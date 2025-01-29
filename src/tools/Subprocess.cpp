@@ -25,6 +25,7 @@
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
+#include <sys/wait.h>
 #endif
 
 namespace PLMD {
@@ -41,25 +42,35 @@ inline static bool SubprocessPidGetenvSignals() noexcept {
 class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
-  pid_t pid;
+  const pid_t pid;
   explicit SubprocessPid(pid_t pid):
-    pid(pid)
-  {
+    pid(pid) {
     plumed_assert(pid!=0 && pid!=-1);
   }
   void stop() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) {
+      kill(pid,SIGSTOP);
+    }
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) {
+      kill(pid,SIGCONT);
+    }
   }
   ~SubprocessPid() {
-    // this is apparently working also with MPI on Travis.
-    if(pid!=0 && pid!=-1) kill(pid,SIGINT);
+    // the destructor implies we do not need the subprocess anymore, so SIGKILL
+    // is the fastest exit.
+    // if we want to gracefully kill the process with a delay, it would be cleaner
+    // to have another member function
+    kill(pid,SIGKILL);
+    // Wait for the child process to terminate
+    // This is anyway required to avoid leaks
+    int status;
+    waitpid(pid, &status, 0);
   }
 #endif
 };
@@ -75,30 +86,49 @@ Subprocess::Subprocess(const std::string & cmd) {
   };
   int cp[2];
   int pc[2];
-  if(pipe(pc)<0) plumed_error()<<"error creating parent to child pipe";
-  if(pipe(cp)<0) plumed_error()<<"error creating child to parent pipe";
+  if(pipe(pc)<0) {
+    plumed_error()<<"error creating parent to child pipe";
+  }
+  if(pipe(cp)<0) {
+    plumed_error()<<"error creating child to parent pipe";
+  }
   pid_t pid=fork();
   switch(pid) {
   case -1:
     plumed_error()<<"error forking";
     break;
 // CHILD:
-  case 0:
-  {
-    if(close(1)<0) plumed_error()<<"error closing file";
-    if(dup(cp[1])<0) plumed_error()<<"error duplicating file";
-    if(close(0)<0) plumed_error()<<"error closing file";
-    if(dup(pc[0])<0) plumed_error()<<"error duplicating file";
-    if(close(pc[1])<0) plumed_error()<<"error closing file";
-    if(close(cp[0])<0) plumed_error()<<"error closing file";
+  case 0: {
+    if(close(1)<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(dup(cp[1])<0) {
+      plumed_error()<<"error duplicating file";
+    }
+    if(close(0)<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(dup(pc[0])<0) {
+      plumed_error()<<"error duplicating file";
+    }
+    if(close(pc[1])<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(close(cp[0])<0) {
+      plumed_error()<<"error closing file";
+    }
     auto err=execv(arr[0],arr);
     plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
   }
 // PARENT::
   default:
     this->pid=Tools::make_unique<SubprocessPid>(pid);
-    if(close(pc[0])<0) plumed_error()<<"error closing file";
-    if(close(cp[1])<0) plumed_error()<<"error closing file";
+    if(close(pc[0])<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(close(cp[1])<0) {
+      plumed_error()<<"error closing file";
+    }
     fpc=pc[1];
     fcp=cp[0];
     fppc=fdopen(fpc,"w");
@@ -113,11 +143,15 @@ Subprocess::Subprocess(const std::string & cmd) {
 
 Subprocess::~Subprocess() {
 #ifdef __PLUMED_HAS_SUBPROCESS
-// fpc should be closed to terminate the child executable
+// close files:
   fclose(fppc);
+  fclose(fpcp);
+// fclose also closes the underlying descriptors,
+// so this is not needed:
   close(fpc);
-// fcp should not be closed because it could make the child executable fail
-/// TODO: check if this is necessary and make this class exception safe!
+  close(fcp);
+// after closing the communication, the subprocess is killed
+// in pid's destructor
 #endif
 }
 
@@ -147,29 +181,33 @@ void Subprocess::flush() {
 
 Subprocess & Subprocess::getline(std::string & line) {
   child_to_parent.getline(line);
-  if(!child_to_parent) plumed_error() <<"error reading subprocess";
+  if(!child_to_parent) {
+    plumed_error() <<"error reading subprocess";
+  }
   return (*this);
 }
 
 Subprocess::Handler::Handler(Subprocess *sp) noexcept:
-  sp(sp)
-{
+  sp(sp) {
   sp->cont();
 }
 
 Subprocess::Handler::~Handler() {
-  if(sp) sp->stop();
+  if(sp) {
+    sp->stop();
+  }
 }
 
 Subprocess::Handler::Handler(Handler && handler) noexcept :
-  sp(handler.sp)
-{
+  sp(handler.sp) {
   handler.sp=nullptr;
 }
 
 Subprocess::Handler & Subprocess::Handler::operator=(Handler && handler) noexcept {
   if(this!=&handler) {
-    if(sp) sp->stop();
+    if(sp) {
+      sp->stop();
+    }
     sp=handler.sp;
     handler.sp=nullptr;
   }

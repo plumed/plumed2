@@ -79,7 +79,9 @@ std::string ActionVolume::getKernelType() const {
 
 inline
 Vector ActionVolume::getPosition( const unsigned& index ) const {
-  if( getConstPntrToComponent(0)->getRank()==0 ) return ActionAtomistic::getPosition( 1 + index );
+  if( getConstPntrToComponent(0)->getRank()==0 ) {
+    return ActionAtomistic::getPosition( 1 + index );
+  }
   return ActionAtomistic::getPosition( getConstPntrToComponent(0)->getShape()[0] + index );
 }
 

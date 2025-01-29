@@ -78,8 +78,7 @@ UPDATE_IF ARG=coord END
 
 class UpdateIf:
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::vector<double> lower;
   std::vector<double> upper;
   bool on;
@@ -100,7 +99,7 @@ void UpdateIf::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of values that should be used to make the decision on whether to update or not");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.addFlag("END",false,"end");
   keys.add("optional","LESS_THAN","upper bound");
@@ -112,17 +111,28 @@ UpdateIf::UpdateIf(const ActionOptions&ao):
   ActionPilot(ao),
   ActionWithArguments(ao),
   on(false),
-  end(false)
-{
+  end(false) {
   parseFlag("END",end);
   parseVector("LESS_THAN",upper);
   parseVector("MORE_THAN",lower);
-  if(end && upper.size()!=0) error("END and LESS_THAN are not compatible");
-  if(end && lower.size()!=0) error("END and MORE_THAN are not compatible");
-  if(upper.size()==0) upper.assign(getNumberOfArguments(),+std::numeric_limits<double>::max());
-  if(lower.size()==0) lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
-  if(upper.size()!=getNumberOfArguments()) error("LESS_THAN should have the same size as ARG");
-  if(lower.size()!=getNumberOfArguments()) error("MORE_THAN should have the same size as ARG");
+  if(end && upper.size()!=0) {
+    error("END and LESS_THAN are not compatible");
+  }
+  if(end && lower.size()!=0) {
+    error("END and MORE_THAN are not compatible");
+  }
+  if(upper.size()==0) {
+    upper.assign(getNumberOfArguments(),+std::numeric_limits<double>::max());
+  }
+  if(lower.size()==0) {
+    lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
+  }
+  if(upper.size()!=getNumberOfArguments()) {
+    error("LESS_THAN should have the same size as ARG");
+  }
+  if(lower.size()!=getNumberOfArguments()) {
+    error("MORE_THAN should have the same size as ARG");
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     log<<"  boundaries for argument "<<i<<"    "<<lower[i]<<" "<<upper[i]<<"\n";
   }
@@ -136,15 +146,21 @@ void UpdateIf::prepare() {
 void UpdateIf::calculate() {
   on=true;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
+    if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) {
+      on=false;
+    }
   }
 }
 
 void UpdateIf::beforeUpdate() {
-  if(end) plumed.updateFlagsPop();
-  else {
-    if(on) plumed.updateFlagsPush(plumed.updateFlagsTop());
-    else   plumed.updateFlagsPush(false);
+  if(end) {
+    plumed.updateFlagsPop();
+  } else {
+    if(on) {
+      plumed.updateFlagsPush(plumed.updateFlagsTop());
+    } else {
+      plumed.updateFlagsPush(false);
+    }
   }
 }
 

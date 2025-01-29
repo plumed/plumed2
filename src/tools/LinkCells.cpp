@@ -30,29 +30,41 @@ LinkCells::LinkCells( Communicator& cc ) :
   cutoffwasset(false),
   link_cutoff(0.0),
   ncells(3),
-  nstride(3)
-{
+  nstride(3) {
 }
 
 void LinkCells::setCutoff( const double& lcut ) {
-  cutoffwasset=true; link_cutoff=lcut;
+  cutoffwasset=true;
+  link_cutoff=lcut;
 }
 
 double LinkCells::getCutoff() const {
-  plumed_assert( cutoffwasset ); return link_cutoff;
+  plumed_assert( cutoffwasset );
+  return link_cutoff;
 }
 
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
-
+  auto box = pbc.getBox();
+  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
+    // If the box is not set then we can't use link cells.  We thus set the link cell cutoff and box vectors equal to 23 (because it is the best number).
+    // Setting everything this way ensures that the link cells are a 1x1x1 box.  Notice that if it is a one by one by one box then we are hard coded to return
+    // 0 in findCell. GAT
+    // Note: any non infinite - non zero number should work correctly here! Apparently Gareth likes numerology. I do as well, so let's keep this. GB
+    box(0,0) = box(1,1) = box(2,2) = link_cutoff = 23;
+  } else {
+    auto determinant = box.determinant();
+    plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+  }
   // Setup the pbc object by copying it from action
-  mypbc.setBox( pbc.getBox() );
+  mypbc.setBox( box );
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
-    allcells.resize( pos.size() ); lcell_lists.resize( pos.size() );
+    allcells.resize( pos.size() );
+    lcell_lists.resize( pos.size() );
   }
 
   {
@@ -61,22 +73,31 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 // This allows to use linked cells in non orthorhomic boxes
     Tensor reciprocal(transpose(mypbc.getInvBox()));
     ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
-    if( ncells[0]==0 ) ncells[0]=1;
+    if( ncells[0]==0 ) {
+      ncells[0]=1;
+    }
     ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
-    if( ncells[1]==0 ) ncells[1]=1;
+    if( ncells[1]==0 ) {
+      ncells[1]=1;
+    }
     ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
-    if( ncells[2]==0 ) ncells[2]=1;
+    if( ncells[2]==0 ) {
+      ncells[2]=1;
+    }
   }
   // Setup the strides
-  nstride[0]=1; nstride[1]=ncells[0]; nstride[2]=ncells[0]*ncells[1];
+  nstride[0]=1;
+  nstride[1]=ncells[0];
+  nstride[2]=ncells[0]*ncells[1];
 
   // Setup the storage for link cells
   unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
   if( lcell_tots.size()!=ncellstot ) {
-    lcell_tots.resize( ncellstot ); lcell_starts.resize( ncellstot );
+    lcell_tots.resize( ncellstot );
+    lcell_starts.resize( ncellstot );
   }
   // Clear nlcells
-  for(unsigned i=0; i<ncellstot; ++i) lcell_tots[i]=0;
+  lcell_tots.assign( lcell_tots.size(), 0 );
   // Clear allcells
   allcells.assign( allcells.size(), 0 );
 
@@ -87,12 +108,17 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     lcell_tots[allcells[i]]++;
   }
   // And gather all this information on every node
-  comm.Sum( allcells ); comm.Sum( lcell_tots );
+  comm.Sum( allcells );
+  comm.Sum( lcell_tots );
 
   // Now prepare the link cell lists
   unsigned tot=0;
-  for(unsigned i=0; i<lcell_tots.size(); ++i) { lcell_starts[i]=tot; tot+=lcell_tots[i]; lcell_tots[i]=0; }
-  plumed_assert( tot==pos.size() );
+  for(unsigned i=0; i<lcell_tots.size(); ++i) {
+    lcell_starts[i]=tot;
+    tot+=lcell_tots[i];
+    lcell_tots[i]=0;
+  }
+  plumed_assert( tot==pos.size() ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<pos.size();
 
   // And setup the link cells properly
   for(unsigned j=0; j<pos.size(); ++j) {
@@ -119,11 +145,18 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn, unsigned& 
         int zval = celn[2] + nz;
         zval=LINKC_PBC(zval,ncells[2])*nstride[2];
 
-        unsigned mybox=xval+yval+zval; bool added=false;
+        unsigned mybox=xval+yval+zval;
+        bool added=false;
         for(unsigned k=0; k<ncells_required; ++k) {
-          if( mybox==cells_required[k] ) { added=true; break; }
+          if( mybox==cells_required[k] ) {
+            added=true;
+            break;
+          }
         }
-        if( !added ) { cells_required[ncells_required+nnew_cells]=mybox; nnew_cells++; }
+        if( !added ) {
+          cells_required[ncells_required+nnew_cells]=mybox;
+          nnew_cells++;
+        }
       }
     }
   }
@@ -132,8 +165,11 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn, unsigned& 
 
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list,
     unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-  if( cell_list.size()!=getNumberOfCells() ) cell_list.resize( getNumberOfCells() );
-  unsigned ncellt=0; addRequiredCells( findMyCell( pos ), ncellt, cell_list );
+  if( cell_list.size()!=getNumberOfCells() ) {
+    cell_list.resize( getNumberOfCells() );
+  }
+  unsigned ncellt=0;
+  addRequiredCells( findMyCell( pos ), ncellt, cell_list );
   retrieveAtomsInCells( ncellt, cell_list, natomsper, atoms );
 }
 
@@ -153,8 +189,12 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos );
   std::array<unsigned,3> celn;
+  if( ncells[0]*ncells[1]*ncells[2] == 1 ) {
+    celn[0]=celn[1]=celn[2]=0;
+    return celn;
+  }
+  Vector fpos=mypbc.realToScaled( pos );
   for(unsigned j=0; j<3; ++j) {
     celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
@@ -174,7 +214,9 @@ unsigned LinkCells::findCell( const Vector& pos ) const {
 unsigned LinkCells::getMaxInCell() const {
   unsigned maxn = lcell_tots[0];
   for(unsigned i=1; i<lcell_tots.size(); ++i) {
-    if( lcell_tots[i]>maxn ) { maxn=lcell_tots[i]; }
+    if( lcell_tots[i]>maxn ) {
+      maxn=lcell_tots[i];
+    }
   }
   return maxn;
 }

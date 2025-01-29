@@ -33,8 +33,7 @@ class PlumedMain;
 class Communicator;
 
 class GREX:
-  public WithCmd
-{
+  public WithCmd {
   bool initialized;
   ForwardDecl<Communicator> intracomm_fwd;
   Communicator& intracomm=*intracomm_fwd;
@@ -52,7 +51,7 @@ class GREX:
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
-  void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val) override;
   void calculate();
   void savePositions();
 };

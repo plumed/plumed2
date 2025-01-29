@@ -138,7 +138,8 @@ void ContactMap::registerKeywords( Keywords& keys ) {
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contact map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.addOutputComponent("contact","default","scalar","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.setValueDescription("scalar","the sum of all the switching function on all the distances");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
@@ -147,12 +148,13 @@ ContactMap::ContactMap(const ActionOptions&ao):
   serial(false),
   docomp(true),
   dosum(false),
-  docmdist(false)
-{
+  docmdist(false) {
   parseFlag("SERIAL",serial);
   parseFlag("SUM",dosum);
   parseFlag("CMDIST",docmdist);
-  if(docmdist==true&&dosum==true) error("You cannot use SUM and CMDIST together");
+  if(docmdist==true&&dosum==true) {
+    error("You cannot use SUM and CMDIST together");
+  }
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -161,39 +163,61 @@ ContactMap::ContactMap(const ActionOptions&ao):
   std::vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;; ++i ) {
     parseAtomList("ATOMS", i, t );
-    if( t.empty() ) break;
+    if( t.empty() ) {
+      break;
+    }
 
     if( t.size()!=2 ) {
-      std::string ss; Tools::convert(i,ss);
+      std::string ss;
+      Tools::convert(i,ss);
       error("ATOMS" + ss + " keyword has the wrong number of atoms");
     }
-    ga_lista.push_back(t[0]); gb_lista.push_back(t[1]);
+    ga_lista.push_back(t[0]);
+    gb_lista.push_back(t[1]);
     t.resize(0);
 
     // Add a value for this contact
-    std::string num; Tools::convert(i,num);
-    if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
+    std::string num;
+    Tools::convert(i,num);
+    if(!dosum&&!docmdist) {
+      addComponentWithDerivatives("contact-"+num);
+      componentIsNotPeriodic("contact-"+num);
+    }
   }
   // Create neighbour lists
   nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,true,pbc,getPbc(),comm);
 
   // Read in switching functions
-  std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
+  std::string errors;
+  sfs.resize( ga_lista.size() );
+  unsigned nswitch=0;
   for(unsigned i=0; i<ga_lista.size(); ++i) {
-    std::string num, sw1; Tools::convert(i+1, num);
-    if( !parseNumbered( "SWITCH", i+1, sw1 ) ) break;
-    nswitch++; sfs[i].set(sw1,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+    std::string num, sw1;
+    Tools::convert(i+1, num);
+    if( !parseNumbered( "SWITCH", i+1, sw1 ) ) {
+      break;
+    }
+    nswitch++;
+    sfs[i].set(sw1,errors);
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH" + num + " keyword : " + errors );
+    }
   }
   if( nswitch==0 ) {
-    std::string sw; parse("SWITCH",sw);
-    if(sw.length()==0) error("no switching function specified use SWITCH keyword");
+    std::string sw;
+    parse("SWITCH",sw);
+    if(sw.length()==0) {
+      error("no switching function specified use SWITCH keyword");
+    }
     for(unsigned i=0; i<ga_lista.size(); ++i) {
       sfs[i].set(sw,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCH keyword : " + errors );
+      }
     }
   } else if( nswitch!=sfs.size()  ) {
-    std::string num; Tools::convert(nswitch+1, num);
+    std::string num;
+    Tools::convert(nswitch+1, num);
     error("missing SWITCH" + num + " keyword");
   }
 
@@ -201,7 +225,9 @@ ContactMap::ContactMap(const ActionOptions&ao):
   nswitch=0;
   reference.resize(ga_lista.size(), 0.);
   for(unsigned i=0; i<ga_lista.size(); ++i) {
-    if( !parseNumbered( "REFERENCE", i+1, reference[i] ) ) break;
+    if( !parseNumbered( "REFERENCE", i+1, reference[i] ) ) {
+      break;
+    }
     nswitch++;
   }
   if( nswitch==0 ) {
@@ -211,13 +237,17 @@ ContactMap::ContactMap(const ActionOptions&ao):
       nswitch++;
     }
   }
-  if(nswitch == 0 && docmdist) error("with CMDIST one must use REFERENCE to setup the reference contact map");
+  if(nswitch == 0 && docmdist) {
+    error("with CMDIST one must use REFERENCE to setup the reference contact map");
+  }
 
   // Read in weight values
   nswitch=0;
   weight.resize(ga_lista.size(), 1.0);
   for(unsigned i=0; i<ga_lista.size(); ++i) {
-    if( !parseNumbered( "WEIGHT", i+1, weight[i] ) ) break;
+    if( !parseNumbered( "WEIGHT", i+1, weight[i] ) ) {
+      break;
+    }
     nswitch++;
   }
   if( nswitch==0 ) {
@@ -235,11 +265,13 @@ ContactMap::ContactMap(const ActionOptions&ao):
   }
 
   if(dosum) {
-    addValueWithDerivatives(); setNotPeriodic();
+    addValueWithDerivatives();
+    setNotPeriodic();
     log.printf("  colvar is sum of all contacts in contact map\n");
   }
   if(docmdist) {
-    addValueWithDerivatives(); setNotPeriodic();
+    addValueWithDerivatives();
+    setNotPeriodic();
     log.printf("  colvar is distance between the contact map matrix and the provided reference matrix\n");
   }
 
@@ -312,12 +344,16 @@ void ContactMap::calculate() {
 
   if(!serial) {
     comm.Sum(&ncoord,1);
-    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+    if(!deriv.empty()) {
+      comm.Sum(&deriv[0][0],3*deriv.size());
+    }
     comm.Sum(&virial[0][0],9);
   }
 
   if( !docomp ) {
-    for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
+    for(unsigned i=0; i<deriv.size(); ++i) {
+      setAtomsDerivatives(i,deriv[i]);
+    }
     setValue           (ncoord);
     setBoxDerivatives  (virial);
   }

@@ -64,6 +64,7 @@ public:
   bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
 /// Retrieve a keywords object for a particular action
   bool getKeywords( const std::string& action, Keywords& keys );
+  void getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys);
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   std::vector<std::string> getActionNames() const;
@@ -96,13 +97,14 @@ class ActionRegistration {
 public:
   ///On construction register the ActionClass with the wanted directive
   ActionRegistration(std::string_view directive):
-    id(actionRegister().add(directive.data(),create,ActionClass::registerKeywords))
-  {
+    id(actionRegister().add(directive.data(),create,ActionClass::registerKeywords)) {
     static_assert(isActionType<ActionClass>,
                   "ActionRegistration accepts only class that inherit from Action");
   }
   ///On destruction deregister the ActionClass (useful when you unload a shared object)
-  ~ActionRegistration() {actionRegister().remove(id);}
+  ~ActionRegistration() {
+    actionRegister().remove(id);
+  }
 };
 } //PLMD
 

@@ -65,8 +65,7 @@ PLMD::Action you should use <b> the routines with the word component in the name
 */
 
 class ActionWithValue :
-  public virtual Action
-{
+  public virtual Action {
   friend class ActionWithVector;
   friend class ActionWithArguments;
 private:
@@ -112,6 +111,8 @@ public:
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+/// Get the description of this component
+  virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
@@ -131,8 +132,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
   static void noAnalyticalDerivatives(Keywords& keys);
-/// Puts a message into the manual that the components always output
-  static void componentsAreNotOptional(Keywords& keys);
 /// The components in the action will depend on the user
   static void useCustomisableComponents(Keywords& keys);
 /// Are we not calculating derivatives
@@ -178,7 +177,9 @@ public:
 /// This forces the class to use numerical derivatives
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields
-  virtual void checkFieldsAllowed() { error("cannot use this action as a field"); }
+  virtual void checkFieldsAllowed() {
+    error("cannot use this action as a field");
+  }
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
@@ -186,7 +187,9 @@ public:
   virtual void getMatrixColumnTitles( std::vector<std::string>& argnames ) const ;
 /// This is used to check if we run calculate during the update step
   virtual bool calculateOnUpdate();
-  ActionWithValue* castToActionWithValue() noexcept final { return this; }
+  ActionWithValue* castToActionWithValue() noexcept final {
+    return this;
+  }
 };
 
 inline
@@ -202,7 +205,9 @@ double ActionWithValue::getOutputQuantity( const std::string& name ) const {
     const std::string & valname=values[i]->name;
     if(valname.size()>offset+1 && valname[offset]=='.' ) {
       plumed_dbg_assert(Tools::startWith(valname,getLabel()));
-      if(!std::strcmp(valname.c_str()+offset+1,name.c_str())) return values[i]->get();
+      if(!std::strcmp(valname.c_str()+offset+1,name.c_str())) {
+        return values[i]->get();
+      }
     }
   }
   return 0.0;

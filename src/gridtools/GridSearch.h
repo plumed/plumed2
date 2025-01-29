@@ -47,18 +47,23 @@ private:
 public:
   GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, const std::vector<unsigned>& nfg, FCLASS* funcc ) :
     myclass_func( funcc ),
-    using_fgrid(false)
-  {
+    using_fgrid(false) {
     // Setup the min and max values for the grid
     std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() );
-    std::vector<bool> pbc( nfg.size(), false ); std::vector<double> dummy_spacing;
-    for(unsigned i=0; i<nfg.size(); ++i) { Tools::convert(mmin[i],gmin[i]); Tools::convert(mmax[i],gmax[i]); }
+    std::vector<bool> pbc( nfg.size(), false );
+    std::vector<double> dummy_spacing;
+    for(unsigned i=0; i<nfg.size(); ++i) {
+      Tools::convert(mmin[i],gmin[i]);
+      Tools::convert(mmax[i],gmax[i]);
+    }
     // Create the coarse grid grid objects
     mygrid.setup( "flat", pbc, 0, 0.0 );
     mygrid.setBounds( gmin, gmax, ng, dummy_spacing );
     // Setup the fine grid object
     if( nfg[0]>0 ) {
-      using_fgrid=true; myfgrid.setup("flat", pbc, 0, 0.0 ); dummy_spacing.resize(0);
+      using_fgrid=true;
+      myfgrid.setup("flat", pbc, 0, 0.0 );
+      dummy_spacing.resize(0);
       myfgrid.setBounds( gmin, gmax, nfg, dummy_spacing );
     }
     value.reset( new Value( NULL, "gval", true, mygrid.getNbin(true)) );
@@ -70,29 +75,42 @@ public:
 
 template <class FCLASS>
 void GridSearch<FCLASS>::setGridElement( const unsigned& ind, const double& emin, const std::vector<double>& der ) {
-  value->set( ind, emin ); for(unsigned j=0; j<der.size(); ++j) value->setGridDerivatives( ind, j, der[j] );
+  value->set( ind, emin );
+  for(unsigned j=0; j<der.size(); ++j) {
+    value->setGridDerivatives( ind, j, der[j] );
+  }
 }
 
 template <class FCLASS>
 bool GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc ) {
-  std::vector<double> der( p.size() ); std::vector<double> coords( p.size() );
+  std::vector<double> der( p.size() );
+  std::vector<double> coords( p.size() );
   double initial_eng = (myclass_func->*myfunc)( p, der );
-  mygrid.getGridPointCoordinates( 0, coords ); unsigned pmin=0;
-  double emin=(myclass_func->*myfunc)( coords, der ); setGridElement( 0, emin, der );
+  mygrid.getGridPointCoordinates( 0, coords );
+  unsigned pmin=0;
+  double emin=(myclass_func->*myfunc)( coords, der );
+  setGridElement( 0, emin, der );
   for(unsigned i=1; i<mygrid.getNumberOfPoints(); ++i) {
     mygrid.getGridPointCoordinates( i, coords );
     double eng = (myclass_func->*myfunc)( coords, der );
     setGridElement( i, eng, der );
-    if( eng<emin ) { emin=eng; pmin=i; }
+    if( eng<emin ) {
+      emin=eng;
+      pmin=i;
+    }
   }
 
   if( using_fgrid ) {
-    myfgrid.getGridPointCoordinates( 0, coords ); pmin=0;
+    myfgrid.getGridPointCoordinates( 0, coords );
+    pmin=0;
     double emin = myinterp->splineInterpolation( coords, der );
     for(unsigned i=1; i<myfgrid.getNumberOfPoints(); ++i) {
       myfgrid.getGridPointCoordinates( i, coords );
       double eng = myinterp->splineInterpolation( coords, der );
-      if( eng<emin ) { emin=eng; pmin=i; }
+      if( eng<emin ) {
+        emin=eng;
+        pmin=i;
+      }
     }
     myfgrid.getGridPointCoordinates( pmin, coords );
     double checkEng = (myclass_func->*myfunc)( coords, der );

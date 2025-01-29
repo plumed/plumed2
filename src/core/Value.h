@@ -54,16 +54,6 @@ class Value {
   friend class DomainDecomposition;
   template<typename T>
   friend class DataPassingObjectTyped;
-/// This copies the contents of a value into a second value (just the derivatives and value)
-  friend void copy( const Value& val1, Value& val2 );
-/// This copies the contents of a value into a second value (but second value is a pointer)
-  friend void copy( const Value& val, Value* val2 );
-/// This adds some derivatives onto the value
-  friend void add( const Value& val1, Value* valout );
-/// This calculates val1*val2 and sorts out the derivatives
-  friend void product( const Value& val1, const Value& val2, Value& valout );
-/// This calculates va1/val2 and sorts out the derivatives
-  friend void quotient( const Value& val1, const Value& val2, Value* valout );
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -131,6 +121,8 @@ public:
   void add(double);
 /// Add something to the ith element of the data array
   void add(const std::size_t& n, const double& v );
+/// Get the location of this element of in the store
+  std::size_t getIndexInStore( const std::size_t& ival ) const ;
 /// Get the value of the function
   double get( const std::size_t& ival=0, const bool trueind=true ) const;
 /// Find out if the value has been set
@@ -159,8 +151,6 @@ public:
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
   void setDerivative(unsigned i, double d);
-/// Apply the chain rule to the derivatives
-  void chainRule(double df);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
@@ -202,6 +192,8 @@ public:
   void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here
   unsigned getNumberOfValues() const ;
+/// Get the number of values that are actually stored here once sparse matrices are taken into account
+  unsigned getNumberOfStoredValues() const ;
 /// Get the number of threads to use when assigning this value
   unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
 /// These are used for passing around the data in this value when we are doing replica exchange
@@ -254,46 +246,18 @@ public:
   void setGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
 /// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
+/// Get the type of value that is stored here
+  std::string getValueType() const ;
 };
-
-void copy( const Value& val1, Value& val2 );
-void copy( const Value& val1, Value* val2 );
-void add( const Value& val1, Value* valout );
 
 inline
 void Value::applyPeriodicity(const unsigned& ival) {
   if(periodicity==periodic) {
     data[ival]=min+difference(min,data[ival]);
-    if(data[ival]<min)data[ival]+=max_minus_min;
+    if(data[ival]<min) {
+      data[ival]+=max_minus_min;
+    }
   }
-}
-
-inline
-void product( const Value& val1, const Value& val2, Value& valout ) {
-  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives() );
-  if( valout.getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout.resizeDerivatives( val1.getNumberOfDerivatives() );
-  valout.value_set=false;
-  valout.clearDerivatives();
-  double u=val1.get();
-  double v=val2.get();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
-    valout.addDerivative(i, u*val2.getDerivative(i) + v*val1.getDerivative(i) );
-  }
-  valout.set( u*v );
-}
-
-inline
-void quotient( const Value& val1, const Value& val2, Value* valout ) {
-  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives());
-  if( valout->getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout->resizeDerivatives( val1.getNumberOfDerivatives() );
-  valout->value_set=false;
-  valout->clearDerivatives();
-  double u=val1.get();
-  double v=val2.get();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
-    valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
-  }
-  valout->chainRule( 1/(v*v) ); valout->set( u / v );
 }
 
 inline
@@ -312,7 +276,9 @@ void Value::add(double v) {
 
 inline
 void Value::add(const std::size_t& n, const double& v ) {
-  value_set=true; data[n]+=v; applyPeriodicity(n);
+  value_set=true;
+  data[n]+=v;
+  applyPeriodicity(n);
 }
 
 inline
@@ -328,7 +294,9 @@ const std::string& Value::getName()const {
 inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
-  if( shape.size()>0 ) return shape.size();
+  if( shape.size()>0 ) {
+    return shape.size();
+  }
   return data.size() - 1;
 }
 
@@ -345,8 +313,12 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n) {
-  if( shape.size()>0 ) return;
-  if(hasDeriv) data.resize(1+n);
+  if( shape.size()>0 ) {
+    return;
+  }
+  if(hasDeriv) {
+    data.resize(1+n);
+  }
 }
 
 inline
@@ -362,28 +334,35 @@ void Value::setDerivative(unsigned i, double d) {
 }
 
 inline
-void Value::chainRule(double df) {
-  for(unsigned i=0; i<getNumberOfDerivatives(); ++i) data[1+i]*=df;
-}
-
-inline
 void Value::clearInputForce() {
-  if( !hasForce ) return;
-  hasForce=false; std::fill(inputForce.begin(),inputForce.end(),0);
+  if( !hasForce ) {
+    return;
+  }
+  hasForce=false;
+  std::fill(inputForce.begin(),inputForce.end(),0);
 }
 
 inline
 void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
-  if( !hasForce ) return;
-  hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
+  if( !hasForce ) {
+    return;
+  }
+  hasForce=false;
+  for(const auto & p : index) {
+    inputForce[p.index()]=0;
+  }
 }
 
 inline
 void Value::clearDerivatives( const bool force ) {
-  if( !force && (valtype==constant || valtype==average) ) return;
+  if( !force && (valtype==constant || valtype==average) ) {
+    return;
+  }
 
   value_set=false;
-  if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+  if( data.size()>1 ) {
+    std::fill(data.begin()+1, data.end(), 0);
+  }
 }
 
 inline
@@ -413,7 +392,9 @@ double Value::difference(double d1,double d2)const {
     // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
     return s*max_minus_min;
-  } else plumed_merror("periodicity should be set to compute differences");
+  } else {
+    plumed_merror("periodicity should be set to compute differences");
+  }
 }
 
 inline
@@ -444,8 +425,19 @@ const std::vector<unsigned>& Value::getShape() const {
 
 inline
 unsigned Value::getNumberOfValues() const {
-  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
+  unsigned size=1;
+  for(unsigned i=0; i<shape.size(); ++i) {
+    size *= shape[i];
+  }
   return size;
+}
+
+inline
+unsigned Value::getNumberOfStoredValues() const {
+  if( getRank()==2 && !hasDeriv ) {
+    return shape[0]*ncols;
+  }
+  return getNumberOfValues();
 }
 
 inline

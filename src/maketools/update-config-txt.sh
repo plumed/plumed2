@@ -132,6 +132,8 @@ echo "# if option xx is on then plumed has beeen compiled with -D__PLUMED_HAS_XX
       echo "has $u off"
     fi
   done
+  #this is here for backward compatibility (since we are using c++17 that has <regex>)
+  echo "has cregex on"
 } | sort
 echo
 echo "# other defines"

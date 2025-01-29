@@ -39,8 +39,7 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 /// (it might be extended to add multiple virtual atoms).
 class ActionWithVirtualAtom:
   public ActionAtomistic,
-  public ActionWithValue
-{
+  public ActionWithValue {
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -76,7 +75,9 @@ public:
   static void registerKeywords(Keywords& keys);
   virtual unsigned getNumberOfDerivatives();
   virtual void apply();
-  ActionWithVirtualAtom* castToActionWithVirtualAtom() noexcept final { return this; }
+  ActionWithVirtualAtom* castToActionWithVirtualAtom() noexcept final {
+    return this;
+  }
 };
 
 inline
@@ -86,7 +87,9 @@ unsigned ActionWithVirtualAtom::getNumberOfDerivatives() {
 
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos) {
-  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->set(pos[i]);
+  for(unsigned i=0; i<3; ++i) {
+    getPntrToComponent(i)->set(pos[i]);
+  }
 }
 
 inline

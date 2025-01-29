@@ -69,8 +69,7 @@ opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500
 //+ENDPLUMEDOC
 
 class ECVumbrellasLine :
-  public ExpansionCVs
-{
+  public ExpansionCVs {
 private:
   double barrier_;
   unsigned P0_contribution_;
@@ -96,10 +95,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasLine,"ECV_UMBRELLAS_LINE")
 
-void ECVumbrellasLine::registerKeywords(Keywords& keys)
-{
+void ECVumbrellasLine::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","CV_MIN","the minimum of the CV range to be explored");
   keys.add("compulsory","CV_MAX","the maximum of the CV range to be explored");
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
@@ -111,15 +108,15 @@ void ECVumbrellasLine::registerKeywords(Keywords& keys)
 
 ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   Action(ao),
-  ExpansionCVs(ao)
-{
+  ExpansionCVs(ao) {
 //set P0_contribution_
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
-  if(add_P0)
+  if(add_P0) {
     P0_contribution_=1;
-  else
+  } else {
     P0_contribution_=0;
+  }
 
 //set barrier_
   barrier_=std::numeric_limits<double>::infinity();
@@ -137,37 +134,38 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   double spacing;
   parse("SPACING",spacing);
   double length=0;
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  for(unsigned j=0; j<getNumberOfArguments(); j++) {
     length+=std::pow(cv_max[j]-cv_min[j],2);
+  }
   length=std::sqrt(length);
   unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
   centers_.resize(getNumberOfArguments()); //centers_[cv][umbrellas]
   unsigned full_period=0;
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
-  {
+  for(unsigned j=0; j<getNumberOfArguments(); j++) {
     centers_[j].resize(sizeUmbrellas);
     if(sizeUmbrellas>1)
-      for(unsigned k=0; k<sizeUmbrellas; k++)
+      for(unsigned k=0; k<sizeUmbrellas; k++) {
         centers_[j][k]=cv_min[j]+k*(cv_max[j]-cv_min[j])/(sizeUmbrellas-1);
-    else
+      } else {
       centers_[j][0]=(cv_min[j]+cv_max[j])/2.;
-    if(getPntrToArgument(j)->isPeriodic())
-    {
+    }
+    if(getPntrToArgument(j)->isPeriodic()) {
       double min,max;
       std::string min_str,max_str;
       getPntrToArgument(j)->getDomain(min,max);
       getPntrToArgument(j)->getDomain(min_str,max_str);
       plumed_massert(cv_min[j]>=min,"ARG "+std::to_string(j)+": CV_MIN cannot be smaller than the periodic bound "+min_str);
       plumed_massert(cv_max[j]<=max,"ARG "+std::to_string(j)+": CV_MAX cannot be greater than the periodic bound "+max_str);
-      if(cv_min[j]==min && cv_max[j]==max)
+      if(cv_min[j]==min && cv_max[j]==max) {
         full_period++;
+      }
     }
   }
-  if(full_period==getNumberOfArguments() && sizeUmbrellas>1) //first and last are the same point
-  {
+  if(full_period==getNumberOfArguments() && sizeUmbrellas>1) { //first and last are the same point
     sizeUmbrellas--;
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
       centers_[j].pop_back();
+    }
   }
 
   checkRead();
@@ -181,43 +179,35 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
   log.printf("    with SIGMA = %g\n",sigma_);
   log.printf("    and SPACING = %g\n",spacing);
-  if(barrier_!=std::numeric_limits<double>::infinity())
+  if(barrier_!=std::numeric_limits<double>::infinity()) {
     log.printf("  guess for free energy BARRIER = %g\n",barrier_);
-  if(P0_contribution_==1)
+  }
+  if(P0_contribution_==1) {
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
-  if(lower_only_)
+  }
+  if(lower_only_) {
     log.printf(" -- LOWER_HALF_ONLY: the ECVs are set to zero for values of the CV above the respective center\n");
+  }
 }
 
-void ECVumbrellasLine::calculateECVs(const double * cv)
-{
-  if(lower_only_)
-  {
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-    {
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
-      {
+void ECVumbrellasLine::calculateECVs(const double * cv) {
+  if(lower_only_) {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) { //if ADD_P0, the first ECVs=0
         const unsigned kk=k-P0_contribution_;
         const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
-        if(dist_jk>=0)
-        {
+        if(dist_jk>=0) {
           ECVs_[j][k]=0;
           derECVs_[j][k]=0;
-        }
-        else
-        {
+        } else {
           ECVs_[j][k]=0.5*std::pow(dist_jk,2);
           derECVs_[j][k]=dist_jk/sigma_;
         }
       }
     }
-  }
-  else
-  {
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-    {
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
-      {
+  } else {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) { //if ADD_P0, the first ECVs=0
         const unsigned kk=k-P0_contribution_;
         const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
         ECVs_[j][k]=0.5*std::pow(dist_jk,2);
@@ -227,65 +217,61 @@ void ECVumbrellasLine::calculateECVs(const double * cv)
   }
 }
 
-const double * ECVumbrellasLine::getPntrToECVs(unsigned j)
-{
+const double * ECVumbrellasLine::getPntrToECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &ECVs_[j][0];
 }
 
-const double * ECVumbrellasLine::getPntrToDerECVs(unsigned j)
-{
+const double * ECVumbrellasLine::getPntrToDerECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &derECVs_[j][0];
 }
 
-std::vector<std::string> ECVumbrellasLine::getLambdas() const
-{
+std::vector<std::string> ECVumbrellasLine::getLambdas() const {
   std::vector<std::string> lambdas(totNumECVs_);
-  if(P0_contribution_==1)
-  {
+  if(P0_contribution_==1) {
     std::ostringstream subs;
     subs<<"P0";
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
       subs<<"_P0";
+    }
     lambdas[0]=subs.str();
   }
-  for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-  {
+  for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
     const unsigned kk=k-P0_contribution_;
     std::ostringstream subs;
     subs<<centers_[0][kk];
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
       subs<<"_"<<centers_[j][kk];
+    }
     lambdas[k]=subs.str();
   }
   return lambdas;
 }
 
-void ECVumbrellasLine::initECVs()
-{
+void ECVumbrellasLine::initECVs() {
   plumed_massert(!isReady_,"initialization should not be called twice");
   isReady_=true;
   log.printf("  *%4u windows for %s\n",totNumECVs_,getName().c_str());
 }
 
-void ECVumbrellasLine::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
-{
+void ECVumbrellasLine::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j) {
   //this non-linear exansion never uses automatic initialization
   initECVs();
   calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
   for(unsigned j=0; j<getNumberOfArguments(); j++)
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+    for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
       ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
+    }
 }
 
-void ECVumbrellasLine::initECVs_restart(const std::vector<std::string>& lambdas)
-{
+void ECVumbrellasLine::initECVs_restart(const std::vector<std::string>& lambdas) {
   std::size_t pos=0;
-  for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
+  for(unsigned j=0; j<getNumberOfArguments()-1; j++) {
+    pos=lambdas[0].find("_",pos+1);  //checking only lambdas[0] is hopefully enough
+  }
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
   pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());

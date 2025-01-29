@@ -1,4 +1,4 @@
-#! FIELDS time parameter smap.coord-1 smap.coord-2 lwe
+#! FIELDS time parameter smap_ap.coord-1 smap_ap.coord-2 lwe
  500.000000 0   -966.3   1318.3      1.0
  500.000000 1   -607.3    827.1      1.0
  500.000000 2     26.7    -36.8      1.0

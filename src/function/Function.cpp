@@ -30,14 +30,14 @@ void Function::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values from which the function is calculated");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
 }
 
 Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
 }
 
 void Function::addValueWithDerivatives() {
@@ -52,10 +52,12 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
 }
 
-void Function::apply()
-{
-  if( !checkForForces() ) return;
-  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind, getLabel() );
+void Function::apply() {
+  if( !checkForForces() ) {
+    return;
+  }
+  unsigned ind=0;
+  addForcesOnArguments( 0, getForcesToApply(), ind, getLabel() );
 }
 
 }

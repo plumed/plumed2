@@ -14,32 +14,53 @@ Advantages of using PYCV over standard development of CVs in C++ are:
 
 You can see the original PyCV [here](https://giorginolab.github.io/plumed2-pycv)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
-[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
+[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/). 
+
+Note that the current syntax is different than the one described in the original paper.
+
+
+As usual if you are not working in a virtual environment you are doing this at your own risk
+`pip install .` should be enough, with a plumed version (>=2.10) avaiable with a pkg-config or in the `PATH`s.
+
+
+>[!NOTE]
+>On linux If you use `make` and `make check` note that the tests will find pycv only if you are working in the same python environment that you had active when compiling/installing plumed
+
+> [!NOTE]
+>We have some problem with the macs:
+you may need to explicitly declare and export some environmental variables like the `PYTHON_PATH` to make pycv work when plumed is called
 
 
 ## Documentation
+
+>[!NOTE]
+>The regtests `regtest/pycvcomm/rt-doc` and `regtest/pycvfunc/rt-doc` can be used both as
+ an example and a way to create a (very) basic code documentation for the action/function interface.
+>The example in `regtest/pycvcomm/rt-doc` will produce very basic html pages,
+ and the one in `regtest/pycvfunc/rt-doc` will dump a few simple textfiles
+
 
 The PYCV module defines the following actions:
 
  * `PYCVINTERFACE`, to implement single- and multi-component CVs in Python;
  * `PYFUNCTION`, to implement arbitrary functions.
 
-Plumed will start a a Python interpreter.
-Then Plumed will import a python module with the `IMPORT=` keyword, this module
-must contain at least two objects: a calculate function that will be called at
-the `calculate()` step, and an init function or dictionary that will be used at
-time of constructing the pycv.
+Plumed will start an embedded Python interpreter.
+Then Plumed will import a python module with the `IMPORT=` keyword. This module
+must contain at least two objects: a *calculate* function that will be called at
+the `calculate()` step, and an *init* function or dictionary that will be used at
+time of constructing the PYCV.
 The module that can be imported can be a `*.py` file or a directory that contains
-an `__init__.py`, or a module in the your python path.
+an `__init__.py`, or a module in the your Python path.
 
 `PYCVINTERFACE` will accept also functions during the `prepare()` and `update()`
 steps.
 
-`PYCVINTERFACE` will accept also the `ATOMS` keyword (see `DISTANCE` cv)
-**or** a series of keyword relative to the neighbour list (see `COORDINATION` cv).
+`PYCVINTERFACE` will accept also the `ATOMS` keyword (see `DISTANCE` CV)
+**or** a series of keyword relative to the neighbour list (see `COORDINATION` CV).
 If both the flavour of asking atom is used, `PYCVINTERFACE` will raise and error.
 
-The interface to python as anticipated before depends on the following keywords:
+The interface to Python, as anticipated above, depends on the following keywords:
 
 | keyword   | description                                  | PYCVINTERFACE | PYFUNCTION |
 |-----------|----------------------------------------------|---------------|------------|
@@ -49,55 +70,63 @@ The interface to python as anticipated before depends on the following keywords:
 | PREPARE   | the function to call at `prepare()` step     | ✅            | ❌         |
 | UPDATE    | the function to call at `update()` step      | ✅            | ❌         |
 
-If not specified INIT will default to `"plumedInit` and CALCULATE  to 
-`"plumedCalculate"`, on the other hand, if PREPARE and UPDATE are not present, will be ignored.
+If not specified, `INIT` will default to `plumedInit` and `CALCULATE`  to 
+`plumedCalculate`. On the other hand, if `PREPARE` and `UPDATE` are not present, they will be ignored.
 
-## Preparation
+## Installation
 
-For compiling the plugin you just need pybind11 and numpy.
-I always recomend to create and ad-hoc environment for your projects:
-```bash
-python3 -m venv pycvenv
-source ./pycvenv/bin/activate
-pip install -U pip
-pip install -r requirements.txt
+It should be sufficient to run, ideally in a virtual or conda environment:
+```sh
+cd plugins/pycv
+pip install .
 ```
-The requirements.txt file is in the home of the plug in
+You will need to have plumed avaiable in your path or through `pkg-config`
 
-### Standard compilation
+Required dependencies `numpy` and `pybind11` are installed as part of the installation process.
 
-If you have a plumed that supports plumed mklib (that will be release in the 2.10 version, but it is avaiable in the master branch) with multiple files you can simply
-```bash
-./standaloneCompile.sh
+Note that an in-place installation, `pip install -e .`, won't work. 
+
+Now you can get the position of the shared object to load with `python -m pycv`, see [below](#some-examples)
+
+## Regression tests
+
+A suite of regression tests are provided in the `regtest` subdirectory. They can be run e.g. with 
+```sh
+make -C regtest
 ```
 
-### Developer compilation
+## Common runtime problems
 
-If you want to contribute to this module,
-the procedure is slighly more compex:
-```bash
-./prepareMakeForDevelop.sh
+On some platforms, *embedded* Python interpreters  (such as the one used in PYCV) appear to behave 
+differently than the plain ones, raising surprising errors.  For example:
+
+>[!NOTE]
+>Some Python configurations (e.g. Conda under Linux) require the
+ Python shared library to be found in the LD_LIBRARY_PATH, 
+ ignoring the activated environment.  This manifests itself with an
+ error like:
+
 ```
-will prepare a Make.inc in this directory that will be included by the Makefile.
-Then simply:
-```bash
+      libpython3.13.so.1.0: cannot open shared object file: No such file or directory
+```
+
+>[!NOTE]
+>Similarly, some Python configurations (e.g. MacOS) ignore the current
+ environment when searching for packages (e.g. `numpy`). Hence,
+ one should set PYTHONPATH manually.  This manifests itself with an
+ error like:
+
+```
+      No module named numpy
+```
+### Developing pycv
+
+If you are developing pycv can be compiled and tested from the pycv dir with `make`
+
+```sh
 make
+make check
 ```
-
-#### Set up tests
-
-If you are interested in running the test regarding this plugin you can use the same procedure as with the standard plumed, but in the subdir regtest of this plugin.
-The only requirement is to copy or to create a symbolic link to the `regtest/scripts` directory in a plumed source. Plumed must be runnable to execute tests
-```bash
-cd regtest
-ln -s path/to/plumed/source/regtest/scripts .
-make
-```
-### About older Plumed versions
-
-If you are using an older plumed version you must know that:
- - On linux the plug-in can be loaded only if `LOAD` supports the `GLOBAL` keyword
- - mklib won't work (supports only single file compilations), so you'll need to use `./prepareMakeForDevelop.sh`
 
 ## Getting started
 
@@ -197,6 +226,14 @@ You can however act on the `.data` dict or access to all the parameters accessib
 
 In the following paragraphs I am showing a few examples, for a short description of the python interface look [here](PythonInterface.md)
 
+>![IMPORTANT]
+> In the following examples you will see often `path/to/PythonCVInterface.so` as the path to load pycv into plumed
+> If you are using a standalone plumed you can get the path to that file simply by calling `python -m pycv`
+> If you are using plumed within python by importing the `pycv` python module
+  and loading the pycv plumed module with the convenient function  `pycv.getPythonCVInterface()`,
+  like `plmd.cmd("readInputLine", f"LOAD FILE={pycv.getPythonCVInterface()}")`
+
+
 ### Bare minimum
 The minimum invocation can be the following:
 
@@ -218,14 +255,30 @@ def plumedCalculate(action: PLMD.PythonFunction):
 ```
 This simply prints an "Hello, world!" at each step of the simulation/trajectory.
 
-### An example, gradient calculation with jax
+## JAX 
 
-Here's a quick example with calculation of an angle between three atoms
+Transparent auto-differentiation, JIT compilation, neural networks and vectorization
+are readily available through Google's [JAX
+library](https://github.com/google/jax) (recommended).
+
+### Installation
+
+As described in the  [jax documenation](https://jax.readthedocs.io/en/latest/installation.html), there are several installation routes, and calculations can be accelerated with various hardware. For example:
+ - example if you have a cuda12 compatible device (a wheel for cuda will be installed alongside jax):
+`pip install "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
+ - example if you have a cuda12 compatible device, and **cuda already installed on your system**:
+`pip install "jax[cuda12_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
+
+
+
+### Example: a CV with automatic gradient calculation 
+
+Here's a numpy-style calculation of an angle between three atoms, with automatic differentiation:
 
 **plumed.dat**
 
 ```
-cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv CALCULATE=cv1
+cv1:  PYCVINTERFACE ATOMS=1,4,3 IMPORT=jaxcv CALCULATE=cv1
 ```
 
 **jaxcv.py**
@@ -237,6 +290,7 @@ from jax import grad, jit, vmap
 import plumedCommunications
 
 plumedInit={"Value": plumedCommunications.defaults.COMPONENT}
+
 # Implementation of the angle function. @jit really improves speed
 @jit
 def angle(x):
@@ -249,7 +303,7 @@ def angle(x):
     return theta
 
 # Use JAX to auto-gradient it
-grad_angle = grad(angle)
+grad_angle = jit(grad(angle))
 
 # The CV function actually called
 def cv1(action):
@@ -257,35 +311,23 @@ def cv1(action):
     return angle(x), grad_angle(x)
 
 ```
-## EXTRA: JAX
-
-Transparent auto-differentiation, JIT compilation, and vectorization
-are available through Google's [JAX
-library](https://github.com/google/jax) (recommended).
-
-### Install jax:
-
-Go to the original guide in the [jax documenation](https://jax.readthedocs.io/en/latest/installation.html)
-
-jax has different method of installation, and can be accelerated with various different hardware,
-(as stated before, trying to install things in a virtual environment make doing error less costly)
-The command for installing should be similar to:
- - example if you have a cuda12 compatible device (a wheel for cuda will be installed alongside jax):
-`pip install "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
- - example if you have a cuda12 compatible device, and **cuda already installed on your system**:
-`pip install "jax[cuda12_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
-
 
 ## Limitations
 
 - No test have been done with MPI
-- JAX's GPU/TPU offloading are not 100% testes.
+- JAX's GPU/TPU offloading are not 100% tested.
+
+
+If you are using an older Plumed version you must know that:
+ - On linux the plug-in can be loaded only if `LOAD` supports the `GLOBAL` keyword
+ - mklib won't work (supports only single file compilations), so you'll need to use `./prepareMakeForDevelop.sh`
 
 ## Authors
 
-Original author: Toni Giorgino <toni.giorgino@gmail.com>
+Original author: Toni Giorgino <toni.giorgino@cnr.it>
 
 Daniele Rapetti <Daniele.Rapetti@sissa.it>
+
 ## Contributing
 
 Please report bugs and ideas via this repository's *Issues*. 
@@ -299,6 +341,7 @@ Collective Variables in Python. The Journal of Open Source Software
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
+
 
 
 ## Copyright

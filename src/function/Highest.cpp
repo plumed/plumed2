@@ -86,10 +86,14 @@ class Highest : public FunctionTemplateBase {
 private:
   bool min, scalar_out;
 public:
-  void registerKeywords( Keywords& keys ) override {}
+  void registerKeywords( Keywords& keys ) override ;
   void read( ActionWithArguments* action ) override;
-  bool zeroRank() const override { return scalar_out; }
-  bool doWithTasks() const override { return !scalar_out; }
+  bool zeroRank() const override {
+    return scalar_out;
+  }
+  bool doWithTasks() const override {
+    return !scalar_out;
+  }
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -103,13 +107,28 @@ typedef FunctionOfVector<Highest> VectorHighest;
 PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
 PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
+void Highest::registerKeywords( Keywords& keys ) {
+  if( keys.getDisplayName().find("LOWEST") ) {
+    keys.setValueDescription("scalar","the lowest of the input values");
+  } else {
+    keys.setValueDescription("scalar","the highest of the input values");
+  }
+}
+
 void Highest::read( ActionWithArguments* action ) {
-  min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos );
+  min=action->getName().find("LOWEST")!=std::string::npos;
+  if( !min ) {
+    plumed_assert( action->getName().find("HIGHEST")!=std::string::npos );
+  }
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
-    if( action->getPntrToArgument(i)->isPeriodic() ) action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
+    if( action->getPntrToArgument(i)->isPeriodic() ) {
+      action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
+    }
   }
   scalar_out = action->getNumberOfArguments()==1;
-  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("sorting a single scalar is trivial");
+  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) {
+    action->error("sorting a single scalar is trivial");
+  }
 }
 
 void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

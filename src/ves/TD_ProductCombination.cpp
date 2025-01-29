@@ -152,25 +152,36 @@ TD_ProductCombination::TD_ProductCombination(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
   distribution_pntrs_(0),
   grid_pntrs_(0),
-  ndist_(0)
-{
+  ndist_(0) {
   std::vector<std::string> targetdist_labels;
   parseVector("DISTRIBUTIONS",targetdist_labels);
 
   std::string error_msg = "";
   distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);
+  }
 
   for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
-    if(distribution_pntrs_[i]->isDynamic()) {setDynamic();}
-    if(distribution_pntrs_[i]->fesGridNeeded()) {setFesGridNeeded();}
-    if(distribution_pntrs_[i]->biasGridNeeded()) {setBiasGridNeeded();}
+    if(distribution_pntrs_[i]->isDynamic()) {
+      setDynamic();
+    }
+    if(distribution_pntrs_[i]->fesGridNeeded()) {
+      setFesGridNeeded();
+    }
+    if(distribution_pntrs_[i]->biasGridNeeded()) {
+      setBiasGridNeeded();
+    }
   }
 
   ndist_ = distribution_pntrs_.size();
   grid_pntrs_.assign(ndist_,NULL);
-  if(ndist_==0) {plumed_merror(getName()+ ": no distributions are given.");}
-  if(ndist_==1) {plumed_merror(getName()+ ": giving only one distribution does not make sense.");}
+  if(ndist_==0) {
+    plumed_merror(getName()+ ": no distributions are given.");
+  }
+  if(ndist_==1) {
+    plumed_merror(getName()+ ": giving only one distribution does not make sense.");
+  }
   //
   checkRead();
 }
@@ -204,7 +215,9 @@ void TD_ProductCombination::updateGrid() {
     for(unsigned int i=0; i<ndist_; i++) {
       value *= grid_pntrs_[i]->getValue(l);
     }
-    if(value<0.0 && !isTargetDistGridShiftedToZero()) {plumed_merror(getName()+": The target distribution function gives negative values. You should change the definition of the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");}
+    if(value<0.0 && !isTargetDistGridShiftedToZero()) {
+      plumed_merror(getName()+": The target distribution function gives negative values. You should change the definition of the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
+    }
     norm += integration_weights[l]*value;
     targetDistGrid().setValue(l,value);
     logTargetDistGrid().setValue(l,-std::log(value));
@@ -212,8 +225,7 @@ void TD_ProductCombination::updateGrid() {
 
   if(norm>0.0) {
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-  }
-  else if(!isTargetDistGridShiftedToZero()) {
+  } else if(!isTargetDistGridShiftedToZero()) {
     plumed_merror(getName()+": The target distribution function cannot be normalized proberly. You should change the definition of the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
   }
   logTargetDistGrid().setMinToZero();

@@ -79,7 +79,7 @@ AC_DEFUN([PLUMED_CHECK_CFLAG], [
 ])
 
 # PLUMED_CHECK_LDFLAGS(flag)
-# use it to check if a flag is available on this compiler
+# use it to check if a flag is available for linking
 AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
   save_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS $1"
@@ -312,7 +312,6 @@ PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
-PLUMED_CONFIG_ENABLE([popen],[search for popen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
@@ -324,6 +323,7 @@ PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
+PLUMED_CONFIG_ENABLE([metatensor],[search for metatensor],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -448,6 +448,9 @@ then
    AC_MSG_WARN([Your compiler appears not to support C++17])
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
+
+# We assume now that compiler supports C++11 library
+AC_DEFINE([__PLUMED_WRAPPER_LIBCXX11])
 
 AC_SUBST(disable_dependency_tracking)
 
@@ -924,11 +927,15 @@ if test "$af_cpu" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
+# metatensor requires libtorch
+if test $metatensor = true ; then
+  libtorch=true;
+fi
+
 #added by luigibonati
 if test $libtorch = true ; then 
   # disable as-needed in linking libraries (both static and shared)
-  PLUMED_CHECK_CXXFLAG([-Wl,--no-as-needed])
-  LDSHARED="$LDSHARED -Wl,--no-as-needed "
+  PLUMED_CHECK_LDFLAGS([-Wl,--no-as-needed])
 
   # CUDA and CPU libtorch libs have different libraries
   # first test CUDA program
@@ -959,6 +966,35 @@ if test $libtorch = true ; then
     }
   ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
   fi
+fi
+
+if test $metatensor = true ; then
+  # find metatensor and metatensor_torch
+  PLUMED_CHECK_CXX_PACKAGE([metatensor],[
+    // torch header creates a lot a pedantic warnings, which we can't do anything about
+    // we disable them to make finding the relevant part in the config.log easier
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+    #pragma GCC diagnostic ignored "-Wfloat-equal"
+    #pragma GCC diagnostic ignored "-Wfloat-conversion"
+    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+    #pragma GCC diagnostic ignored "-Wsign-conversion"
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #pragma GCC diagnostic pop
+    #include <metatensor/torch.hpp>
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
+    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #endif
+    int main() {
+      metatensor_torch::version();
+      return 0;
+    }
+  ], [__PLUMED_HAS_METATENSOR], [metatensor metatensor_torch], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG

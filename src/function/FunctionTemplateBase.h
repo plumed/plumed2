@@ -44,20 +44,30 @@ protected:
   void parseFlag( Action* action, const std::string&key, bool&t );
 public:
 /// Override this function if you have not implemented the derivatives
-  virtual bool derivativesImplemented() { return true; }
+  virtual bool derivativesImplemented() {
+    return true;
+  }
 ////
   virtual std::vector<std::string> getComponentsPerLabel() const ;
-  virtual bool getDerivativeZeroIfValueIsZero() const { return false; }
+  virtual bool getDerivativeZeroIfValueIsZero() const {
+    return false;
+  }
   virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
-  virtual bool doWithTasks() const { return true; }
+  virtual bool doWithTasks() const {
+    return true;
+  }
   virtual std::vector<Value*> getArgumentsToCheck( const std::vector<Value*>& args );
   bool allComponentsRequired( const std::vector<Value*>& args, const std::vector<ActionWithVector*>& actions );
-  virtual bool zeroRank() const { return false; }
+  virtual bool zeroRank() const {
+    return false;
+  }
   virtual void setPeriodicityForOutputs( ActionWithValue* action );
   virtual void setPrefactor( ActionWithArguments* action, const double pref ) {}
-  virtual unsigned getArgStart() const { return 0; }
+  virtual unsigned getArgStart() const {
+    return 0;
+  }
   virtual void setup( ActionWithValue* action );
   virtual void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const = 0;
 };
@@ -79,16 +89,21 @@ void FunctionTemplateBase::parseFlag( Action* action, const std::string&key, boo
 
 inline
 std::vector<std::string> FunctionTemplateBase::getComponentsPerLabel() const {
-  std::vector<std::string> comps; return comps;
+  std::vector<std::string> comps;
+  return comps;
 }
 
 inline
 void FunctionTemplateBase::setup( ActionWithValue* action ) {
   noderiv=action->doNotCalculateDerivatives();
   // Check for grids in input
-  ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( action ); plumed_assert( aarg );
+  ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( action );
+  plumed_assert( aarg );
   for(unsigned i=0; i<aarg->getNumberOfArguments(); ++i) {
-    if( aarg->getPntrToArgument(i)->getRank()>0 && aarg->getPntrToArgument(i)->hasDerivatives() ) { noderiv=false; break; }
+    if( aarg->getPntrToArgument(i)->getRank()>0 && aarg->getPntrToArgument(i)->hasDerivatives() ) {
+      noderiv=false;
+      break;
+    }
   }
 }
 
@@ -96,13 +111,21 @@ inline
 void FunctionTemplateBase::setPeriodicityForOutputs( ActionWithValue* action ) {
   plumed_massert( action->getNumberOfComponents()==1,"you must defined a setPeriodicityForOutputs function in your function class");
   if( action->keywords.exists("PERIODIC") ) {
-    std::vector<std::string> period; parseVector(action,"PERIODIC",period);
+    std::vector<std::string> period;
+    parseVector(action,"PERIODIC",period);
     if( period.size()==1 ) {
-      if( period[0]!="NO") action->error("input to PERIODIC keyword does not make sense");
-      action->setNotPeriodic(); return;
-    } else if( period.size()!=2 ) action->error("input to PERIODIC keyword does not make sense");
+      if( period[0]!="NO") {
+        action->error("input to PERIODIC keyword does not make sense");
+      }
+      action->setNotPeriodic();
+      return;
+    } else if( period.size()!=2 ) {
+      action->error("input to PERIODIC keyword does not make sense");
+    }
     action->setPeriodic( period[0], period[1] );
-  } else action->setNotPeriodic();
+  } else {
+    action->setNotPeriodic();
+  }
 }
 
 inline
@@ -115,19 +138,27 @@ bool FunctionTemplateBase::allComponentsRequired( const std::vector<Value*>& arg
   std::vector<Value*> checkArgs = getArgumentsToCheck( args );
   for(unsigned i=0; i<checkArgs.size(); ++i ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( checkArgs[i]->getPntrToAction() );
-    if( !av ) return false;
+    if( !av ) {
+      return false;
+    }
     bool found=false;
     for(unsigned j=0; j<actions.size(); ++j) {
-      if( actions[j]==av ) { found=true; break; }
+      if( actions[j]==av ) {
+        found=true;
+        break;
+      }
     }
-    if( !found ) return true;
+    if( !found ) {
+      return true;
+    }
   }
   return false;
 }
 
 inline
 std::string FunctionTemplateBase::getGraphInfo( const std::string& name ) const {
-  std::size_t und = name.find_last_of("_"); return name.substr(0,und);
+  std::size_t und = name.find_last_of("_");
+  return name.substr(0,und);
 }
 
 }

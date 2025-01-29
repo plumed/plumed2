@@ -1,0 +1,64 @@
+scalar_global: METATENSOR ...
+      MODEL=scalar-global.pt
+      DEVICE=cpu
+      # DEVICE=cuda
+      # DEVICE=mps
+
+      SPECIES1=1-9
+      SPECIES_TO_TYPES=6
+...
+
+PRINT ARG=scalar_global FILE=scalar_global FMT=%8.2f
+
+
+scalar_per_atom: METATENSOR ...
+      MODEL=scalar-per-atom.pt
+      DEVICE=cpu
+      # DEVICE=cuda
+      # DEVICE=mps
+
+      SPECIES1=1-9
+      SPECIES_TO_TYPES=6
+...
+
+PRINT ARG=scalar_per_atom FILE=scalar_per_atom FMT=%8.2f
+
+
+vector_global: METATENSOR ...
+      MODEL=vector-global.pt
+      DEVICE=cpu
+      # DEVICE=cuda
+      # DEVICE=mps
+
+      SPECIES1=1-9
+      SPECIES_TO_TYPES=6
+...
+
+PRINT ARG=vector_global FILE=vector_global FMT=%8.2f
+
+
+vector_per_atom: METATENSOR ...
+      MODEL=vector-per-atom.pt
+      DEVICE=cpu
+      # DEVICE=cuda
+      # DEVICE=mps
+
+      SPECIES1=1-9
+      SPECIES_TO_TYPES=6
+...
+
+PRINT ARG=vector_per_atom FILE=vector_per_atom FMT=%8.2f
+
+
+scalar_per_atom_sum: SUM ARG=scalar_per_atom PERIODIC=NO
+vector_global_sum: SUM ARG=vector_global PERIODIC=NO
+vector_per_atom_sum: SUM ARG=vector_per_atom PERIODIC=NO
+
+summed: CUSTOM ...
+      ARG=scalar_global,scalar_per_atom_sum,vector_global_sum,vector_per_atom_sum
+      VAR=x,y,z,t
+      FUNC=x+y+z+t
+      PERIODIC=NO
+...
+
+BIASVALUE ARG=summed

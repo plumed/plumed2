@@ -34,8 +34,7 @@ They take as argument regular CVs, and output them as components without modific
 
 class ExpansionCVs:
   public ActionWithValue,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 protected:
   bool isReady_; //true only after initECVs
   double kbt_;
@@ -48,13 +47,21 @@ protected:
 public:
   explicit ExpansionCVs(const ActionOptions&);
   virtual ~ExpansionCVs() {};
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void apply() override;
   void calculate() override;
   static void registerKeywords(Keywords&);
-  inline unsigned getNumberOfDerivatives() override {return 1;};
+  inline unsigned getNumberOfDerivatives() override {
+    return 1;
+  };
 
-  inline double getKbT() const {return kbt_;};
-  inline unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
+  inline double getKbT() const {
+    return kbt_;
+  };
+  inline unsigned getTotNumECVs() const {
+    plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady");
+    return totNumECVs_;
+  };
   virtual std::vector< std::vector<unsigned> > getIndex_k() const; //might need to override this
 
   virtual void calculateECVs(const double *) = 0;

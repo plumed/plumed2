@@ -144,7 +144,6 @@ PLUMED_REGISTER_ACTION(Funnel,"FUNNEL")
 
 void Funnel::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
   keys.addFlag("SPHERE",false, "The Funnel potential including the binding site can be spherical instead of a cone");
@@ -202,7 +201,9 @@ Funnel::Funnel(const ActionOptions& ao):
   parse("SAFETY",safety);
   string file;
   parse("FILE",file);
-  if( file.length()==0 ) error("No funnel file name was specified");
+  if( file.length()==0 ) {
+    error("No funnel file name was specified");
+  }
   parse("SCALE",scale_);
 
   //Reading optional arguments
@@ -275,12 +276,18 @@ Funnel::Funnel(const ActionOptions& ao):
   gridfile.open(file);
   BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
 //not necessary anymore?  gridfile.close();
-  if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+  if(BiasGrid_->getDimension()!=getNumberOfArguments()) {
+    error("mismatch between dimensionality of input grid and number of arguments");
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+    if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) {
+      error("periodicity mismatch between arguments and input bias");
+    }
   }
   comm.Barrier();
-  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
+  if(comm.Get_rank()==0 && walkers_mpi) {
+    multi_sim_comm.Barrier();
+  }
   log<<"  Bibliography "<<plumed.cite("Limongelli, Bonomi, and Parrinello, PNAS 110, 6358 (2013)")<<"\n";
 }
 
@@ -301,8 +308,7 @@ void Funnel::createBIAS(const double& R_cyl, const double& z_cc, const double& a
   double MAX_Z;
   if (sphere==false) {
     MAX_Z=R_cyl + tg_alpha * (z_cc - MIN_S);
-  }
-  else {
+  } else {
     MAX_Z=z_cc+safety;
   }
 
@@ -311,8 +317,7 @@ void Funnel::createBIAS(const double& R_cyl, const double& z_cc, const double& a
   double DX_S;
   if (sphere==false) {
     DX_S=(MAX_S - MIN_S) / NBIN_S;
-  }
-  else {
+  } else {
     DX_S=(MAX_S + z_cc + safety)/NBIN_S;
   }
 
@@ -324,8 +329,11 @@ void Funnel::createBIAS(const double& R_cyl, const double& z_cc, const double& a
 
   //Write the header
   pof.printf("#! FIELDS %s %s %s der_%s der_%s \n", getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str(), funcl.c_str(), getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str());
-  if (sphere==false) pof.printf("#! SET min_%s %f\n", getPntrToArgument(0)->getName().c_str(), MIN_S);
-  else pof.printf("#! SET min_%s %f\n", getPntrToArgument(0)->getName().c_str(), -z_cc-safety);
+  if (sphere==false) {
+    pof.printf("#! SET min_%s %f\n", getPntrToArgument(0)->getName().c_str(), MIN_S);
+  } else {
+    pof.printf("#! SET min_%s %f\n", getPntrToArgument(0)->getName().c_str(), -z_cc-safety);
+  }
   pof.printf("#! SET max_%s %f\n", getPntrToArgument(0)->getName().c_str(), MAX_S);
   pof.printf("#! SET nbins_%s %f\n", getPntrToArgument(0)->getName().c_str(), NBIN_S);
   pof.printf("#! SET periodic_%s false\n", getPntrToArgument(0)->getName().c_str());
@@ -340,76 +348,75 @@ void Funnel::createBIAS(const double& R_cyl, const double& z_cc, const double& a
   for(int is=0; is <= NBIN_S; is++) {
     if (sphere==false) {
       SS = MIN_S + is * DX_S;
-    }
-    else {
+    } else {
       SS = - z_cc - safety + is * DX_S;
     }
     bool cone = false;
     if (sphere==false) {
-      if(SS <= z_cc) cone = true;
-    }
-    else {
-      if (SS <= sqrt(pow(z_cc,2)-pow(R_cyl,2))) cone = true;
+      if(SS <= z_cc) {
+        cone = true;
+      }
+    } else {
+      if (SS <= sqrt(pow(z_cc,2)-pow(R_cyl,2))) {
+        cone = true;
+      }
     }
     //Set wall boundaries properly
     if(cone == true) {
       if(sphere==false) {
         Zmax = R_cyl + (z_cc - SS) * tg_alpha;
-      }
-      else {
+      } else {
         if (SS > -z_cc) {
           Zmax = sqrt(pow(z_cc,2) - pow(SS,2));
-        }
-        else {
+        } else {
           Zmax = 0;
         }
       }
+    } else {
+      Zmax = R_cyl;
     }
-    else Zmax = R_cyl;
 
     for(int iz=0; iz <= NBIN_Z; iz++) {
       ZZ = MIN_Z + iz * DX_Z;
 
       //Inside or outside?
       bool inside;
-      if(ZZ < Zmax) inside = true;
-      else inside = false;
+      if(ZZ < Zmax) {
+        inside = true;
+      } else {
+        inside = false;
+      }
 
       if(inside == true) {
         POT = 0;
         FS = 0;
         FZ = 0;
-      }
-      else {
+      } else {
         if(cone == true) {
           if(sphere==false) {
             POT = 0.5 * KAPPA * (ZZ - Zmax) * (ZZ - Zmax);
             FZ = - KAPPA * (ZZ - Zmax);
             FS = - KAPPA * (ZZ - Zmax) * tg_alpha;
-          }
-          else {
+          } else {
             D = sqrt(pow(ZZ,2)+pow(SS,2));
             d = D - z_cc;
             POT = 0.5 * KAPPA * pow(d,2);
             FZ = - KAPPA * d * ZZ / D;
             FS = - KAPPA * d * SS / D;
           }
-        }
-        else {
+        } else {
           if(sphere==false) {
             POT = 0.5 * KAPPA * (ZZ - Zmax) * (ZZ - Zmax);
             FZ = - KAPPA * (ZZ - Zmax);
             FS = 0;
-          }
-          else {
+          } else {
             D = sqrt(pow(ZZ,2)+pow(SS,2));
             d = D - z_cc;
             if(ZZ>=R_cyl+slope*(SS-z_cc)) {
               POT = 0.5 * KAPPA * pow(d,2);
               FZ = - KAPPA * d * ZZ / D;
               FS = - KAPPA * d * SS / D;
-            }
-            else {
+            } else {
               POT = 0.5 * KAPPA * pow(sqrt(pow((ZZ+slope*z_cc-R_cyl)/slope,2)+pow(ZZ,2))-
                                       z_cc,2);
               FZ = - KAPPA*(sqrt(pow((ZZ+slope*z_cc-R_cyl)/slope,2)+pow(ZZ,2))-z_cc)*
@@ -426,8 +433,7 @@ void Funnel::createBIAS(const double& R_cyl, const double& z_cc, const double& a
   pof.close();
 }
 
-void Funnel::calculate()
-{
+void Funnel::calculate() {
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv), der(ncv);
 

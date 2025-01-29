@@ -54,8 +54,7 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 
 class DumpDerivatives :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::string file;
   std::string fmt;
   OFile of;
@@ -74,7 +73,7 @@ void DumpDerivatives::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values whose derivatives should be output");
   keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
@@ -87,10 +86,11 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%15.10f")
-{
+  fmt("%15.10f") {
   parse("FILE",file);
-  if( file.length()==0 ) error("name of output file was not specified");
+  if( file.length()==0 ) {
+    error("name of output file was not specified");
+  }
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);
@@ -98,15 +98,25 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
-  if( nargs==0 ) error("no arguments specified");
+  if( nargs==0 ) {
+    error("no arguments specified");
+  }
   (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
-  if( getPntrToArgument(0)->getRank()>0 ) error("cannot dump derivatives of non-scalar objects");
+  if( getPntrToArgument(0)->getRank()>0 ) {
+    error("cannot dump derivatives of non-scalar objects");
+  }
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
-  if( npar==0 ) error("one or more arguments has no derivatives");
+  if( npar==0 ) {
+    error("one or more arguments has no derivatives");
+  }
   for(unsigned i=1; i<nargs; i++) {
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
-    if( getPntrToArgument(i)->getRank()>0 ) error("cannot dump derivatives of non-scalar objects");
-    if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
+    if( getPntrToArgument(i)->getRank()>0 ) {
+      error("cannot dump derivatives of non-scalar objects");
+    }
+    if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) {
+      error("the number of derivatives must be the same in all values being dumped");
+    }
   }
   checkRead();
 }

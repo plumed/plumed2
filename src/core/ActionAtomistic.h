@@ -44,8 +44,7 @@ class SelectMassCharge;
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
-  virtual public Action
-{
+  virtual public Action {
   friend class Group;
   friend class DomainDecomposition;
   friend class colvar::SelectMassCharge;
@@ -86,6 +85,7 @@ class ActionAtomistic :
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
   void updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
+  bool                  massesWereSet;
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
 /// Used to interpret whether this index is a virtual atom or a real atom
@@ -131,7 +131,9 @@ public:
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const {return indexes.size();}
+  unsigned getNumberOfAtoms()const {
+    return indexes.size();
+  }
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Applies  PBCs to a seriens of positions or distances
@@ -144,8 +146,12 @@ public:
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Parse an list of atom with a numbred keyword
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
-/// Convert a set of read in strings into an atom list (this is used in parseAtomList)
+/// Interpret the atom selection.  Just a wrapper to the static function with four arguments called interpretAtomList that passes xpos and this.
   void interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t);
+/// Convert a set of read in strings into an atom list (this is used in parseAtomList)
+  static void interpretAtomList( std::vector<std::string>& strings, const std::vector<Value*>& xpos, Action* action, std::vector<AtomNumber> &t);
+/// This gets std::vector that contain the PLMD::Value objects that contain xpositions, ypositions, zpositions, masses and charges
+  static void getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev );
 /// Change the box shape
   void changeBox( const Tensor& newbox );
 /// Get reference to Pbc
@@ -161,11 +167,15 @@ public:
 /// not going to be retrieved. Can be used for optimization. Notice that
 /// calling getPosition(int) in an Action where DoNotRetrieve() was called might
 /// lead to undefined behavior.
-  void doNotRetrieve() {donotretrieve=true;}
+  void doNotRetrieve() {
+    donotretrieve=true;
+  }
 /// Skip atom forces - use with care.
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
-  void doNotForce() {donotforce=true;}
+  void doNotForce() {
+    donotforce=true;
+  }
 /// Make atoms whole, assuming they are in the proper order
   void makeWhole();
 public:
@@ -193,7 +203,9 @@ public:
   void readAtomsFromPDB( const PDB& pdb ) override;
 /// Transfer the gradients
   void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
-  ActionAtomistic* castToActionAtomistic() noexcept final { return this; }
+  ActionAtomistic* castToActionAtomistic() noexcept final {
+    return this;
+  }
   virtual bool actionHasForces();
 };
 
@@ -204,12 +216,17 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 
 inline
 double ActionAtomistic::getMass(int i)const {
+  if( !massesWereSet ) {
+    log.printf("WARNING: masses were not passed to plumed\n");
+  }
   return masses[i];
 }
 
 inline
 double ActionAtomistic::getCharge(int i) const {
-  if( !chargesWereSet ) error("charges were not passed to plumed");
+  if( !chargesWereSet ) {
+    error("charges were not passed to plumed");
+  }
   return charges[i];
 }
 

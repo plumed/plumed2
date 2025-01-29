@@ -49,11 +49,11 @@ namespace maze {
 //+PLUMEDOC MAZE_BIAS MAZE_OPTIMIZER_BIAS
 /*
 
-Biases the ligand along the direction calculated by the chosen \ref MAZE_OPTIMIZER.
+Biases the ligand along the direction calculated by the chosen MAZE_OPTIMIZER.
 
 OptimizerBias is a class deriving from Bias, and it is used to adaptively
 bias a ligand-protein system toward an optimal solution found by the chosen
-optimizer.
+\ref MAZE_OPTIMIZER.
 
 Remember to define the loss function (\ref MAZE_LOSS) and the optimizer
 (\ref MAZE_OPTIMIZER) prior to the adaptive bias for the optimizer.
@@ -200,8 +200,6 @@ PLUMED_REGISTER_ACTION(OptimizerBias, "MAZE_OPTIMIZER_BIAS")
 void OptimizerBias::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
 
-  keys.use("ARG");
-
   keys.add(
     "compulsory",
     "BIASING_RATE",
@@ -225,35 +223,38 @@ void OptimizerBias::registerKeywords(Keywords& keys) {
                 MEMETIC_SAMPLING"
   );
 
-  componentsAreNotOptional(keys);
-
   keys.addOutputComponent(
     "force2",
     "default",
+    "scalar",
     "Square of the biasing force."
   );
 
   keys.addOutputComponent(
     "x",
     "default",
+    "scalar",
     "Optimal biasing direction: x component."
   );
 
   keys.addOutputComponent(
     "y",
     "default",
+    "scalar",
     "Optimal biasing direction: y component."
   );
 
   keys.addOutputComponent(
     "z",
     "default",
+    "scalar",
     "Optimal biasing direction: z component."
   );
 
   keys.addOutputComponent(
     "tdist",
     "default",
+    "scalar",
     "Total distance traveled by biased atoms."
   );
 }
@@ -262,8 +263,7 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao),
     bias_(0.0),
     force_(0.0),
-    total_distance_(0.0)
-{
+    total_distance_(0.0) {
   log.printf(
     "maze> You are using the maze module of PLUMED2,\
     please read and cite "

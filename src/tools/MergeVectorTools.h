@@ -40,19 +40,27 @@ template<class C>
 static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vector<typename C::value_type> & result) {
 
   /// local class storing the range of remaining objects to be pushed
-  class Entry
-  {
+  class Entry {
     typename C::const_iterator fwdIt,endIt;
 
   public:
     explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
     /// check if this vector still contains something to be pushed
-    bool empty() const { return fwdIt == endIt; }
+    bool empty() const {
+      return fwdIt == endIt;
+    }
     /// to allow using a priority_queu, which selects the highest element.
     /// we here (counterintuitively) define < as >
-    bool operator< (Entry const& rhs) const { return top() > rhs.top(); }
-    const auto & top() const { return *fwdIt; }
-    void next() { ++fwdIt;};
+    bool operator< (Entry const& rhs) const {
+      return top() > rhs.top();
+    }
+    // TODO: revert "typename C::value_type" to "auto": nvc++ and icpc seems to do not deduce automatically the return type
+    const typename C::value_type & top() const {
+      return *fwdIt;
+    }
+    void next() {
+      ++fwdIt;
+    };
   };
 
   // preprocessing
@@ -65,7 +73,9 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     // this is just to decrease the number of reallocations on push_back
     result.reserve(maxsize);
     // if vectors are empty we are done
-    if(maxsize==0) return;
+    if(maxsize==0) {
+      return;
+    }
   }
 
   // start
@@ -93,8 +103,11 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     // here, we append inconditionally
     result.push_back(val);
     tmp.next();
-    if(tmp.empty()) heap.pop_back();
-    else std::push_heap(std::begin(heap), std::end(heap));
+    if(tmp.empty()) {
+      heap.pop_back();
+    } else {
+      std::push_heap(std::begin(heap), std::end(heap));
+    }
   }
 
   while(!heap.empty()) {
@@ -106,13 +119,19 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     const auto val=tmp.top();
     // if the element is larger than the current largest element,
     // push it to result
-    if(val > result.back()) result.push_back(val);
+    if(val > result.back()) {
+      result.push_back(val);
+    }
     // move forward the used entry
     tmp.next();
     // if this entry is exhausted, remove it from the array
-    if(tmp.empty()) heap.pop_back();
+    if(tmp.empty()) {
+      heap.pop_back();
+    }
     // otherwise, sort again the array
-    else std::push_heap(std::begin(heap), std::end(heap));
+    else {
+      std::push_heap(std::begin(heap), std::end(heap));
+    }
   }
 }
 

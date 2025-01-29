@@ -109,57 +109,84 @@ void Angles::registerKeywords( Keywords& keys ) {
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
   keys.add("optional","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
-  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE"); keys.needsAction("COORD_ANGLES");
+  keys.setValueDescription("vector","the ANGLE for each set of three atoms that were specified");
+  MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("ANGLE");
+  keys.needsAction("COORD_ANGLES");
 }
 
 Angles::Angles(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string swit; parse("SWITCH",swit);
+  ActionShortcut(ao) {
+  std::string swit;
+  parse("SWITCH",swit);
   if( swit.length()>0 ) {
-    std::string cat, grp; parse("GROUPA",cat); parse("GROUPB",grp);
-    if( cat.length()==0 || grp.length()==0 ) error("must use GROUPA/GROUPB when using SWITCH");
+    std::string cat, grp;
+    parse("GROUPA",cat);
+    parse("GROUPB",grp);
+    if( cat.length()==0 || grp.length()==0 ) {
+      error("must use GROUPA/GROUPB when using SWITCH");
+    }
     readInputLine( getShortcutLabel() + ": COORD_ANGLES SWITCH={" +  swit + "} CATOMS=" + cat + " GROUP=" + grp + " " + convertInputLineToString() );
     return;
   }
-  std::vector<std::string> group; parseVector("GROUP",group);
-  std::vector<std::string> groupa; parseVector("GROUPA",groupa);
-  std::vector<std::string> groupb; parseVector("GROUPB",groupb);
-  std::vector<std::string> groupc; parseVector("GROUPC",groupc);
+  std::vector<std::string> group;
+  parseVector("GROUP",group);
+  std::vector<std::string> groupa;
+  parseVector("GROUPA",groupa);
+  std::vector<std::string> groupb;
+  parseVector("GROUPB",groupb);
+  std::vector<std::string> groupc;
+  parseVector("GROUPC",groupc);
   if( group.size()>0 ) {
-    if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
-    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE"; unsigned n=1;
+    if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) {
+      error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
+    }
+    Tools::interpretRanges( group );
+    std::string ainput = getShortcutLabel() + ": ANGLE";
+    unsigned n=1;
     // Not sure if this triple sum makes any sense
     for(unsigned i=2; i<group.size(); ++i ) {
       for(unsigned j=1; j<i; ++j ) {
         for(unsigned k=0; k<j; ++k) {
-          std::string str_n; Tools::convert( n, str_n );
-          ainput += " ATOMS" + str_n + "=" + group[i] + "," + group[j] + "," + group[k]; n++;
+          std::string str_n;
+          Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + group[i] + "," + group[j] + "," + group[k];
+          n++;
         }
       }
     }
     readInputLine( ainput );
   } else if( groupc.size()>0 ) {
-    Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb ); Tools::interpretRanges( groupc );
-    unsigned n=1; std::string ainput = getShortcutLabel() + ": ANGLE";
+    Tools::interpretRanges( groupa );
+    Tools::interpretRanges( groupb );
+    Tools::interpretRanges( groupc );
+    unsigned n=1;
+    std::string ainput = getShortcutLabel() + ": ANGLE";
     for(unsigned i=0; i<groupa.size(); ++i ) {
       for(unsigned j=0; j<groupb.size(); ++j ) {
         for(unsigned k=0; k<groupc.size(); ++k) {
-          std::string str_n; Tools::convert( n, str_n );
-          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupc[k]; n++;
+          std::string str_n;
+          Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupc[k];
+          n++;
         }
       }
     }
     readInputLine( ainput );
   } else if( groupa.size()>0 ) {
-    Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb );
-    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE";
+    Tools::interpretRanges( groupa );
+    Tools::interpretRanges( groupb );
+    unsigned n=1;
+    std::string ainput;
+    ainput = getShortcutLabel() + ": ANGLE";
     for(unsigned i=0; i<groupa.size(); ++i ) {
       for(unsigned j=1; j<groupb.size(); ++j ) {
         for(unsigned k=0; k<j; ++k) {
-          std::string str_n; Tools::convert( n, str_n );
-          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupb[k]; n++;
+          std::string str_n;
+          Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupb[k];
+          n++;
         }
       }
     }

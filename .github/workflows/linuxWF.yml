@@ -28,6 +28,8 @@ jobs:
 # see https://github.com/plumed/plumed2/issues/976
         - -intel-
         - -pycv-mpi-
+#this does not install mpi but uses the internal one
+        - -nvhpc-mpi-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/cache@v4
@@ -136,6 +138,18 @@ jobs:
         echo "CXX=icpx" >> $GITHUB_ENV
         echo "CC=icx" >> $GITHUB_ENV
         echo "FC=ifx" >> $GITHUB_ENV
+    - name: Install NVHPC compiler
+      if: contains( matrix.variant, '-nvhpc-' )
+      # use this if it does not work
+      # wget https://developer.download.nvidia.com/hpc-sdk/24.3/nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
+      # tar xpzf nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
+      # nvhpc_2024_243_Linux_x86_64_cuda_12.3/install
+      run: |
+        curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
+        echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
+        sudo apt-get update -y
+        sudo apt-get install -y nvhpc-24-3
+      # nvhpcinstalls his own mpi compilers
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
@@ -198,8 +212,7 @@ jobs:
       if: contains( matrix.variant, '-pycv-' )
       working-directory: ./plugins/pycv/
       run: |
-            pip install --user -r requirements.txt
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
-            ./prepareMakeForDevelop.sh
             make check
+            

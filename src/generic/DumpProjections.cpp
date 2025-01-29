@@ -49,8 +49,7 @@ DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
 
 class DumpProjections :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::string file;
   std::string fmt;
   OFile of;
@@ -60,7 +59,9 @@ public:
   static void registerKeywords(Keywords& keys);
   void apply() override {}
   void update() override;
-  bool checkNeedsGradients()const override {return true;}
+  bool checkNeedsGradients()const override {
+    return true;
+  }
   ~DumpProjections();
 };
 
@@ -70,7 +71,7 @@ void DumpProjections::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values whose gradients should be outpu");
   keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
@@ -83,10 +84,11 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%15.10f")
-{
+  fmt("%15.10f") {
   parse("FILE",file);
-  if( file.length()==0 ) error("filename not specified");
+  if( file.length()==0 ) {
+    error("filename not specified");
+  }
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.open(file);

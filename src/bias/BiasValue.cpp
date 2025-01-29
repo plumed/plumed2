@@ -83,29 +83,30 @@ PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
 void BiasValue::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalar/vector arguments whose values will be used as a bias on the system");
   // Should be _bias below
-  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("_bias","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "these quantities will named with  the arguments of the bias followed by "
                           "the character string _bias. These quantities tell the user how much the bias is "
                           "due to each of the colvars.");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao)
-{
+  PLUMED_BIAS_INIT(ao) {
   checkRead();
   // add one bias for each argument
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     std::string ss=getPntrToArgument(i)->getName()+"_bias";
-    addComponent(ss); componentIsNotPeriodic(ss);
+    addComponent(ss);
+    componentIsNotPeriodic(ss);
   }
 }
 
 void BiasValue::calculate() {
   double bias=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double val; val=getArgument(i);
+    double val;
+    val=getArgument(i);
     getPntrToComponent(i+1)->set(val);
     setOutputForce(i,-1.);
     bias+=val;

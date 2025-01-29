@@ -125,12 +125,14 @@ void Random_Acceleration_MD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent(
     "dist",
     "default",
+    "scalar",
     "Distance traveled in one sampling interval."
   );
 
   keys.addOutputComponent(
     "tdist",
     "default",
+    "scalar",
     "Total distance traveled by biased atoms."
   );
 }
@@ -180,8 +182,7 @@ void Random_Acceleration_MD::optimize() {
 
   if (pbc_) {
     d = pbcDistance(c, com_);
-  }
-  else {
+  } else {
     d = delta(c, com_);
   }
 

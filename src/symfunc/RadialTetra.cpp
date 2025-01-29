@@ -51,26 +51,44 @@ void RadialTetra::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
-  keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
-  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
-  keys.needsAction("CUSTOM"); keys.needsAction("ONES");
+  keys.setValueDescription("vector","the value of the radial tetrahedrality parameter for each of the input atoms");
+  keys.remove("NN");
+  keys.remove("MM");
+  keys.remove("D_0");
+  keys.remove("R_0");
+  keys.remove("SWITCH");
+  keys.needsAction("DISTANCE_MATRIX");
+  keys.needsAction("NEIGHBORS");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 RadialTetra::RadialTetra( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read species input and create the matrix
-  bool nopbc; parseFlag("NOPBC",nopbc);
-  std::string pbcstr=""; if( nopbc ) pbcstr = " NOPBC";
-  std::string sp_str, rcut; parse("SPECIES",sp_str); parse("CUTOFF",rcut);
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  std::string pbcstr="";
+  if( nopbc ) {
+    pbcstr = " NOPBC";
+  }
+  std::string sp_str, rcut;
+  parse("SPECIES",sp_str);
+  parse("CUTOFF",rcut);
   if( sp_str.length()>0 ) {
     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr );
   } else {
-    std::string specA, specB; parse("SPECIESA",specA); parse("SPECIESB",specB);
-    if( specA.length()==0 ) error("missing input atoms");
-    if( specB.length()==0 ) error("missing SPECIESB keyword");
+    std::string specA, specB;
+    parse("SPECIESA",specA);
+    parse("SPECIESB",specB);
+    if( specA.length()==0 ) {
+      error("missing input atoms");
+    }
+    if( specB.length()==0 ) {
+      error("missing SPECIESB keyword");
+    }
     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr);
   }
   // Get the neighbors matrix
@@ -80,7 +98,8 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   //Now compute sum of four nearest distances
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_sum4: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_near4," + getShortcutLabel() + "_ones");
   // Now compute squares of four nearest distance
@@ -93,7 +112,8 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sum4," + getShortcutLabel() + "_sum4_2," + getShortcutLabel() + "_meanr " +
                  "FUNC=(1-(y-x*z)/(12*z*z)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 

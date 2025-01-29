@@ -57,16 +57,16 @@ void UWalls::registerKeywords(Keywords& keys) {
   keys.add("atoms","CATOMS","all the angles between the bonds that radiate out from these central atom are computed");
   keys.add("atoms","GROUP","a list of angls between pairs of bonds connecting one of the atoms specified using the CATOM command and two of the atoms specified here are computed");
   keys.add("compulsory","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
   keys.needsAction("UPPER_WALLS");
 }
 
 UWalls::UWalls(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string data; parse("DATA",data);
+  ActionShortcut(ao) {
+  std::string data;
+  parse("DATA",data);
   readInputLine( getShortcutLabel() + ": UPPER_WALLS ARG=" + data + " " + convertInputLineToString() );
 }
 

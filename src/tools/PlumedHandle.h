@@ -26,8 +26,7 @@
 #include "TypesafePtr.h"
 #include <memory>
 
-namespace PLMD
-{
+namespace PLMD {
 
 class PlumedMain;
 
@@ -71,8 +70,7 @@ Thus, once constructed the object is guaranteed to be functional.
 
 */
 class PlumedHandle :
-  public WithCmd
-{
+  public WithCmd {
 /// Pointer to PlumedMain.
 /// Used when using the current kernel in order to avoid unneeded indirections.
   std::unique_ptr<PlumedMain> local;
@@ -98,7 +96,7 @@ public:
 /// Move assignment.
   PlumedHandle & operator=(PlumedHandle && other) noexcept;
 /// Execute cmd.
-  void cmd(std::string_view key,const TypesafePtr & ptr=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & ptr) override;
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;
 };

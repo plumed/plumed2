@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
 #include "function/FunctionShortcut.h"
-#include "adjmat/FunctionOfMatrix.h"
+#include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -100,18 +100,20 @@ public:
 
 typedef function::FunctionShortcut<Fccubic> FccubicShortcut;
 PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCUBIC_FUNC")
-typedef adjmat::FunctionOfMatrix<Fccubic> MatrixFccubic;
+typedef function::FunctionOfMatrix<Fccubic> MatrixFccubic;
 PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
+  keys.setValueDescription("matrix","a function that measures the similarity with an fcc environment");
 }
 
 void Fccubic::read( ActionWithArguments* action ) {
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
   parse(action,"ALPHA",alpha);
-  a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
+  a1 = 80080. / (2717. + 16*alpha);
+  b1 = 16.*(alpha-143)/(2717+16*alpha);
   action->log.printf("  setting alpha paramter equal to %f \n",alpha);
 }
 

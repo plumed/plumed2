@@ -195,7 +195,11 @@ private:
 extern "C" void signalHandler(int signal) {
   if (signal == SIGINT) {
     signalReceived.store(true);
-    fprintf(stderr, "Signal handler called\n");
+    fprintf(stderr, "Signal interrupt received\n");
+  }
+  if (signal == SIGTERM) {
+    signalReceived.store(true);
+    fprintf(stderr, "Signal termination received\n");
   }
 }
 
@@ -212,11 +216,13 @@ struct KernelBase {
     path(path_),
     plumed_dat(plumed_dat_),
     handle([&]() {
-    if(path_=="this") return PlumedHandle();
-    else return PlumedHandle::dlopen(path.c_str());
+    if(path_=="this") {
+      return PlumedHandle();
+    } else {
+      return PlumedHandle::dlopen(path.c_str());
+    }
   }()),
-  stopwatch(*log_)
-  {
+  stopwatch(*log_) {
   }
 };
 
@@ -228,8 +234,7 @@ struct Kernel :
   Log* log=nullptr;
   Kernel(const std::string & path_,const std::string & the_plumed_dat, Log* log_):
     KernelBase(path_,the_plumed_dat,log_),
-    log(log_)
-  {
+    log(log_) {
   }
 
   ~Kernel() {
@@ -245,13 +250,11 @@ struct Kernel :
 
   Kernel(Kernel && other) noexcept:
     KernelBase(std::move(other)),
-    log(other.log)
-  {
+    log(other.log) {
     other.log=nullptr; // ensure no log is done in the moved away object
   }
 
-  Kernel & operator=(Kernel && other) noexcept
-  {
+  Kernel & operator=(Kernel && other) noexcept {
     if(this != &other) {
       KernelBase::operator=(std::move(other));
       log=other.log;
@@ -288,6 +291,7 @@ struct AtomDistribution {
   virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
     std::fill(box.begin(), box.end(),0);
   };
+  virtual ~AtomDistribution() noexcept {}
 };
 
 struct theLine:public AtomDistribution {
@@ -319,9 +323,15 @@ struct uniformSphere:public AtomDistribution {
   }
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
-    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
-    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
-    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+    box[0]=rmax;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=rmax;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=rmax;
 
   }
 };
@@ -347,9 +357,15 @@ struct twoGlobs: public AtomDistribution {
   virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
 
     const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
-    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
-    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
-    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+    box[0]=rmax;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=rmax;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=rmax;
   };
 };
 
@@ -374,9 +390,15 @@ struct uniformCube:public AtomDistribution {
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     //+0.05 to avoid overlap
     const double rmax= std::cbrt(natoms)+0.05;
-    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
-    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
-    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+    box[0]=rmax;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=rmax;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=rmax;
 
   }
 };
@@ -403,9 +425,15 @@ struct tiledSimpleCubic:public AtomDistribution {
   }
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
-    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
-    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
-    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+    box[0]=rmax;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=rmax;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=rmax;
 
   }
 };
@@ -429,8 +457,7 @@ std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDis
 }
 } //anonymus namespace for benchmark distributions
 class Benchmark:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
@@ -444,20 +471,20 @@ PLUMED_REGISTER_CLTOOL(Benchmark,"benchmark")
 
 void Benchmark::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
+  keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
@@ -470,7 +497,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
-      if(f) std::fclose(f);
+      if(f) {
+        std::fclose(f);
+      }
     }
   };
 
@@ -483,7 +512,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     log.link(log_dev_null.get());
   }
   log.setLinePrefix("BENCH:  ");
-
+  log <<"Welcome to PLUMED benchmark\n";
   std::vector<Kernel> kernels;
 
   // perform comparative analysis
@@ -510,7 +539,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       log<<"Single run, skipping comparative analysis\n";
     } else if(size<10) {
       log<<"Too small sample, skipping comparative analysis\n";
-    } else try {
+    } else
+      try {
 
         log<<"Running comparative analysis, "<<numblocks<<" blocks with size "<<blocksize<<"\n";
 
@@ -518,7 +548,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         std::uniform_int_distribution<> distrib(0, numblocks-1);
         std::vector<std::vector<long long int>> blocks(f->size());
 
-        { int i=0;
+        {
+          int i=0;
           for(auto it = f->rbegin(); it != f->rend(); ++it,++i) {
             size_t l=0;
             blocks[i].assign(numblocks,0);
@@ -540,7 +571,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
         //B are the bootstrap iterations
         for(unsigned b=0; b<B; b++) {
-          for(auto & c : choice) c=distrib(bootstrapRng);
+          for(auto & c : choice) {
+            c=distrib(bootstrapRng);
+          }
           long long int reference=0;
           for(auto & c : choice) {
             reference+=blocks[0][c];
@@ -575,7 +608,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         log<<"Unexpected error during comparative analysis\n";
         log<<e.what()<<"\n";
       }
-    while(!f->empty()) f->pop_back();
+    while(!f->empty()) {
+      f->pop_back();
+    }
 
   };
   std::unique_ptr<decltype(kernels),decltype(kernels_deleter)> kernels_deleter_obj(&kernels,kernels_deleter);
@@ -588,6 +623,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     {
       std::string paths;
       parse("--kernel",paths);
+      log <<"Using --kernel=" << paths << "\n";
       allpaths=Tools::getWords(paths,":");
     }
 
@@ -595,6 +631,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     {
       std::string paths;
       parse("--plumed",paths);
+      log <<"Using --plumed=" << paths << "\n";
       allplumed=Tools::getWords(paths,":");
     }
 
@@ -603,7 +640,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     // this check only works on MacOS
 #if defined(__APPLE__)
     // if any of the paths if different from "this", we check if libplumed was loaded locally to avoid conflicts.
-    if(std::any_of(allpaths.begin(),allpaths.end(),[](auto value) {return value != "this";})) {
+    if(std::any_of(allpaths.begin(),allpaths.end(),[](auto value) {
+    return value != "this";
+  })) {
       if(DLLoader::isPlumedGlobal()) {
         plumed_error()<<"It looks like libplumed is loaded in the global namespace, you cannot load a different version of the kernel\n"
                       <<"Please make sure you use the plumed-runtime executable and that the env var PLUMED_LOAD_NAMESPACE is not set to GLOBAL";
@@ -615,10 +654,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       plumed_error() << "--kernel and --plumed should have either one element or the same number of elements";
     }
 
-    if(allplumed.size()>1 && allpaths.size()==1) for(unsigned i=1; i<allplumed.size(); i++) allpaths.push_back(allpaths[0]);
-    if(allplumed.size()==1 && allpaths.size()>1) for(unsigned i=1; i<allpaths.size(); i++) allplumed.push_back(allplumed[0]);
+    if(allplumed.size()>1 && allpaths.size()==1)
+      for(unsigned i=1; i<allplumed.size(); i++) {
+        allpaths.push_back(allpaths[0]);
+      }
+    if(allplumed.size()==1 && allpaths.size()>1)
+      for(unsigned i=1; i<allpaths.size(); i++) {
+        allplumed.push_back(allplumed[0]);
+      }
 
-    for(unsigned i=0; i<allpaths.size(); i++) kernels.emplace_back(allpaths[i],allplumed[i],&log);
+    for(unsigned i=0; i<allpaths.size(); i++) {
+      kernels.emplace_back(allpaths[i],allplumed[i],&log);
+    }
   }
 
   // reverse order so that log happens in the forward order:
@@ -627,18 +674,37 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // read other flags:
   bool shuffled=false;
   parseFlag("--shuffled",shuffled);
-  int nf; parse("--nsteps",nf);
-  unsigned natoms; parse("--natoms",natoms);
 
-  double maxtime; parse("--maxtime",maxtime);
+  int nf;
+  parse("--nsteps",nf);
+  log << "Using --nsteps=" << nf << "\n";
+  unsigned natoms;
+  parse("--natoms",natoms);
+  log << "Using --natoms=" << natoms << "\n";
+  double maxtime;
+  parse("--maxtime",maxtime);
+  log << "Using --maxtime=" << maxtime << "\n";
 
   bool domain_decomposition=false;
   parseFlag("--domain-decomposition",domain_decomposition);
-  if(pc.Get_size()>1) domain_decomposition=true;
-  if(domain_decomposition) shuffled=true;
+
+  if(pc.Get_size()>1) {
+    domain_decomposition=true;
+  }
+  if(domain_decomposition) {
+    shuffled=true;
+  }
+
+  if (shuffled) {
+    log << "Using --shuffled\n";
+  }
+  if (domain_decomposition) {
+    log << "Using --domain-decomposition\n";
+  }
 
   double timeToSleep;
   parse("--sleep",timeToSleep);
+  log << "Using --sleep=" << timeToSleep << "\n";
 
   std::vector<int> shuffled_indexes;
 
@@ -646,14 +712,46 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     std::string atomicDistr;
     parse("--atom-distribution",atomicDistr);
     distribution = getAtomDistribution(atomicDistr);
+    log << "Using --atom-distribution=" << atomicDistr << "\n";
   }
 
+  {
+    std::string fileToDump;
+    if(parse("--dump-trajectory",fileToDump)) {
+      log << "Saving the trajectory to \"" << fileToDump << "\" and exiting\n";
+      std::vector<double> cell(9);
+      std::vector<Vector> pos(natoms);
+      std::ofstream ofile(fileToDump);
+      if (nf<0) {
+        //if the user accidentally sets infinite steps, we set it to print only one
+        nf=1;
+      }
+      for(int step=0; step<nf; ++step) {
+        auto sw=kernels[0].stopwatch.startStop("TrajectoryGeneration");
+        distribution->positions(pos,step,atomicGenerator);
+        distribution->box(cell,natoms,step,atomicGenerator);
+        ofile << natoms << "\n"
+              << cell[0] << " " << cell[1] << " " << cell[2] << " "
+              << cell[3] << " " << cell[4] << " " << cell[5] << " "
+              << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
+        for(int i=0; i<natoms; ++i) {
+          ofile << "X\t" << pos[i]<< "\n";
+        }
+      }
+      ofile.close();
+      return 0;
+    }
+  }
+
+  log <<"Initializing the setup of the kernel(s)\n";
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
     auto & p(k.handle);
     auto sw=k.stopwatch.startStop("A Initialization");
-    if(Communicator::plumedHasMPI() && domain_decomposition) p.cmd("setMPIComm",&pc.Get_comm());
+    if(Communicator::plumedHasMPI() && domain_decomposition) {
+      p.cmd("setMPIComm",&pc.Get_comm());
+    }
     p.cmd("setRealPrecision",(int)sizeof(double));
     p.cmd("setMDLengthUnits",1.0);
     p.cmd("setMDChargeUnits",1.0);
@@ -672,13 +770,17 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   if(shuffled) {
     shuffled_indexes.resize(natoms);
-    for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=i;
+    for(unsigned i=0; i<natoms; i++) {
+      shuffled_indexes[i]=i;
+    }
     std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
   }
 
   // non owning pointers, used for shuffling the execution order
   std::vector<Kernel*> kernels_ptr;
-  for(unsigned i=0; i<kernels.size(); i++) kernels_ptr.push_back(&kernels[i]);
+  for(unsigned i=0; i<kernels.size(); i++) {
+    kernels_ptr.push_back(&kernels[i]);
+  }
 
   int plumedStopCondition=0;
   bool fast_finish=false;
@@ -688,7 +790,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
   // trap signals:
   SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
-
+  SignalHandlerGuard sigTermGuard(SIGTERM, signalHandler);
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
@@ -709,10 +811,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       const auto myrank=pc.Get_rank();
       auto shift=0;
       n_local_atoms=nn;
-      if(myrank<excess) n_local_atoms+=1;
+      if(myrank<excess) {
+        n_local_atoms+=1;
+      }
       for(int i=0; i<myrank; i++) {
         shift+=nn;
-        if(i<excess) shift+=1;
+        if(i<excess) {
+          shift+=1;
+        }
       }
       pos_ptr=&pos[shift][0];
       for_ptr=&forces[shift][0];
@@ -729,10 +835,15 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     }
 
     const char* sw_name;
-    if(part==0)      sw_name="B0 First step";
-    else if(part==1) sw_name="B1 Warm-up";
-    else if(part==2) sw_name="B2 Calculation part 1";
-    else             sw_name="B3 Calculation part 2";
+    if(part==0) {
+      sw_name="B0 First step";
+    } else if(part==1) {
+      sw_name="B1 Warm-up";
+    } else if(part==2) {
+      sw_name="B2 Calculation part 1";
+    } else {
+      sw_name="B3 Calculation part 2";
+    }
 
 
     for(unsigned i=0; i<kernels_ptr.size(); i++) {
@@ -742,15 +853,15 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         auto sw=kernels_ptr[i]->stopwatch.startPause(sw_name);
         p.cmd("setStep",step);
         p.cmd("setStopFlag",&plumedStopCondition);
-        p.cmd("setForces",for_ptr,n_local_atoms*3);
-        p.cmd("setBox",&cell[0],9);
-        p.cmd("setVirial",&virial[0],9);
-        p.cmd("setPositions",pos_ptr,n_local_atoms*3);
-        p.cmd("setMasses",masses_ptr,n_local_atoms);
-        p.cmd("setCharges",charges_ptr,n_local_atoms);
+        p.cmd("setForces",for_ptr, {n_local_atoms,3});
+        p.cmd("setBox",&cell[0], {3,3});
+        p.cmd("setVirial",&virial[0], {3,3});
+        p.cmd("setPositions",pos_ptr, {n_local_atoms,3});
+        p.cmd("setMasses",masses_ptr, {n_local_atoms});
+        p.cmd("setCharges",charges_ptr, {n_local_atoms});
         if(shuffled) {
           p.cmd("setAtomsNlocal",n_local_atoms);
-          p.cmd("setAtomsGatindex",indexes_ptr,n_local_atoms);
+          p.cmd("setAtomsGatindex",indexes_ptr, {n_local_atoms});
         }
         p.cmd("prepareCalc");
       }
@@ -759,7 +870,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       {
         unsigned k=0;
         auto start=std::chrono::high_resolution_clock::now();
-        while(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start).count()<(long long int)1e9*timeToSleep) k+=i*i;
+        while(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start).count()<(long long int)1e9*timeToSleep) {
+          k+=i*i;
+        }
         std::fprintf(log_dev_null.get(),"%u",k);
       }
 
@@ -768,11 +881,17 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         p.cmd("performCalc");
       }
 
-      if(kernels_ptr.size()>1 && part>1) kernels_ptr[i]->timings.push_back(kernels_ptr[i]->stopwatch.getLastCycle(sw_name));
-      if(plumedStopCondition || signalReceived.load()) fast_finish=true;
+      if(kernels_ptr.size()>1 && part>1) {
+        kernels_ptr[i]->timings.push_back(kernels_ptr[i]->stopwatch.getLastCycle(sw_name));
+      }
+      if(plumedStopCondition || signalReceived.load()) {
+        fast_finish=true;
+      }
     }
     auto elapsed=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-initial_time).count();
-    if(part==0) part=1;
+    if(part==0) {
+      part=1;
+    }
     if(part<2) {
       if((maxtime>0 && elapsed>(long long int)(0.2*1e9*maxtime)) || (nf>0 && step+1>=nf/5) || (maxtime<0 && nf<0 && step+1>=100)) {
         part=2;
@@ -786,14 +905,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       }
     }
 
-    if(maxtime>0 && elapsed>(long long int)(1e9*maxtime)) fast_finish=true;
+    if(maxtime>0 && elapsed>(long long int)(1e9*maxtime)) {
+      fast_finish=true;
+    }
 
     {
       unsigned tmp=fast_finish;
       pc.Bcast(tmp,0);
       fast_finish=tmp;
     }
-    if(fast_finish) break;
+    if(fast_finish) {
+      break;
+    }
   }
 
   return 0;

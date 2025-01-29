@@ -1,3 +1,0 @@
-type=driver
-arg="--noatoms --plumed plumed.dat"
-

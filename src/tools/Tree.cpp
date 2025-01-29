@@ -34,13 +34,16 @@ Tree::Tree(GenericMolInfo* moldat) {
 // initialize class
   moldat_ = moldat;
 // check if molinfo present
-  if(!moldat_) plumed_merror("MOLINFO DATA not found");
+  if(!moldat_) {
+    plumed_merror("MOLINFO DATA not found");
+  }
 // check if reference structure is whole
-  if(!moldat_->isWhole()) plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
+  if(!moldat_->isWhole()) {
+    plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
+  }
 }
 
-void Tree::buildTree(const std::vector<AtomNumber> & atoms)
-{
+void Tree::buildTree(const std::vector<AtomNumber> & atoms) {
   // Implementation inspired from:
   // https://mayanknatani.wordpress.com/2013/05/31/euclidean-minimummaximum-spanning-tree-emst/
   //
@@ -62,7 +65,9 @@ void Tree::buildTree(const std::vector<AtomNumber> & atoms)
   root_.reserve(atoms.size());
   tree_indexes_.reserve(atoms.size());
   root_indexes_.reserve(atoms.size());
-  if(!moldat_->checkForAtom(atoms[0])) plumed_merror("The first atom in the list should be present in the PDB file");
+  if(!moldat_->checkForAtom(atoms[0])) {
+    plumed_merror("The first atom in the list should be present in the PDB file");
+  }
   // store first atom
   newatoms.push_back(0);
   positions.push_back(moldat_->getPosition(atoms[0]));
@@ -87,8 +92,9 @@ void Tree::buildTree(const std::vector<AtomNumber> & atoms)
   for(unsigned i=0; i<newatoms.size(); ++i) {
     int selected_vertex = -1;
     for(unsigned j=0; j<newatoms.size(); ++j) {
-      if( !intree[j] && (selected_vertex==-1 || mindist[j] < mindist[selected_vertex]) )
+      if( !intree[j] && (selected_vertex==-1 || mindist[j] < mindist[selected_vertex]) ) {
         selected_vertex = j;
+      }
     }
     // add to tree
     plumed_assert(selected_vertex>=0);
@@ -100,7 +106,9 @@ void Tree::buildTree(const std::vector<AtomNumber> & atoms)
     int iroot = -1;
     for(unsigned j=0; j<newatoms.size(); ++j) {
       double dist = delta(positions[selected_vertex], positions[j]).modulo2();
-      if(dist < mindist[j]) mindist[j] = dist;
+      if(dist < mindist[j]) {
+        mindist[j] = dist;
+      }
       if(dist < minroot && intree[j] && dist>0.0) {
         minroot = dist;
         iroot = j;

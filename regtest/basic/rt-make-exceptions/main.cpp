@@ -1,6 +1,5 @@
 // In order to correctly catch the thrown C++11 exceptions,
 // we notify the Plumed wrapper that those exceptions are recognized by the compiler.
-#define __PLUMED_WRAPPER_LIBCXX11 1
 #define __PLUMED_WRAPPER_LIBCXX17 1
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
@@ -59,7 +58,7 @@ int main(){
   int natoms=10;
 
   std::vector<double> positions(3*natoms,0.0);
-  for(unsigned i=0;i<3*natoms;i++) positions[i]=i;
+  for(int i=0;i<3*natoms;i++) positions[i]=i;
   std::vector<double> masses(natoms,1.0);
   std::vector<double> forces(3*natoms,0.0);
   std::vector<double> box(9,0.0);
@@ -146,7 +145,7 @@ int main(){
     plumed.cmd("setVirial",&virial[0]);
     plumed.cmd("setMasses",&masses[0]);
 // set positions after having passed the pointer. They should be accessed here (at "calc").
-    for(unsigned i=0;i<3*natoms;i++) positions[i]=i*step;
+    for(int i=0;i<3*natoms;i++) positions[i]=i*step;
     plumed.cmd("calc");
 
 // this should fail

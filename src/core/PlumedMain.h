@@ -68,6 +68,7 @@ class FileBase;
 class TypesafePtr;
 class IFile;
 class Units;
+class Keywords;
 class DataPassingTools;
 
 /**
@@ -78,8 +79,7 @@ which defines completely the external plumed interface.
 It does not contain any static data.
 */
 class PlumedMain:
-  public WithCmd
-{
+  public WithCmd {
 /// Pointers to files opened in actions associated to this object.
 /// Notice that with the current implementation this should be at the top of this
 /// structure. Indeed, this should be destroyed *after* all the actions allocated
@@ -297,7 +297,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val) override;
   ~PlumedMain();
   /**
     Turn on parse only mode to deactivate restart in all actions.
@@ -429,7 +429,9 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long long int getStep()const {return step;}
+  long long int getStep()const {
+    return step;
+  }
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
@@ -457,7 +459,11 @@ public:
 /// Check if restarting
   bool getRestart()const;
 /// Set restart flag
-  void setRestart(bool f) {if(!doParseOnly) restart=f;}
+  void setRestart(bool f) {
+    if(!doParseOnly) {
+      restart=f;
+    }
+  }
 /// Check if checkpointing
   bool getCPT()const;
 /// Set exchangeStep flag
@@ -474,7 +480,9 @@ public:
   void resetActive(bool active);
 
 /// Access to exchange patterns
-  ExchangePatterns& getExchangePatterns() {return exchangePatterns;}
+  ExchangePatterns& getExchangePatterns() {
+    return exchangePatterns;
+  }
 
 /// Push a state to update flags
   void updateFlagsPush(bool);
@@ -523,6 +531,8 @@ public:
   void plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const ;
 /// Take a typesafe pointer from the MD code and convert it to a double
   double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
+/// Get the keywords for a particular action
+  void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
 };
 
 /////
@@ -603,7 +613,9 @@ bool PlumedMain::callErrorHandler(int code,const char* msg)const {
   if(error_handler.handler) {
     error_handler.handler(error_handler.ptr,code,msg);
     return true;
-  } else return false;
+  } else {
+    return false;
+  }
 }
 
 
