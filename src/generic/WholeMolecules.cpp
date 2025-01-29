@@ -137,7 +137,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.10 this is the default when using MOLINFO with WHOLE");
+  keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.11 this is the default when using MOLINFO with WHOLE");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
 }
 
@@ -151,7 +151,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // parse optional flags
   bool doemst_tmp;
   parseFlag("EMST", doemst_tmp);
-  if(doemst_tmp) log << "EMST option is not needed any more as of PLUMED 2.10\n";
+  if(doemst_tmp) log << "EMST option is not needed any more as of PLUMED 2.11\n";
   parseFlag("ADDREFERENCE", addref);
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
