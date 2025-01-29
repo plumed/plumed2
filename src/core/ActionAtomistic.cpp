@@ -33,6 +33,7 @@
 #include "tools/Exception.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
+#include "tools/Tree.h"
 
 namespace PLMD {
 
@@ -50,6 +51,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   massesWereSet(false),
   chargesWereSet(false) {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
+  moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( bv ) {
     boxValue=bv->copyOutput(0);
   }
@@ -113,6 +115,8 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 
 void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
+  // this makes the EMST invalid so that it will be regenerated at next request
+  tree.reset();
   int nat=a.size();
   indexes=a;
   positions.resize(nat);
@@ -581,10 +585,24 @@ unsigned ActionAtomistic::getTotAtoms()const {
 }
 
 void ActionAtomistic::makeWhole() {
-  for(unsigned j=0; j<positions.size()-1; ++j) {
-    const Vector & first (positions[j]);
-    Vector & second (positions[j+1]);
-    second=first+pbcDistance(first,second);
+  if(moldat && moldat->isWhole()) {
+    // make sure the tree has been constructed
+    if(!tree) {
+      tree=std::make_unique<Tree>(moldat);
+    }
+    const auto & tree_indexes=tree->getTreeIndexes();
+    const auto & root_indexes=tree->getRootIndexes();
+    for(unsigned j=0; j<root_indexes.size(); j++) {
+      const Vector & first (positions[root_indexes[j]]);
+      Vector & second (positions[tree_indexes[j]]);
+      second=first+pbcDistance(first,second);
+    }
+  } else {
+    for(unsigned j=0; j<positions.size()-1; ++j) {
+      const Vector & first (positions[j]);
+      Vector & second (positions[j+1]);
+      second=first+pbcDistance(first,second);
+    }
   }
 }
 
