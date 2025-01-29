@@ -48,8 +48,8 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_commrec;
 struct gmx_multisim_t;
+struct t_commrec;
 
 namespace gmx
 {
@@ -61,7 +61,7 @@ struct PlumedOptions
     std::string         plumedFile_;
     int                 natoms_;
     const t_commrec*    cr_;
-    const gmx_multisim_t* ms_;
+     const gmx_multisim_t* ms_;
     real                simulationTimeStep_;
     std::optional<real> ensembleTemperature_{};
     StartingBehavior    startingBehavior_{};
@@ -99,11 +99,12 @@ public:
     /*! @brief Sets the address to the communication record object
      * @param cr  the Communication Record object
      */
-    void setComm(const t_commrec& cr);
+    void setComm(const t_commrec& cr);    
     /*! @brief Sets the address to the multisimulation object
      * @param ms  the address to the multisimulation object
      */
     void setMultisim(const gmx_multisim_t* ms);
+
     //! @brief returns the active status of the module
     bool active() const;
 

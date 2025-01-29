@@ -90,14 +90,14 @@ void PlumedOptionProvider::setComm(const t_commrec& cr)
     opts_.cr_ = &cr;
 }
 
-void PlumedOptionProvider::setMultisim(const gmx_multisim_t* ms)
-{
-    opts_.ms_ = ms;
-}
-
 bool PlumedOptionProvider::active() const
 {
     return opts_.active_;
+}
+
+void PlumedOptionProvider::setMultisim(const gmx_multisim_t* ms)
+{
+    opts_.ms_ = ms;
 }
 
 

@@ -41,31 +41,21 @@
 
 #include "plumedforceprovider.h"
 
+#include "external/plumed/PlumedInclude.h"
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/units.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "PlumedOutside.h"
 #include "plumedOptions.h"
-
-#define __PLUMED_WRAPPER_FORTRAN 0 // NOLINT(bugprone-reserved-identifier)
-
-#define __PLUMED_WRAPPER_LINK_RUNTIME 1 // NOLINT(bugprone-reserved-identifier)
-#define __PLUMED_WRAPPER_EXTERN 0       // NOLINT(bugprone-reserved-identifier)
-
-#define __PLUMED_WRAPPER_CXX 1            // NOLINT(bugprone-reserved-identifier)
-#define __PLUMED_WRAPPER_LIBCXX11 1       // NOLINT(bugprone-reserved-identifier)
-#define __PLUMED_WRAPPER_LIBCXX17 1       // NOLINT(bugprone-reserved-identifier)
-#define __PLUMED_WRAPPER_IMPLEMENTATION 1 // NOLINT(bugprone-reserved-identifier)
-#define __PLUMED_HAS_DLOPEN               // NOLINT(bugprone-reserved-identifier)
-
-#include "external/plumed/Plumed.h"
-
 namespace gmx
 {
 
@@ -73,6 +63,7 @@ PlumedForceProvider::~PlumedForceProvider() = default;
 PlumedForceProvider::PlumedForceProvider(const PlumedOptions& options)
 try : plumed_(std::make_unique<PLMD::Plumed>())
 {
+    PLMD::plumedOutside().setPlumed(plumed_.get());
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
@@ -115,6 +106,21 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
         }
     }
 
+    if (plumedAPIversion_ > 5)
+    {
+        int nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+        plumed_->cmd("setNumOMPthreads", &nth);
+    }
+
+    /*
+    if(plumedAPIversion_>9) {
+    //todo::get this info
+                 plumed_->cmd("setGpuDeviceId", &deviceId);
+              }
+              */
+
+             
+
     if (isMultiSim(options.ms_))
     {
         if (MAIN(options.cr_))
@@ -123,9 +129,10 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
         plumed_->cmd("GREX init", nullptr);
     }
 
+
     if (PAR(options.cr_))
     {
-        if (havePPDomainDecomposition(options.cr_))
+        if (haveDDAtomOrdering(*options.cr_))
         {
             plumed_->cmd("setMPIComm", &options.cr_->dd->mpi_comm_all);
         }

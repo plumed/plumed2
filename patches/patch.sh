@@ -288,6 +288,7 @@ case "$action" in
     
     if [[ -z $PLUMED_ONLY_PATCH ]]; then
       #PLUMED_ONLY_PATCH is special for programs that have an embedded plumed integration
+      #and do not need the Plumed.h, Plumed.inc, and Plumed.cmake files
       if test -n "$include" ; then
         test -n "$quiet" || echo "Including Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
         echo "#include \"$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h\"" > Plumed.h
@@ -356,10 +357,14 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
-    then
-      echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
-      exit 1
+    if [[ -z $PLUMED_ONLY_PATCH ]]; then
+      #PLUMED_ONLY_PATCH is special for programs that have an embedded plumed integration
+      #and do not need the Plumed.h, Plumed.inc, and Plumed.cmake files
+      if [ ! -e Plumed.h ] || [ ! -e Plumed.inc ] || [ ! -e Plumed.cmake ]
+      then
+        echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
+        exit 1
+      fi
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
     for file in $PLUMED_PREPLUMED_IGNORE;
