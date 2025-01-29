@@ -151,7 +151,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // parse optional flags
   bool doemst_tmp;
   parseFlag("EMST", doemst_tmp);
-  if(doemst_tmp) log << "EMST option is not needed any more as of PLUMED 2.11\n";
+  if(doemst_tmp) {
+    log << "EMST option is not needed any more as of PLUMED 2.11\n";
+  }
   parseFlag("ADDREFERENCE", addref);
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
@@ -196,9 +198,13 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
-  if(moldat && moldat->isWhole()) doemst=true;
+  if(moldat && moldat->isWhole()) {
+    doemst=true;
+  }
 
-  if(doemst_tmp && ! doemst) error("cannot enable EMST if MOLINFO is not WHOLE");
+  if(doemst_tmp && ! doemst) {
+    error("cannot enable EMST if MOLINFO is not WHOLE");
+  }
 
   if(doemst) {
     if( !moldat ) {

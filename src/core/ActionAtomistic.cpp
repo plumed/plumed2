@@ -587,7 +587,9 @@ unsigned ActionAtomistic::getTotAtoms()const {
 void ActionAtomistic::makeWhole() {
   if(moldat && moldat->isWhole()) {
     // make sure the tree has been constructed
-    if(!tree) tree=std::make_unique<Tree>(moldat);
+    if(!tree) {
+      tree=std::make_unique<Tree>(moldat);
+    }
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
     for(unsigned j=0; j<root_indexes.size(); j++) {
