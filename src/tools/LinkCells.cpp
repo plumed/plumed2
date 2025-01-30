@@ -212,11 +212,7 @@ std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
   }
   Vector fpos=mypbc.realToScaled( mypos );
   for(unsigned j=0; j<3; ++j) {
-    if( nopbc ) {
-      celn[j] = std::floor( fpos[j] * ncells[j] );
-    } else {
-      celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
-    }
+    celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j]<<" link cell cutoff is "<<link_cutoff<<" position is "<<fpos[0]<<" "<<fpos[1]<<" "<<fpos[2]<<" box is "<<mypbc.getBox()(0,0)<<" "<<mypbc.getBox()(1,1)<<" "<<mypbc.getBox()(2,2);
   }
   return celn;
