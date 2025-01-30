@@ -286,8 +286,8 @@ case "$action" in
       plumed_before_patch
     fi
     
-    if [[ -z $PLUMED_ONLY_PATCH ]]; then
-      #PLUMED_ONLY_PATCH is special for programs that have an embedded plumed integration
+    if [[ -z $PLUMED_PATCH_NO_INCLUDE ]]; then
+      #PLUMED_PATCH_NO_INCLUDE is special for programs that have an embedded plumed integration
       #and do not need the Plumed.h, Plumed.inc, and Plumed.cmake files
       if test -n "$include" ; then
         test -n "$quiet" || echo "Including Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
@@ -302,6 +302,11 @@ case "$action" in
       fi
     fi
 
+    if [[ -n $PLUMED_PATCH_EXTRA_FILES ]]; then
+      for file in $PLUMED_PATCH_EXTRA_FILES; do
+        cp "${diff}/$file" "$file"
+      done
+    fi
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
       PREPLUMED=$(cd "$diff" ; find . -name "*.preplumed" | sort)
@@ -357,8 +362,8 @@ case "$action" in
     fi
   ;;
   (save)
-    if [[ -z $PLUMED_ONLY_PATCH ]]; then
-      #PLUMED_ONLY_PATCH is special for programs that have an embedded plumed integration
+    if [[ -z $PLUMED_PATCH_NO_INCLUDE ]]; then
+      #PLUMED_PATCH_NO_INCLUDE is special for programs that have an embedded plumed integration
       #and do not need the Plumed.h, Plumed.inc, and Plumed.cmake files
       if [ ! -e Plumed.h ] || [ ! -e Plumed.inc ] || [ ! -e Plumed.cmake ]
       then
@@ -389,6 +394,11 @@ case "$action" in
     test -n "$quiet" || echo "Saving your changes to $diff"
     test -n "$quiet" || echo "Preplumed files:"
     test -n "$quiet" || echo "$PREPLUMED"
+    if [[ -n $PLUMED_PATCH_EXTRA_FILES ]]; then
+      echo "Extra files:"
+      echo "$PLUMED_PATCH_EXTRA_FILES"
+    fi
+
     if [ -d "$diff" ] && [ -z "$save_originals" ]; then
       echo "This patch uses the dir format (originals are saved)"
       echo "Are you sure you want to save the single diff?"
@@ -421,14 +431,24 @@ case "$action" in
           cp "$file" "$diff/$file"
           cp "$bckfile" "$diff/$bckfile"
         else
-          echo "patch -u -l -b -F 5 -N --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
-          diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
-          echo "EOF_EOF"                                                   >> "$diff"
+          {
+            echo "patch -u -l -b -F 5 -N --suffix=.preplumed \"${file}\" << \\EOF_EOF"
+            diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file"
+            echo "EOF_EOF"
+          } >> "$diff"
         fi
       else
         echo "ERROR: File $file is missing"
       fi
     done
+    if [[ -n $PLUMED_PATCH_EXTRA_FILES ]]; then
+      test -n "$quiet" || echo "saving extra files"
+      for file in $PLUMED_PATCH_EXTRA_FILES; do
+        xx=${diff}/$file
+        mkdir -p "${xx%/*}"
+        cp "$file" "${diff}/$file"
+      done
+    fi
 cat <<EOF
 * If you want your patch to perform some arbitrary action before/after
 * patching the diff files, just add a function named
@@ -446,7 +466,7 @@ EOF
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
+    if [ ! -e Plumed.h ] || [ ! -e Plumed.inc ] || [ ! -e Plumed.cmake ]
     then
       echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else
@@ -462,6 +482,12 @@ EOF
         file="${bckfile%.preplumed}"
         mv "$bckfile" "$file"
         touch "$file"
+      done
+    fi
+    if [[ -n $PLUMED_PATCH_EXTRA_FILES ]]; then
+      test -n "$quiet" || echo "Removing the extra files"
+      for file in $PLUMED_PATCH_EXTRA_FILES; do
+        rm -v "$file"
       done
     fi
     if type -t plumed_after_revert 1>/dev/null ; then
