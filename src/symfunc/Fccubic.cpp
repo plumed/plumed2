@@ -52,38 +52,40 @@ Measure how similar the environment around atoms is to that found in a FCC struc
 /*
 Measure how similar the environment around atoms is to that found in a FCC structure.
 
-This CV was introduced in this article \cite fcc-michele-1 and again in this article \cite fcc-michele-2
-This CV essentially determines whether the environment around any given atom is similar to that found in
-the FCC structure or not.  The function that is used to make this determination is as follows:
+This shortcut is an example of a [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md), 
+which we can use to measure how similar the environment around atom $i$ is to an fcc structure.
+The function that is used to make this determination is as follows:
 
-\f[
+$$
 s_i = \frac{ \sum_{i \ne j} \sigma(r_{ij}) \left\{ a\left[ \frac{(x_{ij}y_{ij})^4 + (x_{ij}z_{ij})^4 + (y_{ij}z_{ij})^4}{r_{ij}^8} - \frac{\alpha (x_{ij}y_{ij}z_{ij})^4}{r_{ij}^{12}} \right] + b \right\} }{ \sum_{i \ne j} \sigma(r_{ij}) }
-\f]
+$$
 
-In this expression \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$ are the \f$x\f$, \f$y\f$ and \f$z\f$ components of the vector connecting atom \f$i\f$ to
-atom \f$j\f$ and \f$r_{ij}\f$ is the magnitude of this vector.  \f$\sigma(r_{ij})\f$ is a \ref switchingfunction that acts on the distance between
-atom \f$i\f$ and atom \f$j\f$ and its inclusion in the numerator and the denominator of the above expression as well as the fact that we are summing
+
+In this expression $x_{ij}$, $y_{ij}$ and $z_{ij}$ are the $x$, $y$ and $z$ components of the vector connecting atom $i$ to
+atom $j$ and $r_{ij}$ is the magnitude of this vector.  $\sigma(r_{ij})$ is a switching function that acts on the distance between
+atom $i$ and atom $j$ and its inclusion in the numerator and the denominator of the above expression as well as the fact that we are summing
 over all of the other atoms in the system ensures that we are calculating an average
-of the function of \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$ for the atoms in the first coordination sphere around atom \f$i\f$.  Lastly, \f$\alpha\f$
-is a parameter that can be set by the user, which by default is equal to three.  The values of \f$a\f$ and \f$b\f$ are calculated from \f$\alpha\f$ using:
+of the function of $x_{ij}$, $y_{ij}$ and $z_{ij}$ for the atoms in the first coordination sphere around atom $i$.  Lastly, $\alpha$
+is a parameter that can be set by the user, which by default is equal to three.  The values of $a$ and $b$ are calculated from $\alpha$ using:
 
-\f[
+$$
 a = \frac{ 80080}{ 2717 + 16 \alpha} \qquad \textrm{and} \qquad b = \frac{ 16(\alpha - 143) }{2717 + 16\alpha}
-\f]
+$$
 
-This quantity is once again a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
-the average value for the atoms in your system, the number of atoms that have an \f$s_i\f$ value that is more that some target and
-so on.  Notice also that you can rotate the reference frame if you are using a non-standard unit cell.
-
-\par Examples
+This action was been used in all the articles in the bibliography. We thus wrote an explict 
+action to calculate it in PLUMED instead of using a shortcut as we did for [SIMPLECUBIC](SIMPLECUBIC.md) so that we could get 
+good computational performance.
 
 The following input calculates the FCCUBIC parameter for the 64 atoms in the system
 and then calculates and prints the average value for this quantity.
 
-\plumedfile
-FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN LABEL=d
+```plumed
+d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN 
 PRINT ARG=d.* FILE=colv
-\endplumedfile
+```
+
+Notice that you can you can rotate the bond vectors before computing the
+function in the above expression as is discussed in the documentation for [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
 
 */
 //+ENDPLUMEDOC

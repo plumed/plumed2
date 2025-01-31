@@ -36,8 +36,25 @@ namespace symfunc {
 /*
 Calculate the local crystalinity symmetry function
 
-\par Examples
+This shortcut provides an implementation of the local crystalinity order parameter that is described in the paper in the bibliography.
+To use this CV you define a series of unit vectors, $g_k$, using multiple instances of the GVECTOR keyword.  This allows you to define a 
+[symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html) for the $i$th atom as:
 
+$$
+s_i = \sum_k \left| \frac{\sum_j \sigma(|r_{ij}|) e^{ig_k r_{ij}}}{\sum_j \sigma(|r_{ij}|) \right|^2
+$$
+
+In this expression $r_{ij}$ is the vector connecting atom $i$ to atom $j$ and $\sigma$ is a switching function that acts upon the magnidue of this vector, $|r_{ij}|$.
+The following input is an example that shows how this symmetry function can be used in practice.
+
+```plumed
+lc: LOCAL_CRYSTALINITY SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM
+PRINT ARG=lc_sum FILE=colvar
+```  
+
+As you can see if you expand the shortcut in this input, the sum over $k$ in the above expression has three terms in this input as 3 GVECTORS are specified.
+Sixty four values for the expression above are computed.  These sixty four numbers are then added together in order to give a global mesuare of the crystallinity 
+for the simulated system.
 
 */
 //+ENDPLUMEDOC
@@ -57,6 +74,7 @@ void LocalCrystallinity::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector","the value of the local crystalinity for each of the input atoms");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.addDOI("10.1063/1.4822877");
 }
 
 LocalCrystallinity::LocalCrystallinity( const ActionOptions& ao):

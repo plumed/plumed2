@@ -33,7 +33,76 @@ namespace symfunc {
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the q_1 vector on the central atom and the q_3 vector on the atoms in the first coordination sphere.
 
-\par Examples
+The [Q1](Q1.md) command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
+around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
+measure of the global degree of order for the system. The simplest way of doing this - calculating the average Steinhardt parameter - can be problematic. If one is
+examining nucleation say only the order parameters for those atoms in the nucleus will change significantly when the nucleus forms. The order parameters for the
+atoms in the surrounding liquid will remain pretty much the same. As such if one models a small nucleus embedded in a very large amount of solution/melt any
+change in the average order parameter will be negligible. Substantial changes in the value of this average can be observed in simulations of nucleation but only
+because the number of atoms is relatively small.
+
+When the average [Q1](Q1.md) parameter is used to bias the dynamics a problems
+can occur. These averaged coordinates cannot distinguish between the correct,
+single-nucleus pathway and a concerted pathway in which all the atoms rearrange
+themselves into their solid-like configuration simultaneously. This second type
+of pathway would be impossible in reality because there is a large entropic
+barrier that prevents concerted processes like this from happening.  However,
+in the finite sized systems that are commonly simulated this barrier is reduced
+substantially. As a result in simulations where average Steinhardt parameters
+are biased there are often quite dramatic system size effects
+
+If one wants to simulate nucleation using some form on
+biased dynamics what is really required is an order parameter that measures:
+
+- Whether or not the coordination spheres around atoms are ordered
+- Whether or not the atoms that are ordered are clustered together in a crystalline nucleus
+
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html) a variety of variations on the Steinhardt parameters have been 
+introduced to better describe nucleation. That page also shows how PLUMED provides you with flexibility that you can use to implement new combinations of the 
+Steinhardt parameters. However, the inputs that you would need to write to implement common symmetry functions are rather complex so we also provide shortcuts 
+like this one to help you compute CVs that have been widely used in the literature easily.  
+
+This particular shortcut allows you to compute the LOCAL_Q1 parameter for a particular atom, which is a number that measures the extent to
+which the orientation of the atoms in the first coordination sphere of an atom match the orientation of the central atom.  It does this by calculating the following
+quantity for each of the atoms in the system:
+
+$$
+ s_i = \frac{ \sum_j \sigma( r_{ij} ) \sum_{m=-1}^1 q_{1m}^{*}(i)q_{1m}(j) }{ \sum_j \sigma( r_{ij} ) }
+$$
+
+where $q_{1m}(i)$ and $q_{1m}(j)$ are the 1st order Steinhardt vectors calculated for atom $i$ and atom $j$ respectively and the asterisk denotes complex
+conjugation.  The function
+$\sigma( r_{ij} )$ is a switching function that acts on the distance between atoms $i$ and $j$.  The parameters of this function should be set
+so that it the function is equal to one when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.  The sum in the numerator
+of this expression is the dot product of the Steinhardt parameters for atoms $i$ and $j$ and thus measures the degree to which the orientations of these
+adjacent atoms are correlated.
+
+The following input shows how this works in practice.  This input calculates the average value of the LOCAL_Q1 parameter for the 64 Lennard Jones atoms in the system under study and prints this
+quantity to a file called colvar.
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq1: LOCAL_Q1 SPECIES=q1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
+PRINT ARG=lq1.mean FILE=colvar
+```
+
+The following input calculates the distribution of LOCAL_Q1 parameters at any given time and outputs this information to a file.
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq1: LOCAL_Q1 SPECIES=q1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} 
+PRINT ARG=lq1.* FILE=colvar
+```
+
+The following calculates the LOCAL_Q1 parameters for atoms 1-5 only. For each of these atoms comparisons of the geometry of the coordination sphere
+are done with those of all the other atoms in the system.  The final quantity is the average and is outputted to a file
+
+```plumed
+q1a: Q1 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+q1b: Q1 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+w1: LOCAL_Q1 SPECIES=q1a,q1b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
+PRINT ARG=w1.* FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -42,7 +111,7 @@ Calculate the local degree of order around an atoms by taking the average dot pr
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the q_3 vector on the central atom and the q_3 vector on the atoms in the first coordination sphere.
 
-The \ref Q3 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
+The [Q3](Q3.md) command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
 measure of the global degree of order for the system. The simplest way of doing this - calculating the average Steinhardt parameter - can be problematic. If one is
 examining nucleation say only the order parameters for those atoms in the nucleus will change significantly when the nucleus forms. The order parameters for the
@@ -50,7 +119,7 @@ atoms in the surrounding liquid will remain pretty much the same. As such if one
 change in the average order parameter will be negligible. Substantial changes in the value of this average can be observed in simulations of nucleation but only
 because the number of atoms is relatively small.
 
-When the average \ref Q3 parameter is used to bias the dynamics a problems
+When the average [Q3](Q3.md) parameter is used to bias the dynamics a problems
 can occur. These averaged coordinates cannot distinguish between the correct,
 single-nucleus pathway and a concerted pathway in which all the atoms rearrange
 themselves into their solid-like configuration simultaneously. This second type
@@ -66,51 +135,52 @@ biased dynamics what is really required is an order parameter that measures:
 - Whether or not the coordination spheres around atoms are ordered
 - Whether or not the atoms that are ordered are clustered together in a crystalline nucleus
 
-\ref LOCAL_AVERAGE and \ref NLINKS are variables that can be combined with the Steinhardt parameters allow to calculate variables that satisfy these requirements.
-LOCAL_Q3 is another variable that can be used in these sorts of calculations. The LOCAL_Q3 parameter for a particular atom is a number that measures the extent to
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html) a variety of variations on the Steinhardt parameters have been 
+introduced to better describe nucleation. That page also shows how PLUMED provides you with flexibility that you can use to implement new combinations of the 
+Steinhardt parameters. However, the inputs that you would need to write to implement common symmetry functions are rather complex so we also provide shortcuts 
+like this one to help you compute CVs that have been widely used in the literature easily.  
+
+This particular shortcut allows you to compute the LOCAL_Q3 parameter for a particular atom, which is a number that measures the extent to
 which the orientation of the atoms in the first coordination sphere of an atom match the orientation of the central atom.  It does this by calculating the following
 quantity for each of the atoms in the system:
 
-\f[
+$$
  s_i = \frac{ \sum_j \sigma( r_{ij} ) \sum_{m=-3}^3 q_{3m}^{*}(i)q_{3m}(j) }{ \sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$q_{3m}(i)\f$ and \f$q_{3m}(j)\f$ are the 3rd order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterisk denotes complex
+where $q_{3m}(i)$ and $q_{3m}(j)$ are the 3rd order Steinhardt vectors calculated for atom $i$ and atom $j$ respectively and the asterisk denotes complex
 conjugation.  The function
-\f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set
-so that it the function is equal to one when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  The sum in the numerator
-of this expression is the dot product of the Steinhardt parameters for atoms \f$i\f$ and \f$j\f$ and thus measures the degree to which the orientations of these
-adjacent atoms is correlated.
+$\sigma( r_{ij} )$ is a switching function that acts on the distance between atoms $i$ and $j$.  The parameters of this function should be set
+so that it the function is equal to one when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.  The sum in the numerator
+of this expression is the dot product of the Steinhardt parameters for atoms $i$ and $j$ and thus measures the degree to which the orientations of these
+adjacent atoms are correlated.
 
-\par Examples
-
-The following command calculates the average value of the LOCAL_Q3 parameter for the 64 Lennard Jones atoms in the system under study and prints this
+The following input shows how this works in practice.  This input calculates the average value of the LOCAL_Q3 parameter for the 64 Lennard Jones atoms in the system under study and prints this
 quantity to a file called colvar.
 
-\plumedfile
-Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q3
-LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq3
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq3: LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=lq3.mean FILE=colvar
-\endplumedfile
+```
 
 The following input calculates the distribution of LOCAL_Q3 parameters at any given time and outputs this information to a file.
 
-\plumedfile
-Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q3
-LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq3
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq3: LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} 
 PRINT ARG=lq3.* FILE=colvar
-\endplumedfile
+```
 
 The following calculates the LOCAL_Q3 parameters for atoms 1-5 only. For each of these atoms comparisons of the geometry of the coordination sphere
 are done with those of all the other atoms in the system.  The final quantity is the average and is outputted to a file
 
-\plumedfile
-Q3 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q3a
-Q3 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q3b
-
-LOCAL_Q3 SPECIES=q3a,q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w3
+```plumed
+q3a: Q3 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+q3b: Q3 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+w3: LOCAL_Q3 SPECIES=q3a,q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=w3.* FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -119,7 +189,7 @@ PRINT ARG=w3.* FILE=colvar
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the q_4 vector on the central atom and the q_4 vector on the atoms in the first coordination sphere.
 
-The \ref Q4 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
+The [Q4](Q4.md) command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
 measure of the global degree of order for the system. The simplest way of doing this - calculating the average Steinhardt parameter - can be problematic. If one is
 examining nucleation say only the order parameters for those atoms in the nucleus will change significantly when the nucleus forms. The order parameters for the
@@ -127,7 +197,7 @@ atoms in the surrounding liquid will remain pretty much the same. As such if one
 change in the average order parameter will be negligible. Substantial changes in the value of this average can be observed in simulations of nucleation but only
 because the number of atoms is relatively small.
 
-When the average \ref Q4 parameter is used to bias the dynamics a problems
+When the average [Q4](Q4.md) parameter is used to bias the dynamics a problems
 can occur. These averaged coordinates cannot distinguish between the correct,
 single-nucleus pathway and a concerted pathway in which all the atoms rearrange
 themselves into their solid-like configuration simultaneously. This second type
@@ -143,51 +213,52 @@ biased dynamics what is really required is an order parameter that measures:
 - Whether or not the coordination spheres around atoms are ordered
 - Whether or not the atoms that are ordered are clustered together in a crystalline nucleus
 
-\ref LOCAL_AVERAGE and \ref NLINKS are variables that can be combined with the Steinhardt parameters allow to calculate variables that satisfy these requirements.
-LOCAL_Q4 is another variable that can be used in these sorts of calculations. The LOCAL_Q4 parameter for a particular atom is a number that measures the extent to
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html) a variety of variations on the Steinhardt parameters have been 
+introduced to better describe nucleation. That page also shows how PLUMED provides you with flexibility that you can use to implement new combinations of the 
+Steinhardt parameters. However, the inputs that you would need to write to implement common symmetry functions are rather complex so we also provide shortcuts 
+like this one to help you compute CVs that have been widely used in the literature easily.  
+
+This particular shortcut allows you to compute the LOCAL_Q4 parameter for a particular atom, which is a number that measures the extent to
 which the orientation of the atoms in the first coordination sphere of an atom match the orientation of the central atom.  It does this by calculating the following
 quantity for each of the atoms in the system:
 
-\f[
+$$
  s_i = \frac{ \sum_j \sigma( r_{ij} ) \sum_{m=-4}^4 q_{4m}^{*}(i)q_{4m}(j) }{ \sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$q_{4m}(i)\f$ and \f$q_{4m}(j)\f$ are the fourth order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterisk denotes
-complex conjugation.  The function
-\f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set
-so that it the function is equal to one when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  The sum in the numerator
-of this expression is the dot product of the Steinhardt parameters for atoms \f$i\f$ and \f$j\f$ and thus measures the degree to which the orientations of these
-adjacent atoms is correlated.
+where $q_{4m}(i)$ and $q_{4m}(j)$ are the 4th order Steinhardt vectors calculated for atom $i$ and atom $j$ respectively and the asterisk denotes complex
+conjugation.  The function
+$\sigma( r_{ij} )$ is a switching function that acts on the distance between atoms $i$ and $j$.  The parameters of this function should be set
+so that it the function is equal to one when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.  The sum in the numerator
+of this expression is the dot product of the Steinhardt parameters for atoms $i$ and $j$ and thus measures the degree to which the orientations of these
+adjacent atoms are correlated.
 
-\par Examples
-
-The following command calculates the average value of the LOCAL_Q4 parameter for the 64 Lennard Jones atoms in the system under study and prints this
+The following input shows how this works in practice.  This input calculates the average value of the LOCAL_Q4 parameter for the 64 Lennard Jones atoms in the system under study and prints this
 quantity to a file called colvar.
 
-\plumedfile
-Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q4
-LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq4
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq4: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=lq4.mean FILE=colvar
-\endplumedfile
+```
 
 The following input calculates the distribution of LOCAL_Q4 parameters at any given time and outputs this information to a file.
 
-\plumedfile
-Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q4
-LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq4
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq4: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} 
 PRINT ARG=lq4.* FILE=colvar
-\endplumedfile
+```
 
 The following calculates the LOCAL_Q4 parameters for atoms 1-5 only. For each of these atoms comparisons of the geometry of the coordination sphere
 are done with those of all the other atoms in the system.  The final quantity is the average and is outputted to a file
 
-\plumedfile
-Q4 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q4a
-Q4 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q4b
-
-LOCAL_Q4 SPECIES=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w4
+```plumed
+q4a: Q4 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+q4b: Q4 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+w4: LOCAL_Q4 SPECIES=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=w4.* FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -196,7 +267,7 @@ PRINT ARG=w4.* FILE=colvar
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the q_6 vector on the central atom and the q_6 vector on the atoms in the first coordination sphere.
 
-The \ref Q6 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
+The [Q6](Q6.md) command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
 measure of the global degree of order for the system. The simplest way of doing this - calculating the average Steinhardt parameter - can be problematic. If one is
 examining nucleation say only the order parameters for those atoms in the nucleus will change significantly when the nucleus forms. The order parameters for the
@@ -204,7 +275,7 @@ atoms in the surrounding liquid will remain pretty much the same. As such if one
 change in the average order parameter will be negligible. Substantial changes in the value of this average can be observed in simulations of nucleation but only
 because the number of atoms is relatively small.
 
-When the average \ref Q6 parameter is used to bias the dynamics a problems
+When the average [Q6](Q6.md) parameter is used to bias the dynamics a problems
 can occur. These averaged coordinates cannot distinguish between the correct,
 single-nucleus pathway and a concerted pathway in which all the atoms rearrange
 themselves into their solid-like configuration simultaneously. This second type
@@ -220,51 +291,52 @@ biased dynamics what is really required is an order parameter that measures:
 - Whether or not the coordination spheres around atoms are ordered
 - Whether or not the atoms that are ordered are clustered together in a crystalline nucleus
 
-\ref LOCAL_AVERAGE and \ref NLINKS are variables that can be combined with the Steinhardt parameters allow to calculate variables that satisfy these requirements.
-LOCAL_Q6 is another variable that can be used in these sorts of calculations. The LOCAL_Q6 parameter for a particular atom is a number that measures the extent to
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html) a variety of variations on the Steinhardt parameters have been 
+introduced to better describe nucleation. That page also shows how PLUMED provides you with flexibility that you can use to implement new combinations of the 
+Steinhardt parameters. However, the inputs that you would need to write to implement common symmetry functions are rather complex so we also provide shortcuts 
+like this one to help you compute CVs that have been widely used in the literature easily.  
+
+This particular shortcut allows you to compute the LOCAL_Q6 parameter for a particular atom, which is a number that measures the extent to
 which the orientation of the atoms in the first coordination sphere of an atom match the orientation of the central atom.  It does this by calculating the following
 quantity for each of the atoms in the system:
 
-\f[
+$$
  s_i = \frac{ \sum_j \sigma( r_{ij} ) \sum_{m=-6}^6 q_{6m}^{*}(i)q_{6m}(j) }{ \sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$q_{6m}(i)\f$ and \f$q_{6m}(j)\f$ are the sixth order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterisk denotes
-complex conjugation.  The function
-\f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set
-so that it the function is equal to one when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  The sum in the numerator
-of this expression is the dot product of the Steinhardt parameters for atoms \f$i\f$ and \f$j\f$ and thus measures the degree to which the orientations of these
-adjacent atoms is correlated.
+where $q_{6m}(i)$ and $q_{6m}(j)$ are the 6th order Steinhardt vectors calculated for atom $i$ and atom $j$ respectively and the asterisk denotes complex
+conjugation.  The function
+$\sigma( r_{ij} )$ is a switching function that acts on the distance between atoms $i$ and $j$.  The parameters of this function should be set
+so that it the function is equal to one when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.  The sum in the numerator
+of this expression is the dot product of the Steinhardt parameters for atoms $i$ and $j$ and thus measures the degree to which the orientations of these
+adjacent atoms are correlated.
 
-\par Examples
-
-The following command calculates the average value of the LOCAL_Q6 parameter for the 64 Lennard Jones atoms in the system under study and prints this
+The following input shows how this works in practice.  This input calculates the average value of the LOCAL_Q6 parameter for the 64 Lennard Jones atoms in the system under study and prints this
 quantity to a file called colvar.
 
-\plumedfile
-Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q6
-LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq6
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=lq6.mean FILE=colvar
-\endplumedfile
+```
 
 The following input calculates the distribution of LOCAL_Q6 parameters at any given time and outputs this information to a file.
 
-\plumedfile
-Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q6
-LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq6
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} 
 PRINT ARG=lq6.* FILE=colvar
-\endplumedfile
+```
 
 The following calculates the LOCAL_Q6 parameters for atoms 1-5 only. For each of these atoms comparisons of the geometry of the coordination sphere
 are done with those of all the other atoms in the system.  The final quantity is the average and is outputted to a file
 
-\plumedfile
-Q6 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6a
-Q6 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6b
-
-LOCAL_Q6 SPECIES=q6a,q6b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w6
+```plumed
+q6a: Q6 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+q6b: Q6 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 
+w6: LOCAL_Q6 SPECIES=q6a,q6b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN 
 PRINT ARG=w6.* FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -285,9 +357,9 @@ PLUMED_REGISTER_ACTION(LocalSteinhardt,"LOCAL_Q6")
 
 void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("optional","SPECIES","");
-  keys.add("optional","SPECIESA","");
-  keys.add("optional","SPECIESB","");
+  keys.add("optional","SPECIES","the label of the action that computes the Steinhardt parameters for which you would like to calculate local steinhardt parameters");
+  keys.add("optional","SPECIESA","the label of the action that computes the Steinhardt parameters for which you would like to calculate local steinhardt parameters");
+  keys.add("optional","SPECIESB","the label of the action that computes the Steinhardt parameters that you would like to use when calculating the loal steinhardt parameters");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");

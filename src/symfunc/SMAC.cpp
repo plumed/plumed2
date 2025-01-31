@@ -30,8 +30,50 @@
 /*
 Calculate the SMAC order parameter for a set of molecules
 
-\par Examples
+This shortcut action provides a quantity that can be thought of as a [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html) for molecules.
+You can thus use it to detect whether the molecules in a sample are ordered in the way that they would expect to be ordered in the crystal. If you are using this CV you normally use
+the [COM](COM.md) command to define centers of mass for your molecules and the [DISTANCE](DISTANCE.md) or [PLANE](PLANE.md) command to define each molecules orientation.  You can thus calculate 
+the relative orientation molecules $i$ and $j$ by calculating the torsional angle, $\theta_{ij}$, between the two molecular orientations around the vector $r_{ij}$ connecting the centers of 
+mass of the two molecules. The value of the molecular order parameter for molecule $i$ is thus calculated as:
 
+$$
+s_i = frac{1-\gamma(c_i)}{c_i} \sum_j \sigma(|r_{ij}|) \sum_k K\left( \frac{\theta_{ij} - \phi_k}{b} \right) \qquad \textrm{where} \qquad c_i = \sum_j \sigma(|r_{ij}|)
+$$ 
+
+In this expression $\sigma$ is a switching function that acts on the distance between the centers of mass of molecules $i$ and $j$. $c_i$ is thus the number of molecules that are within 
+a certain cutoff of molecule $i$ and $\gamma$ is another switching function that acts upon this quantity. This switching function ensures that the symmetry function is zero for atoms that are 
+regions where the density of molecules are low.  $K$ is then a kernel function with bandwidth $b$ that is centered at $\phi_k$.  The function above is thus only large if molecule $i$ is surrounded 
+by molecules whose relative orientations are as the user has requested by specifying $\phi_k$ parameters.
+
+The following example illustrates how the SMAC order parameter in PLUMED is used:
+
+```plumed
+m3: DISTANCES ...
+   ATOMS1=9,10 LOCATION1=9
+   ATOMS2=89,90 LOCATION2=89
+   ATOMS3=473,474 LOCATION3=473
+   ATOMS4=1161,1162 LOCATION4=1161
+   ATOMS5=1521,1522 LOCATION5=1521
+   ATOMS6=1593,1594 LOCATION6=1593
+   ATOMS7=1601,1602 LOCATION7=1601
+   ATOMS8=2201,2202 LOCATION8=2201
+   COMPONENTS 
+... 
+
+s2: SMAC SPECIES=m3 KERNEL1={GAUSSIAN CENTER=0 SIGMA=0.480} KERNEL2={GAUSSIAN CENTER=pi SIGMA=0.480} SWITCH={RATIONAL R_0=0.6} MORE_THAN={RATIONAL R_0=0.7} SWITCH_COORD={EXP R_0=4}
+
+PRINT ARG=s2_morethan FILE=colvar
+```
+
+Here the orientations of the molecules are specified by calculating the vectors connecting pairs of atoms in the molecules.  The LOCATION keywords in the distance command are used to specify the 
+positions of the molecules from which the $r_{ij}$ vectors in the above expression are calculated.  The sum over $k$ in the above expression has two terms corresponding to the two Gaussian kernels
+that have been specified using KERNEL keywords.  The SWITCH keyword has been used to specify the parameters of the switching function $\sigma$, while the SWITCH_COORD keyword has been used to specify 
+the parameters of the switching function $\gamma$.  
+
+A vector of 8 values for $s_i$ is calculated.  The elements of this vector are transformed by a switching function that is one if the $s_i$ value is larger than 0.7.  The eight elements of the resulting vector
+of transformed $s_i$ are then added together to determine the final quantity that is output to the colvar file. 
+
+Incidentally, the authors who designed the SMAC symmetry function have forgotten what the letters in this acronym stand for. 
 
 */
 //+ENDPLUMEDOC
@@ -65,6 +107,7 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONTACT_MATRIX");
   keys.needsAction("TORSIONS_MATRIX"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MORE_THAN");
+  keys.addDOI("10.1016/j.ces.2014.08.032"); keys.addDOI("10.1021/acs.jctc.6b01073");
 }
 
 SMAC::SMAC(const ActionOptions& ao):
