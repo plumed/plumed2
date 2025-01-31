@@ -54,8 +54,8 @@ void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
-    if( keys.style( keys.get(i), "atoms" ) ) {
-      keys.reset_style( keys.get(i), "numbered" );
+    if( keys.style( keys.getKeyword(i), "atoms" ) ) {
+      keys.reset_style( keys.getKeyword(i), "numbered" );
     }
   }
   if( keys.outputComponentExists(".#!value") ) {

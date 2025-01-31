@@ -78,7 +78,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
 
   // Set all flags to default false
   for(unsigned k=0; k<keywords.size(); ++k) {
-    thiskey=keywords.get(k);
+    thiskey=keywords.getKeyword(k);
     if( keywords.style(thiskey,"flag") ) {
       inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
     }
@@ -96,7 +96,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
     } else {
       bool found=false;
       for(unsigned k=0; k<keywords.size(); ++k) {
-        thiskey=keywords.get(k);
+        thiskey=keywords.getKeyword(k);
         if( keywords.style(thiskey,"flag") ) {
           if( a==thiskey ) {
             found=true;
@@ -147,7 +147,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
 void CLTool::setRemainingToDefault(FILE* out) {
   std::string def, thiskey;
   for(unsigned k=0; k<keywords.size(); ++k) {
-    thiskey=keywords.get(k);
+    thiskey=keywords.getKeyword(k);
     if( keywords.style(thiskey,"compulsory") ) {
       if( inputData.count(thiskey)==0 ) {
         if( keywords.getDefaultValue(thiskey,def) ) {
@@ -218,7 +218,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
     std::string keyword=buffer;
     bool found=false;
     for(unsigned i=0; i<keywords.size(); ++i) {
-      std::string thiskey=keywords.get(i);
+      std::string thiskey=keywords.getKeyword(i);
       if(thiskey==keyword) {
         found=true;
         std::size_t keypos=line.find_first_of(keyword)+keyword.length();

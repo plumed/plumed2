@@ -34,8 +34,8 @@ void ActionShortcut::registerKeywords( Keywords& keys ) {
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
-  for(unsigned i=0; i<keys.size(); ++i) {
-    std::string t, keyname = keys.get(i);
+  for (auto& keyname:keys.getKeys()) {
+    std::string t;
     if( keys.style( keyname, "optional") || keys.style( keyname, "compulsory") ) {
       parse(keyname,t);
       if( t.length()>0 ) {
@@ -80,15 +80,11 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
   std::vector<std::string> words=Tools::getWords(input);
   Tools::interpretLabel(words);
   // Check if this action name has been registered
-  bool founds=false, found = std::find(keywords.neededActions.begin(), keywords.neededActions.end(), words[0] )!=keywords.neededActions.end();
+  bool founds=false;
+  bool found = keywords.isActionNeeded(words[0]);
   // Check if we are just calling something like SUM_VECTOR using just SUM.
   if( !found && words[0].find(getName())!=std::string::npos ) {
-    for(unsigned j=0 ; j<keywords.actionNameSuffixes.size(); ++j) {
-      if( (getName() + keywords.actionNameSuffixes[j])==words[0] ) {
-        found=true;
-        break;
-      }
-    }
+    found =keywords.isActionSuffixed(words[0],getName());
     founds=true;
   }
   if( found ) {
@@ -121,17 +117,25 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
         std::string av_label = av->getLabel();
         if( av_label == getShortcutLabel() && av->getNumberOfComponents()==1 ) {
           savedOutputs.push_back( av_label );
-          plumed_massert( keywords.componentHasCorrectType(".#!value", (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of value is incorrect");
+          plumed_massert( keywords.componentHasCorrectType(".#!value",
+                          (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ),
+                          "documentation for type of value is incorrect");
         } else {
-          for(unsigned i=0; i<keywords.cnames.size(); ++i) {
-            if( av_label == getShortcutLabel() + "_" + keywords.cnames[i] ) {
+          for(const auto& cname: keywords.getOutputComponents()) {
+            if( av_label == getShortcutLabel() + "_" + cname ) {
               savedOutputs.push_back( av_label );
-              plumed_massert( keywords.componentHasCorrectType(keywords.cnames[i], (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of component " + keywords.cnames[i] + " is incorrect");
-            } else if( keywords.getOutputComponentFlag(keywords.cnames[i])!="default" ) {
-              std::string thisflag = keywords.getOutputComponentFlag(keywords.cnames[i]);
-              if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + keywords.cnames[i])!=std::string::npos ) {
+              plumed_massert( keywords.componentHasCorrectType(cname,
+                              (av->copyOutput(0))->getRank(),
+                              (av->copyOutput(0))->hasDerivatives() ),
+                              "documentation for type of component " + cname + " is incorrect");
+            } else if( keywords.getOutputComponentFlag(cname)!="default" ) {
+              std::string thisflag = keywords.getOutputComponentFlag(cname);
+              if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + cname)!=std::string::npos ) {
                 savedOutputs.push_back( av_label );
-                plumed_massert( keywords.componentHasCorrectType(keywords.cnames[i], (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of component " + keywords.cnames[i] + " is incorrect");
+                plumed_massert( keywords.componentHasCorrectType(cname,
+                                (av->copyOutput(0))->getRank(),
+                                (av->copyOutput(0))->hasDerivatives() ),
+                                "documentation for type of component " + cname + " is incorrect");
               }
             }
           }
@@ -186,9 +190,9 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
   Keywords thiskeys;
   actionRegister().getKeywords( actname, thiskeys );
   std::vector<std::string> numberedkeys;
-  for(unsigned i=0; i<thiskeys.size(); ++i ) {
-    if( thiskeys.numbered( thiskeys.getKeyword(i) ) ) {
-      numberedkeys.push_back( thiskeys.getKeyword(i) );
+  for (auto& keyname: thiskeys.getKeys()) {
+    if( thiskeys.numbered( keyname ) ) {
+      numberedkeys.push_back( keyname );
     }
   }
   if( numberedkeys.size()>0 && actname!="CONCATENATE" ) {

@@ -152,17 +152,18 @@ PLUMED_REGISTER_ACTION(DistanceMulti,"DISTANCE_VECTOR")
 void Distance::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("DISTANCE");
+  constexpr auto scalarOrVector = Keywords::componentType::scalar | Keywords::componentType::vector;
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
-  keys.addOutputComponent("x","COMPONENTS","scalar/vector","the x-component of the vector connecting the two atoms");
-  keys.addOutputComponent("y","COMPONENTS","scalar/vector","the y-component of the vector connecting the two atoms");
-  keys.addOutputComponent("z","COMPONENTS","scalar/vector","the z-component of the vector connecting the two atoms");
-  keys.addOutputComponent("a","SCALED_COMPONENTS","scalar/vector","the normalized projection on the first lattice vector of the vector connecting the two atoms");
-  keys.addOutputComponent("b","SCALED_COMPONENTS","scalar/vector","the normalized projection on the second lattice vector of the vector connecting the two atoms");
-  keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("x","COMPONENTS",scalarOrVector,"the x-component of the vector connecting the two atoms");
+  keys.addOutputComponent("y","COMPONENTS",scalarOrVector,"the y-component of the vector connecting the two atoms");
+  keys.addOutputComponent("z","COMPONENTS",scalarOrVector,"the z-component of the vector connecting the two atoms");
+  keys.addOutputComponent("a","SCALED_COMPONENTS",scalarOrVector,"the normalized projection on the first lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("b","SCALED_COMPONENTS",scalarOrVector,"the normalized projection on the second lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("c","SCALED_COMPONENTS",scalarOrVector,"the normalized projection on the third lattice vector of the vector connecting the two atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("scalar/vector","the DISTANCE between this pair of atoms");
+  keys.setValueDescription(scalarOrVector,"the DISTANCE between this pair of atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):

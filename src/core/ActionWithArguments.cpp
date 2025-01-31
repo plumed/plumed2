@@ -49,7 +49,7 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
   if( keywords.getArgumentType(key).length()==0 ) {
-    warning("keyword " + key + " for reading arguments should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
+    warning("keyword " + key + " for reading arguments is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
   }
   std::string def;
   std::vector<std::string> c;
@@ -67,7 +67,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
   if( keywords.getArgumentType(key).length()==0 ) {
-    warning("keyword " + key + " for reading argument should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
+    warning("keyword " + key + " for reading argument is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
   }
   std::vector<std::string> c;
   arg.clear();
