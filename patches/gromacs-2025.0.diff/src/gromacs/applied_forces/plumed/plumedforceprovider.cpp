@@ -48,10 +48,10 @@
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
-#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "PlumedOutside.h"
@@ -119,7 +119,6 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
               }
               */
 
-             
 
     if (isMultiSim(options.ms_))
     {

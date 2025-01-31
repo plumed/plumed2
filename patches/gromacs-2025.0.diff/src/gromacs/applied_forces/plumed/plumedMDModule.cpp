@@ -59,7 +59,6 @@ class gmx_multisim_t;
 namespace gmx
 {
 
-    
 
 namespace
 {
@@ -96,10 +95,10 @@ public:
                 { this->options_.setPlumedFile(plumedFilename.plumedFilename_); });
 
         // Retrieve the Multisim options
-        notifier->simulationSetupNotifier_.subscribe(
-                [this](const gmx_multisim_t* ms) { this->options_.setMultisim(ms); });
+        notifier->simulationSetupNotifier_.subscribe([this](const gmx_multisim_t* ms)
+                                                     { this->options_.setMultisim(ms); });
 
-        
+
         // Access the temperature if it is constant during the simulation
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const EnsembleTemperature& ensembleT)
