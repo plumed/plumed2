@@ -53,9 +53,9 @@ As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data
 be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_1(i) = \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
-\f]
+$$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like 
 the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
@@ -92,7 +92,7 @@ atoms, columns 2-4 will then contain the x, y and z positions of the atoms, colu
 
 ```plumed
 q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q1 ARG=q1_anorm FILE=q1.xyz
+DUMPATOMS ATOMS=q1 ARG=q1 FILE=q1.xyz
 ```
 
 */
@@ -119,9 +119,9 @@ As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data
 be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_3(i) = \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
-\f]
+$$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like 
 the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
@@ -158,7 +158,7 @@ atoms, columns 2-4 will then contain the x, y and z positions of the atoms, colu
 
 ```plumed
 q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q3 ARG=q3_anorm FILE=q3.xyz
+DUMPATOMS ATOMS=q3 ARG=q3 FILE=q3.xyz
 ```
 
 */
@@ -185,9 +185,9 @@ As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data
 be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_4(i) = \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
-\f]
+$$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like 
 the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
@@ -224,7 +224,7 @@ atoms, columns 2-4 will then contain the x, y and z positions of the atoms, colu
 
 ```plumed
 q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q4 ARG=q4_anorm FILE=q4.xyz
+DUMPATOMS ATOMS=q4 ARG=q4 FILE=q4.xyz
 ```
 
 */
@@ -251,9 +251,9 @@ As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data
 be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_6(i) = \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
-\f]
+$$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like 
 the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
@@ -290,7 +290,7 @@ atoms, columns 2-4 will then contain the x, y and z positions of the atoms, colu
 
 ```plumed
 q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q6 ARG=q6_anorm FILE=q6.xyz
+DUMPATOMS ATOMS=q6 ARG=q6 FILE=q6.xyz
 ```
 
 */

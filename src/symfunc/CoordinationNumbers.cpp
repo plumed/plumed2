@@ -56,7 +56,7 @@ one hundred atoms with themselves:
 
 ```plumed
 c: COORDINATIONNUMBER SPECIES=1-100 R_0=1.0
-DUMPXYZ ATOMS=c ARG=c FILE=coords.xyz
+DUMPATOMS ATOMS=c ARG=c FILE=coords.xyz
 ```
 
 This input will produce an output file called coords that contains the coordination numbers of the 100 input atoms.  The cutoff
