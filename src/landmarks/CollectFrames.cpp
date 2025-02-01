@@ -27,9 +27,55 @@
 
 //+PLUMEDOC ANALYSIS COLLECT_FRAMES
 /*
-This allows you to convert a trajectory and a dissimilarity matrix into a dissimilarity object
+Collect atomic positions or argument values from the trajectory for later analysis
 
-\par Examples
+This shortcut uses [COLLECT](COLLECT.md) actions to collect data from the trajectory that is amenable for later analysis
+using PLUMED's landmark selection actions or dimensionality reduction methods.  You can use this method to collect atomic position 
+data as shown in the following example:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL
+
+# This should output the atomic positions for the frames that were collected to a pdb file called traj.pdb
+DUMPPDB ATOMS=cc_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb
+```
+
+If you look at the expanded version of the shortcut above you can see how the position data is stored in a matrix. It is also worth 
+noting that all the stored structured are aligned to the first frame before being stored. When we take the difference between the 
+stored configurations we are thus excluding any rotation or the reference frame or translation of the center of mass that has taken place.
+
+Instead of storing the positions of the atoms you you can store a time series of argument values as shown below: 
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+t3: TORSION ATOMS=9,10,11,12
+
+# This collects the three torsion angles
+cc: COLLECT_FRAMES ARG=t1,t2,t3 STRIDE=10 CLEAR=1000
+DUMPVECTOR ARG=cc.* FILE=timeseries STRIDE=1000
+```
+
+Notice that the stored data is in a matrix once again here.  Further note that we are storing the three torsions on every tenth step.  In addition we also delete all the stored data on every 1000th step of trajectory.
+The time series for each consecutive 1000 step segment of trajectory will be output to separate files in the above input.  These output files also contain weights for each of the stored frames.  For the above input 
+these weights are all equal to one.  We can, however, pass the weight as an input argument.  This functionality is useful if a bias is acting upon the system and we want to keep track of how much bias is acting upon
+each frame of the traejctory as has been done in the input below.
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+t3: TORSION ATOMS=9,10,11,12
+
+r: RESTRAINT ARG=t1 AT=pi/2 KAPPA=10
+bw: REWEIGHT_BIAS TEMP=300
+    
+# This collects the three torsion angles
+cc: COLLECT_FRAMES ARG=t1,t2,t3 LOGWEIGHTS=bw
+DUMPVECTOR ARG=cc.* FILE=timeseries 
+```
+
+You can learn how to use COLLECT_FRAMES to perform dimensionality reduction calculations by working through [this tutorial](https://www.plumed-tutorials.org/lessons/21/006/data/DIMENSIONALITY.html)
 
 */
 //+ENDPLUMEDOC

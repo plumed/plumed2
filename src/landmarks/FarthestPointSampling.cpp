@@ -27,7 +27,40 @@
 /*
 Select a set of landmarks using farthest point sampling.
 
-\par Examples
+This action is used within the [LANDMARK_SELECT_FPS](LANDMARK_SELECT_FPS.md) shortcut, which performs farthest point sampling.
+Farthest point sampling is a method of selecting a subset of input coordinates that works by selecting a first point at random.  
+The remaining points are then selected by taking the unselected point in the input data set that is the furthest
+from all the points that have been selected thus far.
+
+This particular action is designed to be used in conjunction with [SELECT_WITH_MASK](SELECT_WITH_MASK.md) in the same way that 
+[CREATE_MASK](CREATE_MASK.md) is designed to be be used with that action.  This action takes an $N\times N$ matrix of dissimilarities 
+in input and outputs and $N$ dimensional vector whose elements are ones and zeros. As shown in the example input below, this output
+vector is passed to a [SELECT_WITH_MASK](SELECT_WITH_MASK.md) using the MASK keyword. 
+
+The example below thus shows how this action is used in the [LANDMARK_SELECT_FPS](LANDMARK_SELECT_FPS.md) shortcut to select 100 landmark
+frames from the trajectory using farthest point sampling.
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL 
+
+# We now compute the dissimilarities between these frames
+cc_dataT: TRANSPOSE ARG=cc_data
+dd: DISSIMILARITIES ARG=cc_data,cc_dataT
+
+# Create a mask that will be used to create our landmark data
+mask: FARTHEST_POINT_SAMPLING ARG=dd NZEROS=100
+
+# These are the landmark points
+landmarks: SELECT_WITH_MASK=cc_data ROW_MASK=mask
+
+# Output the landmarks to a file
+DUMPPDB ATOMS=landmarks ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb 
+```
+
+This only saves the coordinates of the landmark points.  If you look at the shortcuts in the documentation for [LANDMARK_SELECT_FPS](LANDMARK_SELECT_FPS.md)
+you can see how the shortcut also saves information on the dissimilarities between the landmarks, the dissimilarities between the landmarks and all the other
+points and the weights of the landmarks, which are determined using a [VORONOI](VORONOI.md) analysis.
 
 */
 //+ENDPLUMEDOC

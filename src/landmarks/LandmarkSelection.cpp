@@ -28,9 +28,51 @@
 
 //+PLUMEDOC LANDMARKS LANDMARK_SELECT_STRIDE
 /*
-Select every ith frame from the stored data
+Select every ith frame from the stored set of configurations
 
-\par Examples
+If you have collected a set of trajectory frames using [COLLECT_FRAMES](COLLECT_FRAMES.md) you can use this action to 
+select a subset you have collected.  This particular method for landmark selection reduces the number of frames by selecting taking every
+$i$th frame. So, for example, if you use the input below every 10th frame of the stored trajectory is transferred to the `ll_data` Value
+that is output which is output in the PDB file.  This happens because we are collecting 1000 trajectory frames in total but only taking 
+100 landmarks from this data.
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=100
+
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_STRIDE shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action 
+that calculates the distances between the input frames. We need to calculate these dissimilarities here because the LANDMARK_SELECT_STRIDE shortcut computes the 
+weights of the landmarks by doing a [VORONOI](VORONOI.md) analysis.  If you would like to turn this and the computing of dissimilarities off you can use the 
+NODISSIMILARITIES flag.  If you do not want to compute VORONOI weights you can use the NOVORONOI flag.  Be aware, however, that dissimilarities are still computed
+if you only the the NOVORONOI flag.
+
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_STRIDE funtion as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# This calculates the dissimilarities between the stored frames
+cc_dataT: TRANSPOSE ARG=cc_data
+dd: DISSIMILARITIES ARG=cc_data,cc_dataT 
+  
+# Select landmarks 
+ll: LANDMARK_SELECT_STRIDE ARG=cc DISSIMILARITIES=dd NLANDMARKS=100
+    
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```  
+
+Notice that you can also read in dissimilarities from a file using a [CONSTANT](CONSTANT.md) action and pass these directly to the LANDMARK_SELECT_STRIDE action and avoid using COLLECT_FRAMES.
+
+You can learn how to use landmark selection for dimensionality reduction calculations by working through [this tutorial](https://www.plumed-tutorials.org/lessons/21/006/data/DIMENSIONALITY.html)
 
 */
 //+ENDPLUMEDOC
@@ -39,7 +81,48 @@ Select every ith frame from the stored data
 /*
 Select a random set of landmarks from a large set of configurations.
 
-\par Examples
+If you have collected a set of trajectory frames using [COLLECT_FRAMES](COLLECT_FRAMES.md) you can use this action to 
+select a subset of the configurations you have collected.  This particular method for landmark selection reduces the number of frames by 
+chooseing NLANDMARKS points from the data collected by COLLECT_FRAMES at random.  So, for example, if you use the input 100 randomly-selected 
+points from the 1000 trajectory frames that were by collected by the COLLECT_FRAMES action are transferred to the `ll_data` Value that is output which is output in the PDB file.  
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=100
+
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_RANDOM shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action 
+that calculates the distances between the input frames. We need to calculate these dissimilarities here because the LANDMARK_SELECT_RANDOM shortcut computes the 
+weights of the landmarks by doing a [VORONOI](VORONOI.md) analysis.  If you would like to turn this and the computing of dissimilarities off you can use the 
+NODISSIMILARITIES flag.  If you do not want to compute VORONOI weights you can use the NOVORONOI flag.  Be aware, however, that dissimilarities are still computed
+if you only the the NOVORONOI flag.
+
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_RANDOM funtion as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# This calculates the dissimilarities between the stored frames
+cc_dataT: TRANSPOSE ARG=cc_data
+dd: DISSIMILARITIES ARG=cc_data,cc_dataT 
+  
+# Select landmarks 
+ll: LANDMARK_SELECT_RANDOM ARG=cc DISSIMILARITIES=dd NLANDMARKS=100
+    
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```  
+
+Notice that you can also read in dissimilarities from a file using a [CONSTANT](CONSTANT.md) action and pass these directly to the LANDMARK_SELECT_RANDOM shortcut and avoid using COLLECT_FRAMES.
+
+You can learn how to use landmark selection for dimensionality reduction calculations by working through [this tutorial](https://www.plumed-tutorials.org/lessons/21/006/data/DIMENSIONALITY.html)
 
 */
 //+ENDPLUMEDOC
@@ -48,7 +131,47 @@ Select a random set of landmarks from a large set of configurations.
 /*
 Select a of landmarks from a large set of configurations using farthest point sampling.
 
-\par Examples
+If you have collected a set of trajectory frames using [COLLECT_FRAMES](COLLECT_FRAMES.md) you can use this action to 
+select a subset of the configurations you have collected. This shortcut does this using [FARTHEST_POINT_SAMPLING](FARTHEST_POINT_SAMPLING.md)
+the first point is thus selected at random.  The remaining points are then selected by taking the unselected point in the input data set that is the furthest
+from all the points that have been selected thus far.  The following input demonstrates how you can use this method:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=100
+
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_RANDOM shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action 
+that calculates the distances between the input frames. We have to compute these dissimilarities in order to perform the farthest point sampling here so you cannot use the 
+NODISSIMILARITIES flag with this action.  However, we also need the dissimilarities to compute the weights of the landmarks as this is done by performing a [VORONOI](VORONOI.md) analysis.
+If you would like to turn off the computation of the VORONOI weights you can use the NOVORONOI flag.
+
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_FPS funtion as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# This calculates the dissimilarities between the stored frames
+cc_dataT: TRANSPOSE ARG=cc_data
+dd: DISSIMILARITIES ARG=cc_data,cc_dataT 
+  
+# Select landmarks 
+ll: LANDMARK_SELECT_FPS ARG=cc DISSIMILARITIES=dd NLANDMARKS=100
+    
+# Output the data to a file 
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```  
+
+Notice that you can also read in dissimilarities from a file using a [CONSTANT](CONSTANT.md) action and pass these directly to the LANDMARK_SELECT_FPS shortcut and avoid using COLLECT_FRAMES.
+
+You can learn how to use landmark selection for dimensionality reduction calculations by working through [this tutorial](https://www.plumed-tutorials.org/lessons/21/006/data/DIMENSIONALITY.html)
 
 */
 //+ENDPLUMEDOC

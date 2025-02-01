@@ -26,9 +26,46 @@
 /*
 This action takes the exponential of a vector of logarithms and divides each element of the vector by the sum of the exponentials.
 
-The log-exp-sum trick is used here
+If you has performed a simulation with a time-independent bias, $V(x)$, you can recover the unbiased distribution from the trajectory 
+by constructing a histogram in which the $i$th frame of the trajectory is given weight of:
 
-\par Examples
+$$
+w_i = \frac{e^{\beta V(x_i)}}{\sum_j e^{\beta V(x_j)}}
+$$
+
+where $x_i$ is used to indicate the coordinates for frame $i$ and $\beta$ is the inverse temperature in units of energy.  If the bias 
+is large then it is easy for $e^{\beta V(x_i)}$ to overflow.  This action thus allows you to use the following trick is to compute the $w_i$ 
+values in the above expression:
+
+$$
+w_i = e^{\beta(V(x_i) - c} \qquad \textrm{where} \qquad c = \beta V_\textrm{max} + \log\left[ \sum_j e^{\beta V(x_j) - \beta V_\textrm{max}} \right]  
+$$
+
+In this expression $V_\textrm{max}$ is the maximum value the bias took during the simulation.
+
+The following example shows how you can write a PLUMED input that exploits this trick.
+
+```plumed
+# Calculate some CVs for later analysis
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+t3: TORSION ATOMS=9,10,11,12
+
+# This computes the bias potential 
+r: RESTRAINT ARG=t1 AT=pi/2 KAPPA=10
+# This calculates the instantaneous reweighting weight 
+# given the bias potential that is acting upon the system
+bw: REWEIGHT_BIAS TEMP=300
+
+# This collects our data for later analysis and the reweighting weights
+cc: COLLECT_FRAMES ARG=t1,t2,t3 LOGWEIGHTS=bw
+
+# And this determines the final vector of weights that should be used for histograms and so on.
+weights: LOGSUMEXP ARG=cc_logweights 
+
+# This outputs the time series of reweighting weights to a file
+DUMPVECTOR ARG=weights FILE=weights
+```
 
 */
 //+ENDPLUMEDOC
@@ -62,7 +99,6 @@ LogSumExp::LogSumExp( const ActionOptions& ao ):
   std::string argn; parse("ARG",argn);
   // Find the maximum weight
   readInputLine( getShortcutLabel() + "_maxlogweight: HIGHEST ARG=" + argn );
-  readInputLine( getShortcutLabel() + "_maxweight: CUSTOM ARG=" + getShortcutLabel() + "_maxlogweight FUNC=exp(x) PERIODIC=NO");
   // Calculate the maximum
   readInputLine( getShortcutLabel() + "_shiftw: CUSTOM ARG=" + argn + "," + getShortcutLabel() + "_maxlogweight FUNC=exp(x-y) PERIODIC=NO");
   // compute the sum of all the exponentials
