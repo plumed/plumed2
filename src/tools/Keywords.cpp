@@ -31,7 +31,7 @@ void erase_remove(std::vector<T>& vec, const T& value) {
   vec.erase(std::remove(vec.begin(), vec.end(), value), vec.end());
 }
 
-void erase_remove(std::string& vec, const char& value) {
+void erase_remove(std::string& vec, const char value) {
   vec.erase(std::remove(vec.begin(), vec.end(), value), vec.end());
 }
 
@@ -1136,15 +1136,6 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
 void Keywords::removeOutputComponent( const std::string& name ) {
   components.erase(name);
   erase_remove(cnames,name);
-}
-
-void Keywords::removeComponent( const std::string& name ) {
-  if(components.find(name)!=components.end()) {
-    components.erase(name);
-    erase_remove(cnames,name);
-  } else {
-    plumed_massert(false,"You are trying to remove " + name + " a component that isn't there");
-  }
 }
 
 std::string Keywords::getKeywordDescription( const std::string& key ) const {

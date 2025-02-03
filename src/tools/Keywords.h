@@ -288,8 +288,6 @@ public:
   }
 /// Get the description of a particular keyword
   std::string getKeywordDescription( const std::string& name ) const ;
-/// Remove a component with a particular name from the keywords
-  void removeComponent( const std::string& name );
 /// Get the description of a particular keyword
   std::string getTooltip( const std::string& name ) const ;
 /// Note that another actions is required to create this shortcut
