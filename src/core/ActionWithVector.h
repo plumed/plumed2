@@ -84,6 +84,8 @@ public:
 /// Check if a mask has been set
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
+/// This is for resizing the task list
+  virtual unsigned getNumberOfAtomsPerTask() const { return 0; }
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
 /// Get the list of tasks that are active

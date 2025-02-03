@@ -63,7 +63,7 @@ private:
   std::vector<std::vector<double> > tmp_vectors;
 public:
   MultiValue() : task_index(0), task2_index(0), nderivatives(0), atLeastOneSet(false), vector_call(false), nindices(0), nsplit(0), matrix_row_nderivatives(0) {}
-  void resize( const std::size_t& nvals, const std::size_t& nder );
+  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& natoms );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
 ///
@@ -91,7 +91,6 @@ public:
   std::vector<std::vector<Vector> >& getFirstAtomDerivativeVector();
   const std::vector<std::vector<Vector> >& getConstFirstAtomDerivativeVector() const ;
   std::vector<Tensor>& getFirstAtomVirialVector();
-  void resizeTemporyVector(const unsigned& n );
   std::vector<double>& getTemporyVector(const unsigned& ind );
 ///
   bool inVectorCall() const ;
@@ -320,11 +319,6 @@ void MultiValue::addMatrixForce( const unsigned& jind, const double& f ) {
 inline
 double MultiValue::getStashedMatrixForce( const unsigned& jind ) const {
   return matrix_force_stash[jind];
-}
-
-inline
-void MultiValue::resizeTemporyVector(const unsigned& n ) {
-  if( n>tmp_vectors.size() ) tmp_vectors.resize(n);
 }
 
 inline

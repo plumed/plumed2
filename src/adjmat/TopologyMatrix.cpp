@@ -127,7 +127,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
   // Now run through all sea atoms
   HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );
   Vector g1derivf,g2derivf,lderivf; Tensor vir; double binlength = maxbins * binw_mat;
-  MultiValue tvals; tvals.resize( maxbins, myvals.getNumberOfDerivatives() );
+  MultiValue tvals; tvals.resize( maxbins, myvals.getNumberOfDerivatives(), 0 );
   for(unsigned i=0; i<natoms; ++i) {
     // Position of sea atom (this will be the origin)
     Vector d2 = getPosition(i,myvals);

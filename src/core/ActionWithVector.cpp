@@ -222,7 +222,9 @@ void ActionWithVector::runAllTasks() {
     std::vector<double> omp_buffer;
     const unsigned t=OpenMP::getThreadNum();
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives ) myvals[t].resize( getNumberOfComponents(), nderivatives );
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) { 
+        myvals[t].resize( getNumberOfComponents(), nderivatives, getNumberOfAtomsPerTask() );
+    }
     myvals[t].clearAll();
 
     #pragma omp for nowait
@@ -379,7 +381,9 @@ bool ActionWithVector::checkForForces() {
       if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
       else omp_forces[t].assign( forcesForApply.size(), 0.0 );
     }
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderiv ) myvals[t].resize( getNumberOfComponents(), nderiv );
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderiv || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
+        myvals[t].resize( getNumberOfComponents(), nderiv, getNumberOfAtomsPerTask() );
+    }
     myvals[t].clearAll();
 
     #pragma omp for nowait

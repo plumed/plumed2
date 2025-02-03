@@ -42,6 +42,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
+  unsigned getNumberOfAtomsPerTask() const override ;
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
@@ -128,10 +129,14 @@ void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& nam
 }
 
 template <class T>
+unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const { 
+  return ablocks.size();
+}
+
+template <class T>
 void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Retrieve the positions
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  if( fpositions.size()!=ablocks.size() ) fpositions.resize( ablocks.size() );
   for(unsigned i=0; i<ablocks.size(); ++i) fpositions[i] = getPosition( ablocks[i][task_index] );
   // If we are using pbc make whole
   if( usepbc ) {
@@ -145,19 +150,13 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     }
   } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
   // Retrieve the masses and charges
-  myvals.resizeTemporyVector(2);
   std::vector<double> & mass( myvals.getTemporyVector(0) );
   std::vector<double> & charge( myvals.getTemporyVector(1) );
-  if( mass.size()!=ablocks.size() ) { mass.resize(ablocks.size()); charge.resize(ablocks.size()); }
   for(unsigned i=0; i<ablocks.size(); ++i) { mass[i]=getMass( ablocks[i][task_index] ); charge[i]=getCharge( ablocks[i][task_index] ); }
   // Make some space to store various things
   std::vector<double> values( getNumberOfComponents() );
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
   std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
-  if( derivs.size()!=values.size() ) { derivs.resize( values.size() ); virial.resize( values.size() ); }
-  for(unsigned i=0; i<derivs.size(); ++i) {
-    if( derivs[i].size()<ablocks.size() ) derivs[i].resize( ablocks.size() );
-  }
   // Calculate the CVs using the method in the Colvar
   T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
