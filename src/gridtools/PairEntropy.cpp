@@ -46,6 +46,7 @@ PLUMED_REGISTER_ACTION(PairEntropy,"PAIRENTROPY")
 void PairEntropy::registerKeywords( Keywords& keys ) {
   RDF::registerKeywords( keys );
   keys.needsAction("RDF");
+  keys.add("compulsory","SIGMA","use bandwidth","an alternative method for specifying the bandwidth instead of using the BANDWIDTH keyword");
   keys.setValueDescription("scalar","the KL-entropy that is computed from the radial distribution function");
   keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("INTEGRATE_GRID");
@@ -83,7 +84,10 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
-  parse("BANDWIDTH",bw);
+  parse("SIGMA",bw);
+  if( bw=="use bandwidth" ) {
+    parse("BANDWIDTH",bw);
+  }
   parse("CUTOFF",cutoff);
   std::string dens_str;
   if( dens.length()>0 ) {
