@@ -48,7 +48,7 @@ void PairEntropies::registerKeywords( Keywords& keys ) {
   keys.remove("GROUP");
   keys.remove("GROUPA");
   keys.remove("GROUPB");
-  keys.add("atoms","ATOMS","the atoms that you would like to compute the entropies for");
+  keys.remove("ATOMS"); keys.add("atoms","ATOMS","the atoms that you would like to compute the entropies for");
   keys.setValueDescription("vector","the a vector containing the KL-entropy that is computed from the radial distribution function around each of the atoms in the input");
   keys.needsAction("PAIRENTROPY");
   keys.needsAction("INTERPOLATE_GRID");
