@@ -23,6 +23,7 @@
 #define __PLUMED_colvar_MultiColvarTemplate_h
 
 #include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
 
 namespace PLMD {
 namespace colvar {
@@ -30,6 +31,8 @@ namespace colvar {
 template <class T>
 class MultiColvarTemplate : public ActionWithVector {
 private:
+/// The parallel task manager
+  ParallelTaskManager<T> taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
@@ -64,6 +67,7 @@ template <class T>
 MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
+  taskmanager(this),
   mode(0),
   usepbc(true),
   wholemolecules(false)
@@ -115,7 +119,9 @@ unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
 template <class T>
 void MultiColvarTemplate<T>::calculate() {
   if( wholemolecules ) makeWhole();
-  runAllTasks();
+  setForwardPass(true);
+  taskmanager.runAllTasks( ablocks.size() );
+  setForwardPass(false);
 }
 
 template <class T>
@@ -129,7 +135,7 @@ void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& nam
 }
 
 template <class T>
-unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const { 
+unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const {
   return ablocks.size();
 }
 

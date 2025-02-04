@@ -114,11 +114,11 @@ public:
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
 /// Get the description of this component
   virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
+/// Get a const pointer to the ith component
+  const Value* getConstPntrToComponent(int i) const;
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
-/// Get a const pointer to the ith component
-  const Value* getConstPntrToComponent(int i) const;
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Accumulate the forces from the Values

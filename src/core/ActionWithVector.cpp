@@ -222,8 +222,8 @@ void ActionWithVector::runAllTasks() {
     std::vector<double> omp_buffer;
     const unsigned t=OpenMP::getThreadNum();
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) { 
-        myvals[t].resize( getNumberOfComponents(), nderivatives, getNumberOfAtomsPerTask() );
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
+      myvals[t].resize( getNumberOfComponents(), nderivatives, getNumberOfAtomsPerTask() );
     }
     myvals[t].clearAll();
 
@@ -279,7 +279,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
   const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(this);
-  myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
+  myvals.setTaskIndex(current); performTask( current, myvals );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     const Value* myval = getConstPntrToComponent(i);
     if( am || myval->hasDerivatives() ) continue;
@@ -382,7 +382,7 @@ bool ActionWithVector::checkForForces() {
       else omp_forces[t].assign( forcesForApply.size(), 0.0 );
     }
     if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderiv || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
-        myvals[t].resize( getNumberOfComponents(), nderiv, getNumberOfAtomsPerTask() );
+      myvals[t].resize( getNumberOfComponents(), nderiv, getNumberOfAtomsPerTask() );
     }
     myvals[t].clearAll();
 

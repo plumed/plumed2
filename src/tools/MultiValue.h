@@ -48,7 +48,6 @@ private:
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// Are we in this for a call on vectors
-  bool vector_call;
   unsigned nindices, nsplit;
   std::vector<double> matrix_force_stash;
 /// These are used to store the indices that have derivatives wrt to at least one
@@ -62,7 +61,7 @@ private:
   std::vector<Tensor> tmp_atom_virial;
   std::vector<std::vector<double> > tmp_vectors;
 public:
-  MultiValue() : task_index(0), task2_index(0), nderivatives(0), atLeastOneSet(false), vector_call(false), nindices(0), nsplit(0), matrix_row_nderivatives(0) {}
+  MultiValue() : task_index(0), task2_index(0), nderivatives(0), atLeastOneSet(false), nindices(0), nsplit(0), matrix_row_nderivatives(0) {}
   void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& natoms );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
@@ -92,8 +91,6 @@ public:
   const std::vector<std::vector<Vector> >& getConstFirstAtomDerivativeVector() const ;
   std::vector<Tensor>& getFirstAtomVirialVector();
   std::vector<double>& getTemporyVector(const unsigned& ind );
-///
-  bool inVectorCall() const ;
 /// Set value numbered
   void setValue( const std::size_t&,  const double& );
 /// Add value numbered
@@ -227,12 +224,6 @@ void MultiValue::setNumberOfIndices( const std::size_t& nat ) {
 inline
 std::size_t MultiValue::getNumberOfIndices() const {
   return nindices;
-}
-
-
-inline
-bool MultiValue::inVectorCall() const {
-  return (matrix_force_stash.size()>0 && vector_call);
 }
 
 inline

@@ -31,9 +31,9 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
   matrix_force_stash.resize(nder,0);
   matrix_row_nderivatives=0; matrix_row_derivative_indices.resize(nder); atLeastOneSet=false;
   if( natoms>0 ) {
-      tmp_vectors.resize(2); tmp_vectors[0].resize(natoms); tmp_vectors[1].resize(natoms);
-      tmp_atom_der.resize(nvals); tmp_atom_virial.resize(nvals); tmp_atoms.resize(natoms);
-      for(unsigned i=0; i<nvals; ++i) tmp_atom_der[i].resize(natoms); 
+    tmp_vectors.resize(2); tmp_vectors[0].resize(natoms); tmp_vectors[1].resize(natoms);
+    tmp_atom_der.resize(nvals); tmp_atom_virial.resize(nvals); tmp_atoms.resize(natoms);
+    for(unsigned i=0; i<nvals; ++i) tmp_atom_der[i].resize(natoms);
   }
 }
 

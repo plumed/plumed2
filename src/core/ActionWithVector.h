@@ -64,14 +64,14 @@ private:
 protected:
 /// Turn off the flag that says this action has a masked input
   void ignoreMaskArguments();
-/// Run all calculations in serial
-  bool runInSerial() const ;
 /// Run all the tasks in the list
   void runAllTasks();
 /// Check if a force has been added on one of the components of this action
   bool checkComponentsForForce() const ;
 /// Accumulate the forces from the Values
   bool checkForForces();
+/// Set the forward pass variable
+  void setForwardPass(const bool val);
 /// Gather the forces on a particular value
   void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
 public:
@@ -81,6 +81,8 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   virtual void prepare() override;
+/// Run all calculations in serial
+  bool runInSerial() const ;
 /// Check if a mask has been set
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
@@ -131,6 +133,11 @@ int ActionWithVector::getNumberOfMasks() const {
 inline
 void ActionWithVector::ignoreMaskArguments() {
   plumed_assert( nmask<=0 ); nmask=-1;
+}
+
+inline
+void ActionWithVector::setForwardPass(const bool val) {
+  forwardPass=val;
 }
 
 }
