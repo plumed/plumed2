@@ -46,7 +46,7 @@ template <class T>
 class MultiColvarTemplate : public ActionWithVector {
 private:
 /// The parallel task manager
-  ParallelTaskManager<T> taskmanager;
+  ParallelTaskManager<MultiColvarTemplate<T> > taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
@@ -65,6 +65,7 @@ public:
   void getInputData( std::vector<double>& inputdata ) const override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
+  static void performTask( const ParallelActionsInput& input, MultiValue& myvals );
   static void performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals );
 };
 
@@ -131,7 +132,9 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
       for(unsigned j=0; j<ablocks.size(); ++j) ind[i*ablocks.size() + j] = ablocks[j][i];
   }
   // Sets up the index list in the task manager
-  taskmanager.setupIndexList( ind );
+  taskmanager.setupIndexList( ind ); 
+  taskmanager.setPbcFlag( usepbc );
+  taskmanager.setMode( mode );
 }
 
 template <class T>
@@ -193,6 +196,22 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   std::vector<std::size_t> der_indices( ablocks.size() );
   for(unsigned i=0; i<der_indices.size(); ++i) der_indices[i] = ablocks[i][task_index];
   performTask( mode, der_indices, doNotCalculateDerivatives(), usepbc, getPbc(), myvals );
+}
+
+template <class T>
+void MultiColvarTemplate<T>::performTask( const ParallelActionsInput& input, MultiValue& myvals ) {
+  std::vector<double> & mass( myvals.getTemporyVector(0) );
+  std::vector<double> & charge( myvals.getTemporyVector(1) );
+  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
+  for(unsigned i=0; i<fpositions.size(); ++i) {
+      std::size_t base = 5*fpositions.size()*input.task_index + 5*i;
+      fpositions[i][0] = input.inputdata[base + 0];
+      fpositions[i][1] = input.inputdata[base + 1];
+      fpositions[i][2] = input.inputdata[base + 2];
+      mass[i] = input.inputdata[base + 3];
+      charge[i] = input.inputdata[base + 4];
+  }
+  MultiColvarTemplate<T>::performTask( input.mode, input.indices, input.noderiv, input.usepbc, input.pbc, myvals );
 }
 
 template <class T>

@@ -29,6 +29,20 @@
 
 namespace PLMD {
 
+class ParallelActionsInput {
+public:
+  bool usepbc;
+  bool noderiv;
+  const Pbc& pbc;
+  unsigned mode;
+  unsigned task_index;
+/// This holds indices for creating derivatives
+  std::vector<std::size_t> indices;
+/// This holds all the input data that is required to calculate all values for all tasks
+  std::vector<double> inputdata;
+  ParallelActionsInput( const Pbc& box ) : usepbc(false), noderiv(false), pbc(box), mode(0), task_index(0) {}
+};
+
 template <class T>
 class ParallelTaskManager {
 private:
@@ -42,33 +56,46 @@ private:
   std::vector<double> buffer;
 /// A tempory vector of MultiValue so we can avoid doing lots of resizes
   std::vector<MultiValue> myvals;
-/// This holds indices for creating derivatives
-  std::vector<std::size_t> indices;
-/// This holds all the input data that is required to calculate all values for all tasks
-  std::vector<double> inputdata;
+/// An action to hold data that we pass to and from the static function 
+  ParallelActionsInput myinput;
 public:
   ParallelTaskManager(ActionWithVector* av);
 /// Setup an array to hold all the indices that are used for derivatives
   void setupIndexList( const std::vector<std::size_t>& ind );
+/// Set the mode for the calculation
+  void setMode( const unsigned val );
+/// Set the value of the pbc flag
+  void setPbcFlag( const bool val );
 /// This runs all the tasks
   void runAllTasks( const unsigned& natoms=0 );
 /// This runs each of the tasks
-  void runTask( const unsigned& current, MultiValue& myvals ) const ;
+  void runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) const ;
 };
 
 template <class T>
 ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
-  ismatrix(false)
+  ismatrix(false),
+  myinput(av->getPbc())
 {
   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
   if(am) ismatrix=true;
 }
 
 template <class T>
+void ParallelTaskManager<T>::setMode( const unsigned val ) {
+  myinput.mode = val;
+}
+
+template <class T>
+void ParallelTaskManager<T>::setPbcFlag( const bool val ) {
+  myinput.usepbc = val;
+}
+
+template <class T>
 void ParallelTaskManager<T>::setupIndexList( const std::vector<std::size_t>& ind ) {
-  indices.resize( ind.size() ); for(unsigned i=0; i<ind.size(); ++i) indices[i] = ind[i];
+  myinput.indices.resize( ind.size() ); for(unsigned i=0; i<ind.size(); ++i) myinput.indices[i] = ind[i];
 }
 
 template <class T>
@@ -98,7 +125,8 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
   buffer.assign( buffer.size(), 0.0 );
 
   // Get all the input data so we can broadcast it to the GPU
-  action->getInputData( inputdata );
+  myinput.noderiv = true;
+  action->getInputData( myinput.inputdata );
 
   #pragma omp parallel num_threads(nt)
   {
@@ -113,7 +141,8 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      runTask( partialTaskList[i], myvals[t] );
+      myinput.task_index = partialTaskList[i]; 
+      runTask( myinput, myvals[t] );
 
       // Clear the value
       myvals[t].clearAll();
@@ -129,14 +158,15 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
 }
 
 template <class T>
-void ParallelTaskManager<T>::runTask( const unsigned& current, MultiValue& myvals ) const {
+void ParallelTaskManager<T>::runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) const {
   const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(action);
+  myvals.setTaskIndex(locinp.task_index); T::performTask( locinp, myvals );
   if( am ) return ;
-  myvals.setTaskIndex(current); action->performTask( current, myvals );
+
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
     const Value* myval = action->getConstPntrToComponent(i);
     if( myval->hasDerivatives() || (action->getName()=="RMSD_VECTOR" && myval->getRank()==2) ) continue;
-    Value* myv = const_cast<Value*>( myval ); myv->set( current, myvals.get( i ) );
+    Value* myv = const_cast<Value*>( myval ); myv->set( locinp.task_index, myvals.get( i ) );
   }
 }
 
