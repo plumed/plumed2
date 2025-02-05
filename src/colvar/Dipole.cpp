@@ -82,7 +82,7 @@ class Dipole : public Colvar {
   std::vector<AtomNumber> ga_lista;
   bool components;
   bool nopbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
   Value* valuex=nullptr;
@@ -94,8 +94,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -123,7 +122,7 @@ Dipole::Dipole(const ActionOptions&ao):
   derivs(1),
   virial(1)
 {
-  parseAtomList(-1,ga_lista,this); charges.resize(ga_lista.size());
+  parseAtomList(-1,ga_lista,this); 
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
     value.resize(3); derivs.resize(3); virial.resize(3);
@@ -166,17 +165,18 @@ unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
 // calculator
 void Dipole::calculate()
 {
+  if( !chargesWereSet ) error("charges were not set by MD code");
+
   if(!nopbc) makeWhole();
   unsigned N=getNumberOfAtoms();
-  for(unsigned i=0; i<N; ++i) charges[i]=getCharge(i);
 
   if(!components) {
-    calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
-    calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial, this );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);
       setAtomsDerivatives(valuey,i,derivs[1][i]);
@@ -191,34 +191,31 @@ void Dipole::calculate()
   }
 }
 
-void Dipole::calculateCV( const unsigned& mode, const std::vector<double>& masses, std::vector<double>& charges,
-                          const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                           std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  unsigned N=pos.size(); double ctot=0.;
-  for(unsigned i=0; i<N; ++i) ctot += charges[i];
+  unsigned N=cvin.pos.size(); double ctot=0.;
+  for(unsigned i=0; i<N; ++i) ctot += cvin.charges[i];
   ctot/=(double)N;
 
   Vector dipje;
-  for(unsigned i=0; i<N; ++i) {
-    charges[i]-=ctot; dipje += charges[i]*pos[i];
-  }
+  for(unsigned i=0; i<N; ++i) dipje += (cvin.charges[i]-ctot)*cvin.pos[i];
 
-  if( mode==1 ) {
+  if( cvin.mode==1 ) {
     for(unsigned i=0; i<N; i++) {
-      derivs[0][i]=charges[i]*Vector(1.0,0.0,0.0);
-      derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
-      derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
+      derivs[0][i]=(cvin.charges[i]-ctot)*Vector(1.0,0.0,0.0);
+      derivs[1][i]=(cvin.charges[i]-ctot)*Vector(0.0,1.0,0.0);
+      derivs[2][i]=(cvin.charges[i]-ctot)*Vector(0.0,0.0,1.0);
     }
     for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i];
   } else {
     vals[0] = dipje.modulo();
     double idip = 1./vals[0];
     for(unsigned i=0; i<N; i++) {
-      double dfunc=charges[i]*idip;
+      double dfunc=(cvin.charges[i]-ctot)*idip;
       derivs[0][i] = dfunc*dipje;
     }
   }
-  setBoxDerivativesNoPbc( pos, derivs, virial );
+  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
 }
 
 }

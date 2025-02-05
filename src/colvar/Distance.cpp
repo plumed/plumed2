@@ -128,7 +128,7 @@ class Distance : public Colvar {
   bool scaled_components;
   bool pbc;
 
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -138,8 +138,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -227,7 +226,7 @@ void Distance::calculate() {
   if(pbc) makeWhole();
 
   if( components ) {
-    calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial, this );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -244,7 +243,7 @@ void Distance::calculate() {
     setBoxDerivatives(valuez,virial[2]);
     valuez->set(value[2]);
   } else if( scaled_components ) {
-    calculateCV( 2, masses, charges, getPositions(), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), value, derivs, virial, this );
 
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
@@ -256,21 +255,20 @@ void Distance::calculate() {
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
     valuec->set(value[2]);
   } else  {
-    calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
     setBoxDerivatives(virial[0]);
     setValue           (value[0]);
   }
 }
 
-void Distance::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  Vector distance=delta(pos[0],pos[1]);
+  Vector distance=delta(cvin.pos[0],cvin.pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  if(mode==1) {
+  if(cvin.mode==1) {
     derivs[0][0] = Vector(-1,0,0);
     derivs[0][1] = Vector(+1,0,0);
     vals[0] = distance[0];
@@ -282,8 +280,8 @@ void Distance::calculateCV( const unsigned& mode, const std::vector<double>& mas
     derivs[2][0] = Vector(0,0,-1);
     derivs[2][1] = Vector(0,0,+1);
     vals[2] = distance[2];
-    setBoxDerivativesNoPbc( pos, derivs, virial );
-  } else if(mode==2) {
+    setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+  } else if(cvin.mode==2) {
     Vector d=aa->getPbc().realToScaled(distance);
     derivs[0][0] = matmul(aa->getPbc().getInvBox(),Vector(-1,0,0));
     derivs[0][1] = matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
@@ -297,7 +295,7 @@ void Distance::calculateCV( const unsigned& mode, const std::vector<double>& mas
   } else {
     derivs[0][0] = -invvalue*distance;
     derivs[0][1] = invvalue*distance;
-    setBoxDerivativesNoPbc( pos, derivs, virial );
+    setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
     vals[0] = value;
   }
 }

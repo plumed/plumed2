@@ -20,5 +20,22 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarTemplate.h"
+#include "core/Colvar.h"
 
+namespace PLMD {
+namespace colvar {
 
+ColvarInput::ColvarInput( const unsigned& m, const std::vector<Vector>& p, const std::vector<double>& w, const std::vector<double>& q ) :
+mode(m),
+pos(p),
+mass(w),
+charges(q)
+{
+}
+
+ColvarInput ColvarInput::createColvarInput( const unsigned& m, const std::vector<Vector>& p, const Colvar* colv ) {
+  return ColvarInput( m, p, colv->getMasses(), colv->getCharges(true) );
+}
+
+}
+}

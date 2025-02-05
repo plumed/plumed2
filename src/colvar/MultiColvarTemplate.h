@@ -26,7 +26,20 @@
 #include "core/ParallelTaskManager.h"
 
 namespace PLMD {
+
+class Colvar;
+
 namespace colvar {
+
+class ColvarInput {
+public:
+  unsigned mode;
+  const std::vector<Vector>& pos;
+  const std::vector<double>& mass;
+  const std::vector<double>& charges;
+  ColvarInput( const unsigned& m, const std::vector<Vector>& p, const std::vector<double>& w, const std::vector<double>& q );
+  static ColvarInput createColvarInput( const unsigned& m, const std::vector<Vector>& p, const Colvar* colv );
+};
 
 template <class T>
 class MultiColvarTemplate : public ActionWithVector {
@@ -164,7 +177,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
   std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
   // Calculate the CVs using the method in the Colvar
-  T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
+  T::calculateCV( ColvarInput(mode, fpositions, mass, charge), values, derivs, virial, this );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
   if( doNotCalculateDerivatives() ) return;

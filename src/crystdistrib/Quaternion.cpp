@@ -97,7 +97,7 @@ See \ref QUATERNION for more details
 class Quaternion : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -107,8 +107,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -166,7 +165,7 @@ unsigned Quaternion::getModeAndSetupValues( ActionWithValue* av ) {
 void Quaternion::calculate() {
   if(pbc) makeWhole();
 
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
@@ -176,12 +175,11 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                              const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                               std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   //declarations
-  Vector vec1_comp = delta( pos[0], pos[1] ); //components between atom 1 and 2
-  Vector vec2_comp = delta( pos[0], pos[2] ); //components between atom 1 and 3
+  Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
+  Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3
 
 ////////x-vector calculations///////
   double magx = vec1_comp.modulo(); Vector xt = vec1_comp / magx;
@@ -383,7 +381,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     vals[3] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) derivs[3][i] =0.25*dS[i];
   }
-  setBoxDerivativesNoPbc( pos, derivs, virial );
+  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
 
 }
 

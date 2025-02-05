@@ -110,6 +110,10 @@ public:
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
+/// Get the array of all masses
+  const std::vector<double>& getMasses()const;
+/// Get the array of all charges
+  const std::vector<double>& getCharges( const bool allowempty=false )const;
 /// Get the virial that is acting
   Tensor getVirial() const ;
 /// Get energy
@@ -224,6 +228,17 @@ AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const {
 inline
 const std::vector<Vector> & ActionAtomistic::getPositions()const {
   return positions;
+}
+
+inline
+const std::vector<double> & ActionAtomistic::getMasses()const {
+  return masses;
+}
+
+inline
+const std::vector<double> & ActionAtomistic::getCharges( const bool allowempty )const {
+  if( !allowempty && !chargesWereSet ) error("charges were not passed to plumed");
+  return charges;
 }
 
 inline

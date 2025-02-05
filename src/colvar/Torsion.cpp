@@ -110,7 +110,7 @@ class Torsion : public Colvar {
   bool pbc;
   bool do_cosine;
 
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -119,8 +119,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
   static void registerKeywords(Keywords& keys);
 };
@@ -225,22 +224,21 @@ unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
 // calculator
 void Torsion::calculate() {
   if(pbc) makeWhole();
-  if(do_cosine) calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
-  else calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  if(do_cosine) calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial, this );
+  else calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
   for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,derivs[0][i] );
   setValue(value[0]); setBoxDerivatives( virial[0] );
 }
 
-void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Torsion::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  Vector d0=delta(pos[1],pos[0]);
-  Vector d1=delta(pos[3],pos[2]);
-  Vector d2=delta(pos[5],pos[4]);
+  Vector d0=delta(cvin.pos[1],cvin.pos[0]);
+  Vector d1=delta(cvin.pos[3],cvin.pos[2]);
+  Vector d2=delta(cvin.pos[5],cvin.pos[4]);
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   vals[0] = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  if(mode==1) {
+  if(cvin.mode==1) {
     dd0 *= -std::sin(vals[0]);
     dd1 *= -std::sin(vals[0]);
     dd2 *= -std::sin(vals[0]);
@@ -252,7 +250,7 @@ void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& mass
   derivs[0][3] = -dd1;
   derivs[0][4] = dd2;
   derivs[0][5] = -dd2;
-  setBoxDerivativesNoPbc( pos, derivs, virial );
+  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
 }
 
 }

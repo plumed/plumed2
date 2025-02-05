@@ -64,7 +64,7 @@ Measure the correlation between a multiple pairs of dihedral angles
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -73,8 +73,7 @@ public:
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -126,26 +125,25 @@ unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
 void DihedralCorrelation::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void DihedralCorrelation::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                                       const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void DihedralCorrelation::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                                        std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  const Vector d10=delta(pos[1],pos[0]);
-  const Vector d11=delta(pos[2],pos[1]);
-  const Vector d12=delta(pos[3],pos[2]);
+  const Vector d10=delta(cvin.pos[1],cvin.pos[0]);
+  const Vector d11=delta(cvin.pos[2],cvin.pos[1]);
+  const Vector d12=delta(cvin.pos[3],cvin.pos[2]);
 
   Vector dd10,dd11,dd12;
   PLMD::Torsion t1;
   const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
-  const Vector d20=delta(pos[5],pos[4]);
-  const Vector d21=delta(pos[6],pos[5]);
-  const Vector d22=delta(pos[7],pos[6]);
+  const Vector d20=delta(cvin.pos[5],cvin.pos[4]);
+  const Vector d21=delta(cvin.pos[6],cvin.pos[5]);
+  const Vector d22=delta(cvin.pos[7],cvin.pos[6]);
 
   Vector dd20,dd21,dd22;
   PLMD::Torsion t2;

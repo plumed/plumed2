@@ -93,7 +93,7 @@ Create a vector that holds the components of the position of a set of atoms.
 class Position : public Colvar {
   bool scaled_components;
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -103,8 +103,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -185,7 +184,7 @@ void Position::calculate() {
   }
 
   if(scaled_components) {
-    calculateCV( 1, masses, charges, distance, value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), value, derivs, virial, this );
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -196,7 +195,7 @@ void Position::calculate() {
     setAtomsDerivatives (valuec,0,derivs[2][0]);
     valuec->set(value[2]);
   } else {
-    calculateCV( 0, masses, charges, distance, value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), value, derivs, virial, this );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -215,19 +214,18 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  if( mode==1 ) {
-    Vector d=aa->getPbc().realToScaled(pos[0]);
+  if( cvin.mode==1 ) {
+    Vector d=aa->getPbc().realToScaled(cvin.pos[0]);
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
     derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
     derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
     derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
   } else {
-    for(unsigned i=0; i<3; ++i) vals[i]=pos[0][i];
+    for(unsigned i=0; i<3; ++i) vals[i]=cvin.pos[0][i];
     derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-    virial[0]=Tensor(pos[0],Vector(-1,0,0)); virial[1]=Tensor(pos[0],Vector(0,-1,0)); virial[2]=Tensor(pos[0],Vector(0,0,-1));
+    virial[0]=Tensor(cvin.pos[0],Vector(-1,0,0)); virial[1]=Tensor(cvin.pos[0],Vector(0,-1,0)); virial[2]=Tensor(cvin.pos[0],Vector(0,0,-1));
   }
 }
 

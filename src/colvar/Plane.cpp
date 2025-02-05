@@ -62,7 +62,7 @@ namespace colvar {
 class Plane : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -72,8 +72,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -135,17 +134,16 @@ Plane::Plane(const ActionOptions&ao):
 void Plane::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Plane::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                         const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+void Plane::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                          std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  Vector d1=delta( pos[1], pos[0] );
-  Vector d2=delta( pos[2], pos[3] );
+  Vector d1=delta( cvin.pos[1], cvin.pos[0] );
+  Vector d2=delta( cvin.pos[2], cvin.pos[3] );
   Vector cp = crossProduct( d1, d2 );
 
   derivs[0][0] = crossProduct( Vector(-1.0,0,0), d2 );
