@@ -69,7 +69,9 @@ public:
 /// This runs all the tasks
   void runAllTasks( const unsigned& natoms=0 );
 /// This runs each of the tasks
-  void runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) const ;
+  static void runTask( const ParallelActionsInput& locinp, MultiValue& myvals );
+/// Transfer the data to the Value
+  void transferToValue( const unsigned& task_index, const MultiValue& myvals ) const ;
 };
 
 template <class T>
@@ -128,6 +130,10 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
   myinput.noderiv = true;
   action->getInputData( myinput.inputdata );
 
+  // Check if this is an actionWithMatrix object
+  const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(action);
+  bool ismatrix=false; if(am) ismatrix=true;
+
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
@@ -144,6 +150,9 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
       myinput.task_index = partialTaskList[i]; 
       runTask( myinput, myvals[t] );
 
+      // Transfer the data to the values
+      if( !ismatrix ) transferToValue( partialTaskList[i], myvals[t] );
+
       // Clear the value
       myvals[t].clearAll();
     }
@@ -158,15 +167,16 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
 }
 
 template <class T>
-void ParallelTaskManager<T>::runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) const {
-  const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(action);
+void ParallelTaskManager<T>::runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) {
   myvals.setTaskIndex(locinp.task_index); T::performTask( locinp, myvals );
-  if( am ) return ;
+}
 
+template <class T>
+void ParallelTaskManager<T>::transferToValue( const unsigned& task_index, const MultiValue& myvals ) const {
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
     const Value* myval = action->getConstPntrToComponent(i);
     if( myval->hasDerivatives() || (action->getName()=="RMSD_VECTOR" && myval->getRank()==2) ) continue;
-    Value* myv = const_cast<Value*>( myval ); myv->set( locinp.task_index, myvals.get( i ) );
+    Value* myv = const_cast<Value*>( myval ); myv->set( task_index, myvals.get( i ) );
   }
 }
 
