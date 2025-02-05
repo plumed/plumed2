@@ -62,6 +62,7 @@ public:
   unsigned getNumberOfAtomsPerTask() const override ;
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
+  void getInputData( std::vector<double>& inputdata ) const override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
   static void performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals );
@@ -124,6 +125,13 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
 
   // Setup the values
   mode = T::getModeAndSetupValues( this );
+  // This sets up an array in the parallel task manager to hold all the indices
+  std::vector<std::size_t> ind( ablocks.size()*ablocks[0].size() );
+  for(unsigned i=0; i<ablocks[0].size(); ++i) {
+      for(unsigned j=0; j<ablocks.size(); ++j) ind[i*ablocks.size() + j] = ablocks[j][i];
+  }
+  // Sets up the index list in the task manager
+  taskmanager.setupIndexList( ind );
 }
 
 template <class T>
@@ -152,6 +160,23 @@ void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& nam
 template <class T>
 unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const {
   return ablocks.size();
+}
+
+template <class T>
+void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
+  unsigned ntasks = ablocks[0].size(); std::size_t k=0;
+  if( inputdata.size()!=5*ablocks.size()*ntasks ) inputdata.resize( 5*ablocks.size()*ntasks );
+  for(unsigned i=0; i<ntasks; ++i) {
+      for(unsigned j=0; j<ablocks.size(); ++j) { 
+          Vector mypos( getPosition( ablocks[j][i] ) );
+          inputdata[k] = mypos[0];
+          inputdata[k+1] = mypos[1];
+          inputdata[k+2] = mypos[2];
+          inputdata[k+3] = getMass( ablocks[j][i] );
+          inputdata[k+4] = getCharge( ablocks[j][i] );
+          k+=5;
+      }    
+  }
 }
 
 template <class T>

@@ -42,8 +42,14 @@ private:
   std::vector<double> buffer;
 /// A tempory vector of MultiValue so we can avoid doing lots of resizes
   std::vector<MultiValue> myvals;
+/// This holds indices for creating derivatives
+  std::vector<std::size_t> indices;
+/// This holds all the input data that is required to calculate all values for all tasks
+  std::vector<double> inputdata;
 public:
   ParallelTaskManager(ActionWithVector* av);
+/// Setup an array to hold all the indices that are used for derivatives
+  void setupIndexList( const std::vector<std::size_t>& ind );
 /// This runs all the tasks
   void runAllTasks( const unsigned& natoms=0 );
 /// This runs each of the tasks
@@ -58,6 +64,11 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
 {
   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
   if(am) ismatrix=true;
+}
+
+template <class T>
+void ParallelTaskManager<T>::setupIndexList( const std::vector<std::size_t>& ind ) {
+  indices.resize( ind.size() ); for(unsigned i=0; i<ind.size(); ++i) indices[i] = ind[i];
 }
 
 template <class T>
@@ -85,6 +96,9 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
+
+  // Get all the input data so we can broadcast it to the GPU
+  action->getInputData( inputdata );
 
   #pragma omp parallel num_threads(nt)
   {
