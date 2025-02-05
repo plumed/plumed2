@@ -103,8 +103,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -184,7 +183,7 @@ void Position::calculate() {
   }
 
   if(scaled_components) {
-    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), value, derivs, virial );
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -195,7 +194,7 @@ void Position::calculate() {
     setAtomsDerivatives (valuec,0,derivs[2][0]);
     valuec->set(value[2]);
   } else {
-    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), value, derivs, virial );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -214,14 +213,13 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   if( cvin.mode==1 ) {
-    Vector d=aa->getPbc().realToScaled(cvin.pos[0]);
+    Vector d=cvin.pbc.realToScaled(cvin.pos[0]);
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
-    derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
-    derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
-    derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
+    derivs[0][0]=matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
+    derivs[1][0]=matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
+    derivs[2][0]=matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
   } else {
     for(unsigned i=0; i<3; ++i) vals[i]=cvin.pos[0][i];
     derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);

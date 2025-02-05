@@ -107,8 +107,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -165,7 +164,7 @@ unsigned Quaternion::getModeAndSetupValues( ActionWithValue* av ) {
 void Quaternion::calculate() {
   if(pbc) makeWhole();
 
-  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
@@ -175,8 +174,7 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                              std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   //declarations
   Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3

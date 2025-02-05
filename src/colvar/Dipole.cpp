@@ -94,8 +94,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Dipole> DipoleShortcut;
@@ -122,7 +121,7 @@ Dipole::Dipole(const ActionOptions&ao):
   derivs(1),
   virial(1)
 {
-  parseAtomList(-1,ga_lista,this); 
+  parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
     value.resize(3); derivs.resize(3); virial.resize(3);
@@ -171,12 +170,12 @@ void Dipole::calculate()
   unsigned N=getNumberOfAtoms();
 
   if(!components) {
-    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
-    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial, this );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);
       setAtomsDerivatives(valuey,i,derivs[1][i]);
@@ -191,8 +190,7 @@ void Dipole::calculate()
   }
 }
 
-void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                          std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   unsigned N=cvin.pos.size(); double ctot=0.;
   for(unsigned i=0; i<N; ++i) ctot += cvin.charges[i];
   ctot/=(double)N;

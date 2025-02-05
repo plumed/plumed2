@@ -72,8 +72,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Plane> PlaneShortcut;
@@ -134,14 +133,13 @@ Plane::Plane(const ActionOptions&ao):
 void Plane::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Plane::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Plane::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   Vector d1=delta( cvin.pos[1], cvin.pos[0] );
   Vector d2=delta( cvin.pos[2], cvin.pos[3] );
   Vector cp = crossProduct( d1, d2 );

@@ -73,8 +73,7 @@ public:
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<DihedralCorrelation> DihedralCorrelationShortcut;
@@ -125,14 +124,13 @@ unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
 void DihedralCorrelation::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void DihedralCorrelation::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                                       std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void DihedralCorrelation::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   const Vector d10=delta(cvin.pos[1],cvin.pos[0]);
   const Vector d11=delta(cvin.pos[2],cvin.pos[1]);
   const Vector d12=delta(cvin.pos[3],cvin.pos[2]);

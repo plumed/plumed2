@@ -119,8 +119,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
   static void registerKeywords(Keywords& keys);
 };
 
@@ -224,14 +223,13 @@ unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
 // calculator
 void Torsion::calculate() {
   if(pbc) makeWhole();
-  if(do_cosine) calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial, this );
-  else calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+  if(do_cosine) calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial );
+  else calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,derivs[0][i] );
   setValue(value[0]); setBoxDerivatives( virial[0] );
 }
 
-void Torsion::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Torsion::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   Vector d0=delta(cvin.pos[1],cvin.pos[0]);
   Vector d1=delta(cvin.pos[3],cvin.pos[2]);
   Vector d2=delta(cvin.pos[5],cvin.pos[4]);

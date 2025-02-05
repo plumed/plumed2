@@ -110,8 +110,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Angle> AngleShortcut;
@@ -168,14 +167,13 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial, this );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Angle::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Angle::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
   Vector dij,dik;
   dij=delta(cvin.pos[2],cvin.pos[3]);
   dik=delta(cvin.pos[1],cvin.pos[0]);
