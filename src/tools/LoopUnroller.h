@@ -53,29 +53,29 @@ class LoopUnroller {
 public:
 /// Set to zero.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=0.0;`
-  static void _zero(T*d);
+  constexpr static void _zero(T*d);
 /// Add v to d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]+=v[i];`
-  static void _add(T*d,const T*v);
+  constexpr static void _add(T*d,const T*v);
 /// Subtract v from d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]-=v[i];`
-  static void _sub(T*d,const T*v);
+  constexpr static void _sub(T*d,const T*v);
 /// Multiply d by s.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]*=s;`
-  static void _mul(T*d,const T s);
+  constexpr static void _mul(T*d,const T s);
 /// Set d to -v.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=-v[i];`
-  static void _neg(T*d,const T*v);
+  constexpr static void _neg(T*d,const T*v);
 /// Squared modulo of d;
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*d[i]; return r;`
-  static T _sum2(const T*d);
+  constexpr static T _sum2(const T*d);
 /// Dot product of d and v
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*v[i]; return r;`
-  static T _dot(const T*d,const T*v);
+  constexpr static T _dot(const T*d,const T*v);
 };
 
 template<typename T, unsigned n>
-void LoopUnroller<T,n>::_zero(T*d) {
+constexpr void LoopUnroller<T,n>::_zero(T*d) {
   if constexpr (n>1) {
     LoopUnroller<T,n-1>::_zero(d);
   }
@@ -83,7 +83,7 @@ void LoopUnroller<T,n>::_zero(T*d) {
 }
 
 template<typename T, unsigned n>
-void LoopUnroller<T,n>::_add(T*d,const T*a) {
+constexpr void LoopUnroller<T,n>::_add(T*d,const T*a) {
   if constexpr (n>1) {
     LoopUnroller<T,n-1>::_add(d,a);
   }
@@ -91,7 +91,7 @@ void LoopUnroller<T,n>::_add(T*d,const T*a) {
 }
 
 template<typename T, unsigned n>
-void LoopUnroller<T,n>::_sub(T*d,const T*a) {
+constexpr void LoopUnroller<T,n>::_sub(T*d,const T*a) {
   if constexpr (n>1) {
     LoopUnroller<T,n-1>::_sub(d,a);
   }
@@ -99,7 +99,7 @@ void LoopUnroller<T,n>::_sub(T*d,const T*a) {
 }
 
 template<typename T, unsigned n>
-void LoopUnroller<T,n>::_mul(T*d,const T s) {
+constexpr void LoopUnroller<T,n>::_mul(T*d,const T s) {
   if constexpr (n>1) {
     LoopUnroller<T,n-1>::_mul(d,s);
   }
@@ -107,7 +107,7 @@ void LoopUnroller<T,n>::_mul(T*d,const T s) {
 }
 
 template<typename T, unsigned n>
-void LoopUnroller<T,n>::_neg(T*d,const T*a ) {
+constexpr void LoopUnroller<T,n>::_neg(T*d,const T*a ) {
   if constexpr (n>1) {
     LoopUnroller<T,n-1>::_neg(d,a);
   }
@@ -115,7 +115,7 @@ void LoopUnroller<T,n>::_neg(T*d,const T*a ) {
 }
 
 template<typename T, unsigned n>
-T LoopUnroller<T,n>::_sum2(const T*d) {
+constexpr T LoopUnroller<T,n>::_sum2(const T*d) {
   if constexpr (n>1) {
     return LoopUnroller<T,n-1>::_sum2(d)+d[n-1]*d[n-1];
   } else {
@@ -123,7 +123,7 @@ T LoopUnroller<T,n>::_sum2(const T*d) {
   }
 }
 template<typename T, unsigned n>
-T LoopUnroller<T,n>::_dot(const T*d,const T*v) {
+constexpr T LoopUnroller<T,n>::_dot(const T*d,const T*v) {
   if constexpr (n>1) {
     return LoopUnroller<T,n-1>::_dot(d,v)+d[n-1]*v[n-1];
   } else {
