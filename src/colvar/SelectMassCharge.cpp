@@ -19,11 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Colvar.h"
-#include "ColvarShortcut.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
-#include "MultiColvarTemplate.h"
-#include "tools/Pbc.h"
 
 //+PLUMEDOC MCOLVAR CHARGE
 /*
@@ -82,77 +80,60 @@ Get the mass of one or multiple atoms
 namespace PLMD {
 namespace colvar {
 
-class SelectMassCharge : public Colvar {
+class SelectMassCharge : 
+public ActionAtomistic,
+public ActionWithValue {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SelectMassCharge(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
+  unsigned getNumberOfDerivatives() override { return 0; }
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  void apply() override {}
 };
 
-typedef ColvarShortcut<SelectMassCharge> MQShortcut;
-PLUMED_REGISTER_ACTION(MQShortcut,"MASS")
-PLUMED_REGISTER_ACTION(MQShortcut,"CHARGE")
-PLUMED_REGISTER_ACTION(SelectMassCharge,"MASS_SCALAR")
-PLUMED_REGISTER_ACTION(SelectMassCharge,"CHARGE_SCALAR")
-typedef MultiColvarTemplate<SelectMassCharge> MQMulti;
-PLUMED_REGISTER_ACTION(MQMulti,"MASS_VECTOR")
-PLUMED_REGISTER_ACTION(MQMulti,"CHARGE_VECTOR")
+PLUMED_REGISTER_ACTION(SelectMassCharge,"MASS")
+PLUMED_REGISTER_ACTION(SelectMassCharge,"CHARGE")
 
 void SelectMassCharge::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom number");
+  Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
   keys.add("atoms","ATOMS","the atom numbers that you would like to store the masses and charges of");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  std::string acname = keys.getDisplayName(); std::size_t und = acname.find("_SCALAR");
-  if( und==std::string::npos ) und = acname.find("_VECTOR");
-  keys.setDisplayName( acname.substr(0,und) ); keys.setValueDescription("the " + keys.getDisplayName() + " of the atom");
+  keys.setValueDescription("the " + keys.getDisplayName() + " of the atom/s");
 }
 
 SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
+  Action(ao),
+  ActionAtomistic(ao),
+  ActionWithValue(ao)
 {
-  std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
-  unsigned mode=getModeAndSetupValues(this);
-  requestAtoms(atoms);
-}
-
-void SelectMassCharge::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
-  aa->parseAtomList("ATOM",num,t);
-  if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
-  else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
-}
-
-unsigned SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
-  av->addValueWithDerivatives(); av->setNotPeriodic(); bool constant=true;
-  ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( av ); plumed_assert( aa );
-  for(unsigned i=0; i<aa->getNumberOfAtoms(); ++i) {
-    std::pair<std::size_t,std::size_t> p = aa->getValueIndices( aa->getAbsoluteIndex(i) );
-    if( av->getName().find("MASS")!=std::string::npos && !aa->masv[p.first]->isConstant() ) constant=false;
-    if( av->getName().find("CHARGE")!=std::string::npos && !aa->chargev[p.first]->isConstant() ) constant=false;
+  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
+  log.printf("  getting %s of atoms : ", getName().c_str() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+      std::pair<std::size_t,std::size_t> p = getValueIndices( atoms[i] ); 
+      if( getName()=="MASS" && !masv[p.first]->isConstant() ) error("cannot deal with non-constant " + getName() + " values");  
+      if( getName()=="CHARGE" && !chargev[p.first]->isConstant() ) error("cannot deal with non-constant " + getName() + " values");
+      log.printf("%d ", atoms[i].serial() );
   }
-  if( !constant ) av->error("cannot deal with non-constant " + av->getName() + " values");
-  (av->copyOutput(0))->setConstant();
-  return 0;
+  log.printf("\n"); requestAtoms(atoms);
+  std::vector<unsigned> shape(1); 
+  if(atoms.size()==1) shape.resize(0);
+  else shape[0] = atoms.size();
+  addValue( shape ); setNotPeriodic();
+  getPntrToComponent(0)->setConstant();
 }
 
 // calculator
 void SelectMassCharge::calculate() {
-  std::vector<double> masses(1), charges(1), vals(1);
-  std::vector<Vector> pos; std::vector<std::vector<Vector> > derivs; std::vector<Tensor> virial;
-  calculateCV( 0, masses, charges, pos, vals, derivs, virial, this ); setValue( vals[0] );
-}
-
-void SelectMassCharge::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                                    const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                                    std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  if( aa->getName().find("MASSES")!=std::string::npos ) vals[0]=masses[0];
-  else if( aa->chargesWereSet ) vals[0]=charges[0];
+   Value* myval = getPntrToComponent(0);
+   if( getName()=="CHARGES" ) {
+       if( !chargesWereSet ) error("cannot determine charges are charges were not set");
+       for(unsigned i=0; i<getNumberOfAtoms(); ++i) myval->set( i, getCharge(i) );
+   } else {
+       for(unsigned i=0; i<getNumberOfAtoms(); ++i) myval->set( i, getMass(i) );
+   }
 }
 
 }
