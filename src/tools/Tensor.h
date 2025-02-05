@@ -123,6 +123,8 @@ class TensorTyped:
 /// Auxiliary private function for constructor
   template<typename... Args>
   constexpr void auxiliaryConstructor(T first,Args... arg);
+  template <int n_, int m_>
+  using is3x3 = std::enable_if_t<(n_==3 && m_==3)>;
 public:
 //upload the tensor to the current acc device
   void toACCDevice()const  {
@@ -172,10 +174,12 @@ public:
 /// get i-th row
   constexpr VectorTyped<T,m> getRow(unsigned i)const;
 /// returns the determinant
+  template<int m_=m, int n_=n,typename = is3x3<m_,n_>>
   constexpr T determinant()const;
 /// return an identity tensor
   static constexpr TensorTyped<T,n,n> identity();
 /// return the matrix inverse
+  template<int m_=m, int n_=n,typename = is3x3<m_,n_>>
   constexpr TensorTyped inverse()const;
 /// return the transpose matrix
   constexpr TensorTyped<T,m,n> transpose()const;
@@ -371,8 +375,8 @@ constexpr TensorTyped<T,n,m> operator/(const TensorTyped<T,n,m>&t1,J s) {
 }
 
 template<typename T, unsigned n, unsigned m>
+template<int m_, int n_,typename>
 constexpr inline T TensorTyped<T,n,m>::determinant()const {
-  static_assert(n==3&&m==3,"determinanat can be called only for 3x3 Tensors");
   return
     d[0]*d[4]*d[8]
     + d[1]*d[5]*d[6]
@@ -403,8 +407,8 @@ constexpr TensorTyped<T,m,n> TensorTyped<T,n,m>::transpose()const {
 }
 
 template<typename T, unsigned n, unsigned m>
+template<int m_, int n_,typename>
 constexpr inline TensorTyped<T,n,m> TensorTyped<T,n,m>::inverse()const {
-  static_assert(n==3&&m==3,"inverse can be called only for 3x3 Tensors");
   TensorTyped t;
   T invdet=1.0/determinant();
   for(unsigned i=0; i<3; i++)
