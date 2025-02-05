@@ -64,6 +64,7 @@ public:
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
+  static void performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals );
 };
 
 template <class T>
@@ -156,37 +157,50 @@ unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const {
 template <class T>
 void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Retrieve the positions
+  std::vector<double> & mass( myvals.getTemporyVector(0) );
+  std::vector<double> & charge( myvals.getTemporyVector(1) );
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  for(unsigned i=0; i<ablocks.size(); ++i) fpositions[i] = getPosition( ablocks[i][task_index] );
+  for(unsigned i=0; i<ablocks.size(); ++i) {
+      fpositions[i] = getPosition( ablocks[i][task_index] );
+      mass[i]=getMass( ablocks[i][task_index] );
+      charge[i]=getCharge( ablocks[i][task_index] );
+  }
+  std::vector<std::size_t> der_indices( ablocks.size() );
+  for(unsigned i=0; i<der_indices.size(); ++i) der_indices[i] = ablocks[i][task_index];
+  performTask( mode, der_indices, doNotCalculateDerivatives(), usepbc, getPbc(), myvals );
+}
+
+template <class T>
+void MultiColvarTemplate<T>::performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals ) {
+  // Retrieve the inputs
+  std::vector<double> & mass( myvals.getTemporyVector(0) );
+  std::vector<double> & charge( myvals.getTemporyVector(1) );
+  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
   // If we are using pbc make whole
-  if( usepbc ) {
+  if( haspbc ) {
     if( fpositions.size()==1 ) {
-      fpositions[0]=pbcDistance(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
+      fpositions[0]=pbc.distance(Vector(0.0,0.0,0.0),fpositions[0]);
     } else {
       for(unsigned j=0; j<fpositions.size()-1; ++j) {
         const Vector & first (fpositions[j]); Vector & second (fpositions[j+1]);
-        second=first+pbcDistance(first,second);
+        second=first+pbc.distance(first,second);
       }
     }
-  } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
-  // Retrieve the masses and charges
-  std::vector<double> & mass( myvals.getTemporyVector(0) );
-  std::vector<double> & charge( myvals.getTemporyVector(1) );
-  for(unsigned i=0; i<ablocks.size(); ++i) { mass[i]=getMass( ablocks[i][task_index] ); charge[i]=getCharge( ablocks[i][task_index] ); }
+  } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),fpositions[0]);
   // Make some space to store various things
-  std::vector<double> values( getNumberOfComponents() );
+  std::vector<double> values( myvals.getNumberOfValues() );
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
   std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
   // Calculate the CVs using the method in the Colvar
-  T::calculateCV( ColvarInput(mode, fpositions, mass, charge, getPbc() ), values, derivs, virial );
+  T::calculateCV( ColvarInput(m, fpositions, mass, charge, pbc ), values, derivs, virial );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
-  if( doNotCalculateDerivatives() ) return;
+  if( noderiv ) return;
 
   // Now transfer the derivatives to the underlying MultiValue
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    unsigned base=3*ablocks[i][task_index];
-    for(int j=0; j<getNumberOfComponents(); ++j) {
+  for(unsigned i=0; i<der_indices.size(); ++i) {
+    unsigned base=3*der_indices[i];
+    for(int j=0; j<values.size(); ++j) {
       myvals.addDerivative( j, base + 0, derivs[j][i][0] );
       myvals.addDerivative( j, base + 1, derivs[j][i][1] );
       myvals.addDerivative( j, base + 2, derivs[j][i][2] );
@@ -194,17 +208,17 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     // Check for duplicated indices during update to avoid double counting
     bool newi=true;
     for(unsigned j=0; j<i; ++j) {
-      if( ablocks[j][task_index]==ablocks[i][task_index] ) { newi=false; break; }
+      if( der_indices[j]==der_indices[i] ) { newi=false; break; }
     }
     if( !newi ) continue;
-    for(int j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<values.size(); ++j) {
       myvals.updateIndex( j, base );
       myvals.updateIndex( j, base + 1 );
       myvals.updateIndex( j, base + 2 );
     }
   }
-  unsigned nvir=3*getNumberOfAtoms();
-  for(int j=0; j<getNumberOfComponents(); ++j) {
+  unsigned nvir=myvals.getNumberOfDerivatives() - 9;
+  for(int j=0; j<values.size(); ++j) {
     for(unsigned i=0; i<3; ++i) {
       for(unsigned k=0; k<3; ++k) {
         myvals.addDerivative( j, nvir + 3*i + k, virial[j][i][k] );
