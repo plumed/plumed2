@@ -129,10 +129,10 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // This sets up an array in the parallel task manager to hold all the indices
   std::vector<std::size_t> ind( ablocks.size()*ablocks[0].size() );
   for(unsigned i=0; i<ablocks[0].size(); ++i) {
-      for(unsigned j=0; j<ablocks.size(); ++j) ind[i*ablocks.size() + j] = ablocks[j][i];
+    for(unsigned j=0; j<ablocks.size(); ++j) ind[i*ablocks.size() + j] = ablocks[j][i];
   }
   // Sets up the index list in the task manager
-  taskmanager.setupIndexList( ind ); 
+  taskmanager.setupIndexList( ind );
   taskmanager.setPbcFlag( usepbc );
   taskmanager.setMode( mode );
 }
@@ -170,15 +170,15 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
   unsigned ntasks = ablocks[0].size(); std::size_t k=0;
   if( inputdata.size()!=5*ablocks.size()*ntasks ) inputdata.resize( 5*ablocks.size()*ntasks );
   for(unsigned i=0; i<ntasks; ++i) {
-      for(unsigned j=0; j<ablocks.size(); ++j) { 
-          Vector mypos( getPosition( ablocks[j][i] ) );
-          inputdata[k] = mypos[0];
-          inputdata[k+1] = mypos[1];
-          inputdata[k+2] = mypos[2];
-          inputdata[k+3] = getMass( ablocks[j][i] );
-          inputdata[k+4] = getCharge( ablocks[j][i] );
-          k+=5;
-      }    
+    for(unsigned j=0; j<ablocks.size(); ++j) {
+      Vector mypos( getPosition( ablocks[j][i] ) );
+      inputdata[k] = mypos[0];
+      inputdata[k+1] = mypos[1];
+      inputdata[k+2] = mypos[2];
+      inputdata[k+3] = getMass( ablocks[j][i] );
+      inputdata[k+4] = getCharge( ablocks[j][i] );
+      k+=5;
+    }
   }
 }
 
@@ -189,9 +189,9 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   std::vector<double> & charge( myvals.getTemporyVector(1) );
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
   for(unsigned i=0; i<ablocks.size(); ++i) {
-      fpositions[i] = getPosition( ablocks[i][task_index] );
-      mass[i]=getMass( ablocks[i][task_index] );
-      charge[i]=getCharge( ablocks[i][task_index] );
+    fpositions[i] = getPosition( ablocks[i][task_index] );
+    mass[i]=getMass( ablocks[i][task_index] );
+    charge[i]=getCharge( ablocks[i][task_index] );
   }
   std::vector<std::size_t> der_indices( ablocks.size() );
   for(unsigned i=0; i<der_indices.size(); ++i) der_indices[i] = ablocks[i][task_index];
@@ -204,12 +204,12 @@ void MultiColvarTemplate<T>::performTask( const ParallelActionsInput& input, Mul
   std::vector<double> & charge( myvals.getTemporyVector(1) );
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
   for(unsigned i=0; i<fpositions.size(); ++i) {
-      std::size_t base = 5*fpositions.size()*input.task_index + 5*i;
-      fpositions[i][0] = input.inputdata[base + 0];
-      fpositions[i][1] = input.inputdata[base + 1];
-      fpositions[i][2] = input.inputdata[base + 2];
-      mass[i] = input.inputdata[base + 3];
-      charge[i] = input.inputdata[base + 4];
+    std::size_t base = 5*fpositions.size()*input.task_index + 5*i;
+    fpositions[i][0] = input.inputdata[base + 0];
+    fpositions[i][1] = input.inputdata[base + 1];
+    fpositions[i][2] = input.inputdata[base + 2];
+    mass[i] = input.inputdata[base + 3];
+    charge[i] = input.inputdata[base + 4];
   }
   MultiColvarTemplate<T>::performTask( input.mode, input.indices, input.noderiv, input.usepbc, input.pbc, myvals );
 }
@@ -234,7 +234,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& m, const std::vector<s
   // Make some space to store various things
   std::vector<double> values( myvals.getNumberOfValues() );
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
-  std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
+  Matrix<Vector> derivs( values.size(), fpositions.size() );
   // Calculate the CVs using the method in the Colvar
   T::calculateCV( ColvarInput(m, fpositions, mass, charge, pbc ), values, derivs, virial );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );

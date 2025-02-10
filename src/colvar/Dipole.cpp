@@ -83,7 +83,7 @@ class Dipole : public Colvar {
   bool components;
   bool nopbc;
   std::vector<double> value;
-  std::vector<std::vector<Vector> > derivs;
+  Matrix<Vector> derivs;
   std::vector<Tensor> virial;
   Value* valuex=nullptr;
   Value* valuey=nullptr;
@@ -94,7 +94,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Dipole> DipoleShortcut;
@@ -118,18 +118,17 @@ Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   components(false),
   value(1),
-  derivs(1),
+  derivs(1,1),
   virial(1)
 {
   parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
-    value.resize(3); derivs.resize(3); virial.resize(3);
+    value.resize(3); derivs.resize(3,ga_lista.size()); virial.resize(3);
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
-  }
-  for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ga_lista.size() );
+  } else derivs.resize(1,ga_lista.size());
   parseFlag("NOPBC",nopbc);
   checkRead();
 
@@ -190,7 +189,7 @@ void Dipole::calculate()
   }
 }
 
-void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   unsigned N=cvin.pos.size(); double ctot=0.;
   for(unsigned i=0; i<N; ++i) ctot += cvin.charges[i];
   ctot/=(double)N;

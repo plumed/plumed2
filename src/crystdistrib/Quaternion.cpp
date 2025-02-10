@@ -98,7 +98,7 @@ class Quaternion : public Colvar {
 private:
   bool pbc;
   std::vector<double> value;
-  std::vector<std::vector<Vector> > derivs;
+  Matrix<Vector> derivs;
   std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
@@ -107,7 +107,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -130,10 +130,9 @@ Quaternion::Quaternion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   value(4),
-  derivs(4),
+  derivs(4,3),
   virial(4)
 {
-  for(unsigned i=0; i<4; ++i) derivs[i].resize(3);
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if(atoms.size()!=3) error("Number of specified atoms should be 3");
@@ -174,7 +173,7 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   //declarations
   Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3

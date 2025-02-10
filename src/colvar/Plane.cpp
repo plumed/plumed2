@@ -63,7 +63,7 @@ class Plane : public Colvar {
 private:
   bool pbc;
   std::vector<double> value;
-  std::vector<std::vector<Vector> > derivs;
+  Matrix<Vector> derivs;
   std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
@@ -72,7 +72,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Plane> PlaneShortcut;
@@ -113,10 +113,9 @@ Plane::Plane(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   value(3),
-  derivs(3),
+  derivs(3,4),
   virial(3)
 {
-  for(unsigned i=0; i<3; ++i) derivs[i].resize(4);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -135,11 +134,11 @@ void Plane::calculate() {
   if(pbc) makeWhole();
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Plane::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+void Plane::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   Vector d1=delta( cvin.pos[1], cvin.pos[0] );
   Vector d2=delta( cvin.pos[2], cvin.pos[3] );
   Vector cp = crossProduct( d1, d2 );

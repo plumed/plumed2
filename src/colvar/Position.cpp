@@ -94,7 +94,7 @@ class Position : public Colvar {
   bool scaled_components;
   bool pbc;
   std::vector<double> value;
-  std::vector<std::vector<Vector> > derivs;
+  Matrix<Vector> derivs;
   std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
@@ -103,7 +103,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -132,10 +132,9 @@ Position::Position(const ActionOptions&ao):
   scaled_components(false),
   pbc(true),
   value(3),
-  derivs(3),
+  derivs(3,1),
   virial(3)
 {
-  for(unsigned i=0; i<3; ++i) derivs[i].resize(1);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
   if( mode==1 ) scaled_components=true;
@@ -213,7 +212,7 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   if( cvin.mode==1 ) {
     Vector d=cvin.pbc.realToScaled(cvin.pos[0]);
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);

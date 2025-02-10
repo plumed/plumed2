@@ -129,7 +129,7 @@ class Distance : public Colvar {
   bool pbc;
 
   std::vector<double> value;
-  std::vector<std::vector<Vector> > derivs;
+  Matrix<Vector> derivs;
   std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
@@ -138,7 +138,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
@@ -168,10 +168,9 @@ Distance::Distance(const ActionOptions&ao):
   scaled_components(false),
   pbc(true),
   value(1),
-  derivs(1),
+  derivs(1,2),
   virial(1)
 {
-  derivs[0].resize(2);
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if(atoms.size()!=2)
@@ -187,8 +186,7 @@ Distance::Distance(const ActionOptions&ao):
   unsigned mode = getModeAndSetupValues( this );
   if(mode==1) components=true; else if(mode==2) scaled_components=true;
   if( components || scaled_components ) {
-    value.resize(3); derivs.resize(3); virial.resize(3);
-    for(unsigned i=0; i<3; ++i) derivs[i].resize(2);
+    value.resize(3); derivs.resize(3,2); virial.resize(3);
   }
   requestAtoms(atoms);
 }
@@ -261,7 +259,7 @@ void Distance::calculate() {
   }
 }
 
-void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   Vector distance=delta(cvin.pos[0],cvin.pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;

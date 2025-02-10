@@ -56,7 +56,7 @@ private:
   std::vector<double> buffer;
 /// A tempory vector of MultiValue so we can avoid doing lots of resizes
   std::vector<MultiValue> myvals;
-/// An action to hold data that we pass to and from the static function 
+/// An action to hold data that we pass to and from the static function
   ParallelActionsInput myinput;
 public:
   ParallelTaskManager(ActionWithVector* av);
@@ -147,7 +147,7 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      myinput.task_index = partialTaskList[i]; 
+      myinput.task_index = partialTaskList[i];
       runTask( myinput, myvals[t] );
 
       // Transfer the data to the values
