@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 #checked with shellcheck
+#formatted with shfmt v3.6.0
 
 set -e
 
@@ -19,31 +20,28 @@ baserev=${PLMD_CODECHECK_REV:-master}
 #this simply will help by making the script works from anywhere
 basedir=$(git rev-parse --show-toplevel)
 
-for opt
-do
+for opt; do
   case $opt in
-  (--cppcheck) do_plumedcheck=false ;;
-  (--plumedcheck) do_cppcheck=false ;;
-  (--local) do_local=true ;;
-  (--modified-only) do_modified=true;;
-  (--base=*) do_modified=true;baserev=${opt#*=} ;;
+  --cppcheck) do_plumedcheck=false ;;
+  --plumedcheck) do_cppcheck=false ;;
+  --local) do_local=true ;;
+  --modified-only) do_modified=true ;;
+  --base=*)
+    do_modified=true
+    baserev=${opt#*=}
+    ;;
   esac
 done
 
 if [[ $do_modified = true ]]; then
   # getting the modified files
-  fls=$(
-      git diff-index --diff-filter=ACMR "$baserev" |
-          awk '/src.*(\.h|\.cpp|\.inc\.in)/{print $6}
-              /plugins.*(\.h|\.cpp|\.inc\.in)/{print $6}'
+  # and making the list working from anywhere
+  files=$(
+    git diff-index --diff-filter=ACMR "$baserev" |
+      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}
+           /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
   )
-
-  files="${basedir}/src/core/ActionRegister.h"
-  # then making the list working from anywhere
-  for file in $fls ; do
-    files="$files ${basedir}/${file}"
-  done
-elif [ $do_local == true ] ; then
+elif [ $do_local == true ]; then
   files="$(ls ./*.{h,cpp})"
 else
   files="$(ls ./*/*.{h,cpp})"
@@ -51,39 +49,38 @@ fi
 
 {
 
-if [ $do_plumedcheck == true ] ; then
-  extra=()
-  
-  if [[ $do_modified = false ]]; then
-   extra[${#extra[@]}]="${basedir}/configure.ac"
-  fi
-  if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
-    extra[${#extra[@]}]="${basedir}/configure"
-  fi
-  # shellcheck disable=SC2086
-  "${basedir}/src/maketools/plumedcheck" \
-        --astyle="${basedir}/astyle/astyle" \
-        --astyle-options="${basedir}/.astyle.options" \
-        "${extra[@]}" $files
-  
-fi
+  if [ $do_plumedcheck == true ]; then
+    extra=()
 
-if [ $do_cppcheck == true ] ; then
-  # we discard configurations introduced in small_vector because they are many and
-  # get included in many files
-  # shellcheck disable=SC2086
-  cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
-    -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
-    -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
-    -U__PLUMED_HAS_ASMJIT \
-    -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-    --config-exclude=small_vector/ \
-    --template='[{file}:{line}] ({severity}) :{id}: {message}' \
-    --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
-    $files
-    #You coud add -I ${basedir}/src/ but that will not check if the correct 
+    if [[ $do_modified = false ]]; then
+      extra[${#extra[@]}]="${basedir}/configure.ac"
+    fi
+    if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+      extra[${#extra[@]}]=--global-check
+    fi
+    # shellcheck disable=SC2086
+    "${basedir}/src/maketools/plumedcheck" \
+      --astyle="${basedir}/astyle/astyle" \
+      --astyle-options="${basedir}/.astyle.options" \
+      "${extra[@]}" $files
+  fi
+
+  if [ $do_cppcheck == true ]; then
+    # we discard configurations introduced in small_vector because they are many and
+    # get included in many files
+    # shellcheck disable=SC2086
+    cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
+      -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
+      -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
+      -U__PLUMED_HAS_ASMJIT \
+      -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
+      --config-exclude=small_vector/ \
+      --template='[{file}:{line}] ({severity}) :{id}: {message}' \
+      --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
+      $files
+    #You coud add -I ${basedir}/src/ but that will not check if the correct
     # requisite modules are set in the module configuration file
-fi
+  fi
 
 } 2> >(tee codecheck.log >&2)
 
@@ -104,7 +101,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector" 
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector"
 echo "  since they are full of false positives"
 
 gawk '{
@@ -127,27 +124,26 @@ gawk '{
     if(match($0,"[[]small_vector/")) next;
   }
   print
-}' < codecheck.log > "${CLEAN_FILE}"
+}' <codecheck.log >"${CLEAN_FILE}"
 
 ## Here I make a summary of the (style) and (information) messages
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  Summary of reported (style) and (information) messages"
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-awk '{if($2=="(style)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
-awk '{if($2=="(information)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
+awk '{if($2=="(style)")print $3}' "${CLEAN_FILE}" | sort | uniq -c || true
+awk '{if($2=="(information)")print $3}' "${CLEAN_FILE}" | sort | uniq -c || true
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 ## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >> "${FATAL_FILE}" || true
-count=$( wc -l < "${FATAL_FILE}" )
-echo 
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >>"${FATAL_FILE}" || true
+count=$(wc -l <"${FATAL_FILE}")
+echo
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-if ((count==0))
-then
+if ((count == 0)); then
   echo "      codecheck did not find any fatal error"
   echo "      excluding (style) and (information)"
-echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   exit 0
 fi
 
@@ -160,4 +156,3 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo
 
 exit 1
-
