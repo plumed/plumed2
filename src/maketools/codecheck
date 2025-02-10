@@ -12,7 +12,7 @@ do_local=false
 #checks only files that differ from the given base revision
 do_modified=false
 baserev=${PLMD_CODECHECK_REV:-master}
-srcdir=$(git rev-parse --show-toplevel)
+basedir=$(git rev-parse --show-toplevel)
 
 for opt
 do
@@ -32,31 +32,38 @@ if [[ $do_modified = true ]]; then
               /plugins.*(\.h|\.cpp|\.inc\.in)/{print $6}'
   )
 
-  files=()
+  files=""
   for file in $fls ; do
   #here I build a list of file with full path
-    files[${#files[@]}]="${srcdir}${file}"
+    files="$files ${basedir}/${file}"
   done
-  echo "${files[@]}"
-  exit
+  echo "${files}"
+else
+  if [ $do_local == true ] ; then
+    files="$(ls -1 ./*.{h,cpp})"
+  else
+    files="$(ls -1 ./*/*.{h,cpp})"
+  fi
 fi
 
 {
 
 if [ $do_plumedcheck == true ] ; then
-  if [ $do_local == true ] ; then
-    ../maketools/plumedcheck $(ls -1 *.{h,cpp}) ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
-  else
-    maketools/plumedcheck --global-check $(ls -1 */*.{h,cpp}) ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
+  plmdcheckfiles=$files
+  if [[ $do_modified = false ]]; then
+    plmdcheckfiles="$plmdcheckfiles ${basedir}/configure.ac"
   fi
+  if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+    plmdcheckfiles="--global-check $plmdcheckfiles"
+  fi
+  "${basedir}/src/maketools/plumedcheck" \
+        $plmdcheckfiles \
+        --astyle="${basedir}/astyle/astyle" \
+        --astyle-options="${basedir}/.astyle.options"
+  
 fi
 
 if [ $do_cppcheck == true ] ; then
-  if [ $do_local == true ] ; then
-    files="$(echo *.{h,cpp})"
-  else
-    files="$(echo */*.{h,cpp})"
-  fi
   # we discard configurations introduced in small_vector because they are many and
   # get included in many files
   cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
