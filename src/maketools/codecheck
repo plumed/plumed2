@@ -101,10 +101,10 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector"
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile"
 echo "  since they are full of false positives"
-
-gawk '{
+#shellcheck disable=SC2002
+cat codecheck.log | gawk '{
   if(match($0,":plmd_")){
 # with plumed we only exclude specific warnings from lapack and blas
     if(match($0,"[[]lapack/")) next;
@@ -121,10 +121,9 @@ gawk '{
     if(match($0,"[[]lepton/")) next;
     if(match($0,"[[]asmjit/")) next;
     if(match($0,"[[]xdrfile/")) next;
-    if(match($0,"[[]small_vector/")) next;
   }
   print
-}' <codecheck.log >"${CLEAN_FILE}"
+}' >"${CLEAN_FILE}"
 
 ## Here I make a summary of the (style) and (information) messages
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -136,7 +135,7 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >>"${FATAL_FILE}" || true
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" || true
 count=$(wc -l <"${FATAL_FILE}")
 echo
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
