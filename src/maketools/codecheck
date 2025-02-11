@@ -103,27 +103,35 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo "  In the following analysis we exclude:"
 echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile"
 echo "  since they are full of false positives"
-#shellcheck disable=SC2002
-cat codecheck.log | gawk '{
+
+#the regexes like this avoid false positives for eventual composite names
+# "(.*/|)"" means anithing that ends in "/" or nothing, so:
+# - "[someblas/" do not check
+# - "[./someblas/" do not check
+# - "[blas"/ checks
+# - "[./blas"/ checks
+# - "[/path/to/blas"/ checks
+
+gawk '{
   if(match($0,":plmd_")){
 # with plumed we only exclude specific warnings from lapack and blas
-    if(match($0,"[[]lapack/")) next;
-    if(match($0,"[[]blas/")) next;
-    if(match($0,"[[]molfile/")) next;
-    if(match($0,"[[]lepton/")) next;
-    if(match($0,"[[]asmjit/")) next;
-    if(match($0,"[[]xdrfile/")) next;
+    if(match($0,"[[](.*/|)lapack/")) next;
+    if(match($0,"[[](.*/|)blas/")) next;
+    if(match($0,"[[](.*/|)molfile/")) next;
+    if(match($0,"[[](.*/|)lepton/")) next;
+    if(match($0,"[[](.*/|)asmjit/")) next;
+    if(match($0,"[[](.*/|)xdrfile/")) next;
   } else {
 # with cppcheck we exclude molfile lapack and blas
-    if(match($0,"[[]molfile/")) next;
-    if(match($0,"[[]lapack/")) next;
-    if(match($0,"[[]blas/")) next;
-    if(match($0,"[[]lepton/")) next;
-    if(match($0,"[[]asmjit/")) next;
-    if(match($0,"[[]xdrfile/")) next;
+    if(match($0,"[[](.*/|)molfile/")) next;
+    if(match($0,"[[](.*/|)lapack/")) next;
+    if(match($0,"[[](.*/|)blas//")) next;
+    if(match($0,"[[](.*/|)lepton/")) next;
+    if(match($0,"[[](.*/|)asmjit/")) next;
+    if(match($0,"[[](.*/|)xdrfile/")) next;
   }
   print
-}' >"${CLEAN_FILE}"
+}' <codecheck.log >"${CLEAN_FILE}"
 
 ## Here I make a summary of the (style) and (information) messages
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
