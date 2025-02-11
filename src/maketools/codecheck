@@ -1,47 +1,86 @@
 #! /usr/bin/env bash
+#checked with shellcheck
+#formatted with shfmt v3.6.0
 
 set -e
 
-# I use a "tee" here so that errors qre written both immediately (to see progress)
+# I use a "tee" here so that errors are written both immediately (to see progress)
 # and on a file (for later report)
 
 do_plumedcheck=true
 do_cppcheck=true
 do_local=false
+#checks only files that differ from the given base revision
+do_modified=false
+#use master as baserev, but you can specify a different one with exporting PLMD_CODECHECK_REV
+#or by calling this with --base=revision
+#a revision can be a branch or a commit hash
+baserev=${PLMD_CODECHECK_REV:-master}
 
-for opt
-do
+#this simply will help by making the script works from anywhere
+basedir=$(git rev-parse --show-toplevel)
+
+for opt; do
   case $opt in
-  (--cppcheck) do_plumedcheck=false ;;
-  (--plumedcheck) do_cppcheck=false ;;
-  (--local) do_local=true ;;
+  --cppcheck) do_plumedcheck=false ;;
+  --plumedcheck) do_cppcheck=false ;;
+  --local) do_local=true ;;
+  --modified-only) do_modified=true ;;
+  --base=*)
+    do_modified=true
+    baserev=${opt#*=}
+    ;;
   esac
 done
 
+if [[ $do_modified = true ]]; then
+  # getting the modified files
+  # and making the list working from anywhere
+  files=$(
+    git diff-index --diff-filter=ACMR "$baserev" |
+      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}
+           /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
+  )
+elif [ $do_local == true ]; then
+  files="$(ls ./*.{h,cpp})"
+else
+  files="$(ls ./*/*.{h,cpp})"
+fi
+
 {
 
-if [ $do_plumedcheck == true ] ; then
-  if [ $do_local == true ] ; then
-    ../maketools/plumedcheck $(ls -1 *.{h,cpp}) ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
-  else
-    maketools/plumedcheck --global-check $(ls -1 */*.{h,cpp}) ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
-  fi
-fi
+  if [ $do_plumedcheck == true ]; then
+    extra=()
 
-if [ $do_cppcheck == true ] ; then
-  if [ $do_local == true ] ; then
-    files="$(echo *.{h,cpp})"
-  else
-    files="$(echo */*.{h,cpp})"
+    if [[ $do_modified = false ]]; then
+      extra[${#extra[@]}]="${basedir}/configure.ac"
+    fi
+    if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+      extra[${#extra[@]}]=--global-check
+    fi
+    # shellcheck disable=SC2086
+    "${basedir}/src/maketools/plumedcheck" \
+      --astyle="${basedir}/astyle/astyle" \
+      --astyle-options="${basedir}/.astyle.options" \
+      "${extra[@]}" $files
   fi
-  cppcheck --std=c++11 -j 4 --platform=unix64 --language=c++ \
-  -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
-  -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
-  -U__PLUMED_HAS_ASMJIT \
-  -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
-  $files
-fi
+
+  if [ $do_cppcheck == true ]; then
+    # we discard configurations introduced in small_vector because they are many and
+    # get included in many files
+    # shellcheck disable=SC2086
+    cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
+      -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
+      -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
+      -U__PLUMED_HAS_ASMJIT \
+      -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
+      --config-exclude=small_vector/ \
+      --template='[{file}:{line}] ({severity}) :{id}: {message}' \
+      --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
+      $files
+    #You coud add -I ${basedir}/src/ but that will not check if the correct
+    # requisite modules are set in the module configuration file
+  fi
 
 } 2> >(tee codecheck.log >&2)
 
@@ -62,49 +101,56 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile" 
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile"
 echo "  since they are full of false positives"
-cat codecheck.log |
- gawk '{
+
+#the regexes like this avoid false positives for eventual composite names
+# "(.*/|)"" means anithing that ends in "/" or nothing, so:
+# - "[someblas/" do not check
+# - "[./someblas/" do not check
+# - "[blas"/ checks
+# - "[./blas"/ checks
+# - "[/path/to/blas"/ checks
+
+gawk '{
   if(match($0,":plmd_")){
 # with plumed we only exclude specific warnings from lapack and blas
-    if(match($0,"[[]lapack/")) next;
-    if(match($0,"[[]blas/")) next;
-    if(match($0,"[[]molfile/")) next;
-    if(match($0,"[[]lepton/")) next;
-    if(match($0,"[[]asmjit/")) next;
-    if(match($0,"[[]xdrfile/")) next;
+    if(match($0,"[[](.*/|)lapack/")) next;
+    if(match($0,"[[](.*/|)blas/")) next;
+    if(match($0,"[[](.*/|)molfile/")) next;
+    if(match($0,"[[](.*/|)lepton/")) next;
+    if(match($0,"[[](.*/|)asmjit/")) next;
+    if(match($0,"[[](.*/|)xdrfile/")) next;
   } else {
 # with cppcheck we exclude molfile lapack and blas
-    if(match($0,"[[]molfile/")) next;
-    if(match($0,"[[]lapack/")) next;
-    if(match($0,"[[]blas/")) next;
-    if(match($0,"[[]lepton/")) next;
-    if(match($0,"[[]asmjit/")) next;
-    if(match($0,"[[]xdrfile/")) next;
+    if(match($0,"[[](.*/|)molfile/")) next;
+    if(match($0,"[[](.*/|)lapack/")) next;
+    if(match($0,"[[](.*/|)blas//")) next;
+    if(match($0,"[[](.*/|)lepton/")) next;
+    if(match($0,"[[](.*/|)asmjit/")) next;
+    if(match($0,"[[](.*/|)xdrfile/")) next;
   }
   print
-}' > "${CLEAN_FILE}"
+}' <codecheck.log >"${CLEAN_FILE}"
 
 ## Here I make a summary of the (style) and (information) messages
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  Summary of reported (style) and (information) messages"
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-awk '{if($2=="(style)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
-awk '{if($2=="(information)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
+awk '{if($2=="(style)")print $3}' "${CLEAN_FILE}" | sort | uniq -c || true
+awk '{if($2=="(information)")print $3}' "${CLEAN_FILE}" | sort | uniq -c || true
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 ## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" > "${FATAL_FILE}" || true
-count=$(cat "${FATAL_FILE}" | wc -l)
-echo 
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" >"${FATAL_FILE}" || true
+count=$(wc -l <"${FATAL_FILE}")
+echo
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-if ((count==0))
-then
+if ((count == 0)); then
   echo "      codecheck did not find any fatal error"
   echo "      excluding (style) and (information)"
-echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   exit 0
 fi
 
@@ -117,4 +163,3 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo
 
 exit 1
-
