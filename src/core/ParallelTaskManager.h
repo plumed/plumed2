@@ -35,12 +35,15 @@ public:
   bool noderiv;
   const Pbc& pbc;
   unsigned mode;
-  unsigned task_index;
+/// The number of components the underlying action is computing
+  unsigned ncomponents;
+//// The number of indexes that you use per task
+  unsigned nindices_per_task;
 /// This holds indices for creating derivatives
   std::vector<std::size_t> indices;
 /// This holds all the input data that is required to calculate all values for all tasks
   std::vector<double> inputdata;
-  ParallelActionsInput( const Pbc& box ) : usepbc(false), noderiv(false), pbc(box), mode(0), task_index(0) {}
+  ParallelActionsInput( const Pbc& box ) : usepbc(false), noderiv(false), pbc(box), mode(0), ncomponents(0), nindices_per_task(0) {}
 };
 
 template <class T>
@@ -52,26 +55,20 @@ private:
   Communicator& comm;
 /// Is this an action with matrix
   bool ismatrix;
-/// The buffer that we use (we keep a copy here to avoid resizing)
-  std::vector<double> buffer;
-/// A tempory vector of MultiValue so we can avoid doing lots of resizes
-  std::vector<MultiValue> myvals;
+/// This holds the values before we pass them to the value
+  Matrix<double> value_mat;
 /// An action to hold data that we pass to and from the static function
   ParallelActionsInput myinput;
 public:
   ParallelTaskManager(ActionWithVector* av);
 /// Setup an array to hold all the indices that are used for derivatives
-  void setupIndexList( const std::vector<std::size_t>& ind );
+  void setupIndexList( const std::size_t& nind, const std::vector<std::size_t>& ind );
 /// Set the mode for the calculation
   void setMode( const unsigned val );
 /// Set the value of the pbc flag
   void setPbcFlag( const bool val );
 /// This runs all the tasks
   void runAllTasks( const unsigned& natoms=0 );
-/// This runs each of the tasks
-  static void runTask( const ParallelActionsInput& locinp, MultiValue& myvals );
-/// Transfer the data to the Value
-  void transferToValue( const unsigned& task_index, const MultiValue& myvals ) const ;
 };
 
 template <class T>
@@ -96,87 +93,59 @@ void ParallelTaskManager<T>::setPbcFlag( const bool val ) {
 }
 
 template <class T>
-void ParallelTaskManager<T>::setupIndexList( const std::vector<std::size_t>& ind ) {
+void ParallelTaskManager<T>::setupIndexList( const std::size_t& nind, const std::vector<std::size_t>& ind ) {
+  plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
+  std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
+  for(unsigned i=1; i<action->getNumberOfComponents(); ++i) plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
+  myinput.ncomponents = action->getNumberOfComponents();
+  value_mat.resize( valuesize, action->getNumberOfComponents() ); myinput.nindices_per_task = nind;
   myinput.indices.resize( ind.size() ); for(unsigned i=0; i<ind.size(); ++i) myinput.indices[i] = ind[i];
 }
 
 template <class T>
 void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(action->runInSerial()) { stride=1; rank=0; }
-
-  // Clear matrix bookeeping arrays
-  // if( ismatrix && stride>1 ) clearMatrixBookeeping();
-
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
   unsigned nactive_tasks=partialTaskList.size();
-
-  // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-  if( nt==0 ) nt=1;
-  if( myvals.size()!=nt ) myvals.resize(nt);
-
-  // Get the total number of streamed quantities that we need
-  // Get size for buffer
-  unsigned bufsize=0, nderivatives = 0; bool gridsInStream=false;
-  if( buffer.size()!=bufsize ) buffer.resize( bufsize );
-  // Clear buffer
-  buffer.assign( buffer.size(), 0.0 );
+  // Clear the value matrix
+  value_mat = 0;
 
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
   action->getInputData( myinput.inputdata );
 
-  // Check if this is an actionWithMatrix object
-  const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(action);
-  bool ismatrix=false; if(am) ismatrix=true;
+#ifdef __PLUMED_HAS_OPENACC
+
+#else
+  // Get the MPI details
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(action->runInSerial()) { stride=1; rank=0; }
+
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 ) nt=1;
 
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<double> omp_buffer;
-    const unsigned t=OpenMP::getThreadNum();
-    if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    if( myvals[t].getNumberOfValues()!=action->getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives || myvals[t].getAtomVector().size()!=natoms ) {
-      myvals[t].resize( action->getNumberOfComponents(), nderivatives, natoms );
-    }
-    myvals[t].clearAll();
-
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      myinput.task_index = partialTaskList[i];
-      runTask( myinput, myvals[t] );
+      const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
 
       // Transfer the data to the values
-      if( !ismatrix ) transferToValue( partialTaskList[i], myvals[t] );
-
-      // Clear the value
-      myvals[t].clearAll();
+      T::transferToValue( partialTaskList[i], values, value_mat );
     }
-    #pragma omp critical
-    if( nt>1 ) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
   }
   // MPI Gather everything
-  if( !action->runInSerial() ) {
-    if( buffer.size()>0 ) comm.Sum( buffer );
-    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) (action->copyOutput(i))->MPIGatherTasks( !ismatrix, comm );
-  }
-}
+  if( !action->runInSerial() ) comm.Sum( value_mat );
+#endif
 
-template <class T>
-void ParallelTaskManager<T>::runTask( const ParallelActionsInput& locinp, MultiValue& myvals ) {
-  myvals.setTaskIndex(locinp.task_index); T::performTask( locinp, myvals );
-}
-
-template <class T>
-void ParallelTaskManager<T>::transferToValue( const unsigned& task_index, const MultiValue& myvals ) const {
+  // And transfer the value to the output values
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    const Value* myval = action->getConstPntrToComponent(i);
-    if( myval->hasDerivatives() || (action->getName()=="RMSD_VECTOR" && myval->getRank()==2) ) continue;
-    Value* myv = const_cast<Value*>( myval ); myv->set( task_index, myvals.get( i ) );
+    Value* myval = action->copyOutput(i);
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) myval->set( j, value_mat[j][i] );
   }
 }
 

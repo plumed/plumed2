@@ -206,9 +206,6 @@ public:
   void setConstant();
 /// Check if forces have been added on this value
   bool forcesWereAdded() const ;
-/// This gets all the elements for a vector/matrix if the vector/matrix has been calculated
-/// over a number of MPI processes
-  void MPIGatherTasks( const bool notmatrix, Communicator& comm );
 /// Set a bool that tells us if the derivative is zero when the value is zero true
   void setDerivativeIsZeroWhenValueIsZero();
 /// Return a bool that tells us if the derivative is zero when the value is zero

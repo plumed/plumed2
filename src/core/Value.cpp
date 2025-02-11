@@ -257,11 +257,6 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   return data[ival];
 }
 
-void Value::MPIGatherTasks( const bool notmatrix, Communicator& comm ) {
-  if( hasDeriv ) return ;
-  comm.Sum( data ); if( !notmatrix && shape.size()==2 && ncols<shape[1] ) comm.Sum( matrix_bookeeping );
-}
-
 void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
   hasForce=true;
   if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
