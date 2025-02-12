@@ -53,20 +53,20 @@ private:
   bool usepbc;
 /// Do we reassemble the molecule
   bool wholemolecules;
-/// Blocks of atom numbers
-  std::vector< std::vector<unsigned> > ablocks;
+/// The number of atoms per task
+  unsigned natoms_per_task;
 public:
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
-  unsigned getNumberOfAtomsPerTask() const override ;
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned&, MultiValue& ) const override ;
+  void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static std::pair<std::vector<double>,Matrix<double> > performTask( const unsigned& task_index, const ParallelActionsInput& input );
-  static void performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals );
+  static void gatherForces( const unsigned& task_index, const ParallelActionsInput& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
   static void transferToValue( const unsigned& task_index, const std::vector<double>& values, Matrix<double>& value_mat );
 };
 
@@ -93,22 +93,19 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   std::vector<AtomNumber> all_atoms;
   if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) parseAtomList( "ATOMS", all_atoms );
   if( all_atoms.size()>0 ) {
-    ablocks.resize(1); ablocks[0].resize( all_atoms.size() );
-    for(unsigned i=0; i<all_atoms.size(); ++i) ablocks[0][i] = i;
+    natoms_per_task=1;
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
       T::parseAtomList( i, t, this );
       if( t.empty() ) break;
 
-      if( i==1 ) { ablocks.resize(t.size()); }
-      if( t.size()!=ablocks.size() ) {
+      if( i==1 ) { natoms_per_task=t.size(); }
+      if( t.size()!=natoms_per_task ) {
         std::string ss; Tools::convert(i,ss);
         error("ATOMS" + ss + " keyword has the wrong number of atoms");
       }
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
-      }
+      for(unsigned j=0; j<natoms_per_task; ++j) all_atoms.push_back( t[j] );
       t.resize(0);
     }
   }
@@ -128,12 +125,8 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // Setup the values
   mode = T::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
-  std::vector<std::size_t> ind( ablocks.size()*ablocks[0].size() );
-  for(unsigned i=0; i<ablocks[0].size(); ++i) {
-    for(unsigned j=0; j<ablocks.size(); ++j) ind[i*ablocks.size() + j] = ablocks[j][i];
-  }
   // Sets up the index list in the task manager
-  taskmanager.setupIndexList( ablocks.size(), ind );
+  taskmanager.setNumberOfIndicesPerTask( natoms_per_task );
   taskmanager.setPbcFlag( usepbc );
   taskmanager.setMode( mode );
 }
@@ -146,57 +139,41 @@ unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
 template <class T>
 void MultiColvarTemplate<T>::calculate() {
   if( wholemolecules ) makeWhole();
-  setForwardPass(true);
-  taskmanager.runAllTasks( ablocks.size() );
-  setForwardPass(false);
+  taskmanager.runAllTasks();
+}
+
+template <class T>
+void MultiColvarTemplate<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addValue( s );
+  std::vector<unsigned> s(1); s[0]=getNumberOfAtoms() / natoms_per_task; addValue( s );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addComponent( name, s );
-}
-
-template <class T>
-unsigned MultiColvarTemplate<T>::getNumberOfAtomsPerTask() const {
-  return ablocks.size();
+  std::vector<unsigned> s(1); s[0]=getNumberOfAtoms() / natoms_per_task; addComponent( name, s );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
-  unsigned ntasks = ablocks[0].size(); std::size_t k=0;
-  if( inputdata.size()!=5*ablocks.size()*ntasks ) inputdata.resize( 5*ablocks.size()*ntasks );
+  unsigned ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  if( inputdata.size()!=5*natoms_per_task*ntasks ) inputdata.resize( 5*natoms_per_task*ntasks );
+
+  std::size_t k=0;
   for(unsigned i=0; i<ntasks; ++i) {
-    for(unsigned j=0; j<ablocks.size(); ++j) {
-      Vector mypos( getPosition( ablocks[j][i] ) );
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      Vector mypos( getPosition( natoms_per_task*i + j ) );
       inputdata[k] = mypos[0];
       inputdata[k+1] = mypos[1];
       inputdata[k+2] = mypos[2];
-      inputdata[k+3] = getMass( ablocks[j][i] );
-      inputdata[k+4] = getCharge( ablocks[j][i] );
+      inputdata[k+3] = getMass( natoms_per_task*i + j );
+      inputdata[k+4] = getCharge( natoms_per_task*i + j );
       k+=5;
     }
   }
-}
-
-template <class T>
-void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  // Retrieve the positions
-  std::vector<double> & mass( myvals.getTemporyVector(0) );
-  std::vector<double> & charge( myvals.getTemporyVector(1) );
-  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    fpositions[i] = getPosition( ablocks[i][task_index] );
-    mass[i]=getMass( ablocks[i][task_index] );
-    charge[i]=getCharge( ablocks[i][task_index] );
-  }
-  std::vector<std::size_t> der_indices( ablocks.size() );
-  for(unsigned i=0; i<der_indices.size(); ++i) der_indices[i] = ablocks[i][task_index];
-  performTask( mode, der_indices, doNotCalculateDerivatives(), usepbc, getPbc(), myvals );
 }
 
 template <class T>
@@ -222,75 +199,48 @@ std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTa
       }
     }
   } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),fpositions[0]);
+
   std::vector<double> values( input.ncomponents );
   std::vector<Tensor> virial( input.ncomponents );
   Matrix<Vector> derivs( values.size(), fpositions.size() );
   Matrix<double> derivatives( values.size(), 3*fpositions.size() + 9 );
   T::calculateCV( ColvarInput( input.mode, fpositions, mass, charge, input.pbc ), values, derivs, virial );
   if( input.noderiv ) return {values, derivatives};
-}
 
-template <class T>
-void MultiColvarTemplate<T>::performTask( const unsigned& m, const std::vector<std::size_t>& der_indices, const bool noderiv, const bool haspbc, const Pbc& pbc, MultiValue& myvals ) {
-  // Retrieve the inputs
-  std::vector<double> & mass( myvals.getTemporyVector(0) );
-  std::vector<double> & charge( myvals.getTemporyVector(1) );
-  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  // If we are using pbc make whole
-  if( haspbc ) {
-    if( fpositions.size()==1 ) {
-      fpositions[0]=pbc.distance(Vector(0.0,0.0,0.0),fpositions[0]);
-    } else {
-      for(unsigned j=0; j<fpositions.size()-1; ++j) {
-        const Vector & first (fpositions[j]); Vector & second (fpositions[j+1]);
-        second=first+pbc.distance(first,second);
-      }
+  for(unsigned i=0; i<values.size(); ++i) {
+    unsigned k=0;
+    for(unsigned j=0; j<fpositions.size(); ++j) {
+      derivatives[i][k] = derivs[i][j][0]; k++;
+      derivatives[i][k] = derivs[i][j][1]; k++;
+      derivatives[i][k] = derivs[i][j][2]; k++;
     }
-  } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),fpositions[0]);
-  // Make some space to store various things
-  std::vector<double> values( myvals.getNumberOfValues() );
-  std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
-  Matrix<Vector> derivs( values.size(), fpositions.size() );
-  // Calculate the CVs using the method in the Colvar
-  T::calculateCV( ColvarInput(m, fpositions, mass, charge, pbc ), values, derivs, virial );
-  for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
-  // Finish if there are no derivatives
-  if( noderiv ) return;
-
-  // Now transfer the derivatives to the underlying MultiValue
-  for(unsigned i=0; i<der_indices.size(); ++i) {
-    unsigned base=3*der_indices[i];
-    for(int j=0; j<values.size(); ++j) {
-      myvals.addDerivative( j, base + 0, derivs[j][i][0] );
-      myvals.addDerivative( j, base + 1, derivs[j][i][1] );
-      myvals.addDerivative( j, base + 2, derivs[j][i][2] );
-    }
-    // Check for duplicated indices during update to avoid double counting
-    bool newi=true;
-    for(unsigned j=0; j<i; ++j) {
-      if( der_indices[j]==der_indices[i] ) { newi=false; break; }
-    }
-    if( !newi ) continue;
-    for(int j=0; j<values.size(); ++j) {
-      myvals.updateIndex( j, base );
-      myvals.updateIndex( j, base + 1 );
-      myvals.updateIndex( j, base + 2 );
+    for(unsigned j=0; j<3; ++j) {
+      for(unsigned n=0; n<3; ++n) { derivatives[i][k] = virial[i][j][n]; k++; }
     }
   }
-  unsigned nvir=myvals.getNumberOfDerivatives() - 9;
-  for(int j=0; j<values.size(); ++j) {
-    for(unsigned i=0; i<3; ++i) {
-      for(unsigned k=0; k<3; ++k) {
-        myvals.addDerivative( j, nvir + 3*i + k, virial[j][i][k] );
-        myvals.updateIndex( j, nvir + 3*i + k );
-      }
-    }
-  }
+  return {values, derivatives};
 }
 
 template <class T>
 void MultiColvarTemplate<T>::transferToValue( const unsigned& task_index, const std::vector<double>& values, Matrix<double>& value_mat ) {
   for(unsigned i=0; i<values.size(); ++i) value_mat[task_index][i] = values[i];
+}
+
+template <class T>
+void MultiColvarTemplate<T>::gatherForces( const unsigned& task_index, const ParallelActionsInput& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
+  std::size_t base = 3*task_index*input.nindices_per_task;
+  for(unsigned i=0; i<force_in.ncols(); ++i) {
+    unsigned m = 0; double ff = force_in[task_index][i];
+    for(unsigned j=0; j<input.nindices_per_task; ++j) {
+      force_out[base + m] += ff*derivs[i][m]; m++;
+      force_out[base + m] += ff*derivs[i][m]; m++;
+      force_out[base + m] += ff*derivs[i][m]; m++;
+    }
+    unsigned n = force_out.size() - 9;
+    for(unsigned j=0; j<3; ++j) {
+      for(unsigned k=0; k<3; ++k) { force_out[n] += ff*derivs[i][m]; n++; m++; }
+    }
+  }
 }
 
 }

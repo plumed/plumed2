@@ -59,8 +59,6 @@ private:
   void gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const ;
 /// Get the number of stored values in the stream
   bool getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat );
-/// Check the chain for non scalar forces
-  bool checkChainForNonScalarForces() const ;
 protected:
 /// Turn off the flag that says this action has a masked input
   void ignoreMaskArguments();
@@ -120,6 +118,8 @@ public:
   virtual void getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const ;
 /// Apply the forces on this data
   virtual void apply();
+/// Apply the forces on non-zero rank objects
+  virtual void applyNonZeroRankForces( std::vector<double>& outforces );
 };
 
 inline

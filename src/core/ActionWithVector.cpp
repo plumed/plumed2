@@ -327,13 +327,6 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
   }
 }
 
-bool ActionWithVector::checkChainForNonScalarForces() const {
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->forcesWereAdded() ) return true;
-  }
-  return false;
-}
-
 void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const {
   nforces=0; unsigned nargs = getNumberOfArguments(); int nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) nargs = nargs - nmasks;
@@ -348,18 +341,24 @@ bool ActionWithVector::checkForForces() {
   if( getPntrToComponent(0)->getRank()==0 ) return ActionWithValue::checkForForces();
 
   // Check if there are any forces
-  if( !checkChainForNonScalarForces() ) return false;
+  bool hasforce=false;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->forcesWereAdded() ) { hasforce=true; break; }
+  }
+  if( !hasforce ) return false;
+  applyNonZeroRankForces( forcesForApply );
+  return true;
+}
 
+void ActionWithVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Setup MPI parallel loop
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
   // Get the number of tasks
-  std::vector<unsigned> force_tasks; std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-  for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
-  unsigned nf_tasks=force_tasks.size();
-  if( nf_tasks==0 ) return false;
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+  unsigned nf_tasks = partialTaskList.size();
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
@@ -368,40 +367,36 @@ bool ActionWithVector::checkForForces() {
   if( myvals.size()!=nt ) myvals.resize(nt);
   if( omp_forces.size()!=nt ) omp_forces.resize(nt);
 
-  // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned nderiv, nforces; getNumberOfForceDerivatives( nforces, nderiv );
-  if( forcesForApply.size()!=nforces ) forcesForApply.resize( nforces );
   // Clear force buffer
-  forcesForApply.assign( forcesForApply.size(), 0.0 );
+  outforces.assign( outforces.size(), 0.0 );
 
   #pragma omp parallel num_threads(nt)
   {
     const unsigned t=OpenMP::getThreadNum();
     if( nt>1 ) {
-      if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
-      else omp_forces[t].assign( forcesForApply.size(), 0.0 );
+      if( omp_forces[t].size()!=outforces.size() ) omp_forces[t].resize( outforces.size(), 0.0 );
+      else omp_forces[t].assign( outforces.size(), 0.0 );
     }
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderiv || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
-      myvals[t].resize( getNumberOfComponents(), nderiv, getNumberOfAtomsPerTask() );
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=outforces.size() || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
+      myvals[t].resize( getNumberOfComponents(), outforces.size(), getNumberOfAtomsPerTask() );
     }
     myvals[t].clearAll();
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nf_tasks; i+=stride) {
-      runTask( force_tasks[i], myvals[t] );
+      runTask( partialTaskList[i], myvals[t] );
 
       // Now get the forces
-      if( nt>1 ) gatherForces( force_tasks[i], myvals[t], omp_forces[t] );
-      else gatherForces( force_tasks[i], myvals[t], forcesForApply );
+      if( nt>1 ) gatherForces( partialTaskList[i], myvals[t], omp_forces[t] );
+      else gatherForces( partialTaskList[i], myvals[t], outforces );
 
       myvals[t].clearAll();
     }
     #pragma omp critical
-    if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[t][i];
+    if(nt>1) for(unsigned i=0; i<outforces.size(); ++i) outforces[i]+=omp_forces[t][i];
   }
   // MPI Gather on forces
-  if( !serial ) comm.Sum( forcesForApply );
-  return true;
+  if( !serial ) comm.Sum( outforces );
 }
 
 bool ActionWithVector::checkComponentsForForce() const {
@@ -434,6 +429,9 @@ void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& my
 }
 
 void ActionWithVector::apply() {
+  unsigned nf, nder; getNumberOfForceDerivatives( nf, nder );
+  if( forcesForApply.size()!=nf ) forcesForApply.resize( nf );
+
   if( !checkForForces() ) return;
   // Find the top of the chain and add forces
   unsigned ind=0; addForcesOnArguments( 0, forcesForApply, ind ); setForcesOnAtoms( forcesForApply, ind );
