@@ -243,7 +243,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   }
   for(unsigned i=0; i<arg.size(); ++i) {
     if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) {
-      readact->warning("documentation for input type is not provided in " + readact->getName() );
+      readact->error("documentation for input type is not provided in " + readact->getName() );
     }
   }
 }

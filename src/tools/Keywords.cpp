@@ -1054,43 +1054,25 @@ std::vector<std::string> Keywords::getArgumentKeys() const {
 }
 
 bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
-  std::map <std::string,bool> arguments;
+  bool allArgumentsAreCorrect = true;
   for(auto const& kw : getArgumentKeys() ) {
     const auto & at = std::get<argType>(keywords.at(kw).argument_type);
-    arguments[kw] = false;
+    bool kwIsCorrect = false;
     if( rank==0  && valid(at | argType::scalar)) {
-      arguments[kw] = true;
+      kwIsCorrect = true;
     }
     if( hasderiv && valid(at | argType::grid)) {
-      arguments[kw] = true;
+      kwIsCorrect = true;
     }
     if( rank==1  && valid(at | argType::vector)) {
-      arguments[kw] = true;
+      kwIsCorrect = true;
     }
     if( rank==2  && valid(at | argType::matrix)) {
-      arguments[kw] = true;
+      kwIsCorrect = true;
     }
+    allArgumentsAreCorrect &= kwIsCorrect;
   }
-  if(std::all_of(arguments.begin(), arguments.end(),
-  [](auto const& arg) {
-  return arg.second;
-})) {
-    return true;
-  }
-  ///@todo this plumed_merror breaks the check that is in the only place that
-  ///calls this function (at the end of ActionWithArguments::interpretArgumentList)
-  std::string errorMessage = "WARNING: type for the following arguments has not been specified\n"
-                             "or dimensions are not compatible with rank "+std::to_string(rank)
-                             +" and the "+ ((hasderiv)?"presence":"absence") +" of the derivative \n";
-  for (auto const& arg : arguments) {
-    if (!arg.second) {
-      errorMessage += arg.first +
-                      " ("+toString(std::get<argType>(keywords.at(arg.first).argument_type))+")" +"\n";
-    }
-  }
-  //the merror makes the return never executed!!!
-  plumed_merror(errorMessage);
-  return false;
+  return allArgumentsAreCorrect;
 }
 
 std::string Keywords::getArgumentType( const std::string& name ) const {
