@@ -115,7 +115,17 @@ void ParallelTaskManager<T>::runAllTasks( const unsigned& natoms ) {
   action->getInputData( myinput.inputdata );
 
 #ifdef __PLUMED_HAS_OPENACC
+#pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copy(value_mat)
+  {
+#pragma acc parallel loop
+    for(unsigned i=0; i<nactive_tasks; ++i) {
+      // Calculate the stuff in the loop for this action
+      const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
 
+      // Transfer the data to the values
+      T::transferToValue( partialTaskList[i], values, value_mat );
+    }
+  }
 #else
   // Get the MPI details
   unsigned stride=comm.Get_size();
