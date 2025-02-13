@@ -29,22 +29,26 @@
 
 namespace PLMD {
 
+template <class D>
 class ParallelActionsInput {
 public:
-  bool usepbc;
+/// Do we need to calculate the derivatives
   bool noderiv;
+/// Periodic boundary conditions
   const Pbc& pbc;
-  unsigned mode;
 /// The number of components the underlying action is computing
   unsigned ncomponents;
 //// The number of indexes that you use per task
   unsigned nindices_per_task;
 /// This holds all the input data that is required to calculate all values for all tasks
   std::vector<double> inputdata;
-  ParallelActionsInput( const Pbc& box ) : usepbc(false), noderiv(false), pbc(box), mode(0), ncomponents(0), nindices_per_task(0) {}
+/// This holds data for that the underlying action needs to do the calculation
+  D actiondata;
+/// Default constructor
+  ParallelActionsInput( const Pbc& box ) : noderiv(false), pbc(box), ncomponents(0), nindices_per_task(0) {}
 };
 
-template <class T>
+template <class T, class D>
 class ParallelTaskManager {
 private:
 /// The underlying action for which we are managing parallel tasks
@@ -58,23 +62,21 @@ private:
 /// A tempory set of vectors for holding forces over threads
   std::vector<std::vector<double> > omp_forces;
 /// An action to hold data that we pass to and from the static function
-  ParallelActionsInput myinput;
+  ParallelActionsInput<D> myinput;
 public:
   ParallelTaskManager(ActionWithVector* av);
 /// Setup an array to hold all the indices that are used for derivatives
   void setNumberOfIndicesPerTask( const std::size_t& nind );
-/// Set the mode for the calculation
-  void setMode( const unsigned val );
-/// Set the value of the pbc flag
-  void setPbcFlag( const bool val );
+/// Copy the data from the underlying colvar into this parallel action
+  void setActionInput( const D& adata );
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
   void applyForces( std::vector<double>& forcesForApply );
 };
 
-template <class T>
-ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
+template <class T, class D>
+ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
   ismatrix(false),
@@ -84,18 +86,8 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   if(am) ismatrix=true;
 }
 
-template <class T>
-void ParallelTaskManager<T>::setMode( const unsigned val ) {
-  myinput.mode = val;
-}
-
-template <class T>
-void ParallelTaskManager<T>::setPbcFlag( const bool val ) {
-  myinput.usepbc = val;
-}
-
-template <class T>
-void ParallelTaskManager<T>::setNumberOfIndicesPerTask( const std::size_t& nind ) {
+template <class T, class D>
+void ParallelTaskManager<T, D>::setNumberOfIndicesPerTask( const std::size_t& nind ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
   for(unsigned i=1; i<action->getNumberOfComponents(); ++i) plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
@@ -103,8 +95,13 @@ void ParallelTaskManager<T>::setNumberOfIndicesPerTask( const std::size_t& nind 
   value_mat.resize( valuesize, action->getNumberOfComponents() ); myinput.nindices_per_task = nind;
 }
 
-template <class T>
-void ParallelTaskManager<T>::runAllTasks() {
+template <class T, class D>
+void ParallelTaskManager<T, D>::setActionInput( const D& adata ) {
+  myinput.actiondata=adata;
+}
+
+template <class T, class D>
+void ParallelTaskManager<T, D>::runAllTasks() {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
   unsigned nactive_tasks=partialTaskList.size();
@@ -160,8 +157,8 @@ void ParallelTaskManager<T>::runAllTasks() {
   }
 }
 
-template <class T>
-void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
+template <class T, class D>
+void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
   unsigned nactive_tasks=partialTaskList.size();

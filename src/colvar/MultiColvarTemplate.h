@@ -31,6 +31,15 @@ class Colvar;
 
 namespace colvar {
 
+class MultiColvarInput {
+public:
+  bool usepbc;
+  unsigned mode;
+  MultiColvarInput() : usepbc(false), mode(0)  {}
+  MultiColvarInput( const bool& u, const unsigned& m ) : usepbc(u), mode(m) {}
+  MultiColvarInput& operator=( const MultiColvarInput& m ) { usepbc = m.usepbc; mode = m.mode; return *this; }
+};
+
 class ColvarInput {
 public:
   unsigned mode;
@@ -46,7 +55,7 @@ template <class T>
 class MultiColvarTemplate : public ActionWithVector {
 private:
 /// The parallel task manager
-  ParallelTaskManager<MultiColvarTemplate<T> > taskmanager;
+  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput> taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
@@ -65,8 +74,8 @@ public:
   void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static std::pair<std::vector<double>,Matrix<double> > performTask( const unsigned& task_index, const ParallelActionsInput& input );
-  static void gatherForces( const unsigned& task_index, const ParallelActionsInput& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
+  static std::pair<std::vector<double>,Matrix<double> > performTask( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input );
+  static void gatherForces( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
   static void transferToValue( const unsigned& task_index, const std::vector<double>& values, Matrix<double>& value_mat );
 };
 
@@ -127,8 +136,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
   taskmanager.setNumberOfIndicesPerTask( natoms_per_task );
-  taskmanager.setPbcFlag( usepbc );
-  taskmanager.setMode( mode );
+  taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) ); 
 }
 
 template <class T>
@@ -177,7 +185,7 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTask( const unsigned& task_index, const ParallelActionsInput& input ) {
+std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTask( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input ) {
   std::vector<double> mass( input.nindices_per_task );
   std::vector<double> charge( input.nindices_per_task );
   std::vector<Vector> fpositions( input.nindices_per_task );
@@ -189,7 +197,7 @@ std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTa
     mass[i] = input.inputdata[base + 3];
     charge[i] = input.inputdata[base + 4];
   }
-  if( input.usepbc ) {
+  if( input.actiondata.usepbc ) {
     if( fpositions.size()==1 ) {
       fpositions[0]=input.pbc.distance(Vector(0.0,0.0,0.0),fpositions[0]);
     } else {
@@ -204,7 +212,7 @@ std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTa
   std::vector<Tensor> virial( input.ncomponents );
   Matrix<Vector> derivs( values.size(), fpositions.size() );
   Matrix<double> derivatives( values.size(), 3*fpositions.size() + 9 );
-  T::calculateCV( ColvarInput( input.mode, fpositions, mass, charge, input.pbc ), values, derivs, virial );
+  T::calculateCV( ColvarInput( input.actiondata.mode, fpositions, mass, charge, input.pbc ), values, derivs, virial );
   if( input.noderiv ) return {values, derivatives};
 
   for(unsigned i=0; i<values.size(); ++i) {
@@ -227,7 +235,7 @@ void MultiColvarTemplate<T>::transferToValue( const unsigned& task_index, const 
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( const unsigned& task_index, const ParallelActionsInput& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
+void MultiColvarTemplate<T>::gatherForces( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<force_in.ncols(); ++i) {
     unsigned m = 0; double ff = force_in[task_index][i];
