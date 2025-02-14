@@ -128,7 +128,7 @@ void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const s
 template <class T, class D>
 void ParallelTaskManager<T, D>::setNumberOfThreadedForces( std::size_t nt ) {
   nthreaded_forces = nt; unsigned t=OpenMP::getNumThreads(); if( useacc ) t = 1;
-  omp_forces.resize(t); for(unsigned i=0; i<t; ++i) omp_forces.resize(nt); 
+  omp_forces.resize(t); for(unsigned i=0; i<t; ++i) omp_forces.resize(nt);
 }
 
 template <class T, class D>
@@ -216,7 +216,7 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
 
   if( useacc ) {
 #ifdef __PLUMED_HAS_OPENACC
-    omp_forces[0].assign( omp_forces[0].size(), 0.0 ); 
+    omp_forces[0].assign( omp_forces[0].size(), 0.0 );
 
 #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copyin(value_stash) copy(omp_forces[0]) copy(forcesForApply)
     {
