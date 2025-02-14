@@ -40,8 +40,7 @@ public:
   MultiColvarInput& operator=( const MultiColvarInput& m ) { usepbc = m.usepbc; mode = m.mode; return *this; }
 };
 
-class ColvarInput {
-public:
+struct ColvarInput {
   unsigned mode;
   const Pbc& pbc;
   const std::vector<Vector>& pos;
@@ -176,13 +175,12 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
   for(unsigned i=0; i<ntasks; ++i) {
     for(unsigned j=0; j<natoms_per_task; ++j) {
       Vector mypos( getPosition( natoms_per_task*i + j ) );
-      inputdata[k] = mypos[0];
-      inputdata[k+1] = mypos[1];
-      inputdata[k+2] = mypos[2];
-      inputdata[k+3] = getMass( natoms_per_task*i + j );
-      inputdata[k+4] = getCharge( natoms_per_task*i + j );
-      k+=5;
+      inputdata[k] = mypos[0]; k++;
+      inputdata[k] = mypos[1]; k++;
+      inputdata[k] = mypos[2]; k++;
     }
+    for(unsigned j=0; j<natoms_per_task; ++j) { inputdata[k] = getMass( natoms_per_task*i + j ); k++; }
+    for(unsigned j=0; j<natoms_per_task; ++j) { inputdata[k] = getCharge( natoms_per_task*i + j ); k++; }
   }
 }
 
@@ -191,14 +189,15 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelAct
   std::vector<double> mass( input.nindices_per_task );
   std::vector<double> charge( input.nindices_per_task );
   std::vector<Vector> fpositions( input.nindices_per_task );
+  std::size_t k = 5*fpositions.size()*task_index;
   for(unsigned i=0; i<fpositions.size(); ++i) {
-    std::size_t base = 5*fpositions.size()*task_index + 5*i;
-    fpositions[i][0] = input.inputdata[base + 0];
-    fpositions[i][1] = input.inputdata[base + 1];
-    fpositions[i][2] = input.inputdata[base + 2];
-    mass[i] = input.inputdata[base + 3];
-    charge[i] = input.inputdata[base + 4];
+    fpositions[i][0] = input.inputdata[k]; k++;
+    fpositions[i][1] = input.inputdata[k]; k++;
+    fpositions[i][2] = input.inputdata[k]; k++;
   }
+  for(unsigned i=0; i<fpositions.size(); ++i) { mass[i] = input.inputdata[k]; k++; }
+  for(unsigned i=0; i<fpositions.size(); ++i) { charge[i] = input.inputdata[k]; k++; }
+
   if( input.actiondata.usepbc ) {
     if( fpositions.size()==1 ) {
       fpositions[0]=input.pbc.distance(Vector(0.0,0.0,0.0),fpositions[0]);
