@@ -74,14 +74,15 @@ public:
   void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static std::pair<std::vector<double>,Matrix<double> > performTask( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input );
-  static void gatherForces( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
-  static void transferToValue( const unsigned& task_index, const std::vector<double>& values, Matrix<double>& value_mat );
+  static std::pair<std::vector<double>,Matrix<double> > performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input );
+  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
+  static void transferToValue( unsigned task_index, const std::vector<double>& values, Matrix<double>& value_mat );
 };
 
 template <class T>
 void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
+  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput>::registerKeywords( keys );
   keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
@@ -185,7 +186,7 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTask( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input ) {
+std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input ) {
   std::vector<double> mass( input.nindices_per_task );
   std::vector<double> charge( input.nindices_per_task );
   std::vector<Vector> fpositions( input.nindices_per_task );
@@ -230,12 +231,12 @@ std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTa
 }
 
 template <class T>
-void MultiColvarTemplate<T>::transferToValue( const unsigned& task_index, const std::vector<double>& values, Matrix<double>& value_mat ) {
+void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::vector<double>& values, Matrix<double>& value_mat ) {
   for(unsigned i=0; i<values.size(); ++i) value_mat[task_index][i] = values[i];
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( const unsigned& task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<force_in.ncols(); ++i) {
     unsigned m = 0; double ff = force_in[task_index][i];
