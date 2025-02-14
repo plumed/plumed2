@@ -138,7 +138,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
   taskmanager.setNumberOfIndicesAndDerivativesPerTask( natoms_per_task, 3*natoms_per_task + 9 );
-  taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
+  taskmanager.setNumberOfThreadedForces( 9 ); taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
 }
 
 template <class T>
@@ -234,7 +234,7 @@ void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::ve
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<force_in.ncols(); ++i) {
     unsigned m = 0; double ff = force_in[task_index][i];
@@ -243,13 +243,13 @@ void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelAc
       thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
       thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
     }
-    for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; }
+    for(unsigned n=0; n<9; ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; }
   }
 }
 
 template <class T>
 void MultiColvarTemplate<T>::gatherThreads( std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
-  for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) thred_unsafe_force_out[n] += thred_safe_force_out[n];
+  unsigned k=0; for(unsigned n=thred_unsafe_force_out.size()-9; n<thred_unsafe_force_out.size(); ++n) { thred_unsafe_force_out[n] += thred_safe_force_out[k]; k++; }
 }
 
 }
