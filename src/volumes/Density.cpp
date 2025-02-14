@@ -59,7 +59,7 @@ Density::Density(const ActionOptions& ao):
   ActionShortcut(ao) {
   std::string atoms;
   parse("SPECIES",atoms);
-  warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax"); 
+  warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
   readInputLine( getShortcutLabel() + ": GROUP ATOMS=" + atoms);
 }
 
