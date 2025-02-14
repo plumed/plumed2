@@ -128,46 +128,46 @@ void ParallelTaskManager<T, D>::runAllTasks() {
   action->getInputData( myinput.inputdata );
 
   if( useacc ) {
-     std::size_t indatasize = myinput.inputdata.size();
+    std::size_t indatasize = myinput.inputdata.size();
 #ifdef __PLUMED_HAS_OPENACC
-     #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copy(myinput.inputdata[0:indatasize]) copy(value_mat)
-       {
-     #pragma acc parallel loop
-         for(unsigned i=0; i<nactive_tasks; ++i) {
-           // Calculate the stuff in the loop for this action
-           const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
-     
-           // Transfer the data to the values
-           T::transferToValue( partialTaskList[i], values, value_mat );
-         }
-       }
+#pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copy(myinput.inputdata[0:indatasize]) copy(value_mat)
+    {
+#pragma acc parallel loop
+      for(unsigned i=0; i<nactive_tasks; ++i) {
+        // Calculate the stuff in the loop for this action
+        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+
+        // Transfer the data to the values
+        T::transferToValue( partialTaskList[i], values, value_mat );
+      }
+    }
 #else
-       plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
+    plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
   } else {
-     // Get the MPI details
-     unsigned stride=comm.Get_size();
-     unsigned rank=comm.Get_rank();
-     if(action->runInSerial()) { stride=1; rank=0; }
+    // Get the MPI details
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+    if(action->runInSerial()) { stride=1; rank=0; }
 
-     // Get number of threads for OpenMP
-     unsigned nt=OpenMP::getNumThreads();
-     if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-     if( nt==0 ) nt=1;
+    // Get number of threads for OpenMP
+    unsigned nt=OpenMP::getNumThreads();
+    if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+    if( nt==0 ) nt=1;
 
-     #pragma omp parallel num_threads(nt)
-     {
-       #pragma omp for nowait
-       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-         // Calculate the stuff in the loop for this action
-         const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+    #pragma omp parallel num_threads(nt)
+    {
+      #pragma omp for nowait
+      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+        // Calculate the stuff in the loop for this action
+        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
 
-         // Transfer the data to the values
-         T::transferToValue( partialTaskList[i], values, value_mat );
-       }
-     }
-     // MPI Gather everything
-     if( !action->runInSerial() ) comm.Sum( value_mat );
+        // Transfer the data to the values
+        T::transferToValue( partialTaskList[i], values, value_mat );
+      }
+    }
+    // MPI Gather everything
+    if( !action->runInSerial() ) comm.Sum( value_mat );
   }
 
   // And transfer the value to the output values
@@ -195,52 +195,52 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
 
   if( useacc ) {
 #ifdef __PLUMED_HAS_OPENACC
-     #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copyin(value_mat) copy(forcesForApply)
-       {
-     #pragma acc parallel loop reduction(forcesForApply)
-         for(unsigned i=0; i<nactive_tasks; ++i) {
-           // Calculate the stuff in the loop for this action
-           const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
-     
-           // Gather the forces from the values
-           T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply );
-         }
-       }
+#pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copyin(value_mat) copy(forcesForApply)
+    {
+#pragma acc parallel loop reduction(forcesForApply)
+      for(unsigned i=0; i<nactive_tasks; ++i) {
+        // Calculate the stuff in the loop for this action
+        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+
+        // Gather the forces from the values
+        T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply );
+      }
+    }
 #else
-       plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
+    plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
   } else {
-     // Get the MPI details
-     unsigned stride=comm.Get_size();
-     unsigned rank=comm.Get_rank();
-     if(action->runInSerial()) { stride=1; rank=0; }
+    // Get the MPI details
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+    if(action->runInSerial()) { stride=1; rank=0; }
 
-     // Get number of threads for OpenMP
-     unsigned nt=OpenMP::getNumThreads();
-     if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-     if( nt==0 ) nt=1;
+    // Get number of threads for OpenMP
+    unsigned nt=OpenMP::getNumThreads();
+    if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+    if( nt==0 ) nt=1;
 
-     #pragma omp parallel num_threads(nt)
-     {
-       const unsigned t=OpenMP::getThreadNum();
-       if( nt>1 ) {
-         if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
-         else omp_forces[t].assign( forcesForApply.size(), 0.0 );
-       }
-       #pragma omp for nowait
-       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-         // Calculate the stuff in the loop for this action
-         const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+    #pragma omp parallel num_threads(nt)
+    {
+      const unsigned t=OpenMP::getThreadNum();
+      if( nt>1 ) {
+        if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
+        else omp_forces[t].assign( forcesForApply.size(), 0.0 );
+      }
+      #pragma omp for nowait
+      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+        // Calculate the stuff in the loop for this action
+        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
 
-         // Gather the forces from the values
-         if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, omp_forces[t], forcesForApply );
-         else T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply, forcesForApply );
-       }
-       #pragma omp critical
-       if( nt>1 ) T::gatherThreads( omp_forces[t], forcesForApply );
-     }
-     // MPI Gather everything
-     if( !action->runInSerial() ) comm.Sum( forcesForApply );
+        // Gather the forces from the values
+        if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, omp_forces[t], forcesForApply );
+        else T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply, forcesForApply );
+      }
+      #pragma omp critical
+      if( nt>1 ) T::gatherThreads( omp_forces[t], forcesForApply );
+    }
+    // MPI Gather everything
+    if( !action->runInSerial() ) comm.Sum( forcesForApply );
   }
 
 }

@@ -138,7 +138,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
   taskmanager.setNumberOfIndicesPerTask( natoms_per_task );
-  taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) ); 
+  taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
 }
 
 template <class T>
@@ -246,14 +246,14 @@ void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelAc
       thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
       thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
     }
-    for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; } 
+    for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; }
   }
 }
 
 template <class T>
 void MultiColvarTemplate<T>::gatherThreads( std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
   for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) thred_unsafe_force_out[n] += thred_safe_force_out[n];
-} 
+}
 
 }
 }
