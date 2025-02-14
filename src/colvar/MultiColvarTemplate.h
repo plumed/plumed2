@@ -74,7 +74,7 @@ public:
   void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static std::pair<std::vector<double>,Matrix<double> > performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input );
+  static void performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
   static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
   static void gatherThreads( std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
   static void transferToValue( unsigned task_index, const std::vector<double>& values, Matrix<double>& value_mat );
@@ -137,7 +137,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   mode = T::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
-  taskmanager.setNumberOfIndicesPerTask( natoms_per_task );
+  taskmanager.setNumberOfIndicesAndDerivativesPerTask( natoms_per_task, 3*natoms_per_task + 9 );
   taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
 }
 
@@ -187,7 +187,7 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input ) {
+void MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output ) {
   std::vector<double> mass( input.nindices_per_task );
   std::vector<double> charge( input.nindices_per_task );
   std::vector<Vector> fpositions( input.nindices_per_task );
@@ -210,25 +210,22 @@ std::pair<std::vector<double>,Matrix<double> > MultiColvarTemplate<T>::performTa
     }
   } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),fpositions[0]);
 
-  std::vector<double> values( input.ncomponents );
   std::vector<Tensor> virial( input.ncomponents );
-  Matrix<Vector> derivs( values.size(), fpositions.size() );
-  Matrix<double> derivatives( values.size(), 3*fpositions.size() + 9 );
-  T::calculateCV( ColvarInput( input.actiondata.mode, fpositions, mass, charge, input.pbc ), values, derivs, virial );
-  if( input.noderiv ) return {values, derivatives};
+  Matrix<Vector> derivs( input.ncomponents, fpositions.size() );
+  T::calculateCV( ColvarInput( input.actiondata.mode, fpositions, mass, charge, input.pbc ), output.values, derivs, virial );
+  if( input.noderiv ) return;
 
-  for(unsigned i=0; i<values.size(); ++i) {
+  for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned k=0;
     for(unsigned j=0; j<fpositions.size(); ++j) {
-      derivatives[i][k] = derivs[i][j][0]; k++;
-      derivatives[i][k] = derivs[i][j][1]; k++;
-      derivatives[i][k] = derivs[i][j][2]; k++;
+      output.derivatives[i][k] = derivs[i][j][0]; k++;
+      output.derivatives[i][k] = derivs[i][j][1]; k++;
+      output.derivatives[i][k] = derivs[i][j][2]; k++;
     }
     for(unsigned j=0; j<3; ++j) {
-      for(unsigned n=0; n<3; ++n) { derivatives[i][k] = virial[i][j][n]; k++; }
+      for(unsigned n=0; n<3; ++n) { output.derivatives[i][k] = virial[i][j][n]; k++; }
     }
   }
-  return {values, derivatives};
 }
 
 template <class T>

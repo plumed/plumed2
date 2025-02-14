@@ -29,6 +29,13 @@
 
 namespace PLMD {
 
+class ParallelActionsOutput {
+public:
+  std::vector<double> values;
+  Matrix<double> derivatives;
+  ParallelActionsOutput( std::size_t ncomp, std::size_t nder ) : values(ncomp), derivatives(ncomp,nder) {}
+};
+
 template <class D>
 class ParallelActionsInput {
 public:
@@ -59,6 +66,8 @@ private:
   bool ismatrix;
 /// Are we using acc for parallisation
   bool useacc;
+/// Number of derivatives for each task
+  std::size_t nderivatives_per_task;
 /// This holds the values before we pass them to the value
   Matrix<double> value_mat;
 /// A tempory set of vectors for holding forces over threads
@@ -69,7 +78,7 @@ public:
   static void registerKeywords( Keywords& keys );
   ParallelTaskManager(ActionWithVector* av);
 /// Setup an array to hold all the indices that are used for derivatives
-  void setNumberOfIndicesPerTask( const std::size_t& nind );
+  void setNumberOfIndicesAndDerivativesPerTask( const std::size_t& nind, const std::size_t& nder );
 /// Copy the data from the underlying colvar into this parallel action
   void setActionInput( const D& adata );
 /// This runs all the tasks
@@ -102,11 +111,11 @@ ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
 }
 
 template <class T, class D>
-void ParallelTaskManager<T, D>::setNumberOfIndicesPerTask( const std::size_t& nind ) {
+void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const std::size_t& nind, const std::size_t& nder ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
   for(unsigned i=1; i<action->getNumberOfComponents(); ++i) plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
-  myinput.ncomponents = action->getNumberOfComponents();
+  myinput.ncomponents = action->getNumberOfComponents(); nderivatives_per_task = nder; 
   value_mat.resize( valuesize, action->getNumberOfComponents() ); myinput.nindices_per_task = nind;
 }
 
@@ -157,13 +166,14 @@ void ParallelTaskManager<T, D>::runAllTasks() {
 
     #pragma omp parallel num_threads(nt)
     {
+      ParallelActionsOutput myout( myinput.ncomponents, 0 );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         // Calculate the stuff in the loop for this action
-        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+        T::performTask( partialTaskList[i], myinput, myout );
 
         // Transfer the data to the values
-        T::transferToValue( partialTaskList[i], values, value_mat );
+        T::transferToValue( partialTaskList[i], myout.values, value_mat );
       }
     }
     // MPI Gather everything
@@ -198,12 +208,13 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
 #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copyin(value_mat) copy(forcesForApply)
     {
 #pragma acc parallel loop reduction(forcesForApply)
+      ParallelActionsOutput myout( myinput.ncomponents, nderivatives_per_task ); 
       for(unsigned i=0; i<nactive_tasks; ++i) {
         // Calculate the stuff in the loop for this action
-        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+        T::performTask( partialTaskList[i], myinput, myout );
 
         // Gather the forces from the values
-        T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply );
+        T::gatherForces( partialTaskList[i], myinput, value_mat, myout.derivs, forcesForApply );
       }
     }
 #else
@@ -227,14 +238,15 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
         if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
         else omp_forces[t].assign( forcesForApply.size(), 0.0 );
       }
+      ParallelActionsOutput myout( myinput.ncomponents, nderivatives_per_task );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         // Calculate the stuff in the loop for this action
-        const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
+        T::performTask( partialTaskList[i], myinput, myout );
 
         // Gather the forces from the values
-        if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, omp_forces[t], forcesForApply );
-        else T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply, forcesForApply );
+        if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, myout.derivatives, omp_forces[t], forcesForApply );
+        else T::gatherForces( partialTaskList[i], myinput, value_mat, myout.derivatives, forcesForApply, forcesForApply );
       }
       #pragma omp critical
       if( nt>1 ) T::gatherThreads( omp_forces[t], forcesForApply );
