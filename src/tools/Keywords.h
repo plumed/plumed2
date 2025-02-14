@@ -94,6 +94,8 @@ private:
   bool isatoms=true;
 /// The name of the action that has this set of keywords
   std::string thisactname;
+/// The action to use in place of this deprecated action
+  std::string replaceaction="none";
 
   struct keyInfo {
     /// Whether the keyword is compulsory, optional...
@@ -308,6 +310,10 @@ public:
   std::string getDisplayName() const ;
 /// Set the display name
   void setDisplayName( const std::string& name );
+/// Get the action that should be used to replace this one if action has been deprecated
+  std::string getReplacementAction() const ;
+/// Note that this action has been deprecated
+  void setDeprecated( const std::string& name );
 };
 
 //the following templates specializations make the bitmask enum work with the
