@@ -128,8 +128,9 @@ void ParallelTaskManager<T, D>::runAllTasks() {
   action->getInputData( myinput.inputdata );
 
   if( useacc ) {
+     std::size_t indatasize = myinput.inputdata.size();
 #ifdef __PLUMED_HAS_OPENACC
-     #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copy(value_mat)
+     #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copy(myinput.inputdata[0:indatasize]) copy(value_mat)
        {
      #pragma acc parallel loop
          for(unsigned i=0; i<nactive_tasks; ++i) {
@@ -232,11 +233,11 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
          const auto [values, derivs] = T::performTask( partialTaskList[i], myinput );
 
          // Gather the forces from the values
-         if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, omp_forces[t] );
-         else T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply );
+         if( nt>1 ) T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, omp_forces[t], forcesForApply );
+         else T::gatherForces( partialTaskList[i], myinput, value_mat, derivs, forcesForApply, forcesForApply );
        }
        #pragma omp critical
-       if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[t][i];
+       if( nt>1 ) T::gatherThreads( omp_forces[t], forcesForApply );
      }
      // MPI Gather everything
      if( !action->runInSerial() ) comm.Sum( forcesForApply );

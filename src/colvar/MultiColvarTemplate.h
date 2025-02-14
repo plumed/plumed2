@@ -75,7 +75,8 @@ public:
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static std::pair<std::vector<double>,Matrix<double> > performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input );
-  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out );
+  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
+  static void gatherThreads( std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
   static void transferToValue( unsigned task_index, const std::vector<double>& values, Matrix<double>& value_mat );
 };
 
@@ -236,21 +237,23 @@ void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::ve
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& force_out ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const Matrix<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<force_in.ncols(); ++i) {
     unsigned m = 0; double ff = force_in[task_index][i];
     for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      force_out[base + m] += ff*derivs[i][m]; m++;
-      force_out[base + m] += ff*derivs[i][m]; m++;
-      force_out[base + m] += ff*derivs[i][m]; m++;
+      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
+      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
+      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
     }
-    unsigned n = force_out.size() - 9;
-    for(unsigned j=0; j<3; ++j) {
-      for(unsigned k=0; k<3; ++k) { force_out[n] += ff*derivs[i][m]; n++; m++; }
-    }
+    for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; } 
   }
 }
+
+template <class T>
+void MultiColvarTemplate<T>::gatherThreads( std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
+  for(unsigned n=thred_safe_force_out.size()-9; n<thred_safe_force_out.size(); ++n) thred_unsafe_force_out[n] += thred_safe_force_out[n];
+} 
 
 }
 }
