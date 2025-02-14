@@ -115,7 +115,7 @@ void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const s
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
   for(unsigned i=1; i<action->getNumberOfComponents(); ++i) plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
-  myinput.ncomponents = action->getNumberOfComponents(); nderivatives_per_task = nder; 
+  myinput.ncomponents = action->getNumberOfComponents(); nderivatives_per_task = nder;
   value_mat.resize( valuesize, action->getNumberOfComponents() ); myinput.nindices_per_task = nind;
 }
 
@@ -208,7 +208,7 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
 #pragma acc data copyin(nactive_tasks) copyin(partialTaskList) copyin(myinput) copyin(value_mat) copy(forcesForApply)
     {
 #pragma acc parallel loop reduction(forcesForApply)
-      ParallelActionsOutput myout( myinput.ncomponents, nderivatives_per_task ); 
+      ParallelActionsOutput myout( myinput.ncomponents, nderivatives_per_task );
       for(unsigned i=0; i<nactive_tasks; ++i) {
         // Calculate the stuff in the loop for this action
         T::performTask( partialTaskList[i], myinput, myout );
