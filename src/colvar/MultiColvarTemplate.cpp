@@ -25,17 +25,17 @@
 namespace PLMD {
 namespace colvar {
 
-ColvarInput::ColvarInput( const unsigned& m, const std::vector<Vector>& p, const std::vector<double>& w, const std::vector<double>& q, const Pbc& box ) :
+ColvarInput::ColvarInput( unsigned m, unsigned natoms, const std::vector<Vector>& p, const double* w, const double* q, const Pbc& box ) :
   mode(m),
   pbc(box),
   pos(p),
-  mass(w),
-  charges(q)
+  mass(natoms,w),
+  charges(natoms,q)
 {
 }
 
-ColvarInput ColvarInput::createColvarInput( const unsigned& m, const std::vector<Vector>& p, const Colvar* colv ) {
-  return ColvarInput( m, p, colv->getMasses(), colv->getCharges(true), colv->getPbc() );
+ColvarInput ColvarInput::createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv ) {
+  return ColvarInput( m, p.size(), p, colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
 }
 
 }

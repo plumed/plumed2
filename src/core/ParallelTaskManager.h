@@ -29,6 +29,25 @@
 
 namespace PLMD {
 
+template < typename T, std::size_t N>
+class View { //this is duplicated in PBC.h, this need to be uniformed!!!
+  T *ptr_;
+  const std::size_t size_;
+public:
+  template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
+  View(T* p) : ptr_(p), size_(N) {}
+  View(std::size_t NN, T* p) : ptr_(p), size_(NN) {}
+  constexpr size_t size()const {
+    return size_;
+  }
+  T & operator[](size_t i) {
+    return ptr_[i];
+  }
+  const T & operator[](size_t i) const {
+    return ptr_[i];
+  }
+};
+
 class ParallelActionsOutput {
 public:
   std::vector<double> values;

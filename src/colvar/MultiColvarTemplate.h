@@ -36,7 +36,7 @@ public:
   bool usepbc;
   unsigned mode;
   MultiColvarInput() : usepbc(false), mode(0)  {}
-  MultiColvarInput( const bool& u, const unsigned& m ) : usepbc(u), mode(m) {}
+  MultiColvarInput( bool u, const unsigned m ) : usepbc(u), mode(m) {}
   MultiColvarInput& operator=( const MultiColvarInput& m ) { usepbc = m.usepbc; mode = m.mode; return *this; }
 };
 
@@ -44,10 +44,10 @@ struct ColvarInput {
   unsigned mode;
   const Pbc& pbc;
   const std::vector<Vector>& pos;
-  const std::vector<double>& mass;
-  const std::vector<double>& charges;
-  ColvarInput( const unsigned& m, const std::vector<Vector>& p, const std::vector<double>& w, const std::vector<double>& q, const Pbc& box );
-  static ColvarInput createColvarInput( const unsigned& m, const std::vector<Vector>& p, const Colvar* colv );
+  View<const double,helpers::dynamic_extent> mass;
+  View<const double,helpers::dynamic_extent> charges;
+  ColvarInput( unsigned m, unsigned natoms, const std::vector<Vector>& p, const double* w, const double* q, const Pbc& box );
+  static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
 };
 
 template <class T>
@@ -73,7 +73,7 @@ public:
   void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static void performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
+  static void performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
   static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
   static void gatherThreads( std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
   static void transferToValue( unsigned task_index, const std::vector<double>& values, std::vector<double>& value_mat );
@@ -185,9 +185,7 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-void MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output ) {
-  std::vector<double> mass( input.nindices_per_task );
-  std::vector<double> charge( input.nindices_per_task );
+void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output ) {
   std::vector<Vector> fpositions( input.nindices_per_task );
   std::size_t k = 5*fpositions.size()*task_index;
   for(unsigned i=0; i<fpositions.size(); ++i) {
@@ -195,8 +193,6 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelAct
     fpositions[i][1] = input.inputdata[k]; k++;
     fpositions[i][2] = input.inputdata[k]; k++;
   }
-  for(unsigned i=0; i<fpositions.size(); ++i) { mass[i] = input.inputdata[k]; k++; }
-  for(unsigned i=0; i<fpositions.size(); ++i) { charge[i] = input.inputdata[k]; k++; }
 
   if( input.actiondata.usepbc ) {
     if( fpositions.size()==1 ) {
@@ -211,7 +207,10 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const ParallelAct
 
   std::vector<Tensor> virial( input.ncomponents );
   Matrix<Vector> derivs( input.ncomponents, fpositions.size() );
-  T::calculateCV( ColvarInput( input.actiondata.mode, fpositions, mass, charge, input.pbc ), output.values, derivs, virial );
+  std::size_t pos_start = 5*input.nindices_per_task*task_index;
+  std::size_t mass_start = pos_start + 3*input.nindices_per_task;
+  std::size_t charge_start = mass_start + input.nindices_per_task;
+  T::calculateCV( ColvarInput( input.actiondata.mode, input.nindices_per_task, fpositions, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc ), output.values, derivs, virial );
   if( input.noderiv ) return;
 
   for(unsigned i=0; i<input.ncomponents; ++i) {
