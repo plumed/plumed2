@@ -43,11 +43,15 @@ public:
 struct ColvarInput {
   unsigned mode;
   const Pbc& pbc;
-  const std::vector<Vector>& pos;
+  View2D<const double,helpers::dynamic_extent,3> pos;
   View<const double,helpers::dynamic_extent> mass;
   View<const double,helpers::dynamic_extent> charges;
-  ColvarInput( unsigned m, unsigned natoms, const std::vector<Vector>& p, const double* w, const double* q, const Pbc& box );
+  ColvarInput( unsigned m, unsigned natoms, const double* p, const double* w, const double* q, const Pbc& box );
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
+};
+
+struct ColvarOutput {
+  static void setBoxDerivativesNoPbc( const ColvarInput& inpt, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 template <class T>
@@ -186,36 +190,36 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 
 template <class T>
 void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output ) {
-  std::vector<Vector> fpositions( input.nindices_per_task );
-  std::size_t k = 5*fpositions.size()*task_index;
-  for(unsigned i=0; i<fpositions.size(); ++i) {
-    fpositions[i][0] = input.inputdata[k]; k++;
-    fpositions[i][1] = input.inputdata[k]; k++;
-    fpositions[i][2] = input.inputdata[k]; k++;
-  }
-
+  std::size_t pos_start = 5*input.nindices_per_task*task_index;
   if( input.actiondata.usepbc ) {
-    if( fpositions.size()==1 ) {
-      fpositions[0]=input.pbc.distance(Vector(0.0,0.0,0.0),fpositions[0]);
+    if( input.nindices_per_task==1 ) {
+      Vector fpos=input.pbc.distance(Vector(0.0,0.0,0.0),Vector(input.inputdata[pos_start], input.inputdata[pos_start+1], input.inputdata[pos_start+2]) );
+      input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
     } else {
-      for(unsigned j=0; j<fpositions.size()-1; ++j) {
-        const Vector & first (fpositions[j]); Vector & second (fpositions[j+1]);
+      std::size_t apos_start = pos_start;
+      for(unsigned j=0; j<input.nindices_per_task-1; ++j) {
+        Vector first(input.inputdata[apos_start], input.inputdata[apos_start+1], input.inputdata[apos_start+2]); 
+        Vector second(input.inputdata[apos_start+3], input.inputdata[apos_start+4], input.inputdata[apos_start+5]);
         second=first+input.pbc.distance(first,second);
+        input.inputdata[apos_start+3]=second[0]; input.inputdata[apos_start+4]=second[1]; input.inputdata[apos_start+5]=second[2];
+        apos_start += 3;
       }
     }
-  } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),fpositions[0]);
+  } else if( input.nindices_per_task==1 ) {
+    Vector fpos=delta(Vector(0.0,0.0,0.0),Vector(input.inputdata[pos_start], input.inputdata[pos_start+1], input.inputdata[pos_start+2]));
+    input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
+  }
 
   std::vector<Tensor> virial( input.ncomponents );
-  Matrix<Vector> derivs( input.ncomponents, fpositions.size() );
-  std::size_t pos_start = 5*input.nindices_per_task*task_index;
+  Matrix<Vector> derivs( input.ncomponents, input.nindices_per_task );
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  T::calculateCV( ColvarInput( input.actiondata.mode, input.nindices_per_task, fpositions, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc ), output.values, derivs, virial );
+  T::calculateCV( ColvarInput( input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc ), output.values, derivs, virial );
   if( input.noderiv ) return;
 
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned k=0;
-    for(unsigned j=0; j<fpositions.size(); ++j) {
+    for(unsigned j=0; j<input.nindices_per_task; ++j) {
       output.derivatives[i][k] = derivs[i][j][0]; k++;
       output.derivatives[i][k] = derivs[i][j][1]; k++;
       output.derivatives[i][k] = derivs[i][j][2]; k++;

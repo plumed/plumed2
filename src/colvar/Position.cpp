@@ -214,7 +214,7 @@ void Position::calculate() {
 
 void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
   if( cvin.mode==1 ) {
-    Vector d=cvin.pbc.realToScaled(cvin.pos[0]);
+    Vector d=cvin.pbc.realToScaled(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]));
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
     derivs[0][0]=matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
     derivs[1][0]=matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
@@ -222,7 +222,9 @@ void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, 
   } else {
     for(unsigned i=0; i<3; ++i) vals[i]=cvin.pos[0][i];
     derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-    virial[0]=Tensor(cvin.pos[0],Vector(-1,0,0)); virial[1]=Tensor(cvin.pos[0],Vector(0,-1,0)); virial[2]=Tensor(cvin.pos[0],Vector(0,0,-1));
+    virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0)); 
+    virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0)); 
+    virial[2]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1));
   }
 }
 

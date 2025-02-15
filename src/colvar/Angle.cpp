@@ -180,7 +180,7 @@ void Angle::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Mat
   vals[0]=a.compute(dij,dik,ddij,ddik);
   derivs[0][0]=ddik; derivs[0][1]=-ddik;
   derivs[0][2]=-ddij; derivs[0][3]=ddij;
-  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+  ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
 }
 
 }

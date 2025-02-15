@@ -248,7 +248,7 @@ void Torsion::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, M
   derivs[0][3] = -dd1;
   derivs[0][4] = dd2;
   derivs[0][5] = -dd2;
-  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+  ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
 }
 
 }

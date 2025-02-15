@@ -67,7 +67,6 @@ public:
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfDerivatives() override;
-  static void setBoxDerivativesNoPbc( const std::vector<Vector>& pos, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
 };
 
 inline
@@ -111,15 +110,6 @@ inline
 unsigned Colvar::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms() + 9;
 }
-
-inline
-void Colvar::setBoxDerivativesNoPbc( const std::vector<Vector>& pos, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
-  unsigned nat=pos.size();
-  for(unsigned i=0; i<virial.size(); ++i) {
-    virial[i].zero(); for(unsigned j=0; j<nat; j++) virial[i]-=Tensor(pos[j],derivs[i][j]);
-  }
-}
-
 
 }
 

@@ -25,17 +25,24 @@
 namespace PLMD {
 namespace colvar {
 
-ColvarInput::ColvarInput( unsigned m, unsigned natoms, const std::vector<Vector>& p, const double* w, const double* q, const Pbc& box ) :
+ColvarInput::ColvarInput( unsigned m, unsigned natoms, const double* p, const double* w, const double* q, const Pbc& box ) :
   mode(m),
   pbc(box),
-  pos(p),
+  pos(p,natoms),
   mass(natoms,w),
   charges(natoms,q)
 {
 }
 
 ColvarInput ColvarInput::createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv ) {
-  return ColvarInput( m, p.size(), p, colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
+  return ColvarInput( m, p.size(), &p[0][0], colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
+}
+
+void ColvarOutput::setBoxDerivativesNoPbc( const ColvarInput& inpt, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+  unsigned nat=inpt.pos.size();
+  for(unsigned i=0; i<virial.size(); ++i) {
+    virial[i].zero(); for(unsigned j=0; j<nat; j++) virial[i]-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),derivs[i][j]);
+  }
 }
 
 }

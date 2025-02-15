@@ -29,7 +29,7 @@
 
 namespace PLMD {
 
-template < typename T, std::size_t N>
+template <typename T, std::size_t N>
 class View { //this is duplicated in PBC.h, this need to be uniformed!!!
   T *ptr_;
   const std::size_t size_;
@@ -46,6 +46,35 @@ public:
   const T & operator[](size_t i) const {
     return ptr_[i];
   }
+  template<typename TT>
+  friend VectorGeneric<3> delta(const View<TT,3>& v1, const View<TT,3>& v2 );
+};
+
+template<typename T>
+VectorGeneric<3> delta(const View<T,3>& v1, const View<T,3>& v2 ) {
+  VectorGeneric<3> v; plumed_dbg_assert( v1.size()==3 );
+  v[0] = v2[0] - v1[0]; v[1] = v2[1] - v1[1]; v[2] = v2[2] - v1[2];
+  return v;
+}
+
+template <typename T, std::size_t N, std::size_t M>
+class View2D {
+  T *ptr_;
+  const std::size_t sizeN_;
+  const std::size_t sizeM_;
+public:
+  template <size_t NN = N, size_t MM = M, typename = std::enable_if_t<NN != helpers::dynamic_extent && MM != helpers::dynamic_extent>>
+  View2D(T *p) : ptr_(p), sizeN_(N), sizeM_(M) {} 
+  template <size_t MM = M, typename = std::enable_if_t<MM != helpers::dynamic_extent>>
+  View2D(T *p, size_t NN) : ptr_(p), sizeN_(NN), sizeM_(M) {}
+  View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {} 
+  View<T, M> operator[](size_t i) {
+    return View<T, M>(sizeM_, ptr_ + i * sizeM_);
+  }
+  View<T, M> operator[](size_t i) const {
+    return View<T, M>(sizeM_, ptr_ + i * sizeM_);
+  }
+  constexpr size_t size() const { return sizeN_; }
 };
 
 class ParallelActionsOutput {

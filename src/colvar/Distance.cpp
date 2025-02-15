@@ -276,7 +276,7 @@ void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, 
     derivs[2][0] = Vector(0,0,-1);
     derivs[2][1] = Vector(0,0,+1);
     vals[2] = distance[2];
-    setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+    ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
   } else if(cvin.mode==2) {
     Vector d=cvin.pbc.realToScaled(distance);
     derivs[0][0] = matmul(cvin.pbc.getInvBox(),Vector(-1,0,0));
@@ -291,7 +291,7 @@ void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, 
   } else {
     derivs[0][0] = -invvalue*distance;
     derivs[0][1] = invvalue*distance;
-    setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+    ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
     vals[0] = value;
   }
 }

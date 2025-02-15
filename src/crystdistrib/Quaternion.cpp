@@ -378,7 +378,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<doubl
     vals[3] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) derivs[3][i] =0.25*dS[i];
   }
-  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+  colvar::ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
 
 }
 

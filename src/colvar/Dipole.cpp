@@ -195,7 +195,7 @@ void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Ma
   ctot/=(double)N;
 
   Vector dipje;
-  for(unsigned i=0; i<N; ++i) dipje += (cvin.charges[i]-ctot)*cvin.pos[i];
+  for(unsigned i=0; i<N; ++i) dipje += (cvin.charges[i]-ctot)*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
 
   if( cvin.mode==1 ) {
     for(unsigned i=0; i<N; i++) {
@@ -212,7 +212,7 @@ void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Ma
       derivs[0][i] = dfunc*dipje;
     }
   }
-  setBoxDerivativesNoPbc( cvin.pos, derivs, virial );
+  ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
 }
 
 }
