@@ -64,10 +64,10 @@ class View2D {
   const std::size_t sizeM_;
 public:
   template <size_t NN = N, size_t MM = M, typename = std::enable_if_t<NN != helpers::dynamic_extent && MM != helpers::dynamic_extent>>
-  View2D(T *p) : ptr_(p), sizeN_(N), sizeM_(M) {} 
+  View2D(T *p) : ptr_(p), sizeN_(N), sizeM_(M) {}
   template <size_t MM = M, typename = std::enable_if_t<MM != helpers::dynamic_extent>>
   View2D(T *p, size_t NN) : ptr_(p), sizeN_(NN), sizeM_(M) {}
-  View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {} 
+  View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {}
   View<T, M> operator[](size_t i) {
     return View<T, M>(sizeM_, ptr_ + i * sizeM_);
   }

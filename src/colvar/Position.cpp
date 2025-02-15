@@ -222,8 +222,8 @@ void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, 
   } else {
     for(unsigned i=0; i<3; ++i) vals[i]=cvin.pos[0][i];
     derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-    virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0)); 
-    virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0)); 
+    virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0));
+    virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0));
     virial[2]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1));
   }
 }

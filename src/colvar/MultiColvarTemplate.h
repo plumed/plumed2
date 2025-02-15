@@ -198,7 +198,7 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
     } else {
       std::size_t apos_start = pos_start;
       for(unsigned j=0; j<input.nindices_per_task-1; ++j) {
-        Vector first(input.inputdata[apos_start], input.inputdata[apos_start+1], input.inputdata[apos_start+2]); 
+        Vector first(input.inputdata[apos_start], input.inputdata[apos_start+1], input.inputdata[apos_start+2]);
         Vector second(input.inputdata[apos_start+3], input.inputdata[apos_start+4], input.inputdata[apos_start+5]);
         second=first+input.pbc.distance(first,second);
         input.inputdata[apos_start+3]=second[0]; input.inputdata[apos_start+4]=second[1]; input.inputdata[apos_start+5]=second[2];
