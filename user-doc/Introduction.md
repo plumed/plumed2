@@ -46,6 +46,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 - [ASE](https://wiki.fysik.dtu.dk/ase/)
 - [GPUMD](https://gpumd.org/)
+- [GROMACS](https://www.gromacs.org/) as of version 2025, with limited support (no replica exchange, no \ref ENERGY collective variable, no lambda dynamics).
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
