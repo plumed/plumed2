@@ -67,13 +67,14 @@ private:
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
+  ColvarOutput cvout;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<DihedralCorrelation> DihedralCorrelationShortcut;
@@ -94,7 +95,8 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1,8),
-  virial(1)
+  virial(1),
+  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   if( atoms.size()!=8 ) error("Number of specified atoms should be 8");
@@ -123,13 +125,13 @@ unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
 void DihedralCorrelation::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
   for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void DihedralCorrelation::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   const Vector d10=delta(cvin.pos[1],cvin.pos[0]);
   const Vector d11=delta(cvin.pos[2],cvin.pos[1]);
   const Vector d12=delta(cvin.pos[3],cvin.pos[2]);
@@ -148,27 +150,27 @@ void DihedralCorrelation::calculateCV( const ColvarInput& cvin, std::vector<doub
 
   // Calculate value
   const double diff = phi2 - phi1;
-  vals[0] = 0.5*(1.+std::cos(diff));
+  cvout.values[0] = 0.5*(1.+std::cos(diff));
   // Derivatives wrt phi1
   const double dval = 0.5*std::sin(diff);
   dd10 *= dval;
   dd11 *= dval;
   dd12 *= dval;
   // And add
-  derivs[0][0]=dd10;
-  derivs[0][1]=dd11-dd10;
-  derivs[0][2]=dd12-dd11;
-  derivs[0][3]=-dd12;
+  cvout.derivs[0][0]=dd10;
+  cvout.derivs[0][1]=dd11-dd10;
+  cvout.derivs[0][2]=dd12-dd11;
+  cvout.derivs[0][3]=-dd12;
   // Derivative wrt phi2
   dd20 *= -dval;
   dd21 *= -dval;
   dd22 *= -dval;
   // And add
-  derivs[0][4]=dd20;
-  derivs[0][5]=dd21-dd20;
-  derivs[0][6]=dd22-dd21;
-  derivs[0][7]=-dd22;
-  virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22));
+  cvout.derivs[0][4]=dd20;
+  cvout.derivs[0][5]=dd21-dd20;
+  cvout.derivs[0][6]=dd22-dd21;
+  cvout.derivs[0][7]=-dd22;
+  cvout.virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22));
 }
 
 }

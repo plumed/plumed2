@@ -88,13 +88,14 @@ class Dipole : public Colvar {
   Value* valuex=nullptr;
   Value* valuey=nullptr;
   Value* valuez=nullptr;
+  ColvarOutput cvout;
 public:
   explicit Dipole(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Dipole> DipoleShortcut;
@@ -119,7 +120,8 @@ Dipole::Dipole(const ActionOptions&ao):
   components(false),
   value(1),
   derivs(1,1),
-  virial(1)
+  virial(1),
+  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
@@ -169,12 +171,12 @@ void Dipole::calculate()
   unsigned N=getNumberOfAtoms();
 
   if(!components) {
-    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
-    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);
       setAtomsDerivatives(valuey,i,derivs[1][i]);
@@ -189,7 +191,7 @@ void Dipole::calculate()
   }
 }
 
-void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void Dipole::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   unsigned N=cvin.pos.size(); double ctot=0.;
   for(unsigned i=0; i<N; ++i) ctot += cvin.charges[i];
   ctot/=(double)N;
@@ -199,20 +201,20 @@ void Dipole::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Ma
 
   if( cvin.mode==1 ) {
     for(unsigned i=0; i<N; i++) {
-      derivs[0][i]=(cvin.charges[i]-ctot)*Vector(1.0,0.0,0.0);
-      derivs[1][i]=(cvin.charges[i]-ctot)*Vector(0.0,1.0,0.0);
-      derivs[2][i]=(cvin.charges[i]-ctot)*Vector(0.0,0.0,1.0);
+      cvout.derivs[0][i]=(cvin.charges[i]-ctot)*Vector(1.0,0.0,0.0);
+      cvout.derivs[1][i]=(cvin.charges[i]-ctot)*Vector(0.0,1.0,0.0);
+      cvout.derivs[2][i]=(cvin.charges[i]-ctot)*Vector(0.0,0.0,1.0);
     }
-    for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i];
+    for(unsigned i=0; i<3; ++i ) cvout.values[i] = dipje[i];
   } else {
-    vals[0] = dipje.modulo();
-    double idip = 1./vals[0];
+    cvout.values[0] = dipje.modulo();
+    double idip = 1./cvout.values[0];
     for(unsigned i=0; i<N; i++) {
       double dfunc=(cvin.charges[i]-ctot)*idip;
-      derivs[0][i] = dfunc*dipje;
+      cvout.derivs[0][i] = dfunc*dipje;
     }
   }
-  ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
+  cvout.setBoxDerivativesNoPbc( cvin );
 }
 
 }

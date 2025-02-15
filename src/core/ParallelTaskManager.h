@@ -77,13 +77,6 @@ public:
   constexpr size_t size() const { return sizeN_; }
 };
 
-class ParallelActionsOutput {
-public:
-  std::vector<double> values;
-  Matrix<double> derivatives;
-  ParallelActionsOutput( std::size_t ncomp, std::size_t nder ) : values(ncomp), derivatives(ncomp,nder) {}
-};
-
 template <class D>
 class ParallelActionsInput {
 public:
@@ -101,6 +94,13 @@ public:
   D actiondata;
 /// Default constructor
   ParallelActionsInput( const Pbc& box ) : noderiv(false), pbc(box), ncomponents(0), nindices_per_task(0) {}
+};
+
+class ParallelActionsOutput {
+public:
+  std::vector<double> values;
+  Matrix<double> derivatives;
+  ParallelActionsOutput( std::size_t ncomp, std::size_t nder ) : values(ncomp), derivatives(ncomp,nder) {}
 };
 
 template <class T, class D>

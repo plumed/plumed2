@@ -103,6 +103,7 @@ class Angle : public Colvar {
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
+  ColvarOutput cvout;
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
@@ -110,7 +111,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Angle> AngleShortcut;
@@ -147,7 +148,8 @@ Angle::Angle(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1,4),
-  virial(1)
+  virial(1),
+  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   std::vector<AtomNumber> atoms; parseAtomList( -1, atoms, this );
   bool nopbc=!pbc;
@@ -166,21 +168,21 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
   for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Angle::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void Angle::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   Vector dij,dik;
   dij=delta(cvin.pos[2],cvin.pos[3]);
   dik=delta(cvin.pos[1],cvin.pos[0]);
   Vector ddij,ddik; PLMD::Angle a;
-  vals[0]=a.compute(dij,dik,ddij,ddik);
-  derivs[0][0]=ddik; derivs[0][1]=-ddik;
-  derivs[0][2]=-ddij; derivs[0][3]=ddij;
-  ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
+  cvout.values[0]=a.compute(dij,dik,ddij,ddik);
+  cvout.derivs[0][0]=ddik; cvout.derivs[0][1]=-ddik;
+  cvout.derivs[0][2]=-ddij; cvout.derivs[0][3]=ddij;
+  cvout.setBoxDerivativesNoPbc( cvin );
 }
 
 }

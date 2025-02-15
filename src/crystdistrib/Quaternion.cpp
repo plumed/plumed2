@@ -100,6 +100,7 @@ private:
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
+  colvar::ColvarOutput cvout;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Quaternion(const ActionOptions&);
@@ -107,7 +108,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOutput& cvout );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -131,7 +132,8 @@ Quaternion::Quaternion(const ActionOptions&ao):
   pbc(true),
   value(4),
   derivs(4,3),
-  virial(4)
+  virial(4),
+  cvout(colvar::ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
@@ -163,7 +165,7 @@ unsigned Quaternion::getModeAndSetupValues( ActionWithValue* av ) {
 void Quaternion::calculate() {
   if(pbc) makeWhole();
 
-  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
+  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
@@ -173,7 +175,7 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOutput& cvout ) {
   //declarations
   Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3
@@ -316,69 +318,69 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, std::vector<doubl
     double S = 1/(sqrt(tr) * 2); // S=4*qw
     for(unsigned i=0; i<3; ++i) dS[i] = (-2*S*S*S)*(tdx[i].getRow(0) + tdy[i].getRow(1) + tdz[i].getRow(2));
 
-    vals[0] = 0.25 / S;
-    for(unsigned i=0; i<3; ++i) derivs[0][i] =-0.25*dS[i]/(S*S);
+    cvout.values[0] = 0.25 / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[0][i] =-0.25*dS[i]/(S*S);
 
-    vals[1] = (z[1] - y[2]) * S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] = (S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) + (z[1]-y[2])*dS[i];
+    cvout.values[1] = (z[1] - y[2]) * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[1][i] = (S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) + (z[1]-y[2])*dS[i];
 
-    vals[2] = (x[2] - z[0]) * S;
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i];
+    cvout.values[2] = (x[2] - z[0]) * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i];
 
-    vals[3] = (y[0] - x[1]) * S;
-    for(unsigned i=0; i<3; ++i) derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
+    cvout.values[3] = (y[0] - x[1]) * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
   }
   else if ((x[0] > y[1])&(x[0] > z[2])) {
     float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
 
-    vals[0] = (z[1] - y[2]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) - (vals[0]/S)*dS[i];
+    cvout.values[0] = (z[1] - y[2]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[0][i] = (1/S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) - (cvout.values[0]/S)*dS[i];
 
-    vals[1] = 0.25 * S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] =0.25*dS[i];
+    cvout.values[1] = 0.25 * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[1][i] =0.25*dS[i];
 
-    vals[2] = (x[1] + y[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[2]/S)*dS[i];
+    cvout.values[2] = (x[1] + y[0]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[2][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (cvout.values[2]/S)*dS[i];
 
-    vals[3] = (x[2] + z[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[3]/S)*dS[i];
+    cvout.values[3] = (x[2] + z[0]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (cvout.values[3]/S)*dS[i];
   }
   else if (y[1] > z[2]) {
     float S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*( -tdx[i].getRow(0) + tdy[i].getRow(1) - tdz[i].getRow(2));
 
 
-    vals[0] = (x[2] - z[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (vals[0]/S)*dS[i];
+    cvout.values[0] = (x[2] - z[0]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (cvout.values[0]/S)*dS[i];
 
-    vals[1] = (x[1] + y[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[1]/S)*dS[i];
+    cvout.values[1] = (x[1] + y[0]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[1][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (cvout.values[1]/S)*dS[i];
 
-    vals[2] = 0.25 * S;
-    for(unsigned i=0; i<3; ++i) derivs[2][i] =0.25*dS[i];
+    cvout.values[2] = 0.25 * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[2][i] =0.25*dS[i];
 
-    vals[3] = (y[2] + z[1]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[3]/S)*dS[i];
+    cvout.values[3] = (y[2] + z[1]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (cvout.values[3]/S)*dS[i];
   }
   else {
     float S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-tdx[i].getRow(0) - tdy[i].getRow(1) + tdz[i].getRow(2));
 
 
-    vals[0] = (y[0] - x[1]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) - (vals[0]/S)*dS[i];
+    cvout.values[0] = (y[0] - x[1]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[0][i] = (1/S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) - (cvout.values[0]/S)*dS[i];
 
-    vals[1] = (x[2] + z[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[1]/S)*dS[i];
+    cvout.values[1] = (x[2] + z[0]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (cvout.values[1]/S)*dS[i];
 
-    vals[2] = (y[2] + z[1]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[2]/S)*dS[i];
+    cvout.values[2] = (y[2] + z[1]) / S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (cvout.values[2]/S)*dS[i];
 
-    vals[3] = 0.25 * S;
-    for(unsigned i=0; i<3; ++i) derivs[3][i] =0.25*dS[i];
+    cvout.values[3] = 0.25 * S;
+    for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] =0.25*dS[i];
   }
-  colvar::ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
+  cvout.setBoxDerivativesNoPbc( cvin );
 
 }
 

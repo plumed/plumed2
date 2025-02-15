@@ -51,7 +51,12 @@ struct ColvarInput {
 };
 
 struct ColvarOutput {
-  static void setBoxDerivativesNoPbc( const ColvarInput& inpt, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  std::vector<double>& values;
+  std::vector<Tensor>& virial;
+  Matrix<Vector>& derivs;
+  ColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t );
+  void setBoxDerivativesNoPbc( const ColvarInput& inpt );
+  static ColvarOutput createColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t );
 };
 
 template <class T>
@@ -214,7 +219,8 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
   Matrix<Vector> derivs( input.ncomponents, input.nindices_per_task );
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  T::calculateCV( ColvarInput( input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc ), output.values, derivs, virial );
+  ColvarOutput cvout = ColvarOutput(output.values, derivs, virial);
+  T::calculateCV( ColvarInput(input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
   if( input.noderiv ) return;
 
   for(unsigned i=0; i<input.ncomponents; ++i) {

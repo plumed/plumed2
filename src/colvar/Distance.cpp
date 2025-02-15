@@ -131,6 +131,7 @@ class Distance : public Colvar {
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
+  ColvarOutput cvout;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
@@ -138,7 +139,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
@@ -169,7 +170,8 @@ Distance::Distance(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1,2),
-  virial(1)
+  virial(1),
+  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
@@ -223,7 +225,7 @@ void Distance::calculate() {
   if(pbc) makeWhole();
 
   if( components ) {
-    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -240,7 +242,7 @@ void Distance::calculate() {
     setBoxDerivatives(valuez,virial[2]);
     valuez->set(value[2]);
   } else if( scaled_components ) {
-    calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), cvout );
 
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
@@ -252,47 +254,47 @@ void Distance::calculate() {
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
     valuec->set(value[2]);
   } else  {
-    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
     setBoxDerivatives(virial[0]);
     setValue           (value[0]);
   }
 }
 
-void Distance::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void Distance::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   Vector distance=delta(cvin.pos[0],cvin.pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
   if(cvin.mode==1) {
-    derivs[0][0] = Vector(-1,0,0);
-    derivs[0][1] = Vector(+1,0,0);
-    vals[0] = distance[0];
+    cvout.derivs[0][0] = Vector(-1,0,0);
+    cvout.derivs[0][1] = Vector(+1,0,0);
+    cvout.values[0] = distance[0];
 
-    derivs[1][0] = Vector(0,-1,0);
-    derivs[1][1] = Vector(0,+1,0);
-    vals[1] = distance[1];
+    cvout.derivs[1][0] = Vector(0,-1,0);
+    cvout.derivs[1][1] = Vector(0,+1,0);
+    cvout.values[1] = distance[1];
 
-    derivs[2][0] = Vector(0,0,-1);
-    derivs[2][1] = Vector(0,0,+1);
-    vals[2] = distance[2];
-    ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
+    cvout.derivs[2][0] = Vector(0,0,-1);
+    cvout.derivs[2][1] = Vector(0,0,+1);
+    cvout.values[2] = distance[2];
+    cvout.setBoxDerivativesNoPbc( cvin );
   } else if(cvin.mode==2) {
     Vector d=cvin.pbc.realToScaled(distance);
-    derivs[0][0] = matmul(cvin.pbc.getInvBox(),Vector(-1,0,0));
-    derivs[0][1] = matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
-    vals[0] = Tools::pbc(d[0]);
-    derivs[1][0] = matmul(cvin.pbc.getInvBox(),Vector(0,-1,0));
-    derivs[1][1] = matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
-    vals[1] = Tools::pbc(d[1]);
-    derivs[2][0] = matmul(cvin.pbc.getInvBox(),Vector(0,0,-1));
-    derivs[2][1] = matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
-    vals[2] = Tools::pbc(d[2]);
+    cvout.derivs[0][0] = matmul(cvin.pbc.getInvBox(),Vector(-1,0,0));
+    cvout.derivs[0][1] = matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
+    cvout.values[0] = Tools::pbc(d[0]);
+    cvout.derivs[1][0] = matmul(cvin.pbc.getInvBox(),Vector(0,-1,0));
+    cvout.derivs[1][1] = matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
+    cvout.values[1] = Tools::pbc(d[1]);
+    cvout.derivs[2][0] = matmul(cvin.pbc.getInvBox(),Vector(0,0,-1));
+    cvout.derivs[2][1] = matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
+    cvout.values[2] = Tools::pbc(d[2]);
   } else {
-    derivs[0][0] = -invvalue*distance;
-    derivs[0][1] = invvalue*distance;
-    ColvarOutput::setBoxDerivativesNoPbc( cvin, derivs, virial );
-    vals[0] = value;
+    cvout.derivs[0][0] = -invvalue*distance;
+    cvout.derivs[0][1] = invvalue*distance;
+    cvout.setBoxDerivativesNoPbc( cvin );
+    cvout.values[0] = value;
   }
 }
 

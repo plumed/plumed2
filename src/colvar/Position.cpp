@@ -96,6 +96,7 @@ class Position : public Colvar {
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
+  ColvarOutput cvout;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
@@ -103,7 +104,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -133,7 +134,8 @@ Position::Position(const ActionOptions&ao):
   pbc(true),
   value(3),
   derivs(3,1),
-  virial(3)
+  virial(3),
+  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
@@ -182,7 +184,7 @@ void Position::calculate() {
   }
 
   if(scaled_components) {
-    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), cvout );
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -193,7 +195,7 @@ void Position::calculate() {
     setAtomsDerivatives (valuec,0,derivs[2][0]);
     valuec->set(value[2]);
   } else {
-    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), value, derivs, virial );
+    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), cvout );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -212,19 +214,19 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const ColvarInput& cvin, std::vector<double>& vals, Matrix<Vector>& derivs, std::vector<Tensor>& virial ) {
+void Position::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   if( cvin.mode==1 ) {
     Vector d=cvin.pbc.realToScaled(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]));
-    vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
-    derivs[0][0]=matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
-    derivs[1][0]=matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
-    derivs[2][0]=matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
+    cvout.values[0]=Tools::pbc(d[0]); cvout.values[1]=Tools::pbc(d[1]); cvout.values[2]=Tools::pbc(d[2]);
+    cvout.derivs[0][0]=matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
+    cvout.derivs[1][0]=matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
+    cvout.derivs[2][0]=matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
   } else {
-    for(unsigned i=0; i<3; ++i) vals[i]=cvin.pos[0][i];
-    derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-    virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0));
-    virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0));
-    virial[2]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1));
+    for(unsigned i=0; i<3; ++i) cvout.values[i]=cvin.pos[0][i];
+    cvout.derivs[0][0]=Vector(+1,0,0); cvout.derivs[1][0]=Vector(0,+1,0); cvout.derivs[2][0]=Vector(0,0,+1);
+    cvout.virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0));
+    cvout.virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0));
+    cvout.virial[2]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1));
   }
 }
 
