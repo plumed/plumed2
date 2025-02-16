@@ -38,17 +38,18 @@ ColvarInput ColvarInput::createColvarInput( unsigned m, const std::vector<Vector
   return ColvarInput( m, p.size(), &p[0][0], colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
 }
 
-ColvarOutput::ColvarOutput( std::size_t n, double* v, std::size_t m, std::vector<double>& d ):
-  ncomponents(n),
-  values(n,v),
+ColvarOutput::ColvarOutput( View<double,helpers::dynamic_extent>& v, std::size_t m, std::vector<double>& d ):
+  ncomponents(v.size()),
+  values(v),
   derivs(m,d),
   virial(m,d)
 {
 }
 
 ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action ) {
+  View<double,helpers::dynamic_extent> val(v.size(),v.data());
   d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
-  return ColvarOutput( v.size(), v.data(), action->getNumberOfDerivatives(), d );
+  return ColvarOutput( val, action->getNumberOfDerivatives(), d );
 }
 
 void ColvarOutput::setBoxDerivativesNoPbc( const ColvarInput& inpt ) {

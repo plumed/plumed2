@@ -88,7 +88,7 @@ public:
   View<double,helpers::dynamic_extent> values;
   DerivHelper derivs;
   VirialHelper virial;
-  ColvarOutput( std::size_t n, double* v, std::size_t m, std::vector<double>& d );
+  ColvarOutput( View<double,helpers::dynamic_extent>& v, std::size_t m, std::vector<double>& d );
   Vector getAtomDerivatives( std::size_t i, std::size_t a ) { return derivs.getAtomDerivatives(i,a); }
   void setBoxDerivativesNoPbc( const ColvarInput& inpt );
   static ColvarOutput createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action );
@@ -120,7 +120,6 @@ public:
   static void performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
   static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const ForceInput& fdata, ForceOutput& forces );
   static void gatherThreads( ForceOutput& forces );
-  static void transferToValue( unsigned task_index, const std::vector<double>& values, std::vector<double>& value_mat );
 };
 
 template <class T>
@@ -252,14 +251,8 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
 
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  ColvarOutput cvout = ColvarOutput( input.ncomponents, output.values.data(), 3*input.nindices_per_task+9, output.derivatives );
+  ColvarOutput cvout = ColvarOutput( output.values, 3*input.nindices_per_task+9, output.derivatives );
   T::calculateCV( ColvarInput(input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
-}
-
-template <class T>
-void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::vector<double>& values, std::vector<double>& value_mat ) {
-  unsigned ncomponents = values.size();
-  for(unsigned i=0; i<ncomponents; ++i) value_mat[ncomponents*task_index+i] = values[i];
 }
 
 template <class T>
