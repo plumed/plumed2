@@ -73,239 +73,260 @@ int main(){
 \endverbatim
 
 */
+template<typename T, unsigned n> class VectorTyped;
+
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n> delta(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
+
+template<typename T, unsigned n>
+constexpr T dotProduct(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
 
 
-template <unsigned n>
-class VectorGeneric {
-  std::array<double,n> d;
+template<typename T, unsigned n>
+std::ostream & operator<<(std::ostream &os, const VectorTyped<T, n>& v);
+template<typename T, unsigned n>
+class VectorTyped {
+  std::array<T,n> d;
 /// Auxiliary private function for constructor
-  void auxiliaryConstructor();
+  constexpr void auxiliaryConstructor();
 /// Auxiliary private function for constructor
   template<typename... Args>
-  void auxiliaryConstructor(double first,Args... arg);
+  constexpr void auxiliaryConstructor(T first,Args... arg);
 public:
-/// Constructor accepting n double parameters.
+/// Constructor accepting n T parameters.
 /// Can be used as Vector<3>(1.0,2.0,3.0) or Vector<2>(2.0,3.0).
 /// In case a wrong number of parameters is given, a static assertion will fail.
   template<typename... Args>
-  VectorGeneric(double first,Args... arg);
+  constexpr VectorTyped(T first,Args... arg);
 /// create it null
-  VectorGeneric();
+  constexpr VectorTyped();
+/// get the underline pointer to the data
+  constexpr T* data();
+/// get the underline pointer to the data
+  constexpr const T* data() const;
 /// set it to zero
-  void zero();
+  constexpr void zero();
 /// array-like access [i]
-  double & operator[](unsigned i);
+  constexpr   T & operator[](unsigned i);
 /// array-like access [i]
-  const double & operator[](unsigned i)const;
+  constexpr const T & operator[](unsigned i)const;
 /// parenthesis access (i)
-  double & operator()(unsigned i);
+  constexpr   T & operator()(unsigned i);
 /// parenthesis access (i)
-  const double & operator()(unsigned i)const;
+  constexpr const T & operator()(unsigned i)const;
 /// increment
-  VectorGeneric& operator +=(const VectorGeneric& b);
+  constexpr VectorTyped& operator +=(const VectorTyped& b);
 /// decrement
-  VectorGeneric& operator -=(const VectorGeneric& b);
+  constexpr VectorTyped& operator -=(const VectorTyped& b);
 /// multiply
-  VectorGeneric& operator *=(double s);
+  constexpr VectorTyped& operator *=(T s);
 /// divide
-  VectorGeneric& operator /=(double s);
+  constexpr VectorTyped& operator /=(T s);
 /// sign +
-  VectorGeneric operator +()const;
+  constexpr VectorTyped operator +()const;
 /// sign -
-  VectorGeneric operator -()const;
+  constexpr VectorTyped operator -()const;
 /// return v1+v2
-  template<unsigned m>
-  friend VectorGeneric<m> operator+(const VectorGeneric<m>&,const VectorGeneric<m>&);
+  template<typename U, unsigned m>
+  friend constexpr VectorTyped<U, m> operator+(const VectorTyped<U, m>&,const VectorTyped<U, m>&);
 /// return v1-v2
-  template<unsigned m>
-  friend VectorGeneric<m> operator-(const VectorGeneric<m>&,const VectorGeneric<m>&);
+  template<typename U, unsigned m>
+  friend constexpr VectorTyped<U, m> operator-(VectorTyped<U, m>,const VectorTyped<U, m>&);
 /// return s*v
-  template<unsigned m>
-  friend VectorGeneric<m> operator*(double,const VectorGeneric<m>&);
+  template<typename U, typename J, unsigned m>
+  friend constexpr VectorTyped<U, m> operator*(J,VectorTyped<U, m>);
 /// return v*s
-  template<unsigned m>
-  friend VectorGeneric<m> operator*(const VectorGeneric<m>&,double);
+  template<typename U, typename J, unsigned m>
+  friend constexpr VectorTyped<U, m> operator*(VectorTyped<U, m>,J);
 /// return v/s
-  template<unsigned m>
-  friend VectorGeneric<m> operator/(const VectorGeneric<m>&,double);
+  template<typename U, typename J, unsigned m>
+  friend constexpr VectorTyped<U, m> operator/(const VectorTyped<U, m>&,J);
 /// return v2-v1
-  template<unsigned m>
-  friend VectorGeneric<m> delta(const VectorGeneric<m>&v1,const VectorGeneric<m>&v2);
+  friend constexpr VectorTyped delta<>(const VectorTyped&v1,const VectorTyped&v2);
 /// return v1 .scalar. v2
-  template<unsigned m>
-  friend double dotProduct(const VectorGeneric<m>&,const VectorGeneric<m>&);
+  friend constexpr T dotProduct<>(const VectorTyped&,const VectorTyped&);
+  //this bad boy produces a warning (in fact becasue declrare the crossproduc as a friend for ALL thhe possible combinations of n and T)
 /// return v1 .vector. v2
 /// Only available for size 3
-  friend VectorGeneric<3> crossProduct(const VectorGeneric<3>&,const VectorGeneric<3>&);
+  template<typename U>
+  friend constexpr VectorTyped<U, 3> crossProduct(const VectorTyped<U, 3>&,const VectorTyped<U, 3>&);
 /// compute the squared modulo
-  double modulo2()const;
+  constexpr T modulo2()const;
 /// Compute the modulo.
 /// Shortcut for sqrt(v.modulo2())
-  double modulo()const;
+  constexpr T modulo()const;
 /// friend version of modulo2 (to simplify some syntax)
-  template<unsigned m>
-  friend double modulo2(const VectorGeneric<m>&);
+  template<typename U, unsigned m>
+  friend constexpr U modulo2(const VectorTyped<U, m>&);
 /// friend version of modulo (to simplify some syntax)
-  template<unsigned m>
-  friend double modulo(const VectorGeneric<m>&);
+  template<typename U, unsigned m>
+  friend constexpr U modulo(const VectorTyped<U, m>&);
 /// << operator.
 /// Allows printing vector `v` with `std::cout<<v;`
-  template<unsigned m>
-  friend std::ostream & operator<<(std::ostream &os, const VectorGeneric<m>&);
+  friend std::ostream & operator<< <>(std::ostream &os, const VectorTyped&);
 };
 
-template <unsigned n>
-void VectorGeneric<n>::auxiliaryConstructor()
+template<typename T, unsigned n>
+constexpr void VectorTyped<T, n>::auxiliaryConstructor()
 {}
 
-template <unsigned n>
+template<typename T, unsigned n>
 template<typename... Args>
-void VectorGeneric<n>::auxiliaryConstructor(double first,Args... arg) {
+constexpr void VectorTyped<T, n>::auxiliaryConstructor(T first,Args... arg) {
   d[n-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
-template <unsigned n>
+template<typename T, unsigned n>
 template<typename... Args>
-VectorGeneric<n>::VectorGeneric(double first,Args... arg) {
+constexpr VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
   static_assert((sizeof...(Args))+1==n,"you are trying to initialize a Vector with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
 
-template <unsigned n>
-void VectorGeneric<n>::zero() {
-  LoopUnroller<n>::_zero(d.data());
+template<typename T, unsigned n>
+constexpr T* VectorTyped<T, n>::data() {
+  return d.data();
 }
 
-template <unsigned n>
-VectorGeneric<n>::VectorGeneric() {
-  LoopUnroller<n>::_zero(d.data());
+template<typename T, unsigned n>
+constexpr const T* VectorTyped<T, n>::data() const {
+  return d.data();
 }
 
-template <unsigned n>
-double & VectorGeneric<n>::operator[](unsigned i) {
+template<typename T, unsigned n>
+constexpr void VectorTyped<T, n>::zero() {
+  LoopUnroller<T, n>::_zero(d.data());
+}
+
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>::VectorTyped() {
+  LoopUnroller<T, n>::_zero(d.data());
+}
+
+template<typename T, unsigned n>
+constexpr T & VectorTyped<T, n>::operator[](unsigned i) {
   return d[i];
 }
 
-template <unsigned n>
-const double & VectorGeneric<n>::operator[](unsigned i)const {
+template<typename T, unsigned n>
+constexpr const T & VectorTyped<T, n>::operator[](unsigned i)const {
   return d[i];
 }
 
-template <unsigned n>
-double & VectorGeneric<n>::operator()(unsigned i) {
+template<typename T, unsigned n>
+constexpr T & VectorTyped<T, n>::operator()(unsigned i) {
   return d[i];
 }
 
-template <unsigned n>
-const double & VectorGeneric<n>::operator()(unsigned i)const {
+template<typename T, unsigned n>
+constexpr const T & VectorTyped<T, n>::operator()(unsigned i)const {
   return d[i];
 }
 
-template <unsigned n>
-VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_add(d.data(),b.d.data());
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator +=(const VectorTyped<T, n>& b) {
+  LoopUnroller<T, n>::_add(d.data(),b.d.data());
   return *this;
 }
 
-template <unsigned n>
-VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_sub(d.data(),b.d.data());
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator -=(const VectorTyped<T, n>& b) {
+  LoopUnroller<T, n>::_sub(d.data(),b.d.data());
   return *this;
 }
 
-template <unsigned n>
-VectorGeneric<n>& VectorGeneric<n>::operator *=(double s) {
-  LoopUnroller<n>::_mul(d.data(),s);
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator *=(T s) {
+  LoopUnroller<T, n>::_mul(d.data(),s);
   return *this;
 }
 
-template <unsigned n>
-VectorGeneric<n>& VectorGeneric<n>::operator /=(double s) {
-  LoopUnroller<n>::_mul(d.data(),1.0/s);
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator /=(T s) {
+  LoopUnroller<T, n>::_mul(d.data(),1.0/s);
   return *this;
 }
 
-template <unsigned n>
-VectorGeneric<n>  VectorGeneric<n>::operator +()const {
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n>  VectorTyped<T, n>::operator +()const {
   return *this;
 }
 
-template <unsigned n>
-VectorGeneric<n> VectorGeneric<n>::operator -()const {
-  VectorGeneric<n> r;
-  LoopUnroller<n>::_neg(r.d.data(),d.data());
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n> VectorTyped<T, n>::operator -()const {
+  VectorTyped<T, n> r;
+  LoopUnroller<T, n>::_neg(r.d.data(),d.data());
   return r;
 }
 
-template <unsigned n>
-VectorGeneric<n> operator+(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2) {
-  VectorGeneric<n> v(v1);
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n> operator+(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
+  VectorTyped<T, n> v(v1);
   return v+=v2;
 }
 
-template <unsigned n>
-VectorGeneric<n> operator-(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2) {
-  VectorGeneric<n> v(v1);
-  return v-=v2;
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n> operator-(VectorTyped<T, n>v1,const VectorTyped<T, n>&v2) {
+  return v1-=v2;
 }
 
-template <unsigned n>
-VectorGeneric<n> operator*(double s,const VectorGeneric<n>&v) {
-  VectorGeneric<n> vv(v);
-  return vv*=s;
+template<typename T, typename J, unsigned n>
+constexpr VectorTyped<T, n> operator*(J s,VectorTyped<T, n>v) {
+  return v*=s;
 }
 
-template <unsigned n>
-VectorGeneric<n> operator*(const VectorGeneric<n>&v,double s) {
-  return s*v;
+template<typename T, typename J, unsigned n>
+constexpr VectorTyped<T, n> operator*(VectorTyped<T, n> v,J s) {
+  return v*=s;
 }
 
-template <unsigned n>
-VectorGeneric<n> operator/(const VectorGeneric<n>&v,double s) {
-  return v*(1.0/s);
+template<typename T, typename J, unsigned n>
+constexpr VectorTyped<T, n> operator/(const VectorTyped<T, n>&v,J s) {
+  return v*(T(1.0)/s);
 }
 
-template <unsigned n>
-VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2) {
+template<typename T, unsigned n>
+constexpr VectorTyped<T, n> delta(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
   return v2-v1;
 }
 
-template <unsigned n>
-double VectorGeneric<n>::modulo2()const {
-  return LoopUnroller<n>::_sum2(d.data());
+template<typename T, unsigned n>
+constexpr T VectorTyped<T, n>::modulo2()const {
+  return LoopUnroller<T, n>::_sum2(d.data());
 }
 
-template <unsigned n>
-double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2) {
-  return LoopUnroller<n>::_dot(v1.d.data(),v2.d.data());
+template<typename T, unsigned n>
+constexpr T dotProduct(const VectorTyped<T, n>& v1,const VectorTyped<T, n>& v2) {
+  return LoopUnroller<T, n>::_dot(v1.d.data(),v2.d.data());
 }
 
-inline
-VectorGeneric<3> crossProduct(const VectorGeneric<3>& v1,const VectorGeneric<3>& v2) {
-  return VectorGeneric<3>(
+template<typename T>
+constexpr inline
+VectorTyped<T, 3> crossProduct(const VectorTyped<T, 3>& v1,const VectorTyped<T, 3>& v2) {
+  return VectorTyped<T, 3>(
            v1[1]*v2[2]-v1[2]*v2[1],
            v1[2]*v2[0]-v1[0]*v2[2],
            v1[0]*v2[1]-v1[1]*v2[0]);
 }
 
-template<unsigned n>
-double VectorGeneric<n>::modulo()const {
+template<typename T, unsigned n>
+constexpr T VectorTyped<T, n>::modulo()const {
   return sqrt(modulo2());
 }
 
-template<unsigned n>
-double modulo2(const VectorGeneric<n>&v) {
+template<typename T, unsigned n>
+constexpr T modulo2(const VectorTyped<T, n>&v) {
   return v.modulo2();
 }
 
-template<unsigned n>
-double modulo(const VectorGeneric<n>&v) {
+template<typename T, unsigned n>
+constexpr T modulo(const VectorTyped<T, n>&v) {
   return v.modulo();
 }
 
-template<unsigned n>
-std::ostream & operator<<(std::ostream &os, const VectorGeneric<n>& v) {
+template<typename T, unsigned n>
+std::ostream & operator<<(std::ostream &os, const VectorTyped<T, n>& v) {
   for(unsigned i=0; i<n-1; i++) {
     os<<v(i)<<" ";
   }
@@ -313,6 +334,8 @@ std::ostream & operator<<(std::ostream &os, const VectorGeneric<n>& v) {
   return os;
 }
 
+template<unsigned n>
+using VectorGeneric=VectorTyped<double, n>;
 
 /// \ingroup TOOLBOX
 /// Alias for one dimensional vectors
@@ -331,13 +354,13 @@ typedef VectorGeneric<4> Vector4d;
 typedef VectorGeneric<5> Vector5d;
 /// \ingroup TOOLBOX
 /// Alias for three dimensional vectors
-typedef Vector3d Vector;
+using Vector=Vector3d;
+//using the using keyword seems to be more trasparent
 
 static_assert(sizeof(VectorGeneric<2>)==2*sizeof(double), "code cannot work if this is not satisfied");
 static_assert(sizeof(VectorGeneric<3>)==3*sizeof(double), "code cannot work if this is not satisfied");
 static_assert(sizeof(VectorGeneric<4>)==4*sizeof(double), "code cannot work if this is not satisfied");
 
-}
+} //PLMD
 
-#endif
-
+#endif //__PLUMED_tools_Vector_h
