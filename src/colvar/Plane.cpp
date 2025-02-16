@@ -63,9 +63,7 @@ class Plane : public Colvar {
 private:
   bool pbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Plane(const ActionOptions&);
@@ -113,10 +111,7 @@ unsigned Plane::getModeAndSetupValues( ActionWithValue* av ) {
 Plane::Plane(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(3),
-  derivs(3,4),
-  virial(3),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(3)
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   bool nopbc=!pbc;
@@ -134,10 +129,11 @@ Plane::Plane(const ActionOptions&ao):
 void Plane::calculate() {
 
   if(pbc) makeWhole();
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
-  setBoxDerivatives( virial[0] );
+  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
 void Plane::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
@@ -149,21 +145,21 @@ void Plane::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   cvout.derivs[0][1] = crossProduct( Vector(+1.0,0,0), d2 );
   cvout.derivs[0][2] = crossProduct( Vector(-1.0,0,0), d1 );
   cvout.derivs[0][3] = crossProduct( Vector(+1.0,0,0), d1 );
-  cvout.virial[0] = Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1));
+  cvout.virial.set( 0, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
   cvout.values[0] = cp[0];
 
   cvout.derivs[1][0] = crossProduct( Vector(0,-1.0,0), d2 );
   cvout.derivs[1][1] = crossProduct( Vector(0,+1.0,0), d2 );
   cvout.derivs[1][2] = crossProduct( Vector(0,-1.0,0), d1 );
   cvout.derivs[1][3] = crossProduct( Vector(0,+1.0,0), d1 );
-  cvout.virial[1] = Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1));
+  cvout.virial.set(1, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
   cvout.values[1] = cp[1];
 
   cvout.derivs[2][0] = crossProduct( Vector(0,0,-1.0), d2 );
   cvout.derivs[2][1] = crossProduct( Vector(0,0,+1.0), d2 );
   cvout.derivs[2][2] = crossProduct( Vector(0,0,-1.0), d1 );
   cvout.derivs[2][3] = crossProduct( Vector(0,0,+1.0), d1 );
-  cvout.virial[2] = Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1));
+  cvout.virial.set(2, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
   cvout.values[2] = cp[2];
 }
 

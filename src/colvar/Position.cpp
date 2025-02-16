@@ -94,9 +94,7 @@ class Position : public Colvar {
   bool scaled_components;
   bool pbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
@@ -132,10 +130,7 @@ Position::Position(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   scaled_components(false),
   pbc(true),
-  value(3),
-  derivs(3,1),
-  virial(3),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(3)
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
@@ -183,16 +178,17 @@ void Position::calculate() {
     distance[0]=delta(Vector(0.0,0.0,0.0),getPosition(0));
   }
 
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   if(scaled_components) {
     calculateCV( ColvarInput::createColvarInput( 1, distance, this ), cvout );
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
-    setAtomsDerivatives (valuea,0,derivs[0][0]);
+    setAtomsDerivatives (valuea,0,cvout.getAtomDerivatives(0,0));
     valuea->set(value[0]);
-    setAtomsDerivatives (valueb,0,derivs[1][0]);
+    setAtomsDerivatives (valueb,0,cvout.getAtomDerivatives(1,0));
     valueb->set(value[1]);
-    setAtomsDerivatives (valuec,0,derivs[2][0]);
+    setAtomsDerivatives (valuec,0,cvout.getAtomDerivatives(2,0));
     valuec->set(value[2]);
   } else {
     calculateCV( ColvarInput::createColvarInput( 0, distance, this ), cvout );
@@ -200,16 +196,16 @@ void Position::calculate() {
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
 
-    setAtomsDerivatives (valuex,0,derivs[0][0]);
-    setBoxDerivatives   (valuex,virial[0]);
+    setAtomsDerivatives (valuex,0,cvout.getAtomDerivatives(0,0));
+    setBoxDerivatives   (valuex,cvout.virial[0]);
     valuex->set(value[0]);
 
-    setAtomsDerivatives (valuey,0,derivs[1][0]);
-    setBoxDerivatives   (valuey,virial[1]);
+    setAtomsDerivatives (valuey,0,cvout.getAtomDerivatives(1,0));
+    setBoxDerivatives   (valuey,cvout.virial[1]);
     valuey->set(value[1]);
 
-    setAtomsDerivatives (valuez,0,derivs[2][0]);
-    setBoxDerivatives   (valuez,virial[2]);
+    setAtomsDerivatives (valuez,0,cvout.getAtomDerivatives(2,0));
+    setBoxDerivatives   (valuez,cvout.virial[2]);
     valuez->set(value[2]);
   }
 }
@@ -224,9 +220,9 @@ void Position::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   } else {
     for(unsigned i=0; i<3; ++i) cvout.values[i]=cvin.pos[0][i];
     cvout.derivs[0][0]=Vector(+1,0,0); cvout.derivs[1][0]=Vector(0,+1,0); cvout.derivs[2][0]=Vector(0,0,+1);
-    cvout.virial[0]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0));
-    cvout.virial[1]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0));
-    cvout.virial[2]=Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1));
+    cvout.virial.set(0, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0)) );
+    cvout.virial.set(1, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0)) );
+    cvout.virial.set(2, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1)) );
   }
 }
 

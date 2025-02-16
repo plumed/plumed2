@@ -51,13 +51,47 @@ struct ColvarInput {
 };
 
 class ColvarOutput {
+private:
+  std::size_t ncomponents;
+  class DerivHelper {
+  private:
+    std::size_t nderiv;
+    std::vector<double>& derivatives;
+  public:
+    DerivHelper( std::size_t n, std::vector<double>& d ) : nderiv(n), derivatives(d) {}
+    View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
+      return View2D<double, helpers::dynamic_extent, 3>( derivatives.data() + i*nderiv, nderiv );
+    }
+    Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
+      std::size_t base = i*nderiv + 3*a;
+      return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
+    }
+  };
+  class VirialHelper {
+  private:
+    std::size_t nderiv;
+    std::vector<double>& derivatives;
+  public:
+    VirialHelper( std::size_t n, std::vector<double>& d ) : nderiv(n), derivatives(d) {}
+    Tensor operator[](std::size_t i) const {
+      std::size_t n=(i+1)*nderiv;
+      return Tensor( derivatives[n-9], derivatives[n-8], derivatives[n-7], derivatives[n-6], derivatives[n-5], derivatives[n-4], derivatives[n-3], derivatives[n-2], derivatives[n-1] );
+    }
+    void set( std::size_t i, const Tensor& v ) {
+      std::size_t n=(i+1)*nderiv;
+      derivatives[n-9]=v[0][0]; derivatives[n-8]=v[0][1]; derivatives[n-7]=v[0][2];
+      derivatives[n-6]=v[1][0]; derivatives[n-5]=v[1][1]; derivatives[n-4]=v[1][2];
+      derivatives[n-3]=v[2][0]; derivatives[n-2]=v[2][1]; derivatives[n-1]=v[2][2];
+    }
+  };
 public:
   View<double,helpers::dynamic_extent> values;
-  std::vector<Tensor>& virial;
-  Matrix<Vector>& derivs;
-  ColvarOutput( std::size_t n, double* v, Matrix<Vector>& d, std::vector<Tensor>& t );
+  DerivHelper derivs;
+  VirialHelper virial;
+  ColvarOutput( std::size_t n, double* v, std::size_t m, std::vector<double>& d );
+  Vector getAtomDerivatives( std::size_t i, std::size_t a ) { return derivs.getAtomDerivatives(i,a); }
   void setBoxDerivativesNoPbc( const ColvarInput& inpt );
-  static ColvarOutput createColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t );
+  static ColvarOutput createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action );
 };
 
 template <class T>
@@ -84,8 +118,8 @@ public:
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, ParallelForceData& forces );
-  static void gatherThreads( ParallelForceData& forces );
+  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const ForceInput& fdata, ForceOutput& forces );
+  static void gatherThreads( ForceOutput& forces );
   static void transferToValue( unsigned task_index, const std::vector<double>& values, std::vector<double>& value_mat );
 };
 
@@ -216,25 +250,10 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
     input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
   }
 
-  std::vector<Tensor> virial( input.ncomponents );
-  Matrix<Vector> derivs( input.ncomponents, input.nindices_per_task );
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  ColvarOutput cvout = ColvarOutput(input.ncomponents, output.values.data(), derivs, virial);
+  ColvarOutput cvout = ColvarOutput( input.ncomponents, output.values.data(), 3*input.nindices_per_task+9, output.derivatives );
   T::calculateCV( ColvarInput(input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
-  if( input.noderiv ) return;
-
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned k=0;
-    for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      output.derivatives[i][k] = derivs[i][j][0]; k++;
-      output.derivatives[i][k] = derivs[i][j][1]; k++;
-      output.derivatives[i][k] = derivs[i][j][2]; k++;
-    }
-    for(unsigned j=0; j<3; ++j) {
-      for(unsigned n=0; n<3; ++n) { output.derivatives[i][k] = virial[i][j][n]; k++; }
-    }
-  }
 }
 
 template <class T>
@@ -244,21 +263,21 @@ void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::ve
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, ParallelForceData& forces ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const ForceInput& fdata, ForceOutput& forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned m = 0; double ff = force_in[task_index*input.ncomponents+i];
+    unsigned m = 0; double ff = fdata.force[i];
     for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
-      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
-      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
     }
-    for(unsigned n=0; n<9; ++n) { forces.thread_safe[n] += ff*derivs[i][m]; m++; }
+    for(unsigned n=0; n<9; ++n) { forces.thread_safe[n] += ff*fdata.deriv[i][m]; m++; }
   }
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherThreads( ParallelForceData& forces ) {
+void MultiColvarTemplate<T>::gatherThreads( ForceOutput& forces ) {
   unsigned k=0; for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) { forces.thread_unsafe[n] += forces.thread_safe[k]; k++; }
 }
 

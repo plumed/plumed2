@@ -65,9 +65,7 @@ class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
@@ -93,10 +91,7 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(1),
-  derivs(1,8),
-  virial(1),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(1)
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   if( atoms.size()!=8 ) error("Number of specified atoms should be 8");
@@ -125,10 +120,11 @@ unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
 void DihedralCorrelation::calculate() {
 
   if(pbc) makeWhole();
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
-  setBoxDerivatives( virial[0] );
+  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, cvout.getAtomDerivatives(0, i) );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
 void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
@@ -170,7 +166,7 @@ void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cv
   cvout.derivs[0][5]=dd21-dd20;
   cvout.derivs[0][6]=dd22-dd21;
   cvout.derivs[0][7]=-dd22;
-  cvout.virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22));
+  cvout.virial.set( 0, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
 }
 
 }

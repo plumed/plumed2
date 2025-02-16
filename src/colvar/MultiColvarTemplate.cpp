@@ -38,21 +38,25 @@ ColvarInput ColvarInput::createColvarInput( unsigned m, const std::vector<Vector
   return ColvarInput( m, p.size(), &p[0][0], colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
 }
 
-ColvarOutput::ColvarOutput( std::size_t n, double* v, Matrix<Vector>& d, std::vector<Tensor>& t ):
+ColvarOutput::ColvarOutput( std::size_t n, double* v, std::size_t m, std::vector<double>& d ):
+  ncomponents(n),
   values(n,v),
-  virial(t),
-  derivs(d)
+  derivs(m,d),
+  virial(m,d)
 {
 }
 
-ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t ) {
-  return ColvarOutput( v.size(), v.data(), d, t );
+ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action ) {
+  d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
+  return ColvarOutput( v.size(), v.data(), action->getNumberOfDerivatives(), d );
 }
 
 void ColvarOutput::setBoxDerivativesNoPbc( const ColvarInput& inpt ) {
   unsigned nat=inpt.pos.size();
-  for(unsigned i=0; i<virial.size(); ++i) {
-    virial[i].zero(); for(unsigned j=0; j<nat; j++) virial[i]-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),derivs[i][j]);
+  for(unsigned i=0; i<ncomponents; ++i) {
+    Tensor v; v.zero();
+    for(unsigned j=0; j<nat; j++) v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),derivs.getAtomDerivatives(i,j));
+    virial.set( i, v );
   }
 }
 

@@ -101,9 +101,7 @@ Calculate multiple angles.
 class Angle : public Colvar {
   bool pbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
@@ -146,10 +144,7 @@ unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
 Angle::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(1),
-  derivs(1,4),
-  virial(1),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(1)
 {
   std::vector<AtomNumber> atoms; parseAtomList( -1, atoms, this );
   bool nopbc=!pbc;
@@ -168,10 +163,11 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
-  setBoxDerivatives( virial[0] );
+  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
 void Angle::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {

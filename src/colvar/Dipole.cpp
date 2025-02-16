@@ -83,8 +83,7 @@ class Dipole : public Colvar {
   bool components;
   bool nopbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> derivs;
   Value* valuex=nullptr;
   Value* valuey=nullptr;
   Value* valuez=nullptr;
@@ -117,14 +116,12 @@ void Dipole::registerKeywords(Keywords& keys) {
 Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   components(false),
-  value(1),
-  derivs(1,1),
-  virial(1)
+  value(1)
 {
   parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
-    value.resize(3); derivs.resize(3,ga_lista.size()); virial.resize(3);
+    value.resize(3);
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
@@ -169,22 +166,22 @@ void Dipole::calculate()
   unsigned N=getNumberOfAtoms();
 
   if(!components) {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
     calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
-    for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
-    setBoxDerivatives(virial[0]);
+    for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i));
+    setBoxDerivatives(cvout.virial[0]);
     setValue(value[0]);
   } else {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
     calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) {
-      setAtomsDerivatives(valuex,i,derivs[0][i]);
-      setAtomsDerivatives(valuey,i,derivs[1][i]);
-      setAtomsDerivatives(valuez,i,derivs[2][i]);
+      setAtomsDerivatives(valuex,i,cvout.getAtomDerivatives(0,i));
+      setAtomsDerivatives(valuey,i,cvout.getAtomDerivatives(1,i));
+      setAtomsDerivatives(valuez,i,cvout.getAtomDerivatives(2,i));
     }
-    setBoxDerivatives(valuex,virial[0]);
-    setBoxDerivatives(valuey,virial[1]);
-    setBoxDerivatives(valuez,virial[2]);
+    setBoxDerivatives(valuex,cvout.virial[0]);
+    setBoxDerivatives(valuey,cvout.virial[1]);
+    setBoxDerivatives(valuez,cvout.virial[2]);
     valuex->set(value[0]);
     valuey->set(value[1]);
     valuez->set(value[2]);

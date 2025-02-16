@@ -98,9 +98,7 @@ class Quaternion : public Colvar {
 private:
   bool pbc;
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  colvar::ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Quaternion(const ActionOptions&);
@@ -130,10 +128,7 @@ void Quaternion::registerKeywords( Keywords& keys ) {
 Quaternion::Quaternion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(4),
-  derivs(4,3),
-  virial(4),
-  cvout(colvar::ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(4)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
@@ -165,11 +160,12 @@ unsigned Quaternion::getModeAndSetupValues( ActionWithValue* av ) {
 void Quaternion::calculate() {
   if(pbc) makeWhole();
 
+  colvar::ColvarOutput cvout = colvar::ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
-    for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
-    setBoxDerivatives(valuej,virial[j]);
+    for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,cvout.getAtomDerivatives(j,i) );
+    setBoxDerivatives(valuej,cvout.virial[j]);
     valuej->set(value[j]);
   }
 }

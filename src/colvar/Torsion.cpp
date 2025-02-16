@@ -111,9 +111,7 @@ class Torsion : public Colvar {
   bool do_cosine;
 
   std::vector<double> value;
-  Matrix<Vector> derivs;
-  std::vector<Tensor> virial;
-  ColvarOutput cvout;
+  std::vector<double> derivs;
 public:
   explicit Torsion(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
@@ -147,10 +145,7 @@ Torsion::Torsion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   do_cosine(false),
-  value(1),
-  derivs(1,6),
-  virial(1),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  value(1)
 {
   std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> v1; ActionAtomistic::parseAtomList("VECTOR1",v1);
@@ -225,10 +220,11 @@ unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
 // calculator
 void Torsion::calculate() {
   if(pbc) makeWhole();
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   if(do_cosine) calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
   else calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
-  for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,derivs[0][i] );
-  setValue(value[0]); setBoxDerivatives( virial[0] );
+  for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i) );
+  setValue(value[0]); setBoxDerivatives( cvout.virial[0] );
 }
 
 void Torsion::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
