@@ -131,7 +131,6 @@ class Distance : public Colvar {
   std::vector<double> value;
   Matrix<Vector> derivs;
   std::vector<Tensor> virial;
-  ColvarOutput cvout;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
@@ -170,8 +169,7 @@ Distance::Distance(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1,2),
-  virial(1),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  virial(1)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
@@ -225,6 +223,7 @@ void Distance::calculate() {
   if(pbc) makeWhole();
 
   if( components ) {
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
     calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
@@ -242,6 +241,7 @@ void Distance::calculate() {
     setBoxDerivatives(valuez,virial[2]);
     valuez->set(value[2]);
   } else if( scaled_components ) {
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
     calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), cvout );
 
     Value* valuea=getPntrToComponent("a");
@@ -254,6 +254,7 @@ void Distance::calculate() {
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
     valuec->set(value[2]);
   } else  {
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
     calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
     setBoxDerivatives(virial[0]);

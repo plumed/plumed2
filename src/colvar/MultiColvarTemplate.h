@@ -50,11 +50,12 @@ struct ColvarInput {
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
 };
 
-struct ColvarOutput {
-  std::vector<double>& values;
+class ColvarOutput {
+public:
+  View<double,helpers::dynamic_extent> values;
   std::vector<Tensor>& virial;
   Matrix<Vector>& derivs;
-  ColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t );
+  ColvarOutput( std::size_t n, double* v, Matrix<Vector>& d, std::vector<Tensor>& t );
   void setBoxDerivativesNoPbc( const ColvarInput& inpt );
   static ColvarOutput createColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t );
 };
@@ -83,8 +84,8 @@ public:
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
-  static void gatherThreads( std::vector<double>& thred_unsafe_force_out, std::vector<double>& thred_safe_force_out );
+  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, ParallelForceData& forces );
+  static void gatherThreads( ParallelForceData& forces );
   static void transferToValue( unsigned task_index, const std::vector<double>& values, std::vector<double>& value_mat );
 };
 
@@ -219,7 +220,7 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
   Matrix<Vector> derivs( input.ncomponents, input.nindices_per_task );
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  ColvarOutput cvout = ColvarOutput(output.values, derivs, virial);
+  ColvarOutput cvout = ColvarOutput(input.ncomponents, output.values.data(), derivs, virial);
   T::calculateCV( ColvarInput(input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
   if( input.noderiv ) return;
 
@@ -243,22 +244,22 @@ void MultiColvarTemplate<T>::transferToValue( unsigned task_index, const std::ve
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const std::vector<double>& force_in, const Matrix<double>& derivs, ParallelForceData& forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned m = 0; double ff = force_in[task_index*input.ncomponents+i];
     for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
-      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
-      thred_unsafe_force_out[base + m] += ff*derivs[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*derivs[i][m]; m++;
     }
-    for(unsigned n=0; n<9; ++n) { thred_safe_force_out[n] += ff*derivs[i][m]; m++; }
+    for(unsigned n=0; n<9; ++n) { forces.thread_safe[n] += ff*derivs[i][m]; m++; }
   }
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherThreads( std::vector<double>& thred_safe_force_out, std::vector<double>& thred_unsafe_force_out ) {
-  unsigned k=0; for(unsigned n=thred_unsafe_force_out.size()-9; n<thred_unsafe_force_out.size(); ++n) { thred_unsafe_force_out[n] += thred_safe_force_out[k]; k++; }
+void MultiColvarTemplate<T>::gatherThreads( ParallelForceData& forces ) {
+  unsigned k=0; for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) { forces.thread_unsafe[n] += forces.thread_safe[k]; k++; }
 }
 
 }

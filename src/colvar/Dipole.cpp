@@ -88,7 +88,6 @@ class Dipole : public Colvar {
   Value* valuex=nullptr;
   Value* valuey=nullptr;
   Value* valuez=nullptr;
-  ColvarOutput cvout;
 public:
   explicit Dipole(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
@@ -120,8 +119,7 @@ Dipole::Dipole(const ActionOptions&ao):
   components(false),
   value(1),
   derivs(1,1),
-  virial(1),
-  cvout(ColvarOutput::createColvarOutput(value,derivs,virial))
+  virial(1)
 {
   parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
@@ -171,11 +169,13 @@ void Dipole::calculate()
   unsigned N=getNumberOfAtoms();
 
   if(!components) {
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
     calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, virial) );
     calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);

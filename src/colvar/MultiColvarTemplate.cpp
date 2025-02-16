@@ -38,15 +38,15 @@ ColvarInput ColvarInput::createColvarInput( unsigned m, const std::vector<Vector
   return ColvarInput( m, p.size(), &p[0][0], colv->getMasses().data(), colv->getCharges(true).data(), colv->getPbc() );
 }
 
-ColvarOutput::ColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t ):
-  values(v),
+ColvarOutput::ColvarOutput( std::size_t n, double* v, Matrix<Vector>& d, std::vector<Tensor>& t ):
+  values(n,v),
   virial(t),
   derivs(d)
 {
 }
 
 ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v, Matrix<Vector>& d, std::vector<Tensor>& t ) {
-  return ColvarOutput( v, d, t );
+  return ColvarOutput( v.size(), v.data(), d, t );
 }
 
 void ColvarOutput::setBoxDerivativesNoPbc( const ColvarInput& inpt ) {

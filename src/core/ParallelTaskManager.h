@@ -103,6 +103,12 @@ public:
   ParallelActionsOutput( std::size_t ncomp, std::size_t nder ) : values(ncomp), derivatives(ncomp,nder) {}
 };
 
+struct ParallelForceData {
+  std::vector<double>& thread_safe;
+  std::vector<double>& thread_unsafe;
+  ParallelForceData( std::vector<double>& s, std::vector<double>& u ) : thread_safe(s), thread_unsafe(u) {}
+};
+
 template <class T, class D>
 class ParallelTaskManager {
 private:
@@ -297,6 +303,7 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
     {
       const unsigned t=OpenMP::getThreadNum();
       omp_forces[t].assign( nthreaded_forces, 0.0 );
+      ParallelForceData forces( omp_forces[t], forcesForApply );
       ParallelActionsOutput myout( myinput.ncomponents, nderivatives_per_task );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
@@ -304,10 +311,10 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
         T::performTask( partialTaskList[i], myinput, myout );
 
         // Gather the forces from the values
-        T::gatherForces( partialTaskList[i], myinput, value_stash, myout.derivatives, omp_forces[t], forcesForApply );
+        T::gatherForces( partialTaskList[i], myinput, value_stash, myout.derivatives, forces );
       }
       #pragma omp critical
-      T::gatherThreads( omp_forces[t], forcesForApply );
+      T::gatherThreads( forces );
     }
     // MPI Gather everything
     if( !action->runInSerial() ) comm.Sum( forcesForApply );
