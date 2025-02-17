@@ -101,7 +101,8 @@ void VolumeInSphere::registerKeywords( Keywords& keys ) {
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("atoms-2","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
-  keys.remove("SIGMA"); keys.linkActionInDocs("RADIUS","LESS_THAN");
+  keys.remove("SIGMA");
+  keys.linkActionInDocs("RADIUS","LESS_THAN");
 }
 
 VolumeInSphere::VolumeInSphere(const ActionOptions& ao):

@@ -134,7 +134,8 @@ void ContactMap::registerKeywords( Keywords& keys ) {
   keys.add("numbered","WEIGHT","A weight value for a given contact, by default is 1.0 "
            "You can either specify a global weight value using WEIGHT or one "
            "weight value for each contact.");
-  keys.reset_style("SWITCH","compulsory"); keys.linkActionInDocs("SWITCH","LESS_THAN");
+  keys.reset_style("SWITCH","compulsory");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contact map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
