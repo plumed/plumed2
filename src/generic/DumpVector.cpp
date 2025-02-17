@@ -73,23 +73,38 @@ DumpVector::DumpVector(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  fmt("%f")
-{
-  if( getNumberOfArguments()==0 ) error("found no arguments");
-  buildArgnames(); parse("FILE",filename); parseFlag("PRINT_ONE_FILE", onefile);
-  if(filename.length()==0) error("name out output file was not specified");
+  fmt("%f") {
+  if( getNumberOfArguments()==0 ) {
+    error("found no arguments");
+  }
+  buildArgnames();
+  parse("FILE",filename);
+  parseFlag("PRINT_ONE_FILE", onefile);
+  if(filename.length()==0) {
+    error("name out output file was not specified");
+  }
 
   log.printf("  outputting data with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
-  parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() ); fmt = " " + fmt;
-  if( onefile ) log.printf("  printing all grids on a single file \n");
-  else log.printf("  printing all grids on separate files \n");
+  parse("FMT",fmt);
+  log.printf(" with format %s \n", fmt.c_str() );
+  fmt = " " + fmt;
+  if( onefile ) {
+    log.printf("  printing all grids on a single file \n");
+  } else {
+    log.printf("  printing all grids on separate files \n");
+  }
 }
 
 void DumpVector::buildArgnames() {
-  argnames.resize(0); unsigned nvals = getPntrToArgument(0)->getShape()[0];
-  if( getPntrToArgument(0)->getRank()==2 ) nvals = getPntrToArgument(0)->getShape()[0];
+  argnames.resize(0);
+  unsigned nvals = getPntrToArgument(0)->getShape()[0];
+  if( getPntrToArgument(0)->getRank()==2 ) {
+    nvals = getPntrToArgument(0)->getShape()[0];
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
+    if( getPntrToArgument(i)->getShape()[0]!=nvals ) {
+      error("all arguments should have same number of values");
+    }
     if( getPntrToArgument(i)->getRank()==1 ) {
       argnames.push_back( getPntrToArgument(i)->getName() );
     } else if( getPntrToArgument(i)->getRank()==2 ) {
@@ -100,17 +115,26 @@ void DumpVector::buildArgnames() {
 }
 
 void DumpVector::update() {
-  OFile ofile; ofile.link(*this);
-  if( onefile ) ofile.enforceRestart();
-  else ofile.setBackupString("analysis");
+  OFile ofile;
+  ofile.link(*this);
+  if( onefile ) {
+    ofile.enforceRestart();
+  } else {
+    ofile.setBackupString("analysis");
+  }
   ofile.open( filename );
 
   unsigned totargs = 0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==1 ) totargs += 1;
-    else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
+    if( getPntrToArgument(i)->getRank()==1 ) {
+      totargs += 1;
+    } else if( getPntrToArgument(i)->getRank()==2 ) {
+      totargs += getPntrToArgument(i)->getShape()[1];
+    }
   }
-  if( totargs!=argnames.size() ) buildArgnames();
+  if( totargs!=argnames.size() ) {
+    buildArgnames();
+  }
 
   unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<nvals; ++i) {
@@ -120,10 +144,16 @@ void DumpVector::update() {
     ofile.printField("parameter",int(i));
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       if( getPntrToArgument(j)->getRank()==1 ) {
-        ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i) ); n++;
+        ofile.fmtField(fmt);
+        ofile.printField(argnames[n],getPntrToArgument(j)->get(i) );
+        n++;
       } else if( getPntrToArgument(j)->getRank()==2 ) {
         unsigned ncols = getPntrToArgument(j)->getShape()[1];
-        for(unsigned k=0; k<ncols; ++k) { ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i*ncols+k)); n++; }
+        for(unsigned k=0; k<ncols; ++k) {
+          ofile.fmtField(fmt);
+          ofile.printField(argnames[n],getPntrToArgument(j)->get(i*ncols+k));
+          n++;
+        }
       }
     }
     ofile.printField();

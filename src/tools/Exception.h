@@ -152,8 +152,7 @@ this in all previous PLUMED versions. In case it is necessary, we can replace
 it later with a fixed size array placed on the stack.
 
 */
-class Exception : public std::exception
-{
+class Exception : public std::exception {
 /// Reported message. Can be updated.
   std::string msg;
 /// Flag to remember if we have to write the `+++ message follows +++` string.
@@ -220,8 +219,7 @@ public:
 
 /// Constructor compatible with PLUMED <=2.4.
   explicit Exception(const std::string & msg):
-    Exception()
-  {
+    Exception() {
     *this << msg;
   }
 
@@ -232,8 +230,7 @@ public:
     note(e.note),
     callstack(e.callstack),
     callstack_n(e.callstack_n),
-    stackTrace(e.stackTrace)
-  {
+    stackTrace(e.stackTrace) {
   }
 
 /// Assignment.
@@ -252,7 +249,9 @@ public:
 /// In case the environment variable PLUMED_STACK_TRACE was defined
 /// and equal to `yes` when the exception was raised,
 /// the error message will contain the stack trace as well.
-  const char* what() const noexcept override {return msg.c_str();}
+  const char* what() const noexcept override {
+    return msg.c_str();
+  }
 
 /// Returns the stack trace as a string.
 /// This function is slow as it requires building a parsed string.
@@ -260,10 +259,14 @@ public:
   const char* stack() const;
 
 /// Returns the callstack.
-  const std::array<void*,128> & trace() const noexcept {return callstack;}
+  const std::array<void*,128> & trace() const noexcept {
+    return callstack;
+  }
 
 /// Returns the number of elements in the trace array
-  int trace_n() const noexcept {return callstack_n;}
+  int trace_n() const noexcept {
+    return callstack_n;
+  }
 
 /// Destructor should be defined and should not throw other exceptions
   ~Exception() noexcept override {}

@@ -110,6 +110,15 @@ codecheck:
 plumedcheck:
 	$(MAKE) -C src plumedcheck
 
+cppcheck-local:
+	$(MAKE) -C src cppcheck-local
+
+codecheck-local:
+	$(MAKE) -C src codecheck-local
+
+plumedcheck-local:
+	$(MAKE) -C src plumedcheck-local
+
 macports:
 	$(MAKE) -C macports
 

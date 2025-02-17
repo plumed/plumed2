@@ -37,7 +37,7 @@ in input ("sss" component) and the distance from them ("zzz" component).
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding molecules with a procedure
+by rebuilding molecules with a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -104,22 +104,25 @@ void PathMSD::registerKeywords(Keywords& keys) {
 }
 
 PathMSD::PathMSD(const ActionOptions&ao):
-  Action(ao),PathMSDBase(ao)
-{
+  Action(ao),PathMSDBase(ao) {
   checkRead();
 
   log<<"  Bibliography "
      <<plumed.cite("Branduardi, Gervasio, Parrinello J. Chem. Phys. 126, 054103 (2007)")
      <<"\n";
   // no need to read anything
-  addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
-  addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
+  addComponentWithDerivatives("sss");
+  componentIsNotPeriodic("sss");
+  addComponentWithDerivatives("zzz");
+  componentIsNotPeriodic("zzz");
   requestAtoms(pdbv[0].getAtomNumbers());
 
   double i=1.;
   for(unsigned it=0 ; it<nframes ; ++it) {
-    std::vector<double> v; v.push_back(i);
-    indexvec.push_back(v); i+=1.;
+    std::vector<double> v;
+    v.push_back(i);
+    indexvec.push_back(v);
+    i+=1.;
   }
 }
 

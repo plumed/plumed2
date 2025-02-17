@@ -57,7 +57,9 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
-The way WHOLEMOLECULES modifies each of the listed entities is this:
+The behavior of WHOLEMOLECULES is affected by the last \ref MOLINFO action
+present in the input file before WHOLEMOLECULES. Specifically, if the
+\ref MOLINFO action does not have a `WHOLE` flag, then the behavior is the following:
 - First atom of the list is left in place
 - Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
   to the previous one, iteratively.
@@ -66,6 +68,11 @@ In this way, if an entity consists of a list of atoms such that consecutive atom
 list are always closer than half a box side the entity will become whole.
 This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
 to skip some atoms, provided consecutive chosen atoms are close enough.
+
+If instead the \ref MOLINFO action does have a `WHOLE` flag, then a minimum spanning tree
+is built based on the atoms passed to WHOLEMOLECULES using the coordinates in the PDB
+passed to \ref MOLINFO as a reference, and this tree is used to reconstruct PBCs.
+This approach is more robust when dealing with complexes of multiple molecules.
 
 \par Examples
 
@@ -101,8 +108,7 @@ WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
 
 class WholeMolecules:
   public ActionPilot,
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
   std::vector<Vector> refs;
@@ -110,7 +116,9 @@ class WholeMolecules:
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  bool actionHasForces() override { return false; }
+  bool actionHasForces() override {
+    return false;
+  }
   void calculate() override;
   void apply() override {}
 };
@@ -129,7 +137,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
+  keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.11 this is the default when using MOLINFO with WHOLE");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
 }
 
@@ -137,32 +145,46 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  doemst(false), addref(false)
-{
+  doemst(false), addref(false) {
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   // parse optional flags
-  parseFlag("EMST", doemst);
+  bool doemst_tmp;
+  parseFlag("EMST", doemst_tmp);
+  if(doemst_tmp) {
+    log << "EMST option is not needed any more as of PLUMED 2.11\n";
+  }
   parseFlag("ADDREFERENCE", addref);
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   // create groups from ENTITY
   for(int i=0;; i++) {
     std::vector<AtomNumber> group;
     parseAtomList("ENTITY",i,group);
-    if( group.empty() ) break;
+    if( group.empty() ) {
+      break;
+    }
     groups.push_back(group);
   }
 
   // Read residues to align from MOLINFO
-  std::vector<std::string> resstrings; parseVector("RESIDUES",resstrings);
+  std::vector<std::string> resstrings;
+  parseVector("RESIDUES",resstrings);
   if( resstrings.size()>0 ) {
     if( resstrings.size()==1 ) {
-      if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
+      if( resstrings[0]=="all" ) {
+        resstrings[0]="all-ter";  // Include terminal groups in alignment
+      }
     }
-    std::string moltype; parse("MOLTYPE",moltype);
-    if(moltype.length()==0) error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("MOLINFO is required to use RESIDUES");
+    std::string moltype;
+    parse("MOLTYPE",moltype);
+    if(moltype.length()==0) {
+      error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
+    }
+    if( !moldat ) {
+      error("MOLINFO is required to use RESIDUES");
+    }
     std::vector< std::vector<AtomNumber> > backatoms;
     moldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
@@ -171,12 +193,23 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   // check number of groups
-  if(groups.size()==0) error("no atoms found for WHOLEMOLECULES!");
+  if(groups.size()==0) {
+    error("no atoms found for WHOLEMOLECULES!");
+  }
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
+  if(moldat && moldat->isWhole()) {
+    doemst=true;
+  }
+
+  if(doemst_tmp && ! doemst) {
+    error("cannot enable EMST if MOLINFO is not WHOLE");
+  }
+
   if(doemst) {
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("MOLINFO is required to use EMST");
+    if( !moldat ) {
+      error("MOLINFO is required to use EMST");
+    }
     // initialize tree
     Tree tree = Tree(moldat);
     // cycle on groups and reorder atoms
@@ -189,7 +222,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     // fill root vector with previous atom in groups
     for(unsigned i=0; i<groups.size(); ++i) {
       std::vector<AtomNumber> root;
-      for(unsigned j=0; j<groups[i].size()-1; ++j) root.push_back(groups[i][j]);
+      for(unsigned j=0; j<groups[i].size()-1; ++j) {
+        root.push_back(groups[i][j]);
+      }
       // store root atoms
       roots.push_back(root);
     }
@@ -197,8 +232,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
   // adding reference if needed
   if(addref) {
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("MOLINFO is required to use ADDREFERENCE");
+    if( !moldat ) {
+      error("MOLINFO is required to use ADDREFERENCE");
+    }
     for(unsigned i=0; i<groups.size(); ++i) {
       // add reference position of first atom in entity
       refs.push_back(moldat->getPosition(groups[i][0]));
@@ -208,9 +244,13 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // print out info
   for(unsigned i=0; i<groups.size(); ++i) {
     log.printf("  atoms in entity %d : ",i);
-    for(unsigned j=0; j<groups[i].size(); ++j) log.printf("%d ",groups[i][j].serial() );
+    for(unsigned j=0; j<groups[i].size(); ++j) {
+      log.printf("%d ",groups[i][j].serial() );
+    }
     log.printf("\n");
-    if(addref) log.printf("     with reference position : %lf %lf %lf\n",refs[i][0],refs[i][1],refs[i][2]);
+    if(addref) {
+      log.printf("     with reference position : %lf %lf %lf\n",refs[i][0],refs[i][1],refs[i][2]);
+    }
   }
 
   // collect all atoms
@@ -223,13 +263,17 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   p_groups.resize( groups.size() );
   for(unsigned i=0; i<groups.size(); ++i) {
     p_groups[i].resize( groups[i].size() );
-    for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
+    for(unsigned j=0; j<groups[i].size(); ++j) {
+      p_groups[i][j] = getValueIndices( groups[i][j] );
+    }
   }
   // Convert roots to p_roots
   p_roots.resize( roots.size() );
   for(unsigned i=0; i<roots.size(); ++i) {
     p_roots[i].resize( roots[i].size() );
-    for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
+    for(unsigned j=0; j<roots[i].size(); ++j) {
+      p_roots[i][j] = getValueIndices( roots[i][j] );
+    }
   }
 
 

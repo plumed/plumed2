@@ -101,8 +101,7 @@ void BF_Fourier::registerKeywords(Keywords& keys) {
 
 
 BF_Fourier::BF_Fourier(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
-{
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
   setNumberOfBasisFunctions(2*getOrder()+1);
   setIntrinsicInterval("-pi","+pi");
   setPeriodic();
@@ -131,7 +130,9 @@ void BF_Fourier::getAllValues(const double arg, double& argT, bool& inside_range
     derivs[2*i] = io*cos_tmp*intervalDerivf();
   }
   if(!inside_range) {
-    for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}
+    for(unsigned int i=0; i<derivs.size(); i++) {
+      derivs[i]=0.0;
+    }
   }
 }
 
@@ -139,7 +140,8 @@ void BF_Fourier::getAllValues(const double arg, double& argT, bool& inside_range
 void BF_Fourier::setupLabels() {
   setLabel(0,"1");
   for(unsigned int i=1; i < getOrder()+1; i++) {
-    std::string is; Tools::convert(i,is);
+    std::string is;
+    Tools::convert(i,is);
     setLabel(2*i-1,"cos("+is+"*s)");
     setLabel(2*i,"sin("+is+"*s)");
   }

@@ -50,7 +50,9 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
-  bool isAdjacencyMatrix() const override { return true; }
+  bool isAdjacencyMatrix() const override {
+    return true;
+  }
   unsigned getNumberOfDerivatives() override ;
   unsigned getNumberOfColumns() const override;
   void prepare() override;
@@ -72,9 +74,14 @@ Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, MultiValue& myva
 
 inline
 void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return;
-  plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex();
-  if( indno==1 ) index = myvals.getSecondTaskIndex();
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
+  plumed_dbg_assert( indno<2 );
+  unsigned index = myvals.getTaskIndex();
+  if( indno==1 ) {
+    index = myvals.getSecondTaskIndex();
+  }
   unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
   myvals.addDerivative( w_index, 3*index+0, der[0] );
   myvals.addDerivative( w_index, 3*index+1, der[1] );
@@ -83,7 +90,9 @@ void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vecto
 
 inline
 void AdjacencyMatrixBase::addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
   unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
   unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
   myvals.addDerivative( w_index, 3*index+0, der[0] );
@@ -93,7 +102,9 @@ void AdjacencyMatrixBase::addThirdAtomDerivatives( const unsigned& indno, const 
 
 inline
 void AdjacencyMatrixBase::addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
   unsigned nbase = 3*getNumberOfAtoms();
   unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
   myvals.addDerivative( w_index, nbase+0, vir(0,0) );

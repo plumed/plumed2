@@ -97,8 +97,9 @@ __device__ __forceinline__ calculateFloat pcuda_fastpow (calculateFloat base,
   }
   calculateFloat result = 1.0;
   while (expo) {
-    if (expo & 1)
+    if (expo & 1) {
       result *= base;
+    }
     expo >>= 1;
     base *= base;
   }
@@ -156,8 +157,9 @@ __global__ void getpcuda_Rational (const calculateFloat *rdists,
   if (rdists[i] <= 0.) {
     res[i] = 1.;
     dfunc[i] = 0.0;
-  } else
+  } else {
     res[i] = pcuda_Rational (rdists[i], NN, MM, dfunc[i]);
+  }
   // printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
 }
 

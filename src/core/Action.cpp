@@ -43,15 +43,13 @@ Keywords ActionOptions::emptyKeys;
 ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
   plumed(p),
   line(l),
-  keys(emptyKeys)
-{
+  keys(emptyKeys) {
 }
 
 ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
   plumed(ao.plumed),
   line(ao.line),
-  keys(keys)
-{
+  keys(keys) {
 }
 
 void Action::registerKeywords( Keywords& keys ) {
@@ -76,15 +74,16 @@ Action::Action(const ActionOptions&ao):
   log(plumed.getLog()),
   comm(plumed.comm),
   multi_sim_comm(plumed.multi_sim_comm),
-  keywords(ao.keys)
-{
+  keywords(ao.keys) {
   // Retrieve the timestep and save it
   resetStoredTimestep();
 
   line.erase(line.begin());
   if( !keywords.exists("NO_ACTION_LOG") ) {
     log.printf("Action %s\n",name.c_str());
-    if(ao.fullPath.length()>0) log<<"  from library: "<<ao.fullPath<<"\n";
+    if(ao.fullPath.length()>0) {
+      log<<"  from library: "<<ao.fullPath<<"\n";
+    }
   }
 
   if(comm.Get_rank()==0) {
@@ -92,32 +91,56 @@ Action::Action(const ActionOptions&ao):
   }
   comm.Bcast(replica_index,0);
 
-  if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
+  if ( keywords.exists("LABEL") ) {
+    parse("LABEL",label);
+  }
   if(label.length()==0) {
-    std::string s; Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
+    std::string s;
+    Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
     label="@"+s;
-  } else if ( label.find(".")!=std::string::npos ) warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
-  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
-  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("  with label %s\n",label.c_str());
-  if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
-  if( !keywords.exists("NO_ACTION_LOG") && update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
-  if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
-  if( !keywords.exists("NO_ACTION_LOG") && update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
+  } else if ( label.find(".")!=std::string::npos ) {
+    warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
+  }
+  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) {
+    error("label " + label + " has been already used");
+  }
+  if( !keywords.exists("NO_ACTION_LOG") ) {
+    log.printf("  with label %s\n",label.c_str());
+  }
+  if ( keywords.exists("UPDATE_FROM") ) {
+    parse("UPDATE_FROM",update_from);
+  }
+  if( !keywords.exists("NO_ACTION_LOG") && update_from!=std::numeric_limits<double>::max()) {
+    log.printf("  only update from time %f\n",update_from);
+  }
+  if ( keywords.exists("UPDATE_UNTIL") ) {
+    parse("UPDATE_UNTIL",update_until);
+  }
+  if( !keywords.exists("NO_ACTION_LOG") && update_until!=std::numeric_limits<double>::max()) {
+    log.printf("  only update until time %f\n",update_until);
+  }
   if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
-    if( plumed.parseOnlyMode() ) restart=false;
-    else if(srestart=="YES") restart=true;
-    else if(srestart=="NO")  restart=false;
-    else if(srestart=="AUTO") {
+    if( plumed.parseOnlyMode() ) {
+      restart=false;
+    } else if(srestart=="YES") {
+      restart=true;
+    } else if(srestart=="NO") {
+      restart=false;
+    } else if(srestart=="AUTO") {
       // do nothing, this is the default
-    } else error("RESTART should be either YES, NO, or AUTO");
+    } else {
+      error("RESTART should be either YES, NO, or AUTO");
+    }
   }
 }
 
 void Action::resetStoredTimestep() {
   ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
-  if( ts ) timestep = (ts->copyOutput(0))->get();
+  if( ts ) {
+    timestep = (ts->copyOutput(0))->get();
+  }
 }
 
 Action::~Action() {
@@ -128,10 +151,16 @@ Action::~Action() {
 
 FILE* Action::fopen(const char *path, const char *mode) {
   bool write(false);
-  for(const char*p=mode; *p; p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
+  for(const char*p=mode; *p; p++)
+    if(*p=='w' || *p=='a' || *p=='+') {
+      write=true;
+    }
   FILE* fp;
-  if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
-  else      fp=plumed.fopen(path,mode);
+  if(write && comm.Get_rank()!=0) {
+    fp=plumed.fopen("/dev/null",mode);
+  } else {
+    fp=plumed.fopen(path,mode);
+  }
   files.insert(fp);
   return fp;
 }
@@ -152,11 +181,15 @@ std::string Action::getKeyword(const std::string& key) {
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
 
   std::string outkey;
-  if( Tools::getKey(line,key,outkey ) ) return key + outkey;
+  if( Tools::getKey(line,key,outkey ) ) {
+    return key + outkey;
+  }
 
   if( keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,outkey) ) {
-      if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
+      if( outkey.length()==0 ) {
+        error("keyword " + key + " has weird default value");
+      }
       return key + "=" +  outkey;
     } else {
       error("keyword " + key + " is compulsory for this action");
@@ -187,22 +220,33 @@ void Action::parseFlag(const std::string&key,bool & t) {
 void Action::addDependency(Action*action) {
   bool found=false;
   for(const auto & d : after ) {
-    if( action==d ) { found=true; break; }
+    if( action==d ) {
+      found=true;
+      break;
+    }
   }
-  if( !found ) after.push_back(action);
+  if( !found ) {
+    after.push_back(action);
+  }
 }
 
 bool Action::checkForDependency( Action* action ) {
   for(const auto & d : after) {
-    if( action==d ) { return true; }
-    if( d->checkForDependency(action) ) { return true; }
+    if( action==d ) {
+      return true;
+    }
+    if( d->checkForDependency(action) ) {
+      return true;
+    }
   }
   return false;
 }
 
 void Action::activate() {
 // This is set to true if actions are only need to be computed in setup (during checkRead)
-  if( never_activate ) return;
+  if( never_activate ) {
+    return;
+  }
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
@@ -211,15 +255,21 @@ void Action::activate() {
     this->unlockRequests();
     prepare();
     this->lockRequests();
-  } else return;
-  for(const auto & p : after) p->activate();
+  } else {
+    return;
+  }
+  for(const auto & p : after) {
+    p->activate();
+  }
   active=true;
 }
 
 void Action::setOption(const std::string &s) {
 // This overloads the action and activate some options
   options.insert(s);
-  for(const auto & p : after) p->setOption(s);
+  for(const auto & p : after) {
+    p->setOption(s);
+  }
 }
 
 void Action::clearOptions() {
@@ -236,7 +286,9 @@ void Action::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
     for(unsigned i=0; i<line.size(); i++) {
-      if(i>0) msg = msg + ", ";
+      if(i>0) {
+        msg = msg + ", ";
+      }
       msg = msg + line[i];
     }
     error(msg);
@@ -253,12 +305,17 @@ void Action::setupConstantValues( const bool& have_atoms ) {
     if( at && av ) {
       never_activate=av->getNumberOfComponents()>0;
       for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-        if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
+        if( !av->copyOutput(i)->isConstant() ) {
+          never_activate=false;
+          break;
+        }
       }
     }
   }
   ActionWithArguments* aa = castToActionWithArguments();
-  if( aa && aa->getNumberOfArguments()>0 && getName()!="BIASVALUE" ) never_activate = aa->calculateConstantValues( have_atoms );
+  if( aa && aa->getNumberOfArguments()>0 && getName()!="BIASVALUE" ) {
+    never_activate = aa->calculateConstantValues( have_atoms );
+  }
 }
 
 long long int Action::getStep()const {
@@ -275,14 +332,23 @@ double Action::getTimeStep()const {
 
 double Action::getkBT() {
   double temp=-1.0;
-  if( keywords.exists("TEMP") ) parse("TEMP",temp);
-  if(temp>=0.0 && keywords.style("TEMP","optional") ) return getKBoltzmann()*temp;
+  if( keywords.exists("TEMP") ) {
+    parse("TEMP",temp);
+  }
+  if(temp>=0.0 && keywords.style("TEMP","optional") ) {
+    return getKBoltzmann()*temp;
+  }
   ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
-  double kbt=0; if(kb) kbt=(kb->copyOutput(0))->get();
+  double kbt=0;
+  if(kb) {
+    kbt=(kb->copyOutput(0))->get();
+  }
   if( temp>=0 && keywords.style("TEMP","compulsory") ) {
     double kB=getKBoltzmann();
     if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
-      std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
+      std::string strt1, strt2;
+      Tools::convert( temp, strt1 );
+      Tools::convert( kbt/kB, strt2 );
       warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
     }
     kbt = kB*temp;
@@ -305,7 +371,9 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
+  if( !keywords.exists("NO_ACTION_LOG") ) {
+    log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
+  }
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 
@@ -317,7 +385,10 @@ void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
     ActionWithValue*av=castToActionWithValue();
-    if(av) { av->clearInputForces(); av->clearDerivatives(); }
+    if(av) {
+      av->clearInputForces();
+      av->clearDerivatives();
+    }
     p->readAtomsFromPDB( pdb );
     p->calculate();
   }
@@ -336,8 +407,11 @@ std::string Action::cite(const std::string&s) {
 /// Check if action should be updated.
 bool Action::checkUpdate()const {
   double t=getTime();
-  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
-  else return false;
+  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool Action::getCPT() const {
@@ -353,14 +427,20 @@ bool Action::usingNaturalUnits() const {
 }
 
 double Action::getKBoltzmann() const {
-  if( usingNaturalUnits() ) return 1.0;
-  else return kBoltzmann/getUnits().getEnergy();
+  if( usingNaturalUnits() ) {
+    return 1.0;
+  } else {
+    return kBoltzmann/getUnits().getEnergy();
+  }
 }
 
 std::string Action::writeInGraph() const {
   std::string nam=getName();
-  std::size_t u=nam.find_last_of("_"); std::string sub=nam.substr(u+1);
-  if( sub=="SCALAR" || sub=="VECTOR" || sub=="GRID" ) return nam.substr(0,u);
+  std::size_t u=nam.find_last_of("_");
+  std::string sub=nam.substr(u+1);
+  if( sub=="SCALAR" || sub=="VECTOR" || sub=="GRID" ) {
+    return nam.substr(0,u);
+  }
   return nam;
 }
 

@@ -133,26 +133,35 @@ TD_GeneralizedNormal::TD_GeneralizedNormal(const ActionOptions& ao):
   betas_(0),
   normalization_(0),
   weights_(0),
-  ncenters_(0)
-{
+  ncenters_(0) {
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_center;
-    if(!parseNumberedVector("CENTER",i,tmp_center) ) {break;}
+    if(!parseNumberedVector("CENTER",i,tmp_center) ) {
+      break;
+    }
     centers_.push_back(tmp_center);
   }
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_alpha;
-    if(!parseNumberedVector("ALPHA",i,tmp_alpha) ) {break;}
+    if(!parseNumberedVector("ALPHA",i,tmp_alpha) ) {
+      break;
+    }
     for(unsigned int k=0; k<tmp_alpha.size(); k++) {
-      if(tmp_alpha[k]<=0.0) {plumed_merror(getName()+": the values given in ALPHA should be positive");}
+      if(tmp_alpha[k]<=0.0) {
+        plumed_merror(getName()+": the values given in ALPHA should be positive");
+      }
     }
     alphas_.push_back(tmp_alpha);
   }
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_beta;
-    if(!parseNumberedVector("BETA",i,tmp_beta) ) {break;}
+    if(!parseNumberedVector("BETA",i,tmp_beta) ) {
+      break;
+    }
     for(unsigned int k=0; k<tmp_beta.size(); k++) {
-      if(tmp_beta[k]<=0.0) {plumed_merror(getName()+": the values given in BETA should be positive");}
+      if(tmp_beta[k]<=0.0) {
+        plumed_merror(getName()+": the values given in BETA should be positive");
+      }
     }
     betas_.push_back(tmp_beta);
   }
@@ -182,14 +191,20 @@ TD_GeneralizedNormal::TD_GeneralizedNormal(const ActionOptions& ao):
   }
   //
   parseVector("WEIGHTS",weights_);
-  if(weights_.size()==0) {weights_.assign(centers_.size(),1.0);}
+  if(weights_.size()==0) {
+    weights_.assign(centers_.size(),1.0);
+  }
   if(centers_.size()!=weights_.size()) {
     plumed_merror(getName()+": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");
   }
   //
   double sum_weights=0.0;
-  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
-  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    sum_weights+=weights_[i];
+  }
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    weights_[i]/=sum_weights;
+  }
   //
   normalization_.resize(ncenters_);
   for(unsigned int i=0; i<ncenters_; i++) {

@@ -123,7 +123,9 @@ unsigned GridCoordinatesObject::getNumberOfPoints() const {
 
 inline
 const std::vector<double>& GridCoordinatesObject::getGridSpacing() const {
-  if( gtype==flat ) return dx;
+  if( gtype==flat ) {
+    return dx;
+  }
   plumed_merror("dont understand what spacing means for spherical grids");
   return dx;
 }
@@ -131,7 +133,10 @@ const std::vector<double>& GridCoordinatesObject::getGridSpacing() const {
 inline
 double GridCoordinatesObject::getCellVolume() const {
   if( gtype==flat ) {
-    double myvol=1.0; for(unsigned i=0; i<dimension; ++i) myvol *= dx[i];
+    double myvol=1.0;
+    for(unsigned i=0; i<dimension; ++i) {
+      myvol *= dx[i];
+    }
     return myvol;
   } else {
     return 4*pi / static_cast<double>( getNumberOfPoints() );
@@ -157,8 +162,11 @@ const std::vector<unsigned>& GridCoordinatesObject::getStride() const {
 
 inline
 std::string GridCoordinatesObject::getGridType() const {
-  if( gtype==flat ) return "flat";
-  else if( gtype==fibonacci ) return "fibonacci";
+  if( gtype==flat ) {
+    return "flat";
+  } else if( gtype==fibonacci ) {
+    return "fibonacci";
+  }
   return "";
 }
 

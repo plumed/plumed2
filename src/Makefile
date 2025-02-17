@@ -40,6 +40,18 @@ plumedcheck:
 codecheck:
 	maketools/codecheck
 
+.PHONY: cppcheck-local
+cppcheck-local:
+	maketools/codecheck --cppcheck --modified-only
+
+.PHONY: plumedcheck-local
+plumedcheck-local:
+	maketools/codecheck --plumedcheck --modified-only
+
+.PHONY: codecheck-local
+codecheck-local:
+	maketools/codecheck --modified-only
+
 .PHONY: help
 help:
 	@echo "Available targets are"

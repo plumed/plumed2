@@ -126,8 +126,7 @@ PLUMED FILE=plumed.dat CHDIR=directory2
 class Plumed:
   public ActionAtomistic,
   public ActionWithValue,
-  public ActionPilot
-{
+  public ActionPilot {
 /// True on root processor
   const bool root;
 /// Separate directory.
@@ -168,7 +167,9 @@ public:
   unsigned getNumberOfDerivatives() override {
     return 0;
   }
-  bool actionHasForces() override { return true; }
+  bool actionHasForces() override {
+    return true;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Plumed,"PLUMED")
@@ -219,14 +220,15 @@ API([&]() {
   // as a matter of fact, any version <2.5 will not even load due to namespace pollution
   plumed_assert(api>3) << "API>3 is required for the PLUMED action to work correctly\n";
   return api;
-}())
-{
+}()) {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
 
   bool noreplicas;
   parseFlag("NOREPLICAS",noreplicas);
   int nreps;
-  if(root) nreps=multi_sim_comm.Get_size();
+  if(root) {
+    nreps=multi_sim_comm.Get_size();
+  }
   comm.Bcast(nreps,0);
   if(nreps>1) {
     if(noreplicas) {
@@ -256,76 +258,133 @@ API([&]() {
   parse("FILE",file);
   if(file.length()>0) {
     log<<"  with input file "<<file<<"\n";
-  } else plumed_error() << "you must provide an input file\n";
+  } else {
+    plumed_error() << "you must provide an input file\n";
+  }
 
   bool inherited_logfile=false;
   std::string logfile;
   parse("LOG",logfile);
   if(logfile.length()>0) {
     log<<"  with log file "<<logfile<<"\n";
-    if(root) p.cmd("setLogFile",logfile.c_str());
+    if(root) {
+      p.cmd("setLogFile",logfile.c_str());
+    }
   } else if(log.getFILE()) {
     log<<"  with inherited log file\n";
-    if(root) p.cmd("setLog",log.getFILE());
+    if(root) {
+      p.cmd("setLog",log.getFILE());
+    }
     inherited_logfile=true;
   } else {
     log<<"  with log on stdout\n";
-    if(root) p.cmd("setLog",stdout);
+    if(root) {
+      p.cmd("setLog",stdout);
+    }
   }
 
   checkRead();
 
-  if(root) p.cmd("setMDEngine","plumed");
+  if(root) {
+    p.cmd("setMDEngine","plumed");
+  }
 
   double engunits=getUnits().getEnergy();
-  if(root) p.cmd("setMDEnergyUnits",&engunits);
+  if(root) {
+    p.cmd("setMDEnergyUnits",&engunits);
+  }
 
   double lenunits=getUnits().getLength();
-  if(root) p.cmd("setMDLengthUnits",&lenunits);
+  if(root) {
+    p.cmd("setMDLengthUnits",&lenunits);
+  }
 
   double timunits=getUnits().getTime();
-  if(root) p.cmd("setMDTimeUnits",&timunits);
+  if(root) {
+    p.cmd("setMDTimeUnits",&timunits);
+  }
 
   double chaunits=getUnits().getCharge();
-  if(root) p.cmd("setMDChargeUnits",&chaunits);
+  if(root) {
+    p.cmd("setMDChargeUnits",&chaunits);
+  }
   double masunits=getUnits().getMass();
-  if(root) p.cmd("setMDMassUnits",&masunits);
+  if(root) {
+    p.cmd("setMDMassUnits",&masunits);
+  }
 
   double kbt=getkBT();
-  if(root) p.cmd("setKbT",&kbt);
+  if(root) {
+    p.cmd("setKbT",&kbt);
+  }
 
   int res=0;
-  if(getRestart()) res=1;
-  if(root) p.cmd("setRestart",&res);
+  if(getRestart()) {
+    res=1;
+  }
+  if(root) {
+    p.cmd("setRestart",&res);
+  }
 
-  if(root) p.cmd("setNatoms",&natoms);
-  if(root) p.cmd("setTimestep",&dt);
-  if(root) p.cmd("setPlumedDat",file.c_str());
+  if(root) {
+    p.cmd("setNatoms",&natoms);
+  }
+  if(root) {
+    p.cmd("setTimestep",&dt);
+  }
+  if(root) {
+    p.cmd("setPlumedDat",file.c_str());
+  }
 
   addComponentWithDerivatives("bias");
   componentIsNotPeriodic("bias");
 
-  if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-  if(root) p.cmd("init");
-  if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+  if(inherited_logfile) {
+    log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+  }
+  if(root) {
+    p.cmd("init");
+  }
+  if(inherited_logfile) {
+    log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+  }
 }
 
 void Plumed::prepare() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   int step=getStep();
-  if(root) p.cmd("setStep",&step);
-  if(root) p.cmd("prepareDependencies");
+  if(root) {
+    p.cmd("setStep",&step);
+  }
+  if(root) {
+    p.cmd("prepareDependencies");
+  }
   int ene=0;
-  if(root) p.cmd("isEnergyNeeded",&ene);
-  if(ene) plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
+  if(root) {
+    p.cmd("isEnergyNeeded",&ene);
+  }
+  if(ene) {
+    plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
+  }
   int n=0;
-  if(root) p.cmd("createFullList",&n);
+  if(root) {
+    p.cmd("createFullList",&n);
+  }
   const int *pointer=nullptr;
-  if(root) p.cmd("getFullList",&pointer);
+  if(root) {
+    p.cmd("getFullList",&pointer);
+  }
   bool redo=(index.size()!=n);
-  if(first) redo=true;
+  if(first) {
+    redo=true;
+  }
   first=false;
-  if(root && !redo) for(int i=0; i<n; i++) if(index[i]!=pointer[i]) { redo=true; break;};
+  if(root && !redo)
+    for(int i=0; i<n; i++)
+      if(index[i]!=pointer[i]) {
+        redo=true;
+        break;
+      };
   if(root && redo) {
     index.resize(n);
     masses.resize(n);
@@ -338,7 +397,9 @@ void Plumed::prepare() {
     p.cmd("setAtomsNlocal",&n);
     p.cmd("setAtomsGatindex",index.data(), {index.size()});
   }
-  if(root) p.cmd("clearFullList");
+  if(root) {
+    p.cmd("clearFullList");
+  }
   int tmp=0;
   if(root && redo) {
     tmp=1;
@@ -347,50 +408,78 @@ void Plumed::prepare() {
   if(tmp) {
     int s=index.size();
     comm.Bcast(s,0);
-    if(!root) index.resize(s);
+    if(!root) {
+      index.resize(s);
+    }
     comm.Bcast(index,0);
     std::vector<AtomNumber> numbers;
     numbers.reserve(index.size());
-    for(auto i : index) numbers.emplace_back(AtomNumber::index(i));
+    for(auto i : index) {
+      numbers.emplace_back(AtomNumber::index(i));
+    }
     requestAtoms(numbers);
   }
 }
 
 void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  if(root) p.cmd("setStopFlag",&stop);
+  if(root) {
+    p.cmd("setStopFlag",&stop);
+  }
   Tensor box=getPbc().getBox();
-  if(root) p.cmd("setBox",&box[0][0], {3,3});
+  if(root)
+    p.cmd("setBox",&box[0][0], {3,3});
 
   virial.zero();
-  for(int i=0; i<forces.size(); i++) forces[i]=0.0;
-  for(int i=0; i<masses.size(); i++) masses[i]=getMass(i);
-  for(int i=0; i<charges.size(); i++) charges[i]=getCharge(i);
+  for(int i=0; i<forces.size(); i++) {
+    forces[i]=0.0;
+  }
+  for(int i=0; i<masses.size(); i++) {
+    masses[i]=getMass(i);
+  }
+  for(int i=0; i<charges.size(); i++) {
+    charges[i]=getCharge(i);
+  }
 
-  if(root) p.cmd("setMasses",masses.data(), {masses.size()});
-  if(root) p.cmd("setCharges",charges.data(), {charges.size()});
-  if(root) p.cmd("setPositions",positions.data(), {masses.size(),3});
-  if(root) p.cmd("setForces",forces.data(),forces.size());
-  if(root) p.cmd("setVirial",&virial[0][0], {3,3});
+  if(root)
+    p.cmd("setMasses",masses.data(), {masses.size()});
+  if(root)
+    p.cmd("setCharges",charges.data(), {charges.size()});
+  if(root)
+    p.cmd("setPositions",positions.data(), {masses.size(),3});
+  if(root) {
+    p.cmd("setForces",forces.data(),forces.size());
+  }
+  if(root)
+    p.cmd("setVirial",&virial[0][0], {3,3});
 
 
-  if(root) for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+  if(root)
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       positions[3*i+0]=getPosition(i)[0];
       positions[3*i+1]=getPosition(i)[1];
       positions[3*i+2]=getPosition(i)[2];
     }
 
-  if(root) p.cmd("shareData");
-  if(root) p.cmd("performCalcNoUpdate");
+  if(root) {
+    p.cmd("shareData");
+  }
+  if(root) {
+    p.cmd("performCalcNoUpdate");
+  }
 
   int s=forces.size();
   comm.Bcast(s,0);
-  if(!root) forces.resize(s);
+  if(!root) {
+    forces.resize(s);
+  }
   comm.Bcast(forces,0);
   comm.Bcast(virial,0);
 
   double bias=0.0;
-  if(root) p.cmd("getBias",&bias);
+  if(root) {
+    p.cmd("getBias",&bias);
+  }
   comm.Bcast(bias,0);
   getPntrToComponent("bias")->set(bias);
 }
@@ -398,14 +487,22 @@ void Plumed::calculate() {
 void Plumed::apply() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   std::vector<double> fforces( forces.size() + 9, 0 );
-  for(unsigned i=0; i<forces.size(); i++) fforces[i] += forces[i];
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) fforces[forces.size()+3*i+j] = virial[i][j];
-  unsigned ind=0; setForcesOnAtoms( fforces, ind );
+  for(unsigned i=0; i<forces.size(); i++) {
+    fforces[i] += forces[i];
+  }
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      fforces[forces.size()+3*i+j] = virial[i][j];
+    }
+  unsigned ind=0;
+  setForcesOnAtoms( fforces, ind );
 }
 
 void Plumed::update() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  if(root) p.cmd("update");
+  if(root) {
+    p.cmd("update");
+  }
   comm.Bcast(stop,0);
   if(stop) {
     log<<"  Action " << getLabel()<<" asked to stop\n";

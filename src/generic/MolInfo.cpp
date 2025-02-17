@@ -48,6 +48,16 @@ generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
 More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
 
+If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e. not broken by PBC.
+**This will impact PBC calculations in all the actions following the MOLINFO action!**.
+In particular, actions that reconstruct molecules locally will do the reconstruction using a
+minimum spanning tree rather than the order in which atoms are provided.
+Notice that in PLUMED 2.8, 2.9, and 2.10 this would only have affected the behavior of \ref WHOLEMOLECULES
+actions, whereas starting with PLUMED 2.11 all actions that reconstruct PBCs are affected.
+If you want a variable to ignore this, you can just repeate the MOLINFO action without
+the `WHOLE` flag: all the following actions will use the traditional reconstruction algorithm,
+based on the order in which atoms are listed.
+
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
 for known residues from these three types of molecule. In other words, this is available for
 historical reasons and to allow future extensions where alternative lists will be provided.

@@ -51,18 +51,18 @@ Singleton & getSingleton() {
 }
 
 Register::RegistrationLock::RegistrationLock(const std::string & fullPath):
-  active(true)
-{
+  active(true) {
   pushDLRegistration(fullPath);
 }
 
 Register::RegistrationLock::~RegistrationLock() noexcept {
-  if(active) popDLRegistration();
+  if(active) {
+    popDLRegistration();
+  }
 }
 
 Register::RegistrationLock::RegistrationLock(RegistrationLock&& other) noexcept:
-  active(other.active)
-{
+  active(other.active) {
   other.active=false;
 }
 
@@ -83,14 +83,18 @@ void Register::pushDLRegistration(const std::string & fullPath) {
 
 void Register::popDLRegistration() noexcept {
   auto & singleton=getSingleton();
-  for(auto & reg : singleton.registers) reg->clearStaged();
+  for(auto & reg : singleton.registers) {
+    reg->clearStaged();
+  }
   singleton.registeringCounter--;
   singleton.registeringMutex.unlock();
 }
 
 void Register::completeAllRegistrations(void* image) {
   auto & singleton=getSingleton();
-  for(auto & reg : singleton.registers) reg->completeRegistration(image);
+  for(auto & reg : singleton.registers) {
+    reg->completeRegistration(image);
+  }
 }
 
 std::string Register::imageToString(void* image) {
@@ -121,7 +125,9 @@ Register::~Register() noexcept {
   // this is to protect removal
   std::unique_lock lock(singleton.registeringMutex);
   auto it=std::find(singleton.registers.begin(),singleton.registers.end(),this);
-  if(it!=singleton.registers.end()) singleton.registers.erase(it);
+  if(it!=singleton.registers.end()) {
+    singleton.registers.erase(it);
+  }
 }
 
 std::vector<std::string> Register::getKeysWithDLHandle(void* image) const {
@@ -129,7 +135,9 @@ std::vector<std::string> Register::getKeysWithDLHandle(void* image) const {
   const auto prefix=imageToString(image)+":";
   for(auto & k : getKeys()) {
     if(Tools::startWith(k,prefix)) {
-      if(!std::getenv("PLUMED_LOAD_ACTION_DEBUG")) k=k.substr(prefix.length());
+      if(!std::getenv("PLUMED_LOAD_ACTION_DEBUG")) {
+        k=k.substr(prefix.length());
+      }
       res.push_back(k);
     }
   }
@@ -138,7 +146,9 @@ std::vector<std::string> Register::getKeysWithDLHandle(void* image) const {
 
 std::ostream & operator<<(std::ostream &log,const Register &reg) {
   std::vector<std::string> s(reg.getKeys());
-  for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
+  for(unsigned i=0; i<s.size(); i++) {
+    log<<"  "<<s[i]<<"\n";
+  }
   return log;
 }
 

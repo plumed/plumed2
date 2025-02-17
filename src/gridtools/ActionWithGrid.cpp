@@ -28,9 +28,11 @@ ActionWithGrid* ActionWithGrid::getInputActionWithGrid( Action* action ) {
   ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
   if( !ag && action->getName()=="ACCUMULATE" ) {
     ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action );
-    plumed_assert( aa ); ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() );
+    plumed_assert( aa );
+    ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() );
   }
-  plumed_assert( ag ); return ag;
+  plumed_assert( ag );
+  return ag;
 }
 
 void ActionWithGrid::registerKeywords( Keywords& keys ) {
@@ -40,13 +42,15 @@ void ActionWithGrid::registerKeywords( Keywords& keys ) {
 ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  firststep(true)
-{
+  firststep(true) {
 }
 
 void ActionWithGrid::calculate() {
   plumed_assert( !actionInChain() );
-  if( firststep ) { setupOnFirstStep( true ); firststep=false; }
+  if( firststep ) {
+    setupOnFirstStep( true );
+    firststep=false;
+  }
 
   runAllTasks();
 }

@@ -42,7 +42,9 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
-  while (maxsupport*(1U<<recursion_number) < gridsize) { recursion_number++; }
+  while (maxsupport*(1U<<recursion_number) < gridsize) {
+    recursion_number++;
+  }
   // set "true" gridsize
   unsigned bins_per_int = 1U<<recursion_number;
   gridsize = maxsupport*bins_per_int;
@@ -62,8 +64,7 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
     std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
     gridvarname = typeToString(type,true)+std::to_string(order)+"_psi";
-  }
-  else {
+  } else {
     gridvarname = typeToString(type,true)+std::to_string(order)+"_phi";
   }
 
@@ -84,7 +85,8 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
 std::vector<Matrix<double>> WaveletGrid::setupMatrices(const std::vector<double>& coeffs) {
   Matrix<double> M0, M1;
   const int N = coeffs.size() -1;
-  M0.resize(N,N); M1.resize(N,N);
+  M0.resize(N,N);
+  M1.resize(N,N);
   for (int i = 0; i < N; ++i) {
     for (int j = 0; j < N; ++j) {
       int shift = 2*i -j;
@@ -133,9 +135,12 @@ std::vector<double> WaveletGrid::getEigenvector(const Matrix<double> &A, const d
   std::vector<int> iwork(8*N);
 
   // Transfer the matrix to the local array and substract eigenvalue
-  for (int i=0; i<N; ++i) for (int j=0; j<N; ++j) {
+  for (int i=0; i<N; ++i)
+    for (int j=0; j<N; ++j) {
       da[i*N+j]=static_cast<double>( A(j,i) );
-      if (i==j) da[i*N+j] -= eigenvalue;
+      if (i==j) {
+        da[i*N+j] -= eigenvalue;
+      }
     }
 
   // This optimizes the size of the work array used in lapack singular value decomposition
@@ -144,14 +149,17 @@ std::vector<double> WaveletGrid::getEigenvector(const Matrix<double> &A, const d
   plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
 
   // Retrieve correct sizes for work and reallocate
-  lwork=static_cast<int>(work[0]); work.resize(lwork);
+  lwork=static_cast<int>(work[0]);
+  work.resize(lwork);
 
   // This does the singular value decomposition
   plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
 
   // fill eigenvector with last column of VT
   std::vector<double> eigenvector(N);
-  for (int i=0; i<N; ++i) eigenvector[i] = VT[N-1 + i*N];
+  for (int i=0; i<N; ++i) {
+    eigenvector[i] = VT[N-1 + i*N];
+  }
 
   return eigenvector;
 }
@@ -166,11 +174,17 @@ WaveletGrid::BinaryMap WaveletGrid::cascade(std::vector<Matrix<double>>& h_Matve
   std::vector<double> temp_values;
 
   // multiply matrices by 2 if derivatives are calculated (assumes ascending order)
-  if (derivnum != 0) for (auto& M : h_Matvec) M *= 2;
+  if (derivnum != 0)
+    for (auto& M : h_Matvec) {
+      M *= 2;
+    }
 
   if (use_mother_wavelet) {
     wavelet_map.reserve(bins_per_int);
-    if (derivnum != 0) for (auto& M : g_Matvec) M *= 2;
+    if (derivnum != 0)
+      for (auto& M : g_Matvec) {
+        M *= 2;
+      }
   }
 
   // fill the first two datasets by hand
@@ -231,8 +245,11 @@ void WaveletGrid::fillGridFromMaps(std::unique_ptr<Grid>& grid, const BinaryMap&
 
 WaveletGrid::Type WaveletGrid::stringToType(std::string& type_str) {
   std::unordered_map<std::string, Type> typemap = { {"DAUBECHIES", Type::db}, {"SYMLETS", Type::sym} };
-  try { return typemap.at(type_str); }
-  catch(const std::out_of_range& e) {plumed_merror("The specified wavelet type "+type_str+" is not implemented."); }
+  try {
+    return typemap.at(type_str);
+  } catch(const std::out_of_range& e) {
+    plumed_merror("The specified wavelet type "+type_str+" is not implemented.");
+  }
 }
 
 

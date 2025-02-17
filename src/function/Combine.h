@@ -27,8 +27,7 @@
 namespace PLMD {
 namespace function {
 
-class Combine : public FunctionTemplateBase
-{
+class Combine : public FunctionTemplateBase {
   bool normalize;
   std::vector<double> coefficients;
   std::vector<double> parameters;

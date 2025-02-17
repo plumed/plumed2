@@ -102,29 +102,43 @@ void Piecewise::registerKeywords(Keywords& keys) {
 void Piecewise::read( ActionWithArguments* action ) {
   for(int i=0;; i++) {
     std::vector<double> pp;
-    if(!action->parseNumberedVector("POINT",i,pp) ) break;
-    if(pp.size()!=2) action->error("points should be in x,y format");
+    if(!action->parseNumberedVector("POINT",i,pp) ) {
+      break;
+    }
+    if(pp.size()!=2) {
+      action->error("points should be in x,y format");
+    }
     points.push_back(std::pair<double,double>(pp[0],pp[1]));
-    if(i>0 && points[i].first<=points[i-1].first) action->error("points abscissas should be monotonously increasing");
+    if(i>0 && points[i].first<=points[i-1].first) {
+      action->error("points abscissas should be monotonously increasing");
+    }
   }
 
   for(unsigned i=0; i<action->getNumberOfArguments(); i++) {
-    if(action->getPntrToArgument(i)->isPeriodic()) action->error("Cannot use PIECEWISE on periodic arguments");
+    if(action->getPntrToArgument(i)->isPeriodic()) {
+      action->error("Cannot use PIECEWISE on periodic arguments");
+    }
   }
   action->log.printf("  on points:");
-  for(unsigned i=0; i<points.size(); i++) action->log.printf("   (%f,%f)",points[i].first,points[i].second);
+  for(unsigned i=0; i<points.size(); i++) {
+    action->log.printf("   (%f,%f)",points[i].first,points[i].second);
+  }
   action->log.printf("\n");
 }
 
 void Piecewise::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) action->copyOutput(i)->setNotPeriodic();
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+    action->copyOutput(i)->setNotPeriodic();
+  }
 }
 
 void Piecewise::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   for(unsigned i=0; i<args.size(); i++) {
     unsigned p=0;
     for(; p<points.size(); p++) {
-      if(args[i]<points[p].first) break;
+      if(args[i]<points[p].first) {
+        break;
+      }
     }
     if(p==0) {
       vals[i]=points[0].second;

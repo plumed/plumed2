@@ -68,33 +68,51 @@ DumpContour::DumpContour(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  fmt("%f")
-{
-  if( getNumberOfArguments()!=1 ) error("should only be one argument");
+  fmt("%f") {
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument");
+  }
   FindContour* fc=dynamic_cast<FindContour*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !fc ) error("can only use this action to print data from FIND_CONTOUR actions");
+  if( !fc ) {
+    error("can only use this action to print data from FIND_CONTOUR actions");
+  }
 
   parse("FILE",filename);
-  if(filename.length()==0) error("name out output file was not specified");
+  if(filename.length()==0) {
+    error("name out output file was not specified");
+  }
 
   log.printf("  outputting contour with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
-  parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() ); fmt = " " + fmt;
+  parse("FMT",fmt);
+  log.printf(" with format %s \n", fmt.c_str() );
+  fmt = " " + fmt;
 }
 
 void DumpContour::update() {
-  OFile ofile; ofile.link(*this);
+  OFile ofile;
+  ofile.link(*this);
   ofile.setBackupString("analysis");
   ofile.open( filename );
 
   FindContour* fc=dynamic_cast<FindContour*>( getPntrToArgument(0)->getPntrToAction() );
   unsigned maxp = fc->active_cells.size(), ncomp = fc->getNumberOfComponents();
-  unsigned ntasks = 0; for(unsigned i=0; i<maxp; ++i) ntasks += fc->active_cells[i];
-
-  ofile.printf("%d\n", ntasks ); ofile.printf("Points found on isocontour\n");
+  unsigned ntasks = 0;
   for(unsigned i=0; i<maxp; ++i) {
-    if( fc->active_cells[i]==0 ) continue ;
-    const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
-    for(unsigned j=0; j<ncomp; ++j ) ofile.printf((" " + fmt).c_str(), (fc->copyOutput(j))->get(i)  );
+    ntasks += fc->active_cells[i];
+  }
+
+  ofile.printf("%d\n", ntasks );
+  ofile.printf("Points found on isocontour\n");
+  for(unsigned i=0; i<maxp; ++i) {
+    if( fc->active_cells[i]==0 ) {
+      continue ;
+    }
+    const char* defname="X";
+    const char* name=defname;
+    ofile.printf("%s", name);
+    for(unsigned j=0; j<ncomp; ++j ) {
+      ofile.printf((" " + fmt).c_str(), (fc->copyOutput(j))->get(i)  );
+    }
     ofile.printf("\n");
   }
 }

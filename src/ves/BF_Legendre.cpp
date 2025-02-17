@@ -113,9 +113,9 @@ void BF_Legendre::registerKeywords(Keywords& keys) {
 
 BF_Legendre::BF_Legendre(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  scaled_(false)
-{
-  parseFlag("SCALED",scaled_); addKeywordToList("SCALED",scaled_);
+  scaled_(false) {
+  parseFlag("SCALED",scaled_);
+  addKeywordToList("SCALED",scaled_);
   setNumberOfBasisFunctions(getOrder()+1);
   setIntrinsicInterval("-1.0","+1.0");
   setNonPeriodic();
@@ -156,14 +156,20 @@ void BF_Legendre::getAllValues(const double arg, double& argT, bool& inside_rang
       derivs[i] *= sf;
     }
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {
+    for(unsigned int i=0; i<derivs.size(); i++) {
+      derivs[i]=0.0;
+    }
+  }
 }
 
 
 void BF_Legendre::setupUniformIntegrals() {
   setAllUniformIntegralsToZero();
   double L0_int = 1.0;
-  if(scaled_) {L0_int = sqrt(0.5);}
+  if(scaled_) {
+    L0_int = sqrt(0.5);
+  }
   setUniformIntegral(0,L0_int);
 }
 

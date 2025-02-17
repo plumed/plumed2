@@ -38,8 +38,7 @@ This is the abstract base class to use for implementing new collective variables
 
 class Colvar :
   public ActionAtomistic,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
 protected:
   void requestAtoms(const std::vector<AtomNumber> & a);

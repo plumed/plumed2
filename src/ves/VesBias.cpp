@@ -76,8 +76,7 @@ VesBias::VesBias(const ActionOptions&ao):
   bias_cutoff_value_(0.0),
   bias_current_max_value(0.0),
   calc_reweightfactor_(false),
-  optimization_threshold_(0.0)
-{
+  optimization_threshold_(0.0) {
   log.printf("  VES bias, please read and cite ");
   log << plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
   log.printf("\n");
@@ -107,14 +106,15 @@ VesBias::VesBias(const ActionOptions&ao):
     if(targetdist_labels.size()>1) {
       plumed_merror(getName()+" with label "+getLabel()+": multiple target distribution labels not allowed");
     }
-  }
-  else if(keywords.exists("TARGET_DISTRIBUTIONS")) {
+  } else if(keywords.exists("TARGET_DISTRIBUTIONS")) {
     parseVector("TARGET_DISTRIBUTIONS",targetdist_labels);
   }
 
   std::string error_msg = "";
   targetdist_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Problem with target distribution in "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Problem with target distribution in "+getName()+": "+error_msg);
+  }
 
   for(unsigned int i=0; i<targetdist_pntrs_.size(); i++) {
     targetdist_pntrs_[i]->linkVesBias(this);
@@ -180,7 +180,9 @@ VesBias::VesBias(const ActionOptions&ao):
   if(keywords.exists("PROJ_ARG")) {
     std::vector<std::string> proj_arg;
     for(int i=1;; i++) {
-      if(!parseNumberedVector("PROJ_ARG",i,proj_arg)) {break;}
+      if(!parseNumberedVector("PROJ_ARG",i,proj_arg)) {
+        break;
+      }
       // checks
       if(proj_arg.size() > (getNumberOfArguments()-1) ) {
         plumed_merror("PROJ_ARG must be a subset of ARG");
@@ -195,7 +197,8 @@ VesBias::VesBias(const ActionOptions&ao):
           }
         }
         if(!found) {
-          std::string s1; Tools::convert(i,s1);
+          std::string s1;
+          Tools::convert(i,s1);
           std::string error = "PROJ_ARG" + s1 + ": label " + proj_arg[k] + " is not among the arguments given in ARG";
           plumed_merror(error);
         }
@@ -208,7 +211,8 @@ VesBias::VesBias(const ActionOptions&ao):
   if(keywords.exists("CALC_REWEIGHT_FACTOR")) {
     parseFlag("CALC_REWEIGHT_FACTOR",calc_reweightfactor_);
     if(calc_reweightfactor_) {
-      addComponent("rct"); componentIsNotPeriodic("rct");
+      addComponent("rct");
+      componentIsNotPeriodic("rct");
       updateReweightFactor();
     }
   }
@@ -376,8 +380,7 @@ bool VesBias::readCoeffsFromFiles() {
     plumed_massert(coeffs_fnames.size()==ncoeffssets_,"COEFFS keyword is of the wrong size");
     if(ncoeffssets_==1) {
       log.printf("  Read in coefficients from file ");
-    }
-    else {
+    } else {
       log.printf("  Read in coefficients from files:\n");
     }
     for(unsigned int i=0; i<ncoeffssets_; i++) {
@@ -392,8 +395,7 @@ bool VesBias::readCoeffsFromFiles() {
       coeffs_pntrs_[i]->setIterationCounterAndTime(0,getTime());
       if(ncoeffssets_==1) {
         log.printf("%s (read %zu of %zu values)\n", ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
-      }
-      else {
+      } else {
         log.printf("   coefficient %u: %s (read %zu of %zu values)\n",i,ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
       }
       ifile.close();
@@ -411,7 +413,9 @@ void VesBias::updateGradientAndHessian(const bool use_mwalkers_mpi) {
     comm.Sum(sampled_cross_averages[k]);
     if(use_mwalkers_mpi) {
       double walker_weight=1.0;
-      if(aver_counters[k]==0) {walker_weight=0.0;}
+      if(aver_counters[k]==0) {
+        walker_weight=0.0;
+      }
       multiSimSumAverages(k,walker_weight);
     }
     // NOTE: this assumes that all walkers have the same TargetDist, might change later on!!
@@ -435,7 +439,9 @@ void VesBias::updateGradientAndHessian(const bool use_mwalkers_mpi) {
     // is zero
     unsigned int total_samples = aver_counters[k];
     if(use_mwalkers_mpi) {
-      if(comm.Get_rank()==0) {multi_sim_comm.Sum(total_samples);}
+      if(comm.Get_rank()==0) {
+        multi_sim_comm.Sum(total_samples);
+      }
       comm.Bcast(total_samples,0);
     }
     if(total_samples==0) {
@@ -468,7 +474,9 @@ void VesBias::multiSimSumAverages(const unsigned int c_id, const double walker_w
     multi_sim_comm.Sum(sampled_cross_averages[c_id]);
     double norm_weights = walker_weight;
     multi_sim_comm.Sum(norm_weights);
-    if(norm_weights>0.0) {norm_weights=1.0/norm_weights;}
+    if(norm_weights>0.0) {
+      norm_weights=1.0/norm_weights;
+    }
     for(size_t i=0; i<sampled_averages[c_id].size(); i++) {
       sampled_averages[c_id][i] *= norm_weights;
     }
@@ -544,8 +552,7 @@ unsigned int VesBias::getIterationCounter() const {
   unsigned int iteration = 0;
   if(optimizeCoeffs()) {
     iteration = getOptimizerPntr()->getIterationCounter();
-  }
-  else {
+  } else {
     iteration = getCoeffsPntrs()[0]->getIterationCounter();
   }
   return iteration;
@@ -556,8 +563,7 @@ void VesBias::linkOptimizer(Optimizer* optimizer_pntr_in) {
   //
   if(optimizer_pntr_==NULL) {
     optimizer_pntr_ = optimizer_pntr_in;
-  }
-  else {
+  } else {
     std::string err_msg = "VES bias " + getLabel() + " of type " + getName() + " has already been linked with optimizer " + optimizer_pntr_->getLabel() + " of type " + optimizer_pntr_->getName() + ". You cannot link two optimizer to the same VES bias.";
     plumed_merror(err_msg);
   }
@@ -612,12 +618,18 @@ std::unique_ptr<OFile> VesBias::getOFile(const std::string& filepath, const bool
   auto ofile_pntr = Tools::make_unique<OFile>();
   std::string fp = filepath;
   ofile_pntr->link(*static_cast<Action*>(this));
-  if(enforce_backup) {ofile_pntr->enforceBackup();}
+  if(enforce_backup) {
+    ofile_pntr->enforceBackup();
+  }
   if(multi_sim_single_file) {
     unsigned int r=0;
-    if(comm.Get_rank()==0) {r=multi_sim_comm.Get_rank();}
+    if(comm.Get_rank()==0) {
+      r=multi_sim_comm.Get_rank();
+    }
     comm.Bcast(r,0);
-    if(r>0) {fp="/dev/null";}
+    if(r>0) {
+      fp="/dev/null";
+    }
     ofile_pntr->enforceSuffix("");
   }
   ofile_pntr->open(fp);
@@ -695,9 +707,12 @@ void VesBias::setupBiasCutoff(const double bias_cutoff_value, const double fermi
   //
   double fermi_exp_max = 100.0;
   //
-  std::string str_bias_cutoff_value; VesTools::convertDbl2Str(bias_cutoff_value,str_bias_cutoff_value);
-  std::string str_fermi_lambda; VesTools::convertDbl2Str(fermi_lambda,str_fermi_lambda);
-  std::string str_fermi_exp_max; VesTools::convertDbl2Str(fermi_exp_max,str_fermi_exp_max);
+  std::string str_bias_cutoff_value;
+  VesTools::convertDbl2Str(bias_cutoff_value,str_bias_cutoff_value);
+  std::string str_fermi_lambda;
+  VesTools::convertDbl2Str(fermi_lambda,str_fermi_lambda);
+  std::string str_fermi_exp_max;
+  VesTools::convertDbl2Str(fermi_exp_max,str_fermi_exp_max);
   std::string swfunc_keywords = "FERMI R_0=" + str_bias_cutoff_value + " FERMI_LAMBDA=" + str_fermi_lambda + " FERMI_EXP_MAX=" + str_fermi_exp_max;
   //
   std::string swfunc_errors="";

@@ -44,8 +44,7 @@ information as to how to go about implementing a new Metainference action.
 class MetainferenceBase :
   public ActionAtomistic,
   public ActionWithArguments,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
   std::vector<double> forces;
   std::vector<double> forcesToApply;
@@ -124,6 +123,7 @@ private:
   // restart
   std::string status_file_name_;
   OFile    sfile_;
+  std::string fmt_;
 
   // others
   bool     firstTime;
@@ -209,62 +209,57 @@ public:
 };
 
 inline
-void MetainferenceBase::setNarg(const unsigned input)
-{
+void MetainferenceBase::setNarg(const unsigned input) {
   narg = input;
 }
 
 inline
-bool MetainferenceBase::getDoScore()
-{
+bool MetainferenceBase::getDoScore() {
   return doscore_;
 }
 
 inline
-unsigned MetainferenceBase::getWstride()
-{
+unsigned MetainferenceBase::getWstride() {
   return write_stride_;
 }
 
 inline
-unsigned MetainferenceBase::getNarg()
-{
+unsigned MetainferenceBase::getNarg() {
   return narg;
 }
 
 inline
-void MetainferenceBase::setMetaDer(const unsigned index, const double der)
-{
+void MetainferenceBase::setMetaDer(const unsigned index, const double der) {
   metader_[index] = der;
 }
 
 inline
-double MetainferenceBase::getMetaDer(const unsigned index)
-{
+double MetainferenceBase::getMetaDer(const unsigned index) {
   return metader_[index];
 }
 
 inline
-double MetainferenceBase::getCalcData(const unsigned index)
-{
+double MetainferenceBase::getCalcData(const unsigned index) {
   return calc_data_[index];
 }
 
 inline
-void MetainferenceBase::setCalcData(const unsigned index, const double datum)
-{
+void MetainferenceBase::setCalcData(const unsigned index, const double datum) {
   calc_data_[index] = datum;
 }
 
 inline
-void MetainferenceBase::setCalcData(const std::vector<double>& data)
-{
-  for(unsigned i=0; i<data.size(); i++) calc_data_[i] = data[i];
+void MetainferenceBase::setCalcData(const std::vector<double>& data) {
+  for(unsigned i=0; i<data.size(); i++) {
+    calc_data_[i] = data[i];
+  }
 }
 
 inline
 void MetainferenceBase::setParameters(const std::vector<double>& input) {
-  for(unsigned i=0; i<input.size(); i++) parameters.push_back(input[i]);
+  for(unsigned i=0; i<input.size(); i++) {
+    parameters.push_back(input[i]);
+  }
 }
 
 inline
@@ -289,8 +284,11 @@ void MetainferenceBase::setDerivatives() {
   }
 
   // Resize all derivative arrays
-  forces.resize( nder ); forcesToApply.resize( nder );
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+  forces.resize( nder );
+  forcesToApply.resize( nder );
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->resizeDerivatives(nder);
+  }
 }
 
 inline
@@ -326,27 +324,39 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a=NULL )
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+        if(getPntrToComponent(j)->hasDerivatives()) {
+          save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+        }
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+        if(getPntrToComponent(j)->hasDerivatives()) {
+          getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+        }
     }
   }
 }
 
 inline
 void MetainferenceBase::apply() {
-  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
+  bool wasforced=false;
+  forcesToApply.assign(forcesToApply.size(),0.0);
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
+      for(unsigned i=0; i<forces.size(); ++i) {
+        forcesToApply[i]+=forces[i];
+      }
     }
   }
   if( wasforced ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
+    unsigned ind=0;
+    addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
+    if( getNumberOfAtoms()>0 ) {
+      setForcesOnAtoms( forcesToApply, ind );
+    }
   }
 }
 

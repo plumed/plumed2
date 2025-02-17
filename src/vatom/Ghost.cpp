@@ -37,7 +37,7 @@ The computed ghost atom is stored as a virtual atom that can be accessed in
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.10,
-by considering the ordered list of atoms and rebuilding the molecule using a procedure
+by rebuilding the molecule using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -62,8 +62,7 @@ PRINT ARG=d1
 
 
 class Ghost:
-  public ActionWithVirtualAtom
-{
+  public ActionWithVirtualAtom {
   std::vector<double> coord;
   std::vector<Tensor> deriv;
   bool nopbc=false;
@@ -83,20 +82,25 @@ void Ghost::registerKeywords(Keywords& keys) {
 
 Ghost::Ghost(const ActionOptions&ao):
   Action(ao),
-  ActionWithVirtualAtom(ao)
-{
+  ActionWithVirtualAtom(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=3) error("ATOMS should contain a list of three atoms");
+  if(atoms.size()!=3) {
+    error("ATOMS should contain a list of three atoms");
+  }
 
   parseVector("COORDINATES",coord);
-  if(coord.size()!=3) error("COORDINATES should be a list of three real numbers");
+  if(coord.size()!=3) {
+    error("COORDINATES should be a list of three real numbers");
+  }
 
   parseFlag("NOPBC",nopbc);
 
   checkRead();
   log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf(" %d",atoms[i].serial());
+  }
   log.printf("\n");
 
   if(nopbc) {
@@ -109,7 +113,9 @@ Ghost::Ghost(const ActionOptions&ao):
 
 void Ghost::calculate() {
 
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
 
   Vector pos;
   deriv.resize(getNumberOfAtoms());
