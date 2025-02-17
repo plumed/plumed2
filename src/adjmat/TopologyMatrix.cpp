@@ -72,10 +72,14 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("compulsory","RADIUS","");
+  keys.linkActionInDocs("RADIUS","LESS_THAN");
   keys.add("compulsory","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
+  keys.linkActionInDocs("CYLINDER_SWITCH","LESS_THAN");
   keys.add("compulsory","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","");
+  keys.linkActionInDocs("DENSITY_THRESHOLD","LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
 }
