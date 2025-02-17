@@ -36,7 +36,7 @@ class View { //this is duplicated in PBC.h, this need to be uniformed!!!
 public:
   template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
   View(T* p) : ptr_(p), size_(N) {}
-  View(std::size_t NN, T* p) : ptr_(p), size_(NN) {}
+  View(T* p, std::size_t NN) : ptr_(p), size_(NN) {}
   constexpr size_t size()const {
     return size_;
   }
@@ -73,10 +73,10 @@ public:
   View2D(T *p, size_t NN) : ptr_(p), sizeN_(NN), sizeM_(M) {}
   View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {}
   View<T, M> operator[](size_t i) {
-    return View<T, M>(sizeM_, ptr_ + i * sizeM_);
+    return View<T, M>(ptr_ + i * sizeM_, sizeM_);
   }
   View<T, M> operator[](size_t i) const {
-    return View<T, M>(sizeM_, ptr_ + i * sizeM_);
+    return View<T, M>(ptr_ + i * sizeM_, sizeM_);
   }
   constexpr size_t size() const { return sizeN_; }
 };
@@ -101,7 +101,7 @@ class ParallelActionsOutput {
 public:
   View<double,helpers::dynamic_extent> values;
   std::vector<double>& derivatives;
-  ParallelActionsOutput( std::size_t ncomp, double* v, std::vector<double>& d ) : values(ncomp,v), derivatives(d) {}
+  ParallelActionsOutput( std::size_t ncomp, double* v, std::vector<double>& d ) : values(v,ncomp), derivatives(d) {}
 };
 
 class ForceInput {
@@ -114,13 +114,13 @@ private:
   public:
     DerivHelper( std::size_t n, std::vector<double>& d ) : nderiv(n), derivatives(d) {}
     View<double, helpers::dynamic_extent> operator[](std::size_t i) const {
-      return View<double, helpers::dynamic_extent>( nderiv, derivatives.data() + i*nderiv );
+      return View<double, helpers::dynamic_extent>( derivatives.data() + i*nderiv, nderiv );
     }
   };
 public:
   View<double,helpers::dynamic_extent> force;
   DerivHelper deriv;
-  ForceInput( std::size_t n, double* f, std::size_t m, std::vector<double>& d ) : ncomp(n), force(n,f), deriv(m,d) {}
+  ForceInput( std::size_t n, double* f, std::size_t m, std::vector<double>& d ) : ncomp(n), force(f,n), deriv(m,d) {}
 };
 
 struct ForceOutput {

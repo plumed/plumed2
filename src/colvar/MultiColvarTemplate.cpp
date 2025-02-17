@@ -29,8 +29,8 @@ ColvarInput::ColvarInput( unsigned m, unsigned natoms, const double* p, const do
   mode(m),
   pbc(box),
   pos(p,natoms),
-  mass(natoms,w),
-  charges(natoms,q)
+  mass(w,natoms),
+  charges(q,natoms)
 {
 }
 
@@ -47,7 +47,7 @@ ColvarOutput::ColvarOutput( View<double,helpers::dynamic_extent>& v, std::size_t
 }
 
 ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action ) {
-  View<double,helpers::dynamic_extent> val(v.size(),v.data());
+  View<double,helpers::dynamic_extent> val(v.data(),v.size());
   d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
   return ColvarOutput( val, action->getNumberOfDerivatives(), d );
 }
