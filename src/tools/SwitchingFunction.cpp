@@ -28,6 +28,12 @@
 #include <algorithm>
 #include <optional>
 
+/*
+IMPORTANT NOTE FOR DEVELOPERS:
+
+If you add a new type of switching function in this file please add documentation for your new switching function type in function/LessThan.cpp
+*/
+
 namespace PLMD {
 
 namespace switchContainers {

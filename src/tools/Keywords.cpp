@@ -246,7 +246,7 @@ Keywords::keyInfo& Keywords::keyInfo::setAllowMultiple(bool a) {
   allowmultiple=a;
   return *this;
 }
-Keywords::keyInfo& Keywords::keyInfo::setLinkedAction(std::string a) {
+Keywords::keyInfo& Keywords::keyInfo::setLinkedAction(std::string_view a) {
   linkaction=a;
   return *this;
 }

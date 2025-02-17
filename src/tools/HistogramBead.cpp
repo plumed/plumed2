@@ -25,6 +25,13 @@
 #include "Tools.h"
 #include "Keywords.h"
 
+/*
+IMPORTANT NOTE FOR DEVELOPERS:
+
+If you add a new type of function in this file please add documentation for your new switching function type in function/Between.cpp
+
+*/
+
 namespace PLMD {
 
 void HistogramBead::registerKeywords( Keywords& keys ) {

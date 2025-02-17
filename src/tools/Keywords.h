@@ -115,7 +115,7 @@ private:
     keyInfo& setDefaultFlag(bool a);
     keyInfo& setArgumentType(argType a);
     keyInfo& setAllowMultiple(bool a);
-    keyInfo& setLinkedAction(std::string a);
+    keyInfo& setLinkedAction(std::string_view a);
     bool isArgument() const;
   };
   ///Add o reserve a new keyword (internal tool)
