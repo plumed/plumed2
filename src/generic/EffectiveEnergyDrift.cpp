@@ -190,7 +190,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
     }
   }
 
-  log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
+  log<<"Bibliography "<<plumed.cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
 
   //construct biases from ActionWithValue with a component named bias
   std::vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
