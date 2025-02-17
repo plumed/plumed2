@@ -50,6 +50,7 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   // Resize local variables
   which_cluster.resize( getPntrToArgument(0)->getShape()[0] );
   cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
+  log<<"  Bibliography "<<plumed.cite("10.1021/acs.jctc.6b01073")<<"\n";
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {
