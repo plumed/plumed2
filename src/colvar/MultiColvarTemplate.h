@@ -117,8 +117,8 @@ public:
   void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static void performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const ForceInput& fdata, ForceOutput& forces );
+  static void performTask( unsigned task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
+  static void gatherForces( unsigned task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
   static void gatherThreads( ForceOutput& forces );
 };
 
@@ -228,9 +228,9 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsInput<MultiColvarInput>& input, ParallelActionsOutput& output ) {
+void MultiColvarTemplate<T>::performTask( unsigned task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   std::size_t pos_start = 5*input.nindices_per_task*task_index;
-  if( input.actiondata.usepbc ) {
+  if( actiondata.usepbc ) {
     if( input.nindices_per_task==1 ) {
       Vector fpos=input.pbc.distance(Vector(0.0,0.0,0.0),Vector(input.inputdata[pos_start], input.inputdata[pos_start+1], input.inputdata[pos_start+2]) );
       input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
@@ -252,11 +252,11 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, ParallelActionsIn
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
   ColvarOutput cvout = ColvarOutput( output.values, 3*input.nindices_per_task+9, output.derivatives );
-  T::calculateCV( ColvarInput(input.actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
+  T::calculateCV( ColvarInput(actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const ParallelActionsInput<MultiColvarInput>& input, const ForceInput& fdata, ForceOutput& forces ) {
+void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned m = 0; double ff = fdata.force[i];

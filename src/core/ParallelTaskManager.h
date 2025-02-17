@@ -81,7 +81,6 @@ public:
   constexpr size_t size() const { return sizeN_; }
 };
 
-template <class D>
 class ParallelActionsInput {
 public:
 /// Do we need to calculate the derivatives
@@ -94,8 +93,6 @@ public:
   unsigned nindices_per_task;
 /// This holds all the input data that is required to calculate all values for all tasks
   std::vector<double> inputdata;
-/// This holds data for that the underlying action needs to do the calculation
-  D actiondata;
 /// Default constructor
   ParallelActionsInput( const Pbc& box ) : noderiv(false), pbc(box), ncomponents(0), nindices_per_task(0) {}
 };
@@ -152,7 +149,9 @@ private:
 /// A tempory set of vectors for holding forces over threads
   std::vector<std::vector<double> > omp_forces;
 /// An action to hold data that we pass to and from the static function
-  ParallelActionsInput<D> myinput;
+  ParallelActionsInput myinput;
+/// This holds data for that the underlying action needs to do the calculation
+  D actiondata;
 public:
   static void registerKeywords( Keywords& keys );
   ParallelTaskManager(ActionWithVector* av);
@@ -210,7 +209,7 @@ void ParallelTaskManager<T, D>::setNumberOfThreadedForces( std::size_t nt ) {
 
 template <class T, class D>
 void ParallelTaskManager<T, D>::setActionInput( const D& adata ) {
-  myinput.actiondata=adata;
+  actiondata=adata;
 }
 
 template <class T, class D>
@@ -236,7 +235,7 @@ void ParallelTaskManager<T, D>::runAllTasks() {
         std::size_t val_pos = task_number*myinput.ncomponents;
         ParallelActionsOutput myout( myinput.ncomponents, value_stash.data()+val_pos, derivatives );
         // Calculate the stuff in the loop for this action
-        T::performTask( task_number, myinput, myout );
+        T::performTask( task_number, actiondata, myinput, myout );
       }
     }
 #else
@@ -262,7 +261,7 @@ void ParallelTaskManager<T, D>::runAllTasks() {
         std::size_t val_pos = task_number*myinput.ncomponents;
         ParallelActionsOutput myout( myinput.ncomponents, value_stash.data()+val_pos, derivatives );
         // Calculate the stuff in the loop for this action
-        T::performTask( task_number, myinput, myout );
+        T::performTask( task_number, actiondata, myinput, myout );
       }
     }
     // MPI Gather everything
@@ -306,10 +305,10 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
         std::size_t task_index = partialTaskList[i];
         ParallelActionsOutput myout( myinput.ncomponents, fake_vals.data(), derivatives );
         // Calculate the stuff in the loop for this action
-        T::performTask( task_index, myinput, myout );
+        T::performTask( task_index, actiondata, myinput, myout );
 
         // Gather the forces from the values
-        T::gatherForces( task_index, myinput, ForceInput( myinput.ncomponents, value_stash.data()+myinput.ncomponents*task_index, nderivatives_per_task, derivatives), forces );
+        T::gatherForces( task_index, actiondata, myinput, ForceInput( myinput.ncomponents, value_stash.data()+myinput.ncomponents*task_index, nderivatives_per_task, derivatives), forces );
       }
       T::gatherThreads( omp_forces[0], forcesForApply );
     }
@@ -339,10 +338,10 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
         std::size_t task_index = partialTaskList[i];
         ParallelActionsOutput myout( myinput.ncomponents, fake_vals.data(), derivatives );
         // Calculate the stuff in the loop for this action
-        T::performTask( task_index, myinput, myout );
+        T::performTask( task_index, actiondata, myinput, myout );
 
         // Gather the forces from the values
-        T::gatherForces( task_index, myinput, ForceInput( myinput.ncomponents, value_stash.data()+myinput.ncomponents*task_index, nderivatives_per_task, derivatives), forces );
+        T::gatherForces( task_index, actiondata, myinput, ForceInput( myinput.ncomponents, value_stash.data()+myinput.ncomponents*task_index, nderivatives_per_task, derivatives), forces );
       }
       #pragma omp critical
       T::gatherThreads( forces );
