@@ -368,16 +368,16 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
     }
     log<<"  selection interpreted using ";
     if(Tools::startWith(symbol,"mdt:")) {
-      log<<"mdtraj "<<cite("McGibbon et al, Biophys. J., 109, 1528 (2015)")<<"\n";
+      log<<"mdtraj "<<plumed.cite("McGibbon et al, Biophys. J., 109, 1528 (2015)")<<"\n";
     }
     if(Tools::startWith(symbol,"mda:")) {
-      log<<"MDAnalysis "<<cite("Gowers et al, Proceedings of the 15th Python in Science Conference, doi:10.25080/majora-629e541a-00e (2016)")<<"\n";
+      log<<"MDAnalysis "<<plumed.cite("Gowers et al, Proceedings of the 15th Python in Science Conference, doi:10.25080/majora-629e541a-00e (2016)")<<"\n";
     }
     if(Tools::startWith(symbol,"vmdexec:")) {
-      log<<"VMD "<<cite("Humphrey, Dalke, and Schulten, K., J. Molec. Graphics, 14, 33 (1996)")<<"\n";
+      log<<"VMD "<<plumed.cite("Humphrey, Dalke, and Schulten, K., J. Molec. Graphics, 14, 33 (1996)")<<"\n";
     }
     if(Tools::startWith(symbol,"vmd:")) {
-      log<<"VMD (github.com/Eigenstate/vmd-python) "<<cite("Humphrey, Dalke, and Schulten, K., J. Molec. Graphics, 14, 33 (1996)")<<"\n";
+      log<<"VMD (github.com/Eigenstate/vmd-python) "<<plumed.cite("Humphrey, Dalke, and Schulten, K., J. Molec. Graphics, 14, 33 (1996)")<<"\n";
     }
     return;
   }

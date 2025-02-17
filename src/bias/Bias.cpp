@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
+#include "core/PlumedMain.h"
 
 
 namespace PLMD {
@@ -37,7 +38,7 @@ Bias::Bias(const ActionOptions&ao):
 
   if(getStride()>1) {
     log<<"  multiple time step "<<getStride()<<" ";
-    log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
+    log<<plumed.cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
+#include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -231,7 +232,7 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   tot_work=0.0;
 
   log<<"  Bibliography ";
-  log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
+  log<<plumed.cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
 
 }
 

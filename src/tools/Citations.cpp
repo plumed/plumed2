@@ -26,14 +26,23 @@
 
 namespace PLMD {
 
+const static Tools::FastStringUnorderedMap<std::string> doi_map = {
+#include "CitationMap.inc"
+};
+
 std::string Citations::cite(const std::string & item) {
+  std::string myref=item;
+  if( doi_map.find(item)!=doi_map.end() ) {
+    myref=doi_map.find(item)->second;
+  }
+
   unsigned i;
   for(i=0; i<items.size(); ++i)
-    if(items[i]==item) {
+    if(items[i]==myref) {
       break;
     }
   if(i==items.size()) {
-    items.push_back(item);
+    items.push_back(myref);
   }
   plumed_assert(i<items.size());
   std::string ret;

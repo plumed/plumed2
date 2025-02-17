@@ -43,6 +43,7 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("y","COMPONENTS","matrix","the projection of the bond on the y axis");
   keys.addOutputComponent("z","COMPONENTS","matrix","the projection of the bond on the z axis");
   keys.setValueDescription("matrix","a matrix containing the weights for the bonds between each pair of atoms");
+  keys.addDOI("10.1021/acs.jctc.6b01073");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
@@ -174,7 +175,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
     addComponent( "z", shape );
     componentIsNotPeriodic("z");
   }
-  log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
+  log<<"  Bibliography "<<plumed.cite("10.1021/acs.jctc.6b01073")<<"\n";
 }
 
 unsigned AdjacencyMatrixBase::getNumberOfDerivatives() {
