@@ -110,7 +110,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
       for(unsigned i=1; i<getPntrToArgument(0)->getShape()[1]; ++i) {
         con += ",0";
       }
-      plumed.readInputLine( getLabel() + "_colmask: CONSTANT VALUES=" + con );
+      plumed.readInputWords( Tools::getWords(getLabel() + "_colmask: CONSTANT VALUES=" + con), false );
       std::vector<std::string> labs(1, getLabel() + "_colmask");
       ActionWithArguments::interpretArgumentList( labs, plumed.getActionSet(), this, cmask );
     } else if( rmask.size()==0 ) {
@@ -118,7 +118,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
       for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
         con += ",0";
       }
-      plumed.readInputLine( getLabel() + "_rowmask: CONSTANT VALUES=" + con );
+      plumed.readInputWords( Tools::getWords(getLabel() + "_rowmask: CONSTANT VALUES=" + con), false );
       std::vector<std::string> labs(1, getLabel() + "_rowmask");
       ActionWithArguments::interpretArgumentList( labs, plumed.getActionSet(), this, rmask );
     }
