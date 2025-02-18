@@ -173,6 +173,13 @@ Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
 In addition, it allows \ref DUMPATOMS to write compressed xtc files.
 
+\par Multiple replicas
+
+When PLUMED is compiled with MPI support, you can emulate a multi-simulation setup with the `driver` by providing the `--multi`
+option with the appropriate number of ranks. This allows to use the \ref special-replica-syntax and to analyze multiple
+trajectories (see \ref trieste-5-replicas). PLUMED will automatically append a numbered suffix to output files
+(e.g. `COLVAR.0`, `COLVAR.1`, …). Similarly, each replica will search for the corresponding suffixed input file (e.g. `traj.0.xtc`, …)
+or default to the unsuffixed one.
 
 */
 //+ENDPLUMEDOC
