@@ -43,7 +43,7 @@ The following example input illustrates this idea.
 
 ```plumed
 d3: DISTANCE ATOMS=1,2 COMPONENTS
-PRINT ARG=d3.x,d3.y.d3.z FILE=colvar
+PRINT ARG=d3.x,d3.y,d3.z FILE=colvar
 ```
 
 For this input the DISTANCE action now outputs 3 values because the COMPONENTS keyword is present. This flag tells PLUMED that you would like to 
@@ -75,7 +75,7 @@ an input that is equivalent to this one:
 
 ```plumed
 d3: DISTANCE ATOMS=1,2 COMPONENTS
-PRINT ARG=d3.x,d3.y.d3.z FILE=colvar
+PRINT ARG=d3.x,d3.y,d3.z FILE=colvar
 ```
 
 by using the * widlcard to print all the values output by the action with label d3 in the PRINT action as follows:

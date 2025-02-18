@@ -55,6 +55,18 @@ def create_map( URL ) :
     
     return dict(map(lambda i,j : (i,j) , xdata,ydata))
 
+def printDataTable( f, titles, tabledata ) :
+    f.write("<table id=\"browse-table\" class=\"display\">\n")
+    f.write("<thead><tr>\n")
+    for t in titles : f.write("<th style=\"text-align: left\">" + t + "</th>\n")
+    f.write("</tr></thead><tbody>\n")
+    for r in tabledata : 
+        if len(r)!=len(titles) : raise Exception("mismatch between number of columns in tabledata and number of titles")
+        f.write("<tr>\n")
+        for e in r : f.write("<td style=\"text-align: left\">" + e + "</td>\n")
+        f.write("</tr>\n")
+    f.write("</tbody></table>\n")
+
 def printIndexFile(of,version) :
     content=f"""
 PLUMED Version {version}
@@ -75,19 +87,18 @@ You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials
     """
     of.write(content)
 
-def printActionFileHeader(af,version) :
+def printActionListPage(af,version,tabledata) :
     content=f"""
 Actions implemented in PLUMED Version {version}
 -----------------------------------------------
 
 The [actions](actions.md) that can be used within a PLUMED input file are listed below.
 
-| Name | Description | 
-|:-----|:------------|
-    """
+"""
     af.write(content)
+    printDataTable(af,["Name", "Description"], tabledata)
 
-def printModuleFileHeader(mf,version) :
+def printModuleListPage(mf,version,tabledata) :
     content=f"""
 Modules that make up PLUMED Version {version}
 ---------------------------------------------
@@ -109,10 +120,9 @@ The remainder of the modules are not compiled unless you explicitly request PLUM
 The table below lists all the available modules and tells you whether they are always compiled, on by default or off by default.  An alternative, graphical
 view of this information is available [here](modulegraph.md).
 
-| Name | Description | Authors | Type |
-|:-----|:------------|:--------|:----:|
-    """
+"""
     mf.write(content)
+    printDataTable(mf,["Name","Description","Authors","Type"],tabledata)
 
 def drawModuleNode( index, key, ntype, of ) :
     of.write(  str(index) + "(\"" + key + "\")\n")
@@ -275,7 +285,7 @@ def getKeywordDescription( docs ) :
        desc = desc + ". Options for this keyword are explained in the documentation for [" + docs["actionlink"] + "](" + docs["actionlink"] + ".md)."
     return desc
 
-def createActionPage( version, action, value, neggs, nlessons, actdb ) :
+def createActionPage( version, action, value, neggs, nlessons ) :
     with open( "docs/" + action + ".md", "w") as f : 
          hasatoms, hasargs = False, False
          for key, docs in value["syntax"].items() :
@@ -434,7 +444,7 @@ if __name__ == "__main__" :
    # Copy the extra files we need to process all the inputs 
    shutil.copytree("extras","docs/extras")
    # Create the assets
-   os.mkdir("docs/assets")
+   shutil.copytree("assets","docs/assets")
    # Create the javascript
    with open("docs/assets/plumedtohtml.js", "w+") as jf : jf.write( get_javascript() )
    # Create the css
@@ -448,17 +458,19 @@ if __name__ == "__main__" :
        if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
    # Create a page for each action
-   with open("docs/actionlist.md","w+") as actdb :
-        printActionFileHeader(actdb,version)
-        for key, value in plumed_syntax.items() :
-           if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
-           # Now create the page contents
-           neggs, nlessons = 0, 0
-           if key in nest_map.keys() : neggs = nest_map[key]
-           if key in school_map.keys() : nlessons = school_map[key] 
-           print("Building action page", key )
-           createActionPage( version, key, value, neggs, nlessons, actdb ) 
-           actdb.write("|[" +  key + "](" + key + ".md) | " + value["description"] + "|\n")
+   tabledata = []
+   for key, value in plumed_syntax.items() :
+      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
+      # Now create the page contents
+      neggs, nlessons = 0, 0
+      if key in nest_map.keys() : neggs = nest_map[key]
+      if key in school_map.keys() : nlessons = school_map[key] 
+      print("Building action page", key )
+      createActionPage( version, key, value, neggs, nlessons )
+      alink = "<a href=\"../" + key + "\">" + key + "</a>"
+      tabledata.append( [alink, str(value["description"])] ) 
+   # Create the page with the list of actions
+   with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata )
 
    # Create a list of modules
    modules = {}
@@ -472,11 +484,14 @@ if __name__ == "__main__" :
      else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons
 
    # And create each module page
-   with open("docs/modules.md","w+") as module_file : 
-       printModuleFileHeader(module_file,version)
-       for module, value in modules.items() : 
-           module_file.write("| [" + module + "](module_" + module + ".md) | Information about the module | authors | default-on |\n") 
-           print("Building module page", module )
-           createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
+   moduletabledata = []
+   for module, value in modules.items() :
+       mlink = "<a href=\"../module_" + module + "\">" + module + "</a>"
+       moduletabledata.append( [mlink, "Information about the module", "authors", "default-on"] ) 
+       print("Building module page", module )
+       createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
+   with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
+   # And create the page to hold the modules
+    
    # Create the graph that shows all the modules
    # createModuleGraph( version, plumed_syntax )

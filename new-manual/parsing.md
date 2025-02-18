@@ -61,7 +61,7 @@ You can also also write expressions in terms of any of the following constants:
 | `pi`   | the circle constant $\pi$ |
 | `pi_2` | $\pi / 2$ |
 | `pi_4` | $\pi / 4$ |
-| `sqrt2 | $\sqrt(2)$ |
+| `sqrt2` | $\sqrt(2)$ |
 | `sqrt1_2 ` | $\sqrt(0.5)$ |
 
 Notice that this functionality cannot be used when the keyword takes integer numbers in input 
