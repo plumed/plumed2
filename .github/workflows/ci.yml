@@ -194,7 +194,7 @@ jobs:
          .ci/push doc
 
   codecheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Set path
@@ -220,7 +220,7 @@ jobs:
 
   # We test on fedora37 to make sure we have compatibility with newer compilers (gcc 12)
   fedora37:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Build and run tests
@@ -229,7 +229,7 @@ jobs:
 
   # We test on rockylinux8 as well
   rocky8:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Build and run tests
@@ -308,7 +308,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04 , macos-13, macos-14 ]
+        os: [ubuntu-22.04 , macos-13, macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
