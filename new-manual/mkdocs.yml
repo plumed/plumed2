@@ -1,0 +1,19 @@
+site_name: PLUMED manual
+
+nav:
+  - Introduction: 'index.md'
+  - Modules: 'modules.md'
+  - Actions: 'actionlist.md'
+  - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
+  - Tutorials: 'https://www.plumed-tutorials.org'
+  - Publications: 'https://www.plumed-nest.org'
+
+not_in_nav: |
+  *.md
+  !index.md
+
+extra_css:
+   - assets/plumedtohtml.css
+
+extra_javascript:
+  - assets/plumedtohtml.js
