@@ -28,6 +28,7 @@ namespace clusters {
 void ClusteringBase::registerKeywords( Keywords& keys ) {
   matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.setValueDescription("vector","vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
+  keys.addDOI("10.1021/acs.jctc.6b01073");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
@@ -49,6 +50,7 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   // Resize local variables
   which_cluster.resize( getPntrToArgument(0)->getShape()[0] );
   cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
+  log<<"  Bibliography "<<plumed.cite("10.1021/acs.jctc.6b01073")<<"\n";
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {

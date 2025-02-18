@@ -152,6 +152,8 @@ private:
   std::vector<std::string> neededActions;
 /// List of suffixes that can be used with this action
   std::vector<std::string> actionNameSuffixes;
+/// List of doi's that should appear in the manual
+  std::vector<std::string> doilist;
 /// Print the documentation for the named keyword in html
   void print_html_item( const std::string& ) const;
 public:
@@ -314,6 +316,10 @@ public:
   std::string getReplacementAction() const ;
 /// Note that this action has been deprecated
   void setDeprecated( const std::string& name );
+/// Add a DOI to the list in the manual page for this action
+  void addDOI( const std::string& doi );
+/// Get the list of DOI
+  const std::vector<std::string>& getDOIList() const ;
 };
 
 //the following templates specializations make the bitmask enum work with the
