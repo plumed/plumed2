@@ -495,7 +495,8 @@ if __name__ == "__main__" :
    moduletabledata = []
    for module, value in modules.items() :
        mlink = "<a href=\"../module_" + module + "\">" + module + "</a>"
-       moduletabledata.append( [mlink, "Information about the module", "authors", "default-on"] ) 
+       with open("../src/" + module + "/module.type") as f : mtype = f.read().strip()
+       moduletabledata.append( [mlink, "Information about the module", "authors", mtype] ) 
        print("Building module page", module )
        createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
    # And the page with the list of modules
