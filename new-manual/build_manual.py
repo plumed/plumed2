@@ -124,6 +124,14 @@ view of this information is available [here](modulegraph.md).
     mf.write(content)
     printDataTable(mf,["Name","Description","Authors","Type"],tabledata)
 
+def addSpecialGroupsToPage( file, groups ) :
+    with open(file,"r") as f : lines = f.readlines() 
+    with open(file,"w+") as of : 
+         for l in lines :
+             if "@MOLINFOGROUPS@" in l : 
+                printDataTable( of, ["Name","Description"], groups )
+             else : of.write( l ) 
+
 def drawModuleNode( index, key, ntype, of ) :
     of.write(  str(index) + "(\"" + key + "\")\n")
     if ntype=="always" : of.write("style " + str(index) + " fill:blue\n")
@@ -430,7 +438,7 @@ if __name__ == "__main__" :
        except ValueError as ve:
           raise InvalidJSONError(ve)
 
-   # Create a file with all the special groups
+   # Create a list containing all the special groups
    # with open("_data/grouplist.yml","w") as gfile :
    #     print("# file containing special groups",file=gfile)
    #     for key, value in plumed_syntax["groups"].items() :
@@ -490,8 +498,13 @@ if __name__ == "__main__" :
        moduletabledata.append( [mlink, "Information about the module", "authors", "default-on"] ) 
        print("Building module page", module )
        createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
+   # And the page with the list of modules
    with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
-   # And create the page to hold the modules
-    
    # Create the graph that shows all the modules
-   # createModuleGraph( version, plumed_syntax )
+   # createModuleGraph( version, plumed_syntax ) 
+   
+   # Create a list containing all the special groups
+   special_groups = []
+   for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
+   # Add tables with special groups to pages that need them
+   addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups ) 
