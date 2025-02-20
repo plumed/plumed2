@@ -132,44 +132,46 @@ def addSpecialGroupsToPage( file, groups ) :
                 printDataTable( of, ["Name","Description"], groups )
              else : of.write( l ) 
 
-def drawModuleNode( index, key, ntype, of ) :
+def getModuleType(module): 
+    if not Path("../src/" + module + "/module.type").is_file() : return "always"
+    with open("../src/" + module + "/module.type") as f : return f.read().strip()
+
+def drawModuleNode( index, key, of ) :
     of.write(  str(index) + "(\"" + key + "\")\n")
-    if ntype=="always" : of.write("style " + str(index) + " fill:blue\n")
-    elif ntype=="default-on" : of.write("style " + str(index) + " fill:green\n")
-    elif ntype=="default-off" : of.write("style " + str(index) + " fill:red\n")    
-    else : raise Exception("don't know how to draw node of type " + ntype )
+    if getModuleType(key)=="always" : of.write("style " + str(index) + " fill:blue\n")
+    elif getModuleType(key)=="default-on" : of.write("style " + str(index) + " fill:green\n")
+    elif getModuleType(key)=="default-off" : of.write("style " + str(index) + " fill:red\n")    
+    else : raise Exception("don't know how to draw node of type " + getModuleType(key) )
+
+def getModuleRequirementsFromMakefile(thismodule) : 
+   with open("../src/" + thismodule + "/Makefile") as f :
+        for line in f.readlines() :
+            if "USE=" in line : return line.replace("USE=","").split()
+   return []
 
 def createModuleGraph( version, plumed_syntax ) :
-   # Get all the module dependencies
-#   requires = {}
-#   for key, value in plumed_syntax.items() :
-#       if "module" not in value : continue
-#       thismodule = value["module"]
-#       if thismodule not in requires.keys() : requires[thismodule] = set()
-#       if "needs" in value :
-#          for req in value["needs"] :
-#              if plumed_syntax[req]["module"]!=thismodule : requires[thismodule].add( plumed_syntax[req]["module"] )
-#   
-#   # And from inclusion  
-#   with open("_data/extradeps" + version + ".json") as f :
-#      try:
-#        dependinfo = json.load(f)
-#      except ValueError as ve:
-#        raise InvalidJSONError(ve)
-#   
-#   for key in requires.keys() :
-#       modules = []
-#       for conn in dependinfo[key]["depends"] :
-#           if conn in requires.keys() : requires[key].add( conn )
-#
-   of = open( "docs/index.md", "w")
+   # Get all the module dependencies from plumed_syntax
+   requires = {}
+   for key, value in plumed_syntax.items() :
+       if "module" not in value : continue
+       thismodule = value["module"]
+       if thismodule not in requires.keys() : requires[thismodule] = set()
+       if "needs" in value :
+          for req in value["needs"] :
+              if plumed_syntax[req]["module"]!=thismodule : requires[thismodule].add( plumed_syntax[req]["module"] )
+   # Get dependencies from Makefiles
+   for thismodule in requires.keys() :
+       for conn in getModuleRequirementsFromMakefile(thismodule) :
+           if conn in requires.keys() : requires[thismodule].add( conn ) 
+
+   of = open( "docs/modulegraph.md", "w")
+   print("REQUIRED", requires)
    ghead = f"""
 PLUMED Version {version}
 ------------------------
 
-PLUMED is a community-developed code that can be used to incorporate additional functionality into multiple molecular dynamics codes and for analysing 
-trajectories. PLUMED is a composed of a modules that contain a variety of different functionalities but that share a common basic syntax. You can find 
-a list of the modules that are available within PLUMED in the following graph. The graph also shows the interdependencies between the various modules. 
+PLUMED is a composed of a modules that contain a variety of different functionalities but that share a common basic syntax. You can find 
+all the modules that are available within PLUMED in the following graph. The graph also shows the interdependencies between the various modules. 
 If you click on the modules in the graph module-specific information will open.  The colors of the nodes in the graph below indicate whether the module
 is always compiled (blue), on by default (green) or off by default (red).  If you need a feature from a module that is by default off you need to explicitly tell
 PLUMED to include it during the configure stage by using:
@@ -180,89 +182,84 @@ PLUMED to include it during the configure stage by using:
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).
 
-Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command. 
+You can view the information about the modules in the graph above in a table by following [the following link](modules.md). 
 
-If you are completely unfamiliar with PLUMED we would recommend that you start by working through [the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html).
-   """
-   of.write(ghead)
+<pre class=\"mermaid\">
+"""
+   of.write(ghead + "\n")
+   of.write("%%{init: {\"flowchart\": {\"defaultRenderer\": \"elk\"}} }%%\n")
+   of.write("flowchart TD\n")
+   
+   k, translate, backtranslate = 0, {}, []
+   for key, data in requires.items() :
+       translate[key] = k
+       backtranslate.append(key) 
+       k = k + 1
+   
+   # And create the graph
+   G = nx.DiGraph()
+   for key, data in requires.items() :
+       for dd in data : G.add_edge( translate[dd], translate[key] )
+
+   # Find any closed loops in the graph and remove them
+   cycles = list( nx.simple_cycles(G) )
+   for cyc in cycles :
+      for i in range(len(cyc)-1) : G.remove_edge( cyc[i], cyc[(i+1)%len(cyc)] )   
+
+   # And create the graph showing the modules
+   pG = nx.transitive_reduction(G)
+
+   # Create a matrix with the connections
+   graphmat = np.zeros([k,k])
+   for edge in pG.edges() : graphmat[edge[0],edge[1]] = 1
+   for cyc in cycles : 
+       for i in range(len(cyc)-1) : graphmat[cyc[i], cyc[(i+1)%len(cyc)]] = 1
+
+   drawn = np.zeros(k)
+   for i in range(k) : 
+       if backtranslate[i]=="core" : continue
+      
+       group = set([i])
+       for j in range(k) :
+           if np.sum(graphmat[:,i])>0 and np.all(graphmat[:,j]==graphmat[:,i]) and drawn[j]==0 : group.add(j)
+
+       # This code ensures that if there are more than 2 nodes that have identical dependencies we draw them in 
+       # a subgraph.  The resulting flow chart is less clustered with arrows       
+       if len(group)>2 : 
+          of.write("subgraph g" + str(i) + " [ ]\n")
+          ncols, lgroup, row, col = 3, [], 0, 0 
+          for j in group :  
+              lgroup.append(j)
+              if drawn[j]==0 :
+                 drawModuleNode( j, backtranslate[j], of )
+                 if row>0 :
+                    ind = lgroup[(row-1)*ncols + col]
+                    of.write( str(ind) + "~~~" + str(j) + ";\n")
+                 col = col + 1
+                 if col%ncols==0 : col, row = 0, row + 1 
+                 drawn[j]==1
+          of.write("end\n")
+          for l in range(k) :
+              if graphmat[l,j]>0 :
+                 if drawn[l]==0 :
+                    drawModuleNode( l, backtranslate[l], of )
+                    drawn[l]==1
+                 of.write( str(l) + "--> g" + str(i) + ";\n" )
+          for j in group : graphmat[:,j] = 0
+
+   for i in range(k) :
+       if drawn[i]==0 : drawModuleNode( i,  backtranslate[i], of ) 
+       for j in range(k) :
+           if graphmat[i,j]>0 : of.write( str(i) + "-->" + str(j) + ";\n" )
+
+   # And finally the click stuff
+   k=0
+   for key, data in requires.items() :
+       of.write("click " + str(k) + " \"../module_" + key + "\" \"Information about the module [Authors: list of authors]\"\n" )
+       k = k + 1
+   
+   of.write("</pre>\n")
    of.close()
-
-#```mermaid
-#   %%{init: {"flowchart": {"defaultRenderer": "elk"}} }%%
-#   """
-#   of.write(ghead + "\n")
-#   of.write("flowchart TD\n")
-#   
-#   k, translate, backtranslate = 0, {}, []
-#   for key, data in requires.items() :
-#       translate[key] = k
-#       backtranslate.append(key) 
-#       k = k + 1
-#   
-#   # And create the graph
-#   G = nx.DiGraph()
-#   for key, data in requires.items() :
-#       for dd in data : G.add_edge( translate[dd], translate[key] )
-#
-#   # Find any closed loops in the graph and remove them
-#   cycles = list( nx.simple_cycles(G) )
-#   for cyc in cycles :
-#      for i in range(len(cyc)-1) : G.remove_edge( cyc[i], cyc[(i+1)%len(cyc)] )   
-#
-#   # And create the graph showing the modules
-#   pG = nx.transitive_reduction(G)
-#
-#   # Create a matrix with the connections
-#   graphmat = np.zeros([k,k])
-#   for edge in pG.edges() : graphmat[edge[0],edge[1]] = 1
-#   for cyc in cycles : 
-#       for i in range(len(cyc)-1) : graphmat[cyc[i], cyc[(i+1)%len(cyc)]] = 1
-#
-#   drawn = np.zeros(k)
-#   for i in range(k) : 
-#       if backtranslate[i]=="core" : continue
-#      
-#       group = set([i])
-#       for j in range(k) :
-#           if np.sum(graphmat[:,i])>0 and np.all(graphmat[:,j]==graphmat[:,i]) and drawn[j]==0 : group.add(j)
-#
-#       # This code ensures that if there are more than 2 nodes that have identical dependencies we draw them in 
-#       # a subgraph.  The resulting flow chart is less clustered with arrows       
-#       if len(group)>2 : 
-#          of.write("subgraph g" + str(i) + " [ ]\n")
-#          ncols, lgroup, row, col = 3, [], 0, 0 
-#          for j in group :  
-#              lgroup.append(j)
-#              if drawn[j]==0 :
-#                 drawModuleNode( j, backtranslate[j], dependinfo[backtranslate[j]]["type"], of )
-#                 if row>0 :
-#                    ind = lgroup[(row-1)*ncols + col]
-#                    of.write( str(ind) + "~~~" + str(j) + ";\n")
-#                 col = col + 1
-#                 if col%ncols==0 : col, row = 0, row + 1 
-#                 drawn[j]==1
-#          of.write("end\n")
-#          for l in range(k) :
-#              if graphmat[l,j]>0 :
-#                 if drawn[l]==0 :
-#                    drawModuleNode( l, backtranslate[l], dependinfo[backtranslate[l]]["type"], of )
-#                    drawn[l]==1
-#                 of.write( str(l) + "--> g" + str(i) + ";\n" )
-#          for j in group : graphmat[:,j] = 0
-#
-#   for i in range(k) :
-#       if drawn[i]==0 : drawModuleNode( i,  backtranslate[i], dependinfo[backtranslate[i]]["type"], of ) 
-#       for j in range(k) :
-#           if graphmat[i,j]>0 : of.write( str(i) + "-->" + str(j) + ";\n" )
-#
-#   # And finally the click stuff
-#   k=0
-#   for key, data in requires.items() :
-#       of.write("click " + str(k) + " \"" + key + ".html\" \"Information about the module [Authors: list of authors]\"\n" )
-#       k = k + 1
-#   
-#   of.write("```\n")
-#   of.close()
 
 def createModulePage( version, modname, neggs, nlessons, plumed_syntax ) :
     with open( "docs/module_" + modname + ".md", "w") as f :
@@ -438,13 +435,6 @@ if __name__ == "__main__" :
        except ValueError as ve:
           raise InvalidJSONError(ve)
 
-   # Create a list containing all the special groups
-   # with open("_data/grouplist.yml","w") as gfile :
-   #     print("# file containing special groups",file=gfile)
-   #     for key, value in plumed_syntax["groups"].items() :
-   #         print("- name: \"" + key + "\"", file=gfile )
-   #         print("  description: " + value["description"], file=gfile )
-
    # Create a directory to hold all the docs
    os.mkdir("docs")
    # Create the index file
@@ -495,14 +485,13 @@ if __name__ == "__main__" :
    moduletabledata = []
    for module, value in modules.items() :
        mlink = "<a href=\"../module_" + module + "\">" + module + "</a>"
-       with open("../src/" + module + "/module.type") as f : mtype = f.read().strip()
-       moduletabledata.append( [mlink, "Information about the module", "authors", mtype] ) 
+       moduletabledata.append( [mlink, "Information about the module", "authors", getModuleType(module) ] ) 
        print("Building module page", module )
        createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
    # And the page with the list of modules
    with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
    # Create the graph that shows all the modules
-   # createModuleGraph( version, plumed_syntax ) 
+   createModuleGraph( version, plumed_syntax ) 
    
    # Create a list containing all the special groups
    special_groups = []
