@@ -31,8 +31,8 @@ In the input to keywords that read real numbers you can use constants that are s
 An example is the following
 
 ```plumed
-#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
-MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
+#SETTINGS MOLFILE=extras/AA.pdb
+MOLINFO STRUCTURE=extras/AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200
 ```
@@ -43,8 +43,8 @@ Any real numbers that are read in from input are interpretted using the [Lepton 
 action. You can thus employ complicated expressions such as `1+2` or `exp(10)` as shown in the in the input as shown below:
 
 ```plumed
-#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
-MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
+#SETTINGS MOLFILE=extras/AA.pdb
+MOLINFO STRUCTURE=extras/AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 RESTRAINT ARG=e1 AT=1+0.5
 ```

@@ -67,6 +67,38 @@ def printDataTable( f, titles, tabledata ) :
         f.write("</tr>\n")
     f.write("</tbody></table>\n")
 
+def createSummaryPage( broken, undocumented, noexamples ) :
+    f = open("docs/summary.md","w+")
+    f.write("# Summary of manual coverage\n\n Data on this page was generated on " + date.today().strftime('%B %d, %Y') + "\n")
+
+    if len(broken)>0 : 
+       text = f"""
+## List of pages with broken examples
+
+There are {len(broken)} action pages with failing inputs.
+"""
+       f.write( text )
+       printDataTable( f, ["Page","# broken"], broken )
+     
+    if len(undocumented)>0 : 
+       text=f"""
+## List of actions that have undocumented keywords
+
+There are {len(undocumented)} actions with undocumented keywords
+"""
+       f.write( text )
+       printDataTable( f, ["Action","Module"], undocumented )
+
+    if len(noexamples)>0 :
+       text=f"""
+## List of actions that have no examples in manual
+
+There are {len(noexamples)} action pages with no examples.
+"""
+       f.write( text )
+       printDataTable( f, ["Action","Module"], noexamples )       
+    f.close()  
+
 def printIndexFile(of,version) :
     content=f"""
 PLUMED Version {version}
@@ -84,6 +116,8 @@ Please also note that some developers prefer not to include their codes in PLUME
 If you are completely unfamiliar with PLUMED we would recommend that you start by working through [the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html).
 
 You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials.org) and you can find examples of how PLUMED has been used in many academic research articles [here](https://www.plumed-nest.org).
+
+The documentation in this manual was built on [{date.today().strftime('%B %d, %Y')}](summary.md).
     """
     of.write(content)
 
@@ -165,7 +199,6 @@ def createModuleGraph( version, plumed_syntax ) :
            if conn in requires.keys() : requires[thismodule].add( conn ) 
 
    of = open( "docs/modulegraph.md", "w")
-   print("REQUIRED", requires)
    ghead = f"""
 PLUMED Version {version}
 ------------------------
@@ -261,7 +294,7 @@ You can view the information about the modules in the graph above in a table by 
    of.write("</pre>\n")
    of.close()
 
-def createModulePage( version, modname, neggs, nlessons, plumed_syntax ) :
+def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_inputs ) :
     with open( "docs/module_" + modname + ".md", "w") as f :
          f.write("# [Module](modules.md): " + modname + "\n\n")
          f.write("| Description    | Usage |\n")
@@ -290,7 +323,7 @@ def getKeywordDescription( docs ) :
        desc = desc + ". Options for this keyword are explained in the documentation for [" + docs["actionlink"] + "](" + docs["actionlink"] + ".md)."
     return desc
 
-def createActionPage( version, action, value, neggs, nlessons ) :
+def createActionPage( version, action, value, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples ) :
     with open( "docs/" + action + ".md", "w") as f : 
          hasatoms, hasargs = False, False
          for key, docs in value["syntax"].items() :
@@ -369,6 +402,8 @@ def createActionPage( version, action, value, neggs, nlessons ) :
              with open("automatic/" + action + ".md", "w+") as off : off.write( inp.replace(value["description"],"") )
              actions = set()
              ninp, nf = processMarkdown( "automatic/" + action + ".md", (PLUMED,), (version.replace("-",""),), actions, ghmarkdown=False )
+             if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
+             if ninp==0 : noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
              if os.path.exists("docs/colvar") : os.remove("docs/colvar")
              nfail = nf[0]
              with open("automatic/" + action + ".md", "r") as iff : inp = iff.read()
@@ -377,6 +412,7 @@ def createActionPage( version, action, value, neggs, nlessons ) :
              for file in glob.glob("automatic/" + action + ".md_*" ) : os.rename(file, file.replace("automatic", version) )
          else : 
              f.write("Text from manual goes here \n")
+             noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
          if "dois" in value and len(value["dois"])>0 : 
             f.write("## References \n")
             f.write("More information about how this action can be used is available in the following articles:\n")
@@ -412,6 +448,7 @@ def createActionPage( version, action, value, neggs, nlessons ) :
              if docs["type"]=="optional" :
                 if len(docs["description"])==0 : undoc = undoc + 1 
                 f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
+         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
 
 if __name__ == "__main__" : 
    # Get the version of plumed that we are building the manual for
@@ -422,11 +459,6 @@ if __name__ == "__main__" :
    nest_map = create_map("https://www.plumed-nest.org/summary.html")
    school_map = create_map("https://www.plumed-tutorials.org/summary.html")
 
-   # Print the date to the data directory
-   # today = { "date": date.today().strftime('%B %d, %Y') }
-   # df = open("_data/date.json","w")
-   # json.dump( today, df, indent=4 )
-   # df.close()
    # Get list of plumed actions from syntax file
    keyfile = "../json/syntax.json"
    with open(keyfile) as f :
@@ -448,15 +480,19 @@ if __name__ == "__main__" :
    # Create the css
    with open("docs/assets/plumedtohtml.css", "w+") as cf : cf.write( get_css() )
 
+   # Holder for table with pages with broken inputs
+   broken_inputs = []
+
    # Create the general pages
    actions = set()
    for page in glob.glob("*.md") :
        shutil.copy( page, "docs/" + page ) 
-       processMarkdown( "docs/" + page, (PLUMED,), (version,), actions, ghmarkdown=False )
+       ninp, nf = processMarkdown( "docs/" + page, (PLUMED,), (version,), actions, ghmarkdown=False )
+       if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
        if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
    # Create a page for each action
-   tabledata = []
+   tabledata, undocumented_keywords, noexamples = [], [], []
    for key, value in plumed_syntax.items() :
       if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
       # Now create the page contents
@@ -464,7 +500,7 @@ if __name__ == "__main__" :
       if key in nest_map.keys() : neggs = nest_map[key]
       if key in school_map.keys() : nlessons = school_map[key] 
       print("Building action page", key )
-      createActionPage( version, key, value, neggs, nlessons )
+      createActionPage( version, key, value, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples )
       alink = "<a href=\"../" + key + "\">" + key + "</a>"
       tabledata.append( [alink, str(value["description"])] ) 
    # Create the page with the list of actions
@@ -487,7 +523,7 @@ if __name__ == "__main__" :
        mlink = "<a href=\"../module_" + module + "\">" + module + "</a>"
        moduletabledata.append( [mlink, "Information about the module", "authors", getModuleType(module) ] ) 
        print("Building module page", module )
-       createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax )
+       createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
    # And the page with the list of modules
    with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
    # Create the graph that shows all the modules
@@ -498,3 +534,6 @@ if __name__ == "__main__" :
    for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
    # Add tables with special groups to pages that need them
    addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups ) 
+
+   # And output the summary page
+   createSummaryPage( broken_inputs, undocumented_keywords, noexamples )

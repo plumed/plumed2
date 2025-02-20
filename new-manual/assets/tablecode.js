@@ -1,5 +1,5 @@
 $(document).ready(function() {
-var table = $('#browse-table').DataTable({
+var table = $('table.display').DataTable({
   "dom": '<"search"f><"top"il>rt<"bottom"Bp><"clear">',
   language: { search: '', searchPlaceholder: "Search table..." },
   buttons: [
