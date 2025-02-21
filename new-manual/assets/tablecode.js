@@ -10,8 +10,8 @@ var table = $('table.display').DataTable({
 $('#browse-table-searchbar').keyup(function () {
   table.search( this.value ).draw();
   });
-  hu = window.location.search.substring(1);
-  searchfor = hu.split("=");
+  var hu = window.location.search.substring(1);
+  var searchfor = hu.split("=");
   if( searchfor[0]=="search" ) {
       table.search( searchfor[1] ).draw();
   }
