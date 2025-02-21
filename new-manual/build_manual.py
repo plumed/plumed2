@@ -5,12 +5,13 @@ import shutil
 import getopt
 import requests
 import subprocess
+import yaml
 import glob
 import numpy as np
 from pathlib import Path
 from datetime import date 
 from bs4 import BeautifulSoup
-from PlumedToHTML import processMarkdown, get_javascript, get_css 
+from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript, get_css 
 import networkx as nx
 
 PLUMED="plumed"
@@ -30,7 +31,7 @@ def getActionDocumentationFromPlumed() :
             elif "//+PLUMEDOC" in line :
                if indocs : raise Exception("Found PLUMEDDOC before ENDPLUMEDOC in " + file) 
                actioname, indocs = line.split()[2], True 
-            elif indocs : founddocs += line
+            elif indocs and not "/*" in line and not "*/" in line : founddocs += line + "\n"
     return docs
 
 def get_reference(doi):
@@ -316,18 +317,25 @@ You can view the information about the modules in the graph above in a table by 
    # And finally the click stuff
    k=0
    for key, data in requires.items() :
-       of.write("click " + str(k) + " \"../module_" + key + "\" \"Information about the module [Authors: list of authors]\"\n" )
+       mod_dict = getModuleDictionary( key )
+       of.write("click " + str(k) + " \"../module_" + key + "\" \"" + mod_dict["description"] + "[Authors:" + mod_dict["authors"] + "]\"\n" )
        k = k + 1
    
    of.write("</pre>\n")
    of.close()
+
+def getModuleDictionary( modname ) :
+    if os.path.exists("../src/" + module + "/module.yml") :
+       with open("../src/" + module + "/module.yml") as f : moddict = yaml.load(f,Loader=yaml.BaseLoader)
+       return moddict
+    return {"name": modname, "authors": "authors", "description": "Information about the module", "dois": [] }
 
 def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_inputs ) :
     with open( "docs/module_" + modname + ".md", "w") as f :
          f.write("# [Module](modules.md): " + modname + "\n\n")
          f.write("| Description    | Usage |\n")
          f.write("|:--------|:--------:|\n") 
-         f.write("| Description of module | ")
+         f.write("| " + getModuleDictionary(modname)["description"] + "\n __Authors:__ " + mod_dict["authors"] + " | ")
          if nlessons>0 :
             f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search=" + modname + ")")
          else : 
@@ -337,6 +345,19 @@ def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_i
          else : 
             f.write("![used in " + str(neggs) + " eggs](https://img.shields.io/badge/nest-0-red.svg)")
          f.write("|\n\n")
+         f.write("## Details \n") 
+         if os.path.exists("../src/" + modname + "/module.md") :
+            with open("../src/" + modname + "/module.md") as iff : docs = iff.read()
+            actions = set()
+            ninp, nf = processMarkdownString( docs, "docs/module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
+            if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
+         dois = getModuleDictionary(modname)["dois"] 
+         if len(dois)>0 : 
+            f.write("## References \n")
+            f.write("More information about this module is available in the following articles:\n\n") 
+            for doi in dois :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n") 
          f.write("## Actions \n\n")
          f.write("The following actions are part of this module\n\n")
          f.write("| Name | Description |\n") 
@@ -425,20 +446,11 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
             #fixed_modules = ["adjmat", "envsim", "sprint", "clusters", "secondarystructure", "multicolvar", "valtools", "matrixtools", "colvar", "pamm", "volumes", "generic", "function", "wham", "core", "refdist", "fourier", "setup", "vatom", "symfunc", "landmarks"]
-            fixed_modules = []
+            fixed_modules = ["wham"]
             if value["module"] in fixed_modules : 
-                with open("automatic/" + action + ".md", "r") as iff : inp = iff.read()
-                with open("automatic/" + action + ".md", "w+") as off : off.write( inp.replace(value["description"],"") )
                 actions = set()
-                ninp, nf = processMarkdown( "automatic/" + action + ".md", (PLUMED,), (version.replace("-",""),), actions, ghmarkdown=False )
+                ninp, nf = processMarkdownString( plumeddocs[action], "docs/" + action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
-                if ninp==0 : noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
-                if os.path.exists("docs/colvar") : os.remove("docs/colvar")
-                nfail = nf[0]
-                with open("automatic/" + action + ".md", "r") as iff : inp = iff.read()
-                f.write( inp )
-                # This moves all the PLUMED output files 
-                for file in glob.glob("automatic/" + action + ".md_*" ) : os.rename(file, file.replace("automatic", version) )
             else : 
                 f.write("Text from manual goes here \n")
                 noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
@@ -551,7 +563,8 @@ if __name__ == "__main__" :
    moduletabledata = []
    for module, value in modules.items() :
        mlink = "<a href=\"../module_" + module + "\">" + module + "</a>"
-       moduletabledata.append( [mlink, "Information about the module", "authors", getModuleType(module) ] ) 
+       mod_dict = getModuleDictionary( module )
+       moduletabledata.append( [mlink, mod_dict["description"], mod_dict["authors"], getModuleType(module) ] ) 
        print("Building module page", module )
        createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 

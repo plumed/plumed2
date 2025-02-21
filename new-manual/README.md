@@ -4,7 +4,7 @@ You need to install the following:
 
 ````
 pip install mkdocs
-pip install https://github.com/mitya57/python-markdown-math/archive/master.zip
+pip install python-markdown-math 
 ````
 
 # Building 

@@ -6,7 +6,7 @@ nav:
   - Actions: 'actionlist.md'
   - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
   - Tutorials: 'https://www.plumed-tutorials.org'
-  - Publications: 'https://www.plumed-nest.org'
+  - Examples: 'https://www.plumed-nest.org'
 
 not_in_nav: |
   *.md
@@ -22,10 +22,11 @@ extra_javascript:
   - assets/plumedtohtml.js
   - https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
   - assets/tablecode.js
-  - assets/mathjax.js
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
   - https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.js
   - https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js
   - assets/mermaid.js
 
-markdown_extensions:
-  - mdx_math
+markdown_extensions: 
+  - mdx_math:
+     enable_dollar_delimiter: True 
