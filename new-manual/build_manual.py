@@ -1,8 +1,6 @@
 import os
-import sys
 import json
 import shutil
-import getopt
 import requests
 import subprocess
 import yaml
@@ -23,7 +21,7 @@ def getActionDocumentationFromPlumed() :
         if "//+PLUMEDOC" not in content : continue
         actioname, founddocs,  indocs = "", "", False
         for line in content.splitlines() :
-            if indocs and "//+ENDPLUMEDOC" in line :
+            if "//+ENDPLUMEDOC" in line :
                if not indocs : raise Exception("Found ENDPLUMEDDOC before PLUMEDOC in " + file)
                print("Found documentation for ", actioname)
                docs[actioname] = founddocs
@@ -44,18 +42,15 @@ def get_reference(doi):
         ref=doi.lower()
       # get info from doi
       else:
-        try:
-          # get citation
-          cit = subprocess.check_output('curl -LH "Accept: text/bibliography; style=science" \'http://dx.doi.org/'+doi+'\'', shell=True).decode('utf-8').strip()
-          if("DOI Not Found" in cit):
-           ref="DOI not found"
-          else:
-           # get citation
-           ref=cit[3:cit.find(", doi")]
-           # and url
-           ref_url="http://dx.doi.org/"+doi
-        except:
-          ref="DOI not found"
+        # get citation
+        cit = subprocess.check_output('curl -LH "Accept: text/bibliography; style=science" \'http://dx.doi.org/'+doi+'\'', shell=True).decode('utf-8').strip()
+        if("DOI Not Found" in cit):
+         ref="DOI not found"
+        else:
+         # get citation
+         ref=cit[3:cit.find(", doi")]
+         # and url
+         ref_url="http://dx.doi.org/"+doi
     return ref,ref_url
 
 def create_map( URL ) :
@@ -87,46 +82,45 @@ def printDataTable( f, titles, tabledata ) :
     f.write("</tbody></table>\n")
 
 def createSummaryPage( broken, nodocs, undocumented, noexamples ) :
-    f = open("docs/summary.md","w+")
-    f.write("# Summary of manual coverage\n\n Data on this page was generated on " + date.today().strftime('%B %d, %Y') + "\n")
+    with open("docs/summary.md","w+") as f : 
+       f.write("# Summary of manual coverage\n\n Data on this page was generated on " + date.today().strftime('%B %d, %Y') + "\n")
 
-    if len(broken)>0 : 
-       text = f"""
+       if len(broken)>0 : 
+          text = f"""
 ## List of pages with broken examples
 
 There are {len(broken)} action pages with failing inputs.
 """
-       f.write( text )
-       printDataTable( f, ["Page","# broken"], broken )
+          f.write( text )
+          printDataTable( f, ["Page","# broken"], broken )
 
-    if len(nodocs)>0 :
-       ## List of pages with broken examples
-       text = f"""
+       if len(nodocs)>0 :
+          ## List of pages with broken examples
+          text = f"""
 ## List of pages with no documentation
 
 There are {len(nodocs)} pages with no in code documentation.
 """
-       f.write( text )
-       printDataTable( f, ["Page","Type"], nodocs )
+          f.write( text )
+          printDataTable( f, ["Page","Type"], nodocs )
      
-    if len(undocumented)>0 : 
-       text=f"""
+       if len(undocumented)>0 : 
+          text=f"""
 ## List of actions that have undocumented keywords
 
 There are {len(undocumented)} actions with undocumented keywords
 """
-       f.write( text )
-       printDataTable( f, ["Action","Module"], undocumented )
+          f.write( text )
+          printDataTable( f, ["Action","Module"], undocumented )
 
-    if len(noexamples)>0 :
-       text=f"""
+       if len(noexamples)>0 :
+          text=f"""
 ## List of actions that have no examples in manual
 
 There are {len(noexamples)} action pages with no examples.
 """
-       f.write( text )
-       printDataTable( f, ["Action","Module"], noexamples )       
-    f.close()  
+          f.write( text )
+          printDataTable( f, ["Action","Module"], noexamples )       
 
 def printIndexFile(of,version) :
     content=f"""
@@ -227,8 +221,8 @@ def createModuleGraph( version, plumed_syntax ) :
        for conn in getModuleRequirementsFromMakefile(thismodule) :
            if conn in requires.keys() : requires[thismodule].add( conn ) 
 
-   of = open( "docs/modulegraph.md", "w")
-   ghead = f"""
+   with open( "docs/modulegraph.md", "w") as of :
+      ghead = f"""
 PLUMED Version {version}
 ------------------------
 
@@ -248,81 +242,80 @@ You can view the information about the modules in the graph above in a table by 
 
 <pre class=\"mermaid\">
 """
-   of.write(ghead + "\n")
-   of.write("%%{init: {\"flowchart\": {\"defaultRenderer\": \"elk\"}} }%%\n")
-   of.write("flowchart TD\n")
+      of.write(ghead + "\n")
+      of.write("%%{init: {\"flowchart\": {\"defaultRenderer\": \"elk\"}} }%%\n")
+      of.write("flowchart TD\n")
    
-   k, translate, backtranslate = 0, {}, []
-   for key, data in requires.items() :
-       translate[key] = k
-       backtranslate.append(key) 
-       k = k + 1
-   
-   # And create the graph
-   G = nx.DiGraph()
-   for key, data in requires.items() :
-       for dd in data : G.add_edge( translate[dd], translate[key] )
-
-   # Find any closed loops in the graph and remove them
-   cycles = list( nx.simple_cycles(G) )
-   for cyc in cycles :
-      for i in range(len(cyc)-1) : G.remove_edge( cyc[i], cyc[(i+1)%len(cyc)] )   
-
-   # And create the graph showing the modules
-   pG = nx.transitive_reduction(G)
-
-   # Create a matrix with the connections
-   graphmat = np.zeros([k,k])
-   for edge in pG.edges() : graphmat[edge[0],edge[1]] = 1
-   for cyc in cycles : 
-       for i in range(len(cyc)-1) : graphmat[cyc[i], cyc[(i+1)%len(cyc)]] = 1
-
-   drawn = np.zeros(k)
-   for i in range(k) : 
-       if backtranslate[i]=="core" : continue
+      k, translate, backtranslate = 0, {}, []
+      for key, data in requires.items() :
+          translate[key] = k
+          backtranslate.append(key) 
+          k = k + 1
       
-       group = set([i])
-       for j in range(k) :
-           if np.sum(graphmat[:,i])>0 and np.all(graphmat[:,j]==graphmat[:,i]) and drawn[j]==0 : group.add(j)
+      # And create the graph
+      G = nx.DiGraph()
+      for key, data in requires.items() :
+          for dd in data : G.add_edge( translate[dd], translate[key] )
 
-       # This code ensures that if there are more than 2 nodes that have identical dependencies we draw them in 
-       # a subgraph.  The resulting flow chart is less clustered with arrows       
-       if len(group)>2 : 
-          of.write("subgraph g" + str(i) + " [ ]\n")
-          ncols, lgroup, row, col = 3, [], 0, 0 
-          for j in group :  
-              lgroup.append(j)
-              if drawn[j]==0 :
-                 drawModuleNode( j, backtranslate[j], of )
-                 if row>0 :
-                    ind = lgroup[(row-1)*ncols + col]
-                    of.write( str(ind) + "~~~" + str(j) + ";\n")
-                 col = col + 1
-                 if col%ncols==0 : col, row = 0, row + 1 
-                 drawn[j]==1
-          of.write("end\n")
-          for l in range(k) :
-              if graphmat[l,j]>0 :
-                 if drawn[l]==0 :
-                    drawModuleNode( l, backtranslate[l], of )
-                    drawn[l]==1
-                 of.write( str(l) + "--> g" + str(i) + ";\n" )
-          for j in group : graphmat[:,j] = 0
+      # Find any closed loops in the graph and remove them
+      cycles = list( nx.simple_cycles(G) )
+      for cyc in cycles :
+         for i in range(len(cyc)-1) : G.remove_edge( cyc[i], cyc[(i+1)%len(cyc)] )   
 
-   for i in range(k) :
-       if drawn[i]==0 : drawModuleNode( i,  backtranslate[i], of ) 
-       for j in range(k) :
-           if graphmat[i,j]>0 : of.write( str(i) + "-->" + str(j) + ";\n" )
+      # And create the graph showing the modules
+      pG = nx.transitive_reduction(G)
 
-   # And finally the click stuff
-   k=0
-   for key, data in requires.items() :
-       mod_dict = getModuleDictionary( key )
-       of.write("click " + str(k) + " \"../module_" + key + "\" \"" + mod_dict["description"] + "[Authors:" + mod_dict["authors"] + "]\"\n" )
-       k = k + 1
-   
-   of.write("</pre>\n")
-   of.close()
+      # Create a matrix with the connections
+      graphmat = np.zeros([k,k])
+      for edge in pG.edges() : graphmat[edge[0],edge[1]] = 1
+      for cyc in cycles : 
+          for i in range(len(cyc)-1) : graphmat[cyc[i], cyc[(i+1)%len(cyc)]] = 1
+
+      drawn = np.zeros(k)
+      for i in range(k) : 
+          if backtranslate[i]=="core" : continue
+         
+          group = set([i])
+          for j in range(k) :
+              if np.sum(graphmat[:,i])>0 and np.all(graphmat[:,j]==graphmat[:,i]) and drawn[j]==0 : group.add(j)
+
+          # This code ensures that if there are more than 2 nodes that have identical dependencies we draw them in 
+          # a subgraph.  The resulting flow chart is less clustered with arrows       
+          if len(group)>2 : 
+             of.write("subgraph g" + str(i) + " [ ]\n")
+             ncols, lgroup, row, col = 3, [], 0, 0 
+             for j in group :  
+                 lgroup.append(j)
+                 if drawn[j]==0 :
+                    drawModuleNode( j, backtranslate[j], of )
+                    if row>0 :
+                       ind = lgroup[(row-1)*ncols + col]
+                       of.write( str(ind) + "~~~" + str(j) + ";\n")
+                    col = col + 1
+                    if col%ncols==0 : col, row = 0, row + 1 
+                    drawn[j]==1
+             of.write("end\n")
+             for l in range(k) :
+                 if graphmat[l,j]>0 :
+                    if drawn[l]==0 :
+                       drawModuleNode( l, backtranslate[l], of )
+                       drawn[l]==1
+                    of.write( str(l) + "--> g" + str(i) + ";\n" )
+             for j in group : graphmat[:,j] = 0
+
+      for i in range(k) :
+          if drawn[i]==0 : drawModuleNode( i,  backtranslate[i], of ) 
+          for j in range(k) :
+              if graphmat[i,j]>0 : of.write( str(i) + "-->" + str(j) + ";\n" )
+
+      # And finally the click stuff
+      k=0
+      for key, data in requires.items() :
+          mod_dict = getModuleDictionary( key )
+          of.write("click " + str(k) + " \"../module_" + key + "\" \"" + mod_dict["description"] + "[Authors:" + mod_dict["authors"] + "]\"\n" )
+          k = k + 1
+      
+      of.write("</pre>\n")
 
 def getModuleDictionary( modname ) :
     if os.path.exists("../src/" + module + "/module.yml") :
@@ -494,7 +487,6 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
 
 if __name__ == "__main__" : 
    # Get the version of plumed that we are building the manual for
-   cmd = ['../src/lib/plumed', 'info', '--version']
    version = subprocess.check_output(f'../src/lib/plumed info --version', shell=True).decode('utf-8').strip()
 
    # Create dictionaries that hold how often each action has been used in nest/tutorials
