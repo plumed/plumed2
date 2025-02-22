@@ -97,6 +97,20 @@ public:
     }
     return *this;
   }
+
+  View<T,3>& operator+=( const VectorGeneric<3>& v ) {
+    for(unsigned i=0; i<3; ++i) {
+      ptr_[i] += v[i];
+    }
+    return *this;
+  }
+
+  View<T,N> operator*=( const double& v ) {
+    for(unsigned i=0; i<size_; ++i) {
+      ptr_[i] *= v;
+    }
+    return *this;
+  }
 };
 
 template<typename T>
