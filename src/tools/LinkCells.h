@@ -88,6 +88,8 @@ public:
                              unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
 /// Retrieve the atoms we need to consider
   void retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
+/// Create a neighbour list for the specified input atoms
+  void createNeighborList( const std::vector<Vector>& pos, const std::vector<unsigned>& ind, unsigned& natoms_per_list, std::vector<std::size_t>& nlist ) const ;
 };
 
 inline

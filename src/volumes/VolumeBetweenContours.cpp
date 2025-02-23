@@ -70,141 +70,158 @@ This quantity can be used to calculate functions of the distribution of collecti
 namespace PLMD {
 namespace volumes {
 
-class VolumeInEnvelope : public ActionVolume {
-private:
-  LinkCells mylinks;
-  double gvol;
-  std::vector<std::unique_ptr<Value>> pos;
-  std::vector<Vector> ltmp_pos;
-  std::vector<unsigned> ltmp_ind;
-  std::vector<double> bandwidth;
-  SwitchingFunction sfunc, switchingFunction;
+class VolumeInEnvelope {
 public:
+  double gvol, maxs;
+  std::string kerneltype;
+  std::vector<double> bandwidth;
+  std::string sfunc_str;
+  SwitchingFunction sfunc, switchingFunction;
+  unsigned natoms_in_list;
+  unsigned natoms_per_list;
+  std::vector<std::size_t> nlist;
   static void registerKeywords( Keywords& keys );
-  explicit VolumeInEnvelope(const ActionOptions& ao);
-  void setupRegions() override;
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
+  void parseInput( ActionVolume<VolumeInEnvelope>* action );
+  void setupRegions( ActionVolume<VolumeInEnvelope>* action, const Pbc& pbc, const std::vector<Vector>& positions );
+  static void parseAtoms( ActionVolume<VolumeInEnvelope>* action, std::vector<AtomNumber>& atom );
+  VolumeInEnvelope& operator=( const VolumeInEnvelope& m ) {
+    gvol=m.gvol;
+    maxs=m.maxs;
+    kerneltype=m.kerneltype;
+    bandwidth=m.bandwidth;
+    sfunc_str=m.sfunc_str;
+    std::string errors;
+    sfunc.set(sfunc_str, errors);
+    switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH", errors );
+    return *this;
+  }
+  static void calculateNumberInside( const VolumeInput& input, const VolumeInEnvelope& actioninput, VolumeOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE_CALC")
+typedef ActionVolume<VolumeInEnvelope> volenv;
+PLUMED_REGISTER_ACTION(volenv,"INENVELOPE_CALC")
 char glob_contours[] = "INENVELOPE";
 typedef VolumeShortcut<glob_contours> VolumeInEnvelopeShortcut;
 PLUMED_REGISTER_ACTION(VolumeInEnvelopeShortcut,"INENVELOPE")
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
-  keys.remove("SIGMA");
   keys.setDisplayName("INENVELOPE");
   keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
+  keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
 }
 
-VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
-  Action(ao),
-  ActionVolume(ao),
-  mylinks(comm) {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("FIELD_ATOMS",atoms);
-  log.printf("  creating density field from atoms : ");
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    log.printf("%d ",atoms[i].serial() );
-  }
-  log.printf("\n");
-  ltmp_ind.resize( atoms.size() );
-  ltmp_pos.resize( atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    ltmp_ind[i]=i;
-  }
+void VolumeInEnvelope::parseInput( ActionVolume<VolumeInEnvelope>* action ) {
+  action->parse("KERNEL",kerneltype);
 
-  std::string sw, errors;
-  parse("CONTOUR",sw);
-  if(sw.length()==0) {
-    error("missing CONTOUR keyword");
+  std::string errors;
+  action->parse("CONTOUR",sfunc_str);
+  if(sfunc_str.length()==0) {
+    action->error("missing CONTOUR keyword");
   }
-  sfunc.set(sw,errors);
+  sfunc.set(sfunc_str,errors);
   if( errors.length()!=0 ) {
-    error("problem reading RADIUS keyword : " + errors );
+    action->error("problem reading RADIUS keyword : " + errors );
   }
-  log.printf("  density at atom must be larger than %s \n", ( sfunc.description() ).c_str() );
+  action->log.printf("  density at atom must be larger than %s \n", ( sfunc.description() ).c_str() );
 
   std::vector<double> pp(3,0.0);
   bandwidth.resize(3);
-  parseVector("BANDWIDTH",bandwidth);
-  log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
+  action->parseVector("BANDWIDTH",bandwidth);
+  action->log.printf("  using %s kernel with bandwidths %f %f %f \n",kerneltype.c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
   std::string errors2;
   switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH", errors2 );
   if( errors2.length()!=0 ) {
-    error("problem reading switching function description " + errors2);
+    action->error("problem reading switching function description " + errors2);
   }
   double det=1;
   for(unsigned i=0; i<bandwidth.size(); ++i) {
     det*=bandwidth[i]*bandwidth[i];
   }
   gvol=1.0;
-  if( getKernelType()=="gaussian" ) {
+  if( kerneltype=="gaussian" ) {
     gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
   } else {
-    error("cannot use kernel other than gaussian");
+    action->error("cannot use kernel other than gaussian");
   }
   double dp2cutoff;
-  parse("CUTOFF",dp2cutoff);
-  double maxs =  sqrt(2*dp2cutoff)*bandwidth[0];
+  action->parse("CUTOFF",dp2cutoff);
+  maxs = sqrt(2*dp2cutoff)*bandwidth[0];
   for(unsigned j=1; j<bandwidth.size(); ++j) {
     if( sqrt(2*dp2cutoff)*bandwidth[j]>maxs ) {
       maxs=sqrt(2*dp2cutoff)*bandwidth[j];
     }
   }
-  checkRead();
-  requestAtoms(atoms);
-  mylinks.setCutoff( maxs );
 }
 
-void VolumeInEnvelope::setupRegions() {
-  for(unsigned i=0; i<ltmp_ind.size(); ++i) {
-    ltmp_pos[i]=getPosition(i);
+void VolumeInEnvelope::parseAtoms( ActionVolume<VolumeInEnvelope>* action, std::vector<AtomNumber>& atoms ) {
+  action->parseAtomList("FIELD_ATOMS",atoms);
+  action->log.printf("  creating density field from atoms : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    action->log.printf("%d ",atoms[i].serial() );
   }
-  mylinks.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
+  action->log.printf("\n");
 }
 
-double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
-  unsigned ncells_required=0, natoms=1;
-  std::vector<unsigned> cells_required( mylinks.getNumberOfCells() ), indices( 1 + getNumberOfAtoms() );
-  mylinks.addRequiredCells( mylinks.findMyCell( cpos ), ncells_required, cells_required );
-  indices[0]=getNumberOfAtoms();
-  mylinks.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-  double value=0;
+void VolumeInEnvelope::setupRegions( ActionVolume<VolumeInEnvelope>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {
+  LinkCells mylinks(action->comm);
+  mylinks.setCutoff( maxs );
+  std::vector<unsigned> ltmp_ind(positions.size());
+  for(unsigned i=0; i<ltmp_ind.size(); ++i) {
+    ltmp_ind[i]=i;
+  }
+  mylinks.buildCellLists( positions, ltmp_ind, pbc );
+  natoms_in_list = (action->copyOutput(0))->getShape()[0];
+  std::vector<unsigned> ind( natoms_in_list );
+  std::vector<Vector> volpos( natoms_in_list );
+  for(unsigned i=0; i<natoms_in_list; ++i) {
+    ind[i] = positions.size() + i;
+    volpos[i] = action->getPosition(i);
+  }
+  mylinks.createNeighborList( volpos, ind, natoms_per_list, nlist );
+}
+
+void VolumeInEnvelope::calculateNumberInside( const VolumeInput& input, const VolumeInEnvelope& actioninput, VolumeOutput& output ) {
+  double value=0, dfunc;
   std::vector<double> der(3);
   Vector tder;
 
-  // convert pointer once
-  auto pos_ptr=Tools::unique2raw(pos);
-  for(unsigned i=1; i<natoms; ++i) {
-    Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
+  Tensor vir;
+  vir.zero();
+  output.derivatives[0]=output.derivatives[1]=output.derivatives[2]=0;
+  std::size_t lstart = actioninput.natoms_in_list + input.task_index*(1+actioninput.natoms_per_list);
+  for(unsigned i=0; i<actioninput.nlist[input.task_index]; ++i) {
+    unsigned atno = actioninput.nlist[lstart+i];
+    Vector dist = input.pbc.distance( Vector(input.cpos[0],input.cpos[1],input.cpos[2]), Vector(input.refpos[atno][0], input.refpos[atno][1], input.refpos[atno][2]) );
     double dval=0;
     for(unsigned j=0; j<3; ++j) {
-      der[j] = dist[j]/bandwidth[j];
+      der[j] = dist[j]/actioninput.bandwidth[j];
       dval += der[j]*der[j];
-      der[j] = der[j] / bandwidth[j];
+      der[j] = der[j] / actioninput.bandwidth[j];
     }
-    double dfunc;
-    value += switchingFunction.calculateSqr( dval, dfunc ) / gvol;
-    double tmp = dfunc / gvol;
+    value += actioninput.switchingFunction.calculateSqr( dval, dfunc ) / actioninput.gvol;
+    double tmp = dfunc / actioninput.gvol;
     for(unsigned j=0; j<3; ++j) {
-      derivatives[j] -= tmp*der[j];
-      refders[ indices[i] ][j] += tmp*der[j];
+      output.derivatives[j] -= tmp*der[j];
+      output.refders[atno][j] = tmp*der[j];
       tder[j]=tmp*der[j];
     }
     vir -= Tensor( tder, dist );
   }
-  double deriv, fval = sfunc.calculate( value, deriv );
-  derivatives *= -deriv*value;
-  vir *= -deriv*value;
-  for(unsigned i=1; i<natoms; ++i) {
-    refders[ indices[i] ] *= -deriv*value;
+  double deriv;
+  output.values[0] = 1 - actioninput.sfunc.calculate( value, deriv );
+  output.derivatives[0] *= -deriv*value;
+  output.derivatives[1] *= -deriv*value;
+  output.derivatives[2] *= -deriv*value;
+  output.virial.set( 0, -deriv*value*vir );
+  for(unsigned i=0; i<actioninput.nlist[input.task_index]; ++i) {
+    unsigned atno = actioninput.nlist[lstart+i];
+    output.refders[ atno ][0] *= -deriv*value;
+    output.refders[ atno ][1] *= -deriv*value;
+    output.refders[ atno ][2] *= -deriv*value;
   }
-  return 1.0 - fval;
 }
 
 }

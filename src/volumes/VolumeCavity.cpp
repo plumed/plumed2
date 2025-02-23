@@ -24,6 +24,7 @@
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "tools/HistogramBead.h"
 #include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES CAVITY
@@ -114,108 +115,80 @@ Calculate a vector from the input positions with elements equal to one when the 
 namespace PLMD {
 namespace volumes {
 
-class VolumeCavity : public ActionVolume {
-private:
-  bool boxout;
-  OFile boxfile;
-  double lenunit;
+class VolumeCavity {
+public:
   double jacob_det;
   double len_bi, len_cross, len_perp, sigma;
-  Vector origin, bi, cross, perp;
+  Vector bi, cross, perp;
+  std::string kerneltype;
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
-public:
   static void registerKeywords( Keywords& keys );
-  explicit VolumeCavity(const ActionOptions& ao);
-  ~VolumeCavity();
-  void setupRegions() override;
-  void update() override;
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
+  VolumeCavity() : dlbi(4), dlcross(4), dlperp(4), dbi(3), dcross(3), dperp(3) {}
+  void setupRegions( ActionVolume<VolumeCavity>* action, const Pbc& pbc, const std::vector<Vector>& positions );
+  void parseInput( ActionVolume<VolumeCavity>* action );
+  static void parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms );
+  VolumeCavity& operator=( const VolumeCavity& m ) {
+    dlbi.resize(4);
+    dlcross.resize(4);
+    dlperp.resize(4);
+    dbi.resize(3);
+    dcross.resize(3);
+    dperp.resize(3);
+    sigma = m.sigma;
+    kerneltype=m.kerneltype;
+    return *this;
+  }
+  static void calculateNumberInside( const VolumeInput& input, const VolumeCavity& actioninput, VolumeOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY_CALC")
+typedef ActionVolume<VolumeCavity> VolCav;
+PLUMED_REGISTER_ACTION(VolCav,"CAVITY_CALC")
 char glob_cavity[] = "CAVITY";
 typedef VolumeShortcut<glob_cavity> VolumeCavityShortcut;
 PLUMED_REGISTER_ACTION(VolumeCavityShortcut,"CAVITY")
 
 void VolumeCavity::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
   keys.setDisplayName("CAVITY");
+  keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
-  keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
-  keys.add("optional","FILE","the file on which to write out the box coordinates");
-  keys.add("optional","UNITS","( default=nm ) the units in which to write out the corners of the box");
 }
 
-VolumeCavity::VolumeCavity(const ActionOptions& ao):
-  Action(ao),
-  ActionVolume(ao),
-  boxout(false),
-  lenunit(1.0),
-  dlbi(4),
-  dlcross(4),
-  dlperp(4),
-  dbi(3),
-  dcross(3),
-  dperp(3) {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("BOX",atoms);
+void VolumeCavity::parseInput( ActionVolume<VolumeCavity>* action ) {
+  action->parse("SIGMA",sigma);
+  action->parse("KERNEL",kerneltype);
+  action->log.printf("  using %s kernels with a bandwidth of %d \n", kerneltype.c_str(), sigma );
+}
+
+void VolumeCavity::parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms ) {
+  action->parseAtomList("BOX",atoms);
   if( atoms.size()!=4 ) {
-    error("number of atoms in box should be equal to four");
+    action->error("number of atoms in box should be equal to four");
   }
 
-  log.printf("  boundaries for region are calculated based on positions of atoms : ");
+  action->log.printf("  boundaries for region are calculated based on positions of atoms : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    log.printf("%d ",atoms[i].serial() );
+    action->log.printf("%d ",atoms[i].serial() );
   }
-  log.printf("\n");
-  requestAtoms( atoms );
-
-  boxout=false;
-  parseFlag("PRINT_BOX",boxout);
-  if(boxout) {
-    std::string boxfname;
-    parse("FILE",boxfname);
-    if(boxfname.length()==0) {
-      error("no name for box file specified");
-    }
-    std::string unitname;
-    parse("UNITS",unitname);
-    if ( unitname.length()>0 ) {
-      Units u;
-      u.setLength(unitname);
-      lenunit=getUnits().getLength()/u.getLength();
-    } else {
-      unitname="nm";
-    }
-    boxfile.link(*this);
-    boxfile.open( boxfname );
-    log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
-  }
-
-  checkRead();
+  action->log.printf("\n");
 }
 
-VolumeCavity::~VolumeCavity() {
-}
-
-void VolumeCavity::setupRegions() {
+void VolumeCavity::setupRegions( ActionVolume<VolumeCavity>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {
   // Make some space for things
   Vector d1, d2, d3;
 
-  // Retrieve the sigma value
-  sigma=getSigma();
   // Set the position of the origin
-  origin=getPosition(0);
+  Vector origin=positions[0];
 
   // Get two vectors
-  d1 = pbcDistance(origin,getPosition(1));
+  d1 = pbc.distance(origin,positions[1]);
   double d1l=d1.modulo();
-  d2 = pbcDistance(origin,getPosition(2));
+  d2 = pbc.distance(origin,positions[2]);
 
   // Find the vector connecting the origin to the top corner of
   // the subregion
-  d3 = pbcDistance(origin,getPosition(3));
+  d3 = pbc.distance(origin,positions[3]);
 
   // Create a set of unit vectors
   bi = d1 / d1l;
@@ -361,69 +334,33 @@ void VolumeCavity::setupRegions() {
   jacob_det = fabs( jacob.determinant() );
 }
 
-void VolumeCavity::update() {
-  if(boxout) {
-    boxfile.printf("%d\n",8);
-    const Tensor & t(getPbc().getBox());
-    if(getPbc().isOrthorombic()) {
-      boxfile.printf(" %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
-    } else {
-      boxfile.printf(" %f %f %f %f %f %f %f %f %f\n",
-                     lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
-                     lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
-                     lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
-                    );
-    }
-    boxfile.printf("AR %f %f %f \n",lenunit*origin[0],lenunit*origin[1],lenunit*origin[2]);
-    Vector ut, vt, wt;
-    ut = origin + len_bi*bi;
-    vt = origin + len_cross*cross;
-    wt = origin + len_perp*perp;
-    boxfile.printf("AR %f %f %f \n",lenunit*(ut[0]), lenunit*(ut[1]), lenunit*(ut[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(vt[0]), lenunit*(vt[1]), lenunit*(vt[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(wt[0]), lenunit*(wt[1]), lenunit*(wt[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(vt[0]+len_bi*bi[0]),
-                   lenunit*(vt[1]+len_bi*bi[1]),
-                   lenunit*(vt[2]+len_bi*bi[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(ut[0]+len_perp*perp[0]),
-                   lenunit*(ut[1]+len_perp*perp[1]),
-                   lenunit*(ut[2]+len_perp*perp[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(vt[0]+len_perp*perp[0]),
-                   lenunit*(vt[1]+len_perp*perp[1]),
-                   lenunit*(vt[2]+len_perp*perp[2]) );
-    boxfile.printf("AR %f %f %f \n",lenunit*(vt[0]+len_perp*perp[0]+len_bi*bi[0]),
-                   lenunit*(vt[1]+len_perp*perp[1]+len_bi*bi[1]),
-                   lenunit*(vt[2]+len_perp*perp[2]+len_bi*bi[2]) );
-  }
-}
-
-double VolumeCavity::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& rderiv ) const {
+void VolumeCavity::calculateNumberInside( const VolumeInput& input, const VolumeCavity& actioninput, VolumeOutput& output ) {
   // Setup the histogram bead
   HistogramBead bead;
   bead.isNotPeriodic();
-  bead.setKernelType( getKernelType() );
+  bead.setKernelType( actioninput.kerneltype );
 
   // Calculate distance of atom from origin of new coordinate frame
-  Vector datom=pbcDistance( origin, cpos );
+  Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
   double ucontr, uder, vcontr, vder, wcontr, wder;
 
   // Calculate contribution from integral along bi
-  bead.set( 0, len_bi, sigma );
-  double upos=dotProduct( datom, bi );
+  bead.set( 0, actioninput.len_bi, actioninput.sigma );
+  double upos=dotProduct( datom, actioninput.bi );
   ucontr=bead.calculate( upos, uder );
   double udlen=bead.uboundDerivative( upos );
   double uder2 = bead.lboundDerivative( upos ) - udlen;
 
   // Calculate contribution from integral along cross
-  bead.set( 0, len_cross, sigma );
-  double vpos=dotProduct( datom, cross );
+  bead.set( 0, actioninput.len_cross, actioninput.sigma );
+  double vpos=dotProduct( datom, actioninput.cross );
   vcontr=bead.calculate( vpos, vder );
   double vdlen=bead.uboundDerivative( vpos );
   double vder2 = bead.lboundDerivative( vpos ) - vdlen;
 
   // Calculate contribution from integral along perp
-  bead.set( 0, len_perp, sigma );
-  double wpos=dotProduct( datom, perp );
+  bead.set( 0, actioninput.len_perp, actioninput.sigma );
+  double wpos=dotProduct( datom, actioninput.perp );
   wcontr=bead.calculate( wpos, wder );
   double wdlen=bead.uboundDerivative( wpos );
   double wder2 = bead.lboundDerivative( wpos ) - wdlen;
@@ -432,10 +369,10 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, Vector& derivati
   dfd[0]=uder*vcontr*wcontr;
   dfd[1]=ucontr*vder*wcontr;
   dfd[2]=ucontr*vcontr*wder;
-  derivatives[0] = (dfd[0]*bi[0]+dfd[1]*cross[0]+dfd[2]*perp[0]);
-  derivatives[1] = (dfd[0]*bi[1]+dfd[1]*cross[1]+dfd[2]*perp[1]);
-  derivatives[2] = (dfd[0]*bi[2]+dfd[1]*cross[2]+dfd[2]*perp[2]);
-  double tot = ucontr*vcontr*wcontr*jacob_det;
+  output.derivatives[0] = (dfd[0]*actioninput.bi[0]+dfd[1]*actioninput.cross[0]+dfd[2]*actioninput.perp[0]);
+  output.derivatives[1] = (dfd[0]*actioninput.bi[1]+dfd[1]*actioninput.cross[1]+dfd[2]*actioninput.perp[1]);
+  output.derivatives[2] = (dfd[0]*actioninput.bi[2]+dfd[1]*actioninput.cross[2]+dfd[2]*actioninput.perp[2]);
+  output.values[0] = ucontr*vcontr*wcontr*actioninput.jacob_det;
 
   // Add reference atom derivatives
   dfd[0]=uder2*vcontr*wcontr;
@@ -445,21 +382,20 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, Vector& derivati
   dfld[0]=udlen*vcontr*wcontr;
   dfld[1]=ucontr*vdlen*wcontr;
   dfld[2]=ucontr*vcontr*wdlen;
-  rderiv[0] = dfd[0]*matmul(datom,dbi[0]) + dfd[1]*matmul(datom,dcross[0]) + dfd[2]*matmul(datom,dperp[0]) +
-              dfld[0]*dlbi[0] + dfld[1]*dlcross[0] + dfld[2]*dlperp[0] - derivatives;
-  rderiv[1] = dfd[0]*matmul(datom,dbi[1]) + dfd[1]*matmul(datom,dcross[1]) + dfd[2]*matmul(datom,dperp[1]) +
-              dfld[0]*dlbi[1] + dfld[1]*dlcross[1] + dfld[2]*dlperp[1];
-  rderiv[2] = dfd[0]*matmul(datom,dbi[2]) + dfd[1]*matmul(datom,dcross[2]) + dfd[2]*matmul(datom,dperp[2]) +
-              dfld[0]*dlbi[2] + dfld[1]*dlcross[2] + dfld[2]*dlperp[2];
-  rderiv[3] = dfld[0]*dlbi[3] + dfld[1]*dlcross[3] + dfld[2]*dlperp[3];
+  output.refders[0] = dfd[0]*matmul(datom,actioninput.dbi[0]) + dfd[1]*matmul(datom,actioninput.dcross[0]) + dfd[2]*matmul(datom,actioninput.dperp[0]) +
+                      dfld[0]*actioninput.dlbi[0] + dfld[1]*actioninput.dlcross[0] + dfld[2]*actioninput.dlperp[0] - Vector(output.derivatives[0],output.derivatives[1],output.derivatives[2]);
+  output.refders[1] = dfd[0]*matmul(datom,actioninput.dbi[1]) + dfd[1]*matmul(datom,actioninput.dcross[1]) + dfd[2]*matmul(datom,actioninput.dperp[1]) +
+                      dfld[0]*actioninput.dlbi[1] + dfld[1]*actioninput.dlcross[1] + dfld[2]*actioninput.dlperp[1];
+  output.refders[2] = dfd[0]*matmul(datom,actioninput.dbi[2]) + dfd[1]*matmul(datom,actioninput.dcross[2]) + dfd[2]*matmul(datom,actioninput.dperp[2]) +
+                      dfld[0]*actioninput.dlbi[2] + dfld[1]*actioninput.dlcross[2] + dfld[2]*actioninput.dlperp[2];
+  output.refders[3] = dfld[0]*actioninput.dlbi[3] + dfld[1]*actioninput.dlcross[3] + dfld[2]*actioninput.dlperp[3];
 
-  vir.zero();
-  vir-=Tensor( cpos,derivatives );
+  Tensor vir;
+  vir=-Tensor( Vector(input.cpos[0],input.cpos[1],input.cpos[2]), Vector(output.derivatives[0],output.derivatives[1],output.derivatives[2]) );
   for(unsigned i=0; i<4; ++i) {
-    vir -= Tensor( getPosition(i), rderiv[i] );
+    vir -= Tensor( Vector(input.refpos[i][0],input.refpos[i][1],input.refpos[i][2]), Vector(output.refders[i][0],output.refders[i][1],output.refders[i][2]) );
   }
-
-  return tot;
+  output.virial.set( 0, vir );
 }
 
 }

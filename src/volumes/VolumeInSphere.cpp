@@ -79,72 +79,72 @@ Calculate a vector from the input positions with elements equal to one when the 
 namespace PLMD {
 namespace volumes {
 
-class VolumeInSphere : public ActionVolume {
-private:
-  Vector origin;
-  SwitchingFunction switchingFunction;
+class VolumeInSphere {
 public:
+  std::string swinput;
+  SwitchingFunction switchingFunction;
   static void registerKeywords( Keywords& keys );
-  explicit VolumeInSphere(const ActionOptions& ao);
-  void setupRegions() override;
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
+  void parseInput( ActionVolume<VolumeInSphere>* action );
+  void setupRegions( ActionVolume<VolumeInSphere>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
+  static void parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom );
+  VolumeInSphere& operator=( const VolumeInSphere& m ) {
+    swinput=m.swinput;
+    std::string errors;
+    switchingFunction.set(swinput,errors);
+    return *this;
+  }
+  static void calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE_CALC")
+typedef ActionVolume<VolumeInSphere> Vols;
+PLUMED_REGISTER_ACTION(Vols,"INSPHERE_CALC")
 char glob_sphere[] = "INSPHERE";
 typedef VolumeShortcut<glob_sphere> VolumeInSphereShortcut;
 PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
   keys.setDisplayName("INSPHERE");
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("atoms-2","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
-  keys.remove("SIGMA");
   keys.linkActionInDocs("RADIUS","LESS_THAN");
 }
 
-VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
-  Action(ao),
-  ActionVolume(ao) {
-  std::vector<AtomNumber> atom;
-  parseAtomList("CENTER",atom);
-  if( atom.size()==0 ) {
-    parseAtomList("ATOM",atom);
+void VolumeInSphere::parseInput( ActionVolume<VolumeInSphere>* action ) {
+  std::string errors;
+  action->parse("RADIUS",swinput);
+  if(swinput.length()==0) {
+    action->error("missing RADIUS keyword");
   }
-  if( atom.size()!=1 ) {
-    error("should only be one atom specified");
-  }
-  log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
-
-  std::string sw, errors;
-  parse("RADIUS",sw);
-  if(sw.length()==0) {
-    error("missing RADIUS keyword");
-  }
-  switchingFunction.set(sw,errors);
+  switchingFunction.set(swinput,errors);
   if( errors.length()!=0 ) {
-    error("problem reading RADIUS keyword : " + errors );
+    action->error("problem reading RADIUS keyword : " + errors );
   }
-  log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
-
-  checkRead();
-  requestAtoms(atom);
+  action->log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
 }
 
-void VolumeInSphere::setupRegions() { }
+void VolumeInSphere::parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom ) {
+  action->parseAtomList("CENTER",atom);
+  if( atom.size()==0 ) {
+    action->parseAtomList("ATOM",atom);
+  }
+  if( atom.size()!=1 ) {
+    action->error("should only be one atom specified");
+  }
+  action->log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
+}
 
-double VolumeInSphere::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
+void VolumeInSphere::calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output ) {
   // Calculate position of atom wrt to origin
-  Vector fpos=pbcDistance( getPosition(0), cpos );
-  double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
-  derivatives.zero();
-  derivatives = dfunc*fpos;
-  refders[0] = -derivatives;
+  Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
+  double dfunc;
+  output.values[0] = actioninput.switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
+  output.derivatives = dfunc*fpos;
+  output.refders[0][0] = -output.derivatives[0];
+  output.refders[0][1] = -output.derivatives[1];
+  output.refders[0][2] = -output.derivatives[2];
   // Add a virial contribution
-  vir -= Tensor(fpos,derivatives);
-  return value;
+  output.virial.set( 0, -Tensor(fpos,Vector(output.derivatives[0], output.derivatives[1], output.derivatives[2])) );
 }
 
 }
