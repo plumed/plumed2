@@ -27,16 +27,6 @@
 #include <string>
 #include <cmath>
 
-//+PLUMEDOC MATRIX TOPOLOGY_MATRIX
-/*
-Adjacency matrix in which two atoms are adjacent if they are connected topologically
-
-\par Examples
-
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace adjmat {
 
