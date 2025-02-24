@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 
 //+PLUMEDOC MATRIX DISTANCE_MATRIX
