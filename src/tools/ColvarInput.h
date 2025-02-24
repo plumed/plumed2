@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2023 The plumed team
+   Copyright (c) 2025 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,4 +19,45 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarTemplate.h"
+#ifndef __PLUMED_colvar_ColvarInput_h
+#define __PLUMED_colvar_ColvarInput_h
+
+#include <vector>
+
+#include "Pbc.h"
+#include "View.h"
+#include "View2D.h"
+#include "Vector.h"
+#include "Tensor.h"
+
+namespace PLMD {
+
+class Colvar;
+
+namespace colvar {
+struct ColvarInput {
+  unsigned mode;
+  const Pbc& pbc;
+  View2D<const double,helpers::dynamic_extent,3> pos;
+  View<const double> mass;
+  View<const double> charges;
+  ColvarInput( unsigned m,
+               unsigned natoms,
+               const double* p,
+               const double* w,
+               const double* q,
+               const Pbc& box ) :
+    mode(m),
+    pbc(box),
+    pos(p,natoms),
+    mass(w,natoms),
+    charges(q,natoms)
+  {
+  }
+
+  static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
+};
+
+} // namespace colvar
+} //namespace PLMD
+#endif // __PLUMED_colvar_ColvarInput_h
