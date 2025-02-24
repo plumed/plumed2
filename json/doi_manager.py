@@ -30,8 +30,7 @@ if __name__ == "__main__" :
    # Get all the dois that are listed in the syntax file
    doilist = get_dois_from_syntax()
    # Now get all the references using Max's magic script and create the map
-   of = open("../src/tools/CitationMap.inc","w+")
-   for doi in doilist : 
-       if doi==doilist[-1] : of.write("{\"" + doi + "\",\"" + get_reference(doi) + "\"}") 
-       else : of.write("{\"" + doi + "\",\"" + get_reference(doi) + "\"}")
-   of.close()
+   with open("../src/tools/CitationMap.inc","w+") as of :
+       for doi in doilist : 
+           if doi==doilist[-1] : of.write("{\"" + doi + "\",\"" + get_reference(doi) + "\"}") 
+           else : of.write("{\"" + doi + "\",\"" + get_reference(doi) + "\"}")
