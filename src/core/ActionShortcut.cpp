@@ -88,19 +88,18 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
     founds=true;
   }
   if( found ) {
-    std::string f_input = input;
     if( !founds && saveline ) {
       addToSavedInputLines( input );
     }
     if( keywords.exists("RESTART") ) {
       if( restart ) {
-        f_input += " RESTART=YES";
+        words.push_back("RESTART=YES");
       }
       if( !restart ) {
-        f_input += " RESTART=NO";
+        words.push_back("RESTART=NO");
       }
     }
-    plumed.readInputLine( f_input );
+    plumed.readInputWords( words, false);
     if( !founds ) {
       ActionWithValue* av=NULL;
       for(auto pp=plumed.getActionSet().rbegin(); pp!=plumed.getActionSet().rend(); ++pp) {

@@ -1067,6 +1067,9 @@ void PlumedMain::readInputLine(const std::string & str, const bool& before_init)
     return;
   }
   std::vector<std::string> words=Tools::getWords(str);
+  if( before_init ) {
+    plumed_assert( citations.empty() );
+  }
   citations.clear();
   readInputWords(words,before_init);
   if(!citations.empty()) {
@@ -1729,7 +1732,7 @@ bool PlumedMain::DeprecatedAtoms::usingNaturalUnits() const {
 }
 
 void PlumedMain::DeprecatedAtoms::setCollectEnergy(bool b) const {
-  plumed.readInputLine( plumed.MDEngine + "_energy: ENERGY" );
+  plumed.readInputWords( Tools::getWords(plumed.MDEngine + "_energy: ENERGY"), false );
   plumed.setEnergyValue( plumed.MDEngine + "_energy" );
 }
 

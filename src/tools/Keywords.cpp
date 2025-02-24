@@ -200,8 +200,6 @@ Keywords::KeyType::keyStyle Keywords::KeyType::keyStyleFromString(std::string_vi
     return keyStyle::atoms;
   } else if( type=="hidden" ) {
     return keyStyle::hidden;
-  } else if( type=="vessel" ) {
-    return keyStyle::vessel;
   } else {
     plumed_massert(false,"invalid keyword specifier " + std::string(type));
   }
@@ -246,6 +244,10 @@ Keywords::keyInfo& Keywords::keyInfo::setArgumentType(argType a) {
 }
 Keywords::keyInfo& Keywords::keyInfo::setAllowMultiple(bool a) {
   allowmultiple=a;
+  return *this;
+}
+Keywords::keyInfo& Keywords::keyInfo::setLinkedAction(std::string_view a) {
+  linkaction=a;
   return *this;
 }
 bool Keywords::keyInfo::isArgument() const {
@@ -312,28 +314,11 @@ void Keywords::addOrReserve( std::string_view keytype,
   auto type = KeyType(t_type);
   if (!reserve) {
     plumed_massert( !type.isFlag(),   "use addFlag() to register a flag keyword (" + std::string(key) + ")");
-    plumed_massert( !type.isVessel(), "use reserve() to register a vessel keyword (" + std::string(key) + ")");
   }
 
   std::string fd{docstring};
   bool allowMultiple= false;
-  if( type.isVessel() && reserve) {
-    // Convert to lower case
-    std::string lowkey{key};
-    std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) {
-      return std::tolower(c);
-    });
-    // Remove any underscore characters
-    erase_remove(lowkey, '_');
-
-    fd += " The final value can be referenced using <em>label</em>." + lowkey;
-    if(docstring.find("flag")==std::string::npos) {
-      fd += NUMBERED_DOCSTRING(key) "  The corresponding values are then "
-            "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey +
-            "-2,  <em>label</em>." + lowkey + "-3...";
-    }
-    allowMultiple = true;
-  } else if( isNumbered ) {
+  if( isNumbered ) {
     fd += NUMBERED_DOCSTRING(key);
     allowMultiple = true;
   }
@@ -341,7 +326,8 @@ void Keywords::addOrReserve( std::string_view keytype,
   keywords[std::string(key)] = keyInfo()
                                .setType(type)
                                .setDocString(fd)
-                               .setAllowMultiple(allowMultiple);
+                               .setAllowMultiple(allowMultiple)
+                               .setLinkedAction("none");
   if( type.isAtomList() ) {
     //keytype may be "residues" or something like "atoms-3"
     keywords.find(key)->second.atomtag=keytype;
@@ -376,7 +362,8 @@ void Keywords::reserveFlag(const std::string & key, const bool defaultValue, con
                   .setType(KeyType{KeyType::keyStyle::flag})
                   .setDocString(defstr + docstring)
                   .setAllowMultiple(false)
-                  .setDefaultFlag(defaultValue);
+                  .setDefaultFlag(defaultValue)
+                  .setLinkedAction("none");
   reserved_keys.emplace_back(key);
 }
 
@@ -397,9 +384,6 @@ void Keywords::reset_style( const std::string & k, const std::string & style ) {
     return;
   }
   keywords.at(k).type.setStyle(style);
-  if( (keywords.at(k).type).isVessel() ) {
-    keywords.at(k).allowmultiple=true;
-  }
   if( (keywords.at(k).type).isAtomList() ) {
     keywords.at(k).atomtag=style;
   }
@@ -466,7 +450,8 @@ void Keywords::add( std::string_view keytype,
                                .setType(type)
                                .setDefaultValue(defaultValue)
                                .setDocString("( default=" + std::string(defaultValue) + " ) " + std::string(docstring) )
-                               .setAllowMultiple(false);
+                               .setAllowMultiple(false)
+                               .setLinkedAction("none");
 
   keys.emplace_back(key);
 }
@@ -479,7 +464,8 @@ void Keywords::addFlag(std::string_view key, bool defaultValue, std::string_view
                                .setType(KeyType("flag"))
                                .setDefaultFlag(false)
                                .setDocString(std::string(defstr) + std::string(docstring))
-                               .setAllowMultiple(false);
+                               .setAllowMultiple(false)
+                               .setLinkedAction("none");
 
   keys.emplace_back(key);
 }
@@ -729,7 +715,7 @@ void Keywords::print_html() const {
   }
   nkeys=0;
   for(const auto& key : keys) {
-    if ( keywords.at(key).type.isFlag() || keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+    if ( keywords.at(key).type.isFlag() || keywords.at(key).type.isOptional() ) {
       nkeys++;
     }
   }
@@ -749,13 +735,13 @@ void Keywords::print_html() const {
   }
   nkeys=0;
   for(const auto& key : keys) {
-    if ( keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+    if ( keywords.at(key).type.isOptional() ) {
       nkeys++;
     }
   }
   if( nkeys>0 ) {
     for(const auto& key : keys) {
-      if ( keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+      if ( keywords.at(key).type.isOptional() ) {
         print_html_item( key );
       }
     }
@@ -845,13 +831,13 @@ std::string Keywords::getHelpString() const {
   }
   nkeys=0;
   for(const auto& key : keys) {
-    if ( keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+    if ( keywords.at(key).type.isOptional() ) {
       nkeys++;
     }
   }
   if( nkeys>0 ) {
     for(const auto& key : keys) {
-      if ( keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+      if ( keywords.at(key).type.isOptional() ) {
         helpstr += getKeywordDocs( key );
       }
     }
@@ -1179,6 +1165,16 @@ void Keywords::addDOI( const std::string& doi ) {
 
 const std::vector<std::string>& Keywords::getDOIList() const {
   return doilist;
+}
+
+void Keywords::linkActionInDocs( const std::string& k, const std::string& action ) {
+  plumed_massert( exists(k), "no " + k + " keyword" );
+  keywords.at(k).setLinkedAction(action);
+}
+
+std::string Keywords::getLinkedActions( const std::string& key ) const {
+  plumed_assert( exists( key ) );
+  return keywords.at(key).linkaction;
 }
 
 }// namespace PLMD

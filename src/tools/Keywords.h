@@ -38,7 +38,7 @@ class Log;
 class Keywords {
 /// This class lets me pass keyword types easily
   struct KeyType {
-    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel,unknown};
+    enum class keyStyle {hidden,compulsory,flag,optional,atoms,unknown};
     keyStyle style;
     static keyStyle keyStyleFromString(std::string_view type );
     explicit KeyType( keyStyle type );
@@ -56,9 +56,6 @@ class Keywords {
     bool isAtomList() const {
       return (style==keyStyle::atoms);
     }
-    bool isVessel() const {
-      return (style==keyStyle::vessel);
-    }
     bool isHidden() const {
       return (style==keyStyle::hidden);
     }
@@ -75,8 +72,6 @@ class Keywords {
         return "flag";
       case keyStyle::hidden:
         return "hidden";
-      case keyStyle::vessel:
-        return "vessel";
       default:
         plumed_massert(false,"unknown keyword type");
       }
@@ -108,6 +103,8 @@ private:
     std::variant<std::monostate,argType>argument_type;
     /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
     std::string atomtag;//no noeed for optional, since the type will state if this is needed
+    ///This stores any action documentation that we should link to
+    std::string linkaction;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -118,6 +115,7 @@ private:
     keyInfo& setDefaultFlag(bool a);
     keyInfo& setArgumentType(argType a);
     keyInfo& setAllowMultiple(bool a);
+    keyInfo& setLinkedAction(std::string_view a);
     bool isArgument() const;
   };
   ///Add o reserve a new keyword (internal tool)
@@ -320,6 +318,10 @@ public:
   void addDOI( const std::string& doi );
 /// Get the list of DOI
   const std::vector<std::string>& getDOIList() const ;
+/// Create a link to this action in the documentation for it
+  void linkActionInDocs( const std::string& k, const std::string& action );
+/// Get any actions that are linked to this keyword
+  std::string getLinkedActions( const std::string& key ) const ;
 };
 
 //the following templates specializations make the bitmask enum work with the
