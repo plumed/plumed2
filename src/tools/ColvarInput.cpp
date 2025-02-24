@@ -19,4 +19,22 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "View.h"
+#include "ColvarInput.h"
+#include "core/Colvar.h"
+
+namespace PLMD {
+namespace colvar {
+
+ColvarInput ColvarInput::createColvarInput( unsigned m,
+    const std::vector<Vector>& p,
+    const Colvar* colv ) {
+  return ColvarInput( m,
+                      p.size(),
+                      &p[0][0],
+                      colv->getMasses().data(),
+                      colv->getCharges(true).data(),
+                      colv->getPbc() );
+}
+
+} // namespace colvar
+} // namespace PLMD

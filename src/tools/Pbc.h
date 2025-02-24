@@ -26,6 +26,7 @@
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
 #include "View.h"
+#include "View2D.h"
 #include <vector>
 #include <cstddef>
 
@@ -34,23 +35,8 @@ namespace PLMD {
 template <std::size_t N=3>
 using MemoryView=View<double,N>;
 
-//this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
-//the idea is to take an address that you know to be strided in a certain way and
-//make it avaiable to any interface (like using the data from a nunmpy.ndarray in
-//a function thought for a std::vector<PLMD::Vector> )
-//the N=-1 is there for mocking the run time size from the span (where a
-//dynamic extent is size_t(-))
 template < std::size_t N=helpers::dynamic_extent, std::size_t STRIDE=3>
-class mdMemoryView {
-  double *ptr_;
-  size_t size_;
-public:
-  mdMemoryView(double* p, size_t s) :ptr_(p), size_(s) {}
-  size_t size()const {return size_;}
-  static constexpr size_t extent = N;
-  static constexpr size_t stride = STRIDE;
-  MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i * STRIDE);}
-};
+using mdMemoryView = View2D<double,N,STRIDE>;
 
 using VectorView = mdMemoryView<helpers::dynamic_extent, 3>;
 

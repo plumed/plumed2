@@ -19,4 +19,18 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "View.h"
+#include "ColvarOutput.h"
+#include "core/Colvar.h"
+
+namespace PLMD {
+namespace colvar {
+ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v,
+    std::vector<double>& d,
+    Colvar* action ) {
+  View<double> val(v.data(),v.size());
+  d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
+  return ColvarOutput( val, action->getNumberOfDerivatives(), d.data() );
+}
+
+} // namespace colvar
+} // namespace PLMD

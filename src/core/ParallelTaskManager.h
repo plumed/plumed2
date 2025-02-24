@@ -27,31 +27,9 @@
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 #include "tools/View.h"
+#include "tools/View2D.h"
 
 namespace PLMD {
-
-
-
-template <typename T, std::size_t N, std::size_t M>
-class View2D {
-  T *ptr_;
-  const std::size_t sizeN_;
-  const std::size_t sizeM_;
-public:
-  template <size_t NN = N, size_t MM = M, typename = std::enable_if_t<NN != helpers::dynamic_extent && MM != helpers::dynamic_extent>>
-  View2D(T *p) : ptr_(p), sizeN_(N), sizeM_(M) {}
-  template <size_t MM = M, typename = std::enable_if_t<MM != helpers::dynamic_extent>>
-  View2D(T *p, size_t NN) : ptr_(p), sizeN_(NN), sizeM_(M) {}
-  View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {}
-  View<T, M> operator[](size_t i) {
-    return View<T, M>(ptr_ + i * sizeM_, sizeM_);
-  }
-  View<T, M> operator[](size_t i) const {
-    return View<T, M>(ptr_ + i * sizeM_, sizeM_);
-  }
-  constexpr size_t size() const { return sizeN_; }
-};
-
 class ParallelActionsInput {
 public:
 /// Do we need to calculate the derivatives

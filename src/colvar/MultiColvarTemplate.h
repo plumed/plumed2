@@ -24,6 +24,8 @@
 
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
+#include "tools/ColvarInput.h"
+#include "tools/ColvarOutput.h"
 
 namespace PLMD {
 
@@ -38,60 +40,6 @@ public:
   MultiColvarInput() : usepbc(false), mode(0)  {}
   MultiColvarInput( bool u, const unsigned m ) : usepbc(u), mode(m) {}
   MultiColvarInput& operator=( const MultiColvarInput& m ) { usepbc = m.usepbc; mode = m.mode; return *this; }
-};
-
-struct ColvarInput {
-  unsigned mode;
-  const Pbc& pbc;
-  View2D<const double,helpers::dynamic_extent,3> pos;
-  View<const double,helpers::dynamic_extent> mass;
-  View<const double,helpers::dynamic_extent> charges;
-  ColvarInput( unsigned m, unsigned natoms, const double* p, const double* w, const double* q, const Pbc& box );
-  static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
-};
-
-class ColvarOutput {
-private:
-  std::size_t ncomponents;
-  class DerivHelper {
-  private:
-    std::size_t nderiv;
-    std::vector<double>& derivatives;
-  public:
-    DerivHelper( std::size_t n, std::vector<double>& d ) : nderiv(n), derivatives(d) {}
-    View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
-      return View2D<double, helpers::dynamic_extent, 3>( derivatives.data() + i*nderiv, nderiv );
-    }
-    Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
-      std::size_t base = i*nderiv + 3*a;
-      return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
-    }
-  };
-  class VirialHelper {
-  private:
-    std::size_t nderiv;
-    std::vector<double>& derivatives;
-  public:
-    VirialHelper( std::size_t n, std::vector<double>& d ) : nderiv(n), derivatives(d) {}
-    Tensor operator[](std::size_t i) const {
-      std::size_t n=(i+1)*nderiv;
-      return Tensor( derivatives[n-9], derivatives[n-8], derivatives[n-7], derivatives[n-6], derivatives[n-5], derivatives[n-4], derivatives[n-3], derivatives[n-2], derivatives[n-1] );
-    }
-    void set( std::size_t i, const Tensor& v ) {
-      std::size_t n=(i+1)*nderiv;
-      derivatives[n-9]=v[0][0]; derivatives[n-8]=v[0][1]; derivatives[n-7]=v[0][2];
-      derivatives[n-6]=v[1][0]; derivatives[n-5]=v[1][1]; derivatives[n-4]=v[1][2];
-      derivatives[n-3]=v[2][0]; derivatives[n-2]=v[2][1]; derivatives[n-1]=v[2][2];
-    }
-  };
-public:
-  View<double,helpers::dynamic_extent> values;
-  DerivHelper derivs;
-  VirialHelper virial;
-  ColvarOutput( View<double,helpers::dynamic_extent>& v, std::size_t m, std::vector<double>& d );
-  Vector getAtomDerivatives( std::size_t i, std::size_t a ) { return derivs.getAtomDerivatives(i,a); }
-  void setBoxDerivativesNoPbc( const ColvarInput& inpt );
-  static ColvarOutput createColvarOutput( std::vector<double>& v, std::vector<double>& d, Colvar* action );
 };
 
 template <class T>
@@ -251,7 +199,7 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const MultiColvar
 
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
   std::size_t charge_start = mass_start + input.nindices_per_task;
-  ColvarOutput cvout = ColvarOutput( output.values, 3*input.nindices_per_task+9, output.derivatives );
+  ColvarOutput cvout = ColvarOutput( output.values, 3*input.nindices_per_task+9, output.derivatives.data() );
   T::calculateCV( ColvarInput(actiondata.mode, input.nindices_per_task, input.inputdata.data()+pos_start, input.inputdata.data()+mass_start, input.inputdata.data()+charge_start, input.pbc), cvout );
 }
 
