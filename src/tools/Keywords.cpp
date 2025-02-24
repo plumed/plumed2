@@ -1159,6 +1159,14 @@ std::string Keywords::getReplacementAction() const {
   return replaceaction;
 }
 
+void Keywords::addDOI( const std::string& doi ) {
+  doilist.push_back( doi );
+}
+
+const std::vector<std::string>& Keywords::getDOIList() const {
+  return doilist;
+}
+
 void Keywords::linkActionInDocs( const std::string& k, const std::string& action ) {
   plumed_massert( exists(k), "no " + k + " keyword" );
   keywords.at(k).setLinkedAction(action);
