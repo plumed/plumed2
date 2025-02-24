@@ -25,26 +25,15 @@
 #include "Vector.h"
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
+#include "View.h"
 #include <vector>
 #include <cstddef>
 
 namespace PLMD {
 
-//this more or less mocks c++20 span with fixed size
-template < std::size_t N=3>
-class MemoryView {
-  double *ptr_;
-public:
-  MemoryView(double* p) :ptr_(p) {}
-  constexpr size_t size()const {return N;}
-  static constexpr size_t extent = N;
-  double & operator[](size_t i) { return ptr_[i];}
-  const double & operator[](size_t i) const { return ptr_[i];}
-};
+template <std::size_t N=3>
+using MemoryView=View<double,N>;
 
-namespace helpers {
-inline constexpr std::size_t dynamic_extent = -1;
-}
 //this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
 //the idea is to take an address that you know to be strided in a certain way and
 //make it avaiable to any interface (like using the data from a nunmpy.ndarray in

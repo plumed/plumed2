@@ -22,44 +22,15 @@
 #ifndef __PLUMED_core_ParallelTaskManager_h
 #define __PLUMED_core_ParallelTaskManager_h
 
-#include "tools/Communicator.h"
 #include "ActionWithVector.h"
 #include "ActionWithMatrix.h"
+#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
+#include "tools/View.h"
 
 namespace PLMD {
 
-template <typename T, std::size_t N>
-class View { //this is duplicated in PBC.h, this need to be uniformed!!!
-  T *ptr_;
-  const std::size_t size_;
-public:
-  template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
-  View(T* p) : ptr_(p), size_(N) {}
-  View(T* p, std::size_t NN) : ptr_(p), size_(NN) {}
-  constexpr size_t size()const {
-    return size_;
-  }
-  T & operator[](size_t i) {
-    return ptr_[i];
-  }
-  const T & operator[](size_t i) const {
-    return ptr_[i];
-  }
-  View<T,3>& operator=( const VectorGeneric<3>& v ) {
-    for(unsigned i=0; i<3; ++i) ptr_[i] = v[i];
-    return *this;
-  }
-  template<typename TT>
-  friend VectorGeneric<3> delta(const View<TT,3>& v1, const View<TT,3>& v2 );
-};
 
-template<typename T>
-VectorGeneric<3> delta(const View<T,3>& v1, const View<T,3>& v2 ) {
-  VectorGeneric<3> v; plumed_dbg_assert( v1.size()==3 );
-  v[0] = v2[0] - v1[0]; v[1] = v2[1] - v1[1]; v[2] = v2[2] - v1[2];
-  return v;
-}
 
 template <typename T, std::size_t N, std::size_t M>
 class View2D {
