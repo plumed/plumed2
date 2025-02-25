@@ -97,8 +97,7 @@ PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
 void ECVlinear::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
-  keys.remove("ARG");
-  keys.add("compulsory","ARG","the label of the Hamiltonian difference. Delta U");
+  keys.addInputKeyword("compulsory","ARG","scalar","the label of the Hamiltonian difference. Delta U");
   keys.add("compulsory","LAMBDA","0","the lambda at which the underlying simulation runs");
   keys.add("optional","LAMBDA_MIN","( default=0 ) the minimum of the lambda range");
   keys.add("optional","LAMBDA_MAX","( default=1 ) the maximum of the lambda range");

@@ -152,6 +152,7 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.setValueDescription("vector","the symmetry function for each of the specified atoms");
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("FCCUBIC_FUNC"); keys.needsAction("CUSTOM");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }

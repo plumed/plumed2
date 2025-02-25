@@ -118,6 +118,7 @@ void Steered_MD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent(
     "tdist",
     "default",
+    "scalar",
     "Total distance traveled by biased atoms."
   );
 }

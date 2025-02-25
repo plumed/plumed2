@@ -110,8 +110,7 @@ PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,"ECV_MULTITHERMAL_MULTIBARIC")
 void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
-  keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with ENERGY and VOLUME respectively");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the potential energy and of the volume of the system. You can calculate them with ENERGY and VOLUME respectively");
 //temperature
   keys.add("optional","TEMP_MIN","the minimum of the temperature range");
   keys.add("optional","TEMP_MAX","the maximum of the temperature range");

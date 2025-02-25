@@ -59,19 +59,21 @@ public:
 
 template <class T>
 void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
-  ActionWithVector::registerKeywords(keys); keys.use("ARG"); std::string name = keys.getDisplayName();
-  std::size_t und=name.find("_MATRIX"); keys.setDisplayName( name.substr(0,und) ); keys.use("MASK");
+  ActionWithVector::registerKeywords(keys); std::string name = keys.getDisplayName();
+  std::size_t und=name.find("_MATRIX"); keys.setDisplayName( name.substr(0,und) );
+  keys.addInputKeyword("compulsory","ARG","scalar/matrix","the labels of the scalar and matrices that on which the function is being calculated elementwise");
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
-    keys.setValueDescription("the sum of all the elements in the input matrix");
+    keys.setValueDescription("scalar","the sum of all the elements in the input matrix");
   } else if( keys.getDisplayName()=="HIGHEST" ) {
-    keys.setValueDescription("the largest element of the input matrix");
+    keys.setValueDescription("scalar","the largest element of the input matrix");
   } else if( keys.getDisplayName()=="LOWEST" ) {
-    keys.setValueDescription("the smallest element in the input matrix");
+    keys.setValueDescription("scalar","the smallest element in the input matrix");
   } else if( keys.outputComponentExists(".#!value") ) {
-    keys.setValueDescription("the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
+    keys.setValueDescription("matrix","the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
   }
 }
 

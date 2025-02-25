@@ -67,7 +67,7 @@ void Volume::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.setValueDescription("the volume of simulation box");
+  keys.setValueDescription("scalar","the volume of simulation box");
 }
 
 

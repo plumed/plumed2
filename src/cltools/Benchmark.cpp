@@ -195,7 +195,11 @@ private:
 extern "C" void signalHandler(int signal) {
   if (signal == SIGINT) {
     signalReceived.store(true);
-    fprintf(stderr, "Signal handler called\n");
+    fprintf(stderr, "Signal interrupt received\n");
+  }
+  if (signal == SIGTERM) {
+    signalReceived.store(true);
+    fprintf(stderr, "Signal termination received\n");
   }
 }
 
@@ -445,13 +449,14 @@ PLUMED_REGISTER_CLTOOL(Benchmark,"benchmark")
 
 void Benchmark::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
+  keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
@@ -630,8 +635,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // read other flags:
   bool shuffled=false;
   parseFlag("--shuffled",shuffled);
-  if (shuffled)
-    log << "Using --shuffled\n";
+
   int nf; parse("--nsteps",nf);
   log << "Using --nsteps=" << nf << "\n";
   unsigned natoms; parse("--natoms",natoms);
@@ -641,11 +645,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   bool domain_decomposition=false;
   parseFlag("--domain-decomposition",domain_decomposition);
-  if (domain_decomposition)
-    log << "Using --domain-decomposition\n";
 
   if(pc.Get_size()>1) domain_decomposition=true;
   if(domain_decomposition) shuffled=true;
+
+  if (shuffled)
+    log << "Using --shuffled\n";
+  if (domain_decomposition)
+    log << "Using --domain-decomposition\n";
 
   double timeToSleep;
   parse("--sleep",timeToSleep);
@@ -659,6 +666,35 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     distribution = getAtomDistribution(atomicDistr);
     log << "Using --atom-distribution=" << atomicDistr << "\n";
   }
+
+  {
+    std::string fileToDump;
+    if(parse("--dump-trajectory",fileToDump)) {
+      log << "Saving the trajectory to \"" << fileToDump << "\" and exiting\n";
+      std::vector<double> cell(9);
+      std::vector<Vector> pos(natoms);
+      std::ofstream ofile(fileToDump);
+      if (nf<0) {
+        //if the user accidentally sets infinite steps, we set it to print only one
+        nf=1;
+      }
+      for(int step=0; step<nf; ++step) {
+        auto sw=kernels[0].stopwatch.startStop("TrajectoryGeneration");
+        distribution->positions(pos,step,atomicGenerator);
+        distribution->box(cell,natoms,step,atomicGenerator);
+        ofile << natoms << "\n"
+              << cell[0] << " " << cell[1] << " " << cell[2] << " "
+              << cell[3] << " " << cell[4] << " " << cell[5] << " "
+              << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
+        for(int i=0; i<natoms; ++i) {
+          ofile << "X\t" << pos[i]<< "\n";
+        }
+      }
+      ofile.close();
+      return 0;
+    }
+  }
+
   log <<"Initializing the setup of the kernel(s)\n";
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
@@ -700,6 +736,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
   // trap signals:
   SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+  SignalHandlerGuard sigTermGuard(SIGTERM, signalHandler);
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);

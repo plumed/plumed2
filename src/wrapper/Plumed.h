@@ -653,6 +653,15 @@
 
 /* The following macros are just to define shortcuts */
 
+/* This is needed to use non c-style cast when working in c++ */
+#ifdef __cplusplus
+#define __PLUMED_WRAPPER_STATIC_CAST(to,what) static_cast<to>(what)
+#define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) reinterpret_cast<to>(what)
+#else
+#define __PLUMED_WRAPPER_STATIC_CAST(to,what) ((to) what)
+#define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) __PLUMED_WRAPPER_STATIC_CAST(to,what)
+#endif
+
 /* Simplify addition of extern "C" blocks.  */
 #ifdef __cplusplus
 #define __PLUMED_WRAPPER_EXTERN_C_BEGIN extern "C" {
@@ -988,7 +997,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
   }
 
   /* Allocate the new message */
-  new_buffer=(char*)plumed_malloc(len+1);
+  new_buffer=__PLUMED_WRAPPER_STATIC_CAST(char*, plumed_malloc(len+1));
   if(new_buffer) {
     /* If allocation was successful, merge the messages */
     new_buffer[0]='\0';
@@ -1034,12 +1043,12 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   void*const* options;
   plumed_error_filesystem_path path;
 
-  error=(plumed_error*) ptr;
+  error=__PLUMED_WRAPPER_STATIC_CAST(plumed_error*, ptr);
 
   error->code=code;
   error->error_code=0;
   len=__PLUMED_WRAPPER_STD strlen(what);
-  error->what_buffer=(char*) plumed_malloc(len+1);
+  error->what_buffer=__PLUMED_WRAPPER_STATIC_CAST(char*, plumed_malloc(len+1));
   if(!error->what_buffer) {
     plumed_error_set_bad_alloc(error);
     return;
@@ -1050,31 +1059,31 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
 
   /* interpret optional arguments */
   if(opt) {
-    options=(void*const*)opt;
+    options=__PLUMED_WRAPPER_STATIC_CAST(void*const*, opt);
     while(*options) {
       /* c: error code */
-      if(*((const char*)*options)=='c' && *(options+1)) {
-        error->error_code=*((const int*)*(options+1));
+      if(*(__PLUMED_WRAPPER_STATIC_CAST(const char*,*options))=='c' && *(options+1)) {
+        error->error_code=*(__PLUMED_WRAPPER_STATIC_CAST(const int*,*(options+1)));
         break;
       }
       options+=2;
     }
 
-    options=(void*const*)opt;
+    options=__PLUMED_WRAPPER_STATIC_CAST(void*const*,opt);
     while(*options) {
       /* C: error_category */
-      if(*((const char*)*options)=='C' && *(options+1)) {
-        error->error_category=*((const int*)*(options+1));
+      if(*(__PLUMED_WRAPPER_STATIC_CAST(char*, *options))=='C' && *(options+1)) {
+        error->error_category=*(__PLUMED_WRAPPER_STATIC_CAST(const int*,*(options+1)));
         break;
       }
       options+=2;
     }
 
-    options=(void*const*)opt;
+    options=__PLUMED_WRAPPER_STATIC_CAST(void*const*, opt);
     while(*options) {
       /* path 1 */
-      if(*((const char*)*options)=='p' && *(options+1)) {
-        path=*(plumed_error_filesystem_path*)*(options+1);
+      if(*(__PLUMED_WRAPPER_STATIC_CAST(char*, *options))=='p' && *(options+1)) {
+        path=*__PLUMED_WRAPPER_STATIC_CAST(plumed_error_filesystem_path*,*(options+1));
         error->path1.ptr=plumed_malloc(path.numbytes);
         if(!error->path1.ptr) {
           plumed_error_set_bad_alloc(error);
@@ -1087,11 +1096,11 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
       options+=2;
     }
 
-    options=(void*const*)opt;
+    options=__PLUMED_WRAPPER_STATIC_CAST(void*const*, opt);
     while(*options) {
       /* path 2 */
-      if(*((const char*)*options)=='q' && *(options+1)) {
-        path=*(plumed_error_filesystem_path*)*(options+1);
+      if(*(__PLUMED_WRAPPER_STATIC_CAST(char*, *options))=='q' && *(options+1)) {
+        path=*__PLUMED_WRAPPER_STATIC_CAST(plumed_error_filesystem_path*,*(options+1));
         error->path2.ptr=plumed_malloc(path.numbytes);
         if(!error->path2.ptr) {
           plumed_error_set_bad_alloc(error);
@@ -1104,20 +1113,20 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
       options+=2;
     }
 
-    options=(void*const*)opt;
+    options=__PLUMED_WRAPPER_STATIC_CAST(void*const*, opt);
     while(*options) {
       /* n: nested exception */
-      if(*((const char*)*options)=='n' && *(options+1)) {
+      if(*(__PLUMED_WRAPPER_STATIC_CAST(char*, *options))=='n' && *(options+1)) {
         /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
-        error->nested=(plumed_error*) plumed_malloc(sizeof(plumed_error));
+        error->nested=__PLUMED_WRAPPER_STATIC_CAST(plumed_error*, plumed_malloc(sizeof(plumed_error)));
         /* this is if malloc fails */
         if(!error->nested) {
           plumed_error_set_bad_alloc(error);
           break;
         }
-        plumed_error_init((plumed_error*)error->nested);
+        plumed_error_init(__PLUMED_WRAPPER_STATIC_CAST(plumed_error*,error->nested));
         /* plumed will make sure to only use this if it is not null */
-        *(void**)*(options+1)=error->nested;
+        *__PLUMED_WRAPPER_STATIC_CAST(void**,*(options+1))=error->nested;
         break;
       }
       options+=2;
@@ -1482,7 +1491,7 @@ __PLUMED_WRAPPER_C_END
     plumed_nothrow_handler nothrow; \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
-    safe.shape=(const size_t*)shape; \
+    safe.shape=__PLUMED_WRAPPER_STATIC_CAST(const size_t*, shape); \
     safe.flags=flags_; \
     safe.opt=NULL; \
     if(error) { \
@@ -1966,17 +1975,23 @@ private:
           */
           f(::std::filesystem::filesystem_error(msg,
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                    (::std::filesystem::path::value_type*) h.path1.ptr,h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                    ),::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path1.ptr),
+                                                    h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 error_code));
         } else {
           f(::std::filesystem::filesystem_error(msg,
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                    (::std::filesystem::path::value_type*) h.path1.ptr,h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                    ),::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path1.ptr),
+                                                    h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                    (::std::filesystem::path::value_type*) h.path2.ptr,h.path2.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                    ),::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path2.ptr),
+                                                    h.path2.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 error_code));
         }
       }
@@ -2331,7 +2346,7 @@ private:
     char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
     void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
-      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      __PLUMED_WRAPPER_STD strncpy(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
       this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
@@ -3766,7 +3781,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   void* tmpptr;
   if(f) {
     if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) {
-      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",(const void*)f);
+      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",__PLUMED_WRAPPER_STATIC_CAST(const void*,f));
       __PLUMED_CONVERT_FPTR(tmpptr,f->create);
       __PLUMED_FPRINTF(stderr,"%p,",tmpptr);
       __PLUMED_CONVERT_FPTR(tmpptr,f->cmd);
@@ -3811,12 +3826,12 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     */
     __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     strlenpath=__PLUMED_WRAPPER_STD strlen(path);
-    pathcopy=(char*) plumed_malloc(strlenpath+1);
+    pathcopy=__PLUMED_WRAPPER_STATIC_CAST(char*, plumed_malloc(strlenpath+1));
     if(!pathcopy) {
       __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
       __PLUMED_WRAPPER_STD abort();
     }
-    __PLUMED_WRAPPER_STD strncpy(pathcopy,path,strlenpath+1);
+    __PLUMED_WRAPPER_STD memcpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
     if(pc>=pathcopy) {
@@ -3836,11 +3851,16 @@ __PLUMED_WRAPPER_INTERNALS_END
 /**
   Utility to search for a function.
 */
-#define __PLUMED_SEARCH_FUNCTION(tmpptr,handle,func,name,debug) \
+#ifdef __cplusplus
+#define __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr) func=reinterpret_cast<functype>(tmpptr)
+#else
+#define __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr)  *(void **)&func=tmpptr
+#endif
+#define __PLUMED_SEARCH_FUNCTION(functype,tmpptr,handle,func,name,debug) \
   if(!func) { \
     tmpptr=dlsym(handle,name); \
     if(tmpptr) { \
-      *(void **)(&func)=tmpptr; \
+      __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr); \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ %s found at %p +++\n",name,tmpptr); \
     } else { \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ Function %s not found\n",name); \
@@ -3872,12 +3892,12 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     unnecessary and might be removed at some point.
   */
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
-  table_ptr=(plumed_symbol_table_type*) dlsym(handle,"plumed_symbol_table");
+  table_ptr=__PLUMED_WRAPPER_STATIC_CAST(plumed_symbol_table_type*, dlsym(handle,"plumed_symbol_table"));
   if(table_ptr) functions=table_ptr->functions;
   if(debug) {
     if(table_ptr) {
-      __PLUMED_FPRINTF(stderr,"+++ plumed_symbol_table version %i found at %p +++\n",table_ptr->version,(void*)table_ptr);
-      __PLUMED_FPRINTF(stderr,"+++ plumed_function_pointers found at %p (",(void*)&table_ptr->functions);
+      __PLUMED_FPRINTF(stderr,"+++ plumed_symbol_table version %i found at %p +++\n",table_ptr->version,__PLUMED_WRAPPER_STATIC_CAST(void*,table_ptr));
+      __PLUMED_FPRINTF(stderr,"+++ plumed_function_pointers found at %p (",__PLUMED_WRAPPER_STATIC_CAST(void*,&table_ptr->functions));
       __PLUMED_CONVERT_FPTR(tmpptr,functions.create);
       __PLUMED_FPRINTF(stderr,"%p,",tmpptr);
       __PLUMED_CONVERT_FPTR(tmpptr,functions.cmd);
@@ -3889,12 +3909,12 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     }
   }
   /* only searches if they were not found already */
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.create,"plumedmain_create",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.create,"plumed_plumedmain_create",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.cmd,"plumedmain_cmd",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.cmd,"plumed_plumedmain_cmd",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumedmain_finalize",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumed_plumedmain_finalize",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_create_pointer,tmpptr,handle,functions.create,"plumedmain_create",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_create_pointer,tmpptr,handle,functions.create,"plumed_plumedmain_create",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_cmd_pointer,tmpptr,handle,functions.cmd,"plumedmain_cmd",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_cmd_pointer,tmpptr,handle,functions.cmd,"plumed_plumedmain_cmd",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_finalize_pointer,tmpptr,handle,functions.finalize,"plumedmain_finalize",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_finalize_pointer,tmpptr,handle,functions.finalize,"plumed_plumedmain_finalize",debug);
   if(functions.create && functions.cmd && functions.finalize) {
     if(debug) __PLUMED_FPRINTF(stderr,"+++ PLUMED was loaded correctly +++\n");
     *f=functions;
@@ -3995,6 +4015,8 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   void* p;
   char* debug;
   int dlopenmode;
+  /* possible value of PLUMED_LOAD_NAMESPACE environment variable */
+  char *load_namespace;
   g.create=__PLUMED_WRAPPER_CXX_NULLPTR;
   g.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
   g.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
@@ -4025,7 +4047,8 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
     __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
     if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     dlopenmode=RTLD_NOW;
-    if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"GLOBAL")) {
+    load_namespace = __PLUMED_GETENV("PLUMED_LOAD_NAMESPACE");
+    if(load_namespace && !__PLUMED_WRAPPER_STD strcmp(load_namespace,"GLOBAL")) {
       dlopenmode=dlopenmode|RTLD_GLOBAL;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
     } else {
@@ -4079,7 +4102,7 @@ __PLUMED_WRAPPER_INTERNALS_BEGIN
 plumed_implementation* plumed_malloc_pimpl() {
   plumed_implementation* pimpl;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
-  pimpl=(plumed_implementation*) plumed_malloc(sizeof(plumed_implementation));
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, plumed_malloc(sizeof(plumed_implementation)));
   if(!pimpl) {
     __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
     __PLUMED_WRAPPER_STD abort();
@@ -4090,7 +4113,7 @@ plumed_implementation* plumed_malloc_pimpl() {
   pimpl->refcount=1;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   /* cppcheck-suppress nullPointerRedundantCheck */
-  __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",__PLUMED_WRAPPER_STATIC_CAST(void*,pimpl));
 #endif
   /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
@@ -4131,6 +4154,8 @@ plumed plumed_create(void) {
   plumed p;
   /* pointer to implementation */
   plumed_implementation* pimpl;
+  /* possible value of PLUMED_LOAD_DLCLOSE environment variable */
+  char *load_dlclose;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
   pimpl=plumed_malloc_pimpl();
   /* store pointers in pimpl */
@@ -4141,7 +4166,8 @@ plumed plumed_create(void) {
 #endif
   /* note if handle should not be dlclosed */
   pimpl->dlclose=1;
-  if(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE"),"no")) pimpl->dlclose=0;
+  load_dlclose = __PLUMED_GETENV("PLUMED_LOAD_DLCLOSE");
+  if(load_dlclose && !__PLUMED_WRAPPER_STD strcmp(load_dlclose,"no")) pimpl->dlclose=0;
   /* in case of failure, return */
   /* the resulting object should be plumed_finalized, though you cannot use plumed_cmd */
   if(!pimpl->functions.create) {
@@ -4222,7 +4248,7 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   if(dlhandle) {
     p=plumed_create_dlsym(dlhandle);
     /* obtain pimpl */
-    pimpl=(plumed_implementation*) p.p;
+    pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
     /* make sure the handler is closed when plumed is finalized */
     pimpl->dlclose=1;
     return p;
@@ -4239,7 +4265,7 @@ __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   /* increase reference count */
   /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
@@ -4249,7 +4275,7 @@ plumed plumed_create_reference(plumed p) {
     pimpl->refcount++;
   }
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  __PLUMED_FPRINTF(stderr,"refcount: increase at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: increase at %p\n",__PLUMED_WRAPPER_STATIC_CAST(void*,pimpl));
 #endif
   return p;
 }
@@ -4281,7 +4307,7 @@ __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd(plumed p,const char*key,const void*val) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
@@ -4305,7 +4331,7 @@ void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_
     return;
   }
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     if(pimpl->used_plumed_kernel) {
@@ -4341,7 +4367,7 @@ __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr safe) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
@@ -4362,10 +4388,10 @@ __PLUMED_WRAPPER_C_BEGIN
 void plumed_finalize(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  __PLUMED_FPRINTF(stderr,"refcount: decrease at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: decrease at %p\n",__PLUMED_WRAPPER_STATIC_CAST(void*,pimpl));
 #endif
   /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
   if(pimpl->p && pimpl->table && pimpl->table->version>3) {
@@ -4390,7 +4416,7 @@ void plumed_finalize(plumed p) {
   }
 #endif
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  __PLUMED_FPRINTF(stderr,"refcount: delete at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: delete at %p\n",__PLUMED_WRAPPER_STATIC_CAST(void*,pimpl));
 #endif
   /* free pimpl space */
   plumed_free(pimpl);
@@ -4401,7 +4427,7 @@ __PLUMED_WRAPPER_C_BEGIN
 int plumed_valid(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   if(pimpl->p) return 1;
   else return 0;
@@ -4412,7 +4438,7 @@ __PLUMED_WRAPPER_C_BEGIN
 int plumed_use_count(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
+  pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
   assert(plumed_check_pimpl(pimpl));
   /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
   if(pimpl->p && pimpl->table && pimpl->table->version>3) {
@@ -4513,7 +4539,7 @@ void plumed_c2f(plumed p,char*c) {
   assert(sizeof(p.p)<=16);
 
   assert(c);
-  cc=(unsigned char*)&p.p;
+  cc=__PLUMED_WRAPPER_REINTERPRET_CAST(unsigned char*,&p.p);
   for(i=0; i<sizeof(p.p); i++) {
     /*
       characters will range between '0' (ASCII 48) and 'o' (ASCII 111=48+63)
@@ -4543,7 +4569,7 @@ plumed plumed_f2c(const char*c) {
      needed to avoid cppcheck warning on uninitialized p
   */
   p.p=__PLUMED_WRAPPER_CXX_NULLPTR;
-  cc=(unsigned char*)&p.p;
+  cc=__PLUMED_WRAPPER_REINTERPRET_CAST(unsigned char*,&p.p);
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);
     assert(c[2*i+1]>=48 && c[2*i+1]<48+64);
@@ -4562,14 +4588,14 @@ __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 void* plumed_c2v(plumed p) {
-  assert(plumed_check_pimpl((plumed_implementation*)p.p));
+  assert(plumed_check_pimpl(__PLUMED_WRAPPER_REINTERPRET_CAST(plumed_implementation*,p.p)));
   return p.p;
 }
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_v2c(void* v) {
-  assert(plumed_check_pimpl((plumed_implementation*)v));
+  assert(plumed_check_pimpl(__PLUMED_WRAPPER_REINTERPRET_CAST(plumed_implementation*,v)));
   plumed p;
   p.p=v;
   return p;

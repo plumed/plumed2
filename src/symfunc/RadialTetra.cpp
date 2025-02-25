@@ -51,6 +51,7 @@ void RadialTetra::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
+  keys.setValueDescription("vector","the value of the radial tetrahedrality parameter for each of the input atoms");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
   keys.needsAction("CUSTOM"); keys.needsAction("ONES");

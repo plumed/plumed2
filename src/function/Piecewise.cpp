@@ -93,7 +93,7 @@ PLUMED_REGISTER_ACTION(ScalarPiecewise,"PIECEWISE_SCALAR")
 void Piecewise::registerKeywords(Keywords& keys) {
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
-  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity can be referenced elsewhere "
+  keys.addOutputComponent("_pfunc","default","scalar","one or multiple instances of this quantity can be referenced elsewhere "
                           "in the input file.  These quantities will be named with the arguments of the "
                           "function followed by the character string _pfunc.  These quantities tell the "
                           "user the values of the piece wise functions of each of the arguments.");

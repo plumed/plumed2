@@ -163,7 +163,6 @@ PLUMED_REGISTER_ACTION(Rescale,"RESCALE")
 
 void Rescale::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TEMP","temperature");
   keys.add("compulsory","SELECTOR", "name of the SELECTOR used for rescaling");
   keys.add("compulsory","MAX_RESCALE","maximum values for rescaling");
@@ -177,9 +176,9 @@ void Rescale::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
-  keys.addOutputComponent("igamma",  "default","gamma parameter");
-  keys.addOutputComponent("accgamma","default","MC acceptance for gamma");
-  keys.addOutputComponent("wtbias",  "default","well-tempered bias");
+  keys.addOutputComponent("igamma",  "default","scalar","gamma parameter");
+  keys.addOutputComponent("accgamma","default","scalar","MC acceptance for gamma");
+  keys.addOutputComponent("wtbias",  "default","scalar","well-tempered bias");
 }
 
 Rescale::Rescale(const ActionOptions&ao):

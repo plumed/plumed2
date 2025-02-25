@@ -212,10 +212,10 @@ void Path::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
-  keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
-  keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
-  keys.addOutputComponent("spath","default","the position along the path calculated");
-  keys.addOutputComponent("zpath","default","the distance from the path calculated");
+  keys.addOutputComponent("gspath","GPATH","scalar","the position along the path calculated using the geometric formula");
+  keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
+  keys.addOutputComponent("spath","default","scalar","the position along the path calculated");
+  keys.addOutputComponent("zpath","default","scalar","the distance from the path calculated");
 }
 
 void Path::registerInputFileKeywords( Keywords& keys ) {
@@ -223,7 +223,7 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
-  keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
+  keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NOSPATH",false,"do not calculate the spath CV");

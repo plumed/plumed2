@@ -389,7 +389,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  keys.use("ARG");
+  keys.addInputKeyword("optional","ARG","scalar","the labels of the values from which the function is calculated");
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
@@ -420,16 +420,16 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","AVERAGING", "Averaging window for weights");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
-  keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
-  keys.addOutputComponent("scale", "REGRESSION","scale factor");
-  keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
-  keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
-  keys.addOutputComponent("anneal","ANNEAL","annealing factor");
-  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
-  keys.addOutputComponent("sigma",      "NOISETYPE",     "uncertainty in the forward models and experiment");
-  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
+  keys.addOutputComponent("scoreb","default","scalar","Bayesian score");
+  keys.addOutputComponent("acc",   "NOISETYPE","scalar","MC acceptance for uncertainty");
+  keys.addOutputComponent("scale", "REGRESSION","scalar","scale factor");
+  keys.addOutputComponent("accscale", "REGRESSION","scalar","MC acceptance for scale regression");
+  keys.addOutputComponent("enescale", "REGRESSION","scalar","MC energy for scale regression");
+  keys.addOutputComponent("anneal","ANNEAL","scalar","annealing factor");
+  keys.addOutputComponent("weight",       "REWEIGHT","scalar",     "weights of the weighted average");
+  keys.addOutputComponent("biasDer",      "REWEIGHT","scalar",     "derivatives with respect to the bias");
+  keys.addOutputComponent("sigma",      "NOISETYPE","scalar",     "uncertainty in the forward models and experiment");
+  keys.addOutputComponent("neff",         "default","scalar",      "effective number of replicas");
 }
 
 EMMI::EMMI(const ActionOptions&ao):

@@ -180,7 +180,6 @@ PLUMED_REGISTER_ACTION(VesDeltaF,"VES_DELTA_F")
 
 void VesDeltaF::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("optional","TEMP","temperature is compulsory, but it can be sometimes fetched from the MD engine");
 //local free energies
   keys.add("numbered","FILE_F","names of files containing local free energies and derivatives. "
@@ -210,8 +209,8 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
 //output components
-  keys.addOutputComponent("rct","default","the reweighting factor c(t)");
-  keys.addOutputComponent("work","default","the work done by the bias in one AV_STRIDE");
+  keys.addOutputComponent("rct","default","scalar","the reweighting factor c(t)");
+  keys.addOutputComponent("work","default","scalar","the work done by the bias in one AV_STRIDE");
 }
 
 VesDeltaF::VesDeltaF(const ActionOptions&ao)

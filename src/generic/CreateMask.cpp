@@ -56,11 +56,12 @@ PLUMED_REGISTER_ACTION(CreateMask,"CREATE_MASK")
 
 void CreateMask::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","vector","the label of the vector that you would like to construct a mask for");
   keys.add("compulsory","TYPE","the way the zeros are supposed to be set");
   keys.add("compulsory","NZEROS","the number of zeros that you want to put in the mask");
   keys.add("optional","SEED","the seed to use for the random number generator");
-  keys.setValueDescription("a vector of zeros and ones that is used that can be used to mask some of the elements in a time series");
+  keys.setValueDescription("vector","a vector of zeros and ones that is used that can be used to mask some of the elements in a time series");
 }
 
 

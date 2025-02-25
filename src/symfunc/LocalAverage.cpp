@@ -100,6 +100,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("VSTACK"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
+  keys.setValueDescription("vector","the values of the local averages");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):

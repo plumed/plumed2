@@ -66,7 +66,7 @@ void PrintNDX::registerKeywords(Keywords& keys) {
   ActionPilot::registerKeywords(keys);
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("optional","ARG","vector","the labels of vectors that should be used when printind the NDX file");
   keys.add("atoms","ATOMS","the list of atoms that have the corresponding arguments");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");

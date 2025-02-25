@@ -74,7 +74,7 @@ void DumpDerivatives::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values whose derivatives should be output");
   keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");

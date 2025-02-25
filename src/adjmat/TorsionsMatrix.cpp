@@ -49,10 +49,12 @@ public:
 PLUMED_REGISTER_ACTION(TorsionsMatrix,"TORSIONS_MATRIX")
 
 void TorsionsMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
+  ActionWithMatrix::registerKeywords(keys); 
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of this matrix to compute");
+  keys.addInputKeyword("compulsory","ARG","matrix","an Nx3 and a 3xN matrix that contain the bond vectors that you would like to determine the torsion angles between");
   keys.add("atoms","POSITIONS1","the positions to use for the molecules specified using the first argument");
   keys.add("atoms","POSITIONS2","the positions to use for the molecules specified using the second argument");
-  keys.setValueDescription("the matrix of torsions between the two vectors of input directors");
+  keys.setValueDescription("matrix","the matrix of torsions between the two vectors of input directors");
 }
 
 TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):

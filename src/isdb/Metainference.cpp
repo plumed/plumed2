@@ -286,8 +286,7 @@ PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
 
 void Metainference::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives");
+  keys.addInputKeyword("optional","PARARG","scalar","reference values for the experimental data, these can be provided as arguments without derivatives");
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
@@ -319,21 +318,22 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
+  keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
-  keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
-  keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
-  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
-  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
-  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
-  keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
-  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
-  keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
-  keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
-  keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
+  keys.addOutputComponent("sigma",        "default",      "scalar","uncertainty parameter");
+  keys.addOutputComponent("sigmaMean",    "default",      "scalar","uncertainty in the mean estimate");
+  keys.addOutputComponent("neff",         "default",      "scalar","effective number of replicas");
+  keys.addOutputComponent("acceptSigma",  "default",      "scalar","MC acceptance for sigma values");
+  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "scalar","MC acceptance for scale value");
+  keys.addOutputComponent("acceptFT",     "GENERIC",      "scalar","MC acceptance for general metainference f tilde value");
+  keys.addOutputComponent("weight",       "REWEIGHT",     "scalar","weights of the weighted average");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "scalar","derivatives with respect to the bias");
+  keys.addOutputComponent("scale",        "SCALEDATA",    "scalar","scale parameter");
+  keys.addOutputComponent("offset",       "ADDOFFSET",    "scalar","offset parameter");
+  keys.addOutputComponent("ftilde",       "GENERIC",      "scalar","ensemble average estimator");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -590,6 +590,9 @@ Metainference::Metainference(const ActionOptions&ao):
     Dsigma_.resize(sigma_max_.size(), -1.);
     /* in this case Dsigma is initialised after reading the restart file if present */
   }
+
+  std::string fmt_;
+  parse("FMT",fmt_);
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -902,6 +905,7 @@ Metainference::Metainference(const ActionOptions&ao):
   if(write_stride_>0) {
     sfile_.link(*this);
     sfile_.open(status_file_name_);
+    if(fmt_.length()>0) sfile_.fmtField(fmt_);
   }
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");

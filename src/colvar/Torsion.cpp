@@ -138,7 +138,7 @@ void Torsion::registerKeywords(Keywords& keys) {
   keys.add("atoms-3","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("the TORSION involving these atoms");
+  keys.setValueDescription("scalar/vector","the TORSION involving these atoms");
 }
 
 Torsion::Torsion(const ActionOptions&ao):

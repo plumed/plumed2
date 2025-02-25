@@ -118,10 +118,10 @@ PLUMED_REGISTER_ACTION(QuaternionMulti,"QUATERNION_VECTOR")
 void Quaternion::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys ); keys.setDisplayName("QUATERNION");
   keys.add("atoms","ATOMS","the three atom that we are using to calculate the quaternion");
-  keys.addOutputComponent("w","default","the real component of quaternion");
-  keys.addOutputComponent("i","default","the i component of the quaternion");
-  keys.addOutputComponent("j","default","the j component of the quaternion");
-  keys.addOutputComponent("k","default","the k component of the quaternion");
+  keys.addOutputComponent("w","default","scalar/vector","the real component of quaternion");
+  keys.addOutputComponent("i","default","scalar/vector","the i component of the quaternion");
+  keys.addOutputComponent("j","default","scalar/vector","the j component of the quaternion");
+  keys.addOutputComponent("k","default","scalar/vector","the k component of the quaternion");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
@@ -327,7 +327,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOut
     for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
   }
   else if ((x[0] > y[1])&(x[0] > z[2])) {
-    float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
+    double S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
 
     cvout.values[0] = (z[1] - y[2]) / S;
@@ -343,7 +343,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOut
     for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (cvout.values[3]/S)*dS[i];
   }
   else if (y[1] > z[2]) {
-    float S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
+    double S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*( -tdx[i].getRow(0) + tdy[i].getRow(1) - tdz[i].getRow(2));
 
 
@@ -360,7 +360,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOut
     for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (cvout.values[3]/S)*dS[i];
   }
   else {
-    float S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
+    double S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-tdx[i].getRow(0) - tdy[i].getRow(1) + tdz[i].getRow(2));
 
 

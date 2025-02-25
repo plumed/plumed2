@@ -28,7 +28,8 @@ namespace PLMD {
 namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys ); keys.remove("ARG"); keys.use("MASK");
+  ActionWithMatrix::registerKeywords( keys );
+  keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the adjancency matrix to compute");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");
@@ -38,11 +39,11 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
   keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
-  keys.addOutputComponent("w","COMPONENTS","a matrix containing the weights for the bonds between each pair of atoms");
-  keys.addOutputComponent("x","COMPONENTS","the projection of the bond on the x axis");
-  keys.addOutputComponent("y","COMPONENTS","the projection of the bond on the y axis");
-  keys.addOutputComponent("z","COMPONENTS","the projection of the bond on the z axis");
-  keys.setValueDescription("a matrix containing the weights for the bonds between each pair of atoms");
+  keys.addOutputComponent("w","COMPONENTS","matrix","a matrix containing the weights for the bonds between each pair of atoms");
+  keys.addOutputComponent("x","COMPONENTS","matrix","the projection of the bond on the x axis");
+  keys.addOutputComponent("y","COMPONENTS","matrix","the projection of the bond on the y axis");
+  keys.addOutputComponent("z","COMPONENTS","matrix","the projection of the bond on the z axis");
+  keys.setValueDescription("matrix","a matrix containing the weights for the bonds between each pair of atoms");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
@@ -63,7 +64,9 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
+    if( ta.size()==0 && getName()=="HBOND_MATRIX") parseAtomList("DONORS",ta);
     std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);
+    if( tb.size()==0 && getName()=="HBOND_MATRIX") parseAtomList("ACCEPTORS",tb);
     if( ta.size()==0 || tb.size()==0 ) error("no atoms have been specified in input");
 
     // Create list of tasks

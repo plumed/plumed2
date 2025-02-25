@@ -124,6 +124,7 @@ private:
   // restart
   std::string status_file_name_;
   OFile    sfile_;
+  std::string fmt_;
 
   // others
   bool     firstTime;

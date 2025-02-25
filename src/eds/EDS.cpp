@@ -281,10 +281,9 @@ PLUMED_REGISTER_ACTION(EDS, "EDS")
 void EDS::registerKeywords(Keywords &keys)
 {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("optional", "CENTER", "The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed centers");
-  keys.add("optional", "CENTER_ARG", "The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
-           "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
+  keys.addInputKeyword("optional", "CENTER_ARG", "scalar", "The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
+                       "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional", "PERIOD", "Steps over which to adjust bias for adaptive or ramping");
   keys.add("compulsory", "RANGE", "25.0", "The (starting) maximum increase in coupling constant per PERIOD (in k_B T/[BIAS_SCALE unit]) for each CV biased");
@@ -298,7 +297,7 @@ void EDS::registerKeywords(Keywords &keys)
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
   keys.add("optional", "VIRIAL", "Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
-  keys.add("optional", "LOGWEIGHTS", "Add weights to use for computing statistics. For example, if biasing with metadynamics.");
+  keys.addInputKeyword("optional", "LOGWEIGHTS", "scalar", "Add weights to use for computing statistics. For example, if biasing with metadynamics.");
   keys.addFlag("LM", false, "Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.add("compulsory", "LM_MIXING", "1", "Initial mixing parameter when using Levenberg-Marquadt minimization.");
   keys.add("optional", "RESTART_FMT", "the format that should be used to output real numbers in EDS restarts");
@@ -316,9 +315,9 @@ void EDS::registerKeywords(Keywords &keys)
 
   keys.use("RESTART");
 
-  keys.addOutputComponent("force2", "default", "squared value of force from the bias");
-  keys.addOutputComponent("pressure", "default", "If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
-  keys.addOutputComponent("_coupling", "default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
+  keys.addOutputComponent("force2", "default", "scalar", "squared value of force from the bias");
+  keys.addOutputComponent("pressure", "default", "scalar", "If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
+  keys.addOutputComponent("_coupling", "default", "scalar", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
 EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),

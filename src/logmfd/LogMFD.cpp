@@ -461,7 +461,6 @@ PLUMED_REGISTER_ACTION(LogMFD,"LOGMFD")
 */
 void LogMFD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","INTERVAL",
            "Period of MD steps (N_m) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",
@@ -537,12 +536,12 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "temperature of the MD system, while TEMP may be (in principle) different from it. "
            "If not provided, TEMPPD is set to be the same value as TEMP." );
 
-  keys.addOutputComponent("_fict","default",
+  keys.addOutputComponent("_fict","default","scalar",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, "
                           "the associated fictitious dynamical variable can be specified as "
                           "PRINT ARG=dist12,logmfd.dist12_fict FILE=COLVAR");
-  keys.addOutputComponent("_vfict","default",
+  keys.addOutputComponent("_vfict","default","scalar",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, the "
                           "velocity of the associated fictitious dynamical variable can be specified as "

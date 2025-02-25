@@ -26,9 +26,9 @@ namespace PLMD {
 namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
-  matrixtools::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
+  matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
-  keys.setValueDescription("vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
+  keys.setValueDescription("vector","vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):

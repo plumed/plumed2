@@ -94,11 +94,13 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","NBINS","the number of bins to use in each direction (alternative to GRID_NBIN)");
+  keys.add("optional","GRID_MIN","the lower bounds for the grid (default boxlengths)");
+  keys.add("optional","GRID_MAX","the upper bounds for the grid (default boxlengths)");
   keys.add("optional","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
   keys.addFlag("UNORMALIZED",false,"do not divide by the density");
   keys.add("optional","NORMALIZATION","set true/false to determine how to the data is normalised");
-  keys.setValueDescription("the average value of the order parameters at each point on the grid");
+  keys.setValueDescription("grid","the average value of the order parameters at each point on the grid");
   keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
   keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("CUSTOM");
 }

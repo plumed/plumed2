@@ -74,12 +74,12 @@ template <class T>
 void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
   ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput>::registerKeywords( keys );
-  keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
+  keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
     if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
   }
-  if( keys.outputComponentExists(".#!value") ) keys.setValueDescription("the " + keys.getDisplayName() + " for each set of specified atoms");
+  if( keys.outputComponentExists(".#!value") ) keys.setValueDescription("vector","the " + keys.getDisplayName() + " for each set of specified atoms");
 }
 
 template <class T>

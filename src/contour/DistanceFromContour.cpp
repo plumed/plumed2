@@ -83,10 +83,10 @@ PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
 
 void DistanceFromContour::registerKeywords( Keywords& keys ) {
   DistanceFromContourBase::registerKeywords( keys );
-  keys.addOutputComponent("dist1","default","the distance between the reference atom and the nearest contour");
-  keys.addOutputComponent("dist2","default","the distance between the reference atom and the other contour");
-  keys.addOutputComponent("qdist","default","the differentiable (squared) distance between the two contours (see above)");
-  keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
+  keys.addOutputComponent("dist1","default","scalar","the distance between the reference atom and the nearest contour");
+  keys.addOutputComponent("dist2","default","scalar","the distance between the reference atom and the other contour");
+  keys.addOutputComponent("qdist","default","scalar","the differentiable (squared) distance between the two contours (see above)");
+  keys.addOutputComponent("thickness","default","scalar","the distance between the two contours on the line from the reference atom");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "

@@ -29,6 +29,7 @@
 #include "View2D.h"
 #include <vector>
 #include <cstddef>
+#include <limits>
 
 namespace PLMD {
 

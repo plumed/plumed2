@@ -51,8 +51,9 @@ public:
 PLUMED_REGISTER_ACTION(Voronoi,"VORONOI")
 
 void Voronoi::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
-  keys.setValueDescription("a matrix in which element ij is equal to one if the ij component of the input matrix is lower than all the ik elements of the matrix where k is not j and zero otherwise");
+  ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","matrix","the distance/adjacency matrix that should be used to perform the voronoi analysis");
+  keys.setValueDescription("matrix","a matrix in which element ij is equal to one if the ij component of the input matrix is lower than all the ik elements of the matrix where k is not j and zero otherwise");
 }
 
 Voronoi::Voronoi(const ActionOptions&ao):

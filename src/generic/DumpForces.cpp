@@ -72,7 +72,7 @@ void DumpForces::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the labels of the values whose forces should be output");
   keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");

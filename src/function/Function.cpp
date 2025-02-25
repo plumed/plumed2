@@ -30,6 +30,7 @@ void Function::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values from which the function is calculated");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
 }
 

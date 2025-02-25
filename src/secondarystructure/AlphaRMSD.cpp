@@ -96,6 +96,7 @@ PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
   keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("STRUCTURE");
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal alpha helix.  If LESS_THAN is not present the number of residue segments where the structure is similar to an alpha helix");
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):

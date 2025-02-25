@@ -122,7 +122,7 @@ void Angle::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys); keys.setDisplayName("ANGLE");
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("the ANGLE involving these atoms");
+  keys.setValueDescription("scalar/vector","the ANGLE involving these atoms");
 }
 
 void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {

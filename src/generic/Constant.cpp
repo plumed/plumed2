@@ -78,8 +78,8 @@ void Constant::registerKeywords( Keywords& keys ) {
   keys.add("optional","VALUES","the numbers that are in your constant value");
   keys.addFlag("SCALARS",false,"treat the input list of numbers as a set of scalars");
   keys.addFlag("NOLOG",false,"do not report all the read in scalars in the log");
-  keys.addOutputComponent("v","SCALARS","the # value");
-  keys.setValueDescription("the constant value that was read from the plumed input");
+  keys.addOutputComponent("v","SCALARS","scalar","the # value");
+  keys.setValueDescription("scalar/vector/matrix","the constant value that was read from the plumed input");
 }
 
 Constant::Constant(const ActionOptions&ao):

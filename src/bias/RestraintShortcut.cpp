@@ -38,13 +38,13 @@ PLUMED_REGISTER_ACTION(RestraintShortcut,"RESTRAINT")
 
 void RestraintShortcut::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("numbered","ARG","the arguments on which the bias is acting");
+  keys.addInputKeyword("numbered","ARG","scalar/vector","the values the harmonic restraint acts upon");
   keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
   keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","AT","the position of the restraint");
   keys.add("hidden","STRIDE","1","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","scalar/vector","the instantaneous value of the squared force due to this bias potential");
   keys.addActionNameSuffix("_SCALAR"); keys.needsAction("COMBINE"); keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("BIASVALUE");
 }
 

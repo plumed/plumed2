@@ -62,10 +62,12 @@ PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"MATRIX_PRODUCT")
 PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"DISSIMILARITIES")
 
 void MatrixTimesMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
-  keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
+  ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute"); 
   keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
-  keys.setValueDescription("the product of the two input matrices");
+  keys.addInputKeyword("compulsory","ARG","matrix","the label of the two matrices from which the product is calculated");
+  keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
+  keys.setValueDescription("matrix","the product of the two input matrices");
 }
 
 MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):

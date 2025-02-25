@@ -90,7 +90,7 @@ PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
 void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("numbered","ARG","scalar","the labels of the actions that you want to use");
   keys.add("compulsory","NUM","the number of local replicas");
   useCustomisableComponents(keys);
 }

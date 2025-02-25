@@ -117,12 +117,12 @@ void Position::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
-  keys.addOutputComponent("x","default","the x-component of the atom position");
-  keys.addOutputComponent("y","default","the y-component of the atom position");
-  keys.addOutputComponent("z","default","the z-component of the atom position");
-  keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the atom position");
-  keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the atom position");
-  keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the atom position");
+  keys.addOutputComponent("x","default","scalar/vector","the x-component of the atom position");
+  keys.addOutputComponent("y","default","scalar/vector","the y-component of the atom position");
+  keys.addOutputComponent("z","default","scalar/vector","the z-component of the atom position");
+  keys.addOutputComponent("a","SCALED_COMPONENTS","scalar/vector","the normalized projection on the first lattice vector of the atom position");
+  keys.addOutputComponent("b","SCALED_COMPONENTS","scalar/vector","the normalized projection on the second lattice vector of the atom position");
+  keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the atom position");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 

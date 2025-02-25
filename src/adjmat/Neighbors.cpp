@@ -51,10 +51,11 @@ public:
 PLUMED_REGISTER_ACTION(Neighbors,"NEIGHBORS")
 
 void Neighbors::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys ); keys.use("ARG");
+  ActionWithMatrix::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","matrix","the label of an adjacency/distance matrix that will be used to find the nearest neighbors");
   keys.add("compulsory","NLOWEST","0","in each row of the output matrix set the elements that correspond to the n lowest elements in each row of the input matrix equal to one");
   keys.add("compulsory","NHIGHEST","0","in each row of the output matrix set the elements that correspond to the n highest elements in each row of the input matrix equal to one");
-  keys.setValueDescription("a matrix in which the ij element is one if the ij-element of the input matrix is one of the NLOWEST/NHIGHEST elements on that row of the input matrix and zero otherwise");
+  keys.setValueDescription("matrix","a matrix in which the ij element is one if the ij-element of the input matrix is one of the NLOWEST/NHIGHEST elements on that row of the input matrix and zero otherwise");
 }
 
 Neighbors::Neighbors(const ActionOptions&ao):

@@ -79,15 +79,15 @@ void Cell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.addOutputComponent("ax","default","the ax component of the cell matrix");
-  keys.addOutputComponent("ay","default","the ay component of the cell matrix");
-  keys.addOutputComponent("az","default","the az component of the cell matrix");
-  keys.addOutputComponent("bx","default","the bx component of the cell matrix");
-  keys.addOutputComponent("by","default","the by component of the cell matrix");
-  keys.addOutputComponent("bz","default","the bz component of the cell matrix");
-  keys.addOutputComponent("cx","default","the cx component of the cell matrix");
-  keys.addOutputComponent("cy","default","the cy component of the cell matrix");
-  keys.addOutputComponent("cz","default","the cz component of the cell matrix");
+  keys.addOutputComponent("ax","default","scalar","the ax component of the cell matrix");
+  keys.addOutputComponent("ay","default","scalar","the ay component of the cell matrix");
+  keys.addOutputComponent("az","default","scalar","the az component of the cell matrix");
+  keys.addOutputComponent("bx","default","scalar","the bx component of the cell matrix");
+  keys.addOutputComponent("by","default","scalar","the by component of the cell matrix");
+  keys.addOutputComponent("bz","default","scalar","the bz component of the cell matrix");
+  keys.addOutputComponent("cx","default","scalar","the cx component of the cell matrix");
+  keys.addOutputComponent("cy","default","scalar","the cy component of the cell matrix");
+  keys.addOutputComponent("cz","default","scalar","the cz component of the cell matrix");
 }
 
 

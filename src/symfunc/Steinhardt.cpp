@@ -281,11 +281,12 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
-  keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
+  keys.addOutputComponent("_vmean","VMEAN","scalar","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
-  keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
+  keys.addOutputComponent("_vsum","VSUM","scalar","the norm of the mean vector");
   keys.needsAction("GROUP"); keys.needsAction("CONTACT_MATRIX"); keys.needsAction("SPHERICAL_HARMONIC"); keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("MEAN"); keys.needsAction("SUM");
+  keys.setValueDescription("vector","the norms of the vectors of spherical harmonic coefficients");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):

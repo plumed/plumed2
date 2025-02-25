@@ -1,5 +1,5 @@
 {
    "q1" : {
-      "expansion" : "q1_grp: GROUP ATOMS=1-10 \nq1_mat: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1} COMPONENTS \nq1_sh: SPHERICAL_HARMONIC ARG=q1_mat.x,q1_mat.y,q1_mat.z,q1_mat.w L=1 \nq1_denom_ones: ONES SIZE=10\nq1_denom: MATRIX_VECTOR_PRODUCT ARG=q1_mat.w,q1_denom_ones \nq1_sp: MATRIX_VECTOR_PRODUCT ARG=q1_sh.*,q1_denom_ones \nq1_norm2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2 ARG=q1_sp.rm-n1,q1_sp.im-n1,q1_sp.rm-0,q1_sp.im-0,q1_sp.rm-p1,q1_sp.im-p1 \nq1_norm: CUSTOM ARG=q1_norm2 FUNC=sqrt(x) PERIODIC=NO \nq1: CUSTOM ARG=q1_norm,q1_denom FUNC=x/y PERIODIC=NO "
+      "expansion" : "q1_grp: GROUP ATOMS=1-10\nq1_mat: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1} COMPONENTS\nq1_sh: SPHERICAL_HARMONIC ARG=q1_mat.x,q1_mat.y,q1_mat.z,q1_mat.w L=1\nq1_denom_ones: ONES SIZE=10\nq1_denom: MATRIX_VECTOR_PRODUCT ARG=q1_mat.w,q1_denom_ones\nq1_sp: MATRIX_VECTOR_PRODUCT ARG=q1_sh.*,q1_denom_ones\nq1_norm2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2 ARG=q1_sp.rm-n1,q1_sp.im-n1,q1_sp.rm-0,q1_sp.im-0,q1_sp.rm-p1,q1_sp.im-p1\nq1_norm: CUSTOM ARG=q1_norm2 FUNC=sqrt(x) PERIODIC=NO\nq1: CUSTOM ARG=q1_norm,q1_denom FUNC=x/y PERIODIC=NO"
    }
 }

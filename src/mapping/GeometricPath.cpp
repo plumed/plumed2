@@ -50,11 +50,11 @@ public:
 PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
 
 void GeometricPath::registerKeywords(Keywords& keys) {
-  ActionWithVector::registerKeywords(keys); keys.use("ARG");
+  ActionWithVector::registerKeywords(keys);
   PathProjectionCalculator::registerKeywords(keys);
-  keys.add("compulsory","PROPERTY","the coordinates we are projecting these points onto");
-  keys.addOutputComponent("s","default","the position on the path");
-  keys.addOutputComponent("z","default","the distance from the path");
+  keys.addInputKeyword("compulsory","PROPERTY","vector","the label of a value that contains the coordinates we are projecting these points onto");
+  keys.addOutputComponent("s","default","scalar","the position on the path");
+  keys.addOutputComponent("z","default","scalar","the distance from the path");
   keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("PDB2CONSTANT");
 }
 

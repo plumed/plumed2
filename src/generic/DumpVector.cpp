@@ -61,7 +61,8 @@ PLUMED_REGISTER_ACTION(DumpVector,"DUMPVECTOR")
 void DumpVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","vector/matrix","the labels of vectors/matrices that should be output in the file");
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the vetors");
   keys.add("optional","FMT","the format that should be used to output real numbers");

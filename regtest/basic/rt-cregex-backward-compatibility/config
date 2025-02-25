@@ -1,0 +1,3 @@
+type=plumed
+#this just tests that config will always return cregex as existing, for backward compatibility
+arg="config has cregex"

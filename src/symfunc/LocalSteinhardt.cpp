@@ -293,6 +293,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("optional","MASK","the label/s for vectors that are used to determine which local steinhardt parameters to compute");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.setValueDescription("vector","the values of the local steinhardt parameters for the input atoms");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("GROUP");
   keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("VSTACK");

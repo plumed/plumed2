@@ -104,7 +104,8 @@ PLUMED_REGISTER_ACTION(PythonFunction,"PYFUNCTION")
 
 void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("PERIODIC");
+  keys.addInputKeyword("optional","ARG","scalar","the labels of the values from which the function is calculated");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call");
   keys.add("compulsory","INIT",PYCV_DEFAULTINIT,"the function to call during the construction method of the function");

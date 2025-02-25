@@ -48,7 +48,7 @@ void CovarianceMatrix::registerKeywords(Keywords& keys ) {
   keys.add("compulsory","WEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the input data points.");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
-  keys.setValueDescription("the covariance matrix");
+  keys.setValueDescription("matrix","the covariance matrix");
   keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE");
   keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("MATRIX_PRODUCT");
 }

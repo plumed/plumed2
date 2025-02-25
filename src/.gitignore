@@ -66,6 +66,7 @@
 !/membranefusion
 !/wham
 !/metatensor
+!/sizeshape
 
 # And just ignore these files
 *.xxd

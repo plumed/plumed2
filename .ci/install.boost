@@ -12,8 +12,9 @@ version_=${version//./_}
 
 echo $version $version_
 
-wget https://boostorg.jfrog.io/artifactory/main/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
-tar xzf boost_${version_}.tar.gz
+#wget https://boostorg.jfrog.io/artifactory/main/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+wget https://sourceforge.net/projects/boost/files/boost/$version/boost_${version_}.tar.bz2 > /dev/null 2> /dev/null
+tar xjf boost_${version_}.tar.bz2
 
 cd boost_${version_}
 

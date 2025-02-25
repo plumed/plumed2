@@ -124,7 +124,6 @@ PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
 
 void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
   keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimated on-the-fly using AVERAGING");
@@ -132,10 +131,10 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TSCALE","1.0","Apply a time scaling on the experimental time scale");
   keys.add("compulsory","SCALE","1.0","Apply a constant scaling on the data provided as arguments");
   keys.add("optional","REGRES_ZERO","stride for regression with zero offset");
-  keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
-  keys.addOutputComponent("mean","default","the current average value of the calculated observable");
-  keys.addOutputComponent("kappa","default","the current force constant");
-  keys.addOutputComponent("scale","REGRES_ZERO","the current scaling constant");
+  keys.addOutputComponent("x0","default","scalar","the instantaneous value of the center of the potential");
+  keys.addOutputComponent("mean","default","scalar","the current average value of the calculated observable");
+  keys.addOutputComponent("kappa","default","scalar","the current force constant");
+  keys.addOutputComponent("scale","REGRES_ZERO","scalar","the current scaling constant");
 }
 
 Caliber::Caliber(const ActionOptions&ao):

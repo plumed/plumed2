@@ -53,7 +53,8 @@ bool SecondaryStructureRMSD::readShortcutWords( std::string& ltmap, ActionShortc
 }
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
-  ActionWithVector::registerKeywords( keys ); keys.use("MASK");
+  ActionWithVector::registerKeywords( keys ); 
+  keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
            "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
@@ -77,8 +78,10 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
   keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
-  keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
-  keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.setValueDescription("vector","a vector containing the rmsd distance between each of the residue segments and the reference structure");
+  keys.addOutputComponent("struct","default","vector","the vectors containing the rmsd distances between the residues and each of the reference structures");
+  keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD"); keys.needsAction("LESS_THAN"); keys.needsAction("SUM");
 }
 
@@ -137,6 +140,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
     }
     colvar_atoms.push_back( newatoms );
   }
+  if( colvar_atoms.size()==0 ) error("missing SEGMENT keywords -- no atoms have been specified for comparison");
 
   double bondlength; parse("BONDLENGTH",bondlength); bondlength=bondlength/getUnits().getLength();
 

@@ -93,13 +93,20 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
       }
       if( av ) {
         std::string av_label = av->getLabel();
-        if( av_label == getShortcutLabel() ) savedOutputs.push_back( av_label );
-        else {
+        if( av_label == getShortcutLabel() && av->getNumberOfComponents()==1 ) {
+          savedOutputs.push_back( av_label );
+          plumed_massert( keywords.componentHasCorrectType(".#!value", (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of value is incorrect");
+        } else {
           for(unsigned i=0; i<keywords.cnames.size(); ++i) {
-            if( av_label == getShortcutLabel() + "_" + keywords.cnames[i] ) savedOutputs.push_back( av_label );
-            else if( keywords.getOutputComponentFlag(keywords.cnames[i])!="default" ) {
+            if( av_label == getShortcutLabel() + "_" + keywords.cnames[i] ) {
+              savedOutputs.push_back( av_label );
+              plumed_massert( keywords.componentHasCorrectType(keywords.cnames[i], (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of component " + keywords.cnames[i] + " is incorrect");
+            } else if( keywords.getOutputComponentFlag(keywords.cnames[i])!="default" ) {
               std::string thisflag = keywords.getOutputComponentFlag(keywords.cnames[i]);
-              if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + keywords.cnames[i])!=std::string::npos ) savedOutputs.push_back( av_label );
+              if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + keywords.cnames[i])!=std::string::npos ) {
+                savedOutputs.push_back( av_label );
+                plumed_massert( keywords.componentHasCorrectType(keywords.cnames[i], (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ), "documentation for type of component " + keywords.cnames[i] + " is incorrect");
+              }
             }
           }
         }
@@ -170,8 +177,8 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
         std::string num; Tools::convert( ninstances[j], num );
         if( ninstances[j]>0 ) reducedline += num + " further " + numberedkeys[j] + "n keywords, ";
       }
-    }
-    savedInputLines.push_back( reducedline );
+      savedInputLines.push_back( reducedline );
+    } else savedInputLines.push_back( line );
   } else savedInputLines.push_back( line );
 }
 

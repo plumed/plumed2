@@ -152,7 +152,8 @@ void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("optional","ARG","vector","the labels of vectors that should be output in the xyz file. The number of elements in the vector should equal the number of atoms output");
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates; extension is automatically detected");

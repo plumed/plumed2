@@ -61,20 +61,20 @@ PLUMED_REGISTER_ACTION(ArgsToVatom,"ARGS2VATOM")
 
 void ArgsToVatom::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.add("compulsory","XPOS","the x position of the atom");
-  keys.add("compulsory","YPOS","the y position of the atom");
-  keys.add("compulsory","ZPOS","the z position of the atom");
-  keys.add("compulsory","MASS","the mass of the atom");
-  keys.add("compulsory","CHARGE","the charge of the atom");
-  keys.add("hidden","XBKP","x position to use in case PBC not set when using PHASES");
-  keys.add("hidden","YBKP","y position to use in case PBC not set when using PHASES");
-  keys.add("hidden","ZBKP","z position to use in case PBC not set when using PHASES");
+  keys.addInputKeyword("compulsory","XPOS","scalar","the value to use for the x position of the atom");
+  keys.addInputKeyword("compulsory","YPOS","scalar","the value to use for the y position of the atom");
+  keys.addInputKeyword("compulsory","ZPOS","scalar","the value to use for the z position of the atom");
+  keys.addInputKeyword("compulsory","MASS","scalar","the value to use for the mass of the atom");
+  keys.addInputKeyword("compulsory","CHARGE","scalar","the value to use for the charge of the atom");
+  keys.addInputKeyword("hidden","XBKP","scalar","x position to use in case PBC not set when using PHASES");
+  keys.addInputKeyword("hidden","YBKP","scalar","y position to use in case PBC not set when using PHASES");
+  keys.addInputKeyword("hidden","ZBKP","scalar","z position to use in case PBC not set when using PHASES");
   keys.addFlag("FRACTIONAL",false,"the input arguments are calculated in fractional coordinates so you need to multiply by the cell");
-  keys.addOutputComponent("x","default","the x coordinate of the virtual atom");
-  keys.addOutputComponent("y","default","the y coordinate of the virtual atom");
-  keys.addOutputComponent("z","default","the z coordinate of the virtual atom");
-  keys.addOutputComponent("mass","default","the mass of the virtual atom");
-  keys.addOutputComponent("charge","default","the charge of the virtual atom");
+  keys.addOutputComponent("x","default","scalar","the x coordinate of the virtual atom");
+  keys.addOutputComponent("y","default","scalar","the y coordinate of the virtual atom");
+  keys.addOutputComponent("z","default","scalar","the z coordinate of the virtual atom");
+  keys.addOutputComponent("mass","default","scalar","the mass of the virtual atom");
+  keys.addOutputComponent("charge","default","scalar","the charge of the virtual atom");
 }
 
 ArgsToVatom::ArgsToVatom(const ActionOptions& ao):

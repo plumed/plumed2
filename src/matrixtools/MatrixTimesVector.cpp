@@ -53,9 +53,10 @@ public:
 PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
-  ActionWithVector::registerKeywords(keys); keys.use("ARG");
-  keys.setValueDescription("the vector that is obtained by taking the product between the matrix and the vector that were input");
+  ActionWithVector::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","matrix/vector/scalar","the label for the matrix and the vector/scalar that are being multiplied.  Alternatively, you can provide labels for multiple matrices and a single vector or labels for a single matrix and multiple vectors. In these cases multiple matrix vector products will be computed.");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
+  keys.setValueDescription("vector","the vector that is obtained by taking the product between the matrix and the vector that were input");
   ActionWithValue::useCustomisableComponents(keys);
 }
 

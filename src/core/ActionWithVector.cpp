@@ -34,7 +34,6 @@ void ActionWithVector::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithArguments::registerKeywords( keys );
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
-  keys.reserve("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
 }
 
 ActionWithVector::ActionWithVector(const ActionOptions&ao):

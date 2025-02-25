@@ -51,6 +51,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","calculate distance for each distinct set of three atoms in the group");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
   keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
+  keys.setValueDescription("vector","the INPLANEDISTANCE between each of the atoms specified using the GROUP keyword and atom A in the plane perpendicular to the vector connecting the atoms specified using VECTORSTART and VECTOREND");
   MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("DISTANCE"); keys.needsAction("ANGLE");
 }

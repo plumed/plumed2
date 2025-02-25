@@ -69,6 +69,7 @@ void ClusterProperties::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ARG","calculate the sum of the arguments calculated by this action for the cluster");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  keys.setValueDescription("vector","a vector that is one if the atom is part of the cluster or interest and zero otherwise");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CLUSTER_WEIGHTS");
 }
