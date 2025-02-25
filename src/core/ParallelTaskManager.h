@@ -265,14 +265,14 @@ void ParallelTaskManager<T, D>::runAllTasks() {
                           default(none)
     for(unsigned i=0; i<nactive_tasks; ++i) {
       std::vector<double> derivatives(devSize);
-      std::size_t task_number = partialTaskList_data[i];
-      std::size_t val_pos = task_number*input.ncomponents;
+      std::size_t task_index = partialTaskList_data[i];
+      std::size_t val_pos = task_index*input.ncomponents;
       ParallelActionsOutput myout( input.ncomponents,
                                    value_stash_data+val_pos,
                                    devSize,
                                    derivatives.data() );
       // Calculate the stuff in the loop for this action
-      T::performTask( task_number, t_actiondata, input, myout );
+      T::performTask( task_index, t_actiondata, input, myout );
     }
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
@@ -293,14 +293,14 @@ void ParallelTaskManager<T, D>::runAllTasks() {
       std::vector<double> derivatives( myinput.ncomponents*nderivatives_per_task );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        std::size_t task_number = partialTaskList[i];
-        std::size_t val_pos = task_number*myinput.ncomponents;
+        std::size_t task_index = partialTaskList[i];
+        std::size_t val_pos = task_index*myinput.ncomponents;
         ParallelActionsOutput myout( myinput.ncomponents,
                                      value_stash.data()+val_pos,
                                      myinput.ncomponents*nderivatives_per_task,
                                      derivatives.data() );
         // Calculate the stuff in the loop for this action
-        T::performTask( task_number, actiondata, myinput, myout );
+        T::performTask( task_index, actiondata, myinput, myout );
       }
     }
     // MPI Gather everything
@@ -347,11 +347,9 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
     auto omp_forces_data = omp_forces[0].data();
     auto of_size = omp_forces[0].size();
     //on the cpu we only need the declaration, see the create statement below
-    double* fake_vals;
     const auto nderivs =  myinput.ncomponents*nderivatives_per_task;
     const auto ndev_per_task = nderivatives_per_task;
-    const auto ncomponents = myinput.ncomponents;
-
+    
     //To future me/you:
     // I need to allocate this on the host to create a bigger temporay data array
     // on the device
@@ -381,20 +379,19 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
     for(unsigned i=0; i<nactive_tasks; ++i) {
       //This may be changed to a shared array
       std::vector<double> valstmp( input.ncomponents );
-      std::size_t task_number = partialTaskList_data[i];
-      std::size_t val_pos = task_number*input.ncomponents;
+      std::size_t task_index = partialTaskList_data[i];
       // std::vector<double> derivative( nderivs );
       ParallelActionsOutput myout( input.ncomponents,
                                    valstmp.data(),
                                    nderivs,
                                    derivatives);
       // Calculate the stuff in the loop for this action
-      T::performTask( task_number, t_actiondata, input, myout );
+      T::performTask( task_index, t_actiondata, input, myout );
 
       // Gather the forces from the values
-      T::gatherForces( task_number, t_actiondata, input,
+      T::gatherForces( task_index, t_actiondata, input,
                        ForceInput( input.ncomponents,
-                                   value_stash_data+input.ncomponents*task_number,
+                                   value_stash_data+input.ncomponents*task_index,
                                    ndev_per_task,
                                    derivatives),
                        ForceOutput { omp_forces_data,of_size, forcesForApply_data,ffa_size }
