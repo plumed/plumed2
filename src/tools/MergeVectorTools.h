@@ -50,8 +50,8 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     bool empty() const { return fwdIt == endIt; }
     /// to allow using a priority_queu, which selects the highest element.
     /// we here (counterintuitively) define < as >
-    bool operator< (Entry const& rhs) const { return top() > rhs.top(); }
     const auto & top() const { return *fwdIt; }
+    bool operator< (Entry const& rhs) const { return top() > rhs.top(); }
     void next() { ++fwdIt;};
   };
 

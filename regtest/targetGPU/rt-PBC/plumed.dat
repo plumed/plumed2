@@ -1,0 +1,8 @@
+# This is loading a collective variable on the fly:
+LOAD FILE=./pbctest.cpp
+
+d2: TESTPBCS ATOMS=1,2
+
+PRINT FILE=COLVAR ARG=d2
+
+ENDPLUMED

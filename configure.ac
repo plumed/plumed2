@@ -324,6 +324,7 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([metatensor],[search for metatensor],[no])
+PLUMED_CONFIG_ENABLE([openacc],[search for openacc],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -996,6 +997,23 @@ if test $metatensor = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_METATENSOR], [metatensor metatensor_torch], [true])
+fi
+
+if test $openacc = true; then
+#this is here just to compile with openacc
+#no PLUMED_HAS_OPENACC until pbcs are done
+  #test if we can compile with openacc
+  PLUMED_CHECK_CXXFLAG([-acc])
+  PLUMED_CHECK_CXXFLAG([-acc=gpu])
+  #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!11
+  PLUMED_CHECK_CXXFLAG([-gpu=cc75])
+  #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
+  #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
+  #PLUMED_CHECK_CXXFLAG([-stdpar])
+  #PLUMED_CHECK_CXXFLAG([-gpu=managed])
+  #PLUMED_CHECK_LDFLAGS([-static-nvidia])
+  #PLUMED_CHECK_LDFLAGS([-acc])
+  LDSHARED="$LDSHARED -acc -static-nvidia"
 fi
 
 # in non-debug mode, add -DNDEBUG

@@ -46,7 +46,8 @@ private:
   public:
     DerivHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
-      return { derivatives + i*nderivPerComponent, nderivPerComponent };
+      //the -9 is to "exclude" the virial (even if tecnically is still accessible)
+      return { derivatives + i*nderivPerComponent, nderivPerComponent-9 };
     }
 
     Vector getAtomDerivatives( std::size_t valueID, std::size_t atomID ) {
@@ -78,7 +79,7 @@ private:
                      derivatives[n-1] );
     }
     View<double,9> getView(std::size_t i) const {
-      std::size_t n=(i+1)*nderivPerComponent;
+      std::size_t n=(i+1)*nderivPerComponent-9;
       return {derivatives+n};
     }
     void set( std::size_t i, const Tensor& v ) {
@@ -110,13 +111,13 @@ public:
 
 #pragma acc routine seq
   void setBoxDerivativesNoPbc( const ColvarInput& inpt ) {
-    //now with no extra allocated memory: (actually I was searching for a bug...that was not here...)
+    // return;
     unsigned nat=inpt.pos.size();
     for(unsigned i=0; i<ncomponents; ++i) {
       auto v = virial.getView(i);
       LoopUnroller<9>::_zero(v.data());
       for(unsigned j=0; j<nat; j++) {
-        const auto deriv =  derivs.getDerivativesView(i,j);
+        const auto deriv = derivs.getDerivativesView(i,j);
         v[0] -= inpt.pos[j][0]*deriv[0];
         v[1] -= inpt.pos[j][0]*deriv[1];
         v[2] -= inpt.pos[j][0]*deriv[2];
