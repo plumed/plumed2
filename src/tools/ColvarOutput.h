@@ -29,7 +29,6 @@
 #include "View2D.h"
 #include "Vector.h"
 #include "Tensor.h"
-#include "ColvarInput.h"
 
 namespace PLMD {
 
@@ -39,7 +38,6 @@ namespace colvar {
 
 class ColvarOutput {
 private:
-  std::size_t ncomponents;
   class DerivHelper {
   private:
     std::size_t nderiv;
@@ -56,6 +54,7 @@ private:
       return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
     }
   };
+public:
   class VirialHelper {
   private:
     std::size_t nderiv;
@@ -81,7 +80,7 @@ private:
       derivatives[n-3]=v[2][0]; derivatives[n-2]=v[2][1]; derivatives[n-1]=v[2][2];
     }
   };
-public:
+  std::size_t ncomponents;
   View<double> values;
   DerivHelper derivs;
   VirialHelper virial;
@@ -98,19 +97,6 @@ public:
 
   Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
     return derivs.getAtomDerivatives(i,a);
-  }
-  // void setBoxDerivativesNoPbc( const ColvarInput& inpt );
-  void setBoxDerivativesNoPbc( const ColvarInput& inpt ) {
-    unsigned nat=inpt.pos.size();
-    for(unsigned i=0; i<ncomponents; ++i) {
-      Tensor v;
-      v.zero();
-      for(unsigned j=0; j<nat; j++) {
-        v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
-                  derivs.getAtomDerivatives(i,j));
-      }
-      virial.set( i, v );
-    }
   }
 };
 

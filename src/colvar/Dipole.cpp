@@ -211,7 +211,7 @@ void Dipole::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
       cvout.derivs[0][i] = dfunc*dipje;
     }
   }
-  cvout.setBoxDerivativesNoPbc( cvin );
+  ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
 }
 
 }

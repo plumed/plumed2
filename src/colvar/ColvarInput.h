@@ -19,22 +19,47 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ColvarInput.h"
-#include "core/Colvar.h"
+#ifndef __PLUMED_colvar_ColvarInput_h
+#define __PLUMED_colvar_ColvarInput_h
+
+#include <vector>
+
+#include "tools/Pbc.h"
+#include "tools/View.h"
+#include "tools/View2D.h"
+#include "tools/Vector.h"
+#include "tools/Tensor.h"
+#include "tools/ColvarOutput.h"
 
 namespace PLMD {
-namespace colvar {
 
-ColvarInput ColvarInput::createColvarInput( unsigned m,
-    const std::vector<Vector>& p,
-    const Colvar* colv ) {
-  return ColvarInput( m,
-                      p.size(),
-                      &p[0][0],
-                      colv->getMasses().data(),
-                      colv->getCharges(true).data(),
-                      colv->getPbc() );
-}
+class Colvar;
+
+namespace colvar {
+struct ColvarInput {
+  unsigned mode;
+  const Pbc& pbc;
+  View2D<const double,helpers::dynamic_extent,3> pos;
+  View<const double> mass;
+  View<const double> charges;
+  ColvarInput( unsigned m,
+               unsigned natoms,
+               const double* p,
+               const double* w,
+               const double* q,
+               const Pbc& box ) :
+    mode(m),
+    pbc(box),
+    pos(p,natoms),
+    mass(w,natoms),
+    charges(q,natoms)
+  {
+  }
+
+  static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
+  static void setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out );
+};
 
 } // namespace colvar
-} // namespace PLMD
+} //namespace PLMD
+#endif // __PLUMED_colvar_ColvarInput_h

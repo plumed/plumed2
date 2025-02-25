@@ -24,8 +24,8 @@
 
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
-#include "tools/ColvarInput.h"
 #include "tools/ColvarOutput.h"
+#include "ColvarInput.h"
 
 namespace PLMD {
 

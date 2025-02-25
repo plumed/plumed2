@@ -376,7 +376,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOut
     cvout.values[3] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) cvout.derivs[3][i] =0.25*dS[i];
   }
-  cvout.setBoxDerivativesNoPbc( cvin );
+  colvar::ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
 
 }
 

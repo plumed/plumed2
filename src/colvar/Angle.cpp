@@ -178,7 +178,7 @@ void Angle::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   cvout.values[0]=a.compute(dij,dik,ddij,ddik);
   cvout.derivs[0][0]=ddik; cvout.derivs[0][1]=-ddik;
   cvout.derivs[0][2]=-ddij; cvout.derivs[0][3]=ddij;
-  cvout.setBoxDerivativesNoPbc( cvin );
+  ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
 }
 
 }
