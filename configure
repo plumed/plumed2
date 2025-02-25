@@ -752,6 +752,7 @@ enable_af_cuda
 enable_af_cpu
 enable_libtorch
 enable_metatensor
+enable_openacc
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -1454,6 +1455,7 @@ Optional Features:
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
   --enable-metatensor     enable search for metatensor, default: no
+  --enable-openacc        enable search for openacc, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -3234,6 +3236,24 @@ else
   case "no" in
              (yes) metatensor=true ;;
              (no)  metatensor=false ;;
+  esac
+
+fi
+
+
+
+openacc=
+# Check whether --enable-openacc was given.
+if test "${enable_openacc+set}" = set; then :
+  enableval=$enable_openacc; case "${enableval}" in
+             (yes) openacc=true ;;
+             (no)  openacc=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-openacc" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) openacc=true ;;
+             (no)  openacc=false ;;
   esac
 
 fi
@@ -10154,6 +10174,158 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_METATENSOR" >&2;}
       LIBS="$save_LIBS"
     fi
 
+fi
+
+if test $openacc = true; then
+#this is here just to compile with openacc
+#no PLUMED_HAS_OPENACC until pbcs are done
+  #test if we can compile with openacc
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -acc"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc" >&5
+$as_echo_n "checking whether $CXX accepts -acc... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -acc=gpu"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc=gpu" >&5
+$as_echo_n "checking whether $CXX accepts -acc=gpu... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!11
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -gpu=cc75"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -gpu=cc75" >&5
+$as_echo_n "checking whether $CXX accepts -gpu=cc75... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
+  #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
+  #PLUMED_CHECK_CXXFLAG([-stdpar])
+  #PLUMED_CHECK_CXXFLAG([-gpu=managed])
+  #PLUMED_CHECK_LDFLAGS([-static-nvidia])
+  #PLUMED_CHECK_LDFLAGS([-acc])
+  LDSHARED="$LDSHARED -acc -static-nvidia"
 fi
 
 # in non-debug mode, add -DNDEBUG
