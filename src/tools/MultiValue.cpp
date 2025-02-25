@@ -25,48 +25,79 @@
 namespace PLMD {
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& natoms ) {
-  if( values.size()==nvals && nderivatives>nder ) return;
-  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
-  hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
+  if( values.size()==nvals && nderivatives>nder ) {
+    return;
+  }
+  values.resize(nvals);
+  nderivatives=nder;
+  derivatives.resize( nvals*nder );
+  hasderiv.resize(nvals*nder,false);
+  nactive.resize(nvals);
+  active_list.resize(nvals*nder);
   matrix_force_stash.resize(nder,0);
-  matrix_row_nderivatives=0; matrix_row_derivative_indices.resize(nder); atLeastOneSet=false;
+  matrix_row_nderivatives=0;
+  matrix_row_derivative_indices.resize(nder);
+  atLeastOneSet=false;
   if( natoms>0 ) {
-    tmp_vectors.resize(2); tmp_vectors[0].resize(natoms); tmp_vectors[1].resize(natoms);
-    tmp_atom_der.resize(nvals); tmp_atom_virial.resize(nvals); tmp_atoms.resize(natoms);
-    for(unsigned i=0; i<nvals; ++i) tmp_atom_der[i].resize(natoms);
+    tmp_vectors.resize(2);
+    tmp_vectors[0].resize(natoms);
+    tmp_vectors[1].resize(natoms);
+    tmp_atom_der.resize(nvals);
+    tmp_atom_virial.resize(nvals);
+    tmp_atoms.resize(natoms);
+    for(unsigned i=0; i<nvals; ++i) {
+      tmp_atom_der[i].resize(natoms);
+    }
   }
 }
 
 void MultiValue::clearAll() {
-  for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+  for(unsigned i=0; i<values.size(); ++i) {
+    values[i]=0;
+  }
   // Clear matrix derivative indices
-  for(unsigned j=0; j<matrix_row_nderivatives; ++j) matrix_force_stash[matrix_row_derivative_indices[j]] = 0;
+  for(unsigned j=0; j<matrix_row_nderivatives; ++j) {
+    matrix_force_stash[matrix_row_derivative_indices[j]] = 0;
+  }
   matrix_row_nderivatives=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<matrix_force_stash.size(); ++i) plumed_assert( fabs(matrix_force_stash[i])<epsilon );
+  for(unsigned i=0; i<matrix_force_stash.size(); ++i) {
+    plumed_assert( fabs(matrix_force_stash[i])<epsilon );
+  }
 #endif
-  if( !atLeastOneSet ) return;
-  for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
+  if( !atLeastOneSet ) {
+    return;
+  }
+  for(unsigned i=0; i<values.size(); ++i) {
+    clearDerivatives(i);
+  }
   atLeastOneSet=false;
 }
 
 void MultiValue::clearDerivatives( const unsigned& ival ) {
   values[ival]=0;
-  if( !atLeastOneSet ) return;
+  if( !atLeastOneSet ) {
+    return;
+  }
   unsigned base=ival*nderivatives;
   for(unsigned i=0; i<nactive[ival]; ++i) {
-    unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false;
+    unsigned k = base+active_list[base+i];
+    derivatives[k]=0.;
+    hasderiv[k]=false;
   }
   nactive[ival]=0;
 #ifndef NDEBUG
   for(unsigned i=0; i<nderivatives; ++i) {
     if( hasderiv[base+i] ) {
       std::string num1, num2;
-      Tools::convert(ival,num1); Tools::convert(i,num2);
+      Tools::convert(ival,num1);
+      Tools::convert(i,num2);
       plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
     }
     // As this is debugging code we hard code an escape here otherwise this check is really expensive
-    if( i>1000 ) return;
+    if( i>1000 ) {
+      return;
+    }
   }
 #endif
 }

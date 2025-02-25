@@ -129,15 +129,20 @@ ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
   useacc(false),
   nderivatives_per_task(0),
   nthreaded_forces(0),
-  myinput(av->getPbc())
-{
+  myinput(av->getPbc()) {
   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
-  if(am) ismatrix=true;
+  if(am) {
+    ismatrix=true;
+  }
   action->parseFlag("USEGPU",useacc);
 #ifdef __PLUMED_HAS_OPENACC
-  if( useacc ) action->log.printf("  using GPU to calculate this action\n");
+  if( useacc ) {
+    action->log.printf("  using GPU to calculate this action\n");
+  }
 #else
-  if( useacc ) action->error("cannot use USEGPU flag as PLUMED has not been compiled with openacc");
+  if( useacc ) {
+    action->error("cannot use USEGPU flag as PLUMED has not been compiled with openacc");
+  }
 #endif
 }
 
@@ -145,15 +150,26 @@ template <class T, class D>
 void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const std::size_t& nind, const std::size_t& nder ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
-  for(unsigned i=1; i<action->getNumberOfComponents(); ++i) plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
-  myinput.ncomponents = action->getNumberOfComponents(); nderivatives_per_task = nder;
-  value_stash.resize( valuesize*action->getNumberOfComponents() ); myinput.nindices_per_task = nind;
+  for(unsigned i=1; i<action->getNumberOfComponents(); ++i) {
+    plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
+  }
+  myinput.ncomponents = action->getNumberOfComponents();
+  nderivatives_per_task = nder;
+  value_stash.resize( valuesize*action->getNumberOfComponents() );
+  myinput.nindices_per_task = nind;
 }
 
 template <class T, class D>
 void ParallelTaskManager<T, D>::setNumberOfThreadedForces( std::size_t nt ) {
-  nthreaded_forces = nt; unsigned t=OpenMP::getNumThreads(); if( useacc ) t = 1;
-  omp_forces.resize(t); for(unsigned i=0; i<t; ++i) omp_forces.resize(nt);
+  nthreaded_forces = nt;
+  unsigned t=OpenMP::getNumThreads();
+  if( useacc ) {
+    t = 1;
+  }
+  omp_forces.resize(t);
+  for(unsigned i=0; i<t; ++i) {
+    omp_forces.resize(nt);
+  }
 }
 
 template <class T, class D>
@@ -194,12 +210,19 @@ void ParallelTaskManager<T, D>::runAllTasks() {
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) { stride=1; rank=0; }
+    if(action->runInSerial()) {
+      stride=1;
+      rank=0;
+    }
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-    if( nt==0 ) nt=1;
+    if( nt*stride*10>nactive_tasks ) {
+      nt=nactive_tasks/stride/10;
+    }
+    if( nt==0 ) {
+      nt=1;
+    }
 
     #pragma omp parallel num_threads(nt)
     {
@@ -214,13 +237,17 @@ void ParallelTaskManager<T, D>::runAllTasks() {
       }
     }
     // MPI Gather everything
-    if( !action->runInSerial() ) comm.Sum( value_stash );
+    if( !action->runInSerial() ) {
+      comm.Sum( value_stash );
+    }
   }
 
   // And transfer the value to the output values
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
     Value* myval = action->copyOutput(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) myval->set( j, value_stash[j*myinput.ncomponents+i] );
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      myval->set( j, value_stash[j*myinput.ncomponents+i] );
+    }
   }
 }
 
@@ -237,7 +264,9 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
   // Retrieve the forces from the values
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
     Value* myval = action->copyOutput(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) value_stash[j*myinput.ncomponents+i] = myval->getForce( j );
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      value_stash[j*myinput.ncomponents+i] = myval->getForce( j );
+    }
   }
 
   if( useacc ) {
@@ -268,12 +297,19 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) { stride=1; rank=0; }
+    if(action->runInSerial()) {
+      stride=1;
+      rank=0;
+    }
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-    if( nt==0 ) nt=1;
+    if( nt*stride*10>nactive_tasks ) {
+      nt=nactive_tasks/stride/10;
+    }
+    if( nt==0 ) {
+      nt=1;
+    }
 
     #pragma omp parallel num_threads(nt)
     {
@@ -296,7 +332,9 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
       T::gatherThreads( forces );
     }
     // MPI Gather everything
-    if( !action->runInSerial() ) comm.Sum( forcesForApply );
+    if( !action->runInSerial() ) {
+      comm.Sum( forcesForApply );
+    }
   }
 
 }

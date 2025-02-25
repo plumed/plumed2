@@ -41,7 +41,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() override;
-  unsigned getNumberOfColumns() const override { return number; }
+  unsigned getNumberOfColumns() const override {
+    return number;
+  }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override {}
@@ -60,27 +62,39 @@ void Neighbors::registerKeywords( Keywords& keys ) {
 
 Neighbors::Neighbors(const ActionOptions&ao):
   Action(ao),
-  ActionWithMatrix(ao)
-{
-  if( getNumberOfArguments()!=1 ) error("found wrong number of arguments in input");
-  if( getPntrToArgument(0)->getRank()!=2 ) error("input argument should be a matrix");
+  ActionWithMatrix(ao) {
+  if( getNumberOfArguments()!=1 ) {
+    error("found wrong number of arguments in input");
+  }
+  if( getPntrToArgument(0)->getRank()!=2 ) {
+    error("input argument should be a matrix");
+  }
 
-  unsigned nlow; parse("NLOWEST",nlow);
-  unsigned nhigh; parse("NHIGHEST",nhigh);
-  if( nlow==0 && nhigh==0 ) error("missing NLOWEST or NHIGHEST keyword one of these two keywords must be set in input");
-  if( nlow>0 && nhigh>0 ) error("should only be one of NLOWEST or NHIGHEST set in input");
+  unsigned nlow;
+  parse("NLOWEST",nlow);
+  unsigned nhigh;
+  parse("NHIGHEST",nhigh);
+  if( nlow==0 && nhigh==0 ) {
+    error("missing NLOWEST or NHIGHEST keyword one of these two keywords must be set in input");
+  }
+  if( nlow>0 && nhigh>0 ) {
+    error("should only be one of NLOWEST or NHIGHEST set in input");
+  }
   if( nlow>0 ) {
-    number=nlow; lowest=true;
+    number=nlow;
+    lowest=true;
     log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",number);
   }
   if( nhigh>0 ) {
-    number=nhigh; lowest=false;
+    number=nhigh;
+    lowest=false;
     log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",number);
   }
 
   // And get the shape
   std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-  addValue( shape ); setNotPeriodic();
+  addValue( shape );
+  setNotPeriodic();
   checkRead();
 }
 
@@ -94,27 +108,39 @@ unsigned Neighbors::getNumberOfDerivatives() {
 }
 
 void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  const Value* wval = getPntrToArgument(0); unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getShape()[1];
-  if( indices.size()!=1+number ) indices.resize( 1 + number );
+  const Value* wval = getPntrToArgument(0);
+  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getShape()[1];
+  if( indices.size()!=1+number ) {
+    indices.resize( 1 + number );
+  }
   myvals.setSplitIndex(1+number);
 
   unsigned nind=0;
   for(unsigned i=0; i<nbonds; ++i) {
     unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
     double weighti = wval->get( ipos );
-    if( weighti<epsilon ) continue ;
+    if( weighti<epsilon ) {
+      continue ;
+    }
     nind++;
   }
-  if( number>nind ) plumed_merror("not enough matrix elements were stored");
+  if( number>nind ) {
+    plumed_merror("not enough matrix elements were stored");
+  }
 
   // Now build vectors for doing sorting
-  std::vector<std::pair<double,unsigned> > rows( nind ); unsigned n=0;
+  std::vector<std::pair<double,unsigned> > rows( nind );
+  unsigned n=0;
   for(unsigned i=0; i<nbonds; ++i) {
     unsigned iind = wval->getRowIndex( task_index, i );
     unsigned ipos = ncols*task_index + iind;
     double weighti = wval->get( ipos );
-    if( weighti<epsilon ) continue ;
-    rows[n].first=weighti; rows[n].second=iind; n++;
+    if( weighti<epsilon ) {
+      continue ;
+    }
+    rows[n].first=weighti;
+    rows[n].second=iind;
+    n++;
   }
 
   // Now do the sort and clear all the stored values ready for recompute
@@ -124,7 +150,9 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
   // And setup the lowest indices, which are the ones we need to calculate
   for(unsigned i=0; i<number; ++i) {
     indices[i+1] = start_n + rows[nind-1-i].second;
-    if( lowest ) indices[i+1] = start_n + rows[i].second;
+    if( lowest ) {
+      indices[i+1] = start_n + rows[i].second;
+    }
   }
 }
 

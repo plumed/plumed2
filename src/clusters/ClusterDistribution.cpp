@@ -98,8 +98,10 @@ PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION_CALC")
 void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering"); keys.setDisplayName("CLUSTER_DISTRIBUTION");
+  ActionWithValue::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
+  keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
+  keys.setDisplayName("CLUSTER_DISTRIBUTION");
   keys.addInputKeyword("optional","WEIGHTS","vector","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
   keys.setValueDescription("vector","a vector containing the sum of a atomic-cv that is calculated for each of the identified clusters");
 }
@@ -107,19 +109,28 @@ void ClusterDistribution::registerKeywords( Keywords& keys ) {
 ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
-  ActionWithValue(ao)
-{
+  ActionWithValue(ao) {
   // Read in the clustering object
-  std::vector<Value*> clusters; parseArgumentList("CLUSTERS",clusters);
-  if( clusters.size()!=1 ) error("should pass only one matrix to clustering base");
+  std::vector<Value*> clusters;
+  parseArgumentList("CLUSTERS",clusters);
+  if( clusters.size()!=1 ) {
+    error("should pass only one matrix to clustering base");
+  }
   ClusteringBase* cc = dynamic_cast<ClusteringBase*>( clusters[0]->getPntrToAction() );
-  if( !cc ) error("input to CLUSTERS keyword should be a clustering action");
-  std::vector<Value*> weights; parseArgumentList("WEIGHTS",weights);
+  if( !cc ) {
+    error("input to CLUSTERS keyword should be a clustering action");
+  }
+  std::vector<Value*> weights;
+  parseArgumentList("WEIGHTS",weights);
   if( weights.size()==0 ) {
     log.printf("  using unit weights in cluster distribution \n");
   } else if( weights.size()==1 ) {
-    if( weights[0]->getRank()!=1 ) error("input weights has wrong shape");
-    if( weights[0]->getShape()[0]!=clusters[0]->getShape()[0] ) error("mismatch between number of weights and number of atoms");
+    if( weights[0]->getRank()!=1 ) {
+      error("input weights has wrong shape");
+    }
+    if( weights[0]->getShape()[0]!=clusters[0]->getShape()[0] ) {
+      error("mismatch between number of weights and number of atoms");
+    }
     log.printf("  using weights from action with label %s in cluster distribution \n", weights[0]->getName().c_str() );
     clusters.push_back( weights[0] );
   } else {
@@ -128,8 +139,10 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   // Request the arguments
   requestArguments( clusters );
   // Now create the value
-  std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0];
-  addValue( shape ); setNotPeriodic();
+  std::vector<unsigned> shape(1);
+  shape[0]=clusters[0]->getShape()[0];
+  addValue( shape );
+  setNotPeriodic();
 }
 
 unsigned ClusterDistribution::getNumberOfDerivatives() {
@@ -138,17 +151,24 @@ unsigned ClusterDistribution::getNumberOfDerivatives() {
 
 void ClusterDistribution::calculate() {
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
-  if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
+  if( getNumberOfArguments()>1 ) {
+    plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
+  }
   double csize = getPntrToArgument(0)->get(0);
   for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
-    if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
+    if( getPntrToArgument(0)->get(i)>csize ) {
+      csize = getPntrToArgument(0)->get(i);
+    }
   }
   unsigned ntasks = static_cast<unsigned>( csize );
   for(unsigned i=0; i<ntasks; ++i) {
     for(unsigned j=0; j<getPntrToArgument(0)->getShape()[0]; ++j) {
       if( fabs(getPntrToArgument(0)->get(j)-i)<epsilon ) {
-        if( getNumberOfArguments()==2 ) getPntrToValue()->add( i, getPntrToArgument(1)->get(j) );
-        else getPntrToValue()->add( i, 1.0 );
+        if( getNumberOfArguments()==2 ) {
+          getPntrToValue()->add( i, getPntrToArgument(1)->get(j) );
+        } else {
+          getPntrToValue()->add( i, 1.0 );
+        }
       }
     }
   }
@@ -172,9 +192,9 @@ void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
 
 ClusterDistributionShortcut::ClusterDistributionShortcut(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  ActionShortcut(ao) {
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   readInputLine( getShortcutLabel() + ": CLUSTER_DISTRIBUTION_CALC " + convertInputLineToString() );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),  getShortcutLabel(),  "", keymap, this );
 }

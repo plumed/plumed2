@@ -37,8 +37,7 @@ void Function::registerKeywords(Keywords& keys) {
 Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
 }
 
 void Function::addValueWithDerivatives() {
@@ -53,10 +52,12 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
 }
 
-void Function::apply()
-{
-  if( !checkForForces() ) return;
-  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind );
+void Function::apply() {
+  if( !checkForForces() ) {
+    return;
+  }
+  unsigned ind=0;
+  addForcesOnArguments( 0, getForcesToApply(), ind );
 }
 
 }

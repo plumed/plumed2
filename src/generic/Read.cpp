@@ -76,8 +76,7 @@ The file input_colvar.data is just a normal colvar file as shown below
 
 class Read :
   public ActionPilot,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
   bool ignore_time;
   bool ignore_forces;
@@ -131,8 +130,7 @@ Read::Read(const ActionOptions&ao):
   ActionWithValue(ao),
   ignore_time(false),
   ignore_forces(false),
-  nlinesPerStep(1)
-{
+  nlinesPerStep(1) {
   // Read the file name from the input line
   parse("FILE",filename);
   // Check if time is to be ignored
@@ -151,50 +149,80 @@ Read::Read(const ActionOptions&ao):
   if( !cloned_file ) {
     ifile_ptr=Tools::make_unique<IFile>();
     ifile=ifile_ptr.get();
-    if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
+    if( !ifile->FileExist(filename) ) {
+      error("could not find file named " + filename);
+    }
     ifile->link(*this);
     ifile->open(filename);
     ifile->allowIgnoredFields();
   }
   parse("EVERY",nlinesPerStep);
-  if(nlinesPerStep>1) log.printf("  only reading every %uth line of file %s\n",nlinesPerStep,filename.c_str() );
-  else log.printf("  reading data from file %s\n",filename.c_str() );
+  if(nlinesPerStep>1) {
+    log.printf("  only reading every %uth line of file %s\n",nlinesPerStep,filename.c_str() );
+  } else {
+    log.printf("  reading data from file %s\n",filename.c_str() );
+  }
   // Find out what we are reading
-  std::vector<std::string> valread; parseVector("VALUES",valread);
+  std::vector<std::string> valread;
+  parseVector("VALUES",valread);
 
-  if(nlinesPerStep>1 && cloned_file) error("Opening a file multiple times and using EVERY is not allowed");
+  if(nlinesPerStep>1 && cloned_file) {
+    error("Opening a file multiple times and using EVERY is not allowed");
+  }
 
   std::size_t dot=valread[0].find_first_of('.');
   if( valread[0].find(".")!=std::string::npos ) {
     std::string label=valread[0].substr(0,dot);
     std::string name=valread[0].substr(dot+1);
     if( name=="*" ) {
-      if( valread.size()>1 ) error("all values must be from the same Action when using READ");
+      if( valread.size()>1 ) {
+        error("all values must be from the same Action when using READ");
+      }
       std::vector<std::string> fieldnames;
       ifile->scanFieldList( fieldnames );
       for(unsigned i=0; i<fieldnames.size(); ++i) {
         if( fieldnames[i].substr(0,dot)==label ) {
-          readvals.emplace_back(Tools::make_unique<Value>(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
-          if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
-          else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
+          readvals.emplace_back(Tools::make_unique<Value>(this, fieldnames[i], false) );
+          addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
+          if( ifile->FieldExist("min_" + fieldnames[i]) ) {
+            componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
+          } else {
+            componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
+          }
         }
       }
     } else {
-      readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) ); addComponentWithDerivatives( name );
-      if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
-      else componentIsNotPeriodic( valread[0].substr(dot+1) );
+      readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) );
+      addComponentWithDerivatives( name );
+      if( ifile->FieldExist("min_" + valread[0]) ) {
+        componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
+      } else {
+        componentIsNotPeriodic( valread[0].substr(dot+1) );
+      }
       for(unsigned i=1; i<valread.size(); ++i) {
-        if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-        readvals.emplace_back(Tools::make_unique<Value>(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
-        if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
-        else componentIsNotPeriodic( valread[i].substr(dot+1) );
+        if( valread[i].substr(0,dot)!=label ) {
+          error("all values must be from the same Action when using READ");
+        };
+        readvals.emplace_back(Tools::make_unique<Value>(this, valread[i], false) );
+        addComponentWithDerivatives( valread[i].substr(dot+1) );
+        if( ifile->FieldExist("min_" + valread[i]) ) {
+          componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
+        } else {
+          componentIsNotPeriodic( valread[i].substr(dot+1) );
+        }
       }
     }
   } else {
-    if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-    readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) ); addValueWithDerivatives();
-    if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" );
-    else setNotPeriodic();
+    if( valread.size()!=1 ) {
+      error("all values must be from the same Action when using READ");
+    }
+    readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) );
+    addValueWithDerivatives();
+    if( ifile->FieldExist("min_" + valread[0]) ) {
+      setPeriodic( "-pi", "pi" );
+    } else {
+      setNotPeriodic();
+    }
     log.printf("  reading value %s and storing as %s\n",valread[0].c_str(),getLabel().c_str() );
   }
   checkRead();
@@ -203,9 +231,12 @@ Read::Read(const ActionOptions&ao):
 std::string Read::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
   plumed_assert( !exists( getLabel() ) );
   for(unsigned i=0; i<readvals.size(); ++i) {
-    if( readvals[i]->getName().find( cname )!=std::string::npos ) return "values from the column labelled " + readvals[i]->getName() + " in the file named " + filename;
+    if( readvals[i]->getName().find( cname )!=std::string::npos ) {
+      return "values from the column labelled " + readvals[i]->getName() + " in the file named " + filename;
+    }
   }
-  plumed_error(); return "";
+  plumed_error();
+  return "";
 }
 
 std::string Read::getFilename() const {
@@ -221,8 +252,9 @@ unsigned Read::getNumberOfDerivatives() {
 }
 
 void Read::turnOnDerivatives() {
-  if( !ignore_forces ) error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
-                               "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
+  if( !ignore_forces )
+    error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
+          "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
 void Read::prepare() {
@@ -231,7 +263,9 @@ void Read::prepare() {
     if( !ifile->scanField("time",du_time) ) {
       error("Reached end of file " + filename + " before end of trajectory");
     } else if( std::abs( du_time-getTime() )>getTimeStep() && !ignore_time ) {
-      std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
+      std::string str_dutime,str_ptime;
+      Tools::convert(du_time,str_dutime);
+      Tools::convert(getTime(),str_ptime);
       error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime + ". Add IGNORE_TIME to ignore error.");
     }
   }
@@ -254,8 +288,11 @@ void Read::calculate() {
 void Read::update() {
   if( !cloned_file ) {
     for(unsigned i=0; i<nlinesPerStep; ++i) {
-      ifile->scanField(); double du_time;
-      if( !ifile->scanField("time",du_time) && !plumed.inputsAreActive() ) plumed.stop();
+      ifile->scanField();
+      double du_time;
+      if( !ifile->scanField("time",du_time) && !plumed.inputsAreActive() ) {
+        plumed.stop();
+      }
     }
   }
 }

@@ -36,7 +36,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
 ///
-  virtual bool isAdjacencyMatrix() const { return false; }
+  virtual bool isAdjacencyMatrix() const {
+    return false;
+  }
 /// This should return the number of columns to help with sparse storage of matrices
   virtual unsigned getNumberOfColumns() const = 0;
 //// This does some setup before we run over the row of the matrix

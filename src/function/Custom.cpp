@@ -274,45 +274,78 @@ void Custom::registerKeywords(Keywords& keys) {
 
 void Custom::read( ActionWithArguments* action ) {
   // Read in the variables
-  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
-  if( av && av->getNumberOfMasks()>0 ) nargs = nargs - av->getNumberOfMasks();
-  std::vector<std::string> var; parseVector(action,"VAR",var); parse(action,"FUNC",func);
+  unsigned nargs = action->getNumberOfArguments();
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
+  if( av && av->getNumberOfMasks()>0 ) {
+    nargs = nargs - av->getNumberOfMasks();
+  }
+  std::vector<std::string> var;
+  parseVector(action,"VAR",var);
+  parse(action,"FUNC",func);
   if(var.size()==0) {
     var.resize(nargs);
-    if(var.size()>3) action->error("Using more than 3 arguments you should explicitly write their names with VAR");
-    if(var.size()>0) var[0]="x";
-    if(var.size()>1) var[1]="y";
-    if(var.size()>2) var[2]="z";
+    if(var.size()>3) {
+      action->error("Using more than 3 arguments you should explicitly write their names with VAR");
+    }
+    if(var.size()>0) {
+      var[0]="x";
+    }
+    if(var.size()>1) {
+      var[1]="y";
+    }
+    if(var.size()>2) {
+      var[2]="z";
+    }
   }
-  if(var.size()!=nargs) action->error("Size of VAR array should be the same as number of arguments");
+  if(var.size()!=nargs) {
+    action->error("Size of VAR array should be the same as number of arguments");
+  }
   // Check for operations that are not multiplication (this can probably be done much more cleverly)
   bool onlymultiplication = func.find("*")!=std::string::npos;
   // Find first bracket in expression
   if( func.find("(")!=std::string::npos ) {
-    std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
-    if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); std::string aa = subexpr.substr(0,sl); subexpr=aa; }
-    if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
+    std::size_t br = func.find_first_of("(");
+    std::string subexpr=func.substr(0,br);
+    onlymultiplication = func.find("*")!=std::string::npos;
+    if( subexpr.find("/")!=std::string::npos ) {
+      std::size_t sl = func.find_first_of("/");
+      std::string aa = subexpr.substr(0,sl);
+      subexpr=aa;
+    }
+    if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) {
+      onlymultiplication=false;
+    }
     // Now work out which vars are in multiplication
     if( onlymultiplication ) {
       for(unsigned i=0; i<var.size(); ++i) {
         if( subexpr.find(var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+          check_multiplication_vars.push_back(i);
+        }
       }
     }
   } else if( func.find("/")!=std::string::npos ) {
-    onlymultiplication=true; if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
+    onlymultiplication=true;
+    if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
+      onlymultiplication=false;
+    }
     if( onlymultiplication ) {
-      std::size_t br = func.find_first_of("/"); std::string subexpr=func.substr(0,br);
+      std::size_t br = func.find_first_of("/");
+      std::string subexpr=func.substr(0,br);
       for(unsigned i=0; i<var.size(); ++i) {
         if( subexpr.find(var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+          check_multiplication_vars.push_back(i);
+        }
       }
     }
   } else if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
     onlymultiplication=false;
   } else {
     for(unsigned i=0; i<var.size(); ++i) {
-      if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+      if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+        check_multiplication_vars.push_back(i);
+      }
     }
   }
   if( check_multiplication_vars.size()>0 ) {
@@ -321,11 +354,17 @@ void Custom::read( ActionWithArguments* action ) {
 
   action->log.printf("  with function : %s\n",func.c_str());
   action->log.printf("  with variables :");
-  for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
-  action->log.printf("\n"); function.set( func, var, action );
-  std::vector<double> zeros( nargs, 0 ); double fval = abs(function.evaluate(zeros));
+  for(unsigned i=0; i<var.size(); i++) {
+    action->log.printf(" %s",var[i].c_str());
+  }
+  action->log.printf("\n");
+  function.set( func, var, action );
+  std::vector<double> zeros( nargs, 0 );
+  double fval = abs(function.evaluate(zeros));
   zerowhenallzero=(fval<epsilon );
-  if( zerowhenallzero ) action->log.printf("  not calculating when all arguments are zero \n");
+  if( zerowhenallzero ) {
+    action->log.printf("  not calculating when all arguments are zero \n");
+  }
 }
 
 std::string Custom::getGraphInfo( const std::string& name ) const {
@@ -341,16 +380,24 @@ bool Custom::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
   for(unsigned i=0; i<args.size(); ++i) {
     bool found=false;
     for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
-      if( i==check_multiplication_vars[j] ) { found=true; break; }
+      if( i==check_multiplication_vars[j] ) {
+        found=true;
+        break;
+      }
     }
-    if( found ) continue;
+    if( found ) {
+      continue;
+    }
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( args[i]->getPntrToAction() );
     if( av && av->getNumberOfMasks()>=0 ) {
       unsigned nargs = av->getNumberOfArguments(), nm = av->getNumberOfMasks();
       for(unsigned k=nargs-nm; k<nargs; ++k ) {
-        nomask=false; Value* maskarg = av->getPntrToArgument( k );
+        nomask=false;
+        Value* maskarg = av->getPntrToArgument( k );
         for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
-          if( maskarg==args[check_multiplication_vars[j]] ) return true;
+          if( maskarg==args[check_multiplication_vars[j]] ) {
+            return true;
+          }
         }
       }
     }
@@ -360,7 +407,9 @@ bool Custom::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
 
 std::vector<Value*> Custom::getArgumentsToCheck( const std::vector<Value*>& args ) {
   std::vector<Value*> fargs( check_multiplication_vars.size() );
-  for(unsigned i=0; i<check_multiplication_vars.size(); ++i) fargs[i] = args[check_multiplication_vars[i]];
+  for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+    fargs[i] = args[check_multiplication_vars[i]];
+  }
   return fargs;
 }
 
@@ -369,22 +418,33 @@ void Custom::calc( const ActionWithArguments* action, const std::vector<double>&
     bool allzero=false;
     if( check_multiplication_vars.size()>0 ) {
       for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
-        if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
+        if( fabs(args[check_multiplication_vars[i]])<epsilon ) {
+          allzero=true;
+          break;
+        }
       }
     } else if( zerowhenallzero ) {
       allzero=(fabs(args[0])<epsilon);
       for(unsigned i=1; i<args.size(); ++i) {
-        if( fabs(args[i])>epsilon ) { allzero=false; break; }
+        if( fabs(args[i])>epsilon ) {
+          allzero=false;
+          break;
+        }
       }
     }
     if( allzero ) {
-      vals[0]=0; for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = 0.0;
+      vals[0]=0;
+      for(unsigned i=0; i<args.size(); i++) {
+        derivatives(0,i) = 0.0;
+      }
       return;
     }
   }
   vals[0] = function.evaluate( args );
   if( !noderiv ) {
-    for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = function.evaluateDeriv( i, args );
+    for(unsigned i=0; i<args.size(); i++) {
+      derivatives(0,i) = function.evaluateDeriv( i, args );
+    }
   }
 }
 

@@ -248,7 +248,9 @@ inline
 void Value::applyPeriodicity(const unsigned& ival) {
   if(periodicity==periodic) {
     data[ival]=min+difference(min,data[ival]);
-    if(data[ival]<min)data[ival]+=max_minus_min;
+    if(data[ival]<min) {
+      data[ival]+=max_minus_min;
+    }
   }
 }
 
@@ -268,7 +270,9 @@ void Value::add(double v) {
 
 inline
 void Value::add(const std::size_t& n, const double& v ) {
-  value_set=true; data[n]+=v; applyPeriodicity(n);
+  value_set=true;
+  data[n]+=v;
+  applyPeriodicity(n);
 }
 
 inline
@@ -284,7 +288,9 @@ const std::string& Value::getName()const {
 inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
-  if( shape.size()>0 ) return shape.size();
+  if( shape.size()>0 ) {
+    return shape.size();
+  }
   return data.size() - 1;
 }
 
@@ -301,8 +307,12 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n) {
-  if( shape.size()>0 ) return;
-  if(hasDeriv) data.resize(1+n);
+  if( shape.size()>0 ) {
+    return;
+  }
+  if(hasDeriv) {
+    data.resize(1+n);
+  }
 }
 
 inline
@@ -319,23 +329,36 @@ void Value::setDerivative(unsigned i, double d) {
 
 inline
 void Value::clearInputForce() {
-  if( !hasForce ) return;
-  hasForce=false; std::fill(inputForce.begin(),inputForce.end(),0);
+  if( !hasForce ) {
+    return;
+  }
+  hasForce=false;
+  std::fill(inputForce.begin(),inputForce.end(),0);
 }
 
 inline
 void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
-  if( !hasForce ) return;
-  hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
+  if( !hasForce ) {
+    return;
+  }
+  hasForce=false;
+  for(const auto & p : index) {
+    inputForce[p.index()]=0;
+  }
 }
 
 inline
 void Value::clearDerivatives( const bool force ) {
-  if( !force && (valtype==constant || valtype==average) ) return;
+  if( !force && (valtype==constant || valtype==average) ) {
+    return;
+  }
 
   value_set=false;
-  if( shape.size()>0 ) std::fill(data.begin(), data.end(), 0);
-  else if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+  if( shape.size()>0 ) {
+    std::fill(data.begin(), data.end(), 0);
+  } else if( data.size()>1 ) {
+    std::fill(data.begin()+1, data.end(), 0);
+  }
 }
 
 inline
@@ -370,7 +393,9 @@ double Value::difference(double d1,double d2)const {
     // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
     return s*max_minus_min;
-  } else plumed_merror("periodicity should be set to compute differences");
+  } else {
+    plumed_merror("periodicity should be set to compute differences");
+  }
 }
 
 inline
@@ -401,13 +426,18 @@ const std::vector<unsigned>& Value::getShape() const {
 
 inline
 unsigned Value::getNumberOfValues() const {
-  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
+  unsigned size=1;
+  for(unsigned i=0; i<shape.size(); ++i) {
+    size *= shape[i];
+  }
   return size;
 }
 
 inline
 unsigned Value::getNumberOfStoredValues() const {
-  if( getRank()==2 && !hasDeriv ) return shape[0]*ncols;
+  if( getRank()==2 && !hasDeriv ) {
+    return shape[0]*ncols;
+  }
   return getNumberOfValues();
 }
 
@@ -434,7 +464,9 @@ void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
 
 inline
 unsigned Value::getRowLength( const unsigned& irow ) const {
-  if( matrix_bookeeping.size()==0 ) return 0;
+  if( matrix_bookeeping.size()==0 ) {
+    return 0;
+  }
   plumed_dbg_assert( (1+ncols)*irow<matrix_bookeeping.size() );
   return matrix_bookeeping[(1+ncols)*irow];
 }

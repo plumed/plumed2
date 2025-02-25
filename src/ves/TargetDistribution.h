@@ -49,8 +49,7 @@ class TargetDistModifer;
 class VesBias;
 
 class TargetDistribution :
-  public Action
-{
+  public Action {
 private:
   enum TargetDistType {
     static_targetdist,
@@ -92,15 +91,31 @@ private:
   void updateBiasCutoffForTargetDistGrid();
   void checkNanAndInf();
 protected:
-  void setStatic() {type_=static_targetdist;}
-  void setDynamic() {type_=dynamic_targetdist;}
+  void setStatic() {
+    type_=static_targetdist;
+  }
+  void setDynamic() {
+    type_=dynamic_targetdist;
+  }
   // set the that target distribution is normalized
-  void setForcedNormalization() {force_normalization_=true; check_normalization_=false;}
-  void unsetForcedNormalization() {force_normalization_=false; check_normalization_=true;};
+  void setForcedNormalization() {
+    force_normalization_=true;
+    check_normalization_=false;
+  }
+  void unsetForcedNormalization() {
+    force_normalization_=false;
+    check_normalization_=true;
+  };
   //
-  void setBiasGridNeeded() {needs_bias_grid_=true;}
-  void setBiasWithoutCutoffGridNeeded() {needs_bias_withoutcutoff_grid_=true;}
-  void setFesGridNeeded() {needs_fes_grid_=true;}
+  void setBiasGridNeeded() {
+    needs_bias_grid_=true;
+  }
+  void setBiasWithoutCutoffGridNeeded() {
+    needs_bias_withoutcutoff_grid_=true;
+  }
+  void setFesGridNeeded() {
+    needs_fes_grid_=true;
+  }
   //
   VesBias* getPntrToVesBias() const;
   Action* getPntrToAction() const;
@@ -109,12 +124,22 @@ protected:
   //
   void normalizeTargetDistGrid();
   //
-  Grid& targetDistGrid() const {return *targetdist_grid_pntr_;}
-  Grid& logTargetDistGrid() const {return *log_targetdist_grid_pntr_;}
+  Grid& targetDistGrid() const {
+    return *targetdist_grid_pntr_;
+  }
+  Grid& logTargetDistGrid() const {
+    return *log_targetdist_grid_pntr_;
+  }
   //
-  Grid* getBiasGridPntr() const {return bias_grid_pntr_;}
-  Grid* getBiasWithoutCutoffGridPntr() const {return bias_withoutcutoff_grid_pntr_;}
-  Grid* getFesGridPntr() const {return fes_grid_pntr_;}
+  Grid* getBiasGridPntr() const {
+    return bias_grid_pntr_;
+  }
+  Grid* getBiasWithoutCutoffGridPntr() const {
+    return bias_withoutcutoff_grid_pntr_;
+  }
+  Grid* getFesGridPntr() const {
+    return fes_grid_pntr_;
+  }
   //
   double getBeta() const;
   //
@@ -123,29 +148,55 @@ protected:
   void setMinimumOfTargetDistGridToZero();
   void updateLogTargetDistGrid();
   //
-  virtual void updateGrid() {calculateStaticDistributionGrid();}
+  virtual void updateGrid() {
+    calculateStaticDistributionGrid();
+  }
 public:
   static void registerKeywords(Keywords&);
   explicit TargetDistribution(const ActionOptions&);
   ~TargetDistribution();
   //
-  bool isStatic() const {return type_==static_targetdist;}
-  bool isDynamic() const {return type_==dynamic_targetdist;}
+  bool isStatic() const {
+    return type_==static_targetdist;
+  }
+  bool isDynamic() const {
+    return type_==dynamic_targetdist;
+  }
   // is the target distribution normalize or not
-  bool forcedNormalization() const {return force_normalization_;};
-  bool isTargetDistGridShiftedToZero() const {return shift_targetdist_to_zero_;}
+  bool forcedNormalization() const {
+    return force_normalization_;
+  };
+  bool isTargetDistGridShiftedToZero() const {
+    return shift_targetdist_to_zero_;
+  }
   //
-  bool biasGridNeeded() const {return needs_bias_grid_;}
-  bool biasWithoutCutoffGridNeeded() const {return needs_bias_withoutcutoff_grid_;}
-  bool fesGridNeeded()  const {return needs_fes_grid_;}
+  bool biasGridNeeded() const {
+    return needs_bias_grid_;
+  }
+  bool biasWithoutCutoffGridNeeded() const {
+    return needs_bias_withoutcutoff_grid_;
+  }
+  bool fesGridNeeded()  const {
+    return needs_fes_grid_;
+  }
   //
-  void allowBiasCutoff() {allow_bias_cutoff_=true;}
-  void doNotAllowBiasCutoff() {allow_bias_cutoff_=false;}
-  bool isBiasCutoffAllowed() const {return allow_bias_cutoff_;}
-  bool biasCutoffActive() const {return bias_cutoff_active_;}
+  void allowBiasCutoff() {
+    allow_bias_cutoff_=true;
+  }
+  void doNotAllowBiasCutoff() {
+    allow_bias_cutoff_=false;
+  }
+  bool isBiasCutoffAllowed() const {
+    return allow_bias_cutoff_;
+  }
+  bool biasCutoffActive() const {
+    return bias_cutoff_active_;
+  }
   //
   void setDimension(const unsigned int dimension);
-  unsigned getDimension() const {return dimension_;}
+  unsigned getDimension() const {
+    return dimension_;
+  }
   //
   virtual void linkVesBias(VesBias*);
   virtual void linkAction(Action*);
@@ -156,8 +207,12 @@ public:
   //
   void setupBiasCutoff();
   //
-  Grid* getTargetDistGridPntr() const {return targetdist_grid_pntr_.get();}
-  Grid* getLogTargetDistGridPntr() const {return log_targetdist_grid_pntr_.get();}
+  Grid* getTargetDistGridPntr() const {
+    return targetdist_grid_pntr_.get();
+  }
+  Grid* getLogTargetDistGridPntr() const {
+    return log_targetdist_grid_pntr_.get();
+  }
   //
   void clearLogTargetDistGrid();
   // calculate the target distribution itself
@@ -198,7 +253,9 @@ Action* TargetDistribution::getPntrToAction() const {
 inline
 void TargetDistribution::normalizeTargetDistGrid() {
   double normalization = normalizeGrid(targetdist_grid_pntr_.get());
-  if(normalization<0.0) {plumed_merror(getName()+": something went wrong trying to normalize the target distribution, integrating over it gives a negative value.");}
+  if(normalization<0.0) {
+    plumed_merror(getName()+": something went wrong trying to normalize the target distribution, integrating over it gives a negative value.");
+  }
 }
 
 

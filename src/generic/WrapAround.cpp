@@ -145,8 +145,7 @@ DUMPATOMS FILE=dump.xyz ATOMS=solute,water
 
 class WrapAround:
   public ActionPilot,
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   // cppcheck-suppress duplInheritedMember
   std::vector<Vector> refatoms;
   std::vector<std::pair<std::size_t,std::size_t> > p_atoms;
@@ -156,7 +155,9 @@ class WrapAround:
 public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  bool actionHasForces() override { return false; }
+  bool actionHasForces() override {
+    return false;
+  }
   void calculate() override;
   void apply() override {}
 };
@@ -179,39 +180,60 @@ WrapAround::WrapAround(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   groupby(1),
-  pair_(false)
-{
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
-  std::vector<AtomNumber> reference; parseAtomList("AROUND",reference);
+  pair_(false) {
+  std::vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  std::vector<AtomNumber> reference;
+  parseAtomList("AROUND",reference);
   parse("GROUPBY",groupby);
   parseFlag("PAIR", pair_);
 
   log.printf("  atoms in reference :");
-  for(unsigned j=0; j<reference.size(); ++j) log.printf(" %d",reference[j].serial() );
+  for(unsigned j=0; j<reference.size(); ++j) {
+    log.printf(" %d",reference[j].serial() );
+  }
   log.printf("\n");
   log.printf("  atoms to be wrapped :");
-  for(unsigned j=0; j<atoms.size(); ++j) log.printf(" %d",atoms[j].serial() );
+  for(unsigned j=0; j<atoms.size(); ++j) {
+    log.printf(" %d",atoms[j].serial() );
+  }
   log.printf("\n");
-  if(groupby>1) log<<"  atoms will be grouped by "<<groupby<<"\n";
-  if(pair_) log.printf("  pairing atoms and references\n");
+  if(groupby>1) {
+    log<<"  atoms will be grouped by "<<groupby<<"\n";
+  }
+  if(pair_) {
+    log.printf("  pairing atoms and references\n");
+  }
 
-  if(atoms.size()%groupby!=0) error("number of atoms should be a multiple of groupby option");
+  if(atoms.size()%groupby!=0) {
+    error("number of atoms should be a multiple of groupby option");
+  }
   // additional checks with PAIR
-  if(pair_ && atoms.size()!=reference.size()*groupby) error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
+  if(pair_ && atoms.size()!=reference.size()*groupby) {
+    error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
+  }
 
   checkRead();
 
   // do not remove duplicates with pair
   if(!pair_) {
-    if(groupby<=1) Tools::removeDuplicates(atoms);
+    if(groupby<=1) {
+      Tools::removeDuplicates(atoms);
+    }
     Tools::removeDuplicates(reference);
   }
 
   std::vector<AtomNumber> merged(atoms.size()+reference.size());
   merge(atoms.begin(),atoms.end(),reference.begin(),reference.end(),merged.begin());
-  p_atoms.resize( atoms.size() ); for(unsigned i=0; i<atoms.size(); ++i) p_atoms[i] = getValueIndices( atoms[i] );
-  refatoms.resize( reference.size() ); p_reference.resize( reference.size() );
-  for(unsigned i=0; i<reference.size(); ++i) p_reference[i] = getValueIndices( reference[i] );
+  p_atoms.resize( atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    p_atoms[i] = getValueIndices( atoms[i] );
+  }
+  refatoms.resize( reference.size() );
+  p_reference.resize( reference.size() );
+  for(unsigned i=0; i<reference.size(); ++i) {
+    p_reference[i] = getValueIndices( reference[i] );
+  }
   Tools::removeDuplicates(merged);
   requestAtoms(merged);
   doNotRetrieve();
@@ -219,7 +241,9 @@ WrapAround::WrapAround(const ActionOptions&ao):
 }
 
 void WrapAround::calculate() {
-  for(unsigned j=0; j<p_reference.size(); ++j) refatoms[j] = getGlobalPosition(p_reference[j]);
+  for(unsigned j=0; j<p_reference.size(); ++j) {
+    refatoms[j] = getGlobalPosition(p_reference[j]);
+  }
 
   for(unsigned i=0; i<p_atoms.size(); i+=groupby) {
     Vector second, first=getGlobalPosition(p_atoms[i]);
@@ -241,7 +265,8 @@ void WrapAround::calculate() {
     }
     second=refatoms[closest];
 // place first atom of the group
-    first=second+pbcDistance(second,first); setGlobalPosition(p_atoms[i],first);
+    first=second+pbcDistance(second,first);
+    setGlobalPosition(p_atoms[i],first);
 // then place other atoms close to the first of the group
     for(unsigned j=1; j<groupby; j++) {
       second=getGlobalPosition(p_atoms[i+j]);

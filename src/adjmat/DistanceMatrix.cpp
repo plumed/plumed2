@@ -58,8 +58,7 @@ void DistanceMatrix::registerKeywords( Keywords& keys ) {
 
 DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
+  AdjacencyMatrixBase(ao) {
   // And set the link cell cutoff
   log.printf("  weight is distance between atoms \n");
   parse("CUTOFF",cutoff);
@@ -72,7 +71,8 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
 }
 
 double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2; double mod = distance.modulo();
+  Vector distance = pos2;
+  double mod = distance.modulo();
   if( cutoff<0 || mod<cutoff ) {
     double invd = 1.0/mod;
     addAtomDerivatives( 0, (-invd)*distance, myvals );

@@ -182,32 +182,42 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   nl_update(0),
   DeltaGValues("absent"),
   Ti(0),
-  firstStepFlag(0)
-{
+  firstStepFlag(0) {
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()==0) error("no atoms specified");
+  if(atoms.size()==0) {
+    error("no atoms specified");
+  }
   std::string Type;
   parse("TYPE",Type);
   parse("NL_STRIDE", stride);
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  if(Type=="TOTAL") sasa_type=TOTAL;
-  else if(Type=="TRANSFER") sasa_type=TRANSFER;
-  else error("Unknown SASA type");
+  if(Type=="TOTAL") {
+    sasa_type=TOTAL;
+  } else if(Type=="TRANSFER") {
+    sasa_type=TRANSFER;
+  } else {
+    error("Unknown SASA type");
+  }
 
-  switch(sasa_type)
-  {
-  case TOTAL:   log.printf("  TOTAL SASA;"); break;
-  case TRANSFER: log.printf("  TRANSFER MODEL;"); break;
+  switch(sasa_type) {
+  case TOTAL:
+    log.printf("  TOTAL SASA;");
+    break;
+  case TRANSFER:
+    log.printf("  TRANSFER MODEL;");
+    break;
   }
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf("%d ",atoms[i].serial());
   }
   log.printf("\n");
@@ -219,7 +229,8 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   }
 
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   requestAtoms(atoms);
 
   natoms = getNumberOfAtoms();
@@ -236,8 +247,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
 
 //splits strings into tokens. Used to read into SASA parameters file and into reference pdb file
 template <class Container>
-void split(const std::string& str, Container& cont)
-{
+void split(const std::string& str, Container& cont) {
   std::istringstream iss(str);
   std::copy(std::istream_iterator<std::string>(iss),
             std::istream_iterator<std::string>(),
@@ -249,7 +259,9 @@ void split(const std::string& str, Container& cont)
 
 void SASA_HASEL::readPDB() {
   auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( ! moldat ) error("Unable to find MOLINFO in input");
+  if( ! moldat ) {
+    error("Unable to find MOLINFO in input");
+  }
   AtomResidueName[0].clear();
   AtomResidueName[1].clear();
 
@@ -587,9 +599,12 @@ void SASA_HASEL::readDeltaG() {
         }
       }
     }
-    if ( backboneflag == 0) error("Cannot find backbone value in Delta G parameters file\n");
+    if ( backboneflag == 0) {
+      error("Cannot find backbone value in Delta G parameters file\n");
+    }
+  } else {
+    error("Cannot open DeltaG file");
   }
-  else error("Cannot open DeltaG file");
 
   for(unsigned i=0; i<natoms; i++) {
     if (DeltaG[i].size()==0 ) {
@@ -760,7 +775,9 @@ void SASA_HASEL::computeDeltaG() {
 
 //calculates neighbor list
 void SASA_HASEL::calcNlist() {
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
 
   for(unsigned i = 0; i < natoms; i++) {
     Nlist[i].clear();
@@ -786,9 +803,13 @@ void SASA_HASEL::calcNlist() {
 
 //calculates SASA according to Hasel et al., Tetrahedron Computer Methodology Vol. 1, No. 2, pp. 103-116, 1988
 void SASA_HASEL::calculate() {
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
 
-  if(getExchangeStep()) nl_update = 0;
+  if(getExchangeStep()) {
+    nl_update = 0;
+  }
   if (firstStepFlag ==0) {
     readPDB();
     readSASAparam();
@@ -799,7 +820,9 @@ void SASA_HASEL::calculate() {
 
 
   auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( ! moldat ) error("Unable to find MOLINFO in input");
+  if( ! moldat ) {
+    error("Unable to find MOLINFO in input");
+  }
   double Si, sasai, bij;
   double sasa = 0;
   vector<Vector> derivatives( natoms );

@@ -52,8 +52,7 @@ struct ColvarInput {
     pbc(box),
     pos(p,natoms),
     mass(w,natoms),
-    charges(q,natoms)
-  {
+    charges(q,natoms) {
   }
 
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );

@@ -29,8 +29,7 @@ namespace PLMD {
 Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao)
-{
+  ActionWithValue(ao) {
 }
 
 void Colvar::registerKeywords( Keywords& keys ) {
@@ -44,23 +43,31 @@ void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  }
 }
 
 void Colvar::apply() {
-  if( !checkForForces() ) return ;
+  if( !checkForForces() ) {
+    return ;
+  }
   unsigned ind=0;
-  if( getNumberOfAtoms()>0 ) setForcesOnAtoms( getForcesToApply(), ind );
-  else setForcesOnCell( getForcesToApply(), ind );
+  if( getNumberOfAtoms()>0 ) {
+    setForcesOnAtoms( getForcesToApply(), ind );
+  } else {
+    setForcesOnCell( getForcesToApply(), ind );
+  }
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {
   Tensor virial;
   unsigned nat=getNumberOfAtoms();
-  for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                          Vector(v->getDerivative(3*i+0),
-                                              v->getDerivative(3*i+1),
-                                              v->getDerivative(3*i+2)));
+  for(unsigned i=0; i<nat; i++)
+    virial-=Tensor(getPosition(i),
+                   Vector(v->getDerivative(3*i+0),
+                          v->getDerivative(3*i+1),
+                          v->getDerivative(3*i+2)));
   setBoxDerivatives(v,virial);
 }
 }

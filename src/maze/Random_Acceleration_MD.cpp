@@ -182,8 +182,7 @@ void Random_Acceleration_MD::optimize() {
 
   if (pbc_) {
     d = pbcDistance(c, com_);
-  }
-  else {
+  } else {
     d = delta(c, com_);
   }
 

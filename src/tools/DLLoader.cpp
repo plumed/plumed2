@@ -46,7 +46,9 @@ void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
   auto lockerAction=Register::registrationLock(s);
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
-  if(!p) plumed_error()<<"Could not load library "<<s<<"\n"<<dlerror();
+  if(!p) {
+    plumed_error()<<"Could not load library "<<s<<"\n"<<dlerror();
+  }
   handles.push_back(p);
   Register::completeAllRegistrations(p);
   return p;
@@ -58,7 +60,9 @@ void* DLLoader::load(const std::string&s) {
 DLLoader::~DLLoader() {
   auto debug=std::getenv("PLUMED_LOAD_DEBUG");
 #ifdef __PLUMED_HAS_DLOPEN
-  if(debug) std::fprintf(stderr,"delete dlloader\n");
+  if(debug) {
+    std::fprintf(stderr,"delete dlloader\n");
+  }
   while(!handles.empty()) {
     int ret=dlclose(handles.back());
     if(ret) {
@@ -66,7 +70,9 @@ DLLoader::~DLLoader() {
     }
     handles.pop_back();
   }
-  if(debug) std::fprintf(stderr,"end delete dlloader\n");
+  if(debug) {
+    std::fprintf(stderr,"end delete dlloader\n");
+  }
 #endif
 }
 
@@ -126,7 +132,9 @@ bool DLLoader::isPlumedGlobal() {
 #endif
   // we check for two variants, see wrapper/Plumed.h for an explanation:
   result=dlsym(handle,"plumed_plumedmain_create") || dlsym(handle,"plumedmain_create");
-  if(handle) dlclose(handle);
+  if(handle) {
+    dlclose(handle);
+  }
 #else
   // if a system cannot use dlopen, we assume plumed is globally available
   result=true;

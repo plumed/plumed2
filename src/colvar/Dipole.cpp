@@ -103,7 +103,8 @@ typedef MultiColvarTemplate<Dipole> DipoleMulti;
 PLUMED_REGISTER_ACTION(DipoleMulti,"DIPOLE_VECTOR")
 
 void Dipole::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys); keys.setDisplayName("DIPOLE");
+  Colvar::registerKeywords(keys);
+  keys.setDisplayName("DIPOLE");
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the dipole separately and store them as label.x, label.y and label.z");
   keys.addOutputComponent("x","COMPONENTS","scalar/vector","the x-component of the dipole");
@@ -116,8 +117,7 @@ void Dipole::registerKeywords(Keywords& keys) {
 Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   components(false),
-  value(1)
-{
+  value(1) {
   parseAtomList(-1,ga_lista,this);
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
@@ -125,12 +125,17 @@ Dipole::Dipole(const ActionOptions&ao):
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
-  } else derivs.resize(1,ga_lista.size());
+  } else {
+    derivs.resize(1,ga_lista.size());
+  }
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 
   requestAtoms(ga_lista);
 }
@@ -147,28 +152,39 @@ void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAt
 }
 
 unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
-  bool c; av->parseFlag("COMPONENTS",c);
+  bool c;
+  av->parseFlag("COMPONENTS",c);
   if( c ) {
-    av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
-    av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
-    av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+    av->addComponentWithDerivatives("x");
+    av->componentIsNotPeriodic("x");
+    av->addComponentWithDerivatives("y");
+    av->componentIsNotPeriodic("y");
+    av->addComponentWithDerivatives("z");
+    av->componentIsNotPeriodic("z");
     return 1;
   }
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
+  return 0;
 }
 
 // calculator
-void Dipole::calculate()
-{
-  if( !chargesWereSet ) error("charges were not set by MD code");
+void Dipole::calculate() {
+  if( !chargesWereSet ) {
+    error("charges were not set by MD code");
+  }
 
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
   unsigned N=getNumberOfAtoms();
 
   if(!components) {
     ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
     calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
-    for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i));
+    for(unsigned i=0; i<N; i++) {
+      setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i));
+    }
     setBoxDerivatives(cvout.virial[0]);
     setValue(value[0]);
   } else {
@@ -189,12 +205,17 @@ void Dipole::calculate()
 }
 
 void Dipole::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  unsigned N=cvin.pos.size(); double ctot=0.;
-  for(unsigned i=0; i<N; ++i) ctot += cvin.charges[i];
+  unsigned N=cvin.pos.size();
+  double ctot=0.;
+  for(unsigned i=0; i<N; ++i) {
+    ctot += cvin.charges[i];
+  }
   ctot/=(double)N;
 
   Vector dipje;
-  for(unsigned i=0; i<N; ++i) dipje += (cvin.charges[i]-ctot)*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
+  for(unsigned i=0; i<N; ++i) {
+    dipje += (cvin.charges[i]-ctot)*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
+  }
 
   if( cvin.mode==1 ) {
     for(unsigned i=0; i<N; i++) {
@@ -202,7 +223,9 @@ void Dipole::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
       cvout.derivs[1][i]=(cvin.charges[i]-ctot)*Vector(0.0,1.0,0.0);
       cvout.derivs[2][i]=(cvin.charges[i]-ctot)*Vector(0.0,0.0,1.0);
     }
-    for(unsigned i=0; i<3; ++i ) cvout.values[i] = dipje[i];
+    for(unsigned i=0; i<3; ++i ) {
+      cvout.values[i] = dipje[i];
+    }
   } else {
     cvout.values[0] = dipje.modulo();
     double idip = 1./cvout.values[0];

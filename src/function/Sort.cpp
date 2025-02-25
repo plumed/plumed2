@@ -79,9 +79,13 @@ private:
 public:
   void registerKeywords(Keywords& keys) override ;
   void read( ActionWithArguments* action ) override;
-  bool zeroRank() const override { return true; }
+  bool zeroRank() const override {
+    return true;
+  }
   bool getDerivativeZeroIfValueIsZero() const override ;
-  bool doWithTasks() const override { return !scalar_out; }
+  bool doWithTasks() const override {
+    return !scalar_out;
+  }
   std::vector<std::string> getComponentsPerLabel() const override ;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
@@ -102,12 +106,20 @@ void Sort::registerKeywords(Keywords& keys) {
 
 
 void Sort::read( ActionWithArguments* action ) {
-  scalar_out = action->getNumberOfArguments()==1; nargs = action->getNumberOfArguments(); if( scalar_out ) nargs = action->getPntrToArgument(0)->getNumberOfValues();
+  scalar_out = action->getNumberOfArguments()==1;
+  nargs = action->getNumberOfArguments();
+  if( scalar_out ) {
+    nargs = action->getPntrToArgument(0)->getNumberOfValues();
+  }
 
   zero_der=true;
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
-    if((action->getPntrToArgument(i))->isPeriodic()) action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
-    if(!(action->getPntrToArgument(i))->isDerivativeZeroWhenValueIsZero() ) zero_der=false;
+    if((action->getPntrToArgument(i))->isPeriodic()) {
+      action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
+    }
+    if(!(action->getPntrToArgument(i))->isDerivativeZeroWhenValueIsZero() ) {
+      zero_der=false;
+    }
   }
 }
 
@@ -116,15 +128,21 @@ bool Sort::getDerivativeZeroIfValueIsZero() const {
 }
 
 std::vector<std::string> Sort::getComponentsPerLabel() const {
-  std::vector<std::string> comp; std::string num;
+  std::vector<std::string> comp;
+  std::string num;
   for(unsigned i=0; i<nargs; ++i) {
-    Tools::convert(i+1,num); comp.push_back( num );
+    Tools::convert(i+1,num);
+    comp.push_back( num );
   }
   return comp;
 }
 
 void Sort::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0; i<nargs; ++i) { std::string num; Tools::convert(i+1,num); action->componentIsNotPeriodic( num ); }
+  for(unsigned i=0; i<nargs; ++i) {
+    std::string num;
+    Tools::convert(i+1,num);
+    action->componentIsNotPeriodic( num );
+  }
 }
 
 void Sort::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
@@ -135,8 +153,12 @@ void Sort::calc( const ActionWithArguments* action, const std::vector<double>& a
     data[i].second=i;
   }
 // STL sort sorts based on first element (value) then second (index)
-  std::sort(data.begin(),data.end()); derivatives = 0;
-  for(int i=0; i<vals.size(); ++i) { vals[i] = data[i].first; derivatives(i, data[i].second ) = 1; }
+  std::sort(data.begin(),data.end());
+  derivatives = 0;
+  for(int i=0; i<vals.size(); ++i) {
+    vals[i] = data[i].first;
+    derivatives(i, data[i].second ) = 1;
+  }
 }
 
 }

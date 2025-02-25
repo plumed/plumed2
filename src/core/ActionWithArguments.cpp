@@ -48,23 +48,35 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
-  if( keywords.getArgumentType(key).length()==0 ) warning("keyword " + key + " for reading arguments should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
-  std::string def; std::vector<std::string> c; arg.clear(); parseVector(key,c);
+  if( keywords.getArgumentType(key).length()==0 ) {
+    warning("keyword " + key + " for reading arguments should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
+  }
+  std::string def;
+  std::vector<std::string> c;
+  arg.clear();
+  parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
-    if( keywords.getDefaultValue(key,def) ) c.push_back( def );
-    else return;
+    if( keywords.getDefaultValue(key,def) ) {
+      c.push_back( def );
+    } else {
+      return;
+    }
   }
   interpretArgumentList(c,plumed.getActionSet(),this,arg);
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
-  if( keywords.getArgumentType(key).length()==0 ) warning("keyword " + key + " for reading argument should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
+  if( keywords.getArgumentType(key).length()==0 ) {
+    warning("keyword " + key + " for reading argument should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
+  }
   std::vector<std::string> c;
   arg.clear();
   if(parseNumberedVector(key,i,c)) {
     interpretArgumentList(c,plumed.getActionSet(),this,arg);
     return true;
-  } else return false;
+  } else {
+    return false;
+  }
 }
 
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* readact, std::vector<Value*>&arg) {
@@ -78,7 +90,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
         std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
-        if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
+        if( all.empty() ) {
+          readact->error("your input file is not telling plumed to calculate anything");
+        }
 
         try {
           std::regex txt_regex(myregex,std::regex::extended);
@@ -95,7 +109,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         } catch(std::regex_error & e) {
           plumed_error()<<"Error parsing regular expression: "<<e.what();
         }
-        if(!found_something) plumed_error()<<"There isn't any action matching your regex " << myregex;
+        if(!found_something) {
+          plumed_error()<<"There isn't any action matching your regex " << myregex;
+        }
       } else {
         plumed_merror("did you want to use regexp to input arguments? enclose it between two round braces (...) with no spaces!");
       }
@@ -107,17 +123,26 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         if(a=="*" && name=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
-          if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            readact->error("your input file is not telling plumed to calculate anything");
+          }
           for(unsigned j=0; j<all.size(); j++) {
             plumed_assert(all[j]); // needed for following calls, see #1046
-            ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap ) continue;
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
+            ActionForInterface* ap=all[j]->castToActionForInterface();
+            if( ap ) {
+              continue;
+            }
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+              arg.push_back(all[j]->copyOutput(k));
+            }
           }
         } else if ( name=="*") {
           unsigned carg=arg.size();
           // Take all the values from an action with a specific name
           ActionShortcut* shortcut=as.getShortcutActionWithLabel(a);
-          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, readact, arg );
+          if( shortcut ) {
+            shortcut->interpretDataLabel( a + "." + name, readact, arg );
+          }
           if( arg.size()==carg ) {
             // Take all the values from an action with a specific name
             ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
@@ -126,24 +151,36 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
               str+=as.getLabelList<ActionWithValue*>()+")";
               readact->error("cannot find action named " + a + str);
             }
-            if( action->getNumberOfComponents()==0 ) readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-            for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
+            if( action->getNumberOfComponents()==0 ) {
+              readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+            }
+            for(int k=0; k<action->getNumberOfComponents(); ++k) {
+              arg.push_back(action->copyOutput(k));
+            }
           }
         } else if ( a=="*" ) {
           std::vector<ActionShortcut*> shortcuts=as.select<ActionShortcut*>();
           // Take components from all actions with a specific name
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
-          if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            readact->error("your input file is not telling plumed to calculate anything");
+          }
           unsigned carg=arg.size();
           for(unsigned j=0; j<shortcuts.size(); ++j) {
             shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, readact, arg );
           }
           unsigned nval=0;
           for(unsigned j=0; j<all.size(); j++) {
-            std::string flab; flab=all[j]->getLabel() + "." + name;
-            if( all[j]->exists(flab) ) { arg.push_back(all[j]->copyOutput(flab)); nval++; }
+            std::string flab;
+            flab=all[j]->getLabel() + "." + name;
+            if( all[j]->exists(flab) ) {
+              arg.push_back(all[j]->copyOutput(flab));
+              nval++;
+            }
           }
-          if(nval==0 && arg.size()==carg) readact->error("found no actions with a component called " + name );
+          if(nval==0 && arg.size()==carg) {
+            readact->error("found no actions with a component called " + name );
+          }
         } else {
           // Take values with a specific name
           ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
@@ -155,8 +192,11 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           } else if( action && action->exists(c[i]) ) {
             arg.push_back(action->copyOutput(c[i]));
           } else if( shortcut ) {
-            unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, readact, arg );
-            if( arg.size()==narg ) readact->error("found no element in " + a + " with label " + name );
+            unsigned narg=arg.size();
+            shortcut->interpretDataLabel( a + "." + name, readact, arg );
+            if( arg.size()==narg ) {
+              readact->error("found no element in " + a + " with label " + name );
+            }
           } else {
             std::string str=" (hint! the components in this actions are: ";
             str+=action->getComponentsList()+")";
@@ -167,12 +207,22 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         if(c[i]=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
-          if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            readact->error("your input file is not telling plumed to calculate anything");
+          }
           for(unsigned j=0; j<all.size(); j++) {
             plumed_assert(all[j]); // needed for following calls, see #1046
-            ActionWithVirtualAtom* av=all[j]->castToActionWithVirtualAtom(); if( av ) continue;
-            ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap && all[j]->getName()!="ENERGY" ) continue;
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
+            ActionWithVirtualAtom* av=all[j]->castToActionWithVirtualAtom();
+            if( av ) {
+              continue;
+            }
+            ActionForInterface* ap=all[j]->castToActionForInterface();
+            if( ap && all[j]->getName()!="ENERGY" ) {
+              continue;
+            }
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+              arg.push_back(all[j]->copyOutput(k));
+            }
           }
         } else {
           ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(c[i]);
@@ -192,13 +242,21 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
     }
   }
   for(unsigned i=0; i<arg.size(); ++i) {
-    if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) readact->warning("documentation for input type is not provided in " + readact->getName() );
-  } 
-  if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) return;
+    if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) {
+      readact->warning("documentation for input type is not provided in " + readact->getName() );
+    }
+  }
+  if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) {
+    return;
+  }
   for(unsigned i=0; i<arg.size(); ++i) {
-    if( arg[i]->getRank()==0 ) continue;
+    if( arg[i]->getRank()==0 ) {
+      continue;
+    }
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( arg[i]->getPntrToAction() );
-    if( av && av->getNumberOfMasks()>=0 ) readact->error("cannot use argument " + arg[i]->getName() + " in input as not all elements are computed");
+    if( av && av->getNumberOfMasks()>=0 ) {
+      readact->error("cannot use argument " + arg[i]->getName() + " in input as not all elements are computed");
+    }
   }
 }
 
@@ -229,7 +287,9 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
     addDependency(action);
   }
   ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
-  if(av) av->firststep=true;
+  if(av) {
+    av->firststep=true;
+  }
 }
 
 void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &extra) {
@@ -252,8 +312,7 @@ void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &ex
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
-  lockRequestArguments(false)
-{
+  lockRequestArguments(false) {
   if( keywords.exists("ARG") ) {
     std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
@@ -261,11 +320,17 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
     if(!arg.empty()) {
       log.printf("  with arguments : \n");
       for(unsigned i=0; i<arg.size(); i++) {
-        if( arg[i]->hasDerivatives() && arg[i]->getRank()>0 ) log.printf(" function on grid with label %s \n",arg[i]->getName().c_str());
-        else if( arg[i]->getRank()==2 ) log.printf("   matrix with label %s \n",arg[i]->getName().c_str());
-        else if( arg[i]->getRank()==1 ) log.printf("   vector with label %s \n",arg[i]->getName().c_str());
-        else if( arg[i]->getRank()==0 ) log.printf("   scalar with label %s \n",arg[i]->getName().c_str());
-        else error("type of argument does not make sense");
+        if( arg[i]->hasDerivatives() && arg[i]->getRank()>0 ) {
+          log.printf(" function on grid with label %s \n",arg[i]->getName().c_str());
+        } else if( arg[i]->getRank()==2 ) {
+          log.printf("   matrix with label %s \n",arg[i]->getName().c_str());
+        } else if( arg[i]->getRank()==1 ) {
+          log.printf("   vector with label %s \n",arg[i]->getName().c_str());
+        } else if( arg[i]->getRank()==0 ) {
+          log.printf("   scalar with label %s \n",arg[i]->getName().c_str());
+        } else {
+          error("type of argument does not make sense");
+        }
       }
     }
     requestArguments(arg);
@@ -294,7 +359,10 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   a->clearDerivatives();
   for(int j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
-    if( v->hasDerivatives() ) for(int i=0; i<npar; i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
+    if( v->hasDerivatives() )
+      for(int i=0; i<npar; i++) {
+        v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
+      }
   }
 }
 
@@ -307,37 +375,61 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 }
 
 void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind ) {
-  unsigned nargs=arguments.size(); const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( this );
-  if( av && av->getNumberOfMasks()>0 ) nargs=nargs-av->getNumberOfMasks();
+  unsigned nargs=arguments.size();
+  const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( this );
+  if( av && av->getNumberOfMasks()>0 ) {
+    nargs=nargs-av->getNumberOfMasks();
+  }
   for(unsigned i=0; i<nargs; ++i) {
-    if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
+    if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) {
+      continue ;
+    }
     unsigned nvals = arguments[i]->getNumberOfStoredValues();
-    for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind], false ); ind++; }
+    for(unsigned j=0; j<nvals; ++j) {
+      arguments[i]->addForce( j, forces[ind], false );
+      ind++;
+    }
   }
 }
 
 void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
-  if( !myval->hasDeriv ) return; plumed_assert( myval->getRank()==0 );
+  if( !myval->hasDeriv ) {
+    return;
+  }
+  plumed_assert( myval->getRank()==0 );
 
   bool scalar=true;
   for(unsigned i=0; i<arguments.size(); ++i ) {
-    if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
+    if( arguments[i]->getRank()!=0 ) {
+      scalar=false;
+      break;
+    }
   }
   if( !scalar ) {
     bool constant=true;
     for(unsigned i=0; i<arguments.size(); ++i ) {
-      if( !arguments[i]->isConstant() ) { constant=false; break; }
-      else start += arguments[i]->getNumberOfValues();
+      if( !arguments[i]->isConstant() ) {
+        constant=false;
+        break;
+      } else {
+        start += arguments[i]->getNumberOfValues();
+      }
     }
-    if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+    if( !constant ) {
+      error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+    }
   }
   // Now pass the gradients
-  for(unsigned i=0; i<arguments.size(); ++i ) arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
+  for(unsigned i=0; i<arguments.size(); ++i ) {
+    arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
+  }
 }
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   ActionWithValue* av = castToActionWithValue();
-  if( !av || arguments.size()==0 ) return false;
+  if( !av || arguments.size()==0 ) {
+    return false;
+  }
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
     auto * ptr=arguments[i]->getPntrToAction();
@@ -345,23 +437,39 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
     ActionAtomistic* aa=ptr->castToActionAtomistic();
     if( aa ) {
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
-      if( !av || aa->getNumberOfAtoms()>0 ) atoms=true;
+      if( !av || aa->getNumberOfAtoms()>0 ) {
+        atoms=true;
+      }
     }
-    if( !arguments[i]->isConstant() ) { constant=false; break; }
+    if( !arguments[i]->isConstant() ) {
+      constant=false;
+      break;
+    }
   }
   if( constant ) {
     // Set everything constant first as we need to set the shape
-    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
-    if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
-    if( atoms ) return haveatoms;
+    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+      (av->copyOutput(i))->setConstant();
+    }
+    if( !haveatoms ) {
+      log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+    }
+    if( atoms ) {
+      return haveatoms;
+    }
   }
   // Now do the calculation and store the values if we don't need anything from the atoms
   if( constant && !haveatoms ) {
-    plumed_assert( !atoms ); activate(); calculate(); deactivate();
+    plumed_assert( !atoms );
+    activate();
+    calculate();
+    deactivate();
     for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
       unsigned nv = av->copyOutput(i)->getNumberOfValues();
       log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
-      for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
+      for(unsigned j=0; j<nv; ++j) {
+        log.printf(" %f", (av->copyOutput(i))->get(j) );
+      }
       log.printf("\n");
     }
   }

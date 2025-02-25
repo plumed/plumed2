@@ -39,13 +39,14 @@ ColvarInput ColvarInput::createColvarInput( unsigned m,
 void ColvarInput::setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out ) {
   unsigned nat=inpt.pos.size();
   for(unsigned i=0; i<out.ncomponents; ++i) {
-      Tensor v; v.zero();
-      for(unsigned j=0; j<nat; j++) {
-        v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
-                  out.derivs.getAtomDerivatives(i,j));
-      }           
-      out.virial.set( i, v );
+    Tensor v;
+    v.zero();
+    for(unsigned j=0; j<nat; j++) {
+      v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
+                out.derivs.getAtomDerivatives(i,j));
     }
+    out.virial.set( i, v );
+  }
 }
 
 } // namespace colvar

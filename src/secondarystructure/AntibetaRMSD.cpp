@@ -96,7 +96,10 @@ PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("STRUCTURE");
+  keys.remove("ATOMS");
+  keys.remove("SEGMENT");
+  keys.remove("BONDLENGTH");
+  keys.remove("STRUCTURE");
   keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
   keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
@@ -106,42 +109,59 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ) {
            "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
            "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
            "However, if you are using some other option, then this cannot be used");
-  keys.needsAction("DISTANCE"); keys.needsAction("CUSTOM");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("CUSTOM");
 }
 
 AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
-  std::string ltmap; bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  std::string ltmap;
+  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
   // read in the backbone atoms
-  std::vector<unsigned> chains; std::vector<std::string> all_atoms; SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
+  std::vector<unsigned> chains;
+  std::vector<std::string> all_atoms;
+  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   bool intra_chain(false), inter_chain(false);
-  std::string style; parse("STYLE",style);
+  std::string style;
+  parse("STYLE",style);
   if( Tools::caseInSensStringCompare(style, "all") ) {
-    intra_chain=true; inter_chain=true;
+    intra_chain=true;
+    inter_chain=true;
   } else if( Tools::caseInSensStringCompare(style, "inter") ) {
-    intra_chain=false; inter_chain=true;
+    intra_chain=false;
+    inter_chain=true;
   } else if( Tools::caseInSensStringCompare(style, "intra") ) {
-    intra_chain=true; inter_chain=false;
+    intra_chain=true;
+    inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");
   }
 
-  double strands_cutoff=0.; parse("STRANDS_CUTOFF",strands_cutoff); std::string scutoff_action;
-  if( strands_cutoff>0 ) scutoff_action=getShortcutLabel() + "_cut_dists: DISTANCE ";
+  double strands_cutoff=0.;
+  parse("STRANDS_CUTOFF",strands_cutoff);
+  std::string scutoff_action;
+  if( strands_cutoff>0 ) {
+    scutoff_action=getShortcutLabel() + "_cut_dists: DISTANCE ";
+  }
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
-  std::string seglist; unsigned k=1;
+  std::string seglist;
+  unsigned k=1;
   if( intra_chain ) {
-    unsigned nprevious=0; std::vector<unsigned> nlist(30);
+    unsigned nprevious=0;
+    std::vector<unsigned> nlist(30);
     for(unsigned i=0; i<chains.size(); ++i) {
-      if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
+      if( chains[i]<40 ) {
+        error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
+      }
       // Loop over all possible triples in each 8 residue segment of protein
       unsigned nres=chains[i]/5;
-      if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      if( chains[i]%5!=0 ) {
+        error("backbone segment received does not contain a multiple of five residues");
+      }
       for(unsigned ires=0; ires<nres-7; ires++) {
         for(unsigned jres=ires+7; jres<nres; jres++) {
           for(unsigned k=0; k<15; ++k) {
@@ -150,27 +170,45 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
           }
           std::string nlstr, num;
           Tools::convert( nlist[0], nlstr );
-          Tools::convert(k, num); k++;
+          Tools::convert(k, num);
+          k++;
           seglist += " SEGMENT" + num + "=" + nlstr;
-          for(unsigned kk=1; kk<nlist.size(); ++kk ) { Tools::convert( nlist[kk], nlstr ); seglist += "," + nlstr; }
-          if( strands_cutoff>0 ) scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+          for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+            Tools::convert( nlist[kk], nlstr );
+            seglist += "," + nlstr;
+          }
+          if( strands_cutoff>0 ) {
+            scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+          }
         }
       }
       nprevious+=chains[i];
     }
   }
   if( inter_chain ) {
-    if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
+    if( chains.size()==1 && style!="all" ) {
+      error("there is only one chain defined so cannot use inter_chain option");
+    }
     std::vector<unsigned> nlist(30);
     for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
-      unsigned iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];
+      unsigned iprev=0;
+      for(unsigned i=0; i<ichain; ++i) {
+        iprev+=chains[i];
+      }
       unsigned inres=chains[ichain]/5;
-      if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      if( chains[ichain]%5!=0 ) {
+        error("backbone segment received does not contain a multiple of five residues");
+      }
       for(unsigned ires=0; ires<inres-2; ++ires) {
         for(unsigned jchain=0; jchain<ichain; ++jchain) {
-          unsigned jprev=0; for(unsigned i=0; i<jchain; ++i) jprev+=chains[i];
+          unsigned jprev=0;
+          for(unsigned i=0; i<jchain; ++i) {
+            jprev+=chains[i];
+          }
           unsigned jnres=chains[jchain]/5;
-          if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+          if( chains[jchain]%5!=0 ) {
+            error("backbone segment received does not contain a multiple of five residues");
+          }
           for(unsigned jres=0; jres<jnres-2; ++jres) {
             for(unsigned k=0; k<15; ++k) {
               nlist[k]=iprev+ ires*5+k;
@@ -178,10 +216,16 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
             }
             std::string nlstr, num;
             Tools::convert( nlist[0], nlstr );
-            Tools::convert(k, num); k++;
+            Tools::convert(k, num);
+            k++;
             seglist += " SEGMENT" + num + "=" + nlstr;
-            for(unsigned kk=1; kk<nlist.size(); ++kk ) { Tools::convert( nlist[kk], nlstr ); seglist += "," + nlstr; }
-            if( strands_cutoff>0 ) scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+            for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+              Tools::convert( nlist[kk], nlstr );
+              seglist += "," + nlstr;
+            }
+            if( strands_cutoff>0 ) {
+              scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+            }
           }
         }
       }
@@ -226,15 +270,33 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
   }
 
-  std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
-  std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
-  std::string atoms="ATOMS=" + all_atoms[0]; for(unsigned i=1; i<all_atoms.size(); ++i) atoms += "," + all_atoms[i];
+  std::string type;
+  parse("TYPE",type);
+  std::string lab = getShortcutLabel() + "_rmsd";
+  if( uselessthan ) {
+    lab = getShortcutLabel();
+  }
+  std::string nopbcstr="";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    nopbcstr = " NOPBC";
+  }
+  std::string atoms="ATOMS=" + all_atoms[0];
+  for(unsigned i=1; i<all_atoms.size(); ++i) {
+    atoms += "," + all_atoms[i];
+  }
 
   if( strands_cutoff>0 ) {
-    readInputLine( scutoff_action ); std::string str_cut; Tools::convert( strands_cutoff, str_cut );
+    readInputLine( scutoff_action );
+    std::string str_cut;
+    Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
     readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
     if( ltmap.length()>0 ) {
@@ -243,12 +305,17 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     }
   } else {
     readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-    if( ltmap.length()>0 ) readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    if( ltmap.length()>0 ) {
+      readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    }
   }
   // Create the less than object
   if( ltmap.length()>0 ) {
-    if( uselessthan ) readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    if( uselessthan ) {
+      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    } else {
+      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    }
   }
 }
 

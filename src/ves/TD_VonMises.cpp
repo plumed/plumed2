@@ -131,16 +131,19 @@ TD_VonMises::TD_VonMises(const ActionOptions& ao):
   normalization_(0),
   weights_(0),
   periods_(0),
-  ncenters_(0)
-{
+  ncenters_(0) {
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_center;
-    if(!parseNumberedVector("CENTER",i,tmp_center) ) {break;}
+    if(!parseNumberedVector("CENTER",i,tmp_center) ) {
+      break;
+    }
     centers_.push_back(tmp_center);
   }
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_sigma;
-    if(!parseNumberedVector("SIGMA",i,tmp_sigma) ) {break;}
+    if(!parseNumberedVector("SIGMA",i,tmp_sigma) ) {
+      break;
+    }
     sigmas_.push_back(tmp_sigma);
   }
   //
@@ -154,8 +157,12 @@ TD_VonMises::TD_VonMises(const ActionOptions& ao):
   //
   // check centers and sigmas
   for(unsigned int i=0; i<ncenters_; i++) {
-    if(centers_[i].size()!=getDimension()) {plumed_merror(getName()+": one of the CENTER keyword does not match the given dimension");}
-    if(sigmas_[i].size()!=getDimension()) {plumed_merror(getName()+": one of the SIGMA keyword does not match the given dimension");}
+    if(centers_[i].size()!=getDimension()) {
+      plumed_merror(getName()+": one of the CENTER keyword does not match the given dimension");
+    }
+    if(sigmas_[i].size()!=getDimension()) {
+      plumed_merror(getName()+": one of the SIGMA keyword does not match the given dimension");
+    }
   }
   //
   kappas_.resize(sigmas_.size());
@@ -167,16 +174,28 @@ TD_VonMises::TD_VonMises(const ActionOptions& ao):
   }
   //
   parseVector("WEIGHTS",weights_);
-  if(weights_.size()==0) {weights_.assign(centers_.size(),1.0);}
-  if(centers_.size()!=weights_.size()) {plumed_merror(getName() + ": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");}
+  if(weights_.size()==0) {
+    weights_.assign(centers_.size(),1.0);
+  }
+  if(centers_.size()!=weights_.size()) {
+    plumed_merror(getName() + ": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");
+  }
   //
-  if(periods_.size()==0) {periods_.assign(getDimension(),2*pi);}
+  if(periods_.size()==0) {
+    periods_.assign(getDimension(),2*pi);
+  }
   parseVector("PERIODS",periods_);
-  if(periods_.size()!=getDimension()) {plumed_merror(getName() + ": the number of values given in PERIODS does not match the dimension of the distribution");}
+  if(periods_.size()!=getDimension()) {
+    plumed_merror(getName() + ": the number of values given in PERIODS does not match the dimension of the distribution");
+  }
   //
   double sum_weights=0.0;
-  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
-  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    sum_weights+=weights_[i];
+  }
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    weights_[i]/=sum_weights;
+  }
   //
   normalization_.resize(ncenters_);
   for(unsigned int i=0; i<ncenters_; i++) {
@@ -228,7 +247,8 @@ double TD_VonMises::getNormalization(const double kappa, const double period) co
   //
   double sum = 0.0;
   for(unsigned int l=0; l<nbins; l++) {
-    std::vector<double> arg(1); arg[0]= points[l];
+    std::vector<double> arg(1);
+    arg[0]= points[l];
     sum += weights[l] * VonMisesDiagonal(arg,centers,kappas,periods,norm);
   }
   return 1.0/sum;

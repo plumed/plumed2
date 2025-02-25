@@ -82,7 +82,8 @@ typedef MultiColvarTemplate<DihedralCorrelation> DihedralCorrelationMulti;
 PLUMED_REGISTER_ACTION(DihedralCorrelationMulti,"DIHEDRAL_CORRELATION_VECTOR")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); keys.setDisplayName("DIHEDRAL_CORRELATION");
+  Colvar::registerKeywords( keys );
+  keys.setDisplayName("DIHEDRAL_CORRELATION");
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used to calculate this quantity");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the DIHEDRAL_CORRELATION for these atoms");
@@ -91,22 +92,29 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(1)
-{
-  std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
-  if( atoms.size()!=8 ) error("Number of specified atoms should be 8");
+  value(1) {
+  std::vector<AtomNumber> atoms;
+  parseAtomList(-1,atoms,this);
+  if( atoms.size()!=8 ) {
+    error("Number of specified atoms should be 8");
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 }
 
 void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
-  if( num<0 && t.size()!=8 ) aa->error("Number of specified atoms should be 8");
+  if( num<0 && t.size()!=8 ) {
+    aa->error("Number of specified atoms should be 8");
+  }
   if( t.size()==8 ) {
     aa->log.printf("  correlation between dihedral angle for atoms %d %d %d %d and atoms %d %d %d %d\n",
                    t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial(),t[4].serial(),t[5].serial(),t[6].serial(),t[7].serial());
@@ -114,16 +122,22 @@ void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>
 }
 
 unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
+  return 0;
 }
 
 void DihedralCorrelation::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
   ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<getPositions().size(); ++i) setAtomsDerivatives( i, cvout.getAtomDerivatives(0, i) );
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( i, cvout.getAtomDerivatives(0, i) );
+  }
   setBoxDerivatives( cvout.virial[0] );
 }
 

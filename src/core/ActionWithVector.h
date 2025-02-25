@@ -33,8 +33,7 @@ namespace PLMD {
 class ActionWithVector:
   public ActionAtomistic,
   public ActionWithValue,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   friend class Value;
 private:
 /// Check if there is a mask value
@@ -85,7 +84,9 @@ public:
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// This is for resizing the task list
-  virtual unsigned getNumberOfAtomsPerTask() const { return 0; }
+  virtual unsigned getNumberOfAtomsPerTask() const {
+    return 0;
+  }
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
 /// Get the list of tasks that are active
@@ -95,11 +96,15 @@ public:
 /// Find out how many tasks we need to perform in this loop
   virtual void getNumberOfTasks( unsigned& ntasks );
 /// Check the status of the ith task
-  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const { return flag; }
+  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const {
+    return flag;
+  }
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU
-  virtual void getInputData( std::vector<double>& inputdata ) const { plumed_merror("this is not implemented yet"); }
+  virtual void getInputData( std::vector<double>& inputdata ) const {
+    plumed_merror("this is not implemented yet");
+  }
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average
@@ -134,7 +139,8 @@ int ActionWithVector::getNumberOfMasks() const {
 
 inline
 void ActionWithVector::ignoreMaskArguments() {
-  plumed_assert( nmask<=0 ); nmask=-1;
+  plumed_assert( nmask<=0 );
+  nmask=-1;
 }
 
 inline

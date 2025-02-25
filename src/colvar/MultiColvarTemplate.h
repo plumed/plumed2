@@ -39,7 +39,11 @@ public:
   unsigned mode;
   MultiColvarInput() : usepbc(false), mode(0)  {}
   MultiColvarInput( bool u, const unsigned m ) : usepbc(u), mode(m) {}
-  MultiColvarInput& operator=( const MultiColvarInput& m ) { usepbc = m.usepbc; mode = m.mode; return *this; }
+  MultiColvarInput& operator=( const MultiColvarInput& m ) {
+    usepbc = m.usepbc;
+    mode = m.mode;
+    return *this;
+  }
 };
 
 template <class T>
@@ -62,7 +66,9 @@ public:
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
@@ -77,9 +83,13 @@ void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
-    if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
+    if( keys.style( keys.get(i), "atoms" ) ) {
+      keys.reset_style( keys.get(i), "numbered" );
+    }
   }
-  if( keys.outputComponentExists(".#!value") ) keys.setValueDescription("vector","the " + keys.getDisplayName() + " for each set of specified atoms");
+  if( keys.outputComponentExists(".#!value") ) {
+    keys.setValueDescription("vector","the " + keys.getDisplayName() + " for each set of specified atoms");
+  }
 }
 
 template <class T>
@@ -89,46 +99,63 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   taskmanager(this),
   mode(0),
   usepbc(true),
-  wholemolecules(false)
-{
+  wholemolecules(false) {
   std::vector<AtomNumber> all_atoms;
-  if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) parseAtomList( "ATOMS", all_atoms );
+  if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) {
+    parseAtomList( "ATOMS", all_atoms );
+  }
   if( all_atoms.size()>0 ) {
     natoms_per_task=1;
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
       T::parseAtomList( i, t, this );
-      if( t.empty() ) break;
+      if( t.empty() ) {
+        break;
+      }
 
-      if( i==1 ) { natoms_per_task=t.size(); }
+      if( i==1 ) {
+        natoms_per_task=t.size();
+      }
       if( t.size()!=natoms_per_task ) {
-        std::string ss; Tools::convert(i,ss);
+        std::string ss;
+        Tools::convert(i,ss);
         error("ATOMS" + ss + " keyword has the wrong number of atoms");
       }
-      for(unsigned j=0; j<natoms_per_task; ++j) all_atoms.push_back( t[j] );
+      for(unsigned j=0; j<natoms_per_task; ++j) {
+        all_atoms.push_back( t[j] );
+      }
       t.resize(0);
     }
   }
-  if( all_atoms.size()==0 ) error("No atoms have been specified");
+  if( all_atoms.size()==0 ) {
+    error("No atoms have been specified");
+  }
   requestAtoms(all_atoms);
   if( keywords.exists("NOPBC") ) {
-    bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
+    bool nopbc=!usepbc;
+    parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
   if( keywords.exists("WHOLEMOLECULES") ) {
     parseFlag("WHOLEMOLECULES",wholemolecules);
-    if( wholemolecules ) usepbc=false;
+    if( wholemolecules ) {
+      usepbc=false;
+    }
   }
-  if( usepbc ) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if( usepbc ) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   // Setup the values
   mode = T::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
   taskmanager.setNumberOfIndicesAndDerivativesPerTask( natoms_per_task, 3*natoms_per_task + 9 );
-  taskmanager.setNumberOfThreadedForces( 9 ); taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
+  taskmanager.setNumberOfThreadedForces( 9 );
+  taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
 }
 
 template <class T>
@@ -138,7 +165,9 @@ unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
 
 template <class T>
 void MultiColvarTemplate<T>::calculate() {
-  if( wholemolecules ) makeWhole();
+  if( wholemolecules ) {
+    makeWhole();
+  }
   taskmanager.runAllTasks();
 }
 
@@ -149,29 +178,44 @@ void MultiColvarTemplate<T>::applyNonZeroRankForces( std::vector<double>& outfor
 
 template <class T>
 void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1); s[0]=getNumberOfAtoms() / natoms_per_task; addValue( s );
+  std::vector<unsigned> s(1);
+  s[0]=getNumberOfAtoms() / natoms_per_task;
+  addValue( s );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1); s[0]=getNumberOfAtoms() / natoms_per_task; addComponent( name, s );
+  std::vector<unsigned> s(1);
+  s[0]=getNumberOfAtoms() / natoms_per_task;
+  addComponent( name, s );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
   unsigned ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
-  if( inputdata.size()!=5*natoms_per_task*ntasks ) inputdata.resize( 5*natoms_per_task*ntasks );
+  if( inputdata.size()!=5*natoms_per_task*ntasks ) {
+    inputdata.resize( 5*natoms_per_task*ntasks );
+  }
 
   std::size_t k=0;
   for(unsigned i=0; i<ntasks; ++i) {
     for(unsigned j=0; j<natoms_per_task; ++j) {
       Vector mypos( getPosition( natoms_per_task*i + j ) );
-      inputdata[k] = mypos[0]; k++;
-      inputdata[k] = mypos[1]; k++;
-      inputdata[k] = mypos[2]; k++;
+      inputdata[k] = mypos[0];
+      k++;
+      inputdata[k] = mypos[1];
+      k++;
+      inputdata[k] = mypos[2];
+      k++;
     }
-    for(unsigned j=0; j<natoms_per_task; ++j) { inputdata[k] = getMass( natoms_per_task*i + j ); k++; }
-    for(unsigned j=0; j<natoms_per_task; ++j) { inputdata[k] = getCharge( natoms_per_task*i + j ); k++; }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getMass( natoms_per_task*i + j );
+      k++;
+    }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getCharge( natoms_per_task*i + j );
+      k++;
+    }
   }
 }
 
@@ -181,20 +225,26 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const MultiColvar
   if( actiondata.usepbc ) {
     if( input.nindices_per_task==1 ) {
       Vector fpos=input.pbc.distance(Vector(0.0,0.0,0.0),Vector(input.inputdata[pos_start], input.inputdata[pos_start+1], input.inputdata[pos_start+2]) );
-      input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
+      input.inputdata[pos_start]=fpos[0];
+      input.inputdata[pos_start+1]=fpos[1];
+      input.inputdata[pos_start+2]=fpos[2];
     } else {
       std::size_t apos_start = pos_start;
       for(unsigned j=0; j<input.nindices_per_task-1; ++j) {
         Vector first(input.inputdata[apos_start], input.inputdata[apos_start+1], input.inputdata[apos_start+2]);
         Vector second(input.inputdata[apos_start+3], input.inputdata[apos_start+4], input.inputdata[apos_start+5]);
         second=first+input.pbc.distance(first,second);
-        input.inputdata[apos_start+3]=second[0]; input.inputdata[apos_start+4]=second[1]; input.inputdata[apos_start+5]=second[2];
+        input.inputdata[apos_start+3]=second[0];
+        input.inputdata[apos_start+4]=second[1];
+        input.inputdata[apos_start+5]=second[2];
         apos_start += 3;
       }
     }
   } else if( input.nindices_per_task==1 ) {
     Vector fpos=delta(Vector(0.0,0.0,0.0),Vector(input.inputdata[pos_start], input.inputdata[pos_start+1], input.inputdata[pos_start+2]));
-    input.inputdata[pos_start]=fpos[0]; input.inputdata[pos_start+1]=fpos[1]; input.inputdata[pos_start+2]=fpos[2];
+    input.inputdata[pos_start]=fpos[0];
+    input.inputdata[pos_start+1]=fpos[1];
+    input.inputdata[pos_start+2]=fpos[2];
   }
 
   std::size_t mass_start = pos_start + 3*input.nindices_per_task;
@@ -207,19 +257,30 @@ template <class T>
 void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned m = 0; double ff = fdata.force[i];
+    unsigned m = 0;
+    double ff = fdata.force[i];
     for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m]; m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      m++;
+      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      m++;
     }
-    for(unsigned n=0; n<9; ++n) { forces.thread_safe[n] += ff*fdata.deriv[i][m]; m++; }
+    for(unsigned n=0; n<9; ++n) {
+      forces.thread_safe[n] += ff*fdata.deriv[i][m];
+      m++;
+    }
   }
 }
 
 template <class T>
 void MultiColvarTemplate<T>::gatherThreads( ForceOutput& forces ) {
-  unsigned k=0; for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) { forces.thread_unsafe[n] += forces.thread_safe[k]; k++; }
+  unsigned k=0;
+  for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) {
+    forces.thread_unsafe[n] += forces.thread_safe[k];
+    k++;
+  }
 }
 
 }

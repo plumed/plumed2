@@ -59,7 +59,9 @@ public:
     cmd(key,TypesafePtr::setNelemAndShape(val,0,shape));
   }
   void cmd(std::string_view key,const TypesafePtr & val,std::initializer_list<SizeLike> shape) {
-    if(shape.size()>4) plumed_error() << "Maximum shape size is 4";
+    if(shape.size()>4) {
+      plumed_error() << "Maximum shape size is 4";
+    }
     std::array<std::size_t,5> shape_;
     unsigned j=0;
     for(auto i : shape) {

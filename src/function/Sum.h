@@ -34,7 +34,9 @@ public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
   bool zeroRank() const override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override { return true; }
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
+    return true;
+  }
   void setPrefactor( ActionWithArguments* action, const double pref ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };

@@ -61,52 +61,83 @@ void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
 
 ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   Action(ao),
-  ActionWithVector(ao)
-{
-  if( getNumberOfArguments()!=3 ) error("found wrong number of arguments in input");
-  std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
-  if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action");
+  ActionWithVector(ao) {
+  if( getNumberOfArguments()!=3 ) {
+    error("found wrong number of arguments in input");
+  }
+  std::vector<Value*> wval;
+  parseArgumentList("WEIGHT",wval);
+  if( wval.size()!=1 ) {
+    error("keyword WEIGHT should be provided with the label of a single action");
+  }
 
   for(unsigned i=0; i<3; ++i) {
-    if( getPntrToArgument(i)->getRank()!=2 ) error("input argument should be a matrix");
-    if( wval[0]->getShape()[0]!=getPntrToArgument(i)->getShape()[0] || wval[0]->getShape()[1]!=getPntrToArgument(i)->getShape()[1] ) error("mismatched shapes of matrices in input");
+    if( getPntrToArgument(i)->getRank()!=2 ) {
+      error("input argument should be a matrix");
+    }
+    if( wval[0]->getShape()[0]!=getPntrToArgument(i)->getShape()[0] || wval[0]->getShape()[1]!=getPntrToArgument(i)->getShape()[1] ) {
+      error("mismatched shapes of matrices in input");
+    }
   }
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
   // Rerequest the arguments
-  std::vector<Value*> myargs( getArguments() ); myargs.push_back( wval[0] ); requestArguments( myargs );
-  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
+  std::vector<Value*> myargs( getArguments() );
+  myargs.push_back( wval[0] );
+  requestArguments( myargs );
+  std::vector<unsigned> shape(1);
+  shape[0] = getPntrToArgument(0)->getShape()[0];
 
   // And now read the functions to compute
   for(int i=1;; i++) {
-    std::string myfunc, mystr, lab, num; Tools::convert(i,num);
-    if( !parseNumbered("FUNCTION",i,mystr ) ) break;
+    std::string myfunc, mystr, lab, num;
+    Tools::convert(i,num);
+    if( !parseNumbered("FUNCTION",i,mystr ) ) {
+      break;
+    }
     std::vector<std::string> data=Tools::getWords(mystr);
-    if( !Tools::parse(data,"LABEL",lab ) ) error("found no LABEL in FUNCTION" + num + " specification");
-    addComponent( lab, shape ); componentIsNotPeriodic( lab );
-    if( !Tools::parse(data,"FUNC",myfunc) ) error("found no FUNC in FUNCTION" + num + " specification");
+    if( !Tools::parse(data,"LABEL",lab ) ) {
+      error("found no LABEL in FUNCTION" + num + " specification");
+    }
+    addComponent( lab, shape );
+    componentIsNotPeriodic( lab );
+    if( !Tools::parse(data,"FUNC",myfunc) ) {
+      error("found no FUNC in FUNCTION" + num + " specification");
+    }
     log.printf("  component labelled %s is computed using %s \n",lab.c_str(), myfunc.c_str() );
-    functions.push_back( LeptonCall() ); std::vector<std::string> argnames(1); argnames[0]="ajik";
-    if( myfunc.find("rij")!=std::string::npos ) argnames.push_back("rij");
+    functions.push_back( LeptonCall() );
+    std::vector<std::string> argnames(1);
+    argnames[0]="ajik";
+    if( myfunc.find("rij")!=std::string::npos ) {
+      argnames.push_back("rij");
+    }
     if( myfunc.find("rik")!=std::string::npos ) {
-      if( argnames.size()<2 ) error("if you have a function of rik it must also be a function of rij -- email gareth.tribello@gmail.com if this is a problem");
+      if( argnames.size()<2 ) {
+        error("if you have a function of rik it must also be a function of rij -- email gareth.tribello@gmail.com if this is a problem");
+      }
       argnames.push_back("rik");
     }
     if( myfunc.find("rjk")!=std::string::npos ) {
-      if( argnames.size()<2 ) error("if you have a function of rjk it must also be a function of rij and rik -- email gareth.tribello@gmail.com if this is a problem");
+      if( argnames.size()<2 ) {
+        error("if you have a function of rjk it must also be a function of rij and rik -- email gareth.tribello@gmail.com if this is a problem");
+      }
       argnames.push_back("rjk");
     }
     functions[i-1].set( myfunc, argnames, this, true );
   }
-  checkRead(); multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
+  checkRead();
+  multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
 }
 
 std::string ThreeBodyGFunctions::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getConstPntrToComponent(i)->getName().find(cname)!=std::string::npos ) {
-      std::string num; Tools::convert( i+1, num ); return "the function defined by the FUNCTION" + num + " keyword";
+      std::string num;
+      Tools::convert( i+1, num );
+      return "the function defined by the FUNCTION" + num + " keyword";
     }
   }
-  plumed_error(); return "";
+  plumed_error();
+  return "";
 }
 
 unsigned ThreeBodyGFunctions::getNumberOfDerivatives() {
@@ -122,38 +153,61 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
   const Value* xval = getPntrToArgument(0);
   const Value* yval = getPntrToArgument(1);
   const Value* zval = getPntrToArgument(2);
-  Angle angle; Vector disti, distj; unsigned matsize = wval->getNumberOfStoredValues();
-  std::vector<double> values(4); std::vector<Vector> der_i(4), der_j(4);
+  Angle angle;
+  Vector disti, distj;
+  unsigned matsize = wval->getNumberOfStoredValues();
+  std::vector<double> values(4);
+  std::vector<Vector> der_i(4), der_j(4);
   unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getNumberOfColumns();
-  if( multi_action_input ) { matsize = wval->getNumberOfValues(); ncols = wval->getShape()[1]; }
+  if( multi_action_input ) {
+    matsize = wval->getNumberOfValues();
+    ncols = wval->getShape()[1];
+  }
   for(unsigned i=0; i<nbonds; ++i) {
     unsigned ipos = ncols*task_index + i;  //wval->getRowIndex( task_index, i );
-    if( multi_action_input ) ipos = ncols*task_index + wval->getRowIndex( task_index, i );
+    if( multi_action_input ) {
+      ipos = ncols*task_index + wval->getRowIndex( task_index, i );
+    }
     double weighti = wval->get( ipos, multi_action_input );
-    if( weighti<epsilon ) continue ;
+    if( weighti<epsilon ) {
+      continue ;
+    }
     disti[0] = xval->get( ipos, multi_action_input );
     disti[1] = yval->get( ipos, multi_action_input );
     disti[2] = zval->get( ipos, multi_action_input );
-    values[1] = disti.modulo2(); der_i[1]=2*disti; der_i[2].zero();
+    values[1] = disti.modulo2();
+    der_i[1]=2*disti;
+    der_i[2].zero();
     for(unsigned j=0; j<i; ++j) {
       unsigned jpos = ncols*task_index + j;  // wval->getRowIndex( task_index, j );
-      if( multi_action_input ) jpos = ncols*task_index + wval->getRowIndex( task_index, j );
+      if( multi_action_input ) {
+        jpos = ncols*task_index + wval->getRowIndex( task_index, j );
+      }
       double weightj = wval->get( jpos, multi_action_input );
-      if( weightj<epsilon ) continue ;
+      if( weightj<epsilon ) {
+        continue ;
+      }
       distj[0] = xval->get( jpos, multi_action_input );
       distj[1] = yval->get( jpos, multi_action_input );
       distj[2] = zval->get( jpos, multi_action_input );
-      values[2] = distj.modulo2(); der_j[1].zero(); der_j[2]=2*distj;
-      der_i[3] = ( disti - distj ); values[3] = der_i[3].modulo2();
-      der_i[3] = 2*der_i[3]; der_j[3] = -der_i[3];
+      values[2] = distj.modulo2();
+      der_j[1].zero();
+      der_j[2]=2*distj;
+      der_i[3] = ( disti - distj );
+      values[3] = der_i[3].modulo2();
+      der_i[3] = 2*der_i[3];
+      der_j[3] = -der_i[3];
       // Compute angle between bonds
       values[0] = angle.compute( disti, distj, der_i[0], der_j[0] );
       // Compute product of weights
       double weightij = weighti*weightj;
       // Now compute all symmetry functions
       for(unsigned n=0; n<functions.size(); ++n) {
-        double nonweight = functions[n].evaluate( values ); myvals.addValue( n, nonweight*weightij );
-        if( doNotCalculateDerivatives() ) continue;
+        double nonweight = functions[n].evaluate( values );
+        myvals.addValue( n, nonweight*weightij );
+        if( doNotCalculateDerivatives() ) {
+          continue;
+        }
 
         for(unsigned m=0; m<functions[n].getNumberOfArguments(); ++m) {
           double der = weightij*functions[n].evaluateDeriv( m, values );
@@ -169,18 +223,24 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
       }
     }
   }
-  if( doNotCalculateDerivatives() ) return ;
+  if( doNotCalculateDerivatives() ) {
+    return ;
+  }
 
   // And update the elements that have derivatives
   // Needs a separate loop here as there may be forces from j
   for(unsigned i=0; i<nbonds; ++i) {
     unsigned ipos = ncols*task_index + i; // wval->getRowIndex( task_index, i );
     double weighti = wval->get( ipos, false );
-    if( weighti<epsilon ) continue ;
+    if( weighti<epsilon ) {
+      continue ;
+    }
 
     for(unsigned n=0; n<functions.size(); ++n) {
-      myvals.updateIndex( n, ipos ); myvals.updateIndex( n, matsize+ipos );
-      myvals.updateIndex( n, 2*matsize+ipos ); myvals.updateIndex( n, 3*matsize+ipos );
+      myvals.updateIndex( n, ipos );
+      myvals.updateIndex( n, matsize+ipos );
+      myvals.updateIndex( n, 2*matsize+ipos );
+      myvals.updateIndex( n, 3*matsize+ipos );
     }
   }
 }

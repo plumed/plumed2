@@ -164,14 +164,18 @@ void MultiValue::addValue( const std::size_t& ival,  const double& val) {
 
 inline
 void MultiValue::addDerivative( const std::size_t& ival, const std::size_t& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder] += der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
+  atLeastOneSet=true;
+  hasderiv[nderivatives*ival+jder]=true;
+  derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
 void MultiValue::setDerivative( const std::size_t& ival, const std::size_t& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder]=der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
+  atLeastOneSet=true;
+  hasderiv[nderivatives*ival+jder]=true;
+  derivatives[nderivatives*ival+jder]=der;
 }
 
 
@@ -185,7 +189,9 @@ inline
 void MultiValue::updateIndex( const std::size_t& ival, const std::size_t& jder ) {
   plumed_dbg_assert( ival<values.size() && jder<nderivatives );
 #ifdef DNDEBUG
-  for(unsigned i=0; i<nactive[ival]; ++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder );
+  for(unsigned i=0; i<nactive[ival]; ++i) {
+    plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder );
+  }
 #endif
   if( hasderiv[nderivatives*ival+jder] ) {
     plumed_dbg_assert( nactive[ival]<nderivatives);

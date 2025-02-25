@@ -75,9 +75,15 @@ public:
     }
     void set( std::size_t i, const Tensor& v ) {
       std::size_t n=(i+1)*nderiv;
-      derivatives[n-9]=v[0][0]; derivatives[n-8]=v[0][1]; derivatives[n-7]=v[0][2];
-      derivatives[n-6]=v[1][0]; derivatives[n-5]=v[1][1]; derivatives[n-4]=v[1][2];
-      derivatives[n-3]=v[2][0]; derivatives[n-2]=v[2][1]; derivatives[n-1]=v[2][2];
+      derivatives[n-9]=v[0][0];
+      derivatives[n-8]=v[0][1];
+      derivatives[n-7]=v[0][2];
+      derivatives[n-6]=v[1][0];
+      derivatives[n-5]=v[1][1];
+      derivatives[n-4]=v[1][2];
+      derivatives[n-3]=v[2][0];
+      derivatives[n-2]=v[2][1];
+      derivatives[n-1]=v[2][2];
     }
   };
   std::size_t ncomponents;
