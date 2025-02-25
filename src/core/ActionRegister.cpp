@@ -43,7 +43,8 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
 
   auto content=get(images,ao.line[0]);
   Keywords keys;
-  keys.thisactname = ao.line[0];
+  //the name of the function is not clear but does `keys.thisactname = ao.line[0];`
+  keys.setDisplayName(ao.line[0]);
   content.keys(keys);
   ActionOptions nao( ao,keys );
   auto fullPath=getFullPath(images,ao.line[0]);
@@ -85,7 +86,8 @@ bool ActionRegister::printTemplate(const std::string& action, bool include_optio
   //no need to insert the try/catch block: check will ensure that action is known
   if( check(action) ) {
     Keywords keys;
-    keys.thisactname = action;
+    //the name of the function is not clear but does `keys.thisactname = action;`
+    keys.setDisplayName(action);
     get(action).keys(keys);
     keys.print_template(action, include_optional);
     return true;
@@ -110,7 +112,8 @@ ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywor
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
   //no need to insert the try/catch block: check will ensure that action is known
   if(check(action)) {
-    keys.thisactname = action;
+    //the name of the function is not clear but does `keys.thisactname = action;`
+    keys.setDisplayName(action);
     get(action).keys(keys);
     return true;
   }
@@ -119,7 +122,8 @@ bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
 
 void ActionRegister::getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys) {
   auto content=get(images,action);
-  keys.thisactname = action;
+  //the name of the function is not clear but does `keys.thisactname = action;`
+  keys.setDisplayName(action);
   content.keys(keys);
 }
 

@@ -108,6 +108,7 @@ void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
   keys.add("compulsory","UPPER","0.0","the upper boundary on the direction parallel to the long axis of the cylinder");
   keys.reset_style("SIGMA","optional");
+  keys.linkActionInDocs("RADIUS","LESS_THAN");
 }
 
 VolumeInCylinder::VolumeInCylinder(const ActionOptions& ao):

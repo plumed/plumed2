@@ -47,6 +47,7 @@ PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")
 
 void DumpMultiColvar::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.setDeprecated("DUMPATOMS");
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","FILE","the file that you would like to output the data to");
   keys.remove("HAS_VALUES");

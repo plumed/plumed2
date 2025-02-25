@@ -48,6 +48,7 @@ void RDF::createX2ReferenceObject( const std::string& lab, const std::string& gr
 void RDF::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("atoms","GROUP","");
+  keys.add("atoms","ATOMS","the atoms that are being used to calculate the RDF");
   keys.add("atoms-2","GROUPA","");
   keys.add("atoms-2","GROUPB","");
   keys.add("compulsory","GRID_BIN","the number of bins to use when computing the RDF");
@@ -107,6 +108,9 @@ RDF::RDF(const ActionOptions&ao):
   // Create contact matrix
   std::string natoms, str_norm_atoms, atom_str, group_str, groupa_str, groupb_str;
   parse("GROUP",group_str);
+  if( group_str.size()==0 ) {
+    parse("ATOMS",group_str);
+  }
   if( group_str.length()>0 ) {
     atom_str="GROUP=" + group_str;
     std::vector<std::string> awords=Tools::getWords(group_str,"\t\n ,");

@@ -159,20 +159,20 @@ KDE::KDE(const ActionOptions&ao):
             band += "," + bwidths[i];
           }
         }
-        plumed.readInputLine( getLabel() + "_sigma: CONSTANT " + band );
-        plumed.readInputLine( getLabel() + "_cov: CUSTOM ARG=" + getLabel() + "_sigma FUNC=x*x PERIODIC=NO" );
-        plumed.readInputLine( getLabel() + "_icov: CUSTOM ARG=" + getLabel() + "_cov FUNC=1/x PERIODIC=NO" );
+        plumed.readInputWords( Tools::getWords(getLabel() + "_sigma: CONSTANT " + band), false );
+        plumed.readInputWords( Tools::getWords(getLabel() + "_cov: CUSTOM ARG=" + getLabel() + "_sigma FUNC=x*x PERIODIC=NO"), false );
+        plumed.readInputWords( Tools::getWords(getLabel() + "_icov: CUSTOM ARG=" + getLabel() + "_cov FUNC=1/x PERIODIC=NO"), false );
         bandwidth = getLabel() + "_icov";
 
         if( (kerneltype=="gaussian" || kerneltype=="GAUSSIAN") && weights_are_volumes ) {
           std::string pstr;
           Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
-          plumed.readInputLine( getLabel() + "_bwprod: PRODUCT ARG=" + getLabel() + "_cov");
-          plumed.readInputLine( getLabel() + "_vol: CUSTOM ARG=" + getLabel() + "_bwprod FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
+          plumed.readInputWords( Tools::getWords(getLabel() + "_bwprod: PRODUCT ARG=" + getLabel() + "_cov"), false );
+          plumed.readInputWords( Tools::getWords(getLabel() + "_vol: CUSTOM ARG=" + getLabel() + "_bwprod FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO"), false );
           if( hasheight ) {
-            plumed.readInputLine( getLabel() + "_height: CUSTOM ARG=" + weight_str[0] + "," + getLabel() + "_vol FUNC=x/y PERIODIC=NO");
+            plumed.readInputWords( Tools::getWords(getLabel() + "_height: CUSTOM ARG=" + weight_str[0] + "," + getLabel() + "_vol FUNC=x/y PERIODIC=NO"), false);
           } else {
-            plumed.readInputLine( getLabel() + "_height: CUSTOM ARG=" + getLabel() + "_vol FUNC=1/x PERIODIC=NO");
+            plumed.readInputWords( Tools::getWords(getLabel() + "_height: CUSTOM ARG=" + getLabel() + "_vol FUNC=1/x PERIODIC=NO"), false);
           }
           hasheight=true;
           weight_str.resize(1);

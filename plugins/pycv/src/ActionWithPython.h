@@ -20,7 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 #include <string>
 
-#include "core/Action.h"
+#include "plumed/core/Action.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 

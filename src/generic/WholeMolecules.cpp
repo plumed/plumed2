@@ -57,7 +57,9 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
-The way WHOLEMOLECULES modifies each of the listed entities is this:
+The behavior of WHOLEMOLECULES is affected by the last \ref MOLINFO action
+present in the input file before WHOLEMOLECULES. Specifically, if the
+\ref MOLINFO action does not have a `WHOLE` flag, then the behavior is the following:
 - First atom of the list is left in place
 - Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
   to the previous one, iteratively.
@@ -66,6 +68,11 @@ In this way, if an entity consists of a list of atoms such that consecutive atom
 list are always closer than half a box side the entity will become whole.
 This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
 to skip some atoms, provided consecutive chosen atoms are close enough.
+
+If instead the \ref MOLINFO action does have a `WHOLE` flag, then a minimum spanning tree
+is built based on the atoms passed to WHOLEMOLECULES using the coordinates in the PDB
+passed to \ref MOLINFO as a reference, and this tree is used to reconstruct PBCs.
+This approach is more robust when dealing with complexes of multiple molecules.
 
 \par Examples
 
@@ -130,7 +137,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
+  keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.11 this is the default when using MOLINFO with WHOLE");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
 }
 
@@ -142,8 +149,14 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   // parse optional flags
-  parseFlag("EMST", doemst);
+  bool doemst_tmp;
+  parseFlag("EMST", doemst_tmp);
+  if(doemst_tmp) {
+    log << "EMST option is not needed any more as of PLUMED 2.11\n";
+  }
   parseFlag("ADDREFERENCE", addref);
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   // create groups from ENTITY
   for(int i=0;; i++) {
@@ -169,7 +182,6 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     if(moltype.length()==0) {
       error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
     }
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) {
       error("MOLINFO is required to use RESIDUES");
     }
@@ -186,8 +198,15 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
+  if(moldat && moldat->isWhole()) {
+    doemst=true;
+  }
+
+  if(doemst_tmp && ! doemst) {
+    error("cannot enable EMST if MOLINFO is not WHOLE");
+  }
+
   if(doemst) {
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) {
       error("MOLINFO is required to use EMST");
     }
@@ -213,7 +232,6 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
   // adding reference if needed
   if(addref) {
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) {
       error("MOLINFO is required to use ADDREFERENCE");
     }

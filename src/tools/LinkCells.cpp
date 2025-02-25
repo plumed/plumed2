@@ -28,6 +28,7 @@ namespace PLMD {
 LinkCells::LinkCells( Communicator& cc ) :
   comm(cc),
   cutoffwasset(false),
+  nopbc(false),
   link_cutoff(0.0),
   ncells(3),
   nstride(3) {
@@ -46,10 +47,35 @@ double LinkCells::getCutoff() const {
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
-  // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
-
-  // Setup the pbc object by copying it from action
-  mypbc.setBox( pbc.getBox() );
+  // Create an orthorhombic box around the atomic positions that encompasses every atomic position if there are no pbc
+  auto box = pbc.getBox();
+  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
+    Vector minp, maxp;
+    minp = maxp = pos[0];
+    for(unsigned k=0; k<3; ++k) {
+      for(unsigned i=1; i<pos.size(); ++i) {
+        if( pos[i][k]>maxp[k] ) {
+          maxp[k] = pos[i][k];
+        }
+        if( pos[i][k]<minp[k] ) {
+          minp[k] = pos[i][k];
+        }
+      }
+      if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) {
+        box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+      } else {
+        box[k][k] = maxp[k] - minp[k] + 1;
+      }
+      origin[k] = ( minp[k] + maxp[k] ) / 2;
+    }
+    nopbc=true;
+    // Setup the pbc object by copying it from action if the Pbc were set
+  } else {
+    auto determinant = box.determinant();
+    nopbc=false;
+    plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+  }
+  mypbc.setBox( box );
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
@@ -87,9 +113,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     lcell_starts.resize( ncellstot );
   }
   // Clear nlcells
-  for(unsigned i=0; i<ncellstot; ++i) {
-    lcell_tots[i]=0;
-  }
+  lcell_tots.assign( lcell_tots.size(), 0 );
   // Clear allcells
   allcells.assign( allcells.size(), 0 );
 
@@ -110,7 +134,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     tot+=lcell_tots[i];
     lcell_tots[i]=0;
   }
-  plumed_assert( tot==pos.size() );
+  plumed_assert( tot==pos.size() ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<pos.size();
 
   // And setup the link cells properly
   for(unsigned j=0; j<pos.size(); ++j) {
@@ -181,11 +205,15 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos );
   std::array<unsigned,3> celn;
+  Vector mypos = pos;
+  if( nopbc ) {
+    mypos = pos - origin;
+  }
+  Vector fpos=mypbc.realToScaled( mypos );
   for(unsigned j=0; j<3; ++j) {
     celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
-    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
+    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j]<<" link cell cutoff is "<<link_cutoff<<" position is "<<fpos[0]<<" "<<fpos[1]<<" "<<fpos[2]<<" box is "<<mypbc.getBox()(0,0)<<" "<<mypbc.getBox()(1,1)<<" "<<mypbc.getBox()(2,2);
   }
   return celn;
 }

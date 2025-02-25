@@ -174,8 +174,10 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     ofile<<"with-LOAD-yellow";
   } else if(status=="incomplete") {
     ofile<<version<<"-incomplete-yellow";
+  } else if ( status=="nobadge" ) {
+    ofile<<"nobadge-36454F";
   } else {
-    error("unknown status");
+    error("unknown status: "+status);
   }
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
   ofile.flush();
@@ -405,7 +407,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
           std::size_t eq=interpreted[i].find_first_of("=");
           if( eq!=std::string::npos ) {
             std::string keyword=interpreted[i].substr(0,eq), rest=interpreted[i].substr(eq+1);
-            ofile<<"<div class=\"tooltip\">"<<keyword<<"<div class=\"right\">"<<keys.getTooltip(keyword)<<"<i></i></div></div>";
+            ofile<<"<span class=\"tooltip\">"<<keyword<<"<span class=\"right\">"<<keys.getTooltip(keyword)<<"<i></i></span></span>";
             if( rest=="__FILL__" ) {
               if( status!="incomplete" ) {
                 error("found __FILL__ statement but status is " + status);
@@ -448,7 +450,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             ofile<<" ";
           } else if( interpreted[i]!="@newline" && interpreted[i]!="..." ) {
             myinputline += interpreted[i] + " ";
-            ofile<<"<div class=\"tooltip\">"<<interpreted[i]<<"<div class=\"right\">"<<keys.getTooltip(interpreted[i])<<"<i></i></div></div> ";
+            ofile<<"<span class=\"tooltip\">"<<interpreted[i]<<"<span class=\"right\">"<<keys.getTooltip(interpreted[i])<<"<i></i></span></span> ";
           } else if( interpreted[i]=="..." ) {
             ofile<<"...";
           }

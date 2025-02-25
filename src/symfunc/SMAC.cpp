@@ -55,8 +55,10 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("numbered","KERNEL","The kernels used in the function of the angle");
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
+  keys.linkActionInDocs("SWITCH_COORD","LESS_THAN");
   keys.reset_style("KERNEL","optional");
   keys.setValueDescription("vector","the value of the smac parameter for each of the input molecules");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );

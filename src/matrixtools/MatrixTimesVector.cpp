@@ -118,7 +118,10 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
           error("number of columns in input matrix does not equal number of elements in vector");
         }
       } else if( getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(n)->getShape()[0] ) {
-        error("number of columns in input matrix does not equal number of elements in vector");
+        std::string str_nmat, str_nvec;
+        Tools::convert( getPntrToArgument(i)->getShape()[1], str_nmat);
+        Tools::convert( getPntrToArgument(n)->getShape()[0], str_nvec );
+        error("number of columns in input matrix is " + str_nmat + " which does not equal number of elements in vector, which is " + str_nvec);
       }
     }
     if( getPntrToArgument(n)->getRank()>0 ) {

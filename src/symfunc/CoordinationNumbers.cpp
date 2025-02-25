@@ -111,6 +111,7 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   keys.add("optional","MASK","the label for a vector that is used to determine which rows of the matrix are computed");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CONTACT_MATRIX");
   keys.needsAction("GROUP");

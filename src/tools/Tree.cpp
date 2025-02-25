@@ -43,64 +43,68 @@ Tree::Tree(GenericMolInfo* moldat) {
   }
 }
 
-std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms) {
+void Tree::buildTree(const std::vector<AtomNumber> & atoms) {
   // Implementation inspired from:
   // https://mayanknatani.wordpress.com/2013/05/31/euclidean-minimummaximum-spanning-tree-emst/
   //
-  // list of AtomNumbers ordered by proximity in PDB file
-  std::vector<AtomNumber> tree;
   // clear root_ vector
   root_.clear();
+  tree_.clear();
+  root_indexes_.clear();
+  tree_indexes_.clear();
 
   std::vector<Vector> positions;
 
   // remove atoms not in PDB file
-  std::vector<AtomNumber> addtotree, addtoroot;
-  std::vector<AtomNumber> newatoms;
+  std::vector<unsigned> addtotree, addtoroot;
+  std::vector<unsigned> newatoms;
   newatoms.reserve(atoms.size());
   positions.reserve(atoms.size());
-  tree.reserve(atoms.size());
+
+  tree_.reserve(atoms.size());
   root_.reserve(atoms.size());
+  tree_indexes_.reserve(atoms.size());
+  root_indexes_.reserve(atoms.size());
   if(!moldat_->checkForAtom(atoms[0])) {
     plumed_merror("The first atom in the list should be present in the PDB file");
   }
   // store first atom
-  newatoms.push_back(atoms[0]);
+  newatoms.push_back(0);
   positions.push_back(moldat_->getPosition(atoms[0]));
   for(unsigned i=1; i<atoms.size(); ++i) {
     if(!moldat_->checkForAtom(atoms[i])) {
       // store this atom for later
-      addtotree.push_back(atoms[i]);
+      addtotree.push_back(i);
       // along with its root (the previous atom)
-      addtoroot.push_back(atoms[i-1]);
+      addtoroot.push_back(i-1);
     } else {
-      newatoms.push_back(atoms[i]);
+      newatoms.push_back(i);
       positions.push_back(moldat_->getPosition(atoms[i]));
     }
   }
-  // reassign atoms
-  atoms=newatoms;
+
   // start EMST
-  std::vector<bool> intree(atoms.size(), false);
-  std::vector<double> mindist(atoms.size(), std::numeric_limits<double>::max());
+  std::vector<bool> intree(newatoms.size(), false);
+  std::vector<double> mindist(newatoms.size(), std::numeric_limits<double>::max());
   // initialize tree with first atom
   mindist[0] = 0.0;
   // loops
-  for(unsigned i=0; i<atoms.size(); ++i) {
+  for(unsigned i=0; i<newatoms.size(); ++i) {
     int selected_vertex = -1;
-    for(unsigned j=0; j<atoms.size(); ++j) {
+    for(unsigned j=0; j<newatoms.size(); ++j) {
       if( !intree[j] && (selected_vertex==-1 || mindist[j] < mindist[selected_vertex]) ) {
         selected_vertex = j;
       }
     }
     // add to tree
     plumed_assert(selected_vertex>=0);
-    tree.push_back(atoms[selected_vertex]);
+    tree_indexes_.push_back(newatoms[selected_vertex]);
+    tree_.push_back(atoms[newatoms[selected_vertex]]);
     intree[selected_vertex] = true;
     // update distances
     double minroot = std::numeric_limits<double>::max();
     int iroot = -1;
-    for(unsigned j=0; j<atoms.size(); ++j) {
+    for(unsigned j=0; j<newatoms.size(); ++j) {
       double dist = delta(positions[selected_vertex], positions[j]).modulo2();
       if(dist < mindist[j]) {
         mindist[j] = dist;
@@ -112,22 +116,40 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms) {
     }
     // add to root vector
     if(iroot>=0) {
-      root_.push_back(atoms[iroot]);
+      root_.push_back(atoms[newatoms[iroot]]);
+      root_indexes_.push_back(newatoms[iroot]);
     }
   }
 
   // now re-add atoms not present in the PDB
   for(unsigned i=0; i<addtotree.size(); ++i) {
-    tree.push_back(addtotree[i]);
-    root_.push_back(addtoroot[i]);
+    tree_.push_back(atoms[addtotree[i]]);
+    tree_indexes_.push_back(addtotree[i]);
+    root_.push_back(atoms[addtoroot[i]]);
+    root_indexes_.push_back(addtoroot[i]);
   }
-
-  // return
-  return tree;
 }
 
-std::vector<AtomNumber> Tree::getRoot() const {
+const std::vector<AtomNumber> & Tree::getTree(const std::vector<AtomNumber> & atoms) {
+  buildTree(atoms);
+  return tree_;
+}
+
+const std::vector<AtomNumber> & Tree::getTree() const noexcept {
+  return tree_;
+}
+
+const std::vector<AtomNumber> & Tree::getRoot() const noexcept {
   return root_;
 }
+
+const std::vector<unsigned> & Tree::getTreeIndexes() const noexcept {
+  return tree_indexes_;
+}
+
+const std::vector<unsigned> & Tree::getRootIndexes() const noexcept {
+  return root_indexes_;
+}
+
 
 }
