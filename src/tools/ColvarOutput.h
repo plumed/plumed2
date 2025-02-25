@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_colvar_ColvarOutputh
-#define __PLUMED_colvar_ColvarOutputh
+#ifndef __PLUMED_tools_ColvarOutputh
+#define __PLUMED_tools_ColvarOutputh
 
 #include <vector>
 
