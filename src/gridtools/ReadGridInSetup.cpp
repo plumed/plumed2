@@ -58,7 +58,7 @@ private:
   std::vector<std::string> dernames;
   void createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
                            const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-                           const std::vector<unsigned>& gbin );
+                           const std::vector<std::size_t>& gbin );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ReadGridInSetup(const ActionOptions&ao);
@@ -101,7 +101,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     parseVector("GRID_MIN",gmin);
     std::vector<std::string> gmax(gmin.size());
     parseVector("GRID_MAX",gmax);
-    std::vector<unsigned> gbin(gmin.size());
+    std::vector<std::size_t> gbin(gmin.size());
     parseVector("GRID_BIN",gbin);
     std::vector<std::string> pbc(gmin.size());
     parseVector("PERIODIC",pbc);
@@ -243,7 +243,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     std::vector<std::string> gmin( dernames.size() ), gmax( dernames.size() );
     std::string pstring;
     int gbin1;
-    std::vector<unsigned> gbin( dernames.size() );
+    std::vector<std::size_t> gbin( dernames.size() );
     std::vector<bool> ipbc( dernames.size() );
     if( !flatgrid ) {
       ifile.scanField( "nbins", gbin1);
@@ -311,17 +311,17 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
 
 void ReadGridInSetup::createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
     const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-    const std::vector<unsigned>& gbin ) {
+    const std::vector<std::size_t>& gbin ) {
   gridobject.setup( gtype, ipbc, nfermi, 0.0 );
   std::vector<double> gspacing;
   if( gtype=="flat" ) {
     gridobject.setBounds( gmin, gmax, gbin, gspacing );
     // Now create the value
-    std::vector<unsigned> shape( gridobject.getNbin(true) );
+    std::vector<std::size_t> shape( gridobject.getNbin(true) );
     ActionWithValue::addValueWithDerivatives( shape );
     setNotPeriodic();
   } else {
-    std::vector<unsigned> shape( 3 );
+    std::vector<std::size_t> shape( 3 );
     shape[0]=gbin[0];
     shape[1]=shape[2]=1;
     ActionWithValue::addValueWithDerivatives( shape );

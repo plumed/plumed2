@@ -25,7 +25,7 @@ namespace PLMD {
 namespace dimred {
 
 SMACOF::SMACOF( const Value* target) {
-  std::vector<unsigned> shape( target->getShape() );
+  std::vector<std::size_t> shape( target->getShape() );
   Distances.resize( shape[0], shape[1] );
   Weights.resize( shape[0], shape[1] );
   for(unsigned i=0; i<shape[0]; ++i) {

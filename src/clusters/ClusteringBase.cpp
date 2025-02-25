@@ -41,7 +41,7 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   }
 
   // Now create a value - this holds the data on which cluster each guy is in
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   // Build the store here to make sure that next action has all data
   addValue( shape );

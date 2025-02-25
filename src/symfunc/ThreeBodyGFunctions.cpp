@@ -84,7 +84,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   std::vector<Value*> myargs( getArguments() );
   myargs.push_back( wval[0] );
   requestArguments( myargs );
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
 
   // And now read the functions to compute

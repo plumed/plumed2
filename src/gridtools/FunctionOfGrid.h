@@ -94,12 +94,12 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
     error("first input to this action must be a grid");
   }
   // Get the shape of the input grid
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
     if( getPntrToArgument(i)->getRank()==0 ) {
       continue;
     }
-    std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
+    std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
     if( s.size()!=shape.size() ) {
       error("mismatch between dimensionalities of input grids");
     }
@@ -138,12 +138,12 @@ void FunctionOfGrid<T>::setupOnFirstStep( const bool incalc ) {
   const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
   unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
   if( mygrid.getGridType()=="flat" ) {
-    std::vector<unsigned> shape( getGridCoordinatesObject().getNbin(true) );
+    std::vector<std::size_t> shape( getGridCoordinatesObject().getNbin(true) );
     for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
       if( getPntrToArgument(i)->getRank()==0 ) {
         continue;
       }
-      std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
+      std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
       for(unsigned j=0; j<shape.size(); ++j) {
         if( shape[j]!=s[j] ) {
           error("mismatch between sizes of input grids");

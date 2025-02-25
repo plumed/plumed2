@@ -72,7 +72,7 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
   parse("SEED",seed);
   log.printf("  selecting %d landmark points \n", nlandmarks );
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   addValue( shape );
   setNotPeriodic();
@@ -81,7 +81,7 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
 void FarthestPointSampling::prepare() {
   Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0] = getPntrToArgument(0)->getShape()[0];
     myval->setShape(shape);
   }

@@ -38,7 +38,7 @@ private:
 /// Used to hold the list of tasks we are running
   std::vector<unsigned> active_tasks;
 /// Get the shape of the output matrix
-  std::vector<unsigned> getValueShapeFromArguments();
+  std::vector<std::size_t> getValueShapeFromArguments();
 /// Get a pointer to the first matrix argument
   Value* getPntrToFirstMatrixArgument() const ;
 public:
@@ -87,7 +87,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao) {
   // Get the shape of the output
-  std::vector<unsigned> shape( getValueShapeFromArguments() );
+  std::vector<std::size_t> shape( getValueShapeFromArguments() );
   // Check if the output matrix is symmetric
   bool symmetric=true;
   unsigned argstart=myfunc.getArgStart();
@@ -166,9 +166,9 @@ void FunctionOfMatrix<T>::turnOnDerivatives() {
 }
 
 template <class T>
-std::vector<unsigned> FunctionOfMatrix<T>::getValueShapeFromArguments() {
+std::vector<std::size_t> FunctionOfMatrix<T>::getValueShapeFromArguments() {
   unsigned argstart=myfunc.getArgStart();
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=shape[1]=0;
   unsigned nargs = getNumberOfArguments();
   if( getNumberOfMasks()>0 ) {
@@ -207,7 +207,7 @@ unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
 template <class T>
 void FunctionOfMatrix<T>::prepare() {
   unsigned argstart = myfunc.getArgStart();
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==2 ) {
       shape[0] = getPntrToArgument(i)->getShape()[0];

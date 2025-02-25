@@ -93,7 +93,7 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   }
   // Create value for this function
   std::vector<std::string> argn( getGridCoordinateNames() );
-  std::vector<unsigned> shape(0);
+  std::vector<std::size_t> shape(0);
   for(unsigned i=0; i<argn.size(); ++i) {
     addComponent( argn[i] + "_opt", shape );
   }

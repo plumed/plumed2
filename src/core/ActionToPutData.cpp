@@ -62,7 +62,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   unit(n),
   mydata(DataPassingObject::create(plumed.getRealPrecision())) {
   if( getName()!="ENERGY" && getName()!="PBC" ) {
-    std::vector<unsigned> shape;
+    std::vector<std::size_t> shape;
     parseVector("SHAPE",shape);
     if( shape.size()==1 && shape[0]==0 ) {
       shape.resize(0);
@@ -189,7 +189,7 @@ bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePt
       mydata->setValuePointer(val,getPntrToComponent(0)->getShape(), !resetable);
     }
   } else {
-    mydata->setValuePointer(val,std::vector<unsigned>(), !resetable);
+    mydata->setValuePointer(val,std::vector<std::size_t>(), !resetable);
   }
   return true;
 }
@@ -202,7 +202,7 @@ bool ActionToPutData::setForcePointer( const std::string& name, const TypesafePt
   if( !from_domains ) {
     mydata->setForcePointer(val,getPntrToComponent(0)->getShape());
   } else {
-    mydata->setForcePointer(val,std::vector<unsigned>());
+    mydata->setForcePointer(val,std::vector<std::size_t>());
   }
   return true;
 }

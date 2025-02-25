@@ -74,7 +74,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
   ActionWithArguments(ao) {
   if( getNumberOfArguments()>0 ) {
     vectors=true;
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()>1 ) {
@@ -150,7 +150,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
       nrows++;
     }
 
-    std::vector<unsigned> shape(2);
+    std::vector<std::size_t> shape(2);
     shape[0]=0;
     unsigned k=0;
     row_starts.resize( arglist.size() );

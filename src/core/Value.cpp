@@ -37,7 +37,7 @@ Value::Value():
   action(NULL),
   value_set(false),
   hasForce(false),
-  shape(std::vector<unsigned>()),
+  shape(std::vector<std::size_t>()),
   hasDeriv(true),
   bufstart(0),
   ngrid_der(0),
@@ -58,7 +58,7 @@ Value::Value(const std::string& name):
   value_set(false),
   hasForce(false),
   name(name),
-  shape(std::vector<unsigned>()),
+  shape(std::vector<std::size_t>()),
   hasDeriv(true),
   bufstart(0),
   ngrid_der(0),
@@ -75,7 +75,7 @@ Value::Value(const std::string& name):
   data[0]=inputForce[0]=0;
 }
 
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<unsigned>&ss):
+Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<std::size_t>&ss):
   action(av),
   value_set(false),
   hasForce(false),
@@ -113,7 +113,7 @@ void Value::setValType( const std::string& vtype ) {
   }
 }
 
-void Value::setShape( const std::vector<unsigned>&ss ) {
+void Value::setShape( const std::vector<std::size_t>&ss ) {
   std::size_t tot=1;
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) {

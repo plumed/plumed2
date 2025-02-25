@@ -74,8 +74,8 @@ Flatten::Flatten(const ActionOptions& ao):
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
     error("input to this action should be a matrix");
   }
-  std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() );
-  std::vector<unsigned> shape( 1 );
+  std::vector<std::size_t> inshape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( 1 );
   shape[0]=inshape[0]*inshape[1];
   addValue( shape );
   setNotPeriodic();

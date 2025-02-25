@@ -154,7 +154,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   std::vector<bool> ipbc( 3, false );
   gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
   // Now create a value
-  std::vector<unsigned> shape( 3 );
+  std::vector<std::size_t> shape( 3 );
   shape[0]=npoints;
   shape[1]=shape[2]=1;
   addValueWithDerivatives( shape );

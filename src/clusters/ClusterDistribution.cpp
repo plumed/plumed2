@@ -139,7 +139,7 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   // Request the arguments
   requestArguments( clusters );
   // Now create the value
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=clusters[0]->getShape()[0];
   addValue( shape );
   setNotPeriodic();

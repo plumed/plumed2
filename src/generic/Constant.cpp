@@ -94,7 +94,7 @@ Constant::Constant(const ActionOptions&ao):
   bool scalars=false;
   std::string fname, vname;
   parse("FILE",fname);
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   std::vector<double> vals;
   if( fname.length()>0 ) {
     IFile mfile;

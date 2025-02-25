@@ -23,7 +23,6 @@
 #include "core/Colvar.h"
 
 namespace PLMD {
-namespace colvar {
 ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v,
     std::vector<double>& d,
     Colvar* action ) {
@@ -32,5 +31,4 @@ ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v,
   return ColvarOutput( val, action->getNumberOfDerivatives(), d.data() );
 }
 
-} // namespace colvar
 } // namespace PLMD

@@ -32,43 +32,7 @@ Get the charges of one or multiple atoms
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR CHARGE_SCALAR
-/*
-Get the charges of one or multiple atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR CHARGE_VECTOR
-/*
-Get the charges of one or multiple atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC MCOLVAR MASS
-/*
-Get the mass of one or multiple atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR MASS_SCALAR
-/*
-Get the mass of one or multiple atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR MASS_VECTOR
 /*
 Get the mass of one or multiple atoms
 
@@ -125,7 +89,7 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
   }
   log.printf("\n");
   requestAtoms(atoms);
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   if(atoms.size()==1) {
     shape.resize(0);
   } else {

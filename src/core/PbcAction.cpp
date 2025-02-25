@@ -49,7 +49,7 @@ PbcAction::PbcAction(const ActionOptions&ao):
   Action(ao),
   ActionToPutData(ao),
   interface(NULL) {
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=shape[1]=3;
   addValue( shape );
   setNotPeriodic();

@@ -82,7 +82,7 @@ private:
 /// The name of this quantiy
   std::string name;
 /// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
@@ -110,9 +110,9 @@ public:
 /// A constructor that can be used to make Vectors of named values
   explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
-  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
+  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<std::size_t>&ss=std::vector<std::size_t>());
 /// Set the shape of the Value
-  void setShape( const std::vector<unsigned>&ss );
+  void setShape( const std::vector<std::size_t>&ss );
 /// Set the value of the function
   void set(double);
 /// Set the value of the stored data
@@ -185,7 +185,7 @@ public:
 /// Get the rank of the object that is contained in this value
   unsigned getRank() const ;
 /// Get the shape of the object that is contained in this value
-  const std::vector<unsigned>& getShape() const ;
+  const std::vector<std::size_t>& getShape() const ;
 /// Reshape the storage for sparse matrices
   void reshapeMatrixStore( const unsigned& n );
 /// Copy the matrix bookeeping stuff
@@ -420,7 +420,7 @@ unsigned Value::getRank() const {
 }
 
 inline
-const std::vector<unsigned>& Value::getShape() const {
+const std::vector<std::size_t>& Value::getShape() const {
   return shape;
 }
 

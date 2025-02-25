@@ -34,8 +34,6 @@ namespace PLMD {
 
 class Colvar;
 
-namespace colvar {
-
 class ColvarOutput {
 private:
   class DerivHelper {
@@ -106,6 +104,5 @@ public:
   }
 };
 
-} // namespace colvar
 } //namespace PLMD
 #endif // __PLUMED_colvar_ColvarOutputh

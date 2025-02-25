@@ -110,7 +110,7 @@ FindContour::FindContour(const ActionOptions&ao):
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=0;
   for(unsigned i=0; i<argn.size(); ++i ) {
     addComponent( argn[i], shape );
@@ -123,7 +123,7 @@ std::string FindContour::getOutputComponentDescription( const std::string& cname
 }
 
 void FindContour::setupValuesOnFirstStep() {
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setShape( shape );
@@ -146,7 +146,7 @@ void FindContour::getNumberOfTasks( unsigned& ntasks ) {
   unsigned npoints = gval->getNumberOfValues();
   std::vector<unsigned> ind( gval->getRank() );
   std::vector<unsigned> ones( gval->getRank(), 1 );
-  std::vector<unsigned> nbin( getInputGridObject().getNbin( false ) );
+  std::vector<std::size_t> nbin( getInputGridObject().getNbin( false ) );
   unsigned num_neighbours;
   std::vector<unsigned> neighbours;
 

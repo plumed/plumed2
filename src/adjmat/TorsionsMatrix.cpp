@@ -106,7 +106,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   log.printf("\n");
   requestAtoms( atoms_a, false );
 
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape );

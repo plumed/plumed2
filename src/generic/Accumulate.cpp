@@ -96,7 +96,7 @@ Accumulate::Accumulate( const ActionOptions& ao ):
     }
     log.printf("  clearing average every %u steps \n",clearstride);
   }
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValueWithDerivatives( shape );
   setNotPeriodic();
   if( getPntrToArgument(0)->isPeriodic() ) {

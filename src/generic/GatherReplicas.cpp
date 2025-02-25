@@ -68,7 +68,7 @@ GatherReplicas::GatherReplicas( const ActionOptions& ao ):
     error("you can only gather one argument at a time with GatherReplicas");
   }
 
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   std::string min, max;
   nreplicas=multi_sim_comm.Get_size();
   bool periodic=false;

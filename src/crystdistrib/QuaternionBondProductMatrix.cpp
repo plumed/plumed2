@@ -110,7 +110,7 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
       error("quaternion arguments are in wrong order");
     }
   }
-  std::vector<unsigned> shape( getPntrToArgument(4)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(4)->getShape() );
   for(unsigned i=4; i<8; ++i) {
     Value* myarg=getPntrToArgument(i);
     if( myarg->getRank()!=2 ) {

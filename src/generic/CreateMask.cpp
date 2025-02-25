@@ -100,7 +100,7 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
   } else {
     error( stype + " is not a valid way input for TYPE");
   }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   addValue( shape );
   setNotPeriodic();
@@ -113,7 +113,7 @@ void CreateMask::prepare() {
   Value* out=getPntrToComponent(0);
   Value* arg=getPntrToArgument(0);
   if( out->getShape()[0]!=arg->getShape()[0] ) {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0] = arg->getShape()[0];
     out->setShape( shape );
   }

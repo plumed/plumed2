@@ -96,7 +96,7 @@ QuaternionProductMatrix::QuaternionProductMatrix(const ActionOptions&ao):
       error("quaternion arguments are in wrong order");
     }
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(4)->getShape()[0];
   addComponent( "w", shape );

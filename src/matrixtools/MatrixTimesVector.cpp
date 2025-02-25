@@ -105,7 +105,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
     ignoreMaskArguments();
   }
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   if( nvectors==1 ) {
     unsigned n = getNumberOfArguments()-1;
@@ -204,7 +204,7 @@ void MatrixTimesVector::prepare() {
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) {
     return;
   }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   myval->setShape(shape);
 }
@@ -236,7 +236,6 @@ int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
 void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   if( sumrows ) {
     unsigned n=getNumberOfArguments()-1;
-    Value* myvec = getPntrToArgument(n);
     for(unsigned i=0; i<n; ++i) {
       Value* mymat = getPntrToArgument(i);
       unsigned ncol = mymat->getNumberOfColumns();

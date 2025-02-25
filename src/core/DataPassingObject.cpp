@@ -26,7 +26,7 @@
 namespace PLMD {
 
 template<typename T>
-static void getPointer(const TypesafePtr & p, const std::vector<unsigned>& shape, const unsigned& start, const unsigned& stride, T*&pp ) {
+static void getPointer(const TypesafePtr & p, const std::vector<std::size_t>& shape, const unsigned& start, const unsigned& stride, T*&pp ) {
   if( shape.size()==1 && stride==1 ) {
     pp=p.get<T*>( {shape[0]} );
   } else if( shape.size()==1 ) {
@@ -51,9 +51,9 @@ public:
 /// this can be used even when you don't pass a pointer from the MD code
   void saveValueAsDouble( const TypesafePtr & val ) override;
 /// Set the pointer to the value
-  void setValuePointer( const TypesafePtr & p, const std::vector<unsigned>& shape, const bool& isconst ) override;
+  void setValuePointer( const TypesafePtr & p, const std::vector<std::size_t>& shape, const bool& isconst ) override;
 /// Set the pointer to the force
-  void setForcePointer( const TypesafePtr & p, const std::vector<unsigned>& shape ) override;
+  void setForcePointer( const TypesafePtr & p, const std::vector<std::size_t>& shape ) override;
 /// This gets the data in the pointer and passes it to the output value
   void share_data( std::vector<double>& values ) const override ;
 /// Share the data and put it in the value from sequential data
@@ -95,7 +95,7 @@ void DataPassingObjectTyped<T>::saveValueAsDouble( const TypesafePtr & val ) {
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst ) {
+void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const std::vector<std::size_t>& shape, const bool& isconst ) {
   if( shape.size()==0 ) {
     if( isconst ) {
       val.get<const T*>();
@@ -117,7 +117,7 @@ void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const 
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape ) {
+void DataPassingObjectTyped<T>::setForcePointer( const TypesafePtr & val, const std::vector<std::size_t>& shape ) {
   if( shape.size()==0 ) {
     val.get<T*>();  // just check type and discard pointer
   } else if( shape.size()==1 )
@@ -151,7 +151,7 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
     }
     return;
   }
-  std::vector<unsigned> s(value->getShape());
+  std::vector<std::size_t> s(value->getShape());
   if( s.size()==1 ) {
     s[0]=k-j;
   }
@@ -166,7 +166,7 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
 
 template <class T>
 void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const {
-  std::vector<unsigned> maxel(1,values.size());
+  std::vector<std::size_t> maxel(1,values.size());
   const T* pp;
   getPointer( v, maxel, start, stride, pp );
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(values))
@@ -178,7 +178,7 @@ void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const 
 template <class T>
 void DataPassingObjectTyped<T>::share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) {
   plumed_dbg_assert( value->getRank()==1 );
-  std::vector<unsigned> maxel(1,index.size());
+  std::vector<std::size_t> maxel(1,index.size());
 #ifndef NDEBUG
 // bounds are only checked in debug mode since they require this extra step that is potentially expensive
   maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
@@ -213,7 +213,7 @@ void DataPassingObjectTyped<T>::add_force( Value* value ) {
 template <class T>
 void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value* value ) {
   plumed_assert( value->getRank()==1 );
-  std::vector<unsigned> s(1,index.size());
+  std::vector<std::size_t> s(1,index.size());
   T* pp;
   getPointer( f, s, start, stride, pp );
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pp,index.size()))
@@ -225,7 +225,7 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value*
 template <class T>
 void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
   plumed_dbg_assert( value->getRank()==1 );
-  std::vector<unsigned> maxel(1,index.size());
+  std::vector<std::size_t> maxel(1,index.size());
 #ifndef NDEBUG
 // bounds are only checked in debug mode since they require this extra step that is potentially expensive
   maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
@@ -244,7 +244,7 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index,
 template <class T>
 void DataPassingObjectTyped<T>::rescale_force( const unsigned& n, const double& factor, Value* value ) {
   plumed_assert( value->getRank()>0 );
-  std::vector<unsigned> s( value->getShape() );
+  std::vector<std::size_t> s( value->getShape() );
   if( s.size()==1 ) {
     s[0] = n;
   }

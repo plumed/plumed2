@@ -99,7 +99,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   ActionWithVector(ao),
   doAtEnd(true) {
   // Get the shape of the output
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=getNumberOfFinalTasks();
   // Read the input and do some checks
   myfunc.read( this );
@@ -195,7 +195,7 @@ unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
 template <class T>
 void FunctionOfVector<T>::prepare() {
   unsigned argstart = myfunc.getArgStart();
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
       shape[0] = getPntrToArgument(i)->getShape()[0];

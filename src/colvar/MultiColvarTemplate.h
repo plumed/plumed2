@@ -38,6 +38,7 @@ public:
   bool usepbc;
   unsigned mode;
   MultiColvarInput() : usepbc(false), mode(0)  {}
+  MultiColvarInput( const MultiColvarInput& m ) : usepbc(m.usepbc), mode(m.mode) {}
   MultiColvarInput( bool u, const unsigned m ) : usepbc(u), mode(m) {}
   MultiColvarInput& operator=( const MultiColvarInput& m ) {
     usepbc = m.usepbc;
@@ -58,21 +59,21 @@ private:
 /// Do we reassemble the molecule
   bool wholemolecules;
 /// The number of atoms per task
-  unsigned natoms_per_task;
+  std::size_t natoms_per_task;
 public:
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
-  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
-  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
+  void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
+  void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
   void performTask( const unsigned&, MultiValue& ) const override {
     plumed_error();
   }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static void performTask( unsigned task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static void performTask( std::size_t task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
+  static void gatherForces( std::size_t task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
   static void gatherThreads( ForceOutput& forces );
 };
 
@@ -177,22 +178,22 @@ void MultiColvarTemplate<T>::applyNonZeroRankForces( std::vector<double>& outfor
 }
 
 template <class T>
-void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1);
+void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
+  std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addValue( s );
 }
 
 template <class T>
-void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1);
+void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
+  std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addComponent( name, s );
 }
 
 template <class T>
 void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
-  unsigned ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
   }
@@ -220,7 +221,7 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
-void MultiColvarTemplate<T>::performTask( unsigned task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+void MultiColvarTemplate<T>::performTask( std::size_t task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   std::size_t pos_start = 5*input.nindices_per_task*task_index;
   if( actiondata.usepbc ) {
     if( input.nindices_per_task==1 ) {
@@ -254,7 +255,7 @@ void MultiColvarTemplate<T>::performTask( unsigned task_index, const MultiColvar
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( unsigned task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+void MultiColvarTemplate<T>::gatherForces( std::size_t task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned m = 0;

@@ -114,7 +114,7 @@ VStack::VStack(const ActionOptions& ao):
     }
   }
   // And create a value to hold the matrix
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=nvals;
   shape[1]=getNumberOfArguments();
   addValue( shape );
@@ -144,7 +144,7 @@ void VStack::prepare() {
   if( getPntrToArgument(0)->getRank()==0 || getPntrToArgument(0)->getShape()[0]==getPntrToComponent(0)->getShape()[0] ) {
     return ;
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   shape[1] = getNumberOfArguments();
   getPntrToComponent(0)->setShape(shape);

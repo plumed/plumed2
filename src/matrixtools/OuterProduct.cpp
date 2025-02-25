@@ -111,7 +111,7 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
     log.printf("  setting diagonal elements equal to zero\n");
   }
 
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[0];
   addValue( shape );
@@ -138,7 +138,7 @@ void OuterProduct::prepare() {
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[0] ) {
     return;
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   shape[1] = getPntrToArgument(1)->getShape()[0];
   myval->setShape( shape );

@@ -92,7 +92,7 @@ Neighbors::Neighbors(const ActionOptions&ao):
   }
 
   // And get the shape
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValue( shape );
   setNotPeriodic();
   checkRead();

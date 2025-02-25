@@ -128,11 +128,11 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
     addComponentWithDerivatives("dist");
     componentIsNotPeriodic("dist");
-    std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
     addComponent( "disp", shape );
     componentIsNotPeriodic("disp");
   } else if( displacement ) {
-    std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addComponent( "dist", shape );
     componentIsNotPeriodic("dist");
     shape.resize(2);
@@ -145,7 +145,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     addValue();
     setNotPeriodic();
   } else {
-    std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addValue( shape );
     setNotPeriodic();
   }

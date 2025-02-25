@@ -62,7 +62,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   if( atoms.size()==1 ) {
     ActionWithValue::addValueWithDerivatives();
   } else {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=atoms.size();
     ActionWithValue::addValue( shape );
   }

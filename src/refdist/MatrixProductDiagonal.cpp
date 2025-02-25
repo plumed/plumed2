@@ -94,7 +94,7 @@ MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):
     if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(1)->getShape()[1] ) {
       error("matrix output by this action must be square");
     }
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=getPntrToArgument(0)->getShape()[0];
     addValue( shape );
     setNotPeriodic();

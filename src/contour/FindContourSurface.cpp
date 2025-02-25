@@ -163,14 +163,14 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( getInputGridObject().getDimension()-1 );
+  std::vector<std::size_t> shape( getInputGridObject().getDimension()-1 );
   addValueWithDerivatives( shape );
   setNotPeriodic();
 }
 
 void FindContourSurface::setupValuesOnFirstStep() {
   std::vector<double> fspacing;
-  std::vector<unsigned> snbins( gridcoords.getDimension() );
+  std::vector<std::size_t> snbins( gridcoords.getDimension() );
   std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );
   for(unsigned i=0; i<gdirs.size(); ++i) {
     smin[i]=getInputGridObject().getMin()[gdirs[i]];
@@ -212,7 +212,7 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
   unsigned num_neighbours;
   unsigned nfound=0;
   double minv=0, minp;
-  std::vector<unsigned> bins_n( getInputGridObject().getNbin(false) );
+  std::vector<std::size_t> bins_n( getInputGridObject().getNbin(false) );
   unsigned shiftn=current;
   std::vector<unsigned> ind( getInputGridObject().getDimension() );
   std::vector<double> point( getInputGridObject().getDimension() );

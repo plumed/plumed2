@@ -141,7 +141,7 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
     log.printf("  in %sth term distances are transformed by 1-switching function with r_0=%s \n", inum.c_str(), switchingFunction[i-1].description().c_str() );
     log.printf("  in %sth term weights of matrix elements in stress function are given by %s \n", inum.c_str(), weights[0]->getName().c_str() );
   }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=ntoproj;
   if( ntoproj==1 ) {
     shape.resize(0);
@@ -164,7 +164,7 @@ void ProjectPoints::prepare() {
     return;
   }
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(dimout)->getShape()[0];
   for(unsigned i=0; i<dimout; ++i) {
     if( getPntrToComponent(i)->getShape()[0]!=shape[0] ) {

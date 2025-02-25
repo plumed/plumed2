@@ -64,7 +64,8 @@ private:
   std::vector<double> gspacing;
   unsigned num_neigh, bwargno;
   std::vector<Value> grid_diff_value;
-  std::vector<unsigned> nbin, nneigh, neighbors;
+  std::vector<std::size_t> nbin;
+  std::vector<unsigned> nneigh, neighbors;
   unsigned numberOfKernels, nbins;
   SwitchingFunction switchingFunction;
   double von_misses_concentration, von_misses_norm;
@@ -123,7 +124,7 @@ KDE::KDE(const ActionOptions&ao):
   ActionWithGrid(ao),
   hasheight(false),
   fixed_width(false) {
-  std::vector<unsigned> shape( getNumberOfArguments() );
+  std::vector<std::size_t> shape( getNumberOfArguments() );
   center.resize( getNumberOfArguments() );
   numberOfKernels=getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=1; i<shape.size(); ++i) {
@@ -357,7 +358,7 @@ void KDE::setupOnFirstStep( const bool incalc ) {
   }
   // And setup the grid object
   gridobject.setBounds( gmin, gmax, nbin, gspacing );
-  std::vector<unsigned> shape( gridobject.getNbin(true) );
+  std::vector<std::size_t> shape( gridobject.getNbin(true) );
   getPntrToComponent(0)->setShape( shape );
   bool hasauto=false;
   for(unsigned i=0; i<gmin.size(); ++i) {

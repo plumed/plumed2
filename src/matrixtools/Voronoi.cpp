@@ -72,7 +72,7 @@ Voronoi::Voronoi(const ActionOptions&ao):
   if( getPntrToArgument(0)->getShape()[1]>getPntrToArgument(0)->getShape()[0] ) {
     warning("would expect number of columns in matrix to exceed number of rows");
   }
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValue( shape );
   setNotPeriodic();
 }
@@ -83,7 +83,7 @@ void Voronoi::prepare() {
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(0)->getShape()[1] ) {
     return;
   }
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   myval->setShape(shape);
 }
 

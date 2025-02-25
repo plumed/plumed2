@@ -89,7 +89,7 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) {
     error("number of columns in first matrix does not equal number of rows in second matrix");
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape );
@@ -136,7 +136,7 @@ void MatrixTimesMatrix::prepare() {
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[1] ) {
     return;
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
   myval->setShape(shape);

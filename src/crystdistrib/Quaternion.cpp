@@ -106,7 +106,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOutput& cvout );
+  static void calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -170,7 +170,7 @@ void Quaternion::calculate() {
     makeWhole();
   }
 
-  colvar::ColvarOutput cvout = colvar::ColvarOutput::createColvarOutput(value,derivs,this);
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
@@ -183,7 +183,7 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const colvar::ColvarInput& cvin, colvar::ColvarOutput& cvout ) {
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout ) {
   //declarations
   Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3

@@ -54,7 +54,7 @@ namespace gridtools {
 class InterpolateGrid : public ActionWithGrid {
 private:
   bool midpoints;
-  std::vector<unsigned> nbin;
+  std::vector<std::size_t> nbin;
   std::vector<double> gspacing;
   EvaluateGridFunction input_grid;
   GridCoordinatesObject output_grid;
@@ -122,7 +122,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( dimension, 0 );
+  std::vector<std::size_t> shape( dimension, 0 );
   addValueWithDerivatives( shape );
 
   if( getPntrToArgument(0)->isPeriodic() ) {
