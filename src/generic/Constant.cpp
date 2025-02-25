@@ -148,7 +148,7 @@ Constant::Constant(const ActionOptions&ao):
       shape[0]=nr;
       shape[1]=nc;
       vals.resize( nr*nc );
-      log.printf("  reading in %d by %d matrix \n", nr, nc );
+      log.printf("  reading in %ld by %ld matrix \n", nr, nc );
     } else if( nr>0 || nc>0 ) {
       error("makes no sense to set only one of NROWS and NCOLS to a non-zero value");
     }
@@ -163,7 +163,7 @@ Constant::Constant(const ActionOptions&ao):
       scalars=false;
     }
 
-    log.printf("  read in %d values :", vals.size() );
+    log.printf("  read in %ld values :", vals.size() );
     if( !nolog ) {
       for(unsigned i=0; i<vals.size(); ++i) {
         log.printf(" %f", vals[i] );

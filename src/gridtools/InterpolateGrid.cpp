@@ -112,7 +112,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   } else if( gspacing.size()==dimension ) {
     log.printf("  spacing for bins in grid %f", gspacing[0]);
     for(unsigned i=1; i<gspacing.size(); ++i) {
-      log.printf(", %ld", gspacing[i]);
+      log.printf(", %f", gspacing[i]);
     }
     log.printf("\n");
   }
