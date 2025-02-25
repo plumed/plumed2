@@ -55,7 +55,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
   // Reset the bookeeping elements for storage
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = const_cast<Value*>( getConstPntrToComponent(i) );
-    unsigned ncols = myval->getNumberOfColumns();
+    std::size_t ncols = myval->getNumberOfColumns();
     if( myval->getRank()!=2 || myval->hasDerivatives() || ncols>=myval->getShape()[1] ) {
       continue;
     }
@@ -91,7 +91,7 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
     double checkval = myvals.get( 0 );
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i);
-      unsigned ncols = myval->getNumberOfColumns();
+      std::size_t ncols = myval->getNumberOfColumns();
       if( myval->getRank()!=2 || myval->hasDerivatives() ) {
         continue;
       }

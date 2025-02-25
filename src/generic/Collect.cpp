@@ -109,7 +109,7 @@ Collect::Collect( const ActionOptions& ao ):
   }
 
   parse("CLEAR",clearstride);
-  unsigned nvals=0;
+  std::size_t nvals=0;
   if( clearstride==getStride() ) {
     nvals=1;
     usefirstconf=(getStride()==0);

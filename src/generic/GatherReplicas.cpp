@@ -99,7 +99,7 @@ unsigned GatherReplicas::getNumberOfDerivatives() {
 
 void GatherReplicas::calculate() {
   Value* myarg = getPntrToArgument(0);
-  unsigned nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfDerivatives();
+  std::size_t nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfDerivatives();
   std::vector<double> dval( nvals*(1+nder) ), datap(nreplicas*nvals*(1+nder) );
   for(unsigned i=0; i<nvals; ++i) {
     dval[i*(1+nder)] = myarg->get(i);

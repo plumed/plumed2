@@ -104,15 +104,15 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   if( midpoints ) {
     log.printf("  evaluating function at midpoints of cells in input grid\n");
   } else if( nbin.size()==dimension ) {
-    log.printf("  number of bins in grid %d", nbin[0]);
+    log.printf("  number of bins in grid %ld", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) {
-      log.printf(", %d", nbin[i]);
+      log.printf(", %ld", nbin[i]);
     }
     log.printf("\n");
   } else if( gspacing.size()==dimension ) {
     log.printf("  spacing for bins in grid %f", gspacing[0]);
     for(unsigned i=1; i<gspacing.size(); ++i) {
-      log.printf(", %d", gspacing[i]);
+      log.printf(", %ld", gspacing[i]);
     }
     log.printf("\n");
   }

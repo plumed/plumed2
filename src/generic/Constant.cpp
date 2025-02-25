@@ -140,7 +140,7 @@ Constant::Constant(const ActionOptions&ao):
       }
     }
   } else {
-    unsigned nr, nc;
+    std::size_t nr, nc;
     parse("NROWS",nr);
     parse("NCOLS",nc);
     if( nr>0 && nc>0 ) {

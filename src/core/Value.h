@@ -86,7 +86,8 @@ private:
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, ngrid_der, ncols;
+  unsigned bufstart, ngrid_der;
+  std::size_t ncols;
 /// If we are storing a matrix is it symmetric?
   bool symmetric;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
@@ -193,9 +194,9 @@ public:
 /// Set the symmetric flag equal true for this matrix
   void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here
-  unsigned getNumberOfValues() const ;
+  std::size_t getNumberOfValues() const ;
 /// Get the number of values that are actually stored here once sparse matrices are taken into account
-  unsigned getNumberOfStoredValues() const ;
+  std::size_t getNumberOfStoredValues() const ;
 /// Get the number of threads to use when assigning this value
   unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
 /// These are used for passing around the data in this value when we are doing replica exchange
@@ -221,11 +222,11 @@ public:
 /// Set a matrix element to be non zero
   void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
 ///
-  unsigned getRowLength( const unsigned& irow ) const ;
+  unsigned getRowLength( const std::size_t& irow ) const ;
 ///
-  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
+  unsigned getRowIndex( const std::size_t& irow, const std::size_t& jind ) const ;
 ///
-  unsigned getNumberOfColumns() const ;
+  std::size_t getNumberOfColumns() const ;
 ///
   bool isSymmetric() const ;
 /// Retrieve the non-zero edges in a matrix
@@ -425,8 +426,8 @@ const std::vector<std::size_t>& Value::getShape() const {
 }
 
 inline
-unsigned Value::getNumberOfValues() const {
-  unsigned size=1;
+std::size_t Value::getNumberOfValues() const {
+  std::size_t size=1;
   for(unsigned i=0; i<shape.size(); ++i) {
     size *= shape[i];
   }
@@ -434,7 +435,7 @@ unsigned Value::getNumberOfValues() const {
 }
 
 inline
-unsigned Value::getNumberOfStoredValues() const {
+std::size_t Value::getNumberOfStoredValues() const {
   if( getRank()==2 && !hasDeriv ) {
     return shape[0]*ncols;
   }
@@ -463,7 +464,7 @@ void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
 }
 
 inline
-unsigned Value::getRowLength( const unsigned& irow ) const {
+unsigned Value::getRowLength( const std::size_t& irow ) const {
   if( matrix_bookeeping.size()==0 ) {
     return 0;
   }
@@ -472,13 +473,13 @@ unsigned Value::getRowLength( const unsigned& irow ) const {
 }
 
 inline
-unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+unsigned Value::getRowIndex( const std::size_t& irow, const std::size_t& jind ) const {
   plumed_dbg_massert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow], "failing in value " + name );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
 }
 
 inline
-unsigned Value::getNumberOfColumns() const {
+std::size_t Value::getNumberOfColumns() const {
   return ncols;
 }
 
