@@ -36,6 +36,15 @@ Pbc::Pbc():
   invBox.zero();
 }
 
+
+// Pbc::Pbc(const Pbc& other):
+//   type(other.type),
+//   box(other.box),
+//    invBox(other.invBox),
+//   reduced(other.reduced),
+//   invReduced(other.invReduced)
+// {}
+
 void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const {
   const double small=1e-28;
 
@@ -216,7 +225,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       dlist[k][1]  = best[1];
       dlist[k][2]  = best[2];
     }
-  } else plumed_merror("unknown pbc type");
+  }// else plumed_merror("unknown pbc type");
 }
 
 Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
@@ -265,6 +274,55 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
       }
     }
   } else plumed_merror("unknown pbc type");
+  return d;
+}
+
+Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
+  Vector d=delta(v1,v2);
+  if(type==unset) {
+    // do nothing
+  } else if(type==orthorombic) {
+#ifdef __PLUMED_PBC_WHILE
+    for(unsigned i=0; i<3; i++) {
+      while(d[i]>hdiag[i]) d[i]-=diag[i];
+      while(d[i]<=mdiag[i]) d[i]+=diag[i];
+    }
+#else
+    for(int i=0; i<3; i++) d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+#endif
+  } else if(type==generic) {
+    Vector s=matmul(d,invReduced);
+// check if images have to be computed:
+//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
+// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
+//         since it does not apply Tools::pbc in many cases. Moreover, it does not
+//         introduce a significant gain. I thus leave it out for the moment.
+    if constexpr (true) {
+// bring to -0.5,+0.5 region in scaled coordinates:
+      for(int i=0; i<3; i++) {
+        s[i]=Tools::pbc(s[i]);
+      }
+      d=matmul(s,reduced);
+// check if shifts have to be attempted:
+      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+// list of shifts is specific for that "octant" (depends on signs of s[i]):
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        Vector best(d);
+        double lbest(modulo2(best));
+// loop over possible shifts:
+        for(unsigned i=0; i<myshifts.size(); i++) {
+          Vector trial=d+myshifts[i];
+          double ltrial=modulo2(trial);
+          if(ltrial<lbest) {
+            lbest=ltrial;
+            best=trial;
+          }
+        }
+        d=best;
+      }
+    }
+    // no throws on the GPU
+  } //else plumed_merror("unknown pbc type");
   return d;
 }
 

@@ -88,6 +88,15 @@ private:
   std::vector<T> data;
 public:
   explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
+  void toDevice() {
+#pragma acc enter data copyin(this[0:1], data[0:data.size()])
+  }
+  void unDevice() {
+    // update host copy of data
+#pragma acc update self( data[0:data.size()] )
+    // and delete
+#pragma acc exit data delete( data[0:data.size()], this[0:1])
+  }
   Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {}
   /// Resize the matrix
   void resize( const unsigned nr, const unsigned nc ) { rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }
