@@ -289,6 +289,7 @@ void CudaCoordination<calculateFloat>::calculate() {
   comm.Bcast (deriv, 0);
   for (unsigned i = 0; i < deriv.size(); ++i) {
     setAtomsDerivatives (i, deriv[i]);
+  }
 
   setValue (coordination);
   setBoxDerivatives (virial);
@@ -371,8 +372,9 @@ getSelfCoord (const unsigned nat,
     // const unsigned j = threadIdx.y + blockIdx.y * blockDim.y;
 
     // Safeguard
-    if (idx == trueIndexes[j])
+    if (idx == trueIndexes[j]) {
       continue;
+    }
 
     d_0 = calculatePBC<usePBC> (coordinates[X (j)] - x, myPBC.X);
     d_1 = calculatePBC<usePBC> (coordinates[Y (j)] - y, myPBC.Y);
@@ -518,6 +520,7 @@ getCoordDual (const unsigned natActive,
     // Safeguard
     if (idx == trueIndexesLoop[j]) {
       continue;
+    }
 
     d_0 = calculatePBC<usePBC> (coordLoop[X (j)] - x, myPBC.X);
     d_1 = calculatePBC<usePBC> (coordLoop[Y (j)] - y, myPBC.Y);
@@ -612,6 +615,7 @@ getDerivDual (const unsigned natLoop,
     // Safeguard
     if (idx == trueIndexesLoop[j]) {
       continue;
+    }
 
     d_0 = calculatePBC<usePBC> (coordLoop[X (j)] - x, myPBC.X);
     d_1 = calculatePBC<usePBC> (coordLoop[Y (j)] - y, myPBC.Y);
@@ -900,7 +904,8 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   }
   std::string sw, errors;
 
-  { // loading data to the GPU
+  {
+    // loading data to the GPU
     int nn_ = 6;
     int mm_ = 0;
 
@@ -915,8 +920,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     if (mm_ == 0) {
       mm_ = 2 * nn_;
     }
-    if (mm_ % 2 != 0 || mm_ % 2 != 0)
+    if (mm_ % 2 != 0 || mm_ % 2 != 0) {
       error (" this implementation only works with both MM and NN even");
+    }
 
     switchingParameters.nn = nn_;
     switchingParameters.mm = mm_;
