@@ -102,13 +102,16 @@ private:
   ParallelActionsInput myinput;
 /// This holds data for that the underlying action needs to do the calculation
   D actiondata;
+/// This is used internally to gather the forces on the threads
+  void gatherThreads( ForceOutput& forces );
 public:
   static void registerKeywords( Keywords& keys );
   ParallelTaskManager(ActionWithVector* av);
-/// Setup the derivatives
-  void setNumberOfIndicesAndDerivativesPerTask( const std::size_t& nind, const std::size_t& nder );
-/// Set the number of forces that are gathered over threads
-  void setNumberOfThreadedForces( std::size_t nt );
+/// Setup the parallel task manager the three arguments are
+/// nind = the number of indices that are used per task
+/// nder = number of derivatives per component that is being calculated
+/// nt = number of derivatives that need to gathered over the threads (default of zero means all derivatives need to be calculated in a way that is thread safe)
+  void setupParallelTaskManager( std::size_t nind, std::size_t nder, std::size_t nt=0 );
 /// Copy the data from the underlying colvar into this parallel action
   void setActionInput( const D& adata );
 /// Get the action input so we can use it
@@ -150,7 +153,7 @@ ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
 }
 
 template <class T, class D>
-void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const std::size_t& nind, const std::size_t& nder ) {
+void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std::size_t nder, std::size_t nt ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
   for(unsigned i=1; i<action->getNumberOfComponents(); ++i) {
@@ -160,18 +163,20 @@ void ParallelTaskManager<T, D>::setNumberOfIndicesAndDerivativesPerTask( const s
   nderivatives_per_component = nder;
   value_stash.resize( valuesize*action->getNumberOfComponents() );
   myinput.nindices_per_task = nind;
-}
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::setNumberOfThreadedForces( std::size_t nt ) {
-  nthreaded_forces = nt;
+  if( nt==0 ) {
+    nthreaded_forces = action->getNumberOfDerivatives();
+  } else {
+    nthreaded_forces = nt;
+  }
+
   unsigned t=OpenMP::getNumThreads();
   if( useacc ) {
     t = 1;
   }
   omp_forces.resize(t);
   for(unsigned i=0; i<t; ++i) {
-    omp_forces.resize(nt);
+    omp_forces.resize(nthreaded_forces);
   }
 }
 
@@ -337,7 +342,7 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
         T::gatherForces( task_index, actiondata, myinput, ForceInput( myinput.ncomponents, value_stash.data()+myinput.ncomponents*task_index, nderivatives_per_component, derivatives), forces );
       }
       #pragma omp critical
-      T::gatherThreads( actiondata, forces );
+      gatherThreads( forces );
     }
     // MPI Gather everything
     if( !action->runInSerial() ) {
@@ -345,6 +350,15 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
     }
   }
 
+}
+
+template <class T, class D>
+void ParallelTaskManager<T, D>::gatherThreads( ForceOutput& forces ) {
+  unsigned k=0;
+  for(unsigned n=forces.thread_unsafe.size()-nthreaded_forces; n<forces.thread_unsafe.size(); ++n) {
+    forces.thread_unsafe[n] += forces.thread_safe[k];
+    k++;
+  }
 }
 
 }

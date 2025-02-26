@@ -74,7 +74,6 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
-  static void gatherThreads( const MultiColvarInput& actiondata, ForceOutput& forces );
 };
 
 template <class T>
@@ -154,8 +153,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   mode = T::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
-  taskmanager.setNumberOfIndicesAndDerivativesPerTask( natoms_per_task, 3*natoms_per_task + 9 );
-  taskmanager.setNumberOfThreadedForces( 9 );
+  taskmanager.setupParallelTaskManager( natoms_per_task, 3*natoms_per_task + 9, 9 );
   taskmanager.setActionInput( MultiColvarInput( usepbc, mode ) );
 }
 
@@ -272,15 +270,6 @@ void MultiColvarTemplate<T>::gatherForces( std::size_t task_index, const MultiCo
       forces.thread_safe[n] += ff*fdata.deriv[i][m];
       m++;
     }
-  }
-}
-
-template <class T>
-void MultiColvarTemplate<T>::gatherThreads( const MultiColvarInput& actiondata, ForceOutput& forces ) {
-  unsigned k=0;
-  for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) {
-    forces.thread_unsafe[n] += forces.thread_safe[k];
-    k++;
   }
 }
 
