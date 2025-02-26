@@ -53,7 +53,7 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
-  static void gatherThreads( ForceOutput& forces );
+  static void gatherThreads( const T& actiondata, ForceOutput& forces );
 };
 
 template <class T>
@@ -339,7 +339,7 @@ void SecondaryStructureBase<T>::gatherForces( unsigned task_index, const T& acti
 }
 
 template <class T>
-void SecondaryStructureBase<T>::gatherThreads( ForceOutput& forces ) {
+void SecondaryStructureBase<T>::gatherThreads( const T& actiondata, ForceOutput& forces ) {
   for(unsigned n=0; n<forces.thread_unsafe.size(); ++n) {
     forces.thread_unsafe[n] += forces.thread_safe[n];
   }
