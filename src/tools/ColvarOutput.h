@@ -39,31 +39,34 @@ namespace colvar {
 
 class ColvarOutput {
 private:
-  std::size_t ncomponents;
   class DerivHelper {
   private:
-    std::size_t nderiv;
+    std::size_t nderivPerComponent;
     double* derivatives;
   public:
-    DerivHelper(double* d, std::size_t n ) : nderiv(n), derivatives(d) {}
+    DerivHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
-      return { derivatives + i*nderiv, nderiv };
+      return { derivatives + i*nderivPerComponent, nderivPerComponent };
     }
-    //is i the index of the value?
-    //is a the index of the atom?
-    Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
-      std::size_t base = i*nderiv + 3*a;
+
+    Vector getAtomDerivatives( std::size_t valueID, std::size_t atomID ) {
+      std::size_t base = valueID*nderivPerComponent + 3*atomID;
       return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
+    }
+
+    View<double,3> getDerivativesView( std::size_t valueID, std::size_t atomID) {
+      std::size_t base = valueID*nderivPerComponent + 3*atomID;
+      return { derivatives +base};
     }
   };
   class VirialHelper {
   private:
-    std::size_t nderiv;
+    std::size_t nderivPerComponent;
     double* derivatives;
   public:
-    VirialHelper(double* d, std::size_t n ) : nderiv(n), derivatives(d) {}
+    VirialHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     Tensor operator[](std::size_t i) const {
-      std::size_t n=(i+1)*nderiv;
+      std::size_t n=(i+1)*nderivPerComponent;
       return Tensor( derivatives[n-9],
                      derivatives[n-8],
                      derivatives[n-7],
@@ -74,22 +77,27 @@ private:
                      derivatives[n-2],
                      derivatives[n-1] );
     }
+    View<double,9> getView(std::size_t i) const {
+      std::size_t n=(i+1)*nderivPerComponent;
+      return {derivatives+n};
+    }
     void set( std::size_t i, const Tensor& v ) {
-      std::size_t n=(i+1)*nderiv;
+      std::size_t n=(i+1)*nderivPerComponent;
       derivatives[n-9]=v[0][0]; derivatives[n-8]=v[0][1]; derivatives[n-7]=v[0][2];
       derivatives[n-6]=v[1][0]; derivatives[n-5]=v[1][1]; derivatives[n-4]=v[1][2];
       derivatives[n-3]=v[2][0]; derivatives[n-2]=v[2][1]; derivatives[n-1]=v[2][2];
     }
   };
+  size_t ncomponents;
 public:
   View<double> values;
   DerivHelper derivs;
   VirialHelper virial;
-  ColvarOutput( View<double> v, std::size_t m, double *derivatives ):
+  ColvarOutput( View<double> v, std::size_t nderivPerComponent, double *derivatives ):
     ncomponents(v.size()),
     values(v),
-    derivs(derivatives,m),
-    virial(derivatives,m)
+    derivs(derivatives,nderivPerComponent),
+    virial(derivatives,nderivPerComponent)
   {}
 
   static ColvarOutput createColvarOutput( std::vector<double>& v,
@@ -99,17 +107,28 @@ public:
   Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
     return derivs.getAtomDerivatives(i,a);
   }
-  // void setBoxDerivativesNoPbc( const ColvarInput& inpt );
+
+#pragma acc routine seq
   void setBoxDerivativesNoPbc( const ColvarInput& inpt ) {
+    //now with no extra allocated memory: (actually I was searching for a bug...that was not here...)
     unsigned nat=inpt.pos.size();
     for(unsigned i=0; i<ncomponents; ++i) {
-      Tensor v;
-      v.zero();
+      auto v = virial.getView(i);
+      LoopUnroller<9>::_zero(v.data());
       for(unsigned j=0; j<nat; j++) {
-        v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
-                  derivs.getAtomDerivatives(i,j));
+        const auto deriv =  derivs.getDerivativesView(i,j);
+        v[0] -= inpt.pos[j][0]*deriv[0];
+        v[1] -= inpt.pos[j][0]*deriv[1];
+        v[2] -= inpt.pos[j][0]*deriv[2];
+
+        v[3] -= inpt.pos[j][1]*deriv[0];
+        v[4] -= inpt.pos[j][1]*deriv[1];
+        v[5] -= inpt.pos[j][1]*deriv[2];
+
+        v[6] -= inpt.pos[j][2]*deriv[0];
+        v[7] -= inpt.pos[j][2]*deriv[1];
+        v[8] -= inpt.pos[j][2]*deriv[2];
       }
-      virial.set( i, v );
     }
   }
 };
