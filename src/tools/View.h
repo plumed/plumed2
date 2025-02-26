@@ -63,27 +63,30 @@ public:
 
   //constructor for fixed size View
   template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
-  View(T* p) : ptr_(p), size_(N) {}
+  View(T* p) noexcept: ptr_(p), size_(N) {}
   //generic constructor, works also for non fixed view (this might change)
-  View(T* p, std::size_t NN) : ptr_(p), size_(NN) {}
-
+  View(T* p, std::size_t NN)  noexcept: ptr_(p), size_(NN) {}
+  View(const View&) noexcept =default;
+  View(View&&) noexcept =default;
+  View&operator =(const View&) noexcept =default;
+  View&operator =(View&&) noexcept =default;
   //returns the dimension
-  constexpr size_t size()const {
+  constexpr size_t size() const  noexcept {
     return size_;
   }
 
   ///returns the reference i-th element
-  constexpr T & operator[](size_t i) {
+  constexpr T & operator[](size_t i) noexcept {
     return ptr_[i];
   }
 
   ///returns the reference i-th element
-  constexpr const T & operator[](size_t i) const {
+  constexpr const T & operator[](size_t i) const  noexcept {
     return ptr_[i];
   }
 
   ///return the pointer to the data
-  constexpr T* data() const {
+  constexpr T* data() const noexcept {
     return ptr_;
   }
 
@@ -100,7 +103,7 @@ public:
 };
 
 template<typename T>
-VectorGeneric<3> delta(const View<T,3>& v1, const View<T,3>& v2 ) {
+VectorGeneric<3> delta(const View<T,3>& v1, const View<T,3>& v2 )  noexcept {
   plumed_dbg_assert( v1.size()==3 );
   VectorGeneric<3> v{
     v2[0] - v1[0],
