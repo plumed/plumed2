@@ -100,9 +100,8 @@ Calculate multiple angles.
 
 class Angle : public Colvar {
   bool pbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> value;
+  std::vector<double> derivs;
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
@@ -110,9 +109,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Angle> AngleShortcut;
@@ -152,10 +149,7 @@ unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
 Angle::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(1),
-  derivs(1),
-  virial(1) {
-  derivs[0].resize(4);
+  value(1) {
   std::vector<AtomNumber> atoms;
   parseAtomList( -1, atoms, this );
   bool nopbc=!pbc;
@@ -180,28 +174,27 @@ void Angle::calculate() {
   if(pbc) {
     makeWhole();
   }
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) {
-    setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
   }
-  setBoxDerivatives( virial[0] );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
-void Angle::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                         const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Angle::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   Vector dij,dik;
-  dij=delta(pos[2],pos[3]);
-  dik=delta(pos[1],pos[0]);
+  dij=delta(cvin.pos[2],cvin.pos[3]);
+  dik=delta(cvin.pos[1],cvin.pos[0]);
   Vector ddij,ddik;
   PLMD::Angle a;
-  vals[0]=a.compute(dij,dik,ddij,ddik);
-  derivs[0][0]=ddik;
-  derivs[0][1]=-ddik;
-  derivs[0][2]=-ddij;
-  derivs[0][3]=ddij;
-  setBoxDerivativesNoPbc( pos, derivs, virial );
+  cvout.values[0]=a.compute(dij,dik,ddij,ddik);
+  cvout.derivs[0][0]=ddik;
+  cvout.derivs[0][1]=-ddik;
+  cvout.derivs[0][2]=-ddij;
+  cvout.derivs[0][3]=ddij;
+  ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
 }
 
 }

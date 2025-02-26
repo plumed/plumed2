@@ -39,16 +39,12 @@ class OuterProduct : public ActionWithMatrix {
 private:
   bool domin, domax, diagzero;
   LeptonCall function;
-  unsigned nderivatives;
-  bool stored_vector1, stored_vector2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit OuterProduct(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   void prepare() override ;
-  unsigned getNumberOfColumns() const override {
-    return getConstPntrToComponent(0)->getShape()[1];
-  }
+  unsigned getNumberOfColumns() const override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -59,6 +55,7 @@ PLUMED_REGISTER_ACTION(OuterProduct,"OUTER_PRODUCT")
 void OuterProduct::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","vector","the labels of the two vectors from which the outer product is being computed");
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.add("compulsory","FUNC","x*y","the function of the input vectors that should be put in the elements of the outer product");
   keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
   keys.setValueDescription("matrix","a matrix containing the outer product of the two input vectors that was obtained using the function that was input");
@@ -69,14 +66,29 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
   ActionWithMatrix(ao),
   domin(false),
   domax(false) {
-  if( getNumberOfArguments()!=2 ) {
-    error("should be two arguments to this action, a matrix and a vector");
+  unsigned nargs=getNumberOfArguments();
+  if( getNumberOfMasks()>0 ) {
+    nargs = nargs - getNumberOfMasks();
+  }
+  if( nargs!=2 ) {
+    error("should be two arguments to this action, they should both be vectors");
   }
   if( getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) {
     error("first argument to this action should be a vector");
   }
   if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) {
     error("first argument to this action should be a vector");
+  }
+  if( getNumberOfMasks()==1 ) {
+    if( getPntrToArgument(2)->getRank()!=2 || getPntrToArgument(2)->hasDerivatives() ) {
+      error("mask argument should be a matrix");
+    }
+    if( getPntrToArgument(2)->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) {
+      error("mask argument has wrong size");
+    }
+    if( getPntrToArgument(2)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) {
+      error("mask argument has wrong size");
+    }
   }
 
   std::string func;
@@ -99,22 +111,25 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
     log.printf("  setting diagonal elements equal to zero\n");
   }
 
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[0];
   addValue( shape );
   setNotPeriodic();
-  nderivatives = buildArgumentStore(0);
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored_vector1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
-  stored_vector2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
   if( getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() || getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) {
     getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   }
 }
 
 unsigned OuterProduct::getNumberOfDerivatives() {
-  return nderivatives;
+  return getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(1)->getNumberOfStoredValues();
+}
+
+unsigned OuterProduct::getNumberOfColumns() const {
+  if( getNumberOfMasks()>0 ) {
+    return getPntrToArgument(2)->getNumberOfColumns();
+  }
+  return getConstPntrToComponent(0)->getShape()[1];
 }
 
 void OuterProduct::prepare() {
@@ -123,14 +138,28 @@ void OuterProduct::prepare() {
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[0] ) {
     return;
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   shape[1] = getPntrToArgument(1)->getShape()[0];
   myval->setShape( shape );
 }
 
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[0];
+  unsigned start_n = getPntrToArgument(0)->getShape()[0];
+  if( getNumberOfMasks()>0 ) {
+    Value* maskarg = getPntrToArgument(2);
+    unsigned size_v = maskarg->getRowLength(task_index);
+    if( indices.size()!=size_v+1 ) {
+      indices.resize( size_v+1 );
+    }
+    for(unsigned i=0; i<size_v; ++i) {
+      indices[i+1] = start_n + maskarg->getRowIndex( task_index, i );
+    }
+    myvals.setSplitIndex( 1 + size_v );
+    return;
+  }
+
+  unsigned size_v = getPntrToArgument(1)->getShape()[0];
   if( diagzero ) {
     if( indices.size()!=size_v ) {
       indices.resize( size_v );
@@ -156,7 +185,7 @@ void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigne
 }
 
 void OuterProduct::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
+  unsigned ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) {
     ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   }
@@ -166,56 +195,56 @@ void OuterProduct::performTask( const std::string& controller, const unsigned& i
 
   double fval;
   unsigned jarg = 0, kelem = index1;
-  bool jstore=stored_vector1;
   std::vector<double> args(2);
-  args[0] = getArgumentElement( 0, index1, myvals );
-  args[1] = getArgumentElement( 1, ind2, myvals );
+  args[0] = getPntrToArgument(0)->get( index1 );
+  args[1] = getPntrToArgument(1)->get( ind2 );
   if( domin ) {
     fval=args[0];
     if( args[1]<args[0] ) {
       fval=args[1];
-      jarg=1;
+      jarg=getPntrToArgument(0)->getNumberOfStoredValues();
       kelem=ind2;
-      jstore=stored_vector2;
     }
   } else if( domax ) {
     fval=args[0];
     if( args[1]>args[0] ) {
       fval=args[1];
-      jarg=1;
+      jarg=getPntrToArgument(0)->getNumberOfStoredValues();
       kelem=ind2;
-      jstore=stored_vector2;
     }
   } else {
     fval=function.evaluate( args );
   }
 
-  myvals.addValue( ostrn, fval );
+  myvals.addValue( 0, fval );
   if( doNotCalculateDerivatives() ) {
     return ;
   }
 
   if( domin || domax ) {
-    addDerivativeOnVectorArgument( jstore, 0, jarg, kelem, 1.0, myvals );
+    myvals.addDerivative( 0, jarg + kelem, 1.0 );
+    myvals.updateIndex( 0, jarg + kelem );
   } else {
-    addDerivativeOnVectorArgument( stored_vector1, 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
-    addDerivativeOnVectorArgument( stored_vector2, 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
+    myvals.addDerivative( 0, index1, function.evaluateDeriv( 0, args ) );
+    myvals.updateIndex( 0, index1 );
+    myvals.addDerivative( 0, getPntrToArgument(0)->getNumberOfStoredValues() + ind2, function.evaluateDeriv( 1, args ) );
+    myvals.updateIndex( 0, getPntrToArgument(0)->getNumberOfStoredValues() + ind2 );
   }
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
+  if( doNotCalculateDerivatives() ) {
     return ;
   }
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = arg_deriv_starts[1] + ind2;
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+  myvals.getMatrixRowDerivativeIndices()[nmat_ind] = getPntrToArgument(0)->getNumberOfStoredValues() + ind2;
+  myvals.setNumberOfMatrixRowDerivatives( nmat_ind+1 );
 }
 
 void OuterProduct::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
+  if( doNotCalculateDerivatives() ) {
     return ;
   }
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = ival;
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+  myvals.getMatrixRowDerivativeIndices()[nmat_ind] = ival;
+  myvals.setNumberOfMatrixRowDerivatives( nmat_ind+1 );
 }
 
 }

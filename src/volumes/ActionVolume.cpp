@@ -62,19 +62,12 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   if( atoms.size()==1 ) {
     ActionWithValue::addValueWithDerivatives();
   } else {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=atoms.size();
     ActionWithValue::addValue( shape );
   }
   setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
-}
-
-bool ActionVolume::isInSubChain( unsigned& nder ) {
-  nder = 0;
-  getFirstActionInChain()->getNumberOfStreamedDerivatives( nder, getPntrToComponent(0) );
-  nder = nder - getNumberOfDerivatives();
-  return true;
 }
 
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
@@ -113,9 +106,6 @@ int ActionVolume::checkTaskStatus( const unsigned& taskno, int& flag ) const {
 }
 
 void ActionVolume::calculate() {
-  if( actionInChain() ) {
-    return;
-  }
   if( getPntrToComponent(0)->getRank()==0 ) {
     setupRegions();
     unsigned nref = getNumberOfAtoms() - 1;
@@ -169,8 +159,7 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
       refders[i]*=-1;
     }
   }
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  outvals.setValue( ostrn, weight );
+  outvals.setValue( 0, weight );
 
   if( doNotCalculateDerivatives() ) {
     return;
@@ -178,23 +167,23 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
 
   // Atom position
   for(unsigned i=0; i<3; ++i ) {
-    outvals.addDerivative( ostrn, 3*curr+i, wdf[i] );
-    outvals.updateIndex( ostrn, 3*curr+i );
+    outvals.addDerivative( 0, 3*curr+i, wdf[i] );
+    outvals.updateIndex( 0, 3*curr+i );
   }
   // Add derivatives with respect to reference positions
   unsigned vbase = 3*(getNumberOfAtoms()-nref);
   for(unsigned i=0; i<refders.size(); ++i) {
     for(unsigned j=0; j<3; ++j ) {
-      outvals.addDerivative( ostrn, vbase, refders[i][j] );
-      outvals.updateIndex( ostrn, vbase );
+      outvals.addDerivative( 0, vbase, refders[i][j] );
+      outvals.updateIndex( 0, vbase );
       vbase++;
     }
   }
   // Add virial
   for(unsigned i=0; i<3; ++i) {
     for(unsigned j=0; j<3; ++j) {
-      outvals.addDerivative( ostrn, vbase, vir(i,j) );
-      outvals.updateIndex( ostrn, vbase );
+      outvals.addDerivative( 0, vbase, vir(i,j) );
+      outvals.updateIndex( 0, vbase );
       vbase++;
     }
   }

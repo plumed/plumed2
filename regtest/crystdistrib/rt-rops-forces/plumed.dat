@@ -1,8 +1,9 @@
 q: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
 c1: DISTANCE_MATRIX GROUP=1,4,7 
 ones: ONES SIZE=3
-qp: QUATERNION_PRODUCT_MATRIX ARG=q.*,q.*
-ops: CUSTOM ARG=c1,qp.w,qp.i,qp.j,qp.k VAR=x,w,i,j,k FUNC=x*(w+i+j+k) PERIODIC=NO
+qp: QUATERNION_PRODUCT_MATRIX ARG=q.*,q.* MASK=c1
+ops: CUSTOM ARG=c1,qp.w,qp.i,qp.j,qp.k VAR=x,w,i,j,k FUNC=x*(w+i+j+k) PERIODIC=NO MASK=c1
 sdot: MATRIX_VECTOR_PRODUCT ARG=ops,ones
 s: SUM ARG=sdot PERIODIC=NO
+PRINT ARG=sdot FILE=sdot FMT=%8.4f
 BIASVALUE ARG=s

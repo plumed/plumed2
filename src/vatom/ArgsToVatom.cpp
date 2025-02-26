@@ -223,7 +223,7 @@ void ArgsToVatom::apply() {
   }
 
   unsigned start=0;
-  addForcesOnArguments( 0, getForcesToApply(), start, getLabel() );
+  addForcesOnArguments( 0, getForcesToApply(), start );
 }
 
 }

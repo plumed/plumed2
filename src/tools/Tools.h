@@ -43,6 +43,7 @@
 #include <unordered_map>
 #include <map>
 #include <condition_variable>
+#include <type_traits>
 
 namespace PLMD {
 

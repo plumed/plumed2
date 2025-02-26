@@ -140,7 +140,7 @@ void Wham::calculate() {
   plumed_assert( stored_biases.size()%nreplicas==0 );
   std::vector<double> final_weights( stored_biases.size() / nreplicas, 1.0 );
   if( getPntrToComponent(0)->getNumberOfValues()!=final_weights.size() ) {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=final_weights.size();
     getPntrToComponent(0)->setShape( shape );
   }
