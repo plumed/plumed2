@@ -82,7 +82,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
       }
       shape[0] += getPntrToArgument(i)->getNumberOfValues();
     }
-    log.printf("  creating vector with %d elements \n", shape[0] );
+    log.printf("  creating vector with %ld elements \n", shape[0] );
     addValue( shape );
     bool period=getPntrToArgument(0)->isPeriodic();
     std::string min, max;
@@ -136,7 +136,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
         if( argn[0]->getRank()==0 ) {
           log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );
         } else {
-          log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
+          log.printf("  %d %d component of composed matrix is %ld by %ld matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
         }
       }
       if( arglist.size()==size_b4 ) {

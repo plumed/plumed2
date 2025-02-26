@@ -74,7 +74,7 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index, const MultiColvarInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const MultiColvarInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
-  static void gatherThreads( ForceOutput& forces );
+  static void gatherThreads( const MultiColvarInput& actiondata, ForceOutput& forces );
 };
 
 template <class T>
@@ -276,7 +276,7 @@ void MultiColvarTemplate<T>::gatherForces( std::size_t task_index, const MultiCo
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherThreads( ForceOutput& forces ) {
+void MultiColvarTemplate<T>::gatherThreads( const MultiColvarInput& actiondata, ForceOutput& forces ) {
   unsigned k=0;
   for(unsigned n=forces.thread_unsafe.size()-9; n<forces.thread_unsafe.size(); ++n) {
     forces.thread_unsafe[n] += forces.thread_safe[k];
