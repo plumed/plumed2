@@ -53,7 +53,6 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
-  static void gatherThreads( const T& actiondata, ForceOutput& forces );
 };
 
 template <class T>
@@ -248,8 +247,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
-  taskmanager.setNumberOfIndicesAndDerivativesPerTask( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + 9 );
-  taskmanager.setNumberOfThreadedForces( 3*getNumberOfAtoms() + 9 );
+  taskmanager.setupParallelTaskManager( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + 9 );
   taskmanager.setActionInput( myinput );
 }
 
@@ -335,13 +333,6 @@ void SecondaryStructureBase<T>::gatherForces( unsigned task_index, const T& acti
       forces.thread_safe[n] += ff*fdata.deriv[i][m];
       m++;
     }
-  }
-}
-
-template <class T>
-void SecondaryStructureBase<T>::gatherThreads( const T& actiondata, ForceOutput& forces ) {
-  for(unsigned n=0; n<forces.thread_unsafe.size(); ++n) {
-    forces.thread_unsafe[n] += forces.thread_safe[n];
   }
 }
 
