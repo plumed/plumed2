@@ -175,7 +175,7 @@ void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std:
   }
   omp_forces.resize(t);
   for(unsigned i=0; i<t; ++i) {
-    omp_forces.resize(nthreaded_forces);
+    omp_forces[i].resize(nthreaded_forces);
   }
 }
 
