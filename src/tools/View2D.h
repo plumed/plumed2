@@ -42,38 +42,42 @@ them as values
 template <typename T, std::size_t N= helpers::dynamic_extent, std::size_t M= helpers::dynamic_extent>
 class View2D {
   T *ptr_;
-  std::size_t sizeN_;
-  std::size_t sizeM_;
+  std::size_t sizeN_{N};
+  std::size_t sizeM_{M};
 public:
 
   //constructor for fixed size View2D
   template <size_t NN = N, size_t MM = M, typename = std::enable_if_t<NN != helpers::dynamic_extent && MM != helpers::dynamic_extent>>
-  View2D(T *p) : ptr_(p), sizeN_(N), sizeM_(M) {}
+  explicit View2D(T *p) noexcept : ptr_(p) {}
 
   //constructor for a View2D with known second dimension
   template <size_t MM = M, typename = std::enable_if_t<MM != helpers::dynamic_extent>>
-  View2D(T *p, size_t NN) : ptr_(p), sizeN_(NN), sizeM_(M) {}
-
+  View2D(T *p, size_t NN) noexcept: ptr_(p), sizeN_(NN) {}
   //generic constructor, works also for non fixed view (this might change)
-  View2D(T *p, size_t NN, size_t MM) : ptr_(p), sizeN_(NN), sizeM_(MM) {}
+  View2D(T *p, size_t NN, size_t MM) noexcept : ptr_(p), sizeN_(NN), sizeM_(MM) {}
+
+  View2D(const View2D&) noexcept =default;
+  View2D(View2D&&) noexcept =default;
+  View2D&operator =(const View2D&) noexcept =default;
+  View2D&operator =(View2D&&) noexcept =default;
 
   ///returns the size of the first dimension
-  constexpr size_t size() const {
+  constexpr size_t size() const noexcept {
     return sizeN_;
   }
 
   ///returns the View to the i-th row
-  constexpr View<T, M> operator[](size_t i) {
+  constexpr View<T, M> operator[](size_t i) noexcept {
     return View<T, M>(ptr_ + i * sizeM_,sizeM_);
   }
 
   ///returns the reference i-th element
-  constexpr const View<T, M> operator[](size_t i) const {
+  constexpr const View<T, M> operator[](size_t i) const noexcept {
     return View<T, M>(ptr_ + i * sizeM_, sizeM_);
   }
 
   ///return the pointer to the data
-  constexpr T* data() const {
+  constexpr T* data() const noexcept {
     return ptr_;
   }
 };
