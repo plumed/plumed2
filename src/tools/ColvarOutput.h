@@ -38,29 +38,33 @@ class ColvarOutput {
 private:
   class DerivHelper {
   private:
-    std::size_t nderiv;
+    std::size_t nderivPerComponent;
     double* derivatives;
   public:
-    DerivHelper(double* d, std::size_t n ) : nderiv(n), derivatives(d) {}
+    DerivHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
-      return { derivatives + i*nderiv, nderiv };
+      return { derivatives + i*nderivPerComponent, nderivPerComponent };
     }
-    //is i the index of the value?
-    //is a the index of the atom?
-    Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
-      std::size_t base = i*nderiv + 3*a;
+
+    Vector getAtomDerivatives( std::size_t valueID, std::size_t atomID ) {
+      std::size_t base = valueID*nderivPerComponent + 3*atomID;
       return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
+    }
+
+    View<double,3> getView( std::size_t valueID, std::size_t atomID) {
+      std::size_t base = valueID*nderivPerComponent + 3*atomID;
+      return { derivatives +base};
     }
   };
 public:
   class VirialHelper {
   private:
-    std::size_t nderiv;
+    std::size_t nderivPerComponent;
     double* derivatives;
   public:
-    VirialHelper(double* d, std::size_t n ) : nderiv(n), derivatives(d) {}
+    VirialHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     Tensor operator[](std::size_t i) const {
-      std::size_t n=(i+1)*nderiv;
+      std::size_t n=(i+1)*nderivPerComponent;
       return Tensor( derivatives[n-9],
                      derivatives[n-8],
                      derivatives[n-7],
@@ -71,8 +75,12 @@ public:
                      derivatives[n-2],
                      derivatives[n-1] );
     }
+    View<double,9> getView(std::size_t i) const {
+      std::size_t n=(i+1)*nderivPerComponent-9;
+      return {derivatives+n};
+    }
     void set( std::size_t i, const Tensor& v ) {
-      std::size_t n=(i+1)*nderiv;
+      std::size_t n=(i+1)*nderivPerComponent;
       derivatives[n-9]=v[0][0];
       derivatives[n-8]=v[0][1];
       derivatives[n-7]=v[0][2];
@@ -88,11 +96,11 @@ public:
   View<double> values;
   DerivHelper derivs;
   VirialHelper virial;
-  ColvarOutput( View<double> v, std::size_t m, double *derivatives ):
+  ColvarOutput( View<double> v, std::size_t nderivPerComponent, double *derivatives ):
     ncomponents(v.size()),
     values(v),
-    derivs(derivatives,m),
-    virial(derivatives,m)
+    derivs(derivatives,nderivPerComponent),
+    virial(derivatives,nderivPerComponent)
   {}
 
   static ColvarOutput createColvarOutput( std::vector<double>& v,
