@@ -110,7 +110,7 @@ public:
 /// nind = the number of indices that are used per task
 /// nder = number of derivatives per component that is being calculated
 /// nt = number of derivatives that need to gathered over the threads (default of zero means all derivatives need to be calculated in a way that is thread safe)
-  void setupParallelTaskManager( std::size_t nind, std::size_t nder, std::size_t nt=0 );
+  void setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt=-1 );
 /// Copy the data from the underlying colvar into this parallel action
   void setActionInput( const D& adata );
 /// Get the action input so we can use it
@@ -152,7 +152,7 @@ ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
 }
 
 template <class T, class D>
-void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std::size_t nder, std::size_t nt ) {
+void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
   std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
   for(unsigned i=1; i<action->getNumberOfComponents(); ++i) {
@@ -163,7 +163,7 @@ void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std:
   value_stash.resize( valuesize*action->getNumberOfComponents() );
   myinput.nindices_per_task = nind;
 
-  if( nt==0 ) {
+  if( nt<0 ) {
     nthreaded_forces = action->getNumberOfDerivatives();
   } else {
     nthreaded_forces = nt;
@@ -175,7 +175,7 @@ void ParallelTaskManager<T, D>::setupParallelTaskManager( std::size_t nind, std:
   }
   omp_forces.resize(t);
   for(unsigned i=0; i<t; ++i) {
-    omp_forces.resize(nthreaded_forces);
+    omp_forces[i].resize(nthreaded_forces);
   }
 }
 
