@@ -20,7 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
+#include "core/MatrixView.h"
 
 //+PLUMEDOC FUNCTION MATRIX_PRODUCT_DIAGONAL
 /*
@@ -34,14 +36,28 @@ Calculate the product of two matrices and return a vector that contains the diag
 namespace PLMD {
 namespace refdist {
 
+class MatrixProductDiagonalInput {
+public:
+  MatrixView A;
+  MatrixView B;
+  MatrixProductDiagonalInput& operator=( const MatrixProductDiagonalInput& m ) { 
+    // Don't need to copy A and B here as they will be set in calculate
+    return *this;
+  }
+};
+
 class MatrixProductDiagonal : public ActionWithVector {
 private:
+  ParallelTaskManager<MatrixProductDiagonal,MatrixProductDiagonalInput> taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductDiagonal(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+  void performTask( const unsigned& task_index, MultiValue& myvals ) const override { plumed_error(); }
+  static void performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
+  static void gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
 };
 
 PLUMED_REGISTER_ACTION(MatrixProductDiagonal,"MATRIX_PRODUCT_DIAGONAL")
@@ -50,13 +66,15 @@ void MatrixProductDiagonal::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","vector/matrix","the two vectors/matrices whose product are to be taken");
   keys.setValueDescription("scalar/vector","a vector containing the diagonal elements of the matrix that obtaned by multiplying the two input matrices together");
+  ParallelTaskManager<MatrixProductDiagonal,MatrixProductDiagonalInput>::registerKeywords( keys );
 }
 
 MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):
   Action(ao),
-  ActionWithVector(ao) {
+  ActionWithVector(ao),
+  taskmanager(this) {
   if( getNumberOfArguments()!=2 ) {
-    error("should be two arguments to this action, a matrix and a vector");
+    error("should be two vectors or matrices in argument to this action");
   }
 
   unsigned ncols;
@@ -98,6 +116,8 @@ MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):
     shape[0]=getPntrToArgument(0)->getShape()[0];
     addValue( shape );
     setNotPeriodic();
+    taskmanager.setupParallelTaskManager( 1, ncols + getPntrToArgument(1)->getShape()[0], 0 );
+    taskmanager.setActionInput( MatrixProductDiagonalInput() );
   }
 }
 
@@ -108,68 +128,74 @@ unsigned MatrixProductDiagonal::getNumberOfDerivatives() {
   return getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();;
 }
 
-void MatrixProductDiagonal::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  Value* arg1 = getPntrToArgument(0);
-  Value* arg2 = getPntrToArgument(1);
-  if( arg1->getRank()==1 ) {
-    double val1 = arg1->get( task_index );
-    double val2 = arg2->get( task_index );
-    myvals.addValue( 0, val1*val2 );
-
+void MatrixProductDiagonal::calculate() {
+  if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(1)->getRank()==1 ) {
+    double val1 = getPntrToArgument(0)->get(0);
+    double val2 = getPntrToArgument(1)->get(0);
+    Value* myval = getPntrToComponent(0);
+    myval->set( val1*val2 );
+  
     if( doNotCalculateDerivatives() ) {
       return;
     }
+  
+    myval->setDerivative( 0, val2 );
+    myval->setDerivative( 1, val1 ); 
+  } else if( getPntrToArgument(1)->getRank()==1 ) {
+    Value* arg1 = getPntrToArgument(0);
+    Value* arg2 = getPntrToArgument(1);
+    unsigned nmult = arg1->getRowLength(0);
+    unsigned nvals1 = arg1->getNumberOfValues();
 
-    myvals.addDerivative( 0, task_index, val2 );
-    myvals.updateIndex( 0, task_index );
-    unsigned nvals = getPntrToArgument(0)->getNumberOfValues();
-    myvals.addDerivative( 0, nvals + task_index, val1 );
-    myvals.updateIndex( 0, nvals + task_index );
-  } else {
-    unsigned nmult = arg1->getRowLength(task_index);
-    unsigned nrowsA = getPntrToArgument(0)->getShape()[1];
-    unsigned nrowsB = 1;
-    if( getPntrToArgument(1)->getRank()>1 ) {
-      nrowsB = getPntrToArgument(1)->getShape()[1];
-    }
-    unsigned nvals1 = getPntrToArgument(0)->getNumberOfValues();
-
-    double matval = 0;
+    double matval=0;
+    Value* myval = getPntrToComponent(0);
     for(unsigned i=0; i<nmult; ++i) {
-      unsigned kind = arg1->getRowIndex( task_index, i );
-      double val1 = arg1->get( task_index*nrowsA + kind );
-      double val2 = arg2->get( kind*nrowsB + task_index );
-      matval += val1*val2;
+        unsigned kind = arg1->getRowIndex( 0, i );
+        double val1 = arg1->get( i, false );
+        double val2 = arg2->get( kind );
+        matval += val1*val2;
 
-      if( doNotCalculateDerivatives() ) {
-        continue;
-      }
+        if( doNotCalculateDerivatives() ) {
+          continue;
+        }
 
-      myvals.addDerivative( 0, task_index*nrowsA + kind, val2 );
-      myvals.updateIndex( 0, task_index*nrowsA + kind );
-      myvals.addDerivative( 0, nvals1 + kind*nrowsB + task_index, val1 );
-      myvals.updateIndex( 0, nvals1 + kind*nrowsB + task_index );
-    }
-    // And add this part of the product
-    myvals.addValue( 0, matval );
+        myval->addDerivative( kind, val2 );
+        myval->addDerivative( nvals1 + kind, val1 );
+    }  
+    myval->set( matval );
+  } else {
+    taskmanager.getActionInput().A.setup( 0, getPntrToArgument(0) );
+    taskmanager.getActionInput().B.setup( getPntrToArgument(0)->getNumberOfStoredValues(), getPntrToArgument(1) );
+    taskmanager.runAllTasks();
   }
 }
 
-void MatrixProductDiagonal::calculate() {
-  if( getPntrToArgument(1)->getRank()==1 ) {
-    unsigned nder = getNumberOfDerivatives();
-    MultiValue myvals;
-    myvals.resize( 1, nder, 0 );
-    performTask( 0, myvals );
+void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforces ) {
+   taskmanager.applyForces( outforces );
+}
 
-    Value* myval=getPntrToComponent(0);
-    myval->set( myvals.get(0) );
-    for(unsigned i=0; i<nder; ++i) {
-      myval->setDerivative( i, myvals.getDerivative(0,i) );
-    }
-  } else {
-    runAllTasks();
-  }
+void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ){
+   output.values[0] = 0;
+   std::size_t ibase = task_index*(actiondata.A.ncols+1);
+   std::size_t n = actiondata.A.bookeeping[ibase];
+   for(unsigned i=0; i<n; ++i) {
+       double val1 = input.inputdata[task_index*actiondata.A.ncols+i];
+       double val2 = MatrixView::getElement( actiondata.A.bookeeping[ibase+1+i], task_index, actiondata.B, input.inputdata );
+       output.values[0] += val1*val2;
+       output.derivatives[i] = val2;
+       output.derivatives[n +i] = val1;
+   } 
+}
+
+void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ){
+   double ff = fdata.force[0];
+   std::size_t ibase = task_index*(actiondata.A.ncols+1);
+   std::size_t n = actiondata.A.bookeeping[ibase];
+   for(unsigned i=0; i<n; ++i) {
+       std::size_t ival = actiondata.A.bookeeping[ibase+1+i];
+       forces.thread_unsafe[ task_index*actiondata.A.shape[1] + ival ] = ff*fdata.deriv[0][i];
+       forces.thread_unsafe[ actiondata.B.start + ival*actiondata.B.shape[1] + task_index ] = ff*fdata.deriv[0][n+i];
+   }
 }
 
 }
