@@ -27,26 +27,28 @@ void MatrixView::setup( std::size_t s, const Value* myval ) {
   start = s;
   shape.resize(2);
   if( myval->getRank()==1 ) {
-     shape[0] = myval->getShape()[0];
-     shape[1] = ncols = 1;
-     bookeeping.resize( 2*shape[0] );
-     for(unsigned i=0; i<shape[0]; ++i) {
-         bookeeping[2*i] = 1; 
-         bookeeping[2*i+1] = 0; 
-     }
+    shape[0] = myval->getShape()[0];
+    shape[1] = ncols = 1;
+    bookeeping.resize( 2*shape[0] );
+    for(unsigned i=0; i<shape[0]; ++i) {
+      bookeeping[2*i] = 1;
+      bookeeping[2*i+1] = 0;
+    }
   } else if( myval->getRank()==2 ) {
-     shape[0] = myval->getShape()[0];
-     shape[1] = myval->getShape()[1];
-     ncols = myval->getNumberOfColumns();
-     bookeeping.resize( myval->matrix_bookeeping.size() );
-     for(unsigned i=0; i<bookeeping.size(); ++i) bookeeping[i] = myval->matrix_bookeeping[i];
+    shape[0] = myval->getShape()[0];
+    shape[1] = myval->getShape()[1];
+    ncols = myval->getNumberOfColumns();
+    bookeeping.resize( myval->matrix_bookeeping.size() );
+    for(unsigned i=0; i<bookeeping.size(); ++i) {
+      bookeeping[i] = myval->matrix_bookeeping[i];
+    }
   }
 }
 
 double MatrixView::getElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, std::vector<double>& data ) {
   if( mat.shape[1]==mat.ncols ) {
-      plumed_assert( mat.start + irow*mat.ncols + jcol<data.size() );
-      return data[mat.start + irow*mat.ncols + jcol];
+    plumed_assert( mat.start + irow*mat.ncols + jcol<data.size() );
+    return data[mat.start + irow*mat.ncols + jcol];
   }
 
   for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
@@ -55,6 +57,20 @@ double MatrixView::getElement( std::size_t irow, std::size_t jcol, const MatrixV
     }
   }
   return 0.0;
+}
+
+bool MatrixView::hasElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, std::size_t& ind ) {
+  if( mat.shape[1]==mat.ncols ) {
+    ind = mat.start + irow*mat.ncols + jcol;
+    return true;
+  }
+  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
+    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
+      ind = mat.start + irow*mat.ncols+i;
+      return true;
+    }
+  }
+  return false;
 }
 
 }

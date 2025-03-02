@@ -40,7 +40,7 @@ class MatrixProductDiagonalInput {
 public:
   MatrixView A;
   MatrixView B;
-  MatrixProductDiagonalInput& operator=( const MatrixProductDiagonalInput& m ) { 
+  MatrixProductDiagonalInput& operator=( const MatrixProductDiagonalInput& m ) {
     // Don't need to copy A and B here as they will be set in calculate
     return *this;
   }
@@ -55,7 +55,9 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override { plumed_error(); }
+  void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
+    plumed_error();
+  }
   static void performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
 };
@@ -134,13 +136,13 @@ void MatrixProductDiagonal::calculate() {
     double val2 = getPntrToArgument(1)->get(0);
     Value* myval = getPntrToComponent(0);
     myval->set( val1*val2 );
-  
+
     if( doNotCalculateDerivatives() ) {
       return;
     }
-  
+
     myval->setDerivative( 0, val2 );
-    myval->setDerivative( 1, val1 ); 
+    myval->setDerivative( 1, val1 );
   } else if( getPntrToArgument(1)->getRank()==1 ) {
     Value* arg1 = getPntrToArgument(0);
     Value* arg2 = getPntrToArgument(1);
@@ -150,18 +152,18 @@ void MatrixProductDiagonal::calculate() {
     double matval=0;
     Value* myval = getPntrToComponent(0);
     for(unsigned i=0; i<nmult; ++i) {
-        unsigned kind = arg1->getRowIndex( 0, i );
-        double val1 = arg1->get( i, false );
-        double val2 = arg2->get( kind );
-        matval += val1*val2;
+      unsigned kind = arg1->getRowIndex( 0, i );
+      double val1 = arg1->get( i, false );
+      double val2 = arg2->get( kind );
+      matval += val1*val2;
 
-        if( doNotCalculateDerivatives() ) {
-          continue;
-        }
+      if( doNotCalculateDerivatives() ) {
+        continue;
+      }
 
-        myval->addDerivative( kind, val2 );
-        myval->addDerivative( nvals1 + kind, val1 );
-    }  
+      myval->addDerivative( kind, val2 );
+      myval->addDerivative( nvals1 + kind, val1 );
+    }
     myval->set( matval );
   } else {
     taskmanager.getActionInput().A.setup( 0, getPntrToArgument(0) );
@@ -171,31 +173,33 @@ void MatrixProductDiagonal::calculate() {
 }
 
 void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforces ) {
-   taskmanager.applyForces( outforces );
+  taskmanager.applyForces( outforces );
 }
 
-void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ){
-   output.values[0] = 0;
-   std::size_t ibase = task_index*(actiondata.A.ncols+1);
-   std::size_t n = actiondata.A.bookeeping[ibase];
-   for(unsigned i=0; i<n; ++i) {
-       double val1 = input.inputdata[task_index*actiondata.A.ncols+i];
-       double val2 = MatrixView::getElement( actiondata.A.bookeeping[ibase+1+i], task_index, actiondata.B, input.inputdata );
-       output.values[0] += val1*val2;
-       output.derivatives[i] = val2;
-       output.derivatives[n +i] = val1;
-   } 
+void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+  output.values[0] = 0;
+  std::size_t ibase = task_index*(actiondata.A.ncols+1);
+  std::size_t n = actiondata.A.bookeeping[ibase];
+  for(unsigned i=0; i<n; ++i) {
+    double val1 = input.inputdata[task_index*actiondata.A.ncols+i];
+    double val2 = MatrixView::getElement( actiondata.A.bookeeping[ibase+1+i], task_index, actiondata.B, input.inputdata );
+    output.values[0] += val1*val2;
+    output.derivatives[i] = val2;
+    output.derivatives[n +i] = val1;
+  }
 }
 
-void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ){
-   double ff = fdata.force[0];
-   std::size_t ibase = task_index*(actiondata.A.ncols+1);
-   std::size_t n = actiondata.A.bookeeping[ibase];
-   for(unsigned i=0; i<n; ++i) {
-       std::size_t ival = actiondata.A.bookeeping[ibase+1+i];
-       forces.thread_unsafe[ task_index*actiondata.A.shape[1] + ival ] = ff*fdata.deriv[0][i];
-       forces.thread_unsafe[ actiondata.B.start + ival*actiondata.B.shape[1] + task_index ] = ff*fdata.deriv[0][n+i];
-   }
+void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+  double ff = fdata.force[0];
+  std::size_t ibase = task_index*(actiondata.A.ncols+1);
+  std::size_t n = actiondata.A.bookeeping[ibase], ind;
+  for(unsigned i=0; i<n; ++i) {
+    std::size_t ival = actiondata.A.bookeeping[ibase+1+i];
+    forces.thread_unsafe[ task_index*actiondata.A.shape[1] + ival ] = ff*fdata.deriv[0][i];
+    if( MatrixView::hasElement( ival, task_index, actiondata.B, ind ) ) {
+      forces.thread_unsafe[ ind ] = ff*fdata.deriv[0][n+i];
+    }
+  }
 }
 
 }

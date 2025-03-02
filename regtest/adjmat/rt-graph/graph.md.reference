@@ -26,9 +26,9 @@ linkStyle 4 stroke:blue,color:blue;
 cc(["label=cc 
  MATRIX_VECTOR_PRODUCT 
 "])
-cc -- cc --> 6
+cc -- cc --> 7
 linkStyle 5 stroke:blue,color:blue;
-6("label=#64;6 
+7("label=#64;7 
  PRINT
 FILE=coords 
 ")
@@ -42,12 +42,12 @@ linkStyle 7 stroke:blue,color:blue;
 s(["label=s 
  SUM 
 "])
-s -- s --> 11
-11("label=#64;11 
+s -- s --> 12
+12("label=#64;12 
  PRINT
 FILE=fcolvar 
 ")
-s -- s --> 12
-12(["label=#64;12 
+s -- s --> 13
+13(["label=#64;13 
  BIASVALUE 
 "])
