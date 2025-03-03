@@ -28,6 +28,7 @@
 #include "tools/OpenMP.h"
 #include "tools/View.h"
 #include "tools/View2D.h"
+#include "MatrixView.h"
 
 #include "tools/ColvarOutput.h"
 #include "tools/OpenACC.h"
@@ -48,7 +49,8 @@ struct ParallelActionsInput {
 /// This holds all the input data that is required to calculate all values for all tasks
   unsigned dataSize{0};
   double *inputdata{nullptr};
-  // std::vector<double> inputdata{};
+/// Bookeeping stuff for arguments
+  std::vector<MatrixView> args;
 /// Default constructor
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
@@ -250,6 +252,14 @@ void ParallelTaskManager<T, D>::runAllTasks() {
   action->getInputData( input_buffer );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
+  // Transfer all the bookeeping information about the arguments
+  std::size_t s = 0; 
+  myinput.args.resize( action->getNumberOfArguments() );
+  for(unsigned i=0; i<myinput.args.size(); ++i) {
+    myinput.args[i].setup( s, action->getPntrToArgument(i) );
+    s += (action->getPntrToArgument(i))->getNumberOfStoredValues();
+  } 
+  // Reset the values at the start of the task loop
   value_stash.assign( value_stash.size(), 0.0 );
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC

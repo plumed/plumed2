@@ -22,7 +22,6 @@
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
-#include "core/MatrixView.h"
 
 //+PLUMEDOC FUNCTION MATRIX_PRODUCT_DIAGONAL
 /*
@@ -38,8 +37,6 @@ namespace refdist {
 
 class MatrixProductDiagonalInput {
 public:
-  MatrixView A;
-  MatrixView B;
   MatrixProductDiagonalInput& operator=( const MatrixProductDiagonalInput& m ) {
     // Don't need to copy A and B here as they will be set in calculate
     return *this;
@@ -166,8 +163,6 @@ void MatrixProductDiagonal::calculate() {
     }
     myval->set( matval );
   } else {
-    taskmanager.getActionInput().A.setup( 0, getPntrToArgument(0) );
-    taskmanager.getActionInput().B.setup( getPntrToArgument(0)->getNumberOfStoredValues(), getPntrToArgument(1) );
     taskmanager.runAllTasks();
   }
 }
@@ -178,11 +173,11 @@ void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforc
 
 void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   output.values[0] = 0;
-  std::size_t ibase = task_index*(actiondata.A.ncols+1);
-  std::size_t n = actiondata.A.bookeeping[ibase];
+  std::size_t ibase = task_index*(input.args[0].ncols+1);
+  std::size_t n = input.args[0].bookeeping[ibase];
   for(unsigned i=0; i<n; ++i) {
-    double val1 = input.inputdata[task_index*actiondata.A.ncols+i];
-    double val2 = MatrixView::getElement( actiondata.A.bookeeping[ibase+1+i], task_index, actiondata.B, input.inputdata );
+    double val1 = input.inputdata[task_index*input.args[0].ncols+i];
+    double val2 = MatrixView::getElement( input.args[0].bookeeping[ibase+1+i], task_index, input.args[1], input.inputdata );
     output.values[0] += val1*val2;
     output.derivatives[i] = val2;
     output.derivatives[n +i] = val1;
@@ -191,12 +186,12 @@ void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixPro
 
 void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   double ff = fdata.force[0];
-  std::size_t ibase = task_index*(actiondata.A.ncols+1);
-  std::size_t n = actiondata.A.bookeeping[ibase], ind;
+  std::size_t ibase = task_index*(input.args[0].ncols+1);
+  std::size_t n = input.args[0].bookeeping[ibase], ind;
   for(unsigned i=0; i<n; ++i) {
-    std::size_t ival = actiondata.A.bookeeping[ibase+1+i];
-    forces.thread_unsafe[ task_index*actiondata.A.shape[1] + ival ] = ff*fdata.deriv[0][i];
-    if( MatrixView::hasElement( ival, task_index, actiondata.B, ind ) ) {
+    std::size_t ival = input.args[0].bookeeping[ibase+1+i];
+    forces.thread_unsafe[ task_index*input.args[0].shape[1] + ival ] = ff*fdata.deriv[0][i];
+    if( MatrixView::hasElement( ival, task_index, input.args[1], ind ) ) {
       forces.thread_unsafe[ ind ] = ff*fdata.deriv[0][n+i];
     }
   }
