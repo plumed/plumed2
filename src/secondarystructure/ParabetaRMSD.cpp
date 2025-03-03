@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureRMSD.h"
+#include "SecondaryStructureBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
@@ -96,10 +96,9 @@ public:
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::registerKeywords( keys );
+  SecondaryStructureBase<Vector>::registerKeywords( keys );
   keys.remove("ATOMS");
   keys.remove("SEGMENT");
-  keys.remove("BONDLENGTH");
   keys.remove("STRUCTURE");
   keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal parallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to a parallel beta sheet");
   keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
@@ -120,11 +119,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  bool uselessthan=SecondaryStructureBase<Vector>::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
   std::vector<std::string> all_atoms;
-  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
+  SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   bool intra_chain(false), inter_chain(false);
   std::string seglist;
@@ -344,7 +343,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    if( type=="DRMSD" ) {
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
+    } else {
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    }
     if( ltmap.length()>0 ) {
       // Create the lowest line
       readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );
@@ -354,7 +357,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
       readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut FUNC=x*y PERIODIC=NO");
     }
   } else {
-    readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    if( type=="DRMSD" ) {
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
+    } else {
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    }
     if( ltmap.length()>0 ) {
       // Create the lowest line
       readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );

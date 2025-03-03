@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2025 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,17 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ColvarOutput.h"
-#include "core/Colvar.h"
+#include "SecondaryStructureBase.h"
 
-namespace PLMD {
+//+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
+/*
+Calclulate the distance between segments of a protein and a reference structure of interest
 
-ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v,
-    std::vector<double>& d,
-    Colvar* action ) {
-  View<double> val(v.data(),v.size());
-  d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
-  return ColvarOutput( val, action->getNumberOfDerivatives(), d.data() );
-}
+\par Examples
 
-} // namespace PLMD
+*/
+//+ENDPLUMEDOC

@@ -30,6 +30,7 @@
 #include "tools/View2D.h"
 
 namespace PLMD {
+
 class ParallelActionsInput {
 public:
 /// Do we need to calculate the derivatives
