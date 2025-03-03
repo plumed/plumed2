@@ -82,9 +82,11 @@ public:
   explicit ThreeBodyGFunctions(const ActionOptions&);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void calculate() override ;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   unsigned getNumberOfDerivatives() override;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
+  void performTask( const unsigned& task_index, MultiValue& myvals ) const override { plumed_merror("shouldn't be here"); }
   static void performTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
+  static void gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
 };
 
 PLUMED_REGISTER_ACTION(ThreeBodyGFunctions,"GSYMFUNC_THREEBODY")
@@ -149,7 +151,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   }
   checkRead();
   input.multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
-  taskmanager.setupParallelTaskManager( 1, 0, 0 );
+  taskmanager.setupParallelTaskManager( 1, 4*wval[0]->getShape()[1], 0 );
   taskmanager.setActionInput( input );
 }
 
@@ -206,6 +208,8 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   View<const double,helpers::dynamic_extent> xval( xpntr, rowlen );
   View<const double,helpers::dynamic_extent> yval( ypntr, rowlen );
   View<const double,helpers::dynamic_extent> zval( zpntr, rowlen );
+  for(unsigned i=0; i<output.derivatives.size(); ++i) output.derivatives[i] = 0;
+  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*actiondata.args[3].shape[1] );
 
   Angle angle;
   Vector disti, distj;
@@ -246,105 +250,55 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
             if( input.noderiv ) {
                 continue;
             }
+           
+            for(unsigned m=0; m<actiondata.functions[n].getNumberOfArguments(); ++m) {
+              double der = weightij*actiondata.functions[n].evaluateDeriv( m, values );
+              derivatives[n][i] += der*der_i[m][0];
+              derivatives[n][rowlen+i] += der*der_i[m][1];
+              derivatives[n][2*rowlen+i] += der*der_i[m][2];
+              derivatives[n][j] += der*der_j[m][0];
+              derivatives[n][rowlen+j] += der*der_j[m][1];
+              derivatives[n][2*rowlen+j] += der*der_j[m][2];
+            }
+            derivatives[n][3*rowlen+i] += nonweight*wval[j];
+            derivatives[n][3*rowlen+j] += nonweight*wval[i];
           }
       }
-  } 
+  }
 }
 
-void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  const Value* wval = getPntrToArgument(3);
-  const Value* xval = getPntrToArgument(0);
-  const Value* yval = getPntrToArgument(1);
-  const Value* zval = getPntrToArgument(2);
-  Angle angle;
-  Vector disti, distj;
-  unsigned matsize = wval->getNumberOfStoredValues();
-  std::vector<double> values(4);
-  std::vector<Vector> der_i(4), der_j(4);
-  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getNumberOfColumns();
-  if( taskmanager.getActionInput().multi_action_input ) {
-    matsize = wval->getNumberOfValues();
-    ncols = wval->getShape()[1];
-  }
-  for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + i;  //wval->getRowIndex( task_index, i );
-    if( taskmanager.getActionInput().multi_action_input ) {
-      ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    }
-    double weighti = wval->get( ipos, taskmanager.getActionInput().multi_action_input );
-    if( weighti<epsilon ) {
-      continue ;
-    }
-    disti[0] = xval->get( ipos, taskmanager.getActionInput().multi_action_input );
-    disti[1] = yval->get( ipos, taskmanager.getActionInput().multi_action_input );
-    disti[2] = zval->get( ipos, taskmanager.getActionInput().multi_action_input );
-    values[1] = disti.modulo2();
-    der_i[1]=2*disti;
-    der_i[2].zero();
-    for(unsigned j=0; j<i; ++j) {
-      unsigned jpos = ncols*task_index + j;  // wval->getRowIndex( task_index, j );
-      if( taskmanager.getActionInput().multi_action_input ) {
-        jpos = ncols*task_index + wval->getRowIndex( task_index, j );
-      }
-      double weightj = wval->get( jpos, taskmanager.getActionInput().multi_action_input );
-      if( weightj<epsilon ) {
-        continue ;
-      }
-      distj[0] = xval->get( jpos, taskmanager.getActionInput().multi_action_input );
-      distj[1] = yval->get( jpos, taskmanager.getActionInput().multi_action_input );
-      distj[2] = zval->get( jpos, taskmanager.getActionInput().multi_action_input );
-      values[2] = distj.modulo2();
-      der_j[1].zero();
-      der_j[2]=2*distj;
-      der_i[3] = ( disti - distj );
-      values[3] = der_i[3].modulo2();
-      der_i[3] = 2*der_i[3];
-      der_j[3] = -der_i[3];
-      // Compute angle between bonds
-      values[0] = angle.compute( disti, distj, der_i[0], der_j[0] );
-      // Compute product of weights
-      double weightij = weighti*weightj;
-      // Now compute all symmetry functions
-      for(unsigned n=0; n<taskmanager.getActionInput().functions.size(); ++n) {
-        double nonweight = taskmanager.getActionInput().functions[n].evaluate( values );
-        myvals.addValue( n, nonweight*weightij );
-        if( doNotCalculateDerivatives() ) {
-          continue;
-        }
+void ThreeBodyGFunctions::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
 
-        for(unsigned m=0; m<taskmanager.getActionInput().functions[n].getNumberOfArguments(); ++m) {
-          double der = weightij*taskmanager.getActionInput().functions[n].evaluateDeriv( m, values );
-          myvals.addDerivative( n, ipos, der*der_i[m][0] );
-          myvals.addDerivative( n, matsize+ipos, der*der_i[m][1] );
-          myvals.addDerivative( n, 2*matsize+ipos, der*der_i[m][2] );
-          myvals.addDerivative( n, jpos, der*der_j[m][0] );
-          myvals.addDerivative( n, matsize+jpos, der*der_j[m][1] );
-          myvals.addDerivative( n, 2*matsize+jpos, der*der_j[m][2] );
-        }
-        myvals.addDerivative( n, 3*matsize+ipos, nonweight*weightj );
-        myvals.addDerivative( n, 3*matsize+jpos, nonweight*weighti );
+void ThreeBodyGFunctions::gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+  std::size_t rowlen = actiondata.args[3].bookeeping[(1+actiondata.args[3].ncols)*task_index];
+  if( actiondata.multi_action_input ) {
+      View<const std::size_t,helpers::dynamic_extent> wbooks( actiondata.args[3].bookeeping.data()+(1+actiondata.args[3].ncols)*task_index+1, rowlen); 
+      for(unsigned j=0; j<rowlen; ++j) {
+          std::size_t xpos, ypos, zpos, matpos = task_index*actiondata.args[3].ncols + j;
+          MatrixView::hasElement( task_index, wbooks[j], actiondata.args[0], xpos );
+          MatrixView::hasElement( task_index, wbooks[j], actiondata.args[1], ypos );
+          MatrixView::hasElement( task_index, wbooks[j], actiondata.args[2], zpos );
+          for(unsigned i=0; i<input.ncomponents; ++i) {
+              double ff = fdata.force[i];
+              forces.thread_unsafe[actiondata.args[0].start + xpos] += ff*fdata.deriv[i][j];
+              forces.thread_unsafe[actiondata.args[1].start + ypos] += ff*fdata.deriv[i][rowlen+j];
+              forces.thread_unsafe[actiondata.args[2].start + zpos] += ff*fdata.deriv[i][2*rowlen+j];
+              forces.thread_unsafe[actiondata.args[3].start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+          }
       }
-    }
-  }
-  if( doNotCalculateDerivatives() ) {
-    return ;
-  }
-
-  // And update the elements that have derivatives
-  // Needs a separate loop here as there may be forces from j
-  for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + i; // wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos, false );
-    if( weighti<epsilon ) {
-      continue ;
-    }
-
-    for(unsigned n=0; n<taskmanager.getActionInput().functions.size(); ++n) {
-      myvals.updateIndex( n, ipos );
-      myvals.updateIndex( n, matsize+ipos );
-      myvals.updateIndex( n, 2*matsize+ipos );
-      myvals.updateIndex( n, 3*matsize+ipos );
-    }
+  } else {
+      for(unsigned j=0; j<rowlen; ++j) {
+          std::size_t matpos = task_index*actiondata.args[3].ncols + j;
+          for(unsigned i=0; i<input.ncomponents; ++i) {
+              double ff = fdata.force[i];
+              forces.thread_unsafe[actiondata.args[0].start + matpos] += ff*fdata.deriv[i][j];
+              forces.thread_unsafe[actiondata.args[1].start + matpos] += ff*fdata.deriv[i][rowlen+j];
+              forces.thread_unsafe[actiondata.args[2].start + matpos] += ff*fdata.deriv[i][2*rowlen+j];
+              forces.thread_unsafe[actiondata.args[3].start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+          }
+      }
   }
 }
 
