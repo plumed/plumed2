@@ -81,31 +81,46 @@ class Pbc {
 /// a distance vector.
   void buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const;
 public:
+///Helper function for moving the class to an openacc device
+  void toACCDevice()const ;
+///Helper function for cleaning the memory of the class from an openacc device
+  void removeFromACCDevice() const;
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
 /// if specified, also returns the number of attempted shifts
-  Vector distance(const Vector&, const Vector&,int*nshifts=nullptr)const;
+#pragma acc routine seq
+  Vector distance(const Vector&, const Vector&)const;
+/// Computes v2-v1, using minimal image convention
+/// if specified, also returns the number of attempted shifts
+  Vector distance(const Vector&, const Vector&,int*nshifts)const;
 /// Apply PBC to a set of positions or distance vectors
+#pragma acc routine seq
   void apply(VectorView dlist, unsigned max_index=0) const;
+#pragma acc routine seq
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
   void setBox(const Tensor&b);
 /// Returns the box
+#pragma acc routine seq
   const Tensor& getBox()const;
 /// Returns the inverse matrix of box.
 /// Thus: pbc.getInvBox() == inverse(pbc.getBox()).
+#pragma acc routine seq
   const Tensor& getInvBox()const;
 /// Transform a vector in real space to a vector in scaled coordinates.
 /// Thus:pbc.realToScaled(v) == matmul(transpose(inverse(pbc.getBox(),v)));
+#pragma acc routine seq
   Vector realToScaled(const Vector&)const;
 /// Transform a vector in scaled coordinates to a vector in real space.
 /// Thus:pbc.scaledToRead(v) == matmul(transpose(pbc.getBox()),v);
+#pragma acc routine seq
   Vector scaledToReal(const Vector&)const;
 /// Returns true if the box vectors are orthogonal
+#pragma acc routine seq
   bool isOrthorombic()const;
 /// Full search (for testing).
 /// Perform a full search on vector

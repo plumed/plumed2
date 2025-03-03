@@ -43,7 +43,8 @@ private:
   public:
     DerivHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
-      return { derivatives + i*nderivPerComponent, nderivPerComponent };
+      //the -9 is to "exclude" the virial (even if tecnically is still accessible)
+      return { derivatives + i*nderivPerComponent, nderivPerComponent-9 };
     }
 
     Vector getAtomDerivatives( std::size_t valueID, std::size_t atomID ) {
@@ -53,7 +54,7 @@ private:
 
     View<double,3> getView( std::size_t valueID, std::size_t atomID) {
       std::size_t base = valueID*nderivPerComponent + 3*atomID;
-      return { derivatives +base};
+      return View<double,3> { derivatives +base};
     }
   };
 public:
@@ -77,7 +78,7 @@ public:
     }
     View<double,9> getView(std::size_t i) const {
       std::size_t n=(i+1)*nderivPerComponent-9;
-      return {derivatives+n};
+      return View<double,9> {derivatives+n};
     }
     void set( std::size_t i, const Tensor& v ) {
       std::size_t n=(i+1)*nderivPerComponent;

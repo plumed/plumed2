@@ -286,7 +286,7 @@ void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actio
 
   // This aligns the two strands if this is required
   if( actiondata.align_strands ) {
-    Vector distance=input.pbc.distance( pos[6],pos[21] );
+    Vector distance=input.pbc->distance( pos[6],pos[21] );
     Vector origin_old, origin_new;
     origin_old=pos[21];
     origin_new=pos[6]+distance;
@@ -297,7 +297,7 @@ void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actio
     for(unsigned i=0; i<actiondata.natoms-1; ++i) {
       const Vector & first (pos[i]);
       Vector & second (pos[i+1]);
-      second=first+input.pbc.distance(first,second);
+      second=first+input.pbc->distance(first,second);
     }
   }
 

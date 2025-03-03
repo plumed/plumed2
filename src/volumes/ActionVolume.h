@@ -48,7 +48,7 @@ struct VolumeInput {
   const Pbc& pbc;
   View<const double,3> cpos;
   View2D<const double,helpers::dynamic_extent,3> refpos;
-  VolumeInput( std::size_t t, unsigned nref, const double* p, const double* rp, const Pbc& box ) :
+  VolumeInput( std::size_t t, unsigned nref, double* p, double* rp, const Pbc& box ) :
     task_index(t),pbc(box),cpos(p),refpos(rp,nref) {
   }
 };
@@ -219,7 +219,7 @@ template <class T>
 void ActionVolume<T>::performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   std::size_t nref = output.derivatives.size()/3 - 4; // This is the number of reference atoms
   VolumeOutput volout( output.values, output.derivatives.size(), output.derivatives.data() );
-  T::calculateNumberInside( VolumeInput( task_index, nref, input.inputdata.data()+3*task_index, input.inputdata.data()+3*actiondata.numberOfNonReferenceAtoms, input.pbc ), actiondata.voldata, volout );
+  T::calculateNumberInside( VolumeInput( task_index, nref, input.inputdata+3*task_index, input.inputdata+3*actiondata.numberOfNonReferenceAtoms, *input.pbc ), actiondata.voldata, volout );
 
   if( actiondata.not_in ) {
     output.values[0] = 1.0 - output.values[0];

@@ -19,6 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+//this is temporary:
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
@@ -299,8 +303,6 @@ void Distance::calculate() {
 
 void Distance::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
   Vector distance=delta(cvin.pos[0],cvin.pos[1]);
-  const double value=distance.modulo();
-  const double invvalue=1.0/value;
 
   if(cvin.mode==1) {
     cvout.derivs[0][0] = Vector(-1,0,0);
@@ -327,6 +329,8 @@ void Distance::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
     cvout.derivs[2][1] = matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
     cvout.values[2] = Tools::pbc(d[2]);
   } else {
+    const double value=distance.modulo();
+    const double invvalue=1.0/value;
     cvout.derivs[0][0] = -invvalue*distance;
     cvout.derivs[0][1] = invvalue*distance;
     ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
