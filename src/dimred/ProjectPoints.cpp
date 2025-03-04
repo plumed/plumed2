@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
 #include "tools/ConjugateGradient.h"
 #include "tools/SwitchingFunction.h"
@@ -38,14 +39,21 @@ Find the projection of a point in a low dimensional space by matching the (trans
 */
 //+ENDPLUMEDOC
 
+class ProjectPoints;
+
+class ProjectPointsInput {
+public:
+  double cgtol;
+  ProjectPoints* action;
+};
+
 class ProjectPoints : public ActionWithVector {
 private:
-  double cgtol;
   unsigned dimout;
   mutable std::vector<unsigned> rowstart;
   std::vector<SwitchingFunction> switchingFunction;
   ConjugateGradient<ProjectPoints> myminimiser;
-  void getProjection( const unsigned& current, std::vector<double>& point ) const ;
+  ParallelTaskManager<ProjectPoints,ProjectPointsInput> taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   ProjectPoints( const ActionOptions& );
@@ -53,7 +61,10 @@ public:
     return 0;
   }
   void prepare() override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_merror("not neessary");
+  }
+  static void performTask( std::size_t task_index, const ProjectPointsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
   void calculate() override ;
   void apply() override {}
@@ -69,6 +80,7 @@ void ProjectPoints::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("numbered","WEIGHTS","vector","the matrix with the weights of the target quantities");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
   keys.addOutputComponent("coord","default","scalar/vector","the coordinates of the points in the low dimensional space");
+  ParallelTaskManager<ProjectPoints,ProjectPointsInput>::registerKeywords( keys );
 }
 
 
@@ -76,7 +88,8 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
   Action(ao),
   ActionWithVector(ao),
   rowstart(OpenMP::getNumThreads()),
-  myminimiser( this ) {
+  myminimiser(this),
+  taskmanager(this) {
   dimout = getNumberOfArguments();
   unsigned nvals=getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -153,10 +166,18 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
     componentIsNotPeriodic( "coord-" + num );
   }
   // Create a list of tasks to perform
+  double cgtol;
   parse("CGTOL",cgtol);
   log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
   requestArguments( args );
   checkRead();
+
+  // Setup parallel task manager
+  ProjectPointsInput input;
+  input.cgtol=cgtol;
+  input.action=this;
+  taskmanager.setupParallelTaskManager( 1, 0, 0 );
+  taskmanager.setActionInput( input );
 }
 
 void ProjectPoints::prepare() {
@@ -207,17 +228,17 @@ double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vecto
   return stress;
 }
 
-void ProjectPoints::getProjection( const unsigned& current, std::vector<double>& point ) const {
-  Value* targ = getPntrToArgument( dimout );
-  unsigned nland = getPntrToArgument(0)->getShape()[0];
-  unsigned base = current;
-  if( targ->getRank()==2 ) {
-    base = current*targ->getShape()[1];
+void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+  std::vector<double> point( input.ncomponents );
+  std::size_t nland = input.args[0].shape[0];
+  std::size_t base = task_index;
+  if( input.args[input.ncomponents].shape.size()==2 ) {
+    base = task_index*input.args[input.ncomponents].shape[1];
   }
   unsigned closest=0;
-  double mindist = targ->get( base );
+  double mindist = input.inputdata[input.args[input.ncomponents].start + base];
   for(unsigned i=1; i<nland; ++i) {
-    double dist = targ->get( base + i );
+    double dist = input.inputdata[input.args[input.ncomponents].start + base+i];
     if( dist<mindist ) {
       mindist=dist;
       closest=i;
@@ -226,34 +247,35 @@ void ProjectPoints::getProjection( const unsigned& current, std::vector<double>&
   // Put the initial guess near to the closest landmark  -- may wish to use grid here again Sandip??
   Random random;
   random.setSeed(-1234);
-  for(unsigned j=0; j<dimout; ++j) {
-    point[j] = getPntrToArgument(j)->get(closest) + (random.RandU01() - 0.5)*0.01;
+  for(unsigned j=0; j<input.ncomponents; ++j) {
+    point[j] = input.inputdata[input.args[j].start + closest] + (random.RandU01() - 0.5)*0.01;
   }
   // And do the optimisation
-  rowstart[OpenMP::getThreadNum()]=current;
-  if( targ->getRank()==2 ) {
-    rowstart[OpenMP::getThreadNum()] = current*targ->getShape()[1];
+  actiondata.action->rowstart[OpenMP::getThreadNum()]=task_index;
+  if( input.args[input.ncomponents].shape.size()==2 ) {
+    actiondata.action->rowstart[OpenMP::getThreadNum()] = task_index*input.args[input.ncomponents].shape[1];
   }
-  myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
-}
-
-void ProjectPoints::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> point( dimout );
-  getProjection( current, point );
-  for(unsigned j=0; j<dimout; ++j) {
-    myvals.setValue( j, point[j] );
+  actiondata.action->myminimiser.minimise( actiondata.cgtol, point, &ProjectPoints::calculateStress );
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    output.values[i] = point[i];
   }
 }
 
 void ProjectPoints::calculate() {
   if( getPntrToComponent(0)->getRank()==0 ) {
-    std::vector<double> point( dimout );
-    getProjection( 0, point );
-    for(unsigned i=0; i<dimout; ++i) {
+    ParallelActionsInput myinput( getPbc() );
+    myinput.noderiv = true;
+    myinput.ncomponents = getNumberOfComponents();
+    getInputData( myinput.inputdata );
+    myinput.setupArguments( this );
+    std::vector<double> derivatives, point( getNumberOfComponents() );
+    ParallelActionsOutput output( myinput.ncomponents, point.data(), derivatives );
+    performTask( 0, taskmanager.getActionInput(), myinput, output );
+    for(unsigned i=0; i<point.size(); ++i) {
       getPntrToComponent(i)->set(point[i]);
     }
   } else {
-    runAllTasks();
+    taskmanager.runAllTasks();
   }
 }
 

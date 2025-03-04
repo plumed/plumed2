@@ -80,7 +80,19 @@ struct ParallelActionsInput {
     // assuming dataSize is not changed
 #pragma acc exit data delete(inputdata[0:dataSize],dataSize,nindices_per_task,ncomponents, pbc[0:1],noderiv,this[0:1])
   }
+  /// Setup the arguments
+  void setupArguments( const ActionWithArguments* action );
 };
+
+inline
+void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
+  std::size_t s = 0;
+  args.resize( action->getNumberOfArguments() );
+  for(unsigned i=0; i<args.size(); ++i) {
+    args[i].setup( s, action->getPntrToArgument(i) );
+    s += (action->getPntrToArgument(i))->getNumberOfStoredValues();
+  }
+}
 
 struct ParallelActionsOutput {
   View<double> values;
@@ -253,13 +265,12 @@ void ParallelTaskManager<T, D>::runAllTasks() {
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  std::size_t s = 0; 
-  myinput.args.resize( action->getNumberOfArguments() );
-  for(unsigned i=0; i<myinput.args.size(); ++i) {
-    myinput.args[i].setup( s, action->getPntrToArgument(i) );
-    s += (action->getPntrToArgument(i))->getNumberOfStoredValues();
-  } 
+  myinput.setupArguments( action );
   // Reset the values at the start of the task loop
+  std::size_t totalvals=(action->getConstPntrToComponent(0))->getNumberOfStoredValues()*action->getNumberOfComponents();
+  if( value_stash.size()!=totalvals ) {
+    value_stash.resize(totalvals);
+  }
   value_stash.assign( value_stash.size(), 0.0 );
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
