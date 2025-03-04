@@ -296,10 +296,10 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       dlist[k][1]  = best[1];
       dlist[k][2]  = best[2];
     }
-  } // else {
+  }
   // throws are not compatible with GPUs
-  // plumed_merror("unknown pbc type");
-//}
+  // so the `plumed_merror("unknown pbc type");` must be anticipated by
+  // a check before running the whole calculation
 }
 
 Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {

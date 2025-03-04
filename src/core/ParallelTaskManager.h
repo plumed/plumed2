@@ -32,8 +32,6 @@
 #include "tools/ColvarOutput.h"
 #include "tools/OpenACC.h"
 
-// #include<iostream>
-// #define vdbg(...) std::cerr << __LINE__ << ":" << #__VA_ARGS__ << " " << (__VA_ARGS__) << '\n'
 namespace PLMD {
 
 struct ParallelActionsInput {

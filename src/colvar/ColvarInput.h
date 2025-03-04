@@ -58,6 +58,9 @@ struct ColvarInput {
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
 #pragma acc routine seq
   static void setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out );
+  /// same as setBoxDerivativesNoPbc but with no extra memory allocations
+#pragma acc routine seq
+  static void setBoxDerivativesNoPbc_inplace( const ColvarInput& inpt, ColvarOutput& out );
 };
 
 } // namespace colvar
