@@ -282,7 +282,7 @@ template <class T>
 void MatrixTimesVectorBase<T>::performTask( std::size_t task_index, const MatrixTimesVectorData& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
     MatrixTimesVectorOutput doutput( i, actiondata, input, output );
-    T::performTask( MatrixTimesVectorInput( task_index, i, actiondata, input, input.inputdata.data() ), doutput );
+    T::performTask( MatrixTimesVectorInput( task_index, i, actiondata, input, input.inputdata ), doutput );
   }
 }
 

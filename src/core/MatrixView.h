@@ -35,7 +35,7 @@ public:
 /// Pass the data from the value to the matrix
   void setup( std::size_t s, const Value* myval );
 /// Get an element of the matrix
-  static double getElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, std::vector<double>& data );
+  static double getElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, double* data );
 /// Determine if there is an element
   static bool hasElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, std::size_t& ind );
 };

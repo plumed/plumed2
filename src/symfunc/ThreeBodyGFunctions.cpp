@@ -182,7 +182,7 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   const double* zpntr=NULL;
   std::vector<double> xvals, yvals, zvals;
   std::size_t rowlen = input.args[3].bookeeping[(1+input.args[3].ncols)*task_index];
-  View<const double,helpers::dynamic_extent> wval( input.inputdata.data() + input.args[3].start + input.args[3].ncols*task_index, rowlen );
+  View<const double,helpers::dynamic_extent> wval( input.inputdata + input.args[3].start + input.args[3].ncols*task_index, rowlen );
   if( actiondata.multi_action_input ) {
     xvals.resize( rowlen );
     yvals.resize( rowlen );
@@ -197,9 +197,9 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
     ypntr = yvals.data();
     zpntr = zvals.data();
   } else {
-    xpntr = input.inputdata.data() + input.args[0].start + input.args[0].ncols*task_index;
-    ypntr = input.inputdata.data() + input.args[1].start + input.args[1].ncols*task_index;
-    zpntr = input.inputdata.data() + input.args[2].start + input.args[2].ncols*task_index;
+    xpntr = input.inputdata + input.args[0].start + input.args[0].ncols*task_index;
+    ypntr = input.inputdata + input.args[1].start + input.args[1].ncols*task_index;
+    zpntr = input.inputdata + input.args[2].start + input.args[2].ncols*task_index;
   }
   View<const double,helpers::dynamic_extent> xval( xpntr, rowlen );
   View<const double,helpers::dynamic_extent> yval( ypntr, rowlen );

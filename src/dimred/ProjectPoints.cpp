@@ -266,10 +266,13 @@ void ProjectPoints::calculate() {
     ParallelActionsInput myinput( getPbc() );
     myinput.noderiv = true;
     myinput.ncomponents = getNumberOfComponents();
-    getInputData( myinput.inputdata );
+    std::vector<double> input_buffer;
+    getInputData( input_buffer );
+    myinput.dataSize = input_buffer.size();
+    myinput.inputdata = input_buffer.data();
     myinput.setupArguments( this );
     std::vector<double> derivatives, point( getNumberOfComponents() );
-    ParallelActionsOutput output( myinput.ncomponents, point.data(), derivatives );
+    ParallelActionsOutput output( myinput.ncomponents, point.data(), 0, derivatives.data() );
     performTask( 0, taskmanager.getActionInput(), myinput, output );
     for(unsigned i=0; i<point.size(); ++i) {
       getPntrToComponent(i)->set(point[i]);

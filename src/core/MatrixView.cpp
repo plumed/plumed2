@@ -45,9 +45,8 @@ void MatrixView::setup( std::size_t s, const Value* myval ) {
   }
 }
 
-double MatrixView::getElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, std::vector<double>& data ) {
+double MatrixView::getElement( std::size_t irow, std::size_t jcol, const MatrixView& mat, double* data ) {
   if( mat.shape[1]==mat.ncols ) {
-    plumed_assert( mat.start + irow*mat.ncols + jcol<data.size() );
     return data[mat.start + irow*mat.ncols + jcol];
   }
 
