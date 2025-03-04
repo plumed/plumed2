@@ -307,10 +307,7 @@ void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
       forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
       ++m;
     }
-    // for(unsigned n=0; n<virialSize; ++n) {
-    //   forces.thread_safe[n] += ff*fdata.deriv[i][m];
-    //   ++m;
-    // }
+    //unrolled virial
     forces.thread_safe[0] += ff*fdata.deriv[i][m];
     forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
     forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
