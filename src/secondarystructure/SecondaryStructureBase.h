@@ -37,8 +37,11 @@ namespace secondarystructure {
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 template <class T>
 class SecondaryStructureBase: public ActionWithVector {
+public:
+  using input_type = T;
+  using PTM = ParallelTaskManager<SecondaryStructureBase<T>>;
 private:
-  ParallelTaskManager<SecondaryStructureBase<T>,T> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
@@ -81,7 +84,7 @@ bool SecondaryStructureBase<T>::readShortcutWords( std::string& ltmap, ActionSho
 template <class T>
 void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
-  ParallelTaskManager<Vector,Vector>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
