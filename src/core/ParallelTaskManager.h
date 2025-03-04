@@ -125,8 +125,10 @@ struct ForceOutput {
   ForceOutput& operator=(ForceOutput &&) = delete;
 };
 
-template <class T, class D>
+template <class T>
 class ParallelTaskManager {
+public:
+  using input_type= typename T::input_type;
 private:
 /// The underlying action for which we are managing parallel tasks
   ActionWithVector* action;
@@ -149,7 +151,7 @@ private:
 //this holds the data for myinput that will be passed though myinput
   std::vector<double> input_buffer;
 /// This holds data for that the underlying action needs to do the calculation
-  D actiondata;
+  input_type actiondata;
 /// This is used internally to gather the forces on the threads
   void gatherThreads( ForceOutput forces );
 public:
@@ -161,22 +163,22 @@ public:
 /// nt = number of derivatives that need to gathered over the threads (default of zero means all derivatives need to be calculated in a way that is thread safe)
   void setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt=-1 );
 /// Copy the data from the underlying colvar into this parallel action
-  void setActionInput( const D& adata );
+  void setActionInput( const input_type& adata );
 /// Get the action input so we can use it
-  D& getActionInput();
+  input_type& getActionInput();
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
   void applyForces( std::vector<double>& forcesForApply );
 };
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::registerKeywords( Keywords& keys ) {
+template <class T>
+void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
 }
 
-template <class T, class D>
-ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
+template <class T>
+ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
   ismatrix(false),
@@ -200,8 +202,8 @@ ParallelTaskManager<T, D>::ParallelTaskManager(ActionWithVector* av):
 #endif
 }
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::setupParallelTaskManager(
+template <class T>
+void ParallelTaskManager<T>::setupParallelTaskManager(
   std::size_t nind,
   std::size_t nder,
   int nt ) {
@@ -230,18 +232,18 @@ void ParallelTaskManager<T, D>::setupParallelTaskManager(
   }
 }
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::setActionInput( const D& adata ) {
+template <class T>
+void ParallelTaskManager<T>::setActionInput( const input_type& adata ) {
   actiondata=adata;
 }
 
-template <class T, class D>
-D& ParallelTaskManager<T, D>::getActionInput() {
+template <class T>
+typename ParallelTaskManager<T>::input_type& ParallelTaskManager<T>::getActionInput() {
   return actiondata;
 }
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::runAllTasks() {
+template <class T>
+void ParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
   unsigned nactive_tasks=partialTaskList.size();
@@ -344,8 +346,8 @@ void ParallelTaskManager<T, D>::runAllTasks() {
   }
 }
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply ) {
+template <class T>
+void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
   unsigned nactive_tasks=partialTaskList.size();
@@ -485,8 +487,8 @@ void ParallelTaskManager<T, D>::applyForces( std::vector<double>& forcesForApply
 
 }
 
-template <class T, class D>
-void ParallelTaskManager<T, D>::gatherThreads( ForceOutput forces ) {
+template <class T>
+void ParallelTaskManager<T>::gatherThreads( ForceOutput forces ) {
   //Forceoutput is basically two spans, so it is ok to pass it by value
   unsigned k=0;
   for(unsigned n=forces.thread_unsafe.size()-nthreaded_forces; n<forces.thread_unsafe.size(); ++n) {
