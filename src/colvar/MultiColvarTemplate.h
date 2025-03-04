@@ -48,12 +48,9 @@ struct MultiColvarInput {
 
 template <class T>
 class MultiColvarTemplate : public ActionWithVector {
-public:
-  using input_type = MultiColvarInput;
-  using PTM = ParallelTaskManager<MultiColvarTemplate<T>>;
 private:
 /// The parallel task manager
-  PTM taskmanager;
+  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput> taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
@@ -89,7 +86,7 @@ public:
 template <class T>
 void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
-  PTM::registerKeywords( keys );
+  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput>::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
