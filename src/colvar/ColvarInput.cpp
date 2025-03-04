@@ -37,6 +37,8 @@ ColvarInput ColvarInput::createColvarInput( unsigned m,
 }
 
 void ColvarInput::setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out ) {
+  //Both version passes the tests, we should discuss wicht onw might be better
+
   unsigned nat=inpt.pos.size();
   for(unsigned i=0; i<out.ncomponents; ++i) {
     Tensor v;
@@ -47,6 +49,28 @@ void ColvarInput::setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput&
     }
     out.virial.set( i, v );
   }
+
+  //now with no extra allocated memory:
+
+  // unsigned nat=inpt.pos.size();
+  // for(unsigned i=0; i<out.ncomponents; ++i) {
+  //   auto v = out.virial.getView(i);
+  //   LoopUnroller<9>::_zero(v.data());
+  //   for(unsigned j=0; j<nat; j++) {
+  //     const auto deriv =  out.derivs.getView(i,j);
+  //     v[0] -= inpt.pos[j][0]*deriv[0];
+  //     v[1] -= inpt.pos[j][0]*deriv[1];
+  //     v[2] -= inpt.pos[j][0]*deriv[2];
+
+  //     v[3] -= inpt.pos[j][1]*deriv[0];
+  //     v[4] -= inpt.pos[j][1]*deriv[1];
+  //     v[5] -= inpt.pos[j][1]*deriv[2];
+
+  //     v[6] -= inpt.pos[j][2]*deriv[0];
+  //     v[7] -= inpt.pos[j][2]*deriv[1];
+  //     v[8] -= inpt.pos[j][2]*deriv[2];
+  //   }
+  // }
 }
 
 } // namespace colvar

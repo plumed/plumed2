@@ -49,14 +49,14 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     bool empty() const {
       return fwdIt == endIt;
     }
+    // TODO: revert "typename C::value_type" to "auto": nvc++ and icpc seems to do not deduce automatically the return type
+    const typename C::value_type & top() const {
+      return *fwdIt;
+    }
     /// to allow using a priority_queu, which selects the highest element.
     /// we here (counterintuitively) define < as >
     bool operator< (Entry const& rhs) const {
       return top() > rhs.top();
-    }
-    // TODO: revert "typename C::value_type" to "auto": nvc++ and icpc seems to do not deduce automatically the return type
-    const typename C::value_type & top() const {
-      return *fwdIt;
     }
     void next() {
       ++fwdIt;

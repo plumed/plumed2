@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
@@ -180,7 +183,9 @@ void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cv
   cvout.derivs[0][5]=dd21-dd20;
   cvout.derivs[0][6]=dd22-dd21;
   cvout.derivs[0][7]=-dd22;
-  cvout.virial.set( 0, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
+  cvout.virial.set( 0,
+                    -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12))
+                    - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
 }
 
 }

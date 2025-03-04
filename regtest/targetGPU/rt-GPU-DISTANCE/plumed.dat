@@ -1,0 +1,8 @@
+#original test was 3 task of 3 components, this is 4 task of 3 componets, so I can manage better where the 3 comes from
+d1: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6  ATOMS4=1,6 USEGPU
+v: VSTACK ARG=d1.x,d1.y,d1.z
+vT: TRANSPOSE ARG=v
+s: SUM ARG=vT PERIODIC=NO
+PRINT ARG=d1.* FILE=dists FMT=%8.4f 
+PRINT ARG=s FILE=colvar FMT=%8.4f 
+BIASVALUE ARG=s

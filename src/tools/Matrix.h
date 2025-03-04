@@ -93,6 +93,13 @@ private:
   std::vector<T> data;
 public:
   explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], data[0:data.size()])
+  }
+  void removeFromACCDevice() const {
+    // and delete
+#pragma acc exit data delete( data[0:data.size()], this[0:1])
+  }
   Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {}
   /// Resize the matrix
   void resize( const unsigned nr, const unsigned nc ) {

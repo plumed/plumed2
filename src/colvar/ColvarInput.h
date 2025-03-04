@@ -56,6 +56,7 @@ struct ColvarInput {
   }
 
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
+#pragma acc routine seq
   static void setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out );
 };
 

@@ -14,7 +14,7 @@ endif
 	@echo "compiling " $*.cpp
 	@-test -d deps || mkdir deps
 ifneq ($(disable_dependency_tracking),yes)
-	$(AT)$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(ADDCPPFLAGS) -DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CXXFLAGS) $*.cpp
+	$(AT)$(CXXDEP) -c -MM -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) -DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
@@ -30,7 +30,7 @@ endif
 	@echo "compiling " $*.c
 	@-test -d deps || mkdir deps
 ifneq ($(disable_dependency_tracking),yes)
-	$(AT)$(CCDEP) -c -MM -MF$*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
+	$(AT)$(CCDEP) -c -MM -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
