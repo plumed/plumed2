@@ -87,9 +87,12 @@ coordination number inside that part of the cell.
 
 template <class T>
 class ActionVolume : public ActionWithVector {
+public:
+  using input_type = VolumeData<T>;
+  using PTM = ParallelTaskManager<ActionVolume<T>>;
 private:
 /// The parallel task manager
-  ParallelTaskManager<ActionVolume<T>,VolumeData<T>> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
@@ -112,7 +115,7 @@ unsigned ActionVolume<T>::getNumberOfDerivatives() {
 template <class T>
 void ActionVolume<T>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
-  ParallelTaskManager<ActionVolume<T>,T>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
   keys.add("atoms","ATOMS","the group of atoms that you would like to investigate");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
   keys.setValueDescription("scalar/vector","vector of numbers between 0 and 1 that measure the degree to which each atom is within the volume of interest");
