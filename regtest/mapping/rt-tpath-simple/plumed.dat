@@ -1,0 +1,6 @@
+# Test with rmsd distances 
+p2: GPATH TYPE=SIMPLE REFERENCE=all.pdb
+
+# Print values of CVS
+PRINT ARG=p2.* FILE=colvar FMT=%8.4f 
+BIASVALUE ARG=p2.*
