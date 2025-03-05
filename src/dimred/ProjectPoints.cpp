@@ -48,12 +48,15 @@ public:
 };
 
 class ProjectPoints : public ActionWithVector {
+public: 
+  using input_type = ProjectPointsInput;
+  using PTM = ParallelTaskManager<ProjectPoints>;
 private:
   unsigned dimout;
   mutable std::vector<unsigned> rowstart;
   std::vector<SwitchingFunction> switchingFunction;
   ConjugateGradient<ProjectPoints> myminimiser;
-  ParallelTaskManager<ProjectPoints,ProjectPointsInput> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   ProjectPoints( const ActionOptions& );
@@ -80,7 +83,7 @@ void ProjectPoints::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("numbered","WEIGHTS","vector","the matrix with the weights of the target quantities");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
   keys.addOutputComponent("coord","default","scalar/vector","the coordinates of the points in the low dimensional space");
-  ParallelTaskManager<ProjectPoints,ProjectPointsInput>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
 }
 
 

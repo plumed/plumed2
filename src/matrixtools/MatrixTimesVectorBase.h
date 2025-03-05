@@ -85,9 +85,12 @@ public:
 
 template <class T>
 class MatrixTimesVectorBase : public ActionWithVector {
+public:
+  using input_type = MatrixTimesVectorData;
+  using PTM = ParallelTaskManager<MatrixTimesVectorBase<T>>;
 private:
 /// The parallel task manager
-  ParallelTaskManager<MatrixTimesVectorBase<T>,MatrixTimesVectorData> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   static void registerLocalKeywords( Keywords& keys );
@@ -120,7 +123,7 @@ void MatrixTimesVectorBase<T>::registerKeywords( Keywords& keys ) {
 
 template <class T>
 void MatrixTimesVectorBase<T>::registerLocalKeywords( Keywords& keys ) {
-  ParallelTaskManager<MatrixTimesVectorBase<T>,MatrixTimesVectorData>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","matrix/vector/scalar","the label for the matrix and the vector/scalar that are being multiplied.  Alternatively, you can provide labels for multiple matrices and a single vector or labels for a single matrix and multiple vectors. In these cases multiple matrix vector products will be computed.");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("vector","the vector that is obtained by taking the product between the matrix and the vector that were input");

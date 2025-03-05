@@ -44,8 +44,11 @@ public:
 };
 
 class MatrixProductDiagonal : public ActionWithVector {
+public: 
+  using input_type = MatrixProductDiagonalInput;
+  using PTM = ParallelTaskManager<MatrixProductDiagonal>;
 private:
-  ParallelTaskManager<MatrixProductDiagonal,MatrixProductDiagonalInput> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductDiagonal(const ActionOptions&);
@@ -65,7 +68,7 @@ void MatrixProductDiagonal::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","vector/matrix","the two vectors/matrices whose product are to be taken");
   keys.setValueDescription("scalar/vector","a vector containing the diagonal elements of the matrix that obtaned by multiplying the two input matrices together");
-  ParallelTaskManager<MatrixProductDiagonal,MatrixProductDiagonalInput>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
 }
 
 MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):

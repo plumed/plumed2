@@ -74,8 +74,11 @@ public:
 };
 
 class ThreeBodyGFunctions : public ActionWithVector {
+public:
+  using input_type = ThreeBodyGFunctionsInput;
+  using PTM = ParallelTaskManager<ThreeBodyGFunctions>; 
 private:
-  ParallelTaskManager<ThreeBodyGFunctions,ThreeBodyGFunctionsInput> taskmanager;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ThreeBodyGFunctions(const ActionOptions&);
@@ -97,7 +100,7 @@ void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","matrix","three matrices containing the bond vectors of interest");
   keys.addInputKeyword("compulsory","WEIGHT","matrix","the matrix that contains the weights that should be used for each connection");
   keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
-  ParallelTaskManager<ThreeBodyGFunctions,ThreeBodyGFunctionsInput>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
   ActionWithValue::useCustomisableComponents( keys );
 }
 
