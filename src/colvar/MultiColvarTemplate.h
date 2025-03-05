@@ -48,9 +48,12 @@ struct MultiColvarInput {
 
 template <class T>
 class MultiColvarTemplate : public ActionWithVector {
+public:
+  using input_type = MultiColvarInput;
+  using PTM = ParallelTaskManager<MultiColvarTemplate<T>>;
 private:
 /// The parallel task manager
-  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput> taskmanager;
+  PTM taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
@@ -86,7 +89,7 @@ public:
 template <class T>
 void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
-  ParallelTaskManager<MultiColvarTemplate<T>,MultiColvarInput>::registerKeywords( keys );
+  PTM::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
@@ -307,10 +310,7 @@ void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
       forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
       ++m;
     }
-    // for(unsigned n=0; n<virialSize; ++n) {
-    //   forces.thread_safe[n] += ff*fdata.deriv[i][m];
-    //   ++m;
-    // }
+    //unrolled virial
     forces.thread_safe[0] += ff*fdata.deriv[i][m];
     forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
     forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
