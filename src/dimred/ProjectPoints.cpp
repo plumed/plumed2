@@ -48,7 +48,7 @@ public:
 };
 
 class ProjectPoints : public ActionWithVector {
-public: 
+public:
   using input_type = ProjectPointsInput;
   using PTM = ParallelTaskManager<ProjectPoints>;
 private:

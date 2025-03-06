@@ -221,7 +221,7 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
 #endif
 }
 
-template <class T> 
+template <class T>
 std::size_t ParallelTaskManager<T>::getValueStashSize() const {
   std::size_t valuesize=0;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {

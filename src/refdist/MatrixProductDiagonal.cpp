@@ -44,7 +44,7 @@ public:
 };
 
 class MatrixProductDiagonal : public ActionWithVector {
-public: 
+public:
   using input_type = MatrixProductDiagonalInput;
   using PTM = ParallelTaskManager<MatrixProductDiagonal>;
 private:

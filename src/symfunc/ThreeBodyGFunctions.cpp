@@ -76,7 +76,7 @@ public:
 class ThreeBodyGFunctions : public ActionWithVector {
 public:
   using input_type = ThreeBodyGFunctionsInput;
-  using PTM = ParallelTaskManager<ThreeBodyGFunctions>; 
+  using PTM = ParallelTaskManager<ThreeBodyGFunctions>;
 private:
   PTM taskmanager;
 public:

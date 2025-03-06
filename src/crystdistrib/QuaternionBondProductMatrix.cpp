@@ -61,7 +61,7 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override {
-     plumed_merror("this doesn't do anything");
+    plumed_merror("this doesn't do anything");
   }
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
@@ -160,9 +160,13 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
   }
   // We now swap round the order of the arguments to make gathering of forces easier for parallel task manager
   std::vector<Value*> args( getArguments() ), newargs;
-  for(unsigned i=0; i<4; ++i) newargs.push_back(args[4+i]);
-  for(unsigned i=0; i<4; ++i) newargs.push_back(args[i]);
-  requestArguments( newargs );  
+  for(unsigned i=0; i<4; ++i) {
+    newargs.push_back(args[4+i]);
+  }
+  for(unsigned i=0; i<4; ++i) {
+    newargs.push_back(args[i]);
+  }
+  requestArguments( newargs );
 
   addComponent( "w", shape );
   componentIsNotPeriodic("w");
@@ -208,9 +212,9 @@ std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( Action
 }
 
 void QuaternionBondProductMatrix::performTask( std::size_t task_index,
-                                               const QuatBondProdMatInput& actiondata,
-                                               ParallelActionsInput& input,
-                                               ParallelActionsOutput& output ) {
+    const QuatBondProdMatInput& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
 
   View2D<double, 4, 8> derivatives( output.derivatives.data() );
   std::size_t index1 = std::floor( task_index / input.args[0].ncols );
@@ -220,13 +224,13 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
 
   // Retrieve the quaternion
   for(unsigned i=0; i<4; ++i) {
-    quat[i] = input.inputdata[ input.args[4+i].start + index1 ]; 
-  }                         
-  
+    quat[i] = input.inputdata[ input.args[4+i].start + index1 ];
+  }
+
   // Retrieve the components of the matrix
   double weight = input.inputdata[ input.args[0].start + task_index ];
   for(unsigned i=1; i<4; ++i) {
-    bond[i] = input.inputdata[ input.args[i].start + task_index ]; 
+    bond[i] = input.inputdata[ input.args[i].start + task_index ];
   }
 
   // calculate normalization factor
@@ -352,16 +356,16 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[0].getCol(i)) + pref2*quatTemp[i])*normFac;
-    derivatives[0][4+i] = tempDot; 
+    derivatives[0][4+i] = tempDot;
   }
   //had to split because bond's derivatives depend on the value of the overall quaternion component
   if( !input.noderiv ) {
-     for(unsigned i=0; i<4; ++i) {
-       tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
-       if( i>0 ) {
-         derivatives[0][i] = tempDot;
-       }
-     }
+    for(unsigned i=0; i<4; ++i) {
+      tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
+      if( i>0 ) {
+        derivatives[0][i] = tempDot;
+      }
+    }
   }
 
   //i component
@@ -391,7 +395,7 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
     for(unsigned i=0; i<4; ++i) {
       tempDot=dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[1].getCol(i))*normFac;
       if( i>0 ) {
-          derivatives[1][i] = tempDot+(-bond[i]*normFac*normFac*xf);
+        derivatives[1][i] = tempDot+(-bond[i]*normFac*normFac*xf);
       }
     }
   }
@@ -417,19 +421,19 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[0].getCol(i)) + pref2*quatTemp[(i+2)%4])*normFac;
-    derivatives[2][4+i] = tempDot; 
+    derivatives[2][4+i] = tempDot;
   }
 
   if( !input.noderiv ) {
     for(unsigned i=0; i<4; ++i) {
       tempDot=dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[1].getCol(i))*normFac;
       if( i>0 ) {
-          derivatives[2][i] = tempDot+(-bond[i]*normFac*normFac*yf);
+        derivatives[2][i] = tempDot+(-bond[i]*normFac*normFac*yf);
       }
     }
   }
 
- //k component
+//k component
   pref=1;
   pref2=1;
   for (unsigned i=0; i<4; i++) {
@@ -437,13 +441,13 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
       pref=-1;
     } else {
       pref=1;
-    } 
+    }
     if(i==1) {
       pref2=-1;
     } else {
       pref2=1;
-    } 
-    
+    }
+
     output.values[3] += normFac*pref*quatTemp[i]*quat[(3-i)];
     zf+=normFac*pref*quatTemp[i]*quat[(3-i)];
     if( input.noderiv ) {
@@ -451,17 +455,17 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
     }
     tempDot=(dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[0].getCol(i)) + pref2*quatTemp[(3-i)])*normFac;
     derivatives[3][4+i] = tempDot;
-  }                                              
-                                                 
+  }
+
   if( input.noderiv ) {
     return ;
   }
 
-  for(unsigned i=0; i<4; ++i) { 
+  for(unsigned i=0; i<4; ++i) {
     tempDot=dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[1].getCol(i))*normFac;
     if( i>0 ) {
-        derivatives[3][i] = tempDot+(-bond[i]*normFac*normFac*zf);
-     }
+      derivatives[3][i] = tempDot+(-bond[i]*normFac*normFac*zf);
+    }
   }
 }
 
@@ -470,21 +474,21 @@ void QuaternionBondProductMatrix::applyNonZeroRankForces( std::vector<double>& o
 }
 
 void QuaternionBondProductMatrix:: gatherForces( std::size_t task_index,
-                                                 const QuatBondProdMatInput& actiondata,
-                                                 const ParallelActionsInput& input,
-                                                 const ForceInput& fdata,
-                                                 ForceOutput forces ) {
+    const QuatBondProdMatInput& actiondata,
+    const ParallelActionsInput& input,
+    const ForceInput& fdata,
+    ForceOutput forces ) {
   std::size_t nquat = input.args[4].shape[0];
   std::size_t index1 = std::floor( task_index / input.args[0].ncols );
   for(unsigned i=0; i<4; ++i) {
-      double ff = fdata.force[i];
-      for(unsigned j=0; j<4; ++j) {
-          forces.thread_unsafe[ input.args[j].start + task_index] += ff*fdata.deriv[i][j];
-      }
-      for(unsigned j=0; j<4; ++j) {
-          forces.thread_safe[ j*nquat + index1 ] += ff*fdata.deriv[i][4+j];
-      }
-  } 
+    double ff = fdata.force[i];
+    for(unsigned j=0; j<4; ++j) {
+      forces.thread_unsafe[ input.args[j].start + task_index] += ff*fdata.deriv[i][j];
+    }
+    for(unsigned j=0; j<4; ++j) {
+      forces.thread_safe[ j*nquat + index1 ] += ff*fdata.deriv[i][4+j];
+    }
+  }
 }
 
 void QuaternionBondProductMatrix::calculate() {
