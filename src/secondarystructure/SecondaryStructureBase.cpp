@@ -20,12 +20,3 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureBase.h"
-
-//+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
-/*
-Calclulate the distance between segments of a protein and a reference structure of interest
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC

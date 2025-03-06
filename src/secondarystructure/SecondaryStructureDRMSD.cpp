@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "tools/Matrix.h"
 
+//+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_DRMSD
+/*
+Calclulate the distance between segments of a protein and a reference structure of interest
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace secondarystructure {
 
@@ -41,7 +50,7 @@ public:
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms;
   static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureDRMSDInput& actiondata, const std::vector<Vector>& pos, ColvarOutput& output );
-  void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure );
+  void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureDRMSDInput& operator=( const SecondaryStructureDRMSDInput& m ) {
     natoms = m.natoms;
     nstructures = m.nstructures;
@@ -62,7 +71,7 @@ public:
 typedef SecondaryStructureBase<SecondaryStructureDRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_DRMSD");
 
-void SecondaryStructureDRMSDInput::setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure ) {
+void SecondaryStructureDRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   std::map<std::pair<unsigned,unsigned>, double> targets;
   for(unsigned i=0; i<structure.size()-1; ++i) {
     for(unsigned j=i+1; j<structure.size(); ++j) {

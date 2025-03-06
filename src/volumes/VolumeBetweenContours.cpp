@@ -93,6 +93,8 @@ public:
     std::string errors;
     sfunc.set(sfunc_str, errors);
     switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH", errors );
+    natoms_in_list = m.natoms_in_list;
+    natoms_per_list = m.natoms_per_list;
     return *this;
   }
   static void calculateNumberInside( const VolumeInput& input, const VolumeInEnvelope& actioninput, VolumeOutput& output );
