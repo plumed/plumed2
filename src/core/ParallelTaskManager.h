@@ -257,7 +257,7 @@ void ParallelTaskManager<T>::runAllTasks() {
     // so I workarounded it with few copies
     ParallelActionsInput input = myinput;
     auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
+    input_type t_actiondata = actiondata;
     auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
     auto value_stash_data = value_stash.data();
@@ -367,7 +367,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     omp_forces[0].assign( omp_forces[0].size(), 0.0 );
     ParallelActionsInput input = myinput;
     auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
+    input_type t_actiondata = actiondata;
     auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
     //passing raw pointer makes things easier in openacc
