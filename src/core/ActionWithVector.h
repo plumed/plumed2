@@ -102,9 +102,11 @@ public:
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU
-  virtual void getInputData( std::vector<double>& inputdata ) const {
-    plumed_merror("this is not implemented yet");
-  }
+  virtual void getInputData( std::vector<double>& inputdata ) const ;
+/// This is so we an transfer data gathered in the parallel task manager to the underlying values
+  virtual void transferStashToValues( const std::vector<double>& stash );
+/// This is so we can transfer forces from the values to the parallel task manager
+  virtual void transferForcesToStash( std::vector<double>& stash ) const ;
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average

@@ -219,6 +219,53 @@ void ActionWithVector::clearMatrixBookeeping() {
   }
 }
 
+void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
+  plumed_dbg_assert( getNumberOfAtoms()==0 );
+  unsigned nargs = getNumberOfArguments();
+  int nmasks=getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+
+  std::size_t total_args = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    total_args += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
+
+  if( inputdata.size()!=total_args ) {
+    inputdata.resize( total_args );
+  }
+
+  total_args = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+      inputdata[total_args] = myarg->get(j,false);
+      total_args++;
+    }
+  }
+}
+
+void ActionWithVector::transferStashToValues( const std::vector<double>& stash ) {
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    Value* myval = copyOutput(i);
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      myval->set( j, stash[j*ncomponents+i] );
+    }
+  }
+}
+
+void ActionWithVector::transferForcesToStash( std::vector<double>& stash ) const {
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    auto myval = getConstPntrToComponent(i);
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      stash[j*ncomponents+i] = myval->getForce( j );
+    }
+  }
+}
+
 void ActionWithVector::runAllTasks() {
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();

@@ -51,13 +51,16 @@ void RMSDVector::registerKeywords(Keywords& keys) {
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
   keys.addOutputComponent("disp","DISPLACEMENT","vector/matrix","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","scalar/vector","the RMSD distance the atoms have moved");
+  PTM::registerKeywords( keys );
   keys.setValueDescription("scalar/vector","a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
 }
 
 RMSDVector::RMSDVector(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  firststep(true) {
+  firststep(true),
+  input(getPbc()),
+  taskmanager(this) {
   if( getPntrToArgument(0)->getRank()!=1 ) {
     error("first argument should be vector");
   }
@@ -77,33 +80,34 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     error("number of components in input arguments should be multiple of three");
   }
 
+  RMSDVectorData myinput;
   unsigned natoms = getPntrToArgument(0)->getNumberOfValues() / 3;
-  type.assign("SIMPLE");
-  parse("TYPE",type);
-  parseFlag("SQUARED",squared);
-  align.resize( natoms );
-  parseVector("ALIGN",align);
-  displace.resize( natoms );
-  parseVector("DISPLACE",displace);
+  myinput.type.assign("SIMPLE");
+  parse("TYPE",myinput.type);
+  parseFlag("SQUARED",myinput.squared);
+  myinput.align.resize( natoms );
+  parseVector("ALIGN",myinput.align);
+  myinput.displace.resize( natoms );
+  parseVector("DISPLACE",myinput.displace);
   bool unorm=false;
   parseFlag("UNORMALIZED",unorm);
   norm_weights=!unorm;
   double wa=0, wd=0;
-  sqrtdisplace.resize( displace.size() );
-  for(unsigned i=0; i<align.size(); ++i) {
-    wa+=align[i];
-    wd+=displace[i];
+  myinput.sqrtdisplace.resize( myinput.displace.size() );
+  for(unsigned i=0; i<myinput.align.size(); ++i) {
+    wa+=myinput.align[i];
+    wd+=myinput.displace[i];
   }
 
   if( wa>epsilon ) {
     double iwa = 1. / wa;
-    for(unsigned i=0; i<align.size(); ++i) {
-      align[i] *= iwa;
+    for(unsigned i=0; i<myinput.align.size(); ++i) {
+      myinput.align[i] *= iwa;
     }
   } else {
     double iwa = 1. / natoms;
-    for(unsigned i=0; i<align.size(); ++i) {
-      align[i] = iwa;
+    for(unsigned i=0; i<myinput.align.size(); ++i) {
+      myinput.align[i] = iwa;
     }
   }
   if( wd>epsilon ) {
@@ -111,27 +115,27 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
       wd = 1;
     }
     double iwd = 1. / wd;
-    for(unsigned i=0; i<align.size(); ++i) {
-      displace[i] *= iwd;
+    for(unsigned i=0; i<myinput.align.size(); ++i) {
+      myinput.displace[i] *= iwd;
     }
   } else {
     double iwd = 1. / natoms;
-    for(unsigned i=0; i<align.size(); ++i) {
-      displace[i] = iwd;
+    for(unsigned i=0; i<myinput.align.size(); ++i) {
+      myinput.displace[i] = iwd;
     }
   }
-  for(unsigned i=0; i<align.size(); ++i) {
-    sqrtdisplace[i] = sqrt(displace[i]);
+  for(unsigned i=0; i<myinput.align.size(); ++i) {
+    myinput.sqrtdisplace[i] = sqrt(myinput.displace[i]);
   }
 
-  parseFlag("DISPLACEMENT",displacement);
-  if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
+  parseFlag("DISPLACEMENT",myinput.displacement);
+  if( myinput.displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
     addComponentWithDerivatives("dist");
     componentIsNotPeriodic("dist");
     std::vector<std::size_t> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
     addComponent( "disp", shape );
     componentIsNotPeriodic("disp");
-  } else if( displacement ) {
+  } else if( myinput.displacement ) {
     std::vector<std::size_t> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addComponent( "dist", shape );
     componentIsNotPeriodic("dist");
@@ -150,9 +154,9 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     setNotPeriodic();
   }
   if( getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getNumberOfValues()==0 ) {
-    myrmsd.resize(1);
+    myinput.myrmsd.resize(1);
   } else {
-    myrmsd.resize( getPntrToArgument(1)->getShape()[0] );
+    myinput.myrmsd.resize( getPntrToArgument(1)->getShape()[0] );
   }
 
   if( getPntrToArgument(1)->getRank()==1 )
@@ -161,12 +165,19 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   else
     log.printf("  calculating RMSD distance between %d sets of %d atoms. Distance between vector %s of atoms and matrix of configurations in %s\n",
                getPntrToArgument(1)->getShape()[0], natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
-  log.printf("  method for alignment : %s \n",type.c_str() );
-  if(squared) {
+  log.printf("  method for alignment : %s \n",myinput.type.c_str() );
+  if(myinput.squared) {
     log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
   } else {
     log.printf("  using periodic boundary conditions\n");
   }
+  // Setup the task manager
+  int stride = 1;
+  if( myinput.displacement ) {
+    stride = 1 + 3*natoms;
+  }
+  taskmanager.setupParallelTaskManager( 0, 3*natoms, -1, stride );
+  taskmanager.setActionInput( myinput );
 }
 
 unsigned RMSDVector::getNumberOfDerivatives() {
@@ -180,101 +191,22 @@ int RMSDVector::checkTaskIsActive( const unsigned& itask ) const {
 void RMSDVector::setReferenceConfigurations() {
   unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
   Vector center;
+  RMSDVectorData& myinput=taskmanager.getActionInput();
   std::vector<Vector> pos( natoms );
-  for(unsigned jconf=0; jconf<myrmsd.size(); ++jconf) {
+  for(unsigned jconf=0; jconf<myinput.myrmsd.size(); ++jconf) {
     center.zero();
     for(unsigned i=0; i<pos.size(); ++i) {
       for(unsigned j=0; j<3; ++j) {
         pos[i][j] = getPntrToArgument(1)->get( (3*jconf+j)*pos.size() + i );
       }
-      center+=pos[i]*align[i];
+      center+=pos[i]*myinput.align[i];
     }
     for(unsigned i=0; i<pos.size(); ++i) {
       pos[i] -= center;
     }
-    myrmsd[jconf].clear();
-    myrmsd[jconf].set(align,displace,pos,type,true,norm_weights);
+    myinput.myrmsd[jconf].clear();
+    myinput.myrmsd[jconf].set(myinput.align,myinput.displace,pos,myinput.type,true,norm_weights);
   }
-}
-
-double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& pos, std::vector<Vector>& der, std::vector<Vector>& direction ) const {
-  unsigned natoms = pos.size();
-  for(unsigned i=0; i<natoms; ++i) {
-    for(unsigned j=0; j<3; ++j) {
-      pos[i][j] = getPntrToArgument(0)->get( j*natoms + i );
-    }
-  }
-
-  if( displacement && type=="SIMPLE" ) {
-    const Value* myval = getConstPntrToComponent(1);
-    double r = myrmsd[current].simpleAlignment( align, displace, pos, myrmsd[current].getReference(), der, direction, squared );
-    if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
-      Vector comforce;
-      comforce.zero();
-      for(unsigned i=0; i<natoms; i++) {
-        for(unsigned k=0; k<3; ++k) {
-          comforce[k] += align[i]*myval->getForce( (3*current+k)*natoms + i);
-        }
-      }
-      for(unsigned i=0; i<natoms; i++) {
-        for(unsigned k=0; k<3; ++k) {
-          direction[i][k] = myval->getForce( (3*current+k)*natoms + i ) - comforce[k];
-        }
-      }
-    }
-    return r;
-  } else if( displacement ) {
-    const Value* myval = getConstPntrToComponent(1);
-    Tensor rot;
-    Matrix<std::vector<Vector> > DRotDPos(3,3);
-    std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
-    double r = myrmsd[current].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
-    std::vector<Vector> ref( myrmsd[current].getReference() );
-    if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
-      Tensor trot=rot.transpose();
-      double prefactor = 1 / static_cast<double>( natoms );
-      Vector v1;
-      v1.zero();
-      for(unsigned n=0; n<natoms; n++) {
-        Vector ff;
-        for(unsigned k=0; k<3; ++k ) {
-          ff[k] = myval->getForce( (3*current+k)*natoms + n );
-        }
-        v1+=prefactor*matmul(trot,ff);
-      }
-      // Notice that we use centreredreference here to accumulate the true forces
-      for(unsigned n=0; n<natoms; n++) {
-        Vector ff;
-        for(unsigned k=0; k<3; ++k ) {
-          ff[k] = myval->getForce( (3*current+k)*natoms + n );
-        }
-        centeredreference[n] = sqrtdisplace[n]*( matmul(trot,ff) - v1 );
-      }
-      for(unsigned a=0; a<3; a++) {
-        for(unsigned b=0; b<3; b++) {
-          double tmp1=0.;
-          for(unsigned m=0; m<natoms; m++) {
-            tmp1+=centeredpos[m][b]*myval->getForce( (3*current+a)*natoms + m );
-          }
-          for(unsigned i=0; i<natoms; i++) {
-            centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
-          }
-        }
-      }
-      // Now subtract the current force and add on the true force
-      for(unsigned n=0; n<natoms; n++) {
-        for(unsigned k=0; k<3; ++k) {
-          direction[n][k] = centeredreference[n][k];
-        }
-      }
-    } else {
-      for(unsigned i=0; i<direction.size(); ++i) {
-        direction[i] = sqrtdisplace[i]*( direction[i] - ref[i] );
-      }
-    }
-    return r;
-  }
-  return myrmsd[current].calculate( pos, der, squared );
 }
 
 // calculator
@@ -285,17 +217,27 @@ void RMSDVector::calculate() {
   }
 
   if( getPntrToComponent(0)->getRank()==0 ) {
-    unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
-    std::vector<Vector> pos( natoms ), der( natoms ), direction( natoms );
-    double r = calculateRMSD( 0, pos, der, direction );
+    input.noderiv = false;
+    input.ncomponents = getNumberOfComponents();
+    input.nscalars= 0;
+    for(unsigned i=0; i<input.ncomponents; ++i) {
+      input.nscalars += getPntrToComponent(i)->getNumberOfStoredValues();
+    }
+    getInputData( input_buffer );
+    input.dataSize = input_buffer.size();
+    input.inputdata = input_buffer.data();
+    input.setupArguments( this );
 
-    getPntrToComponent(0)->set( r );
+    std::vector<double> values( input.nscalars );
+    std::vector<double> deriv( input_buffer.size(), 0 );
+    ParallelActionsOutput output( input.nscalars, values.data(), input_buffer.size(), deriv.data() );
+    performTask( 0, taskmanager.getActionInput(), input, output );
+
+    getPntrToComponent(0)->set( values[0] );
     if( getNumberOfComponents()==2 ) {
       Value* mydisp = getPntrToComponent(1);
-      for(unsigned i=0; i<natoms; i++) {
-        for(unsigned j=0; j<3; ++j ) {
-          mydisp->set( j*natoms+i, direction[i][j] );
-        }
+      for(unsigned i=0; i<mydisp->getNumberOfStoredValues(); i++) {
+        mydisp->set( i, values[i+1] );
       }
     }
     if( doNotCalculateDerivatives() ) {
@@ -303,27 +245,12 @@ void RMSDVector::calculate() {
     }
 
     Value* myval = getPntrToComponent(0);
-    for(unsigned i=0; i<natoms; i++) {
-      for(unsigned j=0; j<3; ++j ) {
-        myval->setDerivative( j*natoms+i, der[i][j] );
-      }
+    for(unsigned i=0; i<deriv.size(); i++) {
+      myval->setDerivative( i, deriv[i] );
     }
   } else {
-    runAllTasks();
+    taskmanager.runAllTasks();
   }
-}
-
-bool RMSDVector::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
-  if( myval->getRank()<2 ) {
-    return ActionWithVector::checkForTaskForce( itask, myval );
-  }
-  unsigned nelements = myval->getShape()[1], startr = itask*nelements;
-  for(unsigned j=0; j<nelements; ++j ) {
-    if( fabs( myval->getForce( startr + j ) )>epsilon ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void RMSDVector::apply() {
@@ -332,98 +259,187 @@ void RMSDVector::apply() {
   }
 
   if( getPntrToComponent(0)->getRank()==0 ) {
-    std::vector<double> forces( getNumberOfDerivatives(), 0 );
-    bool wasforced = getPntrToComponent(0)->applyForce( forces );
+    Value* myval = getPntrToComponent(0);
+    std::vector<double> deriv( input_buffer.size(), 0 );
+    for(unsigned i=0; i<deriv.size(); ++i) {
+      deriv[i] = myval->getDerivative( i );
+    }
 
-    if( getNumberOfComponents()==2 && getPntrToComponent(1)->forcesWereAdded() ) {
-      unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
-      std::vector<Vector> pos( natoms ), der( natoms ), direction( natoms );
-      double r = calculateRMSD( 0, pos, der, direction );
-      for(unsigned i=0; i<natoms; ++i) {
-        for(unsigned j=0; j<3; ++j ) {
-          forces[j*natoms+i] += direction[i][j];
-        }
-      }
-      wasforced=true;
+    std::vector<double> f( input.nscalars );
+    const Value* disp = getConstPntrToComponent(1);
+    f[0] = getConstPntrToComponent(0)->getForce(0);
+    for(unsigned i=0; i<disp->getNumberOfStoredValues(); ++i) {
+      f[i+1] = disp->getForce( i );
     }
-    if( wasforced ) {
-      unsigned ss=0;
-      addForcesOnArguments( 0, forces, ss  );
-    }
+
+    std::vector<double> ignore;
+    std::vector<double> forces( getNumberOfDerivatives(), 0 );
+    ForceOutput fout( forces, ignore );
+    gatherForces( 0, taskmanager.getActionInput(), input, ForceInput( getNumberOfComponents(), input.nscalars, f.data(), deriv.size(), deriv.data() ), fout );
+
+    unsigned ss=0;
+    addForcesOnArguments( 0, forces, ss  );
   } else {
     ActionWithVector::apply();
   }
 }
 
-void RMSDVector::performTask( const unsigned& current, MultiValue& myvals ) const {
-  unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
-  std::vector<Vector>& pos( myvals.getFirstAtomVector() );
-  std::vector<std::vector<Vector> > & allder( myvals.getFirstAtomDerivativeVector() );
-  if( allder.size()!=2 ) {
-    allder.resize(2);
-  }
-  std::vector<Vector>& der( allder[0] );
-  std::vector<Vector>& direction( allder[1] );
-  if( pos.size()!=natoms ) {
-    pos.resize( natoms );
-    der.resize( natoms );
-    direction.resize( natoms );
-  }
+void RMSDVector::getPositionsFromInputData( const ParallelActionsInput& input, std::vector<Vector>& pos ) {
+  View2D<const double,helpers::dynamic_extent,helpers::dynamic_extent> argpos( input.inputdata, 3, pos.size() );
+  // At some stage it would be good to get rid of this and to be able to pass the 2D view directly to the methods in RMSD
   for(unsigned i=0; i<pos.size(); ++i) {
-    for(unsigned j=0; j<3; ++j) {
-      pos[i][j] = getPntrToArgument(0)->get( j*natoms + i );
+    pos[i][0] = argpos[0][i];
+    pos[i][1] = argpos[1][i];
+    pos[i][2] = argpos[2][i];
+  }
+}
+
+void RMSDVector::performTask( std::size_t task_index,
+                              const RMSDVectorData& actiondata,
+                              ParallelActionsInput& input,
+                              ParallelActionsOutput& output ) {
+  std::size_t natoms = actiondata.align.size();
+  std::vector<Vector> der(natoms), pos(natoms);
+  getPositionsFromInputData( input, pos );
+  if( actiondata.displacement && actiondata.type=="SIMPLE" ) {
+    std::vector<Vector> direction( natoms );
+    output.values[0] = actiondata.myrmsd[task_index].simpleAlignment( actiondata.align, actiondata.displace, pos, actiondata.myrmsd[task_index].getReference(), der, direction, actiondata.squared );
+    for(unsigned i=0; i<direction.size(); ++i) {
+      output.values[1+i] = direction[i][0];
+      output.values[1+natoms+i] = direction[i][1];
+      output.values[1+2*natoms+i] = direction[i][2];
     }
+  } else if( actiondata.displacement ) {
+    if( !input.noderiv && actiondata.myrmsd.size()>1 ) {
+      // This is activated on the backwards loop to ensure that we don't calculate the RMSD twice during that backwards loop
+      return;
+    }
+    Tensor rot;
+    std::vector<Vector> direction( natoms );
+    Matrix<std::vector<Vector> > DRotDPos(3,3);
+    std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
+    output.values[0] = actiondata.myrmsd[task_index].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, actiondata.squared );
+    std::vector<Vector> ref( actiondata.myrmsd[task_index].getReference() );
+    for(unsigned i=0; i<direction.size(); ++i) {
+      output.values[1+i] = actiondata.sqrtdisplace[i]*( direction[i][0] - ref[i][0] );
+      output.values[1+natoms+i] = actiondata.sqrtdisplace[i]*( direction[i][1] - ref[i][1] );
+      output.values[1+2*natoms+i] = actiondata.sqrtdisplace[i]*( direction[i][2] - ref[i][2] );
+    }
+  } else {
+    output.values[0] = actiondata.myrmsd[task_index].calculate( pos, der, actiondata.squared );
   }
-  double r = calculateRMSD( current, pos, der, direction );
-  myvals.setValue( 0, r );
-
-  if( doNotCalculateDerivatives() ) {
-    return;
-  }
-
-  for(unsigned i=0; i<natoms; i++) {
-    for(unsigned j=0; j<3; ++j ) {
-      myvals.addDerivative( 0, j*natoms+i, der[i][j] );
-      myvals.updateIndex( 0, j*natoms+i );
+  if( !input.noderiv ) {
+    // This also could be removed if someone was willing to do some additional work
+    for(unsigned i=0; i<natoms; ++i) {
+      output.derivatives[i] = der[i][0];
+      output.derivatives[natoms+i] = der[i][1];
+      output.derivatives[2*natoms+i] = der[i][2];
     }
   }
 }
 
-void RMSDVector::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                                    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  if( getConstPntrToComponent(valindex)->getRank()==1 ) {
-    ActionWithVector::gatherStoredValue( valindex, code, myvals, bufstart, buffer );
+void RMSDVector::transferStashToValues( const std::vector<double>& stash ) {
+  if( getNumberOfComponents()==1 ) {
+    ActionWithVector::transferStashToValues( stash );
     return;
   }
-  const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
-  unsigned natoms = direction.size();
-  unsigned vindex = 3*code*natoms;
-  Value* myval = const_cast<Value*>( getConstPntrToComponent(valindex) );
-  for(unsigned i=0; i<natoms; ++i) {
-    for(unsigned j=0; j<3; ++j ) {
-      myval->set(vindex + j*natoms + i, direction[i][j] );
+  std::size_t k=0;
+  Value* dist = getPntrToComponent(0);
+  Value* disp = getPntrToComponent(1);
+  std::size_t ss = disp->getShape()[1];
+  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
+    dist->set(i,stash[k]);
+    k++;
+    for(unsigned j=0; j<ss; ++j) {
+      disp->set( ss*i + j, stash[k] );
+      k++;
     }
   }
 }
 
-void RMSDVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( checkComponentsForForce() ) {
-    for(unsigned ival=0; ival<getNumberOfComponents(); ++ival) {
-      if( getConstPntrToComponent(ival)->getRank()==1 ) {
-        gatherForcesOnStoredValue( ival, itask, myvals, forces );
-      } else {
-        const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
-        unsigned natoms = direction.size();
-        for(unsigned i=0; i<natoms; ++i) {
-          for(unsigned j=0; j<3; ++j ) {
-            forces[j*natoms+i] += direction[i][j];
-          }
+void RMSDVector::transferForcesToStash( std::vector<double>& stash ) const {
+  if( getNumberOfComponents()==1 ) {
+    ActionWithVector::transferForcesToStash( stash );
+    return;
+  }
+  std::size_t k=0;
+  const Value* dist = getConstPntrToComponent(0);
+  const Value* disp = getConstPntrToComponent(1);
+  std::size_t ss = disp->getShape()[1];
+  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
+    stash[k] = dist->getForce(i);
+    k++;
+    for(unsigned j=0; j<ss; ++j) {
+      stash[k] = disp->getForce( ss*i + j );
+      k++;
+    }
+  }
+}
+
+void RMSDVector::gatherForces( std::size_t task_index,
+                               const RMSDVectorData& actiondata,
+                               const ParallelActionsInput& input,
+                               const ForceInput& fdata,
+                               ForceOutput forces ) {
+  std::size_t natoms = actiondata.align.size();
+  if( actiondata.displacement && actiondata.type=="SIMPLE" ) {
+    Vector comforce;
+    comforce.zero();
+    for(unsigned i=0; i<natoms; ++i) {
+      comforce[0] += actiondata.align[i]*fdata.force[1+i];
+      comforce[1] += actiondata.align[i]*fdata.force[1+natoms+i];
+      comforce[2] += actiondata.align[i]*fdata.force[1+2*natoms+i];
+    }
+    for(unsigned i=0; i<natoms; ++i) {
+      forces.thread_safe[i] += fdata.force[1+i] - comforce[0];
+      forces.thread_safe[natoms+i] += fdata.force[1+natoms+i] - comforce[1];
+      forces.thread_safe[2*natoms+i] += fdata.force[1+2*natoms+i] - comforce[2];
+    }
+  } else if( actiondata.displacement ) {
+    Tensor rot;
+    std::vector<Vector> der(natoms), pos(natoms);
+    getPositionsFromInputData( input, pos );
+    std::vector<Vector> direction( natoms );
+    Matrix<std::vector<Vector> > DRotDPos(3,3);
+    std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
+    double rmsd = actiondata.myrmsd[task_index].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, actiondata.squared );
+    Tensor trot=rot.transpose();
+    double prefactor = 1 / static_cast<double>( natoms );
+    Vector v1;
+    v1.zero();
+    for(unsigned n=0; n<natoms; n++) {
+      v1+=prefactor*matmul(trot, Vector(fdata.force[1+n],fdata.force[1+natoms+n],fdata.force[1+2*natoms+n]) );
+    }
+    for(unsigned n=0; n<natoms; n++) {
+      Vector ff(fdata.force[1+n],fdata.force[1+natoms+n],fdata.force[1+2*natoms+n]);
+      Vector oforce = actiondata.sqrtdisplace[n]*( matmul(trot,ff) - v1 );
+      forces.thread_safe[n] += oforce[0];
+      forces.thread_safe[natoms + n] += oforce[1];
+      forces.thread_safe[2*natoms + n] += oforce[2];
+    }
+    for(unsigned a=0; a<3; a++) {
+      for(unsigned b=0; b<3; b++) {
+        double tmp1=0.;
+        for(unsigned m=0; m<natoms; m++) {
+          tmp1+=centeredpos[m][b]*fdata.force[1+a*natoms + m];
+        }
+        for(unsigned i=0; i<natoms; i++) {
+          forces.thread_safe[i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][0];
+          forces.thread_safe[natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][1];
+          forces.thread_safe[2*natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][2];
         }
       }
     }
   }
+  double ff = fdata.force[0];
+  for(unsigned j=0; j<fdata.deriv[0].size(); ++j ) {
+    forces.thread_safe[j] += ff*fdata.deriv[0][j];
+  }
 }
 
+void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
 
 }
 }
