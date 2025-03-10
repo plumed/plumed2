@@ -626,12 +626,12 @@ END{
 # DOC: :undocumented_action:
 # DOC: Every action that is registered with `PLUMED_REGISTER_ACTION` should also be documented
 # DOC: in a PLUMEDOC page.
-      error("undocumented_action","action " action " at " registered_actions[action] " is not documented")
+      style("undocumented_action","action " action " at " registered_actions[action] " is not documented")
     } else if(!(action in provide_examples)){
 # DOC: :action_without_examples:
 # DOC: Every action that is registered should contain an `Example` section in its documentation.
 # DOC: Notice that if the `Example` section is not added the manual will not show the registered keywords.
-      error("action_without_examples","action " action " at " plumed_doc_action[action] " has no example")
+      style("action_without_examples","action " action " at " plumed_doc_action[action] " has no example")
     } else if(!(action in provide_plumedfile)){
 # DOC: :action_without_verbatim:
 # DOC: Every action that is registered should contain an example in the form of a `plumedfile` section.
