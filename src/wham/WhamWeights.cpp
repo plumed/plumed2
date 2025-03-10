@@ -30,7 +30,7 @@ namespace wham {
 Calculate and output weights for configurations using the weighted histogram analysis method.
 
 This shortcut action allows you to calculate and output weights computed using the weighted histogram
-analysis technique.  The following input demonstrates how this works in practise by showing you how this 
+analysis technique.  The following input demonstrates how this works in practise by showing you how this
 action can be used to analyze the output from a series of umbrella sampling calculations.
 The trajectory from each of the simulations run with the different biases should be concatenated into a
 single trajectory before running the following analysis script on the concatenated trajectory using PLUMED
@@ -52,7 +52,7 @@ The script above must be run with multiple replicas using the following command:
 mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
 ````
 
-For more details on how the weights for configurations are determined using the wham method see the documentation 
+For more details on how the weights for configurations are determined using the wham method see the documentation
 for the [WHAM](WHAM.md) action.
 
 */

@@ -46,7 +46,7 @@ wham: WHAM ARG=col TEMP=300
 DUMPVECTOR ARG=wham FILE=wham_data
 ```
 
-As illustrated in the example above this command is used when you have run $N$ trajectories each of which was computed by integrating a different biased Hamiltonian. The input above calculates 
+As illustrated in the example above this command is used when you have run $N$ trajectories each of which was computed by integrating a different biased Hamiltonian. The input above calculates
 the probability of observing the set of configurations during the $N$ trajectories that we ran using the product of multinomial distributions using the formula shown below:
 
 $$

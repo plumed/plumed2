@@ -58,7 +58,7 @@ The script above must be run with multiple replicas using the following command:
 mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
 ````
 
-For more details on how the weights for configurations are determined using the wham method see the documentation 
+For more details on how the weights for configurations are determined using the wham method see the documentation
 for the [WHAM](WHAM.md) action.
 
 */
