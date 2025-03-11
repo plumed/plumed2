@@ -371,9 +371,7 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  if( !keywords.exists("NO_ACTION_LOG") ) {
-    log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
-  }
+  log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 

@@ -52,6 +52,7 @@ class GenJson : public CLTool {
 private:
   std::string version;
   void printHyperlink(std::string action );
+  void printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys );
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenJson(const CLToolOptions& co );
@@ -106,6 +107,10 @@ void GenJson::printHyperlink( std::string action ) {
     }
   }
   std::cout<<".html\","<<std::endl;
+}
+
+void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
+  std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered(k)<<", \"actionlink\": \""<<keys.getLinkedActions(k)<<"\"";
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
@@ -171,6 +176,15 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       }
       std::cout<<"    \"replacement\" : \""<<replacement<<"\",\n";
     }
+    std::cout<<"     \"dois\" : [";
+    unsigned ndoi = keys.getDOIList().size();
+    if( ndoi>0 ) {
+      std::cout<<"\"" + keys.getDOIList()[0] + "\"";
+      for(unsigned j=1; j<ndoi; ++j) {
+        std::cout<<", \"" + keys.getDOIList()[j] + "\"";
+      }
+    }
+    std::cout<<"],\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
       std::string defa = "", desc = keys.getKeywordDescription( keys.getKeyword(j) );
@@ -186,11 +200,14 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       }
       std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
       if( argtype.length()>0 ) {
-        std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<", \"argtype\": \""<<argtype<<"\"}";
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
+        std::cout<<", \"argtype\": \""<<argtype<<"\"}";
       } else if( defa.length()>0 ) {
-        std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<", \"default\": \""<<defa<<"\"}";
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
+        std::cout<<", \"default\": \""<<defa<<"\"}";
       } else {
-        std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
+        std::cout<<"}";
       }
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) {
         std::cout<<std::endl;
