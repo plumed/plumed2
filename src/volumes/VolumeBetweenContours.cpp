@@ -172,15 +172,16 @@ void VolumeInEnvelope::setupRegions( ActionVolume<VolumeInEnvelope>* action, con
   for(unsigned i=0; i<ltmp_ind.size(); ++i) {
     ltmp_ind[i]=i;
   }
-  mylinks.buildCellLists( positions, ltmp_ind, pbc );
   natoms_in_list = (action->copyOutput(0))->getShape()[0];
   std::vector<unsigned> ind( natoms_in_list );
+  std::vector<unsigned> tind( natoms_in_list );
   std::vector<Vector> volpos( natoms_in_list );
   for(unsigned i=0; i<natoms_in_list; ++i) {
+    tind[i] = i;
     ind[i] = positions.size() + i;
     volpos[i] = action->getPosition(i);
   }
-  mylinks.createNeighborList( volpos, ind, natoms_per_list, nlist );
+  mylinks.createNeighborList( natoms_in_list, volpos, ind, tind, positions, ltmp_ind, pbc, natoms_per_list, nlist );
 }
 
 void VolumeInEnvelope::calculateNumberInside( const VolumeInput& input, const VolumeInEnvelope& actioninput, VolumeOutput& output ) {
@@ -192,7 +193,7 @@ void VolumeInEnvelope::calculateNumberInside( const VolumeInput& input, const Vo
   vir.zero();
   output.derivatives[0]=output.derivatives[1]=output.derivatives[2]=0;
   std::size_t lstart = actioninput.natoms_in_list + input.task_index*(1+actioninput.natoms_per_list);
-  for(unsigned i=0; i<actioninput.nlist[input.task_index]; ++i) {
+  for(unsigned i=1; i<actioninput.nlist[input.task_index]; ++i) {
     unsigned atno = actioninput.nlist[lstart+i];
     Vector dist = input.pbc.distance( Vector(input.cpos[0],input.cpos[1],input.cpos[2]), Vector(input.refpos[atno][0], input.refpos[atno][1], input.refpos[atno][2]) );
     double dval=0;
@@ -216,7 +217,7 @@ void VolumeInEnvelope::calculateNumberInside( const VolumeInput& input, const Vo
   output.derivatives[1] *= -deriv*value;
   output.derivatives[2] *= -deriv*value;
   output.virial.set( 0, -deriv*value*vir );
-  for(unsigned i=0; i<actioninput.nlist[input.task_index]; ++i) {
+  for(unsigned i=1; i<actioninput.nlist[input.task_index]; ++i) {
     unsigned atno = actioninput.nlist[lstart+i];
     output.refders[ atno ][0] *= -deriv*value;
     output.refders[ atno ][1] *= -deriv*value;

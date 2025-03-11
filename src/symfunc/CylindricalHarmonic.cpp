@@ -82,6 +82,12 @@ void CylindricalHarmonic::read( ActionWithArguments* action ) {
 void CylindricalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
   action->componentIsNotPeriodic("rm");
   action->componentIsNotPeriodic("im");
+  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
+  plumed_assert( aarg );
+  if( aarg->getNumberOfArguments()==3 && (aarg->getPntrToArgument(2))->isDerivativeZeroWhenValueIsZero() ) {
+    (action->copyOutput(0))->setDerivativeIsZeroWhenValueIsZero();
+    (action->copyOutput(1))->setDerivativeIsZeroWhenValueIsZero();
+  }
 }
 
 void CylindricalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

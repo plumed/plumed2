@@ -156,7 +156,7 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
   if( getNumberOfArguments()<2 ) {
     error("Not enough arguments specified");
   }
-  bool vectormask=false;
+  bool vectormask=false, derivbool = true;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->hasDerivatives() ) {
       error("arguments should be vectors or matrices");
@@ -166,6 +166,9 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
       if( av && av->getNumberOfMasks()>=0 ) {
         vectormask=true;
       }
+    }
+    if( !getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      derivbool = false;
     }
   }
   if( !vectormask ) {
@@ -177,6 +180,9 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
   if( getNumberOfArguments()==2 ) {
     addValue( shape );
     setNotPeriodic();
+    if( derivbool ) {
+      getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
+    }
   } else {
     unsigned namestart=1, nameend=getNumberOfArguments();
     if( getPntrToArgument(1)->getRank()==2 ) {
@@ -192,6 +198,9 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
       }
       addComponent( name, shape );
       componentIsNotPeriodic( name );
+      if( derivbool ) {
+        copyOutput( getLabel() + "." + name )->setDerivativeIsZeroWhenValueIsZero();
+      }
     }
   }
   // This sets up an array in the parallel task manager to hold all the indices

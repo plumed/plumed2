@@ -227,6 +227,8 @@ public:
 ///
   unsigned getRowIndex( const std::size_t& irow, const std::size_t& jind ) const ;
 ///
+  void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
+///
   std::size_t getNumberOfColumns() const ;
 ///
   bool isSymmetric() const ;
@@ -477,6 +479,18 @@ inline
 unsigned Value::getRowIndex( const std::size_t& irow, const std::size_t& jind ) const {
   plumed_dbg_massert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow], "failing in value " + name );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
+}
+
+inline
+void Value::setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind ) {
+  plumed_dbg_assert( (1+ncols)*irow+1+ind.size()<matrix_bookeeping.size() );
+  std::size_t istart = (1+ncols)*irow;
+  matrix_bookeeping[istart] = ind.size();
+  ++istart;
+  for(unsigned i=0; i<ind.size(); ++i) {
+    matrix_bookeeping[istart] = ind[i];
+    ++istart;
+  }
 }
 
 inline

@@ -115,8 +115,6 @@ public:
   virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {}
 /// Gather the values that we intend to store in the buffer
   virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const {}
-/// Check if there is a force that needs to be accumulated on the ith task
-  virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on non-scalar quantities
   virtual void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value

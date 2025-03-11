@@ -128,12 +128,8 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
           return 1;
         }
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-        unsigned ncol = myarg->getRowLength(itask);
-        unsigned base = itask*myarg->getNumberOfColumns();
-        for(unsigned k=0; k<ncol; ++k) {
-          if( fabs(myarg->get(base+k,false))>0 ) {
-            return 1;
-          }
+        if( myarg->getRowLength(itask)>0 ) {
+          return 1;
         }
       } else {
         plumed_merror("only matrices and vectors should be used as masks");
@@ -141,7 +137,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
     }
   } else {
     for(unsigned i=0; i<nargs; ++i) {
-      if( getName()=="OUTER_PRODUCT" && i>0 ) {
+      if( getName().find("OUTER_PRODUCT")!=std::string::npos && i>0 ) {
         return -1;
       }
 
@@ -274,12 +270,6 @@ void ActionWithVector::runAllTasks() {
     rank=0;
   }
 
-  // Clear matrix bookeeping arrays
-  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
-  if( am && stride>1 ) {
-    clearMatrixBookeeping();
-  }
-
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
   unsigned nactive_tasks=partialTaskList.size();
@@ -376,9 +366,6 @@ void ActionWithVector::runAllTasks() {
       Value* myval = getPntrToComponent(i);
       if( !myval->hasDeriv ) {
         comm.Sum( myval->data );
-        if( am && myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
-          comm.Sum( myval->matrix_bookeeping );
-        }
       }
     }
   }
@@ -597,11 +584,6 @@ bool ActionWithVector::checkComponentsForForce() const {
     }
   }
   return false;
-}
-
-bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
-  plumed_dbg_assert( !(myval->getRank()==2 && !myval->hasDerivatives()) );
-  return fabs(myval->getForce(itask))>epsilon;
 }
 
 void ActionWithVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
