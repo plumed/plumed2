@@ -25,6 +25,32 @@ By default the following units are used when reading the parameters that are spe
 
 These are also the units in any output files.  If you would like to change these units you can use the [UNITS](UNITS.md) command.
 
+## Writing input files
+
+If you edit your PLUMED input files using VIM you can add the following to the .vimrc file:
+
+````
+" Enable syntax
+:syntax on
+" This allows including the proper PLUMED syntax file:
+:let &runtimepath.=','.$PLUMED_VIMPATH
+" The former command requires PLUMED_VIMPATH to be set. Alternatively, use this:
+" let &runtimepath.=',/usr/local/lib/plumed/vim'
+" properly adjusted to the path where PLUMED is installed.
+" This makes autocompletion work in the expected way:
+:set completeopt=longest,menuone
+" This enables bindings of F2/F3/F4 to plumed specific commands:
+:let plumed_shortcuts=1
+````
+
+Then when you open a PLUMED input file, you can enable syntax highlighting with:
+
+```` 
+:set ft=plumed 
+````
+
+You can read more about the features that are available in vim for working with PLUMED input files [here](vim.md).
+
 ## Reading constants
 
 In the input to keywords that read real numbers you can use constants that are specified using strings rather than numbers.

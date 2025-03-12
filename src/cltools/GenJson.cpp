@@ -79,7 +79,7 @@ GenJson::GenJson(const CLToolOptions& co ):
 }
 
 void GenJson::printHyperlink( std::string action ) {
-  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<std::endl;
+  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<"\","<<std::endl;
 }
 
 void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
@@ -106,9 +106,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   // Cycle over all the action names
   std::cout<<"{"<<std::endl;
   // Get the vimlink
-  std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_vim_syntax.html\","<<std::endl;
+  std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/vim\","<<std::endl;
   // And the replicas link
-  std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/special-replica-syntax.html\","<<std::endl;
+  std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/parsing.html\","<<std::endl;
   // Get the names of all the actions
   std::vector<std::string> action_names( actionRegister().getActionNames() );
   std::vector<std::string> allmodules;
@@ -252,22 +252,22 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"  \"groups\" : {"<<std::endl;
   std::cout<<"    \"@allatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms and PLUMEDs vatoms\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms\""<<std::endl;
   std::cout<<"    },"<<std::endl;
   std::cout<<"    \"@mdatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms but not PLUMEDs vatoms\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms\""<<std::endl;
   std::cout<<"    },"<<std::endl;
   std::cout<<"    \"@ndx:\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"load a group from a GROMACS index file\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms.html\""<<std::endl;
   // Now print all the special keywords in molinfo
   std::map<std::string,std::string> specials( GenericMolInfo::getSpecialKeywords() );
   for(auto const& s : specials ) {
     std::cout<<"    },"<<std::endl;
     std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
     std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
-    std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
+    std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/MOLINFO\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
   std::cout<<"  },"<<std::endl;
