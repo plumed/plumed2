@@ -7,6 +7,7 @@ nav:
   - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
   - Tutorials: 'https://www.plumed-tutorials.org'
   - Examples: 'https://www.plumed-nest.org'
+  - Developer docs: '../../developer-doc/html/index.html'
 
 not_in_nav: |
   *.md

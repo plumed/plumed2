@@ -79,34 +79,7 @@ GenJson::GenJson(const CLToolOptions& co ):
 }
 
 void GenJson::printHyperlink( std::string action ) {
-  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-  std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) {
-    return std::tolower(c);
-  });
-  while(true) {
-    std::size_t und=action.find_first_of("_");
-    if( und==std::string::npos ) {
-      break;
-    }
-    std::string first=action.substr(0,und);
-    for(auto c : first ) {
-      if( isdigit(c) ) {
-        std::cout<<c;
-      } else {
-        std::cout<<"_"<<c;
-      }
-    }
-    std::cout<<"_";
-    action=action.substr(und+1);
-  }
-  for(auto c : action ) {
-    if( isdigit(c) ) {
-      std::cout<<c;
-    } else {
-      std::cout<<"_"<<c;
-    }
-  }
-  std::cout<<".html\","<<std::endl;
+  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<std::endl;
 }
 
 void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
