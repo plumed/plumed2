@@ -51,7 +51,7 @@ plumed gen_json
 class GenJson : public CLTool {
 private:
   std::string version;
-  void printHyperlink(std::string action );
+  void printHyperlink( const std::string& action );
   void printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys );
 public:
   static void registerKeywords( Keywords& keys );
@@ -78,7 +78,7 @@ GenJson::GenJson(const CLToolOptions& co ):
   }
 }
 
-void GenJson::printHyperlink( std::string action ) {
+void GenJson::printHyperlink( const std::string& action ) {
   std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<"\","<<std::endl;
 }
 
