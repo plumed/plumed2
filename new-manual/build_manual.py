@@ -140,6 +140,8 @@ If you are completely unfamiliar with PLUMED we would recommend that you start b
 
 You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials.org) and you can find examples of how PLUMED has been used in many academic research articles [here](https://www.plumed-nest.org).
 
+If you would like to add new functionality to PLUMED you can find developer documentation [here](../../developer-doc/html/index.html).
+
 The documentation in this manual was built on [{date.today().strftime('%B %d, %Y')}](summary.md).
     """
     of.write(content)
