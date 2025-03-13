@@ -440,7 +440,6 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          ninp, nfail = 0, 0
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
-            #fixed_modules = ["adjmat", "envsim", "sprint", "clusters", "secondarystructure", "multicolvar", "valtools", "matrixtools", "colvar", "pamm", "volumes", "generic", "function", "wham", "core", "refdist", "fourier", "setup", "vatom", "symfunc", "landmarks"]
             if os.path.isfile("../src/" + value["module"] + "/module.yml") : 
                 actions = set()
                 ninp, nf = processMarkdownString( plumeddocs[action], "docs/" + action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
