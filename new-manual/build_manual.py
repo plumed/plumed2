@@ -358,7 +358,7 @@ def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_i
          f.write("| Name | Description |\n") 
          f.write("|:-----|:------------|\n")
          for key, value in plumed_syntax.items() :
-             if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] or value["module"]!=modname : continue
+             if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
              f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")  
 
 def getKeywordDescription( docs ) :
@@ -530,7 +530,7 @@ if __name__ == "__main__" :
    # Create a page for each action
    plumeddocs, tabledata, undocumented_keywords, noexamples, nodocs = getActionDocumentationFromPlumed(), [], [], [], []
    for key, value in plumed_syntax.items() :
-      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
+      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
       # Now create the page contents
       neggs, nlessons = 0, 0
       if key in nest_map.keys() : neggs = nest_map[key]
@@ -542,10 +542,14 @@ if __name__ == "__main__" :
    # Create the page with the list of actions
    with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata )
 
+   # Create a page for each cltool
+   for key, value in plumed_syntax["cltools"].items() :
+       pass
+
    # Create a list of modules
    modules = {}
    for key, value in plumed_syntax.items() :  
-     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
+     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
      nlessons, neggs = 0, 0
      if key in school_map.keys() : nlessons = school_map[key]
      if key in nest_map.keys() : neggs = nest_map[key]

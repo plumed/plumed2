@@ -24,6 +24,7 @@
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/GenericMolInfo.h"
 #include "core/ModuleMap.h"
 #include <cstdio>
@@ -282,6 +283,44 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
+  std::cout<<"  },"<<std::endl;
+  std::cout<<"  \"cltools\" : {"<<std::endl;
+  std::vector<std::string> cltool_names( cltoolRegister().list() );
+  for(unsigned i=0; i<cltool_names.size(); ++i) {
+    std::cout<<"  \""<<cltool_names[i]<<'"'<<": {"<<std::endl;
+    std::string cltool=cltool_names[i];
+    // Handle converstion to link
+    printHyperlink( cltool );
+    std::string thismodule = getModuleMap().find(cltool_names[i])->second;
+    std::cout<<"    \"module:\" : \""<<thismodule<<"\",\n";
+    auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
+    std::cout<<"    \"description:\" : \""<<mytool->description()<<"\",\n";
+    if( mytool->inputdata==commandline ) {
+        std::cout<<"    \"inputtype:\" : \"command line args\",\n";
+    } else if( mytool->inputdata==ifile ) {
+        std::cout<<"    \"inputtype:\" : \"file\",\n";
+    } else {
+        error("input type for cltool was not specified");
+    }
+    std::cout<<"    \"syntax\" : {"<<std::endl;
+    Keywords keys( cltoolRegister().get(cltool).keys );
+    for(unsigned j=0; j<keys.size(); ++j) {
+        std::string k = keys.getKeyword(j);
+        std::cout<<"     \"" + k + "\": \"" + keys.getKeywordDescription( k ) <<"\"";
+        if( j==keys.size()-1 ) {
+            std::cout<<std::endl;
+        } else {
+            std::cout<<","<<std::endl;
+        }
+    }
+    std::cout<<"       }"<<std::endl;
+    std::cout<<"     }";
+    if( i==cltool_names.size()-1 ) {
+       std::cout<<std::endl;
+    } else {
+       std::cout<<","<<std::endl;
+    }
+  }
   std::cout<<"  }"<<std::endl;
   std::cout<<"}"<<std::endl;
   return 0;
