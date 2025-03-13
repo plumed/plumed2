@@ -292,13 +292,13 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // Handle converstion to link
     printHyperlink( cltool );
     std::string thismodule = getModuleMap().find(cltool_names[i])->second;
-    std::cout<<"    \"module:\" : \""<<thismodule<<"\",\n";
+    std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
     auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
-    std::cout<<"    \"description:\" : \""<<mytool->description()<<"\",\n";
+    std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
     if( mytool->inputdata==commandline ) {
-        std::cout<<"    \"inputtype:\" : \"command line args\",\n";
+        std::cout<<"    \"inputtype\" : \"command line args\",\n";
     } else if( mytool->inputdata==ifile ) {
-        std::cout<<"    \"inputtype:\" : \"file\",\n";
+        std::cout<<"    \"inputtype\" : \"file\",\n";
     } else {
         error("input type for cltool was not specified");
     }
