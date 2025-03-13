@@ -29,6 +29,7 @@ namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords( keys );
+  keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the adjancency matrix to compute");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");
@@ -55,7 +56,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   threecells(comm),
   maxcol(0),
   natoms_per_list(0) {
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   std::vector<AtomNumber> t;
   parseAtomList("GROUP", t );
   if( t.size()==0 ) {
@@ -234,114 +235,52 @@ void AdjacencyMatrixBase::updateNeighbourList() {
     // In this way we ensure that the neighbour list doesn't get too big.  Also this number should always be large enough
     natoms_per_list = 27*linkcells.getMaxInCell();
     nlist.resize( getConstPntrToComponent(0)->getShape()[0]*( 2 + natoms_per_list ) );
-    // Set the number of neighbors to zero for all ranks
-    nlist.assign(nlist.size(),0);
-    // Now get stuff to do parallel implementation
-    unsigned stride=comm.Get_size();
-    unsigned rank=comm.Get_rank();
-    if( runInSerial() ) {
-      stride=1;
-      rank=0;
-    }
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>getConstPntrToComponent(0)->getShape()[0] ) {
-      nt=getConstPntrToComponent(0)->getShape()[0]/stride/10;
-    }
-    if( nt==0 ) {
-      nt=1;
-    }
     // Create a vector from the input set of tasks
     std::vector<unsigned> & pTaskList( getListOfActiveTasks(this) );
-
-    #pragma omp parallel num_threads(nt)
-    {
-      // Get the number of tasks we have to deal with
-      unsigned ntasks=getConstPntrToComponent(0)->getShape()[0];
-      if( nl_stride==1 ) {
-        ntasks=pTaskList.size();
-      }
-      // Build a tempory nlist so we can do omp parallelism
-      std::vector<unsigned> omp_nlist;
-      if( nt>1 ) {
-        omp_nlist.resize( nlist.size(), 0 );
-      }
-      // Now run over all atoms and construct the link cells
-      std::vector<Vector> t_atoms( 1+ablocks.size() );
-      std::vector<unsigned> indices( 1+ablocks.size() ), cells_required( linkcells.getNumberOfCells() );
-      #pragma omp for nowait
-      for(unsigned i=rank; i<ntasks; i+=stride) {
-        // Retrieve cells required from link cells - for matrix blocks
-        unsigned ncells_required=0;
-        linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i]) ), ncells_required, cells_required );
-        // Now get the indices of the atoms in the link cells positions
-        unsigned natoms=1;
-        indices[0]=pTaskList[i];
-        linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-        if( nl_stride==1 ) {
-          if( nt>1 ) {
-            omp_nlist[indices[0]]=0;
-          } else {
-            nlist[indices[0]] = 0;
-          }
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
-          for(unsigned j=0; j<natoms; ++j) {
-            if( nt>1 ) {
-              omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j];
-              omp_nlist[indices[0]]++;
-            } else {
-              nlist[ lstart + nlist[indices[0]] ] = indices[j];
-              nlist[indices[0]]++;
-            }
-          }
-        } else {
-          // Get the positions of all the atoms in the link cells relative to the central atom
-          for(unsigned j=0; j<natoms; ++j) {
-            t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
-          }
-          if( !nopbc ) {
-            pbcApply( t_atoms, natoms );
-          }
-          // Now construct the neighbor list
-          if( nt>1 ) {
-            omp_nlist[indices[0]] = 0;
-          } else {
-            nlist[indices[0]] = 0;
-          }
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
-          for(unsigned j=0; j<natoms; ++j) {
-            double d2;
-            if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
-                 (d2+=t_atoms[j][1]*t_atoms[j][1])<nl_cut2 &&
-                 (d2+=t_atoms[j][2]*t_atoms[j][2])<nl_cut2 ) {
-              if( nt>1 ) {
-                omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j];
-                omp_nlist[indices[0]]++;
-              } else {
-                nlist[ lstart + nlist[indices[0]] ] = indices[j];
-                nlist[indices[0]]++;
-              }
-            }
-          }
-
-        }
-      }
-      // Gather OMP stuff
-      #pragma omp critical
-      if(nt>1) {
-        for(unsigned i=0; i<ntasks; ++i) {
-          nlist[pTaskList[i]]+=omp_nlist[pTaskList[i]];
-        }
-        for(unsigned i=0; i<ntasks; ++i) {
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + pTaskList[i]*(1+natoms_per_list);
-          for(unsigned j=0; j<omp_nlist[pTaskList[i]]; ++j) {
-            nlist[ lstart + j ] += omp_nlist[ lstart + j ];
-          }
-        }
-      }
+    // Get the number of tasks we have to deal with
+    unsigned ntasks=getConstPntrToComponent(0)->getShape()[0];
+    if( nl_stride==1 ) {
+      ntasks=pTaskList.size();
     }
-    // MPI gather
-    if( !runInSerial() ) {
-      comm.Sum( nlist );
+    // Now run over all atoms and construct the link cells
+    std::vector<Vector> t_atoms( 1+ablocks.size() );
+    std::vector<unsigned> indices( 1+ablocks.size() ), cells_required( linkcells.getNumberOfCells() );
+    for(unsigned i=0; i<ntasks; i++) {
+      // Retrieve cells required from link cells - for matrix blocks
+      unsigned ncells_required=0;
+      linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i]) ), ncells_required, cells_required );
+      // Now get the indices of the atoms in the link cells positions
+      unsigned natoms=1;
+      indices[0]=pTaskList[i];
+      linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+      if( nl_stride==1 ) {
+        nlist[indices[0]] = 0;
+        unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
+        for(unsigned j=0; j<natoms; ++j) {
+          nlist[ lstart + nlist[indices[0]] ] = indices[j];
+          nlist[indices[0]]++;
+        }
+      } else {
+        // Get the positions of all the atoms in the link cells relative to the central atom
+        for(unsigned j=0; j<natoms; ++j) {
+          t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
+        }
+        if( !nopbc ) {
+          pbcApply( t_atoms, natoms );
+        }
+        // Now construct the neighbor list
+        nlist[indices[0]] = 0;
+        unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
+        for(unsigned j=0; j<natoms; ++j) {
+          double d2;
+          if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
+               (d2+=t_atoms[j][1]*t_atoms[j][1])<nl_cut2 &&
+               (d2+=t_atoms[j][2]*t_atoms[j][2])<nl_cut2 ) {
+            nlist[ lstart + nlist[indices[0]] ] = indices[j];
+            nlist[indices[0]]++;
+          }
+        }
+      }
     }
   }
   if( threeblocks.size()>0 ) {
@@ -358,31 +297,9 @@ void AdjacencyMatrixBase::updateNeighbourList() {
       maxcol = nlist[i];
     }
   }
-}
-
-void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
-  if( action==this ) {
-    return;
-  }
-  // Update the neighbour list
-  updateNeighbourList();
-
-  unsigned nactive = atasks.size();
-  std::vector<unsigned> indlist( 1 + ablocks.size() + threeblocks.size() );
-  for(unsigned i=0; i<nactive; ++i) {
-    unsigned num = retrieveNeighbours( atasks[i], indlist );
-    for(unsigned j=0; j<num; ++j) {
-      bool found=false;
-      for(unsigned k=0; k<atasks.size(); ++k ) {
-        if( indlist[j]==atasks[k] ) {
-          found=true;
-          break;
-        }
-      }
-      if( !found ) {
-        atasks.push_back( indlist[j] );
-      }
-    }
+  // This ensures that we never store the diagonal elements of the matrix if they are guaranteed to be zero.
+  if( read_one_group && maxcol==getConstPntrToComponent(0)->getShape()[1] ) {
+    maxcol = maxcol-1;
   }
 }
 
@@ -404,9 +321,9 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, std::vector<uns
   }
 
   // Now get the positions
+  const Value* myval = getConstPntrToComponent(0);
   unsigned natoms=retrieveNeighbours( current, indices );
-  unsigned ntwo_atoms=natoms;
-  myvals.setSplitIndex( ntwo_atoms );
+  myvals.setSplitIndex( natoms );
 
   // Now retrieve everything for the third atoms
   if( threeblocks.size()>0 ) {
@@ -446,125 +363,113 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
   zero.zero();
   plumed_dbg_assert( index2<myvals.getAtomVector().size() );
   double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
-  unsigned w_ind = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.setValue( w_ind, weight );
+  myvals.setValue( 0, weight );
   if( fabs(weight)<epsilon ) {
-    myvals.setValue( w_ind, 0 );
+    myvals.setValue( 0, 0 );
     return;
   }
 
   if( !doNotCalculateDerivatives() ) {
     // Update dynamic list indices for central atom
-    myvals.updateIndex( w_ind, 3*index1+0 );
-    myvals.updateIndex( w_ind, 3*index1+1 );
-    myvals.updateIndex( w_ind, 3*index1+2 );
+    myvals.updateIndex( 0, 3*index1+0 );
+    myvals.updateIndex( 0, 3*index1+1 );
+    myvals.updateIndex( 0, 3*index1+2 );
     // Update dynamic list indices for atom forming this bond
-    myvals.updateIndex( w_ind, 3*index2+0 );
-    myvals.updateIndex( w_ind, 3*index2+1 );
-    myvals.updateIndex( w_ind, 3*index2+2 );
+    myvals.updateIndex( 0, 3*index2+0 );
+    myvals.updateIndex( 0, 3*index2+1 );
+    myvals.updateIndex( 0, 3*index2+2 );
     // Now look after all the atoms in the third block
     std::vector<unsigned> & indices( myvals.getIndices() );
     for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
-      myvals.updateIndex( w_ind, 3*indices[i]+0 );
-      myvals.updateIndex( w_ind, 3*indices[i]+1 );
-      myvals.updateIndex( w_ind, 3*indices[i]+2 );
+      myvals.updateIndex( 0, 3*indices[i]+0 );
+      myvals.updateIndex( 0, 3*indices[i]+1 );
+      myvals.updateIndex( 0, 3*indices[i]+2 );
     }
     // Update dynamic list indices for virial
     unsigned base = 3*getNumberOfAtoms();
     for(unsigned j=0; j<9; ++j) {
-      myvals.updateIndex( w_ind, base+j );
+      myvals.updateIndex( 0, base+j );
     }
     // And the indices for the derivatives of the row of the matrix
-    unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
+    unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() );
     matrix_indices[nmat_ind+0]=3*index2+0;
     matrix_indices[nmat_ind+1]=3*index2+1;
     matrix_indices[nmat_ind+2]=3*index2+2;
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+3 );
+    myvals.setNumberOfMatrixRowDerivatives( nmat_ind+3 );
   }
 
   // Calculate the components if we need them
   if( components ) {
-    unsigned x_index = getConstPntrToComponent(1)->getPositionInStream();
-    unsigned y_index = getConstPntrToComponent(2)->getPositionInStream();
-    unsigned z_index = getConstPntrToComponent(3)->getPositionInStream();
     Vector atom = myvals.getAtomVector()[index2];
-    myvals.setValue( x_index, atom[0] );
-    myvals.setValue( y_index, atom[1] );
-    myvals.setValue( z_index, atom[2] );
+    myvals.setValue( 1, atom[0] );
+    myvals.setValue( 2, atom[1] );
+    myvals.setValue( 3, atom[2] );
     if( !doNotCalculateDerivatives() ) {
-      myvals.addDerivative( x_index, 3*index1+0, -1 );
-      myvals.addDerivative( x_index, 3*index2+0, +1 );
-      myvals.addDerivative( x_index, 3*index1+1, 0 );
-      myvals.addDerivative( x_index, 3*index2+1, 0 );
-      myvals.addDerivative( x_index, 3*index1+2, 0 );
-      myvals.addDerivative( x_index, 3*index2+2, 0 );
-      myvals.addDerivative( y_index, 3*index1+0, 0 );
-      myvals.addDerivative( y_index, 3*index2+0, 0 );
-      myvals.addDerivative( y_index, 3*index1+1, -1 );
-      myvals.addDerivative( y_index, 3*index2+1, +1 );
-      myvals.addDerivative( y_index, 3*index1+2, 0 );
-      myvals.addDerivative( y_index, 3*index2+2, 0 );
-      myvals.addDerivative( z_index, 3*index1+0, 0 );
-      myvals.addDerivative( z_index, 3*index2+0, 0 );
-      myvals.addDerivative( z_index, 3*index1+1, 0 );
-      myvals.addDerivative( z_index, 3*index2+1, 0 );
-      myvals.addDerivative( z_index, 3*index1+2, -1 );
-      myvals.addDerivative( z_index, 3*index2+2, +1 );
+      myvals.addDerivative( 1, 3*index1+0, -1 );
+      myvals.addDerivative( 1, 3*index2+0, +1 );
+      myvals.addDerivative( 1, 3*index1+1, 0 );
+      myvals.addDerivative( 1, 3*index2+1, 0 );
+      myvals.addDerivative( 1, 3*index1+2, 0 );
+      myvals.addDerivative( 1, 3*index2+2, 0 );
+      myvals.addDerivative( 2, 3*index1+0, 0 );
+      myvals.addDerivative( 2, 3*index2+0, 0 );
+      myvals.addDerivative( 2, 3*index1+1, -1 );
+      myvals.addDerivative( 2, 3*index2+1, +1 );
+      myvals.addDerivative( 2, 3*index1+2, 0 );
+      myvals.addDerivative( 2, 3*index2+2, 0 );
+      myvals.addDerivative( 3, 3*index1+0, 0 );
+      myvals.addDerivative( 3, 3*index2+0, 0 );
+      myvals.addDerivative( 3, 3*index1+1, 0 );
+      myvals.addDerivative( 3, 3*index2+1, 0 );
+      myvals.addDerivative( 3, 3*index1+2, -1 );
+      myvals.addDerivative( 3, 3*index2+2, +1 );
       for(unsigned k=0; k<3; ++k) {
         // Update dynamic lists for central atom
-        myvals.updateIndex( x_index, 3*index1+k );
-        myvals.updateIndex( y_index, 3*index1+k );
-        myvals.updateIndex( z_index, 3*index1+k );
+        myvals.updateIndex( 1, 3*index1+k );
+        myvals.updateIndex( 2, 3*index1+k );
+        myvals.updateIndex( 3, 3*index1+k );
         // Update dynamic lists for bonded atom
-        myvals.updateIndex( x_index, 3*index2+k );
-        myvals.updateIndex( y_index, 3*index2+k );
-        myvals.updateIndex( z_index, 3*index2+k );
+        myvals.updateIndex( 1, 3*index2+k );
+        myvals.updateIndex( 2, 3*index2+k );
+        myvals.updateIndex( 3, 3*index2+k );
       }
       // Add derivatives of virial
       unsigned base = 3*getNumberOfAtoms();
       // Virial for x
-      myvals.addDerivative( x_index, base+0, -atom[0] );
-      myvals.addDerivative( x_index, base+3, -atom[1] );
-      myvals.addDerivative( x_index, base+6, -atom[2] );
-      myvals.addDerivative( x_index, base+1, 0 );
-      myvals.addDerivative( x_index, base+4, 0 );
-      myvals.addDerivative( x_index, base+7, 0 );
-      myvals.addDerivative( x_index, base+2, 0 );
-      myvals.addDerivative( x_index, base+5, 0 );
-      myvals.addDerivative( x_index, base+8, 0 );
+      myvals.addDerivative( 1, base+0, -atom[0] );
+      myvals.addDerivative( 1, base+3, -atom[1] );
+      myvals.addDerivative( 1, base+6, -atom[2] );
+      myvals.addDerivative( 1, base+1, 0 );
+      myvals.addDerivative( 1, base+4, 0 );
+      myvals.addDerivative( 1, base+7, 0 );
+      myvals.addDerivative( 1, base+2, 0 );
+      myvals.addDerivative( 1, base+5, 0 );
+      myvals.addDerivative( 1, base+8, 0 );
       // Virial for y
-      myvals.addDerivative( y_index, base+0, 0 );
-      myvals.addDerivative( y_index, base+3, 0 );
-      myvals.addDerivative( y_index, base+6, 0 );
-      myvals.addDerivative( y_index, base+1, -atom[0] );
-      myvals.addDerivative( y_index, base+4, -atom[1] );
-      myvals.addDerivative( y_index, base+7, -atom[2] );
-      myvals.addDerivative( y_index, base+2, 0 );
-      myvals.addDerivative( y_index, base+5, 0 );
-      myvals.addDerivative( y_index, base+8, 0 );
+      myvals.addDerivative( 2, base+0, 0 );
+      myvals.addDerivative( 2, base+3, 0 );
+      myvals.addDerivative( 2, base+6, 0 );
+      myvals.addDerivative( 2, base+1, -atom[0] );
+      myvals.addDerivative( 2, base+4, -atom[1] );
+      myvals.addDerivative( 2, base+7, -atom[2] );
+      myvals.addDerivative( 2, base+2, 0 );
+      myvals.addDerivative( 2, base+5, 0 );
+      myvals.addDerivative( 2, base+8, 0 );
       // Virial for z
-      myvals.addDerivative( z_index, base+0, 0 );
-      myvals.addDerivative( z_index, base+3, 0 );
-      myvals.addDerivative( z_index, base+6, 0 );
-      myvals.addDerivative( z_index, base+1, 0 );
-      myvals.addDerivative( z_index, base+4, 0 );
-      myvals.addDerivative( z_index, base+7, 0 );
-      myvals.addDerivative( z_index, base+2, -atom[0] );
-      myvals.addDerivative( z_index, base+5, -atom[1] );
-      myvals.addDerivative( z_index, base+8, -atom[2] );
+      myvals.addDerivative( 3, base+0, 0 );
+      myvals.addDerivative( 3, base+3, 0 );
+      myvals.addDerivative( 3, base+6, 0 );
+      myvals.addDerivative( 3, base+1, 0 );
+      myvals.addDerivative( 3, base+4, 0 );
+      myvals.addDerivative( 3, base+7, 0 );
+      myvals.addDerivative( 3, base+2, -atom[0] );
+      myvals.addDerivative( 3, base+5, -atom[1] );
+      myvals.addDerivative( 3, base+8, -atom[2] );
       for(unsigned k=0; k<9; ++k) {
-        myvals.updateIndex( x_index, base+k );
-        myvals.updateIndex( y_index, base+k );
-        myvals.updateIndex( z_index, base+k );
-      }
-      for(unsigned k=1; k<4; ++k) {
-        unsigned nmat = getConstPntrToComponent(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-        std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-        matrix_indices[nmat_ind+0]=3*index2+0;
-        matrix_indices[nmat_ind+1]=3*index2+1;
-        matrix_indices[nmat_ind+2]=3*index2+2;
-        myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+3 );
+        myvals.updateIndex( 1, base+k );
+        myvals.updateIndex( 2, base+k );
+        myvals.updateIndex( 3, base+k );
       }
     }
   }
@@ -575,28 +480,26 @@ void AdjacencyMatrixBase::runEndOfRowJobs( const unsigned& ind, const std::vecto
     return;
   }
 
-  for(int k=0; k<getNumberOfComponents(); ++k) {
-    unsigned nmat = getConstPntrToComponent(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-    plumed_assert( nmat_ind<matrix_indices.size() );
-    matrix_indices[nmat_ind+0]=3*ind+0;
-    matrix_indices[nmat_ind+1]=3*ind+1;
-    matrix_indices[nmat_ind+2]=3*ind+2;
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() );
+  plumed_assert( nmat_ind<matrix_indices.size() );
+  matrix_indices[nmat_ind+0]=3*ind+0;
+  matrix_indices[nmat_ind+1]=3*ind+1;
+  matrix_indices[nmat_ind+2]=3*ind+2;
+  nmat_ind+=3;
+  for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
+    matrix_indices[nmat_ind+0]=3*indices[i]+0;
+    matrix_indices[nmat_ind+1]=3*indices[i]+1;
+    matrix_indices[nmat_ind+2]=3*indices[i]+2;
     nmat_ind+=3;
-    for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
-      matrix_indices[nmat_ind+0]=3*indices[i]+0;
-      matrix_indices[nmat_ind+1]=3*indices[i]+1;
-      matrix_indices[nmat_ind+2]=3*indices[i]+2;
-      nmat_ind+=3;
-    }
-    unsigned virbase = 3*getNumberOfAtoms();
-    for(unsigned i=0; i<9; ++i) {
-      matrix_indices[nmat_ind+i]=virbase+i;
-    }
-    nmat_ind+=9;
-    plumed_dbg_massert( nmat_ind<=3*getNumberOfAtoms() + 9, "found too many derivatives in " + getLabel() );
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   }
+  unsigned virbase = 3*getNumberOfAtoms();
+  for(unsigned i=0; i<9; ++i) {
+    matrix_indices[nmat_ind+i]=virbase+i;
+  }
+  nmat_ind+=9;
+  plumed_dbg_massert( nmat_ind<=3*getNumberOfAtoms() + 9, "found too many derivatives in " + getLabel() );
+  myvals.setNumberOfMatrixRowDerivatives( nmat_ind );
 }
 
 }

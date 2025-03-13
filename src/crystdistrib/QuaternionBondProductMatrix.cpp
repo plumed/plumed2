@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithMatrix.h"
+#include "core/ActionWithVector.h"
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
@@ -38,19 +38,18 @@ Calculate the product between a matrix of quaternions and the bonds
 */
 //+ENDPLUMEDOC
 
-class QuaternionBondProductMatrix : public ActionWithMatrix {
+class QuaternionBondProductMatrix : public ActionWithVector {
 private:
-  unsigned nderivatives;
-  std::vector<bool> stored;
+  std::vector<unsigned> active_tasks;
 //  const Vector4d& rightMultiply(Tensor4d&, Vector4d&);
 public:
   static void registerKeywords( Keywords& keys );
   explicit QuaternionBondProductMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override ;
-  void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
+  void prepare() override ;
+  void calculate() override ;
+  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATRIX")
@@ -73,7 +72,7 @@ PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATR
 
 
 void QuaternionBondProductMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys);
+  ActionWithVector::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","vector/matrix","this action takes 8 arguments.  The first four should be the w,i,j and k components of a quaternion vector.  The second four should be contact matrix and the matrices should be the x, y and z components of the bond vectors");
   keys.addOutputComponent("w","default","matrix","the real component of quaternion");
   keys.addOutputComponent("i","default","matrix","the i component of the quaternion");
@@ -83,14 +82,13 @@ void QuaternionBondProductMatrix::registerKeywords( Keywords& keys ) {
 
 QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao):
   Action(ao),
-  ActionWithMatrix(ao) {
+  ActionWithVector(ao) {
   if( getNumberOfArguments()!=8 ) {
     error("should be eight arguments to this action, 4 quaternion components and 4 matrices");
   }
   unsigned nquat = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<4; ++i) {
     Value* myarg=getPntrToArgument(i);
-    myarg->buildDataStore();
     if( myarg->getRank()!=1 ) {
       error("first four arguments to this action should be vectors");
     }
@@ -112,7 +110,7 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
       error("quaternion arguments are in wrong order");
     }
   }
-  std::vector<unsigned> shape( getPntrToArgument(4)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(4)->getShape() );
   for(unsigned i=4; i<8; ++i) {
     Value* myarg=getPntrToArgument(i);
     if( myarg->getRank()!=2 ) {
@@ -144,42 +142,42 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
   componentIsNotPeriodic("j");
   addComponent( "k", shape );
   componentIsNotPeriodic("k");
-  done_in_chain=true;
-  nderivatives = buildArgumentStore(0);
-
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored.resize( getNumberOfArguments() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
-  }
 }
 
 unsigned QuaternionBondProductMatrix::getNumberOfDerivatives() {
-  return nderivatives;
+  unsigned nder=0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    nder += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
+  return nder;
 }
 
-unsigned QuaternionBondProductMatrix::getNumberOfColumns() const {
-  const ActionWithMatrix* am=dynamic_cast<const ActionWithMatrix*>( getPntrToArgument(4)->getPntrToAction() );
-  plumed_assert( am );
-  return am->getNumberOfColumns();
+void QuaternionBondProductMatrix::prepare() {
+  ActionWithVector::prepare();
+  active_tasks.resize(0);
 }
 
-void QuaternionBondProductMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(4)->getShape()[0], size_v = getPntrToArgument(4)->getShape()[1];
-  if( indices.size()!=size_v+1 ) {
-    indices.resize( size_v+1 );
+std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( ActionWithVector* action ) {
+  if( active_tasks.size()>0 ) {
+    return active_tasks;
   }
-  for(unsigned i=0; i<size_v; ++i) {
-    indices[i+1] = start_n + i;
+
+  Value* myarg = getPntrToArgument(4);
+  unsigned base=0;
+  unsigned nrows = myarg->getShape()[0];
+  for(unsigned i=0; i<nrows; ++i) {
+    unsigned ncols = myarg->getRowLength(i);
+    for(unsigned j=0; j<ncols; ++j) {
+      active_tasks.push_back(base+j);
+    }
+    base += myarg->getNumberOfColumns();
   }
-  myvals.setSplitIndex( size_v + 1 );
+  return active_tasks;
 }
 
-void QuaternionBondProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ind2=index2;
-  if( index2>=getPntrToArgument(0)->getShape()[0] ) {
-    ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-  }
+void QuaternionBondProductMatrix::performTask( const unsigned& taskno, MultiValue& myvals) const {
+  unsigned index1 = std::floor( taskno / getPntrToArgument(4)->getNumberOfColumns() );
+  unsigned index2 = taskno - getPntrToArgument(4)->getNumberOfColumns()*index1;
 
   std::vector<double> quat(4), bond(4), quatTemp(4);
   std::vector<Tensor4d> dqt(2); //dqt[0] -> derivs w.r.t quat [dwt/dw1 dwt/di1 dwt/dj1 dwt/dk1]
@@ -187,13 +185,13 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 
   // Retrieve the quaternion
   for(unsigned i=0; i<4; ++i) {
-    quat[i] = getArgumentElement( i, index1, myvals );
+    quat[i] = getPntrToArgument(i)->get(index1);
   }
 
   // Retrieve the components of the matrix
-  double weight = getElementOfMatrixArgument( 4, index1, ind2, myvals );
+  double weight = getPntrToArgument(4)->get(taskno, false );
   for(unsigned i=1; i<4; ++i) {
-    bond[i] = getElementOfMatrixArgument( 4+i, index1, ind2, myvals );
+    bond[i] = getPntrToArgument(4+i)->get(taskno, false );
   }
 
   // calculate normalization factor
@@ -205,8 +203,6 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
   double normFac3 = normFac*normFac*normFac;
   //I hold off on normalizing because this can be done at the very end, and it makes the derivatives with respect to 'bond' more simple
 
-
-
   std::vector<double> quat_conj(4);
   quat_conj[0] = quat[0];
   quat_conj[1] = -1*quat[1];
@@ -214,10 +210,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
   quat_conj[3] = -1*quat[3];
   //make a conjugate of q1 my own sanity
 
-
-
-
-//q1_conj * r first, while keep track of derivs
+  //q1_conj * r first, while keep track of derivs
   double pref=1;
   double conj=1;
   double pref2=1;
@@ -232,8 +225,6 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
     quatTemp[0]+=pref*quat_conj[i]*bond[i];
     dqt[0](0,i) = conj*pref*bond[i];
     dqt[1](0,i) = pref2*quat_conj[i];
-    //addDerivativeOnVectorArgument( false, 0, i, index1, conj*pref*bond[i], myvals );
-    //addDerivativeOnVectorArgument( false, 0, 4+i, ind2, conj*pref*quat[i], myvals );
   }
   //i component
   pref=1;
@@ -258,8 +249,6 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
     quatTemp[1]+=pref*quat_conj[i]*bond[(5-i)%4];
     dqt[0](1,i) =conj*pref*bond[(5-i)%4];
     dqt[1](1,i) = pref2*quat_conj[(5-i)%4];
-    //addDerivativeOnVectorArgument( false, 1, i, index1, conj*pref*bond[(5-i)%4], myvals );
-    //addDerivativeOnVectorArgument( false, 1, 4+i, ind2, conj*pref*quat[i], myvals );
   }
 
   //j component
@@ -285,8 +274,6 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
     quatTemp[2]+=pref*quat_conj[i]*bond[(i+2)%4];
     dqt[0](2,i)=conj*pref*bond[(i+2)%4];
     dqt[1](2,i)=pref2*quat_conj[(i+2)%4];
-    //addDerivativeOnVectorArgument( false, 2, i, index1, conj*pref*bond[(i+2)%4], myvals );
-    //addDerivativeOnVectorArgument( false, 2, 4+i, ind2, conj*pref*quat[i], myvals );
   }
 
   //k component
@@ -311,8 +298,6 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
     quatTemp[3]+=pref*quat_conj[i]*bond[(3-i)];
     dqt[0](3,i)=conj*pref*bond[3-i];
     dqt[1](3,i)= pref2*quat_conj[3-i];
-    //addDerivativeOnVectorArgument( false, 3, i, index1, conj*pref*bond[3-i], myvals );
-    //addDerivativeOnVectorArgument( false, 3, 4+i, ind2, conj*pref*quat[i], myvals );
 
   }
 
@@ -322,47 +307,45 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
   double tempDot=0,wf=0,xf=0,yf=0,zf=0;
   pref=1;
   pref2=1;
+  unsigned base=0;
   for(unsigned i=0; i<4; ++i) {
     if( i>0 ) {
       pref=-1;
       pref2=-1;
     }
-    myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), normFac*pref*quatTemp[i]*quat[i] );
+    myvals.addValue( 0, normFac*pref*quatTemp[i]*quat[i] );
     wf+=normFac*pref*quatTemp[i]*quat[i];
     if( doNotCalculateDerivatives() ) {
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[0].getCol(i)) + pref2*quatTemp[i])*normFac;
-    addDerivativeOnVectorArgument( stored[i], 0, i,   index1, tempDot, myvals);
+    myvals.addDerivative( 0, base + index1, tempDot );
+    myvals.updateIndex( 0, base + index1 );
+    base += getPntrToArgument(i)->getNumberOfStoredValues();
   }
   //had to split because bond's derivatives depend on the value of the overall quaternion component
-  //addDerivativeOnMatrixArgument( false, 0, 4, index1, ind2, 0.0, myvals );
-  for(unsigned i=0; i<4; ++i) {
-    tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
-    if (i!=0 ) {
-      addDerivativeOnMatrixArgument( stored[4+i], 0, 4+i, index1, ind2, tempDot, myvals );
-    } else {
-      addDerivativeOnMatrixArgument( stored[4+i], 0, 4+i, index1, ind2, 0.0, myvals );
+  if( !doNotCalculateDerivatives() ) {
+    for(unsigned i=0; i<4; ++i) {
+      tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
+      if( i>0 ) {
+        myvals.addDerivative( 0, base + taskno, tempDot );
+        myvals.updateIndex( 0, base + taskno );
+      }
+      base += getPntrToArgument(4+i)->getNumberOfStoredValues();
     }
   }
-// for (unsigned i=0; i<4; ++i) {
-//myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), 0.0 );
-//if( doNotCalculateDerivatives() ) continue ;
-//addDerivativeOnVectorArgument( false, 0, i,   index1, 0.0, myvals);
-//addDerivativeOnVectorArgument( false, 0, 4+i, ind2, 0.0 ,  myvals);
-//  }
-//the w component should always be zero, barring some catastrophe, but we calculate it out anyway
 
   //i component
   pref=1;
   pref2=1;
+  base = 0;
   for (unsigned i=0; i<4; i++) {
     if(i==3) {
       pref=-1;
     } else {
       pref=1;
     }
-    myvals.addValue( getConstPntrToComponent(1)->getPositionInStream(), normFac*pref*quatTemp[i]*quat[(5-i)%4]);
+    myvals.addValue( 1, normFac*pref*quatTemp[i]*quat[(5-i)%4]);
     xf+=normFac*pref*quatTemp[i]*quat[(5-i)%4];
     if(i==2) {
       pref2=-1;
@@ -373,24 +356,27 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[0].getCol(i)) + pref2*quatTemp[(5-i)%4])*normFac;
-    addDerivativeOnVectorArgument( stored[i], 1, i,   index1, tempDot, myvals);
+    myvals.addDerivative( 1, base + index1, tempDot );
+    myvals.updateIndex( 1, base + index1 );
+    base += getPntrToArgument(i)->getNumberOfStoredValues();
   }
-  //addDerivativeOnMatrixArgument( false, 1, 4, index1, ind2, 0.0, myvals );
 
-  for(unsigned i=0; i<4; ++i) {
-    tempDot=dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[1].getCol(i))*normFac;
-    if (i!=0) {
-      addDerivativeOnMatrixArgument( stored[4+i], 1, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*xf), myvals );
-    } else {
-      addDerivativeOnMatrixArgument( stored[4+i], 1, 4+i, index1, ind2, 0.0, myvals );
+  if( !doNotCalculateDerivatives() ) {
+    for(unsigned i=0; i<4; ++i) {
+      tempDot=dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[1].getCol(i))*normFac;
+      if( i>0 ) {
+        myvals.addDerivative( 1, base + taskno, tempDot+(-bond[i]*normFac*normFac*xf) );
+        myvals.updateIndex( 1, base + taskno);
+      }
+      base += getPntrToArgument(4+i)->getNumberOfStoredValues();
     }
-
   }
 
 
   //j component
   pref=1;
   pref2=1;
+  base = 0;
   for (unsigned i=0; i<4; i++) {
     if(i==1) {
       pref=-1;
@@ -403,30 +389,32 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
       pref2=1;
     }
 
-    myvals.addValue( getConstPntrToComponent(2)->getPositionInStream(), normFac*pref*quatTemp[i]*quat[(i+2)%4]);
+    myvals.addValue( 2, normFac*pref*quatTemp[i]*quat[(i+2)%4]);
     yf+=normFac*pref*quatTemp[i]*quat[(i+2)%4];
     if( doNotCalculateDerivatives() ) {
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[0].getCol(i)) + pref2*quatTemp[(i+2)%4])*normFac;
-    addDerivativeOnVectorArgument( stored[i], 2, i,   index1, tempDot, myvals);
+    myvals.addDerivative( 2, base + index1, tempDot );
+    myvals.updateIndex( 2, base + index1 );
+    base += getPntrToArgument(i)->getNumberOfStoredValues();
   }
-  //    addDerivativeOnMatrixArgument( false, 2, 4, index1, ind2,0.0   , myvals );
 
-  for(unsigned i=0; i<4; ++i) {
-    tempDot=dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[1].getCol(i))*normFac;
-    if (i!=0) {
-      addDerivativeOnMatrixArgument( stored[4+i], 2, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*yf), myvals );
-    } else {
-      addDerivativeOnMatrixArgument( stored[4+i], 2, 4+i, index1, ind2, 0.0, myvals );
+  if( !doNotCalculateDerivatives() ) {
+    for(unsigned i=0; i<4; ++i) {
+      tempDot=dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[1].getCol(i))*normFac;
+      if( i>0 ) {
+        myvals.addDerivative( 2, base + taskno, tempDot+(-bond[i]*normFac*normFac*yf) );
+        myvals.updateIndex( 2, base + taskno );
+      }
+      base += getPntrToArgument(4+i)->getNumberOfStoredValues();
     }
-
-
   }
 
   //k component
   pref=1;
   pref2=1;
+  base = 0;
   for (unsigned i=0; i<4; i++) {
     if(i==2) {
       pref=-1;
@@ -439,88 +427,37 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
       pref2=1;
     }
 
-    myvals.addValue( getConstPntrToComponent(3)->getPositionInStream(), normFac*pref*quatTemp[i]*quat[(3-i)]);
+    myvals.addValue( 3, normFac*pref*quatTemp[i]*quat[(3-i)]);
     zf+=normFac*pref*quatTemp[i]*quat[(3-i)];
     if( doNotCalculateDerivatives() ) {
       continue ;
     }
     tempDot=(dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[0].getCol(i)) + pref2*quatTemp[(3-i)])*normFac;
-    addDerivativeOnVectorArgument( stored[i], 3, i,   index1, tempDot, myvals);
+    myvals.addDerivative( 3, base + index1, tempDot );
+    myvals.updateIndex( 3, base + index1 );
+    base += getPntrToArgument(i)->getNumberOfStoredValues();
   }
-  //addDerivativeOnMatrixArgument( false, 3, 4, index1, ind2,  0.0 , myvals );
 
-  for(unsigned i=0; i<4; ++i) {
-    tempDot=dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[1].getCol(i))*normFac;
-    if (i!=0) {
-      addDerivativeOnMatrixArgument( stored[4+i], 3, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*zf), myvals );
-    } else {
-      addDerivativeOnMatrixArgument( stored[4+i], 3, 4+i, index1, ind2, 0.0, myvals );
-    }
-
-
-  }
   if( doNotCalculateDerivatives() ) {
     return ;
   }
 
-  for(unsigned outcomp=0; outcomp<4; ++outcomp) {
-    unsigned ostrn = getConstPntrToComponent(outcomp)->getPositionInStream();
-    for(unsigned i=4; i<8; ++i) {
-      bool found=false;
-      for(unsigned j=4; j<i; ++j) {
-        if( arg_deriv_starts[i]==arg_deriv_starts[j] ) {
-          found=true;
-          break;
-        }
-      }
-      if( found || !stored[i] ) {
-        continue;
-      }
-
-      unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-        unsigned kind=myvals.getActiveIndex(istrn,k);
-        myvals.updateIndex( ostrn, kind );
-      }
+  for(unsigned i=0; i<4; ++i) {
+    tempDot=dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[1].getCol(i))*normFac;
+    if( i>0 ) {
+      myvals.addDerivative( 3, base + taskno, tempDot+(-bond[i]*normFac*normFac*zf) );
+      myvals.updateIndex( 3, base + taskno);
     }
+    base += getPntrToArgument(4+i)->getNumberOfStoredValues();
   }
 }
 
-void QuaternionBondProductMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
-    return ;
+void QuaternionBondProductMatrix::calculate() {
+  // Copy bookeeping arrays from input matrices to output matrices
+  for(unsigned i=0; i<4; ++i) {
+    getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToArgument(4+i) );
   }
-
-  for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-    unsigned nmat = getConstPntrToComponent(j)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-    unsigned ntwo_atoms = myvals.getSplitIndex();
-    // Quaternion
-    for(unsigned k=0; k<4; ++k) {
-      matrix_indices[nmat_ind] = arg_deriv_starts[k] + ival;
-      nmat_ind++;
-    }
-    // Loop over row of matrix
-    for(unsigned n=4; n<8; ++n) {
-      bool found=false;
-      for(unsigned k=4; k<n; ++k) {
-        if( arg_deriv_starts[k]==arg_deriv_starts[n] ) {
-          found=true;
-          break;
-        }
-      }
-      if( found ) {
-        continue;
-      }
-      unsigned istrn = getPntrToArgument(n)->getPositionInMatrixStash();
-      std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
-      for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) {
-        matrix_indices[nmat_ind + k] = arg_deriv_starts[n] + imat_indices[k];
-      }
-      nmat_ind += myvals.getNumberOfMatrixRowDerivatives( getPntrToArgument(4)->getPositionInMatrixStash() );
-    }
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
-  }
+  runAllTasks();
 }
 
 }

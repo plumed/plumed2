@@ -125,7 +125,7 @@ public:
   void setDisplace(const std::vector<double> & displace, bool normalize_weights=true);
   std::vector<double> getDisplace();
 ///
-  std::string getMethod();
+  std::string getMethod() const ;
 /// workhorses
   double simpleAlignment(const  std::vector<double>  & align,
                          const  std::vector<double>  & displace,

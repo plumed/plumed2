@@ -25,54 +25,19 @@
 #include "Vector.h"
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
+#include "View.h"
+#include "View2D.h"
 #include <vector>
 #include <cstddef>
 #include <limits>
 
 namespace PLMD {
 
-//this more or less mocks c++20 span with fixed size
-template < std::size_t N=3>
-class MemoryView {
-  double *ptr_;
-public:
-  MemoryView(double* p) :ptr_(p) {}
-  constexpr size_t size()const {
-    return N;
-  }
-  static constexpr size_t extent = N;
-  double & operator[](size_t i) {
-    return ptr_[i];
-  }
-  const double & operator[](size_t i) const {
-    return ptr_[i];
-  }
-};
+template <std::size_t N=3>
+using MemoryView=View<double,N>;
 
-namespace helpers {
-inline constexpr std::size_t dynamic_extent = std::numeric_limits<std::size_t>::max();
-}
-//this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
-//the idea is to take an address that you know to be strided in a certain way and
-//make it avaiable to any interface (like using the data from a nunmpy.ndarray in
-//a function thought for a std::vector<PLMD::Vector> )
-//the N=-1 is there for mocking the run time size from the span (where a
-//dynamic extent is size_t(-))
 template < std::size_t N=helpers::dynamic_extent, std::size_t STRIDE=3>
-class mdMemoryView {
-  double *ptr_;
-  size_t size_;
-public:
-  mdMemoryView(double* p, size_t s) :ptr_(p), size_(s) {}
-  size_t size()const {
-    return size_;
-  }
-  static constexpr size_t extent = N;
-  static constexpr size_t stride = STRIDE;
-  MemoryView<STRIDE> operator[](size_t i) {
-    return MemoryView<STRIDE>(ptr_ + i * STRIDE);
-  }
-};
+using mdMemoryView = View2D<double,N,STRIDE>;
 
 using VectorView = mdMemoryView<helpers::dynamic_extent, 3>;
 
@@ -116,31 +81,46 @@ class Pbc {
 /// a distance vector.
   void buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const;
 public:
+///Helper function for moving the class to an openacc device
+  void toACCDevice()const ;
+///Helper function for cleaning the memory of the class from an openacc device
+  void removeFromACCDevice() const;
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
 /// if specified, also returns the number of attempted shifts
-  Vector distance(const Vector&, const Vector&,int*nshifts=nullptr)const;
+#pragma acc routine seq
+  Vector distance(const Vector&, const Vector&)const;
+/// Computes v2-v1, using minimal image convention
+/// if specified, also returns the number of attempted shifts
+  Vector distance(const Vector&, const Vector&,int*nshifts)const;
 /// Apply PBC to a set of positions or distance vectors
+#pragma acc routine seq
   void apply(VectorView dlist, unsigned max_index=0) const;
+#pragma acc routine seq
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
   void setBox(const Tensor&b);
 /// Returns the box
+#pragma acc routine seq
   const Tensor& getBox()const;
 /// Returns the inverse matrix of box.
 /// Thus: pbc.getInvBox() == inverse(pbc.getBox()).
+#pragma acc routine seq
   const Tensor& getInvBox()const;
 /// Transform a vector in real space to a vector in scaled coordinates.
 /// Thus:pbc.realToScaled(v) == matmul(transpose(inverse(pbc.getBox(),v)));
+#pragma acc routine seq
   Vector realToScaled(const Vector&)const;
 /// Transform a vector in scaled coordinates to a vector in real space.
 /// Thus:pbc.scaledToRead(v) == matmul(transpose(pbc.getBox()),v);
+#pragma acc routine seq
   Vector scaledToReal(const Vector&)const;
 /// Returns true if the box vectors are orthogonal
+#pragma acc routine seq
   bool isOrthorombic()const;
 /// Full search (for testing).
 /// Perform a full search on vector

@@ -86,7 +86,7 @@ void Difference::read( ActionWithArguments* action ) {
     action->error("should be two arguments to this action");
   }
   if( action->getPntrToArgument(0)->getRank()==action->getPntrToArgument(1)->getRank() ) {
-    std::vector<unsigned> shape( action->getPntrToArgument(0)->getShape() );
+    std::vector<std::size_t> shape( action->getPntrToArgument(0)->getShape() );
     for(unsigned i=0; i<shape.size(); ++i) {
       if( shape[i]!=action->getPntrToArgument(1)->getShape()[i] ) {
         action->error("shapes of input actions do not match");

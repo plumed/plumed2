@@ -324,6 +324,7 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([metatensor],[search for metatensor],[no])
+PLUMED_CONFIG_ENABLE([openacc],[search for openacc],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -461,7 +462,7 @@ then
   echo "#include \"conftest1.h\"" > conftest.cpp
   echo "#include \"conftest2.h\"" > conftest1.h
   echo "/* */" > conftest2.h
-  $CXX $CXXFLAGS -c -MM -MFconftest.d conftest.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c -MM -MF conftest.d conftest.cpp 1> /dev/null 2> /dev/null
   grep conftest2 conftest.d 1> /dev/null 2>/dev/null && dependency=ok
   if test "$dependency" = ok ; then
     AC_MSG_RESULT([yes])
@@ -995,6 +996,34 @@ if test $metatensor = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_METATENSOR], [metatensor metatensor_torch], [true])
+fi
+
+acc_found=ko
+if test $openacc = true; then
+  acc_found=ko
+  # optional libraries follow
+  if test $mpi = true ; then
+    PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
+    if test "$__PLUMED_HAS_OPENACC" = yes; then
+      acc_found=ok
+      #test if we can compile with openacc
+      PLUMED_CHECK_CXXFLAG([-acc])
+      PLUMED_CHECK_CXXFLAG([-acc=gpu])
+      #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
+      #use CXXFLAGS="-O3 -gpu=cc80" at configure time
+      #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
+      #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
+      #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
+      #PLUMED_CHECK_CXXFLAG([-stdpar])
+      #PLUMED_CHECK_CXXFLAG([-gpu=managed])
+      #PLUMED_CHECK_LDFLAGS([-static-nvidia])
+      #PLUMED_CHECK_LDFLAGS([-acc])
+      LDSHARED="$LDSHARED -acc -static-nvidia"
+      AC_MSG_WARN([Please remember to add "CXXFLAGS" the compute capability flag of your device, for example "-gpu=cc80"])
+    fi
+  else 
+    acc_found=ko
+  fi
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -1547,6 +1576,16 @@ elif test $mpi_found = ok ; then
     AC_MSG_WARN([to patch an MD code use 'plumed --no-mpi patch'])
     AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
   fi
+fi
+
+if test $openacc = true; then
+  if test $acc_found = ok; then
+    AC_MSG_NOTICE([**** PLUMED will be compiled using OPENACC])
+  else 
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because OPENACC have not been found!])
+  fi
+else
+    AC_MSG_NOTICE([**** PLUMED will be compiled without OPENACC])
 fi
 
 AC_SUBST(build_dir)

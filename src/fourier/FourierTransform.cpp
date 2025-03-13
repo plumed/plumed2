@@ -149,7 +149,7 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
     log.printf("  Fourier parameters are A=%i, B=%i \n", fourier_params[0],fourier_params[1]);
   }
 
-  std::vector<unsigned> shape( getPntrToArgument(0)->getRank() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getRank() );
   if (real_output) {
     addValueWithDerivatives( shape );
   } else {
@@ -195,7 +195,7 @@ void FourierTransform::calculate() {
     gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
     const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
     std::vector<double> fspacing;
-    std::vector<unsigned> snbins( getGridCoordinatesObject().getDimension() );
+    std::vector<std::size_t> snbins( getGridCoordinatesObject().getDimension() );
     std::vector<std::string> smin( gcoords.getDimension() ), smax( gcoords.getDimension() );
     for(unsigned i=0; i<getGridCoordinatesObject().getDimension(); ++i) {
       smin[i]=gcoords.getMin()[i];
@@ -227,7 +227,7 @@ void FourierTransform::calculate() {
   //    <<"  max_x: "<<ft_max[0]<<"  max_y: "<<ft_max[1]<<"\n";
 
   // Get the size of the input data arrays (to allocate FFT data)
-  std::vector<unsigned> N_input_data( gridcoords.getNbin(true) );
+  std::vector<std::size_t> N_input_data( gridcoords.getNbin(true) );
   size_t fft_dimension=1;
   for(unsigned i=0; i<N_input_data.size(); ++i) {
     fft_dimension*=static_cast<size_t>( N_input_data[i] );
@@ -260,7 +260,7 @@ void FourierTransform::calculate() {
   }
 
   // Save FT data to output grid
-  std::vector<unsigned> N_out_data ( getGridCoordinatesObject().getNbin(true) );
+  std::vector<std::size_t> N_out_data ( getGridCoordinatesObject().getNbin(true) );
   std::vector<unsigned> out_ind ( getPntrToArgument(0)->getRank() );
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) {
     gridcoords.getIndices( i, out_ind );

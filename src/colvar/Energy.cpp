@@ -83,7 +83,7 @@ Energy::Energy(const ActionOptions&ao):
   ActionToPutData(ao),
   interface(NULL) {
   plumed.setEnergyValue( getLabel() );
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   addValue( shape );
   setNotPeriodic();
   setUnit( "energy", "default" );

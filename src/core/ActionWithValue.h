@@ -87,9 +87,9 @@ public:
 // -------- The action has one value only  ---------------- //
 
 /// Add a value with the name label
-  void addValue( const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  void addValue( const std::vector<std::size_t>& shape=std::vector<std::size_t>() );
 /// Add a value with the name label that has derivatives
-  virtual void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() );
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
@@ -104,20 +104,20 @@ protected:
 
 public:
 /// Add a value with a name like label.name
-  void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  void addComponent( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() );
 /// Add a value with a name like label.name that has derivatives
-  virtual void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
 /// Get the description of this component
   virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
+/// Get a const pointer to the ith component
+  const Value* getConstPntrToComponent(int i) const;
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
-/// Get a const pointer to the ith component
-  const Value* getConstPntrToComponent(int i) const;
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Accumulate the forces from the Values
@@ -163,7 +163,7 @@ public:
 // -- Routines for everything else -- //
 
 /// Returns the number of values defined
-  int getNumberOfComponents() const ;
+  std::size_t getNumberOfComponents() const ;
 /// Clear the forces on the values
   virtual void clearInputForces( const bool& force=false );
 /// Clear the derivatives of values wrt parameters
@@ -221,7 +221,7 @@ void ActionWithValue::setValue(const double& d) {
 }
 
 inline
-int ActionWithValue::getNumberOfComponents() const {
+std::size_t ActionWithValue::getNumberOfComponents() const {
   return values.size();
 }
 

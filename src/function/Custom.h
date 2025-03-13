@@ -39,6 +39,7 @@ public:
   void registerKeywords( Keywords& keys ) override;
   std::string getGraphInfo( const std::string& lab ) const override;
   void read( ActionWithArguments* action ) override;
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override ;
   bool getDerivativeZeroIfValueIsZero() const override;
   std::vector<Value*> getArgumentsToCheck( const std::vector<Value*>& args ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;

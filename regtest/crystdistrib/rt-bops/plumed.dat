@@ -260,6 +260,8 @@ ops: CUSTOM ARG=qp.i,qp.j,qp.k,c1.w VAR=i,j,k,d FUNC=((2.26628554234*exp(-(32.27
 
 ones: ONES SIZE=252
 
+cc: MATRIX_VECTOR_PRODUCT ARG=qp.i,ones
+PRINT ARG=cc FILE=cc FMT=%8.4f 
 
 sdot: MATRIX_VECTOR_PRODUCT ARG=ops,ones
 s: SUM ARG=sdot PERIODIC=NO

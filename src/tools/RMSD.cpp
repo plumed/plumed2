@@ -76,7 +76,7 @@ void RMSD::clear() {
   positions_center_is_removed=false;
 }
 
-std::string RMSD::getMethod() {
+std::string RMSD::getMethod() const {
   std::string mystring;
   switch(alignmentMethod) {
   case SIMPLE:
