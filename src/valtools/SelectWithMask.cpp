@@ -137,9 +137,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
     args.push_back( mask[0] );
     requestArguments( args );
     shape.resize(1,0);
-    if( (mask[0]->getPntrToAction())->getName()=="CONSTANT" ) {
-      shape[0]=getOutputVectorLength(mask[0]);
-    }
+    shape[0]=getOutputVectorLength(mask[0]);
   } else if( getPntrToArgument(0)->getRank()==2 ) {
     std::vector<Value*> rmask, cmask;
     parseArgumentList("ROW_MASK",rmask);
