@@ -95,19 +95,13 @@ d2: DISTANCE ATOMS=1,10
 PRINT ARG=d,d2 FILE=compare-them
 ```
 
-Notice that the `Distance3.cpp` uses the command:
-
-```c++
-PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
-```
-
-Instead of the command:
+Notice that `Distance3.cpp` replaces DISTANCE2 in the command that was used in `Distance2.cpp`; namely:
 
 ```c++
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE2")
 ```
 
-that was used in `Distance2.cpp`. Consequently, when we load the `Distance3.cpp` file here we redefine the DISTANCE command.
+with DISTANCE. Consequently, when we load the `Distance3.cpp` file here we redefine the DISTANCE command.
 The functions that compute `d` and `d2` in the above input are thus different.
 
 A final point to note is that, starting with PLUMED 2.10, the LOAD action can be used in contexts where
