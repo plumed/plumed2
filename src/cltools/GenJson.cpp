@@ -303,11 +303,10 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       error("input type for cltool was not specified");
     }
     std::cout<<"    \"syntax\" : {"<<std::endl;
-    Keywords keys( cltoolRegister().get(cltool).keys );
-    for(unsigned j=0; j<keys.size(); ++j) {
-      std::string k = keys.getKeyword(j);
-      std::cout<<"     \"" + k + "\": \"" + keys.getKeywordDescription( k ) <<"\"";
-      if( j==keys.size()-1 ) {
+    for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
+      std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
+      std::cout<<"     \"" + k + "\": \"" + cltoolRegister().get(cltool).keys.getKeywordDescription( k ) <<"\"";
+      if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
         std::cout<<std::endl;
       } else {
         std::cout<<","<<std::endl;
