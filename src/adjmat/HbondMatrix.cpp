@@ -31,33 +31,29 @@
 /*
 Adjacency matrix in which two atoms are adjacent if there is a hydrogen bond between them.
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  These matrices can then be further
-analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
+A useful tool for developing complex collective variables is the notion of the
+so called adjacency matrix.  An adjacency matrix is an $N \times N$ matrix in which the $i$th, $j$th element tells you whether
+or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  As detailed in the documentation
+for [CONTACT_MATRIX](CONTACT_MATRIX.md) there are then a range of further analyses that you can perform on these matrices.
 
 For this action the elements of the adjacency matrix are calculated using:
 
-\f[
+$$
 a_{ij} = \sigma_{oo}( |\mathbf{r}_{ij}| ) \sum_{k=1}^N \sigma_{oh}( |\mathbf{r}_{ik}| ) \sigma_{\theta}( \theta_{kij} )
-\f]
+$$
 
-This expression was derived by thinking about how to detect if there is a hydrogen bond between atoms \f$i\f$ and \f$j\f$.  The notion is that
-if the hydrogen bond is present atoms \f$i\f$ and \f$j\f$ should be within a certain cutoff distance.  In addition, there should be a hydrogen
-within a certain cutoff distance of atom \f$i\f$ and this hydrogen should lie on or close to the vector connecting atoms \f$i\f$ and \f$j\f$.
-As such \f$\sigma_{oo}( |\mathbf{r}_{ij}| )\f$ is a \ref switchingfunction that acts on the modulus of the vector connecting atom \f$i\f$ to atom
-\f$j\f$.  The sum over \f$k\f$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  \f$\sigma_{oh}(|\mathbf{r}_{ik}|)\f$
-is a \ref switchingfunction that acts on the modulus of the vector connecting atom \f$i\f$ to atom \f$k\f$ and \f$\sigma_{\theta}(\theta_{kij})\f$
-is a \ref switchingfunction that acts on the angle between the vector connecting atoms \f$i\f$ and \f$j\f$ and the vector connecting atoms \f$i\f$ and
-\f$k\f$.
+This expression was derived by thinking about how to detect if there is a hydrogen bond between atoms $i$ and $j$.  The notion is that
+if the hydrogen bond is present atoms $i$ and $j$ should be within a certain cutoff distance.  In addition, there should be a hydrogen
+within a certain cutoff distance of atom $i$ and this hydrogen should lie on or close to the vector connecting atoms $i$ and $j$.
+As such $\sigma_{oo}(r_{ij})$ is a switching function that acts on the modulus of the vector connecting atom $i$ to atom
+$j$.  The sum over $k$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  $\sigma_{oh}(r_{ik})$
+is a switching function that acts on the modulus of the vector connecting atom $i$ to atom $k$ and $\sigma_{\theta}(\theta_{kij})$
+is a switching function that acts on the angle between the vector connecting atoms $i$ and $j$ and the vector connecting atoms $i$ and
+$k$.
 
 It is important to note that hydrogen bonds, unlike regular bonds, are asymmetric. In other words, the hydrogen atom does not sit at the
-mid point between the two other atoms in this three-center bond.  As a result of this adjacency matrices calculated using \ref HBOND_MATRIX are not
-symmetric like those calculated by \ref CONTACT_MATRIX.  One consequence of this fact is that the quantities found by performing \ref ROWSUMS and
-\ref COLUMNSUMS on a square \ref HBOND_MATRIX are not the same as they would be if you performed \ref ROWSUMS and
-\ref COLUMNSUMS on a square \ref CONTACT_MATRIX.
-
-\par Examples
+mid point between the two other atoms in this three-center bond.  As a result of this adjacency matrices calculated using HBOND_MATRIX are not
+symmetric like those calculated by [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
 The following input can be used to analyze the number of hydrogen bonds each of the oxygen atoms in a box of water participates in.  Each
 water molecule can participate in a hydrogen bond in one of two ways.  It can either donate one of its hydrogen atom to the neighboring oxygen or
@@ -66,13 +62,12 @@ on the number of hydrogen bonds each of the water molecules donates and accepts.
 five columns of data.  The first four of these columns are a label for the atom and the x, y and z position of the oxygen.  The last column is then
 the number of accepted/donated hydrogen bonds.
 
-\plumedfile
-mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3.20} HSWITCH={RATIONAL R_0=2.30} ASWITCH={RATIONAL R_0=0.167pi} SUM
-rsums: ROWSUMS MATRIX=mat MEAN
-csums: COLUMNSUMS MATRIX=mat MEAN
-DUMPMULTICOLVAR DATA=rsums FILE=donors.xyz
-DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
-\endplumedfile
+```plumed
+mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3.20} HSWITCH={RATIONAL R_0=2.30} ASWITCH={RATIONAL R_0=0.167pi}
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=mat,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=donors.xyz
+```
 
 */
 //+ENDPLUMEDOC

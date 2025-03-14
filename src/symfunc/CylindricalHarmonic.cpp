@@ -33,8 +33,41 @@ namespace symfunc {
 /*
 Calculate the cylindrical harmonic function
 
-\par Examples
+This action allows you to the value of the following complex function.  The action outputs
+two components that are the real and imaginary parts of the following function:
 
+$$
+z = w (\frac{x}{r} + \frac{y}{r} i )^n \qquad \textrm{where} \qquad r = \sqrt(x^2 + y^2}
+$$
+
+In this expression $n$ is a parameter that is specified using the DEGREE keyword. $x$ and $y$ are the input arguments and $w$ is an optional input weight, which is set equal to
+one if only two arguments are provided in input.  At present, the arguments for this action must be matrices.
+These arguments must all have the same shape as the two output components will also be matrices that are
+calculated by applying the function above to each of the elements of the input matrix in turn.
+
+The following intput provides an example that demonstrates how this function is used:
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-10 COMPONENTS
+c: CYLINDRICAL_HARMONIC DEGREE=6 ARG=d.x,d.y
+PRINT ARG=c.rm FILE=real_part
+PRINT ARG=c.im FILE=imaginary_part
+```
+
+The DISTANCE_MATRIX command in the above input computes 3 $10\times10$ matrices.  Two of these $10\times10$ matrices are used in the input to the cylindrical harmonic command,
+which in turn outputs two $10\times10$ matrices that contain the real and imaginary parts when the function above is applied element-wise to the above input. These two $10\times10$
+matrices are then output to two separate files.
+
+In the above example the weights for every distance is set equal to one.  The following example shows how an argument can be used to set the $w$ values to use when computing the function
+above.
+
+```plumed
+s: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1.0}
+sc: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1.0} COMPONENTS
+c: CYLINDRICAL_HARMONIC DEGREE=6 ARG=sc.x,sc.y,s
+PRINT ARG=c.rm FILE=real_part
+PRINT ARG=c.im FILE=imaginary_part
+```
 
 */
 //+ENDPLUMEDOC

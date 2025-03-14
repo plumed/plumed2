@@ -131,8 +131,8 @@ PLUMED is a community-developed code that can be used to incorporate additional 
 trajectories. PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
 a list of the modules that are available within PLUMED [here](modules.md) or you can see a graphical view of the modules and the dependencies between them [here](modulegraph.md).
 
-Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](cltools.md). 
-You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](cltools.md).
+Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md). 
+You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](module_cltools.md).
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
 
@@ -163,7 +163,7 @@ Modules that make up PLUMED Version {version}
 ---------------------------------------------
        
 The functionality in PLUMED is split up between a collection of modules.  Each of these modules contains a collection of
-[actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](cltools.md).  Some of these modules must be present
+[actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md).  Some of these modules must be present
 every time PLUMED is compiled, others are not essential but are still compiled by default unless you explicitly tell PLUMED not to compile by using:
           
 ```bash
@@ -440,9 +440,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          ninp, nfail = 0, 0
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
-            #fixed_modules = ["adjmat", "envsim", "sprint", "clusters", "secondarystructure", "multicolvar", "valtools", "matrixtools", "colvar", "pamm", "volumes", "generic", "function", "wham", "core", "refdist", "fourier", "setup", "vatom", "symfunc", "landmarks"]
-            fixed_modules = ["wham"]
-            if value["module"] in fixed_modules : 
+            if os.path.isfile("../src/" + value["module"] + "/module.yml") : 
                 actions = set()
                 ninp, nf = processMarkdownString( plumeddocs[action], "docs/" + action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
@@ -503,8 +501,6 @@ if __name__ == "__main__" :
        except ValueError as ve:
           raise InvalidJSONError(ve)
 
-   # Create a directory to hold all the docs
-   os.mkdir("docs")
    # Create the index file
    with open("docs/index.md", "w+") as of : printIndexFile(of,version)
    # Copy the extra files we need to process all the inputs 
@@ -572,7 +568,8 @@ if __name__ == "__main__" :
    special_groups = []
    for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
    # Add tables with special groups to pages that need them
-   addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups ) 
+   addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups )
+   addSpecialGroupsToPage( "docs/MOLINFO.md", special_groups ) 
 
    # And output the summary page
    createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples )

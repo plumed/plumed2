@@ -27,7 +27,49 @@
 /*
 Join vectors or matrices together
 
-\par Examples
+This action can be used to join sets of scalars, vector or matrices together into a single output value.  The following
+example shows how this works with vectors and scalars:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS1=3,4 ATOMS2=5,6
+v: CONCATENATE ARG=d1,d2
+```
+
+The output vector here, `v`, has three components.  The first of these is the distance between atoms 1 and 2 and the second
+and third are the distances between atoms 3 and 4 and 5 and 6 respectively.
+
+Concatenating two or more vectors is similarly straightfoward. Concatenating matrices is a little more difficult as the
+user must explain the axes that each matrix should be joined to. The following input should give some idea as to how
+the joining of matrices is done in practise.  In this example, we define two groups of atoms and calculate the contact
+matrix between all the atoms in the two groups by first calculating three contact matrices that describe the inter and intra
+group contacts.
+
+```plumed
+# Define two groups of atoms
+g: GROUP ATOMS=1-5
+h: GROUP ATOMS=6-20
+
+# Calculate the CONTACT_MATRIX for the atoms in group g
+cg: CONTACT_MATRIX GROUP=g SWITCH={RATIONAL R_0=0.1}
+
+# Calculate the CONTACT_MATRIX for the atoms in group h
+ch: CONTACT_MATRIX GROUP=h SWITCH={RATIONAL R_0=0.2}
+
+# Calculate the CONTACT_MATRIX between the atoms in group g and group h
+cgh: CONTACT_MATRIX GROUPA=g GROUPB=h SWITCH={RATIONAL R_0=0.15}
+
+# Now calculate the contact matrix between the atoms in group h and group h
+# Notice this is just the transpose of cgh
+cghT: TRANSPOSE ARG=cgh
+
+# And concatenate the matrices together to construct the adjacency matrix between the
+# adjacency matrices
+m: CONCATENATE ...
+ MATRIX11=cg MATRIX12=cgh
+ MATRIX21=cghT MATRIX22=ch
+...
+```
 
 */
 //+ENDPLUMEDOC

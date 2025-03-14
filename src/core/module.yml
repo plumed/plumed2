@@ -1,0 +1,4 @@
+name: core
+authors: The PLUMED core developers
+description: PLUMED's core functionalities for interfacing with MD codes and building actions
+dois: ["10.1016/j.cpc.2013.09.018"]

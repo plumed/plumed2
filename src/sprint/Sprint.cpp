@@ -29,52 +29,45 @@
 /*
 Calculate SPRINT topological variables from an adjacency matrix.
 
-The SPRINT topological variables are calculated from the largest eigenvalue, \f$\lambda\f$ of
-an \f$n\times n\f$ adjacency matrix and its corresponding eigenvector, \f$\mathbf{V}\f$, using:
+The SPRINT topological variables are calculated from the largest eigenvalue, $\lambda$ of
+an $n\times n$ adjacency matrix and its corresponding eigenvector, $V$, using:
 
-\f[
+$$
 s_i = \sqrt{n} \lambda v_i
-\f]
+$$
 
-You can use different quantities to measure whether or not two given atoms/molecules are
-adjacent or not in the adjacency matrix.  The simplest measure of adjacency is is whether
-two atoms/molecules are within some cutoff of each other.  Further complexity can be added by
-insisting that two molecules are adjacent if they are within a certain distance of each
-other and if they have similar orientations.
+The example input below calculates the 7 SPRINT coordinates for a 7 atom cluster of Lennard-Jones
+atoms and prints their values to a file.
 
-\par Examples
-
-This example input calculates the 7 SPRINT coordinates for a 7 atom cluster of Lennard-Jones
-atoms and prints their values to a file.  In this input the SPRINT coordinates are calculated
-in the manner described in ?? so two atoms are adjacent if they are within a cutoff:
-
-\plumedfile
-DENSITY SPECIES=1-7 LABEL=d1
-CONTACT_MATRIX ATOMS=d1 SWITCH={RATIONAL R_0=0.1} LABEL=mat
-SPRINT MATRIX=mat LABEL=ss
+```plumed
+ss: SPRINT GROUP=1-7 SWITCH={RATIONAL R_0=0.1}
 PRINT ARG=ss.* FILE=colvar
-\endplumedfile
+```
 
 This example input calculates the 14 SPRINT coordinates for a molecule composed of 7 hydrogen and
-7 carbon atoms.  Once again two atoms are adjacent if they are within a cutoff:
+7 carbon atoms.
 
-\plumedfile
-DENSITY SPECIES=1-7 LABEL=c
-DENSITY SPECIES=8-14 LABEL=h
-
-CONTACT_MATRIX ...
-  ATOMS=c,h
+```plumed
+ss: SPRINT ...
+  GROUP1=1-7 GROUP2=8-14
   SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
   SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
   SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
-  LABEL=mat
-... CONTACT_MATRIX
-
-SPRINT MATRIX=mat LABEL=ss
+...
 
 PRINT ARG=ss.* FILE=colvar
-\endplumedfile
+```
 
+If you explore the inputs above you can see that when PLUMED reads them it creates a more complicated input file
+for calculating the SPRINT CVs. You can get a sense of how these CVs are calculated by looking at the
+expanded versions of the shortcuts in the inputs above. The insight into these methods that you can obtain by looking
+at these expanded input should hopefully give you ideas for developing new versions of these methods that use the same
+body of theory.  For example, if you look at the inputs above you can see that one or more [CONTACT_MATRIX](CONTACT_MATRIX.md) actions are
+used to calculate sprint.  These CONTACT_MATRIX determine whether atoms are adjacent or not.  However, you can
+use different quantities to measure whether or not two given atoms/molecules are
+adjacent or not and compute a different type of adjacency matrix. For example you can say that two molecules are
+adjacent if they are within a certain distance of each other and if they have similar orientations or you can argue that
+two molecules are adjacent if there is a hydrogen bond between them.
 */
 //+ENDPLUMEDOC
 
@@ -101,6 +94,7 @@ void Sprint::registerKeywords(Keywords& keys) {
   keys.needsAction("SORT");
   keys.needsAction("COMBINE");
   keys.addOutputComponent("coord","default","scalar","the sprint coordinates");
+  keys.addDOI("10.1103/PhysRevLett.107.085504");
 }
 
 Sprint::Sprint(const ActionOptions& ao):
@@ -124,6 +118,12 @@ Sprint::Sprint(const ActionOptions& ao):
     unsigned natoms = (av->copyOutput(0))->getShape()[0];
     nin_group.push_back( natoms );
     ntot_atoms += natoms;
+  }
+  if( nin_group.size()==0 ) {
+    ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp );
+    unsigned natoms = (av->copyOutput(0))->getShape()[0];
+    nin_group.push_back( natoms );
+    ntot_atoms = natoms;
   }
 
   // Diagonalization

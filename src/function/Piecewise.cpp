@@ -31,37 +31,60 @@ namespace function {
 /*
 Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
 
+This action can be used to calculate a piecewise linear function of an input argument such as the one given below:
+
+$$
+f(x) = \begin{cases}
+10 & \textrm{if} \quad x<1 \\
+10 + \frac{\pi - 10}{2-1}(x-1) & \textrm{if} \quad 1 \le x < 2 \\
+\pi + \frac{10 - \pi}{3-2}(x-2) & \textrm{if} \quad 2 \le x \le 3 \\
+10 & \textrm{otherwise}
+\end{cases}
+$$
+
+The example shown below illustrates how one can use PLUMED to evaluate the function described above for the distance
+between atom 1 and atom 2.
+
+```plumed
+dist1: DISTANCE ATOMS=1,10
+pw: PIECEWISE POINT0=1,10 POINT1=2,PI POINT2=3,10 ARG=dist1
+PRINT ARG=pw FILE=colvar
+```
+
+As you can see from the example above, the control points for the picewise function are passed using the `POINT0=...` `POINT1=...` syntax.
+You can specify as many of these control points as you want.  These control points then serce as the $x_i$ and $y_i$ values in the following expression.
+
 For variables less than the first
 (greater than the last) point, the value of the first (last) point is used.
 
-\f[
+$$
 \frac{y_{i+1}-y_i}{x_{i+1}-x_i}(s-x_i)+y_i ;  if x_i<s<x_{i+1}
-\f]
-\f[
-y_N ; if x>x_{N-1}
-\f]
-\f[
-y_1 ; if x<x_0
-\f]
+$$
 
-Control points are passed using the POINT0=... POINT1=... syntax as in the example below
+If the input value of $s$ is smaller than the lowest specified $x_i$ value then this action outputs the $y_i$ value that corresponds to the smallest of the input $x_i$ values.
+Similarly, if the input value of $s$ is larger than the highest specified $x_i$ value the $y_i$ value that corresponds to the largest of the input $x_i$ values is output.
 
-If one argument is supplied, it results in a scalar quantity.
-If multiple arguments are supplied, it results
-in a vector of values. Each value will be named as the name of the original
-argument with suffix _pfunc.
+## Using multiple scalars in input
 
-\par Examples
+The following example illustrates what happens when multiple scalar arguments are passed to this action:
 
-\plumedfile
+```plumed
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11
 
-pw: PIECEWISE POINT0=1,10 POINT1=2,PI POINT2=3,10 ARG=dist1
 ppww: PIECEWISE POINT0=1,10 POINT1=2,PI POINT2=3,10 ARG=dist1,dist2
-PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
-\endplumedfile
+PRINT ARG=ppww.dist1_pfunc,ppww.dist2_pfunc
+```
 
+In essence the piecewise function is applied to each of the input arguments in turn.  Hence, in the example above the PIECEWISE command outputs two values.  The first of
+these `ppww.dist1_pfunc` is the result that is obtained when the piecewise function is applied to the argument `dist1`.  The second is then the result that is obtained when the
+piecewise function is applied to the argument `dist2`.
+
+## Non rank zero arguments
+
+This argument currently cannot accept non-rank zero arguments.  However, it would be extremely straightforward to add functionality to ensure that if a PIECEWISE command receives
+a vector, matrix or function on grid in input it will output a vector, matrix or function on grid that is obtained by applying the piecewise function elementwise to each of the
+elements of the input vector, matrix or function.
 
 */
 //+ENDPLUMEDOC

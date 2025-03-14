@@ -25,9 +25,39 @@
 
 //+PLUMEDOC MATRIX DISTANCE_MATRIX
 /*
-Calculate a matrix of distances
+Calculate a matrix of distances between atoms.
 
-\par Examples
+To calculate the matrix of distances between every distinct pair of atoms in a single group you can use the following command:
+
+```plumed
+d1: DISTANCE_MATRIX GROUP=1-7
+```
+
+If you would like to calculate the matrix of distances between the atoms in two different groups of atoms you can use the following command:
+
+```plumed
+d2: DISTANCE_MATRIX GROUPA=1-7 GROUPB=8-20
+```
+
+Once you have calculated your distance matrix in this way you can do many of the operations that were discussed for [CONTACT_MATRIX](CONTACT_MATRIX.md) with the output.
+For example, you can use the COMPONENTS flag to calcuate the $x$, $y$ and $z$ components of the vectors connecting the atoms in your two groups by using
+an input like that shown below:
+
+```plumed
+d1: DISTANCE_MATRIX GROUP=1-7 COMPONENTS
+```
+
+## Optimisation details
+
+If for some reaon, you only want to calculate the distances if they are less than a certain CUTOFF you can add the cutoff keyword as follows:
+
+```plumed
+d3: DISTANCE_MATRIX GROUP=1-7 CUTOFF=1.0
+```
+
+This command will only store those distances that are less than 1 nm.  Notice, however, that the cutoff implemented here is __not__ a continuous function.
+You should thus be careful when commands such as this one above to ensure that any quantities that are forced have continuous derivatives.  If you use
+the CUTOFF keyword, however, many of the features that are used to optimise [CONTACT_MATRIX](CONTACT_MATRIX.md) are used for this action.
 
 */
 //+ENDPLUMEDOC

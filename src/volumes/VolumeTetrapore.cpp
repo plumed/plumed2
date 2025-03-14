@@ -30,29 +30,25 @@
 /*
 This quantity can be used to calculate functions of the distribution of collective variables for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
 
-Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
-dimensional space. For example, if we have the coordination numbers for all the atoms in the
-system each coordination number can be assumed to lie on the position of the central atom.
-Because each base quantity can be assigned to a particular point in space we can calculate functions of the
-distribution of base quantities in a particular part of the box by using:
+This action can be used similarly to the way [AROUND](AROUND.md) is used.  Like [AROUND](AROUND.md) this action returns a vector
+with elements that tell you whether an input atom is within a part of the box that is of particular interest or not. However, for this action
+the elements of this vector are calculated using:
 
-\f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(u_i,v_i,w_i) }{ \sum_i w(u_i,v_i,w_i) }
-\f]
+$$
+w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}v\textrm{d}w
+   K\left( \frac{u - u_i}{\sigma} \right)K\left( \frac{v - v_i}{\sigma} \right)K\left( \frac{w - w_i}{\sigma} \right)
+$$
 
-where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (u_i,v_i,z_i)\f$.
-The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
-Notice that here (at variance with what is done in \ref AROUND) we have transformed from the usual \f$(x_i,y_i,z_i)\f$
-position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation matrix as follows:
+with $u_i,v_i,w_i$ being calculated from the positon of the $i$th atom, $(x_i,y_i,z_i)$, by performing the following transformation.
 
-\f[
+$$
 \left(
 \begin{matrix}
  u_i \\
  v_i \\
  w_i
 \end{matrix}
-\right) = \mathbf{R}
+\right) = R
 \left(
 \begin{matrix}
  x_i - x_o \\
@@ -60,52 +56,57 @@ position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation m
  z_i - z_o
 \end{matrix}
 \right)
-\f]
+$$
 
-where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
-reference positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and
-cross product, \f$\mathbf{c}\f$, of the vectors connecting atoms 1 and 2.  A third unit vector, \f$\mathbf{p}\f$ is then found by taking the cross
-product between the cross product calculated during the first step, \f$\mathbf{c}\f$ and the bisector, \f$\mathbf{b}\f$.  From this
-second cross product \f$\mathbf{p}\f$ and the bisector \f$\mathbf{b}\f$ two new vectors are calculated using:
+where $\mathbf{R}$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
+reference positions specified by the user.  Initially unit vectors are found by calculating the bisector, $\mathbf{b}$, and
+cross product, $\mathbf{c}$, of the vectors connecting the first and second and first and third of the atoms that were specified
+using the `BOX` keyword.  A third unit vector, $\mathbf{p}$ is then found by taking the cross
+product between the cross product calculated during the first step, $\mathbf{c}$ and the bisector, $\mathbf{b}$.  From this
+second cross product $\mathbf{p}$ and the bisector $\mathbf{b}$ two new vectors are calculated using:
 
-\f[
+$$
 v_1 = \cos\left(\frac{\pi}{4}\right)\mathbf{b} + \sin\left(\frac{\pi}{4}\right)\mathbf{p} \qquad \textrm{and} \qquad
 v_2 = \cos\left(\frac{\pi}{4}\right)\mathbf{b} - \sin\left(\frac{\pi}{4}\right)\mathbf{p}
-\f]
+$$
 
-In the previous function \f$ w(u_i,v_i,w_i) \f$ measures whether or not the system is in the subregion of interest. It
-is equal to:
+In the first expression above $K$ is one of the kernel functions described in the documentation for the action [BETWEEN](BETWEEN.md)
+and $\sigma$ is a bandwidth parameter.  Furthermore, The vector connecting atom first and fourth atoms that were specified using the `BOX` keyword is used to define the extent of the box in
+each of the $u$, $v$ and $w$ directions.  This vector connecting atom 1 to atom 4 is projected onto the three unit vectors
+described above and the resulting projections determine the $u'$, $v'$ and $w'$ parameters in the above expression.
 
-\f[
-w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}v\textrm{d}w
-   K\left( \frac{u - u_i}{\sigma} \right)K\left( \frac{v - v_i}{\sigma} \right)K\left( \frac{w - w_i}{\sigma} \right)
-\f]
+The following commands illustrate how this works in practise.  We are using PLUMED here to calculate the number of atoms from the group specified using the ATOMS keyword below are
+in a tetrahedral pore.  The extent of the pore is calculated from the positions of atoms 1, 4, 5 and 11.
 
-where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
-The values of \f$u'\f$ and \f$v'\f$ are found by finding the projections of the vectors connecting atoms 1 and 2 and 1
-and 3 \f$v_1\f$ and \f$v_2\f$.  This gives four projections: the largest two projections are used in the remainder of
-the calculations.  \f$w'\f$ is calculated by taking the projection of the vector connecting atoms 1 and 4 on the vector
-\f$\mathbf{c}\f$.  Notice that the manner by which this box is constructed differs from the way this is done in \ref CAVITY.
-This is in fact the only point of difference between these two actions.
+```plumed
+cav: TETRAHEDRALPORE ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+```
 
-\par Examples
+By contrst the following command tells plumed to calculate the coordination numbers for the atoms
+in the pre described above. The average coordination number and the number of coordination
+numbers more than 4 is then calculated for those molecules that are in the region of interest.
 
-The following commands tell plumed to calculate the number of atom inside a tetrahedral cavity.  The extent of the tetrahedral
-cavity is calculated from the positions of atoms 1, 4, 5, and 11,  The final value will be labeled cav.
+```plumed
+# Calculate the atoms that are in the pore
+cav: TETRAHEDRALPORE ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+# Calculate the coordination numbers of all the atoms
+d1: COORDINATIONNUMBER SPECIES=20-500 SWITCH={RATIONAL R_0=0.1}
+# Do atoms have a coordination number that is greater than 4
+fd1: MORE_THAN ARG=d1 SWITCH={RATIONAL R_0=4}
+# Calculate the mean coordination number in the pore
+nnn: CUSTOM ARG=cav,d1 FUNC=x*y PERIODIC=NO
+numer: SUM ARG=nnn PERIODIC=NO
+denom: SUM ARG=cav PERIODIC=NO
+mean: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# Calculate the number of atoms that are in the pore and that have a coordination number that is greater than 4
+sss: CUSTOM ARG=fd1,cav FUNC=x*y PERIODIC=NO
+mt: SUM ARG=sss PERIODIC=NO
+# And print these two quantities to a file
+PRINT ARG=mean,mt FILE=colvar
+```
 
-\plumedfile
-d1: DENSITY SPECIES=20-500
-TETRAHEDRALPORE DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
-\endplumedfile
-
-The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
-molecules in the tetrahedral cavity described above.  The average coordination number and the number of coordination
-numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
-
-\plumedfile
-d1: COORDINATIONNUMBER SPECIES=20-500 R_0=0.1
-CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
-\endplumedfile
+As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
+still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
 
 */
 //+ENDPLUMEDOC
