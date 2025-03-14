@@ -408,9 +408,7 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          f.write("| " + value["description"] + " | " + value["inputtype"] + "|\n\n" )
          f.write("## Details \n")
          if tool in plumeddocs.keys() :
-            #fixed_modules = ["adjmat", "envsim", "sprint", "clusters", "secondarystructure", "multicolvar", "valtools", "matrixtools", "colvar", "pamm", "volumes", "generic", "function", "wham", "core", "refdist", "fourier", "setup", "vatom", "symfunc", "landmarks"]
-            fixed_modules = ["wham"]
-            if value["module"] in fixed_modules :
+            if os.path.isfile("../src/" + value["module"] + "/module.yml") :
                 actions = set()
                 ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
@@ -429,8 +427,8 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
              f.write("The following table describes the keywords that should be used in the input file for this command line tool\n\n")
          else :
              f.write("The following table describes the command line options that are availabel for this tool\n\n")
-         f.write("| Keyword | Description |\n")
-         f.write("|:-------|:-----------|\n")
+         f.write("| Keyword     | Description |\n")
+         f.write("|:------------|:-----------|\n")
          undoc = 0
          for key, docs in value["syntax"].items() :
              if len(docs)==0 : undoc = undoc + 1 
