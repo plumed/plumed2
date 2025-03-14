@@ -53,7 +53,7 @@ class GenJson : public CLTool {
 private:
   std::string version;
   void printHyperlink( const std::string& action );
-  void printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys );
+  void printKeywordDocs( const std::string& k, const std::string& action, const Keywords& keys );
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenJson(const CLToolOptions& co );
@@ -83,8 +83,27 @@ void GenJson::printHyperlink( const std::string& action ) {
   std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<"\","<<std::endl;
 }
 
-void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
+void GenJson::printKeywordDocs( const std::string& k, const std::string& action, const Keywords& keys ) {
+  std::string defa = "", desc = keys.getKeywordDescription( k );
+  if( desc.find("default=")!=std::string::npos ) {
+    std::size_t defstart = desc.find_first_of("="), brac=desc.find_first_of(")");
+    defa = desc.substr(defstart+1,brac-defstart-2);
+    desc = desc.substr(brac+1);
+  }
+  std::size_t dot=desc.find_first_of(".");
+  std::string mydescrip = desc.substr(0,dot);
+  if( mydescrip.find("\\")!=std::string::npos ) {
+    error("found invalid backslash character documentation for keyword " + k + " in action " + action );
+  }
   std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered(k)<<", \"actionlink\": \""<<keys.getLinkedActions(k)<<"\"";
+  std::string argtype = keys.getArgumentType( k );
+  if( argtype.length()>0 ) {
+    std::cout<<", \"argtype\": \""<<argtype<<"\"}";
+  } else if( defa.length()>0 ) {
+    std::cout<<", \"default\": \""<<defa<<"\"}";
+  } else {
+    std::cout<<"}";
+  }
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
@@ -161,28 +180,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"],\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
-      std::string defa = "", desc = keys.getKeywordDescription( keys.getKeyword(j) );
-      if( desc.find("default=")!=std::string::npos ) {
-        std::size_t defstart = desc.find_first_of("="), brac=desc.find_first_of(")");
-        defa = desc.substr(defstart+1,brac-defstart-2);
-        desc = desc.substr(brac+1);
-      }
-      std::size_t dot=desc.find_first_of(".");
-      std::string mydescrip = desc.substr(0,dot);
-      if( mydescrip.find("\\")!=std::string::npos ) {
-        error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
-      }
-      std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
-      if( argtype.length()>0 ) {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<", \"argtype\": \""<<argtype<<"\"}";
-      } else if( defa.length()>0 ) {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<", \"default\": \""<<defa<<"\"}";
-      } else {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<"}";
-      }
+      printKeywordDocs( keys.getKeyword(j), action, keys );
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) {
         std::cout<<std::endl;
       } else {
@@ -305,12 +303,11 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
       std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
-      std::string descrip = cltoolRegister().get(cltool).keys.getKeywordDescription( k );
-      printKeywordDocs( k, descrip, cltoolRegister().get(cltool).keys );
+      printKeywordDocs( k, cltool, cltoolRegister().get(cltool).keys );
       if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
-        std::cout<<"}"<<std::endl;
+        std::cout<<std::endl;
       } else {
-        std::cout<<"},"<<std::endl;
+        std::cout<<","<<std::endl;
       }
     }
     std::cout<<"       }"<<std::endl;
