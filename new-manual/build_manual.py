@@ -426,13 +426,13 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          if value["inputtype"]=="file" : 
              f.write("The following table describes the keywords that should be used in the input file for this command line tool\n\n")
          else :
-             f.write("The following table describes the command line options that are availabel for this tool\n\n")
+             f.write("The following table describes the command line options that are available for this tool\n\n")
          f.write("| Keyword     | Description |\n")
          f.write("|:------------|:-----------|\n")
          undoc = 0
          for key, docs in value["syntax"].items() :
-             if len(docs)==0 : undoc = undoc + 1 
-             f.write("| " + key + " | " + docs + " |\n")
+             if len(docs["description"])==0 : undoc = undoc + 1 
+             f.write("| " + key + " | " + docs["description"] + " |\n")
          if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
 
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :

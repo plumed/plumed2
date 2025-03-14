@@ -305,7 +305,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
       std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
-      std::cout<<"     \"" + k + "\": \"" + cltoolRegister().get(cltool).keys.getKeywordDescription( k ) <<"\"";
+      std::cout<<"     \"" + k + "\": { \"description\": \"" + cltoolRegister().get(cltool).keys.getKeywordDescription( k ) <<"\"}";
       if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
         std::cout<<std::endl;
       } else {
