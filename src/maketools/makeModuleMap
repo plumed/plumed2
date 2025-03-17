@@ -9,7 +9,7 @@ toPrint='  {"%s", "%s"}'
 #regex are scary, here's a link with the flow of the regex
 # https://regexper.com/#PLUMED_REGISTER_ACTION%20*%5C%28%20*%5B0-9a-zA-Z_%5D%2B%20*%2C%20*%22%28%5B0-9a-zA-Z_%5D%2B%29%22%20*%5C%29
 regex='PLUMED_REGISTER_ACTION *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
-regex_cl='PLUMED_REGISTER_CLTOOL *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
+regex_cl='PLUMED_REGISTER_CLTOOL *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_-]+)" *\)'
 
 for module in ../*/module.type; do
   moduledir=${module%%/module.type}

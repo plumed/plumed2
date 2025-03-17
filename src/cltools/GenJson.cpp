@@ -139,6 +139,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     printHyperlink( action );
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
     bool found=false;
+    plumed_massert( getModuleMap().find(action)!=getModuleMap().end(), "could not find action named " + action + " in module map");
     std::string thismodule = getModuleMap().find(action_names[i])->second;
     for(unsigned i=0; i<allmodules.size(); ++i) {
       if( allmodules[i]==thismodule ) {
@@ -289,6 +290,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::string cltool=cltool_names[i];
     // Handle converstion to link
     printHyperlink( cltool );
+    plumed_massert( getModuleMap().find(cltool)!=getModuleMap().end(), "could not find cltool named " + cltool + " in module map" );
     std::string thismodule = getModuleMap().find(cltool_names[i])->second;
     std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
     auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
