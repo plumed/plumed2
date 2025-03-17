@@ -294,23 +294,23 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
     std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
     if( mytool->inputdata==commandline ) {
-      std::cout<<"    \"inputtype\" : \"command line args\"\n";  //,\n";
+      std::cout<<"    \"inputtype\" : \"command line args\",\n";
     } else if( mytool->inputdata==ifile ) {
-      std::cout<<"    \"inputtype\" : \"file\"\n";  // ,\n";
+      std::cout<<"    \"inputtype\" : \"file\",\n";
     } else {
       error("input type for cltool was not specified");
     }
-    // std::cout<<"    \"syntax\" : {"<<std::endl;
-    // for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
-    //   std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
-    //   printKeywordDocs( k, cltool, cltoolRegister().get(cltool).keys );
-    //   if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
-    //     std::cout<<std::endl;
-    //   } else {
-    //     std::cout<<","<<std::endl;
-    //   }
-    // }
-    // std::cout<<"       }"<<std::endl;
+    std::cout<<"    \"syntax\" : {"<<std::endl;
+    for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
+      std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
+      printKeywordDocs( k, cltool, cltoolRegister().get(cltool).keys );
+      if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
+        std::cout<<std::endl;
+      } else {
+        std::cout<<","<<std::endl;
+      }
+    }
+    std::cout<<"       }"<<std::endl;
     std::cout<<"     }";
     if( i==cltool_names.size()-1 ) {
       std::cout<<std::endl;
