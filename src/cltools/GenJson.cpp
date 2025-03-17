@@ -291,15 +291,15 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     printHyperlink( cltool );
     std::string thismodule = getModuleMap().find(cltool_names[i])->second;
     std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
-    auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
-    std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
-    if( mytool->inputdata==commandline ) {
-      std::cout<<"    \"inputtype\" : \"command line args\",\n";
-    } else if( mytool->inputdata==ifile ) {
-      std::cout<<"    \"inputtype\" : \"file\",\n";
-    } else {
-      error("input type for cltool was not specified");
-    }
+    // auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
+    // std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
+    // if( mytool->inputdata==commandline ) {
+    //   std::cout<<"    \"inputtype\" : \"command line args\",\n";
+    // } else if( mytool->inputdata==ifile ) {
+    //   std::cout<<"    \"inputtype\" : \"file\",\n";
+    // } else {
+    //   error("input type for cltool was not specified");
+    // }
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
       std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
