@@ -9,10 +9,20 @@ import numpy as np
 from pathlib import Path
 from datetime import date 
 from bs4 import BeautifulSoup
+from contextlib import contextmanager
 from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript, get_css 
 import networkx as nx
 
 PLUMED="plumed"
+
+@contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
 def getActionDocumentationFromPlumed() :
     docs = {}
@@ -326,7 +336,7 @@ def getModuleDictionary( modname ) :
     return {"name": modname, "authors": "authors", "description": "Information about the module", "dois": [] }
 
 def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_inputs ) :
-    with open( "docs/module_" + modname + ".md", "w") as f :
+    with open( "module_" + modname + ".md", "w") as f :
          f.write("# [Module](modules.md): " + modname + "\n\n")
          f.write("| Description    | Usage |\n")
          f.write("|:--------|:--------:|\n") 
@@ -368,7 +378,7 @@ def getKeywordDescription( docs ) :
     return desc
 
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
-    with open( "docs/" + action + ".md", "w") as f : 
+    with open( action + ".md", "w") as f : 
          hasatoms, hasargs = False, False
          for key, docs in value["syntax"].items() :
              if key=="output" : continue
@@ -440,9 +450,9 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          ninp, nfail = 0, 0
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
-            if os.path.isfile("../src/" + value["module"] + "/module.yml") : 
+            if os.path.isfile("../../src/" + value["module"] + "/module.yml") : 
                 actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[action], "docs/" + action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                ninp, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
             else : 
                 f.write("Text from manual goes here \n")
@@ -519,7 +529,8 @@ if __name__ == "__main__" :
    actions = set()
    for page in glob.glob("*.md") :
        shutil.copy( page, "docs/" + page ) 
-       ninp, nf = processMarkdown( "docs/" + page, (PLUMED,), (version,), actions, ghmarkdown=False )
+       with cd("docs") : 
+          ninp, nf = processMarkdown( page, (PLUMED,), (version,), actions, ghmarkdown=False )
        if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
        if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
@@ -532,7 +543,8 @@ if __name__ == "__main__" :
       if key in nest_map.keys() : neggs = nest_map[key]
       if key in school_map.keys() : nlessons = school_map[key] 
       print("Building action page", key )
-      createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
+      with cd("docs") : 
+         createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
       alink = "<a href=\"../" + key + "\">" + key + "</a>"
       tabledata.append( [alink, str(value["description"])] ) 
    # Create the page with the list of actions
@@ -556,7 +568,8 @@ if __name__ == "__main__" :
        mod_dict = getModuleDictionary( module )
        moduletabledata.append( [mlink, mod_dict["description"], mod_dict["authors"], getModuleType(module) ] ) 
        print("Building module page", module )
-       createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
+       with cd("docs") :
+          createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 
           nodocs.append(["<a href=\"../module_" + module + "\">" + module+ "</a>", "module"])
    # And the page with the list of modules
