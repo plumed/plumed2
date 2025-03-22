@@ -33,32 +33,38 @@ if(NOT Plumed_FOUND)
           CACHE INTERNAL "plumed found")
 
       message(STATUS "Configuring plumed from executable")
-      execute_process(
-        COMMAND plumed --no-mpi info --include-dir
-        OUTPUT_VARIABLE Plumed_INCLUDEDIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-      set(Plumed_INCLUDEDIR
-          ${Plumed_INCLUDEDIR}
-          CACHE INTERNAL "plumed include dir")
       execute_process(
         COMMAND plumed --no-mpi info --configuration
         OUTPUT_VARIABLE Plumed_CONFIG
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
       set(Plumed_CPP_FLAGS "")
+      set(Plumed_EXTRA_INCLUDE_FLAGS "")
+      set(tPlumed_CPP_FLAGS "")
 
       string(REPLACE "\n" ";" ProcessFile_LINES "${Plumed_CONFIG}")
       foreach(_line ${ProcessFile_LINES})
         if(${_line} MATCHES "CPPFLAGS=.*")
-          set(Plumed_CPP_FLAGS ${_line})
-          string(REGEX REPLACE "CPPFLAGS= *" "" Plumed_CPP_FLAGS
-                               ${Plumed_CPP_FLAGS})
-          string(REPLACE "\\" "" Plumed_CPP_FLAGS ${Plumed_CPP_FLAGS})
-          string(REPLACE "-D" ";" Plumed_CPP_FLAGS ${Plumed_CPP_FLAGS})
-          # message(STATUS "Found PLUMED CPP_FLAGS: \"${Plumed_CPP_FLAGS}\"")
-          # message(STATUS "Found PLUMED CPP_FLAGS:") foreach(_flag
-          # ${Plumed_CPP_FLAGS}) message(STATUS "   \"${_flag}\"") endforeach()
+          set(tPlumed_CPP_FLAGS ${_line})
+          string(REGEX REPLACE "CPPFLAGS= *" "" tPlumed_CPP_FLAGS
+                               ${tPlumed_CPP_FLAGS})
+          string(REPLACE "\\" "" tPlumed_CPP_FLAGS ${tPlumed_CPP_FLAGS})
+          string(REPLACE " -" ";-" tPlumed_CPP_FLAGS ${tPlumed_CPP_FLAGS})
+
+          # message(STATUS "Found PLUMED CPP_FLAGS: \'${tPlumed_CPP_FLAGS}\'")
+          # message(STATUS "Found PLUMED CPP_FLAGS:")
+          foreach(_flag ${tPlumed_CPP_FLAGS})
+            # message(STATUS "   \"${_flag}\"")
+            if(${_flag} MATCHES "^-D")
+              string(REPLACE "-D" "" t ${_flag})
+              list(APPEND Plumed_CPP_FLAGS ${t})
+            endif()
+            if(${_flag} MATCHES "^-I")
+              string(REPLACE "-I" "" t ${_flag})
+              list(APPEND Plumed_EXTRA_INCLUDE_FLAGS ${t})
+            endif()
+          endforeach()
         endif()
         if(${_line} MATCHES ".*-fopenmp.*")
           set(Plumed_HAS_MPI
@@ -66,9 +72,21 @@ if(NOT Plumed_FOUND)
               CACHE INTERNAL "plumed has MPI")
         endif()
       endforeach()
+
       set(Plumed_CFLAGS
           ${Plumed_CPP_FLAGS}
           CACHE INTERNAL "plumed Definitions flags")
+
+      execute_process(
+        COMMAND plumed --no-mpi info --include-dir
+        OUTPUT_VARIABLE Plumed_INCLUDEDIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+      list(APPEND Plumed_INCLUDEDIR ${Plumed_EXTRA_INCLUDE_FLAGS})
+
+      set(Plumed_INCLUDEDIR
+          ${Plumed_INCLUDEDIR}
+          CACHE INTERNAL "plumed include dir")
 
       execute_process(COMMAND plumed --no-mpi config -q has mpi
                       RESULT_VARIABLE Plumed_WITH_MPI)
