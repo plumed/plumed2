@@ -352,20 +352,88 @@ def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_i
             f.write("More information about this module is available in the following articles:\n\n") 
             for doi in dois :
                 ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n") 
-         f.write("## Actions \n\n")
-         f.write("The following actions are part of this module\n\n")
-         f.write("| Name | Description |\n") 
-         f.write("|:-----|:------------|\n")
+                f.write("- [" + ref + "](" + ref_url + ")\n")
+         foundaction=False
          for key, value in plumed_syntax.items() :
-             if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] or value["module"]!=modname : continue
-             f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")  
+             if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
+             foundaction=True
+             break 
+
+         if modname=="cltools" : 
+            if foundaction : raise Exception("Found action in cltools module. There should be no actions in this module")
+
+            f.write("## Available tools \n\n")
+            f.write("The following command line tools are available within PLUMED\n\n")
+            f.write("| Name | Module | Description |\n")
+            f.write("|:-----|:----|:------------|\n")
+            for key, value in plumed_syntax["cltools"].items() :
+                f.write("| [" + key + "](" + key + ".md) | [" + value["module"] + "](module_" + value["module"] + ".md) | " + value["description"] + "|\n")  
+         else : 
+            if foundaction : 
+               f.write("## Actions \n\n")
+               f.write("The following actions are part of this module\n\n")
+               f.write("| Name | Description |\n")
+               f.write("|:-----|:------------|\n")
+               for key, value in plumed_syntax.items() :
+                   if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
+                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")
+
+            foundcltool=False
+            for key, value in plumed_syntax["cltools"].items() :
+                if value["module"]!=modname : continue
+                foundcltool=True
+                break
+
+            if foundcltool :
+               f.write("\n## Command line tools \n\n")
+               f.write("The following command line tools are part of this module\n\n")
+               f.write("| Name | Description |\n")
+               f.write("|:-----|:------------|\n")
+               for key, value in plumed_syntax["cltools"].items() :
+                   if value["module"]!=modname : continue
+                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n") 
 
 def getKeywordDescription( docs ) :
     desc = docs["description"] 
     if "actionlink" in docs.keys() and docs["actionlink"]!="none" :
        desc = desc + ". Options for this keyword are explained in the documentation for [" + docs["actionlink"] + "](" + docs["actionlink"] + ".md)."
     return desc
+
+def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
+    with open( "docs/" + tool + ".md", "w") as f :
+         f.write("# [Command line tool](module_cltools.md): " + tool + "\n\n")
+         f.write("| [**Module**](modules.md) | [**" + value["module"] + "**](module_" + value["module"]  + ".md) |\n")
+         f.write("|:--------|:--------:|\n")
+         f.write("| **Description**    | **Input** |\n")
+         f.write("| " + value["description"] + " | " + value["inputtype"] + "|\n\n" )
+         f.write("## Details \n")
+         if tool in plumeddocs.keys() :
+            if os.path.isfile("../src/" + value["module"] + "/module.yml") :
+                actions = set()
+                ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
+            else :
+                f.write("Text from manual goes here \n")
+                noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
+         else : nodocs.append(["<a href=\"../" + tool + "\">" + tool + "</a>", "cltool"] )
+         if "dois" in value and len(value["dois"])>0 :
+            f.write("## References \n")
+            f.write("More information about how this cltool can be used is available in the following articles:\n")
+            for doi in value["dois"] :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n")
+         f.write("\n## Syntax \n")
+         if value["inputtype"]=="file" : 
+             f.write("The following table describes the keywords that should be used in the input file for this command line tool\n\n")
+         else :
+             f.write("The following table describes the command line options that are available for this tool\n\n")
+         f.write("| Keyword     | Description |\n")
+         f.write("|:------------|:-----------|\n")
+         undoc = 0
+         for key, docs in value["syntax"].items() :
+             if len(docs["description"])==0 : undoc = undoc + 1 
+             f.write("| " + key + " | " + docs["description"] + " |\n")
+         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
 
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
     with open( "docs/" + action + ".md", "w") as f : 
@@ -526,7 +594,7 @@ if __name__ == "__main__" :
    # Create a page for each action
    plumeddocs, tabledata, undocumented_keywords, noexamples, nodocs = getActionDocumentationFromPlumed(), [], [], [], []
    for key, value in plumed_syntax.items() :
-      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
+      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
       # Now create the page contents
       neggs, nlessons = 0, 0
       if key in nest_map.keys() : neggs = nest_map[key]
@@ -538,16 +606,30 @@ if __name__ == "__main__" :
    # Create the page with the list of actions
    with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata )
 
+   # Create a page for each cltool
+   for key, value in plumed_syntax["cltools"].items() :
+       print("Building CLtool page", key )
+       createCLToolPage( version, key, value, plumeddocs, broken_inputs, undocumented_keywords, noexamples, nodocs )
+
    # Create a list of modules
    modules = {}
    for key, value in plumed_syntax.items() :  
-     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key!=value["displayname"] : continue
+     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
      nlessons, neggs = 0, 0
      if key in school_map.keys() : nlessons = school_map[key]
      if key in nest_map.keys() : neggs = nest_map[key]
      if value["module"] not in modules.keys() :
         modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
      else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons
+
+   # Take into account command line tools when building list of modules
+   for key, value in plumed_syntax["cltools"].items() :
+     nlessons, neggs = 0, 0
+     if key in school_map.keys() : nlessons = school_map[key] 
+     if key in nest_map.keys() : neggs = nest_map[key]
+     if value["module"] not in modules.keys() :
+        modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
+     else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons  
 
    # And create each module page
    moduletabledata = []
