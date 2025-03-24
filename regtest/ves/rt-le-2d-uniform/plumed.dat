@@ -14,6 +14,7 @@ VES_LINEAR_EXPANSION ...
  GRID_BINS=100,120
  PROJ_ARG1=phi
  PROJ_ARG2=psi
+ GRID_FMT=%14.7f
 ... VES_LINEAR_EXPANSION
 
 # NOTE: These parameters do not reflect parameters used in real simulations! 
