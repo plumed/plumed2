@@ -31,7 +31,20 @@ namespace crystdistrib {
 /*
 Calculate the ROPS order parameter
 
-\par Examples
+ROPS is a shortcut to calculate the Relative-Orientational Order Parameters that are described in the paper that is referenced below. As arguments, ROPS takes a list of atoms (corresponding to molecules), a vector of quaternions, a cutoff distance, and two kernel files detailing the means, variances, and normalization factors of the probability distributions. ROPS returns a vector of order parameters.
+
+The DOPS kernel file has FIELDS height, mu, and sigma corresponding to the normalization factor, mean, and variance of the gaussian distributions used in the order parameters. The SET kerneltype is gaussian.
+The ROPS kernel file has FIELDS height, kappa, mu\_w, mu\_i, mu\_j, and mu\_k, which correspond to the normalization factor, reciprocal variance, and components of the mean quaternion frame of the Bipolar Watson distribution used in the order parameters. The SET kerneltype is gaussian.
+
+ROPS returns one order parameter per atom given, evaluated over each atom's neighbors within the cutoff. The distribution defined by the kernel files, analogous to a radial distribution function, defined over all possible spatial orientations two molecules could take relative to one another. The domain is the set of all unit quaternions. The order parameter is obtained by evaluating the distribution at each neighbor's unit quaternion, and summing them.
+
+This example file calculates the ROPS for a system of 3 molecules.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/crystdistrib/rt-rops-shortcut/kernels.dat,regtest/crystdistrib/rt-rops-shortcut/kernels2.dat
+quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+bops: ROPS SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0 KERNELFILE_DOPS=regtest/crystdistrib/rt-rops-shortcut/kernels.dat KERNELFILE_ROPS=regtest/crystdistrib/rt-rops-shortcut/kernels2.dat
+```
 
 */
 //+ENDPLUMEDOC
@@ -69,6 +82,7 @@ void RopsShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("ONES");
   keys.needsAction("CUSTOM");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addDOI("10.1063/1.3548889");
 }
 
 RopsShortcut::RopsShortcut(const ActionOptions&ao):
