@@ -85,6 +85,8 @@ private:
   Grid* targetdist_grid_pntr_;
   //
   TargetDistribution* targetdist_pntr_;
+  //
+  std::string gfmt_;
 public:
   static void registerKeywords( Keywords& keys );
   // Constructor
@@ -130,6 +132,9 @@ public:
   };
   CoeffsVector& TargetDistAverages() const {
     return *targetdist_averages_pntr_;
+  };
+  void setGridFMT(const std::string& fmt) {
+    gfmt_=fmt;
   };
   //
   void setSerial() {
