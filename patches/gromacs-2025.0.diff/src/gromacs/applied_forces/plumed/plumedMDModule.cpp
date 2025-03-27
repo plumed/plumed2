@@ -92,7 +92,9 @@ public:
         // Access the plumed filename this is used to activate the plumed module
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const PlumedInputFilename& plumedFilename)
-                { this->options_.setPlumedFile(plumedFilename.plumedFilename_); });
+                { this->options_.setPlumedFile(plumedFilename.plumedFilename_);
+                  this->options_.setReplex(plumedFilename.replex_);
+                 });
         // Retrieve the Multisim options
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const gmx_multisim_t* ms)
