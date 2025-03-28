@@ -93,6 +93,7 @@ class TensorGeneric:
   template<typename... Args>
   void auxiliaryConstructor(double first,Args... arg);
 public:
+  constexpr double *data() { return d.data(); }
 /// Constructor accepting n*m double parameters.
 /// Can be used as Tensor<2,2>(1.0,2.0,3.0,4.0)
 /// In case a wrong number of parameters is given, a static assertion will fail.
@@ -177,6 +178,7 @@ public:
   friend double matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const VectorGeneric<m_>&);
 /// returns the determinant of a tensor
   friend double determinant(const TensorGeneric<3,3>&);
+  friend double determinant(const TensorGeneric<4, 4> &);
 /// returns the inverse of a tensor (same as inverse())
   friend TensorGeneric<3,3> inverse(const TensorGeneric<3,3>&);
 /// returns the transpose of a tensor (same as transpose())
@@ -372,6 +374,26 @@ double TensorGeneric<3,3>::determinant()const {
     - d[2]*d[4]*d[6];
 }
 
+
+template <> inline double TensorGeneric<4, 4>::determinant() const {
+  //  0  1  2  3
+  //  4  5  6  7
+  //  8  9 10 11
+  // 12 13 14 15
+  return d[0] * (-d[11] * d[14] * d[5] + d[10] * d[15] * d[5] +
+                 d[11] * d[13] * d[6] - d[10] * d[13] * d[7] -
+                 d[15] * d[6] * d[9] + d[14] * d[7] * d[9]) +
+         d[1] * (d[11] * d[14] * d[4] - d[10] * d[15] * d[4] -
+                 d[11] * d[12] * d[6] + d[10] * d[12] * d[7] +
+                 d[15] * d[6] * d[8] - d[14] * d[7] * d[8]) +
+         d[2] * (-d[11] * d[13] * d[4] + d[11] * d[12] * d[5] -
+                 d[15] * d[5] * d[8] + d[13] * d[7] * d[8] +
+                 d[15] * d[4] * d[9] - d[12] * d[7] * d[9]) +
+         d[3] * (d[10] * d[13] * d[4] - d[10] * d[12] * d[5] +
+                 d[14] * d[5] * d[8] - d[13] * d[6] * d[8] -
+                 d[14] * d[4] * d[9] + d[12] * d[6] * d[9]);
+}
+
 template<unsigned n,unsigned m>
 inline
 TensorGeneric<n,n> TensorGeneric<n,m>::identity() {
@@ -464,6 +486,10 @@ inline
 double determinant(const TensorGeneric<3,3>&t) {
   return t.determinant();
 }
+inline double determinant(const TensorGeneric<4, 4> &t) {
+  return t.determinant();
+}
+
 
 inline
 TensorGeneric<3,3> inverse(const TensorGeneric<3,3>&t) {
