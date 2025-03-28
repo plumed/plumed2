@@ -326,7 +326,7 @@ void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actio
                             output.derivatives.data() );
   // And now calculate the DRMSD
   for(unsigned i=0; i<rs; ++i) {
-    T::calculateDistance( i, input.noderiv, actiondata, pos.data(), rmsd_output );
+    T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
   }
 }
 

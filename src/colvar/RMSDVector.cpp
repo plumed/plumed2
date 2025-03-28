@@ -207,7 +207,7 @@ double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& 
 
   if( displacement && type=="SIMPLE" ) {
     const Value* myval = getConstPntrToComponent(1);
-    double r = myrmsd[current].simpleAlignment( align, displace, pos, myrmsd[current].getReference(), der, direction, squared );
+    double r = myrmsd[current].simpleAlignment( align, displace, View{pos.data(),pos.size()}, myrmsd[current].getReference(), der, direction, squared );
     if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
       Vector comforce;
       comforce.zero();

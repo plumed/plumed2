@@ -137,7 +137,11 @@ public:
     }
     return *this;
   }
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureDRMSDInput& actiondata, const Vector* pos, ColvarOutput& output );
+  static void calculateDistance( unsigned n,
+                                 bool noderiv,
+                                 const SecondaryStructureDRMSDInput& actiondata,
+                                 View<Vector> pos,
+                                 ColvarOutput& output );
   void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure );
   void toACCDevice()const {
 #pragma acc enter data copyin(this[0:1], natoms,nstructures,nopbc,align_strands)
@@ -182,7 +186,7 @@ void SecondaryStructureDRMSDInput::setReferenceStructure(
 void SecondaryStructureDRMSDInput::calculateDistance( const unsigned n,
     const bool noderiv,
     const SecondaryStructureDRMSDInput& actiondata,
-    const Vector* pos,
+    const View<Vector> pos,
     ColvarOutput& output ) {
   if( !noderiv ) {
     output.virial.set( n, Tensor(0,0,0,0,0,0,0,0,0) );

@@ -52,16 +52,16 @@ public:
   bool align_strands;
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms;
-  void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
-    colvar_atoms.toACCDevice();
-  }
-  void removeFromACCDevice() const {
-    colvar_atoms.removeFromACCDevice();
-#pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
+//   void toACCDevice()const {
+// #pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
+//     colvar_atoms.toACCDevice();
+//   }
+//   void removeFromACCDevice() const {
+//     colvar_atoms.removeFromACCDevice();
+// #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
 
-  }
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, const Vector* pos, ColvarOutput& output );
+//   }
+  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     natoms = m.natoms;
@@ -100,17 +100,17 @@ void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type
 void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
     bool noderiv,
     const SecondaryStructureRMSDInput& actiondata,
-    const Vector * pos,
+    const View<Vector> pos,
     ColvarOutput& output ) {
   std::vector<Vector> myderivs( actiondata.natoms );
-  //output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
+  output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 
   if( noderiv ) {
     return;
   }
   Tensor v;
   v.zero();
-  for(unsigned j=0; j<actiondata.natoms ; ++j) {
+  for(unsigned j=0; j<pos.size(); ++j) {
     output.derivs[n][j] = myderivs[j];
     v +=  (-1.0*Tensor( pos[j], myderivs[j] ));
   }
