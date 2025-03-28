@@ -327,6 +327,14 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   if( nopbc ) {
     nopbcstr = " NOPBC";
   }
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
+  }
   std::string type;
   parse("TYPE",type);
   std::string lab = getShortcutLabel() + "_low";
@@ -344,9 +352,9 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
     if( type=="DRMSD" ) {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr );
     } else {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr );
     }
     if( ltmap.length()>0 ) {
       // Create the lowest line
@@ -358,9 +366,9 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     }
   } else {
     if( type=="DRMSD" ) {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr );
     } else {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr );
     }
     if( ltmap.length()>0 ) {
       // Create the lowest line

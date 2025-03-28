@@ -91,22 +91,47 @@ private:
   unsigned cl;
   /// The data in the matrix
   std::vector<T> data;
+  template <typename Y>
+  struct  openAccVectorHelper {
+    using pointer = Y*;
+    size_t sz=0;
+    pointer data=nullptr;
+    void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],sz,data[0:sz])
+    }
+    void removeFromACCDevice() const {
+#pragma acc exit data delete(data[0:sz],sz,this[0:1])
+    }
+    void update(std::vector<Y>&x) {
+      data = x.data();
+      sz = x.size();
+    }
+  };
+  openAccVectorHelper<T> helper{};
+
 public:
-  explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
+  explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {
+    helper.update(data);
+  }
   void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1], data[0:data.size()])
+#pragma acc enter data copyin(this[0:1])
+    helper.toACCDevice();
   }
   void removeFromACCDevice() const {
+    helper.removeFromACCDevice();
     // and delete
-#pragma acc exit data delete( data[0:data.size()], this[0:1])
+#pragma acc exit data delete( this[0:1])
   }
-  Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {}
+  Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {
+    helper.update(data);
+  }
   /// Resize the matrix
   void resize( const unsigned nr, const unsigned nc ) {
     rw=nr;
     cl=nc;
     sz=nr*nc;
     data.resize(sz);
+    helper.update(data);
   }
   /// Return the number of rows
   inline unsigned nrows() const {
@@ -129,11 +154,13 @@ public:
   }
   /// Return element i,j of the matrix
   inline const T& operator () (const unsigned& i, const unsigned& j) const {
-    return data[j+i*cl];
+    return helper.data[j+i*cl];
+    // return data[j+i*cl];
   }
   /// Return a referenre to element i,j of the matrix
   inline T& operator () (const unsigned& i, const unsigned& j)      {
-    return data[j+i*cl];
+    return helper.data[j+i*cl];
+    // return data[j+i*cl];
   }
   /// Set all elements of the matrix equal to the value of v
   Matrix<T>& operator=(const T& v) {
@@ -148,6 +175,7 @@ public:
     rw=m.rw;
     cl=m.cl;
     data=m.data;
+    helper.update(data);
     return *this;
   }
   /// Set the Matrix equal to the value of a standard vector - used for readin

@@ -194,14 +194,23 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   if( nopbc ) {
     nopbcstr = " NOPBC";
   }
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
+  }
+
   std::string atoms="ATOMS=" + all_atoms[0];
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
   if( type=="DRMSD" ) {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
+    readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr);
   } else {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr);
   }
   // Create the less than object
   if( ltmap.length()>0 ) {

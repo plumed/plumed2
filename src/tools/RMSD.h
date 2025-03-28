@@ -25,6 +25,7 @@
 #include "Vector.h"
 #include "Matrix.h"
 #include "Tensor.h"
+#include "View.h"
 #include <vector>
 #include <string>
 #include <array>
@@ -129,7 +130,7 @@ public:
 /// workhorses
   double simpleAlignment(const  std::vector<double>  & align,
                          const  std::vector<double>  & displace,
-                         const std::vector<Vector> & positions,
+                         const View<Vector> positions,
                          const std::vector<Vector> & reference,
                          std::vector<Vector>  & derivatives,
                          std::vector<Vector>  & displacement,
@@ -137,14 +138,14 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment(const  std::vector<double>  & align,
                           const  std::vector<double>  & displace,
-                          const std::vector<Vector> & positions,
+                          const View<Vector> positions,
                           const std::vector<Vector> & reference,
                           std::vector<Vector>  & DDistDPos, bool squared=false)const;
 
   template <bool safe, bool alEqDis>
   double optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
       const  std::vector<double>  & displace,
-      const std::vector<Vector> & positions,
+      const View<Vector> positions,
       const std::vector<Vector> & reference,
       std::vector<Vector>  & derivatives,
       const Tensor & rotationPosClose,
@@ -155,7 +156,7 @@ public:
   template <bool safe, bool alEqDis>
   double optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
                                         const  std::vector<double>  & displace,
-                                        const std::vector<Vector> & positions,
+                                        const View<Vector> positions,
                                         const std::vector<Vector> & reference,
                                         Tensor & Rotation,
                                         std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
@@ -164,7 +165,7 @@ public:
   template <bool safe, bool alEqDis>
   double optimalAlignment_Rot(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
-                              const std::vector<Vector> & positions,
+                              const View<Vector> positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector>  & derivatives,
                               Tensor & Rotation,
@@ -173,7 +174,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
                                     const  std::vector<double>  & displace,
-                                    const std::vector<Vector> & positions,
+                                    const View<Vector> positions,
                                     const std::vector<Vector> & reference,
                                     std::vector<Vector>  & DDistDPos,
                                     std::vector<Vector> &  DDistDRef,
@@ -182,7 +183,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_SOMA(const  std::vector<double>  & align,
                                const  std::vector<double>  & displace,
-                               const std::vector<Vector> & positions,
+                               const View<Vector> positions,
                                const std::vector<Vector> & reference,
                                std::vector<Vector>  & DDistDPos,
                                std::vector<Vector> &  DDistDRef,
@@ -191,7 +192,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & align,
       const  std::vector<double>  & displace,
-      const std::vector<Vector> & positions,
+      const View<Vector> positions,
       const std::vector<Vector> & reference,
       std::vector<Vector>  & DDistDPos,
       std::vector<Vector> &  DDistDRef,
@@ -202,7 +203,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef(const  std::vector<double>  & align,
       const  std::vector<double>  & displace,
-      const std::vector<Vector> & positions,
+      const View<Vector> positions,
       const std::vector<Vector> & reference,
       std::vector<Vector>  & DDistDPos,
       std::vector<Vector> &  DDistDRef,
@@ -214,7 +215,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_PCA(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
-                              const std::vector<Vector> & positions,
+                              const View<Vector> positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector> & alignedpositions,
                               std::vector<Vector> & centeredpositions,
@@ -227,7 +228,7 @@ public:
   template <bool safe,bool alEqDis>
   double optimalAlignment_Fit(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
-                              const std::vector<Vector> & positions,
+                              const View<Vector> positions,
                               const std::vector<Vector> & reference,
                               Tensor & Rotation,
                               Matrix<std::vector<Vector> > & DRotDPos,
@@ -237,6 +238,8 @@ public:
 
 
 /// Compute rmsd: note that this is an intermediate layer which is kept in order to evtl expand with more alignment types/user options to be called while keeping the workhorses separated
+//#pragma acc routine
+  double calculate(const View<Vector> positions,std::vector<Vector> &derivatives, bool squared=false)const;
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
 /// Other convenience methods:
 /// calculate the derivative of distance respect to position(DDistDPos) and reference (DDistDPos)
@@ -292,7 +295,7 @@ private:
   bool retrieve_only_rotation;
 
   // use reference assignment to speed up instead of copying
-  const std::vector<Vector> &positions;
+  const View<Vector> positions;
   const std::vector<Vector> &reference;
   const std::vector<double> &align;
   const std::vector<double> &displace;
@@ -313,13 +316,13 @@ public:
   /// note: this aligns the reference onto the positions
   ///
   /// this method assumes that the centers are already calculated and subtracted
-  RMSDCoreData(const std::vector<double> &a,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r, Vector &cp, Vector &cr ):
+  RMSDCoreData(const std::vector<double> &a,const std::vector<double> &d,const View<Vector> p, const std::vector<Vector> &r, Vector &cp, Vector &cr ):
     alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
     creference(cr),creference_is_calculated(true),creference_is_removed(true),
     cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0) {};
 
   // this constructor does not assume that the positions and reference have the center subtracted
-  RMSDCoreData(const std::vector<double> &a,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r):
+  RMSDCoreData(const std::vector<double> &a,const std::vector<double> &d, const View<Vector> p, const std::vector<Vector> &r):
     alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
     creference_is_calculated(false),creference_is_removed(false),
     cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0) {

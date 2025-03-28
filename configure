@@ -10158,8 +10158,7 @@ fi
 acc_found=ko
 if test $openacc = true; then
   acc_found=ko
-  # optional libraries follow
-  if test $mpi = true ; then
+# optional libraries follow
 
     found=ko
     __PLUMED_HAS_OPENACC=no
@@ -10296,9 +10295,9 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_OPENACC" >&2;}
     fi
 
-    if test "$__PLUMED_HAS_OPENACC" = yes; then
-      acc_found=ok
-      #test if we can compile with openacc
+  if test "$__PLUMED_HAS_OPENACC" = yes; then
+    acc_found=ok
+    #test if we can compile with openacc
 
   save_CXXFLAGS="$CXXFLAGS"
   CXXFLAGS="$CXXFLAGS -acc"
@@ -10391,22 +10390,21 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-      #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
-      #use CXXFLAGS="-O3 -gpu=cc80" at configure time
-      #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
-      #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
-      #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
-      #PLUMED_CHECK_CXXFLAG([-stdpar])
-      #PLUMED_CHECK_CXXFLAG([-gpu=managed])
-      #PLUMED_CHECK_LDFLAGS([-static-nvidia])
-      #PLUMED_CHECK_LDFLAGS([-acc])
-      LDSHARED="$LDSHARED -acc -static-nvidia"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please remember to add \"CXXFLAGS\" the compute capability flag of your device, for example \"-gpu=cc80\"" >&5
+    #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
+    #use CXXFLAGS="-O3 -gpu=cc80" at configure time
+    #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
+    #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
+    #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
+    #PLUMED_CHECK_CXXFLAG([-stdpar])
+    #PLUMED_CHECK_CXXFLAG([-gpu=managed])
+    #PLUMED_CHECK_LDFLAGS([-static-nvidia])
+    #PLUMED_CHECK_LDFLAGS([-acc])
+    LDSHARED="$LDSHARED -acc -static-nvidia"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please remember to add \"CXXFLAGS\" the compute capability flag of your device, for example \"-gpu=cc80\"" >&5
 $as_echo "$as_me: WARNING: Please remember to add \"CXXFLAGS\" the compute capability flag of your device, for example \"-gpu=cc80\"" >&2;}
-    fi
-  else
-    acc_found=ko
   fi
+else
+  acc_found=ko
 fi
 
 # in non-debug mode, add -DNDEBUG

@@ -138,7 +138,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     error( style + " is not a valid directive for the STYLE keyword");
   }
 
-  double strands_cutoff=0.;
+  double strands_cutoff=-1.;
   parse("STRANDS_CUTOFF",strands_cutoff);
   std::string scutoff_action;
   if( strands_cutoff>0 ) {
@@ -162,14 +162,14 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
       }
       for(unsigned ires=0; ires<nres-7; ires++) {
         for(unsigned jres=ires+7; jres<nres; jres++) {
-          for(unsigned k=0; k<15; ++k) {
-            nlist[k]=nprevious + ires*5+k;
-            nlist[k+15]=nprevious + (jres-2)*5+k;
+          for(unsigned kk=0; kk<15; ++kk) {
+            nlist[kk]=nprevious + ires*5+kk;
+            nlist[kk+15]=nprevious + (jres-2)*5+kk;
           }
           std::string nlstr, num;
           Tools::convert( nlist[0], nlstr );
           Tools::convert(k, num);
-          k++;
+          ++k;
           seglist += " SEGMENT" + num + "=" + nlstr;
           for(unsigned kk=1; kk<nlist.size(); ++kk ) {
             Tools::convert( nlist[kk], nlstr );
@@ -286,31 +286,44 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   if( nopbc ) {
     nopbcstr = " NOPBC";
   }
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
+  }
   std::string atoms="ATOMS=" + all_atoms[0];
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
+  std::string inputLine = lab+":";
+  if( type=="DRMSD" ) {
+    inputLine+=" SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17";
+  } else {
+    inputLine+=" SECONDARY_STRUCTURE_RMSD TYPE=" +type;
+  }
+  inputLine+=" ALIGN_STRANDS " + seglist + structure
+             + " " + atoms + nopbcstr + usegpustr;
 
   if( strands_cutoff>0 ) {
     readInputLine( scutoff_action );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
-    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
-    if( type=="DRMSD" ) {
-      readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
-    } else {
-      readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-    }
+    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
+                   + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
+    inputLine+=" MASK=" + getShortcutLabel()+"_cut";
+    readInputLine(inputLine);
     if( ltmap.length()>0 ) {
-      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
-      readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
+                     + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+      readInputLine( getShortcutLabel()
+                     + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut"
+                     " FUNC=x*y PERIODIC=NO");
     }
   } else {
-    if( type=="DRMSD" ) {
-      readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
-    } else {
-      readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-    }
+    readInputLine(inputLine);
     if( ltmap.length()>0 ) {
       readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
     }
