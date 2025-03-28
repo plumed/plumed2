@@ -211,7 +211,9 @@ std::pair<PLMD::Vector4d, PLMD::Tensor4d> mysolver(PLMD::Tensor in)
   for (int i = 0; i < 4; i++)
   {
     auto t = evs.calculate(ev[i]);
-
+    if (t[0] < 0) {
+      t *= -1;
+    }
     evv.setRow(i, t
                / t.modulo()
               );
