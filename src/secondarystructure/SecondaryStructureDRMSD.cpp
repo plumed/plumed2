@@ -55,7 +55,9 @@ class flexibleMemory {
     sz=sizes.data();
   }
 public:
-  flexibleMemory() =default;
+  flexibleMemory() {
+    update();
+  };
   ~flexibleMemory() =default;
   flexibleMemory(const flexibleMemory& m) :
     data(m.data),

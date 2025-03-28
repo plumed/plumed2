@@ -485,7 +485,6 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
 #pragma acc loop reduction(+:tmp)
           for(unsigned t=0; t<nactive_tasks; ++t) {
             std::size_t task_index = partialTaskList_data[t];
-            printf("\t ti=%d ",task_index);
             auto fdata = ForceInput { input.ncomponents,
                                       value_stash_data+input.ncomponents*task_index,
                                       nderivPerComponent,
@@ -495,7 +494,6 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
             }
           }
           omp_forces_data[nthreaded_forces-9+v] = tmp;
-          printf("(%d,%d) -> %f = %f\n",v,m,tmp,omp_forces_data[v]);
         }
       }
     }
