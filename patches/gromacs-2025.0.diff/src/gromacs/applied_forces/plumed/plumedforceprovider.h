@@ -33,75 +33,55 @@
  */
 /*! \internal \file
  * \brief
- * Defines options for Plumed. This class handles parameters set during
- * pre-processing time.
+ * Declares Plumed force provider class
  *
  * \author Daniele Rapetti <drapetti@sissa.it>
  * \ingroup module_applied_forces
  */
-#include "plumedOptions.h"
+#ifndef GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
+#define GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 
-#include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/topology/topology.h"
+#include <memory>
 
+#include "gromacs/mdtypes/iforceprovider.h"
+
+namespace PLMD
+{
+class Plumed;
+}
 namespace gmx
 {
+struct PlumedOptions;
+/*! \internal \brief
+ * Implements IForceProvider for PLUMED.
+ */
+class PlumedForceProvider final : public IForceProvider
+{
+public:
+    /*! \brief Initialize the PLUMED interface with the given options
+     *
+     * \param options PLUMED options
+     */
+    PlumedForceProvider(const PlumedOptions& options);
+    ~PlumedForceProvider();
+    /*! \brief Tells PLUMED to output the checkpoint data
+     *
+     * If the PLUMED API version is not greater than 3 it will do nothing.
+     */
+    void writeCheckpointData();
+    /*! \brief Calculate the forces with PLUMED
+     * \param[in] forceProviderInput input for force provider
+     * \param[out] forceProviderOutput output for force provider
+     */
+    void calculateForces(const ForceProviderInput& forceProviderInput,
+                         ForceProviderOutput*      forceProviderOutput) override;
 
-void PlumedOptionProvider::setTopology(const gmx_mtop_t& mtop)
-{
-    opts_.natoms_ = mtop.natoms;
-}
-
-void PlumedOptionProvider::setEnsembleTemperature(const EnsembleTemperature& temp)
-{
-    if (temp.constantEnsembleTemperature_)
-    {
-        opts_.ensembleTemperature_ = temp.constantEnsembleTemperature_;
-    }
-}
-
-void PlumedOptionProvider::setPlumedFile(const std::optional<std::string>& fname)
-{
-    if (fname.has_value())
-    {
-        opts_.active_     = true;
-        opts_.plumedFile_ = fname.value();
-    }
-}
-void PlumedOptionProvider::setReplex(bool replex)
-{
-    opts_.replex_     = replex;
-}
-const PlumedOptions& PlumedOptionProvider::options() const
-{
-    return opts_;
-}
-
-void PlumedOptionProvider::setSimulationTimeStep(double timeStep)
-{
-    opts_.simulationTimeStep_ = timeStep;
-}
-
-void PlumedOptionProvider::setStartingBehavior(const StartingBehavior& behavior)
-{
-    opts_.startingBehavior_ = behavior;
-}
-
-void PlumedOptionProvider::setComm(const t_commrec& cr)
-{
-    opts_.cr_ = &cr;
-}
-
-bool PlumedOptionProvider::active() const
-{
-    return opts_.active_;
-}
-
-void PlumedOptionProvider::setMultisim(const gmx_multisim_t* ms)
-{
-    opts_.ms_ = ms;
-}
+private:
+    std::unique_ptr<PLMD::Plumed> plumed_;
+    int                           plumedAPIversion_;
+    bool replex_;
+};
 
 } // namespace gmx
+
+#endif // GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
