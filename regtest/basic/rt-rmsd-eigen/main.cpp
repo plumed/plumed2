@@ -1,14 +1,29 @@
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Stopwatch.h"
+#include "plumed/tools/Random.h"
+
 #include <complex>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <numeric>
+#include <vector>
 
-#define vdbg(x)
+using rng=PLMD::Random;
+
+//form google benchmark
+template <class T>
+inline void DoNotOptimize(T& value) {
+#if defined(__clang__)
+  asm volatile("" : "+r,m"(value) : : "memory");
+#else
+  asm volatile("" : "+m,r"(value) : : "memory");
+#endif
+}
+
+#define vdbg(x) std::cerr <<__LINE__ <<": " #x << " = " << (x) << std::endl
 
 using namespace PLMD;
 
@@ -76,6 +91,25 @@ Tensor4d makeMatrix(const Tensor & rr01) {
   return m;
 }
 
+PLMD::Tensor randomatSmall(rng & gen) {
+  PLMD::Tensor toret;
+  for (unsigned i = 0; i < 3; i++) {
+    for (unsigned j = 0; j < 3; j++) {
+      toret[i][j] = gen.RandU01()*2.0-1.0;
+    }
+  }
+  return toret;
+}
+
+PLMD::Tensor randomat(rng & gen) {
+  PLMD::Tensor toret;
+  for (unsigned i = 0; i < 3; i++) {
+    for (unsigned j = 0; j < 3; j++) {
+      toret[i][j] = gen.RandU01()*20.0-10.0;
+    }
+  }
+  return toret;
+}
 class EigenVectors
 {
   // double v4_0;
@@ -137,19 +171,19 @@ public:
                double r10, double r11, double r12, //
                double r20, double r21, double r22)
     :
-    v1_0(
-      pow(r00,3) + pow(r01,2)*r11 - pow(r02,2)*r11 + 2*r01*r10*r11 + pow(r10,2)*r11 +
-      pow(r11,3) + 2*r01*r02*r12 + 2*r02*r10*r12 + r11*pow(r12,2) - 2*r02*r11*r20 + 2*r01*r12*r20 +
-      2*r10*r12*r20 - r11*pow(r20,2) + 2*r01*r02*r21 + 2*r02*r10*r21 + 2*r11*r12*r21 + 2*r01*r20*r21 +
-      2*r10*r20*r21 + r11*pow(r21,2) - pow(r01,2)*r22 + pow(r02,2)*r22 - 2*r01*r10*r22 - pow(r10,2)*r22 -
-      pow(r11,2)*r22 + pow(r12,2)*r22 + 2*r02*r20*r22 + pow(r20,2)*r22 + 2*r12*r21*r22 + pow(r21,2)*r22 -
-      r11*pow(r22,2) + pow(r22,3) - pow(r00,2)*(r11 + r22) +
-      r00*(pow(r01,2) + pow(r02,2) + 2*r01*r10 + pow(r10,2) - pow(r11,2) - pow(r12,2) + 2*r02*r20 +
-           pow(r20,2) - 2*r12*r21 - pow(r21,2) + 2*r11*r22 - pow(r22,2))
-    ),
-    v1_1 (pow(r00,2) + pow(r01,2) + pow(r02,2) + 2*r01*r10 + pow(r10,2) + pow(r11,2) + pow(r12,2) +
-          2*r02*r20 + pow(r20,2) + 2*r12*r21 + pow(r21,2) - 2*r11*r22 + pow(r22,2) - 2*r00*(r11 + r22)),
-    v1_2(- (r00 + r11 + r22)),
+    // v1_0(
+    //   pow(r00,3) + pow(r01,2)*r11 - pow(r02,2)*r11 + 2*r01*r10*r11 + pow(r10,2)*r11 +
+    //   pow(r11,3) + 2*r01*r02*r12 + 2*r02*r10*r12 + r11*pow(r12,2) - 2*r02*r11*r20 + 2*r01*r12*r20 +
+    //   2*r10*r12*r20 - r11*pow(r20,2) + 2*r01*r02*r21 + 2*r02*r10*r21 + 2*r11*r12*r21 + 2*r01*r20*r21 +
+    //   2*r10*r20*r21 + r11*pow(r21,2) - pow(r01,2)*r22 + pow(r02,2)*r22 - 2*r01*r10*r22 - pow(r10,2)*r22 -
+    //   pow(r11,2)*r22 + pow(r12,2)*r22 + 2*r02*r20*r22 + pow(r20,2)*r22 + 2*r12*r21*r22 + pow(r21,2)*r22 -
+    //   r11*pow(r22,2) + pow(r22,3) - pow(r00,2)*(r11 + r22) +
+    //   r00*(pow(r01,2) + pow(r02,2) + 2*r01*r10 + pow(r10,2) - pow(r11,2) - pow(r12,2) + 2*r02*r20 +
+    //        pow(r20,2) - 2*r12*r21 - pow(r21,2) + 2*r11*r22 - pow(r22,2))
+    // ),
+    // v1_1 (pow(r00,2) + pow(r01,2) + pow(r02,2) + 2*r01*r10 + pow(r10,2) + pow(r11,2) + pow(r12,2) +
+    //       2*r02*r20 + pow(r20,2) + 2*r12*r21 + pow(r21,2) - 2*r11*r22 + pow(r22,2) - 2*r00*(r11 + r22)),
+    // v1_2(- (r00 + r11 + r22)),
     v2_0(
       2*r01*r02*r11 - pow(r01,2)*r12 + pow(r02,2)*r12 + pow(r10,2)*r12 + pow(r11,2)*r12 + pow(r12,3) -
       2*r10*r11*r20 - r12*pow(r20,2) + 2*r00*(r02*r10 - r01*r20) - pow(r01,2)*r21 + pow(r02,2)*r21 +
@@ -178,9 +212,41 @@ public:
     v4_1(-2.0*(r12*r20 - r02*r21 + r01*r22 - r10*r22)),
     v4_2(-r01 + r10)
   {
+    v1_0=
+      (r00)*(r00)*(r00) + (r11)*(r11)*(r11) + 2*(r01 + r10)*(r02 + r20)*(r12 + r21) +
+      r00*((r01 + r10)*(r01 + r10) + (r02 + r20)*(r02 + r20) - (r12 + r21)*(r12 + r21)) +
+      r11*((r01 + r10)*(r01 + r10) - (r02 + r20)*(r02 + r20) + (r12 + r21)*(r12 + r21)) + (r00)*(r00)*(-r11 - r22) -
+      r00*(r11 - r22)*(r11 - r22) + (-(r01 + r10)*(r01 + r10) + (r02 + r20)*(r02 + r20) + (r12 + r21)*(r12 + r21))*r22 + (r22)*(r22)*(r22) -
+      r11*r22*(r11 + r22)
+      ;
+    v1_1 =pow(r00,2) + pow(r01,2) + pow(r02,2) + 2*r01*r10 + pow(r10,2) + pow(r11,2) + pow(r12,2) +
+          2*r02*r20 + pow(r20,2) + 2*r12*r21 + pow(r21,2) - 2*r11*r22 + pow(r22,2) - 2*r00*(r11 + r22);
+    v1_2=- (r00 + r11 + r22);
+    vdbg(v1_0);
+    vdbg(v1_1);
+    vdbg(v1_2);
+    vdbg(v2_0);
+    vdbg(v2_1);
+    vdbg(v2_2);
+    vdbg(v3_0);
+    vdbg(v3_1);
+    vdbg(v3_2);
+    vdbg(v4_0);
+    vdbg(v4_1);
+    vdbg(v4_2);
   }
   PLMD::Vector4d calculate(double l)
   {
+    vdbg(l);
+    vdbg(v1_0);
+    vdbg(l*v1_1);
+    vdbg(l* l*v1_2);
+    vdbg(l* l*l);
+    vdbg(v1_0 + l*v1_1 +l* l*v1_2-l* l*l);
+    vdbg(v2_0);
+    vdbg(l*v2_1);
+    vdbg(l*l*v2_2);
+    vdbg(v2_0 +l*v2_1 + l*l*v2_2);
     return {
       v1_0 +l*(v1_1 + l*(v1_2 -l)),
       v2_0 +l*(v2_1 + l*v2_2),
@@ -214,6 +280,7 @@ std::pair<PLMD::Vector4d, PLMD::Tensor4d> mysolver(PLMD::Tensor in)
     if (t[0] < 0) {
       t *= -1;
     }
+    vdbg(t);
     evv.setRow(i, t
                / t.modulo()
               );
@@ -224,52 +291,116 @@ std::pair<PLMD::Vector4d, PLMD::Tensor4d> mysolver(PLMD::Tensor in)
 int main() {
   std::cerr <<std::setprecision(9) << std::fixed;
   std::ofstream out ("result");
-#define mat 0,1,1,1,1,1,1,1,1
-#define mat 1,1,1,1,1,1,1,1,1
-#define mat 1,2,3,4,5,6,7,8,9
+  std::vector<PLMD::Tensor> tests= {
+    {1,1,1,1,1,1,1,1,1},
+    {1,2,3,4,5,6,7,8,9},
+    {0,1,1,1,1,1,1,1,1},
 //problems
-
-#define mat 1.0, 1.0, 1.0, \
-  1.0, .0, 1.0, \
-  1.0, 1.0, 1.0
+    { 1.0, 1.0, 1.0,
+      1.0, .0, 1.0,
+      1.0, 1.0, 1.0
+    },
 //problems
-#define mat 0.0, 1.0, 1.0, \
-  1.0, 0.0, 1.0, \
-  1.0, 1.0, 0.0
+    { 0.0, 1.0, 1.0,
+      1.0, 0.0, 1.0,
+      1.0, 1.0, 0.0
+    },
 //problems in eigenvalues
-#define mat 1.0, 1.0, 0.0, \
-  1.0, 0.0, 1.0, \
-  0.0, 1.0, 1.0
+    { 1.0, 1.0, 0.0, \
+      1.0, 0.0, 1.0, \
+      0.0, 1.0, 1.0
+    },
 //sign in some eivgenvectors
-#define mat 1.0, 5.0, 1.0, \
-  1.0, 5.0, 3.0, \
-  1.0, 5.0, 1.0
+    { 1.0, 5.0, 1.0, \
+      1.0, 5.0, 3.0, \
+      1.0, 5.0, 1.0
+    }
+  };
 
+  rng gen{"MatrixGenerator"};
+  gen.setSeed(123456789);
+  for(int i=0; i<200; i++) {
+    tests.push_back(randomatSmall(gen));
+  }
+  for(int i=0; i<200; i++) {
+    tests.push_back(randomat(gen));
+  }
+
+  //timing
   Stopwatch sw;
-  Vector4d eigenvals;
-  Tensor4d eigenvecs;
+  // {
+  //   // auto sww = sw.startStop("diagMatSym");
+  //   for (const auto & mat : tests) {
+  //     auto sww = sw.startStop("diagMatSym");
+
+  //     auto m=makeMatrix(mat);
+  //     Vector4d eigenvals;
+  //     Tensor4d eigenvecs;
+
+  //     diagMatSym(m, eigenvals, eigenvecs );
+  //     DoNotOptimize(eigenvals);
+  //     DoNotOptimize(eigenvecs);
+  //   }
+  // }
+
+  // {
+  //   // auto sww = sw.startStop("mysolver");
+  //   for (const auto & mat : tests) {
+  //     auto sww = sw.startStop("mysolver");
+
+  //     auto [ev,evv] = mysolver(Tensor(mat));
+  //     DoNotOptimize(ev);
+  //     DoNotOptimize(evv);
+  //   }
+  // }
+
+//output
   {
-    auto m=makeMatrix(Tensor(mat));
-    auto sww = sw.startStop("diagMatSym");
+    const auto& mat = tests[6];
+    auto m=makeMatrix(mat);
+    Vector4d eigenvals;
+    Tensor4d eigenvecs;
     diagMatSym(m, eigenvals, eigenvecs );
-    std::cerr<<"->"<<eigenvals<<std::endl;
-    out <<"->"<<eigenvals<<std::endl;
+    std::cerr<<"->"<<eigenvals<<"\n";
+    out <<"->"<<eigenvals<<"\n";
     for (unsigned i=0; i<4; ++i) {
-      std::cerr<<eigenvecs.getRow(i)<<std::endl;
-      out<<eigenvecs.getRow(i)<<std::endl;
+      std::cerr<<eigenvecs.getRow(i)<<"\n";
+      out<<eigenvecs.getRow(i)<<"\n";
     }
   }
 
   {
-    auto sww = sw.startStop("mysolver");
+
+    const auto& mat = tests[6];
+    std::cerr<<"mat:\n"<<mat<<"\n";
     auto [ev,evv] = mysolver(Tensor(mat));
-    std::cerr<<"->"<<ev<<std::endl;
-    out<<"->"<<ev<<std::endl;
+    std::cerr<<"->"<<ev<<"\n";
+    out<<"->"<<ev<<"\n";
     for (unsigned i=0; i<4; ++i) {
-      std::cerr<<evv.getRow(i)<<std::endl;
-      out<<evv.getRow(i)<<std::endl;
+      std::cerr<<evv.getRow(i)<<"\n";
+      out<<evv.getRow(i)<<"\n";
     }
   }
+  std::cerr<<"\n";
+  { int index=1;
+
+    const auto& mat = tests[index];
+    std::cerr<<"mat:\n"<<mat<<"\n";
+    auto m=makeMatrix(mat);
+    Vector4d eigenvals;
+    Tensor4d eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    auto [ev,evv] = mysolver(Tensor(mat));
+
+    std::cerr<<"->"<<eigenvals<<"\n"
+             <<"-<"<<ev<<"\n\n";
+    for (unsigned i=0; i<4; ++i) {
+      std::cerr<<">"<<eigenvecs.getRow(i)<<"\n"
+               <<"<"<<evv.getRow(i)<<"\n"
+               <<"\n";
+    }
+  }
+
   std::cerr<<sw;
 
   return 0;
