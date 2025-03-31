@@ -301,6 +301,27 @@ int main() {
     }
   }
 
+
+  {
+std::cerr <<"prefactor -2\n";
+    auto mymat =randomRMSDmat(gen,1000.0);
+    const auto& mat = mymat;
+    std::cerr<<"mat:\n"<<mat<<"\n";
+    auto m=-2.0*EigenSolverForRMSD::makeMatrix(mat);
+    Vector4d eigenvals;
+    Tensor4d eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    auto [ev,evv] = EigenSolverForRMSD::calculate(-2.0*Tensor(mat));
+
+    std::cerr<<"->"<<eigenvals<<"\n"
+             <<"-<"<<ev<<"\n\n";
+    for (unsigned i=0; i<4; ++i) {
+      std::cerr<<">"<<eigenvecs.getRow(i)<<"\n"
+               <<"<"<<evv.getRow(i)<<"\n"
+               <<"\n";
+    }
+  }
+
   std::cerr<<sw;
 
   return 0;
