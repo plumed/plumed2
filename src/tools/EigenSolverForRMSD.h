@@ -38,6 +38,9 @@ class EigenSolverForRMSD {
 
   static PLMD::Vector4d eigen(double d2, double d1, double d0)
   {
+    //d2 is always <0
+    //complex numbers are a workarond for the negative arguments for the square roots
+    //the 4x4 matrix is simmetric, so eigenvalues must be real
     using std::complex;
     // CForm[Simplify[Solve[l^4 + d2 l^2 + d1 l + d0 == 0, l]]]
     const complex<double> twoTothird = pow(2, 1.0 / 3.0);
@@ -72,6 +75,7 @@ class EigenSolverForRMSD {
 
       //
     };
+    //they should alredy be sorted
     // std::sort(&toret[0], &toret[0]+4);
     return toret;
   }
