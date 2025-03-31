@@ -94,6 +94,7 @@ class TensorGeneric:
   void auxiliaryConstructor(double first,Args... arg);
 public:
   constexpr double *data() { return d.data(); }
+  constexpr double const *data() const { return d.data(); }
 /// Constructor accepting n*m double parameters.
 /// Can be used as Tensor<2,2>(1.0,2.0,3.0,4.0)
 /// In case a wrong number of parameters is given, a static assertion will fail.
