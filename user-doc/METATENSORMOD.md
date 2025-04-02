@@ -29,7 +29,7 @@ pre-built Python wheels with `pip`. This is the same set of wheels you will need
 to define custom models.
 
 ```bash
-pip install "metatensor-torch ==0.5.5"  # change this version to get newer releases
+pip install "metatensor-torch ==0.7.4"  # change this version to get newer releases
 
 # optional: get the other metatensor tools to define models (these are only usable from Python).
 pip install metatensor-operations metatensor-learn
@@ -59,19 +59,19 @@ libtorch (see also \ref installation-libtorch for other instructions on
 installing a pre-built libtorch):
 
 ```bash
-# Download torch 2.2.2 for x86_64 (Intel) Linux.
+# Download torch 2.6.0 for x86_64 (Intel) Linux.
 #
 # Variations of this link for other operating systems (macOS, Windows), CPU
 # architecture (Apple Silicon, arm64), CUDA versions, and newer versions of
 # libtorch can be found at https://pytorch.org/get-started/locally/
 
-wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.2.2%2Bcpu.zip
-unzip libtorch-cxx11-abi-shared-with-deps-2.2.2+cpu.zip
+wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.6.0%2Bcpu.zip
+unzip libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu.zip
 
 # alternatively if you have a CUDA-enabled GPU, you can use the corresponding
-# pre-built library (here for CUDA 12.1):
-wget https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.2%2Bcu121.zip
-unzip libtorch-cxx11-abi-shared-with-deps-2.2.2+cu121.zip
+# pre-built library (here for CUDA 12.6):
+wget https://download.pytorch.org/libtorch/cu126/libtorch-cxx11-abi-shared-with-deps-2.6.0%2Bcu126.zip
+unzip libtorch-cxx11-abi-shared-with-deps-2.6.0+cu126.zip
 
 # Make the location of libtorch visible
 TORCH_PREFIX=$(pwd)/libtorch
@@ -100,7 +100,7 @@ METATENSOR_TORCH_PREFIX="$METATENSOR_PREFIX"
 
 git clone https://github.com/lab-cosmo/metatensor
 # or a more recent release of metatensor-torch
-git checkout metatensor-torch-v0.5.5
+git checkout metatensor-torch-v0.7.4
 cd metatensor
 
 mkdir build && cd build

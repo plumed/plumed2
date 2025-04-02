@@ -34,7 +34,9 @@ class TestCollectiveVariable(torch.nn.Module):
     def __init__(self, cutoff, multiple_properties, output_name):
         super().__init__()
 
-        self._nl_request = NeighborListOptions(cutoff=cutoff, full_list=True)
+        self._nl_request = NeighborListOptions(
+            cutoff=cutoff, full_list=True, strict=True
+        )
         self._multiple_properties = multiple_properties
         self._output_name = output_name
 
@@ -44,7 +46,6 @@ class TestCollectiveVariable(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-
         if self._output_name not in outputs:
             return {}
 
@@ -91,19 +92,18 @@ class TestCollectiveVariable(torch.nn.Module):
             distances = torch.linalg.vector_norm(neighbors.values.reshape(-1, 3), dim=1)
             inv_dist = 1.0 / distances
 
-            if distances.shape[0] != 0:
-                if output.per_atom:
-                    sliced = values[system_start:system_stop, 0]
-                    sliced += sliced.index_add(0, atom_index, inv_dist)
-                else:
-                    values[system_i, 0] += inv_dist.sum()
+            if output.per_atom:
+                sliced = values[system_start:system_stop, 0]
+                sliced += sliced.index_add(0, atom_index, inv_dist)
+            else:
+                values[system_i, 0] += inv_dist.sum()
 
-                if self._multiple_properties:
-                    if output.per_atom:
-                        sliced = values[system_start:system_stop, 1]
-                        sliced += sliced.index_add(0, atom_index, inv_dist**2)
-                    else:
-                        values[system_i, 1] += inv_dist.sum() ** 2
+            if self._multiple_properties:
+                if output.per_atom:
+                    sliced = values[system_start:system_stop, 1]
+                    sliced += sliced.index_add(0, atom_index, inv_dist**2)
+                else:
+                    values[system_i, 1] += inv_dist.sum() ** 2
 
             system_start = system_stop
 
