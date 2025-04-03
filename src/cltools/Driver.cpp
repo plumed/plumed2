@@ -39,25 +39,7 @@
 #include "tools/PDB.h"
 #include "tools/FileBase.h"
 #include "tools/IFile.h"
-#include "xdrfile/xdrfile_trr.h"
-#include "xdrfile/xdrfile_xtc.h"
-
-
-// when using molfile plugin
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-#ifndef __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
-/* Use the internal ones. Alternatively:
- *    ifeq (,$(findstring __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS,$(CPPFLAGS)))
- *    CPPFLAGS+=-I../molfile
- */
-#include "molfile/libmolfile_plugin.h"
-#include "molfile/molfile_plugin.h"
-using namespace PLMD::molfile;
-#else
-#include <libmolfile_plugin.h>
-#include <molfile_plugin.h>
-#endif
-#endif
+#include "tools/TrajectoryParser.h"
 
 namespace PLMD {
 namespace cltools {
@@ -197,23 +179,6 @@ or default to the unsuffixed one.
 */
 //+ENDPLUMEDOC
 //
-
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-static std::vector<molfile_plugin_t *> plugins;
-static std::map <std::string, unsigned> pluginmap;
-static int register_cb(void *v, vmdplugin_t *p) {
-  //const char *key = p->name;
-  const auto ret = pluginmap.insert ( std::pair<std::string,unsigned>(std::string(p->name),plugins.size()) );
-  if (ret.second==false) {
-    //cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl;
-  } else {
-    //cerr<<"MOLFILE: loading plugin "<<key<<" number "<<plugins.size()-1<<endl;
-    plugins.push_back(reinterpret_cast<molfile_plugin_t *>(p));
-  }
-  return VMDPLUGIN_SUCCESS;
-}
-#endif
-
 template<typename real>
 class Driver : public CLTool {
 public:
@@ -241,11 +206,12 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.addFlag("--restart",false,"makes driver behave as if restarting");
-  keys.add("atoms","--ixyz","the trajectory in xyz format");
-  keys.add("atoms","--igro","the trajectory in gro format");
-  keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
-  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
-  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
+  TrajectoryParser::registerKeywords(keys);
+  // keys.add("atoms","--ixyz","the trajectory in xyz format");
+  // keys.add("atoms","--igro","the trajectory in gro format");
+  // keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
+  // keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
+  // keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
   keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
   keys.add("optional","--valuedict-ofile","output a dictionary giving information about each value in the input file");
   keys.add("optional","--length-units","units for length, either as a string or a number");
@@ -267,15 +233,6 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("hidden","--debug-pd","[yes/no] use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-  MOLFILE_INIT_ALL
-  MOLFILE_REGISTER_ALL(NULL, register_cb)
-  for(unsigned i=0; i<plugins.size(); i++) {
-    std::string kk="--mf_"+std::string(plugins[i]->name);
-    std::string mm=" molfile: the trajectory in "+std::string(plugins[i]->name)+" format " ;
-    keys.add("atoms",kk,mm);
-  }
-#endif
 }
 template<typename real>
 Driver<real>::Driver(const CLToolOptions& co ):
@@ -456,82 +413,51 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::string trajectory_fmt;
 
   bool use_molfile=false;
-  molfile_plugin_t *api=NULL;
 
-// Read in an xyz file
+  // Read in an xyz file
   std::string trajectoryFile(""), pdbfile(""), mcfile("");
   bool pbc_cli_given=false;
   std::vector<double> pbc_cli_box(9,0.0);
   int command_line_natoms=-1;
 
+  TrajectoryParser parser;
   if(!noatoms) {
-    std::string traj_xyz;
-    parse("--ixyz",traj_xyz);
-    std::string traj_gro;
-    parse("--igro",traj_gro);
-    std::string traj_dlp4;
-    parse("--idlp4",traj_dlp4);
-    std::string traj_xtc;
-    std::string traj_trr;
-    parse("--ixtc",traj_xtc);
-    parse("--itrr",traj_trr);
+    int nn=0;
+    trajectory_fmt="";
+    for (const auto & trj_type : TrajectoryParser::trajectoryOptions()) {
+      std::string tmp;
+      parse("--i"+trj_type, tmp);
+      if (tmp.length()>0) {
+        trajectory_fmt=trj_type;
+        ++nn;
+        trajectoryFile=tmp;
+      }
+    }
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    for(unsigned i=0; i<plugins.size(); i++) {
-      std::string molfile_key="--mf_"+std::string(plugins[i]->name);
-      std::string traj_molfile;
-      parse(molfile_key,traj_molfile);
-      if(traj_molfile.length()>0) {
-        std::fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins[i]->name,traj_molfile.c_str());
-        trajectoryFile=traj_molfile;
-        trajectory_fmt=std::string(plugins[i]->name);
-        use_molfile=true;
-        api = plugins[i];
+    {
+      auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
+      for(unsigned i=0; i<plugins_names.size(); i++) {
+        std::string molfile_key="--mf_"+plugins_names[i];
+        std::string traj_molfile;
+        parse(molfile_key,traj_molfile);
+        if(traj_molfile.length()>0) {
+          ++nn;
+          std::fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins_names[i].c_str(),traj_molfile.c_str());
+          trajectoryFile=traj_molfile;
+          trajectory_fmt=plugins_names[i];
+          use_molfile=true;
+        }
       }
     }
 #endif
     {
-      // check that only one fmt is specified
-      int nn=0;
-      if(traj_xyz.length()>0) {
-        nn++;
-      }
-      if(traj_gro.length()>0) {
-        nn++;
-      }
-      if(traj_dlp4.length()>0) {
-        nn++;
-      }
-      if(traj_xtc.length()>0) {
-        nn++;
-      }
-      if(traj_trr.length()>0) {
-        nn++;
-      }
+
       if(nn>1) {
         std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
         return 1;
       }
     }
-    if(traj_xyz.length()>0 && trajectoryFile.length()==0) {
-      trajectoryFile=traj_xyz;
-      trajectory_fmt="xyz";
-    }
-    if(traj_gro.length()>0 && trajectoryFile.length()==0) {
-      trajectoryFile=traj_gro;
-      trajectory_fmt="gro";
-    }
-    if(traj_dlp4.length()>0 && trajectoryFile.length()==0) {
-      trajectoryFile=traj_dlp4;
-      trajectory_fmt="dlp4";
-    }
-    if(traj_xtc.length()>0 && trajectoryFile.length()==0) {
-      trajectoryFile=traj_xtc;
-      trajectory_fmt="xdr-xtc";
-    }
-    if(traj_trr.length()>0 && trajectoryFile.length()==0) {
-      trajectoryFile=traj_trr;
-      trajectory_fmt="xdr-trr";
-    }
+
     if(trajectoryFile.length()==0&&!parseOnly) {
       std::fprintf(stderr,"ERROR: missing trajectory data\n");
       return 1;
@@ -585,31 +511,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     parse("--natoms",command_line_natoms);
 
-  }
-
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-  auto mf_deleter=[api](void* h_in) {
-    if(h_in) {
-      std::unique_ptr<std::lock_guard<std::mutex>> lck;
-      if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {
-        lck=Tools::molfile_lock();
-      }
-      api->close_file_read(h_in);
-    }
-  };
-  void *h_in=NULL;
-  std::unique_ptr<void,decltype(mf_deleter)> h_in_deleter(h_in,mf_deleter);
-
-  molfile_timestep_t ts_in; // this is the structure that has the timestep
-// a std::vector<float> with the same scope as ts_in
-// it is necessary in order to store the pointer to ts_in.coords
-  std::vector<float> ts_in_coords;
-  ts_in.coords=ts_in_coords.data();
-  ts_in.velocities=NULL;
-  ts_in.A=-1; // we use this to check whether cell is provided or not
-#endif
-
-
+  } // if(!noatoms)
 
   if(debug_dd && debug_pd) {
     error("cannot use debug-dd and debug-pd at the same time");
@@ -653,9 +555,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
   p.cmd("setLog",out);
 
-  int natoms;
-  int lvl=0;
-  int pb=1;
+  int natoms=0;
 
   if(parseOnly) {
     if(command_line_natoms<0) {
@@ -665,26 +565,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
 
-  FILE* fp=NULL;
   FILE* fp_forces=NULL;
   OFile fp_dforces;
 
-  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
-
-  auto xdr_deleter=[](auto xd) {
-    if(xd) {
-      xdrfile::xdrfile_close(xd);
-    }
-  };
-
-  xdrfile::XDRFILE* xd=NULL;
-
-  std::unique_ptr<xdrfile::XDRFILE,decltype(xdr_deleter)> xd_deleter(xd,xdr_deleter);
 
   if(!noatoms&&!parseOnly) {
     if (trajectoryFile=="-") {
-      fp=in;
+      parser.init(trajectory_fmt, in);
     } else {
       if(multi) {
         std::string n;
@@ -697,47 +585,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           trajectoryFile=testfile;
         }
       }
-      if(use_molfile==true) {
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-        std::unique_ptr<std::lock_guard<std::mutex>> lck;
-        if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {
-          lck=Tools::molfile_lock();
-        }
-        h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
-        h_in_deleter.reset(h_in);
-        if(natoms==MOLFILE_NUMATOMS_UNKNOWN) {
-          if(command_line_natoms>=0) {
-            natoms=command_line_natoms;
-          } else {
-            error("this file format does not provide number of atoms; use --natoms on the command line");
-          }
-        }
-        ts_in_coords.resize(3*natoms);
-        ts_in.coords = ts_in_coords.data();
-#endif
-      } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
-        xd=xdrfile::xdrfile_open(trajectoryFile.c_str(),"r");
-        xd_deleter.reset(xd);
-        if(!xd) {
-          std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
-          std::fprintf(stderr,"%s\n",msg.c_str());
-          return 1;
-        }
-        if(trajectory_fmt=="xdr-xtc") {
-          xdrfile::read_xtc_natoms(&trajectoryFile[0],&natoms);
-        }
-        if(trajectory_fmt=="xdr-trr") {
-          xdrfile::read_trr_natoms(&trajectoryFile[0],&natoms);
-        }
-      } else {
-        fp=std::fopen(trajectoryFile.c_str(),"r");
-        fp_deleter.reset(fp);
-        if(!fp) {
-          std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
-          std::fprintf(stderr,"%s\n",msg.c_str());
-          return 1;
-        }
-      }
+      parser.init(trajectory_fmt,trajectoryFile,use_molfile,command_line_natoms);
+      natoms = parser.nOfAtoms();
     }
     if(dumpforces.length()>0) {
       if(Communicator::initialized() && pc.Get_size()>1) {
@@ -781,56 +630,28 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 // random stream to choose decompositions
   Random rnd;
 
-  if(trajectory_fmt=="dlp4") {
-    if(!Tools::getline(fp,line)) {
-      error("error reading title");
-    }
-    if(!Tools::getline(fp,line)) {
-      error("error reading atoms");
-    }
-    std::sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
 
-  }
   bool lstep=true;
   while(true) {
-    if(!noatoms&&!parseOnly) {
-      if(use_molfile==true) {
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-        std::unique_ptr<std::lock_guard<std::mutex>> lck;
-        if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {
-          lck=Tools::molfile_lock();
-        }
-        int rc;
-        rc = api->read_next_timestep(h_in, natoms, &ts_in);
-        if(rc==MOLFILE_EOF) {
-          break;
-        }
-#endif
-      } else if(trajectory_fmt=="xyz" || trajectory_fmt=="gro" || trajectory_fmt=="dlp4") {
-        if(!Tools::getline(fp,line)) {
-          break;
-        }
-      }
-    }
     bool first_step=false;
     if(!noatoms&&!parseOnly) {
-      if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")) {
-        if(trajectory_fmt=="gro")
-          if(!Tools::getline(fp,line)) {
-            error("premature end of trajectory file");
-          }
-        std::sscanf(line.c_str(),"%100d",&natoms);
-      }
-      if(use_molfile==false && trajectory_fmt=="dlp4") {
-        char xa[9];
-        int xb,xc,xd;
-        double t;
-        std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
-        if (lstep) {
-          p.cmd("setTimestep",real(t));
-          lstep = false;
+
+      real timeStep=-1.0;
+
+      auto errormessage=parser.readHeader(step,timeStep);
+
+      if (errormessage) {
+        if (*errormessage =="EOF") {
+          break;
+        } else {
+          error(*errormessage);
         }
       }
+      if (lstep && timeStep>0.0) {
+        p.cmd("setTimestep",real(timeStep));
+        lstep = false;
+      }
+      natoms=parser.nOfAtoms();
     }
     if(checknatoms<0 && !noatoms) {
       pd_nlocal=natoms;
@@ -864,6 +685,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     } else if( checknatoms<0 && noatoms ) {
       natoms=0;
     }
+
     if( checknatoms<0 ) {
       if(kt>=0) {
         p.cmd("setKbT",kt);
@@ -981,7 +803,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             } else {
               valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
             }
-            for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+            for(int i=0; i<av->getNumberOfComponents(); ++i) {
               Value* myval = av->copyOutput(i);
               std::string compname = myval->getName(), description;
               if( av->getLabel()==compname ) {
@@ -1032,7 +854,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                 }
                 valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
               } else {
-                for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
+                for(int j=0; j<av2->getNumberOfComponents(); ++j) {
                   Value* myval = av2->copyOutput(j);
                   std::string compname = myval->getName(), description;
                   if( av2->getLabel()==compname ) {
@@ -1139,249 +961,32 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     int plumedStopCondition=0;
     if(!noatoms) {
-      if(use_molfile) {
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-        if(pbc_cli_given==false) {
-          if(ts_in.A>0.0) { // this is negative if molfile does not provide box
-            // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
-            real cosBC=cos(real(ts_in.alpha)*pi/180.);
-            //double sinBC=std::sin(ts_in.alpha*pi/180.);
-            real cosAC=std::cos(real(ts_in.beta)*pi/180.);
-            real cosAB=std::cos(real(ts_in.gamma)*pi/180.);
-            real sinAB=std::sin(real(ts_in.gamma)*pi/180.);
-            real Ax=real(ts_in.A);
-            real Bx=real(ts_in.B)*cosAB;
-            real By=real(ts_in.B)*sinAB;
-            real Cx=real(ts_in.C)*cosAC;
-            real Cy=(real(ts_in.C)*real(ts_in.B)*cosBC-Cx*Bx)/By;
-            real Cz=std::sqrt(real(ts_in.C)*real(ts_in.C)-Cx*Cx-Cy*Cy);
-            cell[0]=Ax/10.;
-            cell[1]=0.;
-            cell[2]=0.;
-            cell[3]=Bx/10.;
-            cell[4]=By/10.;
-            cell[5]=0.;
-            cell[6]=Cx/10.;
-            cell[7]=Cy/10.;
-            cell[8]=Cz/10.;
-          } else {
-            cell[0]=0.0;
-            cell[1]=0.0;
-            cell[2]=0.0;
-            cell[3]=0.0;
-            cell[4]=0.0;
-            cell[5]=0.0;
-            cell[6]=0.0;
-            cell[7]=0.0;
-            cell[8]=0.0;
-          }
+      auto errormessage=parser.readAtoms(
+                          stride,
+                          pbc_cli_given,
+                          debug_pd,
+                          pd_start,
+                          pd_nlocal,
+                          step,
+                          masses.data(),
+                          charges.data(),
+                          coordinates.data(),
+                          cell.data()
+                        );
+
+      if (errormessage) {
+        if (*errormessage =="EOF") {
+          break;
         } else {
-          for(unsigned i=0; i<9; i++) {
-            cell[i]=pbc_cli_box[i];
-          }
+          error(*errormessage);
         }
-        // info on coords
-        // the order is xyzxyz...
-        for(int i=0; i<3*natoms; i++) {
-          coordinates[i]=real(ts_in.coords[i])/real(10.); //convert to nm
-          //cerr<<"COOR "<<coordinates[i]<<endl;
-        }
-#endif
-      } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
-        int localstep;
-        float time;
-        xdrfile::matrix box;
-// here we cannot use a std::vector<rvec> since it does not compile.
-// we thus use a std::unique_ptr<rvec[]>
-        auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
-        float prec,lambda;
-        int ret=xdrfile::exdrOK;
-        if(trajectory_fmt=="xdr-xtc") {
-          ret=xdrfile::read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);
-        }
-        if(trajectory_fmt=="xdr-trr") {
-          ret=xdrfile::read_trr(xd,natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
-        }
-        if(stride==0) {
-          step=localstep;
-        }
-        if(ret==xdrfile::exdrENDOFFILE) {
-          break;
-        }
-        if(ret!=xdrfile::exdrOK) {
-          break;
-        }
-        for(unsigned i=0; i<3; i++)
-          for(unsigned j=0; j<3; j++) {
-            cell[3*i+j]=box[i][j];
-          }
-        for(int i=0; i<natoms; i++)
-          for(unsigned j=0; j<3; j++) {
-            coordinates[3*i+j]=real(pos[i][j]);
-          }
-      } else {
-        if(trajectory_fmt=="xyz") {
-          if(!Tools::getline(fp,line)) {
-            error("premature end of trajectory file");
-          }
-
-          std::vector<double> celld(9,0.0);
-          if(pbc_cli_given==false) {
-            std::vector<std::string> words;
-            words=Tools::getWords(line);
-            if(words.size()==3) {
-              Tools::convert(words[0],celld[0]);
-              Tools::convert(words[1],celld[4]);
-              Tools::convert(words[2],celld[8]);
-            } else if(words.size()==9) {
-              Tools::convert(words[0],celld[0]);
-              Tools::convert(words[1],celld[1]);
-              Tools::convert(words[2],celld[2]);
-              Tools::convert(words[3],celld[3]);
-              Tools::convert(words[4],celld[4]);
-              Tools::convert(words[5],celld[5]);
-              Tools::convert(words[6],celld[6]);
-              Tools::convert(words[7],celld[7]);
-              Tools::convert(words[8],celld[8]);
-            } else {
-              error("needed box in second line of xyz file");
-            }
-          } else {			// from command line
-            celld=pbc_cli_box;
-          }
-          for(unsigned i=0; i<9; i++) {
-            cell[i]=real(celld[i]);
-          }
-        }
-        if(trajectory_fmt=="dlp4") {
-          std::vector<double> celld(9,0.0);
-          if(pbc_cli_given==false) {
-            if(!Tools::getline(fp,line)) {
-              error("error reading vector a of cell");
-            }
-            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[1],&celld[2]);
-            if(!Tools::getline(fp,line)) {
-              error("error reading vector b of cell");
-            }
-            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[3],&celld[4],&celld[5]);
-            if(!Tools::getline(fp,line)) {
-              error("error reading vector c of cell");
-            }
-            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[6],&celld[7],&celld[8]);
-          } else {
-            celld=pbc_cli_box;
-          }
-          for(auto i=0; i<9; i++) {
-            cell[i]=real(celld[i])*0.1;
-          }
-        }
-        int ddist=0;
-        // Read coordinates
-        for(int i=0; i<natoms; i++) {
-          bool ok=Tools::getline(fp,line);
-          if(!ok) {
-            error("premature end of trajectory file");
-          }
-          double cc[3];
-          if(trajectory_fmt=="xyz") {
-            char dummy[1000];
-            int ret=std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
-            if(ret!=4) {
-              error("cannot read line"+line);
-            }
-          } else if(trajectory_fmt=="gro") {
-            // do the gromacs way
-            if(!i) {
-              //
-              // calculate the distance between dots (as in gromacs gmxlib/confio.c, routine get_w_conf )
-              //
-              const char      *p1, *p2, *p3;
-              p1 = std::strchr(line.c_str(), '.');
-              if (p1 == NULL) {
-                error("seems there are no coordinates in the gro file");
-              }
-              p2 = std::strchr(&p1[1], '.');
-              if (p2 == NULL) {
-                error("seems there is only one coordinates in the gro file");
-              }
-              ddist = p2 - p1;
-              p3 = std::strchr(&p2[1], '.');
-              if (p3 == NULL) {
-                error("seems there are only two coordinates in the gro file");
-              }
-              if (p3 - p2 != ddist) {
-                error("not uniform spacing in fields in the gro file");
-              }
-            }
-            Tools::convert(line.substr(20,ddist),cc[0]);
-            Tools::convert(line.substr(20+ddist,ddist),cc[1]);
-            Tools::convert(line.substr(20+ddist+ddist,ddist),cc[2]);
-          } else if(trajectory_fmt=="dlp4") {
-            char dummy[9];
-            int idummy;
-            double m,c;
-            std::sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
-            masses[i]=real(m);
-            charges[i]=real(c);
-            if(!Tools::getline(fp,line)) {
-              error("error reading coordinates");
-            }
-            std::sscanf(line.c_str(),"%lf %lf %lf",&cc[0],&cc[1],&cc[2]);
-            cc[0]*=0.1;
-            cc[1]*=0.1;
-            cc[2]*=0.1;
-            if(lvl>0) {
-              if(!Tools::getline(fp,line)) {
-                error("error skipping velocities");
-              }
-            }
-            if(lvl>1) {
-              if(!Tools::getline(fp,line)) {
-                error("error skipping forces");
-              }
-            }
-          } else {
-            plumed_error();
-          }
-          if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ) {
-            coordinates[3*i]=real(cc[0]);
-            coordinates[3*i+1]=real(cc[1]);
-            coordinates[3*i+2]=real(cc[2]);
-          }
-        }
-        if(trajectory_fmt=="gro") {
-          if(!Tools::getline(fp,line)) {
-            error("premature end of trajectory file");
-          }
-          std::vector<std::string> words=Tools::getWords(line);
-          if(words.size()<3) {
-            error("cannot understand box format");
-          }
-          Tools::convert(words[0],cell[0]);
-          Tools::convert(words[1],cell[4]);
-          Tools::convert(words[2],cell[8]);
-          if(words.size()>3) {
-            Tools::convert(words[3],cell[1]);
-          }
-          if(words.size()>4) {
-            Tools::convert(words[4],cell[2]);
-          }
-          if(words.size()>5) {
-            Tools::convert(words[5],cell[3]);
-          }
-          if(words.size()>6) {
-            Tools::convert(words[6],cell[5]);
-          }
-          if(words.size()>7) {
-            Tools::convert(words[7],cell[6]);
-          }
-          if(words.size()>8) {
-            Tools::convert(words[8],cell[7]);
-          }
-        }
-
       }
 
+      if(pbc_cli_given) {
+        for(unsigned i=0; i<9; i++) {
+          cell[i]=real(pbc_cli_box[i]);
+        }
+      }
       p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
 
