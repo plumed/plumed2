@@ -102,9 +102,11 @@ public:
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU
-  virtual void getInputData( std::vector<double>& inputdata ) const {
-    plumed_merror("this is not implemented yet");
-  }
+  virtual void getInputData( std::vector<double>& inputdata ) const ;
+/// This is so we an transfer data gathered in the parallel task manager to the underlying values
+  virtual void transferStashToValues( const std::vector<double>& stash );
+/// This is so we can transfer forces from the values to the parallel task manager
+  virtual void transferForcesToStash( std::vector<double>& stash ) const ;
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average
@@ -113,8 +115,6 @@ public:
   virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {}
 /// Gather the values that we intend to store in the buffer
   virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const {}
-/// Check if there is a force that needs to be accumulated on the ith task
-  virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on non-scalar quantities
   virtual void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value
