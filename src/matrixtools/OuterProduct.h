@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_matrxtools_OuterProduct_h
-#define __PLUMED_matrxtools_OuterProduct_h
+#ifndef __PLUMED_matrixtools_OuterProduct_h
+#define __PLUMED_matrixtools_OuterProduct_h
 
 #include "core/ActionWithMatrix.h"
 #include "core/ParallelTaskManager.h"

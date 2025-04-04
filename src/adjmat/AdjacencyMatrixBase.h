@@ -51,7 +51,7 @@ public:
   Vector pos;
   std::size_t natoms{0};
   std::vector<Vector> extra_positions;
-  AdjacencyMatrixInput( bool n, const Pbc* b, Vector p ) : noderiv(n), pbc(b), pos(p) {}
+  AdjacencyMatrixInput( bool n, const Pbc* b, const Vector& p ) : noderiv(n), pbc(b), pos(p) {}
 };
 
 class MatrixOutput {

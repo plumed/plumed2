@@ -483,7 +483,7 @@ unsigned Value::getRowIndex( const std::size_t& irow, const std::size_t& jind ) 
 
 inline
 void Value::setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind ) {
-  plumed_dbg_assert( (1+ncols)*irow+1+ind.size()<matrix_bookeeping.size() );
+  plumed_dbg_massert( (1+ncols)*irow+1+ind.size()<=matrix_bookeeping.size(), "problem in " + name );
   std::size_t istart = (1+ncols)*irow;
   matrix_bookeeping[istart] = ind.size();
   ++istart;

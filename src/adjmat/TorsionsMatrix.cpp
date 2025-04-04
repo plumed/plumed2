@@ -136,9 +136,8 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
       error("argument passed to MASK keyword has the wrong shape");
     }
   }
-  TorsionsMatrixInput actdata;
   taskmanager.setupParallelTaskManager( 1, 2, getPntrToArgument(0)->getNumberOfStoredValues() );
-  taskmanager.setActionInput( actdata );
+  taskmanager.setActionInput( TorsionsMatrixInput() );
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() {
