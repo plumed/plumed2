@@ -39,20 +39,68 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS show_graph
 /*
-show_graph is a tool that takes a plumed input and generates a graph showing how
+show_graph is a tool that takes a plumed input and generates a flowchart showing how
 data flows through the action set involved.
 
-If this tool is invoked without the --force keyword then the way data is passed through the code during the forward pass
-through the action is shown.
+For example, if we have the following plumed input:
 
-When the --force keyword is used then the way forces are passed from biases through actions is shown.
+```plumed
+d1: DISTANCE ATOMS=1,2
+a1: ANGLE ATOMS=1,2,3
+t1: TORSION ATOMS=1,2,3,4
+r: RESTRAINT ARG=d1,a1 AT=1.0,pi/2 KAPPA=100,100
+PRINT ARG=d1,a1,t1,r.* FILE=colvar
+```
 
-\par Examples
+We can use the command:
 
-The following generates the mermaid file for the input in plumed.dat
-\verbatim
+```plumed
 plumed show_graph --plumed plumed.dat
-\endverbatim
+```
+
+To generate the following flowchart showing how data passes through these actions during the PLUMED calculation.
+
+```plumed
+#MERMAID=value
+d1: DISTANCE ATOMS=1,2
+a1: ANGLE ATOMS=1,2,3
+t1: TORSION ATOMS=1,2,3,4
+r: RESTRAINT ARG=d1,a1 AT=1.0,pi/2 KAPPA=100,100
+PRINT ARG=d1,a1,t1,r.* FILE=colvar
+```
+
+Furthermore, if we want to understand how forces on the atoms are calculated from these actions by using the chain rule
+we can use the following command:
+
+```plumed
+plumed show_graph --plumed plumed.dat --force
+```
+
+To generate the following flowchart:
+
+```plumed
+#MERMAID=force
+d1: DISTANCE ATOMS=1,2
+a1: ANGLE ATOMS=1,2,3
+t1: TORSION ATOMS=1,2,3,4
+r: RESTRAINT ARG=d1,a1 AT=1.0,pi/2 KAPPA=100,100
+PRINT ARG=d1,a1,t1,r.* FILE=colvar
+```
+
+These flowcharts are output in a file called `graph.md` unless you use the `--out` option as shown below:
+
+```plumed
+plumed show_graph --plumed plumed.dat --out mygraph.md
+```
+
+In this case the flowchart is output to a file called `mygraph.md`.  This file contains the instructions for constructing the 
+flowchart in [mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.html).  To construct images similar to those 
+above you can copy and paste the contents of the output `graph.md` file into [this online tool for 
+rendering mermaid diagrams](https://mermaid.live).
+
+If you are writing documentation for PLUMED or tutorials for the [plumed tutorials](www.plumed-tutorials.org) site you can add 
+these diagrams by adding the instruction `#MERMAID=value` or `#MERMAID=force` into example inputs.  When these options are given 
+inputs are displayed as mermaid diagrams in the final output html.
 
 */
 //+ENDPLUMEDOC

@@ -34,42 +34,14 @@
 /*
 Pesmd allows one to do (biased) Langevin dynamics on a two-dimensional potential energy surface.
 
-The energy landscape that you are moving about on is specified using a plumed input file.
-The directives that are available for this command line tool are as follows:
+The energy landscape that you are moving about on is specified using in a plumed input file.  
+For example the following example input uses [MATHEVAL](MATHEVAL.md) to define a two dimensional potential.
 
-\par Examples
-
-You run a Langevin simulation using pesmd with the following command:
-\verbatim
-plumed pesmd < input
-\endverbatim
-
-The following is an example of an input file for a pesmd simulation. This file
-instructs pesmd to do 50 steps of Langevin dynamics on a 2D potential energy surface
-at a temperature of 0.722
-\verbatim
-temperature 0.722
-tstep 0.005
-friction 1
-dimension 2
-nstep 50
-ipos 0.0 0.0
-\endverbatim
-
-If you run the following a description of all the directives that can be used in the
-input file will be output.
-\verbatim
-plumed pesmd --help
-\endverbatim
-
-The energy landscape to explore is given within the plumed input file.  For example the following
-example input uses \ref MATHEVAL to define a two dimensional potential.
-
-\verbatim
+```plumed
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 ff: MATHEVAL ARG=d1.x,d1,y PERIODIC=NO FUNC=()
 bb: BIASVALUE ARG=ff
-\endverbatim
+```
 
 Atom 1 is placed at the origin.  The x and y components on our surface are the
 positions of the particle on our two dimensional energy landscape.  By calculating the
@@ -80,14 +52,41 @@ that is calculated on the second line.  The value of this function is then used 
 We can also specify a potential on a grid and look at the dynamics on this function using pesmd.
 A plumed input for an example such as this one might look something like this:
 
-\verbatim
+```plumed
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 bb: EXTERNAL ARG=d1.x,d1,y FILE=fes.dat
-\endverbatim
+```
 
 In this way we can use pesmd to do a dynamics on a free energy surface calculated using metadynamics
-and sum_hills.  On a final note once we have defined our potential we can use all the biasing functions
+and sum_hills.  Notice also, that once we have defined our potential we can use all the biasing functions
 within plumed in addition in order to do a biased dynamics on the potential energy landscape of interest.
+
+You run a Langevin simulation using pesmd with the following command:
+
+```plumed
+plumed pesmd < input
+```
+
+The input to pesmd is specified in an input file that contains one directive per line like the one shown below. 
+
+```plumed
+#TOOL=pesmd
+temperature 0.722
+tstep 0.005
+friction 1
+dimension 2
+nstep 50
+ipos 0.0 0.0
+```
+
+This file instructs pesmd to do 50 steps of Langevin dynamics on a 2D potential energy surface
+at a temperature of 0.722
+
+If you run the following command a description of all the directives that can be used in the input file will be output.
+
+```plumed
+plumed pesmd --help
+```
 
 */
 //+ENDPLUMEDOC
@@ -101,6 +100,7 @@ class PesMD  : public PLMD::CLTool {
   }
 public:
   static void registerKeywords( Keywords& keys ) {
+    CLTool::registerKeywords( keys );
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");

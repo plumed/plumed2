@@ -47,48 +47,55 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS benchmark
 /*
-benchmark is a lightweight reimplementation of driver focused on running benchmarks
+benchmark is a lightweight reimplementation of [driver](driver.md) that can be used to run benchmark calculations
 
-The main difference wrt driver is that it generates a trajectory in memory rather than reading it
-from a file. This allows to better time the overhead of the plumed library, without including
-the time needed to read the trajectory.
+The main difference between [driver](driver.md) and benchmark is that benchmark generates a trajectory in memory rather than reading a
+trajectory from a file. This approach is better for timing the overhead of the plumed library.  If you do similar benchmarking with driver
+the timings you get are dominated by the time spent doing the I/O operations that are required to read the trajectory. 
 
-It is also possible to load a separate version of the plumed kernel. This enables running
-benchmarks agaist previous plumed versions in a controlled setting, where systematic errors
-in the comparison are minimized.
+## Basic usage
 
-\par Examples
+If you want to use benchmark you first create a sample `plumed.dat` file for testing. For example:
 
-First, you should create a sample `plumed.dat` file for testing. For instance:
-
-\plumedfile
+```plumed
 WHOLEMOLECULES ENTITY0=1-10000
 p: POSITION ATOM=1
 RESTRAINT ARG=p.x KAPPA=1 AT=0
-\endplumedfile
+```
 
-Then you can test the performance of this input with the following command:
-\verbatim
+You can then run this benchmark using the following command:
+
+```plumed
 plumed benchmark
-\endverbatim
+```
 
-You can also test a different (older) version of PLUMED with the same input. To do so,
-you should run
-\verbatim
+Notice, that benchmark will read an input file called `plumed.dat` by default.  You can specify a different name for you PLUMED input file
+by using the `--plumed` flag.
+
+## Running with a different PLUMED version
+
+If you want to run a benchmark against a previous plumed version in a controlled setting you can do so by using the command:
+
+```plumed
 plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so
-\endverbatim
+```
 
-\warning It is necessary to use the `plumed-runtime` executable here to avoid conflicts between different
-plumed versions. You will find it in your path if you are using the non installed version of plumed,
-and in `$prefix/lib/plumed` if you installed plumed in $prefix,.
+If you use this command the version of PLUMED that is in your environment calls the version of the library that is specified using the 
+`--kernel` flag.  Running the benchmark in this way ensures that you are running in a controlled setting, where systematic errors
+in the comparison are minimized.
 
-\par Comparing multiple versions
+> [!WARNING]
+> You use the `plumed-runtime` executable here to avoid conflicts between different
+> plumed versions. You will find the `plumed-runtime` executable in your path if you are using the non installed version of plumed,
+> and in `$prefix/lib/plumed` if you installed plumed in $prefix,.
 
-The best way to compare two versions of plumed on the same input is to pass multiple colon-separated kernels:
+## Comparing multiple versions
 
-\verbatim
+The best way to compare two versions of plumed on the same input is to pass multiple colon-separated kernels as shown below:
+
+```plumed
 plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so:/path2/to/lib/libplumedKernel.so:this
-\endverbatim
+```
 
 Here `this` means the kernel of the version with which you are running the benchmark. This comparison runs the three
 instances simultaneously (alternating them) so that systematic differences in the load of your machine will affect them
@@ -97,64 +104,67 @@ to the same extent.
 In case the different versions require modified plumed.dat files, or if you simply want to compare
 two different plumed input files that compute the same thing, you can also use multiple plumed input files:
 
-\verbatim
+```plumed
 plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so:this --plumed plumed1.dat:plumed2.dat
-\endverbatim
+```
 
-Similarly, you might want to run two different inputs using the same kernel, which can be obtained with:
+Similarly, you might want to run two different inputs using the same kernel by using an input like this:
 
-\verbatim
+```plumed
 plumed-runtime benchmark --plumed plumed1.dat:plumed2.dat
-\endverbatim
+```
 
-\par Profiling
+## Profiling
 
-If you want to attach a profiler on the fly to the process, you might find it convenient to use `--nsteps -1`.
-The simulation will run forever and can be interrupted with CTRL-C. When interrupted, the result of the timers
+If you want to attach a profiler to the process on the fly, you might find it convenient to use `--nsteps -1`.
+This options ensures that the simulation runs forever unless interrupted with CTRL-C. When interrupted, the result of the timers
 should be displayed anyway.
-You can also run setting a maximum time with `--maxtime`.
+You can also set a maximum time for the calculating by using the `--maxtime` flag.
 
-If you run a profiler when testing multiple PLUMED versions you might be confused by which function is from
-each version. It is recommended to recompile separate instances with a separate C++ namespace (`-DPLMD=PLUMED_version_1`)
+If you run a profiler when testing multiple PLUMED versions it can be difficult to determine which function is from
+each version. We therefore recommended you recompile separate PLUMED instances with a separate C++ namespace (`-DPLMD=PLUMED_version_1`)
 so that you will be able to distinguish them. In addition, compiling with `CXXFLAGS="-g -O3"` will make the profiling
-report more complete, likely including code lines.
+report more complete and will likely highlight lines of code that are particularly computationally demanding.
 
-\par MPI runs
+## MPI runs
 
-You can run emulating a domain decomposition. This is done automatically if plumed has been compiled with MPI
-and you run with `mpirun`
+You can also run a benchmark that emulates a domain decomposition if plumed has been compiled with MPI
+and you run with `mpirun` and a command like the one shown below:
 
-\verbatim
+```plumed
 mpirun -np 4 plumed-runtime benchmark
-\endverbatim
+```
 
 If you load separate PLUMED instances as discussed above, they should all be compiled against the same MPI version.
 Notice that when using MPI signals (CTRL-C) might not work.
 
 Since some of the data transfer could happen asynchronously, you might want to use the `--sleep` option
 to simulate a lag between the `prepareCalc` and `performCalc` actions. This part of the calculation will not contribute
-to timer, but will obviously slow down your test.
+to the output timings, but will obviously slow down your test.
 
-\par Output
+## Output
 
-In the output you will see the usual reports about timing produced by the internal
+In the output you will see the usual reports about timings produced by the internal
 timers of the tested plumed instances.
-In addition, this tool will monitor the timing externally, with some slightly different criterion:
+
+In addition, this tool monitors the timing externally, with some slightly different criterion:
+
 - First, the initialization (construction of the input) will be shown with a separate timer,
   as well as the timing for the first step.
 - Second, the timer corresponding to the calculation will be split in three parts, reporting
   execution of the first 20% (warm-up) and the next two blocks of 40% each.
-- Finally, you might notice some discrepancy because some of the actions that are usually
+- Finally, you might notice some discrepancies because some of the actions that are usually
   not expensive are not included in the internal timers. The external timer will
-  thus provide a better estimate of the total elapsed time, including everything.
+  thus provide a better estimate of the total elapsed time that includes everything.
 
 The internal timers are still useful to monitor what happens at the different stages
-and, with \ref DEBUG `DETAILED_TIMERS`, what happens in each action.
+of the calculattion.  If you want more detailed information you can also use a 
+[DEBUG](DEBUG.md) action with the `DETAILED_TIMERS`, to determine how much time is spnt in each action.
 
 When you run multiple version, a comparative analisys of the time spent within PLUMED in the various
-instances will be done, showing the ratio between the total time and the time measured on the first
-instance, which will act as a reference. Errors will be estimated with bootstrapping. The warm-up phase will be discarded for
-this analysis.
+instances will be done.  For each PLUMED instance you run, this analysis shows the ratio between the total time each PLUMED instance ran for and the total time the first
+PLUMED instance ran for. In other words, the first time that the first PLUMED instance ran for is used as the basis for comparisons. Errors on these estimates of the timings
+are calculated using bootstrapping and the warm-up phase is discarded in the analysis.
 
 */
 //+ENDPLUMEDOC

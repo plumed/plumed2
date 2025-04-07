@@ -35,14 +35,13 @@ namespace cltools {
 /*
 Print out the value of k_B T at a particular temperature
 
-\par Examples
+The following command will tell you the value of $k_BT$ when T is equal to 300 K in eV
 
-The following command will tell you the value of \f$k_BT\f$ when T is equal
-to 300 K in eV
-
-\verbatim
+```plumed
 plumed kt --temp 300 --units eV
-\endverbatim
+```
+
+The value output depends on the unit of energy and the temperature.
 
 */
 //+ENDPLUMEDOC

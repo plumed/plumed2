@@ -33,28 +33,50 @@
 /*
 plotswitch is a tool that takes a the input of a switching function and tabulates the output on the terminal
 
-The tabulated data is compatible with gnuplot and numpy.loadtxt
+The tabulated data is compatible with gnuplot and numpy.loadtxt so you can use this tool to plot any functions that you plan to use with commands like 
+[LESS_THAN](LESS_THAN.md) or [MORE_THAN](MORE_THAN.md).
 
-Without options plotswitch will tabulate 50 points between 0 and R_0, and then continue in tabulating points with the same step until 2*R_0 or if D_MAX is set, D_MAX
+Without options plotswitch will tabulate 50 points between 0 and `R_0`, and then continue in tabulating points with the same step until the value of `D_MAX` is reached. If 
+`D_MAX is unset then a value of `2R_0` is used in place of `D_MAX`.
 
 Without options plotswitch will tabulate data calling calculateSqr, since should be the most used option within the various colvars
 
-Note that if R_0 happen to be between "from" and "to" the number of steps may not be exacly the number requested in order to force r0 to be computed.
+Note that if `R_0` happens to be between "from" and "to" the number of steps may not be exacly the number requested as this command forces the value of the function at r0 to be calculated.
 
-The various --rational** options use the special set option for the rational, like in COORDINATION.
+The various `--rational**` options use the special set option for the rational, like in COORDINATION.
 
-\par Examples
+## Examples
 
-Without option will plot the NN=6 MM=12 rational
-\verbatim
+If this command is called without options like this:
+
+```plumed
 plumed plotswitch > plot.dat
-\endverbatim
+```
 
-\verbatim
-plumed plotswitch --switch="RATIONAL NN=5 MM=9 R_0=1.3" --from=1.29999 --to=1.30001 --steps=100> plot.dat
-\endverbatim
-If you use this with a older plumed version you will see the discontinuity in dfunc around 1.3
-(i use gnuplot with "p 'plot.dat' u 1:3 w l t 'dfunc', 'plot.dat' u 1:2 w l axis x1y2 t 'res'")
+The function calculated is:
+
+$$
+f(x) = \frac{1 - x^6}{1 - x^{12}}
+$$
+
+If you want to use a function that is differnt to this one you use the `--switch` keyword as shown below:
+
+```plumed
+plumed plotswitch --switch="RATIONAL NN=5 MM=9 R_0=1.3" --from=1.29999 --to=1.30001 --steps=100 > plot.dat
+```
+
+The `--switch` keyword here takes the input for switching functions that is discussed in the documentation for 
+[LESS_THAN](LESS_THAN.md).  Notice also that if you use this command with an older plumed version you will see a discontinuity in dfunc at around 1.3
+(if you use gnuplot with "p 'plot.dat' u 1:3 w l t 'dfunc', 'plot.dat' u 1:2 w l axis x1y2 t 'res'")
+
+The following example shows another way of generating the `plot.dat` that is output by the command above:
+
+```plumed
+plumed plotswitch --rationalR_0=1.3 --rationalNN=5 --rationalMM=9 --rationalD_0=0 --from=1.29999 --to=1.30001 --steps=100 > plot.dat
+``` 
+
+As with [LESS_THAN](LESS_THAN.md), there is a alternative to `--switch` that can be used for sepcifying the parameters of RATIONAL switching function. 
+
 */
 //+ENDPLUMEDOC
 

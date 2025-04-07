@@ -33,20 +33,20 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS manual
 /*
-manual is a tool that you can use to construct the manual page for
-a particular action
+manual is a tool that you can use to construct the manual page for a particular action
 
 The manual constructed by this action is in html. In all probability you will never need to use this
-tool. However, it is used within the scripts that generate the html manual for PLUMED.  If you need to use this
-tool outside those scripts the input is specified using the following command line arguments.
+tool. However, it is was within the scripts that generate the old html manual for PLUMED.  
 
-\par Examples
+WE WILL POSSIBILY DELETE THIS COMMAND SOON AS IT IS NO LONGER USED TO CONSTRUCT THE MANUAL
+
+## Examples
 
 The following generates the html manual for the action DISTANCE.
-\verbatim
-plumed manual --action DISTANCE
-\endverbatim
 
+```plumed
+plumed manual --action DISTANCE
+```
 
 */
 //+ENDPLUMEDOC

@@ -64,18 +64,20 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS driver-float
 /*
-Equivalent to driver, but using single precision reals.
+A tool that does the same as driver, but using single precision reals.
 
-The purpose of this tool is just to test what PLUMED does when linked from
-a single precision code.  The documentation is identical to that for \ref driver
+We recommend always using [driver](driver.md) to postprocess your trajectories. However, 
+if you want to test what PLUMED does when linked from a single precision code you can use 
+this version of driver. The documentation for this command line tool is identical to that for 
+[driver](driver.md).
 
-\par Examples
+## Examples
 
-\verbatim
+```plumed
 plumed driver-float --plumed plumed.dat --ixyz trajectory.xyz
-\endverbatim
+```
 
-See also examples in \ref driver
+For more examples see the documentation for [driver](driver.md).
 
 */
 //+ENDPLUMEDOC
@@ -88,55 +90,64 @@ driver is a tool that allows one to to use plumed to post-process an existing tr
 
 The input to driver is specified using the command line arguments described below.
 
-In addition, you can use the special \subpage READ command inside your plumed input
+In addition, you can use the special [READ](READ.md) command inside your plumed input
 to read in colvar files that were generated during your MD simulation.  The values
-read in can then be treated like calculated colvars.
+read in from the file can then be treated like calculated colvars.
 
-\warning
-Notice that by default the driver has no knowledge about the masses and charges
-of your atoms! Thus, if you want to compute quantities depending charges (e.g. \ref DHENERGY)
-or masses (e.g. \ref COM) you should pass the proper information to the driver.
-You can do it either with the --pdb option or with the --mc option. The latter
-will read a file produced by \ref DUMPMASSCHARGE .
+> [!warning]
+> Notice that by default the driver has no knowledge about the masses and charges
+> of your atoms! Thus, if you want to compute quantities that depend on charges (e.g. [DHENERGY](DHENERGY.md))
+> or masses (e.g. [COM](COM.md)) you need to pass masses and charges to driver.
+> You can do this by either using --pdb option or the --mc option. The latter
+> will read a file produced by [DUMPMASSCHARGE](DUMPMASSCHARGE.md).
 
 
-\par Examples
+## Examples
 
 The following command tells plumed to post process the trajectory contained in `trajectory.xyz`
  by performing the actions described in the input file `plumed.dat`.  If an action that takes the
-stride keyword is given a stride equal to \f$n\f$ then it will be performed only on every \f$n\f$th
-frames in the trajectory file.
-\verbatim
-plumed driver --plumed plumed.dat --ixyz trajectory.xyz
-\endverbatim
+stride keyword is given a stride equal to $n$ then it will be performed only on every $n$th
+frame in the trajectory file.
 
-Notice that `xyz` files are expected to be in internal PLUMED units, that is by default nm.
-You can change this behavior by using the `--length-units` option:
-\verbatim
+```plumed
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz
+```
+
+Notice that `xyz` files are expected to be in the internal PLUMED unit of nm.
+You can change this behavior by using the `--length-units` option as shown below
+
+```plumed
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --length-units A
-\endverbatim
-The strings accepted by the `--length-units` options are the same ones accepted by the \ref UNITS action.
+```
+
+The strings accepted by the `--length-units` options are the same ones accepted by the [UNITS](UNITS.md) action.
 Other file formats typically have their default coordinates (e.g., `gro` files are always in nm)
 and it thus should not be necessary to use the `--length-units` option. Additionally,
 consider that the units used by the `driver` might be different by the units used in the PLUMED input
 file `plumed.dat`. For instance consider the command:
-\verbatim
+
+```plumed
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --length-units A
-\endverbatim
-where `plumed.dat` is
-\plumedfile
+```
+
+which uses the following `plumed.dat` file
+
+```plumed
 # no explicit UNITS action here
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=colvar
-\endplumedfile
-In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstrom units.
+```
+
+In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstroms.
 However, the resulting `colvar` file contains a distance expressed in nm.
 
 The following command tells plumed to post process the trajectory contained in trajectory.xyz.
  by performing the actions described in the input file plumed.dat.
-\verbatim
+
+```plumed
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
-\endverbatim
+```
+
 Here though
 `--trajectory-stride` is set equal to the frequency with which frames were output during the trajectory
 and the `--timestep` is equal to the simulation timestep.  As such the `STRIDE` parameters in the `plumed.dat`
@@ -144,42 +155,43 @@ files are referred to the original timestep and any files output resemble those 
 had we run the calculation we are running with driver when the MD simulation was running.
 
 PLUMED can read xyz files (in PLUMED units) and gro files (in nm). In addition,
-PLUMED includes by default support for a
+PLUMED includes support for a
 subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
 
-\verbatim
+```plumed
 plumed driver --plumed plumed.dat --pdb diala.pdb --mf_xtc traj.xtc --trajectory-stride 100 --timestep 0.001
-\endverbatim
+```
 
 where `--mf_` prefixes the extension of one of the accepted molfile plugin format.
-If PLUMED has been \ref Installation "installed" with full molfile support, other formats will be available.
-Just type `plumed driver --help` to see which plugins are available.
+If PLUMED has been installed with full molfile support, other formats will be available.
+Just type `plumed driver --help` to see which file formats you can use.
 
-Molfile plugin require periodic cell to be triangular (i.e. first vector oriented along x and
+Molfile plugin requires the periodic cell to be triangular (i.e. the first vector oriented along x and
 second vector in xy plane). This is true for many MD codes. However, it could be false
 if you rotate the coordinates in your trajectory before reading them in the driver.
-Also notice that some formats (e.g. amber crd) do not specify atom number. In this case you can use
-the `--natoms` option:
-\verbatim
-plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
-\endverbatim
+Also notice that some formats (e.g. amber crd) do not specify the total number of atoms. In this case you can use
+the `--natoms` option as shown below
+
+```plumed
+plumed driver --plumed plumed.dat --mf_crd trajectory.crd --natoms 128
+```
 
 Check the available molfile plugins and limitations at [this link](http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/).
 
-Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
+You can also use the xdrfile implementation of xtc and trr with plumed driver. If you want to do so you just
 download and install properly the xdrfile library (see [this link](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)).
 If the xdrfile library is installed properly the PLUMED configure script should be able to
 detect it and enable it.
 Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
-In addition, it allows \ref DUMPATOMS to write compressed xtc files.
+In addition, if you install xdrfile you can then use the [DUMPATOMS](DUMPATOMS.md) command to write compressed xtc files.
 
-\par Multiple replicas
+## Multiple replicas
 
-When PLUMED is compiled with MPI support, you can emulate a multi-simulation setup with the `driver` by providing the `--multi`
-option with the appropriate number of ranks. This allows to use the \ref special-replica-syntax and to analyze multiple
-trajectories (see \ref trieste-5-replicas). PLUMED will automatically append a numbered suffix to output files
-(e.g. `COLVAR.0`, `COLVAR.1`, …). Similarly, each replica will search for the corresponding suffixed input file (e.g. `traj.0.xtc`, …)
+When PLUMED is compiled with MPI support, you can emulate a multi-simulation setup with `driver` by providing the `--multi`
+option with the appropriate number of ranks. This allows you to use the ref special-replica-syntax that is discussed [here](parsing.md) to analyze multiple
+trajectories (see [this tutorial](https://www.plumed-tutorials.org/lessons/21/005/data/NAVIGATION.html)). PLUMED will also automatically append a numbered suffix to output files
+(e.g. `COLVAR.0`, `COLVAR.1`, …) as discussed [here](Files.md). Similarly, each replica will search for the corresponding suffixed input file (e.g. `traj.0.xtc`, …)
 or default to the unsuffixed one.
 
 */
