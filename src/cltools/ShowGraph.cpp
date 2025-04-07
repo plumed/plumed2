@@ -93,13 +93,13 @@ These flowcharts are output in a file called `graph.md` unless you use the `--ou
 plumed show_graph --plumed plumed.dat --out mygraph.md
 ```
 
-In this case the flowchart is output to a file called `mygraph.md`.  This file contains the instructions for constructing the 
-flowchart in [mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.html).  To construct images similar to those 
-above you can copy and paste the contents of the output `graph.md` file into [this online tool for 
+In this case the flowchart is output to a file called `mygraph.md`.  This file contains the instructions for constructing the
+flowchart in [mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.html).  To construct images similar to those
+above you can copy and paste the contents of the output `graph.md` file into [this online tool for
 rendering mermaid diagrams](https://mermaid.live).
 
-If you are writing documentation for PLUMED or tutorials for the [plumed tutorials](www.plumed-tutorials.org) site you can add 
-these diagrams by adding the instruction `#MERMAID=value` or `#MERMAID=force` into example inputs.  When these options are given 
+If you are writing documentation for PLUMED or tutorials for the [plumed tutorials](www.plumed-tutorials.org) site you can add
+these diagrams by adding the instruction `#MERMAID=value` or `#MERMAID=force` into example inputs.  When these options are given
 inputs are displayed as mermaid diagrams in the final output html.
 
 */

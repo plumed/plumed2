@@ -34,7 +34,7 @@
 /*
 Pesmd allows one to do (biased) Langevin dynamics on a two-dimensional potential energy surface.
 
-The energy landscape that you are moving about on is specified using in a plumed input file.  
+The energy landscape that you are moving about on is specified using in a plumed input file.
 For example the following example input uses [MATHEVAL](MATHEVAL.md) to define a two dimensional potential.
 
 ```plumed
@@ -67,7 +67,7 @@ You run a Langevin simulation using pesmd with the following command:
 plumed pesmd < input
 ```
 
-The input to pesmd is specified in an input file that contains one directive per line like the one shown below. 
+The input to pesmd is specified in an input file that contains one directive per line like the one shown below.
 
 ```plumed
 #TOOL=pesmd

@@ -36,8 +36,8 @@ namespace cltools {
 /*
 Dumps the body of a bash function to be used for auto completion.
 
-You typically will not need to use this command it is involved during complation and is 
-used to construct everything that is required for the autocompletion functionality that 
+You typically will not need to use this command it is involved during complation and is
+used to construct everything that is required for the autocompletion functionality that
 is described [here](module_cltools.md).
 
 ## Examples

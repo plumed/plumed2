@@ -66,9 +66,9 @@ namespace cltools {
 /*
 A tool that does the same as driver, but using single precision reals.
 
-We recommend always using [driver](driver.md) to postprocess your trajectories. However, 
-if you want to test what PLUMED does when linked from a single precision code you can use 
-this version of driver. The documentation for this command line tool is identical to that for 
+We recommend always using [driver](driver.md) to postprocess your trajectories. However,
+if you want to test what PLUMED does when linked from a single precision code you can use
+this version of driver. The documentation for this command line tool is identical to that for
 [driver](driver.md).
 
 ## Examples

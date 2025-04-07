@@ -33,10 +33,10 @@
 /*
 plotswitch is a tool that takes a the input of a switching function and tabulates the output on the terminal
 
-The tabulated data is compatible with gnuplot and numpy.loadtxt so you can use this tool to plot any functions that you plan to use with commands like 
+The tabulated data is compatible with gnuplot and numpy.loadtxt so you can use this tool to plot any functions that you plan to use with commands like
 [LESS_THAN](LESS_THAN.md) or [MORE_THAN](MORE_THAN.md).
 
-Without options plotswitch will tabulate 50 points between 0 and `R_0`, and then continue in tabulating points with the same step until the value of `D_MAX` is reached. If 
+Without options plotswitch will tabulate 50 points between 0 and `R_0`, and then continue in tabulating points with the same step until the value of `D_MAX` is reached. If
 `D_MAX is unset then a value of `2R_0` is used in place of `D_MAX`.
 
 Without options plotswitch will tabulate data calling calculateSqr, since should be the most used option within the various colvars
@@ -65,7 +65,7 @@ If you want to use a function that is differnt to this one you use the `--switch
 plumed plotswitch --switch="RATIONAL NN=5 MM=9 R_0=1.3" --from=1.29999 --to=1.30001 --steps=100 > plot.dat
 ```
 
-The `--switch` keyword here takes the input for switching functions that is discussed in the documentation for 
+The `--switch` keyword here takes the input for switching functions that is discussed in the documentation for
 [LESS_THAN](LESS_THAN.md).  Notice also that if you use this command with an older plumed version you will see a discontinuity in dfunc at around 1.3
 (if you use gnuplot with "p 'plot.dat' u 1:3 w l t 'dfunc', 'plot.dat' u 1:2 w l axis x1y2 t 'res'")
 
@@ -73,9 +73,9 @@ The following example shows another way of generating the `plot.dat` that is out
 
 ```plumed
 plumed plotswitch --rationalR_0=1.3 --rationalNN=5 --rationalMM=9 --rationalD_0=0 --from=1.29999 --to=1.30001 --steps=100 > plot.dat
-``` 
+```
 
-As with [LESS_THAN](LESS_THAN.md), there is a alternative to `--switch` that can be used for sepcifying the parameters of RATIONAL switching function. 
+As with [LESS_THAN](LESS_THAN.md), there is a alternative to `--switch` that can be used for sepcifying the parameters of RATIONAL switching function.
 
 */
 //+ENDPLUMEDOC

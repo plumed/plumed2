@@ -42,7 +42,7 @@ namespace cltools {
 /*
 sum_hills is a tool that allows one to to use plumed to post-process an existing hills/colvar file
 
-This tool is most frequently used as shown below after a [METAD](METAD.md) simulation has been performed to sum all the Gaussians in the hills file 
+This tool is most frequently used as shown below after a [METAD](METAD.md) simulation has been performed to sum all the Gaussians in the hills file
 and output the free energy surface.
 
 ```plumed
@@ -107,7 +107,7 @@ Here the default output file name will be negativebias.dat
 
 From time to time you might need to use HILLS or a COLVAR file
 as it was just a simple set  of points from which you want to build
-a free energy by using -(1/beta)log(P).  If you want to do this operation then 
+a free energy by using -(1/beta)log(P).  If you want to do this operation then
 you use the `--histo` option as shown below:
 
 ```plumed
@@ -115,7 +115,7 @@ plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
 ```
 
 in this case you need a `--kt` to do the reweighting and you
-need to set bandwidth parameters using the `--sigma` option for the histogram calculation as this histogram is computed using 
+need to set bandwidth parameters using the `--sigma` option for the histogram calculation as this histogram is computed using
 Gaussian kernels, so it will be a continuous histogram.
 
 For the command above the default output is called histo.dat.

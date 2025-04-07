@@ -36,7 +36,7 @@ namespace cltools {
 manual is a tool that you can use to construct the manual page for a particular action
 
 The manual constructed by this action is in html. In all probability you will never need to use this
-tool. However, it is was within the scripts that generate the old html manual for PLUMED.  
+tool. However, it is was within the scripts that generate the old html manual for PLUMED.
 
 WE WILL POSSIBILY DELETE THIS COMMAND SOON AS IT IS NO LONGER USED TO CONSTRUCT THE MANUAL
 

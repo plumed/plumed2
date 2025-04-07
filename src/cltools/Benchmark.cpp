@@ -51,7 +51,7 @@ benchmark is a lightweight reimplementation of [driver](driver.md) that can be u
 
 The main difference between [driver](driver.md) and benchmark is that benchmark generates a trajectory in memory rather than reading a
 trajectory from a file. This approach is better for timing the overhead of the plumed library.  If you do similar benchmarking with driver
-the timings you get are dominated by the time spent doing the I/O operations that are required to read the trajectory. 
+the timings you get are dominated by the time spent doing the I/O operations that are required to read the trajectory.
 
 ## Basic usage
 
@@ -80,7 +80,7 @@ If you want to run a benchmark against a previous plumed version in a controlled
 plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so
 ```
 
-If you use this command the version of PLUMED that is in your environment calls the version of the library that is specified using the 
+If you use this command the version of PLUMED that is in your environment calls the version of the library that is specified using the
 `--kernel` flag.  Running the benchmark in this way ensures that you are running in a controlled setting, where systematic errors
 in the comparison are minimized.
 
@@ -158,7 +158,7 @@ In addition, this tool monitors the timing externally, with some slightly differ
   thus provide a better estimate of the total elapsed time that includes everything.
 
 The internal timers are still useful to monitor what happens at the different stages
-of the calculattion.  If you want more detailed information you can also use a 
+of the calculattion.  If you want more detailed information you can also use a
 [DEBUG](DEBUG.md) action with the `DETAILED_TIMERS`, to determine how much time is spnt in each action.
 
 When you run multiple version, a comparative analisys of the time spent within PLUMED in the various

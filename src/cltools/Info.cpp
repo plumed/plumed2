@@ -33,7 +33,7 @@ namespace cltools {
 /*
 This tool allows you to obtain information about your plumed version
 
-You can use this command to get information about the PLUMED version you have installed.  For example if you want to find out the root 
+You can use this command to get information about the PLUMED version you have installed.  For example if you want to find out the root
 directory for your plumed distribution you can use the following command.
 
 ```plumed

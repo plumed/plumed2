@@ -44,7 +44,7 @@ You can use simplemd to do a molecular dynamics simulation on a system of Lennar
 plumed simplemd < in
 ```
 
-The input to simplemd is specified in an input file that contains one directive per line like the one shown below. 
+The input to simplemd is specified in an input file that contains one directive per line like the one shown below.
 
 ```plumed
 #TOOL=simplemd
@@ -61,7 +61,7 @@ nstat   10 energies.dat
 ```
 
 This input instructs  simplemd to do 50 steps of MD at a temperature of 0.722 [Lennard Jones Units](https://en.wikipedia.org/wiki/Lennard-Jones_potential).
-Notice that the atomic configurations are input and output in xyz format. 
+Notice that the atomic configurations are input and output in xyz format.
 
 If you run the following command a description of all the directives that can be used in the input file will be output.
 

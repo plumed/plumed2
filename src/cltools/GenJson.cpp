@@ -39,10 +39,10 @@ namespace cltools {
 gen_json constructs a json file that includes a dictionary of actions, the keywords for those actions and the components and outputs this to standard output
 
 This command is used during the build process of plumed. It constructs a json file that contains documentation information on all actions and cltools. This json
-file is then used by the python package [PlumedToHTML](https://github.com/plumed/PlumedToHTML). This package is used to construct the example input files that 
-appear in [the plumed nest](www.plumed-nest.org), [plumed tutorials](www.plumed-tutorials.org) and this manual. 
+file is then used by the python package [PlumedToHTML](https://github.com/plumed/PlumedToHTML). This package is used to construct the example input files that
+appear in [the plumed nest](www.plumed-nest.org), [plumed tutorials](www.plumed-tutorials.org) and this manual.
 
-You will likely not ever need to run this command.  When it runs during the build proess we use the following command: 
+You will likely not ever need to run this command.  When it runs during the build proess we use the following command:
 
 ```plumed
 plumed --no-mpi gen_json --actions action_list > syntax.json

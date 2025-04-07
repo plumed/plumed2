@@ -44,7 +44,7 @@ This command can be used to process a PDB file and change the atom serial number
 Notice that the resulting list might have gaps. It is however fundamental
 that the atom numbers in your PDB file correspond to those used within the MD code.
 
-Notice, if the serial number of an atom is greater than 99999, it has to be 
+Notice, if the serial number of an atom is greater than 99999, it has to be
 written in [hybrid 36](http://cci.lbl.gov/hybrid_36/) notation (see [PDB2CONSTANT](PDB2CONSTANT.md) ).
 The main use for this command is to produce files where atoms are numbered using the hybrid-36 convention.
 
