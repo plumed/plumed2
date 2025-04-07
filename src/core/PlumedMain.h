@@ -533,6 +533,8 @@ public:
   double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
 /// Get the keywords for a particular action
   void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
+/// Check if the input has been initialized
+  bool hasBeenInitialized() const ;
 };
 
 /////
@@ -616,6 +618,11 @@ bool PlumedMain::callErrorHandler(int code,const char* msg)const {
   } else {
     return false;
   }
+}
+
+inline
+bool PlumedMain::hasBeenInitialized() const {
+  return initialized;
 }
 
 

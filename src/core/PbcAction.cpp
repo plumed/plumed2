@@ -30,7 +30,29 @@
 /*
 Pass the cell vectors into PLUMED.
 
-\par Examples
+This command is used to pass the cell vectors from an MD code to PLUMED. The command is a specialised
+version of the [PUT](PUT.md) command that accepts a $3\times 3$ matrix.  The additional specialisation is
+required because the cell vectors play a special role when you do calculations with PLUMED.
+
+Notice that when you create a [DOMAIN_DECOMPOSITION](DOMAIN_DECOMPOSITION.md) action a PBC action is created
+automatically.
+
+You would only use the PBC command if you were calling PLUMED from python or an MD code. There is no reason for using this command in a conventional PLUMED
+input file like this:
+
+```plumed
+pbc: PBC
+```
+
+Instead this command would be called from python like this:
+
+```python
+import plumed
+
+# Create a PLUMED object
+p = plumed.Plumed()
+p.cmd("readInputLine", "pbc: PBC")
+```
 
 */
 //+ENDPLUMEDOC

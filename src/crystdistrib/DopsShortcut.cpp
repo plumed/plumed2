@@ -29,12 +29,24 @@ namespace crystdistrib {
 
 //+PLUMEDOC COLVAR DOPS
 /*
-Calculate the DOPS order parameter
+Calculate DOPS order parameter for molecules.
 
-\par Examples
+DOPS is a shortcut to calculate the Distance Order Parameters that are described in the paper below.
+As arguments, DOPS takes a list of atoms, a cutoff, and a kernel file detailing the means, variances, and normalization factors of probability distributions. DOPS returns a vector of order parameters.
+
+The DOPS kernel file has FIELDS height, mu, and sigma corresponding to the normalization factor, mean, and variance of the gaussian distributions used in the order parameters. The SET kerneltype is gaussian.
+
+DOPS returns one order parameter per atom given, evaluated over each atom's neighbors within the cutoff given. The kernel file defines a radial distribution function. The order parameter is obtained by evaluating the RDF at each neighbor's position within the cutoff, and summing them up.
+
+This example file calculates the DOPS for a system of 3 molecules.
+```plumed
+#SETTINGS INPUTFILES=regtest/crystdistrib/rt-dops-forces/kernels.dat
+dops: DOPS SPECIES=1,4,7 CUTOFF=7.4 KERNELFILE=regtest/crystdistrib/rt-dops-forces/kernels.dat
+```
 
 */
 //+ENDPLUMEDOC
+
 
 class DopsShortcut : public ActionShortcut {
 public:
@@ -65,6 +77,7 @@ void DopsShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addDOI("10.1063/1.3548889");
 }
 
 DopsShortcut::DopsShortcut(const ActionOptions&ao):

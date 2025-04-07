@@ -30,22 +30,22 @@ namespace colvar {
 /*
 Calculate a position based on the projection along and extension from a defined axis.
 
-This variable takes 3 input atoms or pseudoatoms, using the two AXIS_ATOMS to define a linear vector.
+This variable takes 3 input atoms or pseudoatoms.  It uses the two AXIS_ATOMS to define a linear vector.
 The position of the ATOM is then calculated relative to this vector, with two output components.
 The projection on the axis (proj) is the distance along the axis from the ATOM to the origin.
 The extension (ext) is the orthogonal distance between the ATOM and the axis.
 
-\par Examples
+## Examples
 
 This command tells plumed to define an axis, by calculating a vector that passes through atom 1 and atom 2.
 The position of atom 3 as a projection along this vector is calculated and printed to COLVAR1.
 At the same time, the perpendicular distance of atom 3 from the axis, the extension, is printed to COLVAR2.
 
-\plumedfile
+```plumed
 poa: PROJECTION_ON_AXIS AXIS_ATOMS=1,2 ATOM=3
 PRINT ARG=poa.proj FILE=COLVAR1
 PRINT ARG=poa.ext FILE=COLVAR2
-\endplumedfile
+```
 
 A particular application of this variable could be to study the motion of a ligand relative to its binding pocket on a protein.
 In this set of commands, the anchor points a1 and a2 are defined using example atom numbers within the protein.
@@ -54,14 +54,14 @@ Similarly, a COM is used to define the position of the ligand in lig1.
 The calculated projection of lig1 along the axis defined between a1 and a2 is printed to COLVAR1.
 The calculated perpendicular extension of lig1 from the axis defined between a1 and a2 is printed to COLVAR2.
 
-\plumedfile
+```plumed
 a1: GROUP ATOMS=3754            # Anchor point 1
 a2: COM ATOMS=3019,4329,4744    # Anchor point 2
 lig1: COM ATOMS=5147-5190       # Ligand
 pp: PROJECTION_ON_AXIS AXIS_ATOMS=a1,a2 ATOM=lig1
 PRINT ARG=pp.proj FILE=COLVAR1
 PRINT ARG=pp.ext FILE=COLVAR2
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

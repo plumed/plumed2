@@ -26,53 +26,124 @@
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR GYRATION_FAST
+//+PLUMEDOC COLVAR GYRATION
 /*
 Calculate the radius of gyration, or other properties related to it.
 
-The different properties can be calculated and selected by the TYPE keyword:
-the Radius of Gyration (RADIUS); the Trace of the Gyration Tensor (TRACE);
-the Largest Principal Moment of the Gyration Tensor (GTPC_1); the middle Principal Moment of the Gyration Tensor (GTPC_2);
-the Smallest Principal Moment of the Gyration Tensor (GTPC_3); the Asphericiry (ASPHERICITY); the Acylindricity (ACYLINDRICITY);
-the Relative Shape Anisotropy (KAPPA2); the Smallest Principal Radius Of Gyration (GYRATION_3);
-the Middle Principal Radius of Gyration (GYRATION_2); the Largest Principal Radius of Gyration (GYRATION_1).
-A derivation of all these different variants can be found in \cite Vymetal:2011gv
-
 The radius of gyration is calculated using:
 
-\f[
-s_{\rm Gyr}=\Big ( \frac{\sum_i^{n}
- m_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2}
-\f]
+$$
+s_{\rm Gyr}=\Big ( \frac{\sum_i^{n} w_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} w_i} \Big)^{1/2}
+$$
 
-with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
+with the position of the center ${r}_{\rm COM}$ given by:
 
-\f[
-{r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
-\f]
+$$
+{r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ w_i }{\sum_i^{n} w_i}
+$$
 
-The radius of gyration usually makes sense when atoms used for the calculation
-are all part of the same molecule.
-When running with periodic boundary conditions, the atoms should be
-in the proper periodic image. This is done automatically since PLUMED 2.2,
-by rebuilding the broken entities using a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED.
+In these expressions $r_i$ indicates the position of atom $i$ and $w_i$ is the weight for atom $i$.  The following input
+shows how you can calculate the expressions for a set of atoms by using PLUMED:
 
-In case you want to recover the old behavior you should use the NOPBC flag.
-In that case you need to take care that atoms are in the correct
-periodic image.
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=w
+PRINT ARG=g FILE=colvar
+```
 
+In the above input the weights in the expressions above are set equal to the eleemnts of a constant vector, `w`.  A more common
+approach is to use the masses of the atoms as in the input below:
 
-\par Examples
+```plumed
+g: GYRATION ATOMS=1-5 TYPE=RADIUS MASS_WEIGHTED
+# This input is equivalent
+# g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=@Masses
+PRINT ARG=g FILE=colvar
+```
 
-The following input tells plumed to print the radius of gyration of the
-chain containing atoms 10 to 20.
-\plumedfile
-GYRATION TYPE=RADIUS ATOMS=10-20 LABEL=rg
-PRINT ARG=rg STRIDE=1 FILE=colvar
-\endplumedfile
+or to set all the input weights equal to one as is done in the input below;
+
+```plumed
+g: GYRATION ATOMS=1-5 TYPE=RADIUS
+PRINT ARG=g FILE=colvar
+```
+
+Notice that in the first input above GYRATION is a shortcut and that in the second two inputs it is not.  This is because there
+is a faster (non-shortcutted) version that can be used for these two more-commonplace inputs.  The shortcut input is still useful
+as it allows one to do less comonplace analyses such as this one where a clustering is performed and the radius of gyration for the
+largest cluster is determined.
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 D_MAX=0.5}
+dfs: DFSCLUSTERING ARG=c1
+w: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
+g: GYRATION ATOMS=1-100 WEIGHTS=w TYPE=RADIUS
+```
+
+In calculating the gyration radius you first calculate the [GYRATION_TENSOR](GYRATION_TENSOR.md). Instad of computing the radius from this
+tensor you can instead compute the trace of the tensor by using the following input:
+
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+g: GYRATION ATOMS=1-5 TYPE=TRACE WEIGHTS=w
+PRINT ARG=g FILE=colvar
+```
+
+You can also calculate the largest, middle and smallest principal moments of the tensor:
+
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+# This computes the largest principal moment
+l: GYRATION ATOMS=1-5 TYPE=GTPC_1 WEIGHTS=w
+# This computes the middle principal moment
+m: GYRATION ATOMS=1-5 TYPE=GTPC_2 WEIGHTS=w
+# This computes the smallest principal moment
+s: GYRATION ATOMS=1-5 TYPE=GTPC_3 WEIGHTS=w
+PRINT ARG=l,m,s FILE=colvar
+```
+
+From these principal moments you can calculate the Asphericiry, Acylindricity, or the Relative Shape Anisotropy by using the following input:
+
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+# This computes the Asphericiry
+l: GYRATION ATOMS=1-5 TYPE=ASPHERICITY WEIGHTS=w
+# This computes the Acylindricity
+m: GYRATION ATOMS=1-5 TYPE=ACYLINDRICITY WEIGHTS=w
+# This computes the Relative Shape Anisotropy
+s: GYRATION ATOMS=1-5 TYPE=KAPPA2 WEIGHTS=w
+PRINT ARG=l,m,s FILE=colvar
+```
+
+Lastly, you can calculate the largest, middle and smallest principal radii of gyration by using the following input:
+
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+# This computes the largest principal radius of gyration
+l: GYRATION ATOMS=1-5 TYPE=RGYR_1 WEIGHTS=w
+# This computes the middle principal radius of gyration
+m: GYRATION ATOMS=1-5 TYPE=RGYR_2 WEIGHTS=w
+# This computes the smallest principal radius of gyration
+s: GYRATION ATOMS=1-5 TYPE=RGYR_3 WEIGHTS=w
+PRINT ARG=l,m,s FILE=colvar
+```
+
+By expanding the shortcuts in the inputs above or by reading the papers cited below you can see how these quantities are computed from the [GYRATION_TENSOR](GYRATION_TENSOR.md).
+Notice, however, that as with the radius if you use the masses or a vector of ones as weights a faster implemention of this colvar that
+calculates these quantities directly will be used.
+
+## A note on periodic boundary conditions
+
+Calculating the radius of gyration is normally used to determine the shape of a molecule so all the specified atoms
+would normally be part of the same molecule.  When computing this CV it is important to ensure that the periodic boundaries
+are calculated correctly.  There are two ways that you can manage periodic boundary conditions when using this action.  The
+first and simplest is to reconstruct the molecule similarly to the way that [WHOLEMOLECULES](WHOLEMOLECULES.md) operates.
+This reconstruction of molecules has been done automatically since PLUMED 2.2.  If for some reason you want to turn it off
+you can use the NOPBC flag.
+
+An alternative approach to handling PBC is to use the PHASES keyword.  This keyword instructs PLUMED to use the PHASES option
+when computing the position of the center using the [CENTER](CENTER.md) command.  Distances of atoms from this center are then
+computed using PBC as usual.
 
 */
 //+ENDPLUMEDOC

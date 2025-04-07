@@ -41,26 +41,31 @@ namespace generic {
 /*
 This action is used to rebuild molecules that can become split by the periodic boundary conditions.
 
-It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
-MD dynamics code (e.g. GROMACS) can break molecules during the calculation.
+This command performs an operation that is similar what was done by the ALIGN_ATOMS keyword from plumed1.
+This operation is needed as some MD dynamics code (e.g. GROMACS) can break molecules during the calculation.
+Whenever we are able we try to ensure that molecules are reconstructed automatically.  You thus do not need
+to use this action when you are using actions such as [COM](COM.md), [CENTER](CENTER.md), [GYRATION](GYRATION.md)
+and so on as the reconstruction of molecules is done automatically in these actions.  It is, however, important to understand
+molecule reconstruction as there are many cases (e.g. when you are calculating the end-to-end distance of a polymer)
+where not using the WHOLEMOLCULES command can cause the artifacts discussed in the attached reference.
 
-Running some CVs without this command can cause there to be discontinuities changes
-in the CV value and artifacts in the calculations.  This command can be applied
-more than once.  To see what effect is has use a variable without pbc or use
-the \ref DUMPATOMS directive to output the atomic positions.
+If you think that you need to use this command a good idea is to use the [DUMPATOMS](DUMPATOMS.md) directive
+to output the atomic positions.  This will allow you to see the effect that including/not including WHOLEMOLECULES
+has on the calculation.
 
-\attention
-This directive modifies the stored position at the precise moment
-it is executed. This means that only collective variables
-which are below it in the input script will see the corrected positions.
-As a general rule, put it at the top of the input file. Also, unless you
-know exactly what you are doing, leave the default stride (1), so that
-this action is performed at every MD step.
+> [!ATTENTION]
+> This directive modifies the stored position at the precise moment
+> it is executed. This means that only collective variables
+> which are below it in the input script will see the corrected positions.
+> As a general rule, put it at the top of the input file. Also, unless you
+> know exactly what you are doing, leave the default stride (1), so that
+> this action is performed at every MD step.
 
-The behavior of WHOLEMOLECULES is affected by the last \ref MOLINFO action
-present in the input file before WHOLEMOLECULES. Specifically, if the
-\ref MOLINFO action does not have a `WHOLE` flag, then the behavior is the following:
-- First atom of the list is left in place
+Notice that the behavior of WHOLEMOLECULES is affected by the last [MOLINFO](MOLINFO.md) action
+that is present in the input file before the WHOLEMOLECULES command. Specifically, if the
+[MOLINFO](MOLINFO.md) action does not have a `WHOLE` flag, then the behavior is the following:
+
+- The first atom of the list is left in place
 - Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
   to the previous one, iteratively.
 
@@ -69,38 +74,38 @@ list are always closer than half a box side the entity will become whole.
 This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
 to skip some atoms, provided consecutive chosen atoms are close enough.
 
-If instead the \ref MOLINFO action does have a `WHOLE` flag, then a minimum spanning tree
+If, by contrast, the [MOLINFO](MOLINFO.md) action does have a `WHOLE` flag, then a minimum spanning tree
 is built based on the atoms passed to WHOLEMOLECULES using the coordinates in the PDB
-passed to \ref MOLINFO as a reference, and this tree is used to reconstruct PBCs.
+passed to [MOLINFO](MOLINFO.md) as a reference, and this tree is used to reconstruct PBCs.
 This approach is more robust when dealing with complexes of multiple molecules.
 
-\par Examples
+## Examples
 
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
 at every step of the calculation and dump them on a file.
 
-\plumedfile
+```plumed
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
 WHOLEMOLECULES ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
-\endplumedfile
+```
 
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
-\plumedfile
+```plumed
 WHOLEMOLECULES ENTITY0=1-20 ENTITY1=30-40
 DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
-\endplumedfile
+```
 
 This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -139,6 +144,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
   keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.11 this is the default when using MOLINFO with WHOLE");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
+  keys.addDOI("10.1007/978-1-4939-9608-7_21");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):

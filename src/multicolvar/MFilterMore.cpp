@@ -24,12 +24,9 @@
 
 //+PLUMEDOC MCOLVAR MFILTER_MORE
 /*
-Basically equivalent to MORE_THAN.
+Apply one minus a switching function to the input vector.
 
-This action has been depracated
-
-\par Examples
-
+This action has been depracated as it is equivalent to [MORE_THAN](MORE_THAN.md).
 
 */
 //+ENDPLUMEDOC

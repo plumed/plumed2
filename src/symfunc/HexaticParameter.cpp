@@ -36,9 +36,57 @@ namespace symfunc {
 /*
 Calculate the hexatic order parameter
 
-\bug Virial is not working currently
+This [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html) can be used to understand phase transitions in two dimensional systems.
+The symmetry function for atom $k$ is calculated using:
 
-\par Examples
+$$
+s_k = \left| \frac{\sum_j \sigma(r_{kj}) e^{6i\theta_j} }{\sum_j \sigma(r_{kj})} \right|
+$$
+
+In this expression, the sum run over all the atoms of interest and $r_{kj}$ is the distance between atom $k$ and atom $j$ and $\sigma$ is
+a switching function that acts upon this distance.  $\theta_j$ is the angle between either the $x$, $y$ or $z$ axis and the bond connecting
+atom $k$ and atom $j$.  This angle is multiplied by the imaginary number $i$ - the square root of minus one.  In the code, we thus calculate
+$e^{i\theta_j}$ as follows:
+
+$$
+e^{i\theta_j) = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
+$$
+
+We then take the 6th power of this complex number directly before compupting the magnitude by multiplying the result by its complex conjugate.
+Notice, furthermore, that we can replace $x_{kj}$ or $y_{kj}$ with $z_{kj}$ by using PLANE=xz or PLANE=yz in place of PLANE=xy.
+
+An example that shows how you can use this shortcut is shown below:
+
+```plumed
+hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2} MEAN
+PRINT ARG=hex.mean FILE=colvar
+```
+
+As you can see if you expand the shortcut above, this input calculates the quantity defined in the equation above for the 400 atoms in the simulated system and stores them in a vector.
+The elements of this vector are then added together so the mean value can be computed.
+
+In papers where symmetry functions similar to this one have been used a switching function is not employed. The sums over $j$ in the expression above are replaced by sums over the
+six nearest neighbours to each atom.  If you would like to calculate this quantity using PLUMED you can use an input like this:
+
+```plumed
+dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=3.0 COMPONENTS
+neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
+harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
+rprod: CUSTOM ARG=neigh,harm.rm FUNC=x*y PERIODIC=NO
+iprod: CUSTOM ARG=neigh,harm.im FUNC=x*y PERIODIC=NO
+hex2_ones: ONES SIZE=400
+hex2_denom: MATRIX_VECTOR_PRODUCT ARG=neigh,hex2_ones
+harm_rm: MATRIX_VECTOR_PRODUCT ARG=rprod,hex2_ones
+harm_im: MATRIX_VECTOR_PRODUCT ARG=iprod,hex2_ones
+hex2_rmn: CUSTOM ARG=harm_rm,hex2_denom FUNC=x/y PERIODIC=NO
+hex2_imn: CUSTOM ARG=harm_im,hex2_denom FUNC=x/y PERIODIC=NO
+DUMPATOMS ATOMS=1-400 ARG=hex2_rmn,hex2_imn,hex2_denom FILE=hexparam.xyz
+```
+
+This input outputs the values of the order parameters for all the atoms to an extended xyz file .
+
+> ![CAUTION]
+> Virial is not working currently
 
 
 */
@@ -70,6 +118,7 @@ void HexacticParameter::registerKeywords( Keywords& keys ) {
   keys.needsAction("MEAN");
   keys.needsAction("SUM");
   keys.needsAction("COMBINE");
+  keys.addDOI("https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.99.215701");
 }
 
 HexacticParameter::HexacticParameter( const ActionOptions& ao):

@@ -28,6 +28,36 @@ namespace generic {
 //+PLUMEDOC TOPOLOGY MOLINFO
 /*
 This command is used to provide information on the molecules that are present in your system.
+A simple examples where this command is used to provide the information on which atoms
+are in the backbone of a protein to the [ALPHARMSD](ALPHARMSD.md) action is shown below.
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
+ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+```
+
+The following example prints the distance corresponding to the hydrogen bonds
+in a GC Watson-Crick pair.
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt-ermsd/ref.pdb
+MOLINFO STRUCTURE=regtest/basic/rt-ermsd/ref.pdb MOLTYPE=dna
+hb1: DISTANCE ATOMS=@N2-2,@O2-15
+hb2: DISTANCE ATOMS=@N1-2,@N3-15
+hb3: DISTANCE ATOMS=@O6-2,@N4-15
+PRINT ARG=hb1,hb2,hb3
+```
+
+The last example shows you how you can use MOLINFO to calculate torsion angles
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+```
 
 The information on the molecules in your system can either be provided in the form of a pdb file
 or as a set of lists of atoms that describe the various chains in your system. If a pdb file
@@ -35,18 +65,18 @@ is used plumed the MOLINFO command will endeavor to recognize the various chains
 make up the molecules in your system using the chainIDs and resnumbers from the pdb file. You can
 then use this information in later commands to specify atom lists in terms residues.  For example
 using this command you can find the backbone atoms in your structure automatically.
-Starting with PLUMED 2.7 you can use multiple MOLINFO actions. Every time you perform an atom
+Since the introduction of PLUMED 2.7 you have been able to use multiple MOLINFO actions. Every time you perform an atom
 selection, the last available MOLINFO action will be used. This allows you to provide multiple PDB
-files, for instance using different naming conventions (see \issue{134}).
+files, for instance using different naming conventions (see issue 134).
 
-\warning
-Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
-and examine what plumed is actually doing whenever you use the MOLINFO action.
-Also make sure that the atoms are listed in the pdb with the correct order.
-If you are using gromacs, the safest way is to use reference pdb file
-generated with `gmx editconf -f topol.tpr -o reference.pdb`.
+> [!CAUTION]
+> Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
+> and examine what plumed is actually doing whenever you use the MOLINFO action.
+> Also make sure that the atoms are listed in the pdb with the correct order.
+> If you are using gromacs, the safest way is to use reference pdb file
+> generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
-More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
+More information of the PDB parser implemented in PLUMED can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) command.
 
 If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e. not broken by PBC.
 **This will impact PBC calculations in all the actions following the MOLINFO action!**.
@@ -59,50 +89,52 @@ the `WHOLE` flag: all the following actions will use the traditional reconstruct
 based on the order in which atoms are listed.
 
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
-for known residues from these three types of molecule. In other words, this is available for
+for known residues from these three types of molecule. In other words, this keyword is available for
 historical reasons and to allow future extensions where alternative lists will be provided.
 As of now, you can just ignore this keyword.
 
-Using \ref MOLINFO extends the possibility of atoms selection using the @ special
-symbol. The following shortcuts are available that do not refer to one specific residue:
+Using MOLINFO extends the possibility of atoms selection using the @ special
+symbol. All the various ways that the @ symbol can be used are listed in the following table:
 
-\verbatim
+@MOLINFOGROUPS@
+
+In the table above you will find the following shortcuts that allow you to select atoms that are not part of one specific residue:
+
+````
 @nucleic : all atoms that are part of a DNA or RNA molecule
 @protein : all atoms that are part of a protein
 @water : all water molecules
 @ions : all the ions
 @hydrogens : all hydrogen atoms (those for which the first non-number in the name is a H)
 @nonhydrogens : all non hydrogen atoms (those for which the first non-number in the name is not a H)
-\endverbatim
+````
 
-\warning
-Be careful since these choices are based on common names used in PDB files. Always check if
-the selected atoms are correct.
+> [!CAUTION]
+> Be careful since these choices are based on common names used in PDB files. Always check if
+> the selected atoms are correct.
 
-In addition, atoms from a specific residue can be selected with a symbol in this form:
+When you would like atoms from a specific residue you will use one of the atom selection commands from the above table with the following form:
 
-\verbatim
+````
 @"definition"-chain_residuenum
 @"definition"-chainresiduenum
 @"definition"-residuenum
-\endverbatim
+````
 
 So for example
 
-\verbatim
+````
 @psi-1 will select the atoms defining the psi torsion of residue 1
 @psi-C1  or @psi-C_1 will define the same torsion for residue 1 of chain C.
 @psi-3_1 will define the same torsion for residue 1 of chain 3.
-\endverbatim
+````
 
-Using the underscore to separate chain and residue is available as of PLUMED 2.5 and allows selecting chains
+Using the underscore to separate chain and residue is available as of PLUMED 2.5 and allows you to select chains
 with a numeric id.
 
-In the following are listed the current available definitions:
+Breaking the table above down we see that for protein residues, the following groups are available:
 
-For protein residues, the following groups are available:
-
-\verbatim
+````
 # quadruplets for dihedral angles
 @phi-#
 @psi-#
@@ -117,13 +149,11 @@ For protein residues, the following groups are available:
 @sidechain-#
 # all backbone atoms (including hydrogens)
 @back-#
-\endverbatim
+````
 
-that select the appropriate atoms that define each dihedral angle for residue #.
+while for DNA or RNA residues, the following groups are available:
 
-For DNA or RNA residues, the following groups are available:
-
-\verbatim
+````
 # quadruplets for backbone dihedral angles
 @alpha-#
 @beta-#
@@ -152,7 +182,7 @@ For DNA or RNA residues, the following groups are available:
 #  C2/C4/C6 for pyrimidines
 #  C2/C6/C4 for purines
 @lcs-#
-\endverbatim
+````
 
 Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`
 should not be used on 5' end residue.
@@ -162,32 +192,36 @@ Furthermore it is also possible to pick single atoms using the syntax
 As of PLUMED 2.5, this also works when the residue is not a protein/rna/dna residue.
 For instance, `@OW-100` will select oxygen of water molecule with residue number 100.
 
-Finally, notice that other shortcuts are available even when not using the \ref MOLINFO command (see \ref atomSpecs).
+Finally, notice that some shortcuts are available even when you not using the MOLINFO command.
 
-\warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
+> [!CAUTION]
+> If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
-\bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
-may not be true - GLY is problematic for secondary structure residues as it is achiral.
+> [!CAUTION]
+> At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
+> may not be true - GLY is problematic for secondary structure residues as it is achiral.
 
-\bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein
-( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
-interpret terminal residue 1.
+> [!CAUTION]
+> If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein
+> ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
+> interpret terminal residue 1.
 
-\par Advanced atom selection with mdtraj or MDAnalysis
+## Advanced atom selection with mdtraj or MDAnalysis
 
 Since PLUMED 2.6 it is possible to use the expressive selection syntax of [mdtraj](http://mdtraj.org/latest/atom_selection.html) and/or [MDAnalysis](https://www.mdanalysis.org/docs/documentation_pages/selections.html):
 
-\plumedfile
-MOLINFO STRUCTURE=helix.pdb PYTHON_BIN=python
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb PYTHON_BIN=python
 g1: GROUP ATOMS=@mda:backbone
 g2: GROUP ATOMS={@mda:{resnum 1 or resid 3:5}}
 g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}
 g4: GROUP ATOMS={@mdt:{protein and (backbone or resname ALA)}}
 g5: GROUP ATOMS={@mdt:{mass 5.5 to 20}} # masses guessed by mdtraj based on atom type!
-g6: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1} 1-10}
-\endplumedfile
+g6: GROUP ATOMS={@mda:{resid 3:5} 1-10 @mda:{resnum 1}}
+```
 
-Here `@mda:` indicates that `MDAnalysis` language is used, whereas `@mdt:` indicates that `mdtraj` language is used. Notice that these languages typically select atoms in order. If you want to specify a different order, you can chain definitions as in `g3` above (compare with `g2`). Selections can be also chained with standard PLUMED selections (see `g6`).
+Here `@mda:` indicates that the `MDAnalysis` language is used, whereas `@mdt:` indicates that the `mdtraj` language is used. Notice that these languages typically select atoms in order. If you want to specify a different order, you can chain definitions as in `g3` above (compare with `g2`). Selections can be also chained with standard PLUMED selections (see `g6`).
 
 The double braces are required due to the way PLUMED parses atom lists. In particular:
 
@@ -212,7 +246,7 @@ In order to use this syntax you should check the following points at runtime:
    using `MOLINFO PYTHON_BIN=python3.6` (even higher priority).
 4. The PDB file that you provide to `MOLINFO` should have consecutive atom numbers starting from 1. This is currently enforced since reading atom numbers out of order (as PLUMED does) is not supported by other packages.
 
-\par Advanced atom selection with VMD (experimental)
+## Advanced atom selection with VMD (experimental)
 
 Similarly to the `@mda:` and `@mdt:` selectors above, you can use the two following selectors in order to
 access to [VMD](https://www.ks.uiuc.edu/Research/vmd/) syntax for atoms selection:
@@ -227,39 +261,6 @@ access to [VMD](https://www.ks.uiuc.edu/Research/vmd/) syntax for atoms selectio
   (check using the command `python -c "import vmd"`).
 
 These two selectors are experimental and might be removed at some point.
-
-\par Examples
-
-In the following example the MOLINFO command is used to provide the information on which atoms
-are in the backbone of a protein to the ALPHARMSD CV.
-
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=reference.pdb
-ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endplumedfile
-
-The following example prints the distance corresponding to the hydrogen bonds
-in a GC Watson-Crick pair.
-
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt-ermsd/ref.pdb
-MOLINFO STRUCTURE=reference.pdb MOLTYPE=dna
-hb1: DISTANCE ATOMS=@N2-2,@O2-15
-hb2: DISTANCE ATOMS=@N1-2,@N3-15
-hb3: DISTANCE ATOMS=@O6-2,@N4-15
-PRINT ARG=hb1,hb2,hb3
-\endplumedfile
-
-This example use MOLINFO to calculate torsion angles
-
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-t1: TORSION ATOMS=@phi-3
-t2: TORSION ATOMS=@psi-4
-PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endplumedfile
 
 */
 //+ENDPLUMEDOC

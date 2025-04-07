@@ -31,7 +31,27 @@
 /*
 Calculate the radial tetra CV
 
-\par Examples
+This shortcut calculates a [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html). The particular function that is being
+evaluated for the coordination sphere here is as follows:
+
+$$
+s_i = 1 - \frac{\sum_{j=1}^4 r_{ij}^2 - z_i\sum_{j=1}^4 r_{ij}}{12 z_i^2} \qquad \textrm{where} \qquad z_i = \frac{1}{4} \sum_{j=1}^4 r_{ij}
+$$
+
+In this expression the 4 atoms in the sums over $j$ are the four atoms that are nearest to atom $i$ and $r_{ij}$ is the distance between atoms $i$ and $j$.
+The CV is large if the four atoms nearest atom $i$ are arranged on the vertices of a regular tetrahedron
+and small otherwise.  The following example shows how you can use this action to measure the degree of tetrahedral order in a system.
+
+```plumed
+# Calculate a vector that contains 64 values for the symmetry function.
+# Sum the elements of the vector and calculate the mean value on the atoms from this sum.
+acv: TETRA_RADIAL SPECIES=1-64 SUM MEAN
+# Print out the positions of the 64 atoms for which the symmetry function was calculated
+# to an xyz file along with the values of the symmetry function
+DUMPATOMS ATOMS=1-64 ARG=acv FILE=mcolv.xyz
+# Print out the average value of the symmetry function and the sum of all the symmetry functions
+PRINT ARG=acv_sum,acv_mean FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

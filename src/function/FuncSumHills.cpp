@@ -41,7 +41,7 @@ This function is intended to be called by the command line tool sum_hills.  It i
 In the future one could implement periodic integration during the metadynamics
 or straightforward MD as a tool to check convergence
 
-\par Examples
+## Examples
 
 There are currently no examples for this keyword.
 

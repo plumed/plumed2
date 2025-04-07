@@ -30,7 +30,30 @@
 /*
 Calculate the atomic smac CV
 
-\par Examples
+This shortcut offers another example of a [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html).
+This action was inspired by [SMAC](SMAC.md) and the distribution of angles in the first coordination sphere around an atom to determine if the
+environment around the atom is ordered. For atom $i$ the symmetry function is calculated using:
+
+$$
+s_i = [ 1 - \gamma(c_i) ] \frac{ \sum_j \sum{k \ne j} \sigma(r_{ij})\sigma(r_{ik}) \sum_n G\left( \frac{ \theta_{jik} - \phi_n}{b_n}\right) }{\sum{k \ne j} \sigma(r_{ij})\sigma(r_{ik})} \qquad \textrm{where} \qquad c_i = \sum_j \sigma(r_{ij})
+$$
+
+In this expression $r_{ij}$ is the distance between atom $i$ and atom $j$ and $\sigma$ is a switching function that acts upon this distance.   $c_i$ is thus the number of atoms that are within
+a certain cutoff of atom $i$ and $\gamma$ is another switching function that acts upon this quantity.  This switching function ensures that the symmetry function is zero for atoms that are
+regions where the density is low.  $\theta_{jik}$ is the angle between the vector connecting atoms $i$ and $j$ and the vector connecting atoms $i$ and $k$.  This angle is the argument for the
+set of Gaussian kernel functions, $G$, that are centered on $\phi_n$ and that have bandwidths of $b_n$.  The function above is thus determining if the angles between the bonds in the first coordination
+sphere around atom $i$ are similar to the $\phi_n$ values that have been specified by the user or not.
+
+The following example demonstrates how this symmetry function can be used in practise.
+
+```plumed
+smac: ATOMIC_SMAC SPECIES=1-64 KERNEL1={GAUSSIAN CENTER=pi/2 SIGMA=1.0} KERNEL2={GAUSSIAN CENTER=pi/4 SIGMA=1.0} SWITCH_COORD={EXP R_0=4.0} SWITCH={RATIONAL R_0=2.0 D_0=2.0} SUM
+PRINT ARG=smac.* FILE=colvar
+```
+
+The input above would calculate 64 instances of $s_i$ using the formula above.  In each of these two Gaussian Kernels are used in the sum over $n$.  The parameters for the switching function
+$\sigma$ are specified using the SWITCH keyword, while the parameters for $\gamma$ are specified using SWITCH_COORD.  As you can see if you expand the shortcut in the input above, the 64 values
+for $s_i$ are stored in a vector.  All the elements of this vector are then added together to produce the single quantity that is output in the colvar file.
 
 */
 //+ENDPLUMEDOC
@@ -48,12 +71,10 @@ PLUMED_REGISTER_ACTION(AtomicSMAC,"ATOMIC_SMAC")
 
 void AtomicSMAC::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("optional","SPECIES","");
-  keys.add("optional","SPECIESA","");
-  keys.add("optional","SPECIESB","");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.add("atoms-3","SPECIES","the list of atoms for which the symmetry function is being calculated and the atoms that can be in the environments");
+  keys.add("atoms-4","SPECIESA","the list of atoms for which the symmetry function is being calculated.  This keyword must be used in conjunction with SPECIESB, which specifies the atoms that are in the environment.");
+  keys.add("atoms-4","SPECIESB","the list of atoms that can be in the environments of each of the atoms for which the symmetry function is being calculated.  This keyword must be used in conjunction with SPECIESA, which specifies the atoms for which the symmetry function is being calculated.");
+  keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   keys.add("numbered","KERNEL","The kernels used in the function of the angle");
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");

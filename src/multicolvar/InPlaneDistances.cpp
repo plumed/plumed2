@@ -28,9 +28,28 @@
 
 //+PLUMEDOC MCOLVAR INPLANEDISTANCES
 /*
-Calculate the distance between a pair of atoms in the plane
+Calculate distances in the plane perpendicular to an axis
 
-\par Examples
+Each quantity calculated in this CV uses the positions of two atoms, this indices of which are specified using the VECTORSTART and VECTOREND keywords, to specify the
+orientation of a vector, $\mathbf{n}$.  The perpendicular distance between this vector and the position of some third atom is then computed using:
+
+$$
+ x_j = |\mathbf{r}_{j}| \sin (\theta_j)
+$$
+
+where $\mathbf{r}_j$ is the distance between one of the two atoms that define the vector $\mathbf{n}$ and a third atom (atom $j$) and where $\theta_j$
+is the angle between the vector \f$\mathbf{n}\f$ and the vector $\mathbf{r}_{j}$.  The $x_j$ values for each of the atoms specified using the GROUP keyword are calculated.
+Keywords such as MORE_THAN and LESS_THAN can then be used to calculate the number of these quantities that are more or less than a given cutoff.
+
+The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that
+are within a cylinder with a radius of 0.3 nm that has its long axis aligned with the vector connecting atoms 1 and 2.
+
+```plumed
+d1: INPLANEDISTANCES VECTORSTART=1 VECTOREND=2 GROUP=3-100 LESS_THAN={RATIONAL D_0=0.2 R_0=0.1}
+PRINT ARG=d1.lessthan FILE=colvar
+```
+
+Notice that the INPLANEDISTANCES is a shortcut. The syntax that is described in the expanded version of the input above provides much more flexibility for designing new CVs.
 
 */
 //+ENDPLUMEDOC

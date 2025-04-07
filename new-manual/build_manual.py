@@ -9,10 +9,20 @@ import numpy as np
 from pathlib import Path
 from datetime import date 
 from bs4 import BeautifulSoup
+from contextlib import contextmanager
 from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript, get_css 
 import networkx as nx
 
 PLUMED="plumed"
+
+@contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
 def getActionDocumentationFromPlumed() :
     docs = {}
@@ -131,8 +141,8 @@ PLUMED is a community-developed code that can be used to incorporate additional 
 trajectories. PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
 a list of the modules that are available within PLUMED [here](modules.md) or you can see a graphical view of the modules and the dependencies between them [here](modulegraph.md).
 
-Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](cltools.md). 
-You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](cltools.md).
+Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md). 
+You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](module_cltools.md).
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
 
@@ -163,7 +173,7 @@ Modules that make up PLUMED Version {version}
 ---------------------------------------------
        
 The functionality in PLUMED is split up between a collection of modules.  Each of these modules contains a collection of
-[actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](cltools.md).  Some of these modules must be present
+[actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md).  Some of these modules must be present
 every time PLUMED is compiled, others are not essential but are still compiled by default unless you explicitly tell PLUMED not to compile by using:
           
 ```bash
@@ -326,7 +336,7 @@ def getModuleDictionary( modname ) :
     return {"name": modname, "authors": "authors", "description": "Information about the module", "dois": [] }
 
 def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_inputs ) :
-    with open( "docs/module_" + modname + ".md", "w") as f :
+    with open( "module_" + modname + ".md", "w") as f :
          f.write("# [Module](modules.md): " + modname + "\n\n")
          f.write("| Description    | Usage |\n")
          f.write("|:--------|:--------:|\n") 
@@ -436,7 +446,7 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
 
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
-    with open( "docs/" + action + ".md", "w") as f : 
+    with open( action + ".md", "w") as f : 
          hasatoms, hasargs = False, False
          for key, docs in value["syntax"].items() :
              if key=="output" : continue
@@ -508,11 +518,9 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          ninp, nfail = 0, 0
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
-            #fixed_modules = ["adjmat", "envsim", "sprint", "clusters", "secondarystructure", "multicolvar", "valtools", "matrixtools", "colvar", "pamm", "volumes", "generic", "function", "wham", "core", "refdist", "fourier", "setup", "vatom", "symfunc", "landmarks"]
-            fixed_modules = ["wham"]
-            if value["module"] in fixed_modules : 
+            if os.path.isfile("../../src/" + value["module"] + "/module.yml") : 
                 actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[action], "docs/" + action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                ninp, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
             else : 
                 f.write("Text from manual goes here \n")
@@ -571,8 +579,6 @@ if __name__ == "__main__" :
        except ValueError as ve:
           raise InvalidJSONError(ve)
 
-   # Create a directory to hold all the docs
-   os.mkdir("docs")
    # Create the index file
    with open("docs/index.md", "w+") as of : printIndexFile(of,version)
    # Copy the extra files we need to process all the inputs 
@@ -591,7 +597,8 @@ if __name__ == "__main__" :
    actions = set()
    for page in glob.glob("*.md") :
        shutil.copy( page, "docs/" + page ) 
-       ninp, nf = processMarkdown( "docs/" + page, (PLUMED,), (version,), actions, ghmarkdown=False )
+       with cd("docs") : 
+          ninp, nf = processMarkdown( page, (PLUMED,), (version,), actions, ghmarkdown=False )
        if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
        if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
@@ -604,7 +611,8 @@ if __name__ == "__main__" :
       if key in nest_map.keys() : neggs = nest_map[key]
       if key in school_map.keys() : nlessons = school_map[key] 
       print("Building action page", key )
-      createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
+      with cd("docs") : 
+         createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
       alink = "<a href=\"../" + key + "\">" + key + "</a>"
       tabledata.append( [alink, str(value["description"])] ) 
    # Create the page with the list of actions
@@ -642,7 +650,8 @@ if __name__ == "__main__" :
        mod_dict = getModuleDictionary( module )
        moduletabledata.append( [mlink, mod_dict["description"], mod_dict["authors"], getModuleType(module) ] ) 
        print("Building module page", module )
-       createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
+       with cd("docs") :
+          createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 
           nodocs.append(["<a href=\"../module_" + module + "\">" + module+ "</a>", "module"])
    # And the page with the list of modules
@@ -654,7 +663,8 @@ if __name__ == "__main__" :
    special_groups = []
    for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
    # Add tables with special groups to pages that need them
-   addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups ) 
+   addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups )
+   addSpecialGroupsToPage( "docs/MOLINFO.md", special_groups ) 
 
    # And output the summary page
    createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples )
