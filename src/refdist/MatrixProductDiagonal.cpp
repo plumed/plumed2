@@ -175,29 +175,38 @@ void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforc
 }
 
 void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  output.values[0] = 0;
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
-  std::size_t ibase = task_index*(arg0.ncols+1);
-  std::size_t n = arg0.bookeeping[ibase];
-  for(unsigned i=0; i<n; ++i) {
-    double val1 = input.inputdata[task_index*arg0.ncols+i];
-    double val2 = ArgumentBookeepingHolder::getElement( arg0.bookeeping[ibase+1+i], task_index, arg1, input.inputdata );
-    output.values[0] += val1*val2;
-    output.derivatives[i] = val2;
-    output.derivatives[n +i] = val1;
+  std::size_t fpos = task_index*(1+arg0.ncols);
+  std::size_t nmult = arg0.bookeeping[fpos];
+  std::size_t vstart = task_index*arg0.ncols;
+  output.values[0] = 0;
+  if( arg1.ncols<arg1.shape[1] ) {
+    plumed_merror("multiplying by a sparse matrix is not implemented as I don't think it is needed");
+  } else {
+    std::size_t base = arg1.start + task_index;
+    for(unsigned i=0; i<nmult; ++i) {
+      double val1 = input.inputdata[vstart+i];
+      double val2 = input.inputdata[ base + arg1.ncols*arg0.bookeeping[fpos+1+i] ];
+      output.values[0] += val1*val2;
+      output.derivatives[i] = val2;
+      output.derivatives[nmult + i] = val1;
+    }
   }
 }
 
 void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   double ff = fdata.force[0];
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
-  std::size_t ibase = task_index*(arg0.ncols+1);
-  std::size_t n = arg0.bookeeping[ibase], ind;
-  for(unsigned i=0; i<n; ++i) {
-    std::size_t ival = arg0.bookeeping[ibase+1+i];
-    forces.thread_unsafe[ task_index*arg0.shape[1] + ival ] = ff*fdata.deriv[0][i];
-    if( ArgumentBookeepingHolder::hasElement( ival, task_index, arg1, ind ) ) {
-      forces.thread_unsafe[ ind ] = ff*fdata.deriv[0][n+i];
+  std::size_t fpos = task_index*(1+arg0.ncols);
+  std::size_t nmult = arg0.bookeeping[fpos];
+  std::size_t vstart = task_index*arg0.ncols;
+  if( arg1.ncols<arg1.shape[1] ) {
+    plumed_merror("multiplying by a sparse matrix is not implemented as I don't think it is needed");
+  } else {
+    std::size_t base = arg1.start + task_index;
+    for(unsigned i=0; i<nmult; ++i) {
+      forces.thread_unsafe[ vstart + i ] = ff*fdata.deriv[0][i];
+      forces.thread_unsafe[ base + arg1.ncols*arg0.bookeeping[fpos+1+i] ] = ff*fdata.deriv[0][nmult+i];
     }
   }
 }

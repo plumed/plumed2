@@ -89,6 +89,7 @@ public:
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
     plumed_merror("shouldn't be here");
   }
+  static std::size_t getIndex( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat );
   static void performTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
 };
@@ -179,6 +180,19 @@ void ThreeBodyGFunctions::calculate() {
   taskmanager.runAllTasks();
 }
 
+std::size_t ThreeBodyGFunctions::getIndex( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat ) {
+  if( mat.shape[1]==mat.ncols ) {
+    return irow*mat.ncols + jcol;
+  }
+  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
+    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
+      return irow*mat.ncols+i;
+    }
+  }
+  plumed_merror("could not find index");
+  return 0;
+}
+
 void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   const double* xpntr=NULL;
   const double* ypntr=NULL;
@@ -193,9 +207,9 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
     zvals.resize( rowlen );
     View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned i=0; i<rowlen; ++i) {
-      xvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg0, input.inputdata );
-      yvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg1, input.inputdata );
-      zvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg2, input.inputdata );
+      xvals[i] = input.inputdata[arg0.start + getIndex( task_index, wbooks[i], arg0) ];
+      yvals[i] = input.inputdata[arg1.start + getIndex( task_index, wbooks[i], arg1) ];
+      zvals[i] = input.inputdata[arg2.start + getIndex( task_index, wbooks[i], arg2) ];
     }
     xpntr = xvals.data();
     ypntr = yvals.data();
@@ -279,10 +293,10 @@ void ThreeBodyGFunctions::gatherForces( std::size_t task_index, const ThreeBodyG
   if( actiondata.multi_action_input ) {
     View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned j=0; j<rowlen; ++j) {
-      std::size_t xpos, ypos, zpos, matpos = task_index*arg3.ncols + j;
-      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg0, xpos );
-      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg1, ypos );
-      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg2, zpos );
+      std::size_t matpos = task_index*arg3.ncols + j;
+      std::size_t xpos = getIndex( task_index, wbooks[j], arg0 );
+      std::size_t ypos = getIndex( task_index, wbooks[j], arg1 );
+      std::size_t zpos = getIndex( task_index, wbooks[j], arg2 );
       for(unsigned i=0; i<input.ncomponents; ++i) {
         double ff = fdata.force[i];
         forces.thread_unsafe[arg0.start + xpos] += ff*fdata.deriv[i][j];

@@ -161,38 +161,7 @@ public:
     shape(inp.shapedata.data() + inp.shapestarts[argno], rank ),
     bookeeping(inp.bookeeping.data() + inp.bookstarts[argno], inp.booksizes[argno] ) {
   }
-  static double getElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, double* data );
-  static bool hasElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, std::size_t& ind );
 };
-
-inline
-double ArgumentBookeepingHolder::getElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, double* data ) {
-  if( mat.shape[1]==mat.ncols ) {
-    return data[mat.start + irow*mat.ncols + jcol];
-  }
-
-  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
-    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
-      return data[mat.start + irow*mat.ncols+i];
-    }
-  }
-  return 0.0;
-}
-
-inline
-bool ArgumentBookeepingHolder::hasElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, std::size_t& ind ) {
-  if( mat.shape[1]==mat.ncols ) {
-    ind = mat.start + irow*mat.ncols + jcol;
-    return true;
-  }
-  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
-    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
-      ind = mat.start + irow*mat.ncols+i;
-      return true;
-    }
-  }
-  return false;
-}
 
 struct ParallelActionsOutput {
   View<double> values;
