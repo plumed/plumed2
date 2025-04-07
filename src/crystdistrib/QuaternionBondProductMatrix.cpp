@@ -217,20 +217,20 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
     ParallelActionsOutput& output ) {
 
   View2D<double, 4, 8> derivatives( output.derivatives.data() );
-  std::size_t index1 = std::floor( task_index / input.args[0].ncols );
+  std::size_t index1 = std::floor( task_index / input.ncols[0] );
   std::vector<double> quat(4), bond(4), quatTemp(4);
   std::vector<Tensor4d> dqt(2); //dqt[0] -> derivs w.r.t quat [dwt/dw1 dwt/di1 dwt/dj1 dwt/dk1]
   //[dit/dw1 dit/di1 dit/dj1 dit/dk1] etc, and dqt[1] is w.r.t the vector-turned-quaternion called bond
 
   // Retrieve the quaternion
   for(unsigned i=0; i<4; ++i) {
-    quat[i] = input.inputdata[ input.args[4+i].start + index1 ];
+    quat[i] = input.inputdata[ input.argstarts[4+i] + index1 ];
   }
 
   // Retrieve the components of the matrix
-  double weight = input.inputdata[ input.args[0].start + task_index ];
+  double weight = input.inputdata[ input.argstarts[0] + task_index ];
   for(unsigned i=1; i<4; ++i) {
-    bond[i] = input.inputdata[ input.args[i].start + task_index ];
+    bond[i] = input.inputdata[ input.argstarts[i] + task_index ];
   }
 
   // calculate normalization factor
@@ -478,12 +478,12 @@ void QuaternionBondProductMatrix:: gatherForces( std::size_t task_index,
     const ParallelActionsInput& input,
     const ForceInput& fdata,
     ForceOutput forces ) {
-  std::size_t nquat = input.args[4].shape[0];
-  std::size_t index1 = std::floor( task_index / input.args[0].ncols );
+  std::size_t nquat = input.shapedata[input.shapestarts[4]];
+  std::size_t index1 = std::floor( task_index / input.ncols[0] );
   for(unsigned i=0; i<4; ++i) {
     double ff = fdata.force[i];
     for(unsigned j=0; j<4; ++j) {
-      forces.thread_unsafe[ input.args[j].start + task_index] += ff*fdata.deriv[i][j];
+      forces.thread_unsafe[ input.argstarts[j] + task_index] += ff*fdata.deriv[i][j];
     }
     for(unsigned j=0; j<4; ++j) {
       forces.thread_safe[ j*nquat + index1 ] += ff*fdata.deriv[i][4+j];

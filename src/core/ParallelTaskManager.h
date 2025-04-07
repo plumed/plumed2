@@ -28,7 +28,6 @@
 #include "tools/OpenMP.h"
 #include "tools/View.h"
 #include "tools/View2D.h"
-#include "MatrixView.h"
 
 #include "tools/ColvarOutput.h"
 #include "tools/OpenACC.h"
@@ -50,7 +49,15 @@ struct ParallelActionsInput {
   unsigned dataSize{0};
   double *inputdata{nullptr};
 /// Bookeeping stuff for arguments
-  std::vector<MatrixView> args;
+  std::size_t nargs{0};
+  std::vector<std::size_t> ranks;
+  std::vector<std::size_t> shapestarts;
+  std::vector<std::size_t> shapedata;
+  std::vector<std::size_t> ncols;
+  std::vector<std::size_t> bookstarts;
+  std::vector<std::size_t> booksizes;
+  std::vector<std::size_t> bookeeping;
+  std::vector<std::size_t> argstarts;
 /// Default constructor
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
@@ -86,12 +93,105 @@ struct ParallelActionsInput {
 
 inline
 void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
-  std::size_t s = 0;
-  args.resize( action->getNumberOfArguments() );
-  for(unsigned i=0; i<args.size(); ++i) {
-    args[i].setup( s, action->getPntrToArgument(i) );
-    s += (action->getPntrToArgument(i))->getNumberOfStoredValues();
+  nargs = action->getNumberOfArguments();
+  ranks.resize( nargs );
+  shapestarts.resize( nargs );
+  argstarts.resize( nargs );
+  std::size_t s = 0, ts = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    shapestarts[i] = ts;
+    ranks[i] = myarg->getRank();
+    ts += ranks[i];
+    argstarts[i] = s;
+    s += myarg->getNumberOfStoredValues();
   }
+  shapedata.resize( ts );
+  ts = 0;
+  ncols.resize( nargs );
+  bookstarts.resize( nargs );
+  booksizes.resize( nargs );
+  std::size_t nbook = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    for(unsigned j=0; j<ranks[i]; ++j) {
+      shapedata[ts] = myarg->getShape()[j];
+      ++ts;
+    }
+    bookstarts[i] = nbook;
+    if( ranks[i]==1 ) {
+      ncols[i] = 1;
+      booksizes[i] = 2*myarg->getShape()[0];
+    } else if( ranks[i]==2 ) {
+      ncols[i] = myarg->getNumberOfColumns();
+      booksizes[i] = myarg->matrix_bookeeping.size();
+    }
+    nbook += booksizes[i];
+  }
+  bookeeping.resize( nbook );
+  ts = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    if( ranks[i]==1 ) {
+      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
+        bookeeping[ts] = 1;
+        bookeeping[ts+1] = 0;
+        ts += 2;
+      }
+    } else if( ranks[i]==2 ) {
+      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
+        bookeeping[ts] = myarg->matrix_bookeeping[j];
+        ++ts;
+      }
+    }
+  }
+}
+
+class ArgumentBookeepingHolder {
+public:
+  std::size_t rank;
+  std::size_t ncols;
+  std::size_t start;
+  View<const std::size_t,helpers::dynamic_extent> shape;
+  View<const std::size_t,helpers::dynamic_extent> bookeeping;
+  ArgumentBookeepingHolder( std::size_t argno, const ParallelActionsInput& inp ) :
+    rank(inp.ranks[argno]),
+    ncols(inp.ncols[argno]),
+    start(inp.argstarts[argno]),
+    shape(inp.shapedata.data() + inp.shapestarts[argno], rank ),
+    bookeeping(inp.bookeeping.data() + inp.bookstarts[argno], inp.booksizes[argno] ) {
+  }
+  static double getElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, double* data );
+  static bool hasElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, std::size_t& ind );
+};
+
+inline
+double ArgumentBookeepingHolder::getElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, double* data ) {
+  if( mat.shape[1]==mat.ncols ) {
+    return data[mat.start + irow*mat.ncols + jcol];
+  }
+
+  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
+    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
+      return data[mat.start + irow*mat.ncols+i];
+    }
+  }
+  return 0.0;
+}
+
+inline
+bool ArgumentBookeepingHolder::hasElement( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat, std::size_t& ind ) {
+  if( mat.shape[1]==mat.ncols ) {
+    ind = mat.start + irow*mat.ncols + jcol;
+    return true;
+  }
+  for(unsigned i=0; i<mat.bookeeping[(1+mat.ncols)*irow]; ++i) {
+    if( mat.bookeeping[(1+mat.ncols)*irow+1+i]==jcol ) {
+      ind = mat.start + irow*mat.ncols+i;
+      return true;
+    }
+  }
+  return false;
 }
 
 struct ParallelActionsOutput {

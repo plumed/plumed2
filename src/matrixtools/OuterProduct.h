@@ -32,7 +32,7 @@ template <class T>
 class OuterProductInput {
 public:
   T funcinput;
-  MatrixView outmat;
+  RequiredMatrixElements outmat;
 };
 
 template <class T>
@@ -169,14 +169,14 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
                                        ParallelActionsOutput& output ) {
   std::vector<double> args(2*input.ncomponents);
   for(unsigned i=0; i<input.ncomponents; ++i) {
-    args[i] = input.inputdata[input.args[i].start + task_index];
+    args[i] = input.inputdata[input.argstarts[i] + task_index];
   }
   unsigned fstart = task_index*(1+actiondata.outmat.ncols);
   unsigned nelements = actiondata.outmat.bookeeping[fstart];
   for(unsigned i=0; i<nelements; ++i) {
     std::size_t argpos = actiondata.outmat.bookeeping[fstart+1+i];
     for(unsigned j=0; j<input.ncomponents; ++j) {
-      args[input.ncomponents+j] = input.inputdata[input.args[input.ncomponents+j].start + argpos];
+      args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
     }
     MatrixElementOutput matout( input.ncomponents, 2*input.ncomponents, output.values.data()+i*input.ncomponents, output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
     T::calculate( input.noderiv, actiondata.funcinput, args, matout );
@@ -202,8 +202,8 @@ void OuterProductBase<T>::gatherForces( std::size_t task_index,
     for(unsigned j=0; j<input.ncomponents; ++j) {
       double force = fdata.force[i*input.ncomponents+j];
       for(unsigned k=0; k<input.ncomponents; ++k) {
-        forces.thread_unsafe[input.args[k].start + task_index] += force*derivs[j][k];
-        forces.thread_safe[k*input.args[input.ncomponents].shape[0] + argpos] += force*derivs[j][input.ncomponents+k];
+        forces.thread_unsafe[input.argstarts[k] + task_index] += force*derivs[j][k];
+        forces.thread_safe[k*input.shapedata[input.ncomponents] + argpos] += force*derivs[j][input.ncomponents+k];
       }
     }
   }

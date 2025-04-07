@@ -26,7 +26,11 @@
 
 namespace PLMD {
 
-class MatrixView;
+class RequiredMatrixElements {
+public:
+  std::size_t ncols;
+  std::vector<std::size_t> bookeeping;
+};
 
 class MatrixElementOutput {
 public:
@@ -43,7 +47,7 @@ protected:
 /// Some actions have a flag that sets this to true.  The elements on the diagonal of the resulting matrix are then set to zero
   bool diagzero;
 /// Update all the arrays for doing bookeeping
-  void updateBookeepingArrays( MatrixView& outmat );
+  void updateBookeepingArrays( RequiredMatrixElements& outmat );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);

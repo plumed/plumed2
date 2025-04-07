@@ -32,7 +32,7 @@ template <class T>
 class MatrixTimesMatrixInput {
 public:
   T funcinput;
-  MatrixView outmat;
+  RequiredMatrixElements outmat;
 };
 
 class InputVectors {
@@ -164,21 +164,22 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
                                         const MatrixTimesMatrixInput<T>& actiondata,
                                         ParallelActionsInput& input,
                                         ParallelActionsOutput& output ) {
-  std::size_t fpos = task_index*(1+input.args[0].ncols);
-  std::size_t nmult = input.args[0].bookeeping[fpos];
-  std::size_t vstart = task_index*input.args[0].ncols;
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t fpos = task_index*(1+arg0.ncols);
+  std::size_t nmult = arg0.bookeeping[fpos];
+  std::size_t vstart = task_index*arg0.ncols;
   InputVectors vectors( nmult );
-  if( input.args[1].ncols<input.args[1].shape[1] ) {
+  if( arg1.ncols<arg1.shape[1] ) {
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
     std::size_t nelements = actiondata.outmat.bookeeping[fstart];
     for(unsigned i=0; i<nelements; ++i) {
       std::size_t nm = 0;
       for(unsigned j=0; j<nmult; ++j) {
-        std::size_t kind = input.args[0].bookeeping[fpos+1+j];
-        std::size_t bstart = kind*(input.args[1].ncols + 1);
-        std::size_t nr = input.args[1].bookeeping[bstart];
+        std::size_t kind = arg0.bookeeping[fpos+1+j];
+        std::size_t bstart = kind*(arg1.ncols + 1);
+        std::size_t nr = arg1.bookeeping[bstart];
         for(unsigned k=0; k<nr; ++k) {
-          if( input.args[1].bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
+          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
             nm++;
             break;
           }
@@ -187,13 +188,13 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
       vectors.nelem = nm;
       nm = 0;
       for(unsigned j=0; j<nmult; ++j) {
-        std::size_t kind = input.args[0].bookeeping[fpos+1+j];
-        std::size_t bstart = kind*(input.args[1].ncols + 1);
-        std::size_t nr = input.args[1].bookeeping[bstart];
+        std::size_t kind = arg0.bookeeping[fpos+1+j];
+        std::size_t bstart = kind*(arg1.ncols + 1);
+        std::size_t nr = arg1.bookeeping[bstart];
         for(unsigned k=0; k<nr; ++k) {
-          if( input.args[1].bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
+          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
             vectors.arg1[nm] = input.inputdata[ vstart + j ];
-            vectors.arg2[nm] = input.inputdata[ input.args[1].start + kind*input.args[1].ncols + k ];
+            vectors.arg2[nm] = input.inputdata[ arg1.start + kind*arg1.ncols + k ];
             nm++;
             break;
           }
@@ -212,9 +213,9 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
     std::size_t nelements = actiondata.outmat.bookeeping[fstart];
     for(unsigned i=0; i<nelements; ++i) {
-      std::size_t base = input.args[1].start + actiondata.outmat.bookeeping[fstart+1+i];
+      std::size_t base = arg1.start + actiondata.outmat.bookeeping[fstart+1+i];
       for(unsigned j=0; j<nmult; ++j) {
-        vectors.arg2[j] = input.inputdata[ base + input.args[1].ncols*input.args[0].bookeeping[fpos+1+j] ];
+        vectors.arg2[j] = input.inputdata[ base + arg1.ncols*arg0.bookeeping[fpos+1+j] ];
       }
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
       T::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
@@ -233,9 +234,10 @@ void MatrixTimesMatrix<T>::gatherForces( std::size_t task_index,
     const ParallelActionsInput& input,
     const ForceInput& fdata,
     ForceOutput forces ) {
-  std::size_t fpos = task_index*(1+input.args[0].ncols);
-  std::size_t nmult = input.args[0].bookeeping[fpos];
-  if( input.args[1].ncols<input.args[1].shape[1] ) {
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t fpos = task_index*(1+arg0.ncols);
+  std::size_t nmult = arg0.bookeeping[fpos];
+  if( arg1.ncols<arg1.shape[1] ) {
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
     std::size_t nelements = actiondata.outmat.bookeeping[fstart];
     for(unsigned i=0; i<nelements; ++i) {
@@ -243,13 +245,13 @@ void MatrixTimesMatrix<T>::gatherForces( std::size_t task_index,
       double force = fdata.force[i];
       View<const double,helpers::dynamic_extent> deriv( fdata.deriv.data() + 2*nmult*i, 2*nmult );
       for(unsigned j=0; j<nmult; ++j) {
-        std::size_t kind = input.args[0].bookeeping[fpos+1+j];
-        std::size_t bstart = kind*(input.args[1].ncols + 1);
-        std::size_t nr = input.args[1].bookeeping[bstart];
+        std::size_t kind = arg0.bookeeping[fpos+1+j];
+        std::size_t bstart = kind*(arg1.ncols + 1);
+        std::size_t nr = arg1.bookeeping[bstart];
         for(unsigned k=0; k<nr; ++k) {
-          if( input.args[1].bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
-            forces.thread_unsafe[task_index*input.args[0].ncols + j] += force*deriv[nm];
-            forces.thread_safe[kind*input.args[1].ncols + k] += force*deriv[nmult+nm];
+          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
+            forces.thread_unsafe[task_index*arg0.ncols + j] += force*deriv[nm];
+            forces.thread_safe[kind*arg1.ncols + k] += force*deriv[nmult+nm];
             nm++;
             break;
           }
@@ -264,8 +266,8 @@ void MatrixTimesMatrix<T>::gatherForces( std::size_t task_index,
       double force = fdata.force[i];
       View<const double,helpers::dynamic_extent> deriv( fdata.deriv.data() + 2*nmult*i, 2*nmult );
       for(unsigned j=0; j<nmult; ++j) {
-        forces.thread_unsafe[task_index*input.args[0].ncols + j] += force*deriv[j];
-        forces.thread_safe[input.args[0].bookeeping[fpos+1+j]*input.args[1].ncols + ind] += force*deriv[nmult+j];
+        forces.thread_unsafe[task_index*arg0.ncols + j] += force*deriv[j];
+        forces.thread_safe[arg0.bookeeping[fpos+1+j]*arg1.ncols + ind] += force*deriv[nmult+j];
       }
     }
   }

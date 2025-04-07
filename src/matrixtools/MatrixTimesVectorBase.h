@@ -48,10 +48,10 @@ public:
   View<const double,helpers::dynamic_extent> vector;
   MatrixTimesVectorInput( std::size_t task_index, std::size_t ipair, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* argdata ):
     noderiv(input.noderiv),
-    rowlen(input.args[actiondata.pairs[ipair][0]].bookeeping[(1+input.args[actiondata.pairs[ipair][0]].ncols)*task_index]),
-    indices(input.args[actiondata.pairs[ipair][0]].bookeeping.data()+(1+input.args[actiondata.pairs[ipair][0]].ncols)*task_index+1,rowlen),
-    matrow(argdata + input.args[actiondata.pairs[ipair][0]].start + task_index*input.args[actiondata.pairs[ipair][0]].ncols,rowlen),
-    vector(argdata + input.args[actiondata.pairs[ipair][1]].start,input.args[actiondata.pairs[ipair][1]].shape[0]) {
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+    indices(input.bookeeping.data() + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
+    matrow(argdata + input.argstarts[actiondata.pairs[ipair][0]] + task_index*input.ncols[actiondata.pairs[ipair][0]],rowlen),
+    vector(argdata + input.argstarts[actiondata.pairs[ipair][1]], input.shapedata[1]) {
   }
 };
 
@@ -63,7 +63,7 @@ public:
   View<double,helpers::dynamic_extent> vector_deriv;
   MatrixTimesVectorOutput( std::size_t ival, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ParallelActionsOutput& output ):
     values(output.values.data()+ival),
-    nder(input.args[actiondata.pairs[ival][0]].shape[1]),
+    nder(input.shapedata[1]),
     matrow_deriv(output.derivatives.data()+2*ival*nder,nder),
     vector_deriv(output.derivatives.data()+(1+2*ival)*nder,nder) {
   }
@@ -77,9 +77,9 @@ public:
   View<const double,helpers::dynamic_extent> deriv;
   MatrixTimesVectorForceInput( std::size_t task_index, std::size_t ipair, double ff, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* deriv ):
     force(ff),
-    rowlen(input.args[actiondata.pairs[ipair][0]].bookeeping[(1+input.args[actiondata.pairs[ipair][0]].ncols)*task_index]),
-    indices(input.args[actiondata.pairs[ipair][0]].bookeeping.data()+(1+input.args[actiondata.pairs[ipair][0]].ncols)*task_index+1,rowlen),
-    deriv(deriv,input.args[actiondata.pairs[ipair][1]].shape[0]) {
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+    indices(input.bookeeping.data() + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
+    deriv(deriv,input.shapedata[1]) {
   }
 };
 
@@ -308,13 +308,13 @@ void MatrixTimesVectorBase<T>::gatherForces( std::size_t task_index, const Matri
   std::size_t fcount = 0;
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
     double ff = fdata.force[i];
-    std::size_t base = input.args[actiondata.pairs[i][0]].start + task_index*input.args[actiondata.pairs[i][0]].ncols;
-    std::size_t n = input.args[actiondata.pairs[i][0]].bookeeping[(1+input.args[actiondata.pairs[i][0]].ncols)*task_index];
+    std::size_t base = input.argstarts[actiondata.pairs[i][0]] + task_index*input.ncols[actiondata.pairs[i][0]];
+    std::size_t n = input.bookeeping[input.bookstarts[actiondata.pairs[i][0]] + (1+input.ncols[actiondata.pairs[i][0]])*task_index];
     for(unsigned j=0; j<n; ++j) {
       forces.thread_unsafe[base + j] += ff*fdata.deriv[i][j];
     }
-    View<double,helpers::dynamic_extent> forceout( forces.thread_safe.data() + fcount, input.args[actiondata.pairs[i][1]].shape[0] );
-    T::gatherVectorForces( MatrixTimesVectorForceInput( task_index, i, ff, actiondata, input, fdata.deriv[i].data()+input.args[actiondata.pairs[i][0]].shape[1] ), forceout );
+    View<double,helpers::dynamic_extent> forceout( forces.thread_safe.data() + fcount, input.shapedata[1] );
+    T::gatherVectorForces( MatrixTimesVectorForceInput( task_index, i, ff, actiondata, input, fdata.deriv[i].data()+input.shapedata[1] ), forceout );
     fcount += actiondata.fshift;
   }
 }

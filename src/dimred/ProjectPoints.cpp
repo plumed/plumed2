@@ -233,15 +233,16 @@ double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vecto
 
 void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   std::vector<double> point( input.ncomponents );
-  std::size_t nland = input.args[0].shape[0];
+  std::size_t nland = input.shapedata[0];
   std::size_t base = task_index;
-  if( input.args[input.ncomponents].shape.size()==2 ) {
-    base = task_index*input.args[input.ncomponents].shape[1];
+  if( input.ranks[input.ncomponents]==2 ) {
+    ArgumentBookeepingHolder myargh( input.ncomponents, input );
+    base = task_index*myargh.shape[1];
   }
   unsigned closest=0;
-  double mindist = input.inputdata[input.args[input.ncomponents].start + base];
+  double mindist = input.inputdata[input.argstarts[input.ncomponents] + base];
   for(unsigned i=1; i<nland; ++i) {
-    double dist = input.inputdata[input.args[input.ncomponents].start + base+i];
+    double dist = input.inputdata[input.argstarts[input.ncomponents] + base+i];
     if( dist<mindist ) {
       mindist=dist;
       closest=i;
@@ -251,12 +252,13 @@ void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInpu
   Random random;
   random.setSeed(-1234);
   for(unsigned j=0; j<input.ncomponents; ++j) {
-    point[j] = input.inputdata[input.args[j].start + closest] + (random.RandU01() - 0.5)*0.01;
+    point[j] = input.inputdata[input.argstarts[j] + closest] + (random.RandU01() - 0.5)*0.01;
   }
   // And do the optimisation
   actiondata.action->rowstart[OpenMP::getThreadNum()]=task_index;
-  if( input.args[input.ncomponents].shape.size()==2 ) {
-    actiondata.action->rowstart[OpenMP::getThreadNum()] = task_index*input.args[input.ncomponents].shape[1];
+  if( input.ranks[input.ncomponents]==2 ) {
+    ArgumentBookeepingHolder myargh( input.ncomponents, input );
+    actiondata.action->rowstart[OpenMP::getThreadNum()] = task_index*myargh.shape[1];
   }
   actiondata.action->myminimiser.minimise( actiondata.cgtol, point, &ProjectPoints::calculateStress );
   for(unsigned i=0; i<input.ncomponents; ++i) {

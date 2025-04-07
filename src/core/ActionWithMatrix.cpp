@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
-#include "MatrixView.h"
 #include "tools/Communicator.h"
 
 namespace PLMD {
@@ -42,7 +41,7 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   }
 }
 
-void ActionWithMatrix::updateBookeepingArrays( MatrixView& outmat ) {
+void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) {
   Value* myval = getPntrToComponent(0);
   unsigned lstart = myval->getShape()[0];
   if( getNumberOfMasks()>0 ) {
@@ -76,7 +75,12 @@ void ActionWithMatrix::updateBookeepingArrays( MatrixView& outmat ) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1] );
     }
   }
-  outmat.setup( 0, getPntrToComponent(0) );
+  Value* mycomp = getPntrToComponent(0);
+  outmat.ncols = mycomp->getNumberOfColumns();
+  outmat.bookeeping.resize( mycomp->matrix_bookeeping.size() );
+  for(unsigned i=0; i<outmat.bookeeping.size(); ++i) {
+      outmat.bookeeping[i] = mycomp->matrix_bookeeping[i];
+  }
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
   }

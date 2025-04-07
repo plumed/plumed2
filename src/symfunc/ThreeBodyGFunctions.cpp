@@ -184,25 +184,26 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   const double* ypntr=NULL;
   const double* zpntr=NULL;
   std::vector<double> xvals, yvals, zvals;
-  std::size_t rowlen = input.args[3].bookeeping[(1+input.args[3].ncols)*task_index];
-  View<const double,helpers::dynamic_extent> wval( input.inputdata + input.args[3].start + input.args[3].ncols*task_index, rowlen );
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input ), arg2( 2, input), arg3( 3, input );
+  std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
+  View<const double,helpers::dynamic_extent> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
   if( actiondata.multi_action_input ) {
     xvals.resize( rowlen );
     yvals.resize( rowlen );
     zvals.resize( rowlen );
-    View<const std::size_t,helpers::dynamic_extent> wbooks( input.args[3].bookeeping.data()+(1+input.args[3].ncols)*task_index+1, rowlen);
+    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned i=0; i<rowlen; ++i) {
-      xvals[i] = MatrixView::getElement( task_index, wbooks[i], input.args[0], input.inputdata );
-      yvals[i] = MatrixView::getElement( task_index, wbooks[i], input.args[1], input.inputdata );
-      zvals[i] = MatrixView::getElement( task_index, wbooks[i], input.args[2], input.inputdata );
+      xvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg0, input.inputdata );
+      yvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg1, input.inputdata );
+      zvals[i] = ArgumentBookeepingHolder::getElement( task_index, wbooks[i], arg2, input.inputdata );
     }
     xpntr = xvals.data();
     ypntr = yvals.data();
     zpntr = zvals.data();
   } else {
-    xpntr = input.inputdata + input.args[0].start + input.args[0].ncols*task_index;
-    ypntr = input.inputdata + input.args[1].start + input.args[1].ncols*task_index;
-    zpntr = input.inputdata + input.args[2].start + input.args[2].ncols*task_index;
+    xpntr = input.inputdata + arg0.start + arg0.ncols*task_index;
+    ypntr = input.inputdata + arg1.start + arg1.ncols*task_index;
+    zpntr = input.inputdata + arg2.start + arg2.ncols*task_index;
   }
   View<const double,helpers::dynamic_extent> xval( xpntr, rowlen );
   View<const double,helpers::dynamic_extent> yval( ypntr, rowlen );
@@ -210,7 +211,7 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   for(unsigned i=0; i<output.derivatives.size(); ++i) {
     output.derivatives[i] = 0;
   }
-  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*input.args[3].shape[1] );
+  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*arg3.shape[1] );
 
   Angle angle;
   Vector disti, distj;
@@ -273,31 +274,32 @@ void ThreeBodyGFunctions::applyNonZeroRankForces( std::vector<double>& outforces
 }
 
 void ThreeBodyGFunctions::gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
-  std::size_t rowlen = input.args[3].bookeeping[(1+input.args[3].ncols)*task_index];
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input ), arg2( 2, input), arg3( 3, input );
+  std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   if( actiondata.multi_action_input ) {
-    View<const std::size_t,helpers::dynamic_extent> wbooks( input.args[3].bookeeping.data()+(1+input.args[3].ncols)*task_index+1, rowlen);
+    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned j=0; j<rowlen; ++j) {
-      std::size_t xpos, ypos, zpos, matpos = task_index*input.args[3].ncols + j;
-      MatrixView::hasElement( task_index, wbooks[j], input.args[0], xpos );
-      MatrixView::hasElement( task_index, wbooks[j], input.args[1], ypos );
-      MatrixView::hasElement( task_index, wbooks[j], input.args[2], zpos );
+      std::size_t xpos, ypos, zpos, matpos = task_index*arg3.ncols + j;
+      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg0, xpos );
+      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg1, ypos );
+      ArgumentBookeepingHolder::hasElement( task_index, wbooks[j], arg2, zpos );
       for(unsigned i=0; i<input.ncomponents; ++i) {
         double ff = fdata.force[i];
-        forces.thread_unsafe[input.args[0].start + xpos] += ff*fdata.deriv[i][j];
-        forces.thread_unsafe[input.args[1].start + ypos] += ff*fdata.deriv[i][rowlen+j];
-        forces.thread_unsafe[input.args[2].start + zpos] += ff*fdata.deriv[i][2*rowlen+j];
-        forces.thread_unsafe[input.args[3].start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+        forces.thread_unsafe[arg0.start + xpos] += ff*fdata.deriv[i][j];
+        forces.thread_unsafe[arg1.start + ypos] += ff*fdata.deriv[i][rowlen+j];
+        forces.thread_unsafe[arg2.start + zpos] += ff*fdata.deriv[i][2*rowlen+j];
+        forces.thread_unsafe[arg3.start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
       }
     }
   } else {
     for(unsigned j=0; j<rowlen; ++j) {
-      std::size_t matpos = task_index*input.args[3].ncols + j;
+      std::size_t matpos = task_index*arg3.ncols + j;
       for(unsigned i=0; i<input.ncomponents; ++i) {
         double ff = fdata.force[i];
-        forces.thread_unsafe[input.args[0].start + matpos] += ff*fdata.deriv[i][j];
-        forces.thread_unsafe[input.args[1].start + matpos] += ff*fdata.deriv[i][rowlen+j];
-        forces.thread_unsafe[input.args[2].start + matpos] += ff*fdata.deriv[i][2*rowlen+j];
-        forces.thread_unsafe[input.args[3].start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+        forces.thread_unsafe[arg0.start + matpos] += ff*fdata.deriv[i][j];
+        forces.thread_unsafe[arg1.start + matpos] += ff*fdata.deriv[i][rowlen+j];
+        forces.thread_unsafe[arg2.start + matpos] += ff*fdata.deriv[i][2*rowlen+j];
+        forces.thread_unsafe[arg3.start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
       }
     }
   }

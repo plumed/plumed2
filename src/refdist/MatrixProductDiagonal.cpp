@@ -176,11 +176,12 @@ void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforc
 
 void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   output.values[0] = 0;
-  std::size_t ibase = task_index*(input.args[0].ncols+1);
-  std::size_t n = input.args[0].bookeeping[ibase];
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t ibase = task_index*(arg0.ncols+1);
+  std::size_t n = arg0.bookeeping[ibase];
   for(unsigned i=0; i<n; ++i) {
-    double val1 = input.inputdata[task_index*input.args[0].ncols+i];
-    double val2 = MatrixView::getElement( input.args[0].bookeeping[ibase+1+i], task_index, input.args[1], input.inputdata );
+    double val1 = input.inputdata[task_index*arg0.ncols+i];
+    double val2 = ArgumentBookeepingHolder::getElement( arg0.bookeeping[ibase+1+i], task_index, arg1, input.inputdata );
     output.values[0] += val1*val2;
     output.derivatives[i] = val2;
     output.derivatives[n +i] = val1;
@@ -189,12 +190,13 @@ void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixPro
 
 void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
   double ff = fdata.force[0];
-  std::size_t ibase = task_index*(input.args[0].ncols+1);
-  std::size_t n = input.args[0].bookeeping[ibase], ind;
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t ibase = task_index*(arg0.ncols+1);
+  std::size_t n = arg0.bookeeping[ibase], ind;
   for(unsigned i=0; i<n; ++i) {
-    std::size_t ival = input.args[0].bookeeping[ibase+1+i];
-    forces.thread_unsafe[ task_index*input.args[0].shape[1] + ival ] = ff*fdata.deriv[0][i];
-    if( MatrixView::hasElement( ival, task_index, input.args[1], ind ) ) {
+    std::size_t ival = arg0.bookeeping[ibase+1+i];
+    forces.thread_unsafe[ task_index*arg0.shape[1] + ival ] = ff*fdata.deriv[0][i];
+    if( ArgumentBookeepingHolder::hasElement( ival, task_index, arg1, ind ) ) {
       forces.thread_unsafe[ ind ] = ff*fdata.deriv[0][n+i];
     }
   }

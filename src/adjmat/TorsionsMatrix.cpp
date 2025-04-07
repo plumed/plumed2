@@ -38,7 +38,7 @@ namespace adjmat {
 
 class TorsionsMatrixInput {
 public:
-  MatrixView outmat;
+  RequiredMatrixElements outmat;
 };
 
 class TorsionsMatrix : public ActionWithMatrix {
@@ -198,18 +198,19 @@ void TorsionsMatrix::performTask( std::size_t task_index,
                                   ParallelActionsOutput& output ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t nelements = actiondata.outmat.bookeeping[fstart];
-  std::size_t nargdata = input.args[1].start + input.args[1].shape[0]*input.args[1].ncols;
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t nargdata = arg1.start + arg1.shape[0]*arg1.ncols;
 
   // Get the position and orientation for the first molecule
   std::size_t atbase = nargdata + 3*task_index;
   Vector atom1( input.inputdata[atbase], input.inputdata[atbase+1], input.inputdata[atbase+2] );
-  std::size_t agbase = input.args[0].ncols*task_index;
+  std::size_t agbase = arg0.ncols*task_index;
   Vector v1( input.inputdata[agbase], input.inputdata[agbase+1], input.inputdata[agbase+2] );
 
   // Get the distances to all the molecules in the coordination sphere
   std::vector<Vector> atom2( nelements );
   for(unsigned i=0; i<nelements; ++i) {
-    std::size_t at2base = nargdata + 3*input.args[0].shape[0] + 3*actiondata.outmat.bookeeping[fstart+1+i];
+    std::size_t at2base = nargdata + 3*arg0.shape[0] + 3*actiondata.outmat.bookeeping[fstart+1+i];
     atom2[i] = Vector( input.inputdata[at2base], input.inputdata[at2base+1], input.inputdata[at2base+2] ) - atom1;
   }
   input.pbc->apply( atom2, nelements );
@@ -228,8 +229,8 @@ void TorsionsMatrix::performTask( std::size_t task_index,
       continue ;
     }
 
-    std::size_t ag2base = input.args[1].start + actiondata.outmat.bookeeping[fstart+1+i];
-    Vector v2(input.inputdata[ag2base], input.inputdata[ag2base+input.args[1].ncols], input.inputdata[ag2base+2*input.args[1].ncols] );
+    std::size_t ag2base = arg1.start + actiondata.outmat.bookeeping[fstart+1+i];
+    Vector v2(input.inputdata[ag2base], input.inputdata[ag2base+arg1.ncols], input.inputdata[ag2base+2*arg1.ncols] );
     output.values[i] = t.compute( v1, atom2[i], v2, dv1, dconn, dv2 );
 
     if( input.noderiv ) {
@@ -267,9 +268,10 @@ void TorsionsMatrix::gatherForces( std::size_t task_index,
                                    ForceOutput forces ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t nelements = actiondata.outmat.bookeeping[fstart];
-  std::size_t arg1start = task_index*input.args[0].ncols;
-  std::size_t atom1start = input.args[1].shape[0]*input.args[1].ncols + 3*task_index;
-  std::size_t b2astart = input.args[1].shape[0]*input.args[1].ncols + 3*input.args[0].shape[0];
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t arg1start = task_index*arg0.ncols;
+  std::size_t atom1start = arg1.shape[0]*arg1.ncols + 3*task_index;
+  std::size_t b2astart = arg1.shape[0]*arg1.ncols + 3*arg0.shape[0];
   for(unsigned i=0; i<nelements; ++i) {
     std::size_t base = 21*i;
     double force = fdata.force[i];
@@ -281,8 +283,8 @@ void TorsionsMatrix::gatherForces( std::size_t task_index,
 
     View<double, 3> deriv2( fdata.deriv.data() + base + 3 );
     forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] ] += force*deriv2[0];
-    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + input.args[1].ncols ] += force*deriv2[1];
-    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + 2*input.args[1].ncols ] += force*deriv2[2];
+    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + arg1.ncols ] += force*deriv2[1];
+    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + 2*arg1.ncols ] += force*deriv2[2];
 
     View<double, 3> deriv3( fdata.deriv.data() + base + 6 );
     forces.thread_safe[ atom1start ] += force*deriv3[0];

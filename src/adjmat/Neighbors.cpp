@@ -98,7 +98,7 @@ public:
   unsigned nbonds;
   View<const double,helpers::dynamic_extent> matrow;
   View<const std::size_t,helpers::dynamic_extent> bookrow;
-  NeighborCalcInput( unsigned task_index, unsigned n, const MatrixView& arg, double* d ):
+  NeighborCalcInput( unsigned task_index, unsigned n, const ArgumentBookeepingHolder& arg, double* d ):
     number(n),
     nind(0),
     ncols(arg.ncols),
@@ -295,7 +295,7 @@ void Neighbors<T>::calculate() {
 
 template <class T>
 void Neighbors<T>::performTask( std::size_t task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  T::calculate( NeighborCalcInput( task_index, actiondata.number, input.args[0], input.inputdata ), output.values );
+  T::calculate( NeighborCalcInput( task_index, actiondata.number, ArgumentBookeepingHolder( 0, input ), input.inputdata ), output.values );
 }
 
 template <class T>
