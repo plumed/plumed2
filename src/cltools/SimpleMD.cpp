@@ -38,20 +38,16 @@ namespace cltools {
 /*
 simplemd allows one to do molecular dynamics on systems of Lennard-Jones atoms.
 
-The input to simplemd is specified in an input file. Configurations are input and
-output in xyz format. The input file should contain one directive per line.
-The directives available are as follows:
+You can use simplemd to do a molecular dynamics simulation on a system of Lennard-Jones particles by using the following command
 
-\par Examples
-
-You run an MD simulation using simplemd with the following command:
-\verbatim
+```plumed
 plumed simplemd < in
-\endverbatim
+```
 
-The following is an example of an input file for a simplemd calculation. This file
-instructs simplemd to do 50 steps of MD at a temperature of 0.722
-\verbatim
+The input to simplemd is specified in an input file that contains one directive per line like the one shown below.
+
+```plumed
+#TOOL=simplemd
 inputfile input.xyz
 outputfile output.xyz
 temperature 0.722
@@ -62,13 +58,16 @@ listcutoff  3.0
 nstep 50
 nconfig 10 trajectory.xyz
 nstat   10 energies.dat
-\endverbatim
+```
 
-If you run the following a description of all the directives that can be used in the
-input file will be output.
-\verbatim
+This input instructs  simplemd to do 50 steps of MD at a temperature of 0.722 [Lennard Jones Units](https://en.wikipedia.org/wiki/Lennard-Jones_potential).
+Notice that the atomic configurations are input and output in xyz format.
+
+If you run the following command a description of all the directives that can be used in the input file will be output.
+
+```plumed
 plumed simplemd --help
-\endverbatim
+```
 
 */
 //+ENDPLUMEDOC
@@ -97,6 +96,7 @@ class SimpleMD:
 
 public:
   static void registerKeywords( Keywords& keys ) {
+    CLTool::registerKeywords( keys );
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");

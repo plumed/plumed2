@@ -37,16 +37,16 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS pdbrenumber
 /*
-Modify atom numbers in a PDB, possibly using hybrid-36 coding.
+Modify atom numbers in a PDB file, possibly using hybrid-36 coding.
 
 When reading a PDB files, PLUMED honors the serial number of each atom.
-This command can be used to process a PDB file changing the atom serial numbers.
+This command can be used to process a PDB file and change the atom serial numbers.
 Notice that the resulting list might have gaps. It is however fundamental
-that atom numbers correspond to those used within the MD code.
-Importantly, if the serial number of an atom is greater than 99999, it is
-written in hybrid-36 notation (see \ref pdbreader).
-The main use of \ref pdbrenumber is thus that of producing files where atoms
-are numbered using hybrid-36 convention.
+that the atom numbers in your PDB file correspond to those used within the MD code.
+
+Notice, if the serial number of an atom is greater than 99999, it has to be
+written in [hybrid 36](http://cci.lbl.gov/hybrid_36/) notation (see [PDB2CONSTANT](PDB2CONSTANT.md) ).
+The main use for this command is to produce files where atoms are numbered using the hybrid-36 convention.
 
 The output PDB file is identical to the input PDB file, except for the atom number
 field.
@@ -54,14 +54,15 @@ The rest of the line is written unchanged
 to the output file, even if it is incorrectly formatted. Residue numbers are not touched,
 and atom numbers in the input file are ignored.
 
+## Examples
 
-\par Examples
-
-By default, \ref pdbreader  just sets the numbers as progressive starting from 1.
+By default, pdbreader  just sets the numbers progressively starting from 1.
 For instance the following command:
-\verbatim
-> plumed pdbrenumber --ipdb input.pdb --opdb output.pdb
-\endverbatim
+
+```plumed
+plumed pdbrenumber --ipdb input.pdb --opdb output.pdb
+```
+
 will copy file `input.pdb` to `output.pdb` replacing all the serial atoms with
 increasing numbers starting from one. Atoms that have an index that is greater than 99999 will be written
 in the output PDB file in hybrid-36 code.
@@ -69,30 +70,36 @@ in the output PDB file in hybrid-36 code.
 It is possible to set a different serial number for the first atom, letting the
 following ones grow by one at each line. Here for instance the first atom
 will be assigned serial 1000, the second serial 1001, etc:
-\verbatim
-> plumed pdbrenumber --ipdb input.pdb --opdb output.pdb --firstatomnumber 1000
-\endverbatim
-If the first atom number is >99999, it should be given as a decimal number (not in hybrid-36 code).
-However, numbers >99999 in the output PDB file will be written in hybrid-36 code.
 
-As an alternative, one can provide a list of atoms as one per line in an auxiliary file.
-\verbatim
-> plumed pdbrenumber --ipdb input.pdb --opdb output.pdb --atomnumbers list.txt
-\endverbatim
-The `list.txt` file might be something like this
-\verbatim
+```plumed
+plumed pdbrenumber --ipdb input.pdb --opdb output.pdb --firstatomnumber 1000
+```
+
+If the first atom number is $>99999$, it should be given as a decimal number (not in hybrid-36 code).
+However, numbers $>99999$ in the output PDB file will be written in hybrid-36 format.
+
+As an alternative, one can provide a list of atoms numbers with one number per line in an auxiliary file
+as has been done with the following example.
+
+```plumed
+plumed pdbrenumber --ipdb input.pdb --opdb output.pdb --atomnumbers list.txt
+```
+
+The `list.txt` file that is used above might be something like this
+
+````
 120000
 120001
 120002
 1
 2
 3
-\endverbatim
-Numbers >99999 in the list should be provided as decimal numbers (not in hybrid-36 code).
-However, numbers >99999 in the output PDB file will be written in hybrid-36 code.
-Notice that there should be at least enough lines in `list.txt` as many atoms in the PDB file.
-Additional lines in `list.txt` will just be ignored.
+````
 
+Numbers $>99999$ in the list should be provided as decimal numbers (not in hybrid-36 format).
+However, numbers $>999994 in the output PDB file will be written in hybrid-36 mat.
+Notice that there should be at least as many lines in `list.txt` as there atoms in the PDB file.
+Additional lines in `list.txt` will just be ignored.
 
 */
 //+ENDPLUMEDOC

@@ -48,12 +48,15 @@ The example constructed by this action is in html. In all probability you will n
 tool. However, it is used within the scripts that generate the html manual for PLUMED.  If you need to use this
 tool outside those scripts the input is specified using the following command line arguments.
 
-\par Examples
+THIS COMMAND WILL LIKELY BE DELETED SOON AS IT HAS BEEN SUPERCEDED BY PLUMEDTOHTML.
+
+## Examples
 
 The following generates an example based on the contents of the plumed file plumed.dat
-\verbatim
+
+```plumed
 plumed gen_example --plumed plumed.dat --status working
-\endverbatim
+```
 
 
 */

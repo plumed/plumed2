@@ -36,14 +36,15 @@ namespace cltools {
 /*
 Dumps the body of a bash function to be used for auto completion.
 
-Users will typically not need this command.
-See more at \ref BashAutocompletion
+You typically will not need to use this command it is involved during complation and is
+used to construct everything that is required for the autocompletion functionality that
+is described [here](module_cltools.md).
 
-\par Examples
+## Examples
 
-\verbatim
+```plumed
 plumed completion
-\endverbatim
+```
 
 
 */
