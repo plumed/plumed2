@@ -124,7 +124,6 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   } else {
     setNotPeriodic();
   }
-  getPntrToComponent(0)->buildDataStore();
   if( shape.size()==2 ) {
     getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   }

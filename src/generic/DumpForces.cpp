@@ -112,11 +112,6 @@ DumpForces::DumpForces(const ActionOptions&ao):
   if( getNumberOfArguments()==0 ) {
     error("no arguments have been specified");
   }
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 ) {
-      error("can only use DUMPFORCES to output forces on rank zero objects");
-    }
-  }
   checkRead();
 }
 
