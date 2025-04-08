@@ -34,21 +34,7 @@
 
 namespace PLMD {
 
-struct ParallelActionsInput {
-/// Do we need to calculate the derivatives
-  bool noderiv{false};
-/// Periodic boundary conditions
-  const Pbc* pbc;
-/// The number of components the underlying action is computing
-  unsigned ncomponents{0};
-/// The number of scalars we are calculating for each task
-  unsigned nscalars{0};
-//// The number of indexes that you use per task
-  unsigned nindices_per_task{0};
-/// This holds all the input data that is required to calculate all values for all tasks
-  unsigned dataSize{0};
-  double *inputdata{nullptr};
-/// Bookeeping stuff for arguments
+struct ArgumentsBookkeeping{
   std::size_t nargs{0};
   std::vector<std::size_t> ranks;
   std::vector<std::size_t> shapestarts;
@@ -58,41 +44,11 @@ struct ParallelActionsInput {
   std::vector<std::size_t> booksizes;
   std::vector<std::size_t> bookeeping;
   std::vector<std::size_t> argstarts;
-/// Default constructor
-  ParallelActionsInput( const Pbc& box )
-    : pbc(&box) {}
-  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy)
-  ParallelActionsInput( const ParallelActionsInput& other )
-    : noderiv {other.noderiv},
-      //just copies the ptr
-      pbc  {other.pbc},
-      ncomponents {other.ncomponents},
-      nindices_per_task {other.nindices_per_task},
-      dataSize {other.dataSize},
-      //just copies the value of the pointer
-      inputdata  {other.inputdata}
-  {}
-
-  ParallelActionsInput& operator=( const ParallelActionsInput& other )  = delete;
-
-  //helper function to bring data to the device in a controlled way
-  void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, nindices_per_task, dataSize, inputdata[0:dataSize])
-
-    pbc->toACCDevice();
-  }
-  //helper function to remove data from the device in a controlled way
-  void removeFromACCDevice() const  {
-    pbc->removeFromACCDevice();
-    // assuming dataSize is not changed
-#pragma acc exit data delete(inputdata[0:dataSize],dataSize,nindices_per_task,ncomponents, pbc[0:1],noderiv,this[0:1])
-  }
-  /// Setup the arguments
   void setupArguments( const ActionWithArguments* action );
 };
 
 inline
-void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
+void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
   nargs = action->getNumberOfArguments();
   ranks.resize( nargs );
   shapestarts.resize( nargs );
@@ -147,6 +103,119 @@ void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
   }
 }
 
+struct ParallelActionsInput {
+  /// Do we need to calculate the derivatives
+    bool noderiv{false};
+  /// Periodic boundary conditions
+    const Pbc* pbc;
+  /// The number of components the underlying action is computing
+    unsigned ncomponents{0};
+  /// The number of scalars we are calculating for each task
+    unsigned nscalars{0};
+  //// The number of indexes that you use per task
+    unsigned nindices_per_task{0};
+  /// This holds all the input data that is required to calculate all values for all tasks
+    unsigned dataSize{0};
+    double *inputdata{nullptr};
+  /// Bookeeping stuff for arguments
+  std::size_t nargs{0};
+  std::size_t ranks_size{0};
+  const std::size_t* ranks{nullptr};
+  std::size_t shapestarts_size{0};
+  const std::size_t* shapestarts{nullptr};
+  std::size_t shapedata_size{0};
+  const std::size_t* shapedata{nullptr};
+  std::size_t ncols_size{0};
+  const std::size_t* ncols{nullptr};
+  std::size_t bookstarts_size{0};
+  const std::size_t* bookstarts{nullptr};
+  std::size_t booksizes_size{0};
+  const std::size_t* booksizes{nullptr};
+  std::size_t bookeeping_size{0};
+  const std::size_t* bookeeping{nullptr};
+  std::size_t argstarts_size{0};
+  const std::size_t* argstarts{nullptr};
+  /// Default constructor
+  ParallelActionsInput( const Pbc& box )
+      : pbc(&box) {}
+    /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy)
+    ParallelActionsInput( const ParallelActionsInput& other )
+      : noderiv {other.noderiv},
+        //just copies the ptr
+        pbc  {other.pbc},
+        ncomponents {other.ncomponents},
+        nindices_per_task {other.nindices_per_task},
+        dataSize {other.dataSize},
+        //just copies the value of the pointer
+        inputdata  {other.inputdata}
+    {}
+  
+    ParallelActionsInput& operator=( const ParallelActionsInput& other )  = delete;
+  
+    //helper function to bring data to the device in a controlled way
+    void toACCDevice()const {
+  #pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, \
+     nindices_per_task, \
+     dataSize, inputdata[0:dataSize])
+     if (nargs>0){
+  #pragma acc enter data copyin( nargs, \
+     ranks_size, ranks[0:ranks_size], \
+     shapestarts_size, shapestarts[0:shapestarts_size], \
+     shapedata_size, shapedata[0:shapedata_size], \
+     ncols_size, ncols[0:ncols_size], \
+     bookstarts_size, bookstarts[0:bookstarts_size], \
+     booksizes_size, booksizes[0:booksizes_size], \
+     bookeeping_size, bookeeping[0:bookeeping_size], \
+     argstarts_size, argstarts[0:argstarts_size] \
+    )
+     }
+      pbc->toACCDevice();
+    }
+    //helper function to remove data from the device in a controlled way
+    void removeFromACCDevice() const  {
+      pbc->removeFromACCDevice();
+      // assuming dataSize is not changed
+      if (nargs>0){
+  #pragma acc exit data delete( \
+    shapestarts[0:shapestarts_size], shapestarts_size, \
+    shapedata[0:shapedata_size], shapedata_size, \
+    ncols[0:ncols_size], ncols_size, \
+    bookstarts[0:bookstarts_size], bookstarts_size, \
+    booksizes[0:booksizes_size], booksizes_size, \
+    bookeeping[0:bookeeping_size], bookeeping_size, \
+    argstarts[0:argstarts_size], argstarts_size, \
+    ranks[0:ranks_size], ranks_size, \
+    nargs )
+  }
+    
+    #pragma acc exit data delete( \
+    inputdata[0:dataSize], dataSize, \
+    nindices_per_task, ncomponents, pbc[0:1],noderiv,this[0:1])
+    }
+    /// Setup the arguments
+    void setupArguments( const ArgumentsBookkeeping& ab );
+  };
+
+inline void ParallelActionsInput::setupArguments( const ArgumentsBookkeeping& ab ){
+nargs = ab.nargs;
+ranks = ab.ranks.data();
+ranks_size = ab.ranks.size();
+shapestarts = ab.shapestarts.data();
+shapestarts_size = ab.shapestarts.size();
+shapedata = ab.shapedata.data();
+shapedata_size = ab.shapedata.size();
+ncols = ab.ncols.data();
+ncols_size = ab.ncols.size();
+bookstarts = ab.bookstarts.data();
+bookstarts_size = ab.bookstarts.size();
+booksizes = ab.booksizes.data();
+booksizes_size = ab.booksizes.size();
+bookeeping = ab.bookeeping.data();
+bookeeping_size = ab.bookeeping.size();
+argstarts = ab.argstarts.data();
+argstarts_size = ab.argstarts.size();
+}
+
 class ArgumentBookeepingHolder {
 public:
   std::size_t rank;
@@ -158,8 +227,8 @@ public:
     rank(inp.ranks[argno]),
     ncols(inp.ncols[argno]),
     start(inp.argstarts[argno]),
-    shape(inp.shapedata.data() + inp.shapestarts[argno], rank ),
-    bookeeping(inp.bookeeping.data() + inp.bookstarts[argno], inp.booksizes[argno] ) {
+    shape(inp.shapedata + inp.shapestarts[argno], rank ),
+    bookeeping(inp.bookeeping + inp.bookstarts[argno], inp.booksizes[argno] ) {
   }
 };
 
@@ -233,6 +302,7 @@ private:
   std::vector<std::vector<double> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
   ParallelActionsInput myinput;
+  ArgumentsBookkeeping argumentsMap;
 //this holds the data for myinput that will be passed though myinput
   std::vector<double> input_buffer;
 /// This holds data for that the underlying action needs to do the calculation
@@ -352,7 +422,8 @@ void ParallelTaskManager<T>::runAllTasks() {
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  myinput.setupArguments( action );
+  argumentsMap.setupArguments( action );
+  myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
   if( value_stash.size()!=totalvals ) {
@@ -365,7 +436,7 @@ void ParallelTaskManager<T>::runAllTasks() {
     // so I workarounded it with few copies
     ParallelActionsInput input = myinput;
     auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
+    input_type t_actiondata = actiondata;
     auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
     auto value_stash_data = value_stash.data();
@@ -465,7 +536,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     omp_forces[0].assign( omp_forces[0].size(), 0.0 );
     ParallelActionsInput input = myinput;
     auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
+    input_type t_actiondata = actiondata;
     auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
     //passing raw pointer makes things easier in openacc
