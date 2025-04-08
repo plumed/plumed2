@@ -275,7 +275,9 @@ void ProjectPoints::calculate() {
     getInputData( input_buffer );
     myinput.dataSize = input_buffer.size();
     myinput.inputdata = input_buffer.data();
-    myinput.setupArguments( this );
+    ArgumentsBookkeeping abk;
+    abk.setupArguments( this );
+    myinput.setupArguments( abk );
     std::vector<double> derivatives, point( getNumberOfComponents() );
     ParallelActionsOutput output( myinput.ncomponents, point.data(), 0, derivatives.data() );
     performTask( 0, taskmanager.getActionInput(), myinput, output );

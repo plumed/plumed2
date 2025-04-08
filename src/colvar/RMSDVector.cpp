@@ -226,7 +226,9 @@ void RMSDVector::calculate() {
     getInputData( input_buffer );
     input.dataSize = input_buffer.size();
     input.inputdata = input_buffer.data();
-    input.setupArguments( this );
+    ArgumentsBookkeeping abk;
+    abk.setupArguments( this );
+    input.setupArguments( abk );
 
     std::vector<double> values( input.nscalars );
     std::vector<double> deriv( input_buffer.size(), 0 );
