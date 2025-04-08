@@ -88,7 +88,6 @@ public:
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
-  bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
   void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
@@ -738,16 +737,6 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
       }
     }
   }
-}
-
-bool KDE::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
-  if( !myval->forcesWereAdded() ) {
-    return false;
-  }
-  if( numberOfKernels==1 ) {
-    plumed_error();
-  }
-  return checkTaskIsActive( itask );
 }
 
 void KDE::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {

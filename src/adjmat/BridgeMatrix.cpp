@@ -56,22 +56,27 @@ PRINT ARG=w1 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class BridgeMatrix : public AdjacencyMatrixBase {
-private:
-  Vector dij, dik;
-  SwitchingFunction sf1;
-  SwitchingFunction sf2;
+class BridgeMatrix {
 public:
+  std::string sf1input, sf2input;
+  SwitchingFunction sf1,sf2;
   static void registerKeywords( Keywords& keys );
-  explicit BridgeMatrix(const ActionOptions&);
-// active methods:
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
+  void parseInput( AdjacencyMatrixBase<BridgeMatrix>* action );
+  BridgeMatrix & operator=( const BridgeMatrix& m ) {
+    sf1input=m.sf1input;
+    sf2input=m.sf2input;
+    std::string errors;
+    sf1.set(sf1input,errors);
+    sf2.set(sf2input,errors);
+    return *this;
+  }
+  static void calculateWeight( const BridgeMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(BridgeMatrix,"BRIDGE_MATRIX")
+typedef AdjacencyMatrixBase<BridgeMatrix> bmap;
+PLUMED_REGISTER_ACTION(bmap,"BRIDGE_MATRIX")
 
 void BridgeMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
   keys.add("optional","SWITCH","The parameters of the two switchingfunction in the above formula");
@@ -84,82 +89,91 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
   keys.linkActionInDocs("SWITCHB","LESS_THAN");
 }
 
-BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
-  Action(ao),
-  AdjacencyMatrixBase(ao) {
+void BridgeMatrix::parseInput( AdjacencyMatrixBase<BridgeMatrix>* action ) {
   bool oneswitch;
-  std::string sfinput,errors;
-  parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ) {
-    sf1.set(sfinput,errors);
+  std::string errors;
+  action->parse("SWITCH",sf1input);
+  if( sf1input.length()>0 ) {
+    sf1.set(sf1input,errors);
     oneswitch=true;
     if( errors.length()!=0 ) {
-      error("problem reading SWITCH keyword : " + errors );
+      action->error("problem reading SWITCH keyword : " + errors );
     }
-    sf2.set(sfinput,errors);
+    sf2input=sf1input;
+    sf2.set(sf1input,errors);
     if( errors.length()!=0 ) {
-      error("problem reading SWITCH keyword : " + errors );
+      action->error("problem reading SWITCH keyword : " + errors );
     }
   } else {
-    parse("SWITCHA",sfinput);
-    if(sfinput.length()>0) {
-      sf1.set(sfinput,errors);
+    action->parse("SWITCHA",sf1input);
+    if(sf1input.length()>0) {
+      sf1.set(sf1input,errors);
       oneswitch=false;
       if( errors.length()!=0 ) {
-        error("problem reading SWITCHA keyword : " + errors );
+        action->error("problem reading SWITCHA keyword : " + errors );
       }
-      sfinput.clear();
-      parse("SWITCHB",sfinput);
-      if(sfinput.length()==0) {
-        error("found SWITCHA keyword without SWITCHB");
+      action->parse("SWITCHB",sf2input);
+      if(sf2input.length()==0) {
+        action->error("found SWITCHA keyword without SWITCHB");
       }
-      sf2.set(sfinput,errors);
+      sf2.set(sf2input,errors);
       if( errors.length()!=0 ) {
-        error("problem reading SWITCHB keyword : " + errors );
+        action->error("problem reading SWITCHB keyword : " + errors );
       }
     } else {
-      error("missing definition of switching functions");
+      action->error("missing definition of switching functions");
     }
   }
-  log.printf("  distance between bridging atoms and atoms in GROUPA must be less than %s\n",sf1.description().c_str());
-  log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
+  action->log.printf("  distance between bridging atoms and atoms in GROUPA must be less than %s\n",sf1.description().c_str());
+  action->log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( oneswitch, sf1.get_dmax() + sf2.get_dmax() );
-
-  // And check everything has been read in correctly
-  checkRead();
+  action->setLinkCellCutoff( oneswitch, sf1.get_dmax() + sf2.get_dmax() );
 }
 
-double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  double tot=0;
-  if( pos2.modulo2()<epsilon ) {
-    return 0.0;
+void BridgeMatrix::calculateWeight( const BridgeMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+  output.val[0] = 0;
+  if( input.pos.modulo2()<epsilon ) {
+    return;
   }
-  for(unsigned i=0; i<natoms; ++i) {
-    Vector dij= getPosition(i,myvals);
+  for(unsigned i=0; i<input.natoms; ++i) {
+    Vector dij = input.extra_positions[i];
     double dijm = dij.modulo2();
-    double dw1, w1=sf1.calculateSqr( dijm, dw1 );
+    double dw1, w1=data.sf1.calculateSqr( dijm, dw1 );
     if( dijm<epsilon ) {
       w1=0.0;
       dw1=0.0;
     }
-    Vector dik=pbcDistance( getPosition(i,myvals), pos2 );
+    Vector dik=input.pbc->distance( input.extra_positions[i], input.pos );
     double dikm=dik.modulo2();
-    double dw2, w2=sf2.calculateSqr( dikm, dw2 );
+    double dw2, w2=data.sf2.calculateSqr( dikm, dw2 );
     if( dikm<epsilon ) {
       w2=0.0;
       dw2=0.0;
     }
 
-    tot += w1*w2;
+    output.val[0] += w1*w2;
     // And finish the calculation
-    addAtomDerivatives( 0,  -w2*dw1*dij, myvals );
-    addAtomDerivatives( 1,  w1*dw2*dik, myvals );
-    addThirdAtomDerivatives( i, -w1*dw2*dik+w2*dw1*dij, myvals );
-    addBoxDerivatives( w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij), myvals );
+    output.deriv[0] += -w2*dw1*dij[0];
+    output.deriv[1] += -w2*dw1*dij[1];
+    output.deriv[2] += -w2*dw1*dij[2];
+    output.deriv[3] += w1*dw2*dik[0];
+    output.deriv[4] += w1*dw2*dik[1];
+    output.deriv[5] += w1*dw2*dik[2];
+    output.deriv[6+i*3+0] = -w1*dw2*dik[0] + w2*dw1*dij[0];
+    output.deriv[6+i*3+1] = -w1*dw2*dik[1] + w2*dw1*dij[1];
+    output.deriv[6+i*3+2] = -w1*dw2*dik[2] + w2*dw1*dij[2];
+    Tensor vir = w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij);
+    output.deriv[6 + 3*input.natoms + 0] += vir[0][0];
+    output.deriv[6 + 3*input.natoms + 1] += vir[0][1];
+    output.deriv[6 + 3*input.natoms + 2] += vir[0][2];
+    output.deriv[6 + 3*input.natoms + 3] += vir[1][0];
+    output.deriv[6 + 3*input.natoms + 4] += vir[1][1];
+    output.deriv[6 + 3*input.natoms + 5] += vir[1][2];
+    output.deriv[6 + 3*input.natoms + 6] += vir[2][0];
+    output.deriv[6 + 3*input.natoms + 7] += vir[2][1];
+    output.deriv[6 + 3*input.natoms + 8] += vir[2][2];
   }
-  return tot;
 }
 
 }

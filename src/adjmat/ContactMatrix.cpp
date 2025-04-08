@@ -19,10 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixBase.h"
+#include "ContactMatrix.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
-#include "tools/Matrix.h"
 
 //+PLUMEDOC MATRIX CONTACT_MATRIX_PROPER
 /*
@@ -60,27 +58,10 @@ PRINT ARG=csums.* FILE=colvar
 namespace PLMD {
 namespace adjmat {
 
-class ContactMatrix : public AdjacencyMatrixBase {
-private:
-/// switching function
-  SwitchingFunction switchingFunction;
-public:
-/// Create manual
-  static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit ContactMatrix(const ActionOptions&);
-/// This does nothing
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
-/// Override this so we write the graph properly
-  std::string writeInGraph() const override {
-    return "CONTACT_MATRIX";
-  }
-};
-
-PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX_PROPER")
+typedef AdjacencyMatrixBase<ContactMatrix> cmap;
+PLUMED_REGISTER_ACTION(cmap,"CONTACT_MATRIX_PROPER")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
   keys.setDisplayName("CONTACT_MATRIX");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
@@ -92,50 +73,60 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
   keys.linkActionInDocs("SWITCH","LESS_THAN");
 }
 
-ContactMatrix::ContactMatrix( const ActionOptions& ao ):
-  Action(ao),
-  AdjacencyMatrixBase(ao) {
-  std::string errors, input;
-  parse("SWITCH",input);
-  if( input.length()>0 ) {
-    switchingFunction.set( input, errors );
+void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
+  std::string errors;
+  action->parse("SWITCH",swinput);
+  if( swinput.length()>0 ) {
+    switchingFunction.set( swinput, errors );
     if( errors.length()!=0 ) {
-      error("problem reading switching function description " + errors);
+      action->error("problem reading switching function description " + errors);
     }
   } else {
-    double r_0=-1.0, d_0;
-    int nn, mm;
-    parse("NN",nn);
-    parse("MM",mm);
-    parse("R_0",r_0);
-    parse("D_0",d_0);
+    action->parse("NN",nn);
+    action->parse("MM",mm);
+    action->parse("R_0",r_0);
+    action->parse("D_0",d_0);
     if( r_0<0.0 ) {
-      error("you must set a value for R_0");
+      action->error("you must set a value for R_0");
     }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   // And set the link cell cutoff
-  log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
-  setLinkCellCutoff( true, switchingFunction.get_dmax() );
+  action->log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
+  action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
 }
 
-double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2;
-  double mod2 = distance.modulo2();
+void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+  double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
-    return 0.0;  // Atoms can't be bonded to themselves
+    return;  // Atoms can't be bonded to themselves
   }
-  double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc );
-  if( val<epsilon ) {
-    return 0.0;
+  double dfunc;
+  output.val[0] = data.switchingFunction.calculateSqr( mod2, dfunc );
+  if( output.val[0]<epsilon ) {
+    output.val[0] = 0.0;
+    return;
   }
-  if( doNotCalculateDerivatives() ) {
-    return val;
+  if( input.noderiv ) {
+    return;
   }
-  addAtomDerivatives( 0, (-dfunc)*distance, myvals );
-  addAtomDerivatives( 1, (+dfunc)*distance, myvals );
-  addBoxDerivatives( (-dfunc)*Tensor(distance,distance), myvals );
-  return val;
+  Vector v = (-dfunc)*input.pos;
+  output.deriv[0] = v[0];
+  output.deriv[1] = v[1];
+  output.deriv[2] = v[2];
+  output.deriv[3] = -v[0];
+  output.deriv[4] = -v[1];
+  output.deriv[5] = -v[2];
+  Tensor t = (-dfunc)*Tensor(input.pos,input.pos);
+  output.deriv[6] = t[0][0];
+  output.deriv[7] = t[0][1];
+  output.deriv[8] = t[0][2];
+  output.deriv[9] = t[1][0];
+  output.deriv[10] = t[1][1];
+  output.deriv[11] = t[1][2];
+  output.deriv[12] = t[2][0];
+  output.deriv[13] = t[2][1];
+  output.deriv[14] = t[2][2];
 }
 
 }

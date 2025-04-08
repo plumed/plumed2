@@ -237,14 +237,17 @@ unsigned LinkCells::getMaxInCell() const {
   return maxn;
 }
 
-void LinkCells::createNeighborList( const std::vector<Vector>& pos, const std::vector<unsigned>& ind, unsigned& natoms_per_list, std::vector<std::size_t>& nlist ) const {
-  if( lcell_tots.size()==1 ) {
+void LinkCells::createNeighborList( unsigned nat, const std::vector<Vector>& pos,
+                                    const std::vector<unsigned>& ind, const std::vector<unsigned>& tind,
+                                    const std::vector<Vector>& neigh_pos, const std::vector<unsigned>& neigh_ind, const Pbc& pbc,
+                                    unsigned& natoms_per_list, std::vector<std::size_t>& nlist ) {
+  buildCellLists( neigh_pos, neigh_ind, pbc );
+  natoms_per_list = 27*getMaxInCell();
+  if( natoms_per_list>allcells.size() ) {
     natoms_per_list = allcells.size();
-  } else {
-    natoms_per_list = 27*getMaxInCell();
   }
 
-  nlist.resize( pos.size()*( 2 + natoms_per_list ) );
+  nlist.resize( nat*( 2 + natoms_per_list ) );
   std::vector<unsigned> indices( 1+natoms_per_list ), cells_required( getNumberOfCells() );
   for(unsigned i=0; i<pos.size(); ++i) {
     unsigned ncells_required=0;
@@ -252,11 +255,11 @@ void LinkCells::createNeighborList( const std::vector<Vector>& pos, const std::v
     unsigned natoms=1;
     indices[0] = ind[i];
     retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-    nlist[i] = 0;
-    std::size_t lstart = pos.size() + i*(1+natoms_per_list);
-    for(unsigned j=1; j<natoms; ++j) {
-      nlist[ lstart + nlist[i] ] = indices[j];
-      nlist[i]++;
+    nlist[tind[i]] = 0;
+    std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
+    for(unsigned j=0; j<natoms; ++j) {
+      nlist[ lstart + nlist[tind[i]] ] = indices[j];
+      nlist[tind[i]]++;
     }
   }
 }

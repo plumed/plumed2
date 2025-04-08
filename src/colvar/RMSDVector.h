@@ -23,33 +23,54 @@
 #define __PLUMED_colvar_RMSDVector_h
 
 #include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
 #include "tools/RMSD.h"
 
 namespace PLMD {
 namespace colvar {
 
-class RMSDVector : public ActionWithVector {
-
-  bool firststep;
+class RMSDVectorData {
+public:
   bool squared;
   bool displacement;
-  bool norm_weights;
   std::string type;
   std::vector<PLMD::RMSD> myrmsd;
   std::vector<double> align, displace, sqrtdisplace;
-  double calculateRMSD( const unsigned& current, std::vector<Vector>& pos, std::vector<Vector>& der, std::vector<Vector>& direction ) const ;
+};
+
+class RMSDVector : public ActionWithVector {
+public:
+  using input_type = RMSDVectorData;
+  using PTM = ParallelTaskManager<RMSDVector>;
+private:
+  bool firststep;
+  bool norm_weights;
+  ParallelActionsInput input;
+  std::vector<double> input_buffer;
+  PTM taskmanager;
+  static void getPositionsFromInputData( const ParallelActionsInput& input, std::vector<Vector>& pos );
 public:
   static void registerKeywords(Keywords& keys);
   explicit RMSDVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   int checkTaskIsActive( const unsigned& itask ) const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
-  void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_merror("This shouldn't be needed anymore");
+  }
+  void transferStashToValues( const std::vector<double>& stash ) override ;
+  void transferForcesToStash( std::vector<double>& stash ) const override ;
+  static void performTask( std::size_t task_index,
+                           const RMSDVectorData& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+  static void gatherForces( std::size_t task_index,
+                            const RMSDVectorData& actiondata,
+                            const ParallelActionsInput& input,
+                            const ForceInput& fdata,
+                            ForceOutput forces );
   void setReferenceConfigurations();
   void calculate() override ;
-  bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void apply() override ;
 };
 

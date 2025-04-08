@@ -41,12 +41,23 @@ struct ParallelActionsInput {
   const Pbc* pbc;
 /// The number of components the underlying action is computing
   unsigned ncomponents{0};
+/// The number of scalars we are calculating for each task
+  unsigned nscalars{0};
 //// The number of indexes that you use per task
   unsigned nindices_per_task{0};
 /// This holds all the input data that is required to calculate all values for all tasks
   unsigned dataSize{0};
   double *inputdata{nullptr};
-  // std::vector<double> inputdata{};
+/// Bookeeping stuff for arguments
+  std::size_t nargs{0};
+  std::vector<std::size_t> ranks;
+  std::vector<std::size_t> shapestarts;
+  std::vector<std::size_t> shapedata;
+  std::vector<std::size_t> ncols;
+  std::vector<std::size_t> bookstarts;
+  std::vector<std::size_t> booksizes;
+  std::vector<std::size_t> bookeeping;
+  std::vector<std::size_t> argstarts;
 /// Default constructor
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
@@ -76,6 +87,80 @@ struct ParallelActionsInput {
     // assuming dataSize is not changed
 #pragma acc exit data delete(inputdata[0:dataSize],dataSize,nindices_per_task,ncomponents, pbc[0:1],noderiv,this[0:1])
   }
+  /// Setup the arguments
+  void setupArguments( const ActionWithArguments* action );
+};
+
+inline
+void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
+  nargs = action->getNumberOfArguments();
+  ranks.resize( nargs );
+  shapestarts.resize( nargs );
+  argstarts.resize( nargs );
+  std::size_t s = 0, ts = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    shapestarts[i] = ts;
+    ranks[i] = myarg->getRank();
+    ts += ranks[i];
+    argstarts[i] = s;
+    s += myarg->getNumberOfStoredValues();
+  }
+  shapedata.resize( ts );
+  ts = 0;
+  ncols.resize( nargs );
+  bookstarts.resize( nargs );
+  booksizes.resize( nargs );
+  std::size_t nbook = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    for(unsigned j=0; j<ranks[i]; ++j) {
+      shapedata[ts] = myarg->getShape()[j];
+      ++ts;
+    }
+    bookstarts[i] = nbook;
+    if( ranks[i]==1 ) {
+      ncols[i] = 1;
+      booksizes[i] = 2*myarg->getShape()[0];
+    } else if( ranks[i]==2 ) {
+      ncols[i] = myarg->getNumberOfColumns();
+      booksizes[i] = myarg->matrix_bookeeping.size();
+    }
+    nbook += booksizes[i];
+  }
+  bookeeping.resize( nbook );
+  ts = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = action->getPntrToArgument(i);
+    if( ranks[i]==1 ) {
+      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
+        bookeeping[ts] = 1;
+        bookeeping[ts+1] = 0;
+        ts += 2;
+      }
+    } else if( ranks[i]==2 ) {
+      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
+        bookeeping[ts] = myarg->matrix_bookeeping[j];
+        ++ts;
+      }
+    }
+  }
+}
+
+class ArgumentBookeepingHolder {
+public:
+  std::size_t rank;
+  std::size_t ncols;
+  std::size_t start;
+  View<const std::size_t,helpers::dynamic_extent> shape;
+  View<const std::size_t,helpers::dynamic_extent> bookeeping;
+  ArgumentBookeepingHolder( std::size_t argno, const ParallelActionsInput& inp ) :
+    rank(inp.ranks[argno]),
+    ncols(inp.ncols[argno]),
+    start(inp.argstarts[argno]),
+    shape(inp.shapedata.data() + inp.shapestarts[argno], rank ),
+    bookeeping(inp.bookeeping.data() + inp.bookstarts[argno], inp.booksizes[argno] ) {
+  }
 };
 
 struct ParallelActionsOutput {
@@ -89,12 +174,14 @@ struct ParallelActionsOutput {
 class ForceInput {
 private:
   std::size_t ncomp;
+  std::size_t nvals;
 public:
   View<double> force;
   View2D<double> deriv;
-  ForceInput( std::size_t nc, double* f, std::size_t nd, double* d ) :
+  ForceInput( std::size_t nc, std::size_t nv, double* f, std::size_t nd, double* d ) :
     ncomp(nc),
-    force(f,nc),
+    nvals(nv),
+    force(f,nv),
     deriv(d,nc,nd) {}
 };
 
@@ -150,6 +237,8 @@ private:
   std::vector<double> input_buffer;
 /// This holds data for that the underlying action needs to do the calculation
   input_type actiondata;
+//// This is used internally to get the number of elements in the value stash
+  std::size_t getValueStashSize() const ;
 /// This is used internally to gather the forces on the threads
   void gatherThreads( ForceOutput forces );
 public:
@@ -159,7 +248,8 @@ public:
 /// nind = the number of indices that are used per task
 /// nder = number of derivatives per component that is being calculated
 /// nt = number of derivatives that need to gathered over the threads (default of zero means all derivatives need to be calculated in a way that is thread safe)
-  void setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt=-1 );
+/// s = stride for values - default is equal to number of components
+  void setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt=-1, int s=-1 );
 /// Copy the data from the underlying colvar into this parallel action
   void setActionInput( const input_type& adata );
 /// Get the action input so we can use it
@@ -201,18 +291,29 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
 }
 
 template <class T>
+std::size_t ParallelTaskManager<T>::getValueStashSize() const {
+  std::size_t valuesize=0;
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+    valuesize += (action->getConstPntrToComponent(i))->getNumberOfStoredValues();
+  }
+  return valuesize;
+}
+
+
+template <class T>
 void ParallelTaskManager<T>::setupParallelTaskManager(
   std::size_t nind,
   std::size_t nder,
-  int nt ) {
+  int nt,
+  int s ) {
   plumed_massert( action->getNumberOfComponents()>0, "there should be some components wen you setup the index list" );
-  std::size_t valuesize=(action->getConstPntrToComponent(0))->getNumberOfStoredValues();
-  for(unsigned i=1; i<action->getNumberOfComponents(); ++i) {
-    plumed_assert( valuesize==(action->getConstPntrToComponent(i))->getNumberOfStoredValues() );
-  }
   myinput.ncomponents = action->getNumberOfComponents();
+  myinput.nscalars = myinput.ncomponents;
+  if( s>0 ) {
+    myinput.nscalars = s;
+  }
   nderivatives_per_component = nder;
-  value_stash.resize( valuesize*action->getNumberOfComponents() );
+  value_stash.resize( getValueStashSize() );
   myinput.nindices_per_task = nind;
 
   if( nt<0 ) {
@@ -250,6 +351,13 @@ void ParallelTaskManager<T>::runAllTasks() {
   action->getInputData( input_buffer );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
+  // Transfer all the bookeeping information about the arguments
+  myinput.setupArguments( action );
+  // Reset the values at the start of the task loop
+  std::size_t totalvals=getValueStashSize();
+  if( value_stash.size()!=totalvals ) {
+    value_stash.resize(totalvals);
+  }
   value_stash.assign( value_stash.size(), 0.0 );
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
@@ -285,8 +393,8 @@ void ParallelTaskManager<T>::runAllTasks() {
                           default(none)
     for(unsigned i=0; i<nactive_tasks; ++i) {
       std::size_t task_index = partialTaskList_data[i];
-      std::size_t val_pos = task_index*input.ncomponents;
-      ParallelActionsOutput myout {input.ncomponents,
+      std::size_t val_pos = task_index*input.nscalars;
+      ParallelActionsOutput myout {input.nscalars,
                                    value_stash_data+val_pos,
                                    ndev_per_task,
                                    derivatives+ndev_per_task*i};
@@ -320,8 +428,8 @@ void ParallelTaskManager<T>::runAllTasks() {
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         std::size_t task_index = partialTaskList[i];
-        std::size_t val_pos = task_index*myinput.ncomponents;
-        ParallelActionsOutput myout( myinput.ncomponents,
+        std::size_t val_pos = task_index*myinput.nscalars;
+        ParallelActionsOutput myout( myinput.nscalars,
                                      value_stash.data()+val_pos,
                                      nderivatives_per_component,
                                      derivatives.data() );
@@ -336,12 +444,7 @@ void ParallelTaskManager<T>::runAllTasks() {
   }
 
   // And transfer the value to the output values
-  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    Value* myval = action->copyOutput(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      myval->set( j, value_stash[j*myinput.ncomponents+i] );
-    }
-  }
+  action->transferStashToValues( value_stash );
 }
 
 template <class T>
@@ -355,12 +458,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
-  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    auto myval = action->getConstPntrToComponent(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      value_stash[j*myinput.ncomponents+i] = myval->getForce( j );
-    }
-  }
+  action->transferForcesToStash( value_stash );
 
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
@@ -405,9 +503,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                             default(none)
     for(unsigned i=0; i<nactive_tasks; ++i) {
       //This may be changed to a shared array
-      std::vector<double> valstmp( input.ncomponents );
+      std::vector<double> valstmp( input.nscalars );
       std::size_t task_index = partialTaskList_data[i];
-      ParallelActionsOutput myout( input.ncomponents,
+      ParallelActionsOutput myout( input.nscalars,
                                    valstmp.data(),
                                    nderivPerComponent,
                                    derivatives+ndev_per_task*i
@@ -418,7 +516,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       // Gather the forces from the values
       T::gatherForces( task_index, t_actiondata, input,
                        ForceInput( input.ncomponents,
-                                   value_stash_data+input.ncomponents*task_index,
+                                   input.nscalars,
+                                   value_stash_data+input.nscalars*task_index,
                                    nderivPerComponent,
                                    derivatives+ndev_per_task*i),
                        ForceOutput { omp_forces_data,omp_forces_size, forcesForApply_data,forcesForApply_size }
@@ -451,12 +550,12 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       const unsigned t=OpenMP::getThreadNum();
       omp_forces[t].assign( nthreaded_forces, 0.0 );
       ForceOutput forces{ omp_forces[t], forcesForApply };
-      std::vector<double> fake_vals( myinput.ncomponents );
+      std::vector<double> fake_vals( myinput.nscalars );
       std::vector<double> derivatives( myinput.ncomponents*nderivatives_per_component );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         std::size_t task_index = partialTaskList[i];
-        ParallelActionsOutput myout( myinput.ncomponents,
+        ParallelActionsOutput myout( myinput.nscalars,
                                      fake_vals.data(),
                                      derivatives.size(),
                                      derivatives.data() );
@@ -468,7 +567,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                          actiondata,
                          myinput,
                          ForceInput( myinput.ncomponents,
-                                     value_stash.data()+myinput.ncomponents*task_index,
+                                     myinput.nscalars,
+                                     value_stash.data()+myinput.nscalars*task_index,
                                      nderivatives_per_component,
                                      derivatives.data()),
                          forces );

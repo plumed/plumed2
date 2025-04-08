@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2023 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,41 +19,43 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionShortcut.h"
-#include "core/ActionRegister.h"
+#ifndef __PLUMED_adjmat_ContactMatrix_h
+#define __PLUMED_adjmat_ContactMatrix_h
 
-//+PLUMEDOC MCOLVAR VORONOI
-/*
-Do a voronoi analysis
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
+#include "AdjacencyMatrixBase.h"
+#include "tools/SwitchingFunction.h"
 
 namespace PLMD {
-namespace matrixtools {
 
-class Voronoi : public ActionShortcut {
+class SwitchingFunction;
+
+namespace adjmat {
+
+class ContactMatrix {
 public:
+  int nn{0}, mm{0};
+  double r_0{-1.0}, d_0{0};
+  std::string swinput;
+  SwitchingFunction switchingFunction;
   static void registerKeywords( Keywords& keys );
-  explicit Voronoi(const ActionOptions&);
+  void parseInput( AdjacencyMatrixBase<ContactMatrix>* action );
+  ContactMatrix& operator=( const ContactMatrix& m ) {
+    nn=m.nn;
+    mm=m.mm;
+    r_0=m.r_0;
+    d_0=m.d_0;
+    swinput=m.swinput;
+    std::string errors;
+    if( r_0>0 ) {
+      switchingFunction.set(nn,mm,r_0,d_0);
+    } else {
+      switchingFunction.set(swinput,errors);
+    }
+    return *this;
+  }
+  static void calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(Voronoi,"VORONOI")
-
-void Voronoi::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords(keys);
-  keys.addInputKeyword("compulsory","ARG","matrix","the distance/adjacency matrix that should be used to perform the voronoi analysis");
-  keys.setValueDescription("matrix","a matrix in which element ij is equal to one if the ij component of the input matrix is lower than all the ik elements of the matrix where k is not j and zero otherwise");
-  keys.needsAction("NEIGHBORS");
-}
-
-Voronoi::Voronoi(const ActionOptions& ao):
-  Action(ao),
-  ActionShortcut(ao) {
-  readInputLine( getShortcutLabel() + ": NEIGHBORS NLOWEST=1 " + convertInputLineToString() );
-}
-
 }
 }
+#endif

@@ -166,6 +166,13 @@ void SphericalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
     action->componentIsNotPeriodic("rm" + comp[i]);
     action->componentIsNotPeriodic("im" + comp[i]);
   }
+  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
+  plumed_assert( aarg );
+  if( aarg->getNumberOfArguments()==4 && (aarg->getPntrToArgument(3))->isDerivativeZeroWhenValueIsZero() ) {
+    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+      (action->copyOutput(i))->setDerivativeIsZeroWhenValueIsZero();
+    }
+  }
 }
 
 void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
