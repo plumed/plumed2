@@ -32,17 +32,38 @@ namespace generic {
 /*
 Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
 
-\par Examples
+Consider the following PLUMED input:
 
-Compute the distance between two groups and write on a file the
-derivatives of this distance with respect to all the atoms of the two groups
+```plumed
+x1: CENTER ATOMS=1-10
+x2: CENTER ATOMS=11-20
+r: DISTANCE ATOMS=x1,x2
+```
 
-\plumedfile
+The derivatives of the distance `r` with respect to the atomic positions, $X_i$, are given by:
+
+$$
+\frac{\partial r}{\partial X_i} = \frac{\partial r}{\partial x_1}\frac{\partial r}{\partial x_2}\frac{\partial x_1}{\partial X_i}\frac{\partial x_2}{\partial X_i}
+$$
+
+For the input above there are 69 of these derivatives in total. These include the derivatives of $r$ with respect to the $x$, $y$ and $z$ components of the 10 atomic
+positions that are used to calculate $x_1$, the derivatives of $r$ with respect to the $x$, $y$ and $z$ components of the 10 atomic
+positions that are used to calculate $x_2$ and the 9 derivatives of $r$ with respect to the cell vectors.
+
+If we add a DUMPROJECTIONS command to the above input as shown below:
+
+```plumed
 x1: CENTER ATOMS=1-10
 x2: CENTER ATOMS=11-20
 d: DISTANCE ATOMS=x1,x2
 DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
-\endplumedfile
+```
+
+PLUMED will output these 69 derivatives to the proj file.
+
+> [!CAUTION]
+> This action cannot be used if non rank zero objects are passed between actions that are used to calculate the quantity (`d` in the above examples)
+> whose projections are being output using the DUMPPROJECTIONS command
 
 */
 //+ENDPLUMEDOC
@@ -97,6 +118,9 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   checkRead();
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()!=0 ) {
+      error("cannot use DUMPPROJECTIONS with actions that are not scalars");
+    }
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 }

@@ -32,30 +32,30 @@ namespace colvar {
 /*
 Calculate the total potential energy of the simulation box.
 
-The potential energy can be biased e.g. with umbrella sampling \cite bart-karp98jpcb or with well-tempered metadynamics \cite Bonomi:2009p17935.
+As is explained in the papers in the bibliography the potential energy can be biased with umbrella sampling.
+To print the potential energy from PLUMED you can use an input similar to the one below:
 
-Notice that this CV could be unavailable with some MD code. When
-it is available, and when also replica exchange is available,
+```plumed
+ene: ENERGY
+PRINT ARG=ene FILE=colvar
+```
+
+Notice that this CV is not available with all the MD codes. When
+it is available, and when replica exchange is also available,
 metadynamics applied to ENERGY can be used to decrease the
 number of required replicas.
 
-\bug This \ref ENERGY does not include long tail corrections.
-Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
-the potential energy from \ref ENERGY will be slightly different form the one of the MD code.
-You should still be able to use \ref ENERGY and then reweight your simulation with the correct MD energy value.
+> [!CAUTION]
+> The ENERGY output by PLUMED does not include long tail corrections.
+> Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
+> the potential energy from ENERGY will be slightly different from the one that is output by the MD code.
+> You should still be able to bias the ENERGY and then reweight your simulation with the correct MD energy values.
 
-\bug Acceptance for replica exchange when \ref ENERGY is biased
-is computed correctly only if all the replicas have the same
-potential energy function. This is for instance not true when
-using GROMACS with lambda replica exchange or with plumed-hrex branch.
-
-\par Examples
-
-The following input instructs plumed to print the energy of the system
-\plumedfile
-ene: ENERGY
-PRINT ARG=ene
-\endplumedfile
+> [!CAUTION]
+> Acceptance for replica exchange when ENERGY is biased
+> is computed correctly only if all the replicas have the same
+> potential energy function. This is for instance not true when
+> using GROMACS with lambda replica exchange or with plumed-hrex branch.
 
 */
 //+ENDPLUMEDOC
@@ -112,6 +112,8 @@ Energy::Energy(const ActionOptions&ao):
 void Energy::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.setValueDescription("scalar","the internal energy");
+  keys.addDOI("10.1021/jp972280j");
+  keys.addDOI("10.1103/PhysRevLett.104.190601");
 }
 
 void Energy::wait() {

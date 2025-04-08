@@ -32,33 +32,25 @@
 /*
 Find the connected components of the matrix using the depth first search clustering algorithm.
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  As detailed in \cite tribello-clustering
-these matrices provide a representation of a graph and can thus can be analyzed using tools from graph theory.  This particular action performs
-a depth first search clustering to find the connected components of this graph.  You can read more about depth first search here:
-
-https://en.wikipedia.org/wiki/Depth-first_search
-
 This action is useful if you are looking at a phenomenon such as nucleation where the aim is to detect the sizes of the crystalline nuclei that have formed
-in your simulation cell.
+in your simulation cell and is used in conjustion with tools from the adjmat module.  The adjmat modlule contains a number of different methods that can be
+used to calculate adjacency matrices. An adjacency matrix is an $N \times N$ matrix
+in which the $i$th, $j$th element tells you whether or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  The
+simplest of these adjcency matrix methods is the one for calculating a [CONTACT_MATRIX](CONTACT_MATRIX.md).  All adjacency matrices provide a representation of a graph and can thus
+can be analyzed using tools from graph theory. This particular action thus performs
+[a depth first search clustering](https://en.wikipedia.org/wiki/Depth-first_search) to find the connected components of this graph.
 
-\par Examples
+The input below calculates a CONTACT_MATRIX for 100 atoms. In the graph that is created from this CONTACT_MATRIX atoms are connected if they are within
+a distance of D_MAX of each other and are disconnected otherwise.  The [DFSCLUSTERING](DFSCLUSTERING.md) method is used to find the connected components in this graph.  This
+method outputs a 100-dimensional vector.  The 1st element in this vector tells you which cluster the first atom is within, the second element tells you which
+cluster the second atom is in and so on.  If an atom is in the largest cluster its corresponding element in the vector `dfs` will be one. We can thus print
+the positions of the atoms in the largest cluster by using a [DUMPATOMS](DUMPATOMS.md) command like the one shown below:
 
-The input below calculates the coordination numbers of atoms 1-100 and then computes the an adjacency
-matrix whose elements measures whether atoms \f$i\f$ and \f$j\f$ are within 0.55 nm of each other.  The action
-labelled dfs then treats the elements of this matrix as zero or ones and thus thinks of the matrix as defining
-a graph.  This dfs action then finds the largest connected component in this graph.  The sum of the coordination
-numbers for the atoms in this largest connected component are then computed and this quantity is output to a colvar
-file.  The way this input can be used is described in detail in \cite tribello-clustering.
-
-\plumedfile
-lq: COORDINATIONNUMBER SPECIES=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55} LOWMEM
-cm: CONTACT_MATRIX ATOMS=lq  SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
-dfs: DFSCLUSTERING MATRIX=cm
-clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 SUM
-PRINT ARG=clust1.* FILE=colvar
-\endplumedfile
+```plumed
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING ARG=cm
+DUMPATOMS FILE=cluster.xyz ATOMS=1-100 ARG=dfs LESS_THAN_OR_EQUAL=1.5 GREATER_THAN_OR_EQUAL=0.5
+```
 
 */
 //+ENDPLUMEDOC

@@ -30,24 +30,25 @@ namespace generic {
 /*
 Terminate plumed input.
 
-Can be used to effectively comment out the rest of the input file.
-It can be useful to quickly ignore part of a long input file. However,
-one should keep in mind that when opening the file it might be difficult to
-find where the commented out part begins. Regular comments (with `#`) are
-usually easier to read. Notice that \ref VimSyntax "VIM syntax" should be able
-to detect this command and properly mark the rest of the file as a comment,
-although since vim doesn't parse the whole file it might fail in doing so for long
-input files.
+As the following example illlustrates this action can be used to effectively comment out the rest of the input file.
+This can be useful if you want to quickly ignore part of a long input file. However, __you do not need to include an ENDPLUMED
+command at the end of every PLUMED input file__
 
-\par Examples
-
-\plumedfile
+```plumed
 d: DISTANCE ATOMS=1,10
 PRINT ARG=d FILE=COLVAR STRIDE=10
 ENDPLUMED
 commands here are ignored
 PRINT ARG=d FILE=COLVAR STRIDE=1
-\endplumedfile
+```
+
+If you are using the ENDPLUMED command you should keep in mind that when opening the file it might be difficult to
+find where the commented out part begins. Regular comments (with `#`) are
+usually easier to read. Notice that if you use the VIM syntax it should be able
+to detect this command and properly mark the rest of the file as a comment,
+although since vim doesn't parse the whole file it might fail in doing so for long
+input files.
+
 
 */
 //+ENDPLUMEDOC

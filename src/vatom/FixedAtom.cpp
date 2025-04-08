@@ -31,52 +31,35 @@ namespace vatom {
 /*
 Add a virtual atom in a fixed position.
 
-This action creates a virtual atom at a fixed position.
-The coordinates can be specified in Cartesian components (by default)
-or in scaled coordinates (SCALED_COMPONENTS).
-It is also possible to assign a predefined charge or mass to the atom.
+This action creates [a virtual atom](specifying_atoms.md) at a fixed position.  The example input below illustrates
+how this idea can be used to compute the angle between the vector connecting atoms 15 and 20 and the z axis and how this
+quantity can then be restrained so that the angle stays close to zero.
 
-\attention
-Similar to \ref POSITION this variable is not invariant for translation
-of the system. Adding a force on it can create serious troubles.
-
-Notice that the distance between two atoms created
-using FIXEDATOM is invariant for translation.
-Additionally, if one first align atoms to a reference using \ref FIT_TO_TEMPLATE,
-then it is safe to add further fixed atoms without breaking translational invariance.
-
-\par Examples
-
-The following input instructs plumed to compute the angle between
-distance of atoms 15 and 20 and the z axis and keeping it close to zero.
-\plumedfile
+```plumed
 a: FIXEDATOM AT=0,0,0
 b: FIXEDATOM AT=0,0,1
 an: ANGLE ATOMS=a,b,15,20
 RESTRAINT ARG=an AT=0.0 KAPPA=100.0
-\endplumedfile
+```
 
-The following input instructs plumed to align a protein to a template
-and to then compute the distance between one of the atoms in the protein and the point
-(10,20,30).
-\plumedfile
-FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
+By default PLUMED assumes that any coordinates specified using the AT keyword specified are the cartesian coordinates of the fixed atom.
+However, if you use the SCALED_COMPONENTS flag the coordinates specified using the AT keyword are interpretted as scaled coordinates.
+It is also possible to assign a predefined charge or mass to the atom by using the `SET_MASS` and `SET_CHARGE` keywords.
+
+> [!CAUTION]
+> This action, like [POSITION](POSITION.md) is not invariant for translation of the system so adding a force on it can cause trouble.
+
+The problem is that the vector connecting any atom and a virtual atom created using the FIXEDATOM atoms command is not invariant to translation.
+However, if, as has been done in the following example input, one first aligns atoms to a reference using [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md),
+then it is safe to add further fixed atoms without breaking translational invariance.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt63/align.pdb
+FIT_TO_TEMPLATE STRIDE=1 REFERENCE=regtest/basic/rt63/align.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
 d: DISTANCE ATOMS=a,20
 PRINT ARG=d FILE=colvar
-\endplumedfile
-
-The reference structure to align to is provided in a pdb file called ref.pdb as shown below:
-
-\auxfile{ref.pdb}
-ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
-ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
-ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
-ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
-ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
-END
-\endauxfile
-
+```
 
 */
 //+ENDPLUMEDOC

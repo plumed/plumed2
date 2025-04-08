@@ -29,7 +29,22 @@
 /*
 Print an ndx file
 
-\par Examples
+The following example shows how you can use this command to print out the indices of all the atoms
+that have a coordination number that is greater than or equal to 4.
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+
+# This command then prints the indices of the atoms that have a coordination number that is greater than 4
+# every step
+PRINT_NDX ATOMS=1-100 ARG=cc GREATER_THAN_OR_EQUAL=4
+```
+
+This command is used in the [OUTPUT_CLUSTER](OUTPUT_CLUSTER.md) command that you can use to output the indices
+of the atoms that are in a particular cluster.
 
 */
 //+ENDPLUMEDOC

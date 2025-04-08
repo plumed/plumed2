@@ -47,54 +47,19 @@ public:
 /*
 Calculate the PCA components for a number of provided eigenvectors and an average structure.
 
-For information on this method ( see \cite Sutto:2010 and \cite spiwok ). Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
+Information about this method can be found in the reference papers in the bibliography below.  An example input is provided below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/pca/average.pdb,regtest/trajectories/pca/eigenvec.pdb
+PCARMSD ...
+  AVERAGE=regtest/trajectories/pca/average.pdb
+  EIGENVECTORS=regtest/trajectories/pca/eigenvec.pdb
+...
+```
+
+This input performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
 It takes the average structure and eigenvectors in form of a pdb.
 Note that beta and occupancy values in the pdb are neglected and all the weights are placed to 1 (differently from the RMSD colvar for example)
-
-\par Examples
-
-\plumedfile
-PCARMSD AVERAGE=file.pdb EIGENVECTORS=eigenvectors.pdb
-\endplumedfile
-
-The input is taken so to be compatible with the output you get from g_covar utility of gromacs (suitably adapted to have a pdb input format).
-The reference configuration (file.pdb) will thus be in a file that looks something like this:
-
-\auxfile{file.pdb}
-TITLE     Average structure
-MODEL        1
-ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
-ATOM      5  CLP ALA     1       0.416  -2.033   0.132  1.00  0.00
-ATOM      6  OL  ALA     1       0.415  -2.082  -0.976  1.00  0.00
-ATOM      7  NL  ALA     1      -0.134  -1.045   0.677  1.00  0.00
-ATOM      9  CA  ALA     1      -0.774   0.053   0.003  1.00  0.00
-TER
-ENDMDL
-\endauxfile
-
-while the eigenvectors will be in a pdb file (eigenvectors.pdb) that looks something like this:
-
-\auxfile{eigenvectors.pdb}
-TITLE     frame t= -1.000
-MODEL        1
-ATOM      1  CL  ALA     1       1.194  -2.988   0.724  1.00  0.00
-ATOM      5  CLP ALA     1      -0.996   0.042   0.144  1.00  0.00
-ATOM      6  OL  ALA     1      -1.246  -0.178  -0.886  1.00  0.00
-ATOM      7  NL  ALA     1      -2.296   0.272   0.934  1.00  0.00
-ATOM      9  CA  ALA     1      -0.436   2.292   0.814  1.00  0.00
-TER
-ENDMDL
-TITLE     frame t= 0.000
-MODEL        1
-ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
-ATOM      5  CLP ALA     1      -0.774   0.053   0.003  1.00  0.00
-ATOM      6  OL  ALA     1      -0.849  -0.166  -1.034  1.00  0.00
-ATOM      7  NL  ALA     1      -2.176   0.260   0.563  1.00  0.00
-ATOM      9  CA  ALA     1       0.314   1.825   0.962  1.00  0.00
-TER
-ENDMDL
-
-\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -108,6 +73,8 @@ void PCARMSD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("eig","default","scalar","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","scalar","the distance of the present configuration from the configuration supplied as AVERAGE in terms of mean squared displacement after optimal alignment ");
   keys.addFlag("SQUARED_ROOT",false," This should be set if you want RMSD instead of mean squared displacement ");
+  keys.addDOI("10.1021/ct100413b");
+  keys.addDOI("10.1021/jp068587c");
 }
 
 PCARMSD::PCARMSD(const ActionOptions&ao):

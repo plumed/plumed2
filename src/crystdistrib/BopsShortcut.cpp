@@ -29,9 +29,28 @@ namespace crystdistrib {
 
 //+PLUMEDOC COLVAR BOPS
 /*
-Calculate the BOPS order parameter
+Calculate Bond orientational order parameters for molecules.
 
-\par Examples
+BOPS is a shortcut to calculate the Bond-orientational Order Parameters detailed that are described in the paper cited below.
+As arguments, BOPS takes a list of atoms (corresponding to molecules), a vector of quaternions, a cutoff distance, and two kernel files
+detailing the means, variances, and normalization factors of probability distributions. BOPS returns a vector of order parameters.
+
+The DOPS kernel file has FIELDS height, mu, and sigma corresponding to the normalization factor, mean, and variance of the gaussian distributions used in the order parameters.
+The SET kerneltype is gaussian.
+
+The BOPS kernel file has FIELDS height, kappa, mu\_i, mu\_j, and mu\_k, which correspond to the normalization factor, reciprocal variance, and imaginary components of the
+mean quaternion frame of the fisher distribution used in the order parameters. The SET kerneltype is gaussian.
+
+BOPS returns one order parameter per atom given, evaluated over each atom's neighbors within the cutoff given. The distribution defined by the kernel files, analogous to a radial distribution function, is defined over all possible unit vectors which could be drawn between two atoms. The order parameter is obtained by evaluating the distribution at each unit vector pointing to all neighbors within the cutoff, and summing them up.
+
+
+This example file calculates the BOPS for a system of 3 molecules.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/crystdistrib/rt-bops-shortcut/kernels.dat,regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+bops: BOPS SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0 KERNELFILE_DOPS=regtest/crystdistrib/rt-bops-shortcut/kernels.dat KERNELFILE_BOPS=regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+```
 
 */
 //+ENDPLUMEDOC
@@ -69,6 +88,7 @@ void BopsShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addDOI("10.1063/1.3548889");
 }
 
 BopsShortcut::BopsShortcut(const ActionOptions&ao):

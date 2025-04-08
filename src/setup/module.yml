@@ -1,0 +1,4 @@
+name: setup
+authors: The PLUMED core developers
+description: actions that are used in setup to set units, specify that we are restarting a simulation or to load additional functionality 
+dois: []

@@ -34,59 +34,59 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR TORSION
 /*
-Calculate a torsional angle.
+Calculate one or multiple torsional angles.
 
-This command can be used to compute the torsion between four atoms or alternatively
-to calculate the angle between two vectors projected on the plane
-orthogonal to an axis.
+This command can be used to compute the torsion between four atoms as shown by the input below:
 
-\par Examples
-
-This input tells plumed to print the torsional angle between atoms 1, 2, 3 and 4
-on file COLVAR.
-\plumedfile
+```plumed
 t: TORSION ATOMS=1,2,3,4
-# this is an alternative, equivalent, definition:
-# t: TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
 PRINT ARG=t FILE=COLVAR
-\endplumedfile
+```
 
-If you are working with a protein you can specify the special named torsion angles \f$\phi\f$, \f$\psi\f$, \f$\omega\f$ and \f$\chi_1\f$
-by using TORSION in combination with the \ref MOLINFO command.  This can be done by using the following
-syntax.
+Alternatively you can use this action to calculate the angle between two vectors projected on the plane
+orthogonal to an axis.  The example below uses this syntax and computes the same torsion as the first example
+input above.
 
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-t1: TORSION ATOMS=@phi-3
-t2: TORSION ATOMS=@psi-4
-PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endplumedfile
+```plumed
+t: TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
+PRINT ARG=t FILE=COLVAR
+```
 
-Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
+If you combine this sytax with the functionality in [FIXEDATOM](FIXEDATOM.md) you can see how we can calculate the
+torsional angle between two bond vectors around the z-axis as shown below:
 
-Both of the previous examples specify that the torsion angle should be calculated based on the position of four atoms.
-For the first example in particular the assumption when the torsion is specified in this way is that there are chemical
-bonds between atoms 1 and 2, atoms 2 and 3 and atoms 3 and 4. In general, however, a torsional angle measures the angle
-between two planes, which have at least one vector in common.  As shown below, there is thus an alternate, more general, way
-through which we can define a torsional angle:
-
-\plumedfile
-t1: TORSION VECTOR1=1,2 AXIS=3,4 VECTOR2=5,6
-PRINT ARG=t1 FILE=colvar STRIDE=20
-\endplumedfile
-
-This input instructs PLUMED to calculate the angle between the plane containing the vector connecting atoms 1 and 2 and the vector
-connecting atoms 3 and 4 and the plane containing this second vector and the vector connecting atoms 5 and 6.  We can even use
-PLUMED to calculate the torsional angle between two bond vectors around the z-axis as shown below:
-
-\plumedfile
+```plumed
 a0: FIXEDATOM AT=0,0,0
 az: FIXEDATOM AT=0,0,1
 t1: TORSION VECTOR1=1,2 AXIS=a0,az VECTOR2=5,6
 PRINT ARG=t1 FILE=colvar STRIDE=20
-\endplumedfile
+```
+
+If you are working with a protein you can specify the special named torsion angles $\phi$, $\psi$, $\omega$ and $\chi_1$
+by using TORSION in combination with the [MOLINFO](MOLINFO.md) command.  This can be done by using the following
+syntax.
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+```
+
+Here, `@phi-3` tells plumed that you would like to calculate the $\phi$ angle in the third residue of the protein.
+Similarly `@psi-4` tells plumed that you want to calculate the $\psi$ angle of the fourth residue of the protein.
+
+If you would like to calculate multiple torsion angles at the same time you can use a command like the one shown below:
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
+t1: TORSION ATOMS1=@phi-3 ATOMS2=@phi-4 ATOMS3=@phi-5 ATOMS4=@phi-6 ATOMS5=@phi-7
+PRINT ARG=t1 FILE=colvar STRIDE=10
+```
+
+This input tells PLUMED to calculate the $\phi$ angles in residues 3-7 of the protein.  The output, `t1`, is a 5 dimensional vector.
 
 
 */

@@ -32,23 +32,32 @@ namespace function {
 /*
 This function can be used to sort colvars according to their magnitudes.
 
-\par Description of components
+This action sorts the input arguments according to their magnitudes. It will output the same number of values as it has arguments.
+The lowest argument input will be output as a value labelled _label_.1, the second lowest input argument will be output as a value labelled _label_.2 and so on.
+Thus, for example, the following input can be used to print the distance of the closest and of the farthest atoms to atom 1, chosen among atoms from 2 to 5
 
-This function sorts its arguments according to their magnitudes. The lowest argument will be
-labelled <em>label</em>.1, the second lowest will be labelled <em>label</em>.2 and so on.
-
-\par Examples
-
-The following input tells plumed to print the distance of the closest and of
-the farthest atoms to atom 1, chosen among atoms from 2 to 5
-\plumedfile
+```plumed
 d12:  DISTANCE ATOMS=1,2
 d13:  DISTANCE ATOMS=1,3
 d14:  DISTANCE ATOMS=1,4
 d15:  DISTANCE ATOMS=1,5
 sort: SORT ARG=d12,d13,d14,d15
 PRINT ARG=sort.1,sort.4
-\endplumedfile
+```
+
+Notice that you can also achieve the same result using the following input:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5
+sort: SORT ARG=d
+PRINT ARG=sort.1,sort.4
+```
+
+In this second case the four distances are passed to the SORT action as a vector.  The SORT action then outputs 4 components - the same number of components as there
+are elements in the input vector - that contain the elements of the input vector in order of increasing magnitude.
+
+These examples are representative the only two ways you can use this action.  In input it can accept either a list of scalars or a single vector.
+It does not accept matrices or a list of vectors in input.
 
 */
 //+ENDPLUMEDOC

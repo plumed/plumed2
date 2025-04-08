@@ -44,74 +44,163 @@ namespace generic {
 Dump selected atoms on a file.
 
 This command can be used to output the positions of a particular set of atoms.
-The atoms required are output in a xyz or gro formatted file.
-If PLUMED has been compiled with xdrfile support, then also xtc and trr files can be written.
-To this aim one should install xdrfile library (http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
-If the xdrfile library is installed properly the PLUMED configure script should be able to
-detect it and enable it.
-The type of file is automatically detected from the file extension, but can be also
-enforced with TYPE.
-Importantly, if your
-input file contains actions that edit the atoms position (e.g. \ref WHOLEMOLECULES)
-and the DUMPATOMS command appears after this instruction, then the edited
-atom positions are output.
-You can control the buffering of output using the \ref FLUSH keyword on a separate line.
-
-Units of the printed file can be controlled with the UNITS keyword. By default PLUMED units as
-controlled in the \ref UNITS command are used, but one can override it e.g. with UNITS=A.
-Notice that gro/xtc/trr files can only contain coordinates in nm.
-
-\par Examples
-
-The following input instructs plumed to print out the positions of atoms
-1-10 together with the position of the center of mass of atoms 11-20 every
+For example, the following input instructs PLUMED to print out the positions
+of atoms 1-10 together with the position of the center of mass of atoms 11-20 every
 10 steps to a file called file.xyz.
-\plumedfile
-COM ATOMS=11-20 LABEL=c1
-DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
-\endplumedfile
-Notice that the coordinates in the xyz file will be expressed in nm, since these
-are the defaults units in PLUMED. If you want the xyz file to be expressed in A, you should use the
-following input
-\plumedfile
-COM ATOMS=11-20 LABEL=c1
-DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 UNITS=A
-\endplumedfile
-As an alternative, you might want to set all the length used by PLUMED to Angstrom using the \ref UNITS
-action. However, this latter choice will affect all your input and output.
 
-The following input is very similar but dumps a .gro (gromacs) file,
-which also contains atom and residue names.
-\plumedfile
+```plumed
+c1: COM ATOMS=11-20
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
+```
+
+By default, the coordinates in the output xyz file are in nm but you can change these units
+by using the `UNITS` keyword as shown below:
+
+```plumed
+c1: COM ATOMS=11-20
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 UNITS=A
+```
+
+or by using the [UNITS](UNITS.md) action as shown below:
+
+```plumed
+UNITS LENGTH=A
+c1: COM ATOMS=11-20
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
+```
+
+Notice, however, that if you use the second option here all the quantitities with units of length in your input
+file must be provided in Angstrom and not nm.
+
+## DUMPATOMS and WHOLEMOLECULES
+
+The commands [WHOLEMOLECULES](WHOLEMOLECULES.md), [WRAPAROUND](WRAPAROUND.md), [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md)
+and [RESET_CELL](RESET_CELL.md) all edit the global positions of the atoms.  If you use an input like this one:
+
+```plumed
+DUMPATOMS ATOMS=1-10 FILE=file.xyz
+WHOLEMOLECULES ENTITY0=1-10
+```
+
+then the positions of the atoms that were passed to PLUMED by the MD code are output.  However, if you use an input
+like this one:
+
+```plumed
+WHOLEMOLECULES ENTITY0=1-10
+DUMPATOMS ATOMS=1-10 FILE=file.xyz
+```
+
+the positions outputted by the DUMPATOMS command will have been editted by the [WHOLEMOLECULES](WHOLEMOLECULES.md) command.
+
+## Outputting other file types
+
+The extension that is given to the file specified using the `FILE` keyword determines the output file type. Hence,
+the following example will output a gro file rather than an xyz file:
+
+```plumed
+c1: COM ATOMS=11-20
+DUMPATOMS STRIDE=10 FILE=file.gro ATOMS=1-10,c1
+```
+
+You can also enforce the output file type by using the `TYPE` keyword as shown below:
+
+```plumed
+c1: COM ATOMS=11-20
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 TYPE=gro
+FLUSH STRIDE=1
+```
+
+Notice that DUMPATOMS command here outputs the atoms in the gro-file format even though the author of this input has used the xyz extension.
+Further note that by using the [FLUSH](FLUSH.md) we force PLUMED to output flush all the open files every step and not to store output
+data in a buffer before printing it to the output files.
+
+Outputting the atomic positions using the gro file format is particularly advantageous if you also have a [MOLINFO](MOLINFO.md) command in
+your input file as shown below:
+
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 # this is required to have proper atom names:
-MOLINFO STRUCTURE=reference.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 # if omitted, atoms will have "X" name...
 
-COM ATOMS=11-20 LABEL=c1
+c1: COM ATOMS=11-20
 DUMPATOMS STRIDE=10 FILE=file.gro ATOMS=1-10,c1
 # notice that last atom is a virtual one and will not have
 # a correct name in the resulting gro file
-\endplumedfile
+```
 
-The `file.gro` will contain coordinates expressed in nm, since this is the convention for gro files.
+The reason that using the gro file format is advantageous in this case is that PLUMED will also output the atom and residue names
+for the non-virtual atoms.  PLUMED is able to do this in this case as it is able to use the information that was read in from the
+pdb file that was provided to the [MOLINFO](MOLINFO.md) command.
 
-In case you have compiled PLUMED with `xdrfile` library, you might even write xtc or trr files as follows
-\plumedfile
-COM ATOMS=11-20 LABEL=c1
+If PLUMED has been compiled with xdrfile support, then PLUMED
+can output xtc and trr files as well as xyz and gro files.  If you want to use these output types you should install the xdrfile
+library by following the instructions [here](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+If the xdrfile library is installed properly the PLUMED configure script should be able to
+detect it and enable it.  The following example shows how you can use DUMPATOMS to output an xtc file:
+
+```plumed
+c1: COM ATOMS=11-20
 DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1
-\endplumedfile
-Notice that xtc files are significantly smaller than gro and xyz files.
+```
 
-Finally, consider that gro and xtc file store coordinates with limited precision set by the
-`PRECISION` keyword. Default value is 3, which means "3 digits after dot" in nm (1/1000 of a nm).
+The xtc file that is output by this command will be significantly smaller than a gro and xyz file.
+
+Finally, notice that gro and xtc file store coordinates with limited precision set by the
+`PRECISION` keyword. The default value is 3, which means "3 digits after dot" in nm (1/1000 of a nm).
 The following will write a larger xtc file with high resolution coordinates:
-\plumedfile
+
+```plumed
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1 PRECISION=7
-\endplumedfile
+```
 
+## Outputting atomic positions and vectors
 
+The atoms section of an xyz file normally contains four columns of data - a symbol that tells you the atom type
+and then three columns containing the atom's $x$, $y$ and $z$ coordinates.  PLUMED allows you to output more columns
+of data in this file.  For example, the following input outputs five columns of data.  The first four columns of data
+are the usual ones you would expect in an xyz file, while the fifth contains the coordination numbers for each of the
+atom that have been calculated using PLUMED
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+DUMPATOMS ATOMS=1-100 ARG=cc FILE=file.xyz
+```
+
+This command is used in the shortcut that recovered the old [DUMPMULTICOLVAR](DUMPMULTICOLVAR.md) command. This new version of
+the command is better, however, as you can output more than one vector of symmetry functions at once as is demonstrated by the following
+input that outputs the coordination numbers and the values that were obtained when the coordination numbers were all transformed by a
+switching function:
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+fcc: LESS_THAN ARG=cc SWITCH={RATIONAL R_0=4}
+DUMPATOMS ATOMS=1-100 ARG=cc,fcc FILE=file.xyz
+```
+
+Notice that when we use an `ARG` keyword we can also use DUMPATOMS to only print those atoms whose corresponding element in the
+the input vector satisfies a certain criteria.  For example the input file below only prints the positions (and coordination numbers) of atoms that
+have a coordination number that is greater than or equal to 4.
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+DUMPATOMS ATOMS=1-100 ARG=cc GREATER_THAN_OR_EQUAL=4 FILE=file.xyz
+```
+
+Commands like these are useful if you want to print the coordinates of the atom that are in a paricular cluster that has been identified using
+the [DFSCLUSTERING](DFSCLUSTERING.md) command.
+
+__You can only use the ARG keyword if you are outputting an xyz file__
 
 */
 //+ENDPLUMEDOC

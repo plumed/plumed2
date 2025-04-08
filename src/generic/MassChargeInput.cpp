@@ -36,7 +36,29 @@ namespace generic {
 /*
 Set the masses and charges from an input PDB file.
 
-\par Examples
+You can use this command to read in the masses and charges for the atoms as shown in the example input below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-readmasscharge2/mcinpt
+mq: READMASSCHARGE FILE=regtest/basic/rt-readmasscharge2/mcinpt
+```
+
+In the above example the masses and charges are in a file called `mcinpt` that contains three columns of numbers.
+The first column of numbers is a numerical index, the second column is the masses and the third is the charges.
+
+You can read masses and charges from a PDB file instead by using an input like the one shown below:
+
+```plumed
+#SETTINGS NATOMS=108 INPUTFILES=regtest/basic/rt-readmasscharge/test.pdb
+mq: READMASSCHARGE PDBFILE=regtest/basic/rt-readmasscharge/test.pdb
+```
+
+In this chages masses are read from the occupancy column and charges are read from the beta column.
+
+__Using this command to read in masses and charges is useful when you are postprocessing a trajectory using driver.
+If you are using PLUMED as a plugin to a molecular dynamics code the masses and charges will often be passed from the
+MD code to PLUMED.__
+
 
 */
 //+ENDPLUMEDOC

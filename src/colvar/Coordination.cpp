@@ -32,47 +32,53 @@ Calculate coordination numbers.
 
 This keyword can be used to calculate the number of contacts between two groups of atoms
 and is defined as
-\f[
+
+$$
 \sum_{i\in A} \sum_{i\in B} s_{ij}
-\f]
-where \f$s_{ij}\f$ is 1 if the contact between atoms \f$i\f$ and \f$j\f$ is formed,
-zero otherwise.
-In actuality, \f$s_{ij}\f$ is replaced with a switching function so as to ensure that the calculated CV has continuous derivatives.
+$$
+
+where $s_{ij}$ is 1 if the contact between atoms $i$ and $j$ is formed and zero otherwise.
+In actuality, $s_{ij}$ is replaced with a switching function so as to ensure that the calculated CV has continuous derivatives.
+
 The default switching function is:
-\f[
-s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
-\f]
-but it can be changed using the optional SWITCH option.
 
-To make your calculation faster you can use a neighbor list, which makes it that only a
-relevant subset of the pairwise distance are calculated at every step.
+$$
+s_{ij} = \frac{ 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^m }
+$$
 
-If GROUPB is empty, it will sum the \f$\frac{N(N-1)}{2}\f$ pairs in GROUPA. This avoids computing
-twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
+but it can be changed using the optional SWITCH option.  You can find more information about the various switching functions that you can
+use with this action in the documentation for [LESS_THAN](LESS_THAN.md).
+
+To make your calculation faster you can use a neighbor list, which makes it that only a relevant subset of the pairwise distance are calculated at every step.
+
+If GROUPB is empty, the coordination  number will be calculated based on the $\frac{N(N-1)}{2}$ pairs in GROUPA. This avoids computing
+permuted indexes (e.g. pair (i,j) and (j,i)) twice and ensures that the calculation runs at twice the speed.
 
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
 equal to one. These "self contacts" are discarded by plumed (since version 2.1),
 so that they actually count as "zero".
 
-
-\par Examples
+## Examples
 
 The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbor list is used to make this calculation faster, this neighbor list is updated every 100 steps.
-\plumedfile
+
+```plumed
 COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
-\endplumedfile
+```
 
 The following is a dummy example which should compute the value 0 because the self interaction
 of atom 1 is skipped. Notice that in plumed 2.0 "self interactions" were not skipped, and the
 same calculation should return 1.
-\plumedfile
+
+```plumed
 c: COORDINATION GROUPA=1 GROUPB=1 R_0=0.3
 PRINT ARG=c STRIDE=10
-\endplumedfile
+````
 
-Here's an example that shows what happens when providing COORDINATION with
+Here's an example that shows what happens when COORDINATION is provided with
 a single group:
-\plumedfile
+
+```plumed
 # define some huge group:
 group: GROUP ATOMS=1-1000
 # Here's coordination of a group against itself:
@@ -85,9 +91,7 @@ c2: COMBINE ARG=x COEFFICIENTS=2 PERIODIC=NO
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
 # since it runs on half of the pairs.
 PRINT ARG=c1,c2 STRIDE=10
-\endplumedfile
-
-
+```
 
 */
 //+ENDPLUMEDOC

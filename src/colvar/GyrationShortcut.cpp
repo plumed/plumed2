@@ -23,12 +23,9 @@
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR GYRATION
+//+PLUMEDOC COLVAR GYRATION_FAST
 /*
 Calculate the radius of gyration, or other properties related to it.
-
-With this version of the command you can use any property you so choose to define the weights that are used when computing the average.
-If you use the mass or if all the atoms are ascribed weights of one PLUMED defaults to \ref GYRATION_FAST
 
 \par Examples
 
@@ -39,7 +36,31 @@ If you use the mass or if all the atoms are ascribed weights of one PLUMED defau
 /*
 Calculate the gyration tensor using a user specified vector of weights
 
-\par Examples
+The elements of the $3 \times 3$ gyration tensor are defined as:
+
+$$
+G_{\alpha\beta} = \frac{\sum_i^{n} w_i (\alpha_i-\alpha_{\rm COM})(\beta_i - \beta_{\rm COM})}{\sum_i^{n} w_i}
+$$
+
+where $\alpha_i$ and $\beta_i$ can be the $x$, $y$ or $z$ coordinates of atom $i$ and $\alpha_{\rm COM}$ and
+$\beta_{\rm COM}$ can be the $x$, $y$ or $z$ components of the center, which is calculated using:
+
+$$
+{r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ w_i }{\sum_i^{n} w_i}
+$$
+
+The following example shows how you can calculate and print the gyration tensor from the positions of the fist 10 atoms using PLUMED
+
+```plumed
+g: GYRATION_TENSOR ATOMS=1-10
+PRINT ARG=g FILE=colvar
+```
+
+The 9 elements of the gyration matrix will be output to the file `colvar` here.
+
+Similar functionality to the functionality in the example above is used in the [GYRATION](GYRATION.md) shortcut.  There is, however,
+no fast version of the GYRATION_TENSOR command in the way that there is a fast version of the [GYRATION](GYRATION.md) command that is
+used when the weights are all one or when the masses are used as the weights.
 
 */
 //+ENDPLUMEDOC
@@ -68,10 +89,10 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
   if( keys.getDisplayName()=="GYRATION" ) {
     keys.setValueDescription("scalar","the radius that was computed from the weights");
+    keys.addActionNameSuffix("_FAST");
   } else if( keys.getDisplayName()=="GYRATION_TENSOR" ) {
     keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
   }
-  keys.addActionNameSuffix("_FAST");
   keys.needsAction("CENTER");
   keys.needsAction("CONSTANT");
   keys.needsAction("ONES");
@@ -82,6 +103,7 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("SUM");
   keys.needsAction("CUSTOM");
   keys.needsAction("DIAGONALIZE");
+  keys.addDOI("10.1021/jp2065612");
 }
 
 GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
@@ -93,7 +115,7 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   std::vector<std::string> str_weights;
   parseVector("WEIGHTS",str_weights);
   std::string wflab;
-  if( !phases ) {
+  if( !phases && getName()=="GYRATION" ) {
     if( usemass || str_weights.size()==0 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
       std::string wt_str;
       if( str_weights.size()>0 ) {
@@ -133,9 +155,12 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
     phasestr = " PHASES";
   }
   // Create the geometric center of the molecule
-  std::string weights_str=" WEIGHTS=" + str_weights[0];
-  for(unsigned i=1; i<str_weights.size(); ++i) {
-    weights_str += "," + str_weights[i];
+  std::string weights_str="";
+  if( str_weights.size()>0 ) {
+    weights_str=" WEIGHTS=" + str_weights[0];
+    for(unsigned i=1; i<str_weights.size(); ++i) {
+      weights_str += "," + str_weights[i];
+    }
   }
   readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atlist + pbcstr + phasestr + weights_str );
   if( str_weights.size()==0 ) {

@@ -24,6 +24,7 @@
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/GenericMolInfo.h"
 #include "core/ModuleMap.h"
 #include <cstdio>
@@ -51,8 +52,8 @@ plumed gen_json
 class GenJson : public CLTool {
 private:
   std::string version;
-  void printHyperlink(std::string action );
-  void printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys );
+  void printHyperlink( const std::string& action );
+  void printKeywordDocs( const std::string& k, const std::string& action, const Keywords& keys );
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenJson(const CLToolOptions& co );
@@ -78,39 +79,31 @@ GenJson::GenJson(const CLToolOptions& co ):
   }
 }
 
-void GenJson::printHyperlink( std::string action ) {
-  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-  std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) {
-    return std::tolower(c);
-  });
-  while(true) {
-    std::size_t und=action.find_first_of("_");
-    if( und==std::string::npos ) {
-      break;
-    }
-    std::string first=action.substr(0,und);
-    for(auto c : first ) {
-      if( isdigit(c) ) {
-        std::cout<<c;
-      } else {
-        std::cout<<"_"<<c;
-      }
-    }
-    std::cout<<"_";
-    action=action.substr(und+1);
-  }
-  for(auto c : action ) {
-    if( isdigit(c) ) {
-      std::cout<<c;
-    } else {
-      std::cout<<"_"<<c;
-    }
-  }
-  std::cout<<".html\","<<std::endl;
+void GenJson::printHyperlink( const std::string& action ) {
+  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"<<action<<"\","<<std::endl;
 }
 
-void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
+void GenJson::printKeywordDocs( const std::string& k, const std::string& action, const Keywords& keys ) {
+  std::string defa = "", desc = keys.getKeywordDescription( k );
+  if( desc.find("default=")!=std::string::npos ) {
+    std::size_t defstart = desc.find_first_of("="), brac=desc.find_first_of(")");
+    defa = desc.substr(defstart+1,brac-defstart-2);
+    desc = desc.substr(brac+1);
+  }
+  std::size_t dot=desc.find_first_of(".");
+  std::string mydescrip = desc.substr(0,dot);
+  if( mydescrip.find("\\")!=std::string::npos ) {
+    error("found invalid backslash character documentation for keyword " + k + " in action " + action );
+  }
   std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered(k)<<", \"actionlink\": \""<<keys.getLinkedActions(k)<<"\"";
+  std::string argtype = keys.getArgumentType( k );
+  if( argtype.length()>0 ) {
+    std::cout<<", \"argtype\": \""<<argtype<<"\"}";
+  } else if( defa.length()>0 ) {
+    std::cout<<", \"default\": \""<<defa<<"\"}";
+  } else {
+    std::cout<<"}";
+  }
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
@@ -133,9 +126,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   // Cycle over all the action names
   std::cout<<"{"<<std::endl;
   // Get the vimlink
-  std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_vim_syntax.html\","<<std::endl;
+  std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/vim\","<<std::endl;
   // And the replicas link
-  std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/special-replica-syntax.html\","<<std::endl;
+  std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/parsing.html\","<<std::endl;
   // Get the names of all the actions
   std::vector<std::string> action_names( actionRegister().getActionNames() );
   std::vector<std::string> allmodules;
@@ -146,6 +139,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     printHyperlink( action );
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
     bool found=false;
+    plumed_massert( getModuleMap().find(action)!=getModuleMap().end(), "could not find action named " + action + " in module map");
     std::string thismodule = getModuleMap().find(action_names[i])->second;
     for(unsigned i=0; i<allmodules.size(); ++i) {
       if( allmodules[i]==thismodule ) {
@@ -176,30 +170,18 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       }
       std::cout<<"    \"replacement\" : \""<<replacement<<"\",\n";
     }
+    std::cout<<"     \"dois\" : [";
+    unsigned ndoi = keys.getDOIList().size();
+    if( ndoi>0 ) {
+      std::cout<<"\"" + keys.getDOIList()[0] + "\"";
+      for(unsigned j=1; j<ndoi; ++j) {
+        std::cout<<", \"" + keys.getDOIList()[j] + "\"";
+      }
+    }
+    std::cout<<"],\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
-      std::string defa = "", desc = keys.getKeywordDescription( keys.getKeyword(j) );
-      if( desc.find("default=")!=std::string::npos ) {
-        std::size_t defstart = desc.find_first_of("="), brac=desc.find_first_of(")");
-        defa = desc.substr(defstart+1,brac-defstart-2);
-        desc = desc.substr(brac+1);
-      }
-      std::size_t dot=desc.find_first_of(".");
-      std::string mydescrip = desc.substr(0,dot);
-      if( mydescrip.find("\\")!=std::string::npos ) {
-        error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
-      }
-      std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
-      if( argtype.length()>0 ) {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<", \"argtype\": \""<<argtype<<"\"}";
-      } else if( defa.length()>0 ) {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<", \"default\": \""<<defa<<"\"}";
-      } else {
-        printKeywordDocs( keys.getKeyword(j), mydescrip, keys );
-        std::cout<<"}";
-      }
+      printKeywordDocs( keys.getKeyword(j), action, keys );
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) {
         std::cout<<std::endl;
       } else {
@@ -270,22 +252,22 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"  \"groups\" : {"<<std::endl;
   std::cout<<"    \"@allatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms and PLUMEDs vatoms\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms\""<<std::endl;
   std::cout<<"    },"<<std::endl;
   std::cout<<"    \"@mdatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms but not PLUMEDs vatoms\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms\""<<std::endl;
   std::cout<<"    },"<<std::endl;
   std::cout<<"    \"@ndx:\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"load a group from a GROMACS index file\","<<std::endl;
-  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/specifying_atoms.html\""<<std::endl;
   // Now print all the special keywords in molinfo
   std::map<std::string,std::string> specials( GenericMolInfo::getSpecialKeywords() );
   for(auto const& s : specials ) {
     std::cout<<"    },"<<std::endl;
     std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
     std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
-    std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
+    std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/MOLINFO\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
   std::cout<<"  },"<<std::endl;
@@ -300,6 +282,44 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
+  std::cout<<"  },"<<std::endl;
+  std::cout<<"  \"cltools\" : {"<<std::endl;
+  std::vector<std::string> cltool_names( cltoolRegister().list() );
+  for(unsigned i=0; i<cltool_names.size(); ++i) {
+    std::cout<<"  \""<<cltool_names[i]<<'"'<<": {"<<std::endl;
+    std::string cltool=cltool_names[i];
+    // Handle converstion to link
+    printHyperlink( cltool );
+    plumed_massert( getModuleMap().find(cltool)!=getModuleMap().end(), "could not find cltool named " + cltool + " in module map" );
+    std::string thismodule = getModuleMap().find(cltool_names[i])->second;
+    std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
+    auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
+    std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
+    if( mytool->inputdata==commandline ) {
+      std::cout<<"    \"inputtype\" : \"command line args\",\n";
+    } else if( mytool->inputdata==ifile ) {
+      std::cout<<"    \"inputtype\" : \"file\",\n";
+    } else {
+      error("input type for cltool was not specified");
+    }
+    std::cout<<"    \"syntax\" : {"<<std::endl;
+    for(unsigned j=0; j<cltoolRegister().get(cltool).keys.size(); ++j) {
+      std::string k = cltoolRegister().get(cltool).keys.getKeyword(j);
+      printKeywordDocs( k, cltool, cltoolRegister().get(cltool).keys );
+      if( j==cltoolRegister().get(cltool).keys.size()-1 ) {
+        std::cout<<std::endl;
+      } else {
+        std::cout<<","<<std::endl;
+      }
+    }
+    std::cout<<"       }"<<std::endl;
+    std::cout<<"     }";
+    if( i==cltool_names.size()-1 ) {
+      std::cout<<std::endl;
+    } else {
+      std::cout<<","<<std::endl;
+    }
+  }
   std::cout<<"  }"<<std::endl;
   std::cout<<"}"<<std::endl;
   return 0;

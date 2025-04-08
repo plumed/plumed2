@@ -34,7 +34,130 @@ namespace generic {
 /*
 Print a vector to a file
 
-\par Examples
+In the following input the four distances calculated by the [DISTANCE](DISTANCE.md) command
+are output to files using this command and using [PRINT](PRINT.md)
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+PRINT ARG=d FILE=colvar1 STRIDE=1
+DUMPVECTOR ARG=d FILE=colvar2 STRIDE=1
+```
+
+The PRINT command outputs the instantaneous values of the four distances on a single row.  If we have a trajectory
+with four frames the `colvar1` file will look like the one shown below:
+
+````
+! FIELDS time d.1 d.2 d.3 d.4
+ 0.000000 1.000000 1.000000 1.414214 1.000000
+ 1.000000 1.000000 1.000000 1.414214 1.000000
+ 2.000000 1.000000 1.000000 1.414214 1.000000
+ 3.000000 1.000000 1.000000 1.414214 1.000000
+```
+
+By contrast the DUMPVECTOR command will produce four output files - for each step of the simulation. Each of these
+output files looks like this:
+
+````
+! FIELDS time parameter d
+ 3.000000 0 1.000000
+ 3.000000 1 1.000000
+ 3.000000 2 1.414214
+ 3.000000 3 1.000000
+```
+
+In other words, the four elements of the vector are printed on different rows of the output.
+The latest file output will be called `colvar2` and all earlier files will be called `analysis.n.colvar` where
+n is an integer that indicates the order in which files were produced. By adding the flag `PRINT_ONE_FILE` as shown below:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+DUMPVECTOR ARG=d FILE=colvar2 STRIDE=1 PRINT_ONE_FILE
+```
+
+We can ensure that all the data from all four frames is concatenated to a single file that looks as follows:
+
+````
+#! FIELDS time parameter d
+ 3.000000 0 1.000000
+ 3.000000 1 1.000000
+ 3.000000 2 1.414214
+ 3.000000 3 1.000000
+#! FIELDS time parameter d
+ 0.000000 0 1.000000
+ 0.000000 1 1.000000
+ 0.000000 2 1.414214
+ 0.000000 3 1.000000
+#! FIELDS time parameter d
+ 1.000000 0 1.000000
+ 1.000000 1 1.000000
+ 1.000000 2 1.414214
+ 1.000000 3 1.000000
+#! FIELDS time parameter d
+ 2.000000 0 1.000000
+ 2.000000 1 1.000000
+ 2.000000 2 1.414214
+ 2.000000 3 1.000000
+````
+
+This command is useful for printing out time series that have been stored using the [COLLECT](COLLECT.md)
+action or for printing out projections that have been generating using the tools in the [dimred](module_dimred.md)
+module.  The following input shows how you can use it to calculate and print the time series of values for the
+distances between atoms 1 and 2 and atoms 3 and 4.
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+c1: COLLECT ARG=d1 STRIDE=1
+c2: COLLECT ARG=d2 STRIDE=1
+DUMPVECTOR ARG=c1,c2 FILE=timeseries
+```
+
+In the example input above the time series is output at the end of the calculation.
+
+## Outputing matrices
+
+You can also use this command to output matrices as the following input demonstrates:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3-6
+DUMPVECTOR ARG=d FILE=matrix STRIDE=1
+```
+
+The files `matrix` and `analysis.n.matrix` that are output on each step here looks as follows:
+
+````
+! FIELDS time parameter d.1 d.2 d.3 d.4
+ 4.000000 0 2.000000 2.000000 1.000000 1.000000
+ 4.000000 1 1.000000 2.000000 2.000000 1.414214
+````
+
+In other words, the rows and columns of the file are used to display the rows and columns of the input matrix.
+
+Further note that if your input matrix was constructed using the [VSTACK](VSTACK.md) and [COLLECT](COLLECT.md) commands
+as shown below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+c1: COLLECT ARG=d1 STRIDE=1
+c2: COLLECT ARG=d2 STRIDE=1
+c3: COLLECT ARG=d3 STRIDE=1
+v: VSTACK ARG=c1,c2,c3
+DUMPVECTOR ARG=v FILE=matrix
+```
+
+The output file looks as follows:
+
+````
+#! FIELDS time parameter d1 d2 d3
+ 3.000000 0 1.000000 1.000000 1.414214
+ 3.000000 1 1.000000 1.000000 1.414214
+ 3.000000 2 1.000000 1.000000 1.414214
+````
+
+In other words, the names of the columns in the output reflect the names of the underlying variables that were
+collected and stacked together to form the input matrix.
 
 */
 //+ENDPLUMEDOC

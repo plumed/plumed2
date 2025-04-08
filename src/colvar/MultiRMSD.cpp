@@ -30,13 +30,13 @@
 Calculate RMSD distances for different domains and combine them.
 
 This action is largely depracated.  In previous versions of PLUMED a more complex version of this method was implemented.
-We felt, however, that the input syntax for the method was not very transparant.  We have thus provided this minimal action
-that creates the input for calculating the MultiDomain RMSD for simple cases.  This action is a shortcut.  If you look at the log you can see how we
+You can see an example in [example from the plumed nest](https://www.plumed-nest.org/eggs/20/026/).
+
+We felt that the input syntax for the method was not very transparant.  We have thus provided this minimal action
+that creates the input for calculating the MultiDomain RMSD for simple cases.  This action is a shortcut.  If you look at the inputs in the
+egg that is linked above you can see how we
 use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some of the more
 complicated CVs things that this could do with MULTI_RMSD looking at how this shortcut works will help you start.
-
-
-\par Examples
 
 */
 //+ENDPLUMEDOC

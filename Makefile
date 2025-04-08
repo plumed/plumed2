@@ -54,7 +54,7 @@ test: src
 
 # doxygen
 doc:
-	$(MAKE) -C user-doc
+	$(MAKE) -C new-manual
 	$(MAKE) -C developer-doc
 
 docs:

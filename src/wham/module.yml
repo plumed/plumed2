@@ -1,0 +1,4 @@
+name: wham
+authors: Gareth Tribello
+description: an implementation of the binless wham technique
+dois: ["10.1007/978-1-4939-9608-7_21"]

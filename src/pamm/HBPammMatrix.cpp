@@ -31,7 +31,36 @@
 /*
 Adjacency matrix in which two electronegative atoms are adjacent if they are hydrogen bonded
 
-\par Examples
+This method allows you to calculate an adjacency matrix and use all the methods discussed in the documentation for
+the [CONTACT_MATRIX](CONTACT_MATRIX.md) upon it to define CVs.  The $i,j$ element of the matrix that is calculated
+by this action is one if there is a hydrogen bond connecting atom $i$ to atom $j$.  Furthermore, we determine whether
+there is a hydrogen atom between these two atoms by using the PAMM technique that is discussed in the articles from the
+bibliography below and in the documentation for the [PAMM](PAMM.md) action.
+
+The example shown below illustrates how the method is used in practice
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX GROUP=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+PRINT ARG=m FILE=colvar
+```
+
+This example could be used to investigate the connectivity between a collection of water molecules in liquid water. Notice, however,
+that the output matrix here is not symmetric.
+
+If you want to investigate whether there are hydrogen bonds between two groups of molecules you can use an input like this:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX GROUPA=1 GROUPB=2-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+PRINT ARG=m FILE=colvar
+```
+
+This input outputs a $1\times 63$ matrix in which the $1,i$th element tells you whether or not atom 1 donates a hydrogen bond
+to the $i$th element in the group of 63 atoms that was specified using the ACCEPTORS keyword.
+
+In general, it is better to use this action through the [HBPAMM_SA](HBPAMM_SA.md), [HBPAMM_SD](HBPAMM_SD.md) and [HBPAMM_SH](HBPAMM_SH.md)
+keywords, which can be used to calculate the number of hydrogen bonds each donor, acceptor or hydrogen atom in your system participates in.
 
 */
 //+ENDPLUMEDOC
@@ -40,7 +69,22 @@ Adjacency matrix in which two electronegative atoms are adjacent if they are hyd
 /*
 Calculate the number of hydrogen bonds each acceptor participates in using the HBPamm method
 
-\par Examples
+This shortcut action allows you to calculate the number of hydrogen bonds each of the atoms specified using the SITES
+keyword accepts from its neighbours. The number of hydrogen bonds that a particular site accepts is determined by using the
+PAMM tehcnique that is discussed in the articles from the bibliography below and in the documentation for the [PAMM](PAMM.md) action
+
+The following example shows how you can use this action to calculate how many hydrogen bonds each of the water moecules in
+a box of water accepts from its neighbours.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+acceptors: HBPAMM_SA SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+DUMPATOMS ARG=acceptors ATOMS=1-192:3 FILE=acceptors.xyz
+```
+
+The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
+columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
+that have been accepted by each of the atoms.
 
 */
 //+ENDPLUMEDOC
@@ -49,7 +93,22 @@ Calculate the number of hydrogen bonds each acceptor participates in using the H
 /*
 Calculate the number of hydrogen bonds each donor participates in using the HBPamm method
 
-\par Examples
+This shortcut action allows you to calculate the number of hydrogen bonds each of the atoms specified using the SITES
+keyword donates to its neighbours. The number of hydrogen bonds that a particular site donates is determined by using the
+PAMM tehcnique that is discussed in the articles from the bibliography below and in the documentation for the [PAMM](PAMM.md) action
+
+The following example shows how you can use this action to calculate how many hydrogen bonds each of the water moecules in
+a box of water donates to its neighbours.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+donors: HBPAMM_SD SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+DUMPATOMS ARG=donors ATOMS=1-192:3 FILE=donors.xyz
+```
+
+The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
+columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
+that have been donated by each of the atoms.
 
 */
 //+ENDPLUMEDOC
@@ -58,7 +117,22 @@ Calculate the number of hydrogen bonds each donor participates in using the HBPa
 /*
 Calculate the number of hydrogen bonds each hydrogen participates in using the HBPamm method
 
-\par Examples
+This shortcut action allows you to calculate the number of hydrogen bonds each of the atoms specified using the SITES
+keyword donates to its neighbours. The number of hydrogen bonds that a particular site donates is determined by using the
+PAMM tehcnique that is discussed in the articles from the bibliography below and in the documentation for the [PAMM](PAMM.md) action
+
+The following example shows how you can use this action to calculate how many hydrogen bonds each of the water moecules in
+a box of water donates to its neighbours.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+hyd: HBPAMM_SH SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+DUMPATOMS ARG=hyd ATOMS=2-192:3,3-192:3 FILE=hydrogens.xyz
+```
+
+The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
+columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
+that each hydrogen atom participates in.
 
 */
 //+ENDPLUMEDOC
@@ -88,13 +162,15 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
   adjmat::AdjacencyMatrixBase::registerKeywords( keys );
   keys.use("GROUPC");
   keys.add("compulsory","ORDER","dah","the order in which the groups are specified in the input.  Can be dah (donor/acceptor/hydrogens), "
-           "adh (acceptor/donor/hydrogens) or hda (hydrogens/donor/hydrogens");
+           "adh (acceptor/donor/hydrogens) or hda (hydrogens/donor/acceptors");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("compulsory","GAUSS_CUTOFF","6.25","the cutoff at which to stop evaluating the kernel function is set equal to sqrt(2*x)*(max(adc)+cov(adc))");
   keys.needsAction("PAMM");
   keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addDOI("10.1063/1.4900655");
+  keys.addDOI("10.1021/acs.jctc.7b00993");
 }
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
