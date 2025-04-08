@@ -49,7 +49,7 @@ public:
   MatrixTimesVectorInput( std::size_t task_index, std::size_t ipair, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* argdata ):
     noderiv(input.noderiv),
     rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
-    indices(input.bookeeping.data() + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
+    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
     matrow(argdata + input.argstarts[actiondata.pairs[ipair][0]] + task_index*input.ncols[actiondata.pairs[ipair][0]],rowlen),
     vector(argdata + input.argstarts[actiondata.pairs[ipair][1]], input.shapedata[1]) {
   }
@@ -78,7 +78,7 @@ public:
   MatrixTimesVectorForceInput( std::size_t task_index, std::size_t ipair, double ff, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* deriv ):
     force(ff),
     rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
-    indices(input.bookeeping.data() + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
+    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
     deriv(deriv,input.shapedata[1]) {
   }
 };
