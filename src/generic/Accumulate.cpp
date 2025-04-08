@@ -30,7 +30,84 @@
 /*
 Sum the elements of this value over the course of the trajectory
 
-\par Examples
+This action is used to sum the outputs from another action over the course of the trajectory.  This is useful
+if you want to calculate the average value that a CV took over the course of a simulation.  As an example, the following
+input can be used to calculate the average distance between atom 1 and atom 2.
+
+```plumed
+c: CONSTANT VALUE=1
+d: DISTANCE ATOMS=1,2
+# This adds together the value of the distance on every step
+s: ACCUMULATE ARG=d STRIDE=1
+# This adds one every time we add a new distance to the value s
+n: ACCUMULATE ARG=c STRIDE=1
+# This is thus the average distance
+a: CUSTOM ARG=s,n FUNC=x/y PERIODIC=NO
+# This prints out the average over the whole trajectory (STRIDE=0 means print at end only)
+PRINT ARG=a FILE=average.dat STRIDE=0
+```
+
+You can use this action for block averaging by using the `CLEAR` keyword as shown below:
+
+```plumed
+c: CONSTANT VALUE=1
+d: DISTANCE ATOMS=1,2
+# This adds together the value of the distance on every step
+s: ACCUMULATE ARG=d STRIDE=1 CLEAR=1000
+# This adds one every time we add a new distance to the value s
+n: ACCUMULATE ARG=c STRIDE=1 CLEAR=1000
+# This is thus the average distance
+a: CUSTOM ARG=s,n FUNC=x/y PERIODIC=NO
+# This prints out the average over the whole trajectory (STRIDE=0 means print at end only)
+PRINT ARG=a FILE=average.dat STRIDE=1000
+```
+
+The instructions `CLEAR=1000` in the above input tells PLUMED to set the values `s` and `n` back to
+zero after 1000 new steps have been performed. The PRINT action will thus print a block average that
+is taken from the first 1000 steps of the trajectory, a second block average from the second 1000 steps
+of the trajectory and so on.
+
+## Estimating histograms
+
+We can also use this action to construct histograms. The example below shows how you can estimate the
+distribution of distances between atoms 1 and 2 that are sampled over the course of the trajectory.
+
+```plumed
+c: CONSTANT VALUE=1
+d: DISTANCE ATOMS=1,2
+# Construct the instantaneous histogram from the instantaneous value of the distance
+kde: KDE ARG=d BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=5 GRID_BIN=250
+# Now add together all the instantaneous histograms
+hist: ACCUMULATE ARG=kde STRIDE=1
+# And normalise the histogram
+n: ACCUMULATE ARG=c STRIDE=1
+a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
+# And print out the final histogram
+DUMPGRID ARG=a FILE=histo.grid
+```
+
+At first glance the fact that we use a [KDE](KDE.md) action to construct an instaneous histogram from a single
+distance may appear odd.  The reason for doing this, however, is to introduce a clear distinction between
+the syntaxes that are used for spatial and temporal averaging.  To see what I mean consider the following input:
+
+
+```plumed
+c: CONSTANT VALUE=5
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
+# Construct the instantaneous histogram from the instantaneous value of the distance
+kde: KDE ARG=d BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=5 GRID_BIN=250
+# Now add together all the instantaneous histograms
+hist: ACCUMULATE ARG=kde STRIDE=1
+# And normalise the histogram
+n: ACCUMULATE ARG=c STRIDE=1
+a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
+# And print out the final histogram
+DUMPGRID ARG=a FILE=histo.grid
+```
+
+This input computes 5 distances. Kernels correpsonding to all five of these distances are added to the instaneous
+histogram that is constructed using the [KDE](KDE.md) action.  When we call the accumulate action here we are thus
+not simply adding a single kernel to the accumulated grid when we add the the elements from `kde`.
 
 */
 //+ENDPLUMEDOC

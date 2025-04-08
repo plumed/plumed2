@@ -31,7 +31,65 @@ namespace symfunc {
 /*
 Calculate functions of the coordinates of the coordinates of all pairs of bonds in the first coordination sphere of an atom
 
-\par Examples
+This shortcut can be used to calculate [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html) that
+are like those defined by Behler in the paper that is cited in the bibliography below. The particular symmetry functions that are computed
+by this shortcut are the angular ones that are functions of the set pairs of atoms in the coordination sphere of the central atom.  One of
+the angular symmetry functions that Behler introduces is:
+
+$$
+G^5_i = 2^{1-\zeta} \sum_{j,k\ne i} (1 + \lambda\cos\theta_{ijk})^\zeta e^{-\nu(R_{ij}^2 + R_{ik}^2)} f_c(R_{ij}) f_c(R_{ik})
+$$
+
+In this expression $\zeta$, $\nu$ and $\lambda$ are all parameters.  $f_c$ is a switching function which acts upon $R_{ij}$, the distance between atom $i$ and atom $j$, and
+$R_{ik}$, the distance between atom $i$ and atom $k$.  $\theta_{ijk}$ is then the angle between the vector that points from atom $i$ to atom $j$ and the vector that points from
+atom $i$ to atom $k$.  THe input below can be used to get PLUMED to calculate the 100 values for this symmetry function for the 100 atoms in a system.
+
+```plumed
+# Calculate the contact matrix and the x,y and z components of the bond vectors
+# This action calculates 4 100x100 matrices
+cmat: CONTACT_MATRIX GROUP=1-100 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS
+
+# Compute the symmetry function for the 100 atoms from the 4 100x100 matrices output
+# by cmat.  The output from this action is a vector with 100 elements
+beh3: GSYMFUNC_THREEBODY ...
+    WEIGHT=cmat.w ARG=cmat.x,cmat.y,cmat.z
+    FUNCTION1={FUNC=0.25*exp(-0.1*(rij+rik))*(1+3*cos(ajik))^3 LABEL=g5}
+...
+
+# Print the 100 symmetry function values to a file
+PRINT ARG=beh3.g5 FILE=colvar
+```
+
+The GSYMFUNC_THREEBODY action sums over all the distinct triples of atoms that are identified in the contact matrix.  This action uses the same functionality as [CUSTOM](CUSTOM.md) and can thus compute any
+function of the following four quantities:
+
+* `rij` - the distance between atom $i$ and atom $j$
+* `rik` - the distance between atom $i$ and atom $k$
+* `rjk` - the distance between atom $j$ and atom $k$
+* `ajik` - the angle between the vector connecting atom $i$ to atom $j$ and the vector connecting atom $i$ to atom $k$.
+
+Furthermore we can calculate more than one function of these four quantities at a time as illustrated by the input below:
+
+```plumed
+# Calculate the contact matrix and the x,y and z components of the bond vectors
+# This action calculates 4 100x100 matrices
+cmat: CONTACT_MATRIX GROUP=1-100 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS
+
+# Compute the 4 symmetry function below for the 100 atoms from the 4 100x100 matrices output
+# by cmat.  The output from this action is a vector with 100 elements
+beh3: GSYMFUNC_THREEBODY ...
+    WEIGHT=cmat.w ARG=cmat.x,cmat.y,cmat.z
+    FUNCTION1={FUNC=0.25*(cos(pi*sqrt(rjk)/4.5)+1)*exp(-0.1*(rij+rik+rjk))*(1+2*cos(ajik))^2 LABEL=g4}
+    FUNCTION2={FUNC=0.25*exp(-0.1*(rij+rik))*(1+3.5*cos(ajik))^3 LABEL=g5}
+    FUNCTION3={FUNC=0.125*(1+6.6*cos(ajik))^4 LABEL=g6}
+    FUNCTION4={FUNC=sin(3.0*(ajik-1)) LABEL=g7}
+...
+
+# Print the 4 sets of 100 symmetry function values to a file
+PRINT ARG=beh3.g4,beh3.g5,beh3.g6,beh3.g7 FILE=colvar
+```
+
+You can read more about how to calculate more Behler-type symmetry functions [here](https://www.plumed-tutorials.org/lessons/23/001/data/Behler.html).
 
 */
 //+ENDPLUMEDOC
@@ -57,6 +115,7 @@ void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","WEIGHT","matrix","the matrix that contains the weights that should be used for each connection");
   keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
   ActionWithValue::useCustomisableComponents( keys );
+  keys.addDOI("10.1063/1.3553717");
 }
 
 ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):

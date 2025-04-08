@@ -31,29 +31,25 @@
 /*
 This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a box defined by the positions of four atoms.
 
-Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
-dimensional space. For example, if we have the coordination numbers for all the atoms in the
-system each coordination number can be assumed to lie on the position of the central atom.
-Because each base quantity can be assigned to a particular point in space we can calculate functions of the
-distribution of base quantities in a particular part of the box by using:
+This action can be used similarly to the way [AROUND](AROUND.md) is used.  Like [AROUND](AROUND.md) this action returns a vector
+with elements that tell you whether an input atom is within a part of the box that is of particular interest or not. However, for this action
+the elements of this vector are calculated using:
 
-\f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(u_i,v_i,w_i) }{ \sum_i w(u_i,v_i,w_i) }
-\f]
+$$
+w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}v\textrm{d}w
+   K\left( \frac{u - u_i}{\sigma} \right)K\left( \frac{v - v_i}{\sigma} \right)K\left( \frac{w - w_i}{\sigma} \right)
+$$
 
-where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (u_i,v_i,z_i)\f$.
-The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
-Notice that here (at variance with what is done in \ref AROUND) we have transformed from the usual \f$(x_i,y_i,z_i)\f$
-position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation matrix as follows:
+with $u_i,v_i,w_i$ being calculated from the positon of the $i$th atom, $(x_i,y_i,z_i)$, by performing the following transformation.
 
-\f[
+$$
 \left(
 \begin{matrix}
  u_i \\
  v_i \\
  w_i
 \end{matrix}
-\right) = \mathbf{R}
+\right) = R
 \left(
 \begin{matrix}
  x_i - x_o \\
@@ -61,44 +57,52 @@ position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation m
  z_i - z_o
 \end{matrix}
 \right)
-\f]
+$$
 
-where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
+In this expression $R$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
 reference positions specified by the user. The first of these unit vectors points from the first reference atom to the second.
 The second is then the normal to the plane containing atoms 1,2 and 3 and the the third is the unit vector orthogonal to
-these first two vectors.  \f$(x_o,y_o,z_o)\f$, meanwhile, specifies the position of the first reference atom.
+these first two vectors.  $(x_o,y_o,z_o)$, meanwhile, specifies the position of the first reference atom.
 
-In the previous function \f$ w(u_i,v_i,w_i) \f$ measures whether or not the system is in the subregion of interest. It
-is equal to:
+In the first expression above $K$ is one of the kernel functions described in the documentation for the action [BETWEEN](BETWEEN.md)
+and $\sigma$ is a bandwidth parameter.  Furthermore, The vector connecting atom 1 to atom 4 is used to define the extent of the box in
+each of the $u$, $v$ and $w$ directions.  This vector connecting atom 1 to atom 4 is projected onto the three unit vectors
+described above and the resulting projections determine the $u'$, $v'$ and $w'$ parameters in the above expression.
 
-\f[
-w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}v\textrm{d}w
-   K\left( \frac{u - u_i}{\sigma} \right)K\left( \frac{v - v_i}{\sigma} \right)K\left( \frac{w - w_i}{\sigma} \right)
-\f]
+The following commands illustrate how this works in practise.  We are using PLUMED here to calculate the number of atoms from the group specified using the ATOMS keyword below are
+in an ion channel in a protein.  The extent of the channel is calculated from the positions of atoms 1, 4, 5 and 11.
 
-where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
-The vector connecting atom 1 to atom 4 is used to define the extent of the box in each of the \f$u\f$, \f$v\f$ and \f$w\f$
-directions.  Essentially the vector connecting atom 1 to atom 4 is projected onto the three unit vectors
-described above and the resulting projections determine the \f$u'\f$, \f$v'\f$ and \f$w'\f$ parameters in the above expression.
+```plumed
+cav: CAVITY ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+s: SUM ARG=cav PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
 
-\par Examples
+By contrst the following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
+molecules in the protein channel described above. The average coordination number and the number of coordination
+numbers more than 4 is then calculated for those molecules that are in the region of interest.
 
-The following commands tell plumed to calculate the number of atoms in an ion channel in a protein.
-The extent of the channel is calculated from the positions of atoms 1, 4, 5 and 11. The final value will be labeled cav.
+```plumed
+# Calculate the atoms that are in the cavity
+cav: CAVITY ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+# Calculate the coordination numbers of all the atoms
+d1: COORDINATIONNUMBER SPECIES=20-500 SWITCH={RATIONAL R_0=0.1}
+# Do atoms have a coordination number that is greater than 4
+fd1: MORE_THAN ARG=d1 SWITCH={RATIONAL R_0=4}
+# Calculate the mean coordination number in the channel
+nnn: CUSTOM ARG=cav,d1 FUNC=x*y PERIODIC=NO
+numer: SUM ARG=nnn PERIODIC=NO
+denom: SUM ARG=cav PERIODIC=NO
+mean: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# Calculate the number of atoms that are in the channel and that have a coordination number that is greater than 4
+sss: CUSTOM ARG=fd1,cav FUNC=x*y PERIODIC=NO
+mt: SUM ARG=sss PERIODIC=NO
+# And print these two quantities to a file
+PRINT ARG=mean,mt FILE=colvar
+```
 
-\plumedfile
-d1: DENSITY SPECIES=20-500
-CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
-\endplumedfile
-
-The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
-molecules in the protein channel described above.  The average coordination number and the number of coordination
-numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
-
-\plumedfile
-d1: COORDINATIONNUMBER SPECIES=20-500 R_0=0.1
-CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
-\endplumedfile
+As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
+still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
 
 */
 //+ENDPLUMEDOC

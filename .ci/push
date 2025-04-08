@@ -75,7 +75,7 @@ case "$WHAT" in
 (doc)
 # grab doc
   mkdir user-doc
-  cp -R $root/user-doc/{html,manual.pdf} user-doc/
+  cp -R $root/new-manual/site/ user-doc/html
   test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
   mkdir developer-doc
   cp -R $root/developer-doc/html developer-doc/

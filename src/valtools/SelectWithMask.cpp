@@ -29,7 +29,48 @@
 /*
 Use a mask to select elements of an array
 
-\par Examples
+Output a scalar, vector or matrix that contains a subset of the elements in the input vector or matrix.
+The following example shows how we can output a scalar, `v`, that contains the distance between and 3 and 4
+by using the mask vector `m` to select this element from the three element vector `d`:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+m: CONSTANT VALUES=1,0,1
+v: SELECT_WITH_MASK ARG=d MASK=m
+```
+
+The value, `m`, that is passed to the keyword MASK here is a vector with the same length as `d`.
+Elements of `d` that whose corresponding elements in `m` are zero are copied to the output value `v`.
+When elements of `m` are non-zero the corresponding elements in `d` are not transferred to the output
+value - they are masked.
+
+If you use this action with matrices you must use the keywords `ROW_MASK` and `COLUMN_MASK`. As shown in the example
+inputs below, these keywords take vectors as input.  In this first example, the output matrix is $3 \times 5$ as rows
+of the matrix whose corresponding elements in `m` are non-zero are not transferred:
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-5
+m: CONSTANT VALUES=0,1,1,0,0
+v: SELECT_WITH_MASK ARG=d ROW_MASK=m
+```
+
+For this second example the output matrix is $5 \times 3$ as columns of the matrix whose corresponding elements in `m` are non-zero
+are not transferred:
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-5
+m: CONSTANT VALUES=0,1,1,0,0
+v: SELECT_WITH_MASK ARG=d COLUMN_MASK=m
+```
+
+For this final example the output matrix is $3 \times 3$ as we do not transfer the rows and the columns in `d` whose corresponding
+elements in `m` are non-zero.
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-5
+m: CONSTANT VALUES=0,1,1,0,0
+v: SELECT_WITH_MASK ARG=d ROW_MASK=m COLUMN_MASK=m
+```
 
 */
 //+ENDPLUMEDOC
@@ -95,9 +136,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
     args.push_back( mask[0] );
     requestArguments( args );
     shape.resize(1,0);
-    if( (mask[0]->getPntrToAction())->getName()=="CONSTANT" ) {
-      shape[0]=getOutputVectorLength(mask[0]);
-    }
+    shape[0]=getOutputVectorLength(mask[0]);
   } else if( getPntrToArgument(0)->getRank()==2 ) {
     std::vector<Value*> rmask, cmask;
     parseArgumentList("ROW_MASK",rmask);

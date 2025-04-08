@@ -34,24 +34,24 @@ Two protein segments containing three contiguous residues can form a parallel be
 Although if the two segments are part of the same protein chain they must be separated by
 a minimum of 3 residues to make room for the turn. This colvar thus generates the set of
 all possible six residue sections that could conceivably form a parallel beta sheet
-and calculates the RMSD distance between the configuration in which the residues find themselves
+and calculates the [DRMSD](DRMSD.md) or [RMSD](RMSD.md) distance between the configuration in which the residues find themselves
 and an idealized parallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of inter-atomic
 distances in the reference and instantaneous structures.
 
-This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
+This colvar is based on the reference in the bibliography below.  The authors of
 this paper use the set of distances from the parallel beta sheet configurations to measure
 the number of segments whose configuration resembles a parallel beta sheet. This is done by calculating
 the following sum of functions of the rmsd distances:
 
-\f[
+$$
 s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i-d_0}{r_0}\right)^m }
-\f]
+$$
 
 where the sum runs over all possible segments of parallel beta sheet.  By default the
-NN, MM and D_0 parameters are set equal to those used in \cite pietrucci09jctc.  The R_0
-parameter must be set by the user - the value used in \cite pietrucci09jctc was 0.08 nm.
+NN, MM and D_0 parameters are set equal to those used in the paper cited below.  The R_0
+parameter must be set by the user - the value used in the paper cited below was 0.08 nm.
 
 If you change the function in the above sum you can calculate quantities such as the average
 distance from a structure composed of only parallel beta sheets or the distance between the set of
@@ -60,29 +60,30 @@ calculations you can use the AVERAGE and MIN keywords. In addition you can use t
 keyword if you would like to change the form of the switching function. If you use any of these
 options you no longer need to specify NN, R_0, MM and D_0.
 
-Please be aware that for codes like gromacs you must ensure that plumed
-reconstructs the chains involved in your CV when you calculate this CV using
-anything other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
-
-\par Examples
-
 The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=beta.pdb
-pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
-\endplumedfile
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
+pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
+PRINT ARG=pb FILE=colvar
+```
 
-Here the same is done use RMSD instead of DRMSD
+Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
-hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
-\endplumedfile
+hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}  STRANDS_CUTOFF=1
+PRINT ARG=hh.lessthan FILE=colvar
+```
+
+__YOUR CALCULATION WILL BE MUCH FASTER IF YOU USE THE `STRANDS_CUTOFF` KEYWORD.__  As you can see from the
+expanded version of the inputs above this keyword reduces the computational cost of the calculation by
+avoiding calculations of the RMSD values for segments that have the two strands of the beta sheet further apart
+than a cutoff.
 
 */
 //+ENDPLUMEDOC

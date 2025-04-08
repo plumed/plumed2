@@ -26,7 +26,34 @@
 /*
 Calculate the outer product matrix from two vectors of quaternions
 
-\par Examples
+Calculate the outer product matrix from two vectors of quaternions. Quaternions are made of four numbers, one real number, and three imaginary numbers \textit{i}, \textit{j}, and \textit{k}. The imaginary numbers are not commutative:
+
+\[ij =k\] \[jk=i\] \[ki=j\] \[ji = -k\] \[ik = -j\] \[kj = -i\] \[ii = jj = kk = -1\]
+
+Thus multiplying two quaternions $\mathbf{q_1} = w_1 + x_1i + y_1j + z_1k  $ and $\mathbf{q_2} = w_2 + x_2i + y_2j + z_2k$ yields the following four components:
+
+\[w_{12} = w_1w_2 - x_1x_2 - y_1y_2 -z_1z_2\]
+\[x_{12}i = (w_1x_2 + x_1w_2 + y_1z_2 - z_1y_2  )i\]
+\[y_{12}j = (w_1y_2 - x_1z_2 + y_1w_2 + z_1x_2)j\]
+\[z_{12}k = (w_1z_2 + x_1y_2 - y_1x_2 + z_1w_2)k\]
+
+Quaternions can also be multiplied by a real number, and the conjugate $\mathbf{\overline{q}} = w -xi - yj - zk$ is analogous to complex numbers.
+
+
+This action takes two equal sized vectors of quaternions of length $n$, and returns four $n\times n$ outer product matrices, corresponding to components w, x, y, and z in the above example. These matrices are real numbers, and will not behave with the usual nuances of quaternion algebra in any CUSTOMS, or other actions, that will need to be accounted for manually. The vectors of quaternions can be the same vectors, or different. Note, since the QUATERNION action returns unit quaternions, all quaternions returned here will also be unit quaternions.
+
+```plumed
+#in a system of 4 molecules, each with 3 atoms
+#define quaternions 1-4
+quats12: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6
+quats34: QUATERNION ATOMS1=7,8,9 ATOMS2=10,11,12
+
+#take the outer product of 1,2 and 3,4
+qp: QUATERNION_PRODUCT_MATRIX ARG=quats12.*,quats34.* #notice the asterisk
+#the components need to be passed in the order w1,x1,y1,z1,w2,x2,y2,z2
+#now use in an order parameter
+bpw: CUSTOM ARG=qp.* VAR=w,x,y,z FUNC=exp(w/2+x/2+y/2+z/2) PERIODIC=NO
+```
 
 */
 //+ENDPLUMEDOC

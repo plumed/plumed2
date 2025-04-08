@@ -29,40 +29,38 @@
 /*
 This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
 
-Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
-dimensional space. For example, if we have the coordination numbers for all the atoms in the
-system each coordination number can be assumed to lie on the position of the central atom.
-Because each base quantity can be assigned to a particular point in space we can calculate functions of the
-distribution of base quantities in a particular part of the box by using:
+This action can be used to calculate whether each of the atoms are within a particular part of the simulation box or not as illustrated by the following example:
 
-\f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) \sigma(r) }{ \sum_i \sigma(r) }
-\f]
+```plumed
+f: FIXEDATOM AT=0,0,0
+a: INSPHERE ATOMS=1-100 CENTER=f RADIUS={GAUSSIAN R_0=1.5}
+PRINT ARG=a FILE=colvar
+```
 
-where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
-The function \f$\sigma\f$ is a \ref switchingfunction that acts on the distance between the point at which the
-collective is located \f$(x_i,y_i,z_i)\f$ and the position of the atom that was specified using the ORIGIN keyword.
-In other words:
-\f[
-r = sqrt{ ( x_i - x_0)^2 + ( y_i - y_0)^2 + ( z_i - z_0)^2}
-\f]
-In short this function, \f$\sigma(r_{xy})\f$, measures whether or not the CV is within a sphere that is
-centered on the position of the atom specified using the keyword ORIGIN.
+The 100 elements of the vector `a` that is returned from the INSPHERE action in the above input are calculated using:
 
-The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
+$$
+w(x_i,y_i,z_i) = \sigma\left( \sqrt{ x_i^2 + y_i^2 + z_i^2}  \right)
+$$
 
-When INCYLINDER is used with the \ref DENSITY action the number of atoms in the specified region is calculated
+In this expression $x_i$, $y_i$ and $z_i$ are the components of the vector that connects the $i$th atom that was specified using the `ATOMS` keyword to the atom that was specified using the `CENTER` keyword and
+$\sigma$ is one of the switching functions that is described that in the documentation for the action [LESS_THAN](LESS_THAN.md).  In other words,
+$w(x_i,y_i,z_i)$ is 1 if atom $i$ is within a sphere with a radial extent that is determined by the parameters of the specified switching function
+and zero otherwise.
 
-\par Examples
+If you want to caluclate and print the number of atoms in the sphere of interest you can use an input like the one shown below:
 
-The input below can be use to calculate the average coordination numbers for those atoms that are within a sphere
-of radius 1.5 nm that is centered on the position of atom 101.
+```plumed
+f: FIXEDATOM AT=0,0,0
+a: INSPHERE ATOMS=1-100 CENTER=f RADIUS={GAUSSIAN R_0=1.5}
+s: SUM ARG=a PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
 
-\plumedfile
-c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
-d2: INSPHERE ATOM=101 DATA=c1 RADIUS={TANH R_0=1.5} MEAN
-PRINT ARG=d2.* FILE=colvar
-\endplumedfile
+You can also calculate the average values of symmetry functions in the sphere of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
+action. In other words, you can swap out AROUND actions for an INSPHERE actions.  Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these types of calculations, which can
+still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
+
 
 */
 //+ENDPLUMEDOC

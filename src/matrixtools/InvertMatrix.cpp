@@ -27,7 +27,32 @@
 /*
 Calculate the inverse of the input matrix
 
-\par Examples
+This action allows you to calculate the inverse of a real symmetric matrix.
+If the matrix is not symmetric then the [dgetrf](https://www.netlib.org/lapack/explore-html-3.6.1/dd/d9a/group__double_g_ecomputational_ga0019443faea08275ca60a734d0593e60.html)
+and [dgetri](https://www.netlib.org/lapack/explore-html-3.6.1/dd/d9a/group__double_g_ecomputational_ga56d9c860ce4ce42ded7f914fdb0683ff.html)
+functions from the [LAPACK](https://www.netlib.org/lapack/explore-html/) library are used.
+If the matrix is symmetric then we use [dsyevr](https://www.netlib.org/lapack/explore-html/d1/d56/group__heevr_gaa334ac0c11113576db0fc37b7565e8b5.html#gaa334ac0c11113576db0fc37b7565e8b5)
+to find the eigenvalues. The inverse matrix of the input matrix $M$ with [eigendecomposition](https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix).:
+
+$$
+M = Q \Lambda Q^{-1}
+$$
+
+is then found as:
+
+$$
+M^{-1} = Q \Lambda^{-1} Q^{-1}
+$$
+
+where $\Lambda^{-1}$ is the inverse of the (diagonal) matrix of eigenvalues $\Lambda$ and $Q$ is the matrix of eigenvectors.
+
+The following example shows how this action is used in practise:
+
+```plumed
+c: DISTANCE_MATRIX ATOMS=1-4
+ci: INVERT_MATRIX ARG=c
+PRINT ARG=ci FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

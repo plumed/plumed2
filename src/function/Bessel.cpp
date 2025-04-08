@@ -34,7 +34,27 @@ namespace function {
 /*
 Calculate the value of a Bessel function.
 
-\par Examples
+This action can be used to evaluate [Bessel functions](https://en.wikipedia.org/wiki/Bessel_function).
+This was action is needed because the modified Bessel function of the first kind of order 0 is needed in
+order to calculate the [von-Misses distribution](https://en.wikipedia.org/wiki/Von_Mises_distribution)
+that is used in the implementation of [KERNEL](KERNEL.md).  You can thus only use this function to evaluate the
+modified Bessel function of the first kind of order 0.  You can evaluate the value of this Bessel function
+at $x=1$ by using the following input:
+
+```plumed
+c: CONSTANT VALUE=1
+b: BESSEL ARG=c ORDER=0
+```
+
+Notice that you can also use a vector in the input for this action as illustrated below:
+
+```plumed
+c: CONSTANT VALUES=1,1,5,2
+b: BESSEL ARG=c ORDER=0
+```
+
+The value output by BESSEL in this case is also a vector with three components.  These components give the values
+of the Bessel function at 1.0, 1.5 and 2.0 respectively.
 
 */
 //+ENDPLUMEDOC

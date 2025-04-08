@@ -26,7 +26,41 @@
 /*
 Calculate the transpose of a matrix
 
-\par Examples
+This action takes a matrix in input and calculates the input matrix's [tranpose](https://en.wikipedia.org/wiki/Transpose).
+The following example shows how you can use this to calculate coordination numbers of species A with species B and vice
+versa.
+
+```plumed
+# Calculate the contact matrix between the two groups
+c1: CONTACT_MATRIX GROUPA=1-10 GROUPB=11-30 SWITCH={RATIONAL R_0=0.1}
+# Calculate the cooordination numbers for the atoms in group A by multiplying by a vector of ones
+onesB: ONES SIZE=20
+coordA: MATRIX_VECTOR_PRODUCT ARG=c1,onesB
+# Transpose the contact matrix
+c1T: TRANSPOSE ARG=c1
+# Calculate the coordination number for the atoms in group B by multiplying the transpose by a vector of ones
+onesA: ONES SIZE=10
+coordB: MATRIX_VECTOR_PRODUCT ARG=c1T,onesA
+# Output the two vectors of coordination numbers to a file
+PRINT ARG=coordA,coordB FILE=colvar
+```
+
+Another useful example where the transpose can be used is shown below.  In this input the [DISTANCE](DISTANCE.md) command
+is used to calculate the orientation of a collection of molecules.  We then can then use the [VSTACK](VSTACK.md), TRANSPOSE and the
+[MATRIX_PRODUCT](MATRIX_PRODUCT.md) commands to calculate the dot products between all these vectors
+
+```plumed
+# Calculate the vectors connecting these three pairs of atoms
+d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+# Construct a matrix that contains all the components of the vectors calculated
+v: VSTACK ARG=d.x,d.y,d.z
+# Transpose v
+vT: TRANSPOSE ARG=v
+# And now calculate the 3x3 matrix of dot products
+m: MATRIX_PRODUCT ARG=v,vT
+# And output the matrix product to a file
+PRINT ARG=m FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -83,7 +117,14 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
     shape[1]=getPntrToArgument(0)->getShape()[0];
   }
   addValue( shape );
-  setNotPeriodic();
+  if( getPntrToArgument(0)->isPeriodic() ) {
+    std::string smin, smax;
+    getPntrToArgument(0)->getDomain( smin, smax );
+    setPeriodic( smin, smax );
+  } else {
+    setNotPeriodic();
+  }
+  getPntrToComponent(0)->buildDataStore();
   if( shape.size()==2 ) {
     getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   }

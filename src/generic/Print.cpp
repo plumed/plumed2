@@ -30,25 +30,50 @@ namespace generic {
 /*
 Print quantities to a file.
 
-This directive can be used multiple times
-in the input so you can print files with different strides or print different quantities
-to different files.  You can control the buffering of output using the \subpage FLUSH keyword.
-Output file is either appended or backed up depending on the presence of the \ref RESTART action.
-A per-action `RESTART` keyword can be used as well.
+This command can be used to output quantities to a file. The following demonstrates a very
+simple example:
 
-Notice that printing happens in the so-called "update" phase. This implies that printing
-is affected by the presence of \ref UPDATE_IF actions. In addition, one might decide to start
-and stop printing at preassigned values of time using the `UPDATE_FROM` and `UPDATE_UNTIL` keywords.
-Keep into account that even on steps when the action is not updated (and thus the file is not printed)
-the argument will be activated. In other words, if you use `UPDATE_FROM` to start printing at a given time,
-the collective variables this PRINT statement depends on will be computed also before that time.
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar
+```
 
-\par Examples
+This command outputs the distance between atom 1 and 2 to a file called colvar every step of
+trajectory. If you want to output the distance less frequently you can use the STRIDE keyword
+as illustrated below:
 
-The following input instructs plumed to print the distance between atoms 3 and 5 on a file
-called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
-every 1000 steps.
-\plumedfile
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar STRIDE=10
+```
+
+With the input above the distance is only output on every 10th step. Notice this distance will only
+be calculated on every step as this quantity is not used on every other step.
+
+You can also use the PRINT command to output objects that have a rank that is greater than zero.
+For example, the following input calculates a vector of three distances. These three distances
+are then output to the output colvar file every step.
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+PRINT ARG=d FILE=colvar
+```
+
+Alterantively, we can output a matrix by using an input like the one shown below:
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-4
+PRINT ARG=d FILE=colvar
+```
+
+The output `colvar` file here will contain the 16 elements of the matrix on each line output. You can
+also use PRINT to output functions on grids. However, you are probably better using [DUMPGRID](DUMPGRID.md) or
+[DUMPCUBE](DUMPCUBE.md) to output functions on grids.
+
+The PRINT directive can be used multiple times in the input so you can print files with different strides or print different quantities
+to different files as illustrated in the example input below:
+
+```plumed
 # compute distance:
 distance: DISTANCE ATOMS=2,5
 # compute total energy (potential)
@@ -57,10 +82,22 @@ energy: ENERGY
 PRINT ARG=distance          STRIDE=10   FILE=COLVAR
 # print both variables on another file
 PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
-\endplumedfile
+```
 
-Notice that \ref DISTANCE and \ref ENERGY are computed respectively every 10 and 1000 steps, that is
-only when required.
+The input above instructs plumed to print the distance between atoms 3 and 5 on a file
+called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
+every 1000 steps.
+
+You can control the buffering of output using the [FLUSH](FLUSH.md) keyword. Furthermore, whether the output file is
+appended or backed up depends on whetehr or not the [RESTART](RESTART.md) action is present on the file. If you add `RESTART=yes` on the
+line containing the PRINT directive the file will be appended also.
+
+Printing happens in the so-called "update" phase. This implies that printing
+is affected by the presence of [UPDATE_IF](UPDATE_IF.md) actions. One can thus decide to start
+and stop printing at preassigned values of time using the `UPDATE_FROM` and `UPDATE_UNTIL` keywords.
+Keep into account that even on steps when the action is not updated (and thus the file is not printed)
+the argument will be activated. In other words, if you use `UPDATE_FROM` to start printing at a given time,
+the collective variables this PRINT statement depends on will be computed also before that time.
 
 */
 //+ENDPLUMEDOC

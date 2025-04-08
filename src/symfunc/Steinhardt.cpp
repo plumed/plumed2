@@ -36,7 +36,64 @@ namespace symfunc {
 /*
 Calculate 1st order Steinhardt parameters
 
-\par Examples
+The 1st order Steinhardt parameters allow us to measure the degree to which the first coordination shell
+around an atom is ordered with the atoms aranged on a line.  The Steinhardt parameter for atom, $i$ is complex vector whose components are
+calculated using the following formula:
+
+$$
+q_{1m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{1m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+$$
+
+where $Y_{1m}$ is one of the 1st order spherical harmonics so $m$ is a number that runs from $-1$ to
+$+1$.  The function $\sigma( r_{ij} )$ is a switching function that acts on the distance between
+atoms $i$ and $j$.  The parameters of this function should be set so that it the function is equal to one
+when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
+
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html), the Steinhardt parameters can
+be used to measure the degree of order in the system in a variety of different ways.  The
+simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
+
+$$
+Q_1(i) = \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
+$$
+
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
+the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
+that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
+PRINT ARG=q1.mean FILE=colvar
+```
+
+Another similar command is provided below. This time the histogram of Q1 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
+to a file called colvar:
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
+PRINT ARG=q1.* FILE=colvar
+```
+
+The command below could be used to measure the Q1 parameters that describe the arrangement of chlorine ions around the
+sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
+with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q1 parameter is calculated and output to a
+file called colvar
+
+```plumed
+q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
+PRINT ARG=q1.mean FILE=colvar
+```
+
+If you simply want to examine the values of the Q1 parameters for each of the atoms in your system you can do so by exploiting the
+command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
+called q1.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
+atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q1 parameter, columns
+6-12 will contain the real parts of the director of the $q_{1m}$ vector while columns 12-19 will contain the imaginary parts of this director.
+
+```plumed
+q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
+DUMPATOMS ATOMS=q1 ARG=q1 FILE=q1.xyz
+```
 
 */
 //+ENDPLUMEDOC
@@ -46,71 +103,63 @@ Calculate 1st order Steinhardt parameters
 Calculate 3rd order Steinhardt parameters.
 
 The 3rd order Steinhardt parameters allow us to measure the degree to which the first coordination shell
-around an atom is ordered.  The Steinhardt parameter for atom, \f$i\f$ is complex vector whose components are
+around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex vector whose components are
 calculated using the following formula:
 
-\f[
+$$
 q_{3m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$Y_{3m}\f$ is one of the 3rd order spherical harmonics so \f$m\f$ is a number that runs from \f$-3\f$ to
-\f$+3\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between
-atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that it the function is equal to one
-when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
+where $Y_{3m}$ is one of the 3rd order spherical harmonics so $m$ is a number that runs from $-3$ to
+$+3$.  The function $\sigma( r_{ij} )$ is a switching function that acts on the distance between
+atoms $i$ and $j$.  The parameters of this function should be set so that it the function is equal to one
+when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
 
-The Steinhardt parameters can be used to measure the degree of order in the system in a variety of different ways.  The
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html), the Steinhardt parameters can
+be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_3(i) = \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
-\f]
+$$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, when
-the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with this colvar it is the distribution of these normed quantities
-that is investigated.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
+the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
+that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
 
-Other measures of order can be taken by averaging the components of the individual \f$q_3\f$ vectors individually or by taking dot products of
-the \f$q_{3}\f$ vectors on adjacent atoms.  More information on these variables can be found in the documentation for \ref LOCAL_Q3,
-\ref LOCAL_AVERAGE and \ref NLINKS.
-
-\par Examples
-
-The following command calculates the average Q3 parameter for the 64 atoms in a box of Lennard Jones and prints this
-quantity to a file called colvar:
-
-\plumedfile
-Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q3
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q3.mean FILE=colvar
-\endplumedfile
+```
 
-The following command calculates the histogram of Q3 parameters for the 64 atoms in a box of Lennard Jones and prints these
-quantities to a file called colvar:
+Another similar command is provided below. This time the histogram of Q3 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
+to a file called colvar:
 
-\plumedfile
-Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=q3
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
 PRINT ARG=q3.* FILE=colvar
-\endplumedfile
+```
 
-The following command could be used to measure the Q3 parameters that describe the arrangement of chlorine ions around the
+The command below could be used to measure the Q3 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
-with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q3 parameter is calculated and output to a
+with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q3 parameter is calculated and output to a
 file called colvar
 
-\plumedfile
-Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q3
+```plumed
+q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q3.mean FILE=colvar
-\endplumedfile
+```
 
 If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the
-command \ref DUMPATOMS as shown in the example below.  The following output file will output a file in an extended xyz format
+command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q3.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q3 parameter, columns
-6-12 will contain the real parts of the director of the \f$q_{3m}\f$ vector while columns 12-19 will contain the imaginary parts of this director.
+6-12 will contain the real parts of the director of the $q_{3m}$ vector while columns 12-19 will contain the imaginary parts of this director.
 
-\plumedfile
+```plumed
 q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q3 ARG=q3_anorm FILE=q3.xyz
-\endplumedfile
+DUMPATOMS ATOMS=q3 ARG=q3 FILE=q3.xyz
+```
 
 */
 //+ENDPLUMEDOC
@@ -119,72 +168,64 @@ DUMPATOMS ATOMS=q3 ARG=q3_anorm FILE=q3.xyz
 /*
 Calculate fourth order Steinhardt parameters.
 
-The fourth order Steinhardt parameters allow us to measure the degree to which the first coordination shell
-around an atom is ordered.  The Steinhardt parameter for atom, \f$i\f$ is complex vector whose components are
+The 4th order Steinhardt parameters allow us to measure the degree to which the first coordination shell
+around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex vector whose components are
 calculated using the following formula:
 
-\f[
+$$
 q_{4m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{4m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$Y_{4m}\f$ is one of the fourth order spherical harmonics so \f$m\f$ is a number that runs from \f$-4\f$ to
-\f$+4\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between
-atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that it the function is equal to one
-when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
+where $Y_{4m}$ is one of the 4th order spherical harmonics so $m$ is a number that runs from $-4$ to
+$+4$.  The function $\sigma( r_{ij} )$ is a switching function that acts on the distance between
+atoms $i$ and $j$.  The parameters of this function should be set so that it the function is equal to one
+when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
 
-The Steinhardt parameters can be used to measure the degree of order in the system in a variety of different ways.  The
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html), the Steinhardt parameters can
+be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_4(i) = \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
-\f]
+$$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, when
-the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with this colvar it is the distribution of these normed quantities
-that is investigated.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
+the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
+that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
 
-Other measures of order can be taken by averaging the components of the individual \f$q_4\f$ vectors individually or by taking dot products of
-the \f$q_{4}\f$ vectors on adjacent atoms.  More information on these variables can be found in the documentation for \ref LOCAL_Q4,
-\ref LOCAL_AVERAGE and \ref NLINKS.
-
-\par Examples
-
-The following command calculates the average Q4 parameter for the 64 atoms in a box of Lennard Jones and prints this
-quantity to a file called colvar:
-
-\plumedfile
-Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q4
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q4.mean FILE=colvar
-\endplumedfile
+```
 
-The following command calculates the histogram of Q4 parameters for the 64 atoms in a box of Lennard Jones and prints these
-quantities to a file called colvar:
+Another similar command is provided below. This time the histogram of Q4 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
+to a file called colvar:
 
-\plumedfile
-Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=q4
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
 PRINT ARG=q4.* FILE=colvar
-\endplumedfile
+```
 
-The following command could be used to measure the Q4 parameters that describe the arrangement of chlorine ions around the
+The command below could be used to measure the Q4 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
-with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q4 parameter is calculated and output to a
+with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q4 parameter is calculated and output to a
 file called colvar
 
-\plumedfile
-Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q4
+```plumed
+q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q4.mean FILE=colvar
-\endplumedfile
+```
 
 If you simply want to examine the values of the Q4 parameters for each of the atoms in your system you can do so by exploiting the
-command \ref DUMPATOMS as shown in the example below.  The following output file will output a file in an extended xyz format
-called q$.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
+command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
+called q4.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q4 parameter, columns
-6-15 will contain the real parts of the director of the \f$q_{6m}\f$ vector while columns 15-24 will contain the imaginary parts of this director.
+6-12 will contain the real parts of the director of the $q_{4m}$ vector while columns 12-19 will contain the imaginary parts of this director.
 
-\plumedfile
+```plumed
 q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ATOMS=q4 ARG=q4_anorm FILE=q4.xyz
-\endplumedfile
+DUMPATOMS ATOMS=q4 ARG=q4 FILE=q4.xyz
+```
 
 */
 //+ENDPLUMEDOC
@@ -193,72 +234,64 @@ DUMPATOMS ATOMS=q4 ARG=q4_anorm FILE=q4.xyz
 /*
 Calculate sixth order Steinhardt parameters.
 
-The sixth order Steinhardt parameters allow us to measure the degree to which the first coordination shell
-around an atom is ordered.  The Steinhardt parameter for atom, \f$i\f$ is complex vector whose components are
+The 6th order Steinhardt parameters allow us to measure the degree to which the first coordination shell
+around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex vector whose components are
 calculated using the following formula:
 
-\f[
+$$
 q_{6m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
-\f]
+$$
 
-where \f$Y_{6m}\f$ is one of the sixth order spherical harmonics so \f$m\f$ is a number that runs from \f$-6\f$ to
-\f$+6\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between
-atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that it the function is equal to one
-when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
+where $Y_{6m}$ is one of the 6th order spherical harmonics so $m$ is a number that runs from $-6$ to
+$+6$.  The function $\sigma( r_{ij} )$ is a switching function that acts on the distance between
+atoms $i$ and $j$.  The parameters of this function should be set so that it the function is equal to one
+when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
 
-The Steinhardt parameters can be used to measure the degree of order in the system in a variety of different ways.  The
+As discussed on [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html), the Steinhardt parameters can
+be used to measure the degree of order in the system in a variety of different ways.  The
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
-\f[
+$$
 Q_6(i) = \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
-\f]
+$$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, when
-the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with this colvar it is the distribution of these normed quantities
-that is investigated.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
+the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
+that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
 
-Other measures of order can be taken by averaging the components of the individual \f$q_6\f$ vectors individually or by taking dot products of
-the \f$q_{6}\f$ vectors on adjacent atoms.  More information on these variables can be found in the documentation for \ref LOCAL_Q6,
-\ref LOCAL_AVERAGE and \ref NLINKS.
-
-\par Examples
-
-The following command calculates the average Q6 parameter for the 64 atoms in a box of Lennard Jones and prints this
-quantity to a file called colvar:
-
-\plumedfile
-Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q6
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q6.mean FILE=colvar
-\endplumedfile
+```
 
-The following command calculates the histogram of Q6 parameters for the 64 atoms in a box of Lennard Jones and prints these
-quantities to a file called colvar:
+Another similar command is provided below. This time the histogram of Q6 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
+to a file called colvar:
 
-\plumedfile
-Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=q6
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
 PRINT ARG=q6.* FILE=colvar
-\endplumedfile
+```
 
-The following command could be used to measure the Q6 parameters that describe the arrangement of chlorine ions around the
+The command below could be used to measure the Q6 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
-with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q6 parameter is calculated and output to a
+with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q6 parameter is calculated and output to a
 file called colvar
 
-\plumedfile
-Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q6
+```plumed
+q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 PRINT ARG=q6.mean FILE=colvar
-\endplumedfile
+```
 
 If you simply want to examine the values of the Q6 parameters for each of the atoms in your system you can do so by exploiting the
-command \ref DUMPATOMS as shown in the example below.  The following output file will output a file in an extended xyz format
+command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q6.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q6 parameter, columns
-6-19 will contain the real parts of the director of the \f$q_{6m}\f$ vector while columns 20-33 will contain the imaginary parts of this director.
+6-12 will contain the real parts of the director of the $q_{6m}$ vector while columns 12-19 will contain the imaginary parts of this director.
 
-\plumedfile
+```plumed
 q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPATOMS ARG=q6_anorm ATOMS=q6 FILE=q6.xyz
-\endplumedfile
+DUMPATOMS ATOMS=q6 ARG=q6 FILE=q6.xyz
+```
 
 */
 //+ENDPLUMEDOC
