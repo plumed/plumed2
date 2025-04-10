@@ -29,49 +29,52 @@ namespace gridtools {
 /*
 Evaluate the average value of a multicolvar on a grid.
 
-This keyword allows one to construct a phase field representation for a symmetry function from
-an atomistic description.  If each atom has an associated order parameter, \f$\phi_i\f$ then a
-smooth phase field function \f$\phi(r)\f$ can be computed using:
+This shortcut allows one to construct a phase field representation for a symmetry function from
+an atomistic description.  If each atom has an associated order parameter, $\phi_i$ then a
+smooth phase field function $\phi(r)$ can be computed using:
 
-\f[
+$$
 \phi(\mathbf{r}) = \frac{\sum_i K(\mathbf{r}-\mathbf{r}_i) \phi_i }{ \sum_i K(\mathbf{r} - \mathbf{r}_i )}
-\f]
+$$
 
-where \f$\mathbf{r}_i\f$ is the position of atom \f$i\f$, the sums run over all the atoms input
-and \f$K(\mathbf{r} - \mathbf{r}_i)\f$ is one of the \ref kernelfunctions implemented in plumed.
+where $\mathbf{r}_i$ is the position of atom $i$, the sums run over all the atoms input
+and $K(\mathbf{r} - \mathbf{r}_i)$ is a Gaussian function.
 This action calculates the above function on a grid, which can then be used in the input to further
 actions.
 
-\par Examples
+## Examples
 
-The following example shows perhaps the simplest way in which this action can be used.  The following
+The following example shows perhaps the simplest way that a phase field can be computed.  The following
 input computes the density of atoms at each point on the grid and outputs this quantity to a file.  In
-other words this input instructs plumed to calculate \f$\rho(\mathbf{r}) = \sum_i K(\mathbf{r} - \mathbf{r}_i )\f$
+other words this input instructs plumed to calculate $\rho(\mathbf{r}) = \sum_i K(\mathbf{r} - \mathbf{r}_i )$
 
-\plumedfile
-dens: DENSITY SPECIES=1-100
-grid: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=xyz NBINS=100,100,100 BANDWIDTH=0.05,0.05,0.05 STRIDE=1
-DUMPGRID GRID=grid STRIDE=500 FILE=density
-\endplumedfile
+```plumed
+dens: DISTANCES ATOMS=1-100 ORIGIN=1 COMPONENTS 
+kde: KDE ARG=dens.x,dens.y,dens.z GRID_BIN=100,100,100 BANDWIDTH=0.05,0.05,0.05
+grid: ACCUMULATE ARG=kde STRIDE=10 
+DUMPGRID ARG=grid STRIDE=500 FILE=density
+```
 
-In the above example density is added to the grid on every step.  The PRINT_GRID instruction thus tells PLUMED to
-output the average density at each point on the grid every 500 steps of simulation.  Notice that the that grid output
-on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyze these two blocks
-of data separately you must use the CLEAR flag.
+In the above example density is added to the grid on every step.  The DUMPGRID instruction thus tells PLUMED to
+output the average density at each point on the grid every 500 steps of simulation.  
 
-This second example computes an order parameter (in this case \ref FCCUBIC) and constructs a phase field model
+Understanding the commands in the input above provides a window into understand how MULTICOLVARDENS works. 
+This second example computes an order parameter (in this case [FCCUBIC](FCCUBIC.md)) and constructs a phase field model
 for this order parameter using the equation above.
 
-\plumedfile
+```plumed
 fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27
 dens: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,28 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 CLEAR=1
-DUMPCUBE GRID=dens STRIDE=1 FILE=dens.cube
-\endplumedfile
+DUMPCUBE ARG=dens STRIDE=1 FILE=dens.cube
+```
 
 In this example the phase field model is computed and output to a file on every step of the simulation.  Furthermore,
 because the CLEAR=1 keyword is set on the MULTICOLVARDENS line each Gaussian cube file output is a phase field
 model for a particular trajectory frame. The average value accumulated thus far is cleared at the start of every single
 timestep and there is no averaging over trajectory frames in this case.
+
+If you expand the shortcuts in the input above you can see that the average phase field is calculated using [CUSTOM](CUSTOM.md)
+commands.  We hope that this makes it easy to understand the meaning of the phase field that is computed.
 
 */
 //+ENDPLUMEDOC

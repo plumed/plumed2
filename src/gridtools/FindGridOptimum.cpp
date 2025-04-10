@@ -29,7 +29,37 @@
 /*
 Find the point with the lowest value of the function on the grid
 
-\par Examples
+This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input 
+function at its lowest point. The other scalars returned are the coordinates for which the function takes this particular value. 
+
+As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value. 
+If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a 
+minimum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is lowest will be used as an initial coordinate
+for the optimisation.
+
+To print out the location on the grid where the function is minimised and the value of the function at that point you can use an input like the one shown below:
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+ff: CONVERT_TO_FES ARG=hA1 TEMP=300
+min: FIND_GRID_MINIMUM ARG=ff
+PRINT ARG=min.x_opt,min.optval STRIDE=0
+```
+
+Notice that we set STRIDE=0 in the PRINT command here so the position of the minimum is only output once at the end of the simulation.
+
+A more common usage of this action is illustrated in the following input, which demonstrates how you can use FIND_GRID_MINIMUM to shift a free energy surface so that the minimum in the output
+fes has a value of zero.
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+ff: CONVERT_TO_FES ARG=hA1 TEMP=300
+min: FIND_GRID_MINIMUM ARG=ff
+sff: CUSTOM ARG=ff,min.optval FUNC=x+y PERIODIC=NO
+DUMPGRID ARG=sff FILE=fes.dat
+```
 
 */
 //+ENDPLUMEDOC
@@ -38,7 +68,24 @@ Find the point with the lowest value of the function on the grid
 /*
 Find the point with the highest value of the function on the grid
 
-\par Examples
+This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input 
+function at its highest point. The other scalars returned are the coordinates for which the function takes this particular value. 
+
+As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its highest value. 
+If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a 
+maximum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is highest will be used as an initial coordinate
+for the optimisation.
+
+To print out the location on the grid where the function is maximised and the value of the function at that point you can use an input like the one shown below:
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+max: FIND_GRID_MAXImuM ARG=hA1
+PRINT ARG=max.x_opt,max.optval STRIDE=0
+```
+
+Notice that we set STRIDE=0 in the PRINT command here so the position of the maximum is only output once at the end of the simulation.
 
 */
 //+ENDPLUMEDOC
@@ -96,6 +143,7 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   std::vector<unsigned> shape(0);
   for(unsigned i=0; i<argn.size(); ++i) {
     addComponent( argn[i] + "_opt", shape );
+    componentIsNotPeriodic( argn[i] + "_opt" );
   }
   addComponent( "optval", shape );
   componentIsNotPeriodic( "optval" );

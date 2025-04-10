@@ -30,7 +30,54 @@
 /*
 Calculate the function stored on the input grid at an arbitrary point
 
-\par Examples
+This action can be used to evaluate a function that is stored on a grid at an arbitrary point in space via interpolation. For example, the 
+following input illustrates how you can use this action to evaulate the square of the distance between atom 1 and atom 2
+
+```plumed
+d2: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 GRID_BIN=20 FUNC=d1*d1 VAR=d1 PERIODIC=NO
+d1: DISTANCE ATOMS=1,2
+ff: EVALUATE_FUNCTION_FROM_GRID GRID=d2 
+PRINT ARG=d1,ff FILE=colvar
+```
+
+You can perform the same calculation using [CUSTOM](CUSTOM.md), which will do the calculation exactly and not perform any interpolation. However,
+if for some reaon you only have the values of the function at a grid of point EVALUATE_FUNCTION_FROM_GRID may be a useful alternative as you can 
+use [REFERENCE_GRID](REFERENCE_GRID.md) to read in the values of the function at your grid of point from a file as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/gridtools/rt-weights-integral/kde.grid
+
+ff: REFERENCE_GRID FILE=regtest/gridtools/rt-weights-integral/kde.grid VALUE=h
+aa: ANGLE ATOMS=1,2,3
+tt: TORSION ATOMS=1,2,3,4
+val: EVALUATE_FUNCTION_FROM_GRID GRID=ff
+PRINT ARG=aa,tt,val FILE=colvar
+```
+
+Notice that the ARG command is not used with the EVALUATE_FUNCTION_FROM_GRID command to specify the labels of the input arguments at which you 
+would like the function to be evaluated.  Instead, yaou only specify the GRID that is being used as input for the interpolation.  The reason that it is not 
+necessary to specify the arguments is that PLUMED stores labels for each coordinate axis of a grid.  These labels appear at the top of the 
+columns that contain the grid points when you output grids using [DUMPGRID](DUMPGRID.md). Furthermore, in the first of the inputs above the labels of these 
+input arguments are specified using the VAR option for [REFERENCE_GRID](REFERENCE_GRID.md). Meanwhile, for the second  the titles of the columsn are 
+read in from the input file.  Consequently, PLUMED searches for a value named `d1` when evaluating `ff` in the first input.  For the second input it searches
+for values labelled `aa` and `tt` and evaluates `val` from them.   
+
+Notice that input the inputs above the input values are scalars.  The output from EVALUATE_FUNCTION_FROM_GRID is thus also a scalar.  If, however, one uses an 
+input such as the one shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/gridtools/rt-weights-integral/kde.grid
+
+ff: REFERENCE_GRID FILE=regtest/gridtools/rt-weights-integral/kde.grid VALUE=h
+aa: ANGLE ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+tt: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+val: EVALUATE_FUNCTION_FROM_GRID GRID=ff
+PRINT ARG=aa,tt,val FILE=colvar
+```
+
+The value, `val`, that is output by the EVALUATE_FUNCTION_FROM_GRID action will be a vector.  In other words, in the same way you can use scalars, vectors, matrices and even 
+functions on grids in the input to the [CUSTOM](CUSTOM.md) command you can also use scalars, vectors, matrices and functions on grid in the input to the EVALUATE_FUNCTION_FROM_GRID
+command.
 
 */
 //+ENDPLUMEDOC

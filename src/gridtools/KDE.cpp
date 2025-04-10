@@ -32,8 +32,82 @@
 /*
 Create a histogram from the input scalar/vector/matrix using KDE
 
-\par Examples
+This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation]().
+The input arguments must all have the same rank and size but you can use a scalar, vector or matrix in input.  The distribution
+of this quantity on a grid is then computed using kernel density estimation.
 
+The following example demonstrates how this action can be used with a scalar as input:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+This input outputs a different file on every time step. These files contain a function stored on a grid.  The function output in this case
+consists of a single Gaussian with $\sigma=0.2$ that is centered on the instantaneous value of the distance between atoms 1 and 2.  Obviously,
+you are unlikely to use an input like the one above. The more usual thing to do would be to accumulate the histogram over the course of a 
+few trajectory frames using the [ACCUMULATE](ACCUMULATE.md) command as has been done in the input below, which estimates a histogram as a function
+of two collective variables:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1,d2 GRID_MIN=0.0,0.0 GRID_MAX=1.0,1.0 GRID_BIN=100,100 BANDWIDTH=0.2,0.2
+histo: ACCUMULATE ARG=kde STRIDE=1
+DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
+```
+
+Notice, that you can also achieve something similar by using the [HISTOGRAM](HISTOGRAM.md) shortcut.
+
+## Working with vectors and scalars
+
+If the input to your KDE action is a set of scalars it appears odd to separate the process of computing the KDE from the process of accumulating the histogram. However, if 
+you are using vectors as in the example below, this division can be helpful.
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+```
+
+In the papea cited in the bibliography below, the [KL_ENTROPY](KL_ENTROPY.md) between the instantaneous distribution of CVs and a reference distribution was introduced
+as a collective variable. As is detailed in the documentation for that action, the ability to calculate the instaneous histogram from an input vector is essential to 
+reproducing these calculations.
+
+Notice that you can also use a one or multiple matrices in the input for a KDE object.  The example below uses the angles between the z axis and set of bonds aroud two 
+atoms:
+
+```plumed
+d1: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3-10 COMPONENTS
+phi: CUSTOM ARG=d1.z,d1.w FUNC=acos(x/y) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi GRID_BIN=200 BANDWIDTH=0.1
+```
+
+## Using different weights
+
+In all the inputs above the kernels that are added to the grid on each step are Gaussians with that are normalised so that their integral over all space is one. If you want your 
+Gaussians to have a particular height you can use the HEIGHT keyword as illustrated below:
+
+```plumed
+d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
+phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi HEIGHTS=d1.w GRID_BIN=200 BANDWIDTH=0.1
+```
+
+As indicated above, the HEIGHTS keyword should be passed a Value that has the same rank and size as the arguments that are passed using the ARG keyword. Each of the Gaussian kernels 
+that are added to the grid in this case have a value equal to the weight at the maximum of the function.
+
+Notice that you can also use the VOLUMES keyword in a similar way as shown below:
+
+```plumed
+d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
+phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi VOLUMES=d1.w GRID_BIN=200 BANDWIDTH=0.1
+```
+
+Now, however, the integral of the Gaussians over all space are equal to the elements of d1.w.
 
 */
 //+ENDPLUMEDOC
@@ -42,8 +116,23 @@ Create a histogram from the input scalar/vector/matrix using KDE
 /*
 Create a histogram from the input scalar/vector/matrix using SPHERICAL_KDE
 
-\par Examples
+This action operates similarly to [KDE](KDE.md) but it is designed to be used for investigating [directional statistics](). 
+It is particularly useful if you are looking at the distribution of bond vectors as illustrated in the input below:
 
+```plumed
+# Calculate all the bond vectors
+d1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+# Normalise the bond vectors
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+d1x: CUSTOM ARG=d1.x,mag FUNC=x/y PERIODIC=NO
+d1y: CUSTOM ARG=d1.y,mag FUNC=x/y PERIODIC=NO
+d1z: CUSTOM ARG=d1.z,mag FUNC=x/y PERIODIC=NO
+# And construct the KDE
+kde: SPHERICAL_KDE ARG=d1x,d1y,d1z HEIGHTS=d1.w CONCENTRATION=100 GRID_BIN=144 
+```
+
+Each bond vector here contributes a [Fisher von-Mises kernel](https://en.wikipedia.org/wiki/Von_Mises–Fisher_distribution) to the spherical grid.  This spherical grid is constructed
+using a [Fibonnacci sphere algorithm](https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere) so the number of specified using the GRID_BIN keyword must be a Fibonacci number.
 
 */
 //+ENDPLUMEDOC

@@ -30,8 +30,8 @@
 /*
 Calculate the sum of the arguments
 
-This action takes a single vector or a single matrix in input. The output is a scalar
-that contains the sum of all the elements in the input vector/matrix. This action is
+This action takes a single vector, a single matrix or a single grid in input. The output is a scalar
+that contains the sum of all the elements in the input vector/matrix/grid. This action is
 very useful if you want to do calculations like the one illustrated in this example:
 
 ```plumed
@@ -50,6 +50,9 @@ c: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1}
 s: SUM ARG=c PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
+
+If you want to sum all the elements in a grid you can. However, if the input is a function on a grid 
+it is more likely that you will want to compute the integral using [INTEGRATE_GRID](INTEGRATE_GRID.md). 
 
 */
 //+ENDPLUMEDOC
