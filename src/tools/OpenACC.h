@@ -23,6 +23,9 @@
 #define __PLUMED_tools_OpenACC_h
 
 #include <vector>
+#ifdef __PLUMED_HAS_OPENACC
+#include <openacc.h>
+#endif //__PLUMED_HAS_OPENACC
 
 namespace PLMD {
 
@@ -88,7 +91,67 @@ public:
     m.removeFromACCDevice();
   }
 };
+#ifdef __PLUMED_HAS_OPENACC
+///C++ wrapper around acc_malloc, allocates sizeof(T) bytes and return a typed pointer
+template <typename T> T *myAccMalloc(size_t size) {
+  return reinterpret_cast<T *>(acc_malloc(size * sizeof(T)));
+}
 
+///C++ wrapper around acc_free
+template <typename T> void myAccFree(T *ptr) {
+  acc_free(ptr);
+}
+
+///Memory manager for openacc
+template <typename T> class memoryManager {
+  /// the number of T element stored by the pointer
+  size_t size_ {0};
+  /// the device address, not the host address!!!
+  void *ptr_ {nullptr};
+public:
+  /// @brief allocate the memory on the device, and store the pointer
+  /// @param sz the number of T that you want to allocate
+  memoryManager(size_t sz)
+    : size_(sz),
+      ptr_{acc_malloc(size_ * sizeof(T))} {}
+  /// @brief allocates and copies to the memory of the device the given vector
+  memoryManager(const std::vector<T>& data)
+    : size_(data.size()),
+      ptr_{acc_malloc(size_ * sizeof(T))} {
+    copyToDevice(data.data());
+  }
+  /// frees the stored memory
+  ~memoryManager() {
+    acc_free(ptr_);
+  }
+  /// @brief gets the device addres
+  /// @return gets the device addres, typed
+  constexpr T *devicePtr() const {
+    return reinterpret_cast<T *>(ptr_);
+  }
+  /// return the current number of elements stored on the device
+  constexpr size_t size() const {
+    return size_;
+  }
+  /// @brief Copies the data from the address to the device
+  void copyToDevice(T *data) {
+    acc_memcpy_to_device(ptr_, data, sizeof(T) * size_);
+  }
+  /// @brief Copies the data from the address to the device
+  void copyToDevice(T const *data) {
+    acc_memcpy_to_device(ptr_, const_cast<T *>(data), sizeof(T) * size_);
+  }
+  /// @brief copies the data from the device to the host
+  void copyFromDevice(T *data) {
+    acc_memcpy_from_device(data, ptr_, sizeof(T) * size_);
+  }
+};
+/// @brief specialization for generic memory, useful when calling cuda libraries
+template <> inline memoryManager<void>::memoryManager(size_t sz) : size_{sz}, ptr_{acc_malloc(size_)} {}
+template <> inline void *memoryManager<void>::devicePtr() const {
+  return ptr_;
+}
+#endif //__PLUMED_HAS_OPENACC
 }//namespace OpenACC
 }//namespace PLMD
 
