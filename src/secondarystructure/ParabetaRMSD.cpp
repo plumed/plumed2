@@ -127,10 +127,8 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   bool intra_chain(false), inter_chain(false);
-  std::string seglist;
   std::string style;
   parse("STYLE",style);
-  unsigned jjkk=1;
   if( Tools::caseInSensStringCompare(style, "all") ) {
     intra_chain=true;
     inter_chain=true;
@@ -144,7 +142,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     error( style + " is not a valid directive for the STYLE keyword");
   }
 
-  double strands_cutoff=0.;
+  double strands_cutoff=-1.0;
   parse("STRANDS_CUTOFF",strands_cutoff);
   std::string scutoff_action;
   if( strands_cutoff>0 ) {
@@ -152,6 +150,8 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   }
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
+  std::string seglist;
+  unsigned jjkk=1;
   if( intra_chain ) {
     unsigned nprevious=0;
     std::vector<unsigned> nlist(30);
@@ -328,6 +328,14 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   if( nopbc ) {
     nopbcstr = " NOPBC";
   }
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
+  }
   std::string type;
   parse("TYPE",type);
   std::string lab = getShortcutLabel() + "_low";
@@ -338,38 +346,47 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
+  std::string inputLine =  getShortcutLabel() + "_both:";
+  if( type=="DRMSD" ) {
+    inputLine+=" SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17";
+  } else {
+    inputLine+=" SECONDARY_STRUCTURE_RMSD TYPE=" +type;
+  }
+  inputLine+=" ALIGN_STRANDS " + seglist + structure
+             + " " + atoms + nopbcstr + usegpustr;
 
   if( strands_cutoff>0 ) {
     readInputLine( scutoff_action );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
-    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
-    if( type=="DRMSD" ) {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
-    } else {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-    }
+    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
+                   + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
+    inputLine+=" MASK=" + getShortcutLabel() + "_cut";
+    readInputLine(inputLine);
     if( ltmap.length()>0 ) {
       // Create the lowest line
-      readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );
+      readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1,"
+                     + getShortcutLabel() + "_both.struct-2" );
       // Create the less than object
-      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
+                     + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
       // Multiply by the strands cutoff
-      readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel()
+                     + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
+                     + getShortcutLabel() + "_cut"
+                     " FUNC=x*y PERIODIC=NO");
     }
   } else {
-    if( type=="DRMSD" ) {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_DRMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr );
-    } else {
-      readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-    }
+    readInputLine(inputLine);
     if( ltmap.length()>0 ) {
       // Create the lowest line
-      readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );
+      readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1,"
+                     + getShortcutLabel() + "_both.struct-2" );
       // Create the less than object
       readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
     }
   }
+  // Create the less than object
   if( ltmap.length()>0 ) {
     if( uselessthan ) {
       readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");

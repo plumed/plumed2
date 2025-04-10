@@ -146,11 +146,6 @@ public:
     acc_memcpy_from_device(data, ptr_, sizeof(T) * size_);
   }
 };
-/// @brief specialization for generic memory, useful when calling cuda libraries
-template <> inline memoryManager<void>::memoryManager(size_t sz) : size_{sz}, ptr_{acc_malloc(size_)} {}
-template <> inline void *memoryManager<void>::devicePtr() const {
-  return ptr_;
-}
 #endif //__PLUMED_HAS_OPENACC
 }//namespace OpenACC
 }//namespace PLMD

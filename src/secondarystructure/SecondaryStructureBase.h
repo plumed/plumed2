@@ -40,6 +40,10 @@ class SecondaryStructureBase: public ActionWithVector {
 public:
   using input_type = T;
   using PTM = ParallelTaskManager<SecondaryStructureBase<T>>;
+  static constexpr size_t virialSize=9;
+  static constexpr unsigned customGatherStep=3;
+  static constexpr unsigned customGatherStopBefore=virialSize;
+
 private:
   PTM taskmanager;
 public:
@@ -55,12 +59,22 @@ public:
   }
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static void gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput forces );
+  static void gatherForces_custom( unsigned atomIndex,
+                                   size_t nderivPerComponent,
+                                   size_t ndev_per_task,
+                                   const T& actiondata,
+                                   const ParallelActionsInput& input,
+                                   View<unsigned> partialTaskList,
+                                   double *values,
+                                   double *derivatives,
+                                   View<double> notThreadSafeForces) ;
+
 };
 
 template <class T>
 unsigned SecondaryStructureBase<T>::getNumberOfDerivatives() {
-  return 3*getNumberOfAtoms()+9;
+  return 3*getNumberOfAtoms()+virialSize;
 }
 
 template <class T>
@@ -166,7 +180,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
     error("cannot use this collective variable when using natural units");
   }
 
-  T myinput;
+  input_type myinput;
   parseFlag("NOPBC",myinput.nopbc);
   std::string alignType="";
   if( getName()=="SECONDARY_STRUCTURE_RMSD" ) {
@@ -250,7 +264,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
-  taskmanager.setupParallelTaskManager( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + 9 );
+  taskmanager.setupParallelTaskManager( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + virialSize);//, 3*colvar_atoms[0].size());
   taskmanager.setActionInput( myinput );
 }
 
@@ -279,14 +293,15 @@ void SecondaryStructureBase<T>::getInputData( std::vector<double>& inputdata ) c
 
 template <class T>
 void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  std::vector<Vector> pos( actiondata.natoms );
+  // std::vector<Vector> pos( actiondata.natoms );
+  std::array<Vector,30> pos;
+
   for(unsigned i=0; i<actiondata.natoms; ++i) {
-    unsigned atno = actiondata.colvar_atoms[task_index][i];
+    const unsigned atno = actiondata.colvar_atoms(task_index,i);
     pos[i][0] = input.inputdata[3*atno+0];
     pos[i][1] = input.inputdata[3*atno+1];
     pos[i][2] = input.inputdata[3*atno+2];
   }
-
   // This aligns the two strands if this is required
   if( actiondata.align_strands ) {
     Vector distance=input.pbc->distance( pos[6],pos[21] );
@@ -306,10 +321,12 @@ void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actio
 
   // Create a holder for the derivatives
   const unsigned rs = actiondata.nstructures;
-  ColvarOutput rmsd_output( output.values, 3*pos.size()+9, output.derivatives.data() );
+  ColvarOutput rmsd_output( output.values,
+                            3*pos.size()+virialSize,
+                            output.derivatives.data() );
   // And now calculate the DRMSD
   for(unsigned i=0; i<rs; ++i) {
-    T::calculateDistance( i, input.noderiv, actiondata, pos, rmsd_output );
+    T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
   }
 }
 
@@ -319,24 +336,69 @@ void SecondaryStructureBase<T>::applyNonZeroRankForces( std::vector<double>& out
 }
 
 template <class T>
-void SecondaryStructureBase<T>::gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+void SecondaryStructureBase<T>::gatherForces( unsigned task_index,
+    const T& actiondata,
+    const ParallelActionsInput& input,
+    const ForceInput& fdata,
+    ForceOutput forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned m = 0;
     double ff = fdata.force[i];
     for(unsigned j=0; j<input.nindices_per_task; ++j) {
       std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
       forces.thread_safe[base + 0] += ff*fdata.deriv[i][m];
-      m++;
+      ++m;
       forces.thread_safe[base + 1] += ff*fdata.deriv[i][m];
-      m++;
+      ++m;
       forces.thread_safe[base + 2] += ff*fdata.deriv[i][m];
-      m++;
+      ++m;
     }
-    for(unsigned n=forces.thread_safe.size()-9; n<forces.thread_safe.size(); ++n) {
+
+    for(unsigned n=forces.thread_safe.size()-virialSize; n<forces.thread_safe.size(); ++n) {
       forces.thread_safe[n] += ff*fdata.deriv[i][m];
-      m++;
+      ++m;
     }
   }
+}
+
+template <class T>
+void SecondaryStructureBase<T>:: gatherForces_custom( unsigned atomIndex,
+    size_t nderivPerComponent,
+    size_t ndev_per_task,
+    const T& actiondata,
+    const ParallelActionsInput& input,
+    View<unsigned> partialTaskList,
+    double *values,
+    double *derivatives,
+    View<double> notThreadSafeForces) {
+  double tmp0=0.0;
+  double tmp1=0.0;
+  double tmp2=0.0;
+#pragma acc loop seq
+  for(unsigned t=0; t<partialTaskList.size(); ++t) {
+    std::size_t task_index = partialTaskList[t];
+    auto fdata = ForceInput { input.ncomponents,
+                              values+input.ncomponents*task_index,
+                              nderivPerComponent,
+                              derivatives+ndev_per_task*t};
+
+    for(unsigned taskIT=0; taskIT<input.nindices_per_task; ++taskIT) {
+      std::size_t base = 3*actiondata.colvar_atoms[task_index][taskIT];
+      if(atomIndex == base) {
+        unsigned m = taskIT*3;
+
+        for(unsigned c=0; c<input.ncomponents; ++c) {
+          double ff = fdata.force[c];
+          tmp0 += ff*fdata.deriv[c][m];
+          tmp1 += ff*fdata.deriv[c][m+1];
+          tmp2 += ff*fdata.deriv[c][m+2];
+        }
+      }
+    }
+  }
+  notThreadSafeForces[atomIndex] = tmp0;
+  notThreadSafeForces[atomIndex+1] = tmp1;
+  notThreadSafeForces[atomIndex+2] = tmp2;
 }
 
 }
