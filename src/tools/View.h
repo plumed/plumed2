@@ -57,15 +57,22 @@ PLMD::View<PLMD::VecorGeneric<3>,3> vd(v.data());
 */
 template <typename T, std::size_t N = helpers::dynamic_extent>
 class View {
-  T *ptr_;
+public:
+  using element_type    = T;
+  using pointer         = element_type*;
+  using iterator        = pointer;
+  using const_iterator  = const pointer;
+  using reference       = element_type&;
+  using const_reference = const element_type&;
+private:
+  pointer ptr_;
   std::size_t size_{N};
 public:
-
   //constructor for fixed size View
   template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
-  explicit View(T* p) noexcept: ptr_(p) {}
+  explicit View(pointer p) noexcept: ptr_(p) {}
   //generic constructor, works also for non fixed view (this might change)
-  View(T* p, std::size_t NN)  noexcept: ptr_(p), size_(NN) {}
+  View(pointer p, std::size_t NN)  noexcept: ptr_(p), size_(NN) {}
   View(const View&) noexcept =default;
   View(View&&) noexcept =default;
   View&operator =(const View&) noexcept =default;
@@ -76,18 +83,82 @@ public:
   }
 
   ///returns the reference i-th element
-  constexpr T & operator[](size_t i) noexcept {
+  constexpr reference operator[](size_t i) noexcept {
     return ptr_[i];
   }
 
   ///returns the reference i-th element
-  constexpr const T & operator[](size_t i) const  noexcept {
+  constexpr const_reference operator[](size_t i) const  noexcept {
     return ptr_[i];
   }
 
   ///return the pointer to the data
-  constexpr T* data() const noexcept {
+  constexpr pointer data() const noexcept {
     return ptr_;
+  }
+
+  ///return a subview on consecutive elements
+  constexpr View<element_type,helpers::dynamic_extent> subview(size_t offset,
+      size_t count=helpers::dynamic_extent) const {
+    /// @TODO: enforce these or accept the risk of undefined behaviour in exchange for performance
+    // assert(offset <= size(), "subview: offset out of range");
+    // if (count != helpers::dynamic_extent) {
+    //   assert(count <= (size()-offset), "subview: count out of range");
+    // }
+    return  {data() + offset, count != helpers::dynamic_extent ? count : size() - offset};
+  }
+
+///return a subview on consecutive elements
+  template<size_t Offset, size_t Count=helpers::dynamic_extent>
+  constexpr auto subview() const {
+    //I am more or less implementing the subspan form the std
+    constexpr size_t FinalExtent =
+      (Count != helpers::dynamic_extent)
+      ? Count
+      : (N != helpers::dynamic_extent
+         ? N - Offset
+         : helpers::dynamic_extent);
+    static_assert(Offset <= N, "subview: offset out of range");
+    if constexpr(Count != helpers::dynamic_extent) {
+      static_assert(Count <= (N-Offset), "subview: count out of range");
+    }
+    return  View<T,FinalExtent> {data() + Offset, Count != helpers::dynamic_extent ? Count : size() - Offset};
+  }
+
+  ///return a subview of specific size consecutive elements
+  template<size_t Count>
+  constexpr auto subview_n(size_t offset) const {
+    /// @TODO: enforce these or accept the risk of undefined behaviour in exchange for performance
+    // assert(offset <= size(), "subview: offset out of range");
+    // if (count != helpers::dynamic_extent) {
+    //   assert(count <= (size()-offset), "subview: count out of range");
+    // }
+    static_assert(Count <= N, "subview: count out of range");
+    return  View<element_type,Count> {data() + offset};
+  }
+
+  constexpr iterator begin() noexcept {
+    return ptr_;
+  }
+
+  constexpr const_iterator begin() const noexcept {
+    return ptr_;
+  }
+
+  constexpr const_iterator cbegin() const noexcept {
+    return ptr_;
+  }
+
+  constexpr iterator end() noexcept {
+    return ptr_+size_;
+  }
+
+  constexpr const_iterator end() const noexcept {
+    return ptr_+size_;
+  }
+
+  constexpr const_iterator cend() const noexcept {
+    return ptr_+size_;
   }
 
 //sadly this do not seems to work
@@ -108,7 +179,14 @@ public:
     return *this;
   }
 
-  View<T,N> operator*=( const double& v ) {
+  View<T,3>& operator-=( const VectorGeneric<3>& v ) {
+    for(unsigned i=0; i<3; ++i) {
+      ptr_[i] -= v[i];
+    }
+    return *this;
+  }
+
+  View<T,N> operator*=( double v ) {
     for(unsigned i=0; i<size_; ++i) {
       ptr_[i] *= v;
     }
