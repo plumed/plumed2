@@ -1,0 +1,13 @@
+type=make
+
+#--ixyz
+extra_files="../../trajectories/trajectory.xyz"
+#--igro
+extra_files="$extra_files ../../trajectories/grofiles/traj_10dec.gro"
+#--idlp4
+extra_files="$extra_files ../../trajectories/dlp4/HISTORY"
+#--ixtc
+extra_files="$extra_files ../../trajectories/molfile_plugin/traj.xtc "
+#--itrr
+extra_files="$extra_files ../../trajectories/test_traj.trr"
+#extra_files="$extra_files ../../trajectories/average.pdb"

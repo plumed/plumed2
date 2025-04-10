@@ -642,7 +642,7 @@ class molfileParser final:  public fileParser {
   molfile_timestep_t ts_in;
   std::string trajectoryFile;
   std::string trajectory_fmt_str;
-//The first call to ts_in_coords.data() is UB if ts_in_coords is empty;
+  //Initializing ts_in_coords should prevent that ts_in_coords.data() results in UB (and passes codecheck)
   std::vector<float> ts_in_coords{0.0f,0.0f,0.0f};
   struct molfile_deleter {
     molfile::molfile_plugin_t *api=NULL;
@@ -729,10 +729,15 @@ public:
     ts_in.velocities=NULL;
     ts_in.A=-1; // we use this to check whether cell is provided or not
     trajectory_fmt_str=std::string(fmt);
+    bool found=false;
     for(unsigned i=0; i<molFilePlugins::get().plugins.size(); ++i) {
       if(fmt == molFilePlugins::get().plugins[i]->name) {
+        found=true;
         api = molFilePlugins::get().plugins[i];
       }
+    }
+    if(!found) {
+      return "trajectory format "+trajectory_fmt_str+" is not supported by the molfile plugin";
     }
     std::unique_ptr<std::lock_guard<std::mutex>> lck;
     if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {

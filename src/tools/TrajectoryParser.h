@@ -63,34 +63,30 @@ public:
   //Driver with filename ="-"
   std::optional<std::string> init(std::string_view fmt,FILE* fileHandle);
 
-  std::optional<std::string> readHeader(
-    long long int &step,
-    double &timeStep
-  );
-  std::optional<std::string> readHeader(
-    long long int &step,
-    float &timeStep
-  );
-  std::optional<std::string> readAtoms(    int stride,
-      bool dont_read_pbc,
-      bool debug_pd,
-      int pd_start,
-      int pd_nlocal,
-      long long int &step,
-      double* masses,
-      double* charges,
-      double* coordinates,
-      double* cell );
-  std::optional<std::string> readAtoms(    int stride,
-      bool dont_read_pbc,
-      bool debug_pd,
-      int pd_start,
-      int pd_nlocal,
-      long long int &step,
-      float* masses,
-      float* charges,
-      float* coordinates,
-      float* cell );
+  std::optional<std::string> readHeader(long long int &step,
+                                        double &timeStep);
+  std::optional<std::string> readHeader(long long int &step,
+                                        float &timeStep);
+  std::optional<std::string> readAtoms(int stride,
+                                       bool dont_read_pbc,
+                                       bool debug_pd,
+                                       int pd_start,
+                                       int pd_nlocal,
+                                       long long int &step,
+                                       double* masses,
+                                       double* charges,
+                                       double* coordinates,
+                                       double* cell );
+  std::optional<std::string> readAtoms(int stride,
+                                       bool dont_read_pbc,
+                                       bool debug_pd,
+                                       int pd_start,
+                                       int pd_nlocal,
+                                       long long int &step,
+                                       float* masses,
+                                       float* charges,
+                                       float* coordinates,
+                                       float* cell );
   std::optional<std::string> readFrame(int stride,
                                        bool dont_read_pbc,
                                        bool debug_pd,
