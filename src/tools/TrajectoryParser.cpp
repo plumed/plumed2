@@ -62,15 +62,17 @@ private:
   molFilePlugins() {};
 };
 static int register_cb(void *v, vmdplugin_t *p) {
-// const char *key = p->name;
   const auto ret = molFilePlugins::get().pluginmap.insert ( std::pair<std::string,unsigned>(
                      std::string(p->name),
                      molFilePlugins::get().plugins.size()) );
+
   if (ret.second) {
     molFilePlugins::get().plugins.push_back(reinterpret_cast<molfile_plugin_t *>(p));
-    // std::cerr<<"MOLFILE: loading plugin "<<key<<" number "<<molFilePlugins::get().plugins.size()-1<<std::endl;
+#ifdef PLUMED_MOLFILE_PLUGIN_DEBUG
+    std::cerr<<"MOLFILE: loading plugin "<<p->name<<" number "<<molFilePlugins::get().plugins.size()-1<<std::endl;
   } else {
-    // std::cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<std::endl;
+    std::cerr<<"MOLFILE: found duplicate plugin for "<<p->name<<" : not inserted "<<std::endl;
+#endif
   }
   return VMDPLUGIN_SUCCESS;
 }
@@ -306,7 +308,10 @@ class dlp4Parser final:public fileParser {
       char dummy[9];
       int idummy;
       double m,c;
-      std::sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
+      auto res=std::sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
+      if (res != 4) {
+        return "cannot read line"+line;
+      }
       masses[i]=real(m);
       charges[i]=real(c);
       if(!Tools::getline(fp,line)) {
@@ -375,7 +380,10 @@ public:
     char xa[9];
     int xb,xc,xd;
     double t;
-    std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
+    auto res = std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
+    if (res!=6) {
+      return "error reading header";
+    }
     timeStep=t;
     return std::nullopt;
   }
@@ -556,12 +564,13 @@ class xdParser final: public fileParser {
     // here we cannot use a std::vector<rvec> since it does not compile.
     // we thus use a std::unique_ptr<rvec[]>
     auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
-    float prec,lambda;
     int ret=xdrfile::exdrOK;
     if constexpr(is == xdType::xtc) {
+      float prec;
       ret=xdrfile::read_xtc(xd.get(),natoms,&localstep,&time,box,pos.get(),&prec);
     }
     if constexpr(is == xdType::trr) {
+      float lambda;
       ret=xdrfile::read_trr(xd.get(),natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
     }
     if(stride==0) {
@@ -631,16 +640,19 @@ class molfileParser final:  public fileParser {
   molfile::molfile_plugin_t *api=NULL;
 
   molfile_timestep_t ts_in;
-  std::vector<float> ts_in_coords;
+  std::string trajectoryFile;
+  std::string trajectory_fmt_str;
+//The first call to ts_in_coords.data() is UB if ts_in_coords is empty;
+  std::vector<float> ts_in_coords{0.0f,0.0f,0.0f};
   struct molfile_deleter {
     molfile::molfile_plugin_t *api=NULL;
-    void operator()(void* h_in) {
-      if(h_in) {
+    void operator()(void* h) {
+      if(h) {
         std::unique_ptr<std::lock_guard<std::mutex>> lck;
         if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {
           lck=Tools::molfile_lock();
         }
-        api->close_file_read(h_in);
+        api->close_file_read(h);
       }
     }
   };
@@ -664,7 +676,6 @@ class molfileParser final:  public fileParser {
         // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
         constexpr real r180=real(180.);
         real cosBC=cos(real(ts_in.alpha)*pi/r180);
-        //double sinBC=std::sin(ts_in.alpha*pi/r180);
         real cosAC=std::cos(real(ts_in.beta)*pi/r180);
         real cosAB=std::cos(real(ts_in.gamma)*pi/r180);
         real sinAB=std::sin(real(ts_in.gamma)*pi/r180);
@@ -705,14 +716,19 @@ class molfileParser final:  public fileParser {
   }
 
 public:
+  molfileParser() {
+    ts_in.coords=NULL;
+    ts_in.velocities=NULL;
+    ts_in.A=-1; // we use this to check whether cell is provided or not
+  }
   std::optional<std::string> init(std::string_view fmt,
                                   std::string_view fname,
                                   int command_line_natoms=-1) override {
-    std::string trajectoryFile = std::string(fname);
+    trajectoryFile = std::string(fname);
     ts_in.coords=ts_in_coords.data();
     ts_in.velocities=NULL;
     ts_in.A=-1; // we use this to check whether cell is provided or not
-    std::string trajectory_fmt_str=std::string(fmt);
+    trajectory_fmt_str=std::string(fmt);
     for(unsigned i=0; i<molFilePlugins::get().plugins.size(); ++i) {
       if(fmt == molFilePlugins::get().plugins[i]->name) {
         api = molFilePlugins::get().plugins[i];

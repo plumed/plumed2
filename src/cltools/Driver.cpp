@@ -207,11 +207,6 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.addFlag("--restart",false,"makes driver behave as if restarting");
   TrajectoryParser::registerKeywords(keys);
-  // keys.add("atoms","--ixyz","the trajectory in xyz format");
-  // keys.add("atoms","--igro","the trajectory in gro format");
-  // keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
-  // keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
-  // keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
   keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
   keys.add("optional","--valuedict-ofile","output a dictionary giving information about each value in the input file");
   keys.add("optional","--length-units","units for length, either as a string or a number");
