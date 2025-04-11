@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+// #ifdef __PLUMED_HAS_OPENACC
+// #define __PLUMED_USE_OPENACC 1
+// #endif //__PLUMED_HAS_OPENACC
 #include "SecondaryStructureBase.h"
 #include "core/ActionRegister.h"
 #include "tools/RMSD.h"
@@ -61,7 +64,16 @@ public:
   bool align_strands;
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms;
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, const std::vector<Vector>& pos, ColvarOutput& output );
+//   void toACCDevice()const {
+// #pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
+//     colvar_atoms.toACCDevice();
+//   }
+//   void removeFromACCDevice() const {
+//     colvar_atoms.removeFromACCDevice();
+// #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
+
+//   }
+  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     natoms = m.natoms;
@@ -97,8 +109,12 @@ void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type
   natoms=structure.size();
 }
 
-void SecondaryStructureRMSDInput::calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, const std::vector<Vector>& pos, ColvarOutput& output ) {
-  std::vector<Vector> myderivs( pos.size() );
+void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
+    bool noderiv,
+    const SecondaryStructureRMSDInput& actiondata,
+    const View<Vector> pos,
+    ColvarOutput& output ) {
+  std::vector<Vector> myderivs( actiondata.natoms );
   output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 
   if( noderiv ) {
