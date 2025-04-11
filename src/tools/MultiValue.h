@@ -43,26 +43,17 @@ private:
   std::vector<double> derivatives;
 /// Matrix asserting which values have derivatives
   std::vector<bool> hasderiv;
-/// Tempory value
-  double tmpval;
 /// Lists of active variables
   std::vector<unsigned> nactive, active_list;
-/// Tempory vector of derivatives (used for calculating quotients
-  std::vector<double> tmpder;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// Are we in this for a call on vectors
-  bool vector_call;
   unsigned nindices, nsplit;
-/// This allows us to store matrix elements
-  unsigned nmatrix_cols;
-  std::vector<double> matrix_row_stash;
   std::vector<double> matrix_force_stash;
-  std::vector<unsigned> matrix_bookeeping;
 /// These are used to store the indices that have derivatives wrt to at least one
 /// of the elements in a matrix
-  std::vector<unsigned> matrix_row_nderivatives;
-  std::vector<std::vector<unsigned> > matrix_row_derivative_indices;
+  unsigned matrix_row_nderivatives;
+  std::vector<unsigned> matrix_row_derivative_indices;
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices;
   std::vector<Vector> tmp_atoms;
@@ -70,8 +61,8 @@ private:
   std::vector<Tensor> tmp_atom_virial;
   std::vector<std::vector<double> > tmp_vectors;
 public:
-  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
-  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
+  MultiValue() : task_index(0), task2_index(0), nderivatives(0), atLeastOneSet(false), nindices(0), nsplit(0), matrix_row_nderivatives(0) {}
+  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& natoms );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
 ///
@@ -99,10 +90,7 @@ public:
   std::vector<std::vector<Vector> >& getFirstAtomDerivativeVector();
   const std::vector<std::vector<Vector> >& getConstFirstAtomDerivativeVector() const ;
   std::vector<Tensor>& getFirstAtomVirialVector();
-  void resizeTemporyVector(const unsigned& n );
   std::vector<double>& getTemporyVector(const unsigned& ind );
-///
-  bool inVectorCall() const ;
 /// Set value numbered
   void setValue( const std::size_t&,  const double& );
 /// Add value numbered
@@ -136,17 +124,14 @@ public:
   unsigned getNumberActive( const std::size_t& ival ) const ;
 ///
   unsigned getActiveIndex( const unsigned& ) const ;
-/// Get the matrix bookeeping array
-  const std::vector<unsigned> & getMatrixBookeeping() const ;
-  void stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val );
-  double getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const ;
 /// Get the bookeeping stuff for the derivatives wrt to rows of matrix
-  void setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind );
-  unsigned getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const ;
-  std::vector<unsigned>& getMatrixRowDerivativeIndices( const unsigned& nmat );
+  void setNumberOfMatrixRowDerivatives( const unsigned& nind );
+  unsigned getNumberOfMatrixRowDerivatives() const ;
+  std::vector<unsigned>& getMatrixRowDerivativeIndices();
+  const std::vector<unsigned>& getMatrixRowDerivativeIndices() const ;
 /// Stash the forces on the matrix
-  void addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f );
-  double getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const ;
+  void addMatrixForce( const unsigned& jind, const double& f );
+  double getStashedMatrixForce( const unsigned& jind ) const ;
 };
 
 inline
@@ -247,12 +232,6 @@ std::size_t MultiValue::getNumberOfIndices() const {
   return nindices;
 }
 
-
-inline
-bool MultiValue::inVectorCall() const {
-  return (matrix_row_nderivatives.size()>0 && vector_call);
-}
-
 inline
 void MultiValue::clearActiveMembers( const std::size_t& ival ) {
   nactive[ival]=0;
@@ -309,57 +288,34 @@ std::vector<Tensor>& MultiValue::getFirstAtomVirialVector() {
 }
 
 inline
-void MultiValue::stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val ) {
-  plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() );
-  matrix_bookeeping[rowstart]++;
-  matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol;
-  matrix_row_stash[ nmatrix_cols*nmat + jcol] = val;
+void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nind ) {
+  plumed_dbg_assert( nind<=matrix_row_derivative_indices.size() );
+  matrix_row_nderivatives=nind;
 }
 
 inline
-double MultiValue::getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const {
-  plumed_dbg_assert( nmatrix_cols*nmat + jcol<matrix_row_stash.size() );
-  return matrix_row_stash[ nmatrix_cols*nmat + jcol ];
+unsigned MultiValue::getNumberOfMatrixRowDerivatives() const {
+  return matrix_row_nderivatives;
 }
 
 inline
-const std::vector<unsigned> & MultiValue::getMatrixBookeeping() const {
-  return matrix_bookeeping;
+std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices() {
+  return matrix_row_derivative_indices;
 }
 
 inline
-void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind ) {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() && nind<=matrix_row_derivative_indices[nmat].size() );
-  matrix_row_nderivatives[nmat]=nind;
+const std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices() const {
+  return matrix_row_derivative_indices;
 }
 
 inline
-unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() );
-  return matrix_row_nderivatives[nmat];
+void MultiValue::addMatrixForce( const unsigned& jind, const double& f ) {
+  matrix_force_stash[jind]+=f;
 }
 
 inline
-std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() );
-  return matrix_row_derivative_indices[nmat];
-}
-
-inline
-void MultiValue::addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f ) {
-  matrix_force_stash[imat*nderivatives + jind]+=f;
-}
-
-inline
-double MultiValue::getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const {
-  return matrix_force_stash[imat*nderivatives + jind];
-}
-
-inline
-void MultiValue::resizeTemporyVector(const unsigned& n ) {
-  if( n>tmp_vectors.size() ) {
-    tmp_vectors.resize(n);
-  }
+double MultiValue::getStashedMatrixForce( const unsigned& jind ) const {
+  return matrix_force_stash[jind];
 }
 
 inline

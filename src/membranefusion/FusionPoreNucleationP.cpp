@@ -21,6 +21,10 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include <cmath>
+#ifdef __PLUMED_HAS_OPENACC
+//there are some issues with nvc++ and the declaration of omp here
+#undef _OPENMP
+#endif
 #ifdef _OPENMP
 #if _OPENMP >= 201307
 #include <omp.h>

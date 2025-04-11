@@ -1,0 +1,52 @@
+Dimension of View<int,4> should be 4: v.size() = 4
+View must access to the element of the array: 
+i = 0, a[i] = 1 1 1, v[i] = 1 1 1
+i = 1, a[i] = 2 2 2, v[i] = 2 2 2
+i = 2, a[i] = 3 3 3, v[i] = 3 3 3
+i = 3, a[i] = 4 4 4, v[i] = 4 4 4
+i = 0, a[i] = 1 1 1, v[i] = 1 1 1
+i = 1, a[i] = 2 2 2, v[i] = 2 2 2
+i = 2, a[i] = 5 5 5, v[i] = 5 5 5
+i = 3, a[i] = 4 4 4, v[i] = 4 4 4
+Dimension of View<int> should be 5: v2.size() = 5
+View must access to the element of the vector: 
+i = 0, b[i] = 9, v2[i] = 9
+i = 1, b[i] = 8, v2[i] = 8
+i = 2, b[i] = 7, v2[i] = 7
+i = 3, b[i] = 6, v2[i] = 6
+i = 4, b[i] = 5, v2[i] = 5
+i = 0, b[i] = 9, v2[i] = 9
+i = 1, b[i] = 8, v2[i] = 8
+i = 2, b[i] = 9, v2[i] = 9
+i = 3, b[i] = 6, v2[i] = 6
+Dimension of View<const int> should be 5: v3.size() = 5
+View must access to the element of the vector: 
+i = 0, b[i] = 9, v3[i] = 9
+i = 1, b[i] = 8, v3[i] = 8
+i = 2, b[i] = 9, v3[i] = 9
+i = 3, b[i] = 6, v3[i] = 6
+i = 4, b[i] = 5, v3[i] = 5
+You can acces the pointer with .data():
+*v3.data() = 9 v3[0] = 9
+and use iterators:
+*it = 9
+*it = 8
+*it = 9
+*it = 6
+*it = 5
+and with modern range based for:
+i = 9
+i = 8
+i = 9
+i = 6
+i = 5
+and have some fun with stl algorithms:
+std::accumulate(v3.begin(), v3.end(), 0) = 37
+std::accumulate(b.begin(), b.end(), 0) = 37
+Original data:
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+Data after the +={1,1,1} to head+3 and -={1,1,1} to head+6, and assign={2,2,2} to head+10:
+0 0 0 1 1 1 -1 -1 -1 0 2 2 2 0 0 0 0 0 0 0 0 0 0 0 
+Data: after the *=2.0 on head+5 (2):
+0 0 0 1 1 -2 2 -1 -1 0 2 2 2 0 0 0 0 0 0 0 0 0 0 0 
+result = -1 2 -1

@@ -130,7 +130,7 @@ SMAC::SMAC(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecs: VSTACK ARG=" + sp_lab + ".x," + sp_lab + ".y," + sp_lab + ".z" );
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_lab + " SWITCH={" + sw_input + "}");
-    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab );
+    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab + " MASK=" + getShortcutLabel() + "_cmap");
   } else if( sp_laba.length()>0 ) {
     std::string sp_labb;
     parse("SPECIESB",sp_labb);
@@ -138,10 +138,10 @@ SMAC::SMAC(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecsb: VSTACK ARG=" + sp_labb + ".x," + sp_labb + ".y," + sp_labb + ".z" );
     readInputLine( getShortcutLabel() + "_vecsbT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecsb" );
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + sp_laba + " GROUPB=" + sp_labb + " SWITCH={" + sw_input + "}");
-    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb );
+    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb + " MASK=" + getShortcutLabel() + "_cmap");
   }
   // Now need the Gaussians
-  std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
+  std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO";
   for(unsigned i=1;; ++i) {
     std::string kstr_inpt, istr;
     Tools::convert( i, istr );
@@ -156,13 +156,13 @@ SMAC::SMAC(const ActionOptions& ao):
     Tools::convert( var, nsig );
     std::string coeff;
     Tools::convert( 1/(nsig*nsig), coeff );
-    readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2");
+    readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO ARG=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2");
     if( words[0]=="GAUSSIAN" ) {
-      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
     } else if( words[0]=="TRIANGULAR" ) {
-      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
     } else {
-      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO MASK=" + getShortcutLabel() + "_cmap FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
     }
     if( i==1 ) {
       kmap_input += " ARG=" + getShortcutLabel() + "_kf" + istr;

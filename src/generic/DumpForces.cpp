@@ -85,7 +85,7 @@ void DumpForces::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.addInputKeyword("compulsory","ARG",Keywords::argType::scalar,"the labels of the values whose forces should be output");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the labels of the values whose forces should be output");
   keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
@@ -112,11 +112,6 @@ DumpForces::DumpForces(const ActionOptions&ao):
   if( getNumberOfArguments()==0 ) {
     error("no arguments have been specified");
   }
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 ) {
-      error("can only use DUMPFORCES to output forces on rank zero objects");
-    }
-  }
   checkRead();
 }
 
@@ -126,7 +121,7 @@ void DumpForces::update() {
   of.printField("time",getTime());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     of.fmtField(fmt);
-    of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
+    getPntrToArgument(i)->printForce(of);
   }
   of.printField();
 }

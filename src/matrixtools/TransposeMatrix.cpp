@@ -101,7 +101,7 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   if( getPntrToArgument(0)->isSymmetric() ) {
     error("input matrix is symmetric.  Transposing will achieve nothing!");
   }
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   if( getPntrToArgument(0)->getRank()==0 ) {
     error("transposing a scalar?");
   } else if( getPntrToArgument(0)->getRank()==1 ) {
@@ -124,7 +124,6 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   } else {
     setNotPeriodic();
   }
-  getPntrToComponent(0)->buildDataStore();
   if( shape.size()==2 ) {
     getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   }
@@ -135,7 +134,7 @@ void TransposeMatrix::prepare() {
   Value* myarg = getPntrToArgument(0);
   if( myarg->getRank()==1 ) {
     if( myval->getShape()[0]!=1 || myval->getShape()[1]!=myarg->getShape()[0] ) {
-      std::vector<unsigned> shape(2);
+      std::vector<std::size_t> shape(2);
       shape[0] = 1;
       shape[1] = myarg->getShape()[0];
       myval->setShape( shape );
@@ -143,12 +142,12 @@ void TransposeMatrix::prepare() {
     }
   } else if( myarg->getShape()[0]==1 ) {
     if( myval->getShape()[0]!=myarg->getShape()[1] ) {
-      std::vector<unsigned> shape(1);
+      std::vector<std::size_t> shape(1);
       shape[0] = myarg->getShape()[1];
       myval->setShape( shape );
     }
   } else if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
-    std::vector<unsigned> shape(2);
+    std::vector<std::size_t> shape(2);
     shape[0] = myarg->getShape()[1];
     shape[1] = myarg->getShape()[0];
     myval->setShape( shape );
@@ -162,13 +161,13 @@ void TransposeMatrix::calculate() {
   Value* myval=getPntrToComponent(0);
   if( myarg->getRank()<=1 || myval->getRank()==1 ) {
     if( myarg->getRank()<=1 && myval->getShape()[1]!=myarg->getShape()[0] ) {
-      std::vector<unsigned> shape( 2 );
+      std::vector<std::size_t> shape( 2 );
       shape[0] = 1;
       shape[1] = myarg->getShape()[0];
       myval->setShape( shape );
       myval->reshapeMatrixStore( shape[1] );
     } else if( myval->getRank()==1 && myval->getShape()[0]!=myarg->getShape()[1] ) {
-      std::vector<unsigned> shape( 1 );
+      std::vector<std::size_t> shape( 1 );
       shape[0] = myarg->getShape()[1];
       myval->setShape( shape );
     }
@@ -178,7 +177,7 @@ void TransposeMatrix::calculate() {
     }
   } else {
     if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
-      std::vector<unsigned> shape( 2 );
+      std::vector<std::size_t> shape( 2 );
       shape[0] = myarg->getShape()[1];
       shape[1] = myarg->getShape()[0];
       myval->setShape( shape );
@@ -186,7 +185,7 @@ void TransposeMatrix::calculate() {
     }
     std::vector<double> vals;
     std::vector<std::pair<unsigned,unsigned> > pairs;
-    std::vector<unsigned> shape( myval->getShape() );
+    std::vector<std::size_t> shape( myval->getShape() );
     unsigned nedge=0;
     myarg->retrieveEdgeList( nedge, pairs, vals );
     for(unsigned i=0; i<nedge; ++i) {

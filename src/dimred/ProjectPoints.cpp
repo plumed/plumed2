@@ -125,8 +125,6 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
     if( weights[0]->getShape()[0]!=nvals ) {
       error("number of weights should match number of input coordinates");
     }
-    target[0]->buildDataStore();
-    weights[0]->buildDataStore();
     args.push_back( target[0] );
     args.push_back( weights[0] );
     bool has_sf = parseNumbered("FUNC",i,sfd);
@@ -143,7 +141,7 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
     log.printf("  in %sth term distances are transformed by 1-switching function with r_0=%s \n", inum.c_str(), switchingFunction[i-1].description().c_str() );
     log.printf("  in %sth term weights of matrix elements in stress function are given by %s \n", inum.c_str(), weights[0]->getName().c_str() );
   }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=ntoproj;
   if( ntoproj==1 ) {
     shape.resize(0);
@@ -166,7 +164,7 @@ void ProjectPoints::prepare() {
     return;
   }
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(dimout)->getShape()[0];
   for(unsigned i=0; i<dimout; ++i) {
     if( getPntrToComponent(i)->getShape()[0]!=shape[0] ) {
@@ -243,7 +241,7 @@ void ProjectPoints::performTask( const unsigned& current, MultiValue& myvals ) c
   std::vector<double> point( dimout );
   getProjection( current, point );
   for(unsigned j=0; j<dimout; ++j) {
-    myvals.setValue( getConstPntrToComponent(j)->getPositionInStream(), point[j] );
+    myvals.setValue( j, point[j] );
   }
 }
 

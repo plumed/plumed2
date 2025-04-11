@@ -96,6 +96,7 @@ You can read more about how to calculate more Behler-type symmetry functions [he
 
 class ThreeBodyGFunctions : public ActionWithVector {
 private:
+  bool multi_action_input;
   std::vector<LeptonCall> functions;
 public:
   static void registerKeywords( Keywords& keys );
@@ -142,10 +143,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   std::vector<Value*> myargs( getArguments() );
   myargs.push_back( wval[0] );
   requestArguments( myargs );
-  for(unsigned i=0; i<myargs.size(); ++i) {
-    myargs[i]->buildDataStore();
-  }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
 
   // And now read the functions to compute
@@ -186,6 +184,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     functions[i-1].set( myfunc, argnames, this, true );
   }
   checkRead();
+  multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
 }
 
 std::string ThreeBodyGFunctions::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
@@ -215,31 +214,41 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
   const Value* zval = getPntrToArgument(2);
   Angle angle;
   Vector disti, distj;
-  unsigned matsize = wval->getNumberOfValues();
+  unsigned matsize = wval->getNumberOfStoredValues();
   std::vector<double> values(4);
   std::vector<Vector> der_i(4), der_j(4);
-  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getShape()[1];
+  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getNumberOfColumns();
+  if( multi_action_input ) {
+    matsize = wval->getNumberOfValues();
+    ncols = wval->getShape()[1];
+  }
   for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos );
+    unsigned ipos = ncols*task_index + i;  //wval->getRowIndex( task_index, i );
+    if( multi_action_input ) {
+      ipos = ncols*task_index + wval->getRowIndex( task_index, i );
+    }
+    double weighti = wval->get( ipos, multi_action_input );
     if( weighti<epsilon ) {
       continue ;
     }
-    disti[0] = xval->get( ipos );
-    disti[1] = yval->get( ipos );
-    disti[2] = zval->get( ipos );
+    disti[0] = xval->get( ipos, multi_action_input );
+    disti[1] = yval->get( ipos, multi_action_input );
+    disti[2] = zval->get( ipos, multi_action_input );
     values[1] = disti.modulo2();
     der_i[1]=2*disti;
     der_i[2].zero();
     for(unsigned j=0; j<i; ++j) {
-      unsigned jpos = ncols*task_index + wval->getRowIndex( task_index, j );
-      double weightj = wval->get( jpos );
+      unsigned jpos = ncols*task_index + j;  // wval->getRowIndex( task_index, j );
+      if( multi_action_input ) {
+        jpos = ncols*task_index + wval->getRowIndex( task_index, j );
+      }
+      double weightj = wval->get( jpos, multi_action_input );
       if( weightj<epsilon ) {
         continue ;
       }
-      distj[0] = xval->get( jpos );
-      distj[1] = yval->get( jpos );
-      distj[2] = zval->get( jpos );
+      distj[0] = xval->get( jpos, multi_action_input );
+      distj[1] = yval->get( jpos, multi_action_input );
+      distj[2] = zval->get( jpos, multi_action_input );
       values[2] = distj.modulo2();
       der_j[1].zero();
       der_j[2]=2*distj;
@@ -253,24 +262,23 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
       double weightij = weighti*weightj;
       // Now compute all symmetry functions
       for(unsigned n=0; n<functions.size(); ++n) {
-        unsigned ostrn = getConstPntrToComponent(n)->getPositionInStream();
         double nonweight = functions[n].evaluate( values );
-        myvals.addValue( ostrn, nonweight*weightij );
+        myvals.addValue( n, nonweight*weightij );
         if( doNotCalculateDerivatives() ) {
           continue;
         }
 
         for(unsigned m=0; m<functions[n].getNumberOfArguments(); ++m) {
           double der = weightij*functions[n].evaluateDeriv( m, values );
-          myvals.addDerivative( ostrn, ipos, der*der_i[m][0] );
-          myvals.addDerivative( ostrn, matsize+ipos, der*der_i[m][1] );
-          myvals.addDerivative( ostrn, 2*matsize+ipos, der*der_i[m][2] );
-          myvals.addDerivative( ostrn, jpos, der*der_j[m][0] );
-          myvals.addDerivative( ostrn, matsize+jpos, der*der_j[m][1] );
-          myvals.addDerivative( ostrn, 2*matsize+jpos, der*der_j[m][2] );
+          myvals.addDerivative( n, ipos, der*der_i[m][0] );
+          myvals.addDerivative( n, matsize+ipos, der*der_i[m][1] );
+          myvals.addDerivative( n, 2*matsize+ipos, der*der_i[m][2] );
+          myvals.addDerivative( n, jpos, der*der_j[m][0] );
+          myvals.addDerivative( n, matsize+jpos, der*der_j[m][1] );
+          myvals.addDerivative( n, 2*matsize+jpos, der*der_j[m][2] );
         }
-        myvals.addDerivative( ostrn, 3*matsize+ipos, nonweight*weightj );
-        myvals.addDerivative( ostrn, 3*matsize+jpos, nonweight*weighti );
+        myvals.addDerivative( n, 3*matsize+ipos, nonweight*weightj );
+        myvals.addDerivative( n, 3*matsize+jpos, nonweight*weighti );
       }
     }
   }
@@ -281,18 +289,17 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
   // And update the elements that have derivatives
   // Needs a separate loop here as there may be forces from j
   for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos );
+    unsigned ipos = ncols*task_index + i; // wval->getRowIndex( task_index, i );
+    double weighti = wval->get( ipos, false );
     if( weighti<epsilon ) {
       continue ;
     }
 
     for(unsigned n=0; n<functions.size(); ++n) {
-      unsigned ostrn = getConstPntrToComponent(n)->getPositionInStream();
-      myvals.updateIndex( ostrn, ipos );
-      myvals.updateIndex( ostrn, matsize+ipos );
-      myvals.updateIndex( ostrn, 2*matsize+ipos );
-      myvals.updateIndex( ostrn, 3*matsize+ipos );
+      myvals.updateIndex( n, ipos );
+      myvals.updateIndex( n, matsize+ipos );
+      myvals.updateIndex( n, 2*matsize+ipos );
+      myvals.updateIndex( n, 3*matsize+ipos );
     }
   }
 }

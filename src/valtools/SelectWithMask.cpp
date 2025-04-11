@@ -121,8 +121,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument for this action");
   }
-  getPntrToArgument(0)->buildDataStore();
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   if( getPntrToArgument(0)->getRank()==1 ) {
     std::vector<Value*> mask;
     parseArgumentList("MASK",mask);
@@ -162,9 +161,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
       ActionWithArguments::interpretArgumentList( labs, plumed.getActionSet(), this, rmask );
     }
     shape.resize(2);
-    rmask[0]->buildDataStore();
     shape[0] = getOutputVectorLength( rmask[0] );
-    cmask[0]->buildDataStore();
     shape[1] = getOutputVectorLength( cmask[0] );
     std::vector<Value*> args( getArguments() );
     args.push_back( rmask[0] );
@@ -175,7 +172,6 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
   }
 
   addValue( shape );
-  getPntrToComponent(0)->buildDataStore();
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max;
     getPntrToArgument(0)->getDomain( min, max );
@@ -215,7 +211,7 @@ void SelectWithMask::prepare() {
   Value* out = getPntrToComponent(0);
   if( arg->getRank()==1 ) {
     Value* mask = getPntrToArgument(1);
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=getOutputVectorLength( mask );
     if( out->getNumberOfValues()!=shape[0] ) {
       if( shape[0]==1 ) {
@@ -224,7 +220,7 @@ void SelectWithMask::prepare() {
       out->setShape(shape);
     }
   } else if( arg->getRank()==2 ) {
-    std::vector<unsigned> outshape(2);
+    std::vector<std::size_t> outshape(2);
     Value* rmask = getPntrToArgument(1);
     outshape[0] = getOutputVectorLength( rmask );
     Value* cmask = getPntrToArgument(2);
@@ -250,9 +246,9 @@ void SelectWithMask::calculate() {
       n++;
     }
   } else if ( arg->getRank()==2 ) {
-    std::vector<unsigned> outshape( out->getShape() );
+    std::vector<std::size_t> outshape( out->getShape() );
     unsigned n = 0;
-    std::vector<unsigned> inshape( arg->getShape() );
+    std::vector<std::size_t> inshape( arg->getShape() );
     Value* rmask = getPntrToArgument(1);
     Value* cmask = getPntrToArgument(2);
     for(unsigned i=0; i<inshape[0]; ++i) {
@@ -291,8 +287,8 @@ void SelectWithMask::apply() {
     }
   } else if( arg->getRank()==2 ) {
     unsigned n = 0;
-    std::vector<unsigned> inshape( arg->getShape() );
-    std::vector<unsigned> outshape( out->getShape() );
+    std::vector<std::size_t> inshape( arg->getShape() );
+    std::vector<std::size_t> outshape( out->getShape() );
     Value* rmask = getPntrToArgument(1);
     Value* cmask = getPntrToArgument(2);
     for(unsigned i=0; i<inshape[0]; ++i) {

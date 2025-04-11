@@ -95,9 +95,8 @@ PRINT ARG=fake FILE=fakeout
 class Quaternion : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> value;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Quaternion(const ActionOptions&);
@@ -105,9 +104,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -130,12 +127,7 @@ void Quaternion::registerKeywords( Keywords& keys ) {
 Quaternion::Quaternion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(4),
-  derivs(4),
-  virial(4) {
-  for(unsigned i=0; i<4; ++i) {
-    derivs[i].resize(3);
-  }
+  value(4) {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if(atoms.size()!=3) {
@@ -176,24 +168,23 @@ void Quaternion::calculate() {
     makeWhole();
   }
 
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
+  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) {
-      setAtomsDerivatives(valuej,i,derivs[j][i] );
+      setAtomsDerivatives(valuej,i,cvout.getAtomDerivatives(j,i) );
     }
-    setBoxDerivatives(valuej,virial[j]);
+    setBoxDerivatives(valuej,cvout.virial[j]);
     valuej->set(value[j]);
   }
 }
 
 // calculator
-void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                              const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                              std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void Quaternion::calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout ) {
   //declarations
-  Vector vec1_comp = delta( pos[0], pos[1] ); //components between atom 1 and 2
-  Vector vec2_comp = delta( pos[0], pos[2] ); //components between atom 1 and 3
+  Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
+  Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3
 
 ////////x-vector calculations///////
   double magx = vec1_comp.modulo();
@@ -350,24 +341,24 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
       dS[i] = (-2*S*S*S)*(tdx[i].getRow(0) + tdy[i].getRow(1) + tdz[i].getRow(2));
     }
 
-    vals[0] = 0.25 / S;
+    cvout.values[0] = 0.25 / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[0][i] =-0.25*dS[i]/(S*S);
+      cvout.derivs[0][i] =-0.25*dS[i]/(S*S);
     }
 
-    vals[1] = (z[1] - y[2]) * S;
+    cvout.values[1] = (z[1] - y[2]) * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[1][i] = (S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) + (z[1]-y[2])*dS[i];
+      cvout.derivs[1][i] = (S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) + (z[1]-y[2])*dS[i];
     }
 
-    vals[2] = (x[2] - z[0]) * S;
+    cvout.values[2] = (x[2] - z[0]) * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i];
+      cvout.derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i];
     }
 
-    vals[3] = (y[0] - x[1]) * S;
+    cvout.values[3] = (y[0] - x[1]) * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
+      cvout.derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
     }
   } else if ((x[0] > y[1])&(x[0] > z[2])) {
     double S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
@@ -375,24 +366,24 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
       dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
     }
 
-    vals[0] = (z[1] - y[2]) / S;
+    cvout.values[0] = (z[1] - y[2]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[0][i] = (1/S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) - (vals[0]/S)*dS[i];
+      cvout.derivs[0][i] = (1/S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) - (cvout.values[0]/S)*dS[i];
     }
 
-    vals[1] = 0.25 * S;
+    cvout.values[1] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[1][i] =0.25*dS[i];
+      cvout.derivs[1][i] =0.25*dS[i];
     }
 
-    vals[2] = (x[1] + y[0]) / S;
+    cvout.values[2] = (x[1] + y[0]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[2][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[2]/S)*dS[i];
+      cvout.derivs[2][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (cvout.values[2]/S)*dS[i];
     }
 
-    vals[3] = (x[2] + z[0]) / S;
+    cvout.values[3] = (x[2] + z[0]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[3]/S)*dS[i];
+      cvout.derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (cvout.values[3]/S)*dS[i];
     }
   } else if (y[1] > z[2]) {
     double S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
@@ -401,24 +392,24 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     }
 
 
-    vals[0] = (x[2] - z[0]) / S;
+    cvout.values[0] = (x[2] - z[0]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (vals[0]/S)*dS[i];
+      cvout.derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (cvout.values[0]/S)*dS[i];
     }
 
-    vals[1] = (x[1] + y[0]) / S;
+    cvout.values[1] = (x[1] + y[0]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[1][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[1]/S)*dS[i];
+      cvout.derivs[1][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (cvout.values[1]/S)*dS[i];
     }
 
-    vals[2] = 0.25 * S;
+    cvout.values[2] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[2][i] =0.25*dS[i];
+      cvout.derivs[2][i] =0.25*dS[i];
     }
 
-    vals[3] = (y[2] + z[1]) / S;
+    cvout.values[3] = (y[2] + z[1]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[3]/S)*dS[i];
+      cvout.derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (cvout.values[3]/S)*dS[i];
     }
   } else {
     double S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
@@ -427,27 +418,27 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     }
 
 
-    vals[0] = (y[0] - x[1]) / S;
+    cvout.values[0] = (y[0] - x[1]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[0][i] = (1/S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) - (vals[0]/S)*dS[i];
+      cvout.derivs[0][i] = (1/S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) - (cvout.values[0]/S)*dS[i];
     }
 
-    vals[1] = (x[2] + z[0]) / S;
+    cvout.values[1] = (x[2] + z[0]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[1]/S)*dS[i];
+      cvout.derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (cvout.values[1]/S)*dS[i];
     }
 
-    vals[2] = (y[2] + z[1]) / S;
+    cvout.values[2] = (y[2] + z[1]) / S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[2]/S)*dS[i];
+      cvout.derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (cvout.values[2]/S)*dS[i];
     }
 
-    vals[3] = 0.25 * S;
+    cvout.values[3] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) {
-      derivs[3][i] =0.25*dS[i];
+      cvout.derivs[3][i] =0.25*dS[i];
     }
   }
-  setBoxDerivativesNoPbc( pos, derivs, virial );
+  colvar::ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
 
 }
 

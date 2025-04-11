@@ -29,7 +29,9 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionToPutData.h"
 #include "core/ActionWithVirtualAtom.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionWithVector.h"
+#include "core/ActionWithArguments.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -119,7 +121,6 @@ public:
   void printStyle( const unsigned& linkcount, const Value* v, OFile& ofile );
   void printArgumentConnections( const ActionWithArguments* a, unsigned& linkcount, const bool& force, OFile& ofile );
   void printAtomConnections( const ActionAtomistic* a, unsigned& linkcount, const bool& force, OFile& ofile );
-  void drawActionWithVectorNode( OFile& ofile, PlumedMain& p, Action* ag, const std::vector<std::string>& mychain, std::vector<bool>& printed );
 };
 
 PLUMED_REGISTER_CLTOOL(ShowGraph,"show_graph")
@@ -221,29 +222,6 @@ void ShowGraph::printAtomConnections( const ActionAtomistic* a, unsigned& linkco
   }
 }
 
-void ShowGraph::drawActionWithVectorNode( OFile& ofile, PlumedMain& p, Action* ag, const std::vector<std::string>& mychain, std::vector<bool>& printed ) {
-  ActionWithVector* agg=dynamic_cast<ActionWithVector*>(ag);
-  std::vector<std::string> matchain;
-  agg->getAllActionLabelsInMatrixChain( matchain );
-  if( matchain.size()>0 ) {
-    ofile.printf("subgraph sub%s_mat [%s]\n",getLabel(agg).c_str(), getLabel(agg).c_str());
-    for(unsigned j=0; j<matchain.size(); ++j ) {
-      Action* agm=p.getActionSet().selectWithLabel<Action*>(matchain[j]);
-      for(unsigned k=0; k<mychain.size(); ++k ) {
-        if( mychain[k]==matchain[j] ) {
-          printed[k]=true;
-          break;
-        }
-      }
-      ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(matchain[j]).c_str(), getLabel(matchain[j],true).c_str(), agm->writeInGraph().c_str() );
-    }
-    ofile.printf("end\n");
-    ofile.printf("style sub%s_mat fill:lightblue\n",getLabel(ag).c_str());
-  } else {
-    ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(ag->getLabel()).c_str(), getLabel(ag->getLabel(),true).c_str(), ag->writeInGraph().c_str() );
-  }
-}
-
 int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::string inpt;
@@ -296,7 +274,15 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
           continue ;
         }
         // Now apply the force if there is one
-        a->apply();
+        ActionWithVector* avv=dynamic_cast<ActionWithVector*>(a);
+        ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
+        if( avv ) {
+          for(const auto & v : aaa->getArguments() ) {
+            v->addForce();
+          }
+        } else {
+          a->apply();
+        }
         bool hasforce=false;
         for(int i=0; i<av->getNumberOfComponents(); ++i) {
           if( (av->copyOutput(i))->forcesWereAdded() ) {
@@ -304,8 +290,6 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
             break;
           }
         }
-        //Check if there are forces here
-        ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
         if( aaa ) {
           for(const auto & v : aaa->getArguments() ) {
             if( v->forcesWereAdded() ) {
@@ -317,70 +301,8 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
         if( !hasforce ) {
           continue;
         }
-        ActionWithVector* avec=dynamic_cast<ActionWithVector*>(a);
-        if( avec ) {
-          ActionWithVector* head=avec->getFirstActionInChain();
-          std::vector<std::string> mychain;
-          head->getAllActionLabelsInChain( mychain );
-          std::vector<bool> printed(mychain.size(),false);
-          ofile.printf("subgraph sub%s [%s]\n",getLabel(head).c_str(),getLabel(head).c_str());
-          for(unsigned i=0; i<mychain.size(); ++i) {
-            bool drawn=false;
-            for(unsigned j=0; j<drawn_nodes.size(); ++j ) {
-              if( drawn_nodes[j]==mychain[i] ) {
-                drawn=true;
-                break;
-              }
-            }
-            if( drawn ) {
-              continue;
-            }
-            ActionWithVector* ag=p.getActionSet().selectWithLabel<ActionWithVector*>(mychain[i]);
-            plumed_assert( ag );
-            drawn_nodes.push_back( mychain[i] );
-            if( !printed[i] ) {
-              drawActionWithVectorNode( ofile, p, ag, mychain, printed );
-              printed[i]=true;
-            }
-            for(const auto & v : ag->getArguments() ) {
-              bool chain_conn=false;
-              for(unsigned j=0; j<mychain.size(); ++j) {
-                if( (v->getPntrToAction())->getLabel()==mychain[j] ) {
-                  chain_conn=true;
-                  break;
-                }
-              }
-              if( !chain_conn ) {
-                continue;
-              }
-              ofile.printf("%s -. %s .-> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(ag).c_str() );
-              printStyle( linkcount, v, ofile );
-              linkcount++;
-            }
-          }
-          ofile.printf("end\n");
-          if( avec!=head ) {
-            for(unsigned i=0; i<mychain.size(); ++i) {
-              ActionWithVector* c = p.getActionSet().selectWithLabel<ActionWithVector*>( mychain[i] );
-              plumed_assert(c);
-              if( c->getNumberOfAtoms()>0 || c->hasStoredArguments() ) {
-                for(unsigned j=0; j<avec->getNumberOfComponents(); ++j ) {
-                  if( avec->copyOutput(j)->getRank()>0 ) {
-                    continue;
-                  }
-                  ofile.printf("%s == %s ==> %s\n", getLabel(avec).c_str(), avec->copyOutput(j)->getName().c_str(), getLabel(c).c_str() );
-                  linkcount++;
-                }
-                if( c->getNumberOfAtoms()>0 ) {
-                  atom_force_set.insert( c->getLabel() );
-                }
-              }
-            }
-          }
-        } else {
-          // Print out the node if we have force on it
-          ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
-        }
+        // Print out the node if we have force on it
+        ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
         // Check where this force is being added
         printArgumentConnections( aaa, linkcount, true, ofile );
       }
@@ -428,27 +350,13 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
     ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
     ActionAtomistic* at=dynamic_cast<ActionAtomistic*>(a);
-    ActionWithVector* avec=dynamic_cast<ActionWithVector*>(a);
     // Print out the connections between nodes
     printAtomConnections( at, linkcount, false, ofile );
     printArgumentConnections( aaa, linkcount, false, ofile );
     // Print out the nodes
-    if( avec && !avec->actionInChain() ) {
-      ofile.printf("subgraph sub%s [%s]\n",getLabel(a).c_str(),getLabel(a).c_str());
-      std::vector<std::string> mychain;
-      avec->getAllActionLabelsInChain( mychain );
-      std::vector<bool> printed(mychain.size(),false);
-      for(unsigned i=0; i<mychain.size(); ++i) {
-        Action* ag=p.getActionSet().selectWithLabel<Action*>(mychain[i]);
-        if( !printed[i] ) {
-          drawActionWithVectorNode( ofile, p, ag, mychain, printed );
-          printed[i]=true;
-        }
-      }
-      ofile.printf("end\n");
-    } else if( !av ) {
+    if( !av ) {
       ofile.printf("%s(\"label=%s \n %s \n\")\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
-    } else if( !avec ) {
+    } else {
       ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
     }
   }
