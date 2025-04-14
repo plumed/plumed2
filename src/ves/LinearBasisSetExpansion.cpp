@@ -74,7 +74,7 @@ LinearBasisSetExpansion::LinearBasisSetExpansion(
   log_targetdist_grid_pntr_(NULL),
   targetdist_grid_pntr_(NULL),
   targetdist_pntr_(NULL),
-  gfmt_("%14.9f") {
+  grid_fmt_("%14.9f") {
   plumed_massert(args_pntrs_.size()==basisf_pntrs_.size(),"number of arguments and basis functions do not match");
   for(unsigned int k=0; k<nargs_; k++) {
     nbasisf_[k]=basisf_pntrs_[k]->getNumberOfBasisFunctions();
@@ -292,7 +292,7 @@ void LinearBasisSetExpansion::writeBiasGridToFile(OFile& ofile, const bool appen
   if(append_file) {
     ofile.enforceRestart();
   }
-  bias_grid_pntr_->setOutputFmt(gfmt_);
+  bias_grid_pntr_->setOutputFmt(grid_fmt_);
   bias_grid_pntr_->writeToFile(ofile);
 }
 
@@ -302,7 +302,7 @@ void LinearBasisSetExpansion::writeBiasWithoutCutoffGridToFile(OFile& ofile, con
   if(append_file) {
     ofile.enforceRestart();
   }
-  bias_withoutcutoff_grid_pntr_->setOutputFmt(gfmt_);
+  bias_withoutcutoff_grid_pntr_->setOutputFmt(grid_fmt_);
   bias_withoutcutoff_grid_pntr_->writeToFile(ofile);
 }
 
@@ -312,7 +312,7 @@ void LinearBasisSetExpansion::writeFesGridToFile(OFile& ofile, const bool append
   if(append_file) {
     ofile.enforceRestart();
   }
-  fes_grid_pntr_->setOutputFmt(gfmt_);
+  fes_grid_pntr_->setOutputFmt(grid_fmt_);
   fes_grid_pntr_->writeToFile(ofile);
 }
 
@@ -325,7 +325,7 @@ void LinearBasisSetExpansion::writeFesProjGridToFile(const std::vector<std::stri
   if(append_file) {
     ofile.enforceRestart();
   }
-  proj_grid.setOutputFmt(gfmt_);
+  proj_grid.setOutputFmt(grid_fmt_);
   proj_grid.writeToFile(ofile);
 }
 
@@ -337,7 +337,7 @@ void LinearBasisSetExpansion::writeTargetDistGridToFile(OFile& ofile, const bool
   if(append_file) {
     ofile.enforceRestart();
   }
-  targetdist_grid_pntr_->setOutputFmt(gfmt_);
+  targetdist_grid_pntr_->setOutputFmt(grid_fmt_);
   targetdist_grid_pntr_->writeToFile(ofile);
 }
 
@@ -349,7 +349,7 @@ void LinearBasisSetExpansion::writeLogTargetDistGridToFile(OFile& ofile, const b
   if(append_file) {
     ofile.enforceRestart();
   }
-  log_targetdist_grid_pntr_->setOutputFmt(gfmt_);
+  log_targetdist_grid_pntr_->setOutputFmt(grid_fmt_);
   log_targetdist_grid_pntr_->writeToFile(ofile);
 }
 
@@ -362,7 +362,7 @@ void LinearBasisSetExpansion::writeTargetDistProjGridToFile(const std::vector<st
     ofile.enforceRestart();
   }
   Grid proj_grid = TargetDistribution::getMarginalDistributionGrid(targetdist_grid_pntr_,proj_arg);
-  proj_grid.setOutputFmt(gfmt_);
+  proj_grid.setOutputFmt(grid_fmt_);
   proj_grid.writeToFile(ofile);
 }
 

@@ -86,7 +86,7 @@ private:
   //
   TargetDistribution* targetdist_pntr_;
   //
-  std::string gfmt_;
+  std::string grid_fmt_;
 public:
   static void registerKeywords( Keywords& keys );
   // Constructor
@@ -134,7 +134,7 @@ public:
     return *targetdist_averages_pntr_;
   };
   void setGridFMT(const std::string& fmt) {
-    gfmt_=fmt;
+    grid_fmt_=fmt;
   };
   //
   void setSerial() {

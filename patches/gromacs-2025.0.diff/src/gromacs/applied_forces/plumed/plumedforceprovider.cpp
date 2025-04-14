@@ -71,7 +71,7 @@ namespace gmx
 
 PlumedForceProvider::~PlumedForceProvider() = default;
 PlumedForceProvider::PlumedForceProvider(const PlumedOptions& options)
-try : plumed_(std::make_unique<PLMD::Plumed>())
+try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
 {
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
@@ -194,6 +194,15 @@ try
 
     // Do the work
     plumed_->cmd("performCalc", nullptr);
+
+    if(replex_) {
+        double bias=0.0;
+        cmd("getBias",&bias);
+        if(bias!=0.0) {
+            GMX_THROW(NotImplementedError("The PLUMED patch is still not compatible"
+                " with the replica exchange if PLUMED computes biases"));
+        }
+    }
 
     msmul(plumed_vir, 0.5, plumed_vir);
     forceProviderOutput->forceWithVirial_.addVirialContribution(plumed_vir);
