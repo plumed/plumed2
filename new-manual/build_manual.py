@@ -529,10 +529,10 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          else : nodocs.append(["<a href=\"../" + action + "\">" + action + "</a>", "action"] )
          if "dois" in value and len(value["dois"])>0 : 
             f.write("## References \n")
-            f.write("More information about how this action can be used is available in the following articles:\n")
+            f.write("More information about how this action can be used is available in the following articles:\n\n")
             for doi in value["dois"] :
                 ref, ref_url = get_reference(doi)
-                f.write("* [" + ref + "](" + ref_url + ")\n")
+                f.write("- [" + ref + "](" + ref_url + ")\n")
          f.write("\n## Syntax \n")
          f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
          f.write("| Keyword | Type | Default | Description |\n")

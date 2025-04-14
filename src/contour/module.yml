@@ -1,0 +1,4 @@
+name: contour
+authors: Gareth Tribello
+description: actions that take functions as grid as input and that find isocontours in these functions
+dois: ["10.1039/B805786A","10.1021/jp909219k", "10.1021/acs.jpcb.8b03661", "10.1088/1361-648X/aa893d", "10.1063/1.5134461"]
