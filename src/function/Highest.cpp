@@ -228,6 +228,7 @@ public:
   bool doWithTasks() const override {
     return !scalar_out;
   }
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override ;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -247,6 +248,7 @@ void Highest::registerKeywords( Keywords& keys ) {
   } else {
     keys.setValueDescription("scalar","the highest of the input values");
   }
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs");
 }
 
 void Highest::read( ActionWithArguments* action ) {
@@ -263,6 +265,10 @@ void Highest::read( ActionWithArguments* action ) {
   if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) {
     action->error("sorting a single scalar is trivial");
   }
+}
+
+bool Highest::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
+  return !scalar_out;
 }
 
 void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureRMSD.h"
+#include "SecondaryStructureBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
@@ -97,18 +97,20 @@ public:
 PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::registerKeywords( keys );
-  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
-  keys.remove("ATOMS");
+  SecondaryStructureBase<Vector>::registerKeywords( keys );
   keys.remove("SEGMENT");
-  keys.remove("BONDLENGTH");
-  keys.remove("NO_ACTION_LOG");
-  keys.remove("CUTOFF_ATOMS");
   keys.remove("STRUCTURE");
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
   keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
+  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
+           "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
+           "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
+           "However, if you are using some other option, then this cannot be used");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("CUSTOM");
 }
 
 AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
@@ -116,11 +118,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  bool uselessthan=SecondaryStructureBase<Vector>::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
-  std::string atoms;
-  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
+  std::vector<std::string> all_atoms;
+  SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   bool intra_chain(false), inter_chain(false);
   std::string style;
@@ -136,6 +138,13 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");
+  }
+
+  double strands_cutoff=-1.0;
+  parse("STRANDS_CUTOFF",strands_cutoff);
+  std::string scutoff_action;
+  if( strands_cutoff>0 ) {
+    scutoff_action=getShortcutLabel() + "_cut_dists: DISTANCE ";
   }
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
@@ -155,18 +164,21 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
       }
       for(unsigned ires=0; ires<nres-7; ires++) {
         for(unsigned jres=ires+7; jres<nres; jres++) {
-          for(unsigned k=0; k<15; ++k) {
-            nlist[k]=nprevious + ires*5+k;
-            nlist[k+15]=nprevious + (jres-2)*5+k;
+          for(unsigned kk=0; kk<15; ++kk) {
+            nlist[kk]=nprevious + ires*5+kk;
+            nlist[kk+15]=nprevious + (jres-2)*5+kk;
           }
           std::string nlstr, num;
           Tools::convert( nlist[0], nlstr );
           Tools::convert(k, num);
-          k++;
+          ++k;
           seglist += " SEGMENT" + num + "=" + nlstr;
           for(unsigned kk=1; kk<nlist.size(); ++kk ) {
             Tools::convert( nlist[kk], nlstr );
             seglist += "," + nlstr;
+          }
+          if( strands_cutoff>0 ) {
+            scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
           }
         }
       }
@@ -174,7 +186,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     }
   }
   if( inter_chain ) {
-    if( chains.size()==1 && style!="all" ) {
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
       error("there is only one chain defined so cannot use inter_chain option");
     }
     std::vector<unsigned> nlist(30);
@@ -199,8 +211,8 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
           }
           for(unsigned jres=0; jres<jnres-2; ++jres) {
             for(unsigned k=0; k<15; ++k) {
-              nlist[k]=iprev+ ires*5+k;
-              nlist[k+15]=jprev+ jres*5+k;
+              nlist[k]=iprev + ires*5+k;
+              nlist[k+15]=jprev + jres*5+k;
             }
             std::string nlstr, num;
             Tools::convert( nlist[0], nlstr );
@@ -210,6 +222,9 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
             for(unsigned kk=1; kk<nlist.size(); ++kk ) {
               Tools::convert( nlist[kk], nlstr );
               seglist += "," + nlstr;
+            }
+            if( strands_cutoff>0 ) {
+              scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
             }
           }
         }
@@ -249,6 +264,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   reference[27]=Vector( 2.699, -2.129, -2.917); // CB
   reference[28]=Vector( 1.745, -4.399, -2.330); // C
   reference[29]=Vector( 1.899, -4.545, -1.102); // O
+  // Store the secondary structure ( last number makes sure we convert to internal units nm )
   std::string ref0, ref1, ref2;
   Tools::convert(  reference[0][0], ref0 );
   Tools::convert(  reference[0][1], ref1 );
@@ -261,10 +277,19 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     }
   }
 
-  std::string strands_cutoff;
-  parse("STRANDS_CUTOFF",strands_cutoff);
-  if( strands_cutoff.length()>0 ) {
-    strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
+  std::string nopbcstr="";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    nopbcstr = " NOPBC";
+  }
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
   }
   std::string type;
   parse("TYPE",type);
@@ -272,19 +297,51 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   if( uselessthan ) {
     lab = getShortcutLabel();
   }
-  std::string nopbcstr="";
-  bool nopbc;
-  parseFlag("NOPBC",nopbc);
-  if( nopbc ) {
-    nopbcstr = " NOPBC";
+  std::string atoms="ATOMS=" + all_atoms[0];
+  for(unsigned i=1; i<all_atoms.size(); ++i) {
+    atoms += "," + all_atoms[i];
   }
-  if( seglist.length()==0 ) {
-    error("no segments to investigate");
+  std::string inputLine = lab+":";
+  if( type=="DRMSD" ) {
+    inputLine+=" SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17";
+  } else {
+    inputLine+=" SECONDARY_STRUCTURE_RMSD TYPE=" +type;
   }
-  readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
+  inputLine+=" ALIGN_STRANDS " + seglist + structure
+             + " " + atoms + nopbcstr + usegpustr;
+
+  if( strands_cutoff>0 ) {
+    readInputLine( scutoff_action );
+    std::string str_cut;
+    Tools::convert( strands_cutoff, str_cut );
+    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
+                   + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
+    inputLine+=" MASK=" + getShortcutLabel() + "_cut";
+    readInputLine(inputLine);
+    if( ltmap.length()>0 ) {
+      // Create the less than object
+      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
+                     + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+      // Multiply by the strands cutoff
+      readInputLine( getShortcutLabel()
+                     + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
+                     + getShortcutLabel() + "_cut"
+                     " FUNC=x*y PERIODIC=NO");
+    }
+  } else {
+    readInputLine(inputLine);
+    if( ltmap.length()>0 ) {
+      // Create the less than object
+      readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    }
+  }
   // Create the less than object
   if( ltmap.length()>0 ) {
-    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+    if( uselessthan ) {
+      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    } else {
+      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    }
   }
 }
 

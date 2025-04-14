@@ -40,7 +40,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
+  int checkTaskIsActive( const unsigned& taskno ) const override ;
   std::vector<std::string> getGridCoordinateNames() const override {
     plumed_error();
   }

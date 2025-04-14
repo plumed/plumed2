@@ -54,7 +54,7 @@ public:
 /// Get the periodicity of the grid
   std::vector<bool> getPbc() const ;
 /// Get the number of grid points in each direction
-  std::vector<unsigned> getNbin() const ;
+  std::vector<std::size_t> getNbin() const ;
 /// Get the grid spacing
   const std::vector<double>& getGridSpacing() const ;
 /// This is used to apply forces in interpolate
@@ -74,7 +74,7 @@ std::vector<std::string> EvaluateGridFunction::getMax() const {
 }
 
 inline
-std::vector<unsigned> EvaluateGridFunction::getNbin() const {
+std::vector<std::size_t> EvaluateGridFunction::getNbin() const {
   return gridobject.getNbin(false);
 }
 

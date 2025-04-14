@@ -72,6 +72,7 @@ void Flatten::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","matrix","the label for the matrix that you would like to flatten to a vector");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("vector","a vector containing all the elements of the input matrix");
 }
 
@@ -85,13 +86,11 @@ Flatten::Flatten(const ActionOptions& ao):
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
     error("input to this action should be a matrix");
   }
-  getPntrToArgument(0)->buildDataStore(true);
-  std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() );
-  std::vector<unsigned> shape( 1 );
+  std::vector<std::size_t> inshape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( 1 );
   shape[0]=inshape[0]*inshape[1];
   addValue( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
 }
 
 void Flatten::calculate() {

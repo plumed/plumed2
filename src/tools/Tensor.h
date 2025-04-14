@@ -93,6 +93,14 @@ class TensorGeneric:
   template<typename... Args>
   void auxiliaryConstructor(double first,Args... arg);
 public:
+//upload the tensor to the current acc device
+  void toACCDevice()const  {
+#pragma acc enter data copyin(this[0:1], d, d[0:n*m-1])
+  }
+  void removeFromACCDevice() const {
+    // just delete
+#pragma acc exit data delete( d[0:n*m-1], d, this[0:1])
+  }
 /// Constructor accepting n*m double parameters.
 /// Can be used as Tensor<2,2>(1.0,2.0,3.0,4.0)
 /// In case a wrong number of parameters is given, a static assertion will fail.

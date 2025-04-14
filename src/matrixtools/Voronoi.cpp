@@ -72,19 +72,18 @@ Voronoi::Voronoi(const ActionOptions&ao):
   if( getPntrToArgument(0)->getShape()[1]>getPntrToArgument(0)->getShape()[0] ) {
     warning("would expect number of columns in matrix to exceed number of rows");
   }
-  getPntrToArgument(0)->buildDataStore();
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValue( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
 }
 
 void Voronoi::prepare() {
+  ActionWithVector::prepare();
   Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(0)->getShape()[1] ) {
     return;
   }
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   myval->setShape(shape);
 }
 
@@ -101,7 +100,8 @@ void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code,
       nv = i;
     }
   }
-  buffer[bufstart + code*arg0->getShape()[1] + nv] = 1;
+  Value* myval = const_cast<Value*>( getConstPntrToComponent(0) );
+  myval->set( code*arg0->getShape()[1] + nv, 1 );
 }
 
 }

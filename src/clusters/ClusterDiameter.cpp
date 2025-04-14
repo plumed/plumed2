@@ -82,7 +82,7 @@ ClusterDiameter::ClusterDiameter(const ActionOptions& ao):
   // Distance matrix
   readInputLine( getShortcutLabel() + "_dmat: DISTANCE_MATRIX GROUP=" + atdata );
   // Matrix of bonds in cluster
-  readInputLine( getShortcutLabel() + "_bmat: OUTER_PRODUCT FUNC=x*y ARG=" + arg_str + "," + arg_str );
+  readInputLine( getShortcutLabel() + "_bmat: OUTER_PRODUCT FUNC=x*y ARG=" + arg_str + "," + arg_str + " MASK=" + getShortcutLabel() + "_dmat" );
   // Product of matrices
   readInputLine( getShortcutLabel() + "_dcls: CUSTOM ARG=" + getShortcutLabel() + "_dmat," + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO");
   // Convert matrix to a vector to get highest

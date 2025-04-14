@@ -185,13 +185,13 @@ Collect::Collect( const ActionOptions& ao ):
   }
 
   if( type=="vector" ) {
-    log.printf("  adding %d elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  adding %ld elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
   } else {
-    log.printf("  constructing matrix with rows of length %d from input data\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  constructing matrix with rows of length %ld from input data\n", getPntrToArgument(0)->getNumberOfValues() );
   }
 
   parse("CLEAR",clearstride);
-  unsigned nvals=0;
+  std::size_t nvals=0;
   if( clearstride==getStride() ) {
     nvals=1;
     usefirstconf=(getStride()==0);
@@ -203,9 +203,8 @@ Collect::Collect( const ActionOptions& ao ):
     nvals=(clearstride/getStride());
   }
 
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=nvals;
-  getPntrToArgument(0)->buildDataStore();
   if( type=="matrix" ) {
     shape.resize(2);
     shape[1] = getPntrToArgument(0)->getNumberOfValues();

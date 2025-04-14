@@ -54,7 +54,6 @@ MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
       error("input to this argument should be a matrix");
     }
   }
-  getPntrToArgument(0)->buildDataStore();
 }
 
 void MatrixOperationBase::retrieveFullMatrix( Matrix<double>& mymatrix ) {

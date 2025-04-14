@@ -128,27 +128,24 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
     addComponentWithDerivatives("dist");
     componentIsNotPeriodic("dist");
-    std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
     addComponent( "disp", shape );
-    getPntrToComponent(1)->buildDataStore();
     componentIsNotPeriodic("disp");
   } else if( displacement ) {
-    std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addComponent( "dist", shape );
-    getPntrToComponent(0)->buildDataStore();
     componentIsNotPeriodic("dist");
     shape.resize(2);
     shape[0] = getPntrToArgument(1)->getShape()[0];
     shape[1] = getPntrToArgument(0)->getNumberOfValues();
     addComponent( "disp", shape );
-    getPntrToComponent(1)->buildDataStore();
     getPntrToComponent(1)->reshapeMatrixStore( shape[1] );
     componentIsNotPeriodic("disp");
   } else if( (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
     addValue();
     setNotPeriodic();
   } else {
-    std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
+    std::vector<std::size_t> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addValue( shape );
     setNotPeriodic();
   }
@@ -174,6 +171,10 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
 
 unsigned RMSDVector::getNumberOfDerivatives() {
   return getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
+}
+
+int RMSDVector::checkTaskIsActive( const unsigned& itask ) const {
+  return 1;
 }
 
 void RMSDVector::setReferenceConfigurations() {
@@ -206,7 +207,7 @@ double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& 
 
   if( displacement && type=="SIMPLE" ) {
     const Value* myval = getConstPntrToComponent(1);
-    double r = myrmsd[current].simpleAlignment( align, displace, pos, myrmsd[current].getReference(), der, direction, squared );
+    double r = myrmsd[current].simpleAlignment( align, displace, View{pos.data(),pos.size()}, myrmsd[current].getReference(), der, direction, squared );
     if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
       Vector comforce;
       comforce.zero();
@@ -347,7 +348,7 @@ void RMSDVector::apply() {
     }
     if( wasforced ) {
       unsigned ss=0;
-      addForcesOnArguments( 0, forces, ss, getLabel() );
+      addForcesOnArguments( 0, forces, ss  );
     }
   } else {
     ActionWithVector::apply();
@@ -374,8 +375,7 @@ void RMSDVector::performTask( const unsigned& current, MultiValue& myvals ) cons
     }
   }
   double r = calculateRMSD( current, pos, der, direction );
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.setValue( ostrn, r );
+  myvals.setValue( 0, r );
 
   if( doNotCalculateDerivatives() ) {
     return;
@@ -383,8 +383,8 @@ void RMSDVector::performTask( const unsigned& current, MultiValue& myvals ) cons
 
   for(unsigned i=0; i<natoms; i++) {
     for(unsigned j=0; j<3; ++j ) {
-      myvals.addDerivative( ostrn, j*natoms+i, der[i][j] );
-      myvals.updateIndex( ostrn, j*natoms+i );
+      myvals.addDerivative( 0, j*natoms+i, der[i][j] );
+      myvals.updateIndex( 0, j*natoms+i );
     }
   }
 }
@@ -397,24 +397,29 @@ void RMSDVector::gatherStoredValue( const unsigned& valindex, const unsigned& co
   }
   const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
   unsigned natoms = direction.size();
-  unsigned vindex = bufstart + 3*code*natoms;
+  unsigned vindex = 3*code*natoms;
+  Value* myval = const_cast<Value*>( getConstPntrToComponent(valindex) );
   for(unsigned i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j ) {
-      buffer[vindex + j*natoms + i] += direction[i][j];
+      myval->set(vindex + j*natoms + i, direction[i][j] );
     }
   }
 }
 
-void RMSDVector::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( myval->getRank()==1 ) {
-    ActionWithVector::gatherForcesOnStoredValue( myval, itask, myvals, forces );
-    return;
-  }
-  const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
-  unsigned natoms = direction.size();
-  for(unsigned i=0; i<natoms; ++i) {
-    for(unsigned j=0; j<3; ++j ) {
-      forces[j*natoms+i] += direction[i][j];
+void RMSDVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( checkComponentsForForce() ) {
+    for(unsigned ival=0; ival<getNumberOfComponents(); ++ival) {
+      if( getConstPntrToComponent(ival)->getRank()==1 ) {
+        gatherForcesOnStoredValue( ival, itask, myvals, forces );
+      } else {
+        const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
+        unsigned natoms = direction.size();
+        for(unsigned i=0; i<natoms; ++i) {
+          for(unsigned j=0; j<3; ++j ) {
+            forces[j*natoms+i] += direction[i][j];
+          }
+        }
+      }
     }
   }
 }

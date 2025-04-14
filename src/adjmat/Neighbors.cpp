@@ -71,9 +71,6 @@ public:
   unsigned getNumberOfColumns() const override {
     return number;
   }
-  bool canBeAfterInChain( ActionWithVector* av ) {
-    return av->getLabel()!=(getPntrToArgument(0)->getPntrToAction())->getLabel();
-  }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override {}
@@ -99,7 +96,6 @@ Neighbors::Neighbors(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()!=2 ) {
     error("input argument should be a matrix");
   }
-  getPntrToArgument(0)->buildDataStore();
 
   unsigned nlow;
   parse("NLOWEST",nlow);
@@ -123,7 +119,7 @@ Neighbors::Neighbors(const ActionOptions&ao):
   }
 
   // And get the shape
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValue( shape );
   setNotPeriodic();
   checkRead();
@@ -188,7 +184,7 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
 }
 
 void Neighbors::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), 1.0 );
+  myvals.addValue( 0, 1.0 );
 }
 
 }

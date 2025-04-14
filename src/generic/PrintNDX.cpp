@@ -120,7 +120,6 @@ PrintNDX::PrintNDX(const ActionOptions&ao):
     if( getPntrToArgument(i)->getShape()[0]!=all_atoms.size() ) {
       error("mismatch between number of arguments and number of input atoms");
     }
-    getPntrToArgument(i)->buildDataStore(true);
     argnames[i] = getPntrToArgument(i)->getName();
   }
   log.printf("  printing ndx file containing indices of atoms that have arguments in ranges prescribed below \n");
@@ -162,7 +161,7 @@ void PrintNDX::unlockRequests() {
 void PrintNDX::update() {
   unsigned n=0;
   std::vector<double> argvals( getNumberOfArguments() );
-  ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
+  ofile.printf("[ %s step %ld ] \n", getLabel().c_str(), getStep() );
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       argvals[j] = getPntrToArgument(j)->get(i);
