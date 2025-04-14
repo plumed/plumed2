@@ -29,56 +29,60 @@
 /*
 Compute path collective variables that adapt to the lowest free energy path connecting states A and B.
 
-The Path Collective Variables developed by Branduardi and co-workers \cite brand07 allow one
+This shortcut can be used to implement the method discussed in the second paper cited below. This method allows you to 
+run a simulation with [PATH](PATH.md) collective variables that forces the system to transition between state A and state B.
+If you run with ADAPTIVE_PATH rather than [PATH](PATH.md) the CV adapts as the simulation progresses and should find the 
+lowest free energy path that connects the two states.
+
+The Path Collective Variables developed by Branduardi that are described in the first paper cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
-path.  The progress along the path (s) is computed using:
+path.  Instad of computing progress along the path ($s$) using Branduardi's method we use the expressions that are used in 
+[GEOMETRIC_PATH](GEOMETRIC_PATH.md) and that are introduced in the second paper that is cited below.  The progress along the path is is thus computed using:
 
-\f[
+$$
 s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
-\f]
+$$
 
-In this expression \f$\mathbf{v}_1\f$ and \f$\mathbf{v}_3\f$ are the vectors connecting the current position to the closest and second closest node of the path,
-respectfully and \f$i_1\f$ and \f$i_2\f$ are the projections of the closest and second closest frames of the path. \f$\mathbf{v}_2\f$, meanwhile, is the
-vector connecting the closest frame to the second closest frame.  The distance from the path, \f$z\f$ is calculated using:
+In this expression $\mathbf{v}_1$ and $\mathbf{v}_3$ are the vectors connecting the current position to the closest and second closest node of the path,
+respectfully and $i_1$ and $i_2$ are the projections of the closest and second closest frames of the path. $\mathbf{v}_2$, meanwhile, is the
+vector connecting the closest frame to the second closest frame.  The distance from the path, $z$ is calculated using:
 
-\f[
+$$
 z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
-\f]
+$$
 
-Notice that these are the definitions of \f$s\f$ and \f$z\f$ that are used by \ref PATH when the GPATH option is employed.  The reason for this is that
-the adaptive path method implemented in this action was inspired by the work of Diaz and Ensing in which these formula were used \cite BerndAdaptivePath.
+Notice that these are the definitions of $s$ and $z$ from the [GEOMETRIC_PATH](GEOMETRIC_PATH.md).  The reason for this is that
+the adaptive path method implemented in this action was inspired by the work of Diaz and Ensing that was introduced in the second paper cited below.
 To learn more about how the path is adapted we strongly recommend reading this paper.
 
-\par Examples
+The example input below shows how to use the adaptive path. 
 
-The input below provides an example that shows how the adaptive path works. The path is updated every 50 steps of
-MD based on the data accumulated during the preceding 50 time steps.
-
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=2,5 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
+pp: ADAPTIVE_PATH ARG=d1.x,d1.y UPDATE=50 FIXED=5,15 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
-\endplumedfile
+```
 
-In the case above the distance between frames is calculated based on the \f$x\f$ and \f$y\f$ components of the vector connecting
-atoms 1 and 2.  As such an extract from the input reference path (mypath.pdb) would look as follows:
+The curved path here is defined using a series of points in a two dimensional space.  As you can see if you expand the shortcuts in the input above
+we use a [GEOMETRIC_PATH](GEOMETRIC_PATH.md) shortcut to calculate our position along the path and distance from the path.  In addition, we also collect
+information on the average displacement from the path using an [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) so that we can update the path every step.
+During these update steps the reference points on the path are shifted by the values that are stored in the [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) 
+action.  We then use the [REPARAMETERIZE_PATH](REPARAMETERIZE_PATH.md) to ensure that the new set of reference points on the path are all equally spaced.  After the adaption
+steps the new reference points are used when calculating are position on and distance from the reference path.
 
-\auxfile{mypath.pdb}
-REMARK ARG=d1.x,d1.y d1.x=1.12 d1.y=-.60
-END
-REMARK ARG=d1.x,d1.y d1.x=.99 d1.y=-.45
-END
-REMARK ARG=d1.x,d1.y d1.x=.86 d1.y=-.30
-END
-REMARK ARG=d1.x,d1.y d1.x=.73 d1.y=-.15
-END
-REMARK ARG=d1.x,d1.y d1.x=.60 d1.y=0
-END
-REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
-END
-\endauxfile
+The input below illustrates how to the positions of atoms to define the adaptive path:
 
-Notice that one can also use RMSD frames in place of arguments like those above.
+```plumed
+##SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1b: ADAPTIVE_PATH REFERENCE=regtest/trajectories/path_msd/all.pdb FIXED=1,42 UPDATE=1000 WFILE=out-path.pdb WSTRIDE=20000
+PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
+```
+
+When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md) 
+action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
+of mass and rotation of the reference frame. These vector of atomic displacements that do not include the translation and rotation are also used in the 
+[AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) action that is used to update the path.
 
 */
 //+ENDPLUMEDOC
@@ -106,6 +110,8 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FMT","%f","the format to use for output files");
   keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");
   keys.setValueDescription("scalar","the position along and from the adaptive path");
+  keys.addDOI("10.1063/1.2432340");
+  keys.addDOI("10.1103/PhysRevLett.109.020601");
   keys.needsAction("GEOMETRIC_PATH");
   keys.needsAction("AVERAGE_PATH_DISPLACEMENT");
   keys.needsAction("REPARAMETERIZE_PATH");
@@ -157,7 +163,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
       Tools::convert( mypdb.getBeta()[0], num );
       displace_str += "," + num;
     }
-    metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
+    metric = "RMSD DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
     readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
   }
   // Create the object to accumulate the average path displacements

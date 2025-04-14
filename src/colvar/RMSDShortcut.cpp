@@ -44,6 +44,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
+  keys.addInputKeyword("optional","ARG","vector/matrix","instead of using the REFERENCE option you can use this action to specify the labels of two actions that you are calculating the RMSD between");
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
   keys.addOutputComponent("disp","DISPLACEMENT","vector/matrix","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","scalar/vector","the RMSD distance the atoms have moved");
@@ -60,6 +61,11 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
 RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
+  std::string argn; parse("ARG",argn);
+  if( argn.length()>0 ) {
+      readInputLine( getShortcutLabel() + ": RMSD_VECTOR ARG=" + argn + " " + convertInputLineToString() );
+      return;
+  }
   bool disp;
   parseFlag("DISPLACEMENT",disp);
   std::string reference;
