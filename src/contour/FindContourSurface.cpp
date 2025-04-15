@@ -28,7 +28,7 @@
 Find an isocontour by searching along either the x, y or z direction.
 
 As discussed in the documentation for the [gridtools](module_gridtools.md), PLUMED contains a number of tools that allow you to calculate
-a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are 
+a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are
 discussed [here](module_contour.md).  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three dimensions it can be
 difficult to visualize.
@@ -55,8 +55,8 @@ The input shown below was used to analyze the results from a simulation of an in
 the solid and the liquid was set up in the plane perpendicular to the $z$ direction of the simulation cell. The input below calculates something
 akin to a Willard-Chandler dividing surface (see [contour](module_contour.md)) between the solid phase and the liquid phase.  There are two of these interfaces within the
 simulation box because of the periodic boundary conditions but we were able to determine that one of these two surfaces lies in a particular part of the
-simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average from the values, $s_i$, of the 
-[FCCUBIC](FCCUBIC.md) symmetry functions for each of the atoms using the following expression.  
+simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average from the values, $s_i$, of the
+[FCCUBIC](FCCUBIC.md) symmetry functions for each of the atoms using the following expression.
 
 $$
 \rho'(x,y,z) = \frac{ \sum_{i=1}^N s_i K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }{ \sum_{i=1}^N K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }
@@ -64,7 +64,7 @@ $$
 
 where $(x_i, y_i, z_i)$ is the position of atom $i$ relative to the position of atom 1, $K$ is a Gaussian kernel function and $\lambda=1.0$.
 
-Notice that we use the fact that we know roughly where the interface is when specifying how this phase field is to be calculated and specify the region over the $z$-axis 
+Notice that we use the fact that we know roughly where the interface is when specifying how this phase field is to be calculated and specify the region over the $z$-axis
 in which the [KDE](KDE.md) is computed.  Once we have calculated the phase field we search for contour points on the lines that run parallel to the $z$-direction of the cell
 box using the FIND_CONTOUR_SURFACE command.  The final result is a $14 \times 14$ grid of values for the height of the interface as a function of the $(x,y)$
 position.  This grid is then output to a file called `contour2.dat`.
@@ -78,8 +78,8 @@ UNITS NATURAL
 # This calculates the value of a set of symmetry functions for the atoms of interest
 fcc: FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
-  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 
-... 
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619
+...
 
 # This determines the positions of the atoms of interest relative to the position of atom 1
 dens2_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS

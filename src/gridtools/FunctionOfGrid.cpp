@@ -37,7 +37,7 @@ Sum the values of all the function at the points on a grid
 /*
 Calculate the numerical integral of the function stored on the grid
 
-This action takes a function, $f(x)$, that is stored on a grid of points between $a$ and $b$.  It then computes the following definite integral 
+This action takes a function, $f(x)$, that is stored on a grid of points between $a$ and $b$.  It then computes the following definite integral
 numerically:
 
 $$
@@ -47,10 +47,10 @@ $$
 The approximate value of this integral would be computed using:
 
 $$
-y = \frac{b-a}{n} \sum_{i=0}^{n} f\left( a + \frac{i(b-a)}{n} \right) 
+y = \frac{b-a}{n} \sum_{i=0}^{n} f\left( a + \frac{i(b-a)}{n} \right)
 $$
 
-where $n$ is the number of points at which the grid has been computed.  
+where $n$ is the number of points at which the grid has been computed.
 
 The following example input demonstrates how this action can be used:
 
@@ -61,10 +61,10 @@ h: CUSTOM ARG=hu FUNC=x/10 PERIODIC=NO
 iv: INTEGRATE_GRID ARG=h PERIODIC=NO
 ```
 
-In this case, the [KDE](KDE.md) action is used to compute a histogram that shows the instanenous distribution for 10 coordination numbers. This distribution is 
+In this case, the [KDE](KDE.md) action is used to compute a histogram that shows the instanenous distribution for 10 coordination numbers. This distribution is
 unormalised so that [CUSTOM](CUSTOM.md) command here is used to normalise the distribution.  The resulting integral that is computed here should thsu be one.
 
-Notice also that the action can still be used if the function stored on the grid is a function of 2 or more variables.  For example, the following input performs an integral 
+Notice also that the action can still be used if the function stored on the grid is a function of 2 or more variables.  For example, the following input performs an integral
 that is very similar to the one performed in the previous.  Now, however, the input grid is two dimensional.
 
 ```plumed

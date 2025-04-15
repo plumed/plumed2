@@ -75,7 +75,7 @@ will look something like this:
 ````
 EMARK t1=-4.3345  t2=3.4725
 END
-REMARK t1=-4.1940  t2=3.3420   
+REMARK t1=-4.1940  t2=3.3420
 END
 REMARK t1=-4.0535  t2=3.2114
 END

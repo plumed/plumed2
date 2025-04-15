@@ -30,7 +30,7 @@
 /*
 Accumulate the distances between the reference frames in the paths and the configurations visited
 
-This action is used in the shortcut for [ADAPTIVE_PATH](ADAPTIVE_PATH.md) as it is helps us to adapt and refine 
+This action is used in the shortcut for [ADAPTIVE_PATH](ADAPTIVE_PATH.md) as it is helps us to adapt and refine
 the defintition of a path CV based on the sampling that is observed in the trajectory.
 
 By way of reminder path CVs were introduced by Branduardi _et al._ in the first paper cited in the bibliography below.
@@ -50,15 +50,15 @@ In these expressions $N$ high-dimensional frames ($X_i$) are used to describe th
 space. The two expressions above are then functions of the distances from each of the high-dimensional frames $R[X - X_i]$.
 
 When a simulator uses this method of path CVs the assumption is that when the system undergoes the transition from state A
-to state B it passes through a narrow (non-linear) tube that is centered on the $s$ coordinate that is defiend above in terms the 
-various milestones that are used to define the path. In other words, when the system transitions from A to be B it does not pass along the $s$ 
-coordinate. If, however, we average the vector connecting each position the system passes through to the nearest 
-point on the path that underpins the definition of the $s$ we should get zero as the $s$ coordinate is centered on the path connecting the two states.  
+to state B it passes through a narrow (non-linear) tube that is centered on the $s$ coordinate that is defiend above in terms the
+various milestones that are used to define the path. In other words, when the system transitions from A to be B it does not pass along the $s$
+coordinate. If, however, we average the vector connecting each position the system passes through to the nearest
+point on the path that underpins the definition of the $s$ we should get zero as the $s$ coordinate is centered on the path connecting the two states.
 
 With that theory in mind this action can be used to collect the average displacement between the points that trajectories are passing through and the path.
 This action can thus be used to update the definitions of the milestones that are used in the definition of a [PATH](PATH.md) or [GPATH](GPATH.md) coordinate
 so that the PATH more clearly passes through the center of the path that the system has traversed along in passing from state A to state B.  These path displacements
-are accumulated as follows.  You first determine the vectors, $\mathbf{v}_1$ and $\mathbf{v}_3$ that connect the instaneous position to the closest and second closest milestones on the 
+are accumulated as follows.  You first determine the vectors, $\mathbf{v}_1$ and $\mathbf{v}_3$ that connect the instaneous position to the closest and second closest milestones on the
 current path.  You can then compute the following:
 
 $$
@@ -68,15 +68,15 @@ $$
 where $\mathbf{v}_2$ is the vector connecting the closest and second closest milestone on your path. Displacements for these two milestones are then computed as:
 
 $$
-d_1 = (1 + \delta) \left(\mathbf{v}_1 - \delta \mathbf{v}_2\right) \qquad d_2 = -\delta \left(\mathbf{v}_1 - \delta \mathbf{v}_2\right) 
-$$ 
+d_1 = (1 + \delta) \left(\mathbf{v}_1 - \delta \mathbf{v}_2\right) \qquad d_2 = -\delta \left(\mathbf{v}_1 - \delta \mathbf{v}_2\right)
+$$
 
-These displacement vectors for the two closest nodes are computed on every accumulate step and are then averaged with the factors of $(1 + \delta)$ and $-\delta$ in these expressions 
+These displacement vectors for the two closest nodes are computed on every accumulate step and are then averaged with the factors of $(1 + \delta)$ and $-\delta$ in these expressions
 serving as weights that are used when normalising these averages.
 
 ## Examples
 
-Suppose that you are interested in a transition between two states A and B and that you have representative structures for these two states in the files `start.pdb` and `end.pdb`.  You can 
+Suppose that you are interested in a transition between two states A and B and that you have representative structures for these two states in the files `start.pdb` and `end.pdb`.  You can
 use [pathtools](pathtools.md) to create an initial (linear) path connecting these two states as follows:
 
 ```plumed
@@ -93,18 +93,18 @@ mv: MOVINGRESTRAINT ...
    ARG=p1.s KAPPA0=1000
    STEP0=0 AT0=1
    STEP1=1000000 AT1=42
-   STEP2=2000000 AT2=1 
-   STEP3=3000000 AT3=42 
-   STEP4=4000000 AT4=1 
-   STEP5=5000000 AT5=42 
-   STEP6=6000000 AT6=1 
-   STEP7=7000000 AT7=42 
-   STEP8=8000000 AT8=1  
+   STEP2=2000000 AT2=1
+   STEP3=3000000 AT3=42
+   STEP4=4000000 AT4=1
+   STEP5=5000000 AT5=42
+   STEP6=6000000 AT6=1
+   STEP7=7000000 AT7=42
+   STEP8=8000000 AT8=1
 ...
 PRINT ARG=p1.s,p1.z FILE=colvar
-``` 
+```
 
-This input hopefully (you need to check by looking at your trajectory) drives our system between the two states of interest 8 times - four of these transitions are from A to B and four are from B to A.  
+This input hopefully (you need to check by looking at your trajectory) drives our system between the two states of interest 8 times - four of these transitions are from A to B and four are from B to A.
 You can then analyze the trajectories that are generated using [driver](driver.md) and reparameterize a new path that passes more closely through the sampled trajectories using:
 
 ```plumed
@@ -116,11 +116,11 @@ disp: AVERAGE_PATH_DISPLACEMENT ARG=rmsd.disp STRIDE=1 METRIC={RMSD DISPLACEMENT
 REPARAMETERIZE_PATH DISPLACE_FRAMES=disp FIXED=1,42 METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} METRIC_COMPONENT=disp REFERENCE=rmsd_ref
 # And output the final reparameterized path at the end of the simulation
 DUMPPDB DESCRIPTION=PATH STRIDE=0 FILE=outpatb.pdb ATOMS=rmsd_ref ATOM_INDICES=1-13
-``` 
+```
 
 You can then try the same calculation with the reparameterized path before eventually using a method such as [METAD](METAD.md) to obtain the free energy as a function of your $s$ path coordinate.
 
-Notice that the METRIC keyword appears here as the calculation involves calculating the vectors connecting the milestones on your path.  This keyword operates in the same way that is described in 
+Notice that the METRIC keyword appears here as the calculation involves calculating the vectors connecting the milestones on your path.  This keyword operates in the same way that is described in
 the documentation for [GEOMETRIC_PATH](GEOMETRIC_PATH.md).
 
 */

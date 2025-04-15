@@ -35,23 +35,23 @@ namespace dimred {
 Arrange points in a low dimensional space so that the (transformed) distances between points in the low dimensional space match the dissimilarities provided in an input matrix.
 
 This action and [PROJECT_POINTS](PROJECT_POINTS.md) are the workhorses for the implementation of [SKETCHMAP](SKETCHMAP.md) that is provided within PLUMED.
-ARRANGE_POINTS allows you to find a set of low dimenionsional coordinates, $\{x_k\}_\textrm{min}$, for a set of high-dimensional coordinates, $\{X_k\}$, by 
+ARRANGE_POINTS allows you to find a set of low dimenionsional coordinates, $\{x_k\}_\textrm{min}$, for a set of high-dimensional coordinates, $\{X_k\}$, by
 minimising this stress function:
 
 $$
 \chi(\{x_k\}) = \sum_{i=2}^N \sum_{j=1}^i w_{ij} [ D(X_i,X_j) - d(x_i,x_j) ]^2
 $$
 
-The $D$ here indicates that we are calculating the dissimilarity between the point $X_i$ and $X_j$, while the $d$ indicates that we are calculating the distance between 
-the projections of points $i$ and $j$. In minimising the expression above we are thus finding a set of low-dimensional projections for the high dimensional points that 
+The $D$ here indicates that we are calculating the dissimilarity between the point $X_i$ and $X_j$, while the $d$ indicates that we are calculating the distance between
+the projections of points $i$ and $j$. In minimising the expression above we are thus finding a set of low-dimensional projections for the high dimensional points that
 were input. The $w_{ij}$ is a weight that determines how important reproducing the distance between atom $i$ and $j$
 
 The example input below illustrates how you can use ARRANGE_POINTS to project a high-dimensional representational of a trajectory in a low-dimensional space.
 
 ```plumed
 # Calcuate the instantaneous values of the three distances
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
 # Collect the calulated distances for later analysis
@@ -62,7 +62,7 @@ ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2
 
 # Generate a matrix of w_ij values
-weights: OUTER_PRODUCT ARG=ff_weights,ff_weights 
+weights: OUTER_PRODUCT ARG=ff_weights,ff_weights
 
 # And produce the projections
 proj: ARRANGE_POINTS ARG=mds-1,mds-2 TARGET1=mds_mat WEIGHTS1=weights
@@ -73,7 +73,7 @@ DUMPVECTOR ARG=proj.* FILE=colvar
 
 Here projections are generated once at the end of the trajectory and are output to a file called colvar.  Initial projections of all the points are generated using [CLASSICAL_MDS](CLASSICAL_MDS.md).
 A better optimisation of the stress function above is then obtained by using the conjugate gradient algorithm.  The `MINTYPE` option in ARRANGE_POINTS allows you to specify whether
-[conjugate gradient](https://en.wikipedia.org/wiki/Conjugate_gradient_method), the [smacof](https://en.wikipedia.org/wiki/Stress_majorization) algorithm or 
+[conjugate gradient](https://en.wikipedia.org/wiki/Conjugate_gradient_method), the [smacof](https://en.wikipedia.org/wiki/Stress_majorization) algorithm or
 the pointwise global optimisation algorithm that was discussed in the original paper on sketch-map that is referenced below are used to optimise the stress function.
 
 ## Using RMSD distances
@@ -89,7 +89,7 @@ mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
 # Generate a matrix of w_ij values
-weights: OUTER_PRODUCT ARG=ff_weights,ff_weights 
+weights: OUTER_PRODUCT ARG=ff_weights,ff_weights
 
 # And produce the projections
 proj: ARRANGE_POINTS ARG=mds-1,mds-2 TARGET1=mds_mat WEIGHTS1=weights
@@ -102,7 +102,7 @@ The dissimilarities between the atomic configurations here are computed as [RMSD
 
 ## Using transformed distances
 
-In [SKETCHMAP](SKETCHMAP.md) the stress function that is minimised is not the one given above.  Instead of seeking to generate a projection, in which the 
+In [SKETCHMAP](SKETCHMAP.md) the stress function that is minimised is not the one given above.  Instead of seeking to generate a projection, in which the
 distances between the projections are the same as the dissimilarities between the high-dimensional coordinates, the dissimilarities and distances are transformed by functions as illustrated below:
 
 $$
@@ -113,8 +113,8 @@ The two functions $F$ and $f$ in this expression are usually different as you ca
 
 ```plumed
 # Calcuate the instantaneous values of the three distances
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
 # Collect the calulated distances for later analysis
@@ -128,7 +128,7 @@ mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2
 weights: OUTER_PRODUCT ARG=ff_weights,ff_weights
 
 # Transform the dissimilarities with the function F
-fed: MORE_THAN ARG=mds_mat SQUARED SWITCH={SMAP R_0=4 A=3 B=2} 
+fed: MORE_THAN ARG=mds_mat SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
 
 # And produce the projections
 proj: ARRANGE_POINTS ARG=mds-1,mds-2 TARGET1=fed WEIGHTS1=weights FUNC1={SMAP R_0=4 A=1 B=2}
@@ -137,7 +137,7 @@ proj: ARRANGE_POINTS ARG=mds-1,mds-2 TARGET1=fed WEIGHTS1=weights FUNC1={SMAP R_
 DUMPVECTOR ARG=proj.* FILE=colvar
 ```
 
-In the input above the function, $F$, that is applied on the dissimilarities is implemented using a [MORE_THAN](MORE_THAN.md) action. The function, $f$, 
+In the input above the function, $F$, that is applied on the dissimilarities is implemented using a [MORE_THAN](MORE_THAN.md) action. The function, $f$,
 that is applied on the distances in the low-dimensional space is specified using the `FUNC` keyword that is input to ARRANGE_POINTS.
 
 ## Using multiple targets
@@ -152,8 +152,8 @@ The input below shows how this can be implemted within PLUMED:
 
 ```plumed
 # Calcuate the instantaneous values of the three distances
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
 # Collect the calulated distances for later analysis
@@ -169,11 +169,11 @@ w1: CUSTOM ARG=weights FUNC=0.3*x PERIODIC=NO
 w2: CUSTOM ARG=weights FUNC=(1-0.3)*x PERIODIC=NO
 
 # Transform the dissimilarities with the function F
-fed: MORE_THAN ARG=mds_mat SQUARED SWITCH={SMAP R_0=4 A=3 B=2} 
+fed: MORE_THAN ARG=mds_mat SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
 
 # And produce the projections
 proj: ARRANGE_POINTS ...
-   ARG=mds-1,mds-2 
+   ARG=mds-1,mds-2
    TARGET1=mds_mat WEIGHTS1=w1 FUNC1={CUSTOM FUNC=1-sqrt(x2) R_0=1.0}
    TARGET2=fed WEIGHTS2=w2 FUNC2={SMAP R_0=4 A=1 B=2}
 ...
@@ -183,14 +183,14 @@ DUMPVECTOR ARG=proj.* FILE=colvar
 ```
 
 Here the sum over $M$ in the expression above has two terms. In the first of these terms $F_1$ is the identity so the
-input for `TARGET1` is the output from [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md). $f_1$ is similarly the identity.  To 
+input for `TARGET1` is the output from [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md). $f_1$ is similarly the identity.  To
 implement the identity here we use the input to `FUNC1` shown above.  The input to this function is the input for one of
-the switching functions described in the documentation for [LESS_THAN](LESS_THAN.md). What we compute for the transformed 
-distance is $1-s(d)$ where $s(d)$ is the switching function that is specified in input.  Consequently, applying the 
+the switching functions described in the documentation for [LESS_THAN](LESS_THAN.md). What we compute for the transformed
+distance is $1-s(d)$ where $s(d)$ is the switching function that is specified in input.  Consequently, applying the
 function `1-sqrt(x2)` returns the distance.
 
-The second term in our sum over $M$ in the input above has the dissimilarities and distances transformed by the functions that 
-we introduced in the previous section. 
+The second term in our sum over $M$ in the input above has the dissimilarities and distances transformed by the functions that
+we introduced in the previous section.
 
 */
 //+ENDPLUMEDOC

@@ -28,7 +28,7 @@
 Find an isocontour in a smooth function.
 
 As discussed in the documentation for the [gridtools](module_gridtools.md), PLUMED contains a number of tools that allow you to calculate
-a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are 
+a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are
 discussed [here](module_contour.md).  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three dimensions it can be
 difficult to visualize.
@@ -42,7 +42,7 @@ f(x_c,y_c) - c = 0
 $$
 
 where $c$ is some constant value that is specified by the user.  The points on this contour are detected using a variant
-on the [marching squares](https://en.wikipedia.org/wiki/Marching_squares) or [marching cubes](https://en.wikipedia.org/wiki/Marching_cubes) algorithm. 
+on the [marching squares](https://en.wikipedia.org/wiki/Marching_squares) or [marching cubes](https://en.wikipedia.org/wiki/Marching_cubes) algorithm.
 As such, and unlike [FIND_CONTOUR_SURFACE](FIND_CONTOUR_SURFACE.md) or [FIND_SPHERICAL_CONTOUR](FIND_SPHERICAL_CONTOUR.md), the function input to this action is not required to have three arguments.
 You can find a contour in any function with 2 or more arguments.  Furthermore, the topology of the contour will be determined by the algorithm and does not need to be specified by the user.
 
@@ -52,8 +52,8 @@ The input shown below was used to analyze the results from a simulation of an in
 the solid and the liquid was set up in the plane perpendicular to the $z$ direction of the simulation cell. The input below calculates something
 akin to a Willard-Chandler dividing surface (see [contour](module_contour.md)) between the solid phase and the liquid phase.  There are two of these interfaces within the
 simulation box because of the periodic boundary conditions but we were able to determine that one of these two surfaces lies in a particular part of the
-simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average from the transformed values, $f(s_i)$, of the 
-[FCCUBIC](FCCUBIC.md) symmetry functions for each of the atoms using the following expression.  
+simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average from the transformed values, $f(s_i)$, of the
+[FCCUBIC](FCCUBIC.md) symmetry functions for each of the atoms using the following expression.
 
 $$
 \rho'(x,y,z) = \frac{ \sum_{i=1}^N f(s_i) K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }{ \sum_{i=1}^N K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }
@@ -62,7 +62,7 @@ $$
 where $(x_i, y_i, z_i)$ is the position of atom $i$ relative to the position of atom 1, $f$ is a switching function, $K$ is a Gaussian kernel function and $\lambda=1.0$.
 
 The virtual atom that is computed using [CENTER](CENTER.md) is located in the center of the region where the atoms are solid like and the positions of the atoms
-$(x_i, y_i, z_i)$ are given relative to this position when computing the phase field in the expression above.  This phase field provides a continuous function that 
+$(x_i, y_i, z_i)$ are given relative to this position when computing the phase field in the expression above.  This phase field provides a continuous function that
 gives a measure of the average degree of solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a a set of points
 at which the value of this phase field is equal to 0.5.  This set of points is output to file called `mycontour.dat`.  A new contour
 is found on every single step for each frame that is read in.
@@ -73,14 +73,14 @@ UNITS NATURAL
 # This calculates the value of a set of symmetry functions for the atoms of interest
 fcc: FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
-  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 
-... 
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619
+...
 
 # Transform the symmetry functions with a switching function
 tfcc: LESS_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
 
 # Now compute the center of the solid like region
-center: CENTER ATOMS=1-96000 WEIGHTS=tfcc 
+center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
 
 # This determines the positions of the atoms of interest relative to the center of the solid region
 dens_dist: DISTANCES ORIGIN=center ATOMS=1-96000 COMPONENTS
@@ -92,7 +92,7 @@ dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWI
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 
 # Find the isocontour
-cont: FIND_CONTOUR ARG=dens CONTOUR=0.5 
+cont: FIND_CONTOUR ARG=dens CONTOUR=0.5
 # Use the special method for outputting the contour to a file
 DUMPCONTOUR ARG=cont FILE=surface.xyz
 ```

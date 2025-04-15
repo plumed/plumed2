@@ -52,7 +52,7 @@ $$
 Accumulating these probability densities is precisely what this shortcut can be used to do.  Furthermore, the conversion
 of the histogram to the free energy can be achieved by using the method [CONVERT_TO_FES](CONVERT_TO_FES.md).
 
-We calculate histograms within PLUMED using a method known as [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation). 
+We calculate histograms within PLUMED using a method known as [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 This shortcut action thus uses the [KDE](KDE.md) and [ACCUMULATE](ACCUMULATE.md) actions to build up the time average of the histogram.
 
 In PLUMED the value of $\zeta$ at each discrete instant in time in the trajectory is accumulated.  A kernel, $K(\zeta-\zeta(t'),\sigma)$,
@@ -81,15 +81,15 @@ The following input monitors two torsional angles during a simulation
 and outputs a continuous histogram as a function of them at the end of the simulation.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo
 ```
@@ -98,15 +98,15 @@ The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo
 ```
@@ -115,15 +115,15 @@ The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```
@@ -142,7 +142,7 @@ hh: HISTOGRAM ...
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```

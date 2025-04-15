@@ -26,19 +26,19 @@
 /*
 Calculate the radial distribution function
 
-This shortcut can be used to evaluate the [radial distribution function](https://en.wikipedia.org/wiki/Radial_distribution_function) for 
+This shortcut can be used to evaluate the [radial distribution function](https://en.wikipedia.org/wiki/Radial_distribution_function) for
 a collection of atoms.  The following example illustrates how it can be used to compute the average radial distribution from a
 trajectory:
 
 ```plumed
 rdf: RDF GROUP=1-108 MAXR=2.5 GRID_BIN=25 KERNEL=DISCRETE STRIDE=1 CLEAR=0
 DUMPGRID ARG=rdf FILE=rdf.dat
-``` 
+```
 
-If you expand the shortcut in this input you can see how the radial distribution function is computed using [KDE](KDE.md) actions and that the 
+If you expand the shortcut in this input you can see how the radial distribution function is computed using [KDE](KDE.md) actions and that the
 average is obtained by using [ACCUMULATE](ACCUMULATE.md) actions.  By using expanded versions of this shortcut you can thus calculate and print
 the instantaneous value of the radial distribution function.  Alternatively, if you use the CLEAR option in the [ACCUMULATE](ACCUMULATE.md) commands
-you can calculate radial distribution functions from various parts of the trajectory.  Notice finally that you can replace the DISCRETE kernel that 
+you can calculate radial distribution functions from various parts of the trajectory.  Notice finally that you can replace the DISCRETE kernel that
 is used in the input above with a continuous function and hence compute a radial distribution function via [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 
 */

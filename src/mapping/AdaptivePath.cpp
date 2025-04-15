@@ -29,14 +29,14 @@
 /*
 Compute path collective variables that adapt to the lowest free energy path connecting states A and B.
 
-This shortcut can be used to implement the method discussed in the second paper cited below. This method allows you to 
+This shortcut can be used to implement the method discussed in the second paper cited below. This method allows you to
 run a simulation with [PATH](PATH.md) collective variables that forces the system to transition between state A and state B.
-If you run with ADAPTIVE_PATH rather than [PATH](PATH.md) the CV adapts as the simulation progresses and should find the 
+If you run with ADAPTIVE_PATH rather than [PATH](PATH.md) the CV adapts as the simulation progresses and should find the
 lowest free energy path that connects the two states.
 
 The Path Collective Variables developed by Branduardi that are described in the first paper cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
-path.  Instad of computing progress along the path ($s$) using Branduardi's method we use the expressions that are used in 
+path.  Instad of computing progress along the path ($s$) using Branduardi's method we use the expressions that are used in
 [GEOMETRIC_PATH](GEOMETRIC_PATH.md) and that are introduced in the second paper that is cited below.  The progress along the path is is thus computed using:
 
 $$
@@ -55,7 +55,7 @@ Notice that these are the definitions of $s$ and $z$ from the [GEOMETRIC_PATH](G
 the adaptive path method implemented in this action was inspired by the work of Diaz and Ensing that was introduced in the second paper cited below.
 To learn more about how the path is adapted we strongly recommend reading this paper.
 
-The example input below shows how to use the adaptive path. 
+The example input below shows how to use the adaptive path.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
@@ -67,7 +67,7 @@ PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 The curved path here is defined using a series of points in a two dimensional space.  As you can see if you expand the shortcuts in the input above
 we use a [GEOMETRIC_PATH](GEOMETRIC_PATH.md) shortcut to calculate our position along the path and distance from the path.  In addition, we also collect
 information on the average displacement from the path using an [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) so that we can update the path every step.
-During these update steps the reference points on the path are shifted by the values that are stored in the [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) 
+During these update steps the reference points on the path are shifted by the values that are stored in the [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md)
 action.  We then use the [REPARAMETERIZE_PATH](REPARAMETERIZE_PATH.md) to ensure that the new set of reference points on the path are all equally spaced.  After the adaption
 steps the new reference points are used when calculating are position on and distance from the reference path.
 
@@ -79,9 +79,9 @@ p1b: ADAPTIVE_PATH REFERENCE=regtest/trajectories/path_msd/all.pdb FIXED=1,42 UP
 PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 ```
 
-When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md) 
+When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
 action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
-of mass and rotation of the reference frame. These vector of atomic displacements that do not include the translation and rotation are also used in the 
+of mass and rotation of the reference frame. These vector of atomic displacements that do not include the translation and rotation are also used in the
 [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) action that is used to update the path.
 
 */

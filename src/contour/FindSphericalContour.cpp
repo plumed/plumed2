@@ -28,7 +28,7 @@
 Find an isocontour in a three dimensional grid by searching over a Fibonacci sphere.
 
 As discussed in the documentation for the [gridtools](module_gridtools.md), PLUMED contains a number of tools that allow you to calculate
-a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are 
+a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are
 discussed [here](module_contour.md).  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three dimensions it can be
 difficult to visualize.
@@ -75,7 +75,7 @@ The following input demonstrates how this action can be used.  The input here is
 condensation of Lennard Jones from the vapor.  The input below achieves this by calculating the coordination numbers, $c_i$, of all the atoms within the gas.
 Obviously, those atoms within the droplet will have a large value for the coordination number while the isolated atoms in the gas will have a low value.
 
-We can detect the sizes of the droplets by constructing a matrix whose $i,j$ element tells us whether atom $i$ and atom $j$ are within 6 nm of each other and 
+We can detect the sizes of the droplets by constructing a matrix whose $i,j$ element tells us whether atom $i$ and atom $j$ are within 6 nm of each other and
 both have coordination numbers that are greater that two.  The atoms within the various droplets within the system can then be found by performing a
 [DFSCLUSTERING](DFSCLUSTERING.md) on this matrix to detect the connected components.  We can take the largest of these connected components and find the center of the droplet
 by exploiting the functionality within [CENTER](CENTER.md). We can then construct a phase field based on the positions of the atoms in the largest
@@ -92,14 +92,14 @@ the droplet from the surrounding gas.  The value of the phase field on this isoc
 # Calculate coordination numbers
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Select coordination numbers that are more than 2.0
-cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} 
+cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
 # Build a contact matrix
 c1_mat2: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 dp_mat: OUTER_PRODUCT ARG=cf,cf
 # Build the final matrix
 mat: CUSTOM ARG=c1_mat2,dp_mat FUNC=x*y PERIODIC=NO
 # Find largest cluster
-dfs: DFSCLUSTERING ARG=mat 
+dfs: DFSCLUSTERING ARG=mat
 clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
 # Find center of largest cluster
 trans1: CUSTOM ARG=cf,clust1 FUNC=x*x*y PERIODIC=NO

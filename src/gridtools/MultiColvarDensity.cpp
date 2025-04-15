@@ -49,16 +49,16 @@ input computes the density of atoms at each point on the grid and outputs this q
 other words this input instructs plumed to calculate $\rho(\mathbf{r}) = \sum_i K(\mathbf{r} - \mathbf{r}_i )$
 
 ```plumed
-dens: DISTANCES ATOMS=1-100 ORIGIN=1 COMPONENTS 
+dens: DISTANCES ATOMS=1-100 ORIGIN=1 COMPONENTS
 kde: KDE ARG=dens.x,dens.y,dens.z GRID_BIN=100,100,100 BANDWIDTH=0.05,0.05,0.05
-grid: ACCUMULATE ARG=kde STRIDE=10 
+grid: ACCUMULATE ARG=kde STRIDE=10
 DUMPGRID ARG=grid STRIDE=500 FILE=density
 ```
 
 In the above example density is added to the grid on every step.  The DUMPGRID instruction thus tells PLUMED to
-output the average density at each point on the grid every 500 steps of simulation.  
+output the average density at each point on the grid every 500 steps of simulation.
 
-Understanding the commands in the input above provides a window into understand how MULTICOLVARDENS works. 
+Understanding the commands in the input above provides a window into understand how MULTICOLVARDENS works.
 This second example computes an order parameter (in this case [FCCUBIC](FCCUBIC.md)) and constructs a phase field model
 for this order parameter using the equation above.
 

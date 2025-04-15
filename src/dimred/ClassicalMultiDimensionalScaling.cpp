@@ -62,7 +62,7 @@ DUMPPDB ATOM_INDICES=1-256 ATOMS=ff_data ARG=mds,weights FILE=embed.pdb
 ```
 
 By contrast the following input instructs PLUMED to calculate the distances between atoms by taking the differences in five torsional angles.
-The MDS algorithm is then used to arrange a set of points in a low dimensional space in a way that reproduces these differences. 
+The MDS algorithm is then used to arrange a set of points in a low dimensional space in a way that reproduces these differences.
 
 ```plumed
 phi1: TORSION ATOMS=1,2,3,4

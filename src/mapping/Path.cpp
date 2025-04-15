@@ -48,7 +48,7 @@ $$
 In these expressions $N$ high-dimensional frames ($X_i$) are used to describe the path in the high-dimensional
 space. The two expressions above are then functions of the distances from each of the high-dimensional frames $R[X - X_i]$.
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration.  You could calculate
-the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this shortcut 
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this shortcut
 of the path CV allows one to compute the distances from the paths in a variety of different ways. This is as opposed to
 the alternative implementation of path ([PATHMSD](PATHMSD.md)) which is a bit faster but which only allows one to use the [RMSD](RMSD.md) distance.
 
@@ -82,7 +82,7 @@ high dimensional space and the values that these arguments have at each point on
 /*
 Property maps but with a more flexible framework for the distance metric being used.
 
-This colvar calculates a property map using the formalism developed by Spiwok that is referenced in the second paper cited below. 
+This colvar calculates a property map using the formalism developed by Spiwok that is referenced in the second paper cited below.
 In essence if you have the value of some property, $X_i$, that it takes at a set of high-dimensional
 positions then you calculate the value of the property at some arbitrary point in the high-dimensional space
 using:
@@ -92,7 +92,7 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 $$
 
 In these expressions the value of the property $X$ is given at the position of $N$ high-dimensional frames ($X_i$). The distances, $D_i$, between
-these frames and our instaneous position are then used to compute the value of the property at the instaneous position in the high dimensional space.  
+these frames and our instaneous position are then used to compute the value of the property at the instaneous position in the high dimensional space.
 As illustrated in the examples below, this implementation of the property map allows you to calculate these distances in various different ways.
 This is as opposed to the alternative implementation [PROPERTYMAP](PROPERTYMAP.md) which is a bit faster but which only allows one to use the RMSD distance.
 
@@ -111,7 +111,7 @@ PRINT ARG=p2_X,p2_Y,p2_zpath STRIDE=1 FILE=colvar
 
 Notice that the REFERENCE file here gives the values of the properties at each of the points of interest.
 In this second input the value of the property at each point of interest is also given in the REFERENCE file.
-Here as well the REFERENCE file also tells us that each of the reference points is defined based on the values of the 
+Here as well the REFERENCE file also tells us that each of the reference points is defined based on the values of the
 two torsions `t1` and `t2`.
 
 ```plumed

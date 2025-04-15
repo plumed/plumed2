@@ -30,14 +30,14 @@
 Construct a sketch map projection of the input data
 
 This shortcut allows you to construct a sketch-map projection from a trajectory. The sketch-map algorithm
-is introduced and examples of how it is used are given in the papers cited below. 
+is introduced and examples of how it is used are given in the papers cited below.
 
 The following input illustrates how to run a sketch-map calculation with PLUMED:
 
 ```plumed
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
-d3: DISTANCE ATOMS=5,6 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
 
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 lwe: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
@@ -51,9 +51,9 @@ smap: SKETCHMAP ...
 DUMPVECTOR ARG=smap.*,lwe FILE=smap
 ```
 
-The sketch-map projection is constructed from all the data in the input trajectory here and is output at the end 
-of the simulation.  Dissimilarities between the trajectory frames are calculated based on how much the three 
-distances that are used in the input to the [COLLECT_FRAMES](COLLECT_FRAMES.md) object here have changed.  However, 
+The sketch-map projection is constructed from all the data in the input trajectory here and is output at the end
+of the simulation.  Dissimilarities between the trajectory frames are calculated based on how much the three
+distances that are used in the input to the [COLLECT_FRAMES](COLLECT_FRAMES.md) object here have changed.  However,
 if you want to use RMSD distances to compute these dissimilarities instead you can use an input like the one shown below:
 
 ```plumed
@@ -69,20 +69,20 @@ smap: SKETCHMAP ...
 DUMPVECTOR ARG=smap.*,lwe FILE=smap
 ```
 
-Information on how we optimise the sketch-map stress function can be found by expanding the SKETCHMAP shortcut in the above 
-input and reading the documentation for [ARRANGE_POINTS](ARRANGE_POINTS.md). 
+Information on how we optimise the sketch-map stress function can be found by expanding the SKETCHMAP shortcut in the above
+input and reading the documentation for [ARRANGE_POINTS](ARRANGE_POINTS.md).
 
 ## Using landmarks
 
-Optimising the sketch-map stress function is computationally expensive and so the usual practise with this method is to 
+Optimising the sketch-map stress function is computationally expensive and so the usual practise with this method is to
 pick a subset of [landmark](module_landmarks.md) points.  Projections for these points are found by optimising the sketch-map
-stress function using [ARRANGE_POINTS](ARRANGE_POINTS.md).  Projections for non-landmark points are then found by using 
+stress function using [ARRANGE_POINTS](ARRANGE_POINTS.md).  Projections for non-landmark points are then found by using
 [PROJECT_POINTS](PROJECT_POINTS.md).  The following example input illustrates how you can perform such a calculation with PLUMED
 
 ```plumed
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
-d3: DISTANCE ATOMS=5,6 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
 
 ff: COLLECT_FRAMES ARG=d1,d2,d3
 ff_dataT: TRANSPOSE ARG=ff_data
@@ -102,7 +102,7 @@ smap: SKETCHMAP ...
 ...
 
 DUMPVECTOR ARG=smap,lwe FILE=smap
-DUMPVECTOR ARG=smap_osample,weights FILE=projections 
+DUMPVECTOR ARG=smap_osample,weights FILE=projections
 ```
 
 

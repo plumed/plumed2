@@ -28,8 +28,8 @@
 /*
 Setup a constant grid by either reading values from a file or definining a function in input
 
-This action allows you to create a constant function and store the values that this function takes 
-at a grid of points.  There are two ways that you can create the constant function.  You can either 
+This action allows you to create a constant function and store the values that this function takes
+at a grid of points.  There are two ways that you can create the constant function.  You can either
 read in the value of the function at a set of  grid points from a file as is done in this example input:
 
 ```plumed
@@ -50,12 +50,12 @@ PRINT ARG=d1,ff FMT=%8.4f FILE=colvar
 ```
 
 This input illustrates a rather elaborate (and approximate) method for evaluating the square of the distance between atoms 1 and 2.
-As you can see, the option involves using the GRID_MIN, GRID_MAX and GRID_BIN options to create a grid of points.  You can then use the FUNC option 
+As you can see, the option involves using the GRID_MIN, GRID_MAX and GRID_BIN options to create a grid of points.  You can then use the FUNC option
 to specify the function that should be evaluated at each of those grid points.
-If you use this option the lepton library that is discussed in the documentation for [CUSTOM](CUSTOM.md) is used to evaluate the 
-function at the various grid points.  
+If you use this option the lepton library that is discussed in the documentation for [CUSTOM](CUSTOM.md) is used to evaluate the
+function at the various grid points.
 
-N.B. This method with lepton was implemented to facilitate the implementation of the normalisation in the implementation of the [RDF](RDF.md) shortcut. 
+N.B. This method with lepton was implemented to facilitate the implementation of the normalisation in the implementation of the [RDF](RDF.md) shortcut.
 
 */
 //+ENDPLUMEDOC

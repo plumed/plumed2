@@ -27,7 +27,7 @@
 Calculate the gradient of an input grid
 
 This shortcut implements the gradient CV that was used to drive nucleation and that is described in the paper cited below. A description that explains how
-this CV is evaluated and used can be found in the paper.  
+this CV is evaluated and used can be found in the paper.
 
 An example input for computing and printing the gradient CV that is discussed in the paper is shown below:
 

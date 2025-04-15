@@ -26,7 +26,7 @@
 /*
 Calculate the perpendicular distance from a Willard-Chandler dividing surface.
 
-This action works similarly to [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md). Within this action a field is constructed that measures the density 
+This action works similarly to [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md). Within this action a field is constructed that measures the density
 of the system at each point in space using:
 
 $$
@@ -34,7 +34,7 @@ p(x,y,x) = \sum_{i=1}^N K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\fr
 $$
 
 In this expression $\sigma_x, \sigma_y$ and $\sigma_z$ are bandwidth parameters and
-$K$ is one of a Gaussian kernel function.  With that field in place we can define a Willard-Chandler 
+$K$ is one of a Gaussian kernel function.  With that field in place we can define a Willard-Chandler
 surface is defined a surface of constant density in the above field $p(x,y,z)$.
 In other words, we can define a set of points, $(x',y',z')$, in the box which have:
 
@@ -42,10 +42,10 @@ $$
 p(x',y',z') = \rho
 $$
 
-where $\rho$ is some target density. In [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md) we assume that this set of points lie on a manifold that 
-has the same topology as one or multiple planes.  Here, by contrast, we assume that this set of points lie on a manifold that has the same topology 
-as a sphere.  This action then returns the distance between this spherical manifold and the position of a test particle.  This distance is measured 
-along a vector perpendicular to the manifold. 
+where $\rho$ is some target density. In [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md) we assume that this set of points lie on a manifold that
+has the same topology as one or multiple planes.  Here, by contrast, we assume that this set of points lie on a manifold that has the same topology
+as a sphere.  This action then returns the distance between this spherical manifold and the position of a test particle.  This distance is measured
+along a vector perpendicular to the manifold.
 
 ## Examples
 
@@ -57,9 +57,9 @@ $$
 p(x,y,x) = \sum_{i=1}^N \xi_i f(c_i) K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
 $$
 
-is found using this action.  In this expression $\xi_i$ is 1 if atom $i$ is part of the largest cluster and zero otherwise, $c_i$ is the coordination number of atom $i$ and 
-$f$ is a swtiching function.  The distance between this isocontour and position of atom 513 as well as the distance between `com` (the center of the largest cluster) 
-and the isocontour is then output to a file called colvar.  
+is found using this action.  In this expression $\xi_i$ is 1 if atom $i$ is part of the largest cluster and zero otherwise, $c_i$ is the coordination number of atom $i$ and
+$f$ is a swtiching function.  The distance between this isocontour and position of atom 513 as well as the distance between `com` (the center of the largest cluster)
+and the isocontour is then output to a file called colvar.
 
 ```plumed
 ones: ONES SIZE=512

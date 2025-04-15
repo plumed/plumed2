@@ -63,8 +63,8 @@ void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   ActionWithGrid::registerKeywords(keys);
   std::string name = keys.getDisplayName();
   if( name!="INTEGRATE_GRID" ) {
-      std::size_t und=name.find("_GRID");
-      keys.setDisplayName( name.substr(0,und) );
+    std::size_t und=name.find("_GRID");
+    keys.setDisplayName( name.substr(0,und) );
   }
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc;

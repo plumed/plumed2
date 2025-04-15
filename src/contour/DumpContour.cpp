@@ -34,7 +34,7 @@ namespace contour {
 Print the contour
 
 This is a special action that is used to print the output from a [FIND_CONTOUR](FIND_CONTOUR.md) action.
-The following example illustrates how this method is used to output a xyz file that contains the set of 
+The following example illustrates how this method is used to output a xyz file that contains the set of
 points that [FIND_CONTOUR](FIND_CONTOUR.md) found on the isocontour of interest.
 
 ```plumed
@@ -43,14 +43,14 @@ UNITS NATURAL
 # This calculates the value of a set of symmetry functions for the atoms of interest
 fcc: FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
-  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 
-... 
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619
+...
 
 # Transform the symmetry functions with a switching function
 tfcc: LESS_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
 
 # Now compute the center of the solid like region
-center: CENTER ATOMS=1-96000 WEIGHTS=tfcc 
+center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
 
 # This determines the positions of the atoms of interest relative to the center of the solid region
 dens_dist: DISTANCES ORIGIN=center ATOMS=1-96000 COMPONENTS
@@ -62,7 +62,7 @@ dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWI
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 
 # Find the isocontour
-cont: FIND_CONTOUR ARG=dens CONTOUR=0.5 
+cont: FIND_CONTOUR ARG=dens CONTOUR=0.5
 # Use the special method for outputting the contour to a file
 DUMPCONTOUR ARG=cont FILE=surface.xyz
 ```
@@ -100,12 +100,13 @@ DumpContour::DumpContour(const ActionOptions&ao):
   ActionPilot(ao),
   fmt("%f") {
 
-  std::string argname; parse("ARG",argname);
+  std::string argname;
+  parse("ARG",argname);
   fc=plumed.getActionSet().selectWithLabel<FindContour*>( argname );
   if( !fc ) {
     error("cannot find FIND_CONTOUR action with label " + argname );
   }
-  addDependency(fc); 
+  addDependency(fc);
 
   parse("FILE",filename);
   if(filename.length()==0) {

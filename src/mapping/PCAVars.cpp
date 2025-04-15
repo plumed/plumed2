@@ -33,7 +33,7 @@ namespace mapping {
 /*
 Projection on principal component eigenvectors or other high dimensional linear subspace
 
-As discussed in the documenation for [RMSD](RMSD.md) and [the refdist module](module_refdist.md) there are various different ways 
+As discussed in the documenation for [RMSD](RMSD.md) and [the refdist module](module_refdist.md) there are various different ways
 of calculating the distance between the instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
 problem with all these methods, as one gets further and further from the reference configuration, the
 distance from it becomes a progressively poorer and poorer collective variable.  This happens because
@@ -59,10 +59,10 @@ $$
 \mathbf{s}_i = \sum_k A_{ik} ( X_{k} - X_{k}^{ref} )
 $$
 
-Here $\mathbf{X}-\mathbf{X}^{ref}$ is the displacement from the refernece configuration in the high dimenisonal space, which you can 
+Here $\mathbf{X}-\mathbf{X}^{ref}$ is the displacement from the refernece configuration in the high dimenisonal space, which you can
 calculate using the [RMSD](RMSD.md) action or by simply calculating difference between the instaneous values for a collection of variables
-and the values of the variables for a particular reference configuration.  $A$ is then a $d$ by $D$ matrix where $D$ is the dimensionality 
-of the high dimensional space and $d$ is the dimensionality of the lower dimensional subspace.   This matrix, $A$,    
+and the values of the variables for a particular reference configuration.  $A$ is then a $d$ by $D$ matrix where $D$ is the dimensionality
+of the high dimensional space and $d$ is the dimensionality of the lower dimensional subspace.   This matrix, $A$,
 can be found by various means including principal component analysis ([PCA](PCA.md)) and normal mode analysis.  In both these methods the
 rows of $A$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian.
 

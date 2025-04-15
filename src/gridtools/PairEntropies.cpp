@@ -27,19 +27,19 @@
 /*
 Calculate the KL entropy from the RDF around each of the atoms
 
-This shortcut can be used to calculate the descriptors of local structure that are described in the paper that is cited below.  This is not the implementation 
-that was used when that paper was written.  However, the values that this implementation generates were tested against the values that the implementation that 
+This shortcut can be used to calculate the descriptors of local structure that are described in the paper that is cited below.  This is not the implementation
+that was used when that paper was written.  However, the values that this implementation generates were tested against the values that the implementation that
 was used in the paper, which can be found [here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-fingerprint?authuser=0).
 
 The following example illustrates how this shortcut can be used to calculate and print the descriptor for a set of 64 atoms:
 
 ```plumed
 pp: PAIRENTROPIES ATOMS=1-64 MAXR=2 GRID_BIN=20 BANDWIDTH=0.13
-DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz 
+DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz
 ```
 
-If you expand the shortcut you will notice that this shortcut creates __a lot__ of actions.  It is thus likely to be considerably slower than the implementation 
-[here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-fingerprint?authuser=0). However, we hope that the implementation here is a 
+If you expand the shortcut you will notice that this shortcut creates __a lot__ of actions.  It is thus likely to be considerably slower than the implementation
+[here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-fingerprint?authuser=0). However, we hope that the implementation here is a
 useful reference implementation that anyone interested in using this method can use to test their implementations of it. In addition, we hope that the shortcut
 illustrates how the calculation of this complex descriptor can be broken down into a set of simpler calculations.
 

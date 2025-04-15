@@ -28,21 +28,21 @@
 Read in a sketch-map projection
 
 This shortcut can be used to read in a projection of a trajectory that was generated using [SKETCHMAP](SKETCHMAP.md).
-You can then use the coordinates that were read in to generate projections of other configurations.  Examples of how 
-this tool might be used are given in the last three papers cited below.  In these papers, a sketch-map projection is 
-computed from one particular set of data points.  This sketch-map projection that was output was then used to analyse 
+You can then use the coordinates that were read in to generate projections of other configurations.  Examples of how
+this tool might be used are given in the last three papers cited below.  In these papers, a sketch-map projection is
+computed from one particular set of data points.  This sketch-map projection that was output was then used to analyse
 a second completely different data set.
 
 An example input that illustrates how the sketch-map projection shortcut is used is shown below:
 
 ```plumed
 #SETTING INPUTFILES=regtest/dimred/rt-smap-read/smap.pdb
-d1: DISTANCE ATOMS=1,2 
-d2: DISTANCE ATOMS=3,4 
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
 smap: SKETCHMAP_PROJECTION ...
-    ARG=d1,d2,d3 REFERENCE=regtest/dimred/rt-smap-read/smap.pdb 
+    ARG=d1,d2,d3 REFERENCE=regtest/dimred/rt-smap-read/smap.pdb
     PROPERTY=smap_coord-1,smap_coord-2 CGTOL=1E-3
     WEIGHT=WEIGHT HIGH_DIM_FUNCTION={SMAP R_0=4 A=3 B=2} LOW_DIM_FUNCTION={SMAP R_0=4 A=1 B=2}
 ...

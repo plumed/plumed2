@@ -61,10 +61,11 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
 RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  std::string argn; parse("ARG",argn);
+  std::string argn;
+  parse("ARG",argn);
   if( argn.length()>0 ) {
-      readInputLine( getShortcutLabel() + ": RMSD_VECTOR ARG=" + argn + " " + convertInputLineToString() );
-      return;
+    readInputLine( getShortcutLabel() + ": RMSD_VECTOR ARG=" + argn + " " + convertInputLineToString() );
+    return;
   }
   bool disp;
   parseFlag("DISPLACEMENT",disp);

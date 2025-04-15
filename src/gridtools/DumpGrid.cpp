@@ -36,7 +36,7 @@ Output a three dimensional grid using the Gaussian cube file format.
 Suppose you have calculated the value of a function on a three dimensional grid.
 This function might be a [HISTOGRAM](HISTOGRAM.md), [KDE](KDE.md) or it might be a free energy energy surface
 that was calculated from this histogram by using [CONVERT_TO_FES](CONVERT_TO_FES.md).  Alternatively,
-your function might be a phase-field that was calculated using [MULTICOLVARDENS](MULTICOLVARDENS.md) or a series of [CUSTOM](CUSTOM.md) functions 
+your function might be a phase-field that was calculated using [MULTICOLVARDENS](MULTICOLVARDENS.md) or a series of [CUSTOM](CUSTOM.md) functions
 that had been applied on the input grid.
 Whatever the function is, however, you obviously cannot show it using a typical contour
 plotting program such as gnuplot as you have three input variables.
@@ -108,15 +108,15 @@ The following input monitors two torsional angles during a simulation
 and outputs a continuous histogram as a function of them at the end of the simulation.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo
 ```
@@ -125,15 +125,15 @@ The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo
 ```
@@ -142,15 +142,15 @@ The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```
@@ -161,15 +161,15 @@ Notice how the CLEAR keyword is used here and how it is not used in the
 previous example.
 
 ```plumed
-r1: TORSION ATOMS=1,2,3,4 
-r2: TORSION ATOMS=2,3,4,5 
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2 CLEAR=100000
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-... 
+...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```

@@ -59,7 +59,7 @@ tt: TORSION ...
    VECTORA10=5,4 VECTORB10=ddx,dd0 AXIS10=ddz,dd0
 ...
 
-# We now compute our instaneous normalised histogram of the bond directions.  Notice that the weights are used here so that we do not consider 
+# We now compute our instaneous normalised histogram of the bond directions.  Notice that the weights are used here so that we do not consider
 # non-bonded atoms
 hu: KDE VOLUMES=d1lt ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.2,0.2
 de: SUM ARG=d1lt PERIODIC=NO
@@ -70,12 +70,12 @@ kl: KL_ENTROPY ARG=h REFERENCE=regtest/gridtools/rt-weights-integral/kde.grid VA
 PRINT ARG=kl FILE=colvar
 ```
 
-The CV `kl` that is defined in the input above describes the disribution of bond directions that is observed in the structure.  To compute it we first define the orientations 
-of all the bonds in our structure relative to the lab frame by computing the angle between each bond direction and the z axis and the torsional angle around the z axis between 
-our bond vector and the positive x direction.  In other words, we compute two of the three [spherical polar coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system) 
+The CV `kl` that is defined in the input above describes the disribution of bond directions that is observed in the structure.  To compute it we first define the orientations
+of all the bonds in our structure relative to the lab frame by computing the angle between each bond direction and the z axis and the torsional angle around the z axis between
+our bond vector and the positive x direction.  In other words, we compute two of the three [spherical polar coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system)
 for each of the bond directions in our crystal structure.
 
-A normalised histogram that describes the instaneous distribution for these bond directions is then computed by using the [KDE](KDE.md) action. The final scalar value for the CV is computed by 
+A normalised histogram that describes the instaneous distribution for these bond directions is then computed by using the [KDE](KDE.md) action. The final scalar value for the CV is computed by
 determining the [Kullbeck-Leibler divergence](https://en.wikipedia.org/wiki/Kullback–Leibler_divergence) between this instaneous distribution and a reference distribution that is provided in input.
 
 Notice that this action will also works if you use KDEs computed using the [SPHERICAL_KDE](SPHERICAL_KDE.md) action in input as is illustrated in the following input:
@@ -102,7 +102,7 @@ h: CUSTOM ARG=hu,de FUNC=x/y PERIODIC=NO
 # And lastly compute the KL_ENTROPY
 kl: KL_ENTROPY ARG=h REFERENCE=regtest/gridtools/rt-kldiv/averageSp_X240.grid VALUE=av_Sp_X
 PRINT ARG=kl FILE=colvar
-```  
+```
 
 */
 //+ENDPLUMEDOC

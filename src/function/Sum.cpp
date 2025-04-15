@@ -51,8 +51,8 @@ s: SUM ARG=c PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
-If you want to sum all the elements in a grid you can. However, if the input is a function on a grid 
-it is more likely that you will want to compute the integral using [INTEGRATE_GRID](INTEGRATE_GRID.md). 
+If you want to sum all the elements in a grid you can. However, if the input is a function on a grid
+it is more likely that you will want to compute the integral using [INTEGRATE_GRID](INTEGRATE_GRID.md).
 
 */
 //+ENDPLUMEDOC

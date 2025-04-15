@@ -29,11 +29,11 @@
 /*
 Find the point with the lowest value of the function on the grid
 
-This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input 
-function at its lowest point. The other scalars returned are the coordinates for which the function takes this particular value. 
+This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input
+function at its lowest point. The other scalars returned are the coordinates for which the function takes this particular value.
 
-As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value. 
-If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a 
+As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value.
+If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a
 minimum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is lowest will be used as an initial coordinate
 for the optimisation.
 
@@ -68,11 +68,11 @@ DUMPGRID ARG=sff FILE=fes.dat
 /*
 Find the point with the highest value of the function on the grid
 
-This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input 
-function at its highest point. The other scalars returned are the coordinates for which the function takes this particular value. 
+This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input
+function at its highest point. The other scalars returned are the coordinates for which the function takes this particular value.
 
-As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its highest value. 
-If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a 
+As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its highest value.
+If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a
 maximum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is highest will be used as an initial coordinate
 for the optimisation.
 

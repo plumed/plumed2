@@ -28,9 +28,9 @@
 Distance along and from a path calculated using geometric formulas
 
 The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
-to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that 
-paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating 
-the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their 
+to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that
+paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating
+the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their
 method, the progress along the path $s$ is calculated using:
 
 $$
@@ -45,11 +45,11 @@ $$
 z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
 $$
 
-The symbols here are as they were for $s$.  
+The symbols here are as they were for $s$.
 
 ## Examples
 
-The example input below shows how to use this shortcut. 
+The example input below shows how to use this shortcut.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
@@ -66,9 +66,9 @@ p1b: GPATH REFERENCE=regtest/trajectories/path_msd/all.pdb
 PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 ```
 
-When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md) 
+When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
 action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
-of mass and rotation of the reference frame. 
+of mass and rotation of the reference frame.
 
 */
 //+ENDPLUMEDOC
