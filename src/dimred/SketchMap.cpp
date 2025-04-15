@@ -29,7 +29,82 @@
 /*
 Construct a sketch map projection of the input data
 
-\par Examples
+This shortcut allows you to construct a sketch-map projection from a trajectory. The sketch-map algorithm
+is introduced and examples of how it is used are given in the papers cited below. 
+
+The following input illustrates how to run a sketch-map calculation with PLUMED:
+
+```plumed
+d1: DISTANCE ATOMS=1,2 
+d2: DISTANCE ATOMS=3,4 
+d3: DISTANCE ATOMS=5,6 
+
+ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
+lwe: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
+smap: SKETCHMAP ...
+   ARG=ff NLOW_DIM=2
+   HIGH_DIM_FUNCTION={SMAP R_0=2 A=3 B=9}
+   LOW_DIM_FUNCTION={SMAP R_0=2 A=2 B=2}
+   WEIGHTS=lwe NCYCLES=3 FGRID_SIZE=50,50
+...
+
+DUMPVECTOR ARG=smap.*,lwe FILE=smap
+```
+
+The sketch-map projection is constructed from all the data in the input trajectory here and is output at the end 
+of the simulation.  Dissimilarities between the trajectory frames are calculated based on how much the three 
+distances that are used in the input to the [COLLECT_FRAMES](COLLECT_FRAMES.md) object here have changed.  However, 
+if you want to use RMSD distances to compute these dissimilarities instead you can use an input like the one shown below:
+
+```plumed
+ff: COLLECT_FRAMES STRIDE=1 ATOMS=1-256
+lwe: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
+smap: SKETCHMAP ...
+   ARG=ff NLOW_DIM=2
+   HIGH_DIM_FUNCTION={SMAP R_0=2 A=3 B=9}
+   LOW_DIM_FUNCTION={SMAP R_0=2 A=2 B=2}
+   WEIGHTS=lwe NCYCLES=3 FGRID_SIZE=50,50
+...
+
+DUMPVECTOR ARG=smap.*,lwe FILE=smap
+```
+
+Information on how we optimise the sketch-map stress function can be found by expanding the SKETCHMAP shortcut in the above 
+input and reading the documentation for [ARRANGE_POINTS](ARRANGE_POINTS.md). 
+
+## Using landmarks
+
+Optimising the sketch-map stress function is computationally expensive and so the usual practise with this method is to 
+pick a subset of [landmark](module_landmarks.md) points.  Projections for these points are found by optimising the sketch-map
+stress function using [ARRANGE_POINTS](ARRANGE_POINTS.md).  Projections for non-landmark points are then found by using 
+[PROJECT_POINTS](PROJECT_POINTS.md).  The following example input illustrates how you can perform such a calculation with PLUMED
+
+```plumed
+d1: DISTANCE ATOMS=1,2 
+d2: DISTANCE ATOMS=3,4 
+d3: DISTANCE ATOMS=5,6 
+
+ff: COLLECT_FRAMES ARG=d1,d2,d3
+ff_dataT: TRANSPOSE ARG=ff_data
+ll: LANDMARK_SELECT_STRIDE ARG=ff NLANDMARKS=250
+
+# Calculate the weights
+voro: VORONOI ARG=ll_rectdissims
+weights: CUSTOM ARG=ff.logweights FUNC=exp(x) PERIODIC=NO
+weightsT: TRANSPOSE ARG=weights
+lweT: MATRIX_PRODUCT ARG=weightsT,voro
+lwe: TRANSPOSE ARG=lweT
+
+smap: SKETCHMAP ...
+  ARG=ll NLOW_DIM=2 PROJECT_ALL
+  HIGH_DIM_FUNCTION={SMAP R_0=4 A=3 B=2}
+  LOW_DIM_FUNCTION={SMAP R_0=4 A=1 B=2}
+...
+
+DUMPVECTOR ARG=smap,lwe FILE=smap
+DUMPVECTOR ARG=smap_osample,weights FILE=projections 
+```
+
 
 */
 //+ENDPLUMEDOC
@@ -65,6 +140,11 @@ void SketchMap::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SMACREG","0.001","this is used to ensure that we don't divide by zero when updating weights for SMACOF algorithm");
   keys.setValueDescription("matrix","the sketch-map projection of the input points");
   keys.addOutputComponent("osample","PROJECT_ALL","matrix","the out-of-sample projections");
+  keys.addDOI("10.1073/pnas.1108486108");
+  keys.addDOI("10.1073/pnas.1201152109");
+  keys.addDOI("10.1021/ct3010563");
+  keys.addDOI("10.1021/ct500950z");
+  keys.addDOI("10.1021/acs.jctc.5b00714");
   keys.needsAction("CLASSICAL_MDS");
   keys.needsAction("MORE_THAN");
   keys.needsAction("SUM");
