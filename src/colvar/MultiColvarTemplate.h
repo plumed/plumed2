@@ -79,11 +79,11 @@ public:
                            const MultiColvarInput& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index,
-                            const MultiColvarInput& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t ntotal_force, 
+                               const MultiColvarInput& actiondata,
+                               const ParallelActionsInput& input,
+                               View<std::size_t,helpers::dynamic_extent> force_indices );
 };
 
 template <class T>
@@ -165,6 +165,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // Sets up the index list in the task manager
   taskmanager.setupParallelTaskManager( natoms_per_task,
                                         3*natoms_per_task + virialSize,
+                                        3*natoms_per_task, 
                                         virialSize );
   taskmanager.setActionInput( MultiColvarInput{ usepbc, mode });
 }
@@ -293,35 +294,32 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
 }
 
 template <class T>
-void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
-    const MultiColvarInput& actiondata,
-    const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
+void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
+                                              std::size_t ntotal_force,
+                                              const MultiColvarInput& actiondata,
+                                              const ParallelActionsInput& input,
+                                              View<std::size_t,helpers::dynamic_extent> force_indices ) {
+  std::size_t m=0;
   std::size_t base = 3*task_index*input.nindices_per_task;
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned m = 0;
-    double ff = fdata.force[i];
-    for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+  for(unsigned j=0; j<input.nindices_per_task; ++j) {
+      force_indices[m] = base + m; 
       ++m;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      force_indices[m] = base + m;
       ++m;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      force_indices[m] = base + m;
       ++m;
-    }
-    //unrolled virial
-    forces.thread_safe[0] += ff*fdata.deriv[i][m];
-    forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
-    forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
-    forces.thread_safe[3] += ff*fdata.deriv[i][m+3];
-    forces.thread_safe[4] += ff*fdata.deriv[i][m+4];
-    forces.thread_safe[5] += ff*fdata.deriv[i][m+5];
-    forces.thread_safe[6] += ff*fdata.deriv[i][m+6];
-    forces.thread_safe[7] += ff*fdata.deriv[i][m+7];
-    forces.thread_safe[8] += ff*fdata.deriv[i][m+8];
   }
+  force_indices[m+0] = ntotal_force - 9;
+  force_indices[m+1] = ntotal_force - 8;
+  force_indices[m+2] = ntotal_force - 7;
+  force_indices[m+3] = ntotal_force - 6;
+  force_indices[m+4] = ntotal_force - 5;
+  force_indices[m+5] = ntotal_force - 4;
+  force_indices[m+6] = ntotal_force - 3;
+  force_indices[m+7] = ntotal_force - 2;
+  force_indices[m+8] = ntotal_force - 1;
 }
+
 } // namespace colvar
 } // namespace PLMD
 #endif
