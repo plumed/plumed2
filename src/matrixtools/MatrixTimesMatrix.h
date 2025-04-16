@@ -38,8 +38,8 @@ public:
 class InputVectors {
 public:
   std::size_t nelem;
-  std::vector<double> arg1, arg2;
-  InputVectors( std::size_t n ) : nelem(n), arg1(n), arg2(n) {}
+  View<double,helpers::dynamic_extent> arg1, arg2;
+  InputVectors( std::size_t n,  double* b ) : nelem(n), arg1(b,n), arg2(b+n,n) {}
 };
 
 template <class T>
@@ -156,6 +156,7 @@ void MatrixTimesMatrix<T>::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
   unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
   taskmanager.setupParallelTaskManager( 1, 2*nvals*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues(), nvals );
+  taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
   taskmanager.runAllTasks();
 }
 
@@ -168,7 +169,7 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
   std::size_t vstart = task_index*arg0.ncols;
-  InputVectors vectors( nmult );
+  InputVectors vectors( nmult, output.buffer.data() );
   if( arg1.ncols<arg1.shape[1] ) {
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
     std::size_t nelements = actiondata.outmat.bookeeping[fstart];

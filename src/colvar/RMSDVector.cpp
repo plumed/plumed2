@@ -228,9 +228,10 @@ void RMSDVector::calculate() {
     input.inputdata = input_buffer.data();
     input.setupArguments( this );
 
+    std::vector<double> buffer;
     std::vector<double> values( input.nscalars );
     std::vector<double> deriv( input_buffer.size(), 0 );
-    ParallelActionsOutput output( input.nscalars, values.data(), input_buffer.size(), deriv.data() );
+    ParallelActionsOutput output( input.nscalars, values.data(), input_buffer.size(), deriv.data(), 0, buffer.data() );
     performTask( 0, taskmanager.getActionInput(), input, output );
 
     getPntrToComponent(0)->set( values[0] );

@@ -166,9 +166,11 @@ public:
 struct ParallelActionsOutput {
   View<double> values;
   View<double> derivatives;
-  ParallelActionsOutput( std::size_t ncomp, double* v, std::size_t ndev, double* d )
+  View<double> buffer;
+  ParallelActionsOutput( std::size_t ncomp, double* v, std::size_t ndev, double* d, std::size_t nb, double* b )
     : values(v,ncomp),
-      derivatives(d,ndev) {}
+      derivatives(d,ndev),
+      buffer(b,nb) {}
 };
 
 class ForceInput {
@@ -235,6 +237,8 @@ private:
   ParallelActionsInput myinput;
 //this holds the data for myinput that will be passed though myinput
   std::vector<double> input_buffer;
+/// This holds tempory data that we use in performTask
+  std::size_t workspace_size;
 /// This holds data for that the underlying action needs to do the calculation
   input_type actiondata;
 //// This is used internally to get the number of elements in the value stash
@@ -252,6 +256,8 @@ public:
   void setupParallelTaskManager( std::size_t nind, std::size_t nder, int nt=-1, int s=-1 );
 /// Copy the data from the underlying colvar into this parallel action
   void setActionInput( const input_type& adata );
+/// Creating the size of the workspace
+  void setWorkspaceSize( std::size_t size );
 /// Get the action input so we can use it
   input_type& getActionInput();
 /// This runs all the tasks
@@ -273,7 +279,8 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   useacc(false),
   nderivatives_per_component(0),
   nthreaded_forces(0),
-  myinput(av->getPbc()) {
+  myinput(av->getPbc()),
+  workspace_size(0) {
   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
   if(am) {
     ismatrix=true;
@@ -342,6 +349,11 @@ typename ParallelTaskManager<T>::input_type& ParallelTaskManager<T>::getActionIn
 }
 
 template <class T>
+void ParallelTaskManager<T>::setWorkspaceSize( std::size_t size ) {
+  workspace_size = size;
+}
+
+template <class T>
 void ParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
@@ -397,7 +409,9 @@ void ParallelTaskManager<T>::runAllTasks() {
       ParallelActionsOutput myout {input.nscalars,
                                    value_stash_data+val_pos,
                                    ndev_per_task,
-                                   derivatives+ndev_per_task*i};
+                                   derivatives+ndev_per_task*i,
+                                   workspace_size,      /// These probably need to be passed to the GPU
+                                   buffer.data() };  /// This also needs to be passed to the GPU
       // Calculate the stuff in the loop for this action
       T::performTask( task_index, t_actiondata, input, myout );
     }
@@ -424,6 +438,8 @@ void ParallelTaskManager<T>::runAllTasks() {
 
     #pragma omp parallel num_threads(nt)
     {
+      const unsigned t=OpenMP::getThreadNum();
+      std::vector<double> buffer( workspace_size );
       std::vector<double> derivatives( myinput.ncomponents*nderivatives_per_component );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
@@ -432,7 +448,9 @@ void ParallelTaskManager<T>::runAllTasks() {
         ParallelActionsOutput myout( myinput.nscalars,
                                      value_stash.data()+val_pos,
                                      nderivatives_per_component,
-                                     derivatives.data() );
+                                     derivatives.data(),
+                                     workspace_size,
+                                     buffer.data() );
         // Calculate the stuff in the loop for this action
         T::performTask( task_index, actiondata, myinput, myout );
       }
@@ -508,8 +526,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       ParallelActionsOutput myout( input.nscalars,
                                    valstmp.data(),
                                    nderivPerComponent,
-                                   derivatives+ndev_per_task*i
-                                 );
+                                   derivatives+ndev_per_task*i,
+                                   workspace_size,    // This needs to be passed to the GPU 
+                                   buffer.data() );   // Memory for this needs to be created somehow
 
       // Calculate the stuff in the loop for this action
       T::performTask( task_index, t_actiondata, input, myout );
@@ -550,6 +569,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       const unsigned t=OpenMP::getThreadNum();
       omp_forces[t].assign( nthreaded_forces, 0.0 );
       ForceOutput forces{ omp_forces[t], forcesForApply };
+      std::vector<double> buffer( workspace_size );
       std::vector<double> fake_vals( myinput.nscalars );
       std::vector<double> derivatives( myinput.ncomponents*nderivatives_per_component );
       #pragma omp for nowait
@@ -558,7 +578,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
         ParallelActionsOutput myout( myinput.nscalars,
                                      fake_vals.data(),
                                      derivatives.size(),
-                                     derivatives.data() );
+                                     derivatives.data(),
+                                     workspace_size,
+                                     buffer.data() );
         // Calculate the stuff in the loop for this action
         T::performTask( task_index, actiondata, myinput, myout );
 

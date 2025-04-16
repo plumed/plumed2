@@ -198,7 +198,7 @@ void HBPammMatrix::parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action
 }
 
 void HBPammMatrix::calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput& output ) {
-  Vector ddij, ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;
+  Vector ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;
   ddin = input.pos;
   in_dists[2] = ddin.modulo();
   if( in_dists[2]<epsilon ) {
@@ -208,7 +208,7 @@ void HBPammMatrix::calculateWeight( const HBPammMatrix& data, const adjmat::Adja
   output.val[0]=0;
   Vector disp, der, tmp_der;
   for(unsigned i=0; i<input.natoms; ++i) {
-    ddij = input.extra_positions[i];
+    Vector ddij( input.extra_positions[i][0], input.extra_positions[i][1], input.extra_positions[i][2] );
     in_dists[0] = ddij.modulo();
     ddik = input.pbc->distance( input.pos, ddij );
     in_dists[1] = ddik.modulo();

@@ -163,7 +163,7 @@ void HbondMatrix::calculateWeight( const HbondMatrix& data, const AdjacencyMatri
   double ood_df, ood_sw=data.distanceOOSwitch.calculateSqr( ood_l, ood_df );
 
   for(unsigned i=0; i<input.natoms; ++i) {
-    Vector ohd=input.extra_positions[i];
+    Vector ohd(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
     double ohd_l=ohd.modulo2();
     double ohd_df, ohd_sw=data.distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
 
