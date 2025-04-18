@@ -1,0 +1,4 @@
+name: bias
+authors: The PLUMED core developers
+description: bias potentials that can be used to force rare events to occur in MD simulations 
+dois: []

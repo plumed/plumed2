@@ -41,60 +41,60 @@ namespace bias {
 /*
 Used to performed Parallel Bias metadynamics.
 
-This action activate Parallel Bias Metadynamics (PBMetaD) \cite pbmetad, a version of metadynamics \cite metad in which
-multiple low-dimensional bias potentials are applied in parallel.
+This action provides an implementation of the Parallel Bias Metadynamics (PBMetaD) method that was introduced in the first paper cited below.
+This variant of metadynamics (see [METAD](METAD.md)) uses multiple low-dimensional bias potentials that are applied in parallel.
 In the current implementation, these have the form of mono-dimensional metadynamics bias
 potentials:
 
-\f[
+$$
 {V(s_1,t), ..., V(s_N,t)}
-\f]
+$$
 
 where:
 
-\f[
+$$
 V(s_i,t) = \sum_{ k \tau < t} W_i(k \tau)
 \exp\left(
 - \frac{(s_i-s_i^{(0)}(k \tau))^2}{2\sigma_i^2}
 \right).
-\f]
+$$
 
 To ensure the convergence of each mono-dimensional bias potential to the corresponding free energy,
 at each deposition step the Gaussian heights are multiplied by the so-called conditional term:
 
-\f[
+$$
 W_i(k \tau)=W_0 \frac{\exp\left(
 - \frac{V(s_i,k \tau)}{k_B T}
 \right)}{\sum_{i=1}^N
 \exp\left(
 - \frac{V(s_i,k \tau)}{k_B T}
 \right)}
-\f]
+$$
 
-where \f$W_0\f$ is the initial Gaussian height.
+where $W_0$ is the initial Gaussian height.
 
 The PBMetaD bias potential is defined by:
 
-\f[
+$$
 V_{PB}(\vec{s},t) = -k_B T \log{\sum_{i=1}^N
 \exp\left(
 - \frac{V(s_i,t)}{k_B T}
 \right)}.
-\f]
+$$
 
 
 Information on the Gaussian functions that build each bias potential are printed to
 multiple HILLS files, which
 are used both to restart the calculation and to reconstruct the mono-dimensional
 free energies as a function of the corresponding CVs.
-These can be reconstructed using the \ref sum_hills utility because the final bias is given
+These can be reconstructed using the [sum_hills](sum_hills.md) utility because the final bias is given
 by:
 
-\f[
+$$
 V(s_i) = -F(s_i)
-\f]
+$$
 
-Currently, only a subset of the \ref METAD options are available in PBMetaD.
+Currently, only a subset of the [METAD](METAD.md) options are available in PBMetaD.
 
 The bias potentials can be stored on a grid to increase performances of long PBMetaD simulations.
 You should
@@ -105,24 +105,24 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Another option that is available is well-tempered metadynamics \cite Barducci:2008. In this
+Another option that is available is the well-tempered metadynamics that is discussed in the second paper cited below. In this
 variant of PBMetaD the heights of the Gaussian hills are scaled at each step by the
 additional well-tempered metadynamics term.
 This  ensures that each bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
 the output printed the Gaussian height is re-scaled using the bias factor.
 Also notice that with well-tempered metadynamics the HILLS files do not contain the bias,
 but the negative of the free-energy estimate. This choice has the advantage that
-one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
+one can restart a simulation using a different value for the $\Delta T$. The applied bias will be scaled accordingly.
 
-Note that you can use here also the flexible Gaussian approach  \cite Branduardi:2012dl
-in which you can adapt the Gaussian to the extent of Cartesian space covered by a variable or
+Note that you can also use here the flexible Gaussian approach that is discussed in the third paper cited below.
+This methods allows you to adapt the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
 Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
 (ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
 should be used in this case. Check the documentation for utility sum_hills.
 
-With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero
-outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only
+With the keyword INTERVAL one changes the metadynamics algorithm and sets the bias force equal to zero
+outside boundary as discussed in the fourth paper cited below. If, for example, metadynamics is performed on a CV s and one is interested only
 to the free energy for s > boundary, the history dependent potential is still updated according to the above
 equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussian kernels are added also
 if s < boundary, as the tails of these Gaussian kernels influence VG in the relevant region s > boundary. In this way, the
@@ -130,39 +130,41 @@ force on the system in the region s > boundary comes from both metadynamics and 
 s < boundary only from the latter. This approach allows obtaining a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Note that:
+
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
 - The interval limit boundary in a region where the free energy derivative is not large;
 - If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
-  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
+  be used together with a [UPPER_WALLS](UPPER_WALLS.md) or [LOWER_WALLS](LOWER_WALLS.md) at boundary.
 
 For systems with multiple CVs that share identical properties, PBMetaD with partitioned families can be used
-to group them under one bias potential that each contributes to \cite Prakash2018PF. This is done with a list
+to group them under one bias potential that each contributes to as discussed in the penultimate paper in the references below. This is done with a list
 of PF keywords, where each PF* argument contains the list of CVs from ARG to be placed in that family. Once
 invoked, each CV in ARG must be placed in exactly one PF, even if it results in families containing only one CV.
 Additionally, in cases where each of SIGMA or GRID entry would correspond to each ARG entry, they now correspond to
 each PF and must be adjusted accordingly.
 
-Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
+The multiple walkers that is discussed in the final paper cited below can also be used. See below the examples.
 
-\par Examples
+## Examples
 
 The following input is for PBMetaD calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
 the PBMetaD bias potential are written to the COLVAR file every 100 steps.
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=pb FILE=HILLS_d1,HILLS_d2
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endplumedfile
-(See also \ref DISTANCE and \ref PRINT).
+```
 
-\par
-If you use well-tempered metadynamics, you should specify a single bias factor and initial
-Gaussian height.
-\plumedfile
+(See also [DISTANCE](DISTANCE.md) and [PRINT](PRINT.md)).
+
+If you use well-tempered metadynamics, you should specify a single bias factor and initial Gaussian height.
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -171,13 +173,13 @@ PACE=500 BIASFACTOR=8 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endplumedfile
+```
 
-\par
 Using partitioned families, each CV in ARG must be in exactly one family. Here,
 the distance between atoms 1,2 is degenerate with 2,4, but not with the
 distance between 3,5. Note that two SIGMA are provided to match the two PF.
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 DISTANCE ATOMS=1,2 LABEL=d3
@@ -188,11 +190,11 @@ PACE=500 BIASFACTOR=8 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
 PRINT ARG=d1,d2,d3,pb.bias STRIDE=100 FILE=COLVAR
-\endplumedfile
+```
 
-\par
 The following input enables the MPI version of multiple-walkers.
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -202,15 +204,15 @@ FILE=HILLS_d1,HILLS_d2
 WALKERS_MPI
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endplumedfile
+```
 
-\par
 The disk version of multiple-walkers can be
 enabled by setting the number of walker used, the id of the
 current walker which interprets the input file, the directory where the
 hills containing files resides, and the frequency to read the other walkers.
 Here is an example
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -223,7 +225,8 @@ WALKERS_DIR=../
 WALKERS_RSTRIDE=100
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endplumedfile
+```
+
 where  WALKERS_N is the total number of walkers, WALKERS_ID is the
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between
@@ -368,6 +371,12 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
+  keys.addDOI("10.1021/acs.jctc.5b00846");
+  keys.addDOI("10.1103/PhysRevLett.100.020603");
+  keys.addDOI("10.1021/ct3002464");
+  keys.addDOI("10.2174/1877946811202010079");
+  keys.addDOI("10.1021/acs.jctc.8b00448");
+  keys.addDOI("10.1021/jp054359r");
 }
 
 PBMetaD::PBMetaD(const ActionOptions& ao):

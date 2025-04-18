@@ -38,46 +38,54 @@ namespace bias {
 /*
 Add a linear biasing potential on one or more variables that satisfies a maximum entropy principle.
 
-Add a linear biasing potential on one or more variables \f$f_{i}\left(\boldsymbol{x}\right)\f$ satisfying the maximum entropy principle as proposed in Ref. \cite cesari2016maxent .
+Add a linear biasing potential on one or more variables $f_{i}\left(\boldsymbol{x}\right)$ satisfying the maximum entropy principle as proposed in the paper cited below.
 
-\warning
-    Notice that syntax is still under revision and might change
+> [!warning]
+> Notice that syntax is still under revision and might change
 
 The resulting biasing potential is given by:
-\f[
+
+$$
   V_{BIAS}(\boldsymbol{x},t)=K_{B}T\sum_{i=1}^{\#arguments}f_{i}(\boldsymbol{x},t)\lambda_{i}(t)
-\f]
-Lagrangian multipliers \f$ \lambda_{i}\f$ are updated, every PACE steps, according to the following update rule:
-\f[
+$$
+
+Lagrangian multipliers $\lambda_{i}$ are updated, every PACE steps, according to the following update rule:
+
+$$
 \lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{exp,i}+\xi_{i}\lambda_{i}-f_{i}(\boldsymbol{x})\right)
-\f]
-\f$k\f$ set the initial value of the learning rate and its units are \f$[observable]^{-2}ps^{-1}\f$. This can be set with the keyword KAPPA.
-The number of components for any KAPPA vector must be equal to the number of arguments of the action.
+$$
 
-Variable \f$ \xi_{i}(\lambda) \f$ is related to the chosen prior to model experimental errors. If a GAUSSIAN prior is used then:
-\f[
+The variable $k$ in the above expression sets the initial value of the learning rate and its units are $[observable]^{-2}ps^{-1}$. This variable can be set with the keyword KAPPA.
+The number of components for any KAPPA vector must be equal to the number of arguments for the action.
+
+The variable $\xi_{i}(\lambda)$ is related to the chosen prior to model experimental errors. If a GAUSSIAN prior is used then:
+
+$$
 \xi_{i}(\lambda)=-\lambda_{i}\sigma^{2}
-\f]
-where \f$ \sigma \f$ is the typical expected error on the observable \f$ f_i\f$.
-For a LAPLACE prior:
-\f[
-\xi_{i}(\lambda)=-\frac{\lambda_{i}\sigma^{2}}{1-\frac{\lambda^{2}\sigma^{2}}{2}}
+$$
 
-\f]
-The value of \f$ \xi(\lambda,t)\f$ is written in output as a component named: argument name followed by the string _error.
-Setting \f$ \sigma =0\f$ is equivalent to enforce a pure Maximum Entropy restraint without any noise modelling.
+where $\sigma$ is the typical expected error on the observable $f_i$.
+For a LAPLACE prior:
+
+$$
+\xi_{i}(\lambda)=-\frac{\lambda_{i}\sigma^{2}}{1-\frac{\lambda^{2}\sigma^{2}}{2}}
+$$
+
+The value of $\xi(\lambda,t)$ is written in output as a component named: argument name followed by the string _error.
+Setting $\sigma=0$ is equivalent to enforce a pure Maximum Entropy restraint without any noise modelling.
 This method can be also used to enforce inequality restraint as shown in following examples.
 
-Notice that a similar method is available as \ref EDS, although with different features and using a different optimization algorithm.
+Notice that a similar method is available as [EDS](EDS.md), although with different features and using a different optimization algorithm.
 
-\par Examples
+## Examples
 
 The following input tells plumed to restrain the distance between atoms 7 and 15
 and the distance between atoms 2 and 19, at different equilibrium
 values, and to print the energy of the restraint.
-Lagrangian multiplier will be printed on a file called restraint.LAGMULT with a stride set by the variable PACE to 200ps.
+The Lagrangian multiplier will be printed on a file called restraint.LAGMULT with a stride set by the variable PACE to 200ps.
 Moreover plumed will compute the average of each Lagrangian multiplier in the window [TSTART,TEND] and use that to continue the simulations with fixed Lagrangian multipliers.
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=7,15 LABEL=d1
 DISTANCE ATOMS=2,19 LABEL=d2
 MAXENT ...
@@ -92,17 +100,19 @@ TEND=500
 LABEL=restraint
 ... MAXENT
 PRINT ARG=restraint.bias
-\endplumedfile
+```
+
 Lagrangian multipliers will be printed on a file called restraint.bias
 The following input tells plumed to restrain the distance between atoms 7 and 15
 to be greater than 0.2 and to print the energy of the restraint
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=7,15 LABEL=d
 MAXENT ARG=d TYPE=INEQUAL> AT=0.02 KAPPA=35000.0 TAU=3 LABEL=restraint
 PRINT ARG=restraint.bias
-\endplumedfile
+```
 
-(See also \ref DISTANCE and \ref PRINT).
+(See also [DISTANCE](DISTANCE.md) and [PRINT](PRINT.md)).
 
 */
 //+ENDPLUMEDOC
@@ -194,6 +204,7 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("_error","default","scalar","Instantaneous values of the discrepancy between the observable and the restraint center");
   keys.addOutputComponent("_coupling","default","scalar","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
   keys.use("RESTART");
+  keys.addDOI("10.1021/acs.jctc.6b00944");
 }
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),

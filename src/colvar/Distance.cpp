@@ -197,7 +197,6 @@ void Distance::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("c","SCALED_COMPONENTS",scalarOrVector,"the normalized projection on the third lattice vector of the vector connecting the two atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription(scalarOrVector,"the DISTANCE between this pair of atoms");
-  keys.addDOI("10.48550/arXiv.1812.08213");
   keys.addDOI("10.1007/978-1-4939-9608-7_21");
 }
 

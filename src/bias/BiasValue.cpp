@@ -29,26 +29,44 @@ namespace bias {
 /*
 Takes the value of one variable and use it as a bias
 
-This is the simplest possible bias: the bias potential is equal to a collective variable.
-It is useful to create custom biasing potential, e.g. applying a function (see \ref Function)
-to some collective variable then using the value of this function directly as a bias.
+This is the simplest possible bias: when you use this method the bias potential is set equal to the scalar-valued argument that was input.
+This action is useful for creating custom biasing potential, e.g. if you apply a function (see [function module](module_function.md))
+to some collective variable then use the value of this function directly as a bias.
 
-\par Examples
+This action is also useful for testing that forces are being calculated correctly.  If I wanted to test whether the derivatives calculated
+by the [DISTANCE](DISTANCE.md) action are computed correctly I would write a PLUMED input like this one:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+BIASVALUE ARG=d1
+```
+
+I would then run a calculation using [driver](driver.md) with the following input:
+
+```plumed
+plumed driver --ixyz traj.xyz --debug-forces forces.num
+```
+
+This outputs a file with two columns that both contain the forces that are acting upon the atoms.  The first set of forces output are the
+analytic forces that are implemented within PLUMED.  The second set of forces are calcluated numerically using finite difference.  If you
+method is implemented correctly these two sets of forces should be the same.
+
+## Examples
 
 The following input tells plumed to use the value of the distance between atoms 3 and 5
 and the value of the distance between atoms 2 and 4 as biases.
 It then tells plumed to print the energy of the restraint
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=3,6 LABEL=d2
 BIASVALUE ARG=d1,d2 LABEL=b
 PRINT ARG=d1,d2,b.d1_bias,b.d2_bias
-\endplumedfile
+```
 
-Another thing one can do is asking one system to follow
-a circle in sin/cos according a  time dependence
+Another thing one can do is ask the system to follow a circle in sin/cos in accordance with a time dependence
 
-\plumedfile
+```plumed
 t: TIME
 # this just print cos and sin of time
 cos: MATHEVAL ARG=t VAR=t FUNC=cos(t) PERIODIC=NO
@@ -67,7 +85,7 @@ vv1:  MATHEVAL ARG=mycos,mysin,cos,sin VAR=mc,ms,c,s  FUNC=100*((mc-c)^2+(ms-s)^
 cc: BIASVALUE ARG=vv1
 # some printout
 PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.vv1_bias STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

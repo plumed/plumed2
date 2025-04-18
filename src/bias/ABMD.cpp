@@ -32,49 +32,46 @@ namespace bias {
 Adds a ratchet-and-pawl like restraint on one or more variables.
 
 This action can be used to evolve a system towards a target value in
-CV space using an harmonic potential moving with the thermal fluctuations of the CV
-\cite ballone \cite provasi10abmd \cite camilloni11abmd. The biasing potential in this
+CV space using an harmonic potential that moves with the thermal fluctuations of the CV.
+This method was introduced in the papers cited below.  In it the biasing potential in this
 method is as follows:
 
-\f$
+$$
 V(\rho(t)) = \left \{ \begin{array}{ll} \frac{K}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
               0, & \rho(t)\le\rho_m(t), \end{array} \right .
-\f$
-
+$$
 
 where
 
-
-\f$
+$$
 \rho(t)=\left(CV(t)-TO\right)^2
-\f$
-
+$$
 
 and
 
-
-\f$
+$$
 \rho_m(t)=\min_{0\le\tau\le t}\rho(\tau)+\eta(t)
-\f$.
+$$.
 
 The method is based on the introduction of a biasing potential which is zero when
 the system is moving towards the desired arrival point and which damps the
 fluctuations when the system attempts to move in the opposite direction. As in the
 case of the ratchet and pawl system, propelled by thermal motion of the solvent
-molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f$ is
+molecules, the biasing potential does not exert work on the system. $\eta(t)$ is
 an additional white noise acting on the minimum position of the bias.
 
-\par Examples
+## Examples
 
 The following input sets up two biases, one on the distance between atoms 3 and 5
 and another on the distance between atoms 2 and 4. The two target values are defined
 using TO and the two strength using KAPPA. The total energy of the bias is printed.
-\plumedfile
+
+```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
 PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -105,6 +102,9 @@ void ABMD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("_min","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           " These quantities will be named with the arguments of the bias followed by "
                           "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
+  keys.addDOI("10.1063/1.478259");
+  keys.addDOI("10.1016/j.bpj.2010.01.047");
+  keys.addDOI("10.1063/1.3523345");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
