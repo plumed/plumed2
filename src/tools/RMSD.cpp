@@ -37,8 +37,8 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
 // making them larger improves numerical convergence but increases the cost
 // in theory: what matters for accuracy is nsquare*niter
 //            what matters for cost is ~ nsquare * 4 + niter
-  constexpr unsigned nsquare=10;
-  constexpr unsigned niter=30;
+  constexpr unsigned nsquare=15;
+  constexpr unsigned niter=40;
 
   // Estimate upper bound for largest eigenvalue using Gershgorin disks (branch-free)
   double lambda_shift = 0.0;
