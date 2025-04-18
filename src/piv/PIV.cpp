@@ -35,7 +35,7 @@ using namespace std;
 namespace PLMD {
 namespace piv {
 
-//+PLUMEDOC PIVMOD_COLVAR PIV
+//+PLUMEDOC COLVAR PIV
 /*
 Calculates the PIV-distance.
 

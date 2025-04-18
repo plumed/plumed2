@@ -22,7 +22,7 @@ using namespace std;
 namespace PLMD {
 namespace funnel {
 
-//+PLUMEDOC FUNNELMOD_COLVAR FUNNEL_PS
+//+PLUMEDOC COLVAR FUNNEL_PS
 /*
 FUNNEL_PS implements the Funnel-Metadynamics (FM) technique in PLUMED 2.
 

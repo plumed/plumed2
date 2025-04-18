@@ -34,7 +34,7 @@ using namespace bias;
 namespace PLMD {
 namespace eds {
 
-//+PLUMEDOC EDSMOD_BIAS EDS
+//+PLUMEDOC BIAS EDS
 /*
 Add a linear bias on a set of observables.
 

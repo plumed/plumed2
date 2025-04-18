@@ -35,7 +35,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC TOOLS pdbrenumber
+//+PLUMEDOC pdbrenumber
 /*
 Modify atom numbers in a PDB file, possibly using hybrid-36 coding.
 

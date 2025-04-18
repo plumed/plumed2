@@ -30,7 +30,7 @@
 #include <vector>
 #include <memory>
 
-//+PLUMEDOC TOOLS pesmd
+//+PLUMEDOC pesmd
 /*
 Pesmd allows one to do (biased) Langevin dynamics on a two-dimensional potential energy surface.
 

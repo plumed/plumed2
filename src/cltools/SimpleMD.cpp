@@ -34,7 +34,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC TOOLS simplemd
+//+PLUMEDOC simplemd
 /*
 simplemd allows one to do molecular dynamics on systems of Lennard-Jones atoms.
 

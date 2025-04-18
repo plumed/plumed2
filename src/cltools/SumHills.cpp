@@ -38,7 +38,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC TOOLS sum_hills
+//+PLUMEDOC sum_hills
 /*
 sum_hills is a tool that allows one to to use plumed to post-process an existing hills/colvar file
 

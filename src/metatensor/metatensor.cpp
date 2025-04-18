@@ -26,7 +26,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
-//+PLUMEDOC METATENSORMOD_COLVAR METATENSOR
+//+PLUMEDOC COLVAR METATENSOR
 /*
 Use arbitrary machine learning models as collective variables.
 

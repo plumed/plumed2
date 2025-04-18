@@ -49,7 +49,7 @@ namespace PLMD {
 namespace function {
 namespace pytorch {
 
-//+PLUMEDOC PYTORCH_FUNCTION PYTORCH_MODEL
+//+PLUMEDOC FUNCTION PYTORCH_MODEL
 /*
 Load a PyTorch model compiled with TorchScript.
 

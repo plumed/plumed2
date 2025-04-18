@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <limits>
 
-//+PLUMEDOC TOOLS plotswitch
+//+PLUMEDOC plotswitch
 /*
 plotswitch is a tool that takes a the input of a switching function and tabulates the output on the terminal
 

@@ -38,7 +38,7 @@ using namespace std;
 namespace PLMD {
 namespace sasa {
 
-//+PLUMEDOC SASAMOD_COLVAR SASA_LCPO
+//+PLUMEDOC COLVAR SASA_LCPO
 /*
 Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it.
 

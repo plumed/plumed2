@@ -38,7 +38,7 @@
 namespace PLMD {
 namespace mapping {
 
-//+PLUMEDOC TOOLS pathtools
+//+PLUMEDOC pathtools
 /*
 pathtools can be used to construct paths from pdb data
 
