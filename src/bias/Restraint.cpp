@@ -29,29 +29,42 @@ namespace bias {
 /*
 Adds harmonic and/or linear restraints on one or more variables.
 
-Either or both
-of SLOPE and KAPPA must be present to specify the linear and harmonic force constants
-respectively.  The resulting potential is given by:
-\f[
+Either or both of SLOPE and KAPPA must be present to specify the linear and harmonic force constants
+respectively. If the input arguments are scalars the resulting potential is given by:
+
+$$
   \sum_i \frac{k_i}{2} (x_i-a_i)^2 + m_i*(x_i-a_i)
-\f].
+$$.
 
-The number of components for any vector of force constants must be equal to the number
-of arguments to the action.
-
-Additional material and examples can be also found in the tutorial \ref lugano-2
-
-\par Examples
-
-The following input tells plumed to restrain the distance between atoms 3 and 5
-and the distance between atoms 2 and 4, at different equilibrium
+The following example input illustrates how you can apply a potential of this type.  This input
+tells plumed to restrain the distance between atoms 3 and 5 and the distance between atoms 2 and 4, at different equilibrium
 values, and to print the energy of the restraint
-\plumedfile
-DISTANCE ATOMS=3,5 LABEL=d1
-DISTANCE ATOMS=2,4 LABEL=d2
-RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 LABEL=restraint
+
+```plumed
+d1: DISTANCE ATOMS=3,5
+d2: DISTANCE ATOMS=2,4
+restraint: RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0
 PRINT ARG=restraint.bias
-\endplumedfile
+```
+
+If by contrast the inputs are vectors as in the example below:
+
+```plumed
+d1: DISTANCE ATOMS1=3,5 ATOMS2=5,6 ATOMS3=6,7
+d2: DISTANCE ATOMS1=2,4 ATOMS2=4,6 ATOMS3=6,8
+restraint: RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0
+PRINT ARG=restraint.bias
+```
+
+Then the resulting potential is given by:
+
+$$
+\sum_i \sum_j \frac{k_i}{2} (x_{ij}-a_i)^2 + m_i*(x_{ij}-a_i)
+$$
+
+The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
+Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$ and $m_i$ values  must be 
+equal to the number of arguments to the action.
 
 */
 //+ENDPLUMEDOC
