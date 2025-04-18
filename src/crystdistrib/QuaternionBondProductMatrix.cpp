@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+// #ifdef __PLUMED_HAS_OPENACC
+// #define __PLUMED_USE_OPENACC 1
+// #endif //__PLUMED_HAS_OPENACC
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
@@ -39,9 +42,14 @@ Calculate the product between a matrix of quaternions and the bonds
 */
 //+ENDPLUMEDOC
 
-class QuatBondProdMatInput {
-public:
-  int fake{1};
+struct QuatBondProdMatInput {
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(this[0:1])
+  }
+
 };
 
 class QuaternionBondProductMatrix : public ActionWithVector {
@@ -65,7 +73,7 @@ public:
   }
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
-                           ParallelActionsInput& input,
+                           const ParallelActionsInput& input,
                            ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index,
                             const QuatBondProdMatInput& actiondata,
@@ -212,260 +220,133 @@ std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( Action
 }
 
 void QuaternionBondProductMatrix::performTask( std::size_t task_index,
-    const QuatBondProdMatInput& actiondata,
-    ParallelActionsInput& input,
+    const QuatBondProdMatInput& /*actiondata*/,
+    const ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
 
   View2D<double, 4, 8> derivatives( output.derivatives.data() );
   std::size_t index1 = std::floor( task_index / input.ncols[0] );
-  std::vector<double> quat(4), bond(4), quatTemp(4);
-  std::vector<Tensor4d> dqt(2); //dqt[0] -> derivs w.r.t quat [dwt/dw1 dwt/di1 dwt/dj1 dwt/dk1]
+
+  std::array<Tensor4d,2> dqt; //dqt[0] -> derivs w.r.t quat [dwt/dw1 dwt/di1 dwt/dj1 dwt/dk1]
   //[dit/dw1 dit/di1 dit/dj1 dit/dk1] etc, and dqt[1] is w.r.t the vector-turned-quaternion called bond
 
   // Retrieve the quaternion
-  for(unsigned i=0; i<4; ++i) {
-    quat[i] = input.inputdata[ input.argstarts[4+i] + index1 ];
-  }
-
+  const std::array<double,4> quat{
+    input.inputdata[ input.argstarts[4+0] + index1 ],
+    input.inputdata[ input.argstarts[4+1] + index1 ],
+    input.inputdata[ input.argstarts[4+2] + index1 ],
+    input.inputdata[ input.argstarts[4+3] + index1 ]
+  };
   // Retrieve the components of the matrix
-  double weight = input.inputdata[ input.argstarts[0] + task_index ];
-  for(unsigned i=1; i<4; ++i) {
-    bond[i] = input.inputdata[ input.argstarts[i] + task_index ];
-  }
+  const std::array<double,4> bond{
+    0.0,
+    input.inputdata[ input.argstarts[1] + task_index ],
+    input.inputdata[ input.argstarts[2] + task_index ],
+    input.inputdata[ input.argstarts[3] + task_index ]
+  };
 
-  // calculate normalization factor
-  bond[0]=0.0;
-  double normFac = 1/sqrt(bond[1]*bond[1] + bond[2]*bond[2] + bond[3]*bond[3]);
-  if (bond[1] == 0.0 && bond[2]==0.0 && bond[3]==0) {
-    normFac=1;  //just for the case where im comparing a quat to itself, itll be 0 at the end anyway
-  }
-  double normFac3 = normFac*normFac*normFac;
-  //I hold off on normalizing because this can be done at the very end, and it makes the derivatives with respect to 'bond' more simple
-
-  std::vector<double> quat_conj(4);
-  quat_conj[0] = quat[0];
-  quat_conj[1] = -1*quat[1];
-  quat_conj[2] = -1*quat[2];
-  quat_conj[3] = -1*quat[3];
   //make a conjugate of q1 my own sanity
+  Vector4d quat_conj{ quat[0],-quat[1],-quat[2],-quat[3]};
+  //declaring some signs to simplify the loop
+  constexpr std::array<double,4> pref_i{1,1,1,-1};
+  constexpr std::array<double,4> pref2_i{1,1,-1,1};
 
+  constexpr std::array<double,4> pref_j{1,-1,1,1};
+  constexpr std::array<double,4> pref2_j{1,1,1,-1};
+
+  constexpr std::array<double,4> pref_k{1,1,-1,1};
+  constexpr std::array<double,4> pref2_k{1,-1,1,1};
+
+  constexpr std::array<double,4> conj{1,-1,-1,-1};
+  std::array<double,4> quatTemp{0.0,0.0,0.0,0.0};
   //q1_conj * r first, while keep track of derivs
-  double pref=1;
-  double conj=1;
-  double pref2=1;
-  //real part of q1*q2
-
   for(unsigned i=0; i<4; ++i) {
-    if( i>0 ) {
-      pref=-1;
-      conj=-1;
-      pref2=-1;
-    }
-    quatTemp[0]+=pref*quat_conj[i]*bond[i];
-    dqt[0](0,i) = conj*pref*bond[i];
-    dqt[1](0,i) = pref2*quat_conj[i];
+    //real part of q1*q2
+    quatTemp[0]+= quat[i]*bond[i];//conj*pref 1*1 for 0, -1 * -1 for 1++
+    dqt[0](0,i) = bond[i];//conj*pref 1*1 for 0, -1 * -1 for 1++
+    dqt[1](0,i) = quat[i];//conj*pref 1*1 for 0, -1 * -1 for 1++
+    //i component
+    quatTemp[1]+= pref_i[i]*quat_conj[i]*bond[(5-i)%4];
+    dqt[0](1,i) = pref_i[i]*conj[i]*bond[(5-i)%4];
+    dqt[1](1,i) = pref2_i[i]*quat_conj[(5-i)%4];
+    //j component
+    quatTemp[2]+= pref_j[i]*quat_conj[i]*bond[(i+2)%4];
+    dqt[0](2,i) = pref_j[i]*conj[i]*bond[(i+2)%4];
+    dqt[1](2,i) = pref2_j[i]*quat_conj[(i+2)%4];
+    //k component
+    quatTemp[3]+= pref_k[i]*quat_conj[i]*bond[3-i];
+    dqt[0](3,i) = pref_k[i]*conj[i]*bond[3-i];
+    dqt[1](3,i) = pref2_k[i]*quat_conj[3-i];
   }
-  //i component
-  pref=1;
-  conj=1;
-  pref2=1;
-
-  for (unsigned i=0; i<4; i++) {
-    if(i==3) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    if(i==2) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-    if (i>0) {
-      conj=-1;
-    }
-
-    quatTemp[1]+=pref*quat_conj[i]*bond[(5-i)%4];
-    dqt[0](1,i) =conj*pref*bond[(5-i)%4];
-    dqt[1](1,i) = pref2*quat_conj[(5-i)%4];
-  }
-
-  //j component
-  pref=1;
-  pref2=1;
-  conj=1;
-
-  for (unsigned i=0; i<4; i++) {
-    if(i==1) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    if (i==3) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-    if (i>0) {
-      conj=-1;
-    }
-
-    quatTemp[2]+=pref*quat_conj[i]*bond[(i+2)%4];
-    dqt[0](2,i)=conj*pref*bond[(i+2)%4];
-    dqt[1](2,i)=pref2*quat_conj[(i+2)%4];
-  }
-
-  //k component
-  pref=1;
-  pref2=1;
-  conj=1;
-
-  for (unsigned i=0; i<4; i++) {
-    if(i==2) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    if(i==1) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-    if(i>0) {
-      conj=-1;
-    }
-    quatTemp[3]+=pref*quat_conj[i]*bond[(3-i)];
-    dqt[0](3,i)=conj*pref*bond[3-i];
-    dqt[1](3,i)= pref2*quat_conj[3-i];
-
-  }
-
 //now previous ^ product times quat again, not conjugated
-  //real part of q1*q2
-  double tempDot=0,wf=0,xf=0,yf=0,zf=0;
-  pref=1;
-  pref2=1;
+
+// calculate normalization factor
+  const double normFac = (bond[1] == 0.0 && bond[2]==0.0 && bond[3]==0) ?
+                         //just for the case where im comparing a quat to itself, itll be 0 at the end anyway
+                         1: 1/sqrt(bond[1]*bond[1] + bond[2]*bond[2] + bond[3]*bond[3]);
+//I hold off on normalizing because this can be done at the very end, and it
+// makes the derivatives with respect to 'bond' more simple
+
+  double wf=0,xf=0,yf=0,zf=0;
+
   for(unsigned i=0; i<4; ++i) {
-    if( i>0 ) {
-      pref=-1;
-      pref2=-1;
-    }
-    output.values[0] += normFac*pref*quatTemp[i]*quat[i];
-    wf+=normFac*pref*quatTemp[i]*quat[i];
-    if( input.noderiv ) {
-      continue ;
-    }
-    tempDot=(dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[0].getCol(i)) + pref2*quatTemp[i])*normFac;
-    derivatives[0][4+i] = tempDot;
+    //real part of q1*q2
+    output.values[0] += normFac*conj[i]*quatTemp[i]*quat[i];
+    wf+=normFac*conj[i]*quatTemp[i]*quat[i];
+    //i component
+    output.values[1] += normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];
+    xf+=normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];
+    //j component
+    output.values[2] += normFac*pref_j[i]*quatTemp[i]*quat[(i+2)%4];
+    yf+=normFac*pref_j[i]*quatTemp[i]*quat[(i+2)%4];
+    //k component
+    output.values[3] += normFac*pref_k[i]*quatTemp[i]*quat[(3-i)];
+    zf+=normFac*pref_k[i]*quatTemp[i]*quat[(3-i)];
   }
   //had to split because bond's derivatives depend on the value of the overall quaternion component
-  if( !input.noderiv ) {
-    for(unsigned i=0; i<4; ++i) {
-      tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
-      if( i>0 ) {
-        derivatives[0][i] = tempDot;
-      }
-    }
-  }
-
-  //i component
-  pref=1;
-  pref2=1;
-  for (unsigned i=0; i<4; i++) {
-    if(i==3) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    output.values[1] += normFac*pref*quatTemp[i]*quat[(5-i)%4];
-    xf+=normFac*pref*quatTemp[i]*quat[(5-i)%4];
-    if(i==2) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-    if( input.noderiv ) {
-      continue ;
-    }
-    tempDot=(dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[0].getCol(i)) + pref2*quatTemp[(5-i)%4])*normFac;
-    derivatives[1][4+i] = tempDot;
-  }
-
-  if( !input.noderiv ) {
-    for(unsigned i=0; i<4; ++i) {
-      tempDot=dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[1].getCol(i))*normFac;
-      if( i>0 ) {
-        derivatives[1][i] = tempDot+(-bond[i]*normFac*normFac*xf);
-      }
-    }
-  }
-
-  //j component
-  pref=1;
-  pref2=1;
-  for (unsigned i=0; i<4; i++) {
-    if(i==1) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    if (i==3) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-
-    output.values[2] += normFac*pref*quatTemp[i]*quat[(i+2)%4];
-    yf+=normFac*pref*quatTemp[i]*quat[(i+2)%4];
-    if( input.noderiv ) {
-      continue ;
-    }
-    tempDot=(dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[0].getCol(i)) + pref2*quatTemp[(i+2)%4])*normFac;
-    derivatives[2][4+i] = tempDot;
-  }
-
-  if( !input.noderiv ) {
-    for(unsigned i=0; i<4; ++i) {
-      tempDot=dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[1].getCol(i))*normFac;
-      if( i>0 ) {
-        derivatives[2][i] = tempDot+(-bond[i]*normFac*normFac*yf);
-      }
-    }
-  }
-
-//k component
-  pref=1;
-  pref2=1;
-  for (unsigned i=0; i<4; i++) {
-    if(i==2) {
-      pref=-1;
-    } else {
-      pref=1;
-    }
-    if(i==1) {
-      pref2=-1;
-    } else {
-      pref2=1;
-    }
-
-    output.values[3] += normFac*pref*quatTemp[i]*quat[(3-i)];
-    zf+=normFac*pref*quatTemp[i]*quat[(3-i)];
-    if( input.noderiv ) {
-      continue ;
-    }
-    tempDot=(dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[0].getCol(i)) + pref2*quatTemp[(3-i)])*normFac;
-    derivatives[3][4+i] = tempDot;
-  }
-
   if( input.noderiv ) {
     return ;
   }
-
-  for(unsigned i=0; i<4; ++i) {
-    tempDot=dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[1].getCol(i))*normFac;
-    if( i>0 ) {
-      derivatives[3][i] = tempDot+(-bond[i]*normFac*normFac*zf);
-    }
+  const auto normFacSQ=normFac*normFac;
+  xf*=normFacSQ;
+  yf*=normFacSQ;
+  zf*=normFacSQ;
+  {
+    //I unrolled the loop to opt out the ifs
+    //I copy pasted the first component and constexpr'd the index
+    constexpr int i = 0;
+    //real part of q1*q2
+    derivatives[0][4+i] = (dotProduct(quat_conj, dqt[0].getCol(i)) + conj[i]*quatTemp[i])*normFac;
+    //i component
+    derivatives[1][4+i] = (dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]),
+                                      dqt[0].getCol(i)) + pref2_i[i]*quatTemp[(5-i)%4])*normFac;
+    //j component
+    derivatives[2][4+i] = (dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]),
+                                      dqt[0].getCol(i)) + pref2_j[i]*quatTemp[(i+2)%4])*normFac;
+    //k component
+    derivatives[3][4+i] = (dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]),
+                                      dqt[0].getCol(i)) + pref2_k[i]*quatTemp[(3-i)])*normFac;
+  }
+  for(unsigned i=1; i<4; ++i) {
+    //real part of q1*q2
+    derivatives[0][4+i] = (dotProduct(quat_conj, dqt[0].getCol(i)) + conj[i]*quatTemp[i])*normFac;
+    derivatives[0][i]   = dotProduct(quat_conj, dqt[1].getCol(i))*normFac;
+    //i component
+    derivatives[1][4+i] =(dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]),
+                                     dqt[0].getCol(i)) + pref2_i[i]*quatTemp[(5-i)%4])*normFac;
+    derivatives[1][i]   = dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]),
+                                     dqt[1].getCol(i))*normFac
+                          +(-bond[i]*xf);
+    //j component
+    derivatives[2][4+i] = (dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]),
+                                      dqt[0].getCol(i)) + pref2_j[i]*quatTemp[(i+2)%4])*normFac;
+    derivatives[2][i] = dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]),
+                                   dqt[1].getCol(i))*normFac+(-bond[i]*yf);
+    //k component
+    derivatives[3][4+i] = (dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]),
+                                      dqt[0].getCol(i)) + pref2_k[i]*quatTemp[(3-i)])*normFac;
+    derivatives[3][i] = dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]),
+                                   dqt[1].getCol(i))*normFac+(-bond[i]*zf);
   }
 }
 

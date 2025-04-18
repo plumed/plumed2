@@ -51,6 +51,7 @@ class MultiColvarTemplate : public ActionWithVector {
 public:
   using input_type = MultiColvarInput;
   using PTM = ParallelTaskManager<MultiColvarTemplate<T>>;
+  constexpr static size_t virialSize = 9;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -63,7 +64,6 @@ private:
 /// The number of atoms per task
   std::size_t natoms_per_task;
 public:
-  static constexpr size_t virialSize = 9;
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
@@ -84,6 +84,11 @@ public:
                             const ParallelActionsInput& input,
                             const ForceInput& fdata,
                             ForceOutput forces );
+  static void gatherForcesGPU( std::size_t task_index,
+                               const MultiColvarInput& actiondata,
+                               const ParallelActionsInput& input,
+                               const ForceInput& fdata,
+                               ForceOutput forces );
 };
 
 template <class T>
@@ -292,12 +297,12 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
                   cvout );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
-    const MultiColvarInput& actiondata,
-    const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
+template <bool doVirial>
+inline void gatherForces_t( std::size_t task_index,
+                            const MultiColvarInput& actiondata,
+                            const ParallelActionsInput& input,
+                            const ForceInput& fdata,
+                            ForceOutput forces ) {
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned i=0; i<input.ncomponents; ++i) {
     unsigned m = 0;
@@ -310,18 +315,39 @@ void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
       forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
       ++m;
     }
-    //unrolled virial
-    forces.thread_safe[0] += ff*fdata.deriv[i][m];
-    forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
-    forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
-    forces.thread_safe[3] += ff*fdata.deriv[i][m+3];
-    forces.thread_safe[4] += ff*fdata.deriv[i][m+4];
-    forces.thread_safe[5] += ff*fdata.deriv[i][m+5];
-    forces.thread_safe[6] += ff*fdata.deriv[i][m+6];
-    forces.thread_safe[7] += ff*fdata.deriv[i][m+7];
-    forces.thread_safe[8] += ff*fdata.deriv[i][m+8];
+    if constexpr (doVirial) {
+      //unrolled virial
+      forces.thread_safe[0] += ff*fdata.deriv[i][m];
+      forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
+      forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
+      forces.thread_safe[3] += ff*fdata.deriv[i][m+3];
+      forces.thread_safe[4] += ff*fdata.deriv[i][m+4];
+      forces.thread_safe[5] += ff*fdata.deriv[i][m+5];
+      forces.thread_safe[6] += ff*fdata.deriv[i][m+6];
+      forces.thread_safe[7] += ff*fdata.deriv[i][m+7];
+      forces.thread_safe[8] += ff*fdata.deriv[i][m+8];
+    }
   }
 }
+
+template <class T>
+void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
+    const MultiColvarInput& actiondata,
+    const ParallelActionsInput& input,
+    const ForceInput& fdata,
+    ForceOutput forces ) {
+  gatherForces_t<true>(task_index, actiondata, input, fdata, forces);
+}
+
+template <class T>
+void MultiColvarTemplate<T>::gatherForcesGPU( std::size_t task_index,
+    const MultiColvarInput& actiondata,
+    const ParallelActionsInput& input,
+    const ForceInput& fdata,
+    ForceOutput forces ) {
+  gatherForces_t<false>(task_index, actiondata, input, fdata, forces);
+}
+
 } // namespace colvar
 } // namespace PLMD
 #endif
