@@ -306,13 +306,13 @@ You can view the information about the modules in the graph above in a table by 
                          of.write( str(ind) + "~~~" + str(j) + ";\n")
                       col = col + 1
                       if col%ncols==0 : col, row = 0, row + 1 
-                      drawn[j]==1
+                      drawn[j]=1
                of.write("end\n")
                for l in range(k) :
                    if graphmat[l,j]>0 :
                       if drawn[l]==0 :
                          drawModuleNode( l, backtranslate[l], of )
-                         drawn[l]==1
+                         drawn[l]=1
                       of.write( str(l) + "--> g" + str(i) + ";\n" )
                for j in group : graphmat[:,j] = 0
 
