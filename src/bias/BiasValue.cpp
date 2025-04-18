@@ -33,7 +33,7 @@ This is the simplest possible bias: when you use this method the bias potential 
 This action is useful for creating custom biasing potential, e.g. if you apply a function (see [function module](module_function.md))
 to some collective variable then use the value of this function directly as a bias.
 
-This action is also useful for testing that forces are being calculated correctly.  If I wanted to test whether the derivatives calculated 
+This action is also useful for testing that forces are being calculated correctly.  If I wanted to test whether the derivatives calculated
 by the [DISTANCE](DISTANCE.md) action are computed correctly I would write a PLUMED input like this one:
 
 ```plumed
@@ -45,11 +45,11 @@ I would then run a calculation using [driver](driver.md) with the following inpu
 
 ```plumed
 plumed driver --ixyz traj.xyz --debug-forces forces.num
-``` 
+```
 
-This outputs a file with two columns that both contain the forces that are acting upon the atoms.  The first set of forces output are the 
-analytic forces that are implemented within PLUMED.  The second set of forces are calcluated numerically using finite difference.  If you 
-method is implemented correctly these two sets of forces should be the same. 
+This outputs a file with two columns that both contain the forces that are acting upon the atoms.  The first set of forces output are the
+analytic forces that are implemented within PLUMED.  The second set of forces are calcluated numerically using finite difference.  If you
+method is implemented correctly these two sets of forces should be the same.
 
 ## Examples
 

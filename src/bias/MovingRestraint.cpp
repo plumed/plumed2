@@ -29,7 +29,7 @@ namespace bias {
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
 
-This form of bias can be used to perform the steered MD 
+This form of bias can be used to perform the steered MD
 and Jarzynski sampling calculations that are discussed in the papers cited below.
 
 The harmonic restraint on your system is given by:
@@ -94,7 +94,7 @@ the total bias deposited
 
 (See also [DISTANCE](DISTANCE.md)).
 
-> [!attention] 
+> [!attention]
 > Work is not computed properly when KAPPA is time dependent.
 
 */

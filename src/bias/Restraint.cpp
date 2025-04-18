@@ -63,7 +63,7 @@ $$
 $$
 
 The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
-Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$ and $m_i$ values  must be 
+Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$ and $m_i$ values  must be
 equal to the number of arguments to the action.
 
 */

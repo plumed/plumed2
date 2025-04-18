@@ -30,7 +30,7 @@ namespace bias {
 Defines a wall for the value of one or more collective variables,
  which limits the region of the phase space accessible during the simulation.
 
-If the inputs to the arguments are scalars the restraining potential starts acting on the system when the value of the CV is 
+If the inputs to the arguments are scalars the restraining potential starts acting on the system when the value of the CV is
 lower than a certain limit $a_i$ (AT) minus an offset $o_i$ (OFFSET).  The expression for the bias due to the wall is given by:
 
 $$
@@ -68,7 +68,7 @@ $$
 $$
 
 The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
-Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be 
+Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be
 equal to the number of arguments to the action.
 
 */

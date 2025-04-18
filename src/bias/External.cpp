@@ -42,12 +42,12 @@ defined in the file `extras/1d_bias.dat`. This potential acts on the distance be
 
 ```plumed
 #SETTINGS INPUTFILES=extras/1d_bias.grid
-d1: DISTANCE ATOMS=3,5 
+d1: DISTANCE ATOMS=3,5
 m: EXTERNAL ARG=d1 FILE=extras/1d_bias.grid
 ```
 
 As you can see from the example above, the file that is input to the EXTERNAL command
-contains the value of the function and its derivative on a grid of points.  This file 
+contains the value of the function and its derivative on a grid of points.  This file
 has the grid format that is discussed in the documentation for [DUMPGRID](DUMPGRID.md).
 
 You can also include grids that are a function of more than one collective
@@ -58,7 +58,7 @@ potential acting on two torsional angles:
 #SETTINGS INPUTFILES=extras/2d_bias.grid
 t1: TORSION ATOMS=4,5,6,7
 t2: TORSION ATOMS=6,7,8,9
-ext: EXTERNAL ARG=t1,t2 FILE=extras/2d_bias.grid 
+ext: EXTERNAL ARG=t1,t2 FILE=extras/2d_bias.grid
 ```
 
 Please note the order that the order of arguments in the plumed.dat file must be the same as

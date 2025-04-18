@@ -94,7 +94,7 @@ avg_dist: AVERAGE ARG=distance LOGWEIGHTS=bias_weights,temp_press_weights
 PRINT ARG=avg_dist FILE=COLVAR_REWEIGHT STRIDE=1
 ```
 
-Clearly, in performing the analysis above we read from the potential energy, a distance, and the value of the bias potential from a COLVAR file.  Having done the reweighting 
+Clearly, in performing the analysis above we read from the potential energy, a distance, and the value of the bias potential from a COLVAR file.  Having done the reweighting
 we can then calculate the ensemble average of the distance at 300 K.
 
 The next three inputs can be used to postprocess a molecular dynamics trajectory of a system of 1000 particles run at 500 K and 1 bar using a static bias potential.

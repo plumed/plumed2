@@ -114,7 +114,7 @@ Also notice that with well-tempered metadynamics the HILLS files do not contain 
 but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the $\Delta T$. The applied bias will be scaled accordingly.
 
-Note that you can also use here the flexible Gaussian approach that is discussed in the third paper cited below. 
+Note that you can also use here the flexible Gaussian approach that is discussed in the third paper cited below.
 This methods allows you to adapt the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
 Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time

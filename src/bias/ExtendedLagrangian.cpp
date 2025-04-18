@@ -38,7 +38,7 @@ $$
   V=\sum_i \frac{k_i}{2} (x_i-s_i)^2 + \sum_i \frac{\dot{s}_i^2}{2m_i}
 $$.
 
-In this expression, $x_i$ is the $i$th scalar-argument that is input to the bias potential so 
+In this expression, $x_i$ is the $i$th scalar-argument that is input to the bias potential so
 the resulting potential is similar to a [RESTRAINT](RESTRAINT.md) that is forced to take scalars in input.
 However, in this method the restraint center moves with time following Hamiltonian
 dynamics with mass $m_i$.
@@ -59,7 +59,7 @@ It is also possible to provide a non-zero friction (one value per component).
 This is then used to implement a Langevin thermostat, so as to implement the
 TAMD/dAFED method that is discussed in the second two papers cited below. Notice that
 here a massive Langevin thermostat is used, whereas usually
-TAMD employs an overamped Langevin dynamics while dAFED employs 
+TAMD employs an overamped Langevin dynamics while dAFED employs
 a Gaussian thermostat.
 
 > [!warning]

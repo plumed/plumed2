@@ -38,7 +38,7 @@ namespace bias {
 /*
 Add a linear biasing potential on one or more variables that satisfies a maximum entropy principle.
 
-Add a linear biasing potential on one or more variables $f_{i}\left(\boldsymbol{x}\right)$ satisfying the maximum entropy principle as proposed in the paper cited below.  
+Add a linear biasing potential on one or more variables $f_{i}\left(\boldsymbol{x}\right)$ satisfying the maximum entropy principle as proposed in the paper cited below.
 
 > [!warning]
 > Notice that syntax is still under revision and might change
