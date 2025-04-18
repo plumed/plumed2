@@ -232,6 +232,7 @@ double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vecto
 }
 
 void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+  // I doubt we are ever going to implement this on the GPU so I think we can leave this declaration here
   std::vector<double> point( input.ncomponents );
   std::size_t nland = input.shapedata[0];
   std::size_t base = task_index;
@@ -276,8 +277,9 @@ void ProjectPoints::calculate() {
     myinput.dataSize = input_buffer.size();
     myinput.inputdata = input_buffer.data();
     myinput.setupArguments( this );
+    std::vector<double> buffer;
     std::vector<double> derivatives, point( getNumberOfComponents() );
-    ParallelActionsOutput output( myinput.ncomponents, point.data(), 0, derivatives.data() );
+    ParallelActionsOutput output( myinput.ncomponents, point.data(), 0, derivatives.data(), 0, buffer.data() );
     performTask( 0, taskmanager.getActionInput(), myinput, output );
     for(unsigned i=0; i<point.size(); ++i) {
       getPntrToComponent(i)->set(point[i]);

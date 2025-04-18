@@ -50,8 +50,8 @@ public:
   const Pbc* pbc;
   Vector pos;
   std::size_t natoms{0};
-  std::vector<Vector> extra_positions;
-  AdjacencyMatrixInput( bool n, const Pbc* b, const Vector& p ) : noderiv(n), pbc(b), pos(p) {}
+  VectorView extra_positions;
+  AdjacencyMatrixInput( bool n, const Pbc* b, View<double,3> p, unsigned nep, double* ep ) : noderiv(n), pbc(b), pos(p[0],p[1],p[2]), extra_positions(ep,nep) {}
 };
 
 class MatrixOutput {
@@ -404,6 +404,8 @@ void AdjacencyMatrixBase<T>::calculate() {
   } else {
     taskmanager.setupParallelTaskManager( 0, nder, -1, maxcol );
   }
+  // Create the workspace that we use in performTask
+  taskmanager.setWorkspaceSize( 3*(maxcol + 2 + matdata.natoms_per_three_list) );
   // And run all the tasks
   taskmanager.runAllTasks();
 }
@@ -417,7 +419,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   if( actiondata.natoms_per_three_list>0 ) {
     n3neigh = actiondata.nlist_three[task_index];
   }
-  std::vector<Vector> atoms( nneigh + n3neigh );
+  VectorView atoms( output.buffer.data(), nneigh + n3neigh );
   unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
   Vector pos0( input.inputdata[3*task_index+0],input.inputdata[3*task_index+1],input.inputdata[3*task_index+2] );
   for(unsigned i=0; i<nneigh; ++i) {
@@ -436,13 +438,9 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   if( actiondata.usepbc ) {
     input.pbc->apply( atoms, atoms.size() );
   }
-  AdjacencyMatrixInput adjinp( input.noderiv, input.pbc, atoms[0] );
+  AdjacencyMatrixInput adjinp( input.noderiv, input.pbc, atoms[0], n3neigh, atoms.data() + 3*nneigh );
   if( n3neigh>1 ) {
     adjinp.natoms = n3neigh-1;
-    adjinp.extra_positions.resize( adjinp.natoms );
-    for(unsigned i=0; i<adjinp.natoms; ++i) {
-      adjinp.extra_positions[i] = atoms[nneigh+i];
-    }
   }
 
   // And calculate this row of the matrices
@@ -461,7 +459,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   }
 
   for(unsigned i=1; i<nneigh; ++i ) {
-    adjinp.pos = atoms[i];
+    adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
     std::size_t valpos = (i-1)*ncomponents;
     MatrixOutput adjout( nderiv, output.values.data() + valpos, output.derivatives.data() + valpos*nderiv );
     T::calculateWeight( actiondata.matrixdata, adjinp, adjout );

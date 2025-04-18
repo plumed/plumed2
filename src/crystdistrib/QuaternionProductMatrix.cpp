@@ -38,7 +38,7 @@ class QuaternionProductMatrix {
 public:
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, matrixtools::OuterProductBase<QuaternionProductMatrix>* action );
-  static void calculate( bool noderiv, const QuaternionProductMatrix& actdata, const std::vector<double>& vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const QuaternionProductMatrix& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
 };
 
 typedef matrixtools::OuterProductBase<QuaternionProductMatrix> qpop;
@@ -94,7 +94,7 @@ void QuaternionProductMatrix::setup( const std::vector<std::size_t>& shape, cons
   action->componentIsNotPeriodic("k");
 }
 
-void QuaternionProductMatrix::calculate( bool noderiv, const QuaternionProductMatrix& actdata, const std::vector<double>& vals, MatrixElementOutput& output ) {
+void QuaternionProductMatrix::calculate( bool noderiv, const QuaternionProductMatrix& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
   std::vector<double> quat1(4), quat2(4);
 
   for(unsigned i=0; i<4; ++i) {

@@ -137,14 +137,14 @@ void BridgeMatrix::calculateWeight( const BridgeMatrix& data, const AdjacencyMat
     return;
   }
   for(unsigned i=0; i<input.natoms; ++i) {
-    Vector dij = input.extra_positions[i];
+    Vector dij(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
     double dijm = dij.modulo2();
     double dw1, w1=data.sf1.calculateSqr( dijm, dw1 );
     if( dijm<epsilon ) {
       w1=0.0;
       dw1=0.0;
     }
-    Vector dik=input.pbc->distance( input.extra_positions[i], input.pos );
+    Vector dik=input.pbc->distance( dij, input.pos );
     double dikm=dik.modulo2();
     double dw2, w2=data.sf2.calculateSqr( dikm, dw2 );
     if( dikm<epsilon ) {

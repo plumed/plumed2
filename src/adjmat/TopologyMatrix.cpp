@@ -175,7 +175,7 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const Adjacenc
   // tvals.resize( data.maxbins, 6 + 3*input.natoms + 9, 0 );
   for(unsigned i=0; i<input.natoms; ++i) {
     // Position of sea atom (this will be the origin)
-    Vector d2 = input.extra_positions[i];
+    Vector d2(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
     // Vector connecting sea atom and first in bond taking pbc into account
     Vector d20 = input.pbc->distance( d2, Vector(0,0,0) );
     // Vector connecting sea atom and second in bond taking pbc into account
