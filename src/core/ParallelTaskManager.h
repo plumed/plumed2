@@ -493,32 +493,32 @@ void ParallelTaskManager<T>::runAllTasks() {
   std::fill (value_stash.begin(),value_stash.end(), 0.0);
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
-    //I have a few problem with "this" <- meaning "this" pointer-  being copyed,
-    // so I workarounded it with few copies
-    ParallelActionsInput input = myinput;
-    auto myinput_acc = OpenACC::fromToDataHelper(input);
-    input_type t_actiondata = actiondata;
-    auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
+    if (comm.Get_rank()== 0) {// no multigpu shenanigans until this works
+      //I have a few problem with "this" <- meaning "this" pointer-  being copyed,
+      // so I workarounded it with few copies
+      ParallelActionsInput input = myinput;
+      auto myinput_acc = OpenACC::fromToDataHelper(input);
+      input_type t_actiondata = actiondata;
+      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
-    //template type is deduced
-    OpenACC::memoryManager vs{value_stash};
-    auto value_stash_data = vs.devicePtr();
+      //template type is deduced
+      OpenACC::memoryManager vs{value_stash};
+      auto value_stash_data = vs.devicePtr();
 
-    OpenACC::memoryManager ptl{partialTaskList};
-    auto partialTaskList_data = ptl.devicePtr();
+      OpenACC::memoryManager ptl{partialTaskList};
+      auto partialTaskList_data = ptl.devicePtr();
 
-    const auto nderivPerComponent = nderivatives_per_component;
-    const auto ndev_per_task = input.ncomponents*nderivPerComponent;
+      const auto nderivPerComponent = nderivatives_per_component;
+      const auto ndev_per_task = input.ncomponents*nderivPerComponent;
 
-    OpenACC::memoryManager<double>dev(ndev_per_task*nactive_tasks);
-    auto derivatives = dev.devicePtr();
-
-    OpenACC::memoryManager<double> buff{};
-    if ( workspace_size>0 ) {
-      buff.resize(workspace_size*nactive_tasks);
-    }
-    auto workspaceSize = workspace_size;
-    auto buffer = buff.devicePtr();
+      OpenACC::memoryManager<double> buff{};
+      if ( workspace_size>0 ) {
+        buff.resize(workspace_size*nactive_tasks);
+      }
+      auto workspaceSize = workspace_size;
+      auto buffer = buff.devicePtr();
+      OpenACC::memoryManager<double>dev(ndev_per_task*nactive_tasks);
+      auto derivatives = dev.devicePtr();
 #pragma acc parallel loop present(input, t_actiondata) \
                            copyin(nactive_tasks, \
                                  ndev_per_task, \
@@ -529,21 +529,23 @@ void ParallelTaskManager<T>::runAllTasks() {
                                   value_stash_data, \
                                   buffer) \
                           default(none)
-    for(unsigned i=0; i<nactive_tasks; ++i) {
-      std::size_t task_index = partialTaskList_data[i];
-      std::size_t val_pos = task_index*input.nscalars;
-      ParallelActionsOutput myout {input.nscalars,
-                                   value_stash_data+val_pos,
-                                   ndev_per_task,
-                                   derivatives+ndev_per_task*i,
-                                   workspaceSize,
-                                   (workspaceSize>0)?
-                                   buffer+workspaceSize*i
-                                   :nullptr  };
-      // Calculate the stuff in the loop for this action
-      T::performTask( task_index, t_actiondata, input, myout );
+      for(unsigned i=0; i<nactive_tasks; ++i) {
+        std::size_t task_index = partialTaskList_data[i];
+        std::size_t val_pos = task_index*input.nscalars;
+        ParallelActionsOutput myout {input.nscalars,
+                                     value_stash_data+val_pos,
+                                     ndev_per_task,
+                                     derivatives+ndev_per_task*i,
+                                     workspaceSize,
+                                     (workspaceSize>0)?
+                                     buffer+workspaceSize*i
+                                     :nullptr  };
+        // Calculate the stuff in the loop for this action
+        T::performTask( task_index, t_actiondata, input, myout );
+      }
+      vs.copyFromDevice(value_stash.data());
     }
-    vs.copyFromDevice(value_stash.data());
+    comm.Bcast( value_stash.data(), value_stash.size(), 0);
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
@@ -608,39 +610,40 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
 
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
-    std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
-    ParallelActionsInput input = myinput;
-    auto myinput_acc = OpenACC::fromToDataHelper(input);
-    input_type t_actiondata = actiondata;
-    auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
+    if (comm.Get_rank() == 0) {
+      std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
+      ParallelActionsInput input = myinput;
+      auto myinput_acc = OpenACC::fromToDataHelper(input);
+      input_type t_actiondata = actiondata;
+      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
-    //template type is deduced
-    OpenACC::memoryManager vs{value_stash};
-    auto value_stash_data = vs.devicePtr();
+      //template type is deduced
+      OpenACC::memoryManager vs{value_stash};
+      auto value_stash_data = vs.devicePtr();
 
-    OpenACC::memoryManager ptl{partialTaskList};
-    auto partialTaskList_data = ptl.devicePtr();
+      OpenACC::memoryManager ptl{partialTaskList};
+      auto partialTaskList_data = ptl.devicePtr();
 
-    OpenACC::memoryManager ffa {forcesForApply};
-    auto forcesForApply_data = ffa.devicePtr();
-    const auto forcesForApply_size = ffa.size();
-    OpenACC::memoryManager ofd {omp_forces[0]};
-    auto omp_forces_data = ofd.devicePtr();
-    const auto omp_forces_size = ofd.size();
+      OpenACC::memoryManager ffa {forcesForApply};
+      auto forcesForApply_data = ffa.devicePtr();
+      const auto forcesForApply_size = ffa.size();
+      OpenACC::memoryManager ofd {omp_forces[0]};
+      auto omp_forces_data = ofd.devicePtr();
+      const auto omp_forces_size = ofd.size();
 
-    const auto nderivPerComponent = nderivatives_per_component;
-    const auto ndev_per_task = input.ncomponents*nderivPerComponent;
+      const auto nderivPerComponent = nderivatives_per_component;
+      const auto ndev_per_task = input.ncomponents*nderivPerComponent;
 
-    OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
-    auto derivatives = dev.devicePtr();
-    OpenACC::memoryManager<double> vtmp{input.ncomponents*nactive_tasks};
-    auto valstmp = vtmp.devicePtr();
-    OpenACC::memoryManager<double> buff{};
-    if ( workspace_size>0 ) {
-      buff.resize(workspace_size*nactive_tasks);
-    }
-    auto workspaceSize = workspace_size;
-    auto buffer = buff.devicePtr();
+      OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
+      auto derivatives = dev.devicePtr();
+      OpenACC::memoryManager<double> vtmp{input.ncomponents*nactive_tasks};
+      auto valstmp = vtmp.devicePtr();
+      OpenACC::memoryManager<double> buff{};
+      if ( workspace_size>0 ) {
+        buff.resize(workspace_size*nactive_tasks);
+      }
+      auto workspaceSize = workspace_size;
+      auto buffer = buff.devicePtr();
 
 #pragma acc data present(input,t_actiondata) \
                   copyin(nactive_tasks, \
@@ -657,60 +660,62 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                          valstmp, \
                          buffer) \
                  default(none)
-    {
+      {
 #pragma acc parallel loop
-      for(unsigned i=0; i<nactive_tasks; ++i) {
-        std::size_t task_index = partialTaskList_data[i];
-        ParallelActionsOutput myout { input.nscalars,
-                                      valstmp+input.nscalars*i,
-                                      ndev_per_task,
-                                      derivatives+ndev_per_task*i,
-                                      workspaceSize,
-                                      (workspaceSize>0)?
-                                      buffer+workspaceSize*i
-                                      :nullptr  };
-        // Calculate the stuff in the loop for this action
-        T::performTask( task_index, t_actiondata, input, myout );
-        if constexpr (!has_custom_gather) {
-          // Gather the forces from the values
-          T::gatherForcesGPU( task_index,
-                              t_actiondata,
-                              input,
-                              ForceInput { input.ncomponents,
-                                           input.nscalars,
-                                           value_stash_data+input.nscalars*task_index,
-                                           nderivPerComponent,
-                                           derivatives+ndev_per_task*i},
-                              ForceOutput { omp_forces_data,
-                                            omp_forces_size,
-                                            forcesForApply_data,
-                                            forcesForApply_size}
-                            );
-        }
-      }
-#pragma acc parallel loop
-      for(unsigned v=0; v<virialSize; ++v) {
-        const  unsigned m = input.nindices_per_task*3 + v;
-        double tmp=0.0;
-#pragma acc loop reduction(+:tmp)
-        for(unsigned t=0; t<nactive_tasks; ++t) {
-          std::size_t task_index = partialTaskList_data[t];
-          auto fdata = ForceInput { input.ncomponents,
-                                    input.nscalars,
-                                    value_stash_data+input.nscalars*task_index,
-                                    nderivPerComponent,
-                                    derivatives+ndev_per_task*t};
-          for(unsigned i=0; i<input.ncomponents; ++i) {
-            tmp += fdata.force[i]*fdata.deriv[i][m];
+        for(unsigned i=0; i<nactive_tasks; ++i) {
+          std::size_t task_index = partialTaskList_data[i];
+          ParallelActionsOutput myout { input.nscalars,
+                                        valstmp+input.nscalars*i,
+                                        ndev_per_task,
+                                        derivatives+ndev_per_task*i,
+                                        workspaceSize,
+                                        (workspaceSize>0)?
+                                        buffer+workspaceSize*i
+                                        :nullptr  };
+          // Calculate the stuff in the loop for this action
+          T::performTask( task_index, t_actiondata, input, myout );
+          if constexpr (!has_custom_gather) {
+            // Gather the forces from the values
+            T::gatherForcesGPU( task_index,
+                                t_actiondata,
+                                input,
+                                ForceInput { input.ncomponents,
+                                             input.nscalars,
+                                             value_stash_data+input.nscalars*task_index,
+                                             nderivPerComponent,
+                                             derivatives+ndev_per_task*i},
+                                ForceOutput { omp_forces_data,
+                                              omp_forces_size,
+                                              forcesForApply_data,
+                                              forcesForApply_size}
+                              );
           }
         }
-        omp_forces_data[nthreaded_forces-virialSize+v] = tmp;
+#pragma acc parallel loop
+        for(unsigned v=0; v<virialSize; ++v) {
+          const  unsigned m = input.nindices_per_task*3 + v;
+          double tmp=0.0;
+#pragma acc loop reduction(+:tmp)
+          for(unsigned t=0; t<nactive_tasks; ++t) {
+            std::size_t task_index = partialTaskList_data[t];
+            auto fdata = ForceInput { input.ncomponents,
+                                      input.nscalars,
+                                      value_stash_data+input.nscalars*task_index,
+                                      nderivPerComponent,
+                                      derivatives+ndev_per_task*t};
+            for(unsigned i=0; i<input.ncomponents; ++i) {
+              tmp += fdata.force[i]*fdata.deriv[i][m];
+            }
+          }
+          omp_forces_data[nthreaded_forces-virialSize+v] = tmp;
+        }
+        ffa.copyFromDevice(forcesForApply.data());
+        ofd.copyFromDevice(omp_forces[0].data());
+
+        gatherThreads(ForceOutput{ omp_forces[0], forcesForApply });
       }
     }
-    ffa.copyFromDevice(forcesForApply.data());
-    ofd.copyFromDevice(omp_forces[0].data());
-
-    gatherThreads(ForceOutput{ omp_forces[0], forcesForApply });
+    comm.Bcast( forcesForApply.data(), forcesForApply.size(), 0);
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
