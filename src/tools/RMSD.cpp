@@ -26,6 +26,7 @@
 #include <cmath>
 #include <iostream>
 #include "Tools.h"
+#include "EigenSolverForRMSD.h"
 
 namespace PLMD {
 
@@ -539,25 +540,26 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     rr01+=Tensor(positions[iat]-cpositions,reference[iat])*w;
   }
 
-  Tensor4d m;
+  // Tensor4d m;
 
-  m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
-  m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
-  m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
-  m[3][3]=2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
-  m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
-  m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
-  m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
-  m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
-  m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
-  m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
-  m[1][0] = m[0][1];
-  m[2][0] = m[0][2];
-  m[2][1] = m[1][2];
-  m[3][0] = m[0][3];
-  m[3][1] = m[1][3];
-  m[3][2] = m[2][3];
-
+  // m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  // m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  // m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  // m[3][3]=2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  // m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
+  // m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
+  // m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
+  // m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
+  // m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
+  // m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
+  // m[1][0] = m[0][1];
+  // m[2][0] = m[0][2];
+  // m[2][1] = m[1][2];
+  // m[3][0] = m[0][3];
+  // m[3][1] = m[1][3];
+  // m[3][2] = m[2][3];
+  auto [ eigenvals,
+         eigenvecs] = EigenSolverForRMSD::calculate(-2.0*rr01);
   Tensor dm_drr01[4][4];
   if(!alEqDis) {
     dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0);
@@ -583,9 +585,9 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 
   Tensor dq_drr01[4];
   if(!alEqDis) {
-    Vector4d eigenvals;
-    Tensor4d eigenvecs;
-    diagMatSym(m, eigenvals, eigenvecs );
+    // Vector4d eigenvals;
+    // Tensor4d eigenvecs;
+    // diagMatSym(m, eigenvals, eigenvecs );
     dist=eigenvals[0]+rr00+rr11;
     q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
@@ -609,9 +611,9 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
       dq_drr01[i]=tmp;
     }
   } else {
-    VectorGeneric<1> eigenvals;
-    TensorGeneric<1,4> eigenvecs;
-    diagMatSym(m, eigenvals, eigenvecs );
+    // VectorGeneric<1> eigenvals;
+    // TensorGeneric<1,4> eigenvecs;
+    // diagMatSym(m, eigenvals, eigenvecs );
     dist=eigenvals[0]+rr00+rr11;
     q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
@@ -1161,24 +1163,28 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 // the quaternion matrix: this is internal
   Tensor4d m;
 
-  m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
-  m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
-  m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
-  m[3][3]=2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
-  m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
-  m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
-  m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
-  m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
-  m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
-  m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
-  m[1][0] = m[0][1];
-  m[2][0] = m[0][2];
-  m[2][1] = m[1][2];
-  m[3][0] = m[0][3];
-  m[3][1] = m[1][3];
-  m[3][2] = m[2][3];
-
-
+  // m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  // m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  // m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  // m[3][3]=2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  // m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
+  // m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
+  // m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
+  // m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
+  // m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
+  // m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
+  // m[1][0] = m[0][1];
+  // m[2][0] = m[0][2];
+  // m[2][1] = m[1][2];
+  // m[3][0] = m[0][3];
+  // m[3][1] = m[1][3];
+  // m[3][2] = m[2][3];
+  {
+    auto [ here_eigenvals,
+           here_eigenvecs] = EigenSolverForRMSD::calculate(-2.0*rr01);
+    eigenvals = here_eigenvals;
+    eigenvecs = here_eigenvecs;
+  }
   Tensor dm_drr01[4][4];
   if(!alEqDis or !retrieve_only_rotation) {
     dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0);
@@ -1204,7 +1210,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 
   Tensor dq_drr01[4];
   if(!alEqDis or !only_rotation) {
-    diagMatSym(m, eigenvals, eigenvecs );
+    // diagMatSym(m, eigenvals, eigenvecs );
     q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
     for(unsigned i=0; i<4; i++)
@@ -1227,13 +1233,13 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
       dq_drr01[i]=tmp;
     }
   } else {
-    TensorGeneric<1,4> here_eigenvecs;
-    VectorGeneric<1> here_eigenvals;
-    diagMatSym(m, here_eigenvals, here_eigenvecs );
-    for(unsigned i=0; i<4; i++) {
-      eigenvecs[0][i]=here_eigenvecs[0][i];
-    }
-    eigenvals[0]=here_eigenvals[0];
+    // TensorGeneric<1,4> here_eigenvecs;
+    // VectorGeneric<1> here_eigenvals;
+    // diagMatSym(m, here_eigenvals, here_eigenvecs );
+    // for(unsigned i=0; i<4; i++) {
+    //   eigenvecs[0][i]=here_eigenvecs[0][i];
+    // }
+    // eigenvals[0]=here_eigenvals[0];
     q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
 
