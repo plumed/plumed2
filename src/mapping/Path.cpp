@@ -31,102 +31,48 @@
 /*
 Path collective variables with a more flexible framework for the distance metric being used.
 
-The Path Collective Variables developed by Branduardi and co-workers \cite brand07 allow one
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
 path.  The progress along the path (s) is computed using:
 
-\f[
+$$
 s = \frac{ \sum_{i=1}^N i \exp( -\lambda R[X - X_i] ) }{ \sum_{i=1}^N \exp( -\lambda R[X - X_i] ) }
-\f]
+$$
 
 while the distance from the path (z) is measured using:
 
-\f[
+$$
 z = -\frac{1}{\lambda} \ln\left[ \sum_{i=1}^N \exp( -\lambda R[X - X_i] ) \right]
-\f]
+$$
 
-In these expressions \f$N\f$ high-dimensional frames (\f$X_i\f$) are used to describe the path in the high-dimensional
-space. The two expressions above are then functions of the distances from each of the high-dimensional frames \f$R[X - X_i]\f$.
+In these expressions $N$ high-dimensional frames ($X_i$) are used to describe the path in the high-dimensional
+space. The two expressions above are then functions of the distances from each of the high-dimensional frames $R[X - X_i]$.
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration.  You could calculate
-the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
-of the path CV allows one to use all the difference distance metrics that are discussed in \ref dists. This is as opposed to
-the alternative implementation of path (\ref PATHMSD) which is a bit faster but which only allows one to use the RMSD distance.
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this shortcut
+of the path CV allows one to compute the distances from the paths in a variety of different ways. This is as opposed to
+the alternative implementation of path ([PATHMSD](PATHMSD.md)) which is a bit faster but which only allows one to use the [RMSD](RMSD.md) distance.
 
-The \f$s\f$ and \f$z\f$ variables are calculated using the above formulas by default.  However, there is an alternative method
-of calculating these collective variables, which is detailed in \cite bernd-path.  This alternative method uses the tools of
-geometry (as opposed to algebra, which is used in the equations above).  In this alternative formula the progress along the path
-\f$s\f$ is calculated using:
-
-\f[
-s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
-\f]
-
-where \f$\mathbf{v}_1\f$ and \f$\mathbf{v}_3\f$ are the vectors connecting the current position to the closest and second closest node of the path,
-respectfully and \f$i_1\f$ and \f$i_2\f$ are the projections of the closest and second closest frames of the path. \f$\mathbf{v}_2\f$, meanwhile, is the
-vector connecting the closest frame to the second closest frame.  The distance from the path, \f$z\f$ is calculated using:
-
-\f[
-z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
-\f]
-
-The symbols here are as they were for \f$s\f$.  If you would like to use these equations to calculate \f$s\f$ and \f$z\f$ then you should use the GPATH flag.
-The values of \f$s\f$ and \f$z\f$ can then be referenced using the gspath and gzpath labels.
-
-\par Examples
+## Examples
 
 In the example below the path is defined using RMSD distance from frames.
 
-\plumedfile
-p1: PATH REFERENCE=file.pdb TYPE=OPTIMAL LAMBDA=500.0
-PRINT ARG=p1.spath,p1.zpath STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
-
-The reference frames in the path are defined in the pdb file shown below.  In this frame
-each configuration in the path is separated by a line containing just the word END.
-
-\auxfile{file.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
-ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-ATOM      6  OL  ALA     1      -1.201  -0.849   2.425  1.00  1.00
-ATOM      7  NL  ALA     1      -1.296   0.337   0.534  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -2.990   0.383   2.277  1.00  1.00
-ATOM      5  CLP ALA     1      -1.664  -0.085   1.831  1.00  1.00
-ATOM      6  OL  ALA     1      -0.987  -0.835   2.533  1.00  1.00
-ATOM      7  NL  ALA     1      -1.227   0.364   0.646  1.00  1.00
-END
-\endauxfile
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL LAMBDA=69087
+PRINT ARG=p1.spath,p1.zpath STRIDE=1 FILE=colvar
+```
 
 In the example below the path is defined using the values of two torsional angles (t1 and t2).
-In addition, the \f$s\f$ and \f$z\f$ are calculated using the geometric expressions described
-above rather than the algebraic expressions that are used by default.
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
 t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
-pp: PATH TYPE=EUCLIDEAN REFERENCE=epath.pdb GPATH NOSPATH NOZPATH
+pp: PATH REFERENCE=regtest/mapping/rt-tpath/epath.pdb LAMBDA=1.0
 PRINT ARG=pp.* FILE=colvar
-\endplumedfile
+```
 
-Notice that the LAMBDA parameter is not required here as we are not calculating \f$s\f$ and \f$s\f$
-using the algebraic formulas defined earlier.  The positions of the frames in the path are defined
-in the file epath.pdb.  An extract from this file looks as shown below.
-
-\auxfile{epath.pdb}
-REMARK ARG=t1,t2 t1=-4.25053  t2=3.88053
-END
-REMARK ARG=t1,t2 t1=-4.11     t2=3.75
-END
-REMARK ARG=t1,t2 t1=-3.96947  t2=3.61947
-END
-\endauxfile
-
-The remarks in this pdb file tell PLUMED the labels that are being used to define the position in the
+If you look at the pdb file for the input above you can see that the remarks tell PLUMED the labels that are being used to define the position in the
 high dimensional space and the values that these arguments have at each point on the path.
 
 */
@@ -136,68 +82,45 @@ high dimensional space and the values that these arguments have at each point on
 /*
 Property maps but with a more flexible framework for the distance metric being used.
 
-This colvar calculates a property map using the formalism developed by Spiwok \cite Spiwok:2011ce.
-In essence if you have the value of some property, \f$X_i\f$, that it takes at a set of high-dimensional
+This colvar calculates a property map using the formalism developed by Spiwok that is referenced in the second paper cited below.
+In essence if you have the value of some property, $X_i$, that it takes at a set of high-dimensional
 positions then you calculate the value of the property at some arbitrary point in the high-dimensional space
 using:
 
-\f[
+$$
 X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
-\f]
+$$
 
-Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration, \f$D_i\f$.  You could calculate
-the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
-of the property map allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
-the alternative implementation \ref PROPERTYMAP which is a bit faster but which only allows one to use the RMSD distance.
+In these expressions the value of the property $X$ is given at the position of $N$ high-dimensional frames ($X_i$). The distances, $D_i$, between
+these frames and our instaneous position are then used to compute the value of the property at the instaneous position in the high dimensional space.
+As illustrated in the examples below, this implementation of the property map allows you to calculate these distances in various different ways.
+This is as opposed to the alternative implementation [PROPERTYMAP](PROPERTYMAP.md) which is a bit faster but which only allows one to use the RMSD distance.
 
-\par Examples
+## Examples
 
 The input shown below can be used to calculate the interpolated values of two properties called X and Y based on the values
 that these properties take at a set of reference configurations and using the formula above.  For this input the distances
 between the reference configurations and the instantaneous configurations are calculated using the OPTIMAL metric that is
-discussed at length in the manual pages on \ref RMSD.
+discussed at length in the manual pages on [RMSD](RMSD.md).
 
-\plumedfile
-p2: GPROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087
-PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
-\endplumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/allv.pdb
+p2: GPROPERTYMAP REFERENCE=regtest/trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087
+PRINT ARG=p2_X,p2_Y,p2_zpath STRIDE=1 FILE=colvar
+```
 
-The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
-points has the following format.
+Notice that the REFERENCE file here gives the values of the properties at each of the points of interest.
+In this second input the value of the property at each point of interest is also given in the REFERENCE file.
+Here as well the REFERENCE file also tells us that each of the reference points is defined based on the values of the
+two torsions `t1` and `t2`.
 
-\auxfile{allv.pdb}
-REMARK X=1 Y=2
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
-ATOM      9  CA  ALA     1      -0.003  -0.019   0.021  1.00  1.00
-ATOM     10  HA  ALA     1       0.205  -1.051   0.259  1.00  1.00
-ATOM     11  CB  ALA     1       0.009   0.135  -1.509  1.00  1.00
-ATOM     15  CRP ALA     1       1.121   0.799   0.663  1.00  1.00
-ATOM     16  OR  ALA     1       1.723   1.669   0.043  1.00  1.00
-ATOM     17  NR  ALA     1       1.423   0.519   1.941  1.00  1.00
-ATOM     18  HR  ALA     1       0.873  -0.161   2.413  1.00  1.00
-ATOM     19  CR  ALA     1       2.477   1.187   2.675  1.00  1.00
-END
-FIXED
-REMARK X=2 Y=3
-ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
-ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-ATOM      6  OL  ALA     1      -1.201  -0.849   2.425  1.00  1.00
-ATOM      7  NL  ALA     1      -1.296   0.337   0.534  1.00  1.00
-ATOM      8  HL  ALA     1      -1.807   0.951  -0.044  1.00  1.00
-ATOM      9  CA  ALA     1       0.009  -0.067   0.033  1.00  1.00
-ATOM     10  HA  ALA     1       0.175  -1.105   0.283  1.00  1.00
-ATOM     11  CB  ALA     1       0.027   0.046  -1.501  1.00  1.00
-ATOM     15  CRP ALA     1       1.149   0.725   0.654  1.00  1.00
-ATOM     16  OR  ALA     1       1.835   1.491  -0.011  1.00  1.00
-ATOM     17  NR  ALA     1       1.380   0.537   1.968  1.00  1.00
-ATOM     18  HR  ALA     1       0.764  -0.060   2.461  1.00  1.00
-ATOM     19  CR  ALA     1       2.431   1.195   2.683  1.00  1.00
-END
-\endauxfile
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: GPROPERTYMAP REFERENCE=regtest/mapping/rt-tpath/epath.pdb PROPERTY=X LAMBDA=1.0
+PRINT ARG=pp.* FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -217,6 +140,8 @@ void Path::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
   keys.addOutputComponent("spath","default","scalar","the position along the path calculated");
   keys.addOutputComponent("zpath","default","scalar","the distance from the path calculated");
+  keys.addDOI("10.1063/1.2432340");
+  keys.addDOI("10.1063/1.3660208");
 }
 
 void Path::registerInputFileKeywords( Keywords& keys ) {

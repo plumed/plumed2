@@ -32,7 +32,17 @@
 /*
 Take an input path with frames that are not equally spaced and make the frames equally spaced
 
-\par Examples
+This action is used by [ADAPTIVE_PATH](ADAPTIVE_PATH.md) and [pathtools](pathtools.md). The algorithm in this action takes
+a set of trajectory frames along a [PATH](PATH.md) in input and adjusts them until they are all are equally spaced.  To call
+this algorithm from [pathtools](pathtools.md) you would use an input like this one:
+
+```plumed
+plumed pathtools --path in_path.pdb --metric EUCLIDEAN --out final_path.pdb
+```
+
+If you are using this action directly and not through [pathtools](pathtools.md) or [ADAPTIVE_PATH](ADAPTIVE_PATH.md) you will
+probably be using in the context of the method for reparameterizing paths that is discussed in the example documentation for
+[AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md).
 
 */
 //+ENDPLUMEDOC

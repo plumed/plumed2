@@ -34,9 +34,10 @@ namespace gridtools {
 Output a three dimensional grid using the Gaussian cube file format.
 
 Suppose you have calculated the value of a function on a three dimensional grid.
-This function might be a \ref HISTOGRAM or it might be a free energy energy surface
-that was calculated from this histogram by using \ref CONVERT_TO_FES.  Alternatively,
-your function might be a phase-field that was calculated using \ref MULTICOLVARDENS.
+This function might be a [HISTOGRAM](HISTOGRAM.md), [KDE](KDE.md) or it might be a free energy energy surface
+that was calculated from this histogram by using [CONVERT_TO_FES](CONVERT_TO_FES.md).  Alternatively,
+your function might be a phase-field that was calculated using [MULTICOLVARDENS](MULTICOLVARDENS.md) or a series of [CUSTOM](CUSTOM.md) functions
+that had been applied on the input grid.
 Whatever the function is, however, you obviously cannot show it using a typical contour
 plotting program such as gnuplot as you have three input variables.
 
@@ -44,7 +45,7 @@ Tools like VMD have nice features for plotting these types of three dimensional 
 but typically you are required to use a Gaussian cube file format to input the data.  This
 action thus allows you to output a function evaluated on a grid to a Gaussian cube file format.
 
-\par Examples
+## Examples
 
 The input below can be used to post process a trajectory.  A histogram as a function of the distance
 between atoms 1 and 2, the distance between atom 1 and 3 and the angle between the vector connecting atoms 1 and
@@ -52,14 +53,14 @@ between atoms 1 and 2, the distance between atom 1 and 3 and the angle between t
 all the kernels have been added the resulting histogram is output to a file called histoA1.cube.  This file has the
 Gaussian cube file format.  The histogram can thus be visualized using tools such as VMD.
 
-\plumedfile
+```plumed
 x1: DISTANCE ATOMS=1,2
 x2: DISTANCE ATOMS=1,3
 x3: ANGLE ATOMS=1,2,3
 
 hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=10,10,10 BANDWIDTH=1.0,1.0,1.0
-DUMPCUBE GRID=hA1 FILE=histoA1.cube
-\endplumedfile
+DUMPCUBE ARG=hA1 FILE=histoA1.cube
+```
 
 */
 //+ENDPLUMEDOC
@@ -70,15 +71,15 @@ Output the function on the grid to a file with the PLUMED grid format.
 
 PLUMED provides a number of actions that calculate the values of functions on grids.
 For instance, whenever you calculate a free energy as a function of a collective variable using
-\ref HISTOGRAM and \ref CONVERT_TO_FES you will generally want to output the value of the free energy at a number of points on a
+[KDE](KDE.md), [HISTOGRAM](HISTOGRAM.md) and [CONVERT_TO_FES](CONVERT_TO_FES.md) you will generally want to output the value of the free energy at a number of points on a
 discrete grid that covers the CV space uniformly.  Alternatively you may want to calculate
-what value some symmetry function takes at different points inside your simulation cell using \ref MULTICOLVARDENS.
+what value some symmetry function takes at different points inside your simulation cell using [MULTICOLVARDENS](MULTICOLVARDENS.md) or some suitable combination of [CUSTOM](CUSTOM.md) actions.
 
 This action allows you to output these functions calculated on a grid using a format that can be read in using gnuplot
 and other such plotting programs.  The file output using this action will have a header that contains some essential
 information about the function plotted and that looks something like this:
 
-\verbatim
+````
 #! FIELDS x y hA1 dhA1_x dhA1_x
 #! SET normalisation    2.0000
 #! SET min_x 0.0
@@ -89,7 +90,7 @@ information about the function plotted and that looks something like this:
 #! SET max_y 3.0
 #! SET nbins_y  100
 #! SET periodic_y false
-\endverbatim
+````
 
 The header shown here tells us that we have grid showing the values that a function with two arguments x and y
 takes at various points in our cell.  The lines beneath the first line then tell us a little bit about these two
@@ -101,78 +102,77 @@ x=0 and 100 values of y between 0.0 and 3.0 will be provided.  This block of dat
 There will then be a second block of values which will all have been evaluated the same value of x and all possible values
 for y.  This block is then followed by a blank line again and this pattern continues until all points of the grid have been covered.
 
-\par Examples
+## Examples
 
 The following input monitors two torsional angles during a simulation
 and outputs a continuous histogram as a function of them at the end of the simulation.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo STRIDE=100000
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
 previous example.
 
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2 CLEAR=100000
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo STRIDE=100000
+```
 
 */
 //+ENDPLUMEDOC

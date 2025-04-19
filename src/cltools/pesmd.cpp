@@ -39,7 +39,7 @@ For example the following example input uses [MATHEVAL](MATHEVAL.md) to define a
 
 ```plumed
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-ff: MATHEVAL ARG=d1.x,d1,y PERIODIC=NO FUNC=()
+ff: MATHEVAL ARG=d1.x,d1.y PERIODIC=NO FUNC=()
 bb: BIASVALUE ARG=ff
 ```
 
@@ -54,7 +54,7 @@ A plumed input for an example such as this one might look something like this:
 
 ```plumed
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-bb: EXTERNAL ARG=d1.x,d1,y FILE=fes.dat
+bb: EXTERNAL ARG=d1.x,d1.y FILE=fes.dat
 ```
 
 In this way we can use pesmd to do a dynamics on a free energy surface calculated using metadynamics

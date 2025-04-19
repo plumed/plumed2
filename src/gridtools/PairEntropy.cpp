@@ -27,7 +27,20 @@
 /*
 Calculate the KL Entropy from the radial distribution function
 
-\par Examples
+This shortcut provides an implementation of the CV that is described in the paper that is cited below. Although, the implementation
+that is offered here is not the one that was used to produce the results described in that paper the values produced by this
+implementation have been tested against the implementation that was used in the paper, which can be found [here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-cv?authuser=0).
+
+An example input that calculates and prints the PAIRENTROPY CV is shown below:
+
+```plumed
+pp: PAIRENTROPY GROUP=1-108 MAXR=2.0 GRID_BIN=20 CUTOFF=1.5 BANDWIDTH=0.13
+PRINT ARG=pp FILE=colvar
+```
+
+By expanding the shortct in the input above you can see how features that are already avaialble within PLUMED can be reused to calculate this CV.  The resulting implementation is likely slower than the
+direct implementation that is available [here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-cv?authuser=0).  We hope, however, that this implementation helps others to understand
+how this CV is constructed.
 
 */
 //+ENDPLUMEDOC
@@ -48,6 +61,7 @@ void PairEntropy::registerKeywords( Keywords& keys ) {
   keys.needsAction("RDF");
   keys.add("compulsory","SIGMA","use bandwidth","an alternative method for specifying the bandwidth instead of using the BANDWIDTH keyword");
   keys.setValueDescription("scalar","the KL-entropy that is computed from the radial distribution function");
+  keys.addDOI("10.1103/PhysRevLett.119.015701");
   keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("INTEGRATE_GRID");
 }
