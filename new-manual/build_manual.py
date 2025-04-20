@@ -97,7 +97,7 @@ def printDataTable( f, titles, tabledata, tagdictionary={} ) :
             for tt in line[2].split() : mytags.add(tt)
 
         f.write("<div class=\"dropdown\">\n")
-        f.write("<button class=\"dropbtn\" onmouseover=\'clearTagSelection()\'>Tags</button>\n")
+        f.write("<button class=\"dropbtn\" onclick=\'clearTagSelection()\'>Tags</button>\n")
         f.write("<div class=\"dropdown-content\">\n")
         for tag in mytags : f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
         f.write("</div>\n")
