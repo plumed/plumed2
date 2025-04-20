@@ -17,6 +17,13 @@ $('#browse-table-searchbar').keyup(function () {
   } else if( searchfor[0]=="tagsearch" ) {
       table.columns(2).search( "\\b" + searchfor[1] + "\\b", true, false, false ).draw();
       displayTagData(searchfor[1]);
+  } else if( searchfor[0]=="actions" ) {
+      var allact = searchfor[1].split(",");
+      var searchstr = "\\b" + allact[0] + "\\b";
+      for( let i=1; i<allact.length; i++) {
+           searchstr += "|\\b" + allact[i] + "\\b";
+      }
+      table.columns(0).search( searchstr, true, false, false ).draw();
   }
 });
 
