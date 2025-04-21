@@ -32,74 +32,34 @@ namespace bias {
 /*
 Calculate a restraint that is defined on a grid that is read during start up
 
-\par Examples
+In this action you define an external potential that you would like to use as a bias in a file.
+This file contains the value of your bias potential on a grid of points.  The instantaneous value
+of the bias potential is then computed via interpolation.
 
-The following is an input for a calculation with an external potential that is
-defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
-\plumedfile
-DISTANCE ATOMS=3,5 LABEL=d1
-EXTERNAL ARG=d1 FILE=bias.grid LABEL=external
-\endplumedfile
 
-The bias.grid will then look something like this:
-\auxfile{bias.grid}
-#! FIELDS d1 external.bias der_d1
-#! SET min_d1 1.14
-#! SET max_d1 1.32
-#! SET nbins_d1 6
-#! SET periodic_d1 false
-   1.1400   0.0031   0.1101
-   1.1700   0.0086   0.2842
-   1.2000   0.0222   0.6648
-   1.2300   0.0521   1.4068
-   1.2600   0.1120   2.6873
-   1.2900   0.2199   4.6183
-   1.3200   0.3948   7.1055
-\endauxfile
+The following input illustrates how this works in practice.  Here the external potential is
+defined in the file `extras/1d_bias.dat`. This potential acts on the distance between atoms 3 and 5.
 
-This should then be followed by the value of the potential and its derivative
-at 100 equally spaced points along the distance between 0 and 1.
+```plumed
+#SETTINGS INPUTFILES=extras/1d_bias.grid
+d1: DISTANCE ATOMS=3,5
+m: EXTERNAL ARG=d1 FILE=extras/1d_bias.grid
+```
+
+As you can see from the example above, the file that is input to the EXTERNAL command
+contains the value of the function and its derivative on a grid of points.  This file
+has the grid format that is discussed in the documentation for [DUMPGRID](DUMPGRID.md).
 
 You can also include grids that are a function of more than one collective
 variable.  For instance the following would be the input for an external
 potential acting on two torsional angles:
-\plumedfile
-TORSION ATOMS=4,5,6,7 LABEL=t1
-TORSION ATOMS=6,7,8,9 LABEL=t2
-EXTERNAL ARG=t1,t2 FILE=bias2.grid LABEL=ext
-\endplumedfile
 
-The file bias2.grid for this calculation would need to look something like this:
-\auxfile{bias2.grid}
-#! FIELDS t1 t2 ext.bias der_t1 der_t2
-#! SET min_t1 -pi
-#! SET max_t1 pi
-#! SET nbins_t1 3
-#! SET periodic_t1 true
-#! SET min_t2 -pi
-#! SET max_t2 pi
-#! SET nbins_t2 3
-#! SET periodic_t2 true
- -3.141593 -3.141593 0.000000 -0.000000 -0.000000
- -1.047198 -3.141593 0.000000 0.000000 -0.000000
- 1.047198 -3.141593 0.000000 -0.000000 -0.000000
-
- -3.141593 -1.047198 0.000000 -0.000000 0.000000
- -1.047198 -1.047198 0.007922 0.033185 0.033185
- 1.047198 -1.047198 0.007922 -0.033185 0.033185
-
- -3.141593 1.047198 0.000000 -0.000000 -0.000000
- -1.047198 1.047198 0.007922 0.033185 -0.033185
- 1.047198 1.047198 0.007922 -0.033185 -0.033185
-\endauxfile
-
-This would be then followed by 100 blocks of data.  In the first block of data the
-value of t1 (the value in the first column) is kept fixed and the value of
-the function is given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$.  In the
-second block of data t1 is fixed at \f$-pi + \frac{2pi}{100}\f$ and the value of the function is
-given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$. In the third block of
-data the same is done but t1 is fixed at \f$-pi + \frac{4pi}{100}\f$ and so on until you get to
-the one hundredth block of data where t1 is fixed at \f$+pi\f$.
+```plumed
+#SETTINGS INPUTFILES=extras/2d_bias.grid
+t1: TORSION ATOMS=4,5,6,7
+t2: TORSION ATOMS=6,7,8,9
+ext: EXTERNAL ARG=t1,t2 FILE=extras/2d_bias.grid
+```
 
 Please note the order that the order of arguments in the plumed.dat file must be the same as
 the order of arguments in the header of the grid file.
