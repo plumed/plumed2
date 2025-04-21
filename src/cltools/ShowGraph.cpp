@@ -37,7 +37,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL show_graph
+//+PLUMEDOC TOOLS show_graph
 /*
 show_graph is a tool that takes a plumed input and generates a flowchart showing how
 data flows through the action set involved.

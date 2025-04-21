@@ -31,7 +31,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL manual
+//+PLUMEDOC TOOLS manual
 /*
 manual is a tool that you can use to construct the manual page for a particular action
 

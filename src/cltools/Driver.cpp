@@ -44,7 +44,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL driver-float
+//+PLUMEDOC TOOLS driver-float
 /*
 A tool that does the same as driver, but using single precision reals.
 
@@ -66,7 +66,7 @@ For more examples see the documentation for [driver](driver.md).
 //
 
 
-//+PLUMEDOC CLTOOL driver
+//+PLUMEDOC TOOLS driver
 /*
 driver is a tool that allows one to to use plumed to post-process an existing trajectory.
 

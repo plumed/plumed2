@@ -31,7 +31,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL kt
+//+PLUMEDOC TOOLS kt
 /*
 Print out the value of k_B T at a particular temperature
 

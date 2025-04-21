@@ -40,7 +40,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL gen_example
+//+PLUMEDOC TOOLS gen_example
 /*
 gen_example is a tool that you can use to construct an example for the manual that users can interact with to understand
 

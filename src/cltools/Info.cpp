@@ -29,7 +29,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC CLTOOL info
+//+PLUMEDOC TOOLS info
 /*
 This tool allows you to obtain information about your plumed version
 
