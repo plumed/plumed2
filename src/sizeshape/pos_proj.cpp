@@ -26,7 +26,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace sizeshape {
 
-//+PLUMEDOC sizeshapeMOD_COLVAR SIZESHAPE_POSITION_LINEAR_PROJ
+//+PLUMEDOC COLVAR SIZESHAPE_POSITION_LINEAR_PROJ
 /*
 Calculates a linear projection in the space of a given reference configurational distribution in size-and-shape space.
 

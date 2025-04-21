@@ -2,3 +2,5 @@ name: functions
 authors: The PLUMED core developers
 description: actions that take arguments as input and that return values
 dois: []
+tags:
+  FUNCTION: actions that take in one or multiple arguments and that return one or multiple arguments

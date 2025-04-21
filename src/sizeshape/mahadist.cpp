@@ -25,7 +25,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace sizeshape {
 
-//+PLUMEDOC sizeshapeMOD_COLVAR SIZESHAPE_POSITION_MAHA_DIST
+//+PLUMEDOC COLVAR SIZESHAPE_POSITION_MAHA_DIST
 /*
 Calculates Mahalanobis distance of a current configuration from a  given reference configurational distribution in size-and-shape space.
 

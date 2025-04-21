@@ -29,7 +29,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace PLMD {
 namespace membranefusion {
-//+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR MEMFUSIONP
+//+PLUMEDOC COLVAR MEMFUSIONP
 /*
 Calculate a CV that can induce the formation of the hemifusion stalk between two initially flat and planar bilayers.
 

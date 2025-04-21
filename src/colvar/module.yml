@@ -2,3 +2,6 @@ name: colvar
 authors: The PLUMED core developers
 description: various core collective variables that can be used to analyse or bias simulations
 dois: []
+tags:
+  DCOLVAR: a collective variable that measures the distance between the instantaneous configuration and a reference structure
+  COLVAR: a function of a set of atomic positions that returns a scalar  

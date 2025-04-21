@@ -2,3 +2,6 @@ name: multicolvar
 authors: Gareth Tribello
 description: tools for working with vectors of collective variables
 dois: []
+tags: 
+  MCOLVAR: actions for calculating a vector of colvars
+  MCOLVARF: actions for calculating functions of vectors of colvars

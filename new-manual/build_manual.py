@@ -24,8 +24,8 @@ def cd(newdir):
     finally:
         os.chdir(prevdir)
 
-def getActionDocumentationFromPlumed() :
-    docs = {}
+def getActionDocumentationFromPlumed(syntax) :
+    docs, tags = {}, {}
     for file in glob.glob("../src/*/*.cpp") : 
         with open(file,"r") as f : content = f.read()
         if "//+PLUMEDOC" not in content : continue
@@ -33,14 +33,24 @@ def getActionDocumentationFromPlumed() :
         for line in content.splitlines() :
             if "//+ENDPLUMEDOC" in line :
                if not indocs : raise Exception("Found ENDPLUMEDDOC before PLUMEDOC in " + file)
-               print("Found documentation for ", actioname)
-               docs[actioname] = founddocs
-               actionname, founddocs, indocs = "", "", False
+               if len(actioname)>0 : 
+                  print("Found documentation for ", actioname)
+                  docs[actioname] = founddocs
+               actioname, founddocs, indocs = "", "", False
             elif "//+PLUMEDOC" in line :
                if indocs : raise Exception("Found PLUMEDDOC before ENDPLUMEDOC in " + file) 
-               actioname, indocs = line.split()[2], True 
+               indocs, taglist = True, ""
+               for key in line.split() :
+                   if key=="//+PLUMEDOC" : continue 
+                   if key in syntax.keys() or key in plumed_syntax["cltools"].keys() :
+                      if len(actioname)>0 : raise Exception("found more than one action name in input for " + key )
+                      actioname = key
+                   else : 
+                      taglist = key + " "
+               if actioname in syntax.keys() :
+                  tags[actioname] = taglist
             elif indocs and not "/*" in line and not "*/" in line : founddocs += line + "\n"
-    return docs
+    return docs, tags
 
 def get_reference(doi):
     # initialize strings
@@ -79,7 +89,24 @@ def create_map( URL ) :
     
     return dict(map(lambda i,j : (i,j) , xdata,ydata))
 
-def printDataTable( f, titles, tabledata ) :
+def printDataTable( f, titles, tabledata, tagdictionary={} ) :
+    if "Tags" in titles : 
+        if titles[2]!="Tags" : raise Exception("found tag column in surprising location")
+        # Get all tags in table
+        mytags = set() 
+        for line in tabledata :
+            for tt in line[2].split() : mytags.add(tt)
+
+        f.write("<div class=\"dropdown\">\n")
+        f.write("<button class=\"dropbtn\" onclick=\'clearTagSelection()\'>Tags</button>\n")
+        f.write("<div class=\"dropdown-content\">\n")
+        for tag in mytags : f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
+        f.write("</div>\n")
+        f.write("<span id=\"tagdisplay\"></span>\n")
+        f.write("</div>\n")
+        for tag in mytags : 
+            if tag in tagdictionary.keys() : f.write("<span id=\"" + tag + "\" style=\"display:none;\"><b>" + tag + ":</b> " + tagdictionary[tag] + "</span>\n")
+ 
     f.write("<table id=\"browse-table\" class=\"display\">\n")
     f.write("<thead><tr>\n")
     for t in titles : f.write("<th style=\"text-align: left\">" + t + "</th>\n")
@@ -156,7 +183,7 @@ The documentation in this manual was built on [{date.today().strftime('%B %d, %Y
     """
     of.write(content)
 
-def printActionListPage(af,version,tabledata) :
+def printActionListPage(af,version,tabledata,tagdictionary) :
     content=f"""
 Actions implemented in PLUMED Version {version}
 -----------------------------------------------
@@ -165,7 +192,7 @@ The [actions](actions.md) that can be used within a PLUMED input file are listed
 
 """
     af.write(content)
-    printDataTable(af,["Name", "Description"], tabledata)
+    printDataTable(af,["Name", "Description", "Tags"], tabledata,tagdictionary)
 
 def printModuleListPage(mf,version,tabledata) :
     content=f"""
@@ -331,19 +358,19 @@ You can view the information about the modules in the graph above in a table by 
         of.write("</pre>\n")
 
 def getModuleDictionary( modname ) :
-    if os.path.exists("../../src/" + module + "/module.yml") :
+    if os.path.exists("../../src/" + modname + "/module.yml") :
        with open("../../src/" + module + "/module.yml") as f : moddict = yaml.load(f,Loader=yaml.BaseLoader)
        return moddict
     return {"name": modname, "authors": "authors", "description": "Information about the module", "dois": [] }
 
-def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_inputs ) :
+def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax, plumedtags, tagdictionary, broken_inputs ) :
     with open( "module_" + modname + ".md", "w") as f :
          f.write("# [Module](modules.md): " + modname + "\n\n")
          f.write("| Description    | Usage |\n")
          f.write("|:--------|:--------:|\n") 
-         f.write("| " + getModuleDictionary(modname)["description"] + "\n __Authors:__ " + mod_dict["authors"] + " | ")
+         f.write("| " + mod_dict["description"] + "\n __Authors:__ " + mod_dict["authors"] + " | ")
          if nlessons>0 :
-            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search=" + modname + ")")
+            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?module=" + modname + ")")
          else : 
             f.write("![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)")
          if neggs>0 : 
@@ -357,7 +384,7 @@ def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_i
             actions = set()
             ninp, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
             if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
-         dois = getModuleDictionary(modname)["dois"] 
+         dois = mod_dict["dois"] 
          if len(dois)>0 : 
             f.write("## References \n")
             f.write("More information about this module is available in the following articles:\n\n") 
@@ -383,11 +410,12 @@ def createModulePage( version, modname, neggs, nlessons, plumed_syntax, broken_i
             if foundaction : 
                f.write("## Actions \n\n")
                f.write("The following actions are part of this module\n\n")
-               f.write("| Name | Description |\n")
-               f.write("|:-----|:------------|\n")
+               tabledata = []
                for key, value in plumed_syntax.items() :
                    if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
-                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")
+                   alink = "<a href=\"../" + key + "\">" + key + "</a>" 
+                   tabledata.append( [alink, str(value["description"]), str(plumedtags[key])] ) 
+               printDataTable(f, ["Name", "Description", "Tags"], tabledata, tagdictionary)
 
             foundcltool=False
             for key, value in plumed_syntax["cltools"].items() :
@@ -462,7 +490,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          f.write("| **Description**    | **Usage** |\n")
          f.write("| " + value["description"] + " | ")
          if nlessons>0 : 
-            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search=" + action + ")")
+            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?action=" + action + ")")
          else : 
             f.write("![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)")
          if neggs>0 : 
@@ -604,7 +632,8 @@ if __name__ == "__main__" :
        if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
    # Create a page for each action
-   plumeddocs, tabledata, undocumented_keywords, noexamples, nodocs = getActionDocumentationFromPlumed(), [], [], [], []
+   tabledata, undocumented_keywords, noexamples, nodocs = [], [], [], []
+   plumeddocs, plumedtags = getActionDocumentationFromPlumed(plumed_syntax)
    for key, value in plumed_syntax.items() :
       if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
       # Now create the page contents
@@ -615,9 +644,28 @@ if __name__ == "__main__" :
       with cd("docs") : 
          createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
       alink = "<a href=\"../" + key + "\">" + key + "</a>"
-      tabledata.append( [alink, str(value["description"])] ) 
+      tabledata.append( [alink, str(value["description"]), str(plumedtags[key]) ] ) 
+
+   # Read in all the module pages
+   tagdictionary = {}
+   for file in glob.glob("../src/*/module.yml") :
+       with open(file) as f : moddict = yaml.load(f,Loader=yaml.BaseLoader)
+       if "tags" in moddict : 
+          for key, value in moddict["tags"].items() :
+              if key in tagdictionary.keys() : raise Exception("found duplicate definitions for tag " + key) 
+              tagdictionary[key] = value
+
+   # Find the list of tags in the tag list
+   unfound_tags = set()
+   for key, value in plumedtags.items() : 
+       for tag in value.split() :
+           if tag not in tagdictionary.keys() :
+              tagdictionary[tag] = "place holder text for tag"
+              unfound_tags.add(tag)
+   print( "THESE ARE THE TAGS WE DIDN'T FIND", unfound_tags )
+
    # Create the page with the list of actions
-   with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata )
+   with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata, tagdictionary )
 
    # Create a page for each cltool
    for key, value in plumed_syntax["cltools"].items() :
@@ -652,7 +700,7 @@ if __name__ == "__main__" :
        with cd("docs") :
           mod_dict = getModuleDictionary( module )
           moduletabledata.append( [mlink, mod_dict["description"], mod_dict["authors"], getModuleType(module) ] )
-          createModulePage( version, module, value["neggs"], value["nlessons"], plumed_syntax, broken_inputs )
+          createModulePage( version, module, mod_dict, value["neggs"], value["nlessons"], plumed_syntax, plumedtags, tagdictionary, broken_inputs )
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 
           nodocs.append(["<a href=\"../module_" + module + "\">" + module+ "</a>", "module"])
    # And the page with the list of modules

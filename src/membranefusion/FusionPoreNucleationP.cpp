@@ -29,7 +29,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace PLMD {
 namespace membranefusion {
-//+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPORENUCLEATIONP
+//+PLUMEDOC COLVAR FUSIONPORENUCLEATIONP
 /*
 A CV for inducing the nucleation of the fusion pore from a hemifusion stalk.
 
