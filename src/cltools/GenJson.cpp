@@ -277,12 +277,12 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"  },"<<std::endl;
   std::cout<<"  \"modules\" : {"<<std::endl;
   std::cout<<"    \""<<allmodules[0]<<"\" : { "<<std::endl;
-  printHyperlink( allmodules[0] );
+  printHyperlink( "module_" + allmodules[0] );
   std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   for(unsigned i=1; i<allmodules.size(); ++i) {
     std::cout<<"    },"<<std::endl;
     std::cout<<"    \""<<allmodules[i]<<"\" : { "<<std::endl;
-    printHyperlink( allmodules[i] );
+    printHyperlink( "module_" + allmodules[i] );
     std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
