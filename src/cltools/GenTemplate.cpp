@@ -30,7 +30,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC gentemplate
+//+PLUMEDOC CLTOOL gentemplate
 /*
 gentemplate is a tool that you can use to construct template inputs for the various actions
 

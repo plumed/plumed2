@@ -34,7 +34,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC gen_json
+//+PLUMEDOC CLTOOL gen_json
 /*
 gen_json constructs a json file that includes a dictionary of actions, the keywords for those actions and the components and outputs this to standard output
 

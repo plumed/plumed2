@@ -32,7 +32,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC completion
+//+PLUMEDOC CLTOOL completion
 /*
 Dumps the body of a bash function to be used for auto completion.
 

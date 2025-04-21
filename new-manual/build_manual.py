@@ -47,7 +47,8 @@ def getActionDocumentationFromPlumed(syntax) :
                       actioname = key
                    else : 
                       taglist = key + " "
-               tags[actioname] = taglist
+               if actioname in syntax.keys() :
+                  tags[actioname] = taglist
             elif indocs and not "/*" in line and not "*/" in line : founddocs += line + "\n"
     return docs, tags
 
@@ -369,7 +370,7 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
          f.write("|:--------|:--------:|\n") 
          f.write("| " + mod_dict["description"] + "\n __Authors:__ " + mod_dict["authors"] + " | ")
          if nlessons>0 :
-            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search=" + modname + ")")
+            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?module=" + modname + ")")
          else : 
             f.write("![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)")
          if neggs>0 : 
@@ -489,7 +490,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          f.write("| **Description**    | **Usage** |\n")
          f.write("| " + value["description"] + " | ")
          if nlessons>0 : 
-            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search=" + action + ")")
+            f.write("[![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-" + str(nlessons) + "-green.svg)](https://www.plumed-tutorials.org/browse.html?action=" + action + ")")
          else : 
             f.write("![used in " + str(nlessons) + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)")
          if neggs>0 : 

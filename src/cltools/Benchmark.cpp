@@ -45,7 +45,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC benchmark
+//+PLUMEDOC CLTOOL benchmark
 /*
 benchmark is a lightweight reimplementation of [driver](driver.md) that can be used to run benchmark calculations
 
