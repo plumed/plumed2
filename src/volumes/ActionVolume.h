@@ -247,8 +247,8 @@ void ActionVolume<T>::getForceIndices( std::size_t task_index,
   force_indices[2] = base + 2;
   std::size_t m=3;
   for(unsigned n=3*actiondata.numberOfNonReferenceAtoms; n<ntotal_force; ++n) {
-      force_indices[m] = n;
-      ++m; 
+    force_indices[m] = n;
+    ++m;
   }
 }
 
