@@ -173,8 +173,8 @@ void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std:
 }
 
 void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
-  std::vector<double> vvv(2); 
-  vvv[0]=vals[0]; 
+  std::vector<double> vvv(2);
+  vvv[0]=vals[0];
   vvv[1] = vals[1];
   output.values[0] = actdata.function.evaluate( vvv );
   output.derivs[0][0] = actdata.function.evaluateDeriv( 0, vvv );

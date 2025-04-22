@@ -34,21 +34,7 @@
 
 namespace PLMD {
 
-struct ParallelActionsInput {
-/// Do we need to calculate the derivatives
-  bool noderiv{false};
-/// Periodic boundary conditions
-  const Pbc* pbc;
-/// The number of components the underlying action is computing
-  unsigned ncomponents{0};
-/// The number of scalars we are calculating for each task
-  unsigned nscalars{0};
-//// The number of indexes that you use per task
-  unsigned nindices_per_task{0};
-/// This holds all the input data that is required to calculate all values for all tasks
-  unsigned dataSize{0};
-  double *inputdata{nullptr};
-/// Bookeeping stuff for arguments
+struct ArgumentsBookkeeping {
   std::size_t nargs{0};
   std::vector<std::size_t> ranks;
   std::vector<std::size_t> shapestarts;
@@ -58,41 +44,11 @@ struct ParallelActionsInput {
   std::vector<std::size_t> booksizes;
   std::vector<std::size_t> bookeeping;
   std::vector<std::size_t> argstarts;
-/// Default constructor
-  ParallelActionsInput( const Pbc& box )
-    : pbc(&box) {}
-  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy)
-  ParallelActionsInput( const ParallelActionsInput& other )
-    : noderiv {other.noderiv},
-      //just copies the ptr
-      pbc  {other.pbc},
-      ncomponents {other.ncomponents},
-      nindices_per_task {other.nindices_per_task},
-      dataSize {other.dataSize},
-      //just copies the value of the pointer
-      inputdata  {other.inputdata}
-  {}
-
-  ParallelActionsInput& operator=( const ParallelActionsInput& other )  = delete;
-
-  //helper function to bring data to the device in a controlled way
-  void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, nindices_per_task, dataSize, inputdata[0:dataSize])
-
-    pbc->toACCDevice();
-  }
-  //helper function to remove data from the device in a controlled way
-  void removeFromACCDevice() const  {
-    pbc->removeFromACCDevice();
-    // assuming dataSize is not changed
-#pragma acc exit data delete(inputdata[0:dataSize],dataSize,nindices_per_task,ncomponents, pbc[0:1],noderiv,this[0:1])
-  }
-  /// Setup the arguments
   void setupArguments( const ActionWithArguments* action );
 };
 
 inline
-void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
+void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
   nargs = action->getNumberOfArguments();
   ranks.resize( nargs );
   shapestarts.resize( nargs );
@@ -147,6 +103,112 @@ void ParallelActionsInput::setupArguments( const ActionWithArguments* action ) {
   }
 }
 
+struct ParallelActionsInput {
+  /// Do we need to calculate the derivatives
+  bool noderiv{false};
+  /// Periodic boundary conditions
+  const Pbc* pbc;
+  /// The number of components the underlying action is computing
+  unsigned ncomponents{0};
+  /// The number of scalars we are calculating for each task
+  unsigned nscalars{0};
+  //// The number of indexes that you use per task
+  unsigned nindices_per_task{0};
+  /// This holds all the input data that is required to calculate all values for all tasks
+  unsigned dataSize{0};
+  double *inputdata{nullptr};
+  /// Bookeeping stuff for arguments
+  std::size_t nargs{0};
+  std::size_t ranks_size{0};
+  const std::size_t* ranks{nullptr};
+  std::size_t shapestarts_size{0};
+  const std::size_t* shapestarts{nullptr};
+  std::size_t shapedata_size{0};
+  const std::size_t* shapedata{nullptr};
+  std::size_t ncols_size{0};
+  const std::size_t* ncols{nullptr};
+  std::size_t bookstarts_size{0};
+  const std::size_t* bookstarts{nullptr};
+  std::size_t booksizes_size{0};
+  const std::size_t* booksizes{nullptr};
+  std::size_t bookeeping_size{0};
+  const std::size_t* bookeeping{nullptr};
+  std::size_t argstarts_size{0};
+  const std::size_t* argstarts{nullptr};
+  /// Default constructor
+  ParallelActionsInput( const Pbc& box )
+    : pbc(&box) {}
+  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy)
+  ParallelActionsInput( const ParallelActionsInput& other ) = default;
+  ParallelActionsInput(ParallelActionsInput&& other ) = default;
+
+  ParallelActionsInput& operator=( const ParallelActionsInput& other )  = delete;
+
+  //helper function to bring data to the device in a controlled way
+  void toACCDevice()const {
+#pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, \
+    nscalars, \
+     nindices_per_task, \
+     dataSize, inputdata[0:dataSize])
+    if (nargs>0) {
+#pragma acc enter data copyin( nargs, \
+     ranks_size, ranks[0:ranks_size], \
+     shapestarts_size, shapestarts[0:shapestarts_size], \
+     shapedata_size, shapedata[0:shapedata_size], \
+     ncols_size, ncols[0:ncols_size], \
+     bookstarts_size, bookstarts[0:bookstarts_size], \
+     booksizes_size, booksizes[0:booksizes_size], \
+     bookeeping_size, bookeeping[0:bookeeping_size], \
+     argstarts_size, argstarts[0:argstarts_size] \
+    )
+    }
+    pbc->toACCDevice();
+  }
+  //helper function to remove data from the device in a controlled way
+  void removeFromACCDevice() const  {
+    pbc->removeFromACCDevice();
+    // assuming dataSize is not changed
+    if (nargs>0) {
+#pragma acc exit data delete( \
+    shapestarts[0:shapestarts_size], shapestarts_size, \
+    shapedata[0:shapedata_size], shapedata_size, \
+    ncols[0:ncols_size], ncols_size, \
+    bookstarts[0:bookstarts_size], bookstarts_size, \
+    booksizes[0:booksizes_size], booksizes_size, \
+    bookeeping[0:bookeeping_size], bookeeping_size, \
+    argstarts[0:argstarts_size], argstarts_size, \
+    ranks[0:ranks_size], ranks_size, \
+    nargs )
+    }
+
+#pragma acc exit data delete( \
+    inputdata[0:dataSize], dataSize, \
+    nindices_per_task, nscalars, ncomponents, pbc[0:1],noderiv,this[0:1])
+  }
+  /// Setup the arguments
+  void setupArguments( const ArgumentsBookkeeping& ab );
+};
+
+inline void ParallelActionsInput::setupArguments( const ArgumentsBookkeeping& ab ) {
+  nargs = ab.nargs;
+  ranks = ab.ranks.data();
+  ranks_size = ab.ranks.size();
+  shapestarts = ab.shapestarts.data();
+  shapestarts_size = ab.shapestarts.size();
+  shapedata = ab.shapedata.data();
+  shapedata_size = ab.shapedata.size();
+  ncols = ab.ncols.data();
+  ncols_size = ab.ncols.size();
+  bookstarts = ab.bookstarts.data();
+  bookstarts_size = ab.bookstarts.size();
+  booksizes = ab.booksizes.data();
+  booksizes_size = ab.booksizes.size();
+  bookeeping = ab.bookeeping.data();
+  bookeeping_size = ab.bookeeping.size();
+  argstarts = ab.argstarts.data();
+  argstarts_size = ab.argstarts.size();
+}
+
 class ArgumentBookeepingHolder {
 public:
   std::size_t rank;
@@ -158,8 +220,8 @@ public:
     rank(inp.ranks[argno]),
     ncols(inp.ncols[argno]),
     start(inp.argstarts[argno]),
-    shape(inp.shapedata.data() + inp.shapestarts[argno], rank ),
-    bookeeping(inp.bookeeping.data() + inp.bookstarts[argno], inp.booksizes[argno] ) {
+    shape(inp.shapedata + inp.shapestarts[argno], rank ),
+    bookeeping(inp.bookeeping + inp.bookstarts[argno], inp.booksizes[argno] ) {
   }
 };
 
@@ -212,10 +274,66 @@ struct ForceOutput {
   ForceOutput& operator=(ForceOutput &&) = delete;
 };
 
+namespace PTMUtils {
+template<class, class = void>
+constexpr bool has_gatherForces_custom = false;
+
+//this verifies that T has a method gatherForces_custom that can be called with this signature
+template<class T>
+constexpr bool has_gatherForces_custom <
+T,
+std::void_t<
+decltype(T::gatherForces_custom(
+           std::declval<unsigned >(),
+           std::declval<size_t >(),
+           std::declval<size_t >(),
+           std::declval<const typename T::input_type & >(),
+           std::declval<const ParallelActionsInput& >(),
+           std::declval<View<unsigned> >(),
+           std::declval<double *>(),
+           std::declval<double *>(),
+           std::declval<View<double> >()
+         ))
+>
+> = true;
+
+template<class, class = void>
+constexpr bool has_gatherForces_GPU = false;
+
+//this verifies that T has a method gatherForces_custom that can be called with this signature
+template<class T>
+constexpr bool has_gatherForces_GPU <
+T,
+std::void_t<
+decltype(T::gatherForcesGPU(
+           std::declval<unsigned >(),
+           std::declval<const typename T::input_type & >(),
+           std::declval<const ParallelActionsInput& >(),
+           std::declval<const ForceInput& >(),
+           std::declval<ForceOutput >()
+         ))
+>
+> = true;
+
+/// If the template class has virialSize, otherwise is 9
+template<class, class=void>
+constexpr size_t virialSize = 9;
+
+template<class T>
+constexpr size_t virialSize<T, std::void_t<decltype(T::virialSize),
+//this ensures that T::virialSize is a static member
+          std::enable_if_t<!std::is_member_pointer_v<decltype(&T::virialSize)>>
+          >>
+          = T::virialSize;
+} //namespace PTMUtils
+
 template <class T>
 class ParallelTaskManager {
 public:
   using input_type= typename T::input_type;
+  static constexpr bool has_custom_gather=PTMUtils::has_gatherForces_custom<T>;
+  static constexpr bool has_GPU_gather=PTMUtils::has_gatherForces_GPU<T>;
+  static constexpr size_t virialSize = PTMUtils::virialSize<T>;
 private:
 /// The underlying action for which we are managing parallel tasks
   ActionWithVector* action;
@@ -235,6 +353,7 @@ private:
   std::vector<std::vector<double> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
   ParallelActionsInput myinput;
+  ArgumentsBookkeeping argumentsMap;
 //this holds the data for myinput that will be passed though myinput
   std::vector<double> input_buffer;
 /// This holds tempory data that we use in performTask
@@ -364,57 +483,69 @@ void ParallelTaskManager<T>::runAllTasks() {
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  myinput.setupArguments( action );
+  argumentsMap.setupArguments( action );
+  myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
   if( value_stash.size()!=totalvals ) {
     value_stash.resize(totalvals);
   }
-  value_stash.assign( value_stash.size(), 0.0 );
+  std::fill (value_stash.begin(),value_stash.end(), 0.0);
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
-    //I have a few problem with "this" <- meaning "this" pointer-  being copyed,
-    // so I workarounded it with few copies
-    ParallelActionsInput input = myinput;
-    auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
-    auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
+    if (comm.Get_rank()== 0) {// no multigpu shenanigans until this works
+      //I have a few problem with "this" <- meaning "this" pointer-  being copyed,
+      // so I workarounded it with few copies
+      ParallelActionsInput input = myinput;
+      auto myinput_acc = OpenACC::fromToDataHelper(input);
+      input_type t_actiondata = actiondata;
+      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
-    auto value_stash_data = value_stash.data();
-    auto partialTaskList_data = partialTaskList.data();
-    auto vs_size = value_stash.size();
+      //template type is deduced
+      OpenACC::memoryManager vs{value_stash};
+      auto value_stash_data = vs.devicePtr();
 
-    const auto nderivPerComponent = nderivatives_per_component;
-    const auto ndev_per_task = input.ncomponents*nderivPerComponent;
-    //To future me/you:
-    // I need to allocate this on the host to create a bigger temporay data array
-    // on the device
-    // by trying with double* x=nullptr, you will get a failure
-    // another solution is acc_malloc and then device_ptr in the pragma
-    // (but you have to remember the acc_free)
-    std::vector<double> derivative(1);
-    double * derivatives = derivative.data();
+      OpenACC::memoryManager ptl{partialTaskList};
+      auto partialTaskList_data = ptl.devicePtr();
 
+      const auto nderivPerComponent = nderivatives_per_component;
+      const auto ndev_per_task = input.ncomponents*nderivPerComponent;
+
+      OpenACC::memoryManager<double> buff{};
+      if ( workspace_size>0 ) {
+        buff.resize(workspace_size*nactive_tasks);
+      }
+      auto workspaceSize = workspace_size;
+      auto buffer = buff.devicePtr();
+      OpenACC::memoryManager<double>dev(ndev_per_task*nactive_tasks);
+      auto derivatives = dev.devicePtr();
 #pragma acc parallel loop present(input, t_actiondata) \
-                          copyin(nactive_tasks, \
+                           copyin(nactive_tasks, \
                                  ndev_per_task, \
-                                 nderivPerComponent, \
-                                 partialTaskList_data[0:nactive_tasks])\
-                          copy(value_stash_data[0:vs_size]) \
-                          create(derivatives[0:ndev_per_task*nactive_tasks]) \
+                                 workspace_size, \
+                                 nderivPerComponent)\
+                        deviceptr(derivatives, \
+                                  partialTaskList_data, \
+                                  value_stash_data, \
+                                  buffer) \
                           default(none)
-    for(unsigned i=0; i<nactive_tasks; ++i) {
-      std::size_t task_index = partialTaskList_data[i];
-      std::size_t val_pos = task_index*input.nscalars;
-      ParallelActionsOutput myout {input.nscalars,
-                                   value_stash_data+val_pos,
-                                   ndev_per_task,
-                                   derivatives+ndev_per_task*i,
-                                   workspace_size,      /// These probably need to be passed to the GPU
-                                   buffer.data() };  /// This also needs to be passed to the GPU
-      // Calculate the stuff in the loop for this action
-      T::performTask( task_index, t_actiondata, input, myout );
+      for(unsigned i=0; i<nactive_tasks; ++i) {
+        std::size_t task_index = partialTaskList_data[i];
+        std::size_t val_pos = task_index*input.nscalars;
+        ParallelActionsOutput myout {input.nscalars,
+                                     value_stash_data+val_pos,
+                                     ndev_per_task,
+                                     derivatives+ndev_per_task*i,
+                                     workspaceSize,
+                                     (workspaceSize>0)?
+                                     buffer+workspaceSize*i
+                                     :nullptr  };
+        // Calculate the stuff in the loop for this action
+        T::performTask( task_index, t_actiondata, input, myout );
+      }
+      vs.copyFromDevice(value_stash.data());
     }
+    comm.Bcast( value_stash.data(), value_stash.size(), 0);
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
@@ -460,8 +591,7 @@ void ParallelTaskManager<T>::runAllTasks() {
       comm.Sum( value_stash );
     }
   }
-
-  // And transfer the value to the output values
+// And transfer the value to the output values
   action->transferStashToValues( value_stash );
 }
 
@@ -480,69 +610,112 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
 
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
-    omp_forces[0].assign( omp_forces[0].size(), 0.0 );
-    ParallelActionsInput input = myinput;
-    auto myinput_acc = OpenACC::fromToDataHelper(input);
-    D t_actiondata = actiondata;
-    auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
+    if (comm.Get_rank() == 0) {
+      std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
+      ParallelActionsInput input = myinput;
+      auto myinput_acc = OpenACC::fromToDataHelper(input);
+      input_type t_actiondata = actiondata;
+      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
 
-    //passing raw pointer makes things easier in openacc
-    auto value_stash_data = value_stash.data();
-    const auto value_stash_size = value_stash.size();
-    auto partialTaskList_data = partialTaskList.data();
-    auto forcesForApply_data = forcesForApply.data();
-    const auto forcesForApply_size = forcesForApply.size();
-    auto omp_forces_data = omp_forces[0].data();
-    const auto omp_forces_size = omp_forces[0].size();
+      //template type is deduced
+      OpenACC::memoryManager vs{value_stash};
+      auto value_stash_data = vs.devicePtr();
 
-    const auto nderivPerComponent = nderivatives_per_component;
-    const auto ndev_per_task = input.ncomponents*nderivPerComponent;
+      OpenACC::memoryManager ptl{partialTaskList};
+      auto partialTaskList_data = ptl.devicePtr();
 
-    //To future me/you:
-    // I need to allocate this on the host to create a bigger temporay data array
-    // on the device
-    // by trying with double* x=nullptr, you will get a failure
-    // another solution is acc_malloc and then device_ptr in the pragma
-    // (but you have to remember the acc_free)
-    std::vector<double> derivative(1);
-    double * derivatives = derivative.data();
+      OpenACC::memoryManager ffa {forcesForApply};
+      auto forcesForApply_data = ffa.devicePtr();
+      const auto forcesForApply_size = ffa.size();
+      OpenACC::memoryManager ofd {omp_forces[0]};
+      auto omp_forces_data = ofd.devicePtr();
+      const auto omp_forces_size = ofd.size();
 
+      const auto nderivPerComponent = nderivatives_per_component;
+      const auto ndev_per_task = input.ncomponents*nderivPerComponent;
 
-#pragma acc parallel loop reduction(+:omp_forces_data[0:omp_forces_size])\
-                            present(input,t_actiondata) \
-                             copyin(nactive_tasks, \
-                                    ndev_per_task, \
-                                    nderivPerComponent ,\
-                                    partialTaskList_data[0:nactive_tasks], \
-                                    value_stash_data[0:value_stash_size]) \
-                               copy(omp_forces_data[0:omp_forces_size], \
-                                    forcesForApply_data[0:forcesForApply_size]) \
-                             create(derivatives[0:ndev_per_task*nactive_tasks]) \
-                            default(none)
-    for(unsigned i=0; i<nactive_tasks; ++i) {
-      //This may be changed to a shared array
-      std::vector<double> valstmp( input.nscalars );
-      std::size_t task_index = partialTaskList_data[i];
-      ParallelActionsOutput myout( input.nscalars,
-                                   valstmp.data(),
-                                   nderivPerComponent,
-                                   derivatives+ndev_per_task*i,
-                                   workspace_size,    // This needs to be passed to the GPU 
-                                   buffer.data() );   // Memory for this needs to be created somehow
+      OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
+      auto derivatives = dev.devicePtr();
+      OpenACC::memoryManager<double> vtmp{input.ncomponents*nactive_tasks};
+      auto valstmp = vtmp.devicePtr();
+      OpenACC::memoryManager<double> buff{};
+      if ( workspace_size>0 ) {
+        buff.resize(workspace_size*nactive_tasks);
+      }
+      auto workspaceSize = workspace_size;
+      auto buffer = buff.devicePtr();
 
-      // Calculate the stuff in the loop for this action
-      T::performTask( task_index, t_actiondata, input, myout );
-      // Gather the forces from the values
-      T::gatherForces( task_index, t_actiondata, input,
-                       ForceInput( input.ncomponents,
-                                   input.nscalars,
-                                   value_stash_data+input.nscalars*task_index,
-                                   nderivPerComponent,
-                                   derivatives+ndev_per_task*i),
-                       ForceOutput { omp_forces_data,omp_forces_size, forcesForApply_data,forcesForApply_size }
-                     );
+#pragma acc data present(input,t_actiondata) \
+                  copyin(nactive_tasks, \
+                         nderivPerComponent, \
+                         forcesForApply_size, \
+                         ndev_per_task, \
+                         workspaceSize, \
+                         omp_forces_size) \
+               deviceptr(derivatives, \
+                         omp_forces_data, \
+                         value_stash_data, \
+                         partialTaskList_data, \
+                         forcesForApply_data, \
+                         valstmp, \
+                         buffer) \
+                 default(none)
+      {
+#pragma acc parallel loop
+        for(unsigned i=0; i<nactive_tasks; ++i) {
+          std::size_t task_index = partialTaskList_data[i];
+          ParallelActionsOutput myout { input.nscalars,
+                                        valstmp+input.nscalars*i,
+                                        ndev_per_task,
+                                        derivatives+ndev_per_task*i,
+                                        workspaceSize,
+                                        (workspaceSize>0)?
+                                        buffer+workspaceSize*i
+                                        :nullptr  };
+          // Calculate the stuff in the loop for this action
+          T::performTask( task_index, t_actiondata, input, myout );
+          if constexpr (!has_custom_gather) {
+            // Gather the forces from the values
+            T::gatherForcesGPU( task_index,
+                                t_actiondata,
+                                input,
+                                ForceInput { input.ncomponents,
+                                             input.nscalars,
+                                             value_stash_data+input.nscalars*task_index,
+                                             nderivPerComponent,
+                                             derivatives+ndev_per_task*i},
+                                ForceOutput { omp_forces_data,
+                                              omp_forces_size,
+                                              forcesForApply_data,
+                                              forcesForApply_size}
+                              );
+          }
+        }
+#pragma acc parallel loop
+        for(unsigned v=0; v<virialSize; ++v) {
+          const  unsigned m = input.nindices_per_task*3 + v;
+          double tmp=0.0;
+#pragma acc loop reduction(+:tmp)
+          for(unsigned t=0; t<nactive_tasks; ++t) {
+            std::size_t task_index = partialTaskList_data[t];
+            auto fdata = ForceInput { input.ncomponents,
+                                      input.nscalars,
+                                      value_stash_data+input.nscalars*task_index,
+                                      nderivPerComponent,
+                                      derivatives+ndev_per_task*t};
+            for(unsigned i=0; i<input.ncomponents; ++i) {
+              tmp += fdata.force[i]*fdata.deriv[i][m];
+            }
+          }
+          omp_forces_data[nthreaded_forces-virialSize+v] = tmp;
+        }
+        ffa.copyFromDevice(forcesForApply.data());
+        ofd.copyFromDevice(omp_forces[0].data());
+
+        gatherThreads(ForceOutput{ omp_forces[0], forcesForApply });
+      }
     }
-    gatherThreads({ omp_forces_data,omp_forces_size, forcesForApply_data,forcesForApply_size });
+    comm.Bcast( forcesForApply.data(), forcesForApply.size(), 0);
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif

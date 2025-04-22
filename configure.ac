@@ -1001,29 +1001,27 @@ fi
 acc_found=ko
 if test $openacc = true; then
   acc_found=ko
-  # optional libraries follow
-  if test $mpi = true ; then
-    PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
-    if test "$__PLUMED_HAS_OPENACC" = yes; then
-      acc_found=ok
-      #test if we can compile with openacc
-      PLUMED_CHECK_CXXFLAG([-acc])
-      PLUMED_CHECK_CXXFLAG([-acc=gpu])
-      #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
-      #use CXXFLAGS="-O3 -gpu=cc80" at configure time
-      #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
-      #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
-      #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
-      #PLUMED_CHECK_CXXFLAG([-stdpar])
-      #PLUMED_CHECK_CXXFLAG([-gpu=managed])
-      #PLUMED_CHECK_LDFLAGS([-static-nvidia])
-      #PLUMED_CHECK_LDFLAGS([-acc])
-      LDSHARED="$LDSHARED -acc -static-nvidia"
-      AC_MSG_WARN([Please remember to add "CXXFLAGS" the compute capability flag of your device, for example "-gpu=cc80"])
-    fi
-  else 
-    acc_found=ko
+# optional libraries follow
+  PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
+  if test "$__PLUMED_HAS_OPENACC" = yes; then
+    acc_found=ok
+    #test if we can compile with openacc
+    PLUMED_CHECK_CXXFLAG([-acc])
+    PLUMED_CHECK_CXXFLAG([-acc=gpu])
+    #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
+    #use CXXFLAGS="-O3 -gpu=cc80" at configure time
+    #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
+    #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
+    #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
+    #PLUMED_CHECK_CXXFLAG([-stdpar])
+    #PLUMED_CHECK_CXXFLAG([-gpu=managed])
+    #PLUMED_CHECK_LDFLAGS([-static-nvidia])
+    #PLUMED_CHECK_LDFLAGS([-acc])
+    LDSHARED="$LDSHARED -acc -static-nvidia"
+    AC_MSG_WARN([Please remember to add "CXXFLAGS" the compute capability flag of your device, for example "-gpu=cc80"])
   fi
+else 
+  acc_found=ko
 fi
 
 # in non-debug mode, add -DNDEBUG
