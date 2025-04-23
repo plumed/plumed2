@@ -104,7 +104,7 @@ public:
     plumed_error();
   }
   static void performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static void getForceIndices( std::size_t task_index, std::size_t ntotal_force, const VolumeData<T>& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
 };
 
 template <class T>
@@ -160,7 +160,7 @@ ActionVolume<T>::ActionVolume(const ActionOptions&ao):
   setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
 
-  taskmanager.setupParallelTaskManager( 1, 3*(1+refatoms.size())+9, 3*refatoms.size()+9 );
+  taskmanager.setupParallelTaskManager( 1, 3*(1+refatoms.size())+9, 3, 3*refatoms.size()+9 );
   taskmanager.setActionInput( actioninput );
 }
 
@@ -235,17 +235,20 @@ void ActionVolume<T>::performTask( std::size_t task_index, const VolumeData<T>& 
   }
 }
 
-template <class T>
-void ActionVolume<T>::gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+template<class T>
+void ActionVolume<T>::getForceIndices( std::size_t task_index,
+                                       std::size_t ntotal_force,
+                                       const VolumeData<T>& actiondata,
+                                       const ParallelActionsInput& input,
+                                       View<std::size_t,helpers::dynamic_extent> force_indices ) {
   std::size_t base = 3*task_index;
-  unsigned m = 3;
-  double ff = fdata.force[0];
-  forces.thread_unsafe[base + 0] += ff*fdata.deriv[0][0];
-  forces.thread_unsafe[base + 1] += ff*fdata.deriv[0][1];
-  forces.thread_unsafe[base + 2] += ff*fdata.deriv[0][2];
-  for(unsigned n=3*actiondata.numberOfNonReferenceAtoms; n<forces.thread_unsafe.size(); ++n) {
-    forces.thread_safe[m-3] += ff*fdata.deriv[0][m];
-    m++;
+  force_indices[0] = base;
+  force_indices[1] = base + 1;
+  force_indices[2] = base + 2;
+  std::size_t m=3;
+  for(unsigned n=3*actiondata.numberOfNonReferenceAtoms; n<ntotal_force; ++n) {
+    force_indices[m] = n;
+    ++m;
   }
 }
 

@@ -59,7 +59,7 @@ public:
   }
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( unsigned task_index, const T& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput forces );
+  static void getForceIndices( std::size_t task_index, std::size_t ntotal_force, const T& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
   static void gatherForces_custom( unsigned atomIndex,
                                    size_t nderivPerComponent,
                                    size_t ndev_per_task,
@@ -264,7 +264,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
-  taskmanager.setupParallelTaskManager( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + virialSize);//, 3*colvar_atoms[0].size());
+  taskmanager.setupParallelTaskManager( colvar_atoms[0].size(), 3*colvar_atoms[0].size() + virialSize, 0, 3*getNumberOfAtoms() + 9 );
   taskmanager.setActionInput( myinput );
 }
 
@@ -336,28 +336,24 @@ void SecondaryStructureBase<T>::applyNonZeroRankForces( std::vector<double>& out
 }
 
 template <class T>
-void SecondaryStructureBase<T>::gatherForces( unsigned task_index,
+void SecondaryStructureBase<T>::getForceIndices( std::size_t task_index,
+    std::size_t ntotal_force,
     const T& actiondata,
     const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned m = 0;
-    double ff = fdata.force[i];
-    for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
-      forces.thread_safe[base + 0] += ff*fdata.deriv[i][m];
-      ++m;
-      forces.thread_safe[base + 1] += ff*fdata.deriv[i][m];
-      ++m;
-      forces.thread_safe[base + 2] += ff*fdata.deriv[i][m];
-      ++m;
-    }
-
-    for(unsigned n=forces.thread_safe.size()-virialSize; n<forces.thread_safe.size(); ++n) {
-      forces.thread_safe[n] += ff*fdata.deriv[i][m];
-      ++m;
-    }
+    View<std::size_t,helpers::dynamic_extent> force_indices ) {
+  std::size_t m = 0;
+  for(unsigned j=0; j<input.nindices_per_task; ++j) {
+    std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
+    force_indices[m] = base + 0;
+    ++m;
+    force_indices[m] = base + 1;
+    ++m;
+    force_indices[m] = base + 2;
+    ++m;
+  }
+  for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
+    force_indices[m] = n;
+    ++m;
   }
 }
 
