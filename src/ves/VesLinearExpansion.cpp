@@ -329,6 +329,7 @@ void VesLinearExpansion::registerKeywords( Keywords& keys ) {
   VesBias::useProjectionArgKeywords(keys);
   //
   keys.add("compulsory","BASIS_FUNCTIONS","the label of the one dimensional basis functions that should be used.");
+  keys.add("compulsory","GRID_FMT","%14.9f","the format to use when outputting the numbers in the grids");
   keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential.");
 }
 
@@ -342,7 +343,6 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bf_values_set(false) {
   std::vector<std::string> basisf_labels;
   parseMultipleValues("BASIS_FUNCTIONS",basisf_labels,nargs_);
-  checkRead();
 
   std::string error_msg = "";
   basisf_pntrs_ = VesTools::getPointersFromLabels<BasisFunctions*>(basisf_labels,plumed.getActionSet(),error_msg);
@@ -368,7 +368,10 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bool coeffs_read = readCoeffsFromFiles();
 
   checkThatTemperatureIsGiven();
+  std::string fmt;
+  parse("GRID_FMT",fmt);
   bias_expansion_pntr_ = Tools::make_unique<LinearBasisSetExpansion>(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
+  bias_expansion_pntr_->setGridFMT(fmt);
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //

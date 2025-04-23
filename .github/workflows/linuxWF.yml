@@ -102,6 +102,11 @@ jobs:
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |
+        pip install requests
+        pip install PlumedToHTML
+        pip install networkx
+        pip install mkdocs
+        pip install python-markdown-math 
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         .ci/install.doxygen Release_1_8_17

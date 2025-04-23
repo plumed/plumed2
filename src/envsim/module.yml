@@ -1,0 +1,4 @@
+name: envsim
+authors: Pablo Piaggi and Gareth Tribello
+description: the environmental similarity symmetry function that can be used for probing crystallinity in atomistic systems
+dois: ["10.1063/1.5102104"]

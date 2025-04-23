@@ -1,0 +1,4 @@
+name: fourier
+authors: Edoardo Baldi and Gareth Tribello
+description: tools for performing a 2D fast fourier transform of a function on a grid
+dois: ["10.1088/1361-648X/aa893d"]

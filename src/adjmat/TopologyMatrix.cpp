@@ -32,8 +32,56 @@
 /*
 Adjacency matrix in which two atoms are adjacent if they are connected topologically
 
-\par Examples
+The functionality in this action was developed as part of a project that attempted to study
+the nucleation of bubbles.  The idea was to develop a criterion that would allow one to determine
+if two gas atoms $i$ and $j$ are part of the same bubble or not.  This criterion would then be used
+to construct a adjacency matrix, which could be used in the same way that [CONTACT_MATRIX](CONTACT_MATRIX.md) is used in other
+methods.
 
+The criterion that was developed to determine whether atom $i$ and $j$ are connected in this way works by
+determining if the density within a cylinder that is centered on the vector connecting atoms $i$ and $j$ is
+less than a certain threshold value.  To make this determination we first determine whether any given atom $k$
+is within the cylinder centered on the vector connecting atoms $i$ and $j$ by using the following expression
+
+$$
+f(\mathbf{r}_{ik}, \mathbf{r}_{ij}) = s_1\left( \sqrt{ |\mathbf{r}_{ij}|^2 - \left( \frac{\mathbf{r}_{ij} \cdot \mathbf{r}_{ik}}{|\mathbf{r}_{ij} |} \right)^2} \right)s_2\left( -\frac{\mathbf{r}_{ij} \cdot \mathbf{r}_{ik}}{|\mathbf{r}_{ij} |} \right) s_2\left( \frac{\mathbf{r}_{ij} \cdot \mathbf{r}_{ik}}{|\mathbf{r}_{ij} |} - |\mathbf{r}_{ij}| \right)
+$$
+
+In this expression $s_1$ and $s_2$ are switching functions, while $\mathbf{r}_{lm}$ is used to indicate the vector connecting atoms $l$ and $m$.
+
+We then calculate the density for a grid of $M$ points along the vector connecting atom $i$ and atom $j$ using and find the maximum density on this grid using:
+
+$$
+\rho_{ij} = \max_{m \in M} \left[ \frac{M}{d_\textrm{max}} \right] \sum_k f(r_{ik}, r_{ij}) \int_{(m-1)d_{\textrm{max}}/M}^{ md_{\textrm{max}} /M } \textrm{d}x \quad K\left( \frac{x - r_{ks} \cdot r_{ij} }{ | r_{ks} | }\right)
+$$
+
+where $d_\textrm{max}$ is the `D_MAX` parameter of the switching function $s_3$ that appears in the next equation, $K$ is a kernal function and $s$ is used to represent a point in space that is $d_\textrm{max}$ from atom $j$ along the vector connecting atom $j$ to atom $i$.
+
+The final value that is stored in the $i, j$ element of the output matrix is:
+
+$$
+T_{ij} = s_3(|\mathbf{r}_{ij}|)s_4(\rho_{ij})
+$$
+
+where $s_3$ and $s_4$ are switching functions.
+
+We ended up abandoning this method and the project (if you want drive bubble formation you are probably better off adding a bias on the volume of the simulation cell).
+However, if you would like to try this method an example input that uses this action would look like this:
+
+```plumed
+mat: TOPOLOGY_MATRIX ...
+    GROUP=1-85 BACKGROUND_ATOMS=86-210
+    BIN_SIZE=1.02 SIGMA=0.17 KERNEL=triangular
+    CYLINDER_SWITCH={RATIONAL R_0=0.5 D_MAX=1.0}
+    SWITCH={RATIONAL D_0=30 R_0=0.5 D_MAX=32}
+    RADIUS={RATIONAL D_0=0.375 R_0=0.1 D_MAX=0.43}
+    DENSITY_THRESHOLD={RATIONAL R_0=0.1 D_MAX=0.5}
+...
+```
+
+The switching functions $s_1$, $s_2$, $s_3$ and $s_4$ are specified using the `RADIUS`, `CYLINDER_SWITCH`, `SWITCH` and `DENSITY_THRESHOLD` keywords respectively.
+We loop over the atoms in the group specified using the `BACKGROUND_ATOMS` keyword when looping over $k$ in the formulas above.  An $85 \times 85$ matrix is output
+from the method as we are determining the connectivity between the atoms specified via the `GROUP` keyword.
 
 */
 //+ENDPLUMEDOC
@@ -91,12 +139,12 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
-  keys.add("compulsory","RADIUS","");
+  keys.add("compulsory","RADIUS","swtiching function that acts upon the radial distance of the atom from the center of the cylinder");
   keys.linkActionInDocs("RADIUS","LESS_THAN");
   keys.add("compulsory","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
   keys.linkActionInDocs("CYLINDER_SWITCH","LESS_THAN");
   keys.add("compulsory","BIN_SIZE","the size to use for the bins");
-  keys.add("compulsory","DENSITY_THRESHOLD","");
+  keys.add("compulsory","DENSITY_THRESHOLD","a switching function that acts upon the maximum density in the cylinder");
   keys.linkActionInDocs("DENSITY_THRESHOLD","LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");

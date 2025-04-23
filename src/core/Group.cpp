@@ -37,17 +37,69 @@ namespace PLMD {
 /*
 Define a group of atoms so that a particular list of atoms can be referenced with a single label in definitions of CVs or virtual atoms.
 
-Atoms can be listed as comma separated numbers (i.e. `1,2,3,10,45,7,9`) , simple positive ranges
-(i.e. `20-40`), ranges with a stride either positive or negative (i.e. `20-40:2` or `80-50:-2`) or as
+The GROUP command can be used to define a list of atoms so that the group can be referenced in the definitions of other
+CVs or virtual atoms as shown below:
+
+```plumed
+o: GROUP ATOMS=1,4,7,11,14
+h: GROUP ATOMS=2,3,5,6,8,9,12,13
+# compute the coordination among the two groups
+c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
+# same could have been obtained without GROUP, just writing:
+# c: COORDINATION GROUPA=1,4,7,11,14 GROUPB=2,3,5,6,8,9,12,13
+
+# print the coordination on file 'colvar'
+PRINT ARG=c FILE=colvar
+```
+
+The first group command here creates a group of atoms called `o` containing atoms 1, 4, 7, 11 and 14.
+The second group command here creates a group of toms called `h` containing atoms 2, 3, 5, 6, 8, 9, 12, and 13.
+
+As discussed on [this page](specifying_atoms.md) atoms in groups can be listed as comma separated numbers (i.e. `1,2,3,10,45,7,9`),
+simple positive ranges (i.e. `20-40`), ranges with a stride either positive or negative (i.e. `20-40:2` or `80-50:-2`) or as
 comma separated combinations of all the former methods (`1,2,4,5,10-20,21-40:2,80-50:-2`).
 
-Moreover, lists can be imported from ndx files (GROMACS format). Use `NDX_FILE` to set the name of
-the index file and `NDX_GROUP` to set the name of the group to be imported (default is first one).
-Notice that starting from version 2.10 it is possible to directly use an `@ndx:` selector
-(see \ref Group).
+Oftentime people will store the definitions in a separate file as has been done in the following example input.
 
-It is also possible to remove atoms from a list and or sort them using keywords `REMOVE`, `SORT`, and `UNIQUE`.
-The flow is the following:
+```plumed
+INCLUDE FILE=extras/groups.dat
+# compute the coordination among the two groups
+c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.3
+# print the coordination on file 'colvar'
+PRINT ARG=c FILE=colvar
+```
+
+Storing the groups in the extra file is particularly useful if the groups include list of thousand atoms. Putting these definitions
+in a separate file ensures that the main plumed.dat file is not cluttered.  You can even use a [GROMACS index file](https://manual.gromacs.org/archive/5.0.4/online/ndx.html)
+to hold the groups as illustrated in the input below:
+
+```plumed
+# import group named 'Protein' from file index.ndx
+pro: GROUP NDX_FILE=extras/index.ndx NDX_GROUP=Protein
+# dump all the atoms of the protein on a trajectory file
+DUMPATOMS ATOMS=pro FILE=traj.gro
+```
+
+Notice that you use the keyword `NDX_FILE` to set the name of the index file and `NDX_GROUP` to set the name of the group to be imported (default is first one).
+Further notice that starting from version 2.10 it is possible to directly use an `@ndx:` selector in the input to an action as shwn below:
+
+```plumed
+DUMPATOMS ATOMS={@ndx:{extras/index.ndx Protein}} FILE=traj.gro
+```
+
+Lastly notice that it is also possible to remove atoms from the list of atoms specified in a GROUP by using the keywords `REMOVE`, `SORT`, and `UNIQUE` as shown below:
+
+```plumed
+# take one atom every three, that is oxygens
+ox: GROUP ATOMS=1-90:3
+# take the remaining atoms, that is hydrogens
+hy: GROUP ATOMS=1-90 REMOVE=ox
+DUMPATOMS ATOMS=ox FILE=ox.gro
+DUMPATOMS ATOMS=hy FILE=hy.gro
+```
+
+When you used the GROUP command the flow as follows:
+
 - If `ATOMS` is present, then take the ordered list of atoms from the `ATOMS` keyword as a starting list.
 - Alternatively, if `NDX_FILE` is present, use the list obtained from the gromacs group.
 - If `REMOVE` is present, then remove the first occurrence of each of these atoms from the list.
@@ -58,82 +110,7 @@ The flow is the following:
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 So, having a huge group defined does not slow down your calculation in any way.
-It is just convenient to better organize input files. Might be used in combination with
-the \ref INCLUDE command so as to store long group definitions in a separate file.
-
-
-\par Examples
-
-This command create a group of atoms containing atoms 1, 4, 7, 11 and 14 (labeled 'o'), and another containing
-atoms 2, 3, 5, 6, 8, 9, 12, and 13 (labeled 'h'):
-\plumedfile
-o: GROUP ATOMS=1,4,7,11,14
-h: GROUP ATOMS=2,3,5,6,8,9,12,13
-# compute the coordination among the two groups
-c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
-# same could have been obtained without GROUP, just writing:
-# c: COORDINATION GROUPA=1,4,7,11,14 GROUPB=2,3,5,6,8,9,12,13
-
-# print the coordination on file 'colvar'
-PRINT ARG=c FILE=colvar
-\endplumedfile
-
-Groups can be conveniently stored in a separate file.
-E.g. one could create a file named `groups.dat` which reads
-\plumedfile
-#SETTINGS FILENAME=groups.dat
-# this is groups.dat
-o: GROUP ATOMS=1,4,7,11,14
-h: GROUP ATOMS=2,3,5,6,8,9,12,13
-\endplumedfile
-and then include it in the main 'plumed.dat' file
-\plumedfile
-INCLUDE FILE=groups.dat
-# compute the coordination among the two groups
-c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
-# print the coordination on file 'colvar'
-PRINT ARG=c FILE=colvar
-\endplumedfile
-The `groups.dat` file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
-
-A GROMACS index file such as the one shown below:
-
-\auxfile{index.ndx}
-[ Protein ]
-1 3 5 7 9
-2 4 6 8 10
-[ Group2 ]
-30 31 32 33 34 35 36 37 38 39 40
-5
-\endauxfile
-
-can also be imported by using the GROUP keyword as shown below
-\plumedfile
-# import group named 'Protein' from file index.ndx
-pro: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein
-# dump all the atoms of the protein on a trajectory file
-DUMPATOMS ATOMS=pro FILE=traj.gro
-\endplumedfile
-
-Notice that it is now possible to directly use the `@ndx:` selector
-in the definition of collective variables. Thus, the same result can be obtained
-with the following input:
-\plumedfile
-DUMPATOMS ATOMS={@ndx:{index.ndx Protein}} FILE=traj.gro
-\endplumedfile
-
-A list can be edited with `REMOVE`. For instance, if you
-are using a water model with three atoms per molecule, you can
-easily construct the list of hydrogen atoms in this manner
-\plumedfile
-# take one atom every three, that is oxygens
-ox: GROUP ATOMS=1-90:3
-# take the remaining atoms, that is hydrogens
-hy: GROUP ATOMS=1-90 REMOVE=ox
-DUMPATOMS ATOMS=ox FILE=ox.gro
-DUMPATOMS ATOMS=hy FILE=hy.gro
-\endplumedfile
-
+It is just convenient to better organize input files.
 
 */
 //+ENDPLUMEDOC

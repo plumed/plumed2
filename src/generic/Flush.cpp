@@ -32,15 +32,9 @@ namespace generic {
 This command instructs plumed to flush all the open files with a user specified frequency.
 Notice that all files are flushed anyway every 10000 steps.
 
-This
-is useful for preventing data loss that would otherwise arise as a consequence of the code
-storing data for printing in the buffers. Notice that wherever it is written in the
-plumed input file, it will flush all the open files.
+The input below uses the FLUSH command to get PLUMED to flush all the output files every 100 steps
 
-\par Examples
-
-A command like this in the input will instruct plumed to flush all the output files every 100 steps
-\plumedfile
+```plumed
 d1: DISTANCE ATOMS=1,10
 PRINT ARG=d1 STRIDE=5 FILE=colvar1
 
@@ -49,8 +43,13 @@ FLUSH STRIDE=100
 d2: DISTANCE ATOMS=2,11
 # also this print is flushed every 100 steps:
 PRINT ARG=d2 STRIDE=10 FILE=colvar2
-\endplumedfile
-(see also \ref DISTANCE and \ref PRINT).
+```
+
+This command is useful for preventing data loss that would otherwise arise as a consequence of the code
+storing data for printing in the buffers. Notice that it will always flush all the open files and that the location
+where put this command in the input does not matter.  In the input above, for example both `colvar1` and `colvar2`
+are flushed every 100 steps.
+
 */
 //+ENDPLUMEDOC
 

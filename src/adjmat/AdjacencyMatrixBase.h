@@ -105,10 +105,10 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the adjancency matrix to compute");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
-  keys.add("atoms","GROUPA","");
-  keys.add("atoms","GROUPB","");
+  keys.add("atoms","GROUPA","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPB");
+  keys.add("atoms","GROUPB","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPA");
   keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix. This is a depracated syntax that is equivalent to GROUP.  You are strongly recommened to use GROUP instead of ATOMS.");
-  keys.reserve("atoms","GROUPC","");
+  keys.reserve("atoms","GROUPC","a group of atoms that must be summed over when calculating each element of the adjacency matrix");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
@@ -120,6 +120,7 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("y","COMPONENTS","matrix","the projection of the bond on the y axis");
   keys.addOutputComponent("z","COMPONENTS","matrix","the projection of the bond on the z axis");
   keys.setValueDescription("matrix","a matrix containing the weights for the bonds between each pair of atoms");
+  keys.addDOI("10.1021/acs.jctc.6b01073");
 }
 
 template <class T>

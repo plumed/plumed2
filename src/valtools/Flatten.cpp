@@ -27,7 +27,19 @@
 /*
 Convert a matrix into a vector
 
-\par Examples
+This action can be used to convert an input matrix to a vector. The input matrix is flattened
+in row-major order so if the input matrix is $N \times $M$ the output vector has $N\times M$ elements.
+The first $M$ of these elements contain the first row of the input matrix, the second $M$ contain the
+second row of the input matrix and so on.
+
+The following example illustrates how we can convert a $5\times 5$ contact matrix into a vector with
+25 elements:
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1,2,3,4,5 SWITCH={RATIONAL R_0=0.1}
+f: FLATTEN ARG=c1
+PRINT ARG=f FILE=colvar
+```
 
 
 */

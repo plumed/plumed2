@@ -31,7 +31,74 @@ namespace generic {
 /*
 Create a mask vector to use for landmark selection
 
-\par Examples
+This action should be used in conjuction with the [SELECT_WITH_MASK](SELECT_WITH_MASK.md) action. As is explained in the documentation
+for [SELECT_WITH_MASK](SELECT_WITH_MASK.md), [SELECT_WITH_MASK](SELECT_WITH_MASK.md)
+allows you to output a scalar vector or matrix that contains a subset of the elements in the input vector or matrix.  The following example
+shows how this action works in practice.
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+m: CONSTANT VALUES=1,0,1
+v: SELECT_WITH_MASK ARG=d MASK=m
+```
+
+In the input above, The value, `m`, that is passed to the keyword MASK here is a vector with the same length as `d`.
+Elements of `d` that whose corresponding elements in `m` are zero are copied to the output value `v`.
+When elements of `m` are non-zero the corresponding elements in `d` are not transferred to the output
+value - they are masked.  Consequently, although the input, `d`, to the select SELECT_WITH_MASK action is a vector
+with 3 elements the output, `v`, is a scalar.
+
+In the vast majority of cases you can use the [CONSTANT](CONSTANT.md) action to create the values that are passed to the
+SELECT_WITH_MASK action using the `MASK` keyword as the size of the input vector is known when you write the input file.
+The one exception to this is if you are using a [COLLECT](COLLECT.md) action like the one shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1
+```
+
+The vector `c` here will have as many frames as there are frames in the trajectory that is being generated or analysed.
+Normally, with an input like this a user will want to analyse all the data in the whole trajectory at once without
+specifying the trajectories length to PLUMED.  action should was desgined to create inputs to the MASK keyword for
+[SELECT_WITH_MASK](SELECT_WITH_MASK.md) action in this particular case.  Basically it creates a vector of ones and
+zeros that has the same length as the input vector.
+
+There are three modes for creating these vectors and ones and zeros.  This first one creates a mask vector in which
+every element is equal to zero.  The output from the SELECT_WITH_MASK command, `v`, is thus identical to the output from
+the collect command, `d`.
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1
+m: CREATE_MASK TYPE=nomask ARG=c
+v: SELECT_WITH_MASK ARG=c MASK=m
+```
+
+The second mode, which is illustrated below, sets N randomly-chosen elements of the mask equal to zero.
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1
+m: CREATE_MASK TYPE=random NZEROS=20 ARG=c
+v: SELECT_WITH_MASK ARG=c MASK=m
+```
+
+The vector `v` that is output by the SELECT_WITH_MASK command contains 20 randomly selected elements from the input vector `c`.
+
+The third and final mode, which is illustrated below, selects a set of N evenly spaced points from the input vector.
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1
+m: CREATE_MASK TYPE=stride NZEROS=20 ARG=c
+v: SELECT_WITH_MASK ARG=c MASK=m
+```
+
+The vector `v` that is output by the SELECT_WITH_MASK command contains 20 elements from the input vector `c`.  If `c` has
+200 elements then `v` will contain every 20th element of the input vector `c`.
+
+For more examples that demonstrate how this action is used look at the actions in the [landmarks](module_landmarks.md) module.
+
 
 */
 //+ENDPLUMEDOC
@@ -106,6 +173,11 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
   setNotPeriodic();
   for(unsigned i=0; i<shape[0]; ++i) {
     getPntrToComponent(0)->set( i, 1.0 );
+  }
+  // We run calculate here to make a selection so that we can parse the input.
+  // This initial selection is never used
+  if( shape[0]>0 ) {
+    calculate();
   }
 }
 

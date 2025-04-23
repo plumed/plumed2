@@ -441,8 +441,12 @@ void ParallelTaskManager<T>::setupParallelTaskManager(
   nderivatives_per_component = nder;
   value_stash.resize( getValueStashSize() );
   myinput.nindices_per_task = nind;
-
   if( nt<0 ) {
+    //nvc++ seems to give problem on thrown exceptions
+    plumed_massert(
+      !(useacc && ! has_custom_gather),
+      "This action needs to specify a custom GatherForces function for the derivatives (see ParallelTaskManager manual)"
+    );
     nthreaded_forces = action->getNumberOfDerivatives();
   } else {
     nthreaded_forces = nt;
@@ -602,7 +606,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
   unsigned nactive_tasks=partialTaskList.size();
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
-
+  //TODO: check if std::fill is faster (i get conflicting answers on the net)
+  //std::fill (forcesForApply.begin(),forcesForApply.end(), 0.0);
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
@@ -784,7 +789,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreads( ForceOutput forces ) {
   //Forceoutput is basically two spans, so it is ok to pass it by value
   unsigned k=0;
-  for(unsigned n=forces.thread_unsafe.size()-nthreaded_forces; n<forces.thread_unsafe.size(); ++n) {
+  for(unsigned n=forces.thread_unsafe.size()-forces.thread_safe.size(); n<forces.thread_unsafe.size(); ++n) {
     forces.thread_unsafe[n] += forces.thread_safe[k];
     ++k;
   }

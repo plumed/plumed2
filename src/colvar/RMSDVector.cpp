@@ -306,7 +306,7 @@ void RMSDVector::performTask( std::size_t task_index,
   getPositionsFromInputData( input, pos );
   if( actiondata.displacement && actiondata.type=="SIMPLE" ) {
     std::vector<Vector> direction( natoms );
-    output.values[0] = actiondata.myrmsd[task_index].simpleAlignment( actiondata.align, actiondata.displace, pos, actiondata.myrmsd[task_index].getReference(), der, direction, actiondata.squared );
+    output.values[0] = actiondata.myrmsd[task_index].simpleAlignment( actiondata.align, actiondata.displace, View(pos.data(),pos.size()), actiondata.myrmsd[task_index].getReference(), der, direction, actiondata.squared );
     for(unsigned i=0; i<direction.size(); ++i) {
       output.values[1+i] = direction[i][0];
       output.values[1+natoms+i] = direction[i][1];

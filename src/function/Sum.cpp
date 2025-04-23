@@ -30,7 +30,26 @@
 /*
 Calculate the sum of the arguments
 
-\par Examples
+This action takes a single vector or a single matrix in input. The output is a scalar
+that contains the sum of all the elements in the input vector/matrix. This action is
+very useful if you want to do calculations like the one illustrated in this example:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.1}
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+This example calculates and outputs the number of distances that are less than 0.1 nm.
+
+You can do something similar by summing the elements of a matrix as shown below:
+
+```plumed
+c: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1}
+s: SUM ARG=c PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -57,7 +76,25 @@ Calculate the SUM of the set of input scalars
 /*
 Calculate the arithmetic mean of the elements in a vector
 
-\par Examples
+This action takes a single vector or a single matrix in input.  The output is a scalar
+that contains the mean of all the elements in the input vector/matrix. This action is
+useful if you want do to calculations like the one illustrated in this example:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+m: MEAN ARG=d PERIODIC=NO
+PRINT ARG=m FILE=colvar
+```
+
+The output from the MEAN action here is the average over the four distances that are evaluated by the
+DISTANCE action.  Notice that you can also do the calculation above using:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+s: SUM ARG=d PERIODIC=NO
+m: CUSTOM ARG=s FUNC=x/4 PERIODIC=NO
+PRINT ARG=m FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

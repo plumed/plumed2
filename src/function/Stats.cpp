@@ -34,20 +34,20 @@ slope and the intercept of a linear fit.
 
 The reference values can be either provided as values using PARAMETERS or using value without derivatives
 from other actions using PARARG (for example using experimental values from collective variables such as
-\ref CS2BACKBONE, \ref RDC, \ref NOE, \ref PRE).
+[CS2BACKBONE](CS2BACKBONE.md), [RDC](RDC.md), [NOE](NOE.md), [PRE](PRE.md)).
 
 \par Examples
 
 The following input tells plumed to print the distance between three couple of atoms
 and compare them with three reference distances.
 
-\plumedfile
+```plumed
 d1: DISTANCE ATOMS=10,50
 d2: DISTANCE ATOMS=1,100
 d3: DISTANCE ATOMS=45,75
 st: STATS ARG=d1,d2,d3 PARAMETERS=1.5,4.0,2.0
 PRINT ARG=d1,d2,d3,st.*
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

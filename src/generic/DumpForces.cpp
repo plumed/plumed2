@@ -31,21 +31,35 @@ namespace generic {
 /*
 Dump the force acting on one of a values in a file.
 
-For a CV this command will dump
-the force on the CV itself. Be aware that in order to have the forces on the atoms
-you should multiply the output from this argument by the output from DUMPDERIVATIVES.
-Furthermore, also note that you can output the forces on multiple quantities simultaneously
-by specifying more than one argument. You can control the buffering of output using the \ref FLUSH keyword.
+Consider the following PLUMED input:
 
+```plumed
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+```
 
-\par Examples
+This input will ultimately apply forces on the $x$, $y$ and $z$ components of two
+atoms as well as the 9 cell vectors.  The force on the $i$th of these 15 quantities
+is given by:
 
-The following input instructs plumed to write a file called forces that contains
-the force acting on the distance between atoms 1 and 2.
-\plumedfile
-DISTANCE ATOMS=1,2 LABEL=distance
-DUMPFORCES ARG=distance STRIDE=1 FILE=forces
-\endplumedfile
+$$
+F_i = - \frac{\textrm{d}V}{\textrm{d}r}\frac{\partial r}{\partial x_i}
+$$
+
+where $x_i$ is the $x$, $y$ or $z$ component of the position of one of the two atoms or one of the cell
+vectors.  If we modify the input above by adding the DUMPFORCES command as shown below:
+
+```plumed
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+DUMPFORCES ARG=r FILE=forces
+```
+
+we can then monitor the value of $-\frac{\textrm{d}V}{\textrm{d}r}\frac{\partial r}$ in the output file
+`forces`.  As explained by the equation above to get the forces on the atom this 'input force' needs to
+be multiplied by $\frac{\partial r}{\partial x_i}$.  To view the various components of the $\frac{\partial r}{\partial x_i}$
+you would use the [DUMPDERIVATIVES](DUMPDERIVATIVES.md) command.  To control the buffering of output you use the
+[FLUSH](FLUSH.md) command.
 
 */
 //+ENDPLUMEDOC

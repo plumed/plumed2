@@ -27,7 +27,28 @@
 /*
 Create a matrix by stacking vectors together
 
-\par Examples
+This action takes 2 or more vectors with the same number of elements as input and outputs a matrix.
+This output matrix is constructed stacking the input vectors vertically.  The first row of the output
+matrix thus contains the first elements of all the input vector, the second row contains the second elements
+and so on.  In other words, the first input vector is in the first column of the output matrix, the second
+input vector is in the second column and so.
+
+The following shows an example of how this action operates in practise. The [DISTANCE](DISTANCE.md) command below calculates
+the vectors containing four pairs of atoms.  The VSTACK command is then used to construct a $4 \times 3$ matrix
+that contains all the vectors. The 1,1, 1,2 and 1,3 components in this matrix contain the
+$x$, $y$ and $z$ components of the vector connecting atoms 1 and 2. The 2,1, 2,2 and 2,3 contain the
+$x$, $y$ and $z$ components of the vector connecting atoms 3 and 4 and so on.
+
+```plumed
+d1: DISTANCE ...
+   COMPONENTS
+   ATOMS1=1,2 ATOMS2=3,4
+   ATOMS3=5,6 ATOMS4=7,8
+...
+m: VSTACK ARG=d1.x,d1.y,d1.z
+
+PRINT ARG=m FILE=matrix.dat
+```
 
 */
 //+ENDPLUMEDOC

@@ -44,22 +44,26 @@ namespace colvar {
 Calculates EEF1 solvation free energy for a group of atoms.
 
 EEF1 is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
-\f[
-    \Delta G^\mathrm{solv}_i = \Delta G^\mathrm{ref}_i - \sum_{j \neq i} f_i(r_{ij}) V_j
-\f]
-where \f$\Delta G^\mathrm{solv}_i\f$ is the free energy of solvation, \f$\Delta G^\mathrm{ref}_i\f$ is the reference solvation free energy, \f$V_j\f$ is the volume of atom \f$j\f$ and
-\f[
-    f_i(r) 4\pi r^2 = \frac{2}{\sqrt{\pi}} \frac{\Delta G^\mathrm{free}_i}{\lambda_i} \exp\left\{ - \frac{(r-R_i)^2}{\lambda^2_i}\right\}
-\f]
-where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolated group, \f$\lambda_i\f$ is the correlation length equal to the width of the first solvation shell and \f$R_i\f$ is the van der Waals radius of atom \f$i\f$.
 
-The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbor list with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+$$
+\Delta G^\mathrm{solv}_i = \Delta G_i^\mathrm{ref}-\sum _{j \neq i} f _i(r _{ij}) V_j
+$$
 
-\par Examples
+where $\Delta G^\mathrm{solv}_i$ is the free energy of solvation, $\Delta G^\mathrm{ref}_i$ is the reference solvation free energy, $V_j$ is the volume of atom $j$ and
 
-\plumedfile
+$$
+    f_i(r) 4\pi r^2 = \frac{2}{\sqrt{\pi}} \frac{\Delta G^\mathrm{free}_i}{\lambda_i} \exp\left( - \frac{(r-R_i)^2}{\lambda^2_i}\right)
+$$
+
+where $\Delta G^\mathrm{free}_i$ is the solvation free energy of the isolated group, $\lambda_i$ is the correlation length equal to the width of the first solvation shell and $R_i$ is the van der Waals radius of atom $i$.
+
+The output from this collective variable, the free energy of solvation, can be used with the [BIASVALUE](BIASVALUE.md) keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the [GROUP](GROUP.md) action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbor list with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+
+## Examples
+
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt77/peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
@@ -73,7 +77,7 @@ solv: EEFSOLV ATOMS=protein-h
 bias: BIASVALUE ARG=solv
 
 PRINT ARG=solv FILE=SOLV
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

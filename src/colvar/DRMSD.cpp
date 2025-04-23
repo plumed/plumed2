@@ -38,63 +38,45 @@ you must first superimpose the two structures in some ways.  Obviously, it is th
 motions of the structure - i.e. not the translations and rotations - that are interesting. However,
 aligning two structures by removing the translational and rotational motions is not easy.  Furthermore,
 in some cases there can be alignment issues caused by so-called frame-fitting problems. It is thus
-often cheaper and easier to calculate the distances between all the pairs of atoms.  The distance
-between the two structures, \f$\mathbf{X}^a\f$ and \f$\mathbf{X}^b\f$ can then be measured as:
+often easier to calculate the distances between all the pairs of atoms.  The distance
+between the two structures, ${\bf X}^a$ and ${\bf X}^b$ can then be measured as:
 
-\f[
-d(\mathbf{X}^A, \mathbf{X}^B) = \sqrt{\frac{1}{N(N-1)} \sum_{i \ne j} [ d(\mathbf{x}_i^a,\mathbf{x}_j^a) - d(\mathbf{x}_i^b,\mathbf{x}_j^b) ]^2}
-\f]
+$$
+d({\bf X}^A, {\bf X}^B) = \sqrt{\frac{1}{N(N-1)} \sum_{i \ne j} [ d({\bf x}_i^a,{\bf x}_j^a) - d({\bf x}_i^b,{\bf x}_j^b) ]^2}
+$$
 
-where \f$N\f$ is the number of atoms and \f$d(\mathbf{x}_i,\mathbf{x}_j)\f$ represents the distance between
-atoms \f$i\f$ and \f$j\f$.  Clearly, this representation of the configuration is invariant to translation and rotation.
+where $N$ is the number of atoms and $d({\bf x}_i,{\bf x}_j)$ represents the distance between
+atoms $i$ and $j$.  Clearly, this representation of the configuration is invariant to translation and rotation.
 However, it can become expensive to calculate when the number of atoms is large.  This can be resolved
-within the DRMSD colvar by setting LOWER_CUTOFF and UPPER_CUTOFF.  These keywords ensure that only
+within the DRMSD colvar by setting `LOWER_CUTOFF` and `UPPER_CUTOFF`.  These keywords ensure that only
 pairs of atoms that are within a certain range are incorporated into the above sum.
 
 In PDB files the atomic coordinates and box lengths should be in Angstroms unless
 you are working with natural units.  If you are working with natural units then the coordinates
-should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html
+should be in your natural length unit.  [Click here](http://www.wwpdb.org/docs.html) for more details on the PDB file format.
 
-\par Examples
+## Examples
 
 The following tells plumed to calculate the distance RMSD between
 the positions of the atoms in the reference file and their instantaneous
 position. Only pairs of atoms whose distance in the reference structure is within
 0.1 and 0.8 nm are considered.
 
-\plumedfile
-DRMSD REFERENCE=file1.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
-\endplumedfile
-
-The reference file is a PDB file that looks like this
-
-\auxfile{file1.pdb}
-ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
-ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
-ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
-ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
-ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
-END
-\endauxfile
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test1.pdb
+DRMSD REFERENCE=regtest/basic/rt-drmsd/test1.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
+```
 
 The following tells plumed to calculate a DRMSD value for a pair of molecules.
 
-\plumedfile
-DRMSD REFERENCE=file2.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
-\endplumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test0.pdb
+DRMSD REFERENCE=regtest/basic/rt-drmsd/test0.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
+```
 
-In the input reference file (file.pdb) the atoms in each of the two molecules are separated by a TER
+Notice that in the input reference file (which you can see by clicking on regtest/basic/rt-drmsd/test0.pdb )
+the atoms in each of the two molecules are separated by a TER
 command as shown below.
-
-\auxfile{file2.pdb}
-ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
-ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
-ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
-TER
-ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
-ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
-END
-\endauxfile
 
 In this example the INTER-DRMSD type ensures that the set of distances from which the final
 quantity is computed involve one atom from each of the two molecules.  If this is replaced

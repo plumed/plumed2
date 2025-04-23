@@ -45,15 +45,16 @@ PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
 void Bridge::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
-  keys.add("atoms","GROUPA","");
-  keys.add("atoms","GROUPB","");
+  keys.add("atoms","GROUPA","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPB");
+  keys.add("atoms","GROUPB","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPA");
   keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
-  keys.add("optional","SWITCH","The parameters of the two switchingfunction in the above formula");
-  keys.add("optional","SWITCHA","The switchingfunction on the distance between bridging atoms and the atoms in "
-           "group A");
-  keys.add("optional","SWITCHB","The switchingfunction on the distance between the bridging atoms and the atoms in "
-           "group B");
+  keys.add("optional","SWITCH","The parameters of the two switching functions in the above formula");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
+  keys.add("optional","SWITCHA","The switching function on the distance between bridging atoms and the atoms in group A");
+  keys.linkActionInDocs("SWITCHA","LESS_THAN");
+  keys.add("optional","SWITCHB","The switching function on the distance between the bridging atoms and the atoms in group B");
+  keys.linkActionInDocs("SWITCHB","LESS_THAN");
   keys.needsAction("BRIDGE_MATRIX");
   keys.needsAction("SUM");
   keys.setValueDescription("scalar","the number of bridging atoms between the two groups");

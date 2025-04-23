@@ -32,42 +32,43 @@ namespace colvar {
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
 
+This CV calculates a series of distances between pairs of atoms and transforms them by a switching function.
 The transformed distance can be compared with a reference value in order to calculate the squared distance
 between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
-with \ref FUNCPATHMSD to define a path in the contactmap space.
+with [FUNCPATHMSD](FUNCPATHMSD.md) to define a path in contactmap space as was done in the 2008 paper by Bonomi that
+is cited below.
 
 The individual contact map distances related to each contact can be accessed as components
 named `cm.contact-1`, `cm.contact-2`, etc, assuming that the label of the CONTACTMAP is `cm`.
 
-\par Examples
+## Examples
 
 The following example calculates switching functions based on the distances between atoms
 1 and 2, 3 and 4 and 4 and 5. The values of these three switching functions are then output
 to a file named colvar.
 
-\plumedfile
-CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH={RATIONAL R_0=1.5} LABEL=f1
+```plumed
+f1: CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH={RATIONAL R_0=1.5}
 PRINT ARG=f1.* FILE=colvar
-\endplumedfile
+```
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
 (i.e. the distance between two atoms transformed with the SWITCH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
-\plumedfile
-CONTACTMAP ...
-ATOMS1=1,2 REFERENCE1=0.1 WEIGHT1=0.5
-ATOMS2=3,4 REFERENCE2=0.5 WEIGHT2=1.0
-ATOMS3=4,5 REFERENCE3=0.25 WEIGHT3=1.0
-ATOMS4=5,6 REFERENCE4=0.0 WEIGHT4=0.5
-SWITCH={RATIONAL R_0=1.5}
-LABEL=cmap
-CMDIST
-... CONTACTMAP
+```plumed
+cmap: CONTACTMAP ...
+  ATOMS1=1,2 REFERENCE1=0.1 WEIGHT1=0.5
+  ATOMS2=3,4 REFERENCE2=0.5 WEIGHT2=1.0
+  ATOMS3=4,5 REFERENCE3=0.25 WEIGHT3=1.0
+  ATOMS4=5,6 REFERENCE4=0.0 WEIGHT4=0.5
+  SWITCH={RATIONAL R_0=1.5}
+  CMDIST
+...
 
 PRINT ARG=cmap FILE=colvar
-\endplumedfile
+```
 
 The next example calculates calculates fraction of native contacts (Q)
 for Trp-cage mini-protein. R_0 is the distance at which the switch function is guaranteed to
@@ -78,26 +79,24 @@ the reference value to be formed; instead for lambda values of 1.5–1.8 are usu
 BETA is the softness of the switch function, default is 50nm.
 WEIGHT is the 1/(number of contacts) giving equal weight to each contact.
 
-When using native contact Q switch function, please cite \cite best2013
+When using native contact Q switch function, please cite the 2013 paper from Best from the bibliography below
 
-\plumedfile
+```plumed
 # The full (much-longer) example available in regtest/basic/rt72/
 
-CONTACTMAP ...
-ATOMS1=1,67 SWITCH1={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4059} WEIGHT1=0.003597
-ATOMS2=1,68 SWITCH2={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4039} WEIGHT2=0.003597
-ATOMS3=1,69 SWITCH3={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3215} WEIGHT3=0.003597
-ATOMS4=5,61 SWITCH4={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4277} WEIGHT4=0.003597
-ATOMS5=5,67 SWITCH5={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3851} WEIGHT5=0.003597
-ATOMS6=5,68 SWITCH6={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3811} WEIGHT6=0.003597
-ATOMS7=5,69 SWITCH7={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3133} WEIGHT7=0.003597
-LABEL=cmap
-SUM
-... CONTACTMAP
+cmap: CONTACTMAP ...
+   ATOMS1=1,67 SWITCH1={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4059} WEIGHT1=0.003597
+   ATOMS2=1,68 SWITCH2={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4039} WEIGHT2=0.003597
+   ATOMS3=1,69 SWITCH3={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3215} WEIGHT3=0.003597
+   ATOMS4=5,61 SWITCH4={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4277} WEIGHT4=0.003597
+   ATOMS5=5,67 SWITCH5={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3851} WEIGHT5=0.003597
+   ATOMS6=5,68 SWITCH6={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3811} WEIGHT6=0.003597
+   ATOMS7=5,69 SWITCH7={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3133} WEIGHT7=0.003597
+   SUM
+...
 
 PRINT ARG=cmap FILE=colvar
-\endplumedfile
-(See also \ref switchingfunction)
+```
 
 */
 //+ENDPLUMEDOC
@@ -141,6 +140,8 @@ void ContactMap::registerKeywords( Keywords& keys ) {
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("contact","default","scalar","By not using SUM or CMDIST each contact will be stored in a component");
   keys.setValueDescription("scalar","the sum of all the switching function on all the distances");
+  keys.addDOI("10.1021/ja803652f");
+  keys.addDOI("10.1073/pnas.1311599110");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):

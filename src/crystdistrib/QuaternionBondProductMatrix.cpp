@@ -35,9 +35,31 @@ namespace crystdistrib {
 
 //+PLUMEDOC MCOLVAR QUATERNION_BOND_PRODUCT_MATRIX
 /*
-Calculate the product between a matrix of quaternions and the bonds
+Calculate the product between a matrix of quaternions and the bonds connecting molecules
 
-\par Examples
+Calculate the product of a quaternion, times a vector, times the conjugate of the quaternion. Geometrically, this is the given vector projected onto the coordinate system defined by the quaternion. For context, the QUATERNION action defines an orthogonal coordinate frame given 3 atoms (i.e. one can define a coordinate system based on the structure of a given molecule). This action can then project a vector from the given molecular frame, toward another molecule, essentially pointing toward molecule 2, from the perspective of molecule 1. See QUATERNION for information about the molecular coordinate frame. Given a quaternion centered on molecule 1 $\mathbf{q1}$, and the vector connecting molecule 1, and some other molecule 2, $\mathbf{r_{21}}$, the following calculation is performed:
+
+$$
+\mathbf{r} = \overline{\mathbf{q_1}} \mathbf{r_{21}} \mathbf{q_1}
+$$
+
+where the overline denotes the quaternion conjugate. Internally, the vector $\mathbf{r_{21}}$ is treated as a quaternion with zero real part. Such a multiplication will always yield another quaternion with zero real part, and the results can be interpreted as an ordinary vector in $\mathbb{R}^3$ Nevertheless, this action has four components, the first of which, w, will always be entirely zeros. Finally, the resulting vector is normalized within the action, and the real length can be returned by multiplying each component by the norm of the vector given to the action. The quaternion should be a vector, and the distances a matrix.
+
+In this example, 3 quaternion frames are calculated, and multiplied element-wise onto a distance matrix, yielding 9 vectors overall.
+
+```plumed
+#calculate the quaternion frames for 3 molecules
+quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+#also find the distance between the 3 origins of the molecule frames
+c1: DISTANCE_MATRIX GROUP=1,4,7 CUTOFF=100.0 COMPONENTS
+qp: QUATERNION_BOND_PRODUCT_MATRIX ARG=quat.*,c1.*
+#this is now a matrix showing how each molecule is oriented in 3D space
+#relative to eachother's origins
+#now use in a simple collective variable
+ops: CUSTOM ARG=qp.* VAR=w,i,j,k FUNC=w+i+j+k PERIODIC=NO
+#w could have been ignored because it is always zero.
+
+```
 
 */
 //+ENDPLUMEDOC

@@ -28,55 +28,53 @@ namespace crystdistrib {
 
 //+PLUMEDOC COLVAR QUATERNION
 /*
-Calculate quaternions for molecules.
+Calculate unit quaternions for molecules.
 
-The reference frame for the molecule is defined using the positions of three user selected atoms.  From the positions of these atoms,
-\f$\mathbf{x}_1\f$, \f$\mathbf{x}_2\f$ and \f$\mathbf{x}_3\f$, we define the vectors of the reference frame as:
+This action calculates a unit quaternion to define an internal coordinate frame for a molecule. The reference frame for the molecule is user-defined using the positions of three (non-collinear) atoms.
+The vectors which will define the frame are calculated as follows from atomic coordinates, all vectors in  $\mathbb{R}^3$, $x_1, x_2, x_3$:
 
-\f[
-\begin{aligned}
-\mathbf{x} & = \mathbf{x}_2 - \mathbf{x}_1 \\
-\mathbf{y} & = (\mathbf{x}_2 - \mathbf{x}_1) \times (\mathbf{x}_3 - \mathbf{x}_1) \\
-\mathbf{z} & \mathbf{x} \times \mathbf{y}
-\f]
+The first axis is the normalized difference of $x_1$ and $x_2$:
 
-\par Examples
+$$
+\mathbf{\hat{v_1}} = x_2 - x_1 / \|x_2 - x_1\|
+$$
 
-This calculates the quaternions for a molecule with 10 atoms
+In general, the vector $\mathbf{v'_2} = x_3 - x_1$ will not be orthogonal to $\mathbf{\hat{v_1}}$. This is fixed by taking the difference between the projection of $\mathbf{v'_2}$
+onto $\mathbf{\hat{v_1}}$ and $\mathbf{\hat{v_1}}$.
 
-\plumedfile
-q1: QUATERNION ATOMS1=1,2,3
-PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
-\endplumedfile
+$$
+\mathbf{v_2} = \mathbf{v'_2} - Proj_{\mathbf{\hat{v}_1}}(\mathbf{v'_2}) = \mathbf{v'_2} -  \mathbf{\hat{v}_1} \cdot  \mathbf{v'_2}
+$$
 
-This calculate the quaternions for two molecules with 10 atoms
+This is then normalized to form the second axis.
 
-\plumedfile
-q1: QUATERNION ATOMS1=1,2,3 ATOMS=4,5,6
-PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
-\endplumedfile
+$$
+\mathbf{\hat{v_2}} = \mathbf{v_2} / \|\mathbf{v_2}\|
+$$
 
-*/
-//+ENDPLUMEDOC
+Finally, the third axis is the cross product between the first two.
 
-//+PLUMEDOC COLVAR QUATERNION_SCALAR
-/*
-Calculate a single quaternion
+$$
+\mathbf{\hat{v_3}} = \mathbf{\hat{v_1}} \times \mathbf{\hat{v_2}}
+$$
 
-See \ref QUATERNION for more details
+The above 9 components form an orthonormal basis, centered on the molecule provided. The rotation matrix is generally the inverse of this matrix, and
+in this case since the matrix is orthogonal and its determinant is 1, the inverse is simply the transpose. The rotation matrix is then converted to a quaternion.
+The resulting quaternion has 4 real numbers attached to it, and they can be called as w, i , j ,and k. Note the quaternions are not unique e.g. q and -q perform the same rotation,
+so take care when using the results.  Take care that the components are simply 4 real numbers, and the usual non-commutativity of quaternions, and any other algebraic difference
+will need to be accounted for manually in later usage. No checks are made for co-linearity, or if the atoms are a part of the same molecule.
 
-\par Examples
+An example input file, in a system of 12 atoms. It calculates four molecular frames, then uses them in an order parameter.
 
-*/
-//+ENDPLUMEDOC
+```plumed
+q1: QUATERNION ATOMS1=1,3,2 ATOMS2=4,6,5
+q2: QUATERNION ATOMS1=7,9,8 ATOMS2=10,12,11
+#There are no checks to make sure the atoms belong to the same molecule
 
-//+PLUMEDOC COLVAR QUATERNION_VECTOR
-/*
-Calculate multiple quaternions
-
-See \ref QUATERNION for more details
-
-\par Examples
+fake: CUSTOM ARG=q1.w,q1.i,q1.j,q1.k,q2.w,q2.i,q2.j,q2.k VAR=w1,i1,j1,k1,w2,i2,j2,k2 FUNC=w1*w2+i1*i2+j1*j2+k1*k2 PERIODIC=NO
+#this isn’t a real order parameter, for the record
+PRINT ARG=fake FILE=fakeout
+```
 
 */
 //+ENDPLUMEDOC

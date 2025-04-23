@@ -32,13 +32,12 @@ namespace generic {
 /*
 Does a committor analysis.
 
-\par Examples
-
 The following input monitors two torsional angles during a simulation,
 defines two basins (A and B) as a function of the two torsion angles and
-stops the simulation when it falls in one of the two. In the log
-file will be shown the latest values for the CVs and the basin reached.
-\plumedfile
+stops the simulation when it falls in one of the two. The log
+file shows the latest values for the CVs and the basin reached.
+
+```plumed
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 COMMITTOR ...
@@ -49,7 +48,7 @@ COMMITTOR ...
   BASIN_LL2=-0.25,-0.40
   BASIN_UL2=-0.15,-0.20
 ... COMMITTOR
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

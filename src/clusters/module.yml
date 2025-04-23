@@ -1,0 +1,4 @@
+name: clusters
+authors: Gareth Tribello, Federico Giberti, Matteo Salvalaglio and Gabriele Sosso
+description: tools for using depth first search clustering to find the largest connected component in an adjacency matrix 
+dois: ["10.1021/acs.jctc.6b01073"]

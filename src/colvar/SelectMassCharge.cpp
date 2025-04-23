@@ -27,7 +27,21 @@
 /*
 Get the charges of one or multiple atoms
 
-\par Examples
+The following example shows how you can print the charge of atom one:
+
+```plumed
+q: CHARGE ATOM=1
+PRINT ARG=q FILE=colvar
+```
+
+If you want to output the charges of multiple atoms you would use an input similar to the one below:
+
+```plumed
+q: CHARGE ATOMS=1-10
+PRINT ARG=q FILE=colvar
+```
+
+This input outputs a 10 dimensional vector that contains the charges of the first 10 atoms.
 
 */
 //+ENDPLUMEDOC
@@ -36,7 +50,21 @@ Get the charges of one or multiple atoms
 /*
 Get the mass of one or multiple atoms
 
-\par Examples
+The following example shows how you can print the mass of atom one:
+
+```plumed
+m: MASS ATOM=1
+PRINT ARG=m FILE=colvar
+```
+
+If you want to output the masses of multiple atoms you would use an input similar to the one below:
+
+```plumed
+m: MASS ATOMS=1-10
+PRINT ARG=m FILE=colvar
+```
+
+This input outputs a 10 dimensional vector that contains the masses of the first 10 atoms.
 
 */
 //+ENDPLUMEDOC

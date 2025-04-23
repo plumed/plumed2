@@ -49,7 +49,7 @@ Notice that the two instances are running in the same UNIX process, so that they
 However, most of the features are expected to work correctly.
 
 Notes:
-- The \ref LOAD action will not work correctly since registers will be shared among the two instances.
+- The [LOAD](LOAD.md) action will not work correctly since registers will be shared among the two instances.
   In particular, the loaded actions will be visible to both guest and host irrespective of where they are loaded from.
   This can be fixed and will probably be fixed in a later version.
 - `CHDIR` is not thread safe.
@@ -83,42 +83,48 @@ are using:
 - In general, there might be unexpected crashes. Particularly difficult are situations where different
   kernels were compiled with different libraries.
 
-\todo
+
+The following things need to be done to improve this action:
+
 - Add support for multiple time stepping (`STRIDE` different from 1).
 - Add the possibility to import CVs calculated in the host PLUMED instance into the guest PLUMED instance.
   Will be possible after \issue{83} will be closed.
 - Add the possibility to export CVs calculated in the guest PLUMED instance into the host PLUMED instance.
   Could be implemented using the `DataFetchingObject` class.
 
-\par Examples
+## Examples
 
 Here an example plumed file:
-\plumedfile
+
+```plumed
 # plumed.dat
 p: PLUMED FILE=plumed2.dat
 PRINT ARG=p.bias FILE=COLVAR
-\endplumedfile
+```
+
 `plumed2.dat` can be an arbitrary plumed input file, for instance
-\plumedfile
+
+```plumed
 #SETTINGS FILENAME=plumed2.dat
 # plumed2.dat
 d: DISTANCE ATOMS=1,10
 RESTRAINT ARG=d KAPPA=10 AT=2
-\endplumedfile
+```
 
 Now a more useful example.
 Imagine that you ran simulations using two different PLUMED input files.
 The files are long and complex and there are some clashes in the name of the variables (that is: same names
-are used in both files, same files are written, etc). In addition, files might have been written using different units (see \ref UNITS`).
+are used in both files, same files are written, etc). In addition, files might have been written using different units (see [UNITS](UNITS.md)).
 If you want to run a single simulation with a bias potential
 that is the sum of the two bias potentials, you can:
 - Place the two input files, as well as all the files required by plumed, in separate directories `directory1` and `directory2`.
 - Run with the following input file in the parent directory:
-\plumedfile
+
+```plumed
 # plumed.dat
 PLUMED FILE=plumed.dat CHDIR=directory1
 PLUMED FILE=plumed.dat CHDIR=directory2
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

@@ -47,10 +47,10 @@ void RDF::createX2ReferenceObject( const std::string& lab, const std::string& gr
 
 void RDF::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","GROUP","");
+  keys.add("atoms","GROUP","the atoms that are being used to calculate the RDF");
   keys.add("atoms","ATOMS","the atoms that are being used to calculate the RDF");
-  keys.add("atoms-2","GROUPA","");
-  keys.add("atoms-2","GROUPB","");
+  keys.add("atoms-2","GROUPA","the atoms that you would like to compute the RDF about.  Must be used with GROUPB.");
+  keys.add("atoms-2","GROUPB","the atoms that you would like to to use when computing the RDF around the atoms that were specified with GROUPA");
   keys.add("compulsory","GRID_BIN","the number of bins to use when computing the RDF");
   keys.add("compulsory","KERNEL","GAUSSIAN","the type of kernel to use for computing the histograms for the RDF");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");

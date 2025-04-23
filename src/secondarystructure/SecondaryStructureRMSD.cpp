@@ -19,9 +19,33 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+// #ifdef __PLUMED_HAS_OPENACC
+// #define __PLUMED_USE_OPENACC 1
+// #endif //__PLUMED_HAS_OPENACC
 #include "SecondaryStructureBase.h"
 #include "core/ActionRegister.h"
 #include "tools/RMSD.h"
+
+//+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
+/*
+Calclulate the distance between segments of a protein and a reference structure of interest
+
+This action is used in the shortcuts [ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md).  It calculates a
+vector of RMSD values between a single reference multiple configurations and the instantaneous
+positions of various groups of atoms.  For example, in the following input we define a single set of reference
+set of coordinates for 3 atoms.
+
+```plumed
+c1: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=1,2,3 SEGMENT2=4,5,6 SEGMENT3=7,8,9 SEGMENT4=10,11,12 TYPE=OPTIMAL
+PRINT ARG=c1 FILE=colvar
+```
+
+A four dimensional vector is then returned that contains the RMSD distances between the 4 sets of atoms that were specified using the `SEGMENT` keywords
+and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the the number of vectors output
+is equal to the number of times the `STRUCTURE` keyword is used.
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace secondarystructure {
@@ -40,8 +64,17 @@ public:
   bool align_strands;
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms;
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, const std::vector<Vector>& pos, ColvarOutput& output );
-  void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure );
+//   void toACCDevice()const {
+// #pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
+//     colvar_atoms.toACCDevice();
+//   }
+//   void removeFromACCDevice() const {
+//     colvar_atoms.removeFromACCDevice();
+// #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
+
+//   }
+  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput& output );
+  void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     natoms = m.natoms;
     nstructures = m.nstructures;
@@ -59,7 +92,7 @@ public:
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD");
 
-void SecondaryStructureRMSDInput::setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure ) {
+void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   Vector center;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   for(unsigned i=0; i<structure.size(); ++i) {
@@ -76,8 +109,12 @@ void SecondaryStructureRMSDInput::setReferenceStructure( std::string type, doubl
   natoms=structure.size();
 }
 
-void SecondaryStructureRMSDInput::calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, const std::vector<Vector>& pos, ColvarOutput& output ) {
-  std::vector<Vector> myderivs( pos.size() );
+void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
+    bool noderiv,
+    const SecondaryStructureRMSDInput& actiondata,
+    const View<Vector> pos,
+    ColvarOutput& output ) {
+  std::vector<Vector> myderivs( actiondata.natoms );
   output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 
   if( noderiv ) {
