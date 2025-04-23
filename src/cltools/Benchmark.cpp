@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <chrono>
 #include <string_view>
+#include <optional>
 
 namespace PLMD {
 namespace cltools {
@@ -475,6 +476,14 @@ public:
   std::string description()const override {
     return "run a calculation with a fixed trajectory to find bottlenecks in PLUMED";
   }
+  std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
+    std::string atomicDistr;
+    parse("--atom-distribution",atomicDistr);
+    if(atomicDistr != "") {
+      log << "Using --atom-distribution=" << atomicDistr << "\n";
+      return getAtomDistribution(atomicDistr);
+    }
+  }
 };
 
 PLUMED_REGISTER_CLTOOL(Benchmark,"benchmark")
@@ -484,10 +493,12 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
+  // I do not know, maybe use this can be more clear with --help? keys.reset_style("--natoms","atoms");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  // I do not know, maybe use this can be more clear with --help? keys.reset_style("--atom-distribution","atoms");
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
@@ -503,7 +514,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
   generator rng;
   PLMD::Random atomicGenerator;
-  std::unique_ptr<AtomDistribution> distribution;
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -717,12 +727,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log << "Using --sleep=" << timeToSleep << "\n";
 
   std::vector<int> shuffled_indexes;
-
-  {
-    std::string atomicDistr;
-    parse("--atom-distribution",atomicDistr);
-    distribution = getAtomDistribution(atomicDistr);
-    log << "Using --atom-distribution=" << atomicDistr << "\n";
+  std::unique_ptr<AtomDistribution> distribution;
+  if(auto checkDistr = parseAtomDistribution(log);
+      checkDistr.has_value()) {
+    distribution = std::move (*checkDistr);
+  } else {
+    std::fprintf(stderr,"ERROR: problem with setting up the trajectory for the benchmark\n");
+    return 1;
   }
 
   {
