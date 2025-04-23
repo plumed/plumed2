@@ -459,9 +459,12 @@ class fileTraj:public AtomDistribution {
   std::vector<Vector> coordinates{};
   std::vector<double> cell{};
   void rewind() {
+    parser.rewind();
+    //do rewind to false to not loop
+    step(false);
   }
   //read the next step
-  void step() {
+  void step(bool doRewind=true) {
     positionRead=false;
     boxRead=false;
     long long int mystep=0;
@@ -508,7 +511,7 @@ class fileTraj:public AtomDistribution {
     }
 
     if (errormessage) {
-      if (*errormessage =="EOF") {
+      if (*errormessage =="EOF" && doRewind) {
         rewind();
       } else {
         plumed_error()<<*errormessage;

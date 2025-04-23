@@ -126,6 +126,9 @@ public:
       float* charges,
       float* coordinates,
       float* cell ) =0;
+
+  virtual void rewind() {}
+
 };
 namespace {
 
@@ -254,6 +257,9 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  void rewind() override {
+    std::rewind(fp);
+  }
 };
 
 class dlp4Parser final:public fileParser {
@@ -399,6 +405,9 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  void rewind() override {
+    std::rewind(fp);
+  }
 };
 
 class groParser final:public fileParser {
@@ -532,6 +541,9 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  void rewind() override {
+    std::rewind(fp);
+  }
 };
 
 
@@ -1067,4 +1079,9 @@ int TrajectoryParser::nOfAtoms() const {
   }
   return -1;
 }
+
+void TrajectoryParser::rewind() {
+  parser->rewind();
+}
+
 } // namespace PLMD
