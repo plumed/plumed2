@@ -79,7 +79,9 @@ public:
                            const MultiColvarInput& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MultiColvarInput& actiondata );
   static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
                                std::size_t ntotal_force,
                                const MultiColvarInput& actiondata,
                                const ParallelActionsInput& input,
@@ -294,7 +296,14 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
 }
 
 template <class T>
+int MultiColvarTemplate<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const MultiColvarInput& actiondata ) {
+  return 1;
+}
+
+template <class T>
 void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
     std::size_t ntotal_force,
     const MultiColvarInput& actiondata,
     const ParallelActionsInput& input,

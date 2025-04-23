@@ -104,7 +104,8 @@ public:
     plumed_error();
   }
   static void performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void getForceIndices( std::size_t task_index, std::size_t ntotal_force, const VolumeData<T>& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const VolumeData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const VolumeData<T>& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
 };
 
 template <class T>
@@ -235,8 +236,15 @@ void ActionVolume<T>::performTask( std::size_t task_index, const VolumeData<T>& 
   }
 }
 
+template <class T>
+int ActionVolume<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const VolumeData<T>& actiondata ) {
+  return 1;
+} 
+
 template<class T>
 void ActionVolume<T>::getForceIndices( std::size_t task_index,
+                                       std::size_t colno,
                                        std::size_t ntotal_force,
                                        const VolumeData<T>& actiondata,
                                        const ParallelActionsInput& input,

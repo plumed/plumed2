@@ -59,7 +59,8 @@ public:
   }
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void getForceIndices( std::size_t task_index, std::size_t ntotal_force, const T& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const T& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const T& actiondata, const ParallelActionsInput& input, View<std::size_t,helpers::dynamic_extent> force_indices );
   static void gatherForces_custom( unsigned atomIndex,
                                    size_t nderivPerComponent,
                                    size_t ndev_per_task,
@@ -336,7 +337,14 @@ void SecondaryStructureBase<T>::applyNonZeroRankForces( std::vector<double>& out
 }
 
 template <class T>
+int SecondaryStructureBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const T& actiondata ) {
+  return 1;                            
+}  
+
+template <class T>
 void SecondaryStructureBase<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
     std::size_t ntotal_force,
     const T& actiondata,
     const ParallelActionsInput& input,

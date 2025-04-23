@@ -560,30 +560,35 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
         // Calculate the stuff in the loop for this action
         T::performTask( task_index, actiondata, myinput, myout );
 
-        // Get the force indices
-        T::getForceIndices( task_index,
-                            forcesForApply.size(),
-                            actiondata,
-                            myinput,
-                            force_indices );
+        // If this is a matrix this returns a number that isn't one as we have to loop over the columns
+        std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+        for(unsigned j=0; j<nfpt; ++j) {
+            // Get the force indices
+            T::getForceIndices( task_index, 
+                                j,
+                                forcesForApply.size(),
+                                actiondata,
+                                myinput,
+                                force_indices );
 
-        // Create a force input object
-        ForceInput finput( myinput.ncomponents,
-                           value_stash.data()+myinput.ncomponents*task_index,
-                           nderivatives_per_component,
-                           derivatives.data());
+            // Create a force input object
+            ForceInput finput( myinput.ncomponents,
+                               value_stash.data()+myinput.ncomponents*task_index,
+                               nderivatives_per_component,
+                               derivatives.data());
+ 
+            // Gather forces that are thread safe
+            gatherThreadSafeForces( myinput,
+                                    force_indices,
+                                    finput,
+                                    View<double,helpers::dynamic_extent>(forcesForApply.data(),forcesForApply.size()) );
 
-        // Gather forces that are thread safe
-        gatherThreadSafeForces( myinput,
-                                force_indices,
-                                finput,
-                                View<double,helpers::dynamic_extent>(forcesForApply.data(),forcesForApply.size()) );
-
-        // Gather forces that are not thread safe
-        gatherThreadUnsafeForces( myinput,
-                                  force_indices,
-                                  finput,
-                                  View<double,helpers::dynamic_extent>(omp_forces[t].data(),omp_forces[t].size()) );
+            // Gather forces that are not thread safe
+            gatherThreadUnsafeForces( myinput,
+                                      force_indices,
+                                      finput,
+                                      View<double,helpers::dynamic_extent>(omp_forces[t].data(),omp_forces[t].size()) );
+        }
       }
 
       #pragma omp critical
