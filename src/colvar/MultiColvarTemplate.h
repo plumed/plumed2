@@ -80,7 +80,7 @@ public:
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
   static void getForceIndices( std::size_t task_index,
-                               std::size_t ntotal_force, 
+                               std::size_t ntotal_force,
                                const MultiColvarInput& actiondata,
                                const ParallelActionsInput& input,
                                View<std::size_t,helpers::dynamic_extent> force_indices );
@@ -165,7 +165,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   // Sets up the index list in the task manager
   taskmanager.setupParallelTaskManager( natoms_per_task,
                                         3*natoms_per_task + virialSize,
-                                        3*natoms_per_task, 
+                                        3*natoms_per_task,
                                         virialSize );
   taskmanager.setActionInput( MultiColvarInput{ usepbc, mode });
 }
@@ -295,19 +295,19 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
 
 template <class T>
 void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
-                                              std::size_t ntotal_force,
-                                              const MultiColvarInput& actiondata,
-                                              const ParallelActionsInput& input,
-                                              View<std::size_t,helpers::dynamic_extent> force_indices ) {
+    std::size_t ntotal_force,
+    const MultiColvarInput& actiondata,
+    const ParallelActionsInput& input,
+    View<std::size_t,helpers::dynamic_extent> force_indices ) {
   std::size_t m=0;
   std::size_t base = 3*task_index*input.nindices_per_task;
   for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      force_indices[m] = base + m; 
-      ++m;
-      force_indices[m] = base + m;
-      ++m;
-      force_indices[m] = base + m;
-      ++m;
+    force_indices[m] = base + m;
+    ++m;
+    force_indices[m] = base + m;
+    ++m;
+    force_indices[m] = base + m;
+    ++m;
   }
   force_indices[m+0] = ntotal_force - 9;
   force_indices[m+1] = ntotal_force - 8;

@@ -337,23 +337,23 @@ void SecondaryStructureBase<T>::applyNonZeroRankForces( std::vector<double>& out
 
 template <class T>
 void SecondaryStructureBase<T>::getForceIndices( std::size_t task_index,
-                                                 std::size_t ntotal_force,
-                                                 const T& actiondata,
-                                                 const ParallelActionsInput& input,
-                                                 View<std::size_t,helpers::dynamic_extent> force_indices ) {
+    std::size_t ntotal_force,
+    const T& actiondata,
+    const ParallelActionsInput& input,
+    View<std::size_t,helpers::dynamic_extent> force_indices ) {
   std::size_t m = 0;
   for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
-      force_indices[m] = base + 0;
-      ++m;
-      force_indices[m] = base + 1;
-      ++m;
-      force_indices[m] = base + 2;
-      ++m; 
+    std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
+    force_indices[m] = base + 0;
+    ++m;
+    force_indices[m] = base + 1;
+    ++m;
+    force_indices[m] = base + 2;
+    ++m;
   }
   for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
-      force_indices[m] = n;
-      ++m;
+    force_indices[m] = n;
+    ++m;
   }
 }
 
