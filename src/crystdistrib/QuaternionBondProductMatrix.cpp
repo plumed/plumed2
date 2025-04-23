@@ -89,6 +89,7 @@ public:
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+  void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override {
     plumed_merror("this doesn't do anything");
@@ -97,11 +98,8 @@ public:
                            const QuatBondProdMatInput& actiondata,
                            const ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index,
-                            const QuatBondProdMatInput& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const QuatBondProdMatInput& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const QuatBondProdMatInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATRIX")
@@ -206,7 +204,11 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
   componentIsNotPeriodic("j");
   addComponent( "k", shape );
   componentIsNotPeriodic("k");
-  taskmanager.setupParallelTaskManager( 1, 8, 4*nquat );
+  std::size_t nonthreadsafe = 0;
+  for(unsigned i=4; i<8; ++i) {
+    nonthreadsafe += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
+  taskmanager.setupParallelTaskManager( 8, nonthreadsafe );
   taskmanager.setActionInput( QuatBondProdMatInput() );
 }
 
@@ -221,6 +223,10 @@ unsigned QuaternionBondProductMatrix::getNumberOfDerivatives() {
 void QuaternionBondProductMatrix::prepare() {
   ActionWithVector::prepare();
   active_tasks.resize(0);
+}
+
+void QuaternionBondProductMatrix::getNumberOfTasks( unsigned& ntasks ) {
+  ntasks=getPntrToComponent(0)->getNumberOfStoredValues();
 }
 
 std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( ActionWithVector* action ) {
@@ -376,21 +382,27 @@ void QuaternionBondProductMatrix::applyNonZeroRankForces( std::vector<double>& o
   taskmanager.applyForces( outforces );
 }
 
-void QuaternionBondProductMatrix:: gatherForces( std::size_t task_index,
+int QuaternionBondProductMatrix::getNumberOfValuesPerTask( std::size_t task_index, const QuatBondProdMatInput& actiondata ) {
+  return 1;
+}
+
+void QuaternionBondProductMatrix::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
     const QuatBondProdMatInput& actiondata,
     const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
+    ForceIndexHolder force_indices ) {
   std::size_t nquat = input.shapedata[input.shapestarts[4]];
   std::size_t index1 = std::floor( task_index / input.ncols[0] );
   for(unsigned i=0; i<4; ++i) {
-    double ff = fdata.force[i];
     for(unsigned j=0; j<4; ++j) {
-      forces.thread_unsafe[ input.argstarts[j] + task_index] += ff*fdata.deriv[i][j];
+      force_indices.indices[i][j] = input.argstarts[j] + task_index;
     }
+    force_indices.threadsafe_derivatives_end[i] = 4;
     for(unsigned j=0; j<4; ++j) {
-      forces.thread_safe[ j*nquat + index1 ] += ff*fdata.deriv[i][4+j];
+      force_indices.indices[i][j+4] = j*nquat + index1;
     }
+    force_indices.tot_indices[i] = 8;
   }
 }
 

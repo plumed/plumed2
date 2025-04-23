@@ -149,7 +149,8 @@ public:
   }
   static std::size_t getIndex( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat );
   static void performTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(ThreeBodyGFunctions,"GSYMFUNC_THREEBODY")
@@ -215,7 +216,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   }
   checkRead();
   input.multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
-  taskmanager.setupParallelTaskManager( 1, 4*wval[0]->getShape()[1], 0 );
+  taskmanager.setupParallelTaskManager( 4*wval[0]->getShape()[1], 0 );
   taskmanager.setActionInput( input );
 }
 
@@ -347,7 +348,16 @@ void ThreeBodyGFunctions::applyNonZeroRankForces( std::vector<double>& outforces
   taskmanager.applyForces( outforces );
 }
 
-void ThreeBodyGFunctions::gatherForces( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+int ThreeBodyGFunctions::getNumberOfValuesPerTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata ) {
+  return 1;
+}
+
+void ThreeBodyGFunctions::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const ThreeBodyGFunctionsInput& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input ), arg2( 2, input), arg3( 3, input );
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   if( actiondata.multi_action_input ) {
@@ -358,24 +368,25 @@ void ThreeBodyGFunctions::gatherForces( std::size_t task_index, const ThreeBodyG
       std::size_t ypos = getIndex( task_index, wbooks[j], arg1 );
       std::size_t zpos = getIndex( task_index, wbooks[j], arg2 );
       for(unsigned i=0; i<input.ncomponents; ++i) {
-        double ff = fdata.force[i];
-        forces.thread_unsafe[arg0.start + xpos] += ff*fdata.deriv[i][j];
-        forces.thread_unsafe[arg1.start + ypos] += ff*fdata.deriv[i][rowlen+j];
-        forces.thread_unsafe[arg2.start + zpos] += ff*fdata.deriv[i][2*rowlen+j];
-        forces.thread_unsafe[arg3.start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+        force_indices.indices[i][j] = arg0.start + xpos;
+        force_indices.indices[i][rowlen+j] = arg1.start + ypos;
+        force_indices.indices[i][2*rowlen+j] = arg2.start + zpos;
+        force_indices.indices[i][3*rowlen+j] = arg3.start + matpos;
       }
     }
   } else {
     for(unsigned j=0; j<rowlen; ++j) {
       std::size_t matpos = task_index*arg3.ncols + j;
       for(unsigned i=0; i<input.ncomponents; ++i) {
-        double ff = fdata.force[i];
-        forces.thread_unsafe[arg0.start + matpos] += ff*fdata.deriv[i][j];
-        forces.thread_unsafe[arg1.start + matpos] += ff*fdata.deriv[i][rowlen+j];
-        forces.thread_unsafe[arg2.start + matpos] += ff*fdata.deriv[i][2*rowlen+j];
-        forces.thread_unsafe[arg3.start + matpos] += ff*fdata.deriv[i][3*rowlen+j];
+        force_indices.indices[i][j] = arg0.start + matpos;
+        force_indices.indices[i][rowlen+j] = arg1.start + matpos;
+        force_indices.indices[i][2*rowlen+j] = arg2.start + matpos;
+        force_indices.indices[i][3*rowlen+j] = arg3.start + matpos;
       }
     }
+  }
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    force_indices.threadsafe_derivatives_end[i] = force_indices.tot_indices[i] = 4*rowlen;
   }
 }
 

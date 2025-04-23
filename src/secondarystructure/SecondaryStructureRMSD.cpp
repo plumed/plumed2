@@ -58,6 +58,8 @@ public:
   std::size_t natoms;
 /// The number of structures
   std::size_t nstructures;
+/// The number of indices per task
+  std::size_t nindices_per_task;
 /// Are we operating without periodic boundary conditions
   bool nopbc;
 /// Variables for strands cutoff
@@ -78,6 +80,7 @@ public:
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     natoms = m.natoms;
     nstructures = m.nstructures;
+    nindices_per_task = m.nindices_per_task;
     nopbc = m.nopbc;
     align_strands = m.align_strands;
     colvar_atoms=m.colvar_atoms;

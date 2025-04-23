@@ -328,7 +328,7 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   ncols=n;
-  if( ncols>shape[1] ) {
+  if( shape[1]>0 && ncols>shape[1] ) {
     ncols=shape[1];
   }
   unsigned size=shape[0]*ncols;

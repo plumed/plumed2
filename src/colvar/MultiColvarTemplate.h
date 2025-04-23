@@ -36,13 +36,14 @@ namespace colvar {
 struct MultiColvarInput {
   bool usepbc;
   unsigned mode;
+  unsigned nindices_per_task;
   //this is so simple that it better to use the Rule of 0
   //and the openacc helpers
   void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], usepbc, mode)
+#pragma acc enter data copyin(this[0:1], usepbc, mode, nindices_per_task)
   }
   void removeFromACCDevice() const  {
-#pragma acc exit data delete(mode, usepbc, this[0:1])
+#pragma acc exit data delete(nindices_per_task, mode, usepbc, this[0:1])
   }
 };
 
@@ -62,7 +63,7 @@ private:
 /// Do we reassemble the molecule
   bool wholemolecules;
 /// The number of atoms per task
-  std::size_t natoms_per_task;
+  unsigned natoms_per_task;
 public:
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
@@ -79,16 +80,13 @@ public:
                            const MultiColvarInput& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index,
-                            const MultiColvarInput& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
-  static void gatherForcesGPU( std::size_t task_index,
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MultiColvarInput& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
                                const MultiColvarInput& actiondata,
                                const ParallelActionsInput& input,
-                               const ForceInput& fdata,
-                               ForceOutput forces );
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -168,10 +166,8 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   mode = T::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
-  taskmanager.setupParallelTaskManager( natoms_per_task,
-                                        3*natoms_per_task + virialSize,
-                                        virialSize );
-  taskmanager.setActionInput( MultiColvarInput{ usepbc, mode });
+  taskmanager.setupParallelTaskManager( 3*natoms_per_task + virialSize, virialSize );
+  taskmanager.setActionInput( MultiColvarInput{ usepbc, mode, natoms_per_task });
 }
 
 template <class T>
@@ -240,9 +236,9 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
     const MultiColvarInput& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
-  std::size_t pos_start = 5*input.nindices_per_task*task_index;
+  std::size_t pos_start = 5*actiondata.nindices_per_task*task_index;
   if( actiondata.usepbc ) {
-    if( input.nindices_per_task==1 ) {
+    if( actiondata.nindices_per_task==1 ) {
       //this may be changed to input.pbc.apply() en mass or only on this one
       Vector fpos=input.pbc->distance(Vector(0.0,0.0,0.0),
                                       Vector(input.inputdata[pos_start],
@@ -255,7 +251,7 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
       //make whole?
       std::size_t apos_start = pos_start;
       //if accidentaly nindices_per_task is 0, this will work by looping on all possible unsigned integers!!!!
-      for(unsigned j=0; j<input.nindices_per_task-1; ++j) {
+      for(unsigned j=0; j<actiondata.nindices_per_task-1; ++j) {
         Vector first(input.inputdata[apos_start],
                      input.inputdata[apos_start+1],
                      input.inputdata[apos_start+2]);
@@ -270,7 +266,7 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
         apos_start += 3;
       }
     }
-  } else if( input.nindices_per_task==1 ) {
+  } else if( actiondata.nindices_per_task==1 ) {
     //isn't this equivalent to x = x-0?
     //why this is needed?
     Vector fpos=delta(Vector(0.0,0.0,0.0),
@@ -281,15 +277,15 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
     input.inputdata[pos_start+1]=fpos[1];
     input.inputdata[pos_start+2]=fpos[2];
   }
-  const size_t mass_start = pos_start + 3*input.nindices_per_task;
-  const size_t charge_start = mass_start + input.nindices_per_task;
-  const size_t local_ndev = 3*input.nindices_per_task+virialSize;
+  const size_t mass_start = pos_start + 3*actiondata.nindices_per_task;
+  const size_t charge_start = mass_start + actiondata.nindices_per_task;
+  const size_t local_ndev = 3*actiondata.nindices_per_task+virialSize;
 
   ColvarOutput cvout { output.values,
                        local_ndev,
                        output.derivatives.data() };
   T::calculateCV( ColvarInput{actiondata.mode,
-                              input.nindices_per_task,
+                              actiondata.nindices_per_task,
                               input.inputdata+pos_start,
                               input.inputdata+mass_start,
                               input.inputdata+charge_start,
@@ -297,55 +293,42 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
                   cvout );
 }
 
-template <bool doVirial>
-inline void gatherForces_t( std::size_t task_index,
-                            const MultiColvarInput& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces ) {
-  std::size_t base = 3*task_index*input.nindices_per_task;
+template <class T>
+int MultiColvarTemplate<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const MultiColvarInput& actiondata ) {
+  return 1;
+}
+
+template <class T>
+void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const MultiColvarInput& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
-    unsigned m = 0;
-    double ff = fdata.force[i];
-    for(unsigned j=0; j<input.nindices_per_task; ++j) {
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+    std::size_t m=0;
+    std::size_t base = 3*task_index*actiondata.nindices_per_task;
+    for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
+      force_indices.indices[i][m] = base + m;
       ++m;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      force_indices.indices[i][m] = base + m;
       ++m;
-      forces.thread_unsafe[base + m] += ff*fdata.deriv[i][m];
+      force_indices.indices[i][m] = base + m;
       ++m;
     }
-    if constexpr (doVirial) {
-      //unrolled virial
-      forces.thread_safe[0] += ff*fdata.deriv[i][m];
-      forces.thread_safe[1] += ff*fdata.deriv[i][m+1];
-      forces.thread_safe[2] += ff*fdata.deriv[i][m+2];
-      forces.thread_safe[3] += ff*fdata.deriv[i][m+3];
-      forces.thread_safe[4] += ff*fdata.deriv[i][m+4];
-      forces.thread_safe[5] += ff*fdata.deriv[i][m+5];
-      forces.thread_safe[6] += ff*fdata.deriv[i][m+6];
-      forces.thread_safe[7] += ff*fdata.deriv[i][m+7];
-      forces.thread_safe[8] += ff*fdata.deriv[i][m+8];
-    }
+    force_indices.threadsafe_derivatives_end[i] = 3*actiondata.nindices_per_task;
+    force_indices.indices[i][m+0] = ntotal_force - 9;
+    force_indices.indices[i][m+1] = ntotal_force - 8;
+    force_indices.indices[i][m+2] = ntotal_force - 7;
+    force_indices.indices[i][m+3] = ntotal_force - 6;
+    force_indices.indices[i][m+4] = ntotal_force - 5;
+    force_indices.indices[i][m+5] = ntotal_force - 4;
+    force_indices.indices[i][m+6] = ntotal_force - 3;
+    force_indices.indices[i][m+7] = ntotal_force - 2;
+    force_indices.indices[i][m+8] = ntotal_force - 1;
+    force_indices.tot_indices[i] = 3*actiondata.nindices_per_task + virialSize;
   }
-}
-
-template <class T>
-void MultiColvarTemplate<T>::gatherForces( std::size_t task_index,
-    const MultiColvarInput& actiondata,
-    const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
-  gatherForces_t<true>(task_index, actiondata, input, fdata, forces);
-}
-
-template <class T>
-void MultiColvarTemplate<T>::gatherForcesGPU( std::size_t task_index,
-    const MultiColvarInput& actiondata,
-    const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
-  gatherForces_t<false>(task_index, actiondata, input, fdata, forces);
 }
 
 } // namespace colvar

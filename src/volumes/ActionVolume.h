@@ -105,6 +105,8 @@ public:
   }
   static void performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const VolumeData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const VolumeData<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -156,11 +158,11 @@ ActionVolume<T>::ActionVolume(const ActionOptions&ao):
     ActionWithValue::addValueWithDerivatives();
   } else {
     ActionWithValue::addValue( shape );
+    taskmanager.setupParallelTaskManager( 3*(1+refatoms.size())+9, 3*refatoms.size()+9 );
   }
   setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
 
-  taskmanager.setupParallelTaskManager( 1, 3*(1+refatoms.size())+9, 3*refatoms.size()+9 );
   taskmanager.setActionInput( actioninput );
 }
 
@@ -236,17 +238,29 @@ void ActionVolume<T>::performTask( std::size_t task_index, const VolumeData<T>& 
 }
 
 template <class T>
-void ActionVolume<T>::gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
+int ActionVolume<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const VolumeData<T>& actiondata ) {
+  return 1;
+}
+
+template<class T>
+void ActionVolume<T>::getForceIndices( std::size_t task_index,
+                                       std::size_t colno,
+                                       std::size_t ntotal_force,
+                                       const VolumeData<T>& actiondata,
+                                       const ParallelActionsInput& input,
+                                       ForceIndexHolder force_indices ) {
   std::size_t base = 3*task_index;
-  unsigned m = 3;
-  double ff = fdata.force[0];
-  forces.thread_unsafe[base + 0] += ff*fdata.deriv[0][0];
-  forces.thread_unsafe[base + 1] += ff*fdata.deriv[0][1];
-  forces.thread_unsafe[base + 2] += ff*fdata.deriv[0][2];
-  for(unsigned n=3*actiondata.numberOfNonReferenceAtoms; n<forces.thread_unsafe.size(); ++n) {
-    forces.thread_safe[m-3] += ff*fdata.deriv[0][m];
-    m++;
+  force_indices.indices[0][0] = base;
+  force_indices.indices[0][1] = base + 1;
+  force_indices.indices[0][2] = base + 2;
+  force_indices.threadsafe_derivatives_end[0]=3;
+  std::size_t m=3;
+  for(unsigned n=3*actiondata.numberOfNonReferenceAtoms; n<ntotal_force; ++n) {
+    force_indices.indices[0][m] = n;
+    ++m;
   }
+  force_indices.tot_indices[0] = m;
 }
 
 }

@@ -90,7 +90,8 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
   static void performTask( std::size_t task_index, const TorsionsMatrixInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const TorsionsMatrixInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const TorsionsMatrixInput& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const TorsionsMatrixInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(TorsionsMatrix,"TORSIONS_MATRIX")
@@ -170,7 +171,6 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
       error("argument passed to MASK keyword has the wrong shape");
     }
   }
-  taskmanager.setupParallelTaskManager( 1, 2, getPntrToArgument(0)->getNumberOfStoredValues() );
   taskmanager.setActionInput( TorsionsMatrixInput() );
 }
 
@@ -194,7 +194,7 @@ void TorsionsMatrix::prepare() {
 void TorsionsMatrix::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
   unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
-  taskmanager.setupParallelTaskManager( 1, 21*nvals*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues()+3*getNumberOfAtoms()+9, nvals );
+  taskmanager.setupParallelTaskManager( 21, getNumberOfDerivatives() - getPntrToArgument(0)->getNumberOfStoredValues() );
   taskmanager.runAllTasks();
 }
 
@@ -295,49 +295,42 @@ void TorsionsMatrix::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-void TorsionsMatrix::gatherForces( std::size_t task_index,
-                                   const TorsionsMatrixInput& actiondata,
-                                   const ParallelActionsInput& input,
-                                   const ForceInput& fdata,
-                                   ForceOutput forces ) {
+int TorsionsMatrix::getNumberOfValuesPerTask( std::size_t task_index, const TorsionsMatrixInput& actiondata ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-  std::size_t nelements = actiondata.outmat.bookeeping[fstart];
+  return actiondata.outmat.bookeeping[fstart];
+}
+
+void TorsionsMatrix::getForceIndices( std::size_t task_index,
+                                      std::size_t colno,
+                                      std::size_t ntotal_force,
+                                      const TorsionsMatrixInput& actiondata,
+                                      const ParallelActionsInput& input,
+                                      ForceIndexHolder force_indices ) {
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t arg1start = task_index*arg0.ncols;
-  std::size_t atom1start = arg1.shape[0]*arg1.ncols + 3*task_index;
-  std::size_t b2astart = arg1.shape[0]*arg1.ncols + 3*arg0.shape[0];
-  for(unsigned i=0; i<nelements; ++i) {
-    std::size_t base = 21*i;
-    double force = fdata.force[i];
-
-    View<double, 3> deriv1( fdata.deriv.data() + base );
-    forces.thread_unsafe[ arg1start ] += force*deriv1[0];
-    forces.thread_unsafe[ arg1start + 1 ] += force*deriv1[1];
-    forces.thread_unsafe[ arg1start + 2 ] += force*deriv1[2];
-
-    View<double, 3> deriv2( fdata.deriv.data() + base + 3 );
-    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] ] += force*deriv2[0];
-    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + arg1.ncols ] += force*deriv2[1];
-    forces.thread_safe[ actiondata.outmat.bookeeping[fstart+1+i] + 2*arg1.ncols ] += force*deriv2[2];
-
-    View<double, 3> deriv3( fdata.deriv.data() + base + 6 );
-    forces.thread_safe[ atom1start ] += force*deriv3[0];
-    forces.thread_safe[ atom1start + 1 ] += force*deriv3[1];
-    forces.thread_safe[ atom1start + 2 ] += force*deriv3[2];
-
-    View<double, 3> deriv4( fdata.deriv.data() + base + 9 );
-    std::size_t atom2start = b2astart + 3*actiondata.outmat.bookeeping[fstart+1+i];
-    forces.thread_safe[ atom2start ] += force*deriv4[0];
-    forces.thread_safe[ atom2start + 1 ] += force*deriv4[1];
-    forces.thread_safe[ atom2start + 2 ] += force*deriv4[2];
-
-    std::size_t n=0;
-    View<double, 9> vir( fdata.deriv.data() + base + 12 );
-    for(unsigned j=forces.thread_safe.size()-9; j<forces.thread_safe.size(); ++j) {
-      forces.thread_safe[j] += force*vir[n];
-      ++n;
-    }
+  force_indices.indices[0][0] = arg1start;
+  force_indices.indices[0][1] = arg1start + 1;
+  force_indices.indices[0][2] = arg1start + 2;
+  force_indices.threadsafe_derivatives_end[0] = 3;
+  force_indices.indices[0][3] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno];
+  force_indices.indices[0][4] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno] + arg1.ncols;
+  force_indices.indices[0][5] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno] + 2*arg1.ncols;
+  std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
+  std::size_t atom1start = atomstart + 3*task_index;
+  force_indices.indices[0][6] = atom1start;
+  force_indices.indices[0][7] = atom1start + 1;
+  force_indices.indices[0][8] = atom1start + 2;
+  std::size_t atom2start = atomstart + 3*arg0.shape[0] + 3*actiondata.outmat.bookeeping[fstart+1+colno];
+  force_indices.indices[0][9] = atom2start;
+  force_indices.indices[0][10] = atom2start + 1;
+  force_indices.indices[0][11] = atom2start + 2;
+  std::size_t n=12;
+  for(unsigned j=ntotal_force-9; j<ntotal_force; ++j) {
+    force_indices.indices[0][n] = j;
+    ++n;
   }
+  force_indices.tot_indices[0] = 21;
 }
 
 }

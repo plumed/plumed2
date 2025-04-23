@@ -111,6 +111,7 @@ private:
 public:
   size_t natoms{0};
   size_t nstructures{0};
+  size_t nindices_per_task{0};
 /// Are we operating without periodic boundary conditions
   bool nopbc{false};
 /// Variables for strands cutoff
@@ -132,6 +133,7 @@ public:
     if (this!=&m) {
       natoms = m.natoms;
       nstructures = m.nstructures;
+      nindices_per_task = m.nindices_per_task;
       nopbc = m.nopbc;
       align_strands = m.align_strands;
       colvar_atoms=m.colvar_atoms;

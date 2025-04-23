@@ -93,11 +93,8 @@ public:
                            const AdjacencyMatrixData<T>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index,
-                            const AdjacencyMatrixData<T>& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const AdjacencyMatrixData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const AdjacencyMatrixData<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -258,7 +255,6 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
   matdata.components = components;
   matdata.nlists = getPntrToComponent(0)->getShape()[0];
   matdata.matrixdata.parseInput( this );
-  taskmanager.setupParallelTaskManager( 1, 3 + virialSize, 3 + virialSize );
   taskmanager.setActionInput( matdata );
 }
 
@@ -399,11 +395,11 @@ void AdjacencyMatrixBase<T>::calculate() {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToComponent(0) );
   }
   // We need to setup the task manager here because at this point we know the size of the sparse matrices
-  unsigned nder = maxcol*(6 + 3*matdata.natoms_per_three_list + virialSize);
+  unsigned nder = 6 + 3*matdata.natoms_per_three_list + virialSize;
   if( matdata.components ) {
-    taskmanager.setupParallelTaskManager( 0, nder, -1, 4*maxcol );
+    taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
   } else {
-    taskmanager.setupParallelTaskManager( 0, nder, -1, maxcol );
+    taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
   }
   // Create the workspace that we use in performTask
   taskmanager.setWorkspaceSize( 3*(maxcol + 2 + matdata.natoms_per_three_list) );
@@ -473,10 +469,21 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     if( input.noderiv ) {
       continue ;
     }
-    // We store the distance here as we use it to calculate the virial contribution for the force on the x, y and z components of the bond vector
-    output.derivatives[(valpos+1)*nderiv+0] = atoms[i][0];
-    output.derivatives[(valpos+1)*nderiv+1] = atoms[i][1];
-    output.derivatives[(valpos+1)*nderiv+2] = atoms[i][2];
+    output.derivatives[ valpos*nderiv + nderiv ] = -1;
+    output.derivatives[ valpos*nderiv + nderiv + 1 ] = 1;
+    output.derivatives[ valpos*nderiv + nderiv + 2 ] = -atoms[i][0];
+    output.derivatives[ valpos*nderiv + nderiv + 3 ] = -atoms[i][1];
+    output.derivatives[ valpos*nderiv + nderiv + 4 ] = -atoms[i][2];
+    output.derivatives[ valpos*nderiv + 2*nderiv ] = -1;
+    output.derivatives[ valpos*nderiv + 2*nderiv + 1 ] = 1;
+    output.derivatives[ valpos*nderiv + 2*nderiv + 2 ] = -atoms[i][0];
+    output.derivatives[ valpos*nderiv + 2*nderiv + 3 ] = -atoms[i][1];
+    output.derivatives[ valpos*nderiv + 2*nderiv + 4 ] = -atoms[i][2];
+    output.derivatives[ valpos*nderiv + 3*nderiv ] = -1;
+    output.derivatives[ valpos*nderiv + 3*nderiv + 1 ] = 1;
+    output.derivatives[ valpos*nderiv + 3*nderiv + 2 ] = -atoms[i][0];
+    output.derivatives[ valpos*nderiv + 3*nderiv + 3 ] = -atoms[i][1];
+    output.derivatives[ valpos*nderiv + 3*nderiv + 4 ] = -atoms[i][2];
   }
 }
 
@@ -486,78 +493,77 @@ void AdjacencyMatrixBase<T>::applyNonZeroRankForces( std::vector<double>& outfor
 }
 
 template <class T>
-void AdjacencyMatrixBase<T>::gatherForces( std::size_t task_index,
+int AdjacencyMatrixBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const AdjacencyMatrixData<T>& actiondata ) {
+  return actiondata.nlist[task_index] - 1;
+}
+
+template <class T>
+void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
     const AdjacencyMatrixData<T>& actiondata,
     const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
-  unsigned n3neigh = 0;
+    ForceIndexHolder force_indices ) {
+  force_indices.indices[0][0] = 3*task_index;
+  force_indices.indices[0][1] = 3*task_index + 1;
+  force_indices.indices[0][2] = 3*task_index + 2;
+  unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
+  unsigned myatom = actiondata.nlist[fstart+1+colno];
+  force_indices.indices[0][3] = 3*myatom;
+  force_indices.indices[0][4] = 3*myatom+ 1;
+  force_indices.indices[0][5] = 3*myatom+ 2;
+  if( actiondata.components ) {
+    force_indices.indices[1][0] = 3*task_index;
+    force_indices.indices[1][1] = 3*myatom;
+    force_indices.indices[2][0] = 3*task_index + 1;
+    force_indices.indices[2][1] = 3*myatom + 1;
+    force_indices.indices[3][0] = 3*task_index + 2;
+    force_indices.indices[3][1] = 3*myatom + 2;
+  }
+  if( colno>0 ) {
+    return ;
+  }
+  force_indices.threadsafe_derivatives_end[0] = 0;
+  unsigned n = 6, n3neigh = 0;
   if( actiondata.natoms_per_three_list>0 ) {
     n3neigh = actiondata.nlist_three[task_index];
   }
-  unsigned ncomponents = 1, nder = 6 + 3*actiondata.natoms_per_three_list + virialSize;
-  if( actiondata.components ) {
-    ncomponents = 4;
-  }
-  unsigned nneigh = actiondata.nlist[task_index];
-  unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
   unsigned fstart3 = actiondata.nlists + task_index*(1+actiondata.natoms_per_three_list);
-  for(unsigned i=1; i<nneigh; ++i ) {
-    std::size_t n = 0;
-    unsigned fpos = (i-1)*ncomponents;
-    double force = fdata.force[fpos];
-    View<const double,helpers::dynamic_extent> deriv( fdata.deriv.data() + fpos*nder, nder );
-    forces.thread_safe[ 3*task_index + 0 ] += force*deriv[n];
-    n++;
-    forces.thread_safe[ 3*task_index + 1 ] += force*deriv[n];
-    n++;
-    forces.thread_safe[ 3*task_index + 2 ] += force*deriv[n];
-    n++;
-    unsigned myatom = actiondata.nlist[fstart+i];
-    forces.thread_safe[ 3*myatom + 0 ] += force*deriv[n];
-    n++;
-    forces.thread_safe[ 3*myatom + 1 ] += force*deriv[n];
-    n++;
-    forces.thread_safe[ 3*myatom + 2 ] += force*deriv[n];
-    n++;
-    for(unsigned j=1; j<n3neigh; ++j) {
-      unsigned my3atom = actiondata.nlist_three[fstart3+j];
-      forces.thread_safe[ 3*my3atom + 0 ] += force*deriv[n];
-      n++;
-      forces.thread_safe[ 3*my3atom + 1 ] += force*deriv[n];
-      n++;
-      forces.thread_safe[ 3*my3atom + 2 ] += force*deriv[n];
-      n++;
-    }
-    unsigned virstart = forces.thread_safe.size()-virialSize;
-    for(unsigned j=virstart; j<forces.thread_safe.size(); ++j) {
-      forces.thread_safe[j] += force*deriv[n];
-      n++;
-    }
-    if( !actiondata.components ) {
-      continue ;
-    }
-    View<const double,3> dist( fdata.deriv.data() + (1+fpos)*nder );
-    if( fabs(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])<epsilon ) {
-      continue ;
-    }
-
-    forces.thread_safe[ 3*task_index + 0 ] += -fdata.force[fpos+1];
-    forces.thread_safe[ 3*task_index + 1 ] += -fdata.force[fpos+2];
-    forces.thread_safe[ 3*task_index + 2 ] += -fdata.force[fpos+3];
-    forces.thread_safe[ 3*myatom + 0 ] += fdata.force[fpos+1];
-    forces.thread_safe[ 3*myatom + 1 ] += fdata.force[fpos+2];
-    forces.thread_safe[ 3*myatom + 2 ] += fdata.force[fpos+3];
-
-    forces.thread_safe[virstart + 0] += -fdata.force[fpos+1]*dist[0];
-    forces.thread_safe[virstart + 1] += -fdata.force[fpos+2]*dist[0];
-    forces.thread_safe[virstart + 2] += -fdata.force[fpos+3]*dist[0];
-    forces.thread_safe[virstart + 3] += -fdata.force[fpos+1]*dist[1];
-    forces.thread_safe[virstart + 4] += -fdata.force[fpos+2]*dist[1];
-    forces.thread_safe[virstart + 5] += -fdata.force[fpos+3]*dist[1];
-    forces.thread_safe[virstart + 6] += -fdata.force[fpos+1]*dist[2];
-    forces.thread_safe[virstart + 7] += -fdata.force[fpos+2]*dist[2];
-    forces.thread_safe[virstart + 8] += -fdata.force[fpos+3]*dist[2];
+  for(unsigned j=1; j<n3neigh; ++j) {
+    unsigned my3atom = actiondata.nlist_three[fstart3+j];
+    force_indices.indices[0][n] = 3*my3atom;
+    force_indices.indices[0][n+1] = 3*my3atom+1;
+    force_indices.indices[0][n+2] = 3*my3atom+2;
+    n += 3;
+  }
+  unsigned virstart = ntotal_force - 9;
+  force_indices.indices[0][n] = virstart + 0;
+  force_indices.indices[0][n+1] = virstart + 1;
+  force_indices.indices[0][n+2] = virstart + 2;
+  force_indices.indices[0][n+3] = virstart + 3;
+  force_indices.indices[0][n+4] = virstart + 4;
+  force_indices.indices[0][n+5] = virstart + 5;
+  force_indices.indices[0][n+6] = virstart + 6;
+  force_indices.indices[0][n+7] = virstart + 7;
+  force_indices.indices[0][n+8] = virstart + 8;
+  force_indices.tot_indices[0] = n+9;
+  if( actiondata.components ) {
+    force_indices.threadsafe_derivatives_end[1] = 0;
+    force_indices.threadsafe_derivatives_end[2] = 0;
+    force_indices.threadsafe_derivatives_end[3] = 0;
+    force_indices.indices[1][2] = virstart;
+    force_indices.indices[1][3] = virstart + 1;
+    force_indices.indices[1][4] = virstart + 2;
+    force_indices.indices[2][2] = virstart + 3;
+    force_indices.indices[2][3] = virstart + 4;
+    force_indices.indices[2][4] = virstart + 5;
+    force_indices.indices[3][2] = virstart + 6;
+    force_indices.indices[3][3] = virstart + 7;
+    force_indices.indices[3][4] = virstart + 8;
+    force_indices.tot_indices[1] = 5;
+    force_indices.tot_indices[2] = 5;
+    force_indices.tot_indices[3] = 5;
   }
 }
 

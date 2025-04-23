@@ -59,7 +59,8 @@ public:
     plumed_error();
   }
   static void performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(MatrixProductDiagonal,"MATRIX_PRODUCT_DIAGONAL")
@@ -118,7 +119,7 @@ MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):
     shape[0]=getPntrToArgument(0)->getShape()[0];
     addValue( shape );
     setNotPeriodic();
-    taskmanager.setupParallelTaskManager( 1, ncols + getPntrToArgument(1)->getShape()[0], 0 );
+    taskmanager.setupParallelTaskManager( ncols + getPntrToArgument(1)->getShape()[0], 0 );
     taskmanager.setActionInput( MatrixProductDiagonalInput() );
   }
 }
@@ -194,8 +195,16 @@ void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixPro
   }
 }
 
-void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
-  double ff = fdata.force[0];
+int MatrixProductDiagonal::getNumberOfValuesPerTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata ) {
+  return 1;
+}
+
+void MatrixProductDiagonal::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const MatrixProductDiagonalInput& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
@@ -205,9 +214,11 @@ void MatrixProductDiagonal::gatherForces( std::size_t task_index, const MatrixPr
   } else {
     std::size_t base = arg1.start + task_index;
     for(unsigned i=0; i<nmult; ++i) {
-      forces.thread_unsafe[ vstart + i ] = ff*fdata.deriv[0][i];
-      forces.thread_unsafe[ base + arg1.ncols*arg0.bookeeping[fpos+1+i] ] = ff*fdata.deriv[0][nmult+i];
+      force_indices.indices[0][i] = vstart + i;
+      force_indices.indices[0][nmult+i] = base + arg1.ncols*arg0.bookeeping[fpos+1+i];
     }
+    force_indices.threadsafe_derivatives_end[0] = 2*nmult;
+    force_indices.tot_indices[0] = 2*nmult;
   }
 }
 

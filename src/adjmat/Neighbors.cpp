@@ -289,7 +289,7 @@ Neighbors<T>::Neighbors(const ActionOptions&ao):
   getPntrToComponent(0)->reshapeMatrixStore( myinp.number );
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   // Setup the parallel task manager
-  taskmanager.setupParallelTaskManager( 1, 0, getPntrToComponent(0)->getNumberOfStoredValues(), myinp.number );
+  taskmanager.setupParallelTaskManager( 0, 0 );
   taskmanager.setActionInput( myinp );
 }
 

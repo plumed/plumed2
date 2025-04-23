@@ -57,7 +57,8 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index, const MatrixTimesMatrixInput<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const MatrixTimesMatrixInput<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixTimesMatrixInput<T>& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixTimesMatrixInput<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -112,7 +113,6 @@ MatrixTimesMatrix<T>::MatrixTimesMatrix(const ActionOptions&ao):
   }
   MatrixTimesMatrixInput<T> actdata;
   actdata.funcinput.setup( this, getPntrToArgument(0) );
-  taskmanager.setupParallelTaskManager( 1, 2, getPntrToArgument(0)->getNumberOfStoredValues() );
   taskmanager.setActionInput( actdata );
 }
 
@@ -155,7 +155,7 @@ void MatrixTimesMatrix<T>::calculate() {
   }
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
   unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
-  taskmanager.setupParallelTaskManager( 1, 2*nvals*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues(), nvals );
+  taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues() );
   taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
   taskmanager.runAllTasks();
 }
@@ -203,6 +203,9 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
       }
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
       T::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+      for(unsigned i=vectors.nelem; i<nmult; ++i) {
+        elem.derivs[0][i] = 0;
+      }
     }
   } else {
     // Retrieve the row of the first matrix
@@ -230,47 +233,59 @@ void MatrixTimesMatrix<T>::applyNonZeroRankForces( std::vector<double>& outforce
 }
 
 template <class T>
-void MatrixTimesMatrix<T>::gatherForces( std::size_t task_index,
+int MatrixTimesMatrix<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const MatrixTimesMatrixInput<T>& actiondata ) {
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
+  return actiondata.outmat.bookeeping[fstart];
+}
+
+template <class T>
+void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
     const MatrixTimesMatrixInput<T>& actiondata,
     const ParallelActionsInput& input,
-    const ForceInput& fdata,
-    ForceOutput forces ) {
+    ForceIndexHolder force_indices ) {
   ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   if( arg1.ncols<arg1.shape[1] ) {
-    std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-    std::size_t nelements = actiondata.outmat.bookeeping[fstart];
-    for(unsigned i=0; i<nelements; ++i) {
-      std::size_t nm = 0, ind = actiondata.outmat.bookeeping[fstart+1+i];
-      double force = fdata.force[i];
-      View<const double,helpers::dynamic_extent> deriv( fdata.deriv.data() + 2*nmult*i, 2*nmult );
-      for(unsigned j=0; j<nmult; ++j) {
-        std::size_t kind = arg0.bookeeping[fpos+1+j];
-        std::size_t bstart = kind*(arg1.ncols + 1);
-        std::size_t nr = arg1.bookeeping[bstart];
-        for(unsigned k=0; k<nr; ++k) {
-          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
-            forces.thread_unsafe[task_index*arg0.ncols + j] += force*deriv[nm];
-            forces.thread_safe[kind*arg1.ncols + k] += force*deriv[nmult+nm];
-            nm++;
-            break;
-          }
+    std::size_t nmult_r = 0;
+    for(unsigned j=0; j<nmult; ++j) {
+      std::size_t kind = arg0.bookeeping[fpos+1+j];
+      std::size_t bstart = kind*(arg1.ncols + 1);
+      std::size_t nr = arg1.bookeeping[bstart];
+      for(unsigned k=0; k<nr; ++k) {
+        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+colno] ) {
+          nmult_r++;
+          break;
         }
       }
     }
-  } else {
-    std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-    std::size_t nelements = actiondata.outmat.bookeeping[fstart];
-    for(unsigned i=0; i<nelements; ++i) {
-      std::size_t ind = actiondata.outmat.bookeeping[fstart+1+i];
-      double force = fdata.force[i];
-      View<const double,helpers::dynamic_extent> deriv( fdata.deriv.data() + 2*nmult*i, 2*nmult );
-      for(unsigned j=0; j<nmult; ++j) {
-        forces.thread_unsafe[task_index*arg0.ncols + j] += force*deriv[j];
-        forces.thread_safe[arg0.bookeeping[fpos+1+j]*arg1.ncols + ind] += force*deriv[nmult+j];
+    std::size_t n = 0;
+    for(unsigned j=0; j<nmult; ++j) {
+      std::size_t kind = arg0.bookeeping[fpos+1+j];
+      std::size_t bstart = kind*(arg1.ncols + 1);
+      std::size_t nr = arg1.bookeeping[bstart];
+      for(unsigned k=0; k<nr; ++k) {
+        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+colno] ) {
+          force_indices.indices[0][n] = task_index*arg0.ncols + j;
+          force_indices.indices[0][nmult+n] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + k;
+          n++;
+          break;
+        }
       }
     }
+    force_indices.threadsafe_derivatives_end[0] = nmult_r;
+    force_indices.tot_indices[0] = nmult + nmult_r;
+  } else {
+    for(unsigned j=0; j<nmult; ++j) {
+      force_indices.indices[0][j] = task_index*arg0.ncols + j;
+      force_indices.indices[0][nmult+j] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + actiondata.outmat.bookeeping[fstart+1+colno];
+    }
+    force_indices.threadsafe_derivatives_end[0] = nmult;
+    force_indices.tot_indices[0] = 2*nmult;
   }
 }
 

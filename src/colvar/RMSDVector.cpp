@@ -172,12 +172,25 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     log.printf("  using periodic boundary conditions\n");
   }
   // Setup the task manager
-  int stride = 1;
-  if( myinput.displacement ) {
-    stride = 1 + 3*natoms;
+  if( getPntrToComponent(0)->getRank()>0 ) {
+    taskmanager.setupParallelTaskManager( 3*natoms, 3*natoms );
   }
-  taskmanager.setupParallelTaskManager( 0, 3*natoms, -1, stride );
   taskmanager.setActionInput( myinput );
+  // Setup the Parallel action input object
+  input.noderiv = false;
+  input.ncomponents = getNumberOfComponents();
+  unsigned total_vals = 0;
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    total_vals += getPntrToComponent(i)->getNumberOfStoredValues();
+  }
+  input.nscalars = 1;
+  if( myinput.displacement ) {
+    input.nscalars = 1 + 3*natoms;
+  }
+  force_stash.resize( total_vals );
+  ArgumentsBookkeeping abk;
+  abk.setupArguments( this );
+  input.setupArguments( abk );
 }
 
 unsigned RMSDVector::getNumberOfDerivatives() {
@@ -215,21 +228,12 @@ void RMSDVector::calculate() {
     setReferenceConfigurations();
     firststep=false;
   }
+  input.noderiv = false;
+  getInputData( input_buffer );
+  input.dataSize = input_buffer.size();
+  input.inputdata = input_buffer.data();
 
   if( getPntrToComponent(0)->getRank()==0 ) {
-    input.noderiv = false;
-    input.ncomponents = getNumberOfComponents();
-    input.nscalars= 0;
-    for(unsigned i=0; i<input.ncomponents; ++i) {
-      input.nscalars += getPntrToComponent(i)->getNumberOfStoredValues();
-    }
-    getInputData( input_buffer );
-    input.dataSize = input_buffer.size();
-    input.inputdata = input_buffer.data();
-    ArgumentsBookkeeping abk;
-    abk.setupArguments( this );
-    input.setupArguments( abk );
-
     std::vector<double> buffer;
     std::vector<double> values( input.nscalars );
     std::vector<double> deriv( input_buffer.size(), 0 );
@@ -275,10 +279,8 @@ void RMSDVector::apply() {
       f[i+1] = disp->getForce( i );
     }
 
-    std::vector<double> ignore;
     std::vector<double> forces( getNumberOfDerivatives(), 0 );
-    ForceOutput fout( forces, ignore );
-    gatherForces( 0, taskmanager.getActionInput(), input, ForceInput( getNumberOfComponents(), input.nscalars, f.data(), deriv.size(), deriv.data() ), fout );
+    gatherForces( 0, taskmanager.getActionInput(), input, View<const double,helpers::dynamic_extent>( f.data(), input.nscalars ), deriv, forces );
 
     unsigned ss=0;
     addForcesOnArguments( 0, forces, ss  );
@@ -382,21 +384,22 @@ void RMSDVector::transferForcesToStash( std::vector<double>& stash ) const {
 void RMSDVector::gatherForces( std::size_t task_index,
                                const RMSDVectorData& actiondata,
                                const ParallelActionsInput& input,
-                               const ForceInput& fdata,
-                               ForceOutput forces ) {
+                               View<const double,helpers::dynamic_extent> f,
+                               const std::vector<double>& deriv,
+                               std::vector<double>& outforces ) {
   std::size_t natoms = actiondata.align.size();
   if( actiondata.displacement && actiondata.type=="SIMPLE" ) {
     Vector comforce;
     comforce.zero();
     for(unsigned i=0; i<natoms; ++i) {
-      comforce[0] += actiondata.align[i]*fdata.force[1+i];
-      comforce[1] += actiondata.align[i]*fdata.force[1+natoms+i];
-      comforce[2] += actiondata.align[i]*fdata.force[1+2*natoms+i];
+      comforce[0] += actiondata.align[i]*f[1+i];
+      comforce[1] += actiondata.align[i]*f[1+natoms+i];
+      comforce[2] += actiondata.align[i]*f[1+2*natoms+i];
     }
     for(unsigned i=0; i<natoms; ++i) {
-      forces.thread_safe[i] += fdata.force[1+i] - comforce[0];
-      forces.thread_safe[natoms+i] += fdata.force[1+natoms+i] - comforce[1];
-      forces.thread_safe[2*natoms+i] += fdata.force[1+2*natoms+i] - comforce[2];
+      outforces[i] += f[1+i] - comforce[0];
+      outforces[natoms+i] += f[1+natoms+i] - comforce[1];
+      outforces[2*natoms+i] += f[1+2*natoms+i] - comforce[2];
     }
   } else if( actiondata.displacement ) {
     Tensor rot;
@@ -411,37 +414,100 @@ void RMSDVector::gatherForces( std::size_t task_index,
     Vector v1;
     v1.zero();
     for(unsigned n=0; n<natoms; n++) {
-      v1+=prefactor*matmul(trot, Vector(fdata.force[1+n],fdata.force[1+natoms+n],fdata.force[1+2*natoms+n]) );
+      v1+=prefactor*matmul(trot, Vector(f[1+n],f[1+natoms+n],f[1+2*natoms+n]) );
     }
     for(unsigned n=0; n<natoms; n++) {
-      Vector ff(fdata.force[1+n],fdata.force[1+natoms+n],fdata.force[1+2*natoms+n]);
+      Vector ff(f[1+n],f[1+natoms+n],f[1+2*natoms+n]);
       Vector oforce = actiondata.sqrtdisplace[n]*( matmul(trot,ff) - v1 );
-      forces.thread_safe[n] += oforce[0];
-      forces.thread_safe[natoms + n] += oforce[1];
-      forces.thread_safe[2*natoms + n] += oforce[2];
+      outforces[n] += oforce[0];
+      outforces[natoms + n] += oforce[1];
+      outforces[2*natoms + n] += oforce[2];
     }
     for(unsigned a=0; a<3; a++) {
       for(unsigned b=0; b<3; b++) {
         double tmp1=0.;
         for(unsigned m=0; m<natoms; m++) {
-          tmp1+=centeredpos[m][b]*fdata.force[1+a*natoms + m];
+          tmp1+=centeredpos[m][b]*f[1+a*natoms + m];
         }
         for(unsigned i=0; i<natoms; i++) {
-          forces.thread_safe[i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][0];
-          forces.thread_safe[natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][1];
-          forces.thread_safe[2*natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][2];
+          outforces[i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][0];
+          outforces[natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][1];
+          outforces[2*natoms + i] += actiondata.sqrtdisplace[i]*tmp1*DRotDPos[a][b][i][2];
         }
       }
     }
   }
-  double ff = fdata.force[0];
-  for(unsigned j=0; j<fdata.deriv[0].size(); ++j ) {
-    forces.thread_safe[j] += ff*fdata.deriv[0][j];
+  double ff = f[0];
+  for(unsigned j=0; j<deriv.size(); ++j ) {
+    outforces[j] += ff*deriv[j];
   }
 }
 
 void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
-  taskmanager.applyForces( outforces );
+  // Get the list of active tasks
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+  unsigned nactive_tasks=partialTaskList.size();
+  // Clear force buffer
+  outforces.assign( outforces.size(), 0.0 );
+  // Make sure that forces are calculated
+  input.noderiv = false;
+  // Get the forces
+  transferForcesToStash( force_stash );
+  // Get the MPI details
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if( runInSerial() ) {
+    stride=1;
+    rank=0;
+  }
+
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>nactive_tasks ) {
+    nt=nactive_tasks/stride/10;
+  }
+  if( nt==0 ) {
+    nt=1;
+  }
+
+  #pragma omp parallel num_threads(nt)
+  {
+    const unsigned t=OpenMP::getThreadNum();
+    unsigned nderivatives_per_component = getNumberOfDerivatives();
+    std::vector<double> omp_forces( nderivatives_per_component, 0.0 );
+    std::vector<double> buffer( 0 );
+    std::vector<double> fake_vals( input.nscalars );
+    std::vector<double> derivatives( nderivatives_per_component );
+    #pragma omp for nowait
+    for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+      std::size_t task_index = partialTaskList[i];
+      ParallelActionsOutput myout( input.nscalars,
+                                   fake_vals.data(),
+                                   derivatives.size(),
+                                   derivatives.data(),
+                                   0,
+                                   buffer.data() );
+      // Calculate the stuff in the loop for this action
+      performTask( task_index, taskmanager.getActionInput(), input, myout );
+
+      // Gather the forces from the values
+      gatherForces( task_index,
+                    taskmanager.getActionInput(),
+                    input,
+                    View<const double,helpers::dynamic_extent>( force_stash.data()+input.nscalars*task_index, input.nscalars ),
+                    derivatives,
+                    omp_forces );
+    }
+
+    #pragma omp critical
+    for(unsigned i=0; i<outforces.size(); ++i) {
+      outforces[i] += omp_forces[i];
+    }
+  }
+  // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
+  if( !runInSerial() ) {
+    comm.Sum( outforces );
+  }
 }
 
 }

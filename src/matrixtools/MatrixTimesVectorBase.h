@@ -39,6 +39,16 @@ public:
   }
 };
 
+class MatrixForceIndexInput {
+public:
+  std::size_t rowlen;
+  View<const std::size_t,helpers::dynamic_extent> indices;
+  MatrixForceIndexInput( std::size_t task_index, std::size_t ipair, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input ):
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen) {
+  }
+};
+
 class MatrixTimesVectorInput {
 public:
   bool noderiv;
@@ -57,29 +67,15 @@ public:
 
 class MatrixTimesVectorOutput {
 public:
+  std::size_t rowlen;
   View<double,1> values;
-  std::size_t nder;
   View<double,helpers::dynamic_extent> matrow_deriv;
   View<double,helpers::dynamic_extent> vector_deriv;
-  MatrixTimesVectorOutput( std::size_t ival, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ParallelActionsOutput& output ):
-    values(output.values.data()+ival),
-    nder(input.shapedata[1]),
-    matrow_deriv(output.derivatives.data()+2*ival*nder,nder),
-    vector_deriv(output.derivatives.data()+(1+2*ival)*nder,nder) {
-  }
-};
-
-class MatrixTimesVectorForceInput {
-public:
-  double force;
-  std::size_t rowlen;
-  View<const std::size_t,helpers::dynamic_extent> indices;
-  View<const double,helpers::dynamic_extent> deriv;
-  MatrixTimesVectorForceInput( std::size_t task_index, std::size_t ipair, double ff, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* deriv ):
-    force(ff),
+  MatrixTimesVectorOutput( std::size_t task_index, std::size_t ipair, std::size_t nder, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ParallelActionsOutput& output ):
     rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
-    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
-    deriv(deriv,input.shapedata[1]) {
+    values(output.values.data()+ipair),
+    matrow_deriv(output.derivatives.data()+ipair*nder,rowlen),
+    vector_deriv(output.derivatives.data()+ipair*nder+rowlen,rowlen) {
   }
 };
 
@@ -109,7 +105,8 @@ public:
     return "MATRIX_VECTOR_PRODUCT";
   }
   static void performTask( std::size_t task_index, const MatrixTimesVectorData& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixTimesVectorData& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -223,11 +220,6 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
     nvectors = getNumberOfArguments()-1;
     input.fshift=nder;
   }
-  if( getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
-    taskmanager.setupParallelTaskManager( 1, 2*nder, 0 );
-  } else {
-    taskmanager.setupParallelTaskManager( 1, 2*nder, nvectors*nder );
-  }
   taskmanager.setActionInput( input );
 }
 
@@ -250,7 +242,10 @@ void MatrixTimesVectorBase<T>::prepare() {
   std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   myval->setShape(shape);
+}
 
+template <class T>
+void MatrixTimesVectorBase<T>::calculate() {
   std::size_t nvectors, nder = getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
   if( getPntrToArgument(1)->getRank()==2 ) {
     nvectors = 1;
@@ -258,14 +253,10 @@ void MatrixTimesVectorBase<T>::prepare() {
     nvectors = getNumberOfArguments()-1;
   }
   if( getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
-    taskmanager.setupParallelTaskManager( 1, 2*nder, 0 );
+    taskmanager.setupParallelTaskManager( nder, 0 );
   } else {
-    taskmanager.setupParallelTaskManager( 1, 2*nder, nvectors*nder );
+    taskmanager.setupParallelTaskManager( 2*nder, nvectors*nder );
   }
-}
-
-template <class T>
-void MatrixTimesVectorBase<T>::calculate() {
   taskmanager.runAllTasks();
 }
 
@@ -293,7 +284,7 @@ int MatrixTimesVectorBase<T>::checkTaskIsActive( const unsigned& itask ) const {
 template <class T>
 void MatrixTimesVectorBase<T>::performTask( std::size_t task_index, const MatrixTimesVectorData& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
-    MatrixTimesVectorOutput doutput( i, actiondata, input, output );
+    MatrixTimesVectorOutput doutput( task_index, i, input.nderivatives_per_scalar, actiondata, input, output );
     T::performTask( MatrixTimesVectorInput( task_index, i, actiondata, input, input.inputdata ), doutput );
   }
 }
@@ -304,18 +295,26 @@ void MatrixTimesVectorBase<T>::applyNonZeroRankForces( std::vector<double>& outf
 }
 
 template <class T>
-void MatrixTimesVectorBase<T>::gatherForces( std::size_t task_index, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces ) {
-  std::size_t fcount = 0;
+int MatrixTimesVectorBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const MatrixTimesVectorData& actiondata ) {
+  return 1;
+}
+
+template <class T>
+void MatrixTimesVectorBase<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const MatrixTimesVectorData& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
-    double ff = fdata.force[i];
     std::size_t base = input.argstarts[actiondata.pairs[i][0]] + task_index*input.ncols[actiondata.pairs[i][0]];
     std::size_t n = input.bookeeping[input.bookstarts[actiondata.pairs[i][0]] + (1+input.ncols[actiondata.pairs[i][0]])*task_index];
     for(unsigned j=0; j<n; ++j) {
-      forces.thread_unsafe[base + j] += ff*fdata.deriv[i][j];
+      force_indices.indices[i][j] = base + j;
     }
-    View<double,helpers::dynamic_extent> forceout( forces.thread_safe.data() + fcount, input.shapedata[1] );
-    T::gatherVectorForces( MatrixTimesVectorForceInput( task_index, i, ff, actiondata, input, fdata.deriv[i].data()+input.shapedata[1] ), forceout );
-    fcount += actiondata.fshift;
+    force_indices.threadsafe_derivatives_end[i] = n;
+    force_indices.tot_indices[i] = T::getAdditionalIndices( n, input.argstarts[actiondata.pairs[i][1]], MatrixForceIndexInput( task_index, i, actiondata, input ), force_indices.indices[i] );
   }
 }
 

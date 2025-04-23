@@ -46,6 +46,7 @@ private:
   bool firststep;
   bool norm_weights;
   ParallelActionsInput input;
+  std::vector<double> force_stash;
   std::vector<double> input_buffer;
   PTM taskmanager;
   static void getPositionsFromInputData( const ParallelActionsInput& input, std::vector<Vector>& pos );
@@ -66,8 +67,9 @@ public:
   static void gatherForces( std::size_t task_index,
                             const RMSDVectorData& actiondata,
                             const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
+                            View<const double,helpers::dynamic_extent> f,
+                            const std::vector<double>& deriv,
+                            std::vector<double>& outforces );
   void setReferenceConfigurations();
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;

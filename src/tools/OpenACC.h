@@ -62,19 +62,18 @@ namespace OpenACC {
   bool noderiv{false};
   const Pbc* pbc;
   unsigned ncomponents{0};
-  unsigned nindices_per_task{0};
   unsigned dataSize{0};
   double *inputdata{nullptr};
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
   void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, nindices_per_task, dataSize, inputdata[0:dataSize])
+#pragma acc enter data copyin(this[0:1], noderiv, pbc[0:1],ncomponents, dataSize, inputdata[0:dataSize])
     pbc->toACCDevice();
   }
   void removeFromACCDevice() const  {
     pbc->removeFromACCDevice();
     // assuming dataSize is not changed
-#pragma acc exit data delete(inputdata[0:dataSize],dataSize,nindices_per_task,ncomponents, pbc[0:1],noderiv,this[0:1])
+#pragma acc exit data delete(inputdata[0:dataSize],dataSize,ncomponents, pbc[0:1],noderiv,this[0:1])
   }
 };
  @endcode

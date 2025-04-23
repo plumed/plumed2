@@ -179,7 +179,9 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
   ProjectPointsInput input;
   input.cgtol=cgtol;
   input.action=this;
-  taskmanager.setupParallelTaskManager( 1, 0, 0 );
+  if( ntoproj!=1 ) {
+    taskmanager.setupParallelTaskManager( 0, 0 );
+  }
   taskmanager.setActionInput( input );
 }
 

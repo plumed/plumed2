@@ -55,6 +55,7 @@ public:
 /// Resize the matrices
   void prepare() override ;
   void calculate() override ;
+  void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
 };
@@ -235,6 +236,11 @@ Value* FunctionOfMatrix<T>::getPntrToFirstMatrixArgument() const {
   }
   plumed_merror("could not find matrix argument");
   return NULL;
+}
+
+template <class T>
+void FunctionOfMatrix<T>::getNumberOfTasks( unsigned& ntasks ) {
+  ntasks=getPntrToComponent(0)->getNumberOfStoredValues();
 }
 
 template <class T>

@@ -53,11 +53,8 @@ public:
                            const OuterProductInput<T>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index,
-                            const OuterProductInput<T>& actiondata,
-                            const ParallelActionsInput& input,
-                            const ForceInput& fdata,
-                            ForceOutput forces );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const OuterProductInput<T>& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const OuterProductInput<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -129,13 +126,13 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
       getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
     }
   }
-  taskmanager.setupParallelTaskManager( 1, 2, getPntrToArgument(nvals)->getNumberOfStoredValues() );
   taskmanager.setActionInput( actiondata );
 }
 
 template <class T>
 unsigned OuterProductBase<T>::getNumberOfDerivatives() {
-  return getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(getNumberOfComponents())->getNumberOfStoredValues();
+  unsigned nc = getNumberOfComponents();
+  return nc*(getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(nc)->getNumberOfStoredValues());
 }
 
 template <class T>
@@ -157,8 +154,7 @@ template <class T>
 void OuterProductBase<T>::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
   OuterProductInput<T>& myinp = taskmanager.getActionInput();
-  unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
-  taskmanager.setupParallelTaskManager( 1, 2*getNumberOfComponents()*ncols, getNumberOfComponents()*getPntrToArgument(getNumberOfComponents())->getNumberOfStoredValues(), getNumberOfComponents()*ncols );
+  taskmanager.setupParallelTaskManager( 2*getNumberOfComponents(), getNumberOfComponents()*getPntrToComponent(0)->getShape()[1] );
   taskmanager.setWorkspaceSize( 2*getNumberOfComponents() );
   taskmanager.runAllTasks();
 }
@@ -190,23 +186,27 @@ void OuterProductBase<T>::applyNonZeroRankForces( std::vector<double>& outforces
 }
 
 template <class T>
-void OuterProductBase<T>::gatherForces( std::size_t task_index,
-                                        const OuterProductInput<T>& actiondata,
-                                        const ParallelActionsInput& input,
-                                        const ForceInput& fdata,
-                                        ForceOutput forces ) {
+int OuterProductBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const OuterProductInput<T>& actiondata ) {
   unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-  unsigned nelements = actiondata.outmat.bookeeping[fstart];
-  for(unsigned i=0; i<nelements; ++i) {
-    std::size_t argpos = actiondata.outmat.bookeeping[fstart+1+i];
-    View2D<const double,helpers::dynamic_extent,helpers::dynamic_extent> derivs( fdata.deriv.data() + 2*i*input.ncomponents*input.ncomponents, input.ncomponents, 2*input.ncomponents );
-    for(unsigned j=0; j<input.ncomponents; ++j) {
-      double force = fdata.force[i*input.ncomponents+j];
-      for(unsigned k=0; k<input.ncomponents; ++k) {
-        forces.thread_unsafe[input.argstarts[k] + task_index] += force*derivs[j][k];
-        forces.thread_safe[k*input.shapedata[input.ncomponents] + argpos] += force*derivs[j][input.ncomponents+k];
-      }
+  return actiondata.outmat.bookeeping[fstart];
+}
+
+template <class T>
+void OuterProductBase<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const OuterProductInput<T>& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
+  unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+  for(unsigned j=0; j<input.ncomponents; ++j) {
+    for(unsigned k=0; k<input.ncomponents; ++k) {
+      force_indices.indices[j][k] = input.argstarts[k] + task_index;
+      force_indices.indices[j][input.ncomponents+k] = input.argstarts[input.ncomponents+k] + actiondata.outmat.bookeeping[fstart+1+colno];
     }
+    force_indices.threadsafe_derivatives_end[j] = input.ncomponents;
+    force_indices.tot_indices[j] = 2*input.ncomponents;
   }
 }
 
