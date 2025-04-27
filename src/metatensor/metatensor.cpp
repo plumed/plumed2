@@ -26,7 +26,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
-//+PLUMEDOC METATENSORMOD_COLVAR METATENSOR
+//+PLUMEDOC COLVAR METATENSOR
 /*
 Use arbitrary machine learning models as collective variables.
 
@@ -197,14 +197,15 @@ private:
     // fill this->system_ according to the current PLUMED data
     void createSystem();
     // compute a neighbor list following metatensor format, using data from PLUMED
-    metatensor_torch::TorchTensorBlock computeNeighbors(
+    metatensor_torch::TensorBlock computeNeighbors(
         metatensor_torch::NeighborListOptions request,
         const std::vector<PLMD::Vector>& positions,
-        const PLMD::Tensor& cell
+        const PLMD::Tensor& cell,
+        bool periodic
     );
 
     // execute the model for the given system
-    metatensor_torch::TorchTensorBlock executeModel(metatensor_torch::System system);
+    metatensor_torch::TensorBlock executeModel(metatensor_torch::System system);
 
     torch::jit::Module model_;
 
@@ -226,7 +227,7 @@ private:
     metatensor_torch::ModelEvaluationOptions evaluations_options_;
     bool check_consistency_;
 
-    metatensor_torch::TorchTensorMap output_;
+    metatensor_torch::TensorMap output_;
     // shape of the output of this model
     unsigned n_samples_;
     unsigned n_properties_;
@@ -239,9 +240,9 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     ActionWithValue(options),
     device_(torch::kCPU)
 {
-    if (metatensor_torch::version().find("0.5.") != 0) {
+    if (metatensor_torch::version().find("0.7.") != 0) {
         this->error(
-            "this code requires version 0.5.x of metatensor-torch, got version " +
+            "this code requires version 0.7.x of metatensor-torch, got version " +
             metatensor_torch::version()
         );
     }
@@ -490,7 +491,8 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     auto dummy_system = torch::make_intrusive<metatensor_torch::SystemHolder>(
         /*types = */ torch::zeros({0}, tensor_options.dtype(torch::kInt32)),
         /*positions = */ torch::zeros({0, 3}, tensor_options),
-        /*cell = */ torch::zeros({3, 3}, tensor_options)
+        /*cell = */ torch::zeros({3, 3}, tensor_options),
+        /*pbc = */ torch::zeros({3}, tensor_options.dtype(torch::kBool))
     );
 
     log.printf("  the following neighbor lists have been requested:\n");
@@ -505,7 +507,12 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
             model_length_unit.c_str()
         );
 
-        auto neighbors = this->computeNeighbors(request, {PLMD::Vector(0, 0, 0)}, PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0));
+        auto neighbors = this->computeNeighbors(
+            request,
+            {PLMD::Vector(0, 0, 0)},
+            PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0),
+            false
+        );
         metatensor_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
         dummy_system->add_neighbor_list(request, neighbors);
     }
@@ -611,6 +618,13 @@ void MetatensorPlumedAction::createSystem() {
     torch_cell[2][1] = cell(2, 1);
     torch_cell[2][2] = cell(2, 2);
 
+    using torch::indexing::Slice;
+
+    auto pbc_a = torch_cell.index({0, Slice()}).norm().abs().item<double>() > 1e-9;
+    auto pbc_b = torch_cell.index({1, Slice()}).norm().abs().item<double>() > 1e-9;
+    auto pbc_c = torch_cell.index({2, Slice()}).norm().abs().item<double>() > 1e-9;
+    auto torch_pbc = torch::tensor({pbc_a, pbc_b, pbc_c});
+
     const auto& positions = this->getPositions();
 
     auto torch_positions = torch::from_blob(
@@ -621,6 +635,7 @@ void MetatensorPlumedAction::createSystem() {
 
     torch_positions = torch_positions.to(this->dtype_).to(this->device_);
     torch_cell = torch_cell.to(this->dtype_).to(this->device_);
+    torch_pbc = torch_pbc.to(this->device_);
 
     // setup torch's automatic gradient tracking
     if (!this->doNotCalculateDerivatives()) {
@@ -637,23 +652,54 @@ void MetatensorPlumedAction::createSystem() {
     this->system_ = torch::make_intrusive<metatensor_torch::SystemHolder>(
         this->atomic_types_,
         torch_positions,
-        torch_cell
+        torch_cell,
+        torch_pbc
     );
+
+    auto periodic = torch::all(torch_pbc).item<bool>();
+    if (!periodic && torch::any(torch_pbc).item<bool>()) {
+        std::string periodic_directions;
+        std::string non_periodic_directions;
+        if (pbc_a) {
+            periodic_directions += "A";
+        } else {
+            non_periodic_directions += "A";
+        }
+
+        if (pbc_b) {
+            periodic_directions += "B";
+        } else {
+            non_periodic_directions += "B";
+        }
+
+        if (pbc_c) {
+            periodic_directions += "C";
+        } else {
+            non_periodic_directions += "C";
+        }
+
+        plumed_merror(
+            "mixed periodic boundary conditions are not supported, this system "
+            "is periodic along the " + periodic_directions + " cell vector(s), "
+            "but not along the " + non_periodic_directions + " cell vector(s)."
+        );
+    }
 
     // compute the neighbors list requested by the model, and register them with
     // the system
     for (auto request: this->nl_requests_) {
-        auto neighbors = this->computeNeighbors(request, positions, cell);
+        auto neighbors = this->computeNeighbors(request, positions, cell, periodic);
         metatensor_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
         this->system_->add_neighbor_list(request, neighbors);
     }
 }
 
 
-metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
+metatensor_torch::TensorBlock MetatensorPlumedAction::computeNeighbors(
     metatensor_torch::NeighborListOptions request,
     const std::vector<PLMD::Vector>& positions,
-    const PLMD::Tensor& cell
+    const PLMD::Tensor& cell,
+    bool periodic
 ) {
     auto labels_options = torch::TensorOptions().dtype(torch::kInt32).device(this->device_);
     auto neighbor_component = torch::make_intrusive<metatensor_torch::LabelsHolder>(
@@ -665,12 +711,6 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     );
 
     auto cutoff = request->engine_cutoff(this->getUnits().getLengthString());
-
-    auto non_periodic = (
-        cell(0, 0) == 0.0 && cell(0, 1) == 0.0 && cell(0, 2) == 0.0 &&
-        cell(1, 0) == 0.0 && cell(1, 1) == 0.0 && cell(1, 2) == 0.0 &&
-        cell(2, 0) == 0.0 && cell(2, 2) == 0.0 && cell(2, 2) == 0.0
-    );
 
     // use https://github.com/Luthaf/vesin to compute the requested neighbor
     // lists since we can not get these from PLUMED
@@ -689,7 +729,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
         reinterpret_cast<const double (*)[3]>(positions.data()),
         positions.size(),
         reinterpret_cast<const double (*)[3]>(&cell(0, 0)),
-        !non_periodic,
+        periodic,
         vesin::VesinCPU,
         options,
         vesin_neighbor_list,
@@ -733,14 +773,14 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
         pair_vectors.to(this->dtype_).to(this->device_),
         neighbor_samples,
-        std::vector<metatensor_torch::TorchLabels>{neighbor_component},
+        std::vector<metatensor_torch::Labels>{neighbor_component},
         neighbor_properties
     );
 
     return neighbors;
 }
 
-metatensor_torch::TorchTensorBlock MetatensorPlumedAction::executeModel(metatensor_torch::System system) {
+metatensor_torch::TensorBlock MetatensorPlumedAction::executeModel(metatensor_torch::System system) {
     try {
         auto ivalue_output = this->model_.forward({
             std::vector<metatensor_torch::System>{system},
@@ -843,6 +883,14 @@ void MetatensorPlumedAction::apply() {
 
     auto block = metatensor_torch::TensorMapHolder::block_by_id(this->output_, 0);
     auto torch_values = block->values().to(torch::kCPU).to(torch::kFloat64);
+
+    if (!torch_values.requires_grad()) {
+        this->warning(
+            "the output of the model does not requires gradients, this might "
+            "indicate a problem"
+        );
+        return;
+    }
 
     auto output_grad = torch::zeros_like(torch_values);
     if (n_samples_ == 1) {

@@ -66,6 +66,7 @@ struct PlumedOptions
     std::optional<real> ensembleTemperature_{};
     StartingBehavior    startingBehavior_{};
     bool                active_{ false };
+    bool                replex_{ false };
 };
 
 class PlumedOptionProvider
@@ -88,6 +89,8 @@ public:
      *  @param  fname the (optional) name of the file
      */
     void setPlumedFile(const std::optional<std::string>& fname);
+    //PATCH:: set the replex flag
+    void setReplex(bool replex);
     /*! @brief Sets the timestep
      * @param timeStep the timestep value
      */

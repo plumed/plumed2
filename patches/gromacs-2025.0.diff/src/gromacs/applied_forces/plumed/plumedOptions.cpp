@@ -70,6 +70,10 @@ void PlumedOptionProvider::setPlumedFile(const std::optional<std::string>& fname
         opts_.plumedFile_ = fname.value();
     }
 }
+void PlumedOptionProvider::setReplex(bool replex)
+{
+    opts_.replex_     = replex;
+}
 const PlumedOptions& PlumedOptionProvider::options() const
 {
     return opts_;

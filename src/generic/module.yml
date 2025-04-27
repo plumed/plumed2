@@ -2,3 +2,8 @@ name: generic
 authors: The PLUMED core developers
 description: generic features of PLUMED many of which are for printing data to files
 dois: ["10.1016/j.cpc.2013.09.018"]
+tags:
+  ANALYSIS: tools for analysing trajectories
+  GENERIC: generic actions for printing and so on
+  TOPOLOGY: actions for providing information on the molecular topology
+  PRINTANALYSIS: tools for printing data that was obtained from an analysis of multiple frames of the trajectory

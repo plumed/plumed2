@@ -31,7 +31,7 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_LOSS MAZE_LOSS
+//+PLUMEDOC MAZE_LOSS_FUNCTION MAZE_LOSS
 /*
 
 Define a coarse-grained loss function describing interactions in a

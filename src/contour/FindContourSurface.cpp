@@ -27,57 +27,73 @@
 /*
 Find an isocontour by searching along either the x, y or z direction.
 
-As discussed in the part of the manual on \ref Analysis PLUMED contains a number of tools that allow you to calculate
-a function on a grid.  The function on this grid might be a \ref HISTOGRAM as a function of a few collective variables
-or it might be a phase field that has been calculated using \ref MULTICOLVARDENS.  If this function has one or two input
+As discussed in the documentation for the [gridtools](module_gridtools.md), PLUMED contains a number of tools that allow you to calculate
+a function on a grid.  The function on this grid might be a [HISTOGRAM](HISTOGRAM.md)  or it might be one of the phase fields that are
+discussed [here](module_contour.md).  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three dimensions it can be
 difficult to visualize.
 
 This action provides one tool for visualizing these functions.  It can be used to search for a set of points on a contour
-where the function takes a particular value.  In other words, for the function \f$f(x,y,z)\f$ this action would find a set
-of points \f$\{x_c,y_c,z_c\}\f$ that have:
+where the function takes a particular value.  In other words, for the function $f(x,y,z)$ this action would find a set
+of points $\{x_c,y_c,z_c\}$ that have:
 
-\f[
+$$
 f(x_c,y_c,z_c) - c = 0
-\f]
+$$
 
-where \f$c\f$ is some constant value that is specified by the user.  The points on this contour are find by searching along lines
-that run parallel to the \f$x\f$, \f$y\f$ or \f$z\f$ axis of the simulation cell.  The result is, therefore, a two dimensional
+where $c$ is some constant value that is specified by the user.  The points on this contour are find by searching along lines
+that run parallel to the $x$, $y$ or $z$ axis of the simulation cell.  The result is, therefore, a two dimensional
 function evaluated on a grid that gives us the height of the interface as a function of two coordinates.
 
 It is important to note that this action can only be used to detect contours in three dimensional functions.  In addition, this action will fail to
 find the full set of contour  points if the contour does not have the same topology as an infinite plane.  If you are uncertain that the isocontours in your
-function have the appropriate topology you should use \ref FIND_CONTOUR in place of \ref FIND_CONTOUR_SURFACE.
+function have the appropriate topology you should use [FIND_CONTOUR](FIND_CONTOUR.md) in place of this action.
 
-
-\par Examples
+## Examples
 
 The input shown below was used to analyze the results from a simulation of an interface between solid and molten Lennard Jones.  The interface between
-the solid and the liquid was set up in the plane perpendicular to the \f$z\f$ direction of the simulation cell.   The input below calculates something
-akin to a Willard-Chandler dividing surface \cite wcsurface between the solid phase and the liquid phase.  There are two of these interfaces within the
+the solid and the liquid was set up in the plane perpendicular to the $z$ direction of the simulation cell. The input below calculates something
+akin to a Willard-Chandler dividing surface (see [contour](module_contour.md)) between the solid phase and the liquid phase.  There are two of these interfaces within the
 simulation box because of the periodic boundary conditions but we were able to determine that one of these two surfaces lies in a particular part of the
-simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average of the
-\ref FCCUBIC symmetry function using the \ref MULTICOLVARDENS action.  Notice that we use the fact that we know roughly where the interface is when specifying
-how this phase field is to be calculated and specify the region over the \f$z\f$-axis in which we are going to search for the phase field in the line defining
-the \ref MULTICOLVARDENS.  Once we have calculated the phase field we search for contour points on the lines that run parallel to the \f$z\f$-direction of the cell
-box using the FIND_CONTOUR_SURFACE command.  The final result is a \f$14 \times 14\f$ grid of values for the height of the interface as a function of the \f$(x,y)\f$
-position.  This grid is then output to a file called contour2.dat.
+simulation box.  The input below detects the height profile of one of these two interfaces.  It does so by computing a phase field average from the values, $s_i$, of the
+[FCCUBIC](FCCUBIC.md) symmetry functions for each of the atoms using the following expression.
+
+$$
+\rho'(x,y,z) = \frac{ \sum_{i=1}^N s_i K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }{ \sum_{i=1}^N K\left(\frac{x-x_i}{\lambda}, \frac{y-y_i}{\lambda}, \frac{z-z_i}{\lambda}\right) }
+$$
+
+where $(x_i, y_i, z_i)$ is the position of atom $i$ relative to the position of atom 1, $K$ is a Gaussian kernel function and $\lambda=1.0$.
+
+Notice that we use the fact that we know roughly where the interface is when specifying how this phase field is to be calculated and specify the region over the $z$-axis
+in which the [KDE](KDE.md) is computed.  Once we have calculated the phase field we search for contour points on the lines that run parallel to the $z$-direction of the cell
+box using the FIND_CONTOUR_SURFACE command.  The final result is a $14 \times 14$ grid of values for the height of the interface as a function of the $(x,y)$
+position.  This grid is then output to a file called `contour2.dat`.
 
 Notice that the commands below calculate the instantaneous position of the surface separating the solid and liquid and that as such the accumulated average is cleared
 on every step.
 
-\plumedfile
+```plumed
 UNITS NATURAL
-FCCUBIC ...
+
+# This calculates the value of a set of symmetry functions for the atoms of interest
+fcc: FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
-  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 LABEL=fcc
-... FCCUBIC
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619
+...
 
-dens2: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,50 ZREDUCED ZLOWER=6.0 ZUPPER=11.0 BANDWIDTH=1.0,1.0,1.0 CLEAR=1
+# This determines the positions of the atoms of interest relative to the position of atom 1
+dens2_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS
+# This computes the numerator in the expression above for the phase field
+dens2_numer: KDE VOLUMES=fcc_n ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+# This computes the denominator
+dens2_denom: KDE ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+# This computes the final phase field
+dens2: CUSTOM ARG=dens2_numer,dens2_denom FUNC=x/y PERIODIC=NO
 
-ss2: FIND_CONTOUR_SURFACE GRID=dens2 CONTOUR=0.42 SEARCHDIR=z STRIDE=1 CLEAR=1
-DUMPGRID GRID=ss2 FILE=contour2.dat FMT=%8.4f STRIDE=1
-\endplumedfile
+# We can now find and print the location of the two dimensional contour surface
+ss2: FIND_CONTOUR_SURFACE ARG=dens2 CONTOUR=0.42 SEARCHDIR=dens2_dist.z
+DUMPGRID ARG=ss2 FILE=contour2.dat STRIDE=1
+```
 
 */
 //+ENDPLUMEDOC
@@ -111,6 +127,7 @@ void FindContourSurface::registerKeywords( Keywords& keys ) {
   ContourFindingBase::registerKeywords( keys );
   keys.add("compulsory","SEARCHDIR","In which directions do you wish to search for the contour.");
   keys.setValueDescription("grid","a grid containing the location of the points in the Willard-Chandler surface along the chosen direction");
+  keys.addDOI("10.1088/1361-648X/aa893d");
 }
 
 FindContourSurface::FindContourSurface(const ActionOptions&ao):

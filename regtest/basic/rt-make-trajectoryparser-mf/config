@@ -1,0 +1,18 @@
+type=make
+
+plumed_needs=molfile_plugins
+
+#--mf_xyz
+#extra_files="../../trajectories/trajectory.xyz"
+#--mf_gro
+#extra_files="$extra_files ../../trajectories/grofiles/traj_10dec.gro"
+#--mf_xtc
+extra_files="$extra_files ../../trajectories/molfile_plugin/traj.xtc "
+#--mf_dcd
+extra_files="$extra_files ../../trajectories/molfile_plugin/traj.dcd"
+#--mf_trr
+#extra_files="$extra_files ../../trajectories/test_traj.trr"
+#--mf_crd
+extra_files="$extra_files ../../basic/rt-molfile-4/test.crd"
+#--mf_pdb
+extra_files="$extra_files ../../trajectories/molfile_plugin/test0.pdb"

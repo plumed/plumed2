@@ -34,7 +34,214 @@ namespace dimred {
 /*
 Find the projection of a point in a low dimensional space by matching the (transformed) distance between it and a series of reference configurations that were input
 
-\par Examples
+This action and [ARRANGE_POINTS](ARRANGE_POINTS.md) are the workhorses for the implementation of [SKETCHMAP](SKETCHMAP.md) that is provided within PLUMED.
+PROJECT_POINTS allows you to provide the low dimensional coordinate $y_\textrm{min}$ at which the following stress function is minimised:
+
+$$
+\chi(y) = \sum_{i=1}^N w_i [ D(X_i, Y) - d(x_i,y) ]^2
+$$
+
+where $Y$ is a set of coordinates in some high dimensional space, $X_i$ is a set of coordinates for one of $N$ landmark points in this high-dimensional space,
+$x_i$ is a projection for $X_i$ that we have found in some lower dimensional space and $w_i$ is a weight.  The $D$ indicates that we are calculating the dissimilarity between the point $X_i$ and
+$Y$, while $d$ represents the distance between the point $x_i$ and $y$.  In minimising the expression above we are thus finding the point $y$ at which the distances between $y$ and
+each of the projections, $x_i$, of the $N$ landmark points most closely resembles the dissimiarities between $Y$ and the $N$ landmark points in the high-dimensional points.
+
+The example input below illustrates how you can use PROJECT_POINTS to find the projection of a high-dimensional point in practice.
+
+```plumed
+# The coordinates of the landmarks in the high dimensional space
+d1_ref: CONSTANT VALUES=1.0,2.0,1.5,2.1
+d2_ref: CONSTANT VALUES=0.5,0.7,0.2,1.3
+d3_ref: CONSTANT VALUES=3.1,2.0,1.5,0.5
+
+# The weights of the landmark
+weights: CONSTANT VALUES=1,1,1,1
+
+# The projections of the landmarks in the low dimensional space
+proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
+proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
+
+# Calcuate the instantaneous values of the three distances
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+
+# Calculate the distances between the instananeous points and the current positions
+ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
+
+# And generate the projection
+proj: PROJECT_POINTS ARG=proj1_ref,proj2_ref TARGET1=ed WEIGHTS1=weights
+
+# And output the projection to a file
+PRINT ARG=proj.* FILE=colvar
+```
+
+In this example, we use three distances to define the high dimensional coordinates and have four landmarks points.
+
+## Projecting multiple coordinates at once
+
+The input to the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md) shortcut in the example in the previous section consisted of three
+scalar-valued quantities.  The two components output by project points are thus also scalars. By contrast, in the input below four
+three-dimenional vectors are input to the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md) shortcut. The components output by proj and thus
+four-dimensional vectors.
+
+```plumed
+# The coordinates of the landmarks in the high dimensional space
+d1_ref: CONSTANT VALUES=1.0,2.0,1.5,2.1
+d2_ref: CONSTANT VALUES=0.5,0.7,0.2,1.3
+d3_ref: CONSTANT VALUES=3.1,2.0,1.5,0.5
+
+# The weights of the landmark
+weights: CONSTANT VALUES=1,1,1,1
+
+# The projections of the landmarks in the low dimensional space
+proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
+proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
+
+# Calcuate the instantaneous values of the distances
+d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
+d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
+d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
+
+# Calculate the distances between the instananeous points and the current positions
+ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
+
+# And generate the projection
+proj: PROJECT_POINTS ARG=proj1_ref,proj2_ref TARGET1=ed WEIGHTS1=weights
+
+# And output the projection to a file
+PRINT ARG=proj.* FILE=colvar
+```
+
+## Using RMSD distances
+
+One can use [RMSD](RMSD.md) distances as the dissimilarities rather than distances in some space of arguments as is illustrated below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/allv.pdb
+
+# This action reads in the landmarks in the high dimensional space and calculates the
+# distances from the instantaneous configuration
+rmsd: RMSD SQUARED TYPE=OPTIMAL REFERENCE=regtest/trajectories/path_msd/allv.pdb
+
+# The weights of the landmarks
+weights: ONES SIZE=42
+
+# The projections of the landmarks in the low dimensional space
+X: PDB2CONSTANT ARG=X NOARGS REFERENCE=regtest/trajectories/path_msd/allv.pdb
+Y: PDB2CONSTANT ARG=Y NOARGS REFERENCE=regtest/trajectories/path_msd/allv.pdb
+
+# Generate the projection of the instantaneous coordinates
+proj: PROJECT_POINTS ARG=X,Y TARGET1=rmsd WEIGHTS1=weights
+
+# And output the projection to a file
+PRINT ARG=proj.* FILE=colvar
+```
+
+For ths input there are 42 landmark points and dissimilarities are computed by computing the RMSD distance between the 13 atoms in
+each of landmark coordinates and the instaneous positions of those 13 atoms.
+
+## Using transformed distances
+
+In [SKETCHMAP](SKETCHMAP.md) the stress function that is minimised is not the one given above.  Instead of seeking to generate a projection,
+$y_\textrm{min}$, which is at a point where the distances between it and each projection the landmarks is the same as the dissimilarities between
+the high-dimensional coordinate of the point and the high-dimensional landmarks, the dissimilarities and distances are transformed by functions as illustrated below:
+
+$$
+\chi(y) = \sum_{i=1}^N w_i [ F[D(X_i, Y)] - f[d(x_i,y)] ]^2
+$$
+
+The two functions $F$ and $f$ in this expression are usually different as you can see in the input below:
+
+```plumed
+# The coordinates of the landmarks in the high dimensional space
+d1_ref: CONSTANT VALUES=1.0,2.0,1.5,2.1
+d2_ref: CONSTANT VALUES=0.5,0.7,0.2,1.3
+d3_ref: CONSTANT VALUES=3.1,2.0,1.5,0.5
+
+# The weights of the landmark
+weights: CONSTANT VALUES=1,1,1,1
+
+# The projections of the landmarks in the low dimensional space
+proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
+proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
+
+# Calcuate the instantaneous values of the distances
+d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
+d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
+d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
+
+# Calculate the distances between the instananeous points and the current positions
+ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
+
+# Transform the dissimilarities by applying the funciton F
+fed: MORE_THAN ARG=ed SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
+
+# And generate the projection
+proj: PROJECT_POINTS ARG=proj1_ref,proj2_ref TARGET1=fed FUNC1={SMAP R_0=4 A=1 B=2} WEIGHTS1=weights
+
+# And output the projection to a file
+PRINT ARG=proj.* FILE=colvar
+```
+
+In the input above the function, $F$, that is applied on the dissimilarities is implemented using a [MORE_THAN](MORE_THAN.md) action. The function, $f$,
+that is applied on the distances in the low-dimensional space is specified using the `FUNC` keyword that is input to PROJECT_POINTS.
+
+## Using multiple targets
+
+At its most complex this action allows you to minimise a stress function such as the one below:
+
+$$
+\chi(y) = \sum_{i=1}^N \sum_{j=1}^M w_{ij} [ F_j[D(X_i, Y)] - f_j[d(x_i,y)] ]^2
+$$
+
+The input below shows how this can be implemted within PLUMED:
+
+```plumed
+# The coordinates of the landmarks in the high dimensional space
+d1_ref: CONSTANT VALUES=1.0,2.0,1.5,2.1
+d2_ref: CONSTANT VALUES=0.5,0.7,0.2,1.3
+d3_ref: CONSTANT VALUES=3.1,2.0,1.5,0.5
+
+# The weights of the landmark
+weights: CONSTANT VALUES=1,1,1,1
+w1: CUSTOM ARG=weights FUNC=0.3*x PERIODIC=NO
+w2: CUSTOM ARG=weights FUNC=(1-0.3)*x PERIODIC=NO
+
+# The projections of the landmarks in the low dimensional space
+proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
+proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
+
+# Calcuate the instantaneous values of the distances
+d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
+d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
+d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
+
+# Calculate the distances between the instananeous points and the current positions
+ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
+# Transform the dissimilarities by applying the funciton F
+fed: MORE_THAN ARG=ed SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
+
+# And generate the projection
+proj: PROJECT_POINTS ...
+  ARG=proj1_ref,proj2_ref
+  TARGET1=ed WEIGHTS1=w1 FUNC1={CUSTOM FUNC=1-sqrt(x2) R_0=1.0}
+  TARGET2=fed WEIGHTS2=w2 FUNC2={SMAP R_0=4 A=1 B=2}
+...
+
+# And output the projection to a file
+PRINT ARG=proj.* FILE=colvar
+```
+
+Here the sum over $M$ in the expression above has two terms. In the first of these terms $F_1$ is the identity so the
+input for `TARGET1` is the output from [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md). $f_1$ is similarly the identity.  To
+implement the identity here we use the input to `FUNC1` shown above.  The input to this function is the input for one of
+the switching functions described in the documentation for [LESS_THAN](LESS_THAN.md). What we compute for the transformed
+distance is $1-s(d)$ where $s(d)$ is the switching function that is specified in input.  Consequently, applying the
+function `1-sqrt(x2)` returns the distance.
+
+The second term in our sum over $M$ in the input above has the dissimilarities and distances transformed by the functions that
+we introduced in the previous section.
 
 */
 //+ENDPLUMEDOC
@@ -126,7 +333,7 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
       error("mismatch between numbers of target distances");
     } else if( i==1 ) {
       ntoproj = target[0]->getShape()[1];
-    } else if( ntoproj!=target[0]->getShape()[1] ) {
+    } else if( target[0]->getRank()>1 && ntoproj!=target[0]->getShape()[1] ) {
       error("mismatch between numbers of target distances");
     }
     if( !parseArgumentList("WEIGHTS",i,weights) ) {

@@ -657,11 +657,11 @@ END{
 # DOC: :cltool_without_examples:
 # DOC: Every cltool that is registered should contain an `Example` section in its documentation.
 # DOC: Notice that if the `Example` section is not added the manual will not show the registered options.
-      error("cltool_without_examples","cltool " cltool " at " plumed_doc_cltools[cltool] " has no example")
+      style("cltool_without_examples","cltool " cltool " at " plumed_doc_cltools[cltool] " has no example")
     } else if(!(cltool in provide_verbatim)){
 # DOC: :cltool_without_verbatim:
 # DOC: Every cltool that is registered should contain an example in the form of a `verbatim` section.
-      error("cltool_without_verbatim","cltool " cltool " at " provide_examples[cltool] " has no verbatim")
+      style("cltool_without_verbatim","cltool " cltool " at " provide_examples[cltool] " has no verbatim")
     }
   }
 

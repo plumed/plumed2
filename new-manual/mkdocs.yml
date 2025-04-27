@@ -16,6 +16,7 @@ not_in_nav: |
 extra_css:
    - assets/plumedtohtml.css
    - assets/mermaid.css
+   - assets/dropdown.css
    - https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
    - https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
 

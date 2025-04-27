@@ -33,7 +33,7 @@ namespace s2cm {
 
 //
 
-//+PLUMEDOC S2CMMOD_COLVAR S2CM
+//+PLUMEDOC COLVAR S2CM
 /*
 S2 contact model CV.
 

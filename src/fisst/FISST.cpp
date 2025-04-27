@@ -33,7 +33,7 @@ using namespace bias;
 namespace PLMD {
 namespace fisst {
 
-//+PLUMEDOC FISSTMOD_BIAS FISST
+//+PLUMEDOC BIAS FISST
 /*
 Compute and apply the optimal linear force on an observable to enhance sampling of conformational distributions over a range of applied forces.
 

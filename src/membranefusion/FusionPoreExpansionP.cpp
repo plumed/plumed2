@@ -33,7 +33,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace PLMD {
 namespace membranefusion {
-//+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPOREEXPANSIONP
+//+PLUMEDOC COLVAR FUSIONPOREEXPANSIONP
 /*
 A CV for inducing the expansion of a fusion pore from a nucleated fusion pore.
 

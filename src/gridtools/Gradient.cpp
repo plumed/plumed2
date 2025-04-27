@@ -26,7 +26,15 @@
 /*
 Calculate the gradient of an input grid
 
-\par Examples
+This shortcut implements the gradient CV that was used to drive nucleation and that is described in the paper cited below. A description that explains how
+this CV is evaluated and used can be found in the paper.
+
+An example input for computing and printing the gradient CV that is discussed in the paper is shown below:
+
+```plumed
+s1xyz: GRADIENT ATOMS=1-50 ORIGIN=1 DIR=xyz NBINS=4 SIGMA=1.0
+PRINT ARG=s1xyz FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -51,6 +59,7 @@ void Gradient::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","gaussian-bin","the type of kernel function to be used in the grids");
   keys.add("compulsory","ATOMS","calculate the gradient of these atoms");
   keys.setValueDescription("scalar","the desired gradient");
+  keys.addDOI("10.1021/ct4002027");
   keys.needsAction("DISTANCES");
   keys.needsAction("KDE");
   keys.needsAction("INTERPOLATE_GRID");

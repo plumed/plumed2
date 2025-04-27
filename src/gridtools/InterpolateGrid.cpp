@@ -31,19 +31,19 @@ Interpolate a smooth function stored on a grid onto a grid with a smaller grid s
 This action takes a function evaluated on a grid as input and can be used to interpolate the values of that
 function on to a finer grained grid.  The interpolation within this algorithm is done using splines.
 
-\par Examples
+## Examples
 
-The input below can be used to post process a trajectory.  It calculates a \ref HISTOGRAM as a function the
+The input below can be used to post process a trajectory.  It calculates a [HISTOGRAM](HISTOGRAM.md) as a function the
 distance between atoms 1 and 2 using kernel density estimation.  During the calculation the values of the kernels
 are evaluated at 100 points on a uniform grid between 0.0 and 3.0.  Prior to outputting this function at the end of the
 simulation this function is interpolated onto a finer grid of 200 points between 0.0 and 3.0.
 
-\plumedfile
+```plumed
 x: DISTANCE ATOMS=1,2
 hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
-ii: INTERPOLATE_GRID GRID=hA1 GRID_BIN=200
-DUMPGRID GRID=ii FILE=histo.dat
-\endplumedfile
+ii: INTERPOLATE_GRID ARG=hA1 GRID_BIN=200
+DUMPGRID ARG=ii FILE=histo.dat
+```
 
 */
 //+ENDPLUMEDOC

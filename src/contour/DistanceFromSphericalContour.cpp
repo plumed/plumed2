@@ -26,7 +26,59 @@
 /*
 Calculate the perpendicular distance from a Willard-Chandler dividing surface.
 
-\par Examples
+This action works similarly to [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md). Within this action a field is constructed that measures the density
+of the system at each point in space using:
+
+$$
+p(x,y,x) = \sum_{i=1}^N K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
+$$
+
+In this expression $\sigma_x, \sigma_y$ and $\sigma_z$ are bandwidth parameters and
+$K$ is one of a Gaussian kernel function.  With that field in place we can define a Willard-Chandler
+surface is defined a surface of constant density in the above field $p(x,y,z)$.
+In other words, we can define a set of points, $(x',y',z')$, in the box which have:
+
+$$
+p(x',y',z') = \rho
+$$
+
+where $\rho$ is some target density. In [DISTANCE_FROM_CONTOUR](DISTANCE_FROM_CONTOUR.md) we assume that this set of points lie on a manifold that
+has the same topology as one or multiple planes.  Here, by contrast, we assume that this set of points lie on a manifold that has the same topology
+as a sphere.  This action then returns the distance between this spherical manifold and the position of a test particle.  This distance is measured
+along a vector perpendicular to the manifold.
+
+## Examples
+
+The following input calculates a [CONTACT_MATRIX](CONTACT_MATRIX.md) between a set of atoms in which element $i,j$ is only non-zero if atoms $i$ and $j$
+are within 6 nm of each other.  We then use this matrix as input for a [DFSCLUSTERING](DFSCLUSTERING.md) action that finds the largest connected component
+in the matrix.  The [CENTER](CENTER.md) of this cluster is then identified and the location of an isocontour in:
+
+$$
+p(x,y,x) = \sum_{i=1}^N \xi_i f(c_i) K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
+$$
+
+is found using this action.  In this expression $\xi_i$ is 1 if atom $i$ is part of the largest cluster and zero otherwise, $c_i$ is the coordination number of atom $i$ and
+$f$ is a swtiching function.  The distance between this isocontour and position of atom 513 as well as the distance between `com` (the center of the largest cluster)
+and the isocontour is then output to a file called colvar.
+
+```plumed
+ones: ONES SIZE=512
+# Calculate contact matrix
+c1_mat: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+# Calculate coordination numbers
+c1: MATRIX_VECTOR_PRODUCT ARG=c1_mat,ones
+# Select coordination numbers that are more than 2.0
+cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
+# Find largest cluster
+dfs: DFSCLUSTERING ARG=c1_mat
+clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
+com: CENTER ATOMS=1-512 WEIGHTS=clust1 PHASES
+# Filtered coordination numbers for atoms in largest cluster
+ff: CUSTOM ARG=clust1,cf FUNC=x*y PERIODIC=NO
+# Now do the multicolvar surface
+dd: DISTANCE_FROM_SPHERICAL_CONTOUR ARG=ff POSITIONS=1-512 ATOM=513 ORIGIN=com BANDWIDTH=1.0,1.0,1.0 CONTOUR=0.5
+PRINT ARG=dd.* FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -49,6 +101,7 @@ void DistanceFromSphericalContour::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("dist","default","scalar","the distance between the reference atom and the nearest contour");
   keys.addOutputComponent("radius","default","scalar","the radial distance from the center of the contour to the edge");
   keys.add("atoms","ORIGIN","The position of the center of the region that the contour encloses");
+  keys.addDOI("10.1021/acs.jpcb.8b03661");
 }
 
 DistanceFromSphericalContour::DistanceFromSphericalContour( const ActionOptions& ao ):

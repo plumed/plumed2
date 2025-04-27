@@ -33,77 +33,57 @@ namespace mapping {
 /*
 Projection on principal component eigenvectors or other high dimensional linear subspace
 
-The collective variables described in \ref dists allow one to calculate the distance between the
-instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
-problem with doing this is that, as one gets further and further from the reference configuration, the
+As discussed in the documenation for [RMSD](RMSD.md) and [the refdist module](module_refdist.md) there are various different ways
+of calculating the distance between the instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
+problem with all these methods, as one gets further and further from the reference configuration, the
 distance from it becomes a progressively poorer and poorer collective variable.  This happens because
-the ``number" of structures at a distance \f$d\f$ from a reference configuration is proportional to \f$d^N\f$ in
-an \f$N\f$ dimensional space.  Consequently, when \f$d\f$ is small the distance from the reference configuration
-may well be a good collective variable.  However, when \f$d\f$ is large it is unlikely that the distance from the reference
+the ``number" of structures at a distance $d$ from a reference configuration is proportional to $d^N$ in
+an $N$ dimensional space.  Consequently, when $d$ is small the distance from the reference configuration
+may well be a good collective variable.  However, when $d$ is large it is unlikely that the distance from the reference
 structure is a good CV.  When the distance is large there will almost certainly be markedly different
-configuration that have the same CV value and hence barriers in transverse degrees of
+configurations that have the same CV value and hence barriers in transverse degrees of
 freedom.
 
-For these reasons dimensionality reduction is often employed so a projection \f$\mathbf{s}\f$ of a high-dimensional configuration
-\f$\mathbf{X}\f$ in a lower dimensionality space using a function:
+For these reasons dimensionality reduction is often employed so a projection $\mathbf{s}$ of a high-dimensional configuration
+$\mathbf{X}$ in a lower dimensionality space is found using a function:
 
-\f[
+$$
 \mathbf{s} = F(\mathbf{X}-\mathbf{X}^{ref})
-\f]
+$$
 
-where here we have introduced some high-dimensional reference configuration \f$\mathbf{X}^{ref}\f$.  By far the simplest way to
-do this is to use some linear operator for \f$F\f$.  That is to say we find a low-dimensional projection
+where here we have introduced some high-dimensional reference configuration $\mathbf{X}^{ref}$. By far the simplest way to
+do this is to use some linear operator for $F$.  That is to say we find a low-dimensional projection
 by rotating the basis vectors using some linear algebra:
 
-\f[
+$$
 \mathbf{s}_i = \sum_k A_{ik} ( X_{k} - X_{k}^{ref} )
-\f]
+$$
 
-Here \f$A\f$ is a \f$d\f$ by \f$D\f$ matrix where \f$D\f$ is the dimensionality of the high dimensional space and \f$d\f$ is
-the dimensionality of the lower dimensional subspace.  In plumed when this kind of projection you can use the majority
-of the metrics detailed on \ref dists to calculate the displacement, \f$\mathbf{X}-\mathbf{X}^{ref}\f$, from the reference configuration.
-The matrix \f$A\f$ can be found by various means including principal component analysis and normal mode analysis.  In both these methods the
-rows of \f$A\f$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian.
+Here $\mathbf{X}-\mathbf{X}^{ref}$ is the displacement from the refernece configuration in the high dimenisonal space, which you can
+calculate using the [RMSD](RMSD.md) action or by simply calculating difference between the instaneous values for a collection of variables
+and the values of the variables for a particular reference configuration.  $A$ is then a $d$ by $D$ matrix where $D$ is the dimensionality
+of the high dimensional space and $d$ is the dimensionality of the lower dimensional subspace.   This matrix, $A$,
+can be found by various means including principal component analysis ([PCA](PCA.md)) and normal mode analysis.  In both these methods the
+rows of $A$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian.
 
-\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitly and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
-
-\par Examples
+## Examples
 
 The following input calculates a projection on a linear subspace where the displacements
-from the reference configuration are calculated using the OPTIMAL metric.  Consequently,
+from the reference configuration are calculated using [RMSD](RMSD.md) and TYPE=OPTIMAL.  Consequently,
 both translation of the center of mass of the atoms and rotation of the reference
-frame are removed from these displacements.  The matrix \f$A\f$ and the reference
-configuration \f$R^{ref}\f$ are specified in the pdb input file reference.pdb and the
+frame are removed from the displacements that appear in the equatiosn above.  The matrix $A$ and the reference
+configuration $R^{ref}$ are specified in the pdb input file reference.pdb and the
 value of all projections (and the residual) are output to a file called colvar2.
 
-\plumedfile
-PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-pca/reference.pdb
+pca2: PCAVARS REFERENCE=regtest/mapping/rt-pca/reference.pdb TYPE=OPTIMAL
 PRINT ARG=pca2.* FILE=colvar2
-\endplumedfile
+```
 
-The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
-which is referred to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
-the matrix \f$A\f$ above.  These directions are specified by giving a second configuration that describes the components of \f$A\f$ explicitly.
-
-\verbatim
-ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
-ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
-ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
-ATOM     13  HB2 ALA     2      21.112 -10.688 -12.476  1.00  1.00
-ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
-ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
-ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
-END
-REMARK
-ATOM      2  CH3 ACE     1      0.1414  0.3334 -0.0302  1.00  0.00
-ATOM      5  C   ACE     1      0.0893 -0.1095 -0.1434  1.00  0.00
-ATOM      9  CA  ALA     2      0.0207 -0.321   0.0321  1.00  0.00
-ATOM     13  HB2 ALA     2      0.0317 -0.6085  0.0783  1.00  0.00
-ATOM     15  C   ALA     2      0.1282 -0.4792  0.0797  1.00  0.00
-ATOM     20 HH31 NME     3      0.0053 -0.465   0.0309  1.00  0.00
-ATOM     21 HH32 NME     3     -0.1019 -0.4261 -0.0082  1.00  0.00
-END
-\endverbatim
+As you can see from the example above, the reference configurations are specified using a pdb file.  The first configuration that you provide is the reference configuration,
+which is referred to in the above expressions as $X^{ref}$.  Subsequent configurations give the directions of row vectors that are contained in
+the matrix $A$ above.  These directions are specified by giving a second configuration that describes the components of $A$ explicitly.
 
 Notice that the PCAVARS command is a shortcut.  If you look at how the shortcut in the above input is expanded you should be able to see how the command works
 by calculating the RMSD displacement between the instantaneous and reference configuration and how those displacements are then projected on the eigenvector that
@@ -113,13 +93,15 @@ distance between these two reference configurations during setup and sets up a u
 During the calculation the vector connecting the instantaneous configuration and the first of the two reference configurations in computed.  This vector is then projected
 on the unit vector connecting the two initial structures:
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-pca-two-frames/two-frames.pdb
+
 # Read in two reference configuratioms from PDB file
-ref1: PDB2CONSTANT REFERENCE=two-frames.pdb NUMBER=1
+ref1: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pca-two-frames/two-frames.pdb NUMBER=1
 ref1T: TRANSPOSE ARG=ref1
-ref2: PDB2CONSTANT REFERENCE=two-frames.pdb NUMBER=2
+ref2: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pca-two-frames/two-frames.pdb NUMBER=2
 # Calculate the displacement vector that takes you from ref1 to ref2
-eigu: RMSD_VECTOR ARG=ref1T,ref2 DISPLACEMENT TYPE=OPTIMAL
+eigu: RMSD ARG=ref1T,ref2 DISPLACEMENT TYPE=OPTIMAL
 # Normalise the reference vector
 eigu2: CUSTOM ARG=eigu.disp FUNC=x*x PERIODIC=NO
 eign2: SUM ARG=eigu2 PERIODIC=NO
@@ -128,33 +110,26 @@ eigT: TRANSPOSE ARG=eig
 # Everything prior to this point is only done in setup.  From here onwards we have the commands that are done during the main calculate loop.
 
 # Calculate the RMSD displacement between the instaneous structure and the first reference structure
-rmsd: RMSD REFERENCE=two-frames.pdb NUMBER=1 TYPE=OPTIMAL DISPLACEMENT SQUARED
+rmsd: RMSD REFERENCE=regtest/mapping/rt-pca-two-frames/two-frames.pdb NUMBER=1 TYPE=OPTIMAL DISPLACEMENT SQUARED
 # Project the displacement computed above on the director of the vector that connects reference structure ref1 to refeference structure ref2
 pca: MATRIX_VECTOR_PRODUCT ARG=eigT,rmsd.disp
 
 # Print the final CV to a file
 PRINT ARG=pca FILE=colvar
-\endplumedfile
+```
 
 You also project vectors of differences of arguments on reference vectors.  For example, the input below can be used to look at the projection
 of the vector connecting the instantanous configuraiton to a reference point in CV on a reference vector that has been specified in the PDB file.
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-pca-args/epath.pdb
+
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
-pca: PCAVARS ARG=d1,d2,d3 REFERENCE=epath.pdb
+pca: PCAVARS ARG=d1,d2,d3 REFERENCE=regtest/mapping/rt-pca-args/epath.pdb
 PRINT ARG=pca_eig-1,pca_residual FILE=colvar
-\endplumedfile
-
-The pdb input file for this calculation might look something like this:
-
-\verbatim
-REMARK d1=0.1221 d2=0.0979 d3=0.1079
-END
-REMARK d1=0.078811 d2=-0.945732 d3=-0.315244
-END
-\endverbatim
+```
 
 The first set of argument values in this input file are the reference values for the arguments.  The second any subsquent sets of arguments give the
 coefficients that should be used when constructing linear combinations.

@@ -10025,8 +10025,8 @@ $as_echo_n "checking metatensor without extra libs... " >&6; }
     #include <torch/script.h>
     #pragma GCC diagnostic pop
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
-    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
+    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
     #endif
     int main() {
       metatensor_torch::version();
@@ -10070,8 +10070,8 @@ $as_echo_n "checking metatensor with $all_LIBS... " >&6; }
     #include <torch/script.h>
     #pragma GCC diagnostic pop
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
-    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
+    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
     #endif
     int main() {
       metatensor_torch::version();
@@ -10115,8 +10115,8 @@ $as_echo_n "checking metatensor with -l$testlib... " >&6; }
     #include <torch/script.h>
     #pragma GCC diagnostic pop
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
-    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
+    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
     #endif
     int main() {
       metatensor_torch::version();
@@ -12483,5 +12483,4 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
 
