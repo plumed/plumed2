@@ -588,9 +588,7 @@ public:
   std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
     {
       std::string trajectoryFile(""), pdbfile(""), mcfile("");
-      bool pbc_cli_given=false;
       std::vector<double> pbc_cli_box(9,0.0);
-      int command_line_natoms=-1;
 
       TrajectoryParser parser;
 
@@ -651,6 +649,7 @@ public:
       log << "Using --atom-distribution=" << atomicDistr << "\n";
       return getAtomDistribution(atomicDistr);
     }
+    return std::nullopt;
   }
 };
 
@@ -661,12 +660,12 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
-  // I do not know, maybe use this can be more clear with --help? keys.reset_style("--natoms","atoms");
+  // Maybe "--natoms" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
-  // I do not know, maybe use this can be more clear with --help? keys.reset_style("--atom-distribution","atoms");
+  // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
