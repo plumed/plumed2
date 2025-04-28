@@ -112,7 +112,7 @@ public:
   /// Return the number of atoms
   int nOfAtoms() const;
   /// Return the file pointer to the initial position (use at your own risk)
-  void rewind();
+  std::optional<std::string> rewind();
 };
 } //namespace PLMD
 #endif //__PLUMED_tools_TrajectoryParser_h

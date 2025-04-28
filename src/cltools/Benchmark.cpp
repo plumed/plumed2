@@ -449,6 +449,7 @@ struct tiledSimpleCubic:public AtomDistribution {
   }
 };
 
+/// atomic distribution from a trajectory file
 class fileTraj:public AtomDistribution {
   TrajectoryParser parser;
   bool positionRead=false;
@@ -459,8 +460,12 @@ class fileTraj:public AtomDistribution {
   std::vector<Vector> coordinates{};
   std::vector<double> cell{};
   void rewind() {
-    parser.rewind();
-    //do rewind to false to not loop
+    auto errormessage=parser.rewind();
+    if (errormessage) {
+      // A workarounf for not implemented rewind is to dump the trajectory in an xyz and then read that
+      plumed_error()<<*errormessage;
+    }
+    //the extra false prevents an infinite loop in case of unexpected consecutice EOFs after a rewind
     step(false);
   }
   //read the next step
