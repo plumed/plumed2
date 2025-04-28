@@ -465,7 +465,7 @@ class fileTraj:public AtomDistribution {
       // A workarounf for not implemented rewind is to dump the trajectory in an xyz and then read that
       plumed_error()<<*errormessage;
     }
-    //the extra false prevents an infinite loop in case of unexpected consecutive EOFs after a rewind
+    //the extra false prevents an infinite loop in case of unexpected consecutice EOFs after a rewind
     step(false);
   }
   //read the next step
