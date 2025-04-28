@@ -395,12 +395,12 @@ public:
   void applyForces( std::vector<double>& forcesForApply );
 /// This is used to gather forces that are thread safe
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
-                                      ForceIndexHolder force_indices,
+                                      const ForceIndexHolder& force_indices,
                                       const ForceInput& fdata,
                                       View<double,helpers::dynamic_extent> forces );
 /// This is used to gather forces that are not thread safe
   static void gatherThreadUnsafeForces( const ParallelActionsInput& input,
-                                        ForceIndexHolder force_indices,
+                                        const ForceIndexHolder& force_indices,
                                         const ForceInput& fdata,
                                         View<double,helpers::dynamic_extent> forces );
 };
@@ -750,126 +750,127 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
         }
       }
       ffa.copyFromDevice(forcesForApply.data());
+    }
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
 #endif
-    } else {
-      // Get the MPI details
-      unsigned stride=comm.Get_size();
-      unsigned rank=comm.Get_rank();
-      if(action->runInSerial()) {
-        stride=1;
-        rank=0;
-      }
+  } else {
+    // Get the MPI details
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+    if(action->runInSerial()) {
+      stride=1;
+      rank=0;
+    }
 
-      // Get number of threads for OpenMP
-      unsigned nt=OpenMP::getNumThreads();
-      if( nt*stride*10>nactive_tasks ) {
-        nt=nactive_tasks/stride/10;
-      }
-      if( nt==0 ) {
-        nt=1;
-      }
+    // Get number of threads for OpenMP
+    unsigned nt=OpenMP::getNumThreads();
+    if( nt*stride*10>nactive_tasks ) {
+      nt=nactive_tasks/stride/10;
+    }
+    if( nt==0 ) {
+      nt=1;
+    }
 
-      #pragma omp parallel num_threads(nt)
-      {
-        const unsigned t=OpenMP::getThreadNum();
-        omp_forces[t].assign( omp_forces[t].size(), 0.0 );
-        ForceOutput forces{ omp_forces[t], forcesForApply };
-        std::vector<double> buffer( workspace_size );
-        std::vector<double> fake_vals( myinput.nscalars );
-        std::vector<double> derivatives( nderivatives_per_task );
-        std::vector<std::size_t> indices( (2+myinput.nderivatives_per_scalar)*myinput.ncomponents );
-        ForceIndexHolder force_indices( myinput.ncomponents, myinput.nderivatives_per_scalar, indices.data() );
-        #pragma omp for nowait
-        for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-          std::size_t task_index = partialTaskList[i];
-          ParallelActionsOutput myout( myinput.nscalars,
-                                       fake_vals.data(),
-                                       derivatives.size(),
-                                       derivatives.data(),
-                                       workspace_size,
-                                       buffer.data() );
-          // Calculate the stuff in the loop for this action
-          T::performTask( task_index, actiondata, myinput, myout );
+    #pragma omp parallel num_threads(nt)
+    {
+      const unsigned t=OpenMP::getThreadNum();
+      omp_forces[t].assign( omp_forces[t].size(), 0.0 );
+      ForceOutput forces{ omp_forces[t], forcesForApply };
+      std::vector<double> buffer( workspace_size );
+      std::vector<double> fake_vals( myinput.nscalars );
+      std::vector<double> derivatives( nderivatives_per_task );
+      std::vector<std::size_t> indices( (2+myinput.nderivatives_per_scalar)*myinput.ncomponents );
+      ForceIndexHolder force_indices( myinput.ncomponents, myinput.nderivatives_per_scalar, indices.data() );
+      #pragma omp for nowait
+      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+        std::size_t task_index = partialTaskList[i];
+        ParallelActionsOutput myout( myinput.nscalars,
+                                     fake_vals.data(),
+                                     derivatives.size(),
+                                     derivatives.data(),
+                                     workspace_size,
+                                     buffer.data() );
+        // Calculate the stuff in the loop for this action
+        T::performTask( task_index, actiondata, myinput, myout );
 
-          // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-          std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, actiondata );
-          for(unsigned j=0; j<nfpt; ++j) {
-            // Get the force indices
-            T::getForceIndices( task_index,
-                                j,
-                                forcesForApply.size(),
-                                actiondata,
-                                myinput,
-                                force_indices );
+        // If this is a matrix this returns a number that isn't one as we have to loop over the columns
+        std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+        for(unsigned j=0; j<nfpt; ++j) {
+          // Get the force indices
+          T::getForceIndices( task_index,
+                              j,
+                              forcesForApply.size(),
+                              actiondata,
+                              myinput,
+                              force_indices );
 
-            // Create a force input object
-            ForceInput finput( myinput.nscalars,
-                               value_stash.data()+myinput.nscalars*task_index + j*myinput.ncomponents,
-                               myinput.nderivatives_per_scalar,
-                               derivatives.data() + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
+          // Create a force input object
+          ForceInput finput( myinput.nscalars,
+                             value_stash.data()+myinput.nscalars*task_index + j*myinput.ncomponents,
+                             myinput.nderivatives_per_scalar,
+                             derivatives.data() + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
 
-            // Gather forces that are thread safe
-            gatherThreadSafeForces( myinput,
+          // Gather forces that are thread safe
+          gatherThreadSafeForces( myinput,
+                                  force_indices,
+                                  finput,
+                                  View<double,helpers::dynamic_extent>(forcesForApply.data(),forcesForApply.size()) );
+
+          // Gather forces that are not thread safe
+          gatherThreadUnsafeForces( myinput,
                                     force_indices,
                                     finput,
-                                    View<double,helpers::dynamic_extent>(forcesForApply.data(),forcesForApply.size()) );
-
-            // Gather forces that are not thread safe
-            gatherThreadUnsafeForces( myinput,
-                                      force_indices,
-                                      finput,
-                                      View<double,helpers::dynamic_extent>(omp_forces[t].data(),omp_forces[t].size()) );
-          }
+                                    View<double,helpers::dynamic_extent>(omp_forces[t].data(),omp_forces[t].size()) );
         }
+      }
 
-        #pragma omp critical
-        gatherThreads( forces );
-      }
-      // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-      if( !action->runInSerial() ) {
-        comm.Sum( forcesForApply );
-      }
+      #pragma omp critical
+      gatherThreads( forces );
     }
-
-  }
-
-  template <class T>
-  void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput& input,
-      const ForceIndexHolder force_indices,
-      const ForceInput& fdata,
-      View<double,helpers::dynamic_extent> forces ) {
-    for(unsigned i=0; i<input.ncomponents; ++i) {
-      double ff = fdata.force[i];
-      for(unsigned j=0; j<force_indices.threadsafe_derivatives_end[i]; ++j) {
-        forces[ force_indices.indices[i][j] ] += ff*fdata.deriv[i][j];
-      }
+    // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
+    if( !action->runInSerial() ) {
+      comm.Sum( forcesForApply );
     }
   }
 
-  template <class T>
-  void ParallelTaskManager<T>::gatherThreadUnsafeForces( const ParallelActionsInput& input,
-      const ForceIndexHolder force_indices,
-      const ForceInput& fdata,
-      View<double,helpers::dynamic_extent> forces ) {
-    for(unsigned i=0; i<input.ncomponents; ++i) {
-      double ff = fdata.force[i];
-      for(unsigned j=force_indices.threadsafe_derivatives_end[i]; j<force_indices.tot_indices[i]; ++j) {
-        forces[ force_indices.indices[i][j] - input.threadunsafe_forces_start ] += ff*fdata.deriv[i][j];
-      }
-    }
-  }
+}
 
-  template <class T>
-  void ParallelTaskManager<T>::gatherThreads( ForceOutput forces ) {
-    //Forceoutput is basically two spans, so it is ok to pass it by value
-    unsigned k=0;
-    for(unsigned n=forces.thread_unsafe.size()-forces.thread_safe.size(); n<forces.thread_unsafe.size(); ++n) {
-      forces.thread_unsafe[n] += forces.thread_safe[k];
-      ++k;
+template <class T>
+void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput& input,
+    const ForceIndexHolder& force_indices,
+    const ForceInput& fdata,
+    View<double,helpers::dynamic_extent> forces ) {
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    double ff = fdata.force[i];
+    for(unsigned j=0; j<force_indices.threadsafe_derivatives_end[i]; ++j) {
+      forces[ force_indices.indices[i][j] ] += ff*fdata.deriv[i][j];
     }
   }
+}
+
+template <class T>
+void ParallelTaskManager<T>::gatherThreadUnsafeForces( const ParallelActionsInput& input,
+    const ForceIndexHolder& force_indices,
+    const ForceInput& fdata,
+    View<double,helpers::dynamic_extent> forces ) {
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    double ff = fdata.force[i];
+    for(unsigned j=force_indices.threadsafe_derivatives_end[i]; j<force_indices.tot_indices[i]; ++j) {
+      forces[ force_indices.indices[i][j] - input.threadunsafe_forces_start ] += ff*fdata.deriv[i][j];
+    }
+  }
+}
+
+template <class T>
+void ParallelTaskManager<T>::gatherThreads( ForceOutput forces ) {
+  //Forceoutput is basically two spans, so it is ok to pass it by value
+  unsigned k=0;
+  for(unsigned n=forces.thread_unsafe.size()-forces.thread_safe.size(); n<forces.thread_unsafe.size(); ++n) {
+    forces.thread_unsafe[n] += forces.thread_safe[k];
+    ++k;
+  }
+}
 
 } // namespace PLMD
 #endif

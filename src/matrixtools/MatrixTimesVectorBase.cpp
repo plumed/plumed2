@@ -28,7 +28,7 @@ namespace matrixtools {
 class MatrixTimesVectorRowSums {
 public:
   static void performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output );
-  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput fin, View<std::size_t,helpers::dynamic_extent> indices ) {
+  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices ) {
     return n;
   }
 };
@@ -49,7 +49,7 @@ void MatrixTimesVectorRowSums::performTask( const MatrixTimesVectorInput& input,
 class MatrixTimesVectorProper {
 public:
   static void performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output );
-  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput fin, View<std::size_t,helpers::dynamic_extent> indices );
+  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices );
 };
 
 typedef MatrixTimesVectorBase<MatrixTimesVectorProper> mycp;
@@ -67,7 +67,7 @@ void MatrixTimesVectorProper::performTask( const MatrixTimesVectorInput& input, 
   }
 }
 
-std::size_t MatrixTimesVectorProper::getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput fin, View<std::size_t,helpers::dynamic_extent> indices ) {
+std::size_t MatrixTimesVectorProper::getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices ) {
   for(unsigned i=0; i<fin.rowlen; ++i) {
     indices[n+i] = vecstart + fin.indices[i];
   }
