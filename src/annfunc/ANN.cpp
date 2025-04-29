@@ -50,7 +50,7 @@ with specified neural network weights and generates corresponding outputs.
 The ANN outputs can be used as collective variables, inputs for other collective variables,
 or inputs for data analysis tools.
 
-\par Examples
+## Examples
 
 Assume we have an ANN with numbers of nodes being [2, 3, 1], and weights connecting layer 0 and 1 are
 
@@ -67,9 +67,8 @@ All activation functions are Tanh.
 Then if input variables are l_0_out_0, l_0_out_1, the corresponding ANN function object can be defined using
 following plumed script:
 
-\plumedfile
-ANN ...
-LABEL=ann
+```plumed
+ann: ANN ...
 ARG=l_0_out_0,l_0_out_1
 NUM_LAYERS=3
 NUM_NODES=2,3,1
@@ -78,8 +77,8 @@ WEIGHTS0=1,2,3,4,5,6
 WEIGHTS1=7,8,9
 BIASES0=10,11,12
 BIASES1=13
-... ANN
-\endplumedfile
+... 
+```
 
 To access its components, we use "ann.node-0", "ann.node-1", ..., which represents the components of neural network outputs.
 
