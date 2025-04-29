@@ -1,42 +1,59 @@
 \page usingDoxygen Creating plumed documentation
 
-To create the plumed manual you should go to the <b> user-doc </b> directory and type <b> make </b>. 
-This command works because user documentation for all the PLMD::Action is inside the source code.  If
-you look at the documentation page for any of the actions that are implemented in plumed you will
-see that it is composed of three pars:
+Our main documentation effort for plumed is the plumed tutorials site (www.plumed-tutorials.org) and to a lesser 
+extent the nest (www.plumed-nest.org). The manual is written in a way that supports these two efforts. A key 
+part of our phillosophy is that <b> there is plenty of documentation for PLUMED in the papers that use PLUMED
+and there should be links to these papers in the manual.</b>.  If you are writing documentation for an action 
+the most useful thing you can do is add DOIs to your papers (see \ref dois and \ref moduledois). 
 
-- A short introduction which describes what the method does.
-- A description of the various keywords for the calculation.
-- An example/some examples of how the PLMD::Action can be used.
-
-Furthermore, you will also have noticed that if you make an error in the input for any PLMD::Action the 
-descriptions of all the keywords from the manual appears in the log file.  This is possible because manual
+To create the plumed manual you should go to the root directory and type <b> make docs </b>. 
+This command works because user documentation for all the PLMD::Action is inside the source code.  
+Much of the text in the manual is generated automatically, which is possible as manual
 pages for PLMD::Action are inside the code and because the manual is created using the 
-following packages:
+following package:
 
-- Doxygen:   http://www.doxygen.org
-- Graphviz:  http://www.graphviz.org/ 
+- mkdocs:   https://www.mkdocs.org   (for user documentation)
+- Doxygen:   http://www.doxygen.org  (for developer documentation)
 
 In addition a special class, PLMD::Keywords, is used to store the descriptions of the syntax for any given
 action so that this data can be produced in the output when the user makes a mistake in input.  In the following
-a step-by-step explanaition as to how to use the documentation prodcuing functionality of plumed is provided.  When
+a step-by-step explanaition as to how to use the documentation producing functionality of plumed is provided.  When
 you have finished creating your new documentation they should be incorporated automatically in the manual the next 
 time you make the manual.  Furthermore, a number of checks of your manual are performed when you make the manual
 so any errors should be straightforward to find. 
 
-The plumed manual does not only contain descriptions of the various actions that have been implemented and their 
-keywords. There are also pages that place these actions in context and which attempt to explain the interplay 
-between colvars, functions, biases, analysis methods and so on.  More importantly, the plumed manual contains
-instructive examples that explain to users how to use particular features of the code.  We would encourage all
-users of the code to submit these sort of things to the plumed repository particularly if they have found it difficult to 
-start using a particular method.  Instructions as to how to go about writing a material that will appear in the How-tos 
-section of the manual can be found \ref tutorials here
+\section structure The structure of the manual
 
-\section registerkeys Registering Keywords
+When you visit the manual pages at https://www.plumed.org/doc-master/user-doc/html/ you should notice that the manual is structured
+like the code.  There are pages for each of the actions and command line tools that are implemented with PLUMED and pages for each 
+of the modules.  Every module page contains a table of the actions and command line tools that are implemented within that particular module
+and a tag menu that allows you to search the actions.  There is then a page where all the actions are listed and a page where all the modules 
+are listed.
+
+The division of the code into modules allows us to acknowledge the many authors who have contributed functionality to PLUMED as you 
+see in the documentation for the modules in the manual.  
+
+In earlier versions of the manual we imposed a more complicated taxonomy on the actions in plumed. We chose to discard this as it is difficult 
+to maintain when you have multiple contributors. Furthermore, for any person who wishes to impose some taxnonmy in PLUMED you can do by using
+tags (see \ref tags) or by writing a tutorial. 
+
+<b>Ultimately, our view is that tutorials that explain exactly how to perform a particular calculation
+are the most useful documentation we can provide to users.</b> We learn to use codes by finding examples that are similar to what we want to 
+do and then modifying them to our own purposes. It is rare to find anyone who learns by carefully reading and internalising the user manual. In short, 
+<b>our aim with this documentation is to support people who want to show how the calculations that formed the basis of the argument in their papers were performed.</b>
+
+\section incode In code documentation
+
+A lot of the documentation for PLUMED is inside the PLUMED executible itself. This documentation is used when we construct the annotated examples on 
+www.plumed-nest.org and www.plumed-tutorials.org.  The following sections explain how to construct this in code documentation.
+
+\subsection registerkeys Registering Keywords
 
 When you implement any new PLMD::Action in plumed you must first create the documentation for the keywords that you
-will use to read the input for your new method.  In fact you cannot read in undocumented keywords using plumed.  The
-documentation for keywords is created in a static method of the action called registerKeywords.  This method
+will use to read the input for your new method.  In fact you cannot read in undocumented keywords using plumed.  You will also 
+need to document the values that can be assed out of the action.  Again you cannot pass values unless they are documented.
+
+The documentation for keywords and values is created in a static method of the action called registerKeywords.  This method
 should be declared in the definition of the class as follows:
 
 \verbatim
@@ -94,7 +111,7 @@ keys.addFlag( keyword, default, explantion );
 
 where default is a bool that tells plumed if by default this option is/is not in use.  
 
-\section reading Reading the input keywords
+\subsection reading Reading the input keywords
 
 Keywords are read in using either PLMD::Action::parse, PLMD::Action::parseVector, PLMD::Action::parseNumberedVector or PLMD::Action::parseFlag.  
 These routines will use the information provided during keyword registration to check the sanity of any input.  For instance if you declare a 
@@ -102,11 +119,86 @@ compulsory keyword and do not specify a default value then the code will automat
 In addition, if the vector you pass to PLMD::Action::parseVector and PLMD::Action::parseNumberedVector has a
 size greater than 0 plumed will assume that the input should contain a vector of this size and will complain if it finds a different sized vector.
 
-\section components Registering components
+\subsection argument-keywords Keywords for reading arguments
+
+If you have an action that takes the values output by other actions in input.  In other words, if your action reads argument you need to use the 
+special method for documenting these keywords that is shown below:
+
+\verbatim
+keys.addInputKeyword( attribute , keyword , type , explanation );
+\endverbtim
+
+The addInputKeyword method above is part of PLMD::Keywords.  This function takes the <i> attribute </i>, <i> keyword </i> and <i> explanation </i> arguments that were
+discussed in the previous section as well as a new <i> type </i> attribute.  This <i> type </i> tells PLUMED what kind of input value is expected of the four basic 
+types that PLUMED can pass about:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr>
+<td width=5%%> <b> scalar </b> </td> <td> a scalar </td> 
+</tr> <tr>
+<td width=5%%> <b> vector </b> </td> <td> a vector </td> 
+</tr> <tr>
+<td width=5%%> <b> matrix </b> </td> <td> a matrix </td> 
+</tr> <tr>
+<td width=5%%> <b> grid </b> </td> <td> a function whose values are stored on a grid </td> 
+</tr>
+</table>
+
+You do not have to use a single <i> type </i> when specifying input keywords.  You can specity any combination of the four types in the table above by using types specified 
+by slashes as indicated in the example below:
+
+\verbatim
+keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the values input to this function");
+\endverbatim
+
+\subsection switching Documenting switching functions
+
+If you have a keyword that takes in the input to a switching function you can add the following command in the registerKeywords function:
+
+\verbatim
+keys.linkActionInDocs("SWITCH","LESS_THAN");
+\endverbatim
+
+This command automatically adds the sentence, "Options for this keyword are explained in the documentation for LESS_THAN" into the documentation for the SWITCH keyword.
+Furthermore, the LESS_THAN in this sentence is a link to the documentation for the LESS_THAN command.  You can obviously add a link to any action in the descriptions for keywords
+by using this same mechanism.
+
+\subsection shortcuts Documenting shortcut actions
+
+If you have written a shortcut action that works by creating a more complicated PLUMED input from a simple one line command there are more things that you need to do in order
+to construct the documentation.  I doubt anyone will do this so I have not documented this here.  If I am wrong and you think this documentation would be useful then email
+gareth.tribello@gmail.com.
+
+\subsection components Registering values and components
 
 In plumed 2.1 we will also begin registering all the components that are calculated by your action.
 In plumed 2.2 registering components will become compulsory and your features will not work if this is not done.
-This registering of components means that in the registerKeywords method for commands such as:
+
+The registering of values means that in the registerKeywords method for commands such as:
+
+\verbatim
+d1: DISTANCE
+\endverbatim
+
+which calculates a quantity that can be reference in the input as d1 you have to provide documentation 
+fr the manual that describes hwat information is stored in the d1 value.  As an example, for the
+distances command above this documentation takes the following form:
+
+\verbatim
+keys.setValueDescription(scalarOrVector,"the DISTANCE between this pair of atoms");
+\endverbatim
+
+All values registered by plumed should be added using a variant of the setValueDescription of PLMD::Keywords.
+This command has the following syntax:
+
+\verbatim
+keys.setValueDescription( type, explanation ) 
+\endverbatim 
+
+where <i> type </i> documents whether the output is a scalar, vector, matrix or grid (see \ref argument-keywords) 
+and <i> explanation </i> is an explanation of the quantity that will appear in the manual.
+
+The registering of components means that in the registerKeywords method for commands such as:
 
 \verbatim
 d1: DISTANCE COMPONENTS
@@ -117,9 +209,9 @@ documentation for the manual that describes what information is stored in the x,
 for the distances components this documentation takes the following form:
 
 \verbatim
-keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
-keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
-keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
+keys.addOutputComponent("x","COMPONENTS",scalarOrVector,"the x-components of the vectors connecting the two atoms");
+keys.addOutputComponent("y","COMPONENTS",scalarOrVector,"the y-components of the vectors connecting the two atoms");
+keys.addOutputComponent("z","COMPONENTS",scalarOrVector,"the z-components of the vectors connecting the two atoms");
 \endverbatim
 
 As you can see this new feature works in a similar manner to the feature by which the keywords are registered.  Both
@@ -130,19 +222,19 @@ All components registered by plumed should be added using a variant of the addOu
 This command has the following syntax:
 
 \verbatim
-keys.addOutputComponent( name, keyword, explanation )
+keys.addOutputComponent( name, keyword, type, explanation )
 \endverbatim
 
 where <i> name </i> is the name the component will be given i.e. the quantity will be referencable in input as <i> label.name </i>.
-<i> keyword </i> is the name of any keyword that must be added to the input for the action in order to calculate this quantity
-and <i> explanation </i> is an explanation of the quantity that will appear in the manual.
+<i> keyword </i> is the name of any keyword that must be added to the input for the action in order to calculate this quantity, <i> type </i>
+documents whether the output is a scalar, vector, matrix or grid (see \ref argument-keywords) and <i> explanation </i> is an explanation of the quantity that will appear in the manual.
 
 If your Action always generates a particular set of components then the form of this command changes slightly. That is to say
 if it makes no sense to use reference the isolated label for your command then this command should read:
 
 \verbatim
 componentsAreNotOptional(keys);
-keys.addOutputComponent( name, "default", explanation )
+keys.addOutputComponent( name, "default", "scalar", explanation )
 \endverbatim
 
 So for example in RESTRAINT, which always generates a component called bias and a component called force2, the components are registered
@@ -195,7 +287,19 @@ They can then be set by using something like:
 getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(val[i]);
 \endverbatim
 
-\section reserved Reserved Keywords
+\subsection dois Referening papers
+
+<b>If you have contributed a method to PLUMED you will have generally written extensive documentation about it in the articles 
+you have written. You can add links to these papers on the action's manual page by using the addDOI method from PLMD::Keywords
+as shown below:</b>
+
+\verbatim
+keys.addDOI(doi);
+\endverbatim
+
+This is the easist way to quickly document your action.
+
+\subsection reserved Reserved Keywords
 
 To maintain some consistency for end users of the code certain keywords (e.g. ARG, PERIODIC) are reserved.
 The reserved keywords for PLMD::Colvar, PLMD::function::Function and PLMD::bias::Bias are explained inside the documentation for
@@ -224,400 +328,63 @@ keys.addOutputComponent("min","MIN","the minimum value. This is calculated using
 
 As this documentation will already have been created for you elsewhere in the code.
 
-\section errors Generating errors
+\subsection errors Generating errors
 
 You may need to check for other mistakes in input.  When you find these mistakes you can report them to users using PLMD::Action::error.  This routine will 
 output a description of how the input to your Action should appear.  It takes as input a string that describes the particular nature of the error that the user has made.
 
-\section manual Creating the rest of the manual
+\section actiondocs Documenting actions
 
 The remainder of the manual - the detailed description of your action and some examples of how the PLMD::Action can be used - is created 
-from the comments at the top of the cpp file that contains the various subroutines that your PLMD::Action performs.  This is converted
-to manual using Doxygen as this allows one to incorporate equations, bibliographic information and bits and pieces of HTML.  At the
+from the comments at the top of the cpp file that contains the various subroutines that your PLMD::Action performs.  This documentation is written in 
+github markdown as this allows one to incorporate equations, bibliographic information and bits and pieces of HTML. At the
 start of the block of manual information the following lines should appear:
 
 \verbatim
-//+PLUMEDOC TYPE ACTIONNAME 
+//+PLUMEDOC TAG1 ACTIONNAME TAG2 TAG3 
 /*
 \endverbatim
 
 ACTIONAME is the first word that appears on the input line - i.e. it is the command that a user would use in input in order to make
-use of your particular PLMD::Action.  TYPE, meanwhile, tells Doxygen where in the manual the Docuementation should be placed.  TYPE
-should be one of the following:
-
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr> 
-<td width=5%%> <b> COLVAR </b> </td> <td> This is used if your PLMD::Action is the calculation of a CV </td>
-</tr> <tr>
-<td width=5%%> <b> DCOLVAR </b> </td> <td> This is used if your PLMD::Action is a colvar that measures the distance from a reference frame in some metric </td>
-</tr> <tr>
-<td width=5%%> <b> MCOLVAR </b> </td> <td> This is used if your PLMD::Action calculates some Function of a distribution of CVs. (Action inherits from PLMD::multicolvar::MultiColvar)  </td>
-</tr> <tr>
-<td width=5%%> <b> MCOLVARF </b> </td> <td> This is used if your PLMD::Action calculates a paricularly complicated function of a distribution of CVs. (Action inherits from PLMD::multicolvar::MultiColvarFunction) </td>
-</tr> <tr>
-<td width=5%%> <b> FUNCTION </b> </td> <td> This is used if your PLMD::Action calculates some Function of a set of CVs </td>
-</tr> <tr>
-<td width=5%%> <b> VATOM </b> </td> <td> This is used if your PLMD::Action calculates the position of a new atom e.g. for COM </td>
-</tr> <tr>
-<td width=5%%> <b> ANALYSIS </b> </td> <td> This is used if your PLMD::Action does some analysis of the trajectory </td>
-</tr> <tr>
-<td width=5%%> <b> BIAS </b> </td> <td> This is used if your PLMD::Action is a bias that adds supplemental forces to the potential in order to enhance sampling </td> 
-</tr> <tr>
-<td width=5%%> <b> TOPOLOGY </b> </td> <td> PLMD::setup::MolInfo has documentation of this type.  This command is used to provide information about the chemistry of the system under study.  For MolInfo this is what constitute the backbone atoms of the protin, what the residues are etc. </td>
-</tr> <tr>
-<td width=5%%> <b> GENERIC </b> </td> <td> This should be used if you want to specify manually where in the manual your documentation should appear.  If you feel this really is the correct way to incorporate your new feature please contact the core developers so as to discuss it. </td>
-</tr> 
-</table>
+use of your particular PLMD::Action.  TAG1, TAG2 and TAG3, are words that you can use for organising the actions in the manual (see \ref tags).
 
 Immediately after the start comment symbol you should place a single line that describes in a sentence or two what it is your PLMD::Action does.  This information will
 appear beside the link to your more detailed manual page in the general pages of the user manual.  The code will use everything up to the first blank
-line in input to create this brief description.  You can then write a longer description of your PLMD::Action to appear at the start of its
-particular page in the manual.  As described below this description can incorporate equations and bibliographic information.
+line in input to create this brief description.  You can then write a longer description of your PLMD::Action to appear on the 
+particular page in the manual.  
 
-\subsection Equations
+You write your documentation in the github markdown syntax with additional plumed features that is explained here:
 
-You can add formulae in latex using:
+https://www.plumed-tutorials.org/instructions.html
+
+\section moduledocs Documenting a module
+
+The documentation for modules is included in two files that appear in the module directory that are called <i> module.md </i> and <i> module.yml </i>.  The <i> module.md </i>
+file is a markdown file that contains a description of the module.  This is written in the github markdown syntax that is explained here:
+
+https://www.plumed-tutorials.org/instructions.html
+
+\subsection moduledois The module.json file
+
+The <i> module.yml </i> file is a Yaml file with the following structure:
 
 \verbatim
-This is an inline equation \f$s=y+x\f$ but this is an equation:
-
-\f[
-r = \sqrt{ \mathbf{s}^T \mathbf{C}^{-1} \mathbf{s} }
-\f]
-
-And this is an equation array:
-
-\f{eqnarray*}{
- f &=& \frac{1}{2} \\
- g &=& \frac{2}{3}
-\f}
+name: name of module
+authors: authors of module
+description: description of module
+dois: ["doi1", "doi2", "doi2"]
+tags:
+  TAG1: description of TAG1
+  TAG2: description of TAG2
 \endverbatim
 
-In the manual this will be translated into:
+As you can see you use this file to provide information on the name, authors and description of the module.  You can also include a list of DOIs for papers that should be cited on the 
+module's documentation page.
 
-This is an inline equation \f$s=y+x\f$ but this is an equation:
- 
-\f[
-r = \sqrt{ \mathbf{s}^T \mathbf{C}^{-1} \mathbf{s} }
-\f]
+\subsection tags Using action tags
 
-And this is an equation array:
-
-\f{eqnarray*}{
- f &=& \frac{1}{2} \\
- g &=& \frac{2}{3}
-\f} 
-
-\subsection Lists
-
-You can create lists of data using: 
-
-\verbatim
-- First item in list
-- Second item in list
-\endverbatim
-
-which becomes:
-
-- First item in list
-- Second item in list
-
-\subsection Formatting 
-
-You can create a new section in your documentation using:
-
-\verbatim
-\section manual Creating the rest of the manual
-\endverbatim
-
-In fact I used this very command earlier in writing this page.  I can therefore reference it here (\ref manual) by using:
-
-\verbatim
-\ref manual 
-\endverbatim
-
-You can also reference external webpages by typing web addresses directly in the documentation.
-
-\subsection Citations
-
-You can create citations using:
-
-\verbatim
-\cite bibtex-tag
-\endverbatim
-
-This command uses an interface between Doxygen and bibtex to create bibliographic data.  Inside
-the user-doc directory you will find a bibtex file called bibliography.bib that contains all
-the references that are included in the user documentation for plumed.  To add your reference
-you should add bibliographic data for the article you want to cite in this file.
-
-\section Examples
-
-Manual entries for actions and tutorials <b>must</b> contain some examples.  The most basic way to include these is as follows:
-
-\verbatim
-\par Example
-
-The following input tells plumed to print the distance between atoms 3 and 5,
-the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\plumedfile
-DISTANCE ATOMS=3,5             LABEL=d1
-DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
-PRINT ARG=d1,d2,d2.x
-\ endplumedfile /*** But with no space between the \ and the endplumedfile
-\endverbatim 
-
-In the manual this will be converted to:
-
-\par Example
-
-The following input tells plumed to print the distance between atoms 3 and 5,
-the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-<pre class="fragment">
-<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=3,5             LABEL=d1
-<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=2,4 COMPONENTS  LABEL=d2
-<a href="../../user-doc/html/_p_r_i_n_t.html" style="color:green">PRINT</a> ARG=d1,d2,d2.x
-</pre>
-
-Please be aware of the blank line between after the title of the paragraph.  If this line is not present your manual will look ugly.  
-Also be aware that your Examples section <b> must </b> be called Examples and not Example because of a perculiarity in the 
-script that generates the manual.
-
-By including the example input in a plumedfile environment you ensure two things:
-
-- That the action names are converted to links to the relevant pages in the manual when the manual is constructed.
-- That the code to construct the user manual will test to see if your example input can be parsed by PLUMED whenever the user manual is built.
-
-To achieve the second of these objectives with the input shown above it is sufficient to include the example input in a plumedfile environment.
-As detailed in the following sections, however, there are some cases where things are a little more complicated.
-
-\subsection multirepeg Including example inputs for multiple replica simulations
-
-If you have an input for a simulation that is to be run with three replicas such as the one below:
-
-<pre class="fragment">
-<span style="color:blue"># Compute a distance</span>
-d: <a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2
-<span style="color:blue"># Apply a restraint.</span>
-<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
-</pre>
-
-Then you must specify that the input is to be run on three replicas in the first (SETTINGS) line of the input file as shown below: 
-
-\verbatim
-\plumedfile{3}
-#SETTINGS NREPLICAS=3
-# Compute a distance
-d: DISTANCE ATOMS=1,2
-# Apply a restraint.
-RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
-\ endplumedfile /*** But with no space between the \ and the endplumedfile
-\endverbatim
-
-Notice that there should not be a space between the hash sign at the start of this line and word settings. 
-
-\subsection auxfileeg Including example inputs that require an auxiliary file
-
-Suppose that you have an input such as the one below:
-
-<pre class="fragment">
-<a href="../../user-doc/html/_r_m_s_d.html" style="color:green">RMSD</a> REFERENCE=file.pdb TYPE=OPTIMAL
-</pre>
-
-As RMSD has been used here you are also required to provide an input file which in this case would be called file.pdb.  You can include 
-this input in an auxfile environment as shown below:
-
-\verbatim
-\auxfile{file.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
-END
-\ endauxfile /*** But with no space between the \ and the endauxfile
-\endverbatim
-
-Obviously, the file.pdb inside the curly braces in the top line here indicates that the auxiliary file to be constructed from this data should be named 
-file.pdb.  Files input in this way can be given any name but:
-
-- If two auxfiles are used on the same page they must be given different names (if they are on different pages it does not matter)
-- auxfiles should not be named *.dat as the script that builds the user manual assumes that all *.dat files are plumed input files. 
-
-\subsection incfileeg Using INCLUDE in your example input files
-
-Suppose that you have split your input by using an INCLUDE file as shown below:
-
-<pre class="fragment">
-<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2 LABEL=dist
-<a href="../../user-doc/html/_i_n_c_l_u_d_e.html" style="color:green">INCLUDE</a> FILE=toBeIncluded.inc
-</pre>
-
-<pre class="fragment">
-<span style="color:blue"># this is toBeIncluded.inc</span>
-<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=dist AT=2.0 KAPPA=1.0
-</pre>
-
-To include an input like this in the manul you would write the following:
-
-\verbatim
-\plumedfile
-DISTANCE ATOMS=1,2 LABEL=dist
-INCLUDE FILE=toBeIncluded.inc
-\ endplumedfile    /*** But with no space between the \ and the endplumedfile
-
-\plumedfile
-#SETTINGS FILENAME=toBeIncluded.inc  
-RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
-\ endplumedfile   /*** But with no space between the \ and the endplumedincludefile
-\endverbatim
-
-By including the FILENAME attribute on the SETTINGS line you can set the name of the plumed input file that is generated when the input is tested.
-Also notice that if, as in the example above, the included file is not (by itself) a valid plumed input it CANNOT be called *.dat as the script that 
-checks the input will complain.  
-
-\subsection molfileeg Using MOLFILE in your example input files
-
-If you use have used a \ref MOLINFO command in the example input that you specified as has been done here:
-
-<pre class="fragment">
-<a href="./_m_o_l_i_n_f_o.html" style="color:green">MOLINFO</a> STRUCTURE=helix.pdb
-<a href="./_w_h_o_l_e_m_o_l_e_c_u_l_e_s.html" style="color:green">WHOLEMOLECULES</a> ENTITY0=1-100
-alpha: <a href="./_a_l_p_h_a_r_m_s_d.html" style="color:green">ALPHARMSD</a> RESIDUES=all TYPE=OPTIMAL R_0=0.1
-</pre> 
-
-Then you must provide information on the location from whence PLUMED can the reference input so that the example checking script can copy the input
-for the MOLINFO.   The above input would thus be included in the manual as shown below:
-
-\verbatim
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
-WHOLEMOLECULES ENTITY0=1-100
-alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
-\ endplumedfile    /*** But with no space between the \ and the endplumedfile
-\endverbatim
-
-\subsection otherfiles Other actions requiring external files/folder
-
-Other actions in plumed may require reading input files, examples include reading gromacs .ndx files in \ref GROUP, reading chemical shifts in \ref CS2BACKBONE, etc.
-To make these example work correctly in the manual you can use the keywords AUXFILE and AUXFOLDER as in the following:
-
-\verbatim
-\plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
-WHOLEMOLECULES ENTITY0=1-111
-
-# This allows us to select only non-hydrogen atoms
-#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
-protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-
-# We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
-solv: EEFSOLV ATOMS=protein-h
-
-# Here we actually add our calculated energy back to the potential
-bias: BIASVALUE ARG=solv
-
-PRINT ARG=solv FILE=SOLV
-
-#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
-encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
-stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
-RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
-
-PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
-\ endplumedfile    /*** But with no space between the \ and the endplumedfile
-\endverbatim
-
-\section tutorials Writing how-to instructions
-
-On every page of the plumed user manaul there are three tabs: Main-page, Glossary and How-tos.  Here we are going to describe how to
-go about writing something that will appear on the How-tos page.  On that page you will find that there are two kinds of resources.  
-The first set of resources are a set of links to shortist descriptions of how to particular things with plumed.  The second set of 
-resources are links to a set of external websites that we think might be of interest to users of plumed.
-
-\subsection websites Adding a link to your website 
-
-If you have a website that you think it would be useful for us to link from the plumed How-tos page please send us a file that contains
-the following information in the following format:
-
-\verbatim
-link: http://en.wikipedia.org/wiki/Metadynamics
-
-description: A wikipedia article on metadynamics
-\endverbatim 
-
-In case it isn't abundantly clear the line that starts "link:" contains the hyperlink to your page, while the second line (the one starting "description:")
-contains the description of the page that will appear beside the link on the how-tos page.  If this file is placed in the user-doc/tutorials directory of the
-plumed source and if it is given a name that ends in .site then the link will appear on the how-tos page.
-
-\subsection tute Writing a how-to
-
-Lets say you now want to write a set of how-to instructions.  You will first need to create an additional file in the user-doc/tutorials directory of the plumed
-source.  Much like the rest of plumed manual this file is written in Doxygen so you should read the instructions about how to go about using \ref Equations, \ref Lists, 
-\ref Formatting, \ref Citations and \ref Examples.  You will also need to ensure that the text that you want to appear on the your page is contained between
-the special doxygen comment symbols as shown below:
-
-\verbatim
-This will not appear on the final how-to page.
-
-/**
-This will appear on the final how-to page.
-*/
-
-This will also not appear on the final how-to page.
-\endverbatim 
-
-To ensure that a link is created on the main How-tos page you need to include the following instructions after the closing doxygen comment as shown below:
-
-\verbatim
-/**
-\page filename My explanation of something in plumed
-
-Text of how-to page
-
-*/
-link: @subpage filename
-
-description: The description of what is described on your page
-\endverbatim
-
-For this particular example the above should be contained in a file inside the user-doc/tutorials directory called filename.txt.  If the user comes to the 
-How-tos page they will see a link with the text "My explanation of something in plumed," which they can click on to get to your page.  Beside that link the 
-description "The description of what is described on your page" will appear.
-
-One final thing, if your How-to is a tutorial - that is to say if you have a set of exercises for users to work through - then it may be useful to 
-provide them with some example files that they can download.  This is possible you add the files to our repository and you can put a link to download them
-somewhere on your page.
-To keep things manageable there should only be one (or a few) tar-ball file per tutorial.
-As such if you need to provide users with multiple files please put them in a single directory. The script that 
-build the documentation will make one or more tar-balls from there.
-please put them in a zipped tar ball.
-The simplest way is thus to add a directory
-in the user-doc/tutorials directory and ideally given a name so that it can be identified
-with your corresponding *.txt file.
-For example if the name of the tutorial is `mytute` you should make a directory named
-`user-doc/tutorials/mytute`. 
-You can then download it by including the following into your *.txt file.
-
-\verbatim
-/**
-\page mytute A tutorial that helps users learn to do something with plumed
-
-Please download the following <a href="tutorial-resources/mytute.tar.gz" download="mytute.tar.gz"> file </a>.
-
-*/
-
-link: @subpage mytute
-
-description: A tutorial for users to work through
-
-additional-files: mytute
-\endverbatim 
-
-In this case the tar ball you add is called mytute.tar.gz.  The user can download this file by clicking on the word file.
+As you can see in the previous section you can define tags the <i>module.yml</i> file and give them a short description.  You can then attach these tags to actions by including them on
+the line that includes the string PLUMEDOC.  These tags provide a community-sourced way of grouping actions that can serve similar purposes in the manual.  
 
 \section updating-web-manuals Updating web manuals
 
