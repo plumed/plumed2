@@ -37,44 +37,48 @@ namespace fisst {
 /*
 Compute and apply the optimal linear force on an observable to enhance sampling of conformational distributions over a range of applied forces.
 
-This method is described in \cite Hartmann-FISST-2019
+This method is described in the paper cited below 
 
 If the system's Hamiltonian is given by:
-\f[
+
+$$
     H(\vec{p},\vec{q}) = \sum_{j} \frac{p_j^2}{2m_j} + U(\vec{q}),
-\f]
+$$
 
 This bias modifies the Hamiltonian to be:
-\f[
-  H'(\vec{p},\vec{q}) = H(\vec{p},\vec{q}) - \bar{F} Q
-\f]
 
-where for CV \f$Q\f$, a coupling constant \f${\bar{F}}\f$ is determined
+$$
+  H'(\vec{p},\vec{q}) = H(\vec{p},\vec{q}) - \bar{F} Q
+$$
+
+where for CV $Q$, a coupling constant ${\bar{F}}$ is determined
 adaptively according to the FISST algorithm.
 
 Specifically,
-\f[
+
+$$
 \bar{F}(Q)=\frac{ \int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) F dF}{\int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) dF},
-\f]
+$$
 
-where \f$\vec{q}\f$ are the molecular coordinates of the system, and \f$w(F)\f$ is a weighting function that is learned on the fly for each force by the FISST algorithm (starting from an initial weight distribution, uniform by default).
+where $\vec{q}$ are the molecular coordinates of the system, and $w(F)$ is a weighting function that is learned on the fly for each force by the FISST algorithm (starting from an initial weight distribution, uniform by default).
 
-The target for \f$w(F)=1/Z_q(F)\f$, where
-\f[
+The target for $w(F)=1/Z_q(F)$, where
+
+$$
     Z_q(F) \equiv \int d\vec{q} e^{-\beta U(\vec{q}) + \beta F Q(\vec{q})}.
-\f]
+$$
 
-FISST also computes and writes Observable Weights \f$W_F(\vec{q}_t)\f$ for a molecular configuration at time \f$t\f$, so that averages of other quantities \f$A(\vec{q})\f$ can be reconstructed later at different force values (over a trajectory with \f$T\f$ samples):
-\f[
+FISST also computes and writes Observable Weights $W_F(\vec{q}_t)$ for a molecular configuration at time $t$, so that averages of other quantities $A(\vec{q})$ can be reconstructed later at different force values (over a trajectory with $T$ samples):
+
+$$
     \langle A \rangle_F = \frac{1}{T} \sum_t W_F(\vec{q}_t) A(\vec{q}_t).
-\f]
+$$
 
-
-\par Examples
+## Examples
 
 In the following example, an adaptive restraint is learned to bias the distance between two atoms in a system, for a force range of 0-100 pN.
 
-\plumedfile
+```plumed
 UNITS LENGTH=A TIME=fs ENERGY=kcal/mol
 
 b1: GROUP ATOMS=1
@@ -88,8 +92,7 @@ dend: DISTANCE ATOMS=b1,b2
 f: FISST MIN_FORCE=0 MAX_FORCE=1.44 PERIOD=100 NINTERPOLATE=31 ARG=dend OUT_RESTART=pull.restart.txt OUT_OBSERVABLE=pull.observable.txt OBSERVABLE_FREQ=1000
 
 PRINT ARG=dend,f.dend_fbar,f.bias,f.force2 FILE=pull.colvar.txt STRIDE=1000
-\endplumedfile
-
+```
 
 */
 //+ENDPLUMEDOC
@@ -192,6 +195,7 @@ void FISST::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
   keys.addOutputComponent("force2","default","scalar", "squared value of force from the bias.");
   keys.addOutputComponent("_fbar","default", "scalar", "For each named CV biased, there will be a corresponding output CV_fbar storing the current linear bias prefactor.");
+  keys.addDOI("10.1063/5.0009280");
 }
 
 FISST::FISST(const ActionOptions&ao):
