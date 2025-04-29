@@ -44,54 +44,59 @@ namespace drr {
 
 //+PLUMEDOC EABFMOD_BIAS DRR
 /*
-Used to performed extended-system adaptive biasing force(eABF)
+Used to performed extended-system adaptive biasing force (eABF)
 
-This method was introduced in \cite Lelievre2007.  It is used
+This method was introduced in the first paper cited below.  It is used
  on one or more collective variables. This method is also
- called dynamic reference restraining(DRR) \cite Zheng2012 . A detailed description
- of this module can be found at \cite Chen2018 .
+ called dynamic reference restraining(DRR) as in the second paper cited below. A detailed description
+ of this module can be found in the third paper cited below.
 
-For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$
-is attached through a spring. The fictitious variable \f$\lambda_i\f$ undergoes
-overdamped Langevin dynamics just like \ref EXTENDED_LAGRANGIAN. The ABF
-algorithm applies bias force on \f$\lambda_i\f$. The bias force acts on
-\f$\lambda_i\f$ is the negative average spring force on \f$\lambda_i\f$, which
-enhances the sampling of \f$\lambda_i\f$.
+For each collective variable $\xi_i$, a fictitious variable $\lambda_i$
+is attached through a spring. The fictitious variable $\lambda_i$ undergoes
+overdamped Langevin dynamics just like [EXTENDED_LAGRANGIAN](EXTENDED_LAGRANGIAN.md). The ABF
+algorithm applies bias force on $\lambda_i$. The bias force acts on
+$\lambda_i$ is the negative average spring force on $\lambda_i$, which
+enhances the sampling of $\lambda_i$.
 
-\f[
+$$
 F_{bias}(\lambda_i)=k(\lambda_i-\langle\xi_i\rangle_{\lambda_i})
-\f]
+$$
 
-If spring force constant k is large enough, then \f$\xi_i\f$ synchronizes with
-\f$\lambda_i\f$. The naive(ABF) estimator is just the negative
-average spring force of \f$\lambda_i\f$.
+If spring force constant k is large enough, then $\xi_i$ synchronizes with
+$\lambda_i$. The naive(ABF) estimator is just the negative
+average spring force of $\lambda_i$.
 
 The naive(ABF) estimator is biased. There are unbiased estimators such as
-CZAR(Corrected z-averaged restraint) \cite Lesage2016 and UI(Umbrella
+CZAR(Corrected z-averaged restraint) discussed in the fourth paper cited below and UI(Umbrella
 Integration).
 The CZAR estimates the gradients as:
 
-\f[
+$$
 \frac{\partial{A}}{\partial{\xi_i}}\left({\xi}\right)=-\frac{1}{\beta}\frac{\partial\ln\tilde{\rho}\left(\xi\right)}{\partial{\xi_i}}+k\left(\langle\lambda_i\rangle_\xi-\xi_i\right)
-\f]
+$$
 
 The UI estimates the gradients as:
-\f[
-A'(\xi^*)=\frac{{\sum_\lambda}N\left(\xi^*,\lambda\right)\left[\frac{\xi^*-\langle\xi\rangle_\lambda}{\beta\sigma_\lambda^2}-k(\xi^*-\lambda)\right]}{{\sum_\lambda}N\left(\xi^*,\lambda\right)}
-\f]
 
-The code performing UI(colvar_UIestimator.h) is contributed by Haohao Fu \cite Fu2016 .
+$$
+A'(\xi^*)=\frac{{\sum_\lambda}N\left(\xi^*,\lambda\right)\left[\frac{\xi^*-\langle\xi\rangle_\lambda}{\beta\sigma_\lambda^2}-k(\xi^*-\lambda)\right]}{{\sum_\lambda}N\left(\xi^*,\lambda\right)}
+$$
+
+The code performing UI(colvar_UIestimator.h) is contributed by Haohao Fu (see fifth paper cited below).
 It may be slow. I only change the Boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
-After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. The additional .zcount and .zgrad files contain the number of samples of \f$\boldsymbol{\xi}\f$, and the negative of \f$\boldsymbol{\xi}\f$-averaged spring forces, respectively, which are mainly for inspecting and debugging purpose. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful for numerically integrating the .czar.grad file.
+After running eABF/DRR, the [drr_tool](drr_tool.md) utility can be used to extract the gradients and counts files from .drrstate. 
+Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. 
+The additional .zcount and .zgrad files contain the number of samples of $\boldsymbol{\xi}$, and the negative of $\boldsymbol{\xi}$-averaged 
+spring forces, respectively, which are mainly for inspecting and debugging purpose. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful for numerically integrating the .czar.grad file.
 
-\par Examples
+## Examples
 
 The following input tells plumed to perform a eABF/DRR simulation on two
 torsional angles.
-\plumedfile
+
+```plumed
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -110,22 +115,24 @@ HISTORYFREQ=500000
 
 # monitor the two variables, their fictitious variables and applied forces.
 PRINT STRIDE=10 ARG=phi,psi,eabf.phi_fict,eabf.psi_fict,eabf.phi_biasforce,eabf.psi_biasforce FILE=COLVAR
-\endplumedfile
+```
 
 The following input tells plumed to perform a eABF/DRR simulation on the
-distance of atom 10 and 92. The distance is restraint by \ref LOWER_WALLS and
-\ref UPPER_WALLS.
-\plumedfile
+distance of atom 10 and 92. The distance is restraint by [LOWER_WALLS](LOWER_WALLS.md) and
+[UPPER_WALLS](UPPER_WALLS.md).
+
+```plumed
 dist1: DISTANCE ATOMS=10,92
 eabf_winall: DRR ARG=dist1 FULLSAMPLES=2000 GRID_MIN=1.20 GRID_MAX=3.20 GRID_BIN=200 FRICTION=8.0 TAU=0.5 OUTPUTFREQ=5000 HISTORYFREQ=500000
 uwall: UPPER_WALLS ARG=eabf_winall.dist1_fict AT=3.2 KAPPA=418.4
 lwall: LOWER_WALLS ARG=eabf_winall.dist1_fict AT=1.2 KAPPA=418.4
 PRINT STRIDE=10 ARG=dist1,eabf_winall.dist1_fict,eabf_winall.dist1_biasforce FILE=COLVAR
-\endplumedfile
+```
 
-It's also possible to run extended generalized adaptive biasing force (egABF) described in \cite Zhao2017 .
+It's also possible to run extended generalized adaptive biasing force (egABF) described in the sixth paper cited below.
 An egABF example:
-\plumedfile
+
+```plumed
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -169,7 +176,7 @@ HISTORYFREQ=500000
 ... DRR
 
 PRINT STRIDE=10 ARG=phi,psi FILE=COLVAR
-\endplumedfile
+```
 
  */
 //+ENDPLUMEDOC
@@ -328,6 +335,12 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addOutputComponent("_springforce", "default", "Spring force between real CVs and extended CVs");
   keys.addOutputComponent("_fictNoPBC", "default",
                           "the positions of fictitious particles (without PBC).");
+  keys.addDOI("10.1063/1.2711185");
+  keys.addDOI("10.1021/ct200726v");
+  keys.addDOI("10.1021/acs.jcim.8b00115");
+  keys.addDOI("10.1021/acs.jpcb.6b10055");
+  keys.addDOI("10.1021/acs.jctc.6b00447");
+  keys.addDOI("10.1021/acs.jctc.7b00032");
 }
 
 DynamicReferenceRestraining::DynamicReferenceRestraining(

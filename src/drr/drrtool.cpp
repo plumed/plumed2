@@ -37,32 +37,36 @@ using namespace cltools;
 namespace PLMD {
 namespace drr {
 
-//+PLUMEDOC EABFMOD_TOOLS drr_tool
+//+PLUMEDOC drr_tool
 /*
  - Extract .grad and .count files from the binary output .drrstate
  - Merge windows
 
-\par Examples
+## Examples
 
 The following command will extract .grad and .count files.
-\verbatim
+
+```plumed
 plumed drr_tool --extract eabf.drrstate
-\endverbatim
+```
 
 The following command will merge windows of two .drrstate file, and output the
 .grad and .count files.
-\verbatim
+
+```plumed
 plumed drr_tool --merge win1.drrstate,win2.drrstate
-\endverbatim
+```
 
 After getting the .grad and .count file, you can do numerical integration by
 using abf_integrate tool from
 https://github.com/Colvars/colvars/tree/master/colvartools
-\verbatim
+
+verbatim
 abf_integrate eabf.czar.grad
 \endverbatim
-\note
-The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
+
+> [!note]
+> The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
 
 */
 //+ENDPLUMEDOC

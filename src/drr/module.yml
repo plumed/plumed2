@@ -1,0 +1,7 @@
+name: drr
+authors: Haochuan Chen and Haohao Fu
+description: an implementation of the extended-system adaptive biasing force (eABF) method
+dois: ["10.1063/1.2711185", "10.1021/ct200726v", "10.1021/acs.jcim.8b00115", "10.1021/acs.jpcb.6b10055", "10.1021/acs.jctc.6b00447", "10.1021/acs.jctc.7b00032"]
+tags:
+  EABFMOD_BIAS: bias actions for performing extended-system adaptive biasing force
+ 
