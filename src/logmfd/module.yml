@@ -1,0 +1,4 @@
+name: logmfd
+authors: Tetsuya Morishita, Naoki Watanabe
+description: Method for enhanced sampling and for free energy calculations along collective variables
+dois: ["10.1103/PhysRevE.85.066702", "10.1021/acs.jctc.7b00252", "10.1016/j.cplett.2018.07.011", "10.1021/jp805039u"]
