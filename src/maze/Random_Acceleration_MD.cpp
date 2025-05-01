@@ -37,12 +37,12 @@ namespace maze {
 
 Performs random acceleration MD within the protein matrix.
 
-\par Examples
+## Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref MAZE_LOSS keyword.
+an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
-\plumedfile
+```plumed
 MAZE_RANDOM_ACCELERATION_MD ...
   LABEL=rw
 
@@ -53,7 +53,7 @@ MAZE_RANDOM_ACCELERATION_MD ...
   LIGAND=2635-2646
   PROTEIN=1-2634
 ... MAZE_RANDOM_ACCELERATION_MD
-\endplumedfile
+```
 
 As shown above, each optimizer should be provided with the LIGAND and
 the PROTEIN keywords.
