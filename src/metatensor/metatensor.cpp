@@ -31,7 +31,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 Use arbitrary machine learning models as collective variables.
 
 Note that this action requires the metatensor-torch library. Check the
-instructions in the \ref METATENSORMOD page to enable this module.
+instructions in [the module page](module_metatensor.md) which includes instructions on how to enable this module.
 
 This action enables the use of fully custom machine learning models — based on
 the [metatensor atomistic models][mts_models] interface — as collective
@@ -46,19 +46,20 @@ define such model, have a look at the [corresponding tutorials][mts_tutorials],
 or at the code in `regtest/metatensor/`. Each of the Python scripts in this
 directory defines a custom machine learning CV that can be used with PLUMED.
 
-\par Examples
+## Examples
 
 The following input shows how you can call metatensor and evaluate the model
 that is described in the file `custom_cv.pt` from PLUMED.
 
-\plumedfile metatensor_cv: METATENSOR ... MODEL=custom_cv.pt
+```plumed
+metatensor_cv: METATENSOR ... MODEL=custom_cv.pt
 
     SPECIES1=1-26
     SPECIES2=27-62
     SPECIES3=63-76
     SPECIES_TO_TYPES=6,1,8
 ...
-\endplumedfile
+```
 
 The numbered `SPECIES` labels are used to indicate the list of atoms that belong
 to each atomic species in the system. The `SPECIES_TO_TYPE` keyword then
@@ -85,8 +86,10 @@ using the `SPECIES2` flag and so on.
 
 Here is another example with all the possible keywords:
 
-\plumedfile soap: METATENSOR ... MODEL=soap.pt EXTENSION_DIRECTORY=extensions
-CHECK_CONSISTENCY
+```plumed
+soap: METATENSOR ... 
+  MODEL=soap.pt EXTENSION_DIRECTORY=extensions
+  CHECK_CONSISTENCY
 
     SPECIES1=1-10
     SPECIES2=11-20
@@ -96,9 +99,9 @@ CHECK_CONSISTENCY
     # include the Oxygen (type 8) as potential neighbors.
     SELECTED_ATOMS=11-20
 ...
-\endplumedfile
+```
 
-\par Collective variables and metatensor models
+## Collective variables and metatensor models
 
 PLUMED can use the [`"features"` output][features_output] of metatensor
 atomistic models as a collective variables. Alternatively, the code also accepts

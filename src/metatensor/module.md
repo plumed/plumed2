@@ -147,15 +147,6 @@ __PLUMED_HAS_LIBTORCH` or `cannot enable __PLUMED_HAS_METATENSOR`. If you get
 any of these warnings, you should check `config.log` to know more about what's
 going on and why these libraries can't be found.
 
-# Module Contents
-
-This module defines the following actions:
-
-@METATENSORMOD_COLVAR@
-
-
-
-
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
 [metatensor]: https://docs.metatensor.org/latest/index.html
 [mts_models]: https://docs.metatensor.org/latest/atomistic/index.html
