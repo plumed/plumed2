@@ -31,70 +31,67 @@ Calculate a funnel-shape restraint potential that is defined on a grid that is r
 
 If the input file is not already present, it will create one with the name specified in the FILE flag.
 The potential has a two-dimensional resolution since it has been devised to be used with the two
-components of \ref FUNNEL_PS (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
+components of [FUNNEL_PS](FUNNEL_PS.md) (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
 attached to a cylindrical one. The user can customize the shape of both the sections by modifying a
 number of flags. In particular the cone section of the funnel is calculated with the following formula:
 
-\f[
+$$
 MAX_Z=R_{cyl} + tg_{alpha} * (z_{cc} - MIN_S)
-\f]
+$$
 
-where  \f$ MAX_Z \f$ is the radius of the cone base,  \f$ R_{cyl} \f$ is the radius of the cylinder part,
-\f$ tg_{alpha} \f$ is the angle regulating how steep the cone is, \f$ z_{cc} \f$ is the switching point
-between cone and cylinder, and \f$ MIN_S \f$ is the lowest possible value assumed by fps.lp of \ref FUNNEL_PS.
-As for the cylinder, it starts from the value of \f$ z_{cc} \f$ and stops at the value of \f$ MAX_S \f$
-with a section of \f$ pi*r_{cyl}^2 \f$.
+where $ MAX_Z $ is the radius of the cone base,  $ R_{cyl} $ is the radius of the cylinder part,
+$ tg_{alpha} $ is the angle regulating how steep the cone is, $ z_{cc} $ is the switching point
+between cone and cylinder, and $ MIN_S $ is the lowest possible value assumed by fps.lp of [FUNNEL_PS](FUNNEL_PS.md).
+As for the cylinder, it starts from the value of $ z_{cc} $ and stops at the value of $ MAX_S $
+with a section of $ pi*r_{cyl}^2 $.
 
 There is the option of transforming the cone region into a sphere with the use of the SPHERE flag. In this
-case, the new shape will have a radius of \f$ z_{cc} \f$. It might be necessary tuning the SAFETY option
+case, the new shape will have a radius of $ z_{cc} $. It might be necessary tuning the SAFETY option
 to select how much the potential extends from the sphere.
 
-\par Examples
+## Examples
 
 The following is an input for a calculation with a funnel potential that is defined in the file BIAS
 and that acts on the collective variables defined by FUNNEL_PS.
-\plumedfile
+
+```plumed
+#SETTINGS INPUTFILES=regtest/funnel/rt-funnel/BIAS.reference INPUTFILELINES=1-15
+
 lig: COM ATOMS=3221,3224,3225,3228,3229,3231,3233,3235,3237
 fps: FUNNEL_PS LIGAND=lig REFERENCE=start.pdb ANCHOR=2472 POINTS=4.724,5.369,4.069,4.597,5.721,4.343
 
-FUNNEL ARG=fps.lp,fps.ld ZCC=1.8 ALPHA=0.55 RCYL=0.1 MINS=-0.5 MAXS=3.7 KAPPA=35100 NBINS=500 NBINZ=500 FILE=BIAS LABEL=funnel
-\endplumedfile
+funnel: FUNNEL ...
+   ARG=fps.lp,fps.ld ZCC=1.8 ALPHA=0.55 
+   RCYL=0.1 MINS=-0.5 MAXS=3.7 KAPPA=35100 
+   NBINS=500 NBINZ=500 
+   FILE=regtest/funnel/rt-funnel/BIAS.reference 
+...
+```
 
-The BIAS will then look something like this:
-\auxfile{BIAS}
-#! FIELDS fps.lp fps.ld funnel.bias der_fps.lp der_fps.ld
-#! SET min_fps.lp -0.500000
-#! SET max_fps.lp 3.700000
-#! SET nbins_fps.lp 500.000000
-#! SET periodic_fps.lp false
-#! SET min_fps.ld 0.000000
-#! SET max_fps.ld 1.510142
-#! SET nbins_fps.ld 500.000000
-#! SET periodic_fps.ld false
-    -0.500000      0.000000      0.000000      0.000000      0.000000
-    -0.500000      0.003020      0.000000      0.000000      0.000000
-    -0.500000      0.006041      0.000000      0.000000      0.000000
-    -0.500000      0.009061      0.000000      0.000000      0.000000
-    -0.500000      0.012081      0.000000      0.000000      0.000000
-    -0.500000      0.015101      0.000000      0.000000      0.000000
-\endauxfile
-
-The Funnel potential should always be used in combination with the collective variable  \ref FUNNEL_PS, since it
-is constructed to take as inputs fps.lp and fps.ld (the former linepos and linedist of Funnel-Metadynamics
-\cite FM).  In the first block of data the value of fps.lp (the value in the first column) is kept fixed
+The Funnel potential should always be used in combination with the collective variable  [FUNNEL_PS](FUNNEL_PS.md), since it
+is constructed to take as inputs fps.lp and fps.ld (the former linepos and linedist of Funnel-Metadynamics FM). 
+ In the first block of data the value of fps.lp (the value in the first column) is kept fixed
 and the value of the function is given at 500 equally spaced values for fps.ld between 0 and 1.51. In
-the second block of data fps.lp is fixed at \f$-0.5 + \frac{4.2}{500}\f$ and the value of the function
+the second block of data fps.lp is fixed at $-0.5 + \frac{4.2}{500}$ and the value of the function
 is given at 500 equally spaced values for fps.ld between 0 and 1.51. In the third block of data the same
-is done but fps.lp is fixed at \f$-0.5 + \frac{8.4}{100}\f$ and so on until you get to the five hundredth
-block of data where fps.lp is fixed at \f$3.7\f$.
+is done but fps.lp is fixed at $-0.5 + \frac{8.4}{100}$ and so on until you get to the five hundredth
+block of data where fps.lp is fixed at $3.7$.
 
 It is possible to switch the shape of the cone region, transforming it in a sphere, with the flag SPHERE.
-\plumedfile
+
+```plumed
+#SETTINGS INPUTFILES=regtest/funnel/rt-funnel/BIAS.reference INPUTFILELINES=1-15
+
 lig: COM ATOMS=545,546,547,548,549,550,551,552,553
 fps: FUNNEL_PS LIGAND=lig REFERENCE=ref.pdb ANCHOR=52 POINTS=2.793,3.696,3.942,3.607,4.298,3.452
 
-FUNNEL ARG=fps.lp,fps.ld ZCC=4.0 RCYL=0.1 MINS=0.2 MAXS=4.9 KAPPA=100000 NBINS=500 NBINZ=500 SPHERE SAFETY=1.0 FILE=BIAS LABEL=funnel
-\endplumedfile
+funnel: FUNNEL ...
+   ARG=fps.lp,fps.ld ZCC=4.0 RCYL=0.1 MINS=0.2 
+   MAXS=4.9 KAPPA=100000 NBINS=500 
+   NBINZ=500 SPHERE SAFETY=1.0 
+   FILE=regtest/funnel/rt-funnel/BIAS.reference
+...
+```
 
 */
 //+ENDPLUMEDOC
