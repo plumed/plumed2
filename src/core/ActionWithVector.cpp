@@ -611,7 +611,7 @@ void ActionWithVector::apply() {
   unsigned nf, nder;
   getNumberOfForceDerivatives( nf, nder );
   if( forcesForApply.size()!=nf ) {
-    forcesForApply.resize( nf );
+    forcesForApply.resize( nf, 0 );
   }
 
   if( !checkForForces() ) {
