@@ -333,8 +333,8 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   }
   unsigned size=shape[0]*ncols;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
-    data.resize( size );
-    inputForce.resize( size );
+    data.resize( size, 0 );
+    inputForce.resize( size, 0 );
     matrix_bookeeping.resize( size + shape[0], 0 );
     if( ncols>=shape[1] ) {
       for(unsigned i=0; i<shape[0]; ++i) {
