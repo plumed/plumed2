@@ -39,7 +39,7 @@ namespace piv {
 /*
 Calculates the PIV-distance.
 
-PIV distance is the squared Cartesian distance between the PIV 
+PIV distance is the squared Cartesian distance between the PIV
 associated to the configuration of the system during the dynamics and a reference configuration provided
 as input (PDB file format).
 PIV can be used together with [FUNCPATHMSD](FUNCPATHMSD.md) to define a path in the PIV space.

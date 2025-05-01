@@ -87,7 +87,7 @@ using the `SPECIES2` flag and so on.
 Here is another example with all the possible keywords:
 
 ```plumed
-soap: METATENSOR ... 
+soap: METATENSOR ...
   MODEL=soap.pt EXTENSION_DIRECTORY=extensions
   CHECK_CONSISTENCY
 

@@ -46,7 +46,7 @@ $$
 
 where, $\mathbf{\Sigma}^{-1}$ is the $N\times N$ precision matrix. See also [POSITION_MAHA_DIST](POSITION_MAHA_DIST.md) for information about calculating Mahalanobis distance in size-and-shape space.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. 
+Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
 Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
 
 ##Examples
@@ -61,9 +61,9 @@ In the following example, a group is defined with atom indices of selected atoms
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
 proj: SIZESHAPE_POSITION_LINEAR_PROJ ...
-   REFERENCE=regtest/sizeshape/rt-sizeshape/global_avg.txt 
-   PRECISION=regtest/sizeshape/rt-sizeshape/global_precision.txt 
-   COEFFS=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt 
+   REFERENCE=regtest/sizeshape/rt-sizeshape/global_avg.txt
+   PRECISION=regtest/sizeshape/rt-sizeshape/global_precision.txt
+   COEFFS=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt
    GROUP=ga_list
 ...
 

@@ -77,7 +77,7 @@ WEIGHTS0=1,2,3,4,5,6
 WEIGHTS1=7,8,9
 BIASES0=10,11,12
 BIASES1=13
-... 
+...
 ```
 
 To access its components, we use "ann.node-0", "ann.node-1", ..., which represents the components of neural network outputs.

@@ -37,7 +37,7 @@ $$
 
 Here $\mathbf{x}$ is the configuration at time t, $\mathbf{\mu}$ is the reference and $\mathbf{\Sigma}^{-1}$ is the $N \times N$ precision matrix.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference 
+Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference
 $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
 
 ## Examples
@@ -50,8 +50,8 @@ In the following example, a group is defined with atom indices of selected atoms
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
 d: SIZESHAPE_POSITION_MAHA_DIST ...
-   REFERENCE=regtest/sizeshape/rt-mahadist/global_avg.txt 
-   PRECISION=regtest/sizeshape/rt-mahadist/global_precision.txt 
+   REFERENCE=regtest/sizeshape/rt-mahadist/global_avg.txt
+   PRECISION=regtest/sizeshape/rt-mahadist/global_precision.txt
    GROUP=ga_list
 ...
 PRINT ARG=d STRIDE=1 FILE=output FMT=%8.8f

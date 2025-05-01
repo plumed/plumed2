@@ -56,7 +56,7 @@ $$
 where ${P_{{X_i}}}$  and $M_i$ are the momentum and mass of $X_i$, respectively, and $\Psi$ is the potential function for ${\bf X}$.
 We assume that $\Psi$ is a functional of $F({\bf X})$; $Ψ[F({\bf X})]$. The simplest form of $\Psi$ is $\Psi = F({\bf X})$,
 which corresponds to the TAMD/d-AFED methods that are discussed in the first two papers cited below (or the extended Lagrangian dynamics in the limit of the adiabatic decoupling between $\bf{q}$ and ${\bf X}$).
- In the case of LogMFD, the following form of $\Psi$ is introduced and discussed in the third paper cited below. 
+ In the case of LogMFD, the following form of $\Psi$ is introduced and discussed in the third paper cited below.
 
 
 $$
@@ -100,7 +100,7 @@ $$
 This means that $F({\bf X})$ can be constructed without post processing (on-the-fly free energy reconstruction). Note that the on-the-fly free energy reconstruction is also possible in TAMD/d-AFED if the Hamiltonian-like conserved quantity is available (e.g., the Nose-Hoover type dynamics).
 
 
-## LogPD 
+## LogPD
 
 
 The accuracy in the MF is critical to the on-the-fly free energy reconstruction. To improve the evaluation of the MF, parallel-dynamics (PD) is incorporated into LogMFD, leading to logarithmic parallel-dynamics (LogPD) that is discussed in the fourth paper in the reference section.
@@ -543,7 +543,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
   keys.addDOI("10.1021/acs.jctc.7b00252");
   keys.addDOI("10.1016/j.cplett.2018.07.011");
 }
- 
+
 
 /**
    \brief constructor of LogMFD class

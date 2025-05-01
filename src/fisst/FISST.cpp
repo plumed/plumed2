@@ -37,7 +37,7 @@ namespace fisst {
 /*
 Compute and apply the optimal linear force on an observable to enhance sampling of conformational distributions over a range of applied forces.
 
-This method is described in the paper cited below 
+This method is described in the paper cited below
 
 If the system's Hamiltonian is given by:
 

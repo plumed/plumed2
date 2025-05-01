@@ -38,12 +38,12 @@ namespace eds {
 /*
 Add a linear bias on a set of observables.
 
-This force is the same as the linear part of the bias in 
+This force is the same as the linear part of the bias in
 [RESTRAINT](RESTRAINT.md), but this bias has the ability to compute the prefactors
-adaptively using the scheme of White and Voth that is discussed in the first paper cited below 
+adaptively using the scheme of White and Voth that is discussed in the first paper cited below
 in order to match target observable values for a set of CVs.
 Further updates to the algorithm are described in the second paper cited below.
-The third paper cited below is a review on the method and its applications. 
+The third paper cited below is a review on the method and its applications.
 
 You can
 see a tutorial on EDS specifically for biasing coordination number at
