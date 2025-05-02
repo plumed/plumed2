@@ -26,36 +26,38 @@ namespace opes {
 /*
 Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 
-Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
-\f[
+Any set of collective variables $\mathbf{s}$ can be used as ARG.
+
+$$
   \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{([s]_j-[s_i]_j)^2}{2\sigma^2}\, .
-\f]
+$$
+
 The Gaussian umbrellas are placed along a line, from CV_MIN to CV_MAX.
-The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use \ref ECV_UMBRELLAS_FILE.
+The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use [ECV_UMBRELLAS_FILE](ECV_UMBRELLAS_FILE.md).
 The unbiased fluctuations in the basin usually are a reasonable guess for the value of SIGMA.
 Typically, a SPACING greater than 1 can lead to faster convergence, by reducing the total number of umbrellas.
 The umbrellas can be multidimensional, but the CVs dimensions should be rescaled since a single SIGMA must be used.
 
 The keyword BARRIER can be helpful to avoid breaking your system due to a too strong initial bias.
 If you think the placed umbrellas will not cover the whole unbiased probability distribution you should add it explicitly to the target, with the flag ADD_P0, for more robust convergence.
-See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
+See also Appendix B of the paper cited below for more details on these last two options.
 
-The flag LOWER_HALF_ONLY modifies the ECVs so that they are set to zero when \f$\mathbf{s}>\mathbf{s}_i\f$, as in \ref LOWER_WALLS.
-This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat energy distribution as target.
+The flag LOWER_HALF_ONLY modifies the ECVs so that they are set to zero when $\mathbf{s}>\mathbf{s}_i$, as in [LOWER_WALLS](LOWER_WALLS.md).
+This can be useful e.g. when the CV used is the [ENERGY](ENERGY.md) and one wants to sample a broad range of high energy values, similar to [ECV_MULTITHERMAL](ECV_MULTITHERMAL.md) but with a flat energy distribution as target.
 By pushing only from below one can avoid too extreme forces that could crash the simulation.
 
-\par Examples
+## Examples
 
-\plumedfile
+```plumed
 cv: DISTANCE ATOMS=1,2
 ecv: ECV_UMBRELLAS_LINE ARG=cv CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5 SPACING=1.5
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
-\endplumedfile
+```
 
 It is also possible to combine different ECV_UMBRELLAS_LINE to build a grid of CV values that will be sampled.
 For example the following code will sample a whole 2D region of cv1 and cv2.
 
-\plumedfile
+```plumed
 cv1: DISTANCE ATOMS=1,2
 ecv2: ECV_UMBRELLAS_LINE ARG=cv1 CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5
 
@@ -63,7 +65,7 @@ cv2: DISTANCE ATOMS=3,4
 ecv1: ECV_UMBRELLAS_LINE ARG=cv2 CV_MIN=13.8 CV_MAX=21.4 SIGMA=4.3
 
 opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -104,6 +106,7 @@ void ECVumbrellasLine::registerKeywords(Keywords& keys) {
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("LOWER_HALF_ONLY",false,"use only the lower half of each umbrella potentials");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):

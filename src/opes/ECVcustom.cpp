@@ -28,32 +28,34 @@ Use some given CVs as a set of expansion collective variables (ECVs).
 
 This can be useful e.g. for quickly testing new ECVs, but from a performance point of view it is probably better to implement a new ECV class.
 
-By default the ARGs are expeted to be energies, \f$\Delta U_i\f$, and are then multiplied by the inverse temperature \f$\beta\f$
-\f[
+By default the ARGs are expeted to be energies, $\Delta U_i$, and are then multiplied by the inverse temperature $\beta$
+
+$$
   \Delta u_i=\beta \Delta U_i\, .
-\f]
+$$
+
 Use the DIMENSIONLESS flag to avoid this multiplication.
 
 The flag ADD_P0 adds also the unbiased distribution to the target.
-It is possible to specify a BARRIER as in \ref ECV_UMBRELLAS_LINE, to avoid a too high initial bias.
+It is possible to specify a BARRIER as in [ECV_UMBRELLAS_LINE](ECV_UMBRELLAS_LINE.md), to avoid a too high initial bias.
 
-\par Examples
+## Examples
 
-\plumedfile
+```plumed
 ene: ENERGY
 t1: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/500-1)*x
 t2: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/1000-1)*x
 ecv: ECV_CUSTOM ARG=t1,t2 TEMP=300 ADD_P0
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
-\endplumedfile
+```
 
 It is equivalent to the following:
 
-\plumedfile
+```plumed
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 TEMP_SET_ALL=300,500,1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
