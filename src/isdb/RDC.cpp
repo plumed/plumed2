@@ -80,7 +80,7 @@ a set of function from the GNU Scientific Library (GSL). (With SVD forces are no
 Replica-Averaged simulations can be performed using RDCs, [ENSEMBLE](ENSEMBLE.md), [STATS](STATS.md) and [RESTRAINT](RESTRAINT.md).
 [METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
-Additional material and examples can be also found in the tutorials 
+Additional material and examples can be also found in the tutorials
 
 ## Examples
 

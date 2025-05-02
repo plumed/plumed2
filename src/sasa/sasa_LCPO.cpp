@@ -81,7 +81,7 @@ BACKBONE	1.00066920000002
 
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
-A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure (according to the second, third and fourth papers cited below) 
+A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure (according to the second, third and fourth papers cited below)
 is freely available [here](https://github.com/andrea-arsiccio/DeltaG-calculation). The script automatically outputs a DeltaG.dat file compatible with this SASA module.
 
 If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper the second paper cited below. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.

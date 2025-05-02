@@ -115,12 +115,12 @@ In this first example the chemical shifts are used to calculate a collective var
 in NMR driven Metadynamics that is similar to what was done in the second paper cited below:
 
 ```plumed
-#SETTINGS 
+#SETTINGS
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
 cs: CS2BACKBONE ...
-   ATOMS=1-2612 
-   DATADIR=regtest/isdb/rt-cs2backbone/data/ 
+   ATOMS=1-2612
+   DATADIR=regtest/isdb/rt-cs2backbone/data/
    TEMPLATE=template.pdb CAMSHIFT NOPBC
 ...
 
@@ -144,8 +144,8 @@ This third example show how to use chemical shifts to calculate a [METAINFERENCE
 
 ```plumed
 cs: CS2BACKBONE ...
-   ATOMS=1-174 
-   DATADIR=regtest/isdb/rt-cs2backbone/data/ 
+   ATOMS=1-174
+   DATADIR=regtest/isdb/rt-cs2backbone/data/
    SIGMA_MEAN0=1.0 DOSCORE
 ...
 csbias: BIASVALUE ARG=cs.score

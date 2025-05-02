@@ -54,8 +54,8 @@ cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
 cv3: DISTANCE ATOMS=4,1
 ecv: ECV_UMBRELLAS_FILE ...
-   ARG=cv1,cv2,cv3 
-   FILE=extras/Umbrellas.data 
+   ARG=cv1,cv2,cv3
+   FILE=extras/Umbrellas.data
    ADD_P0 BARRIER=70
 ...
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
