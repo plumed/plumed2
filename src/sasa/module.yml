@@ -1,0 +1,4 @@
+name: sasa
+authors: Andrea Arsiccio
+description: Solvent Accessible Surface Area collective variable (SASA)
+dois: ["10.1016/0898-5529(88)90015-2", "10.1002/(SICI)1096-987X(19990130)20:2<217::AID-JCC4>3.0.CO;2-A","10.1021/acs.jpcb.2c00889", "10.1021/acs.jpcb.1c01694", "10.1021/acs.jpcb.1c04398" ]
