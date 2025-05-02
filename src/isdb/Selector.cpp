@@ -31,18 +31,18 @@ namespace isdb {
 /*
 Defines a variable (of the type double) inside the PLUMED code that can be used and modified by other actions.
 
-A \ref SELECTOR can be used for example to activate or modify a bias based on its current value.
+A [SELECTOR](SELECTOR.md) can be used for example to activate or modify a bias based on its current value.
 
-\par Examples
+## Examples
 
-A typical example is the simulated-tempering like approach activated by \ref RESCALE.
+A typical example is the simulated-tempering like approach activated by [RESCALE](RESCALE.md).
 In this example the total potential energy of the system is scaled
 by a parameter defined on a grid of dimension NBIN in the range from 1 to MAX_RESCALE.
-The value of the scaling parameter is determined by the current value of the \ref SELECTOR GAMMA.
-The value of the \ref SELECTOR is updated by a MC protocol inside the \ref RESCALE class.
-A well-tempered metadynamics potential is used to enhance sampling in the \ref SELECTOR space.
+The value of the scaling parameter is determined by the current value of the [SELECTOR](SELECTOR.md) GAMMA.
+The value of the [SELECTOR](SELECTOR.md) is updated by a MC protocol inside the [RESCALE](RESCALE.md) class.
+A well-tempered metadynamics potential is used to enhance sampling in the [SELECTOR](SELECTOR.md) space.
 
-\plumedfile
+```plumed
 ene:  ENERGY
 
 SELECTOR NAME=GAMMA VALUE=0
@@ -54,7 +54,7 @@ W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
 ...
 
 PRINT FILE=COLVAR ARG=* STRIDE=100
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

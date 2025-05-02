@@ -42,7 +42,7 @@ namespace isdb {
 /*
 Calculates the Metainference energy for a set of experimental data.
 
-Metainference \cite Bonomi:2016ip is a Bayesian framework
+The metainference method that is introduced in the first paper cited below is a Bayesian framework
 to model heterogeneous systems by integrating prior information with noisy, ensemble-averaged data.
 Metainference models a system and quantifies the level of noise in the data by considering a set of replicas of the system.
 
@@ -51,7 +51,7 @@ can be given either from fixed components of other actions using PARARG or as nu
 PARAMETERS. The default behavior is that of averaging the data over the available replicas,
 if this is not wanted the keyword NOENSEMBLE prevent this averaging.
 
-Metadynamics Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of
+Metadynamics Metainference (see second paper cited below) more in general biased Metainference requires the knowledge of
 biasing potential in order to calculate the weighted average. In this case the value of the bias
 can be provided as the last argument in ARG and adding the keyword REWEIGHT. To avoid the noise
 resulting from the instantaneous value of the bias the weight of each replica can be averaged
@@ -72,7 +72,7 @@ As for Metainference theory there are two sigma values: SIGMA_MEAN0 represent th
 error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
 in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
-automatically using the internal sigma mean optimization as introduced in \cite Lohr:2017gc
+automatically using the internal sigma mean optimization as introduced in the third paper cited below
 (OPTSIGMAMEAN=SEM), in this second case sigma_mean is estimated from the maximum standard error
 of the mean either over the simulation or over a defined time using the keyword AVERAGING.
 SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval
@@ -86,14 +86,14 @@ Calculated and experimental data can be compared modulo a scaling factor and/or 
 using SCALEDATA and/or ADDOFFSET, the sampling is obtained by a MC algorithm either using
 a flat or a gaussian prior setting it with SCALE_PRIOR or OFFSET_PRIOR.
 
-\par Examples
+## Examples
 
-In the following example we calculate a set of \ref RDC, take the replica-average of
+In the following example we calculate a set of [RDC](RDC.md), take the replica-average of
 them and comparing them with a set of experimental values. RDCs are compared with
 the experimental data but for a multiplication factor SCALE that is also sampled by
 MC on-the-fly
 
-\plumedfile
+```plumed
 RDC ...
 LABEL=rdc
 SCALE=0.0001
@@ -115,13 +115,13 @@ LABEL=spe
 ... METAINFERENCE
 
 PRINT ARG=spe.bias FILE=BIAS STRIDE=1
-\endplumedfile
+```
 
 in the following example instead of using one uncertainty parameter per data point we use
 a single uncertainty value in a long-tailed gaussian to take into account for outliers, furthermore
 the data are weighted for the bias applied to other variables of the system.
 
-\plumedfile
+```plumed
 RDC ...
 LABEL=rdc
 SCALE=0.0001
@@ -147,9 +147,9 @@ SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
 SIGMA_MEAN0=0.001
 LABEL=spe
 ... METAINFERENCE
-\endplumedfile
+```
 
-(See also \ref RDC, \ref PBMETAD).
+(See also [RDC](RDC.md), [PBMETAD](PBMETAD.md)).
 
 */
 //+ENDPLUMEDOC
@@ -333,6 +333,9 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("scale",        "SCALEDATA",    "scalar","scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "scalar","offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "scalar","ensemble average estimator");
+  keys.addDOI("10.1126/sciadv.1501177");
+  keys.addDOI("10.1038/srep31232");
+  keys.addDOI("10.1063/1.4981211");
 }
 
 Metainference::Metainference(const ActionOptions&ao):

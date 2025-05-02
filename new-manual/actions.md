@@ -79,3 +79,79 @@ is not possible to do things like:
 DISTANCE INCLUDE FILE=options.dat
 RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 ```
+
+## Parallelism
+
+PLUMED uses parallelism to improve the performance of many actions.  Within PLUMED parallelisation is done using a combination of
+[MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) and [OpenMP](https://en.wikipedia.org/wiki/OpenMP).  In addition, 
+we are starting to use [openACC](https://www.openacc.org) in some actions in order to write code than can run on GPUs.
+
+Importantly, all parallism within PLUMED is implemented within actions.  __We do not parallelise over actions.__  Consequently, if you run 
+this input with MPI or openMP:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+PRINT ARG=d1,d2,d3 FILE=colvar
+``` 
+
+all the three distances will be calculated on "the same processor/thread."  If, however, you run the following input with MPI or openMP:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+PRINT ARG=d FILE=colvar
+```
+
+the three distances are calculated by different processors/threads.
+
+### MPI
+
+Unless you disable it by using the option `--disable-mpi` during configuration, PLUMED will search for an MPI installation during configuration.
+If an MPI installation is found then PLUMED will build with MPI when you run make.  To run a PLUMED [driver](driver.md) calculation with MPI you 
+will run a command something like this:
+
+```plumed
+mpirun -np 4 plumed driver --ixyz traj.xyz
+``` 
+
+When this command is run, any actions that can use MPI will run on four MPI processes.
+
+### OpenMP
+
+If your compiler supports openMP then the features of PLUMED that use it have it enabled by default.  However, if you want to disable 
+these features you can do so by configuring PLUMED with the option  `--disable-openmp`.
+
+When you use PLUMED with some MD codes the number of OpenMD threads is set automatically by the MD code. If, however, you are using [driver](driver.md),
+another [command line tool](module_cltools.md) or an MD code that does not set the number of OpenMD threads to be used you will need to set the environment 
+variable PLUMED\_NUM\_THREADS equal to the number of threads you wish PLUMED to use at runtime.  To be clear, you can use the PLUMED\_NUM\_THREADS to set 
+the number of threads to use with PLUMED even if your MD code has an option for setting the number of threads.  With gromacs for instance you can ensure
+that PLUMED runs on 8 threads by using the following commands: 
+
+```bash
+export PLUMED_NUM_THREADS=8
+mdrun -plumed
+```
+
+or by using this single command:
+
+```bash
+mdrun -plumed -ntomp 8
+```
+
+In the first case PLLUMED uses 8 OpenMP threads while gromacs only uses 1 (this is usually sub optimal).
+In the second case GROMACS and plumed will the same number of OpenMP threads.
+
+Notice that:
+
+- Using OpenMP is likely to improve the performance, but could also slow down the code in some case.
+- Using OpenMP can give results that are slightly different because of numerical round off and different order in summations. This should be harmless.
+- The optimum number of threads is not necessary "all of them", nor should be equal to the number of threads used to parallelize the MD calculation. 
+- Not all CVs are parallelized with openMP. 
+- You might also want to tune the environmental variable PLUMED\_CACHELINE\_SIZE.
+  The default of 512 is the size of cache lines on your machine. The PLUMED\_CACHELINE\_SIZE variable is used
+  by PLUMED to decrease the number of threads to be used in each loop so as to avoid clashes in memory access. This variable is expected to affect performance only, not results.
+
+
+
+

@@ -35,41 +35,43 @@ namespace isdb {
 Calculates the FRET efficiency between a pair of atoms.
 The efficiency is calculated using the Forster relation:
 
-\f[
+$$
 E=\frac{1}{1+(R/R_0)^6}
-\f]
+$$
 
-where \f$R\f$ is the distance and \f$R_0\f$ is the Forster radius.
+where $R$ is the distance and $R_0$ is the Forster radius.
 
 By default the distance is computed taking into account periodic
 boundary conditions. This behavior can be changed with the NOPBC flag.
 
 
-\par Examples
+## Examples
 
 The following input tells plumed to print the FRET efficiencies
 calculated as a function of the distance between atoms 3 and 5 and
 the distance between atoms 2 and 4.
-\plumedfile
+
+```plumed
 fe1:  FRET ATOMS=3,5 R0=5.5
 fe2:  FRET ATOMS=2,4 R0=5.5
 PRINT ARG=fe1,fe2
-\endplumedfile
+```
 
 The following input computes the FRET efficiency calculated on the
 terminal atoms of a polymer
 of 100 atoms and keeps it at a value around 0.5.
-\plumedfile
+
+```plumed
 WHOLEMOLECULES ENTITY0=1-100
 fe: FRET ATOMS=1,100 R0=5.5 NOPBC
 RESTRAINT ARG=fe KAPPA=100 AT=0.5
-\endplumedfile
+```
 
 Notice that NOPBC is used
 to be sure that if the distance is larger than half the simulation
 box the distance is compute properly. Also notice that, since many MD
 codes break molecules across cell boundary, it might be necessary to
-use the \ref WHOLEMOLECULES keyword (also notice that it should be
+use the [WHOLEMOLECULES](WHOLEMOLECULES.md) keyword (also notice that it should be
 _before_ FRET).
 Just be sure that the ordered list provide to WHOLEMOLECULES has the following
 properties:
