@@ -302,6 +302,7 @@ struct AtomDistribution {
     std::fill(box.begin(), box.end(),0);
   };
   virtual ~AtomDistribution() noexcept {}
+  virtual bool overrideNat(unsigned& ) {}
 };
 
 struct theLine:public AtomDistribution {
@@ -452,13 +453,20 @@ struct tiledSimpleCubic:public AtomDistribution {
 /// atomic distribution from a trajectory file
 class fileTraj:public AtomDistribution {
   TrajectoryParser parser;
-  bool positionRead=false;
-  bool boxRead=false;
-  bool dont_read_pbc=false;
   std::vector<double> masses{};
   std::vector<double> charges{};
   std::vector<Vector> coordinates{};
   std::vector<double> cell{};
+  unsigned rX=1;
+  unsigned rY=1;
+  unsigned rZ=1;
+  bool positionRead=false;
+  bool boxRead=false;
+  bool dont_read_pbc=false;
+  bool overrideNat(unsigned& natoms) override {
+    natoms = masses.size();
+    return true;
+  }
   void rewind() {
     auto errormessage=parser.rewind();
     if (errormessage) {
@@ -485,9 +493,9 @@ class fileTraj:public AtomDistribution {
       }
       const size_t natoms = parser.nOfAtoms();
 
-      masses.assign(natoms,0.0);
-      charges.assign(natoms,0.0);
-      coordinates.assign(natoms,Vector(0.0,0.0,0.0));
+      masses.assign(natoms*(rX*rY*rZ),0.0);
+      charges.assign(natoms*(rX*rY*rZ),0.0);
+      coordinates.assign(natoms*(rX*rY*rZ),Vector(0.0,0.0,0.0));
       cell.assign(9,0.0);
       errormessage=parser.readAtoms(1,
                                     dont_read_pbc,
@@ -522,7 +530,40 @@ class fileTraj:public AtomDistribution {
         plumed_error()<<*errormessage;
       }
     }
+    // repetitions
+    unsigned nrep = 0;
+    const unsigned nat = parser.nOfAtoms();
+    Vector boxX(cell[0],cell[1],cell[2]);
+    Vector boxY(cell[3],cell[4],cell[5]);
+    Vector boxZ(cell[6],cell[7],cell[8]);
+    for (int x=0; x<rX; ++x) {
+      for (int y=0; y<rY; ++y) {
+        for (int z=0; z<rZ; ++z) {
+          if (nrep>0) {
+            for (unsigned i=0; i<nat; ++i) {
+              coordinates[i+nrep*nat]=coordinates[i]
+                                      + x * boxX
+                                      + y * boxY
+                                      + z * boxZ;
+              masses[i+nrep*nat]=masses[i];
+              charges[i+nrep*nat]=charges[i];
+            }
+          }
+          ++nrep;
+        }
+      }
+    }
+    cell[0]*=rX;
+    cell[1]*=rX;
+    cell[2]*=rX;
 
+    cell[3]*=rY;
+    cell[4]*=rY;
+    cell[5]*=rY;
+
+    cell[6]*=rZ;
+    cell[7]*=rZ;
+    cell[8]*=rZ;
   }
 public:
   void positions(std::vector<Vector>& posToUpdate,
@@ -548,7 +589,13 @@ public:
   fileTraj(std::string_view fmt,
            std::string_view fname,
            bool useMolfile,
-           int command_line_natoms) {
+           int command_line_natoms,
+           unsigned repeatX,
+           unsigned repeatY,
+           unsigned repeatZ):
+    rX(repeatX),
+    rY(repeatY),
+    rZ(repeatZ) {
     parser.init(fmt,
                 fname,
                 useMolfile,
@@ -589,6 +636,12 @@ public:
     {
       std::string trajectoryFile(""), pdbfile(""), mcfile("");
       std::vector<double> pbc_cli_box(9,0.0);
+      int repeatX=0;
+      int repeatY=0;
+      int repeatZ=0;
+      parse("--repeatX",repeatX);
+      parse("--repeatY",repeatY);
+      parse("--repeatZ",repeatZ);
 
       TrajectoryParser parser;
 
@@ -633,13 +686,19 @@ public:
         }
       }
       if (nn==1) {
-        std::cout << trajectory_fmt << "\n";
-        std::cout << trajectoryFile << "\n";
+        if (repeatX<1 || repeatY<1 || repeatZ<1) {
+          log << "ERROR: repetitions of the trajectory must be >=1\n";
+          return std::nullopt;
+        }
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
                  trajectoryFile,
                  use_molfile,
-                 -1
+                 -1,
+                 //these are protected to be maxofunsigned from the guard a few line above
+                 static_cast<unsigned>(repeatX),
+                 static_cast<unsigned>(repeatY),
+                 static_cast<unsigned>(repeatZ)
                );
       }
     }
@@ -670,6 +729,12 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
   TrajectoryParser::registerKeywords(keys);
+  keys.add("compulsory","--repeatX","1","number of time to align the read trajectory along the fist box component,"
+           " ingnored with a atomic distribution");
+  keys.add("compulsory","--repeatY","1","number of time to align the read trajectory along the second box component,"
+           " ingnored with a atomic distribution");
+  keys.add("compulsory","--repeatZ","1","number of time to align the read trajectory along the third box component,"
+           " ingnored with a atomic distribution");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -899,6 +964,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   if(auto checkDistr = parseAtomDistribution(log);
       checkDistr.has_value()) {
     distribution = std::move (*checkDistr);
+    if (distribution->overrideNat(natoms)) {
+      log << "Distribution overrode --natoms, Using --natoms=" << natoms << "\n";
+    }
   } else {
     std::fprintf(stderr,"ERROR: problem with setting up the trajectory for the benchmark\n");
     return 1;
