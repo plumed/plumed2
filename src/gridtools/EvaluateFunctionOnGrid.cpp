@@ -26,7 +26,7 @@
 #include "EvaluateGridFunction.h"
 #include "ActionWithGrid.h"
 
-//+PLUMEDOC GRIDCALC EVALUATE_FUNCTION_FROM_GRID
+//+PLUMEDOC GRIDANALYSIS EVALUATE_FUNCTION_FROM_GRID
 /*
 Calculate the function stored on the input grid at an arbitrary point
 

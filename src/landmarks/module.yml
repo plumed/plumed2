@@ -2,3 +2,5 @@ name: landmarks
 authors: Gareth Tribello
 description: various tools for selecting a subset of points from an input vector/matrix
 dois: ["10.1007/978-1-4939-9608-7_19","10.3389/fmolb.2019.00046"]
+tags:
+  LANDMARKS: tools for selecting a subset of points from an input vector/matrix

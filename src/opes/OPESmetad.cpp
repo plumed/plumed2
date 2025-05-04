@@ -26,7 +26,7 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC OPES_BIAS OPES_METAD
+//+PLUMEDOC BIAS OPES_METAD
 /*
 On-the-fly probability enhanced sampling with metadynamics-like target distribution.
 
@@ -261,7 +261,7 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 //OPES_METAD_EXPLORE is very similar from the point of view of the code,
 //but conceptually it is better to make it a separate BIAS action
 
-//+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
+//+PLUMEDOC BIAS OPES_METAD_EXPLORE
 /*
 On-the-fly probability enhanced sampling with well-tempered target distribution in exploreation mode.
 

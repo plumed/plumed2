@@ -29,11 +29,11 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC OPES_BIAS OPES_EXPANDED
+//+PLUMEDOC BIAS OPES_EXPANDED
 /*
 On-the-fly probability enhanced sampling with expanded ensembles for the target distribution.
 
-This method is similar to the [OPES method](Module_OPES.md) with expanded ensembles target distribution (replica-exchange-like) that is discussed in the paper cited below.
+This method is similar to the [OPES method](module_opes.md) with expanded ensembles target distribution (replica-exchange-like) that is discussed in the paper cited below.
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
 Such ensembles can be sampled via methods like replica exchange, or this [OPES_EXPANDED](OPES_EXPANDED.md) bias action.

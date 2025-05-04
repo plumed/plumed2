@@ -98,7 +98,7 @@ flowchart in [mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.
 above you can copy and paste the contents of the output `graph.md` file into [this online tool for
 rendering mermaid diagrams](https://mermaid.live).
 
-If you are writing documentation for PLUMED or tutorials for the [plumed tutorials](www.plumed-tutorials.org) site you can add
+If you are writing documentation for PLUMED or tutorials for the [plumed tutorials](https://www.plumed-tutorials.org) site you can add
 these diagrams by adding the instruction `#MERMAID=value` or `#MERMAID=force` into example inputs.  When these options are given
 inputs are displayed as mermaid diagrams in the final output html.
 

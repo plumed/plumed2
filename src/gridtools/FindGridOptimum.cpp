@@ -25,7 +25,7 @@
 #include "EvaluateGridFunction.h"
 #include "Interpolator.h"
 
-//+PLUMEDOC GRIDCALC FIND_GRID_MINIMUM
+//+PLUMEDOC GRIDANALYSIS FIND_GRID_MINIMUM
 /*
 Find the point with the lowest value of the function on the grid
 
@@ -64,7 +64,7 @@ DUMPGRID ARG=sff FILE=fes.dat
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC GRIDCALC FIND_GRID_MAXIMUM
+//+PLUMEDOC GRIDANALYSIS FIND_GRID_MAXIMUM
 /*
 Find the point with the highest value of the function on the grid
 

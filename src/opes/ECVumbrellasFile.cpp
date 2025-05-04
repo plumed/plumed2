@@ -39,7 +39,7 @@ You can choose the umbrellas manually, or place them on a grid, or along a path,
 They must cover all the CV space that one wishes to sample.
 
 The first column of the umbrellas file is always ignored and must be called "time".
-You can also use as input file a STATE file from an earlier [OPES_METAD](OPES_METAD.md) run (or an [OPES_MEAD_EXPLORE](OPES_MEAD_EXPLORE.md) run, if you combine it with other ECVs).
+You can also use as input file a STATE file from an earlier [OPES_METAD](OPES_METAD.md) run (or an [OPES_METAD_EXPLORE](OPES_METAD_EXPLORE.md) run, if you combine it with other ECVs).
 
 Similarly to [ECV_UMBRELLAS_LINE](ECV_UMBRELLAS_LINE.md), you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
 You can also use BARRIER to set the maximum barrier height to be explored, and avoid huge biases at the beginning of your simulation.
