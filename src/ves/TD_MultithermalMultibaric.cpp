@@ -248,7 +248,7 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   keys.addDOI("10.1016/j.cplett.2004.04.073");
   keys.addDOI("10.1103/PhysRevLett.122.050601");
   keys.addDOI("10.1021/acs.jctc.5b00076");
-  keys.addDOI("10.1103/PhysRevLett.86.2050"); 
+  keys.addDOI("10.1103/PhysRevLett.86.2050");
   keys.addDOI("10.1103/PhysRevLett.68.9");
 }
 

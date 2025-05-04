@@ -36,7 +36,7 @@ namespace ves {
 /*
 Well-tempered target distribution (dynamic).
 
-Use as a target distribution the well-tempered distribution discussed in the first paper cited below, 
+Use as a target distribution the well-tempered distribution discussed in the first paper cited below,
 which is given by
 
 $$
@@ -124,7 +124,7 @@ PLUMED_REGISTER_ACTION(TD_WellTempered,"TD_WELLTEMPERED")
 void TD_WellTempered::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","BIASFACTOR","The bias factor used for the well-tempered distribution.");
-  keys.addDOI("10.1103/PhysRevLett.100.020603"); 
+  keys.addDOI("10.1103/PhysRevLett.100.020603");
   keys.addDOI("10.1021/acs.jctc.5b00076");
 }
 

@@ -53,7 +53,7 @@ Biases the ligand along the direction calculated by the chosen MAZE_OPTIMIZER.
 
 OptimizerBias is a class deriving from Bias, and it is used to adaptively
 bias a ligand-protein system toward an optimal solution found by the chosen
-MAZE_OPTIMIZER (see [the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the 
+MAZE_OPTIMIZER (see [the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the
 list of permitted optimizers).
 
 Remember to define the loss function ([MAZE_LOSS](MAZE_LOSS.md)) and the optimizer
@@ -79,7 +79,7 @@ and $\alpha$ is a scaled force constant.
 In the following example the bias potential biases a ligand atom (which have to be
 given as an argument) with the biasing rate equal to 0.02 A/ps, and the biasing
 constant equal to 3.6 kcal/(mol A). It also takes an optimizer (see
-[the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the 
+[the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the
 list of permitted optimizers).
 
 ```plumed

@@ -111,7 +111,7 @@ NORMALIZE keyword to make sure that the target distribution is properly
 normalized to 1 over the bounded region. The code will issue a warning
 if that is needed.
 
-For periodic CVs it is generally better to use [Von Mises](TD_VONMISES.md) 
+For periodic CVs it is generally better to use [Von Mises](TD_VONMISES.md)
 distributions instead of Gaussian kernels as these distributions properly
 account for the periodicity of the CVs.
 

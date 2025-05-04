@@ -95,8 +95,8 @@ PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 The local FES files can be obtained as described in Sec. 4.2 of the paper cited below, i.e. for example:
 - run 4 independent metad runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. [COMMITTOR](COMMITTOR.md))
 - `cat HILLS* > all_HILLS`
-- `plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100` 
-- `awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data` 
+- `plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100`
+- `awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data`
 
 */
 //+ENDPLUMEDOC
