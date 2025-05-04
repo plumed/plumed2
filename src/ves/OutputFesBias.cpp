@@ -38,17 +38,18 @@ namespace ves {
 Tool to output biases and free energy surfaces for VES biases from previously obtained coefficients.
 
 This action can be used to output to file biases and free energy surfaces for VES biases from
-previously obtained coefficients. It should be used through the \ref driver and
+previously obtained coefficients. It should be used through the [driver](driver.md) and
 can only be used in post processing. The VES bias needs to be defined in the
 exact same way as during the simulation. At the current moment this action does
 not support dynamic target distributions (e.g. well-tempered).
 
-\par Examples
+## Examples
 
 In the following input we define a VES bias and then read in the coefficient
 file coeffs.input.data and output the FES and bias every 500 iterations.
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/ves/rt-output-fes-2d-targetdist/coeffs.input.data INPUTFILELINES=1-14
 phi:   TORSION ATOMS=5,7,9,15
 psi:   TORSION ATOMS=7,9,15,17
 
@@ -69,29 +70,17 @@ VES_OUTPUT_FES ...
   FES_OUTPUT=500
   FES_PROJ_OUTPUT=500
   BIAS_OUTPUT=500
-  COEFFS_INPUT=coeffs.input.data
+  COEFFS_INPUT=regtest/ves/rt-output-fes-2d-targetdist/coeffs.input.data
 ... VES_OUTPUT_FES
-\endplumedfile
-
-The header of coeffs.input.data should look like the following:
-
-\auxfile{coeffs.input.data}
-#! FIELDS idx_phi idx_psi ves1.coeffs ves1.aux_coeffs index
-#! SET time 100.000000
-#! SET iteration  10
-#! SET type LinearBasisSet
-#! SET ndimensions  2
-#! SET ncoeffs_total  121
-#! SET shape_phi  11
-#! SET shape_psi  11
-\endauxfile
+```
 
 This input should be run through the driver by using a command similar to the
 following one where the trajectory/configuration file configuration.gro is needed to
 correctly define the CVs
-\verbatim
+
+```plumed
 plumed driver --plumed plumed.dat --igro configuration.gro
-\endverbatim
+```
 
 */
 //+ENDPLUMEDOC

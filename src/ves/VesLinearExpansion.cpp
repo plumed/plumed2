@@ -45,28 +45,28 @@ Linear basis set expansion bias.
 This VES bias action takes the bias potential to be a linear expansion
 in some basis set that is written as a product of one-dimensional basis functions.
 For example, for one CV the bias would be written as
-\f[
+$$
 V(s_{1};\boldsymbol{\alpha}) = \sum_{i_{1}} \alpha_{i_{1}} \, f_{i_{1}}(s_{1}),
-\f]
+$$
 while for two CVs it is written as
-\f[
+$$
 V(s_{1},s_{2};\boldsymbol{\alpha}) = \sum_{i_{1},i_{2}} \alpha_{i_{1},i_{2}} \, f_{i_{1}}(s_{1}) \, f_{i_{2}}(s_{2})
-\f]
-where \f$\boldsymbol{\alpha}\f$ is the set of expansion coefficients that
+$$
+where $\boldsymbol{\alpha}$ is the set of expansion coefficients that
 are optimized within VES. With an appropriate choice of the basis functions
 it is possible to represent any generic free energy surface.
 The relationship between the bias and the free energy surface is given by
-\f[
+$$
 V(\mathbf{s}) = - F(\mathbf{s}) - \frac{1}{\beta} \log p(\mathbf{s}).
-\f]
-where \f$p(\mathbf{s})\f$ is the target distribution that is employed in the VES simulation.
+$$
+where $p(\mathbf{s})$ is the target distribution that is employed in the VES simulation.
 
-\par Basis Functions
+## Basis Functions
 
 Various one-dimensional basis functions are available in the VES code,
-see the complete list \ref ves_basisf "here".
-At the current moment we recommend to use Legendre polynomials (\ref BF_LEGENDRE)
-for non-periodic CVs and Fourier basis functions (\ref BF_FOURIER)
+see the complete list go to [the module page](module_ves.md) and select VES_BIAS from the tags dropdown.
+At the current moment we recommend to use Legendre polynomials ([BF_LEGENDRE](BF_LEGENDRE.md))
+for non-periodic CVs and Fourier basis functions ([BF_FOURIER](BF_FOURIER.md))
 for periodic CV (e.g. dihedral angles).
 
 To use basis functions within VES_LINEAR_EXPANSION you first need to
@@ -74,10 +74,10 @@ define them in the input file before the VES_LINEAR_EXPANSION action and
 then give their labels using the BASIS_FUNCTIONS keyword.
 
 
-\par Target Distributions
+## Target Distributions
 
-Various target distributions \f$p(\mathbf{s})\f$ are available in the VES code,
-see the complete list \ref ves_targetdist "here".
+Various target distributions $p(\mathbf{s})$ are available in the VES code,
+see the complete list go to [the module page](module_ves.md) and select VES_TARGETDIST from the tags dropdown.
 
 To use a target distribution within VES_LINEAR_EXPANSION you first need to
 define it in the input file before the VES_LINEAR_EXPANSION action and
@@ -85,19 +85,19 @@ then give its label using the TARGET_DISTRIBUTION keyword.
 The default behavior if no TARGET_DISTRIBUTION is given is to
 employ a uniform target distribution.
 
-Some target distribution, like the well-tempered one (\ref TD_WELLTEMPERED),
+Some target distribution, like the well-tempered one ([TD_WELLTEMPERED](TD_WELLTEMPERED.md)),
 are dynamic and need to be iteratively updated during the optimization.
 
-\par Optimizer
+## Optimizer
 
 In order to optimize the coefficients you will need to use VES_LINEAR_EXPANSION
 in combination with an optimizer, see the list of optimizers available in the
-VES code \ref ves_optimizer "here". At the current moment we recommend to
-use the averaged stochastic gradient decent optimizer (\ref OPT_AVERAGED_SGD).
+VES code go to [the module page](module_ves.md) and select VES_OPTIMIZER from the tags dropdown. At the current moment we recommend to
+use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md)).
 
 The optimizer should be defined after the VES_LINEAR_EXPANSION action.
 
-\par Grid
+## Grid
 
 Internally the code uses grids to calculate the basis set averages
 over the target distribution that is needed for the gradient. The same grid is
@@ -105,11 +105,11 @@ also used for the output files (see next section).
 The size of the grid is determined by the GRID_BINS keyword. By default it has
 100 grid points in each dimension, and generally this value should be sufficient.
 
-\par Outputting Free Energy Surfaces and Other Files
+## Outputting Free Energy Surfaces and Other Files
 
 It is possible to output on-the-fly during the simulation the free energy surface
 estimated from the bias potential. How often this is done is specified within
-the \ref ves_optimizer "optimizer" by using the FES_OUTPUT keyword. The filename
+the ves_optimizer (see the section before last for more details) by using the FES_OUTPUT keyword. The filename
 is specified by the FES_FILE keyword, but by default is it fes.LABEL.data,
 with an added suffix indicating
 the iteration number (iter-#).
@@ -137,47 +137,48 @@ of the output by using the TARGETDIST_OUTPUT and TARGETDIST_PROJ_OUTPUT
 keywords within the optimizer.
 
 It is also possible to output free energy surfaces and bias in post processing
-by using the \ref VES_OUTPUT_FES action. However, be aware that this action
+by using the [VES_OUTPUT_FES](VES_OUTPUT_FES.md) action. However, be aware that this action
 does does not support dynamic target distribution (e.g. well-tempered).
 
-\par Static Bias
+## Static Bias
 
 It is also possible to use VES_LINEAR_EXPANSION as a static bias that uses
 previously obtained coefficients. In this case the coefficients should be
 read in from the coefficient file given in the COEFFS keyword.
 
-\par Bias Cutoff
+## Bias Cutoff
 
 It is possible to impose a cutoff on the bias potential using the procedure
-introduced in \cite McCarty-PRL-2015 such that the free energy surface
+introduced in the paper cited below such that the free energy surface
 is only flooded up to a certain value. The bias that results from this procedure
 can then be used as a static bias for obtaining kinetic rates.
 The value of the cutoff is given by the BIAS_CUTOFF keyword.
-To impose the cutoff the code uses a Fermi switching function \f$1/(1+e^{\lambda x})\f$
-where the parameter \f$\lambda\f$ controls how sharply the switchingfunction goes to zero.
-The default value is \f$\lambda=10\f$ but this can be changed by using the
+To impose the cutoff the code uses a Fermi switching function $1/(1+e^{\lambda x})$
+where the parameter $\lambda$ controls how sharply the switchingfunction goes to zero.
+The default value is $\lambda=10$ but this can be changed by using the
 BIAS_CUTOFF_FERMI_LAMBDA keyword.
 
-\par Examples
+## Examples
 
 In the following example we run a VES_LINEAR_EXPANSION for one CV using
-a Legendre basis functions (\ref BF_LEGENDRE) and a uniform target
+a Legendre basis functions ([BF_LEGENDRE](BF_LEGENDRE.md)) and a uniform target
 distribution as no target distribution is specified. The coefficients
 are optimized using averaged stochastic gradient descent optimizer
-(\ref OPT_AVERAGED_SGD). Within the optimizer we specify that the
+([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md)). Within the optimizer we specify that the
 FES should be outputted to file every 500 coefficients iterations (the
 FES_OUTPUT keyword).
 Parameters that are very specific to the problem at hand, like the
 order of the basis functions, the interval on which the
 basis functions are defined, and the step size used
 in the optimizer, are left unfilled.
-\plumedfile
-bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+
+```plumed
+bf1: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
 
 VES_LINEAR_EXPANSION ...
  ARG=d1
  BASIS_FUNCTIONS=bf1
- TEMP=__FILL__
+ TEMP=_FILL_
  GRID_BINS=200
  LABEL=b1
 ... VES_LINEAR_EXPANSION
@@ -186,30 +187,30 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__FILL__
+ STEPSIZE=_FILL_
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
 ... OPT_AVERAGED_SGD
-\endplumedfile
+```
 
 In the following example we employ VES_LINEAR_EXPANSION for two CVs,
 The first CV is periodic and therefore we employ a Fourier basis functions
-(\ref BF_LEGENDRE) while the second CV is non-periodic so we employ a
+([BF_LEGENDRE](BF_LEGENDRE.md)) while the second CV is non-periodic so we employ a
 Legendre polynomials as in the previous example. For the target distribution
-we employ a well-tempered target distribution (\ref TD_WELLTEMPERED), which is
+we employ a well-tempered target distribution ([TD_WELLTEMPERED](TD_WELLTEMPERED.md)), which is
 dynamic and needs to be iteratively updated with a stride that is given
 using the TARGETDIST_STRIDE within the optimizer.
 
-\plumedfile
-bf1: BF_FOURIER  ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
-bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+```plumed
+bf1: BF_FOURIER  ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
+bf2: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
 
 td_wt: TD_WELLTEMPERED BIASFACTOR=10.0
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__FILL__
+ TEMP=_FILL_
  GRID_BINS=100
  LABEL=b1
  TARGET_DISTRIBUTION=td_wt
@@ -219,26 +220,26 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__FILL__
+ STEPSIZE=_FILL_
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
 ... OPT_AVERAGED_SGD
-\endplumedfile
+```
 
 
 In the following example we employ a bias cutoff such that the bias
 only fills the free energy landscape up a certain level. In this case
 the target distribution is also dynamic and needs to iteratively updated.
 
-\plumedfile
-bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
-bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+```plumed
+bf1: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
+bf2: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__FILL__
+ TEMP=_FILL_
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0
@@ -248,31 +249,32 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__FILL__
+ STEPSIZE=_FILL_
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
 ... OPT_AVERAGED_SGD
-\endplumedfile
+```
 
 The optimized bias potential can then be used as a static bias for obtaining
 kinetics. For this you need read in the final coefficients from file
 (e.g. coeffs_final.data in this case) by using the
 COEFFS keyword (also, no optimizer should be defined in the input)
-\plumedfile
-bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
-bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+
+```plumed
+bf1: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
+bf2: BF_LEGENDRE ORDER=_FILL_ MINIMUM=_FILL_ MAXIMUM=_FILL_
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__FILL__
+ TEMP=_FILL_
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0
  COEFFS=coeffs_final.data
 ... VES_LINEAR_EXPANSION
-\endplumedfile
+```
 
 
 
@@ -331,6 +333,7 @@ void VesLinearExpansion::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","BASIS_FUNCTIONS","the label of the one dimensional basis functions that should be used.");
   keys.add("compulsory","GRID_FMT","%14.9f","the format to use when outputting the numbers in the grids");
   keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential.");
+  keys.addDOI("10.1103/PhysRevLett.115.070601");
 }
 
 VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):

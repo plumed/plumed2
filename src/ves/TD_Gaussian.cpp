@@ -34,37 +34,42 @@ Target distribution given by a sum of Gaussian kernels (static).
 
 Employ a target distribution that is given by a sum of multivariate Gaussian (or normal)
 distributions, defined as
-\f[
+
+$$
 p(\mathbf{s}) = \sum_{i} \, w_{i} \, N(\mathbf{s};\mathbf{\mu}_{i},\mathbf{\Sigma}_{i})
-\f]
-where \f$\mathbf{\mu}_{i}=(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})\f$
-and \f$\mathbf{\Sigma}_{i}\f$ are
-the center and the covariance matrix for the \f$i\f$-th Gaussian.
-The weights \f$w_{i}\f$ are normalized to 1, \f$\sum_{i}w_{i}=1\f$.
+$$
+
+where $\mathbf{\mu}_{i}=(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})$
+and $\mathbf{\Sigma}_{i}$ are
+the center and the covariance matrix for the $i$-th Gaussian.
+The weights $w_{i}$ are normalized to 1, $\sum_{i}w_{i}=1$.
 
 By default the Gaussian distributions are considered as separable into
 independent one-dimensional Gaussian distributions. In other words,
 the covariance matrix is taken as diagonal
-\f$\mathbf{\Sigma}_{i}=(\sigma^2_{1,i},\sigma^2_{2,i},\ldots,\sigma^{2}_{d,i})\f$.
+$\mathbf{\Sigma}_{i}=(\sigma^2_{1,i},\sigma^2_{2,i},\ldots,\sigma^{2}_{d,i})$.
 The Gaussian distribution is then written as
-\f[
+
+$$
 N(\mathbf{s};\mathbf{\mu}_{i},\mathbf{\sigma}_{i}) =
 \prod^{d}_{k} \, \frac{1}{\sqrt{2\pi\sigma^2_{d,i}}} \,
 \exp\left(
 -\frac{(s_{d}-\mu_{d,i})^2}{2\sigma^2_{d,i}}
 \right)
-\f]
+$$
+
 where
-\f$\mathbf{\sigma}_{i}=(\sigma_{1,i},\sigma_{2,i},\ldots,\sigma_{d,i})\f$
+$\mathbf{\sigma}_{i}=(\sigma_{1,i},\sigma_{2,i},\ldots,\sigma_{d,i})$
 is the standard deviation.
-In this case you need to specify the centers \f$\mathbf{\mu}_{i}\f$ using the
-numbered CENTER keywords and the standard deviations \f$\mathbf{\sigma}_{i}\f$
+In this case you need to specify the centers $\mathbf{\mu}_{i}$ using the
+numbered CENTER keywords and the standard deviations $\mathbf{\sigma}_{i}$
 using the numbered SIGMA keywords.
 
 For two arguments it is possible to employ
 [bivariate Gaussian kernels](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 with correlation between arguments, defined as
-\f[
+
+$$
 N(\mathbf{s};\mathbf{\mu}_{i},\mathbf{\sigma}_{i},\rho_i) =
 \frac{1}{2 \pi \sigma_{1,i} \sigma_{2,i} \sqrt{1-\rho_i^2}}
 \,
@@ -76,10 +81,12 @@ N(\mathbf{s};\mathbf{\mu}_{i},\mathbf{\sigma}_{i},\rho_i) =
 \frac{2 \rho_i (s_{1}-\mu_{1,i})(s_{2}-\mu_{2,i})}{\sigma_{1,i}\sigma_{2,i}}
 \right]
 \right)
-\f]
-where \f$\rho_i\f$ is the correlation between \f$s_{1}\f$ and \f$s_{2}\f$
+$$
+
+where $\rho_i$ is the correlation between $s_{1}$ and $s_{2}$
 that goes from -1 to 1. In this case the covariance matrix is given as
-\f[
+
+$$
 \mathbf{\Sigma}=
 \left[
 \begin{array}{cc}
@@ -87,9 +94,10 @@ that goes from -1 to 1. In this case the covariance matrix is given as
 \rho_i \sigma_{1,i} \sigma_{2,i} & \sigma^2_{2,i}
 \end{array}
 \right]
-\f]
-The correlation \f$\rho\f$ is given using
-the numbered CORRELATION keywords. A value of \f$\rho=0\f$ means
+$$
+
+The correlation $\rho$ is given using
+the numbered CORRELATION keywords. A value of $\rho=0$ means
 that the arguments are considered as
 un-correlated, which is the default behavior.
 
@@ -103,34 +111,37 @@ NORMALIZE keyword to make sure that the target distribution is properly
 normalized to 1 over the bounded region. The code will issue a warning
 if that is needed.
 
-For periodic CVs it is generally better to use \ref TD_VONMISES "Von Mises"
+For periodic CVs it is generally better to use [Von Mises](TD_VONMISES.md) 
 distributions instead of Gaussian kernels as these distributions properly
 account for the periodicity of the CVs.
 
 
-\par Examples
+## Examples
 
 One single Gaussian kernel in one-dimension.
-\plumedfile
+
+```plumed
 td: TD_GAUSSIAN CENTER1=-1.5 SIGMA1=0.8
-\endplumedfile
+```
 
 Sum of three Gaussian kernels in two-dimensions with equal weights as
 no weights are given.
-\plumedfile
+
+```plumed
 TD_GAUSSIAN ...
  CENTER1=-1.5,+1.5 SIGMA1=0.8,0.3
  CENTER2=+1.5,-1.5 SIGMA2=0.3,0.8
  CENTER3=+1.5,+1.5 SIGMA3=0.4,0.4
  LABEL=td
 ... TD_GAUSSIAN
-\endplumedfile
+```
 
 Sum of three Gaussian kernels in two-dimensions which
 are weighted unequally. Note that weights are automatically
 normalized to 1 so that WEIGHTS=1.0,2.0,1.0 is equal to
 specifying WEIGHTS=0.25,0.50,0.25.
-\plumedfile
+
+```plumed
 TD_GAUSSIAN ...
  CENTER1=-1.5,+1.5 SIGMA1=0.8,0.3
  CENTER2=+1.5,-1.5 SIGMA2=0.3,0.8
@@ -138,17 +149,18 @@ TD_GAUSSIAN ...
  WEIGHTS=1.0,2.0,1.0
  LABEL=td
 ... TD_GAUSSIAN
-\endplumedfile
+```
 
 Sum of two bivariate Gaussian kernels where there is correlation of
-\f$\rho_{2}=0.75\f$ between the two arguments for the second Gaussian.
-\plumedfile
+$\rho_{2}=0.75$ between the two arguments for the second Gaussian.
+
+```plumed
 TD_GAUSSIAN ...
  CENTER1=-1.5,+1.5 SIGMA1=0.8,0.3
  CENTER2=+1.5,-1.5 SIGMA2=0.3,0.8 CORRELATION2=0.75
  LABEL=td
 ... TD_GAUSSIAN
-\endplumedfile
+```
 
 
 

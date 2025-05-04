@@ -35,7 +35,7 @@ namespace ves {
 /*
 Multicanonical target distribution (dynamic).
 
-Use the target distribution to sample the multicanonical ensemble \cite Berg-PRL-1992 \cite Piaggi-PRL-2019.
+Use the target distribution to sample the multicanonical ensemble that is introduced in the first paper cited below.
 In this way, in a single molecular dynamics simulation one can obtain information about the system in a range of temperatures.
 This range is determined through the keywords MIN_TEMP and MAX_TEMP.
 
@@ -44,49 +44,53 @@ The collective variables (CVs) used to construct the bias potential must be:
  2. the energy and an order parameter.
 
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
-The second CV, the order parameter, must be used when one aims at studying a first order phase transition in the chosen temperature interval \cite Piaggi-JCP-2019.
+The second CV, the order parameter, must be used when one aims at studying a first order phase transition in the chosen temperature interval (for details see the second paper cited below.
 
 The algorithm will explore the free energy at each temperature up to a predefined free
- energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
+ energy threshold $\epsilon$ specified through the keyword THRESHOLD (in kT units).
 If only the energy is biased, i.e. no phase transition is considered, then THRESHOLD can be set to around 5.
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
 
-When only the potential energy is used as CV the method is equivalent to the Wang-Landau algorithm \cite wanglandau.
+When only the potential energy is used as CV the method is equivalent to the Wang-Landau algorithm that is discussed in the last paper cited below.
 The advantage with respect to Wang-Landau is that instead of sampling the potential energy indiscriminately, an interval is chosen on the fly based on the minimum and maximum targeted temperatures.
 
 The algorithm works as follows.
 The target distribution for the potential energy is chosen to be:
 
-\f[
+$$
 p(E)= \left\{\begin{array}{ll}
          \frac{1}{E_2-E_1} & \mathrm{if} \quad E_1<E<E_2 \\
          0 & \mathrm{otherwise}
       \end{array}\right.
-\f]
+$$
 
-where the energy limits \f$E_1\f$ and \f$E_2\f$ are yet to be determined.
-Clearly the interval \f$E_1–E_2\f$ chosen is related to the interval of temperatures \f$T_1-T_2\f$.
+where the energy limits $E_1$ and $E_2$ are yet to be determined.
+Clearly the interval $E_1–E_2$ chosen is related to the interval of temperatures $T_1-T_2$.
 To link these two intervals we make use of the following relation:
-\f[
-\beta' F_{\beta'}(E) = \beta F_{\beta}(E) + (\beta' - \beta) E + C,
-\f]
-where \f$F_{\beta}(E)\f$ is determined during the optimization and we shall choose \f$C\f$ such that \f$F_{\beta'}(E_{m})=0\f$ with \f$E_{m}\f$ the position of the free energy minimum.
-Using this relation we employ an iterative procedure to find the energy interval.
-At iteration \f$k\f$ we have the estimates \f$E_1^k\f$ and \f$E_2^k\f$ for \f$E_1\f$ and \f$E_2\f$, and the target distribution is:
-\f[
-p^k(E)=\frac{1}{E_2^k-E_1^k} \quad \mathrm{for} \quad E_1^k<E<E_2^k.
-\f]
-\f$E_1^k\f$ and \f$E_2^k\f$ are obtained from the leftmost solution of \f$\beta_2 F_{\beta_2}^{k-1}(E_1^k)=\epsilon\f$ and the rightmost solution of \f$\beta_1 F_{\beta_1}^{k-1}(E_2^k)=\epsilon\f$.
-The procedure is repeated until convergence.
-This iterative approach is similar to that in \ref TD_WELLTEMPERED.
 
-The version of this algorithm in which the energy and an order parameter are biased is similar to the one described in \ref TD_MULTITHERMAL_MULTIBARIC.
+$$
+\beta' F_{\beta'}(E) = \beta F_{\beta}(E) + (\beta' - \beta) E + C,
+$$
+
+where $F_{\beta}(E)$ is determined during the optimization and we shall choose $C$ such that $F_{\beta'}(E_{m})=0$ with $E_{m}$ the position of the free energy minimum.
+Using this relation we employ an iterative procedure to find the energy interval.
+At iteration $k$ we have the estimates $E_1^k$ and $E_2^k$ for $E_1$ and $E_2$, and the target distribution is:
+
+$$
+p^k(E)=\frac{1}{E_2^k-E_1^k} \quad \mathrm{for} \quad E_1^k<E<E_2^k.
+$$
+
+$E_1^k$ and $E_2^k$ are obtained from the leftmost solution of $\beta_2 F_{\beta_2}^{k-1}(E_1^k)=\epsilon$ and the rightmost solution of $\beta_1 F_{\beta_1}^{k-1}(E_2^k)=\epsilon$.
+The procedure is repeated until convergence.
+This iterative approach is similar to that in [TD_WELLTEMPERED](TD_WELLTEMPERED.md).
+
+The version of this algorithm in which the energy and an order parameter are biased is similar to the one described in [TD_MULTITHERMAL_MULTIBARIC](TD_MULTITHERMAL_MULTIBARIC.md).
 
 The output of these simulations can be reweighted in order to obtain information at all temperatures in the targeted temperature interval.
-The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
+The reweighting can be performed using the action [REWEIGHT_TEMP_PRESS](REWEIGHT_TEMP_PRESS.md).
 
-\par Examples
+## Examples
 
 The following input can be used to run a simulation in the multicanonical ensemble.
 The temperature interval to be explored is 400-600 K.
@@ -95,7 +99,7 @@ Legendre polynomials are used to construct the bias potential.
 The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
 The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
 
-\plumedfile
+```plumed
 # Use energy and volume as CVs
 energy: ENERGY
 
@@ -131,8 +135,7 @@ OPT_AVERAGED_SGD ...
   COEFFS_OUTPUT=10
   TARGETDIST_STRIDE=100
 ... OPT_AVERAGED_SGD
-
-\endplumedfile
+```
 
 The multicanonical target distribution can also be used to explore a temperature interval in which a first order phase transitions is observed.
 
@@ -167,6 +170,9 @@ void TD_Multicanonical::registerKeywords(Keywords& keys) {
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
   keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
   keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
+  keys.addDOI("10.1103/PhysRevLett.68.9");
+  keys.addDOI("10.1103/PhysRevLett.122.050601");
+  keys.addDOI("10.1103/PhysRevLett.86.2050");
 }
 
 

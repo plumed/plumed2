@@ -37,27 +37,29 @@ namespace ves {
 Target distribution given by an arbitrary mathematical expression (static or dynamic).
 
 Use as a target distribution the distribution defined by
-\f[
+
+$$
 p(\mathbf{s}) =
 \frac{f(\mathbf{s})}{\int d\mathbf{s} \, f(\mathbf{s})}
-\f]
-where \f$f(\mathbf{s})\f$ is some arbitrary mathematical function that
+$$
+
+where $f(\mathbf{s})$ is some arbitrary mathematical function that
 is parsed by the lepton library.
 
-The function \f$f(\mathbf{s})\f$ is given by the FUNCTION keywords by
+The function $f(\mathbf{s})$ is given by the FUNCTION keywords by
 using _s1_,_s2_,..., as variables for the arguments
-\f$\mathbf{s}=(s_1,s_2,\ldots,s_d)\f$.
+$\mathbf{s}=(s_1,s_2,\ldots,s_d)$.
 If one variable is not given the target distribution will be
 taken as uniform in that argument.
 
-It is also possible to include the free energy surface \f$F(\mathbf{s})\f$
+It is also possible to include the free energy surface $F(\mathbf{s})$
 in the target distribution by using the _FE_ variable. In this case the
 target distribution is dynamic and needs to be updated with current
-best estimate of \f$F(\mathbf{s})\f$, similarly as for the
-\ref TD_WELLTEMPERED "well-tempered target distribution".
-Furthermore, the inverse temperature \f$\beta = (k_{\mathrm{B}}T)^{-1}\f$ and
-the thermal energy \f$k_{\mathrm{B}}T\f$ can be included
-by using the _beta_ and \f$k_B T\f$ variables.
+best estimate of $F(\mathbf{s})$, similarly as for the
+[TD_WELLTEMPERED](TD_WELLTEMPERED.md) "well-tempered target distribution".
+Furthermore, the inverse temperature $\beta = (k_{\mathrm{B}}T)^{-1}$ and
+the thermal energy $k_{\mathrm{B}}T$ can be included
+by using the _beta_ and $k_B T$ variables.
 
 The target distribution will be automatically normalized over the region on
 which it is defined on. Therefore, the function given in
@@ -65,49 +67,54 @@ FUNCTION needs to be non-negative and it must be possible to normalize the funct
 code will perform checks to make sure that this is indeed the case.
 
 
-\par Examples
+## Examples
 
 Here we use as shifted [Maxwell-Boltzmann distribution](https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution)
 as a target distribution in one-dimension.
 Note that it is not need to include the normalization factor as the distribution will be
 automatically normalized.
-\plumedfile
+
+```plumed
 TD_CUSTOM ...
  FUNCTION=(s1+20)^2*exp(-(s1+20)^2/(2*10.0^2))
  LABEL=td
 ... TD_CUSTOM
-\endplumedfile
+```
 
 Here we have a two dimensional target distribution where we
 use a [generalized normal distribution](https://en.wikipedia.org/wiki/Generalized_normal_distribution)
-for argument \f$s_2\f$ while the distribution for \f$s_1\f$ is taken as
+for argument $s_2$ while the distribution for $s_1$ is taken as
 uniform as the variable _s1_ is not included in the function.
-\plumedfile
+
+```plumed
 TD_CUSTOM ...
  FUNCTION=exp(-(abs(s2-20.0)/5.0)^4.0)
  LABEL=td
 ... TD_CUSTOM
-\endplumedfile
+```
 
 By using the _FE_ variable the target distribution can depend on
-the free energy surface \f$F(\mathbf{s})\f$. For example,
-the following input is identical to using \ref TD_WELLTEMPERED with
+the free energy surface $F(\mathbf{s})$. For example,
+the following input is identical to using [TD_WELLTEMPERED](TD_WELLTEMPERED.md) with
 a bias factor of 10.
-\plumedfile
+
+```plumed
 TD_CUSTOM ...
  FUNCTION=exp(-(beta/10.0)*FE)
  LABEL=td
 ... TD_CUSTOM
-\endplumedfile
+```
+
 Here the inverse temperature is automatically obtained by using the _beta_
-variable. It is also possible to use the \f$k_B T\f$ variable. The following
+variable. It is also possible to use the $k_B T$ variable. The following
 syntax will give the exact same results as the syntax above
-\plumedfile
+
+```plumed
 TD_CUSTOM ...
  FUNCTION=exp(-(1.0/(kBT*10.0))*FE)
  LABEL=td
 ... TD_CUSTOM
-\endplumedfile
+```
 
 
 */

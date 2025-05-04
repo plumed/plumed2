@@ -36,64 +36,72 @@ namespace ves {
 /*
 Well-tempered target distribution (dynamic).
 
-Use as a target distribution the well-tempered distribution \cite Barducci:2008
-given by
-\f[
+Use as a target distribution the well-tempered distribution discussed in the first paper cited below, 
+which is given by
+
+$$
 p(\mathbf{s}) =
 \frac{e^{-(\beta/\gamma) F(\mathbf{s})}}
 {\int d\mathbf{s}\, e^{-(\beta/\gamma) F(\mathbf{s})}} =
 \frac{[P_{0}(\mathbf{s})]^{1/\gamma}}
 {\int d\mathbf{s}\, [P_{0}(\mathbf{s})]^{1/\gamma}}
-\f]
-where \f$\gamma\f$ is a so-called bias factor and \f$P_{0}(\mathbf{s})\f$ is the
+$$
+
+where $\gamma$ is a so-called bias factor and $P_{0}(\mathbf{s})$ is the
 unbiased canonical distribution of the CVs. This target distribution thus
 corresponds to a biased ensemble where, as compared to the unbiased one,
 the probability peaks have been broaden and the fluctuations of the CVs are
 enhanced.
-The value of the bias factor \f$\gamma\f$ determines by how much the fluctuations
+The value of the bias factor $\gamma$ determines by how much the fluctuations
 are enhanced.
 
 The well-tempered distribution can be view as sampling on
-an effective free energy surface \f$\tilde{F}(\mathbf{s}) = (1/\gamma) F(\mathbf{s})\f$
-which has largely the same metastable states as the original \f$F(\mathbf{s})\f$
-but with barriers that have been reduced by a factor of \f$\gamma\f$.
-Generally one should use a value of \f$\gamma\f$ that results in
-effective barriers on the order of few \f$k_{\mathrm{B}}T\f$
+an effective free energy surface $\tilde{F}(\mathbf{s}) = (1/\gamma) F(\mathbf{s})$
+which has largely the same metastable states as the original $F(\mathbf{s})$
+but with barriers that have been reduced by a factor of $\gamma$.
+Generally one should use a value of $\gamma$ that results in
+effective barriers on the order of few $k_{\mathrm{B}}T$
 such that thermal fluctuations can easily induce transitions
 between different metastable states.
 
 At convergence the relationship between the bias potential and the free
 energy surface is given by
-\f[
+
+$$
 F(\mathbf{s}) = - \left(\frac{1}{1-\gamma^{-1}} \right) V(\mathbf{s})
-\f]
+$$
 
 This target distribution depends directly on the free energy surface
-\f$F(\mathbf{s})\f$ which is quantity that we do not know a-priori and
+$F(\mathbf{s})$ which is quantity that we do not know a-priori and
 want to obtain. Therefore, this target distribution
-is iteratively updated \cite Valsson-JCTC-2015 according to
-\f[
+is iteratively updated according to
+
+$$
 p^{(m+1)}(\mathbf{s}) =
 \frac{e^{-(\beta/\gamma) F^{(m+1)}(\mathbf{s})}}
 {\int d\mathbf{s}\, e^{-(\beta/\gamma) F^{(m+1)}(\mathbf{s})}}
-\f]
-where \f$F^{(m+1)}(\mathbf{s})\f$ is the current best estimate of the
+$$
+
+where $F^{(m+1)}(\mathbf{s})$ is the current best estimate of the
 free energy surface obtained according to
-\f[
+
+$$
 F^{(m+1)}(\mathbf{s}) =
 - V^{(m+1)}(\mathbf{s}) - \frac{1}{\beta} \log p^{(m)}(\mathbf{s}) =
 - V^{(m+1)}(\mathbf{s}) + \frac{1}{\gamma} F^{(m)}(\mathbf{s})
-\f]
+$$
+
 The frequency of performing this update needs to be set in the
 optimizer used in the calculation. Normally it is sufficient
 to do it every 100-1000 bias update iterations.
 
-\par Examples
+## Examples
 
 Employ a well-tempered target distribution with a bias factor of 10
-\plumedfile
+
+```plumed
 td_welltemp: TD_WELLTEMPERED BIASFACTOR=10
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -116,6 +124,8 @@ PLUMED_REGISTER_ACTION(TD_WellTempered,"TD_WELLTEMPERED")
 void TD_WellTempered::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","BIASFACTOR","The bias factor used for the well-tempered distribution.");
+  keys.addDOI("10.1103/PhysRevLett.100.020603"); 
+  keys.addDOI("10.1021/acs.jctc.5b00076");
 }
 
 

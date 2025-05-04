@@ -35,7 +35,7 @@ namespace ves {
 /*
 Multithermal-multibaric target distribution (dynamic).
 
-Use the target distribution to sample the multithermal-multibaric ensemble \cite Piaggi-PRL-2019 \cite Okumura-CPL-2004.
+Use the target distribution to sample the multithermal-multibaric ensemble (see first paper cited below).
 In this way, in a single molecular dynamics simulation one can obtain information
 about the simulated system in a range of temperatures and pressures.
 This range is determined through the keywords MIN_TEMP, MAX_TEMP, MIN_PRESSURE, and MAX_PRESSURE.
@@ -46,10 +46,10 @@ The collective variables (CVs) used to construct the bias potential must be:
   2. the potential energy, the volume, and an order parameter.
 
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
-The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition \cite Piaggi-JCP-2019 .
+The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition (for details see the first paper cited below).
 
 The algorithm will explore the free energy at each temperature and pressure up to a predefined free
- energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
+ energy threshold $\epsilon$ specified through the keyword THRESHOLD (in kT units).
 If only the energy and the volume are being biased, i.e. no phase transition is considered, then THRESHOLD can be set to around 5.
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
@@ -61,7 +61,8 @@ If it is too large, the performance will deteriorate with no additional advantag
 
 We now describe the algorithm more rigorously.
 The target distribution is given by
-\f[
+
+$$
 p(E,\mathcal{V},s)=
   \begin{cases}
     1/\Omega_{E,\mathcal{V},s} & \text{if there is at least one } \beta',P' \text{ such} \\
@@ -69,30 +70,33 @@ p(E,\mathcal{V},s)=
              & \beta_1>\beta'>\beta_2 \text{ and } P_1<P'<P_2 \\
     0 & \text{otherwise}
   \end{cases}
-\f]
-with \f$F_{\beta',P'}(E,\mathcal{V},s)\f$ the free energy as a function of energy \f$E\f$ and volume \f$\mathcal{V}\f$ (and optionally the order parameter \f$s\f$) at temperature \f$\beta'\f$ and pressure \f$P'\f$, \f$\Omega_{E,\mathcal{V},s}\f$ is a normalization constant, and \f$\epsilon\f$ is the THRESHOLD.
-In practice the condition \f$\beta' F_{\beta',P'}(E,\mathcal{V},s)<\epsilon\f$  is checked in equally spaced points in each dimension \f$\beta'\f$ and \f$P'\f$.
+$$
+
+with $F_{\beta',P'}(E,\mathcal{V},s)$ the free energy as a function of energy $E$ and volume $\mathcal{V}$ (and optionally the order parameter $s$) at temperature $\beta'$ and pressure $P'$, $\Omega_{E,\mathcal{V},s}$ is a normalization constant, and $\epsilon$ is the THRESHOLD.
+In practice the condition $\beta' F_{\beta',P'}(E,\mathcal{V},s)<\epsilon$  is checked in equally spaced points in each dimension $\beta'$ and $P'$.
 The number of points is determined with the keywords STEPS_TEMP and STEPS_PRESSURE.
 In practice the target distribution is never set to zero but rather to a small value controlled by the keyword EPSILON.
 The small value is e^-EPSILON.
 
-Much like in the Wang-Landau algorithm \cite wanglandau or in the multicanonical ensemble \cite Berg-PRL-1992 , a flat histogram is targeted.
-The idea behind this choice of target distribution is that all regions of potential energy and volume (and optionally order parameter) that are relevant at all temperatures \f$\beta_1<\beta'<\beta_2\f$ and pressure \f$P_1<P'<P_2\f$ are included in the distribution.
+Much like in the Wang-Landau algorithm that is introduced in the second to last paper cited below or in the multicanonical ensemble that is discussed in the last paper cited below, a flat histogram is targeted.
+The idea behind this choice of target distribution is that all regions of potential energy and volume (and optionally order parameter) that are relevant at all temperatures $\beta_1<\beta'<\beta_2$ and pressure $P_1<P'<P_2$ are included in the distribution.
 
-The free energy at temperature \f$\beta'\f$ and pressure \f$P'\f$ is calculated from the free energy at \f$\beta\f$ and \f$P\f$ using:
-\f[
+The free energy at temperature $\beta'$ and pressure $P'$ is calculated from the free energy at $\beta$ and $P$ using:
+
+$$
 \beta' F_{\beta',P'}(E,\mathcal{V},s) = \beta F_{\beta,P}(E,\mathcal{V},s) + (\beta' - \beta) E + (\beta' P' - \beta P ) \mathcal{V} + C
-\f]
-with \f$C\f$ such that \f$F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0\f$ with \f$E_{m},\mathcal{V}_m,s_m\f$ the position of the free energy minimum.
-\f$ \beta F_{\beta,P}(E,\mathcal{V},s) \f$ is not know from the start and is instead found during the simulation.
-Therefore \f$ p(E,\mathcal{V},s) \f$ is determined iteratively as done in the well tempered target distribution \cite Valsson-JCTC-2015.
+$$
+
+with $C$ such that $F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0$ with $E_{m},\mathcal{V}_m,s_m$ the position of the free energy minimum.
+$ \beta F_{\beta,P}(E,\mathcal{V},s) $ is not know from the start and is instead found during the simulation.
+Therefore $ p(E,\mathcal{V},s) $ is determined iteratively as done in the well tempered target distribution in the second paper cited below.
 
 The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of Temperature-Pressure plane.
-The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
+The reweighting can be performed using the action [REWEIGHT_TEMP_PRESS](REWEIGHT_TEMP_PRESS.md).
 
-The multicanonical ensemble (fixed volume) can be targeted using \ref TD_MULTICANONICAL.
+The multicanonical ensemble (fixed volume) can be targeted using [TD_MULTICANONICAL](TD_MULTICANONICAL.md).
 
-\par Examples
+## Examples
 
 The following input can be used to run a simulation in the multithermal-multibaric ensemble.
 The region of the temperature-pressure plane that will be explored is 260-350 K and 1 bar- 300 MPa.
@@ -101,7 +105,7 @@ Legendre polynomials are used to construct the two dimensional bias potential.
 The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
 The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
 
-\plumedfile
+```plumed
 # Use energy and volume as CVs
 energy: ENERGY
 vol: VOLUME
@@ -142,8 +146,7 @@ OPT_AVERAGED_SGD ...
   COEFFS_OUTPUT=100
   TARGETDIST_STRIDE=100
 ... OPT_AVERAGED_SGD
-
-\endplumedfile
+```
 
 
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
@@ -152,12 +155,12 @@ The region of the temperature-pressure plane that will be explored is 350-450 K 
 We assume that inside this region we can find the liquid-FCC coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
 The energy, volume, and an order parameter are used as collective variables to construct the bias potential.
-We choose as order parameter the \ref FCCUBIC.
+We choose as order parameter the [FCCUBIC](FCCUBIC.md).
 Legendre polynomials are used to construct the three dimensional bias potential.
 The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
 The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
 
-\plumedfile
+```plumed
 # Use energy, volume and FCCUBIC as CVs
 energy: ENERGY
 vol: VOLUME
@@ -204,8 +207,7 @@ OPT_AVERAGED_SGD ...
   COEFFS_OUTPUT=100
   TARGETDIST_STRIDE=500
 ... OPT_AVERAGED_SGD
-
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -243,6 +245,11 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   keys.add("compulsory","STEPS_TEMP","20","Number of temperature steps.");
   keys.add("compulsory","STEPS_PRESSURE","20","Number of pressure steps.");
   keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
+  keys.addDOI("10.1016/j.cplett.2004.04.073");
+  keys.addDOI("10.1103/PhysRevLett.122.050601");
+  keys.addDOI("10.1021/acs.jctc.5b00076");
+  keys.addDOI("10.1103/PhysRevLett.86.2050"); 
+  keys.addDOI("10.1103/PhysRevLett.68.9");
 }
 
 

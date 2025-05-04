@@ -47,14 +47,15 @@ types of basis functions. For example, it is possible to calculate the
 derivatives numerically and compare to the analytically calculated
 derivatives.
 
-This action is normally used through the \ref driver.
+This action is normally used through the [driver](driver.md).
 
-\par Examples
+## Examples
 
 In the following input we define a Legendre polynomials basis functions
 of order 14 over the interval -4.0 to 4.0 and output their values
 and derivatives to files called bfL.values.data and bfL.derivs.data.
-\plumedfile
+
+```plumed
 BF_LEGENDRE ...
  ORDER=14
  MINIMUM=-4.0
@@ -67,14 +68,15 @@ VES_OUTPUT_BASISFUNCTIONS ...
  GRID_BINS=200
  FORMAT_VALUES_DERIVS=%13.6f
 ... VES_OUTPUT_BASISFUNCTIONS
-\endplumedfile
+```
 
 This input should be run through the driver by using a command similar to the
 following one where the trajectory/configuration file configuration.gro is needed to
 trick the code to exit correctly.
-\verbatim
+
+```plumed
 plumed driver --plumed plumed.dat --igro configuration.gro
-\endverbatim
+```
 
 */
 //+ENDPLUMEDOC

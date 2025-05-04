@@ -612,6 +612,8 @@ if __name__ == "__main__" :
    with open("docs/index.md", "w+") as of : printIndexFile(of,version)
    # Copy the extra files we need to process all the inputs 
    shutil.copytree("extras","docs/extras")
+   # Copy the figures 
+   shutil.copytree("figures","docs/figures") 
    # Create the assets
    shutil.copytree("assets","docs/assets")
    # Create the javascript

@@ -33,62 +33,70 @@ namespace ves {
 Legendre polynomials basis functions.
 
 Use as basis functions [Legendre polynomials](https://en.wikipedia.org/wiki/Legendre_polynomials)
-\f$P_{n}(x)\f$ defined on a bounded interval.
-You need to provide the interval \f$[a,b]\f$
+$P_{n}(x)$ defined on a bounded interval.
+You need to provide the interval $[a,b]$
 on which the basis functions are to be used, and the order of the
-expansion \f$N\f$ (i.e. the highest order polynomial used).
-The total number of basis functions is \f$N+1\f$ as the constant \f$P_{0}(x)=1\f$
+expansion $N$ (i.e. the highest order polynomial used).
+The total number of basis functions is $N+1$ as the constant $P_{0}(x)=1$
 is also included.
 These basis functions should not be used for periodic CVs.
 
-Intrinsically the Legendre polynomials are defined on the interval \f$[-1,1]\f$.
-A variable \f$t\f$ in the interval \f$[a,b]\f$ is transformed to a variable \f$x\f$
-in the intrinsic interval \f$[-1,1]\f$ by using the transform function
-\f[
+Intrinsically the Legendre polynomials are defined on the interval $[-1,1]$.
+A variable $t$ in the interval $[a,b]$ is transformed to a variable $x$
+in the intrinsic interval $[-1,1]$ by using the transform function
+
+$$
 x(t) = \frac{t-(a+b)/2}
 {(b-a)/2}
-\f]
+$$
 
 The Legendre polynomials are given by the recurrence relation
-\f{align}{
+
+$$
+\begin{aligned}
 P_{0}(x)    &= 1 \\
 P_{1}(x)    &= x \\
 P_{n+1}(x)  &= \frac{2n+1}{n+1} \, x \, P_{n}(x) -  \frac{n}{n+1} \, P_{n-1}(x)
-\f}
+\end{aligned}
+$$
 
 The first 6 polynomials are shown below
-\image html ves_basisf-legendre.png
 
-The Legendre polynomial are orthogonal over the interval \f$[-1,1]\f$
-\f[
+![A graph showing the first 6 Legendre polynomials](figures/ves_basisf-legendre.png)
+
+The Legendre polynomial are orthogonal over the interval $[-1,1]$
+
+$$
 \int_{-1}^{1} dx \, P_{n}(x)\, P_{m}(x)  =  \frac{2}{2n+1} \delta_{n,m}
-\f]
+$$
+
 By using the SCALED keyword the polynomials are scaled by a factor of
-\f$ \sqrt{\frac{2n+1}{2}}\f$ such that they are orthonormal to 1.
+$\sqrt{\frac{2n+1}{2}}$ such that they are orthonormal to 1.
 
 
 From the above equation it follows that integral of the basis functions
-over the uniform target distribution \f$p_{\mathrm{u}}(x)\f$ are given by
-\f[
+over the uniform target distribution $p_{\mathrm{u}}(x)$ are given by
+
+$$
 \int_{-1}^{1} dx \, P_{n}(x) p_{\mathrm{u}}(x) =  \delta_{n,0},
-\f]
-and thus always zero except for the constant \f$P_{0}(x)=1\f$.
+$$
+
+and thus always zero except for the constant $P_{0}(x)=1$.
 
 
 For further mathematical properties of the Legendre polynomials see for example
 the [Wikipedia page](https://en.wikipedia.org/wiki/Legendre_polynomials).
 
-\par Examples
+## Examples
 
 Here we employ a Legendre expansion of order 20 over the interval -4.0 to 8.0.
 This results in a total number of 21 basis functions.
 The label used to identify  the basis function action can then be
 referenced later on in the input file.
-\plumedfile
-bf_leg: BF_LEGENDRE MINIMUM=-4.0 MAXIMUM=8.0 ORDER=20
-\endplumedfile
 
-\par Examples
+```plumed
+bf_leg: BF_LEGENDRE MINIMUM=-4.0 MAXIMUM=8.0 ORDER=20
+```
 
 */
 //+ENDPLUMEDOC
