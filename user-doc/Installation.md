@@ -304,41 +304,6 @@ Notice that it might be necessary to add to `LDFLAGS` the path to your TCL inter
 
 Then, rebuild plumed.
 
-\subsection installation-libtorch LibTorch
-
-In order to use machine learning models optimized with PyTorch (as in the \ref PYTORCH module) or specific actions implemented in the \ref ISDB module, one needs to link the LibTorch C++ library. To do so, one can follow these instructions to download the pre-compiled library and configure PLUMED to use it.
-
-\warning 
-Libtorch APIs are still in beta phase, so there might be breaking changes in newer versions. Currently, versions between 1.8.* and 2.0.0 have been tested. Please note that if you want to link a different version it might be necessary to manually specify the required libraries within LIBS in configure. 
-
-**Download LibTorch C++ API library**
-
-You can download the pre-built LibTorch library from their <a href="https://pytorch.org/get-started/locally/"> website</a>. For example, the following script downloads the <a href="https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.0%2Bcpu.zip"> `libtorch-cxx11-abi-shared-with-deps-2.0.0%2Bcpu.zip`</a> (2.0.0, CPU, with C++11 ABI compatibility).
-
-\verbatim
-wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.0%2Bcpu.zip 
-unzip libtorch-cxx11-abi-shared-with-deps-2.0.0+cpu.zip ; 
-\endverbatim
-
-If you have a GPU, you might want to use the CUDA-accelerated version of LibTorch. For example, the following script downloads the <a href="https://download.pytorch.org/libtorch/cu117/libtorch-shared-with-deps-2.0.0%2Bcu117.zip"> `libtorch-shared-with-deps-2.0.0%2Bcu117.zip`</a> (2.0.0, GPU, Cuda 11.7, pre-cxx11 ABI binary).
-
-\verbatim
-wget https://download.pytorch.org/libtorch/cu117/libtorch-shared-with-deps-2.0.0%2Bcu117.zip 
-unzip libtorch-shared-with-deps-2.0.0+cu117.zip 
-\endverbatim
-
-In both CPU and GPU cases, the location of the include and library files need to be exported in the environment:
-
-\verbatim
-LIBTORCH=${PWD}/libtorch
-export CPATH=${LIBTORCH}/include/torch/csrc/api/include/:${LIBTORCH}/include/:${LIBTORCH}/include/torch:$CPATH
-export INCLUDE=${LIBTORCH}/include/torch/csrc/api/include/:${LIBTORCH}/include/:${LIBTORCH}/include/torch:$INCLUDE
-export LIBRARY_PATH=${LIBTORCH}/lib:$LIBRARY_PATH
-export LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH
-\endverbatim
-
-Remember to add these lines also in your `~/.bashrc` or  `~/.bash_profile` file. 
-
 **Configure PLUMED**
 
 Once the environment variables are set, we can configure PLUMED with the `--enable-libtorch` keyword:

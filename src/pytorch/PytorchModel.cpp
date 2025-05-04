@@ -57,18 +57,23 @@ This can be a function defined in Python or a more complex model, such as a neur
 
 By default it is assumed that the model is saved as: `model.ptc`, unless otherwise indicated by the `FILE` keyword. The function automatically checks for the number of output dimensions and creates a component for each of them. The outputs are called node-i with i between 0 and N-1 for N outputs.
 
-Note that this function requires \ref installation-libtorch LibTorch C++ library. Check the instructions in the \ref PYTORCH page to enable the module.
+Note that this function requires an installation of the LibTorch C++ library. Check the instructions on [the module page](module_pytorch.md) for instructions on how to enable the module.
 
-\par Examples
+## Examples
+
 Load a model called `torch_model.ptc` that takes as input two dihedral angles and returns two outputs.
 
-\plumedfile
-#SETTINGS AUXFILE=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
+```plumed
+#SETTINGS INPUTFILES=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
+
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-model: PYTORCH_MODEL FILE=torch_model.ptc ARG=phi,psi
+model: PYTORCH_MODEL ...
+  FILE=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
+  ARG=phi,psi
+...
 PRINT FILE=COLVAR ARG=model.node-0,model.node-1
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
