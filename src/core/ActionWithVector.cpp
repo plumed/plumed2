@@ -569,6 +569,7 @@ void ActionWithVector::applyNonZeroRankForces( std::vector<double>& outforces ) 
     if(nt>1)
       for(unsigned i=0; i<outforces.size(); ++i) {
         outforces[i]+=omp_forces[t][i];
+        omp_forces[t][i] = 0.0;
       }
   }
   // MPI Gather on forces
