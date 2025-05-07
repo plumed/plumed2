@@ -229,8 +229,8 @@ def addSpecialGroupsToPage( file, groups ) :
              else : of.write( l ) 
 
 def getModuleType(module): 
-    if not Path("../src/" + module + "/module.type").is_file() : return "always"
-    with open("../src/" + module + "/module.type") as f : return f.read().strip()
+    if not Path("../../src/" + module + "/module.type").is_file() : return "always"
+    with open("../../src/" + module + "/module.type") as f : return f.read().strip()
 
 def drawModuleNode( index, key, of ) :
     of.write(  str(index) + "(\"" + key + "\")\n")
