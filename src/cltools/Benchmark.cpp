@@ -282,7 +282,7 @@ class UniformSphericalVector {
 
 public:
   //assuming rmin=0
-  UniformSphericalVector(const double rmax):
+  explicit UniformSphericalVector(const double rmax):
     rCub (rmax*rmax*rmax/*-rminCub*/) {}
   PLMD::Vector operator()(Random& rng) {
     double rho = std::cbrt (/*rminCub + */rng.RandU01()*rCub);
@@ -302,7 +302,9 @@ struct AtomDistribution {
     std::fill(box.begin(), box.end(),0);
   };
   virtual ~AtomDistribution() noexcept {}
-  virtual bool overrideNat(unsigned& ) {}
+  virtual bool overrideNat(unsigned& ) {
+    return false;
+  }
 };
 
 struct theLine:public AtomDistribution {
@@ -348,12 +350,12 @@ struct uniformSphere:public AtomDistribution {
 };
 
 struct twoGlobs: public AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) override {
     //I am using two unigform spheres and 2V=n
     const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
 
     UniformSphericalVector usv(rmax);
-    std::array<Vector,2> centers{
+    const std::array<const Vector,2> centers{
       PLMD::Vector{0.0,0.0,0.0},
 //so they do not overlap
       PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
@@ -365,7 +367,7 @@ struct twoGlobs: public AtomDistribution {
     });
   }
 
-  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
+  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
 
     const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
     box[0]=rmax;
@@ -536,9 +538,9 @@ class fileTraj:public AtomDistribution {
     Vector boxX(cell[0],cell[1],cell[2]);
     Vector boxY(cell[3],cell[4],cell[5]);
     Vector boxZ(cell[6],cell[7],cell[8]);
-    for (int x=0; x<rX; ++x) {
-      for (int y=0; y<rY; ++y) {
-        for (int z=0; z<rZ; ++z) {
+    for (unsigned x=0; x<rX; ++x) {
+      for (unsigned y=0; y<rY; ++y) {
+        for (unsigned z=0; z<rZ; ++z) {
           if (nrep>0) {
             for (unsigned i=0; i<nat; ++i) {
               coordinates[i+nrep*nat]=coordinates[i]
@@ -634,16 +636,14 @@ public:
   }
   std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
     {
-      std::string trajectoryFile(""), pdbfile(""), mcfile("");
-      std::vector<double> pbc_cli_box(9,0.0);
+      std::string trajectoryFile="";
+      ///@todo: add a the possibility to add the pcbbox via CLI
       int repeatX=0;
       int repeatY=0;
       int repeatZ=0;
       parse("--repeatX",repeatX);
       parse("--repeatY",repeatY);
       parse("--repeatZ",repeatZ);
-
-      TrajectoryParser parser;
 
       int nn=0;
       std::string trajectory_fmt="";
@@ -828,14 +828,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
             c=distrib(bootstrapRng);
           }
           long long int reference=0;
-          for(auto & c : choice) {
+          for(const auto & c : choice) {
             reference+=blocks[0][c];
           }
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
             // for(auto & c : choice){c=distrib(bootstrapRng);}
-            for(auto & c : choice) {
+            for(const auto & c : choice) {
               estimate+=blocks[i][c];
             }
             ratios[i][b]=double(estimate)/double(reference);
@@ -991,7 +991,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
               << cell[0] << " " << cell[1] << " " << cell[2] << " "
               << cell[3] << " " << cell[4] << " " << cell[5] << " "
               << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
-        for(int i=0; i<natoms; ++i) {
+        for(unsigned i=0; i<natoms; ++i) {
           ofile << "X\t" << pos[i]<< "\n";
         }
       }
