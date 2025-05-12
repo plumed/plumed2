@@ -114,7 +114,7 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
        AC_DEFINE([$3])
        $3=yes
     else
-       AC_MSG_WARN([cannot enable $3]) 
+       AC_MSG_WARN([cannot enable $3])
     fi
 ])
 
@@ -133,7 +133,7 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
       testlibs=""
     fi
     save_LIBS="$LIBS"
-    
+
     # check if multiple libraries are required simultaneously
     multiple="no"
     if test "$5" = "true"; then
@@ -163,8 +163,8 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
               [AC_MSG_RESULT([yes])],
               [AC_MSG_RESULT([no])]
           )
-      else 
-        for testlib in $testlibs 
+      else
+        for testlib in $testlibs
         do
           AC_MSG_CHECKING([$1 with -l$testlib])
           LIBS="-l$testlib $LIBS"
@@ -185,7 +185,7 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
       AC_DEFINE([$3])
       $3=yes
     else
-      AC_MSG_WARN([cannot enable $3]) 
+      AC_MSG_WARN([cannot enable $3])
       LIBS="$save_LIBS"
     fi
 ])
@@ -362,7 +362,7 @@ AC_PROG_CXX([$compilers])
 AC_PROG_CC([$c_compilers])
 
 # also setup Fortran compiler
-# this is optional, and can be used in the late part of this 
+# this is optional, and can be used in the late part of this
 # script to verify that fortran can indeed link properly the
 # a c++ library
 AC_PROG_FC
@@ -570,7 +570,7 @@ else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi
 
-fi 
+fi
 
 # in case external blas have been found, take note of their underscoring
 # notice that this applies also when external blas are used with internal lapack
@@ -688,7 +688,7 @@ if test $mpi = true ; then
   if test "$__PLUMED_HAS_MPI" = yes; then
     mpi_found=ok
   fi
-else 
+else
   mpi_found=ko
 fi
 
@@ -849,7 +849,7 @@ AC_SUBST(PYTHON_LDFLAGS)
 AC_SUBST(PYTHON_CFLAGS)
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
-# Otherwise, search from a list of names:  
+# Otherwise, search from a list of names:
 if test -z "$PYTHON_BIN" ; then
     AC_CHECK_PROGS([PYTHON_BIN],[python3])
 fi
@@ -863,10 +863,10 @@ import pybind11
 #no need to check for python3, if you have python2, you don't have pybind11 (and vice-versa)
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
-       
+
        pyver=$($PYTHON_BIN -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))")
        python_config=python${pyver}-config
-       
+
        if ${python_config} --ldflags --embed 1>/dev/null 2>/dev/null ;then
           AC_MSG_RESULT([yes])
           PYBIND11_CFLAGS="$($PYTHON_BIN -m pybind11 --includes) -fvisibility=hidden"
@@ -933,7 +933,7 @@ if test $metatensor = true ; then
 fi
 
 #added by luigibonati
-if test $libtorch = true ; then 
+if test $libtorch = true ; then
   # disable as-needed in linking libraries (both static and shared)
   PLUMED_CHECK_LDFLAGS([-Wl,--no-as-needed])
 
@@ -961,7 +961,7 @@ if test $libtorch = true ; then
     #include <torch/script.h>
     int main() {
       torch::Tensor tensor = torch::rand({2, 3});
-      
+
       return 0;
     }
   ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
@@ -987,8 +987,8 @@ if test $metatensor = true ; then
     #include <torch/script.h>
     #pragma GCC diagnostic pop
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
-    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
+    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
     #endif
     int main() {
       metatensor_torch::version();
@@ -1093,7 +1093,7 @@ then
       fi
     else
       AC_MSG_WARN([readelf not available, no way to set rpath])
-    fi 
+    fi
   fi
   rm -f conftest.*
 fi
@@ -1247,9 +1247,9 @@ if test "$ld_r" = true ; then
 for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -o"
 do
   AC_MSG_CHECKING([whether C++ objects can be grouped with $test_LD_RO])
-  
+
   rm -f conftest*
-  
+
   cat << EOF > conftest-main.cpp
   void f(void);
   int main(int argc,char**argv){ f(); return 0; }
@@ -1261,15 +1261,15 @@ EOF
   cat << EOF > conftest-g.cpp
   void g(void){ return; }
 EOF
-  
+
   $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
-  
+
   $test_LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
-  
+
   $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
-  
+
   if test -f conftest.exe
   then
     AC_MSG_RESULT([yes])
@@ -1288,9 +1288,9 @@ if test "$ar_cr" = true ; then
 for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
 do
   AC_MSG_CHECKING([whether static libraries can be created with $test_AR_CR])
-  
+
   rm -f conftest*
-  
+
   cat << EOF > conftest-main.cpp
   void f(void);
   int main(int argc,char**argv){ f(); return 0; }
@@ -1302,15 +1302,15 @@ EOF
   cat << EOF > conftest-g.cpp
   void g(void){ return; }
 EOF
-  
+
   $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
-  
+
   $test_AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
-  
+
   $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
-  
+
   if test -f conftest.exe
   then
     AC_MSG_RESULT([yes])
@@ -1320,7 +1320,7 @@ EOF
     AC_MSG_RESULT([no])
   fi
 done
- 
+
 fi
 
 make_static_archive=no
@@ -1338,7 +1338,7 @@ if test "${static_archive}" = true ; then
 
   magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
   rm -f conftest-*
-  
+
   cat << EOF > conftest-main.cpp
   void f(void);
   int main(int argc,char**argv){ f(); return 0; }
@@ -1357,7 +1357,7 @@ EOF
   $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
-  
+
   $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
 # linking the previously merged objects should work:
   $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
@@ -1409,7 +1409,7 @@ void f(void){
   std::cout<<"ciao";return;
 }
 EOF
-    $CXX $CXXFLAGS -c conftest.cpp 
+    $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
     if test "${libsearch}" = true ; then
@@ -1528,7 +1528,7 @@ fi
 if test $mpi = true; then
   if test $mpi_found = ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
-  else 
+  else
     AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because MPI have not been found!])
   fi
 else
@@ -1561,4 +1561,3 @@ AC_CONFIG_FILES([Makefile.conf sourceme.sh])
 # The date of this file keeps track of when Makefile.conf and sourceme.sh have been updated
 AC_CONFIG_FILES([stamp-h], [echo timestamp > stamp-h])
 AC_OUTPUT
-

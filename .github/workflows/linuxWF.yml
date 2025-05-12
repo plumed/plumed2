@@ -104,7 +104,7 @@ jobs:
       run: |
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        .ci/install.doxygen Release_1_8_17
+        .ci/install.doxygen Release_1_13_2
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -132,7 +132,7 @@ jobs:
         echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
         sudo apt-get update
         #sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
-        sudo apt-get install intel-basekit intel-hpckit 
+        sudo apt-get install intel-basekit intel-hpckit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CXX=icpx" >> $GITHUB_ENV
@@ -215,4 +215,3 @@ jobs:
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
-            
