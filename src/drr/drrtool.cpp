@@ -61,9 +61,9 @@ After getting the .grad and .count file, you can do numerical integration by
 using abf_integrate tool from
 https://github.com/Colvars/colvars/tree/master/colvartools
 
-verbatim
+````
 abf_integrate eabf.czar.grad
-\endverbatim
+````
 
 > [!note]
 > The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
