@@ -176,7 +176,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<s
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
   values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
-  log.printf("  added component to this action: %s \n", thename.c_str() ); 
+  log.printf("  added component to this action: %s \n", thename.c_str() );
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
