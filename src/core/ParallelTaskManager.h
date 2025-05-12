@@ -109,11 +109,11 @@ struct ParallelActionsInput {
   /// Periodic boundary conditions
   const Pbc* pbc;
   /// The number of components the underlying action is computing
-  unsigned ncomponents{0};
+  std::size_t ncomponents{0};
   /// The number of scalars we are calculating for each task
   unsigned nscalars{0};
   /// Number of derivatives for each scalar being calculated
-  unsigned nderivatives_per_scalar{0};
+  std::size_t nderivatives_per_scalar{0};
   /// The start of the thread unsafe forces
   unsigned threadunsafe_forces_start{0};
   /// This holds all the input data that is required to calculate all values for all tasks

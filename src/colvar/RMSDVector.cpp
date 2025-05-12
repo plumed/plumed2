@@ -163,7 +163,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     log.printf("  calculating RMSD distance between %d atoms. Distance between the avectors of atoms in %s and %s\n",
                natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
   else
-    log.printf("  calculating RMSD distance between %d sets of %d atoms. Distance between vector %s of atoms and matrix of configurations in %s\n",
+    log.printf("  calculating RMSD distance between %zu sets of %d atoms. Distance between vector %s of atoms and matrix of configurations in %s\n",
                getPntrToArgument(1)->getShape()[0], natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
   log.printf("  method for alignment : %s \n",myinput.type.c_str() );
   if(myinput.squared) {

@@ -247,7 +247,8 @@ void LinkCells::createNeighborList( unsigned nat, const std::vector<Vector>& pos
     natoms_per_list = allcells.size();
   }
 
-  nlist.resize( nat*( 2 + natoms_per_list ) );
+  unsigned nlist_sz = nat*( 2 + natoms_per_list );
+  nlist.resize( nlist_sz );
   std::vector<unsigned> indices( 1+natoms_per_list ), cells_required( getNumberOfCells() );
   for(unsigned i=0; i<pos.size(); ++i) {
     unsigned ncells_required=0;
