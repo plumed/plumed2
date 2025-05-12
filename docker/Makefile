@@ -1,13 +1,13 @@
 
-.PHONY: ubuntu plumed2.tgz clean fedora39 fedora39-pycv rocky8 rocky8-pycv 
+.PHONY: ubuntu plumed2.tgz clean fedora42 fedora42-pycv rocky8 rocky8-pycv 
 
 ubuntu: plumed2.tgz
 	docker build --shm-size 1024M -t plumed --progress=plain .
 
-fedora39: plumed2.tgz
-	docker build --shm-size 1024M -t plumed:fedora39 --progress=plain -f fedora39 .
-fedora39-pycv: plumed2.tgz
-	docker build --shm-size 1024M -t plumed:fedora39-pycv --progress=plain -f fedora39-pycv .
+fedora42: plumed2.tgz
+	docker build --shm-size 1024M -t plumed:fedora42 --progress=plain -f fedora42 .
+fedora42-pycv: plumed2.tgz
+	docker build --shm-size 1024M -t plumed:fedora42-pycv --progress=plain -f fedora42-pycv .
 
 
 rocky8: plumed2.tgz

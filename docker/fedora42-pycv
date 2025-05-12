@@ -1,4 +1,4 @@
-FROM plumed:fedora39
+FROM plumed:fedora42
 
 RUN source /etc/bashrc \
  && module load mpi \
