@@ -64,8 +64,6 @@ Note that this function requires an installation of the LibTorch C++ library. Ch
 Load a model called `torch_model.ptc` that takes as input two dihedral angles and returns two outputs.
 
 ```plumed
-#SETTINGS INPUTFILES=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
-
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 model: PYTORCH_MODEL ...
