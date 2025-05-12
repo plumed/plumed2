@@ -126,6 +126,11 @@ public:
       float* charges,
       float* coordinates,
       float* cell ) =0;
+
+  virtual std::optional<std::string> rewind() {
+    return "rewind not (yet) implemented for this kind of trajectory file";
+  }
+
 };
 namespace {
 
@@ -254,6 +259,13 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  std::optional<std::string> rewind() override {
+    int error = std::fseek(fp,0,SEEK_SET);
+    if (error) {
+      return "ERROR: Error rewinding trajectory file";
+    }
+    return std::nullopt;
+  }
 };
 
 class dlp4Parser final:public fileParser {
@@ -399,6 +411,13 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  std::optional<std::string> rewind() override {
+    int error = std::fseek(fp,0,SEEK_SET);
+    if (error) {
+      return "ERROR: Error rewinding trajectory file";
+    }
+    return std::nullopt;
+  }
 };
 
 class groParser final:public fileParser {
@@ -532,6 +551,13 @@ public:
   }
   //see the template readAtoms_t for the implementation
   READATOMS;
+  std::optional<std::string> rewind() override {
+    int error = std::fseek(fp,0,SEEK_SET);
+    if (error) {
+      return "ERROR: Error rewinding trajectory file";
+    }
+    return std::nullopt;
+  }
 };
 
 
@@ -1067,4 +1093,9 @@ int TrajectoryParser::nOfAtoms() const {
   }
   return -1;
 }
+
+std::optional<std::string> TrajectoryParser::rewind() {
+  return parser->rewind();
+}
+
 } // namespace PLMD

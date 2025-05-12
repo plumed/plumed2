@@ -29,6 +29,7 @@
 #include "tools/Log.h"
 #include "tools/DLLoader.h"
 #include "tools/Random.h"
+#include "tools/TrajectoryParser.h"
 
 #include <cstdio>
 #include <string>
@@ -41,6 +42,7 @@
 #include <algorithm>
 #include <chrono>
 #include <string_view>
+#include <optional>
 
 namespace PLMD {
 namespace cltools {
@@ -274,8 +276,6 @@ struct Kernel :
   }
 };
 
-namespace  {
-
 class UniformSphericalVector {
   //double rminCub;
   double rCub;
@@ -433,6 +433,7 @@ struct tiledSimpleCubic:public AtomDistribution {
       }
     }
   }
+
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
     box[0]=rmax;
@@ -447,6 +448,115 @@ struct tiledSimpleCubic:public AtomDistribution {
 
   }
 };
+
+/// atomic distribution from a trajectory file
+class fileTraj:public AtomDistribution {
+  TrajectoryParser parser;
+  bool positionRead=false;
+  bool boxRead=false;
+  bool dont_read_pbc=false;
+  std::vector<double> masses{};
+  std::vector<double> charges{};
+  std::vector<Vector> coordinates{};
+  std::vector<double> cell{};
+  void rewind() {
+    auto errormessage=parser.rewind();
+    if (errormessage) {
+      // A workarounf for not implemented rewind is to dump the trajectory in an xyz and then read that
+      plumed_error()<<*errormessage;
+    }
+    //the extra false prevents an infinite loop in case of unexpected consecutice EOFs after a rewind
+    step(false);
+  }
+  //read the next step
+  void step(bool doRewind=true) {
+    positionRead=false;
+    boxRead=false;
+    long long int mystep=0;
+    double timeStep;
+    std::optional<std::string> errormessage;
+    if (masses.empty()) {
+      errormessage=parser.readHeader(
+                     mystep,
+                     timeStep
+                   );
+      if (errormessage) {
+        plumed_error()<<*errormessage;
+      }
+      const size_t natoms = parser.nOfAtoms();
+
+      masses.assign(natoms,0.0);
+      charges.assign(natoms,0.0);
+      coordinates.assign(natoms,Vector(0.0,0.0,0.0));
+      cell.assign(9,0.0);
+      errormessage=parser.readAtoms(1,
+                                    dont_read_pbc,
+                                    false,
+                                    0,
+                                    0,
+                                    mystep,
+                                    masses.data(),
+                                    charges.data(),
+                                    &coordinates[0][0],
+                                    cell.data()
+                                   );
+    } else {
+      errormessage=parser.readFrame(1,
+                                    dont_read_pbc,
+                                    false,
+                                    0,
+                                    0,
+                                    mystep,
+                                    timeStep,
+                                    masses.data(),
+                                    charges.data(),
+                                    &coordinates[0][0],
+                                    cell.data()
+                                   );
+    }
+
+    if (errormessage) {
+      if (*errormessage =="EOF" && doRewind) {
+        rewind();
+      } else {
+        plumed_error()<<*errormessage;
+      }
+    }
+
+  }
+public:
+  void positions(std::vector<Vector>& posToUpdate,
+                 unsigned /*step*/,
+                 Random& /*rng*/) override {
+    if (positionRead) {
+      step();
+    }
+    positionRead=true;
+    std::copy(coordinates.begin(),coordinates.end(),posToUpdate.begin());
+  }
+
+  void box(std::vector<double>& box,
+           unsigned /*natoms*/,
+           unsigned /*step*/, Random&) override {
+    if (boxRead) {
+      step();
+    }
+    boxRead=true;
+    std::copy(cell.begin(),cell.end(),box.begin());
+  }
+
+  fileTraj(std::string_view fmt,
+           std::string_view fname,
+           bool useMolfile,
+           int command_line_natoms) {
+    parser.init(fmt,
+                fname,
+                useMolfile,
+                command_line_natoms);
+    step();
+  }
+};
+
 std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr) {
   std::unique_ptr<AtomDistribution> distribution;
   if(atomicDistr == "line") {
@@ -465,7 +575,7 @@ std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDis
   }
   return distribution;
 }
-} //anonymus namespace for benchmark distributions
+
 class Benchmark:
   public CLTool {
 public:
@@ -474,6 +584,72 @@ public:
   int main(FILE* in, FILE*out,Communicator& pc) override;
   std::string description()const override {
     return "run a calculation with a fixed trajectory to find bottlenecks in PLUMED";
+  }
+  std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
+    {
+      std::string trajectoryFile(""), pdbfile(""), mcfile("");
+      std::vector<double> pbc_cli_box(9,0.0);
+
+      TrajectoryParser parser;
+
+      int nn=0;
+      std::string trajectory_fmt="";
+      for (const auto & trj_type : TrajectoryParser::trajectoryOptions()) {
+        std::string tmp;
+        parse("--i"+trj_type, tmp);
+        if (tmp.length()>0) {
+          trajectory_fmt=trj_type;
+          ++nn;
+          trajectoryFile=tmp;
+        }
+      }
+      bool use_molfile=false;
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+      {
+        auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
+        for(unsigned i=0; i<plugins_names.size(); i++) {
+          std::string molfile_key="--mf_"+plugins_names[i];
+          std::string traj_molfile;
+          parse(molfile_key,traj_molfile);
+          if(traj_molfile.length()>0) {
+            ++nn;
+            log << "BENCHMARK: Found molfile format trajectory "
+                << plugins_names[i]
+                <<" with name " << traj_molfile
+                << "\n";
+            trajectoryFile=traj_molfile;
+            trajectory_fmt=plugins_names[i];
+            use_molfile=true;
+          }
+        }
+      }
+#endif
+      {
+
+        if(nn>1) {
+          std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+          //let the "main"
+          return std::nullopt;
+        }
+      }
+      if (nn==1) {
+        std::cout << trajectory_fmt << "\n";
+        std::cout << trajectoryFile << "\n";
+        return std::make_unique<fileTraj>(
+                 trajectory_fmt,
+                 trajectoryFile,
+                 use_molfile,
+                 -1
+               );
+      }
+    }
+    std::string atomicDistr;
+    parse("--atom-distribution",atomicDistr);
+    if(atomicDistr != "") {
+      log << "Using --atom-distribution=" << atomicDistr << "\n";
+      return getAtomDistribution(atomicDistr);
+    }
+    return std::nullopt;
   }
 };
 
@@ -484,13 +660,16 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
+  // Maybe "--natoms" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
+  TrajectoryParser::registerKeywords(keys);
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -503,7 +682,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
   generator rng;
   PLMD::Random atomicGenerator;
-  std::unique_ptr<AtomDistribution> distribution;
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -717,12 +895,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log << "Using --sleep=" << timeToSleep << "\n";
 
   std::vector<int> shuffled_indexes;
-
-  {
-    std::string atomicDistr;
-    parse("--atom-distribution",atomicDistr);
-    distribution = getAtomDistribution(atomicDistr);
-    log << "Using --atom-distribution=" << atomicDistr << "\n";
+  std::unique_ptr<AtomDistribution> distribution;
+  if(auto checkDistr = parseAtomDistribution(log);
+      checkDistr.has_value()) {
+    distribution = std::move (*checkDistr);
+  } else {
+    std::fprintf(stderr,"ERROR: problem with setting up the trajectory for the benchmark\n");
+    return 1;
   }
 
   {
@@ -806,6 +985,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
     distribution->positions(pos,step,atomicGenerator);
     distribution->box(cell,natoms,step,atomicGenerator);
+
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;
