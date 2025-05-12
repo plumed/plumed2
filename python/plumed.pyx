@@ -245,7 +245,7 @@ cdef class Plumed:
          if val is None :
             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
             return
-         if isinstance(val, (int,long) ):
+         if isinstance(val, int ):
             self.cmd_int(ckey, val)
             return
          if isinstance(val, float ) :
