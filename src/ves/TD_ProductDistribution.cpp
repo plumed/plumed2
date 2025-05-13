@@ -37,18 +37,20 @@ Target distribution given by a separable product of one-dimensional distribution
 
 Employ a target distribution that is a separable product
 of one-dimensional distributions, defined as
-\f[
+
+$$
 p(\mathbf{s}) =
 \prod_{k}^{d} p_{k}(s_{k})
-\f]
-where \f$d\f$ is the number of arguments used and \f$p_{k}(s_{k})\f$ is the
-one-dimensional distribution corresponding to the \f$k\f$-th argument.
+$$
+
+where $d$ is the number of arguments used and $p_{k}(s_{k})$ is the
+one-dimensional distribution corresponding to the $k$-th argument.
 
 Note the difference between this target distribution and the one defined in
-\ref TD_PRODUCT_COMBINATION. Here we have a separable distribution given as a
-product of one-dimensional distribution \f$p_{k}(s_{k})\f$.
+[TD_PRODUCT_COMBINATION](TD_PRODUCT_COMBINATION.md). Here we have a separable distribution given as a
+product of one-dimensional distribution $p_{k}(s_{k})$.
 
-The labels of the one-dimensional distributions \f$p_{k}(s_{k})\f$ to be
+The labels of the one-dimensional distributions $p_{k}(s_{k})$ to be
 used in the product distribution are given in the DISTRIBUTIONS keyword.
 Note that the order of the labels is very important.
 
@@ -62,17 +64,19 @@ The product distribution will be a dynamic target distribution if one or more
 of the distributions used is a dynamic distribution. Otherwise it will be a
 static distribution.
 
-\par Examples
+## Examples
 
 In the following example we employ a uniform distribution for
 argument 1 and a Gaussian distribution for argument 2.
-\plumedfile
+
+```plumed
 target_uniform: TD_UNIFORM
 
 target_Gaussian: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
 td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=target_uniform,target_Gaussian
-\endplumedfile
+```
+
 Note that order of the labels is important, using DISTRIBUTIONS=target_Gaussian,target_uniform
 would mean that we would employ a Gaussian distribution for argument 1 and a uniform
 distribution for argument 2, which would lead to completely different results.

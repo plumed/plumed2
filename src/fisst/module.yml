@@ -1,0 +1,4 @@
+name: fisst
+authors: Glen Hocky
+description: An implementation of infinite switch simulated tempering in force (FISST)
+dois: ["10.1063/5.0009280"]

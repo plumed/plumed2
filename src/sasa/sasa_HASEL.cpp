@@ -42,19 +42,18 @@ namespace sasa {
 /*
 Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it.
 
-The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The algorithm described in \cite Hasel1988 is used for the calculation. The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of SASA is updated (the default is every 10 steps).
+The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The algorithm described in the first paper cited below is used for the calculation. The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
 
 1) the total SASA (TOTAL);
 
-2) the free energy of transfer for the protein according to the transfer model (TRANSFER). This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in \cite Arsiccio-T-SASA-2021, or to different pressures, as detailed in \cite Arsiccio-P-SASA-2021, or to different osmolyte solutions, as detailed in \cite Arsiccio-C-SASA-2022.
+2) the free energy of transfer for the protein according to the transfer model (TRANSFER). This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in the second paper cited below, or to different pressures, as detailed in the fourth paper cited below, or to different osmolyte solutions, as detailed in the third paper cited below.
 
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
 
-\verbatim
-
+````
 ----------------Sample DeltaG.dat file---------------------
 ALA	0.711019999999962
 ARG	-2.24832799999996
@@ -78,51 +77,52 @@ TYR	0.775547999999958
 VAL	2.12779200000011
 BACKBONE	1.00066920000002
 -----------------------------------------------------------
-\endverbatim
+````
 
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
-A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure (according to \cite Arsiccio-C-SASA-2022, \cite Arsiccio-T-SASA-2021 and \cite Arsiccio-P-SASA-2021) is freely available at https://github.com/andrea-arsiccio/DeltaG-calculation. The script automatically outputs a DeltaG.dat file compatible with this SASA module.
+A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure (according to the second, third and fourth papers cited below) is freely available at
+[here](https://github.com/andrea-arsiccio/DeltaG-calculation). The script automatically outputs a DeltaG.dat file compatible with this SASA module.
 
 
-If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper \cite Arsiccio-T-SASA-2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
+If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper the second paper cited below. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
 
-The SASA usually makes sense when atoms used for the calculation are all part of the same molecule. When running with periodic boundary conditions, the atoms should be in the proper periodic image. This is done automatically since PLUMED 2.2, by rebuilding the broken entities using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. Notice that rebuilding is local to this action. This is different from \ref WHOLEMOLECULES which actually modifies the coordinates stored in PLUMED.
+The SASA usually makes sense when atoms used for the calculation are all part of the same molecule. When running with periodic boundary conditions, the atoms should be in the proper periodic image. This is done automatically since PLUMED 2.2, by rebuilding the broken entities using a procedure that is equivalent to that done in [WHOLEMOLECULES](WHOLEMOLECULES.md). Notice that rebuilding is local to this action. This is different from [WHOLEMOLECULES](WHOLEMOLECULES.md) which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct periodic image.
 
-The SASA may also be computed using the SASA_LCPO collective variable, which makes use of the LCPO algorithm \cite Weiser1999. SASA_LCPO is more accurate then SASA_HASEL, but the computation is slower.
+The SASA may also be computed using the SASA_LCPO collective variable, which makes use of the LCPO algorithm that is discussed in the last paper cited below. SASA_LCPO is more accurate then SASA_HASEL, but the computation is slower.
 
 
-\par Examples
+## Examples
 
 The following input tells plumed to print the total SASA for atoms 10 to 20 in a protein chain.
-\plumedfile
+
+```plumed
 SASA_HASEL TYPE=TOTAL ATOMS=10-20 NL_STRIDE=10 LABEL=sasa
 PRINT ARG=sasa STRIDE=1 FILE=colvar
-\endplumedfile
-
+```
 
 The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are read from a file called DeltaG.dat.
 
-\plumedfile
+```plumed
 SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 DELTAGFILE=DeltaG.dat LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
 PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
-\endplumedfile
+```
 
-The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to \cite Arsiccio-T-SASA-2021, and take into account the effect of temperature using approach 2 as described in the paper.
+The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to the second paper cited below, and take into account the effect of temperature using approach 2 as described in the paper.
 
-\plumedfile
+```plumed
 SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
 PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -172,6 +172,11 @@ void SASA_HASEL::registerKeywords(Keywords& keys) {
   keys.add("optional","DELTAGFILE","a file containing the free energy of transfer values for backbone and sidechains atoms. Necessary only if TYPE = TRANSFER. A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure is freely available at https://github.com/andrea-arsiccio/DeltaG-calculation. The script automatically outputs a DeltaG.dat file compatible with this SASA module. If TYPE = TRANSFER and no DELTAGFILE is provided, the free energy values are those describing the effect of temperature, and are computed using the temperature value passed by the MD engine");
   keys.add("optional","APPROACH","either approach 2 or 3. Necessary only if TYPE = TRANSFER and no DELTAGFILE is provided. If TYPE = TRANSFER and no DELTAGFILE is provided, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021) needs to be used to compute them");
   keys.setValueDescription("scalar","the solvent accessible surface area (SASA) of the molecule");
+  keys.addDOI("10.1016/0898-5529(88)90015-2");
+  keys.addDOI("10.1021/acs.jpcb.1c01694");
+  keys.addDOI("10.1021/acs.jpcb.2c00889");
+  keys.addDOI("10.1021/acs.jpcb.1c04398");
+  keys.addDOI("10.1002/(SICI)1096-987X(19990130)20:2<217::AID-JCC4>3.0.CO;2-A");
 }
 
 

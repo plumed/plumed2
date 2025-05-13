@@ -45,20 +45,22 @@ Target distribution given by product combination of distributions (static or dyn
 
 Employ a target distribution that is a product combination of the other
 distributions, defined as
-\f[
+
+$$
 p(\mathbf{s}) =
 \frac{\prod_{i} p_{i}(\mathbf{s})}
 {\int d \mathbf{s} \prod_{i} p_{i}(\mathbf{s})}
-\f]
-where the distributions \f$p_{i}(\mathbf{s})\f$ are in full dimensional space
+$$
+
+where the distributions $p_{i}(\mathbf{s})$ are in full dimensional space
 of the arguments used.
 
 Note the difference between this target distribution and the one defined in
-\ref TD_PRODUCT_DISTRIBUTION. Here we have a non-separable distribution given
-as a product of distribution \f$p_{i}(\mathbf{s})\f$ which are in full dimensional
+[TD_PRODUCT_DISTRIBUTION](TD_PRODUCT_DISTRIBUTION.md). Here we have a non-separable distribution given
+as a product of distribution $p_{i}(\mathbf{s})$ which are in full dimensional
 space of the arguments used.
 
-The labels of the distributions \f$p_{i}(\mathbf{s})\f$ to be used in the
+The labels of the distributions $p_{i}(\mathbf{s})$ to be used in the
 product combination are given in the DISTRIBUTIONS keyword.
 
 The target distribution resulting from the product combination will be
@@ -70,7 +72,7 @@ The product combination will be a dynamic target distribution if one or more
 of the distributions used is a dynamic distribution. Otherwise it will be a
 static distribution.
 
-\par Examples
+## Examples
 
 In the following example the overall interval on which the
 target distribution is defined is from 0.23 to 0.8.
@@ -80,12 +82,12 @@ zero at 0.6. This results in a target distribution that
 is well-tempered from 0.23 to 0.6 and then decays to zero.
 In other words, we cut off the tail of the well-tempered
 distribution at 0.6
-\plumedfile
+
+```plumed
 td_welltemp: TD_WELLTEMPERED BIASFACTOR=5
 td_uniform: TD_UNIFORM MINIMA=0.23 MAXIMA=0.6 SIGMA_MAXIMA=0.05
 td_combination: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_uniform,td_welltemp
-\endplumedfile
-
+```
 
 In the following example the overall interval on which the
 target distribution is defined is from -4 to 4.
@@ -94,7 +96,8 @@ and distribution that is uniform on the interval -3 to 3 and
 then smoothly decays to zero outside that interval.
 The overall effect will then be to cut off the tails of the
 Gaussian distribution
-\plumedfile
+
+```plumed
 TD_GAUSSIAN ...
  CENTER1=-2.9 SIGMA1=1.0
  CENTER2=+2.9 SIGMA2=0.4
@@ -108,7 +111,7 @@ TD_UNIFORM ...
 ... TD_UNIFORM
 
 td_pc: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_gauss,td_uni
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

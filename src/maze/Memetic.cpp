@@ -34,16 +34,16 @@ namespace maze {
 /*
 
 Calculates the biasing direction along which the ligand unbinds by
-minimizing the \ref MAZE_LOSS function. The optimal biasing direction is
+minimizing the [MAZE_LOSS](MAZE_LOSS.md) function. The optimal biasing direction is
 determined by performing a population-based memetics search with local
 heuristics.
 
-\par Examples
+## Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref MAZE_LOSS keyword.
+an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
-\plumedfile
+```plumed
 MAZE_MEMETIC_SAMPLING ...
   LABEL=ma
 
@@ -67,7 +67,7 @@ MAZE_MEMETIC_SAMPLING ...
   LIGAND=2635-2646
   PROTEIN=1-2634
 ... MAZE_MEMETIC_SAMPLING
-\endplumedfile
+```
 
 As shown above, each optimizer should be provided with the LIGAND and
 the PROTEIN keywords.

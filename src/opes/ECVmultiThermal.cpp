@@ -26,53 +26,54 @@ namespace opes {
 /*
 Expand a simulation to sample multiple temperatures simultaneously.
 
-The internal energy \f$U\f$ of of the system should be used as ARG.
-\f[
-  \Delta u_{\beta'}=(\beta'-\beta) U\, ,
-\f]
-where \f$\beta'\f$ are the temperatures to be sampled and \f$\beta\f$ is the temperature at which the simulation is conducted.
-In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
-If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
+The internal energy $U$ of of the system should be used as ARG.
 
-By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
+$$
+  \Delta u_{\beta'}=(\beta'-\beta) U\, ,
+$$
+
+where $\beta'$ are the temperatures to be sampled and $\beta$ is the temperature at which the simulation is conducted.
+In case of fixed volume, the internal energy is simply the potential energy given by the [ENERGY](ENERGY.md) colvar $U=E$, and you will run a multicanonical simulation.
+If instead the simulation is at fixed pressure $p$, the contribution of the volume must be added $U=E+pV$ (see example below).
+
+By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in the paper cited below.
 Otherwise you can manually set this number with TEMP_STEPS.
 In both cases the steps will be geometrically spaced in temperature.
 Use instead the keyword NO_GEOM_SPACING for a linear spacing in the inverse temperature (beta), that typically increases the focus on lower temperatures.
 Finally, you can use instead the keyword TEMP_SET_ALL and explicitly provide each temperature.
 
-You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
-A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
+You can reweight the resulting simulation at any temperature in the chosen range, using e.g. [REWEIGHT_TEMP_PRESS](REWEIGHT_TEMP_PRESS.md).
+A similar target distribution can be sampled using [TD_MULTICANONICAL](TD_MULTICANONICAL.md).
 
-
-\par Examples
+## Examples
 
 Fixed volume, multicanonical simulation:
 
-\plumedfile
+```plumed
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 TEMP_MIN=300 TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
-\endplumedfile
+```
 
 which, if your MD code passes the temperature to PLUMED, is equivalent to:
 
-\plumedfile
+```plumed
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
-\endplumedfile
+```
 
-If instead the pressure is fixed and the volume changes, you shuld calculate the internal energy first, \f$U=E+pV\f$
+If instead the pressure is fixed and the volume changes, you shuld calculate the internal energy first, $U=E+pV$
 
-\plumedfile
+```plumed
 ene: ENERGY
 vol: VOLUME
 intEne: CUSTOM PERIODIC=NO ARG=ene,vol FUNC=x+0.06022140857*y
 ecv: ECV_MULTITHERMAL ARG=intEne TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.intEne PACE=500
-\endplumedfile
+```
 
-Notice that \f$p=0.06022140857\f$ corresponds to 1 bar when using the default PLUMED units.
+Notice that $p=0.06022140857$ corresponds to 1 bar when using the default PLUMED units.
 
 */
 //+ENDPLUMEDOC
@@ -107,6 +108,7 @@ void ECVmultiThermal::registerKeywords(Keywords& keys) {
   keys.add("optional","TEMP_STEPS","the number of steps in temperature");
   keys.add("optional","TEMP_SET_ALL","manually set all the temperatures");
   keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 ECVmultiThermal::ECVmultiThermal(const ActionOptions&ao)

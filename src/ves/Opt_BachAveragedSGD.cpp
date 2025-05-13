@@ -36,28 +36,32 @@ namespace ves {
 /*
 Averaged stochastic gradient decent with fixed step size.
 
-\par Algorithm
+## Algorithm
 
-This optimizer updates the coefficients according to the averaged stochastic gradient decent algorithm described in ref \cite Bach-NIPS-2013. This algorithm considers two sets of coefficients, the so-called instantaneous coefficients that are updated according to the recursion formula given by
-\f[
+This optimizer updates the coefficients according to the averaged stochastic gradient decent algorithm described [here](https://proceedings.neurips.cc/paper_files/paper/2013/file/7fe1f8abaad094e0b5cb1b01d712f708-Paper.pdf). This algorithm considers two sets of coefficients, the so-called instantaneous coefficients that are updated according to the recursion formula given by
+
+$$
 \boldsymbol{\alpha}^{(n+1)} = \boldsymbol{\alpha}^{(n)} -
 \mu \left[
 \nabla \Omega(\bar{\boldsymbol{\alpha}}^{(n)}) +
 \mathbf{H}(\bar{\boldsymbol{\alpha}}^{(n)})
 [\boldsymbol{\alpha}^{(n)}-\bar{\boldsymbol{\alpha}}^{(n)}]
 \right],
-\f]
-where \f$\mu\f$ is a fixed step size and the gradient \f$ \nabla\Omega(\bar{\boldsymbol{\alpha}}^{(n)})\f$ and the Hessian \f$\mathbf{H}(\bar{\boldsymbol{\alpha}}^{(n)})\f$ depend on the averaged coefficients defined as
-\f[
+$$
+
+where $\mu$ is a fixed step size and the gradient $ \nabla\Omega(\bar{\boldsymbol{\alpha}}^{(n)})$ and the Hessian $\mathbf{H}(\bar{\boldsymbol{\alpha}}^{(n)})$ depend on the averaged coefficients defined as
+
+$$
 \bar{\boldsymbol{\alpha}}^{(n)} = \frac{1}{n+1} \sum_{k=0}^{n} \boldsymbol{\alpha}^{(k)}.
-\f]
-This means that the bias acting on the system depends on the averaged coefficients \f$\bar{\boldsymbol{\alpha}}^{(n)}\f$ which leads to a smooth convergence of the bias and the estimated free energy surface. Furthermore, this allows for a rather short sampling time for each iteration, for classical MD simulations typical sampling times are on the order of few ps (around 1000-4000 MD steps).
+$$
+
+This means that the bias acting on the system depends on the averaged coefficients $\bar{\boldsymbol{\alpha}}^{(n)}$ which leads to a smooth convergence of the bias and the estimated free energy surface. Furthermore, this allows for a rather short sampling time for each iteration, for classical MD simulations typical sampling times are on the order of few ps (around 1000-4000 MD steps).
 
 Currently it is only supported to employ the diagonal part of the Hessian which is generally sufficient. Support for employing the full Hessian will be added later on.
 
 The VES bias that is to be optimized should be specified using the
 BIAS keyword.
-The fixed step size \f$\mu\f$ is given using the STEPSIZE keyword.
+The fixed step size $\mu$ is given using the STEPSIZE keyword.
 The frequency of updating the coefficients is given using the
 STRIDE keyword where the value is given in the number of MD steps.
 For example, if the MD time step is 0.02 ps and STRIDE=2000 will the
@@ -67,7 +71,7 @@ COEFFS_FILE keyword. How often the coefficients are written
 to this file is controlled by the COEFFS_OUTPUT keyword.
 
 If the VES bias employs a dynamic target distribution that needs to be
-iteratively updated (e.g. \ref TD_WELLTEMPERED) \cite Valsson-JCTC-2015, you will need to specify
+iteratively updated (e.g. [TD_WELLTEMPERED](TD_WELLTEMPERED.md)) the second paper cited below, you will need to specify
 the stride for updating the target distribution by using
 the TARGETDIST_STRIDE keyword where the stride
 is given in terms coefficient iterations. For example if the
@@ -87,7 +91,7 @@ It is possible to start the optimization from some initial set of
 coefficients that have been previously obtained by using the INITIAL_COEFFS
 keyword.
 
-When restarting simulations it should be sufficient to put the \ref RESTART action
+When restarting simulations it should be sufficient to put the [RESTART](RESTART.md) action
 in the beginning of the input files (or some MD codes the PLUMED should automatically
 detect if it is a restart run) and keep the same input as before The restarting of
 the optimization should be automatic as the optimizer will then read in the
@@ -100,14 +104,15 @@ This optimizer supports the usage of multiple walkers where different copies of 
 
 The optimizer supports the usage of a so-called mask file that can be used to employ different step sizes for different coefficients and/or deactivate the optimization of certain coefficients (by putting values of 0.0). The mask file is read in by using the MASK_FILE keyword and should be in the same format as the coefficient file. It is possible to generate a template mask file by using the OUTPUT_MASK_FILE keyword.
 
-\par Examples
+## Examples
 
 In the following input we employ an averaged stochastic gradient decent with a
 fixed step size of 1.0 and update the coefficient every 1000 MD steps
 (e.g. every 2 ps if the MD time step is 0.02 ps). The coefficient are outputted
 to the coefficients.data every 50 iterations while the FES and bias is outputted
 to files every 500 iterations (e.g. every 1000 ps).
-\plumedfile
+
+```plumed
 phi:   TORSION ATOMS=5,7,9,15
 
 bf1: BF_FOURIER ORDER=5 MINIMUM=-pi MAXIMUM=pi
@@ -130,7 +135,7 @@ OPT_AVERAGED_SGD ...
   FES_OUTPUT=500
   BIAS_OUTPUT=500
 ... OPT_AVERAGED_SGD
-\endplumedfile
+```
 
 
 In the following example we employ a well-tempered target distribution that
@@ -138,7 +143,8 @@ is updated every 500 iterations (e.g. every 1000 ps). The target distribution is
 also output to a file every 2000 iterations (the TARGETDIST_OUTPUT keyword).
 Here we also employ MULTIPLE_WALKERS flag to enable the usage of
 multiple walkers.
-\plumedfile
+
+```plumed
 #SETTINGS NREPLICAS=2
 phi:   TORSION ATOMS=5,7,9,15
 psi:   TORSION ATOMS=7,9,15,17
@@ -173,7 +179,7 @@ OPT_AVERAGED_SGD ...
   TARGETDIST_STRIDE=500
   TARGETDIST_OUTPUT=2000
 ... OPT_AVERAGED_SGD
-\endplumedfile
+```
 
 
 
@@ -214,6 +220,8 @@ void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {
   keys.add("hidden","COMBINED_GRADIENT_OUTPUT","how often the combined gradient should be written to file. This parameter is given as the number of bias iterations. It is by default 100 if COMBINED_GRADIENT_FILE is specficed");
   keys.add("hidden","COMBINED_GRADIENT_FMT","specify format for combined gradient file(s) (useful for decrease the number of digits in regtests)");
   keys.add("optional","EXP_DECAYING_AVER","calculate the averaged coefficients using exponentially decaying averaging using the decaying constant given here in the number of iterations");
+
+  keys.addDOI("10.1021/acs.jctc.5b00076");
 }
 
 

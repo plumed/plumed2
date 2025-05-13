@@ -53,32 +53,36 @@ Biases the ligand along the direction calculated by the chosen MAZE_OPTIMIZER.
 
 OptimizerBias is a class deriving from Bias, and it is used to adaptively
 bias a ligand-protein system toward an optimal solution found by the chosen
-\ref MAZE_OPTIMIZER.
+MAZE_OPTIMIZER (see [the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the
+list of permitted optimizers).
 
-Remember to define the loss function (\ref MAZE_LOSS) and the optimizer
-(\ref MAZE_OPTIMIZER) prior to the adaptive bias for the optimizer.
+Remember to define the loss function ([MAZE_LOSS](MAZE_LOSS.md)) and the optimizer
+prior to the adaptive bias for the optimizer.
 
 The adaptive bias potential is the following:
-\f[
+
+$$
   V({\bf x}_t)=\alpha
     \left(wt -
       ({\bf x} - {\bf x}^*_{t-\tau})
       \cdot
       \frac{{\bf x}^*_t - {\bf x}_t}{\|{\bf x}^*_t-{\bf x}_t\|}
     \right)^2,
-\f]
-where \f${\bf x}^*_t\f$ is the optimal solution at time \f$t\f$, \f$w\f$ is the
-biasing rate, \f$\tau\f$ is the interval at which the loss function is minimized,
-and \f$\alpha\f$ is a scaled force constant.
+$$
 
-\par Examples
+where ${\bf x}^*_t$ is the optimal solution at time $t$, $w$ is the
+biasing rate, $\tau$ is the interval at which the loss function is minimized,
+and $\alpha$ is a scaled force constant.
+
+## Examples
 
 In the following example the bias potential biases a ligand atom (which have to be
 given as an argument) with the biasing rate equal to 0.02 A/ps, and the biasing
 constant equal to 3.6 kcal/(mol A). It also takes an optimizer (see
-\ref MAZE_OPTIMIZER).
+[the module page](module_maze.md) and select MAZE_OPTIMIZER from the tags dropdown for the
+list of permitted optimizers).
 
-\plumedfile
+```plumed
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
 p: POSITION ATOM=2635 NOPBC
@@ -93,7 +97,7 @@ MAZE_OPTIMIZER_BIAS ...
 
   OPTIMIZER=opt
 ... MAZE_OPTIMIZER_BIAS
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

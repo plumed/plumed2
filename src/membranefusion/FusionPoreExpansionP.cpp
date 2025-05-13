@@ -33,22 +33,22 @@ namespace membranefusion {
 /*
 A CV for inducing the expansion of a fusion pore from a nucleated fusion pore.
 
-Calculate the collective variable designed by Hub \cite Hub2021  and implemented into PLUMED by Masone and collaborators.
+Calculate the collective variable designed by Hub (see paper below) and implemented into PLUMED by Masone and collaborators.
 This CV is capable of inducing the expansion of the fusion pore from a nucleated fusion pore.
 
-\f[
+$$
 \xi_e = \frac{R(r) - R_0}{R_0}
-\f]
+$$
 
-Where \f$\xi_e\f$ is the CV, \f$R_0\f$ is a normalization constant that makes zero the initial value of \f$\xi_e\f$, and
-\f$R(r)\f$ is the approximate radius of the fusion pore, which is defined by the number of waters and phosphateoxygens
+Where $\xi_e$ is the CV, $R_0$ is a normalization constant that makes zero the initial value of $\xi_e$, and
+$R(r)$ is the approximate radius of the fusion pore, which is defined by the number of waters and phosphateoxygens
 beads within a horizontal layer in the center of both membranes.
 
 \par Examples
 
-This example induces the expansion of a nucleated fusion pore (\f$\xi_e = 0.75\f$) from a just nucleated fusion pore (\f$\xi_e = 0.00\f$).
+This example induces the expansion of a nucleated fusion pore ($\xi_e = 0.75$) from a just nucleated fusion pore ($\xi_e = 0.00$).
 
-\plumedfile
+```plumed
 lMem: GROUP ATOMS=1-10752,21505-22728,23953-24420 #All the lower membrane beads.
 uMem: GROUP ATOMS=10753-21504,22729-23952,24421-24888 #All the upper membrane beads.
 tails: GROUP ATOMS=8-23948:12,12-23952:12,23966-24884:18,23970-24888:18 #All the lipid tails beads (from the lower and upper membrane).
@@ -64,8 +64,7 @@ MOVINGRESTRAINT ...
 ...
 
 PRINT ARG=fusionPoreExpansion FILE=COLVAR STRIDE=1
-
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -99,6 +98,7 @@ void fusionPoreExpansionP::registerKeywords(Keywords &keys) {
   keys.add("optional", "XCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.add("optional", "YCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.setValueDescription("scalar","the value of the CV");
+  keys.addDOI("10.1021/acs.jctc.0c01134");
 }
 
 fusionPoreExpansionP::fusionPoreExpansionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao) {

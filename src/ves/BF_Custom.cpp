@@ -36,34 +36,35 @@ Basis functions given by arbitrary mathematical expressions.
 This allows you to define basis functions using arbitrary mathematical expressions
 that are parsed using the lepton library.
 The basis functions
-\f$f_{i}(x)\f$ are given in mathematical expressions with _x_ as a variable using
+$f_{i}(x)$ are given in mathematical expressions with _x_ as a variable using
 the numbered FUNC keywords that start from
-FUNC1. Consistent with other basis functions is \f$f_{0}(x)=1\f$ defined as
+FUNC1. Consistent with other basis functions is $f_{0}(x)=1$ defined as
 the constant. The interval on which the basis functions are defined is
 given using the MINIMUM and MAXIMUM keywords.
 
-Using the TRANSFORM keyword it is possible to define a function \f$x(t)\f$ that
+Using the TRANSFORM keyword it is possible to define a function $x(t)$ that
 is used to transform the argument before calculating the basis functions
 values. The variables _min_ and _max_ can be used to indicate the minimum
 and the maximum of the interval. By default the arguments are not transformed,
-i.e. \f$x(t)=t\f$.
+i.e. $x(t)=t$.
 
 For periodic basis functions you should use the PERIODIC flag to indicate
 that they are periodic.
 
-The basis functions \f$f_{i}(x)\f$ and the transform function \f$x(t)\f$ need
+The basis functions $f_{i}(x)$ and the transform function $x(t)$ need
 to be well behaved in the interval on which the basis functions are defined,
 e.g. not result in a not a number (nan) or infinity (inf).
 The code will not perform checks to make sure that this is the case unless the
 flag CHECK_NAN_INF is enabled.
 
-\par Examples
+## Examples
 
 Defining Legendre polynomial basis functions of order 6 using BF_CUSTOM
 where the appropriate transform function is given by the TRANSFORM keyword.
 This is just an example of what can be done, in practice you should use
-\ref BF_LEGENDRE for Legendre polynomial basis functions.
-\plumedfile
+[BF_LEGENDRE](BF_LEGENDRE.md) for Legendre polynomial basis functions.
+
+```plumed
 BF_CUSTOM ...
  TRANSFORM=(t-(min+max)/2)/((max-min)/2)
  FUNC1=x
@@ -76,14 +77,14 @@ BF_CUSTOM ...
  MAXIMUM=4.0
  LABEL=bf1
 ... BF_CUSTOM
-\endplumedfile
-
+```
 
 Defining Fourier basis functions of order 3 using BF_CUSTOM where the
 periodicity is indicated using the PERIODIC flag. This is just an example
-of what can be done, in practice you should use \ref BF_FOURIER
+of what can be done, in practice you should use [BF_FOURIER](BF_FOURIER.md)
 for Fourier basis functions.
-\plumedfile
+
+```plumed
 BF_CUSTOM ...
  FUNC1=cos(x)
  FUNC2=sin(x)
@@ -96,7 +97,7 @@ BF_CUSTOM ...
  LABEL=bf1
  PERIODIC
 ... BF_CUSTOM
-\endplumedfile
+```
 
 
 */

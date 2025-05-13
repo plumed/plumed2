@@ -1,0 +1,4 @@
+name: eds
+authors: Glen Hocky and Andrew White
+description: Methods for incorporating additional information about CVs into MD simulations by adaptively determined linear bias parameters
+dois: ["10.1021/ct500320c", "10.1021/acs.jctc.7b00690", "10.1080/08927022.2019.1608988"]

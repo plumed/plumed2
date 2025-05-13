@@ -33,15 +33,14 @@ namespace isdb {
 Add a time-dependent, harmonic restraint on one or more variables.
 
 This allows implementing a maximum caliber restraint on one or more experimental time series by replica-averaged restrained simulations.
-See \cite Capelli:2018jt .
 
 The time resolved experiments are read from a text file and intermediate values are obtained by splines.
 
-\par Examples
+## Examples
 
 In the following example a restraint is applied on the time evolution of a saxs spectrum
 
-\plumedfile
+```plumed
 MOLINFO STRUCTURE=first.pdb
 
 # Define saxs variable
@@ -77,11 +76,11 @@ CALIBER ...
   REGRES_ZERO=200
   AVERAGING=200
 ... CALIBER
-\endplumedfile
+```
 
 In particular the file expsaxs.dat contains the time traces for the 15 intensities at the selected scattering lengths, organized as time, q_1, etc.
 The strength of the bias is automatically evaluated from the standard error of the mean over AVERAGING steps and multiplied by KAPPA. This is useful when working with multiple experimental data
-Because \ref SAXS is usually defined in a manner that is irrespective of a scaling factor the scaling is evaluated from a linear fit every REGRES_ZERO step. Alternatively it can be given as a fixed constant as SCALE.
+Because [SAXS](SAXS.md) is usually defined in a manner that is irrespective of a scaling factor the scaling is evaluated from a linear fit every REGRES_ZERO step. Alternatively it can be given as a fixed constant as SCALE.
 The bias is here applied every tenth step.
 
 */
@@ -135,6 +134,7 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("mean","default","scalar","the current average value of the calculated observable");
   keys.addOutputComponent("kappa","default","scalar","the current force constant");
   keys.addOutputComponent("scale","REGRES_ZERO","scalar","the current scaling constant");
+  keys.addDOI("10.1063/1.5030339");
 }
 
 Caliber::Caliber(const ActionOptions&ao):

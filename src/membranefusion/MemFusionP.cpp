@@ -33,25 +33,25 @@ namespace membranefusion {
 /*
 Calculate a CV that can induce the formation of the hemifusion stalk between two initially flat and planar bilayers.
 
-Calculate the collective variable designed by Hub and collaborators \cite Hub2017 and
-implemented into PLUMED by Masone and collaborators \cite DiBartolo2022 .
+Calculate the collective variable designed by Hub and collaborators (see first paper cited below) and
+implemented into PLUMED by Masone and collaborators (see second paper cited below).
 This CV is capable of inducing the formation of the hemifusion stalk between two initially flat and planar bilayers
 surrounded by water molecules.
 
-\f[
+$$
 \xi_f = \frac{1}{N_{sf}} \sum_{s=0}^{N_{sf}-1} \delta_{sf} (N_{sf}^{(p)})
-\f]
+$$
 
-Where \f$\xi_f\f$ is the CV, \f$N_{sf}\f$ is the number of slices of the cylinder that make up the CV,
-\f$\delta_{sf}\f$ is a continuos function in the interval [0 1] (\f$\delta_{sf} = 0\f$ for no beads in the slice s, and
-\f$\delta_{sf} = 1\f$ for 1 or more beads in the slice s) and \f$N_{sf}^{(p)}\f$ accounts for the number of tail beads
+Where $\xi_f$ is the CV, $N_{sf}$ is the number of slices of the cylinder that make up the CV,
+$\delta_{sf}$ is a continuos function in the interval [0 1] ($\delta_{sf} = 0$ for no beads in the slice s, and
+$\delta_{sf} = 1$ for 1 or more beads in the slice s) and $N_{sf}^{(p)}$ accounts for the number of tail beads
 within the slice s.
 
-\par Examples
+## Examples
 
-This example induces a hemifusion stalk (\f$\xi_f = 0.85\f$) from a pair of initially flat membranes (\f$\xi_f = 0.2\f$).
+This example induces a hemifusion stalk ($\xi_f = 0.85$) from a pair of initially flat membranes ($\xi_f = 0.2$).
 
-\plumedfile
+```plumed
 lMem: GROUP ATOMS=1-12288 #All the lower membrane beads.
 uMem: GROUP ATOMS=12289-24576 #All the upper membrane beads.
 tails: GROUP ATOMS=8-24572:12,12-24576:12 #All the lipid tails beads (from the lower and upper membrane).
@@ -65,8 +65,7 @@ MOVINGRESTRAINT ...
 ...
 
 PRINT ARG=memFusion FILE=COLVAR STRIDE=1
-
-\endplumedfile
+```
 
 You can test this CV with another example in this <a href="https://github.com/lautarodibartolo/MemFusion/tree/main/ExampleParallel">GitHub folder</a>.
 
@@ -99,6 +98,8 @@ void memFusionP::registerKeywords(Keywords &keys) {
   keys.add("optional", "XCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.add("optional", "YCYL", "Y coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.setValueDescription("scalar","the value of the CV");
+  keys.addDOI("10.1021/acs.jctc.7b00106");
+  keys.addDOI("10.1039/D1SC06711G");
 }
 
 memFusionP::memFusionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao) {

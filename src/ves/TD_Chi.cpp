@@ -35,43 +35,47 @@ Chi distribution (static).
 Employ a target distribution given by a
 [chi distribution](https://en.wikipedia.org/wiki/Chi_distribution)
 that is defined as
-\f[
+
+$$
 p(s) =
 \frac
 {2^{1-\frac{k}{2}}}
 {\sigma \, \Gamma\left(\frac{k}{2}\right) }
 \, \left(\frac{s-a}{\sigma}\right)^{k-1} \, \exp\left(- \frac{1}{2} \left(\frac{s-a}{\sigma}\right)^2\right),
-\f]
-where \f$a\f$ is the minimum of the distribution that is defined on the interval \f$[a,\infty)\f$,
-the parameter \f$k\f$ (given as a positive integer larger than 1) determines how far
-the peak of the distribution is from the minimum (known as the "degrees of freedom"),
-and the parameter \f$\sigma>0\f$ determines the broadness of the distribution.
+$$
 
-The minimum \f$a\f$ is given using the MINIMUM keyword, the parameter \f$k\f$ is given
-using the KAPPA keyword, and the parameter \f$\sigma\f$ is given using the SIGMA keyword.
+where $a$ is the minimum of the distribution that is defined on the interval $[a,\infty)$,
+the parameter $k$ (given as a positive integer larger than 1) determines how far
+the peak of the distribution is from the minimum (known as the "degrees of freedom"),
+and the parameter $\sigma>0$ determines the broadness of the distribution.
+
+The minimum $a$ is given using the MINIMUM keyword, the parameter $k$ is given
+using the KAPPA keyword, and the parameter $\sigma$ is given using the SIGMA keyword.
 
 This target distribution action is only defined for one dimension, for multiple dimensions
-it should be used in combination with the \ref TD_PRODUCT_DISTRIBUTION action.
+it should be used in combination with the [TD_PRODUCT_DISTRIBUTION](TD_PRODUCT_DISTRIBUTION.md) action.
 
 
-\par Examples
+## Examples
 
-Chi distribution with \f$a=10.0\f$, \f$\sigma=2.0\f$, and \f$k=2\f$
-\plumedfile
+Chi distribution with $a=10.0$, $\sigma=2.0$, and $k=2$
+
+```plumed
 td: TD_CHI  MINIMUM=10.0  SIGMA=2.0  KAPPA=2
-\endplumedfile
+```
 
 The Chi distribution is only defined for one dimension so for multiple
-dimensions we have to use it in combination with the \ref TD_PRODUCT_DISTRIBUTION action as shown in
+dimensions we have to use it in combination with the [TD_PRODUCT_DISTRIBUTION](TD_PRODUCT_DISTRIBUTION.md) action as shown in
 the following example where we have a uniform distribution for argument 1 and
 a Chi distribution for argument 1
-\plumedfile
+
+```plumed
 td_uni: TD_UNIFORM
 
 td_chi: TD_CHI  MINIMUM=-10.0  SIGMA=2.0  KAPPA=2
 
 td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=td_uni,td_chi
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

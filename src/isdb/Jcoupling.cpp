@@ -33,35 +33,35 @@ Calculates 3J coupling constants for a dihedral angle.
 
 The J-coupling between two atoms is given by the Karplus relation:
 
-\f[
+$$
 ^3J(\theta)=A\cos^2(\theta+\Delta\theta)+B\cos(\theta+\Delta\theta)+C
-\f]
+$$
 
-where \f$A\f$, \f$B\f$ and \f$C\f$ are the Karplus parameters and \f$\Delta\theta\f$ is an additional constant
-added on to the dihedral angle \f$\theta\f$. The Karplus parameters are determined empirically and are dependent
+where $A$, $B$ and $C$ are the Karplus parameters and $\Delta\theta$ is an additional constant
+added on to the dihedral angle $\theta$. The Karplus parameters are determined empirically and are dependent
 on the type of J-coupling.
 
 This collective variable computes the J-couplings for a set of atoms defining a dihedral angle. You can specify
-the atoms involved using the \ref MOLINFO notation. You can also specify the experimental couplings using the
+the atoms involved using the [MOLINFO](MOLINFO.md) notation. You can also specify the experimental couplings using the
  COUPLING keywords. These will be included in the output. You must choose the type of
 coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
 and SHIFT keywords. You will need to make sure you are using the correct dihedral angle:
 
-- Ha-N: \f$\psi\f$
-- Ha-HN: \f$\phi\f$
-- N-C\f$\gamma\f$: \f$\chi_1\f$
-- CO-C\f$\gamma\f$: \f$\chi_1\f$
+- Ha-N: $\psi$
+- Ha-HN: $\phi$
+- N-C$\gamma$: $\chi_1$
+- CO-C$\gamma$: $\chi_1$
 
 J-couplings can be used to calculate a Metainference score using the internal keyword DOSCORE and all the options
-of \ref METAINFERENCE .
+of [METAINFERENCE](METAINFERENCE.md) .
 
-\par Examples
+## Examples
 
 In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
-dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental data points and compute
+dihedral $\psi$ angles in the peptide backbone. We also add the experimental data points and compute
 the correlation and other measures and finally print the results.
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
@@ -79,7 +79,7 @@ JCOUPLING ...
 jhanst: STATS ARG=(jhan\.j-.*) PARARG=(jhan\.exp-.*)
 
 PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

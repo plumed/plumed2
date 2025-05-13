@@ -33,24 +33,24 @@ namespace membranefusion {
 /*
 A CV for inducing the nucleation of the fusion pore from a hemifusion stalk.
 
-Calculate the collective variable designed by Hub and collaborators \cite Hub2017 and
+Calculate the collective variable designed by Hub and collaborators (see paper below) and
 implemented into PLUMED by Masone and collaborators.
 This CV is capable of inducing the nucleation of the fusion pore from a hemifusion stalk.
 
-\f[
+$$
 \xi_n = \frac{1}{N_{sn}} \sum_{s=0}^{N_{sn}-1} \delta_{sn} (N_{sn}^{(p)})
-\f]
+$$
 
-Where \f$\xi_n\f$ is the CV, \f$N_{sn}\f$ is the number of slices of the cylinder that make up the CV,
-\f$\delta_{sn}\f$ is a continuos function in the interval [0 1] (\f$\delta_{sf} = 0\f$ for no beads in the slice s, and
-\f$\delta_{sf} = 1\f$ for 1 or more beads in the slice s) and \f$N_{sf}^{(p)}\f$ accounts for the number of water and
+Where $\xi_n$ is the CV, $N_{sn}$ is the number of slices of the cylinder that make up the CV,
+$\delta_{sn}$ is a continuos function in the interval [0 1] ($\delta_{sf} = 0$ for no beads in the slice s, and
+$\delta_{sf} = 1$ for 1 or more beads in the slice s) and $N_{sf}^{(p)}$ accounts for the number of water and
 phosphateoxygens beads within the slice s.
 
-\par Examples
+## Examples
 
-This example induces the nucleation of the fusion pore (\f$\xi_n = 1.0\f$) from a hemifusion stalk (\f$\xi_n = 0.2\f$).
+This example induces the nucleation of the fusion pore ($\xi_n = 1.0$) from a hemifusion stalk ($\xi_n = 0.2$).
 
-\plumedfile
+```plumed
 
 lMem: GROUP ATOMS=1-10752,21505-22728,23953-24420 #All the lower membrane beads.
 uMem: GROUP ATOMS=10753-21504,22729-23952,24421-24888 #All the upper membrane beads.
@@ -68,7 +68,7 @@ MOVINGRESTRAINT ...
 
 PRINT ARG=fusionPoreNucleation FILE=COLVAR STRIDE=1
 
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -103,6 +103,7 @@ void fusionPoreNucleationP::registerKeywords(Keywords &keys) {
   keys.add("optional", "XCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.add("optional", "YCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.setValueDescription("scalar","the value of the CV");
+  keys.addDOI("10.1021/acs.jctc.7b00106");
 }
 
 fusionPoreNucleationP::fusionPoreNucleationP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao) {

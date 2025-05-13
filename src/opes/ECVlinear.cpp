@@ -27,24 +27,26 @@ namespace opes {
 Linear expansion, according to a parameter lambda.
 
 This can be used e.g. for thermodynamic integration, or for multibaric simulations, in which case lambda=pressure.
-It can also be used for multithermal simulations, but for simplicity it is more convenient to use \ref ECV_MULTITHERMAL.
+It can also be used for multithermal simulations, but for simplicity it is more convenient to use [ECV_MULTITHERMAL](ECV_MULTITHERMAL.md).
 
-The difference in Hamiltonian \f$\Delta U\f$ is expected as ARG.
-\f[
+The difference in Hamiltonian $\Delta U$ is expected as ARG.
+
+$$
   \Delta u_\lambda=\beta \lambda \Delta U\, .
-\f]
-Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature \f$\beta\f$.
+$$
 
-By defauly the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
+Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature $\beta$.
+
+By defauly the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as descibed in the paper cited below.
 Otherwise one can set this number with LAMBDA_STEPS.
 In both cases the steps will be uniformly distriuted.
 Finally, one can use instead the keyword LAMBDA_SET_ALL and explicitly provide each lambda value.
 
-\par Examples
+## Examples
 
 Typical multibaric simulation:
 
-\plumedfile
+```plumed
 vol: VOLUME
 ecv: ECV_LINEAR ...
   ARG=vol
@@ -54,15 +56,15 @@ ecv: ECV_LINEAR ...
   LAMBDA_MAX=0.06022140857*4000 #4 kbar
 ...
 opes: OPES_EXPANDED ARG=ecv.vol PACE=500
-\endplumedfile
+```
 
 Typical thermodynamic integration:
 
-\plumedfile
+```plumed
 DeltaU: EXTRACV NAME=energy_difference
 ecv: ECV_LINEAR ARG=DeltaU TEMP=300
 opes: OPES_EXPANDED ARG=ecv.* PACE=100
-\endplumedfile
+```
 
 Notice that by defauly LAMBDA=0, LAMBDA_MIN=0 and LAMBDA_MAX=1, which is the typical case for thermodynamic integration.
 
@@ -103,6 +105,7 @@ void ECVlinear::registerKeywords(Keywords& keys) {
   keys.add("optional","LAMBDA_SET_ALL","manually set all the lamdbas");
   keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by beta");
   keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 ECVlinear::ECVlinear(const ActionOptions&ao)

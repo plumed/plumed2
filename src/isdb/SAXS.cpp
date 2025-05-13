@@ -114,15 +114,16 @@ the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on
 a GPU if the ARRAYFIRE libraries are installed and correctly linked.
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+[METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
-\par Examples
+##Examples
+
 in the following example the SAXS intensities are calculated using single-bead per residue approximation, with a
 SASA threshold of 1 square nanometer and a solvation term of 0.04. Each experimental intensity is divided by
 1.4002, which is the corresponding theoretical intensity value at q = 0. The form factors are selected according
 to the PDB file specified by TEMPLATE keyword.
 
-\plumedfile
+```plumed
 MOLINFO STRUCTURE=template_AA.pdb
 
 SAXS ...
@@ -148,8 +149,7 @@ QVALUE10=0.30 EXPINT10=0.00880634
 ... SAXS
 
 PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
-
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -205,14 +205,15 @@ the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
 GPU if the ARRAYFIRE libraries are installed and correctly linked.
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+[METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
-\par Examples
+##Examples
+
 in the following example the SANS intensities are calculated at atomistic resolution. The form factors are assigned
 according to the PDB file specified in the MOLINFO. Each experimental intensity is divided by 1.4002, which is the
 corresponding theoretical intensity value at q = 0. The deuterated water fraction is set to 48%.
 
-\plumedfile
+```plumed
 MOLINFO STRUCTURE=template_AA.pdb
 
 SANS ...
@@ -234,8 +235,7 @@ QVALUE10=0.30 EXPINT10=0.00880634
 ... SANS
 
 PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
-
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

@@ -36,19 +36,19 @@ namespace maze {
 /*
 
 Calculates the biasing direction along which the ligand unbinds by minimizing
-the \ref MAZE_LOSS function. The optimal biasing direction is determined by
+the [MAZE_LOSS](MAZE_LOSS.md) function. The optimal biasing direction is determined by
 performing simulated annealing.
 
-\par Examples
+## Examples
 
 Every optimizer implemented in the maze module needs a loss function as an
-argument, and it should be passed using the \ref MAZE_LOSS keyword.
+argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
 In the following example simulated annealing is launched for 1000 iterations
 as the optimizer for the loss function every 200 ps. The geometric cooling
 scheme is used.
 
-\plumedfile
+```plumed
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
 MAZE_SIMULATED_ANNEALING ...
@@ -66,7 +66,7 @@ MAZE_SIMULATED_ANNEALING ...
   LIGAND=2635-2646
   PROTEIN=1-2634
 ... MAZE_SIMULATED_ANNEALING
-\endplumedfile
+```
 
 As shown above, each optimizer should be provided with the LIGAND and
 the PROTEIN keywords.

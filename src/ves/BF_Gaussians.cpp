@@ -32,37 +32,41 @@ namespace ves {
 /*
 Gaussian basis functions.
 
-\attention
-__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do form orthogonal bases__.
+> [! attention]
+> __These basis functions do not form orthogonal bases. We recommend using wavelets ([BF_WAVELETS](BF_WAVELETS.md)) instead that do form orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
-bounded interval. See \cite ValssonPampel_Wavelets_2022 for full details.
+bounded interval. See the paper cited below for full details.
 
-You need to provide the interval \f$[a,b]\f$ on which the bias is to be
+You need to provide the interval $[a,b]$ on which the bias is to be
 expanded.
-The ORDER keyword of the basis set \f$N\f$ determines the number of equally sized
+The ORDER keyword of the basis set $N$ determines the number of equally sized
 sub-intervalls to be used.
-On the borders of each of these sub-intervalls the mean \f$\mu\f$ of a Gaussian
+On the borders of each of these sub-intervalls the mean $\mu$ of a Gaussian
 basis function is placed:
-\f{align}{
-  \mu_i = a + (i-1) \frac{b-a}{N}
-\f}
 
-The total number of basis functions is \f$N+4\f$ as the constant
-\f$f_{0}(x)=1\f$, as well as two additional Gaussians at the Boundaries are also included.
+$$
+  \mu_i = a + (i-1) \frac{b-a}{N}
+$$
+
+The total number of basis functions is $N+4$ as the constant
+$f_{0}(x)=1$, as well as two additional Gaussians at the Boundaries are also included.
 
 The basis functions are given by
-\f{align}{
+
+$$
+\begin{aligned}
   f_0(x) &= 1 \\
   f_i(x) &= \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
-\f}
+\end{aligned}
+$$
 
 When the Gaussians are used for a periodic CV (with the PERIODIC keyword),
-the sub-intervals are chosen in the same way, but only \f$N+1\f$ functions
+the sub-intervals are chosen in the same way, but only $N+1$ functions
 are required to fill it (the ones at the boundary coincide and the ones outside
 can be omitted).
 
-It is possible to specify the width \f$\sigma\f$ (i.e. the standard deviation)
+It is possible to specify the width $\sigma$ (i.e. the standard deviation)
 of the Gaussians using the WIDTH keyword.
 By default it is set to the sub-intervall length.
 It was found that performance can be typically improved with a smaller value (around 75 % of the sub-interval length), although a too small overlap will prevent the basis set from working correctly at all.
@@ -73,27 +77,26 @@ To avoid 'blind' optimization of the basis functions outside the currently sampl
 As an example two adjacent basis functions (with the mentioned width choice of 75% of the sub-interval length) can be seen below.
 The full basis consists of shifted Gaussians in the full specified interval.
 
-\image html ves_basisf-gaussians.png
+![Graph showing Gaussian basis functions](figures/ves_basisf-gaussians.png)
 
-
-\par Examples
+## Examples
 
 The bias is expanded with Gaussian functions in the intervall from 0.0 to
 10.0 using order 20.
 This results in 24 basis functions.
 
-\plumedfile
+```plumed
 bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
-\endplumedfile
+```
 
 Because it was not specified, the width of the Gaussians is by default
-set to the sub-intervall length, i.e.\ \f$\sigma=0.5\f$.
+set to the sub-intervall length, i.e.\ $\sigma=0.5$.
 To e.g. enhance the overlap between neighbouring basis functions, it can be
 specified explicitely:
 
-\plumedfile
+```plumed
 bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -119,6 +122,7 @@ void BF_Gaussians::registerKeywords(Keywords& keys) {
   keys.add("optional","WIDTH","The width (i.e. standart deviation) of the Gaussian functions. By default it is equal to the sub-intervall size.");
   keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
+  keys.addDOI("10.1021/acs.jctc.2c00197");
 }
 
 BF_Gaussians::BF_Gaussians(const ActionOptions&ao):

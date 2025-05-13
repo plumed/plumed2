@@ -35,17 +35,19 @@ namespace ves {
 /*
 Combining other basis functions types
 
-\par Examples
+##Examples
 
 Here we define both Fourier cosine and sine expansions of order 10,
 each with 11 basis functions, which are combined. This results
 in a total number of 21 basis functions as only the constant from
 is bf_cos is used.
-\plumedfile
+
+```plumed
 bf_cos: BF_COSINE MINIMUM=-pi MAXIMUM=+pi ORDER=10
 bf_sin: BF_SINE   MINIMUM=-pi MAXIMUM=+pi ORDER=10
 bf_comb: BF_COMBINED BASIS_FUNCTIONS=bf_cos,bf_sin
-\endplumedfile
+```
+
 In principle this is the same as using BF_FOURIER with
 ORDER=10 but with different ordering of the basis functions.
 Note that the order used in BASIS_FUNCTIONS matters for the ordering

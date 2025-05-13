@@ -30,36 +30,45 @@ namespace sizeshape {
 /*
 Calculates a linear projection in the space of a given reference configurational distribution in size-and-shape space.
 
-This method is described in \cite Sasmal-poslda-2023.
-
 The linear projection is given by:
-\f[
+
+$$
     l(\mathbf{x}) = \mathbf{v}\cdot(\mathbf{R}\cdot(\mathbf{x}(t) - \vec{{\zeta}}(t)) - \mathbf{\mu}),
-\f]
-Where \f$\mathbf{v}\f$ is a vector of linear coefficients, \f$\mathbf{x}(t)\f$ is the configuration at time t, \f$\vec{\zeta}(t)\f$ is the difference in the geometric mean of the current configuration and that of the reference configuration \f$\mathbf{\mu}\f$. \f$\vec{\zeta}(t) = \frac{1}{N} \sum_{i=1}^N \vec{x_{i}}(t) - \frac{1}{N} \sum_{i=1}^N \vec{\mu_{i}}(t)\f$, for N atoms.
+$$
 
-\f$\mathbf{R}\f$ is an optimal rotation matrix that minimizes the Mahalanobis distance between the current configuration and reference. \f$\mathbf{R}\f$ is obtained by using Kabsch algorithm within the code. The Mahalanobis distance is given as:
+Where $\mathbf{v}$ is a vector of linear coefficients, $\mathbf{x}(t)$ is the configuration at time t, $\vec{\zeta}(t)$ is the difference in the geometric mean of the current configuration and that of the reference configuration $\mathbf{\mu}$. $\vec{\zeta}(t) = \frac{1}{N} \sum_{i=1}^N \vec{x_{i}}(t) - \frac{1}{N} \sum_{i=1}^N \vec{\mu_{i}}(t)$, for N atoms.
 
-\f[
+$\mathbf{R}$ is an optimal rotation matrix that minimizes the Mahalanobis distance between the current configuration and reference. $\mathbf{R}$ is obtained by using Kabsch algorithm within the code. The Mahalanobis distance is given as:
+
+$$
 d(\mathbf{x}, \mathbf{\mu}, \mathbf{\Sigma}) = \sqrt{(\mathbf{x}-\mathbf{\mu})^T \mathbf{\Sigma}^{-1} (\mathbf{x}-\mathbf{\mu})}
-\f]
+$$
 
-where, \f$\mathbf{\Sigma}^{-1}\f$ is the \f$N\times N\f$ precision matrix. See also \ref POSITION_MAHA_DIST for information about calculating Mahalanobis distance in size-and-shape space.
+where, $\mathbf{\Sigma}^{-1}$ is the $N\times N$ precision matrix. See also [SIZESHAPE_POSITION_MAHA_DIST](SIZESHAPE_POSITION_MAHA_DIST.md) for information about calculating Mahalanobis distance in size-and-shape space.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference \f$(\mathbf{\mu})\f$ and precision \f$(\mathbf{\Sigma}^{-1})\f$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
+Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
 
-\par Examples
+##Examples
+
 In the following example, a group is defined with atom indices of selected atoms and then linear projection is calculated for the given reference, precision and coefficients. Each file is a space separated list of 3N floating point numbers.
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/sizeshape/rt-sizeshape/global_avg.txt
+#SETTINGS INPUTFILES=regtest/sizeshape/rt-sizeshape/global_precision.txt
+#SETTINGS INPUTFILES=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt
+
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
-#SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/global_avg.txt
-#SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/global_precision.txt
-#SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt
-proj: SIZESHAPE_POSITION_LINEAR_PROJ REFERENCE=global_avg.txt PRECISION=global_precision.txt COEFFS=ld1_scalings.txt GROUP=ga_list
+proj: SIZESHAPE_POSITION_LINEAR_PROJ ...
+   REFERENCE=regtest/sizeshape/rt-sizeshape/global_avg.txt
+   PRECISION=regtest/sizeshape/rt-sizeshape/global_precision.txt
+   COEFFS=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt
+   GROUP=ga_list
+...
+
 PRINT ARG=proj STRIDE=1 FILE=COLVAR FMT=%8.8f
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

@@ -33,17 +33,19 @@ namespace ves {
 Fourier sine basis functions.
 
 Use as basis functions Fourier sine series defined on a periodic interval.
-You need to provide the periodic interval \f$[a,b]\f$
+You need to provide the periodic interval $[a,b]$
 on which the basis functions are to be used, and the order of the
-expansion \f$N\f$ (i.e. the highest Fourier sine mode used).
-The total number of basis functions is \f$N+1\f$ as
-the constant \f$f_{0}(x)=1\f$ is also included.
+expansion $N$ (i.e. the highest Fourier sine mode used).
+The total number of basis functions is $N+1$ as
+the constant $f_{0}(x)=1$ is also included.
 These basis functions should only be used for periodic CVs.
 They can be useful if the periodic function being expanded is an
-odd function, i.e. \f$F(-x)=-F(x)\f$.
+odd function, i.e. $F(-x)=-F(x)$.
 
 The Fourier sine basis functions are given by
-\f{align}{
+
+$$
+\begin{aligned}
 f_{0}(x)    &= 1 \\
 f_{1}(x)    &= sin(\frac{2\pi }{P} x) \\
 f_{2}(x)    &= sin(2 \cdot \frac{2\pi}{P} x) \\
@@ -52,30 +54,32 @@ f_{3}(x)    &= sin(3 \cdot \frac{2\pi}{P} x) \\
 f_{n}(x) &= sin(n \cdot \frac{2\pi}{P} x) \\
 & \vdots \\
 f_{N}(x)   &= sin(N \cdot \frac{2\pi}{P} x) \\
-\f}
-where \f$P=(b-a)\f$ is the periodicity of the interval.
-They are orthogonal over the interval \f$[a,b]\f$
-\f[
+\end{aligned}
+$$
+
+where $P=(b-a)$ is the periodicity of the interval.
+They are orthogonal over the interval $[a,b]$
+
+$$
 \int_{a}^{b} dx \, f_{n}(x)\, f_{m}(x)  =
 \begin{cases}
 0 & n \neq m \\
 (b-a) & n = m = 0 \\
 (b-a)/2 & n = m \neq 0
 \end{cases}.
-\f]
+$$
 
-\par Examples
+## Examples
 
 Here we employ a Fourier sine expansion of order 10 over the periodic interval
-\f$-\pi\f$ to \f$+\pi\f$.
+$-\pi$ to $+\pi$.
 This results in a total number of 11 basis functions.
 The label used to identify  the basis function action can then be
 referenced later on in the input file.
-\plumedfile
-BF_SINE MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bfS
-\endplumedfile
 
-\par Examples
+```plumed
+BF_SINE MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bfS
+```
 
 */
 //+ENDPLUMEDOC
