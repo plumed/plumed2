@@ -135,25 +135,9 @@ void NematicOrder::calculate() {
   Matrix<double> eigenvecs(3,3);
   std::vector<double> eigenvals(3);
 
-  //// DEBUG
-  log.printf("nematic order tensor Q\n");
-  log.printf(" %f %f %f\n", Q(0,0), Q(0,1), Q(0,2));
-  log.printf(" %f %f %f\n", Q(1,0), Q(1,1), Q(1,2));
-  log.printf(" %f %f %f\n", Q(2,0), Q(2,1), Q(2,2));
-  log.printf("\n");
-  ////
-
   if(diagMat( Q, eigenvals, eigenvecs )!=0) {
     plumed_merror("diagonalization in NematicOrder failed! This matrix is weird\n");
   };
-
-  //// DEBUG
-  log.printf("eigenvectors\n");
-  log.printf(" %f %f %f\n", eigenvecs(0,0), eigenvecs(0,1), eigenvecs(0,2));
-  log.printf(" %f %f %f\n", eigenvecs(1,0), eigenvecs(1,1), eigenvecs(1,2));
-  log.printf(" %f %f %f\n", eigenvecs(2,0), eigenvecs(2,1), eigenvecs(2,2));
-  log.printf("\n");
-  ////
 
   // The tensor order parameter Q has three eigenvalues lambda_- <= lambda_0 <= lambda_+
   // and the order parameter is defined as S=lambda_+ or equivalently as S=-2*lambda_0
@@ -197,13 +181,6 @@ void NematicOrder::calculate() {
     // Compute the scalar product between the nematic director and the molecular axis
     // cos(angle) = <director,u>
     double cos = dotProduct(director, u);
-
-    //// DEBUG
-    log.printf("eigenvalues= %f %f %f \n", eigenvals[0], eigenvals[1], eigenvals[2]);
-    log.printf("cos= %f\n", cos);
-    log.printf("director       = %f %f %f\n", director(0), director(1), director(2));
-    log.printf("molecular axis = %f %f %f\n", u(0), u(1), (2));
-    ////
 
     // gradient on the head atom of the molecular axis, dS/d(r_head(i))
     Vector deriv = 1.0/num_molecules * (3.0/length) * (cos * director - pow(cos,2) * u);
