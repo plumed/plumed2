@@ -664,6 +664,7 @@ public:
         std::string tmp;
         parse("--i"+trj_type, tmp);
         if (tmp.length()>0) {
+          log << "Using --i"<<trj_type<<"=" << tmp << "\n";
           trajectory_fmt=trj_type;
           ++nn;
           trajectoryFile=tmp;
@@ -679,10 +680,7 @@ public:
           parse(molfile_key,traj_molfile);
           if(traj_molfile.length()>0) {
             ++nn;
-            log << "BENCHMARK: Found molfile format trajectory "
-                << plugins_names[i]
-                <<" with name " << traj_molfile
-                << "\n";
+            log << "Using --mf_"<<plugins_names[i]<<"=" << traj_molfile << "\n";
             trajectoryFile=traj_molfile;
             trajectory_fmt=plugins_names[i];
             use_molfile=true;
@@ -725,8 +723,11 @@ public:
     int repeatY=0;
     int repeatZ=0;
     parse("--repeatX",repeatX);
+    log << "Using --repeatX=" << repeatX << "\n";
     parse("--repeatY",repeatY);
+    log << "Using --repeatY=" << repeatY << "\n";
     parse("--repeatZ",repeatZ);
+    log << "Using --repeatZ=" << repeatZ << "\n";
     if (repeatX<1 || repeatY<1 || repeatZ<1) {
       log << "ERROR: repetitions of the trajectory must be >=1\n";
       return std::nullopt;
