@@ -589,7 +589,6 @@ public:
     {
       std::string trajectoryFile(""), pdbfile(""), mcfile("");
       std::vector<double> pbc_cli_box(9,0.0);
-
       TrajectoryParser parser;
 
       int nn=0;
