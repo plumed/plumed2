@@ -49,8 +49,8 @@ vector connecting atom 1 (the origin) to atom 2 (the position of our particle) w
 getting the position of the atom on the energy landscape.  This is then inserted into the function
 that is calculated on the second line.  The value of this function is then used as a bias.
 
-We can also specify a potential on a grid and look at the dynamics on this function using pesmd.  To do 
-so you would use the DISTANCE command as in the input above together with an [EXTERNAL](EXTERNAL.md) action 
+We can also specify a potential on a grid and look at the dynamics on this function using pesmd.  To do
+so you would use the DISTANCE command as in the input above together with an [EXTERNAL](EXTERNAL.md) action
 that takes d1.x and d1.y as arguments.  In this way you can use pesmd to do a dynamics on a free energy surface calculated using metadynamics
 and sum_hills.  Notice also, that once we have defined our potential we can use all the biasing functions
 within plumed in addition in order to do a biased dynamics on the potential energy landscape of interest.

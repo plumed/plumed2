@@ -81,7 +81,7 @@ file.
 td: TD_GRID FILE=regtest/ves/rt-td-grid/targetdist-input-grid-1d.data
 ```
 
-The input grid is then specified using the usual format employed by PLUMED. You can see an example 
+The input grid is then specified using the usual format employed by PLUMED. You can see an example
 by clicking on the name of the file in the input above.
 
 */
