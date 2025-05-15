@@ -297,10 +297,10 @@ public:
 
 ///Acts as a template for any distribution
 struct AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&)=0;
-  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
-    std::fill(box.begin(), box.end(),0);
-  };
+  virtual void frame(std::vector<Vector>& posToUpdate,
+                     std::vector<double>& box,
+                     unsigned /*step*/,
+                     Random& /*rng*/)=0;
   virtual ~AtomDistribution() noexcept {}
   virtual bool overrideNat(unsigned& ) {
     return false;
@@ -308,18 +308,30 @@ struct AtomDistribution {
 };
 
 struct theLine:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned step, Random&rng) override {
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned step,
+             Random& rng) override {
     auto nat = posToUpdate.size();
     UniformSphericalVector usv(0.5);
 
     for (unsigned i=0; i<nat; ++i) {
       posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
     }
+    box[0]=nat;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=1.75;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=1.75;
   }
 };
 
 struct uniformSphere:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
 
     //giving more or less a cubic udm of volume for each atom: V=nat
     const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
@@ -333,24 +345,21 @@ struct uniformSphere:public AtomDistribution {
       *s = usv (rng);
     }
 
-  }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-    const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
-    box[0]=rmax;
+    box[0]=2.0*rmax;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=2.0*rmax;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=2.0*rmax;
 
   }
 };
 
 struct twoGlobs: public AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) override {
+  virtual void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random&rng) override {
     //I am using two unigform spheres and 2V=n
     const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
 
@@ -365,25 +374,21 @@ struct twoGlobs: public AtomDistribution {
       // return usv (rng) + centers[rng.RandInt(1)];
       return usv (rng) + centers[rng.RandU01()>0.5];
     });
-  }
 
-  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-
-    const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
-    box[0]=rmax;
+    box[0]=4.0 *rmax;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=4.0 *rmax;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=4.0 *rmax;
   };
 };
 
 struct uniformCube:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
 
@@ -399,25 +404,22 @@ struct uniformCube:public AtomDistribution {
     for (unsigned i=0; s!=e; ++s,++i) {
       *s = Vector (rng.RandU01()*rmax,rng.RandU01()*rmax,rng.RandU01()*rmax);
     }
-  }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     //+0.05 to avoid overlap
-    const double rmax= std::cbrt(natoms)+0.05;
-    box[0]=rmax;
+    box[0]=rmax+0.05;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=rmax+0.05;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=rmax+0.05;
 
   }
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
     //Tiling the space in this way will not tests 100% the pbc, but
     //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
     //could be a good idea, in this case
@@ -435,10 +437,6 @@ struct tiledSimpleCubic:public AtomDistribution {
         }
       }
     }
-  }
-
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-    const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
     box[0]=rmax;
     box[1]=0.0;
     box[2]=0.0;
@@ -458,12 +456,10 @@ class fileTraj:public AtomDistribution {
   std::vector<double> masses{};
   std::vector<double> charges{};
   std::vector<Vector> coordinates{};
-  std::vector<double> cell{};
-  unsigned rX=1;
-  unsigned rY=1;
-  unsigned rZ=1;
-  bool positionRead=false;
-  bool boxRead=false;
+  std::vector<double> cell{0.0,0.0,0.0,
+        0.0,0.0,0.0,
+        0.0,0.0,0.0};
+  bool read=false;
   bool dont_read_pbc=false;
   bool overrideNat(unsigned& natoms) override {
     natoms = masses.size();
@@ -480,8 +476,7 @@ class fileTraj:public AtomDistribution {
   }
   //read the next step
   void step(bool doRewind=true) {
-    positionRead=false;
-    boxRead=false;
+    read=false;
     long long int mystep=0;
     double timeStep;
     std::optional<std::string> errormessage;
@@ -495,9 +490,9 @@ class fileTraj:public AtomDistribution {
       }
       const size_t natoms = parser.nOfAtoms();
 
-      masses.assign(natoms*(rX*rY*rZ),0.0);
-      charges.assign(natoms*(rX*rY*rZ),0.0);
-      coordinates.assign(natoms*(rX*rY*rZ),Vector(0.0,0.0,0.0));
+      masses.assign(natoms,0.0);
+      charges.assign(natoms,0.0);
+      coordinates.assign(natoms,Vector(0.0,0.0,0.0));
       cell.assign(9,0.0);
       errormessage=parser.readAtoms(1,
                                     dont_read_pbc,
@@ -532,77 +527,32 @@ class fileTraj:public AtomDistribution {
         plumed_error()<<*errormessage;
       }
     }
-    // repetitions
-    unsigned nrep = 0;
-    const unsigned nat = parser.nOfAtoms();
-    Vector boxX(cell[0],cell[1],cell[2]);
-    Vector boxY(cell[3],cell[4],cell[5]);
-    Vector boxZ(cell[6],cell[7],cell[8]);
-    for (unsigned x=0; x<rX; ++x) {
-      for (unsigned y=0; y<rY; ++y) {
-        for (unsigned z=0; z<rZ; ++z) {
-          if (nrep>0) {
-            for (unsigned i=0; i<nat; ++i) {
-              coordinates[i+nrep*nat]=coordinates[i]
-                                      + x * boxX
-                                      + y * boxY
-                                      + z * boxZ;
-              masses[i+nrep*nat]=masses[i];
-              charges[i+nrep*nat]=charges[i];
-            }
-          }
-          ++nrep;
-        }
-      }
-    }
-    cell[0]*=rX;
-    cell[1]*=rX;
-    cell[2]*=rX;
-
-    cell[3]*=rY;
-    cell[4]*=rY;
-    cell[5]*=rY;
-
-    cell[6]*=rZ;
-    cell[7]*=rZ;
-    cell[8]*=rZ;
   }
 public:
-  void positions(std::vector<Vector>& posToUpdate,
-                 unsigned /*step*/,
-                 Random& /*rng*/) override {
-    if (positionRead) {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+             unsigned /*step*/,
+             Random& /*rng*/) override {
+    if (read) {
       step();
     }
-    positionRead=true;
+    read=true;
     std::copy(coordinates.begin(),coordinates.end(),posToUpdate.begin());
-  }
-
-  void box(std::vector<double>& box,
-           unsigned /*natoms*/,
-           unsigned /*step*/, Random&) override {
-    if (boxRead) {
-      step();
-    }
-    boxRead=true;
     std::copy(cell.begin(),cell.end(),box.begin());
   }
 
   fileTraj(std::string_view fmt,
            std::string_view fname,
            bool useMolfile,
-           int command_line_natoms,
-           unsigned repeatX,
-           unsigned repeatY,
-           unsigned repeatZ):
-    rX(repeatX),
-    rY(repeatY),
-    rZ(repeatZ) {
+           int command_line_natoms) {
     parser.init(fmt,
                 fname,
                 useMolfile,
                 command_line_natoms);
     step();
+  }
+  bool overrideNat(unsigned& natoms) override {
+    natoms = masses.size();
+    return true;
   }
 };
 
@@ -694,11 +644,7 @@ public:
                  trajectory_fmt,
                  trajectoryFile,
                  use_molfile,
-                 -1,
-                 //these are protected to be maxofunsigned from the guard a few line above
-                 static_cast<unsigned>(repeatX),
-                 static_cast<unsigned>(repeatY),
-                 static_cast<unsigned>(repeatZ)
+                 -1
                );
       }
     }
@@ -985,8 +931,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       }
       for(int step=0; step<nf; ++step) {
         auto sw=kernels[0].stopwatch.startStop("TrajectoryGeneration");
-        distribution->positions(pos,step,atomicGenerator);
-        distribution->box(cell,natoms,step,atomicGenerator);
+        distribution->frame(pos,cell,step,atomicGenerator);
+
         ofile << natoms << "\n"
               << cell[0] << " " << cell[1] << " " << cell[2] << " "
               << cell[3] << " " << cell[4] << " " << cell[5] << " "
@@ -1051,8 +997,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
-    distribution->positions(pos,step,atomicGenerator);
-    distribution->box(cell,natoms,step,atomicGenerator);
+    distribution->frame(pos,cell,step,atomicGenerator);
 
     double* pos_ptr;
     double* for_ptr;
