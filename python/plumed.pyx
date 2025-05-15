@@ -187,7 +187,7 @@ cdef class Plumed:
          nothrow.ptr=&error
          nothrow.handler=cplumed.plumed_error_set
          # see https://github.com/plumed/plumed2/pull/1129#issuecomment-2410867829
-         with cython.nogil():
+         with cython.nogil:
             cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
          if(error.code):
            try:
@@ -245,7 +245,7 @@ cdef class Plumed:
          if val is None :
             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
             return
-         if isinstance(val, (int,long) ):
+         if isinstance(val, int ):
             self.cmd_int(ckey, val)
             return
          if isinstance(val, float ) :
