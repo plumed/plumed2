@@ -59,10 +59,6 @@ PLUMED_REGISTER_ACTION(NematicOrder,"NEMATIC_ORDER")
 
 void NematicOrder::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
-  keys.addFlag("NEMATIC_ORDER_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
-  keys.add("compulsory","NEMATIC_ORDER_COMPULSORY","all compulsory keywords should be added like this with a description here");
-  keys.add("optional","NEMATIC_ORDER_OPTIONAL","all optional keywords that have input should be added like a description here");
-  //keys.add("atoms","ATOMS","the keyword with which you specify what atoms to use should be added like this");
   keys.add("atoms", "ATOMS",
     "The molecular axes (arrows) are specified by pairs of atoms. "
     "For n molecules, therefore, 2*n atom indices have to be provided. "
@@ -105,23 +101,24 @@ NematicOrder::NematicOrder(const ActionOptions&ao):
 // calculator
 void NematicOrder::calculate() {
 
-  // build the tensor order parameter
+  // build the 3x3 tensor order parameter
   //  Q_ab = 1/N ∑_i [ 3/2 u_a(i) u_b(i) - 1/2 delta_ab ]
   //       = 1/N ∑_i Q_ab(i)
   // where N is the number of molecules and i runs over 1,...,N
   Matrix<double> Q(3,3);
   for (size_t i = 0; i < num_molecules; i++) {
     // The axis of a molecule is defined by two atoms at opposite ends of the molecule.
-    Vector molecular_axis;
     size_t head = i;
     size_t tail = num_molecules + i;
+    // The vector `distance` defines the molecular axis.
+    Vector distance;
     if(pbc) {
-      molecular_axis=pbcDistance(getPosition(tail),getPosition(head));
+      distance=pbcDistance(getPosition(tail),getPosition(head));
     } else {
-      molecular_axis=delta(getPosition(tail),getPosition(head));
+      distance=delta(getPosition(tail),getPosition(head));
     }
     // normalize vector defining the molecular axis
-    Vector u = molecular_axis / molecular_axis.modulo();
+    Vector u = distance / distance.modulo();
 
     // Add contribution from molecule i to the nematic order tensor.
     for (int a=0; a<3; a++) {
@@ -150,13 +147,51 @@ void NematicOrder::calculate() {
   // R. Eppenga & D. Frenkel, "Monte Carlo study of the isotropic and nematic phases of infinitely thin hard plates",
   // Molecular Physics, 52(6), 1303–1334.
   // https://doi.org/10.1080/00268978400101951
-  double order_parameter = -2 * eigenvals[0];
+  double order_parameter = -2 * eigenvals[1];
 
   setValue(order_parameter);
 
-  //setAtomsDerivatives(0,-invvalue*distance);
-  //setAtomsDerivatives(1,invvalue*distance);
-  //setBoxDerivatives  (-invvalue*Tensor(distance,distance));
+  // Now compute the gradients of the order parameter S with respect to the atomic positions.
+
+  // The nematic director n is the eigenvalue belonging to lambda_0 (with index 1).
+  Vector director;
+  for (size_t a = 0; a < 3; a++) {
+    director(a) = eigenvecs(a,1);
+  }
+
+  // virial = - ∑_i (r_head(i) - r_tail(i)) dS/d(r_head(i))
+  Tensor virial;
+
+  for (size_t i = 0; i < num_molecules; i++) {
+    // The axis of a molecule is defined by two atoms at opposite ends of the molecule.
+    size_t head = i;
+    size_t tail = num_molecules + i;
+    // The vector `distance` defines the molecular axis.
+    Vector distance;
+    if(pbc) {
+      distance=pbcDistance(getPosition(tail),getPosition(head));
+    } else {
+      distance=delta(getPosition(tail),getPosition(head));
+    }
+    // normalize vector defining the molecular axis
+    double length = distance.modulo();
+    Vector u = distance / length;
+
+    // Compute the scalar product between the nematic director and the molecular axis
+    // cos(angle) = <director,u>
+    double cos = dotProduct(director, u);
+
+    // gradient on the head atom of the molecular axis, dS/d(r_head(i))
+    Vector deriv = 1.0/num_molecules * (-6.0/length) * (cos * director - 2.0 * pow(cos,2) * u);
+    setAtomsDerivatives(head, deriv);
+    // gradient on the tail atom of the molecular axis,
+    // dS/d(r_tail(i)) = - dS/d(r_head(i))
+    setAtomsDerivatives(tail, -deriv);
+
+    // contribution to virial
+    virial -= Tensor(deriv, distance);
+  }
+  setBoxDerivatives(virial);
 }
 
 }
