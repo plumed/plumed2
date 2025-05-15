@@ -492,7 +492,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) {
-            dd->setAtomsGatindex(val,false);
+            dd->setAtomsGatindex(val,true);
           }
         }
         break;
