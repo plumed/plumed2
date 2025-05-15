@@ -297,11 +297,13 @@ public:
 
 ///Acts as a template for any distribution
 struct AtomDistribution {
+  ///Update the input vectors with the position and the box of the frame
   virtual void frame(std::vector<Vector>& posToUpdate,
                      std::vector<double>& box,
                      unsigned /*step*/,
                      Random& /*rng*/)=0;
   virtual ~AtomDistribution() noexcept {}
+  ///If necessary changes the number of atoms, returns true if that number has been changed
   virtual bool overrideNat(unsigned& ) {
     return false;
   }
@@ -461,10 +463,6 @@ class fileTraj:public AtomDistribution {
         0.0,0.0,0.0};
   bool read=false;
   bool dont_read_pbc=false;
-  bool overrideNat(unsigned& natoms) override {
-    natoms = masses.size();
-    return true;
-  }
   void rewind() {
     auto errormessage=parser.rewind();
     if (errormessage) {
@@ -529,7 +527,8 @@ class fileTraj:public AtomDistribution {
     }
   }
 public:
-  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
              unsigned /*step*/,
              Random& /*rng*/) override {
     if (read) {
@@ -575,26 +574,90 @@ std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDis
   return distribution;
 }
 
+
+///a decorator for replicate the atomic distribution
+class repliedTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  unsigned rX=1;
+  unsigned rY=1;
+  unsigned rZ=1;
+  std::vector<Vector> coordinates;
+public:
+  repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                    const unsigned repeatX,
+                    const unsigned repeatY,
+                    const unsigned repeatZ,
+                    // I think 4294967295 maximum atoms before the multiplication is more than enough
+                    const unsigned nat):
+    distribution(std::move(d)),
+    rX(repeatX),
+    rY(repeatY),
+    rZ(repeatZ),
+    coordinates(nat,Vector{})
+  {}
+
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+             unsigned step,
+             Random& rng) override {
+    distribution->frame(coordinates,box,step,rng);
+
+    // repetitions
+    auto p = posToUpdate.begin();
+    const auto nat = coordinates.size();
+
+    assert((rX*rY*rZ)*nat == posToUpdate.size());
+
+    Vector boxX(box[0],box[1],box[2]);
+    Vector boxY(box[3],box[4],box[5]);
+    Vector boxZ(box[6],box[7],box[8]);
+    for (unsigned x=0; x<rX; ++x) {
+      for (unsigned y=0; y<rY; ++y) {
+        for (unsigned z=0; z<rZ; ++z) {
+          for (unsigned i=0; i<nat; ++i) {
+            *p=coordinates[i]
+               + x * boxX
+               + y * boxY
+               + z * boxZ;
+            ++p;
+          }
+        }
+      }
+    }
+    box[0]*=rX;
+    box[1]*=rX;
+    box[2]*=rX;
+
+    box[3]*=rY;
+    box[4]*=rY;
+    box[5]*=rY;
+
+    box[6]*=rZ;
+    box[7]*=rZ;
+    box[8]*=rZ;
+  }
+
+  bool overrideNat(unsigned& natoms) override {
+    natoms = (rX*rY*rZ)*coordinates.size();
+    return true;
+  }
+};
+
+
 class Benchmark:
   public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
+
   std::string description()const override {
     return "run a calculation with a fixed trajectory to find bottlenecks in PLUMED";
   }
+
+  //this does the parsing
   std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
     {
       std::string trajectoryFile="";
-      ///@todo: add a the possibility to add the pcbbox via CLI
-      int repeatX=0;
-      int repeatY=0;
-      int repeatZ=0;
-      parse("--repeatX",repeatX);
-      parse("--repeatY",repeatY);
-      parse("--repeatZ",repeatZ);
-
       int nn=0;
       std::string trajectory_fmt="";
       for (const auto & trj_type : TrajectoryParser::trajectoryOptions()) {
@@ -627,19 +690,12 @@ public:
         }
       }
 #endif
-      {
-
-        if(nn>1) {
-          std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
-          //let the "main"
-          return std::nullopt;
-        }
+      if(nn>1) {
+        std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+        //let the "main"
+        return std::nullopt;
       }
       if (nn==1) {
-        if (repeatX<1 || repeatY<1 || repeatZ<1) {
-          log << "ERROR: repetitions of the trajectory must be >=1\n";
-          return std::nullopt;
-        }
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
                  trajectoryFile,
@@ -655,6 +711,37 @@ public:
       return getAtomDistribution(atomicDistr);
     }
     return std::nullopt;
+  }
+
+//parse and evenually decorate the AtomDistribution
+  std::optional<std::unique_ptr<AtomDistribution>> createAtomDistribution(Log& log, unsigned nat) {
+    auto toret= parseAtomDistribution(log);
+    if (!toret.has_value()) {
+      return std::nullopt;
+    }
+    ///@todo: add a the possibility to add the pcbbox via CLI
+    /// this is necessary for some molfile plugins
+    int repeatX=0;
+    int repeatY=0;
+    int repeatZ=0;
+    parse("--repeatX",repeatX);
+    parse("--repeatY",repeatY);
+    parse("--repeatZ",repeatZ);
+    if (repeatX<1 || repeatY<1 || repeatZ<1) {
+      log << "ERROR: repetitions of the trajectory must be >=1\n";
+      return std::nullopt;
+    }
+    if (repeatX*repeatY*repeatZ >1) {
+      //In case it is needed
+      (*toret)->overrideNat(nat);
+      return std::make_unique<repliedTrajectory>(std::move(*toret),
+             repeatX,
+             repeatY,
+             repeatZ,
+             nat
+                                                );
+    }
+    return toret;
   }
 };
 
@@ -907,7 +994,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
   std::unique_ptr<AtomDistribution> distribution;
-  if(auto checkDistr = parseAtomDistribution(log);
+  if(auto checkDistr = createAtomDistribution(log,natoms);
       checkDistr.has_value()) {
     distribution = std::move (*checkDistr);
     if (distribution->overrideNat(natoms)) {
