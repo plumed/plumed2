@@ -115,7 +115,7 @@ SUBROUTINE TEST1(testdat,testme)
     do i=1,10
       indexes(i)=11-i
     end do
-    call plumed_f_gcmd("setAtomsNlocal",10);
+    call plumed_f_gcmd("setAtomsNlocal"//char(0),10);
     call plumed_f_gcmd("setAtomsFGatindex"//char(0),indexes)
     call plumed_f_gcmd("setBox"//char(0),box)
     call plumed_f_gcmd("setVirial"//char(0),virial)
