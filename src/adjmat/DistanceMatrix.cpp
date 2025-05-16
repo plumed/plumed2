@@ -66,49 +66,59 @@ the CUTOFF keyword, however, many of the features that are used to optimise [CON
 namespace PLMD {
 namespace adjmat {
 
-class DistanceMatrix : public AdjacencyMatrixBase {
-private:
-  double cutoff;
+class DistanceMatrix {
 public:
-/// Create manual
+  double cutoff;
   static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit DistanceMatrix(const ActionOptions&);
-/// This does nothing
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
+  void parseInput( AdjacencyMatrixBase<DistanceMatrix>* action );
+  DistanceMatrix & operator=( const DistanceMatrix& m ) {
+    cutoff = m.cutoff;
+    return *this;
+  }
+  static void calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(DistanceMatrix,"DISTANCE_MATRIX")
+typedef AdjacencyMatrixBase<DistanceMatrix> dmap;
+PLUMED_REGISTER_ACTION(dmap,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
 }
 
-DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
-  Action(ao),
-  AdjacencyMatrixBase(ao) {
+void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {
   // And set the link cell cutoff
-  log.printf("  weight is distance between atoms \n");
-  parse("CUTOFF",cutoff);
+  action->log.printf("  weight is distance between atoms \n");
+  action->parse("CUTOFF",cutoff);
   if( cutoff<0 ) {
-    setLinkCellCutoff( true, std::numeric_limits<double>::max() );
+    action->setLinkCellCutoff( true, std::numeric_limits<double>::max() );
   } else {
-    log.printf("  ignoring distances that are larger than %f \n", cutoff);
-    setLinkCellCutoff( true, cutoff );
+    action->log.printf("  ignoring distances that are larger than %f \n", cutoff);
+    action->setLinkCellCutoff( true, cutoff );
   }
 }
 
-double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2;
-  double mod = distance.modulo();
-  if( cutoff<0 || mod<cutoff ) {
-    double invd = 1.0/mod;
-    addAtomDerivatives( 0, (-invd)*distance, myvals );
-    addAtomDerivatives( 1, (+invd)*distance, myvals );
-    addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
+void DistanceMatrix::calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+  output.val[0] = input.pos.modulo();
+  if( data.cutoff<0 || output.val[0]<data.cutoff ) {
+    double invd = 1.0/output.val[0];
+    Vector v = (-invd)*input.pos;
+    output.deriv[0] = v[0];
+    output.deriv[1] = v[1];
+    output.deriv[2] = v[2];
+    output.deriv[3] = -v[0];
+    output.deriv[4] = -v[1];
+    output.deriv[5] = -v[2];
+    Tensor t = (-invd)*Tensor(input.pos,input.pos);
+    output.deriv[6] = t[0][0];
+    output.deriv[7] = t[0][1];
+    output.deriv[8] = t[0][2];
+    output.deriv[9] = t[1][0];
+    output.deriv[10] = t[1][1];
+    output.deriv[11] = t[1][2];
+    output.deriv[12] = t[2][0];
+    output.deriv[13] = t[2][1];
+    output.deriv[14] = t[2][2];
   }
-  return mod;
 }
 
 }

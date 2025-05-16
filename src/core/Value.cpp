@@ -28,6 +28,7 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/OFile.h"
+#include "tools/Communicator.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
@@ -36,15 +37,11 @@ Value::Value():
   action(NULL),
   value_set(false),
   hasForce(false),
-  storedata(false),
-  shape(std::vector<unsigned>()),
+  shape(std::vector<std::size_t>()),
   hasDeriv(true),
   bufstart(0),
-  streampos(0),
-  matpos(0),
   ngrid_der(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -61,15 +58,11 @@ Value::Value(const std::string& name):
   value_set(false),
   hasForce(false),
   name(name),
-  storedata(false),
-  shape(std::vector<unsigned>()),
+  shape(std::vector<std::size_t>()),
   hasDeriv(true),
   bufstart(0),
-  streampos(0),
   ngrid_der(0),
-  matpos(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -82,19 +75,15 @@ Value::Value(const std::string& name):
   data[0]=inputForce[0]=0;
 }
 
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<unsigned>&ss):
+Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<std::size_t>&ss):
   action(av),
   value_set(false),
   hasForce(false),
   name(name),
-  storedata(false),
   hasDeriv(withderiv),
   bufstart(0),
-  streampos(0),
   ngrid_der(0),
-  matpos(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -106,12 +95,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
     if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) {
       valtype=average;
     }
-  }
-  if( action ) {
-    storedata=action->getName()=="PUT" || valtype==average;
-  }
-  if( ss.size() && withderiv ) {
-    storedata=true;
   }
   setShape( ss );
 }
@@ -130,7 +113,7 @@ void Value::setValType( const std::string& vtype ) {
   }
 }
 
-void Value::setShape( const std::vector<unsigned>&ss ) {
+void Value::setShape( const std::vector<std::size_t>&ss ) {
   std::size_t tot=1;
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) {
@@ -151,7 +134,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
     // This is for scalars
     data.resize(1);
     inputForce.resize(1);
-  } else if( storedata && shape.size()<2 ) {
+  } else if( shape.size()<2 ) {
     // This is for vectors (matrices have special version because we have sparse storage)
     data.resize( tot );
     inputForce.resize( tot );
@@ -303,7 +286,7 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
     plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
   }
 #endif
-  if( shape.size()==2 && ncols<shape[1] && trueind ) {
+  if( shape.size()==2 && trueind ) {
     unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
     // This is a special treatment for the lower triangular matrices that are used when
     // we do ITRE with COLLECT_FRAMES
@@ -342,34 +325,16 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
 }
 
 
-void Value::buildDataStore( const bool forprint ) {
-  if( getRank()==0 ) {
-    return;
-  }
-  storedata=true;
-  setShape( shape );
-  if( !forprint ) {
-    return ;
-  }
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( action );
-  if( av ) {
-    (av->getFirstActionInChain())->never_reduce_tasks=true;
-  }
-}
-
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
-  if( !storedata ) {
-    return ;
-  }
   ncols=n;
-  if( ncols>shape[1] ) {
+  if( shape[1]>0 && ncols>shape[1] ) {
     ncols=shape[1];
   }
   unsigned size=shape[0]*ncols;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
-    data.resize( size );
-    inputForce.resize( size );
+    data.resize( size, 0 );
+    inputForce.resize( size, 0 );
     matrix_bookeeping.resize( size + shape[0], 0 );
     if( ncols>=shape[1] ) {
       for(unsigned i=0; i<shape[0]; ++i) {
@@ -380,34 +345,30 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
       }
     }
   }
-  if( ncols<shape[1] ) {
-    std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
-  }
 }
 
-void Value::setPositionInMatrixStash( const unsigned& p ) {
+void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
-  matpos=p;
+  ncols = myarg->getNumberOfColumns();
+  matrix_bookeeping.resize( myarg->matrix_bookeeping.size() );
+  for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
+    matrix_bookeeping[i] = myarg->matrix_bookeeping[i];
+  }
+  data.resize( shape[0]*ncols );
+  inputForce.resize( shape[0]*ncols );
 }
 
 bool Value::ignoreStoredValue(const std::string& c) const {
-  if( !storedata && shape.size()>0 ) {
-    return true;
-  }
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
-  if( av ) {
-    return (av->getFirstActionInChain())->getLabel()==c;
-  }
   return false;
 }
 
 void Value::setConstant() {
   valtype=constant;
-  storedata=true;
   setShape( shape );
   if( getRank()==2 && !hasDeriv ) {
     reshapeMatrixStore( shape[1] );
   }
+  derivativeIsZeroWhenValueIsZero=true;
 }
 
 void Value::writeBinary(std::ostream&o) const {
@@ -486,6 +447,24 @@ void Value::print( OFile& ofile ) const {
         fname += "." + num;
       }
       ofile.printField( fname, get(i) );
+    }
+  }
+}
+
+void Value::printForce( OFile& ofile ) const {
+  if( shape.size()==0 || getNumberOfValues()==1 ) {
+    ofile.printField( name, getForce(0) );
+  } else {
+    std::vector<unsigned> indices( shape.size() );
+    for(unsigned i=0; i<getNumberOfValues(); ++i) {
+      convertIndexToindices( i, indices );
+      std::string num, fname = name;
+      for(unsigned i=0; i<shape.size(); ++i) {
+        Tools::convert( indices[i]+1, num );
+        fname += "." + num;
+      }
+      plumed_assert( i<inputForce.size() );
+      ofile.printField( fname,  getForce(i) );
     }
   }
 }

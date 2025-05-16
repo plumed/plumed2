@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
@@ -90,18 +93,15 @@ Measure the correlation between a multiple pairs of dihedral angles
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> value;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<DihedralCorrelation> DihedralCorrelationShortcut;
@@ -121,10 +121,7 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(1),
-  derivs(1),
-  virial(1) {
-  derivs[0].resize(8);
+  value(1) {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if( atoms.size()!=8 ) {
@@ -166,28 +163,27 @@ void DihedralCorrelation::calculate() {
   if(pbc) {
     makeWhole();
   }
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) {
-    setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( i, cvout.getAtomDerivatives(0, i) );
   }
-  setBoxDerivatives( virial[0] );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
-void DihedralCorrelation::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                                       const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                                       std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  const Vector d10=delta(pos[1],pos[0]);
-  const Vector d11=delta(pos[2],pos[1]);
-  const Vector d12=delta(pos[3],pos[2]);
+void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
+  const Vector d10=delta(cvin.pos[1],cvin.pos[0]);
+  const Vector d11=delta(cvin.pos[2],cvin.pos[1]);
+  const Vector d12=delta(cvin.pos[3],cvin.pos[2]);
 
   Vector dd10,dd11,dd12;
   PLMD::Torsion t1;
   const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
-  const Vector d20=delta(pos[5],pos[4]);
-  const Vector d21=delta(pos[6],pos[5]);
-  const Vector d22=delta(pos[7],pos[6]);
+  const Vector d20=delta(cvin.pos[5],cvin.pos[4]);
+  const Vector d21=delta(cvin.pos[6],cvin.pos[5]);
+  const Vector d22=delta(cvin.pos[7],cvin.pos[6]);
 
   Vector dd20,dd21,dd22;
   PLMD::Torsion t2;
@@ -195,27 +191,29 @@ void DihedralCorrelation::calculateCV( const unsigned& mode, const std::vector<d
 
   // Calculate value
   const double diff = phi2 - phi1;
-  vals[0] = 0.5*(1.+std::cos(diff));
+  cvout.values[0] = 0.5*(1.+std::cos(diff));
   // Derivatives wrt phi1
   const double dval = 0.5*std::sin(diff);
   dd10 *= dval;
   dd11 *= dval;
   dd12 *= dval;
   // And add
-  derivs[0][0]=dd10;
-  derivs[0][1]=dd11-dd10;
-  derivs[0][2]=dd12-dd11;
-  derivs[0][3]=-dd12;
+  cvout.derivs[0][0]=dd10;
+  cvout.derivs[0][1]=dd11-dd10;
+  cvout.derivs[0][2]=dd12-dd11;
+  cvout.derivs[0][3]=-dd12;
   // Derivative wrt phi2
   dd20 *= -dval;
   dd21 *= -dval;
   dd22 *= -dval;
   // And add
-  derivs[0][4]=dd20;
-  derivs[0][5]=dd21-dd20;
-  derivs[0][6]=dd22-dd21;
-  derivs[0][7]=-dd22;
-  virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22));
+  cvout.derivs[0][4]=dd20;
+  cvout.derivs[0][5]=dd21-dd20;
+  cvout.derivs[0][6]=dd22-dd21;
+  cvout.derivs[0][7]=-dd22;
+  cvout.virial.set( 0,
+                    -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12))
+                    - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
 }
 
 }

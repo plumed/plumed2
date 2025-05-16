@@ -3,102 +3,79 @@ rr(["label=rr
  RESTRAINT 
 "])
 rr -- ff --> ff
-subgraph subcm_cncn [cm_cncn]
-subgraph subcm_cncn_mat [cm_cncn]
-cm_cncn(["label=cm_cncn 
- CONTACT_MATRIX 
+ff(["label=ff 
+ SUM 
 "])
-cc_cncn(["label=cc_cncn 
- MATRIX_VECTOR_PRODUCT 
-"])
-end
-style subcm_cncn_mat fill:lightblue
-cm_cncn -. cm_cncn .-> cc_cncn
-linkStyle 1 stroke:red,color:red;
-mt_cncn(["label=mt_cncn 
- MORE_THAN 
-"])
-cc_cncn -. cc_cncn .-> mt_cncn
-linkStyle 2 stroke:blue,color:blue;
-subgraph subcm_cnpb_mat [cm_cnpb]
-cm_cnpb(["label=cm_cnpb 
- CONTACT_MATRIX 
-"])
-cc_cnpb(["label=cc_cnpb 
- MATRIX_VECTOR_PRODUCT 
-"])
-end
-style subcm_cnpb_mat fill:lightblue
-cm_cnpb -. cm_cnpb .-> cc_cnpb
-linkStyle 3 stroke:red,color:red;
-mt_cnpb(["label=mt_cnpb 
- MORE_THAN 
-"])
-cc_cnpb -. cc_cnpb .-> mt_cnpb
-linkStyle 4 stroke:blue,color:blue;
-subgraph subcm_cnI_mat [cm_cnI]
-cm_cnI(["label=cm_cnI 
- CONTACT_MATRIX 
-"])
-cc_cnI(["label=cc_cnI 
- MATRIX_VECTOR_PRODUCT 
-"])
-end
-style subcm_cnI_mat fill:lightblue
-cm_cnI -. cm_cnI .-> cc_cnI
-linkStyle 5 stroke:red,color:red;
-mt_cnI(["label=mt_cnI 
- MORE_THAN 
-"])
-cc_cnI -. cc_cnI .-> mt_cnI
-linkStyle 6 stroke:blue,color:blue;
+ff -- mm --> mm
+linkStyle 1 stroke:blue,color:blue;
 mm(["label=mm 
  CUSTOM
 FUNC=x*y*z 
 "])
-mt_cncn -. mt_cncn .-> mm
-linkStyle 7 stroke:blue,color:blue;
-mt_cnpb -. mt_cnpb .-> mm
-linkStyle 8 stroke:blue,color:blue;
-mt_cnI -. mt_cnI .-> mm
-linkStyle 9 stroke:blue,color:blue;
-ff(["label=ff 
- SUM 
+mm -- mt_cncn --> mt_cncn
+linkStyle 2 stroke:blue,color:blue;
+mm -- mt_cnpb --> mt_cnpb
+linkStyle 3 stroke:blue,color:blue;
+mm -- mt_cnI --> mt_cnI
+linkStyle 4 stroke:blue,color:blue;
+mt_cnI(["label=mt_cnI 
+ MORE_THAN 
 "])
-mm -. mm .-> ff
-linkStyle 10 stroke:blue,color:blue;
-end
-ff == ff ==> cm_cncn
-ff == ff ==> cc_cncn
-ff == ff ==> cm_cnpb
-ff == ff ==> cc_cnpb
-ff == ff ==> cm_cnI
-ff == ff ==> cc_cnI
-subgraph subcm_cncn [cm_cncn]
-end
+mt_cnI -- cc_cnI --> cc_cnI
+linkStyle 5 stroke:blue,color:blue;
+cc_cnI(["label=cc_cnI 
+ MATRIX_VECTOR_PRODUCT 
+"])
+cc_cnI -- cm_cnI --> cm_cnI
+linkStyle 6 stroke:red,color:red;
 cc_cnI -- ones192 --> ones192
-linkStyle 17 stroke:blue,color:blue;
-subgraph subcm_cncn [cm_cncn]
-end
+linkStyle 7 stroke:blue,color:blue;
+cm_cnI(["label=cm_cnI 
+ CONTACT_MATRIX 
+"])
+mt_cnpb(["label=mt_cnpb 
+ MORE_THAN 
+"])
+mt_cnpb -- cc_cnpb --> cc_cnpb
+linkStyle 8 stroke:blue,color:blue;
+cc_cnpb(["label=cc_cnpb 
+ MATRIX_VECTOR_PRODUCT 
+"])
+cc_cnpb -- cm_cnpb --> cm_cnpb
+linkStyle 9 stroke:red,color:red;
 cc_cnpb -- ones64 --> ones64
-linkStyle 18 stroke:blue,color:blue;
-subgraph subcm_cncn [cm_cncn]
-end
+linkStyle 10 stroke:blue,color:blue;
+cm_cnpb(["label=cm_cnpb 
+ CONTACT_MATRIX 
+"])
+mt_cncn(["label=mt_cncn 
+ MORE_THAN 
+"])
+mt_cncn -- cc_cncn --> cc_cncn
+linkStyle 11 stroke:blue,color:blue;
+cc_cncn(["label=cc_cncn 
+ MATRIX_VECTOR_PRODUCT 
+"])
+cc_cncn -- cm_cncn --> cm_cncn
+linkStyle 12 stroke:red,color:red;
 cc_cncn -- ones64 --> ones64
-linkStyle 19 stroke:blue,color:blue;
+linkStyle 13 stroke:blue,color:blue;
+cm_cncn(["label=cm_cncn 
+ CONTACT_MATRIX 
+"])
 Box("label=Box 
  PBC 
 ")
-cm_cnI -- Box --> Box
-linkStyle 20 stroke:red,color:red;
-cm_cnI --> MD
-linkStyle 21 stroke:violet,color:violet;
-cm_cncn -- Box --> Box
-linkStyle 22 stroke:red,color:red;
-cm_cncn --> MD
-linkStyle 23 stroke:violet,color:violet;
-cm_cnpb -- Box --> Box
-linkStyle 24 stroke:red,color:red;
-cm_cnpb --> MD
-linkStyle 25 stroke:violet,color:violet;
+Box -- Box --> cm_cncn
+linkStyle 14 stroke:red,color:red;
+MD --> cm_cncn
+linkStyle 15 stroke:violet,color:violet;
+Box -- Box --> cm_cnpb
+linkStyle 16 stroke:red,color:red;
+MD --> cm_cnpb
+linkStyle 17 stroke:violet,color:violet;
+Box -- Box --> cm_cnI
+linkStyle 18 stroke:red,color:red;
+MD --> cm_cnI
+linkStyle 19 stroke:violet,color:violet;
 MD(positions from MD)

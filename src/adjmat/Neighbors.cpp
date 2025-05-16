@@ -19,7 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithMatrix.h"
+#include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR NEIGHBORS
@@ -61,46 +63,29 @@ cv: CUSTOM ARG=ucv PERIODIC=NO FUNC=x/4
 namespace PLMD {
 namespace adjmat {
 
-class Neighbors : public ActionWithMatrix {
-  bool lowest;
-  unsigned number;
+class NeighborsShortcut : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit Neighbors(const ActionOptions&);
-  unsigned getNumberOfDerivatives() override;
-  unsigned getNumberOfColumns() const override {
-    return number;
-  }
-  bool canBeAfterInChain( ActionWithVector* av ) {
-    return av->getLabel()!=(getPntrToArgument(0)->getPntrToAction())->getLabel();
-  }
-  void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override {}
-  void turnOnDerivatives() override ;
+  explicit NeighborsShortcut(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(Neighbors,"NEIGHBORS")
+PLUMED_REGISTER_ACTION(NeighborsShortcut,"NEIGHBORS")
 
-void Neighbors::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys );
+void NeighborsShortcut::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","matrix","the label of an adjacency/distance matrix that will be used to find the nearest neighbors");
   keys.add("compulsory","NLOWEST","0","in each row of the output matrix set the elements that correspond to the n lowest elements in each row of the input matrix equal to one");
   keys.add("compulsory","NHIGHEST","0","in each row of the output matrix set the elements that correspond to the n highest elements in each row of the input matrix equal to one");
   keys.setValueDescription("matrix","a matrix in which the ij element is one if the ij-element of the input matrix is one of the NLOWEST/NHIGHEST elements on that row of the input matrix and zero otherwise");
+  keys.addActionNameSuffix("_1LOW");
+  keys.addActionNameSuffix("_NLOW");
+  keys.addActionNameSuffix("_1HIGH");
+  keys.addActionNameSuffix("_NHIGH");
 }
 
-Neighbors::Neighbors(const ActionOptions&ao):
+NeighborsShortcut::NeighborsShortcut(const ActionOptions& ao):
   Action(ao),
-  ActionWithMatrix(ao) {
-  if( getNumberOfArguments()!=1 ) {
-    error("found wrong number of arguments in input");
-  }
-  if( getPntrToArgument(0)->getRank()!=2 ) {
-    error("input argument should be a matrix");
-  }
-  getPntrToArgument(0)->buildDataStore();
-
+  ActionShortcut(ao) {
   unsigned nlow;
   parse("NLOWEST",nlow);
   unsigned nhigh;
@@ -111,84 +96,253 @@ Neighbors::Neighbors(const ActionOptions&ao):
   if( nlow>0 && nhigh>0 ) {
     error("should only be one of NLOWEST or NHIGHEST set in input");
   }
-  if( nlow>0 ) {
-    number=nlow;
-    lowest=true;
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",number);
+  if( nlow==1 ) {
+    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",nlow);
+    readInputLine( getShortcutLabel() + ": NEIGHBORS_1LOW N=1 " + convertInputLineToString() );
+  } else if( nlow>1 ) {
+    std::string str_n;
+    Tools::convert( nlow, str_n );
+    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",nlow);
+    readInputLine( getShortcutLabel() + ": NEIGHBORS_NLOW N=" + str_n + " " + convertInputLineToString() );
+  } else if( nhigh==1 ) {
+    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",nhigh);
+    readInputLine( getShortcutLabel() + ": NEIGHBORS_1HIGH N=1 " + convertInputLineToString() );
+  } else if( nhigh>1 ) {
+    std::string str_n;
+    Tools::convert( nlow, str_n );
+    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",nhigh);
+    readInputLine( getShortcutLabel() + ": NEIGHBORS_NHIGH N=" + str_n + " " + convertInputLineToString() );
+  } else {
+    error("do not know what I am supposed to do");
   }
-  if( nhigh>0 ) {
-    number=nhigh;
-    lowest=false;
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",number);
+}
+
+class NeighborCalcInput {
+public:
+  unsigned number;
+  unsigned nind;
+  unsigned ncols;
+  unsigned nbonds;
+  View<const double,helpers::dynamic_extent> matrow;
+  View<const std::size_t,helpers::dynamic_extent> bookrow;
+  NeighborCalcInput( unsigned task_index, unsigned n, const ArgumentBookeepingHolder& arg, double* d ):
+    number(n),
+    nind(0),
+    ncols(arg.ncols),
+    nbonds(arg.bookeeping[task_index*(1+ncols)]),
+    matrow( d + task_index*ncols, nbonds ),
+    bookrow( arg.bookeeping.data() + task_index*(1+ncols)+1, nbonds ) {
+    for(unsigned i=0; i<nbonds; ++i) {
+      if( matrow[i]<epsilon ) {
+        continue ;
+      }
+      nind++;
+    }
+    if( number>nind ) {
+      plumed_merror("not enough matrix elements were stored");
+    }
+  }
+  void getSortedData( std::vector<std::pair<double,unsigned> >& rows ) const ;
+};
+
+void NeighborCalcInput::getSortedData( std::vector<std::pair<double,unsigned> >& rows ) const {
+  unsigned n=0;
+  for(unsigned i=0; i<nbonds; ++i) {
+    if( matrow[i]<epsilon ) {
+      continue ;
+    }
+    rows[n].first=matrow[i];
+    rows[n].second=bookrow[i];
+    n++;
+  }
+  std::sort( rows.begin(), rows.end() );
+}
+
+class OneLowInput {
+public:
+  unsigned number;
+  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+};
+
+void OneLowInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+  unsigned nv = input.bookrow[0];
+  double min = input.matrow[0];
+  for(unsigned i=1; i<input.nbonds; ++i) {
+    if( input.matrow[i]<min ) {
+      min = input.matrow[i];
+      nv = input.bookrow[i];
+    }
+  }
+  output[0] = nv;
+}
+
+class NLowInput {
+public:
+  unsigned number;
+  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+};
+
+void NLowInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+  std::vector<std::pair<double,unsigned> > rows( input.nind );
+  input.getSortedData( rows );
+
+  for(unsigned i=0; i<input.number; ++i) {
+    output[i] = rows[i].second;
+  }
+}
+
+class OneHighInput {
+public:
+  unsigned number;
+  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+};
+
+void OneHighInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+  unsigned nv = input.bookrow[0];
+  double max = input.matrow[0];
+  for(unsigned i=1; i<input.nbonds; ++i) {
+    if( input.matrow[i]>max ) {
+      max = input.matrow[i];
+      nv = input.bookrow[i];
+    }
+  }
+  output[0] = nv;
+}
+
+class NHighInput {
+public:
+  unsigned number;
+  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+};
+
+void NHighInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+  std::vector<std::pair<double,unsigned> > rows( input.nind );
+  input.getSortedData( rows );
+
+  for(unsigned i=0; i<input.number; ++i) {
+    output[i] = rows[input.nind-1-i].second;
+  }
+}
+
+template <class T>
+class Neighbors : public ActionWithVector {
+public:
+  using input_type = T;
+  using PTM = ParallelTaskManager<Neighbors<T>>;
+private:
+/// The parallel task manager
+  PTM taskmanager;
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit Neighbors(const ActionOptions&);
+  unsigned getNumberOfDerivatives() override;
+  void turnOnDerivatives() override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
+  void transferStashToValues( const std::vector<double>& stash ) override ;
+  void prepare() override ;
+  void calculate() override ;
+  static void performTask( std::size_t task_index,
+                           const T& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+};
+
+typedef Neighbors<OneLowInput> olinp;
+PLUMED_REGISTER_ACTION(olinp,"NEIGHBORS_1LOW")
+typedef Neighbors<NLowInput> nlinp;
+PLUMED_REGISTER_ACTION(nlinp,"NEIGHBORS_NLOW")
+typedef Neighbors<OneHighInput> ohinp;
+PLUMED_REGISTER_ACTION(ohinp,"NEIGHBORS_1HIGH")
+typedef Neighbors<NHighInput> nhinp;
+PLUMED_REGISTER_ACTION(nhinp,"NEIGHBORS_NHIGH")
+
+template <class T>
+void Neighbors<T>::registerKeywords( Keywords& keys ) {
+  ActionWithVector::registerKeywords( keys );
+  keys.setDisplayName("NEIGHBORS");
+  keys.addInputKeyword("compulsory","ARG","matrix","the label of an adjacency/distance matrix that will be used to find the nearest neighbors");
+  keys.add("compulsory","N","the number of non-zero elements in each row of the output matrix");
+  keys.setValueDescription("matrix","a matrix in which the ij element is one if the ij-element of the input matrix is one of the NLOWEST/NHIGHEST elements on that row of the input matrix and zero otherwise");
+  PTM::registerKeywords( keys );
+}
+
+template <class T>
+Neighbors<T>::Neighbors(const ActionOptions&ao):
+  Action(ao),
+  ActionWithVector(ao),
+  taskmanager(this) {
+  if( getNumberOfArguments()!=1 ) {
+    error("found wrong number of arguments in input");
+  }
+  if( getPntrToArgument(0)->getRank()!=2 ) {
+    error("input argument should be a matrix");
   }
 
+  T myinp;
+  parse("N",myinp.number);
   // And get the shape
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValue( shape );
   setNotPeriodic();
-  checkRead();
+  getPntrToComponent(0)->reshapeMatrixStore( myinp.number );
+  getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
+  // Setup the parallel task manager
+  taskmanager.setupParallelTaskManager( 0, 0 );
+  taskmanager.setActionInput( myinp );
 }
 
-void Neighbors::turnOnDerivatives() {
-  ActionWithValue::turnOnDerivatives();
-  warning("think about whether your symmetry functions are continuous. If the symmetry function can be calculated from distances only then you can use NEIGHBORS. If you calculate angles between vectors or use the vectors directly then the symmetry function computed using NEIGHBORS is not continuous.  It does not make sense to use such CVs when biasing");
+template <class T>
+void Neighbors<T>::turnOnDerivatives() {
+  error("If the symmetry function can be calculated from distances only then the derivatives of a function that is computed with NEIGHBORS will be continuous. If you calculate angles between vectors or use the vectors directly then the symmetry function computed using NEIGHBORS is not continuous. Out of an abundance of caution we thus forbid forces for this action.  If you are interested on applying forces with this action email gareth.tribello@gmail.com");
 }
 
-unsigned Neighbors::getNumberOfDerivatives() {
+template <class T>
+unsigned Neighbors<T>::getNumberOfDerivatives() {
   return 0;
 }
 
-void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  const Value* wval = getPntrToArgument(0);
-  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getShape()[1];
-  if( indices.size()!=1+number ) {
-    indices.resize( 1 + number );
+template <class T>
+void Neighbors<T>::prepare() {
+  ActionWithVector::prepare();
+  Value* myval = getPntrToComponent(0);
+  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(0)->getShape()[1] ) {
+    return;
   }
-  myvals.setSplitIndex(1+number);
-
-  unsigned nind=0;
-  for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos );
-    if( weighti<epsilon ) {
-      continue ;
-    }
-    nind++;
-  }
-  if( number>nind ) {
-    plumed_merror("not enough matrix elements were stored");
-  }
-
-  // Now build vectors for doing sorting
-  std::vector<std::pair<double,unsigned> > rows( nind );
-  unsigned n=0;
-  for(unsigned i=0; i<nbonds; ++i) {
-    unsigned iind = wval->getRowIndex( task_index, i );
-    unsigned ipos = ncols*task_index + iind;
-    double weighti = wval->get( ipos );
-    if( weighti<epsilon ) {
-      continue ;
-    }
-    rows[n].first=weighti;
-    rows[n].second=iind;
-    n++;
-  }
-
-  // Now do the sort and clear all the stored values ready for recompute
-  std::sort( rows.begin(), rows.end() );
-  // This is to make this action consistent with what in other matrix actions
-  unsigned start_n = getPntrToArgument(0)->getShape()[0];
-  // And setup the lowest indices, which are the ones we need to calculate
-  for(unsigned i=0; i<number; ++i) {
-    indices[i+1] = start_n + rows[nind-1-i].second;
-    if( lowest ) {
-      indices[i+1] = start_n + rows[i].second;
-    }
-  }
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
+  myval->setShape(shape);
+  myval->reshapeMatrixStore( taskmanager.getActionInput().number );
 }
 
-void Neighbors::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), 1.0 );
+template <class T>
+void Neighbors<T>::calculate() {
+  taskmanager.runAllTasks();
+}
+
+template <class T>
+void Neighbors<T>::performTask( std::size_t task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+  T::calculate( NeighborCalcInput( task_index, actiondata.number, ArgumentBookeepingHolder( 0, input ), input.inputdata ), output.values );
+}
+
+template <class T>
+void Neighbors<T>::transferStashToValues( const std::vector<double>& stash ) {
+  Value* myval = getPntrToComponent(0);
+  // All values are set equal to one
+  for(unsigned i=0; i<myval->getNumberOfStoredValues(); ++i) {
+    myval->set( i, 1 );
+  }
+
+  // And we set the bookeeping data from the data in the stash
+  unsigned k=0;
+  std::vector<std::size_t> rowindices( taskmanager.getActionInput().number );
+  for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+    for(unsigned j=0; j<rowindices.size(); ++j) {
+      rowindices[j] = static_cast<std::size_t>( stash[k] );
+      ++k;
+    }
+    myval->setRowIndices( i, rowindices );
+  }
 }
 
 }

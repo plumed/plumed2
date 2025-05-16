@@ -126,6 +126,7 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
+  keys.add("optional","MASK","the label for a vector that is used to determine which rows of the matrix are computed");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CONTACT_MATRIX");
@@ -168,6 +169,11 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
   }
   if( components ) {
     matinp += " COMPONENTS";
+  }
+  std::string maskstr;
+  action->parse("MASK",maskstr);
+  if( maskstr.length()>0 ) {
+    matinp += " MASK=" + maskstr;
   }
   action->readInputLine( matinp );
 }
@@ -233,10 +239,12 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   std::vector<std::string> moments;
   parseVector("MOMENTS",moments);
   Tools::interpretRanges( moments );
-  readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
-  for(unsigned i=0; i<moments.size(); ++i) {
-    readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
-    readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
+  if( moments.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
+    for(unsigned i=0; i<moments.size(); ++i) {
+      readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
+      readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
+    }
   }
   // Read in all the shortcut stuff
   std::map<std::string,std::string> keymap;

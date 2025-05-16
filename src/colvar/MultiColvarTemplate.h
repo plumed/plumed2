@@ -23,35 +23,77 @@
 #define __PLUMED_colvar_MultiColvarTemplate_h
 
 #include "core/ActionWithVector.h"
+#include "core/ParallelTaskManager.h"
+#include "tools/ColvarOutput.h"
+#include "ColvarInput.h"
 
 namespace PLMD {
+
+class Colvar;
+
 namespace colvar {
+
+struct MultiColvarInput {
+  bool usepbc;
+  unsigned mode;
+  unsigned nindices_per_task;
+  //this is so simple that it better to use the Rule of 0
+  //and the openacc helpers
+  void toACCDevice()const {
+#pragma acc enter data copyin(this[0:1], usepbc, mode, nindices_per_task)
+  }
+  void removeFromACCDevice() const  {
+#pragma acc exit data delete(nindices_per_task, mode, usepbc, this[0:1])
+  }
+};
 
 template <class T>
 class MultiColvarTemplate : public ActionWithVector {
+public:
+  using input_type = MultiColvarInput;
+  using PTM = ParallelTaskManager<MultiColvarTemplate<T>>;
+  constexpr static size_t virialSize = 9;
 private:
+/// The parallel task manager
+  PTM taskmanager;
 /// An index that decides what we are calculating
   unsigned mode;
 /// Are we using pbc to calculate the CVs
   bool usepbc;
 /// Do we reassemble the molecule
   bool wholemolecules;
-/// Blocks of atom numbers
-  std::vector< std::vector<unsigned> > ablocks;
+/// The number of atoms per task
+  unsigned natoms_per_task;
 public:
   static void registerKeywords(Keywords&);
   explicit MultiColvarTemplate(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
-  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
-  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
-  void performTask( const unsigned&, MultiValue& ) const override ;
+  void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
+  void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
+  void getInputData( std::vector<double>& inputdata ) const override ;
+  void performTask( const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
   void calculate() override;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+  static void performTask( std::size_t task_index,
+                           const MultiColvarInput& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const MultiColvarInput& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const MultiColvarInput& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
 void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
+  PTM::registerKeywords( keys );
+  keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
     if( keys.style( keys.getKeyword(i), "atoms" ) ) {
@@ -67,6 +109,7 @@ template <class T>
 MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
+  taskmanager(this),
   mode(0),
   usepbc(true),
   wholemolecules(false) {
@@ -75,11 +118,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
     parseAtomList( "ATOMS", all_atoms );
   }
   if( all_atoms.size()>0 ) {
-    ablocks.resize(1);
-    ablocks[0].resize( all_atoms.size() );
-    for(unsigned i=0; i<all_atoms.size(); ++i) {
-      ablocks[0][i] = i;
-    }
+    natoms_per_task=1;
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
@@ -89,15 +128,14 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
       }
 
       if( i==1 ) {
-        ablocks.resize(t.size());
+        natoms_per_task=t.size();
       }
-      if( t.size()!=ablocks.size() ) {
+      if( t.size()!=natoms_per_task ) {
         std::string ss;
         Tools::convert(i,ss);
         error("ATOMS" + ss + " keyword has the wrong number of atoms");
       }
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        ablocks[j].push_back( ablocks.size()*(i-1)+j );
+      for(unsigned j=0; j<natoms_per_task; ++j) {
         all_atoms.push_back( t[j] );
       }
       t.resize(0);
@@ -126,6 +164,10 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
 
   // Setup the values
   mode = T::getModeAndSetupValues( this );
+  // This sets up an array in the parallel task manager to hold all the indices
+  // Sets up the index list in the task manager
+  taskmanager.setupParallelTaskManager( 3*natoms_per_task + virialSize, virialSize );
+  taskmanager.setActionInput( MultiColvarInput{ usepbc, mode, natoms_per_task });
 }
 
 template <class T>
@@ -135,129 +177,160 @@ unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
 
 template <class T>
 void MultiColvarTemplate<T>::calculate() {
-  runAllTasks();
+  if( wholemolecules ) {
+    makeWhole();
+  }
+  taskmanager.runAllTasks();
 }
 
 template <class T>
-void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1);
-  s[0]=ablocks[0].size();
+void MultiColvarTemplate<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
+
+template <class T>
+void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
+  std::vector<std::size_t> s(1);
+  s[0]=getNumberOfAtoms() / natoms_per_task;
   addValue( s );
 }
 
 template <class T>
-void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  std::vector<unsigned> s(1);
-  s[0]=ablocks[0].size();
+void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
+  std::vector<std::size_t> s(1);
+  s[0]=getNumberOfAtoms() / natoms_per_task;
   addComponent( name, s );
 }
 
 template <class T>
-void MultiColvarTemplate<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-  if( wholemolecules ) {
-    makeWhole();
+void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  if( inputdata.size()!=5*natoms_per_task*ntasks ) {
+    inputdata.resize( 5*natoms_per_task*ntasks );
   }
-  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+
+  std::size_t k=0;
+  for(unsigned i=0; i<ntasks; ++i) {
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      Vector mypos( getPosition( natoms_per_task*i + j ) );
+      inputdata[k] = mypos[0];
+      k++;
+      inputdata[k] = mypos[1];
+      k++;
+      inputdata[k] = mypos[2];
+      k++;
+    }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getMass( natoms_per_task*i + j );
+      k++;
+    }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getCharge( natoms_per_task*i + j );
+      k++;
+    }
+  }
+}
+
+template <class T>
+void MultiColvarTemplate<T>::performTask( std::size_t task_index,
+    const MultiColvarInput& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
+  std::size_t pos_start = 5*actiondata.nindices_per_task*task_index;
+  if( actiondata.usepbc ) {
+    if( actiondata.nindices_per_task==1 ) {
+      //this may be changed to input.pbc.apply() en mass or only on this one
+      Vector fpos=input.pbc->distance(Vector(0.0,0.0,0.0),
+                                      Vector(input.inputdata[pos_start],
+                                             input.inputdata[pos_start+1],
+                                             input.inputdata[pos_start+2]) );
+      input.inputdata[pos_start]  =fpos[0];
+      input.inputdata[pos_start+1]=fpos[1];
+      input.inputdata[pos_start+2]=fpos[2];
+    } else {
+      //make whole?
+      std::size_t apos_start = pos_start;
+      //if accidentaly nindices_per_task is 0, this will work by looping on all possible unsigned integers!!!!
+      for(unsigned j=0; j<actiondata.nindices_per_task-1; ++j) {
+        Vector first(input.inputdata[apos_start],
+                     input.inputdata[apos_start+1],
+                     input.inputdata[apos_start+2]);
+        Vector second(input.inputdata[apos_start+3],
+                      input.inputdata[apos_start+4],
+                      input.inputdata[apos_start+5]);
+        //calling the pbc here gives problems
+        second=first+input.pbc->distance(first,second);
+        input.inputdata[apos_start+3]=second[0];
+        input.inputdata[apos_start+4]=second[1];
+        input.inputdata[apos_start+5]=second[2];
+        apos_start += 3;
+      }
+    }
+  } else if( actiondata.nindices_per_task==1 ) {
+    //isn't this equivalent to x = x-0?
+    //why this is needed?
+    Vector fpos=delta(Vector(0.0,0.0,0.0),
+                      Vector(input.inputdata[pos_start],
+                             input.inputdata[pos_start+1],
+                             input.inputdata[pos_start+2]));
+    input.inputdata[pos_start]=fpos[0];
+    input.inputdata[pos_start+1]=fpos[1];
+    input.inputdata[pos_start+2]=fpos[2];
+  }
+  const size_t mass_start = pos_start + 3*actiondata.nindices_per_task;
+  const size_t charge_start = mass_start + actiondata.nindices_per_task;
+  const size_t local_ndev = 3*actiondata.nindices_per_task+virialSize;
+
+  ColvarOutput cvout { output.values,
+                       local_ndev,
+                       output.derivatives.data() };
+  T::calculateCV( ColvarInput{actiondata.mode,
+                              actiondata.nindices_per_task,
+                              input.inputdata+pos_start,
+                              input.inputdata+mass_start,
+                              input.inputdata+charge_start,
+                              *input.pbc},
+                  cvout );
 }
 
 template <class T>
-void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  // Retrieve the positions
-  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  if( fpositions.size()!=ablocks.size() ) {
-    fpositions.resize( ablocks.size() );
-  }
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    fpositions[i] = getPosition( ablocks[i][task_index] );
-  }
-  // If we are using pbc make whole
-  if( usepbc ) {
-    if( fpositions.size()==1 ) {
-      fpositions[0]=pbcDistance(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
-    } else {
-      for(unsigned j=0; j<fpositions.size()-1; ++j) {
-        const Vector & first (fpositions[j]);
-        Vector & second (fpositions[j+1]);
-        second=first+pbcDistance(first,second);
-      }
-    }
-  } else if( fpositions.size()==1 ) {
-    fpositions[0]=delta(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
-  }
-  // Retrieve the masses and charges
-  myvals.resizeTemporyVector(2);
-  std::vector<double> & mass( myvals.getTemporyVector(0) );
-  std::vector<double> & charge( myvals.getTemporyVector(1) );
-  if( mass.size()!=ablocks.size() ) {
-    mass.resize(ablocks.size());
-    charge.resize(ablocks.size());
-  }
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    mass[i]=getMass( ablocks[i][task_index] );
-    charge[i]=getCharge( ablocks[i][task_index] );
-  }
-  // Make some space to store various things
-  std::vector<double> values( getNumberOfComponents() );
-  std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
-  std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
-  if( derivs.size()!=values.size() ) {
-    derivs.resize( values.size() );
-    virial.resize( values.size() );
-  }
-  for(unsigned i=0; i<derivs.size(); ++i) {
-    if( derivs[i].size()<ablocks.size() ) {
-      derivs[i].resize( ablocks.size() );
-    }
-  }
-  // Calculate the CVs using the method in the Colvar
-  T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
-  for(unsigned i=0; i<values.size(); ++i) {
-    myvals.setValue( getConstPntrToComponent(i)->getPositionInStream(), values[i] );
-  }
-  // Finish if there are no derivatives
-  if( doNotCalculateDerivatives() ) {
-    return;
-  }
+int MultiColvarTemplate<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const MultiColvarInput& actiondata ) {
+  return 1;
+}
 
-  // Now transfer the derivatives to the underlying MultiValue
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    unsigned base=3*ablocks[i][task_index];
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
-      myvals.addDerivative( jval, base + 0, derivs[j][i][0] );
-      myvals.addDerivative( jval, base + 1, derivs[j][i][1] );
-      myvals.addDerivative( jval, base + 2, derivs[j][i][2] );
+template <class T>
+void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const MultiColvarInput& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
+  for(unsigned i=0; i<input.ncomponents; ++i) {
+    std::size_t m=0;
+    std::size_t base = 3*task_index*actiondata.nindices_per_task;
+    for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
+      force_indices.indices[i][m] = base + m;
+      ++m;
+      force_indices.indices[i][m] = base + m;
+      ++m;
+      force_indices.indices[i][m] = base + m;
+      ++m;
     }
-    // Check for duplicated indices during update to avoid double counting
-    bool newi=true;
-    for(unsigned j=0; j<i; ++j) {
-      if( ablocks[j][task_index]==ablocks[i][task_index] ) {
-        newi=false;
-        break;
-      }
-    }
-    if( !newi ) {
-      continue;
-    }
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
-      myvals.updateIndex( jval, base );
-      myvals.updateIndex( jval, base + 1 );
-      myvals.updateIndex( jval, base + 2 );
-    }
-  }
-  unsigned nvir=3*getNumberOfAtoms();
-  for(int j=0; j<getNumberOfComponents(); ++j) {
-    unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
-    for(unsigned i=0; i<3; ++i) {
-      for(unsigned k=0; k<3; ++k) {
-        myvals.addDerivative( jval, nvir + 3*i + k, virial[j][i][k] );
-        myvals.updateIndex( jval, nvir + 3*i + k );
-      }
-    }
+    force_indices.threadsafe_derivatives_end[i] = 3*actiondata.nindices_per_task;
+    force_indices.indices[i][m+0] = ntotal_force - 9;
+    force_indices.indices[i][m+1] = ntotal_force - 8;
+    force_indices.indices[i][m+2] = ntotal_force - 7;
+    force_indices.indices[i][m+3] = ntotal_force - 6;
+    force_indices.indices[i][m+4] = ntotal_force - 5;
+    force_indices.indices[i][m+5] = ntotal_force - 4;
+    force_indices.indices[i][m+6] = ntotal_force - 3;
+    force_indices.indices[i][m+7] = ntotal_force - 2;
+    force_indices.indices[i][m+8] = ntotal_force - 1;
+    force_indices.tot_indices[i] = 3*actiondata.nindices_per_task + virialSize;
   }
 }
 
-}
-}
+} // namespace colvar
+} // namespace PLMD
 #endif

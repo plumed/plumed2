@@ -359,7 +359,6 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
       if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) {
         error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
       }
-      getPntrToArgument(i)->buildDataStore(true);
       argnames.push_back( getPntrToArgument(i)->getName() );
     }
     std::vector<std::string> str_upper, str_lower;

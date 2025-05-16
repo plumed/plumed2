@@ -110,6 +110,9 @@ private:
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
+    return true;
+  }
   std::vector<std::string> getComponentsPerLabel() const override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
@@ -124,6 +127,7 @@ void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","L","the value of the angular momentum");
   keys.addOutputComponent("rm","default","matrix","the real parts of the spherical harmonic values with the m value given");
   keys.addOutputComponent("im","default","matrix","the real parts of the spherical harmonic values with the m value given");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs");
 }
 
 unsigned SphericalHarmonic::factorial( const unsigned& n ) const {
@@ -211,6 +215,13 @@ void SphericalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
   for(unsigned i=0; i<comp.size(); ++i) {
     action->componentIsNotPeriodic("rm" + comp[i]);
     action->componentIsNotPeriodic("im" + comp[i]);
+  }
+  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
+  plumed_assert( aarg );
+  if( aarg->getNumberOfArguments()==4 && (aarg->getPntrToArgument(3))->isDerivativeZeroWhenValueIsZero() ) {
+    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+      (action->copyOutput(i))->setDerivativeIsZeroWhenValueIsZero();
+    }
   }
 }
 

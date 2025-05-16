@@ -138,7 +138,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   // Read in the tolerance for the pbc parameter
   parse("TOLERANCE",pbc_param);
 
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   // Create the values
   addComponent("thickness", shape );
   componentIsNotPeriodic("thickness");

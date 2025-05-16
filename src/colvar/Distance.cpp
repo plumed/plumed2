@@ -19,6 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+//this is temporary:
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
@@ -161,9 +165,8 @@ class Distance : public Colvar {
   bool scaled_components;
   bool pbc;
 
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> value;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
@@ -171,9 +174,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
@@ -205,10 +206,7 @@ Distance::Distance(const ActionOptions&ao):
   components(false),
   scaled_components(false),
   pbc(true),
-  value(1),
-  derivs(1),
-  virial(1) {
-  derivs[0].resize(2);
+  value(1) {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if(atoms.size()!=2) {
@@ -233,11 +231,6 @@ Distance::Distance(const ActionOptions&ao):
   }
   if( components || scaled_components ) {
     value.resize(3);
-    derivs.resize(3);
-    virial.resize(3);
-    for(unsigned i=0; i<3; ++i) {
-      derivs[i].resize(2);
-    }
   }
   requestAtoms(atoms);
 }
@@ -289,92 +282,93 @@ void Distance::calculate() {
   }
 
   if( components ) {
-    calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
+    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
 
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valuex,i,derivs[0][i] );
+      setAtomsDerivatives(valuex,i,cvout.getAtomDerivatives(0,i) );
     }
-    setBoxDerivatives(valuex,virial[0]);
+    setBoxDerivatives(valuex,cvout.virial[0]);
     valuex->set(value[0]);
 
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valuey,i,derivs[1][i] );
+      setAtomsDerivatives(valuey,i,cvout.getAtomDerivatives(1,i) );
     }
-    setBoxDerivatives(valuey,virial[1]);
+    setBoxDerivatives(valuey,cvout.virial[1]);
     valuey->set(value[1]);
 
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valuez,i,derivs[2][i] );
+      setAtomsDerivatives(valuez,i,cvout.getAtomDerivatives(2,i) );
     }
-    setBoxDerivatives(valuez,virial[2]);
+    setBoxDerivatives(valuez,cvout.virial[2]);
     valuez->set(value[2]);
   } else if( scaled_components ) {
-    calculateCV( 2, masses, charges, getPositions(), value, derivs, virial, this );
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
+    calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), cvout );
 
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valuea,i,derivs[0][i] );
+      setAtomsDerivatives(valuea,i,cvout.getAtomDerivatives(0,i) );
     }
     valuea->set(value[0]);
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valueb,i,derivs[1][i] );
+      setAtomsDerivatives(valueb,i,cvout.getAtomDerivatives(1,i) );
     }
     valueb->set(value[1]);
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(valuec,i,derivs[2][i] );
+      setAtomsDerivatives(valuec,i,cvout.getAtomDerivatives(2,i) );
     }
     valuec->set(value[2]);
   } else  {
-    calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
+    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<2; ++i) {
-      setAtomsDerivatives(i,derivs[0][i] );
+      setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i) );
     }
-    setBoxDerivatives(virial[0]);
+    setBoxDerivatives(cvout.virial[0]);
     setValue           (value[0]);
   }
 }
 
-void Distance::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  Vector distance=delta(pos[0],pos[1]);
-  const double value=distance.modulo();
-  const double invvalue=1.0/value;
+void Distance::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
+  Vector distance=delta(cvin.pos[0],cvin.pos[1]);
 
-  if(mode==1) {
-    derivs[0][0] = Vector(-1,0,0);
-    derivs[0][1] = Vector(+1,0,0);
-    vals[0] = distance[0];
+  if(cvin.mode==1) {
+    cvout.derivs[0][0] = Vector(-1,0,0);
+    cvout.derivs[0][1] = Vector(+1,0,0);
+    cvout.values[0] = distance[0];
 
-    derivs[1][0] = Vector(0,-1,0);
-    derivs[1][1] = Vector(0,+1,0);
-    vals[1] = distance[1];
+    cvout.derivs[1][0] = Vector(0,-1,0);
+    cvout.derivs[1][1] = Vector(0,+1,0);
+    cvout.values[1] = distance[1];
 
-    derivs[2][0] = Vector(0,0,-1);
-    derivs[2][1] = Vector(0,0,+1);
-    vals[2] = distance[2];
-    setBoxDerivativesNoPbc( pos, derivs, virial );
-  } else if(mode==2) {
-    Vector d=aa->getPbc().realToScaled(distance);
-    derivs[0][0] = matmul(aa->getPbc().getInvBox(),Vector(-1,0,0));
-    derivs[0][1] = matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
-    vals[0] = Tools::pbc(d[0]);
-    derivs[1][0] = matmul(aa->getPbc().getInvBox(),Vector(0,-1,0));
-    derivs[1][1] = matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
-    vals[1] = Tools::pbc(d[1]);
-    derivs[2][0] = matmul(aa->getPbc().getInvBox(),Vector(0,0,-1));
-    derivs[2][1] = matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
-    vals[2] = Tools::pbc(d[2]);
+    cvout.derivs[2][0] = Vector(0,0,-1);
+    cvout.derivs[2][1] = Vector(0,0,+1);
+    cvout.values[2] = distance[2];
+    ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+  } else if(cvin.mode==2) {
+    Vector d=cvin.pbc.realToScaled(distance);
+    cvout.derivs[0][0] = matmul(cvin.pbc.getInvBox(),Vector(-1,0,0));
+    cvout.derivs[0][1] = matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
+    cvout.values[0] = Tools::pbc(d[0]);
+    cvout.derivs[1][0] = matmul(cvin.pbc.getInvBox(),Vector(0,-1,0));
+    cvout.derivs[1][1] = matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
+    cvout.values[1] = Tools::pbc(d[1]);
+    cvout.derivs[2][0] = matmul(cvin.pbc.getInvBox(),Vector(0,0,-1));
+    cvout.derivs[2][1] = matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
+    cvout.values[2] = Tools::pbc(d[2]);
   } else {
-    derivs[0][0] = -invvalue*distance;
-    derivs[0][1] = invvalue*distance;
-    setBoxDerivativesNoPbc( pos, derivs, virial );
-    vals[0] = value;
+    const double value=distance.modulo();
+    const double invvalue=1.0/value;
+    cvout.derivs[0][0] = -invvalue*distance;
+    cvout.derivs[0][1] = invvalue*distance;
+    ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+    cvout.values[0] = value;
   }
 }
 

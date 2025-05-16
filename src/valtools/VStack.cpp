@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithMatrix.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR VSTACK
@@ -55,9 +56,9 @@ PRINT ARG=m FILE=matrix.dat
 namespace PLMD {
 namespace valtools {
 
-class VStack : public ActionWithMatrix {
-private:
-  std::vector<bool> stored;
+class VStack :
+  public ActionWithValue,
+  public ActionWithArguments {
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -69,15 +70,9 @@ public:
 ///
   void prepare() override ;
 ///
-  unsigned getNumberOfColumns() const override {
-    return getNumberOfArguments();
-  }
+  void calculate() override ;
 ///
-  void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const override ;
-///
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
-///
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
+  void apply() override ;
 ///
   void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 };
@@ -85,14 +80,17 @@ public:
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
 
 void VStack::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","scalar/vector","the values that you would like to stack together to construct the output matrix");
   keys.setValueDescription("matrix","a matrix that contains the input vectors in its columns");
 }
 
 VStack::VStack(const ActionOptions& ao):
   Action(ao),
-  ActionWithMatrix(ao) {
+  ActionWithValue(ao),
+  ActionWithArguments(ao) {
   if( getNumberOfArguments()==0 ) {
     error("no arguments were specificed");
   }
@@ -110,6 +108,7 @@ VStack::VStack(const ActionOptions& ao):
     getPntrToArgument(0)->getDomain( smin, smax );
   }
 
+  bool derivbool=true;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()>1 || (getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->hasDerivatives()) ) {
       error("all arguments should be vectors");
@@ -133,9 +132,12 @@ VStack::VStack(const ActionOptions& ao):
     } else if( getPntrToArgument(i)->isPeriodic() ) {
       error("one argument is not periodic but " + getPntrToArgument(i)->getName() + " is periodic");
     }
+    if( !getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      derivbool=false;
+    }
   }
   // And create a value to hold the matrix
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=nvals;
   shape[1]=getNumberOfArguments();
   addValue( shape );
@@ -145,32 +147,9 @@ VStack::VStack(const ActionOptions& ao):
     setNotPeriodic();
   }
   // And store this value
-  getPntrToComponent(0)->buildDataStore();
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
-  // Setup everything so we can build the store
-  done_in_chain=true;
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
-  if( av ) {
-    const ActionWithVector* head0 = av->getFirstActionInChain();
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( !avv ) {
-        continue;
-      }
-      if( head0!=avv->getFirstActionInChain() ) {
-        done_in_chain=false;
-        break;
-      }
-    }
-  } else {
-    done_in_chain=false;
-  }
-  unsigned nder = buildArgumentStore(0);
-  // This checks which values have been stored
-  stored.resize( getNumberOfArguments() );
-  std::string headstr=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<stored.size(); ++i) {
-    stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
+  if( derivbool ) {
+    getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   }
 }
 
@@ -187,70 +166,53 @@ void VStack::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
 }
 
 void VStack::prepare() {
-  ActionWithVector::prepare();
   if( getPntrToArgument(0)->getRank()==0 || getPntrToArgument(0)->getShape()[0]==getPntrToComponent(0)->getShape()[0] ) {
     return ;
   }
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   shape[1] = getNumberOfArguments();
   getPntrToComponent(0)->setShape(shape);
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 
-void VStack::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
+void VStack::calculate() {
+  unsigned nvals=1;
+  if( getPntrToArgument(0)->getRank()==1 ) {
+    nvals = getPntrToArgument(0)->getShape()[0];
+  }
+
+  Value* valout = getPntrToComponent(0);
   unsigned nargs = getNumberOfArguments();
-  unsigned nvals = getConstPntrToComponent(0)->getShape()[0];
-  if( indices.size()!=nargs+1 ) {
-    indices.resize( nargs+1 );
-  }
   for(unsigned i=0; i<nargs; ++i) {
-    indices[i+1] = nvals + i;
+    unsigned ipos = i;
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<nvals; ++j) {
+      valout->set( ipos, myarg->get(j) );
+      ipos += nargs;
+    }
   }
-  myvals.setSplitIndex( nargs + 1 );
 }
 
-void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ind2 = index2;
-  if( index2>=getConstPntrToComponent(0)->getShape()[0] ) {
-    ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
-  }
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( ind2, index1, myvals ) );
-
-  if( doNotCalculateDerivatives() ) {
+void VStack::apply() {
+  if( !getPntrToComponent(0)->forcesWereAdded() ) {
     return;
   }
-  addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
-}
 
-void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
-    return ;
+  unsigned nvals=1;
+  if( getPntrToArgument(0)->getRank()==1 ) {
+    nvals = getPntrToArgument(0)->getShape()[0];
   }
-
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-  plumed_assert( nmat_ind<matrix_indices.size() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    bool found=false;
-    ActionWithValue* iav = getPntrToArgument(i)->getPntrToAction();
-    for(unsigned j=0; j<i; ++j) {
-      if( iav==getPntrToArgument(j)->getPntrToAction() ) {
-        found=true;
-        break;
-      }
-    }
-    if( found ) {
-      continue ;
-    }
-
-    unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-      matrix_indices[nmat_ind] = myvals.getActiveIndex(istrn,k);
-      nmat_ind++;
+  Value* valout = getPntrToComponent(0);
+  unsigned nargs = getNumberOfArguments();
+  for(unsigned i=0; i<nargs; ++i) {
+    unsigned ipos = i;
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<nvals; ++j) {
+      myarg->addForce( j, valout->getForce( ipos ) );
+      ipos += nargs;
     }
   }
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
 }
 
 }

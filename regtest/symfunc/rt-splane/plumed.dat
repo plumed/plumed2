@@ -29,8 +29,8 @@ nn_z: CUSTOM ARG=m3.z,m3_norm FUNC=x/y PERIODIC=NO
 data: VSTACK ARG=nn_x,nn_y,nn_z
 dataT: TRANSPOSE ARG=data
 con: CONTACT_MATRIX GROUP=m3 SWITCH={RATIONAL R_0=0.6}
-dd: MATRIX_PRODUCT ARG=data,dataT 
-prod: CUSTOM ARG=con,dd FUNC=x*(3*y-1)/2 PERIODIC=NO
+dd: MATRIX_PRODUCT ARG=data,dataT MASK=con
+prod: CUSTOM ARG=con,dd FUNC=x*(3*y-1)/2 MASK=con PERIODIC=NO
 # Calculate row sums of matrix
 ones: ONES SIZE=8 
 coord: MATRIX_VECTOR_PRODUCT ARG=prod,ones

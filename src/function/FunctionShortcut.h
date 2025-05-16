@@ -58,6 +58,9 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   } else {
     keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the values input to this function");
   }
+  if( keys.outputComponentExists(".#!value") ) {
+    keys.add("optional","MASK","the label for a sparse vector/matrix that should be used to determine which elements of the vector/matrix should be computed");
+  }
 }
 
 template <class T>

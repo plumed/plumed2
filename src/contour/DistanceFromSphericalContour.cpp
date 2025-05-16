@@ -108,7 +108,7 @@ DistanceFromSphericalContour::DistanceFromSphericalContour( const ActionOptions&
   Action(ao),
   DistanceFromContourBase(ao) {
   // Create the values
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   addComponentWithDerivatives("dist", shape );
   componentIsNotPeriodic("dist");
   addComponent("radius", shape );

@@ -322,7 +322,7 @@ void DumpGrid::update() {
     ofile.printf(ostr.c_str(),mygrid.getNbin(true)[2],0.0,0.0,lunit*mygrid.getGridSpacing()[2]);
     ofile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
     std::vector<unsigned> pp(3);
-    std::vector<unsigned> nbin( mygrid.getNbin(true) );
+    std::vector<std::size_t> nbin( mygrid.getNbin(true) );
     for(pp[0]=0; pp[0]<nbin[0]; ++pp[0]) {
       for(pp[1]=0; pp[1]<nbin[1]; ++pp[1]) {
         for(pp[2]=0; pp[2]<nbin[2]; ++pp[2]) {

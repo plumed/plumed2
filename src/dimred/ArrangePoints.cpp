@@ -201,7 +201,7 @@ class ArrangePoints :
 private:
   unsigned dimout, maxiter, ncycles, current_index;
   double cgtol, gbuf;
-  std::vector<unsigned> npoints, nfgrid;
+  std::vector<std::size_t> npoints, nfgrid;
   std::vector<double> mypos;
   double smacof_tol, smacof_reg;
   int dist_target;
@@ -255,7 +255,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   current_index(0),
   dist_target(-1) {
   dimout = getNumberOfArguments();
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( shape[0]!=getPntrToArgument(i)->getNumberOfValues() ) {
@@ -265,7 +265,6 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
     Tools::convert( i+1, num );
     addComponent( "coord-" + num, shape );
     componentIsNotPeriodic( "coord-" + num );
-    getPntrToArgument(i)->buildDataStore();
   }
   std::vector<Value*> args( getArguments() ), target, weights;
   std::string sfd, errors;
@@ -353,7 +352,6 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
 }
 
 void ArrangePoints::checkInputMatrix( const std::string& key, const unsigned& nvals, const std::vector<Value*>& mat ) const {
-  mat[0]->buildDataStore();
   if( mat.size()!=1 ) {
     error("should only be one value in input to " + key );
   }
@@ -371,7 +369,7 @@ double ArrangePoints::calculateStress( const std::vector<double>& p, std::vector
     d[i]=0.0;
   }
   std::vector<double> dtmp(dimout);
-  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument( dimout )->getShape() );
   unsigned targi=shape[0]*current_index;
   unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
   for(unsigned i=0; i<shape[0]; ++i) {
@@ -416,7 +414,7 @@ double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::ve
   std::vector<double> dtmp( dimout );
 
   unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
-  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument( dimout )->getShape() );
   for(unsigned i=1; i<shape[0]; ++i) {
     for(unsigned j=0; j<i; ++j) {
       // Calculate distance in low dimensional space
@@ -451,7 +449,7 @@ double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::ve
 double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SMACOF& mysmacof ) const {
   double stress=0, totalWeight=0;
   unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
-  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument( dimout )->getShape() );
   for(unsigned i=1; i<shape[0]; ++i) {
     for(unsigned j=0; j<i; ++j) {
       // Calculate distance in low dimensional space
@@ -567,7 +565,7 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
 
 void ArrangePoints::prepare() {
   // Make sure all the components are the right size
-  std::vector<unsigned> shape(1,getPntrToArgument( dimout )->getShape()[0]);
+  std::vector<std::size_t> shape(1,getPntrToArgument( dimout )->getShape()[0]);
   for(unsigned j=0; j<dimout; ++j) {
     if( getPntrToComponent(j)->getShape()[0]!=shape[0] ) {
       getPntrToComponent(j)->setShape( shape );
