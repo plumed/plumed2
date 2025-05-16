@@ -728,7 +728,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         }
         ifile.close();
         // Only output the full version of the input file if there are shortcuts
-        if( data.size()>0 ) {
+        if( data.size()>0 && intracomm.Get_rank()==0 && intercomm.Get_rank()==0 ) {
           OFile long_file;
           long_file.open( full_outputfile );
           long_file.printf("{\n");
@@ -762,7 +762,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           long_file.close();
         }
       }
-      if( valuedict_file.length()>0 ) {
+      if( valuedict_file.length()>0 && intracomm.Get_rank()==0 && intercomm.Get_rank()==0 ) {
         OFile valuefile;
         valuefile.open( valuedict_file );
         valuefile.printf("{\n");
