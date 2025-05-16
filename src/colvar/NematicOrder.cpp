@@ -28,17 +28,48 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR NEMATIC_ORDER
 /*
-This file provides a template for if you want to introduce a new CV.
+Calculate the nematic order parameter.
 
-The descrition of the CV that you include here will appear in the further details and examples
-section of the manual
+The nematic order parameter S characterizes the orientational order of molecules
+and ranges from S=0 (isotropic) to S=1 (all molecular axes are perfectly parallel).
+Most liquids are isotropic, as there is no preferred direction, and have an order parameter
+close to 0. In liquid crystals, membranes and solids, molecules tend to align giving
+rise to order parameters closer to 1.
 
-You can (and should) include examples showing how to use your CV as follows:
+$S$ is calculated from the distribution of the angles between the molecular axes ($\hat{u}_i$ for $i=1,\ldots,N$)
+and the nematic director $\hat{n}$,
+$$
+S = \frac{1}{N} \sum_{i=1}^N \left(\frac{3}{2} \cos^2(\theta_i) - \frac{1}{2} \right),
+$$
+with $\cos(\theta_i) = \hat{n} \cdot \hat{u}_i$.
+
+The nematic director depends on the distribution of the molecular axes
+and is computed as the eigenvector belonging to the largest eigenvalue
+of the $3 \times 3$ nematic order tensor,
+$$
+Q_{a,b} = \frac{1}{N} \sum_{i=1}^N \left(\frac{3}{2} u_{a,i} u_{b,i} - \frac{1}{2} \delta_{a,b} \right).
+$$
+
+By adding a bias to the nematic order parameter, one can drive a liquid crystal from the
+isotropic to the nematic phase.
+
+The axis of a rod-like molecule is defined as the distance vector between two atoms,
+it points from the tail atom to the head atom.
 
 ```plumed
-# This should be a sample input.
-t: NEMATIC_ORDER ATOMS=1,2
-PRINT ARG=t STRIDE=100 FILE=COLVAR
+# Assume there are three molecules with 20 atoms each.
+# In the first molecule the molecular axis vector points from atom 1 to atom 20,
+# in the second molecule it points from atom 21 to atom 40
+# and in the third from atom 41 to atom 60.
+GROUP LABEL=tails ATOMS=1,21,41
+GROUP LABEL=heads ATOMS=20,40,60
+
+# Compute nemtic order parameter for the three molecules.
+S: NEMATIC_ORDER ATOMS=tails,heads
+PRINT FILE=colvar ARG=S
+
+# Add a bias to the nematic order parameter S.
+BIASVALUE ARG=S
 ```
 
 */
@@ -60,10 +91,11 @@ PLUMED_REGISTER_ACTION(NematicOrder,"NEMATIC_ORDER")
 void NematicOrder::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("atoms", "ATOMS",
-    "The molecular axes (arrows) are specified by pairs of atoms. "
-    "For n molecules, therefore, 2*n atom indices have to be provided. "
+    "The molecular axes are specified by pairs of atoms. "
+    "For N molecules, therefore, 2*N atom indices have to be provided. "
     "The first half of the atom list contains the head and the second half the tail atoms.");
-  keys.setValueDescription("scalar","The nematic order parameter S, S=0 for the isotropic phase and S=1 for the nematic phase)");
+  keys.setValueDescription("scalar",
+    "The nematic order parameter S, S=0 for the isotropic phase and S=1 for the nematic/aligned phase)");
 }
 
 NematicOrder::NematicOrder(const ActionOptions&ao):
