@@ -1,5 +1,5 @@
-plumed_modules=metatensor
-plumed_needs=metatensor
+plumed_needs=libmetatomic
+plumed_modules=metatomic
 type=driver
 
 # NOTE: to enable --debug-forces, also change the dtype of the models to float64

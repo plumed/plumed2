@@ -1,24 +1,24 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2024 The METATENSOR code team
-(see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
+Copyright (c) 2024 The METATOMIC-PLUMED team
+(see the PEOPLE-METATOMIC file at the root of this folder for a list of names)
 
-See https://docs.metatensor.org/latest/ for more information about the
-metatensor package that this module allows you to call from PLUMED.
+See https://docs.metatensor.org/metatomic/ for more information about the
+metatomic package that this module allows you to call from PLUMED.
 
-This file is part of METATENSOR-PLUMED module.
+This file is part of METATOMIC-PLUMED module.
 
-The METATENSOR-PLUMED module is free software: you can redistribute it and/or modify
+The METATOMIC-PLUMED module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-The METATENSOR-PLUMED module is distributed in the hope that it will be useful,
+The METATOMIC-PLUMED module is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
+along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "core/ActionAtomistic.h"
@@ -26,32 +26,31 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
-//+PLUMEDOC METATENSORMOD_COLVAR METATENSOR
+//+PLUMEDOC METATOMICMOD_COLVAR METATOMIC
 /*
 Use arbitrary machine learning models as collective variables.
 
-Note that this action requires the metatensor-torch library. Check the
-instructions in the \ref METATENSORMOD page to enable this module.
+\note This action requires the metatomic-torch library. Check the
+instructions in the \ref METATOMICMOD page to enable this module.
 
 This action enables the use of fully custom machine learning models — based on
-the [metatensor atomistic models][mts_models] interface — as collective
-variables in PLUMED. Such machine learning model are typically written and
-customized using Python code, and then exported to run within PLUMED as
-[TorchScript], which is a subset of Python that can be executed by the C++ torch
-library.
+the [metatomic] models interface — as collective variables in PLUMED. Such
+machine learning model are typically written and customized using Python code,
+and then exported to run within PLUMED as [TorchScript], which is a subset of
+Python that can be executed by the C++ torch library.
 
-Metatensor offers a way to define such models and pass data from PLUMED (or any
+Metatomic offers a way to define such models and pass data from PLUMED (or any
 other simulation engine) to the model and back. For more information on how to
-define such model, have a look at the [corresponding tutorials][mts_tutorials],
-or at the code in `regtest/metatensor/`. Each of the Python scripts in this
+define such model, have a look at the [corresponding tutorials][mta_tutorials],
+or at the code in `regtest/metatomic/`. Each of the Python scripts in this
 directory defines a custom machine learning CV that can be used with PLUMED.
 
 \par Examples
 
-The following input shows how you can call metatensor and evaluate the model
-that is described in the file `custom_cv.pt` from PLUMED.
+The following input shows how you can call metatomic and evaluate the model that
+is described in the file `custom_cv.pt` from PLUMED.
 
-\plumedfile metatensor_cv: METATENSOR ... MODEL=custom_cv.pt
+\plumedfile metatomic_cv: METATOMIC ... MODEL=custom_cv.pt
 
     SPECIES1=1-26
     SPECIES2=27-62
@@ -67,14 +66,14 @@ the atomic type of the atoms that have been specified using the `SPECIES1` flag,
 the second number is the atomic number of the atoms that have been specified
 using the `SPECIES2` flag and so on.
 
-`METATENSOR` action also accepts the following options:
+`METATOMIC` action also accepts the following options:
 
 - `EXTENSIONS_DIRECTORY` should be the path to a directory containing
   TorchScript extensions (as shared libraries) that are required to load and
   execute the model. This matches the `collect_extensions` argument to
-  `MetatensorAtomisticModel.export` in Python.
+  `AtomisticModel.export` in Python.
 - `CHECK_CONSISTENCY` can be used to enable internal consistency checks;
-- `SELECTED_ATOMS` can be used to signal the metatensor models that it should
+- `SELECTED_ATOMS` can be used to signal the metatomic models that it should
   only run its calculation for the selected subset of atoms. The model still
   need to know about all the atoms in the system (through the `SPECIES`
   keyword); but this can be used to reduce the calculation cost. Note that the
@@ -85,7 +84,7 @@ using the `SPECIES2` flag and so on.
 
 Here is another example with all the possible keywords:
 
-\plumedfile soap: METATENSOR ... MODEL=soap.pt EXTENSION_DIRECTORY=extensions
+\plumedfile soap: METATOMIC ... MODEL=soap.pt EXTENSION_DIRECTORY=extensions
 CHECK_CONSISTENCY
 
     SPECIES1=1-10
@@ -98,38 +97,35 @@ CHECK_CONSISTENCY
 ...
 \endplumedfile
 
-\par Collective variables and metatensor models
+\par Collective variables and metatomic  models
 
-PLUMED can use the [`"features"` output][features_output] of metatensor
-atomistic models as a collective variables. Alternatively, the code also accepts
-an output named `"plumed::cv"`, with the same metadata structure as the
-`"features"` output.
+PLUMED can use the [`"features"` output][features_output] of metatomic models as
+a collective variables.
 
 */ /*
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
-[mts_models]: https://docs.metatensor.org/latest/atomistic/index.html
-[mts_tutorials]: https://docs.metatensor.org/latest/examples/atomistic/index.html
-[mts_block]: https://docs.metatensor.org/latest/torch/reference/block.html
-[features_output]: https://docs.metatensor.org/latest/examples/atomistic/outputs/features.html
+[metatomic]: https://docs.metatensor.org/metatomic/
+[mta_tutorials]: https://docs.metatensor.org/metatomic/latest/examples/
+[features_output]: https://docs.metatensor.org/metatomic/latest/outputs/features.html
 */
 //+ENDPLUMEDOC
 
 /*INDENT-OFF*/
-#if !defined(__PLUMED_HAS_METATENSOR) || !defined(__PLUMED_HAS_LIBTORCH)
+#if !defined(__PLUMED_HAS_LIBMETATOMIC) || !defined(__PLUMED_HAS_LIBTORCH)
 
-namespace PLMD { namespace metatensor {
-class MetatensorPlumedAction: public ActionAtomistic, public ActionWithValue {
+namespace PLMD { namespace metatomic {
+class MetatomicPlumedAction: public ActionAtomistic, public ActionWithValue {
 public:
     static void registerKeywords(Keywords& keys);
-    explicit MetatensorPlumedAction(const ActionOptions& options):
+    explicit MetatomicPlumedAction(const ActionOptions& options):
         Action(options),
         ActionAtomistic(options),
         ActionWithValue(options)
     {
         throw std::runtime_error(
-            "Can not use metatensor action without the corresponding libraries. \n"
-            "Make sure to configure with `--enable-metatensor --enable-libtorch` "
+            "Can not use metatomic action without the corresponding libraries. \n"
+            "Make sure to configure with `--enable-libmetatomic --enable-libtorch` "
             "and that the corresponding libraries are found"
         );
     }
@@ -139,7 +135,7 @@ public:
     unsigned getNumberOfDerivatives() override {return 0;}
 };
 
-}} // namespace PLMD::metatensor
+}} // namespace PLMD::metatomic
 
 #else
 
@@ -166,13 +162,13 @@ public:
 #pragma GCC diagnostic pop
 
 #include <metatensor/torch.hpp>
-#include <metatensor/torch/atomistic.hpp>
+#include <metatomic/torch.hpp>
 
 #include "vesin.h"
 
 
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 
 // We will cast Vector/Tensor to pointers to arrays and doubles, so let's make
 // sure this is legal to do
@@ -184,10 +180,10 @@ static_assert(std::is_standard_layout<PLMD::Tensor>::value);
 static_assert(sizeof(PLMD::Tensor) == sizeof(std::array<std::array<double, 3>, 3>));
 static_assert(alignof(PLMD::Tensor) == alignof(std::array<std::array<double, 3>, 3>));
 
-class MetatensorPlumedAction: public ActionAtomistic, public ActionWithValue {
+class MetatomicPlumedAction: public ActionAtomistic, public ActionWithValue {
 public:
     static void registerKeywords(Keywords& keys);
-    explicit MetatensorPlumedAction(const ActionOptions&);
+    explicit MetatomicPlumedAction(const ActionOptions&);
 
     void calculate() override;
     void apply() override;
@@ -196,24 +192,23 @@ public:
 private:
     // fill this->system_ according to the current PLUMED data
     void createSystem();
-    // compute a neighbor list following metatensor format, using data from PLUMED
+    // compute a neighbor list following metatomic format, using data from PLUMED
     metatensor_torch::TensorBlock computeNeighbors(
-        metatensor_torch::NeighborListOptions request,
+        metatomic_torch::NeighborListOptions request,
         const std::vector<PLMD::Vector>& positions,
         const PLMD::Tensor& cell,
         bool periodic
     );
 
     // execute the model for the given system
-    metatensor_torch::TensorBlock executeModel(metatensor_torch::System system);
+    metatensor_torch::TensorBlock executeModel(metatomic_torch::System system);
 
     torch::jit::Module model_;
 
-    metatensor_torch::ModelCapabilities capabilities_;
-    std::string model_output_;
+    metatomic_torch::ModelCapabilities capabilities_;
 
     // neighbor lists requests made by the model
-    std::vector<metatensor_torch::NeighborListOptions> nl_requests_;
+    std::vector<metatomic_torch::NeighborListOptions> nl_requests_;
 
     // dtype/device to use to execute the model
     torch::ScalarType dtype_;
@@ -223,8 +218,8 @@ private:
     // store the strain to be able to compute the virial with autograd
     torch::Tensor strain_;
 
-    metatensor_torch::System system_;
-    metatensor_torch::ModelEvaluationOptions evaluations_options_;
+    metatomic_torch::System system_;
+    metatomic_torch::ModelEvaluationOptions evaluations_options_;
     bool check_consistency_;
 
     metatensor_torch::TensorMap output_;
@@ -234,16 +229,16 @@ private:
 };
 
 
-MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
+MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
     ActionWithValue(options),
     device_(torch::kCPU)
 {
-    if (metatensor_torch::version().find("0.7.") != 0) {
+    if (metatomic_torch::version().find("0.1.") != 0) {
         this->error(
-            "this code requires version 0.7.x of metatensor-torch, got version " +
-            metatensor_torch::version()
+            "this code requires version 0.1.x of metatomic-torch, got version " +
+            metatomic_torch::version()
         );
     }
 
@@ -260,17 +255,17 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     this->parse("MODEL", model_path);
 
     try {
-        this->model_ = metatensor_torch::load_atomistic_model(model_path, extensions_directory);
+        this->model_ = metatomic_torch::load_atomistic_model(model_path, extensions_directory);
     } catch (const std::exception& e) {
         this->error("failed to load model at '" + model_path + "': " + e.what());
     }
 
     // extract information from the model
-    auto metadata = this->model_.run_method("metadata").toCustomClass<metatensor_torch::ModelMetadataHolder>();
-    this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatensor_torch::ModelCapabilitiesHolder>();
+    auto metadata = this->model_.run_method("metadata").toCustomClass<metatomic_torch::ModelMetadataHolder>();
+    this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatomic_torch::ModelCapabilitiesHolder>();
     auto requests_ivalue = this->model_.run_method("requested_neighbor_lists");
     for (auto request_ivalue: requests_ivalue.toList()) {
-        auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborListOptionsHolder>();
+        auto request = request_ivalue.get().toCustomClass<metatomic_torch::NeighborListOptionsHolder>();
         this->nl_requests_.push_back(request);
     }
 
@@ -355,51 +350,30 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
 
     // create evaluation options for the model. These won't change during the
     // simulation, so we initialize them once here.
-    evaluations_options_ = torch::make_intrusive<metatensor_torch::ModelEvaluationOptionsHolder>();
+    evaluations_options_ = torch::make_intrusive<metatomic_torch::ModelEvaluationOptionsHolder>();
     evaluations_options_->set_length_unit(getUnits().getLengthString());
 
     auto outputs = this->capabilities_->outputs();
-    if (outputs.contains("features")) {
-        this->model_output_ = "features";
-    }
-
-    if (outputs.contains("plumed::cv")) {
-        if (outputs.contains("features")) {
-            this->warning(
-                "this model exposes both 'features' and 'plumed::cv' outputs, "
-                "we will use 'features'. 'plumed::cv' is deprecated, please "
-                "remove it from your models"
-            );
-        } else {
-            this->warning(
-                "this model is using 'plumed::cv' output, which is deprecated. "
-                "Please replace it with a 'features' output"
-            );
-            this->model_output_ = "plumed::cv";
-        }
-    }
-
-
-    if (this->model_output_.empty()) {
+    if (!outputs.contains("features")) {
         auto existing_outputs = std::vector<std::string>();
         for (const auto& it: this->capabilities_->outputs()) {
             existing_outputs.push_back(it.key());
         }
 
         this->error(
-            "expected 'features' or 'plumed::cv' in the capabilities of the model, "
+            "expected a 'features' output in the capabilities of the model, "
             "could not find it. the following outputs exist: " + torch::str(existing_outputs)
         );
     }
 
-    auto output = torch::make_intrusive<metatensor_torch::ModelOutputHolder>();
+    auto output = torch::make_intrusive<metatomic_torch::ModelOutputHolder>();
     // this output has no quantity or unit to set
 
-    output->per_atom = this->capabilities_->outputs().at(this->model_output_)->per_atom;
+    output->per_atom = this->capabilities_->outputs().at("features")->per_atom;
     // we are using torch autograd system to compute gradients,
     // so we don't need any explicit gradients.
     output->explicit_gradients = {};
-    evaluations_options_->outputs.insert(this->model_output_, output);
+    evaluations_options_->outputs.insert("features", output);
 
     // Determine which device we should use based on user input, what the model
     // supports and what's available
@@ -488,7 +462,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
 
     // determine how many properties there will be in the output by running the
     // model once on a dummy system
-    auto dummy_system = torch::make_intrusive<metatensor_torch::SystemHolder>(
+    auto dummy_system = torch::make_intrusive<metatomic_torch::SystemHolder>(
         /*types = */ torch::zeros({0}, tensor_options.dtype(torch::kInt32)),
         /*positions = */ torch::zeros({0, 3}, tensor_options),
         /*cell = */ torch::zeros({3, 3}, tensor_options),
@@ -513,7 +487,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
             PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0),
             false
         );
-        metatensor_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
+        metatomic_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
         dummy_system->add_neighbor_list(request, neighbors);
     }
 
@@ -535,11 +509,11 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
             auto n_atoms = static_cast<int32_t>(this->atomic_types_.size(0));
             if (selected_atoms[i] <= 0 || selected_atoms[i] > n_atoms) {
                 this->error(
-                    "Values in metatensor's SELECTED_ATOMS should be between 1 "
+                    "Values in metatomic's SELECTED_ATOMS should be between 1 "
                     "and the number of atoms (" + std::to_string(n_atoms) + "), "
                     "got " + std::to_string(selected_atoms[i]));
             }
-            // PLUMED input uses 1-based indexes, but metatensor wants 0-based
+            // PLUMED input uses 1-based indexes, but metatomic wants 0-based
             selection_value[i][1] = selected_atoms[i] - 1;
         }
 
@@ -587,16 +561,16 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     this->setNotPeriodic();
 }
 
-unsigned MetatensorPlumedAction::getNumberOfDerivatives() {
+unsigned MetatomicPlumedAction::getNumberOfDerivatives() {
     // gradients w.r.t. positions (3 x N values) + gradients w.r.t. strain (9 values)
     return 3 * this->getNumberOfAtoms() + 9;
 }
 
 
-void MetatensorPlumedAction::createSystem() {
+void MetatomicPlumedAction::createSystem() {
     if (this->getTotAtoms() != static_cast<unsigned>(this->atomic_types_.size(0))) {
         std::ostringstream oss;
-        oss << "METATENSOR action needs to know about all atoms in the system. ";
+        oss << "METATOMIC action needs to know about all atoms in the system. ";
         oss << "There are " << this->getTotAtoms() << " atoms overall, ";
         oss << "but we only have atomic types for " << this->atomic_types_.size(0) << " of them.";
         plumed_merror(oss.str());
@@ -652,7 +626,7 @@ void MetatensorPlumedAction::createSystem() {
         torch_cell = torch_cell.matmul(this->strain_);
     }
 
-    this->system_ = torch::make_intrusive<metatensor_torch::SystemHolder>(
+    this->system_ = torch::make_intrusive<metatomic_torch::SystemHolder>(
         this->atomic_types_,
         torch_positions,
         torch_cell,
@@ -692,14 +666,14 @@ void MetatensorPlumedAction::createSystem() {
     // the system
     for (auto request: this->nl_requests_) {
         auto neighbors = this->computeNeighbors(request, positions, cell, periodic);
-        metatensor_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
+        metatomic_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
         this->system_->add_neighbor_list(request, neighbors);
     }
 }
 
 
-metatensor_torch::TensorBlock MetatensorPlumedAction::computeNeighbors(
-    metatensor_torch::NeighborListOptions request,
+metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
+    metatomic_torch::NeighborListOptions request,
     const std::vector<PLMD::Vector>& positions,
     const PLMD::Tensor& cell,
     bool periodic
@@ -746,7 +720,7 @@ metatensor_torch::TensorBlock MetatensorPlumedAction::computeNeighbors(
         );
     }
 
-    // transform from vesin to metatensor format
+    // transform from vesin to metatomic format
     auto n_pairs = static_cast<int64_t>(vesin_neighbor_list->length);
 
     auto pair_vectors = torch::from_blob(
@@ -783,16 +757,16 @@ metatensor_torch::TensorBlock MetatensorPlumedAction::computeNeighbors(
     return neighbors;
 }
 
-metatensor_torch::TensorBlock MetatensorPlumedAction::executeModel(metatensor_torch::System system) {
+metatensor_torch::TensorBlock MetatomicPlumedAction::executeModel(metatomic_torch::System system) {
     try {
         auto ivalue_output = this->model_.forward({
-            std::vector<metatensor_torch::System>{system},
+            std::vector<metatomic_torch::System>{system},
             evaluations_options_,
             this->check_consistency_,
         });
 
         auto dict_output = ivalue_output.toGenericDict();
-        auto cv = dict_output.at(this->model_output_);
+        auto cv = dict_output.at("features");
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
         plumed_merror("failed to evaluate the model: " + std::string(e.what()));
@@ -806,7 +780,7 @@ metatensor_torch::TensorBlock MetatensorPlumedAction::executeModel(metatensor_to
 }
 
 
-void MetatensorPlumedAction::calculate() {
+void MetatomicPlumedAction::calculate() {
     this->createSystem();
 
     auto block = this->executeModel(this->system_);
@@ -878,7 +852,7 @@ void MetatensorPlumedAction::calculate() {
 }
 
 
-void MetatensorPlumedAction::apply() {
+void MetatomicPlumedAction::apply() {
     const auto* value = this->getPntrToComponent(0);
     if (!value->forcesWereAdded()) {
         return;
@@ -976,7 +950,7 @@ void MetatensorPlumedAction::apply() {
     this->setForcesOnAtoms(derivatives, index);
 }
 
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
 
 
@@ -984,35 +958,35 @@ void MetatensorPlumedAction::apply() {
 
 
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 
 // use the same implementation for both the actual action and the dummy one
-// (when libtorch and libmetatensor could not be found).
-void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
+// (when libtorch and libmetatomic could not be found).
+void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
     Action::registerKeywords(keys);
     ActionAtomistic::registerKeywords(keys);
     ActionWithValue::registerKeywords(keys);
 
-    keys.add("compulsory", "MODEL", "path to the exported metatensor model");
+    keys.add("compulsory", "MODEL", "path to the exported metatomic model");
     keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
-    keys.add("optional", "DEVICE", "Torch device to use for the calculation");
+    keys.add("optional", "DEVICE", "Torch device to use for the calculations");
 
-    keys.addFlag("CHECK_CONSISTENCY", false, "Should we enable internal consistency of the model");
+    keys.addFlag("CHECK_CONSISTENCY", false, "should we enable internal consistency checks when executing the model");
 
-    keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
+    keys.add("numbered", "SPECIES", "the indices of atoms in each PLUMED species");
     keys.reset_style("SPECIES", "atoms");
 
     keys.add("optional", "SELECTED_ATOMS", "subset of atoms that should be used for the calculation");
     keys.reset_style("SELECTED_ATOMS", "atoms");
 
-    keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
+    keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatomic's atom types");
 
-    keys.addOutputComponent("outputs", "default", "collective variable created by the metatensor model");
+    keys.addOutputComponent("outputs", "default", "collective variable created by the metatomic model");
 
-    keys.setValueDescription("collective variable created by the metatensor model");
+    keys.setValueDescription("collective variable created by the metatomic model");
 }
 
-PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")
+PLUMED_REGISTER_ACTION(MetatomicPlumedAction, "METATOMIC")
 
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
