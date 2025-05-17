@@ -37,12 +37,12 @@ ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   ActionWithGrid(ao),
   mymin(this) {
   parse("CONTOUR",contour);
-  function.read( this );
+  function::FunctionOptions options;
+  gridtools::EvaluateGridFunction::read( function, this, options );
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 
 void ContourFindingBase::setupOnFirstStep( const bool incalc ) {
-  function.setup( this );
   setupValuesOnFirstStep();
 }
 

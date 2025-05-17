@@ -79,8 +79,7 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","grid","the label for function on the grid that you would like to interpolate");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
-  EvaluateGridFunction ii;
-  ii.registerKeywords( keys );
+  EvaluateGridFunction::registerKeywords( keys );
   keys.setValueDescription("grid","the function evaluated onto the interpolated grid");
 }
 
@@ -117,7 +116,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
     log.printf("\n");
   }
   // Create the input grid
-  input_grid.read( this );
+  function::FunctionOptions options;
+  EvaluateGridFunction::read( input_grid, this, options );
   // Need this for creation of tasks
   output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
 
@@ -136,7 +136,6 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
 }
 
 void InterpolateGrid::setupOnFirstStep( const bool incalc ) {
-  input_grid.setup( this );
   ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
@@ -193,12 +192,12 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
 void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> pos( output_grid.getDimension() );
   output_grid.getGridPointCoordinates( current, pos );
-  std::vector<double> val(1);
-  Matrix<double> der( 1, output_grid.getDimension() );
-  input_grid.calc( this, pos, val, der );
+  std::vector<double> val(1), der( output_grid.getDimension() );
+  function::FunctionOutput funcout( 1, val.data(), output_grid.getDimension(), der.data() );
+  EvaluateGridFunction::calc( input_grid, false, View<const double,helpers::dynamic_extent>(pos.data(),pos.size()), funcout );
   myvals.setValue( 0, val[0] );
   for(unsigned i=0; i<output_grid.getDimension(); ++i) {
-    myvals.addDerivative( 0, i, der(0,i) );
+    myvals.addDerivative( 0, i, der[i] );
     myvals.updateIndex( 0, i );
   }
 }

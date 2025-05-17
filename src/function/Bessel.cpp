@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionTemplateBase.h"
+#include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
@@ -78,25 +78,19 @@ Calculate the bessel function for all the elements in a vector
 //+ENDPLUMEDOC
 
 
-class Bessel : public FunctionTemplateBase {
-private:
-  unsigned order;
-  // Cheb coefficient for range [0,8]
-  static std::vector<double> A;
-  // Cheb coefficient for range (8,inf)
-  static std::vector<double> B;
-  double chbevl(double x,std::vector<double>& array) const; // sub copied from scipy in C
-  void fill_coefficients();
+class Bessel {
+  std::vector<double> A, B;
 public:
-  bool derivativesImplemented() override {
-    return false;
+  unsigned order;
+  static void registerKeywords( Keywords& keys );
+  explicit Bessel();
+  static void read( Bessel& func, ActionWithArguments* action, FunctionOptions& options );
+  static double chbevl(double x, const std::vector<double>& array);
+  static void calc( const Bessel& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  Bessel& operator=( const Bessel& m ) {
+    order = m.order;
+    return *this;
   }
-  void registerKeywords( Keywords& keys ) override;
-  void read( ActionWithArguments* action ) override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
-    return args.size()>1;
-  }
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef FunctionShortcut<Bessel> BesselShortcut;
@@ -111,61 +105,7 @@ void Bessel::registerKeywords(Keywords& keys) {
   keys.setValueDescription("scalar/vector","the value of the bessel function");
 }
 
-void Bessel::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=1 ) {
-    ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
-    if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
-      action->error("should only be one argument to less_than actions");
-    }
-  }
-  if( action->getPntrToArgument(0)->isPeriodic() ) {
-    action->error("cannot use this function on periodic functions");
-  }
-  action->parse("ORDER",order);
-  action->log.printf("  computing %dth order bessel function \n", order );
-  if( order!=0 ) {
-    action->error("only zero order bessel function is implemented");
-  }
-  fill_coefficients();
-}
-
-double Bessel::chbevl(double x,std::vector<double>& array) const {
-  double b0, b1, b2;
-  int n = array.size();
-
-  b0 = array[0];
-  b1 = 0.0;
-  b2 = b1 ;
-
-  for(int index = 1 ; index < n ; index++) {
-    b2 = b1;
-    b1 = b0;
-    b0 = x * b1 - b2 + array[index];
-  }
-  return (0.5 * (b0 - b2));
-}
-
-
-void Bessel::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  plumed_dbg_assert( args.size()==1 );
-  if( order==0 ) {
-    double x = fabs(args[0]);
-    if (x <= 8.0) {
-      double y = (x / 2.0) - 2.0;
-      vals[0] =  chbevl(y, A) ;
-      return;
-    }
-    vals[0] = chbevl(32.0 / x - 2.0, B) / sqrt(x) ;
-  } else {
-    plumed_error();
-  }
-}
-
-std::vector<double> Bessel::A;
-std::vector<double> Bessel::B;
-
-void Bessel::fill_coefficients() {
-  A.resize(30);
+Bessel::Bessel() {
   A = {-4.41534164647933937950E-18,
        3.33079451882223809783E-17,
        -2.43127984654795469359E-16,
@@ -197,7 +137,6 @@ void Bessel::fill_coefficients() {
        -3.04682672343198398683E-1,
        6.76795274409476084995E-1
       };
-  B.resize(25);
   B = {-7.23318048787475395456E-18,
        -4.83050448594418207126E-18,
        4.46562142029675999901E-17,
@@ -224,6 +163,57 @@ void Bessel::fill_coefficients() {
        3.36911647825569408990E-3,
        8.04490411014108831608E-1
       };
+}
+
+void Bessel::read( Bessel& func, ActionWithArguments* action, FunctionOptions& options ) {
+  if( action->getNumberOfArguments()!=1 ) {
+    ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
+    if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
+      action->error("should only be one argument to less_than actions");
+    }
+  }
+  if( action->getPntrToArgument(0)->isPeriodic() ) {
+    action->error("cannot use this function on periodic functions");
+  }
+  action->parse("ORDER",func.order);
+  action->log.printf("  computing %dth order bessel function \n", func.order );
+  if( func.order!=0 ) {
+    action->error("only zero order bessel function is implemented");
+  }
+}
+
+double Bessel::chbevl(double x, const std::vector<double>& array) {
+  double b0, b1, b2;
+  int n = array.size();
+
+  b0 = array[0];
+  b1 = 0.0;
+  b2 = b1 ;
+
+  for(int index = 1 ; index < n ; index++) {
+    b2 = b1;
+    b1 = b0;
+    b0 = x * b1 - b2 + array[index];
+  }
+  return (0.5 * (b0 - b2));
+}
+
+
+void Bessel::calc( const Bessel& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+  plumed_dbg_assert( args.size()==1 );
+  if( !noderiv ) {
+    plumed_merror("derivatives have not been implemented for this function");
+  } else if( func.order==0 ) {
+    double x = fabs(args[0]);
+    if (x <= 8.0) {
+      double y = (x / 2.0) - 2.0;
+      funcout.values[0] =  chbevl(y, func.A) ;
+      return;
+    }
+    funcout.values[0] = chbevl(32.0 / x - 2.0, func.B) / sqrt(x) ;
+  } else {
+    plumed_error();
+  }
 }
 
 }

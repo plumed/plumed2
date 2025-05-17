@@ -19,8 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Combine.h"
-#include "FunctionTemplateBase.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
@@ -178,6 +176,28 @@ Calculate the sum of a number of matrices
 */
 //+ENDPLUMEDOC
 
+class Combine  {
+public:
+  std::vector<double> coefficients;
+  std::vector<double> parameters;
+  std::vector<double> powers;
+  std::vector<bool> periodic;
+  std::vector<double> max_minus_min;
+  std::vector<double> inv_max_minus_min;
+  static void registerKeywords(Keywords& keys);
+  static void read( Combine& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Combine& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  Combine& operator=( const Combine& m ) {
+    coefficients = m.coefficients;
+    parameters = m.parameters;
+    powers = m.powers;
+    periodic = m.periodic;
+    max_minus_min = m.max_minus_min;
+    inv_max_minus_min = m.inv_max_minus_min;
+    return *this;
+  }
+};
+
 typedef FunctionShortcut<Combine> CombineShortcut;
 PLUMED_REGISTER_ACTION(CombineShortcut,"COMBINE")
 typedef FunctionOfScalar<Combine> ScalarCombine;
@@ -196,60 +216,82 @@ void Combine::registerKeywords(Keywords& keys) {
   keys.setValueDescription("scalar/vector/matrix","a linear compbination");
 }
 
-void Combine::read( ActionWithArguments* action ) {
+void Combine::read( Combine& func, ActionWithArguments* action, FunctionOptions& options ) {
   unsigned nargs = action->getNumberOfArguments();
   ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
   if(av && av->getNumberOfMasks()>0) {
     nargs = nargs - av->getNumberOfMasks();
   }
-  coefficients.resize( nargs );
-  parameters.resize( nargs );
-  powers.resize( nargs );
-  parseVector(action,"COEFFICIENTS",coefficients);
-  if(coefficients.size()!=nargs) {
+  func.coefficients.resize( nargs );
+  func.parameters.resize( nargs );
+  func.powers.resize( nargs );
+  action->parseVector("COEFFICIENTS",func.coefficients);
+  if(func.coefficients.size()!=nargs) {
     action->error("Size of COEFFICIENTS array should be the same as number for arguments");
   }
-  parseVector(action,"PARAMETERS",parameters);
-  if(parameters.size()!=nargs) {
+  action->parseVector("PARAMETERS",func.parameters);
+  if(func.parameters.size()!=nargs) {
     action->error("Size of PARAMETERS array should be the same as number for arguments");
   }
-  parseVector(action,"POWERS",powers);
-  if(powers.size()!=nargs) {
+  action->parseVector("POWERS",func.powers);
+  if(func.powers.size()!=nargs) {
     action->error("Size of POWERS array should be the same as number for arguments");
   }
 
-  parseFlag(action,"NORMALIZE",normalize);
+  bool normalize;
+  action->parseFlag("NORMALIZE",normalize);
   if(normalize) {
     double n=0.0;
-    for(unsigned i=0; i<coefficients.size(); i++) {
-      n+=coefficients[i];
+    for(unsigned i=0; i<func.coefficients.size(); i++) {
+      n+=func.coefficients[i];
     }
-    for(unsigned i=0; i<coefficients.size(); i++) {
-      coefficients[i]*=(1.0/n);
+    for(unsigned i=0; i<func.coefficients.size(); i++) {
+      func.coefficients[i]*=(1.0/n);
     }
   }
 
   action->log.printf("  with coefficients:");
-  for(unsigned i=0; i<coefficients.size(); i++) {
-    action->log.printf(" %f",coefficients[i]);
+  for(unsigned i=0; i<func.coefficients.size(); i++) {
+    action->log.printf(" %f",func.coefficients[i]);
   }
   action->log.printf("\n  with parameters:");
-  for(unsigned i=0; i<parameters.size(); i++) {
-    action->log.printf(" %f",parameters[i]);
+  for(unsigned i=0; i<func.parameters.size(); i++) {
+    action->log.printf(" %f",func.parameters[i]);
   }
   action->log.printf("\n  and powers:");
-  for(unsigned i=0; i<powers.size(); i++) {
-    action->log.printf(" %f",powers[i]);
+  for(unsigned i=0; i<func.powers.size(); i++) {
+    action->log.printf(" %f",func.powers[i]);
   }
   action->log.printf("\n");
+  // Store periodicity stuff
+  func.periodic.resize( nargs, false );
+  func.max_minus_min.resize( nargs, 0 );
+  func.inv_max_minus_min.resize( nargs, 0 );
+  for(unsigned i=0; i<nargs; ++i) {
+    if( (action->getPntrToArgument(i))->isPeriodic() ) {
+      func.periodic[i] = true;
+      std::string min, max;
+      (action->getPntrToArgument(i))->getDomain( min, max );
+      double dmin, dmax;
+      Tools::convert( min, dmin );
+      Tools::convert( max, dmax );
+      func.max_minus_min[i] = dmax - dmin;
+      func.inv_max_minus_min[i] = 1 / func.max_minus_min[i];
+    }
+  }
 }
 
-void Combine::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  vals[0]=0.0;
-  for(unsigned i=0; i<coefficients.size(); ++i) {
-    double cv = action->difference( i, parameters[i], args[i] );
-    vals[0] += coefficients[i]*pow( cv, powers[i] );
-    derivatives(0,i) = coefficients[i]*powers[i]*pow(cv,powers[i]-1.0);
+void Combine::calc( const Combine& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+  funcout.values[0]=0.0;
+  for(unsigned i=0; i<func.coefficients.size(); ++i) {
+    double cv = args[i] - func.parameters[i];
+    if( func.periodic[i] ) {
+      cv = func.max_minus_min[i]*Tools::pbc( cv*func.inv_max_minus_min[i] );
+    }
+    funcout.values[0] += func.coefficients[i]*pow( cv, func.powers[i] );
+    if( !noderiv ) {
+      funcout.derivs[0][i] = func.coefficients[i]*func.powers[i]*pow(cv,func.powers[i]-1.0);
+    }
   }
 }
 

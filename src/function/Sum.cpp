@@ -19,11 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Sum.h"
-#include "FunctionShortcut.h"
-#include "FunctionOfScalar.h"
-#include "FunctionOfVector.h"
-#include "FunctionOfMatrix.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC COLVAR SUM
@@ -57,24 +54,6 @@ it is more likely that you will want to compute the integral using [INTEGRATE_GR
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR SUM_VECTOR
-/*
-Calculate the sum of the elements in a vector
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR SUM_SCALAR
-/*
-Calculate the SUM of the set of input scalars
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC COLVAR MEAN
 /*
 Calculate the arithmetic mean of the elements in a vector
@@ -102,77 +81,115 @@ PRINT ARG=m FILE=colvar
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR MEAN_SCALAR
-/*
-Calculate the arithmetic mean of the set of input scalars
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR MEAN_VECTOR
-/*
-Calculate the arithmetic mean of the elements in a vector
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR SUM_MATRIX
-/*
-Sum all the elements in a matrix
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 
 namespace PLMD {
 namespace function {
 
-typedef FunctionShortcut<Sum> SumShortcut;
-PLUMED_REGISTER_ACTION(SumShortcut,"SUM")
-PLUMED_REGISTER_ACTION(SumShortcut,"MEAN")
-typedef FunctionOfScalar<Sum> ScalarSum;
-PLUMED_REGISTER_ACTION(ScalarSum,"SUM_SCALAR")
-PLUMED_REGISTER_ACTION(ScalarSum,"MEAN_SCALAR")
-typedef FunctionOfVector<Sum> VectorSum;
-PLUMED_REGISTER_ACTION(VectorSum,"SUM_VECTOR")
-PLUMED_REGISTER_ACTION(VectorSum,"MEAN_VECTOR")
-typedef FunctionOfMatrix<Sum> MatrixSum;
-PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
+class Sum :
+  public ActionWithValue,
+  public ActionWithArguments {
+private:
+  bool ismatrix;
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit Sum(const ActionOptions&);
+  unsigned getNumberOfDerivatives() override ;
+  void calculate() override ;
+  void apply() override ;
+};
 
-void Sum::registerKeywords( Keywords& keys ) {
-  keys.use("PERIODIC");
-  keys.setValueDescription("scalar","the sum");
+PLUMED_REGISTER_ACTION(Sum,"SUM")
+PLUMED_REGISTER_ACTION(Sum,"MEAN")
+
+void Sum::registerKeywords(Keywords& keys) {
+  Action::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","vector/matrix/grid","the vector/matrix/grid whose elements shuld be added together");
+  keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.setValueDescription("scalar","the " + keys.getDisplayName() + " of the elements in the input value");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
 }
 
-void Sum::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=1 ) {
-    action->error("should only be one argument to sum actions");
-  }
-}
+Sum::Sum(const ActionOptions&ao):
+  Action(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  ismatrix(false) {
 
-void Sum::setPrefactor( ActionWithArguments* action, const double pref ) {
-  if(action->getName().find("MEAN")!=std::string::npos) {
-    prefactor = pref / (action->getPntrToArgument(0))->getNumberOfValues();
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument in input for this action");
+  }
+  ismatrix = getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
+
+  addValue();
+  std::vector<std::string> period;
+  parseVector("PERIODIC",period);
+  if( period.size()==1 ) {
+    if( period[0]!="NO") {
+      error("input to PERIODIC keyword does not make sense");
+    }
+    setNotPeriodic();
+  } else if( period.size()!=2 ) {
+    setPeriodic( period[0], period[1] );
   } else {
-    prefactor = pref;
+    error("input to PERIODIC keyword does not make sense");
   }
 }
 
-bool Sum::zeroRank() const {
-  return true;
+unsigned Sum::getNumberOfDerivatives() {
+  return 0;
 }
 
-void Sum::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  vals[0]=prefactor*args[0];
-  derivatives(0,0)=prefactor;
+void Sum::calculate() {
+  double myval = 0;
+  const Value* myarg = getPntrToArgument(0);
+  if( ismatrix ) {
+    unsigned ncols = myarg->getNumberOfColumns();
+    for(unsigned i=0; i<myarg->getShape()[0]; ++i) {
+      for(unsigned j=0; j<myarg->getRowLength(i); ++j) {
+        myval += myarg->get(i*ncols + j, false);
+      }
+    }
+  } else {
+    unsigned nargs = myarg->getNumberOfStoredValues();
+    for(unsigned i=0; i<nargs; ++i) {
+      myval += myarg->get(i);
+    }
+  }
+  if( getName()=="MEAN" ) {
+    getPntrToComponent(0)->set( myval / myarg->getNumberOfValues() );
+  } else {
+    getPntrToComponent(0)->set( myval );
+  }
+}
+
+void Sum::apply() {
+  if( !getPntrToComponent(0)->forcesWereAdded() ) {
+    return ;
+  }
+
+  Value* myarg = getPntrToArgument(0);
+  double force = getPntrToComponent(0)->getForce(0);
+  if( getName()=="MEAN" ) {
+    force = force / myarg->getNumberOfValues();
+  }
+  if( ismatrix ) {
+    unsigned ncols = myarg->getNumberOfColumns();
+    for(unsigned i=0; i<myarg->getShape()[0]; ++i) {
+      for(unsigned j=0; j<myarg->getRowLength(i); ++j) {
+        myarg->addForce(i*ncols + j, force, false);
+      }
+    }
+  } else {
+    unsigned nargs = myarg->getNumberOfStoredValues();
+    for(unsigned i=0; i<nargs; ++i) {
+      myarg->addForce( i, force );
+    }
+  }
 }
 
 }
+
+
 }

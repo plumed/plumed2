@@ -22,31 +22,29 @@
 #ifndef __PLUMED_gridtools_EvaluateGridFunction_h
 #define __PLUMED_gridtools_EvaluateGridFunction_h
 
-#include "function/FunctionTemplateBase.h"
+#include "function/FunctionSetup.h"
+#include "ActionWithGrid.h"
 #include "Interpolator.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class EvaluateGridFunction : public function::FunctionTemplateBase {
-private:
-/// Holds the information on the grid
-  GridCoordinatesObject gridobject;
+class EvaluateGridFunction {
+public:
+/// Hold the function on the grid
+  Value* function=NULL;
+/// This is the grid that is used here
+  ActionWithGrid* gridact=NULL;
 /// How should we set the value of this function outside the range
   bool set_zero_outside_range;
 /// How are we doing interpolation
   enum {spline,linear,floor,ceiling} interpolation_type;
 /// This does the interpolating
   std::unique_ptr<Interpolator> spline_interpolator;
-public:
 /// This is used to setup the input gridobject's bounds with the grid data from values
-  void registerKeywords( Keywords& keys ) override ;
-  void read( ActionWithArguments* action ) override ;
-  unsigned getArgStart() const override {
-    return 1;
-  }
-  void setup( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override ;
+  static void registerKeywords( Keywords& keys );
+  static void read( EvaluateGridFunction& func, ActionWithArguments* action, function::FunctionOptions& options );
+  static void calc( const EvaluateGridFunction& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
 /// Get the vector containing the minimum value of the grid in each dimension
   std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension
@@ -61,31 +59,41 @@ public:
   void applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const ;
 /// This gets the grid object
   const GridCoordinatesObject & getGridObject() const ;
+  EvaluateGridFunction& operator=( const EvaluateGridFunction& m ) {
+    function = m.function;
+    gridact = m.gridact;
+    set_zero_outside_range = m.set_zero_outside_range;
+    interpolation_type = m.interpolation_type;
+    if( interpolation_type==spline ) {
+      spline_interpolator = Tools::make_unique<Interpolator>( function, gridact->getGridCoordinatesObject() );
+    }
+    return *this;
+  }
 };
 
 inline
 std::vector<std::string> EvaluateGridFunction::getMin() const {
-  return gridobject.getMin();
+  return (gridact->getGridCoordinatesObject()).getMin();
 }
 
 inline
 std::vector<std::string> EvaluateGridFunction::getMax() const {
-  return gridobject.getMax();
+  return (gridact->getGridCoordinatesObject()).getMax();
 }
 
 inline
 std::vector<std::size_t> EvaluateGridFunction::getNbin() const {
-  return gridobject.getNbin(false);
+  return (gridact->getGridCoordinatesObject()).getNbin(false);
 }
 
 inline
 const std::vector<double>& EvaluateGridFunction::getGridSpacing() const {
-  return gridobject.getGridSpacing();
+  return (gridact->getGridCoordinatesObject()).getGridSpacing();
 }
 
 inline
 const GridCoordinatesObject & EvaluateGridFunction::getGridObject() const {
-  return gridobject;
+  return (gridact->getGridCoordinatesObject());
 }
 
 }
