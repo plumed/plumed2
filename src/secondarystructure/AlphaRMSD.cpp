@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureRMSD.h"
+#include "SecondaryStructureBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
@@ -89,15 +89,11 @@ public:
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::registerKeywords( keys );
-  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal alpha helix.  If LESS_THAN is not present the number of residue segments where the structure is similar to an alpha helix");
+  SecondaryStructureBase<Vector>::registerKeywords( keys );
   keys.remove("ATOMS");
   keys.remove("SEGMENT");
-  keys.remove("BONDLENGTH");
-  keys.remove("CUTOFF_ATOMS");
-  keys.remove("NO_ACTION_LOG");
-  keys.remove("STRANDS_CUTOFF");
   keys.remove("STRUCTURE");
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal alpha helix.  If LESS_THAN is not present the number of residue segments where the structure is similar to an alpha helix");
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
@@ -105,11 +101,11 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  bool uselessthan=SecondaryStructureBase<Vector>::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
-  std::string atoms;
-  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
+  std::vector<std::string> all_atoms;
+  SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nprevious=0, segno=1;
@@ -193,10 +189,32 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   if( nopbc ) {
     nopbcstr = " NOPBC";
   }
-  readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+  std::string usegpustr="";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if( usegpu ) {
+      usegpustr = " USEGPU";
+    }
+  }
+
+  std::string atoms="ATOMS=" + all_atoms[0];
+  for(unsigned i=1; i<all_atoms.size(); ++i) {
+    atoms += "," + all_atoms[i];
+  }
+  if( type=="DRMSD" ) {
+    readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr);
+  } else {
+    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr);
+  }
   // Create the less than object
   if( ltmap.length()>0 ) {
-    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    if( uselessthan ) {
+      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    } else {
+      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    }
   }
 }
 

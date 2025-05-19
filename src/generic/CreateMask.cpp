@@ -162,17 +162,15 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
     unsigned seed=230623;
     parse("SEED",seed);
     r.setSeed(-seed);
-    getPntrToArgument(0)->buildDataStore();
     type=random;
     log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
   } else {
     error( stype + " is not a valid way input for TYPE");
   }
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0] = getPntrToArgument(0)->getShape()[0];
   addValue( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
   for(unsigned i=0; i<shape[0]; ++i) {
     getPntrToComponent(0)->set( i, 1.0 );
   }
@@ -187,7 +185,7 @@ void CreateMask::prepare() {
   Value* out=getPntrToComponent(0);
   Value* arg=getPntrToArgument(0);
   if( out->getShape()[0]!=arg->getShape()[0] ) {
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0] = arg->getShape()[0];
     out->setShape( shape );
   }

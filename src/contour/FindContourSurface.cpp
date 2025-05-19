@@ -180,15 +180,14 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( getInputGridObject().getDimension()-1 );
+  std::vector<std::size_t> shape( getInputGridObject().getDimension()-1 );
   addValueWithDerivatives( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
 }
 
 void FindContourSurface::setupValuesOnFirstStep() {
   std::vector<double> fspacing;
-  std::vector<unsigned> snbins( gridcoords.getDimension() );
+  std::vector<std::size_t> snbins( gridcoords.getDimension() );
   std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );
   for(unsigned i=0; i<gdirs.size(); ++i) {
     smin[i]=getInputGridObject().getMin()[gdirs[i]];
@@ -230,7 +229,7 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
   unsigned num_neighbours;
   unsigned nfound=0;
   double minv=0, minp;
-  std::vector<unsigned> bins_n( getInputGridObject().getNbin(false) );
+  std::vector<std::size_t> bins_n( getInputGridObject().getNbin(false) );
   unsigned shiftn=current;
   std::vector<unsigned> ind( getInputGridObject().getDimension() );
   std::vector<double> point( getInputGridObject().getDimension() );
@@ -283,15 +282,14 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
     Tools::convert( getStep(), num );
     error("On step " + num + " failed to find required grid point");
   }
-  myvals.setValue( getConstPntrToComponent(0)->getPositionInStream(), minp );
+  myvals.setValue( 0, minp );
 }
 
 void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
     const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 );
   unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  unsigned valout = getConstPntrToComponent(0)->getPositionInStream();
-  buffer[istart] += myvals.get( valout );
+  buffer[istart] += myvals.get( 0 );
 }
 
 }

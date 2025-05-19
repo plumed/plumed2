@@ -102,11 +102,10 @@ InvertMatrix::InvertMatrix(const ActionOptions& ao):
     input_is_constant=true;
   }
 
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0];
   addValue( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   mymatrix.resize( shape[0], shape[1] );
   inverse.resize( shape[0], shape[1] );

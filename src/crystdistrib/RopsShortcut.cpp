@@ -171,12 +171,12 @@ RopsShortcut::RopsShortcut(const ActionOptions&ao):
   if( specA.length()==0 ) {
     std::string quatstr;
     parse("QUATERNIONS",quatstr);
-    readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_PRODUCT_MATRIX ARG=" + quatstr + ".*," + quatstr + ".*" );
+    readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_PRODUCT_MATRIX MASK=" +  getShortcutLabel() + "_cmat ARG=" + quatstr + ".*," + quatstr + ".*" );
   }  else {
     plumed_error();
   }
   //
-  readInputLine( getShortcutLabel() + "_kfunc: CUSTOM ARG=" + getShortcutLabel() + "_cmat,"+ getShortcutLabel() + "_quatprod.* " + "VAR=x,w,i,j,k PERIODIC=NO FUNC=" + kfunc );
+  readInputLine( getShortcutLabel() + "_kfunc: CUSTOM MASK=" +  getShortcutLabel() + "_cmat ARG=" + getShortcutLabel() + "_cmat,"+ getShortcutLabel() + "_quatprod.* " + "VAR=x,w,i,j,k PERIODIC=NO FUNC=" + kfunc );
   // Element wise product of cmat and kfunc
 //  readInputLine( getShortcutLabel() + "_kdmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w," + getShortcutLabel() + "_kfunc FUNC=x*y PERIODIC=NO");
   // Find the number of ones we need to multiply by

@@ -117,7 +117,7 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
 }
 
 void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
-                                       const std::vector<unsigned>& binsin, std::vector<double>& spacing ) {
+                                       const std::vector<std::size_t>& binsin, std::vector<double>& spacing ) {
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
   plumed_assert( gtype==flat && (spacing.size()==dimension || binsin.size()==dimension) );
   str_min.resize( dimension );
@@ -409,9 +409,9 @@ std::vector<std::string> GridCoordinatesObject::getMax() const {
   return str_max;
 }
 
-std::vector<unsigned> GridCoordinatesObject::getNbin( const bool& shape ) const {
+std::vector<std::size_t> GridCoordinatesObject::getNbin( const bool& shape ) const {
   plumed_dbg_assert( gtype==flat && nbin.size()==dimension );
-  std::vector<unsigned> ngrid( dimension );
+  std::vector<std::size_t> ngrid( dimension );
   for(unsigned i=0; i<dimension; ++i) {
     if( !pbc[i] && !shape ) {
       ngrid[i]=nbin[i] - 1;

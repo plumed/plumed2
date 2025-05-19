@@ -50,12 +50,10 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   if( getNumberOfArguments()>1 ) {
     error("should only use one argument for this action");
   }
-  if( getNumberOfArguments()==1 ) {
-    if( getPntrToArgument(0)->getRank()!=1 ) {
-      error("ARG for distance from contour should be rank one");
-    }
-    getPntrToArgument(0)->buildDataStore();
+  if( getNumberOfArguments()==1 &&  getPntrToArgument(0)->getRank()!=1 ) {
+    error("ARG for distance from contour should be rank one");
   }
+
   // Read in the multicolvar/atoms
   std::vector<AtomNumber> atoms;
   parseAtomList("POSITIONS",atoms);

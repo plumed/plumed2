@@ -98,7 +98,7 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
   // Now create a contact matrix
   readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUP=" + atdata + " SWITCH={" + rcut_surf_str +"}" );
   // Now create a custom matrix
-  readInputLine( getShortcutLabel() + "_cwmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_wnosurf," + getShortcutLabel() + "_wnosurf FUNC=max");
+  readInputLine( getShortcutLabel() + "_cwmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_wnosurf," + getShortcutLabel() + "_wnosurf FUNC=max MASK=" + getShortcutLabel() + "_cmat");
   // Product of matrices
   readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering

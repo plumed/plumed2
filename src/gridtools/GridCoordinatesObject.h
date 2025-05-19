@@ -68,7 +68,7 @@ public:
 /// Setup the grid
   void setup( const std::string& geom, const std::vector<bool>& ipbc, const unsigned& np, const double& fib_cutoff );
 /// Set the minimum and maximum of the grid
-  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, std::vector<double>& spacing );
+  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<std::size_t>& nbins, std::vector<double>& spacing );
 /// Convert an index into indices
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Check if a point is within the grid boundaries
@@ -93,7 +93,7 @@ public:
 /// Is the grid periodic in the ith direction
   bool isPeriodic( const unsigned& i ) const ;
 /// Get the number of grid points for each dimension
-  std::vector<unsigned> getNbin( const bool& shape ) const ;
+  std::vector<std::size_t> getNbin( const bool& shape ) const ;
 /// Get the vector containing the minimum value of the grid in each dimension
   std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension

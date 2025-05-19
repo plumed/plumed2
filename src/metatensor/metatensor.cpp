@@ -573,17 +573,14 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
         log.printf("  the output of this model is 1x%d vector\n", n_properties_);
 
         this->addValue({this->n_properties_});
-        this->getPntrToComponent(0)->buildDataStore();
     } else if (n_properties_ == 1) {
         log.printf("  the output of this model is %dx1 vector\n", n_samples_);
 
         this->addValue({this->n_samples_});
-        this->getPntrToComponent(0)->buildDataStore();
     } else {
         log.printf("  the output of this model is a %dx%d matrix\n", n_samples_, n_properties_);
 
         this->addValue({this->n_samples_, this->n_properties_});
-        this->getPntrToComponent(0)->buildDataStore();
         this->getPntrToComponent(0)->reshapeMatrixStore(n_properties_);
     }
 

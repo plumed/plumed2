@@ -127,7 +127,7 @@ CoordAngles::CoordAngles(const ActionOptions& ao):
   // Avoid double counting
   readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG=" + getShortcutLabel() + "_swd FUNC=0.5*x PERIODIC=NO");
   // And the matrix of dot products and the angles
-  readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_stack," + getShortcutLabel() + "_stackT");
+  readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + getShortcutLabel() + "_stack," + getShortcutLabel() + "_stackT");
   readInputLine( getShortcutLabel() + "_angles: CUSTOM ARG=" + getShortcutLabel() + "_dpmat FUNC=acos(x) PERIODIC=NO");
   // Read the input
   Keywords keys;

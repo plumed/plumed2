@@ -45,7 +45,7 @@ private:
   GridCoordinatesObject mygrid;
   GridCoordinatesObject myfgrid;
 public:
-  GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, const std::vector<unsigned>& nfg, FCLASS* funcc ) :
+  GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<std::size_t>& ng, const std::vector<std::size_t>& nfg, FCLASS* funcc ) :
     myclass_func( funcc ),
     using_fgrid(false) {
     // Setup the min and max values for the grid

@@ -112,7 +112,6 @@ ActionToGetData::ActionToGetData(const ActionOptions&ao):
   if( getPntrToArgument(0)->getNumberOfValues()==0 ) {
     error("cannot get data as shape of value " + getPntrToArgument(0)->getName() + " has not been set");
   }
-  getPntrToArgument(0)->buildDataStore();
   data.resize( getPntrToArgument(0)->getNumberOfValues() );
 }
 

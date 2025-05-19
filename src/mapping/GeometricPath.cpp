@@ -142,7 +142,6 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   path_projector(this) {
-  plumed_assert( !actionInChain() );
   // Get the coordinates in the low dimensional space
   std::vector<std::string> pcoord;
   parseVector("PROPERTY", pcoord );

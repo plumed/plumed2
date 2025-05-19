@@ -33,6 +33,9 @@ class Between : public FunctionTemplateBase {
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
+    return args.size()>1;
+  }
   bool getDerivativeZeroIfValueIsZero() const override {
     return true;
   }

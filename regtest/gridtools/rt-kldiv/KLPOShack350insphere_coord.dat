@@ -41,13 +41,13 @@ LABEL=dd_ON
 ... CONTACT_MATRIX
 
 # Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
-spmat_1: OUTER_PRODUCT ARG=sp,sp
-spmat_2: OUTER_PRODUCT ARG=sp,sp
-spmat_3: OUTER_PRODUCT ARG=sp,sp
+spmat_1: OUTER_PRODUCT ARG=sp,sp MASK=dd_centers.w
+spmat_2: OUTER_PRODUCT ARG=sp,sp MASK=dd_OO.w
+spmat_3: OUTER_PRODUCT ARG=sp,sp MASK=dd_ON.w
 # Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
-coordmat_1: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
-coordmat_2: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
-coordmat_3: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
+coordmat_1: OUTER_PRODUCT ARG=coord_morethan,coord_morethan MASK=dd_centers.w
+coordmat_2: OUTER_PRODUCT ARG=coord_morethan,coord_morethan MASK=dd_OO.w
+coordmat_3: OUTER_PRODUCT ARG=coord_morethan,coord_morethan MASK=dd_ON.w
 
 # Now normalize the vectors
 bonds_ON_len2: COMBINE ARG=dd_ON.x,dd_ON.y,dd_ON.z POWERS=2,2,2 PERIODIC=NO

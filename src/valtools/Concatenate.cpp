@@ -116,16 +116,15 @@ Concatenate::Concatenate(const ActionOptions& ao):
   ActionWithArguments(ao) {
   if( getNumberOfArguments()>0 ) {
     vectors=true;
-    std::vector<unsigned> shape(1);
+    std::vector<std::size_t> shape(1);
     shape[0]=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()>1 ) {
         error("cannot concatenate matrix with vectors");
       }
-      getPntrToArgument(i)->buildDataStore();
       shape[0] += getPntrToArgument(i)->getNumberOfValues();
     }
-    log.printf("  creating vector with %d elements \n", shape[0] );
+    log.printf("  creating vector with %ld elements \n", shape[0] );
     addValue( shape );
     bool period=getPntrToArgument(0)->isPeriodic();
     std::string min, max;
@@ -149,7 +148,6 @@ Concatenate::Concatenate(const ActionOptions& ao):
     } else {
       setNotPeriodic();
     }
-    getPntrToComponent(0)->buildDataStore();
     if( getPntrToComponent(0)->getRank()==2 ) {
       getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
     }
@@ -175,13 +173,12 @@ Concatenate::Concatenate(const ActionOptions& ao):
         if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) {
           error("input arguments for this action should be matrices");
         }
-        argn[0]->buildDataStore();
         arglist.push_back( argn[0] );
         nt_cols++;
         if( argn[0]->getRank()==0 ) {
           log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );
         } else {
-          log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
+          log.printf("  %d %d component of composed matrix is %ld by %ld matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
         }
       }
       if( arglist.size()==size_b4 ) {
@@ -195,7 +192,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
       nrows++;
     }
 
-    std::vector<unsigned> shape(2);
+    std::vector<std::size_t> shape(2);
     shape[0]=0;
     unsigned k=0;
     row_starts.resize( arglist.size() );
@@ -237,7 +234,6 @@ Concatenate::Concatenate(const ActionOptions& ao):
     requestArguments(arglist);
     addValue( shape );
     setNotPeriodic();
-    getPntrToComponent(0)->buildDataStore();
     if( getPntrToComponent(0)->getRank()==2 ) {
       getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
     }

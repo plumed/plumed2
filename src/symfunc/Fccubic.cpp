@@ -130,6 +130,9 @@ void Fccubic::calc( const ActionWithArguments* action, const std::vector<double>
   double z4 = z2*z2;
 
   double d2 = x2 + y2 + z2;
+  if( d2 < epsilon ) {
+    d2 = 1;
+  }
   double r8 = pow( d2, 4 );
   double r12 = pow( d2, 6 );
 

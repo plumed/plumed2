@@ -148,6 +148,7 @@ PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
 void Sum::registerKeywords( Keywords& keys ) {
   keys.use("PERIODIC");
   keys.setValueDescription("scalar","the sum");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
 }
 
 void Sum::read( ActionWithArguments* action ) {
