@@ -13,6 +13,7 @@
 
 using rng=PLMD::Random;
 using namespace PLMD;
+
 namespace {
 
 static Tensor4d makeMatrix(const Tensor & rr01) {
@@ -126,23 +127,9 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
   norm = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
   norm = (norm > 0.0) ? norm : 1.0;
   q = v/ norm;
-
-  if(q[3]< -1000*std::numeric_limits<double>::epsilon()) {
-    q*=-1;
-  }
-  if(q[2]< -1000*std::numeric_limits<double>::epsilon()) {
-    q*=-1;
-  }
-  if(q[1]< -1000*std::numeric_limits<double>::epsilon()) {
-    q*=-1;
-  }
-  if(q[0]< -1000*std::numeric_limits<double>::epsilon()) {
-    q*=-1;
-  }
 }
 
-}
-
+} // namespace
 
 //from google benchmark - to avoid compiler optimizations
 template <class T>
@@ -200,7 +187,7 @@ int main() {
   std::cerr <<std::setprecision(9) << std::fixed;
 
   std::vector<PLMD::Tensor> tests= {
-    // {1,1,1,1,1,1,1,1,1}, // wrong eigenvector selected (due to the degeneracy)
+    // {1,1,1,1,1,1,1,1,1}, // 'wrong' eigenvector selected (due to the degeneracy)
     {1,2,3,4,5,6,7,8,9},
     {0,1,1,1,1,1,1,1,1},
     {
@@ -212,7 +199,7 @@ int main() {
     //   0.0, 1.0, 1.0,
     //   1.0, 0.0, 1.0,
     //   1.0, 1.0, 0.0
-    // }, // wrong eigenvector selected (due to the degeneracy)
+    // }, // 'wrong' eigenvector selected (due to the degeneracy)
     {
       1.0, 1.0, 0.0,
       1.0, 0.0, 1.0,
@@ -259,22 +246,20 @@ int main() {
   }
   outv << "\n";
 
-//  #define RESET
-
   out <<std::setprecision(5) << std::fixed;
   outv <<std::setprecision(5) << std::fixed;
+
   for (unsigned index=0; index<tests.size(); ++index) {
     const auto& mat = tests[index];
-
     auto m=makeMatrix(mat);
-    Vector1d eigenvals;
-#ifdef RESET
-    TensorGeneric<1,4> eigenvec;
-    diagMatSym(m, eigenvals, eigenvec );
-#else
+
+    Vector1d eigenval_ref;
+    TensorGeneric<1,4> eigenvec_ref;
+    diagMatSym(m, eigenval_ref, eigenvec_ref );
+
+    double eigenval;
     Vector4d eigenvec;
-    compute_quaternion_from_K(m,eigenvec,eigenvals[0]);
-#endif
+    compute_quaternion_from_K(m,eigenvec,eigenval);
 
     matOut <<std::setw(4)<<index <<":\t";
     for (unsigned i=0; i<16; ++i) {
@@ -284,18 +269,26 @@ int main() {
     matOut<<"\n";
 
     out <<std::setw(4)<<index <<":\t";
-    for (unsigned i=0; i<1; ++i) {
-      out<<" "<<std::setw(10) <<eigenvals[i];
-    }
+    out<<" "<<std::setw(10) <<eigenval_ref[0] - eigenval;
     out<<"\n";
+
+    //The eigenvectors sometimes are returned with the direction inverted
+    if(eigenvec_ref[0][0] * eigenvec[0] < 0.0 ) {
+      eigenvec *=-1;
+      //first element is 0
+    } else if (eigenvec_ref[0][1] * eigenvec[1] < 0.0) {
+      eigenvec *=-1;
+      //also second element is 0
+    } else if (eigenvec_ref[0][2] * eigenvec[2] < 0.0) {
+      eigenvec *=-1;
+      //also third element is 0
+    } else if (eigenvec_ref[0][3] * eigenvec[3] < 0.0) {
+      eigenvec *=-1;
+    }
 
     outv <<std::setw(4)<<index <<":\t";
     for (unsigned i=0; i<4; ++i) {
-#ifdef RESET
-      outv<<" "<<std::setw(10) <<eigenvec[0][i];
-#else
-      outv<<" "<<std::setw(10) <<eigenvec[i];
-#endif
+      outv<<" "<<std::setw(10) <<eigenvec_ref[0][i] - eigenvec[i];
     }
     outv<<"\n";
   }
