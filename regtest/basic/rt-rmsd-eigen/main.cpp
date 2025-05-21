@@ -66,19 +66,13 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
   for(unsigned i=0; i<nsquare; i++) {
     A=matmul(A,A);
     // Compute Frobenius norm of A
-    double frob = 0.0;
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 4; ++j) {
-        frob += A[i][j] * A[i][j];
-      }
+    double frob = PLMD::LoopUnroller<16>::_dot(&A[0][0],&A[0][0]);
+
     frob = std::sqrt(frob);
     frob = (frob > 0.0) ? frob : 1.0;
 
     // Scale A in-place
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 4; ++j) {
-        A[i][j] /= frob;
-      }
+    A /= frob;
   }
 
   // Inverse iteration to find smallest eigenvalue of K
@@ -98,17 +92,13 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
     }
     double norm = std::sqrt(z[0]*z[0] + z[1]*z[1] + z[2]*z[2] + z[3]*z[3]);
     norm = (norm > 0.0) ? norm : 1.0;
-    for (int i = 0; i < 4; ++i) {
-      v[i] = z[i] / norm;
-    }
+    v = z / norm;
   }
 
   // Normalize vector
   double norm = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
   norm = (norm > 0.0) ? norm : 1.0;
-  for (int i = 0; i < 4; ++i) {
-    v[i] /= norm;
-  }
+  v /= norm;
 
   // Compute Rayleigh quotient for lambda_min
   lambda_min = 0.0;
