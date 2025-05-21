@@ -188,7 +188,7 @@ int main() {
 
   std::vector<PLMD::Tensor> tests= {
     // {1,1,1,1,1,1,1,1,1}, // 'wrong' eigenvector selected (due to the degeneracy)
-    {1,2,3,4,5,6,7,8,9},
+    // {1,2,3,4,5,6,7,8,9}, // 'wrong' eigenvector selected (due to the degeneracy)
     {0,1,1,1,1,1,1,1,1},
     {
       1.0, 1.0, 1.0,
@@ -233,14 +233,14 @@ int main() {
   }
   matOut << "\n";
 
-  out <<"# id:\t";
+  out <<"# id:";
   for (unsigned i=0; i<1; ++i) {
     out<<" "<<std::setw(10) <<"eigv"+std::to_string(i);
   }
   out << "\n";
 
 
-  outv <<"# id:\t";
+  outv <<"# id:";
   for (unsigned i=0; i<4; ++i) {
     outv<<" "<<std::setw(10) <<"eigvct"+std::to_string(0)+"_"+std::to_string(i);
   }
@@ -261,14 +261,14 @@ int main() {
     Vector4d eigenvec;
     compute_quaternion_from_K(m,eigenvec,eigenval);
 
-    matOut <<std::setw(4)<<index <<":\t";
+    matOut <<std::setw(4)<<index <<":";
     for (unsigned i=0; i<16; ++i) {
       //it would be lovely if `&mat[0][0]` became `mat.data()`
       matOut<<" "<<std::setw(9) <<(&m[0][0])[i];
     }
     matOut<<"\n";
 
-    out <<std::setw(4)<<index <<":\t";
+    out <<std::setw(4)<<index <<":";
     out<<" "<<std::setw(10) <<eigenval_ref[0] - eigenval;
     out<<"\n";
 
@@ -286,7 +286,7 @@ int main() {
       eigenvec *=-1;
     }
 
-    outv <<std::setw(4)<<index <<":\t";
+    outv <<std::setw(4)<<index <<":";
     for (unsigned i=0; i<4; ++i) {
       outv<<" "<<std::setw(10) <<eigenvec_ref[0][i] - eigenvec[i];
     }
