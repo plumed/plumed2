@@ -38,7 +38,53 @@ namespace PLMD {
 
 namespace switchContainers {
 
-baseSwitch::baseSwitch(double D0,double DMAX, double R0, std::string_view name)
+struct Data {
+  /// Minimum distance (before this, function is one)
+  double d0=0.0;
+  /// Maximum distance (after this, function is zero)
+  double dmax=0.0;
+  /// Square of dmax, useful in calculateSqr()
+  double dmax_2=0.0;
+  /// We store the inverse to avoid a division
+  double invr0=0.0;
+  /// Square of invr0, useful in calculateSqr()
+  double invr0_2=0.0;
+  /// Parameters for stretching the function to zero at d_max
+  double stretch=1.0;
+  double shift=0.0;
+  //Rational stuff
+  int nn=6;
+  int mm=12;
+  double preRes;
+  double preDfunc;
+  double preSecDev;
+  int nnf;
+  int mmf;
+  double preDfuncF;
+  double preSecDevF;
+  //smap stuff
+  int a=0;
+  int b=0;
+  double c=0.0;
+  double d=0.0;
+  //nativeq
+  double beta = 50.0;  // nm-1
+  double lambda = 1.8; // unitless
+  double ref=0.0;
+};
+
+
+/// container for the actual switching function used by PLMD::SwitchingFunction
+template<typename switching>
+class baseSwitch {
+protected:
+  Data data;
+public:
+  
+  
+
+
+baseSwitch(double D0,double DMAX, double R0, std::string_view name)
   : d0(D0),
     dmax(DMAX),
     dmax_2([](const double d) {
@@ -52,16 +98,16 @@ invr0(1.0/R0),
 invr0_2(invr0*invr0),
 mytype(name) {}
 
-baseSwitch::~baseSwitch()=default;
+~baseSwitch()=default;
 
-double baseSwitch::calculate(const double distance, double& dfunc) const {
+static double calculate(const Data&data, const double distance, double& dfunc){
   double res = 0.0;//RVO!
   dfunc = 0.0;
   if(distance <= dmax) {
     res = 1.0;
-    const double rdist = (distance-d0)*invr0;
+    const double rdist = (distance-d0)*data.invr0;
     if(rdist > 0.0) {
-      res = function(rdist,dfunc);
+      res = switching::function(rdist,dfunc);
       //the following comments came from the original
       // this is for the chain rule (derivative of rdist):
       dfunc *= invr0;
@@ -73,28 +119,18 @@ double baseSwitch::calculate(const double distance, double& dfunc) const {
       // (I think this is misleading and I would like to modify it - GB)
       dfunc /= distance;
     }
-    res=res*stretch+shift;
-    dfunc*=stretch;
+    res=res*data.stretch+data.shift;
+    dfunc*=data.stretch;
   }
   return res;
 }
 
-double baseSwitch::calculateSqr(double distance2,double&dfunc) const {
-  double res= calculate(std::sqrt(distance2),dfunc);//RVO!
+static double baseSwitch::calculateSqr(const Data&data, double distance2,double&dfunc) {
+  double res= calculate(data,std::sqrt(distance2),dfunc);//RVO!
   return res;
 }
-double baseSwitch::get_d0() const {
-  return d0;
-}
-double baseSwitch::get_r0() const {
-  return 1.0/invr0;
-}
-double baseSwitch::get_dmax() const {
-  return dmax;
-}
-double baseSwitch::get_dmax2() const {
-  return dmax_2;
-}
+
+const Data& get_data() const {return data}
 std::string baseSwitch::description() const {
   std::ostringstream ostr;
   ostr<<get_r0()
@@ -103,9 +139,6 @@ std::string baseSwitch::description() const {
       <<" switching function with parameters d0="<< d0
       << specificDescription();
   return ostr.str();
-}
-std::string baseSwitch::specificDescription() const {
-  return "";
 }
 void baseSwitch::setupStretch() {
   if(dmax!=std::numeric_limits<double>::max()) {
@@ -122,8 +155,10 @@ void baseSwitch::removeStretch() {
   stretch=1.0;
   shift=0.0;
 }
+};
+
 template<int N, std::enable_if_t< (N >0), bool> = true, std::enable_if_t< (N %2 == 0), bool> = true>
-    class fixedRational :public baseSwitch {
+    class fixedRational :public baseSwitch<fixedRational<N>> {
   std::string specificDescription() const override {
     std::ostringstream ostr;
     ostr << " nn=" << N << " mm=" <<N*2;
@@ -141,23 +176,23 @@ public:
     return result;
   }
 
-  inline double function(double rdist,double&dfunc) const override {
+  inline double function(const Data& data,double rdist,double&dfunc) const override {
     //preRes and preDfunc are passed already set
     dfunc=0.0;
-    double result = doRational<N>(rdist,dfunc);
+    double result = doRational<N>(data.rdist,data.dfunc);
     return result;
   }
 
-  double calculateSqr(double distance2,double&dfunc) const override {
+  static double calculateSqr(const Data& data,double distance2,double&dfunc) const override {
     double result=0.0;
     dfunc=0.0;
-    if(distance2 <= dmax_2) {
-      const double rdist = distance2*invr0_2;
+    if(distance2 <= data.dmax_2) {
+      const double rdist = distance2*data.invr0_2;
       result = doRational<N/2>(rdist,dfunc);
       dfunc*=2*invr0_2;
       // stretch:
-      result=result*stretch+shift;
-      dfunc*=stretch;
+      result=result*data.stretch+data.shift;
+      dfunc*=data.stretch;
     }
     return result;
 
@@ -170,21 +205,11 @@ enum class rationalPow:bool {standard, fast};
 enum class rationalForm:bool {standard, simplified};
 
 template<rationalPow isFast, rationalForm nis2m>
-class rational : public baseSwitch {
+class rational : public baseSwitch<rational<isFast,nis2m>> {
 protected:
-  const int nn=6;
-  const int mm=12;
-  const double preRes;
-  const double preDfunc;
-  const double preSecDev;
-  const int nnf;
-  const int mmf;
-  const double preDfuncF;
-  const double preSecDevF;
   //I am using PLMD::epsilon to be certain to call the one defined in Tools.h
   static constexpr double moreThanOne=1.0+5.0e10*PLMD::epsilon;
   static constexpr double lessThanOne=1.0-5.0e10*PLMD::epsilon;
-
   std::string specificDescription() const override {
     std::ostringstream ostr;
     ostr << " nn=" << nn << " mm=" <<mm;
@@ -238,25 +263,25 @@ public:
     }
     return result;
   }
-  inline double function(double rdist,double&dfunc) const override {
+  static inline double function(const Data&data, double rdist,double&dfunc) const override {
     //preRes and preDfunc are passed already set
-    dfunc=preDfunc;
-    double result = doRational(rdist,dfunc,preSecDev,nn,mm,preRes);
+    dfunc=data.preDfunc;
+    double result = doRational(rdist,dfunc,data.preSecDev,data.nn,data.mm,data.preRes);
     return result;
   }
 
-  double calculateSqr(double distance2,double&dfunc) const override {
+  static double calculateSqr(const Data&data, double distance2,double&dfunc) const override {
     if constexpr (isFast==rationalPow::fast) {
       double result=0.0;
       dfunc=0.0;
       if(distance2 <= dmax_2) {
-        const double rdist = distance2*invr0_2;
-        dfunc=preDfuncF;
-        result = doRational(rdist,dfunc,preSecDevF,nnf,mmf,preRes);
-        dfunc*=2*invr0_2;
+        const double rdist = distance2*data.invr0_2;
+        dfunc=data.preDfuncF;
+        result = doRational(rdist,dfunc,data.preSecDevF,data.nnf,data.mmf,data.preRes);
+        dfunc*=2*data.invr0_2;
 // stretch:
-        result=result*stretch+shift;
-        dfunc*=stretch;
+        result=result*data.stretch+data.shift;
+        dfunc*=data.stretch;
       }
       return result;
     } else {
@@ -314,60 +339,60 @@ rationalFactory(double D0,double DMAX, double R0, int N, int M) {
 }
 //function =
 
-class exponentialSwitch: public baseSwitch {
+class exponentialSwitch: public baseSwitch<exponentialSwitch> {
 public:
   exponentialSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"exponential") {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double function(const Data&,const double rdist,double&dfunc) {
     double result = std::exp(-rdist);
     dfunc=-result;
     return result;
   }
 };
 
-class gaussianSwitch: public baseSwitch {
+class gaussianSwitch: public baseSwitch<gaussianSwitch>{
 public:
   gaussianSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"gaussian") {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double function(const Data&,const double rdist,double&dfunc) {
     double result = std::exp(-0.5*rdist*rdist);
     dfunc=-rdist*result;
     return result;
   }
 };
 
-class fastGaussianSwitch: public baseSwitch {
+class fastGaussianSwitch: public baseSwitch<fastGaussianSwitch> {
 public:
   fastGaussianSwitch(double /*D0*/, double DMAX, double /*R0*/)
     :baseSwitch(0.0,DMAX,1.0,"fastgaussian") {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double function(const Data&,const double rdist,double&dfunc) {
     double result = std::exp(-0.5*rdist*rdist);
     dfunc=-rdist*result;
     return result;
   }
-  inline double calculateSqr(double distance2,double&dfunc) const override {
+  static inline double calculateSqr(const Data& data,const double distance2,double&dfunc) {
     double result = 0.0;
-    if(distance2>dmax_2) {
+    if(distance2>data.dmax_2) {
       dfunc=0.0;
     } else  {
       result = exp(-0.5*distance2);
       dfunc = -result;
       // stretch:
-      result=result*stretch+shift;
-      dfunc*=stretch;
+      result=result*data.stretch+data.shift;
+      dfunc*=data.stretch;
     }
     return result;
   }
 };
 
-class smapSwitch: public baseSwitch {
-  const int a=0;
-  const int b=0;
-  const double c=0.0;
-  const double d=0.0;
+class smapSwitch: public baseSwitch<smapSwitch> {
+  // const int a=0;
+  // const int b=0;
+  // const double c=0.0;
+  // const double d=0.0;
 protected:
   std::string specificDescription() const override {
     std::ostringstream ostr;
@@ -382,16 +407,16 @@ public:
      c(std::pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1.0),
      d(-static_cast<double>(b) / static_cast<double>(a)) {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double calculate(const Data& data,const double rdist,double&dfunc){
 
-    const double sx=c*Tools::fastpow( rdist, a );
-    double result=std::pow( 1.0 + sx, d );
-    dfunc=-b*sx/rdist*result/(1.0+sx);
+    const double sx=data.c*Tools::fastpow( rdist, data.a );
+    double result=std::pow( 1.0 + sx, data.d );
+    dfunc=-data.b*sx/rdist*result/(1.0+sx);
     return result;
   }
 };
 
-class cubicSwitch: public baseSwitch {
+class cubicSwitch: public baseSwitch<cubicSwitch> {
 protected:
   std::string specificDescription() const override {
     std::ostringstream ostr;
@@ -408,7 +433,7 @@ public:
   }
   ~cubicSwitch()=default;
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double calculate(const Data& ,const double rdist,double&dfunc) {
     const double tmp1 = rdist - 1.0;
     const double tmp2 = 1.0+2.0*rdist;
     //double result = tmp1*tmp1*tmp2;
@@ -417,12 +442,12 @@ protected:
   }
 };
 
-class tanhSwitch: public baseSwitch {
+class tanhSwitch: public baseSwitch<tanhSwitch> {
 public:
   tanhSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"tanh") {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double calculate(const Data& ,const double rdist,double&dfunc) {
     const double tmp1 = std::tanh(rdist);
     //was dfunc=-(1-tmp1*tmp1);
     dfunc = tmp1 * tmp1 - 1.0;
@@ -431,47 +456,47 @@ protected:
   }
 };
 
-class cosinusSwitch: public baseSwitch {
+class cosinusSwitch: public baseSwitch<cosinusSwitch> {
 public:
   cosinusSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"cosinus") {}
 protected:
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double calculate(const Data& data,const double rdist,double&dfunc){
     double result = 0.0;
     dfunc=0.0;
     if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
       double rdistPI = rdist * PLMD::pi;
       result = 0.5 * (std::cos ( rdistPI ) + 1.0);
-      dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI ) * invr0;
+      dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI ) * data.invr0;
     }
     return result;
   }
 };
 
-class nativeqSwitch: public baseSwitch {
-  double beta = 50.0;  // nm-1
-  double lambda = 1.8; // unitless
-  double ref=0.0;
+class nativeqSwitch: public baseSwitch<nativeqSwitch> {
+  // double beta = 50.0;  // nm-1
+  // double lambda = 1.8; // unitless
+  // double ref=0.0;
 protected:
   std::string specificDescription() const override {
     std::ostringstream ostr;
     ostr<<" beta="<<beta<<" lambda="<<lambda<<" ref="<<ref;
     return ostr.str();
   }
-  inline double function(const double rdist,double&dfunc) const override {
+  static inline double calculate(const Data& ,const double rdist,double&dfunc){
     return 0.0;
   }
 public:
   nativeqSwitch(double D0, double DMAX, double R0, double BETA, double LAMBDA,double REF)
     :  baseSwitch(D0,DMAX,R0,"nativeq"),beta(BETA),lambda(LAMBDA),ref(REF) {}
-  double calculate(const double distance, double& dfunc) const override {
+  static inline double calculate(const Data& data,const double distance, double& dfunc){
     double res = 0.0;//RVO!
     dfunc = 0.0;
-    if(distance<=dmax) {
+    if(distance<=data.dmax) {
       res = 1.0;
-      if(distance > d0) {
-        const double rdist = beta*(distance - lambda * ref);
+      if(distance > data.d0) {
+        const double rdist = data.beta*(distance - data.lambda * data.ref);
         double exprdist=std::exp(rdist);
         res=1.0/(1.0+exprdist);
         /*2.9
@@ -485,17 +510,17 @@ public:
         dfunc /= distance;
         */
         //2.10
-        dfunc = - beta /(exprdist+ 2.0 +1.0/exprdist) /distance;
+        dfunc = - data.beta /(exprdist+ 2.0 +1.0/exprdist) /distance;
 
-        dfunc*=stretch;
+        dfunc*=data.stretch;
       }
-      res=res*stretch+shift;
+      res=res*data.stretch+data.shift;
     }
     return res;
   }
 };
-
-class leptonSwitch: public baseSwitch {
+/*
+class leptonSwitch: public baseSwitch<leptonSwitch> {
 /// Lepton expression.
   class funcAndDeriv {
     lepton::CompiledExpression expression;
@@ -638,7 +663,7 @@ protected:
     ostr<<" func=" << lepton_func;
     return ostr.str();
   }
-  inline double function(const double,double&) const override {
+  static inline double calculate(const Data& ,const double,double&) const override {
     return 0.0;
   }
 public:
@@ -651,7 +676,7 @@ public:
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
 
-  double calculate(const double distance,double&dfunc) const override {
+  static inline double calculate(const Data& ,const double distance,double&dfunc) const override {
     double res = 0.0;//RVO!
     dfunc = 0.0;
     if(leptonx2) {
@@ -694,7 +719,7 @@ public:
     }
     return result;
   }
-};
+};*/
 } // namespace switchContainers
 
 void SwitchingFunction::registerKeywords( Keywords& keys ) {

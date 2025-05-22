@@ -32,40 +32,7 @@ namespace PLMD {
 class Log;
 class Keywords;
 namespace switchContainers {
-/// container for the actual switching function used by PLMD::SwitchingFunction
-class baseSwitch {
-protected:
-  /// Minimum distance (before this, function is one)
-  double d0=0.0;
-  /// Maximum distance (after this, function is zero)
-  double dmax=0.0;
-  /// Square of dmax, useful in calculateSqr()
-  double dmax_2=0.0;
-  /// We store the inverse to avoid a division
-  double invr0=0.0;
-  /// Square of invr0, useful in calculateSqr()
-  double invr0_2=0.0;
-  /// Parameters for stretching the function to zero at d_max
-  double stretch=1.0;
-  double shift=0.0;
-  std::string mytype;
-  virtual std::string specificDescription() const;
-  //
-  virtual double function(double rdist, double& dfunc) const=0;
-public:
-  baseSwitch(double D0,double DMAX, double R0, std::string_view name);
-  virtual ~baseSwitch();
-  ///the driver for the function (prepares rdist or returns 1 or 0 automatically)
-  virtual double calculate(double distance, double& dfunc) const;
-  virtual double calculateSqr(double distance2, double& dfunc) const;
-  void setupStretch();
-  void removeStretch();
-  std::string description() const;
-  double get_d0() const;
-  double get_r0() const;
-  double get_dmax() const;
-  double get_dmax2() const;
-};
+class baseSwitch;
 } // namespace switchContainers
 
 /// \ingroup TOOLBOX
