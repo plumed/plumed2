@@ -137,7 +137,7 @@ capabilities = ModelCapabilities(
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
     atomic_types=[6, 8],
-    dtype="float64",
+    dtype="float32",
 )
 
 # export all variations of the model
@@ -157,7 +157,7 @@ capabilities = ModelCapabilities(
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
     atomic_types=[6, 8],
-    dtype="float64",
+    dtype="float32",
 )
 
 cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
