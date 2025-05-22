@@ -1,15 +1,21 @@
 from typing import Dict, List, Optional
 
-import torch
-from metatensor.torch import Labels, TensorBlock, TensorMap
-from metatomic.torch import (
-    AtomisticModel,
-    ModelCapabilities,
-    ModelMetadata,
-    ModelOutput,
-    NeighborListOptions,
-    System,
-)
+try:
+    import torch
+    from metatensor.torch import Labels, TensorBlock, TensorMap
+    from metatomic.torch import (
+        AtomisticModel,
+        ModelCapabilities,
+        ModelMetadata,
+        ModelOutput,
+        NeighborListOptions,
+        System,
+    )
+except ImportError as e:
+    raise ImportError(
+        "missing dependencies to generate the models, you can install "
+        "them with `pip install metatomic-torch`"
+    ) from e
 
 
 class TestCollectiveVariable(torch.nn.Module):
