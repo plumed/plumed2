@@ -323,7 +323,7 @@ PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
-PLUMED_CONFIG_ENABLE([metatensor],[search for metatensor],[no])
+PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -927,8 +927,8 @@ if test "$af_cpu" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
-# metatensor requires libtorch
-if test $metatensor = true ; then
+# libmetatomic requires libtorch
+if test $libmetatomic = true ; then
   libtorch=true;
 fi
 
@@ -968,9 +968,9 @@ if test $libtorch = true ; then
   fi
 fi
 
-if test $metatensor = true ; then
-  # find metatensor and metatensor_torch
-  PLUMED_CHECK_CXX_PACKAGE([metatensor],[
+if test $libmetatomic = true ; then
+  # find metatomic & related libraries
+  PLUMED_CHECK_CXX_PACKAGE([libmetatomic],[
     // torch header creates a lot a pedantic warnings, which we can't do anything about
     // we disable them to make finding the relevant part in the config.log easier
     #pragma GCC diagnostic push
@@ -986,15 +986,19 @@ if test $metatensor = true ; then
     #include <torch/torch.h>
     #include <torch/script.h>
     #pragma GCC diagnostic pop
+    #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
-    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
+    #include <metatomic/torch.hpp>
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
+    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
     #endif
     int main() {
+      metatomic_torch::version();
       metatensor_torch::version();
+      mts_version();
       return 0;
     }
-  ], [__PLUMED_HAS_METATENSOR], [metatensor metatensor_torch], [true])
+  ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic_torch metatensor_torch metatensor], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG

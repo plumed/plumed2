@@ -42,7 +42,7 @@
 !/clusters
 !/unittest
 !/wham
-!/metatensor
+!/metatomic
 !/sizeshape
 
 # These files we just want to ignore completely
