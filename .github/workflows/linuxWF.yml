@@ -95,10 +95,8 @@ jobs:
         echo "LDFLAGS=$PIP_LDFLAGS $LDFLAGS" >> $GITHUB_ENV
         echo "CPPFLAGS=$PIP_CPPFLAGS $CPPFLAGS" >> $GITHUB_ENV
 
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic" >> $GITHUB_ENV
-
-        # the flags above also enable the use of libtorch
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
+        # the flags above enable the use of both libmetatomic and libtorch
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |
