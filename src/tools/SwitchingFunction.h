@@ -32,7 +32,7 @@ namespace PLMD {
 class Log;
 class Keywords;
 namespace switchContainers {
-class baseSwitch;
+class mybaseSwitch{};
 } // namespace switchContainers
 
 /// \ingroup TOOLBOX
@@ -46,7 +46,7 @@ class baseSwitch;
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
-  std::unique_ptr<switchContainers::baseSwitch> function;
+  std::unique_ptr<switchContainers::mybaseSwitch> function;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
