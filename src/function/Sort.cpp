@@ -105,7 +105,7 @@ void Sort::registerKeywords(Keywords& keys) {
 
 
 void Sort::read( Sort& func, ActionWithArguments* action, FunctionOptions& options ) {
-  plumed_assert( action->getNumberOfArguments()>1 );
+  if( action->getNumberOfArguments()==1 ) action->warning("if there is only one argument to sort is this function really needed?");
 
   options.derivativeZeroIfValueIsZero=true;
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
