@@ -507,6 +507,11 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
 }
 
 template<unsigned n,unsigned m>
+double frobeniusNorm(const TensorGeneric<m,n>&t) {
+  return std::sqrt(LoopUnroller<m*n>::_dot(&t[0][0],&t[0][0]));
+}
+
+template<unsigned n,unsigned m>
 std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t) {
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -609,6 +614,64 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
         }
   }
 }
+
+template<unsigned n>
+double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
+                          unsigned nsquare = 20, unsigned niter = 20) {
+  // Estimate upper bound for largest eigenvalue using Gershgorin disks
+  double lambda_shift = 0.0;
+  for (unsigned i = 0; i < n; ++i) {
+    auto row = K.getRow(i);
+    double center = std::fabs(row[i]);
+    row[i] = 0.0;  // zero out the diagonal entry
+
+    // Compute sum of absolute values of the off-diagonal elements
+    double row_sum = 0.0;
+    for (unsigned j = 0; j < n; ++j) {
+      row_sum += std::fabs(row[j]);
+    }
+
+    double radius = center + row_sum;
+    lambda_shift = std::fmax(lambda_shift, radius);
+  }
+
+  // Build shifted matrix A = -K + lambda_shift * I
+  TensorGeneric<n, n> A = -K;
+  for (unsigned i = 0; i < n; ++i) {
+    A[i][i] += lambda_shift;
+  }
+
+  // Repeated squaring + normalization to project onto dominant eigenspace
+  for (unsigned k = 0; k < nsquare; ++k) {
+    A = matmul(A, A);
+    auto frob = frobeniusNorm(A);
+    A /= (frob > 0.0 ? frob : 1.0);
+  }
+
+  // Extract dominant eigenvector from projector A
+  VectorGeneric<n> v;
+  double best_norm2 = 0.0;
+  for (unsigned j = 0; j < n; ++j) {
+    auto col = A.getCol(j);
+    double norm2 = modulo2(col);
+    double use = static_cast<double>(norm2 > best_norm2);
+    best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
+    v = use * col + (1.0 - use) * v;
+  }
+
+  v /= modulo(v);
+
+  // Power iteration on v only
+  for (unsigned iter = 0; iter < niter; ++iter) {
+    v = matmul(A, v);
+    v /= modulo(v);
+  }
+
+  eigenvector = v;
+
+  return  matmul(eigenvector, K, eigenvector);
+}
+
 
 static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 

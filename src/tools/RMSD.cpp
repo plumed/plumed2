@@ -618,11 +618,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
       dq_drr01[i]=tmp;
     }
   } else {
-    VectorGeneric<1> eigenvals;
-    TensorGeneric<1,4> eigenvecs;
-    diagMatSym(m, eigenvals, eigenvecs );
-    dist=eigenvals[0]+rr00+rr11;
-    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+    dist = lowestEigenpairSym(m, q) + rr00 + rr11;
   }
 
 
