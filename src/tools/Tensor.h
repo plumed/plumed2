@@ -634,13 +634,7 @@ double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenv
   // Repeated squaring + normalization to project onto dominant eigenspace
   for (unsigned k = 0; k < nsquare; ++k) {
     A = matmul(A, A);
-
-    // Normalize by Frobenius norm
-    double norm2 = 0.0;
-    for (unsigned i = 0; i < n; ++i)
-      for (unsigned j = 0; j < n; ++j) {
-        norm2 += A[i][j] * A[i][j];
-      }
+    double norm2 = PLMD::LoopUnroller<16>::_dot(&A[0][0],&A[0][0]);
     double frob = std::sqrt(norm2);
     A /= (frob > 0.0 ? frob : 1.0);
   }
