@@ -181,24 +181,18 @@ int main() {
     out<<" "<<std::setw(10) <<eigenval_ref[0] - eigenval;
     out<<"\n";
 
-    //The eigenvectors sometimes are returned with the direction inverted
-    if(eigenvec_ref[0][0] * eigenvec[0] < 0.0 ) {
-      eigenvec *=-1;
-      //first element is 0
-    } else if (eigenvec_ref[0][1] * eigenvec[1] < 0.0) {
-      eigenvec *=-1;
-      //also second element is 0
-    } else if (eigenvec_ref[0][2] * eigenvec[2] < 0.0) {
-      eigenvec *=-1;
-      //also third element is 0
-    } else if (eigenvec_ref[0][3] * eigenvec[3] < 0.0) {
-      eigenvec *=-1;
+    double modulo2_ref=0.0;
+    double modulo2=0.0;
+    double dot_product=0.0;
+    for(unsigned i=0; i<4; i++) {
+      modulo2_ref += eigenvec_ref[0][i] * eigenvec_ref[0][i];
+      modulo2 += eigenvec[i] * eigenvec[i];
+      dot_product += eigenvec_ref[0][i] * eigenvec[i];
     }
-
     outv <<std::setw(4)<<index <<":";
-    for (unsigned i=0; i<4; ++i) {
-      outv<<" "<<std::setw(10) <<eigenvec_ref[0][i] - eigenvec[i];
-    }
+    outv<<" "<<std::setw(10) << modulo2_ref;
+    outv<<" "<<std::setw(10) << modulo2;
+    outv<<" "<<std::setw(10) << dot_product*dot_product;
     outv<<"\n";
   }
 
