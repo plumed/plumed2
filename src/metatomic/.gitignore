@@ -9,7 +9,8 @@
 !/README.md
 !/module.type
 !/COPYRIGHT
-!/PEOPLE-METATENSOR
+!/PEOPLE-METATOMIC
+!/flags-from-python.py
 !external/
 !/module.yml
 !/module.md

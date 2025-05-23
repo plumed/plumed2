@@ -751,7 +751,7 @@ enable_af_ocl
 enable_af_cuda
 enable_af_cpu
 enable_libtorch
-enable_metatensor
+enable_libmetatomic
 enable_openacc
 enable_openmp
 '
@@ -1454,7 +1454,7 @@ Optional Features:
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
-  --enable-metatensor     enable search for metatensor, default: no
+  --enable-libmetatomic   enable search for libmetatomic, default: no
   --enable-openacc        enable search for openacc, default: no
   --disable-openmp        do not use OpenMP
 
@@ -3224,18 +3224,18 @@ fi
 
  #added by luigibonati
 
-metatensor=
-# Check whether --enable-metatensor was given.
-if test "${enable_metatensor+set}" = set; then :
-  enableval=$enable_metatensor; case "${enableval}" in
-             (yes) metatensor=true ;;
-             (no)  metatensor=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-metatensor" "$LINENO" 5 ;;
+libmetatomic=
+# Check whether --enable-libmetatomic was given.
+if test "${enable_libmetatomic+set}" = set; then :
+  enableval=$enable_libmetatomic; case "${enableval}" in
+             (yes) libmetatomic=true ;;
+             (no)  libmetatomic=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libmetatomic" "$LINENO" 5 ;;
   esac
 else
   case "no" in
-             (yes) metatensor=true ;;
-             (no)  metatensor=false ;;
+             (yes) libmetatomic=true ;;
+             (no)  libmetatomic=false ;;
   esac
 
 fi
@@ -9675,8 +9675,8 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
 
 fi
 
-# metatensor requires libtorch
-if test $metatensor = true ; then
+# libmetatomic requires libtorch
+if test $libmetatomic = true ; then
   libtorch=true;
 fi
 
@@ -9979,13 +9979,13 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
   fi
 fi
 
-if test $metatensor = true ; then
-  # find metatensor and metatensor_torch
+if test $libmetatomic = true ; then
+  # find metatomic & related libraries
 
     found=ko
-    __PLUMED_HAS_METATENSOR=no
+    __PLUMED_HAS_LIBMETATOMIC=no
     if test "${libsearch}" = true ; then
-      testlibs="metatensor metatensor_torch"
+      testlibs="metatomic_torch metatensor_torch metatensor"
     else
       testlibs=""
     fi
@@ -10004,8 +10004,8 @@ if test $metatensor = true ; then
     fi
 
     # check without libraries
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking metatensor without extra libs" >&5
-$as_echo_n "checking metatensor without extra libs... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libmetatomic without extra libs" >&5
+$as_echo_n "checking libmetatomic without extra libs... " >&6; }
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10024,12 +10024,16 @@ $as_echo_n "checking metatensor without extra libs... " >&6; }
     #include <torch/torch.h>
     #include <torch/script.h>
     #pragma GCC diagnostic pop
+    #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
-    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
+    #include <metatomic/torch.hpp>
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
+    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
     #endif
     int main() {
+      metatomic_torch::version();
       metatensor_torch::version();
+      mts_version();
       return 0;
     }
 
@@ -10048,8 +10052,8 @@ rm -f core conftest.err conftest.$ac_objext \
 
     if test "$found" = "ko" ; then
       if test "$multiple" = "yes" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking metatensor with $all_LIBS" >&5
-$as_echo_n "checking metatensor with $all_LIBS... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libmetatomic with $all_LIBS" >&5
+$as_echo_n "checking libmetatomic with $all_LIBS... " >&6; }
         LIBS="$all_LIBS $LIBS"
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10069,12 +10073,16 @@ $as_echo_n "checking metatensor with $all_LIBS... " >&6; }
     #include <torch/torch.h>
     #include <torch/script.h>
     #pragma GCC diagnostic pop
+    #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
-    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
+    #include <metatomic/torch.hpp>
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
+    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
     #endif
     int main() {
+      metatomic_torch::version();
       metatensor_torch::version();
+      mts_version();
       return 0;
     }
 
@@ -10093,8 +10101,8 @@ rm -f core conftest.err conftest.$ac_objext \
       else
         for testlib in $testlibs
         do
-          { $as_echo "$as_me:${as_lineno-$LINENO}: checking metatensor with -l$testlib" >&5
-$as_echo_n "checking metatensor with -l$testlib... " >&6; }
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libmetatomic with -l$testlib" >&5
+$as_echo_n "checking libmetatomic with -l$testlib... " >&6; }
           LIBS="-l$testlib $LIBS"
           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10114,12 +10122,16 @@ $as_echo_n "checking metatensor with -l$testlib... " >&6; }
     #include <torch/torch.h>
     #include <torch/script.h>
     #pragma GCC diagnostic pop
+    #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
-    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 7
-    #error "this code is only compatible with metatensor-torch >=0.7,<0.8"
+    #include <metatomic/torch.hpp>
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
+    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
     #endif
     int main() {
+      metatomic_torch::version();
       metatensor_torch::version();
+      mts_version();
       return 0;
     }
 
@@ -10144,12 +10156,12 @@ rm -f core conftest.err conftest.$ac_objext \
     fi
 
     if test $found = ok ; then
-      $as_echo "#define __PLUMED_HAS_METATENSOR 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_LIBMETATOMIC 1" >>confdefs.h
 
-      __PLUMED_HAS_METATENSOR=yes
+      __PLUMED_HAS_LIBMETATOMIC=yes
     else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_METATENSOR" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_METATENSOR" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBMETATOMIC" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBMETATOMIC" >&2;}
       LIBS="$save_LIBS"
     fi
 

@@ -1,27 +1,27 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2024 The METATENSOR code team
-(see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
+Copyright (c) 2024 The METATOMIC-PLUMED team
+(see the PEOPLE-METATOMIC file at the root of this folder for a list of names)
 
-See https://docs.metatensor.org/latest/ for more information about the
-metatensor package that this module allows you to call from PLUMED.
+See https://docs.metatensor.org/metatomic/ for more information about the
+metatomic package that this module allows you to call from PLUMED.
 
-This file is part of METATENSOR-PLUMED module.
+This file is part of METATOMIC-PLUMED module.
 
-The METATENSOR-PLUMED module is free software: you can redistribute it and/or modify
+The METATOMIC-PLUMED module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-The METATENSOR-PLUMED module is distributed in the hope that it will be useful,
+The METATOMIC-PLUMED module is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
+along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_metatensor_vesin_h
-#define __PLUMED_metatensor_vesin_h
+#ifndef __PLUMED_metatomic_vesin_h
+#define __PLUMED_metatomic_vesin_h
 /*INDENT-OFF*/
 
 
@@ -52,7 +52,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 
 #ifdef __cplusplus
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 namespace vesin {
 extern "C" {
 #endif
@@ -64,7 +64,9 @@ struct VesinOptions {
     /// Should the returned neighbor list be a full list (include both `i -> j`
     /// and `j -> i` pairs) or a half list (include only `i -> j`)?
     bool full;
-    // TODO: sort option?
+    /// Should the neighbor list be sorted? If yes, the returned pairs will be
+    /// sorted using lexicographic order.
+    bool sorted;
 
     /// Should the returned `VesinNeighborList` contain `shifts`?
     bool return_shifts;
@@ -178,7 +180,7 @@ int VESIN_API vesin_neighbors(
 
 } // extern "C"
 } // namespace vesin
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
 
 #endif

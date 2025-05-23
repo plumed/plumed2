@@ -1,24 +1,24 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2024 The METATENSOR code team
-(see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
+Copyright (c) 2024 The METATOMIC-PLUMED team
+(see the PEOPLE-METATOMIC file at the root of this folder for a list of names)
 
-See https://docs.metatensor.org/latest/ for more information about the
-metatensor package that this module allows you to call from PLUMED.
+See https://docs.metatensor.org/metatomic/ for more information about the
+metatomic package that this module allows you to call from PLUMED.
 
-This file is part of METATENSOR-PLUMED module.
+This file is part of METATOMIC-PLUMED module.
 
-The METATENSOR-PLUMED module is free software: you can redistribute it and/or modify
+The METATOMIC-PLUMED module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-The METATENSOR-PLUMED module is distributed in the hope that it will be useful,
+The METATOMIC-PLUMED module is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
+along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*INDENT-OFF*/
 #include "vesin.h"
@@ -27,6 +27,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 #include <tuple>
 #include <new>
 
@@ -48,7 +49,7 @@ along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/license
 #include <stdexcept>
 
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 namespace vesin {
 struct Vector;
 
@@ -155,19 +156,24 @@ inline Vector operator*(Vector vector, Matrix matrix) {
 }
 
 } // namespace vesin
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
 
 #endif
 
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 namespace vesin {
 
 class BoundingBox {
 public:
     BoundingBox(Matrix matrix, bool periodic): matrix_(matrix), periodic_(periodic) {
         if (periodic) {
+            auto det = matrix_.determinant();
+            if (std::abs(det) < 1e-30) {
+                throw std::runtime_error("the box matrix is not invertible");
+            }
+
             this->inverse_ = matrix_.inverse();
         } else {
             this->matrix_ = Matrix{{{
@@ -258,13 +264,13 @@ inline CellShift operator-(CellShift a, CellShift b) {
 
 
 } // namespace vesin
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
 
 #endif
 
 namespace PLMD {
-namespace metatensor {
+namespace metatomic {
 namespace vesin { namespace cpu {
 
 void free_neighbors(VesinNeighborList& neighbors);
@@ -337,9 +343,9 @@ public:
     }
 
     void set_pair(size_t index, size_t first, size_t second);
-    void set_shift(size_t index, PLMD::metatensor::vesin::CellShift shift);
+    void set_shift(size_t index, PLMD::metatomic::vesin::CellShift shift);
     void set_distance(size_t index, double distance);
-    void set_vector(size_t index, PLMD::metatensor::vesin::Vector vector);
+    void set_vector(size_t index, PLMD::metatomic::vesin::Vector vector);
 
     // reset length to 0, and allocate/deallocate members of
     // `neighbors` according to `options`
@@ -347,19 +353,22 @@ public:
 
     // allocate more memory & update capacity
     void grow();
+
+    // sort the pairs currently in the neighbor list
+    void sort();
 };
 
 } // namespace vesin
-} // namespace metatensor
+} // namespace metatomic
 } // namespace PLMD
 } // namespace cpu
 
 #endif
 
-using namespace PLMD::metatensor::vesin;
-using namespace PLMD::metatensor::vesin::cpu;
+using namespace PLMD::metatomic::vesin;
+using namespace PLMD::metatomic::vesin::cpu;
 
-void PLMD::metatensor::vesin::cpu::neighbors(
+void PLMD::metatomic::vesin::cpu::neighbors(
     const Vector* points,
     size_t n_points,
     BoundingBox cell,
@@ -438,6 +447,10 @@ void PLMD::metatensor::vesin::cpu::neighbors(
             neighbors.increment_length();
         }
     });
+
+    if (options.sorted) {
+        neighbors.sort();
+    }
 }
 
 /* ========================================================================== */
@@ -626,7 +639,7 @@ void GrowableNeighborList::set_pair(size_t index, size_t first, size_t second) {
     this->neighbors.pairs[index][1] = second;
 }
 
-void GrowableNeighborList::set_shift(size_t index, PLMD::metatensor::vesin::CellShift shift) {
+void GrowableNeighborList::set_shift(size_t index, PLMD::metatomic::vesin::CellShift shift) {
     if (index >= this->capacity) {
         this->grow();
     }
@@ -644,7 +657,7 @@ void GrowableNeighborList::set_distance(size_t index, double distance) {
     this->neighbors.distances[index] = distance;
 }
 
-void GrowableNeighborList::set_vector(size_t index, PLMD::metatensor::vesin::Vector vector) {
+void GrowableNeighborList::set_vector(size_t index, PLMD::metatomic::vesin::Vector vector) {
     if (index >= this->capacity) {
         this->grow();
     }
@@ -763,8 +776,110 @@ void GrowableNeighborList::reset() {
     this->neighbors.vectors = vectors;
 }
 
+void GrowableNeighborList::sort() {
+    if (this->length() == 0) {
+        return;
+    }
 
-void PLMD::metatensor::vesin::cpu::free_neighbors(VesinNeighborList& neighbors) {
+    // step 1: sort an array of indices, comparing the pairs at the indices
+    auto indices = std::vector<int64_t>(this->length(), 0);
+    std::iota(std::begin(indices), std::end(indices), 0);
+
+    struct compare_pairs {
+        compare_pairs(size_t (*pairs_)[2]): pairs(pairs_) {}
+
+        bool operator()(int64_t a, int64_t b) const {
+            if (pairs[a][0] == pairs[b][0]) {
+                return pairs[a][1] < pairs[b][1];
+            } else {
+                return pairs[a][0] < pairs[b][0];
+            }
+        }
+
+        size_t (*pairs)[2];
+    };
+
+    std::sort(std::begin(indices), std::end(indices), compare_pairs(this->neighbors.pairs));
+
+    // step 2: permute all data according to the sorted indices.
+    int64_t cur = 0;
+    int64_t is_sorted_up_to = 0;
+    // data in `from` should go to `cur`
+    auto from = indices[cur];
+
+    size_t tmp_pair[2] = {0};
+    double tmp_distance = 0;
+    double tmp_vector[3] = {0};
+    int32_t tmp_shift[3] = {0};
+
+    while (cur < this->length()) {
+        // move data from `cur` to temporary
+        std::swap(tmp_pair, this->neighbors.pairs[cur]);
+        if (options.return_distances) {
+            std::swap(tmp_distance, this->neighbors.distances[cur]);
+        }
+        if (options.return_vectors) {
+            std::swap(tmp_vector, this->neighbors.vectors[cur]);
+        }
+        if (options.return_shifts) {
+            std::swap(tmp_shift, this->neighbors.shifts[cur]);
+        }
+
+        from = indices[cur];
+        do {
+            if (from == cur) {
+                // permutation loop of a single entry, i.e. this value stayed
+                // where is already was
+                break;
+            }
+            // move data from `from` to `cur`
+            std::swap(this->neighbors.pairs[cur], this->neighbors.pairs[from]);
+            if (options.return_distances) {
+                std::swap(this->neighbors.distances[cur], this->neighbors.distances[from]);
+            }
+            if (options.return_vectors) {
+                std::swap(this->neighbors.vectors[cur], this->neighbors.vectors[from]);
+            }
+            if (options.return_shifts) {
+                std::swap(this->neighbors.shifts[cur], this->neighbors.shifts[from]);
+            }
+
+            // mark this spot as already visited
+            indices[cur] = -1;
+
+            // update the indices
+            cur = from;
+            from = indices[cur];
+        } while (indices[from] != -1);
+
+        // we found a full loop of permutation, we can put tmp into `cur`
+        std::swap(this->neighbors.pairs[cur], tmp_pair);
+        if (options.return_distances) {
+            std::swap(this->neighbors.distances[cur], tmp_distance);
+        }
+        if (options.return_vectors) {
+            std::swap(this->neighbors.vectors[cur], tmp_vector);
+        }
+        if (options.return_shifts) {
+            std::swap(this->neighbors.shifts[cur], tmp_shift);
+        }
+
+        indices[cur] = -1;
+
+        // look for the next loop of permutation
+        cur = is_sorted_up_to;
+        while (indices[cur] == -1) {
+            cur += 1;
+            is_sorted_up_to += 1;
+            if (cur == this->length()) {
+                break;
+            }
+        }
+    }
+}
+
+
+void PLMD::metatomic::vesin::cpu::free_neighbors(VesinNeighborList& neighbors) {
     assert(neighbors.device == VesinCPU);
 
     std::free(neighbors.pairs);
@@ -808,6 +923,16 @@ extern "C" int vesin_neighbors(
         return EXIT_FAILURE;
     }
 
+    if (!std::isfinite(options.cutoff) || options.cutoff <= 0) {
+        *error_message = "cutoff must be a finite, positive number";
+        return EXIT_FAILURE;
+    }
+
+    if (options.cutoff <= 1e-6) {
+        *error_message = "cutoff is too small";
+        return EXIT_FAILURE;
+    }
+
     if (neighbors->device != VesinUnknownDevice && neighbors->device != device) {
         *error_message = "`neighbors` device and data `device` do not match, free the neighbors first";
         return EXIT_FAILURE;
@@ -828,16 +953,16 @@ extern "C" int vesin_neighbors(
 
     try {
         if (device == VesinCPU) {
-            auto matrix = PLMD::metatensor::vesin::Matrix{{{
+            auto matrix = PLMD::metatomic::vesin::Matrix{{{
                 {{box[0][0], box[0][1], box[0][2]}},
                 {{box[1][0], box[1][1], box[1][2]}},
                 {{box[2][0], box[2][1], box[2][2]}},
             }}};
 
-            PLMD::metatensor::vesin::cpu::neighbors(
-                reinterpret_cast<const PLMD::metatensor::vesin::Vector*>(points),
+            PLMD::metatomic::vesin::cpu::neighbors(
+                reinterpret_cast<const PLMD::metatomic::vesin::Vector*>(points),
                 n_points,
-                PLMD::metatensor::vesin::BoundingBox(matrix, periodic),
+                PLMD::metatomic::vesin::BoundingBox(matrix, periodic),
                 options,
                 *neighbors
             );
@@ -869,7 +994,7 @@ extern "C" void vesin_free(VesinNeighborList* neighbors) {
     if (neighbors->device == VesinUnknownDevice) {
         // nothing to do
     } else if (neighbors->device == VesinCPU) {
-        PLMD::metatensor::vesin::cpu::free_neighbors(*neighbors);
+        PLMD::metatomic::vesin::cpu::free_neighbors(*neighbors);
     }
 
     std::memset(neighbors, 0, sizeof(VesinNeighborList));
