@@ -62,12 +62,44 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
     A /= frob;
   }
 
-  // Inverse iteration to find smallest eigenvalue of K
-  Vector4d v = {1.0, 1.0, 1.0, 1.0};
-
+  // Inverse iteration with 4 candidate vectors stored as columns
+  Tensor4d M(
+    1, 1, 1, 1,
+    1,-1, 1,-1,
+    1, 1,-1,-1,
+    1,-1,-1,1
+  );
+  
   for (int iter = 0; iter < niter; ++iter) {
-    v = matmul(A, v);
-    v /= modulo(v);
+    Tensor4d newM = matmul(A, M);
+  
+    // Normalize each column
+    for (int j = 0; j < 4; ++j) {
+      double norm2 = 0.0;
+      for (int i = 0; i < 4; ++i)
+        norm2 += newM[i][j] * newM[i][j];
+      double inv_norm = 1.0 / std::sqrt((norm2 > 0.0) ? norm2 : 1.0);
+      for (int i = 0; i < 4; ++i)
+        newM[i][j] *= inv_norm;
+    }
+  
+    M = newM;
+  }
+  
+  // Select the column with the largest norm² (branch-free)
+  double best_norm2 = 0.0;
+  Vector4d v = {0.0, 0.0, 0.0, 0.0};  // This will become the selected vector
+  
+  for (int j = 0; j < 4; ++j) {
+    double norm2 = 0.0;
+    for (int i = 0; i < 4; ++i)
+      norm2 += M[i][j] * M[i][j];
+  
+    double use = static_cast<double>(norm2 > best_norm2);
+    best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
+  
+    for (int i = 0; i < 4; ++i)
+      v[i] = use * M[i][j] + (1.0 - use) * v[i];
   }
 
   // Compute Rayleigh quotient for lambda_min
