@@ -29,93 +29,6 @@
 
 namespace PLMD {
 
-namespace {
-
-void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_min) {
-
-// empirical:
-  constexpr unsigned nsquare = 20;
-  constexpr unsigned niter = 32;
-  //constexpr unsigned nsquare=32;
-  //constexpr unsigned niter=10;
-
-  // Estimate upper bound for largest eigenvalue using Gershgorin disks (branch-free)
-  double lambda_shift = 0.0;
-  for (int i = 0; i < 4; ++i) {
-    double row_sum = 0.0;
-    for (int j = 0; j < 4; ++j) {
-      double off_diag = (i == j) ? 0.0 : std::fabs(K[i][j]);
-      row_sum += off_diag;
-    }
-    double bound = std::fabs(K[i][i]) + row_sum;
-    lambda_shift = std::fmax(lambda_shift, bound);
-  }
-
-  auto A = -K + Tensor4d::identity()*lambda_shift;
-
-  for(unsigned i=0; i<nsquare; i++) {
-    A=matmul(A,A);
-    // Compute Frobenius norm of A
-    double frob = PLMD::LoopUnroller<16>::_dot(&A[0][0],&A[0][0]);
-    frob = std::sqrt(frob);
-    frob = (frob > 0.0) ? frob : 1.0;
-
-    // Scale A in-place
-    A /= frob;
-  }
-
-  // Inverse iteration with 4 candidate vectors stored as columns
-  Tensor4d M(
-    1, 1, 1, 1,
-    1,-1, 1,-1,
-    1, 1,-1,-1,
-    1,-1,-1,1
-  );
-  
-  for (int iter = 0; iter < niter; ++iter) {
-    Tensor4d newM = matmul(A, M);
-  
-    // Normalize each column
-    for (int j = 0; j < 4; ++j) {
-      double norm2 = 0.0;
-      for (int i = 0; i < 4; ++i)
-        norm2 += newM[i][j] * newM[i][j];
-      double inv_norm = 1.0 / std::sqrt((norm2 > 0.0) ? norm2 : 1.0);
-      for (int i = 0; i < 4; ++i)
-        newM[i][j] *= inv_norm;
-    }
-  
-    M = newM;
-  }
-  
-  // Select the column with the largest norm² (branch-free)
-  double best_norm2 = 0.0;
-  Vector4d v = {0.0, 0.0, 0.0, 0.0};  // This will become the selected vector
-  
-  for (int j = 0; j < 4; ++j) {
-    double norm2 = 0.0;
-    for (int i = 0; i < 4; ++i)
-      norm2 += M[i][j] * M[i][j];
-  
-    double use = static_cast<double>(norm2 > best_norm2);
-    best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
-  
-    for (int i = 0; i < 4; ++i)
-      v[i] = use * M[i][j] + (1.0 - use) * v[i];
-  }
-
-  // Compute Rayleigh quotient for lambda_min
-  lambda_min = matmul(v,K,v);
-
-  // Store eigenvector
-  q=v;
-}
-
-
-
-
-}
-
 RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false) {}
 
 ///
@@ -696,16 +609,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
       dq_drr01[i]=tmp;
     }
   } else {
-    compute_quaternion_from_K(m, q, dist);  // dist = smallest eigenvalue
-    //if(true){
-    //std::cerr<<"check:\n";
-    //std::cerr<<dist<<" "<<q[0]<<" "<<q[1]<<" "<<q[2]<<" "<<q[3]<<"\n";
-    //VectorGeneric<4> eigenvals;
-    //TensorGeneric<4,4> eigenvecs;
-    //diagMatSym(m, eigenvals, eigenvecs );
-    //for(unsigned i=0;i<4;i++) std::cerr<<eigenvals[i]<<" "<<eigenvecs[i][0]<<" "<<eigenvecs[0][1]<<" "<<eigenvecs[i][2]<<" "<<eigenvecs[i][3]<<"\n";
-    //}
-    dist += rr00 + rr11;
+    dist = lowestEigenpairSym(m, q) + rr00 + rr11;
   }
 
 

@@ -602,6 +602,87 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   }
 }
 
+template<unsigned n>
+double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
+                          unsigned nsquare = 20, unsigned niter = 32) {
+  // Estimate upper bound for largest eigenvalue using Gershgorin disks
+  double lambda_shift = 0.0;
+  for (unsigned i = 0; i < n; ++i) {
+    double row_sum = 0.0;
+    for (unsigned j = 0; j < n; ++j) {
+      if (i != j) row_sum += std::fabs(K[i][j]);
+    }
+    lambda_shift = std::fmax(lambda_shift, std::fabs(K[i][i]) + row_sum);
+  }
+
+  // Build shifted matrix A = -K + lambda_shift * I
+  TensorGeneric<n, n> A = -K;
+  for (unsigned i = 0; i < n; ++i)
+    A[i][i] += lambda_shift;
+
+  // Repeated squaring + normalization to project onto dominant eigenspace
+  for (unsigned k = 0; k < nsquare; ++k) {
+    A = matmul(A, A);
+
+    // Normalize by Frobenius norm
+    double norm2 = 0.0;
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < n; ++j)
+        norm2 += A[i][j] * A[i][j];
+    double frob = std::sqrt(norm2);
+    A /= (frob > 0.0 ? frob : 1.0);
+  }
+
+  // Initialize candidate vectors as columns of M
+  TensorGeneric<n, n> M;
+  for (unsigned j = 0; j < n; ++j)
+    for (unsigned i = 0; i < n; ++i)
+      M[i][j] = ((i + j) % 2 == 0) ? 1.0 : -1.0;
+
+  // Power iteration
+  for (unsigned it = 0; it < niter; ++it) {
+    TensorGeneric<n, n> newM = matmul(A, M);
+
+    // Normalize each column
+    for (unsigned j = 0; j < n; ++j) {
+      double norm2 = 0.0;
+      for (unsigned i = 0; i < n; ++i)
+        norm2 += newM[i][j] * newM[i][j];
+      double inv_norm = 1.0 / std::sqrt((norm2 > 0.0) ? norm2 : 1.0);
+      for (unsigned i = 0; i < n; ++i)
+        newM[i][j] *= inv_norm;
+    }
+
+    M = newM;
+  }
+
+  // Select the column with the largest norm² (redundant if normalized, but safe)
+  double best_norm2 = 0.0;
+  for (unsigned i = 0; i < n; ++i)
+    eigenvector[i] = 0.0;
+
+  for (unsigned j = 0; j < n; ++j) {
+    double norm2 = 0.0;
+    for (unsigned i = 0; i < n; ++i)
+      norm2 += M[i][j] * M[i][j];
+
+    double use = static_cast<double>(norm2 > best_norm2);
+    best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
+
+    for (unsigned i = 0; i < n; ++i)
+      eigenvector[i] = use * M[i][j] + (1.0 - use) * eigenvector[i];
+  }
+
+  // Compute Rayleigh quotient λ = vᵀ K v
+  VectorGeneric<n> Kv = matmul(K, eigenvector);
+  double eigenvalue = 0.0;
+  for (unsigned i = 0; i < n; ++i)
+    eigenvalue += eigenvector[i] * Kv[i];
+
+  return eigenvalue;
+}
+
+
 static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 
 }
