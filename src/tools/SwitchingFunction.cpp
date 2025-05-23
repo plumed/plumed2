@@ -36,7 +36,6 @@ If you add a new type of switching function in this file please add documentatio
 */
 
 namespace PLMD {
-
 namespace switchContainers {
 Data::Data()=default;
 Data::Data(const double D0,const double DMAX, const double R0)  : d0(D0),
@@ -50,24 +49,20 @@ Data::Data(const double D0,const double DMAX, const double R0)  : d0(D0),
 }(dmax)),
 invr0(1.0/R0),
 invr0_2(invr0*invr0) {}
-
-// namespace switchContainersUtils {
+std::string typeToString(switchType type);
+namespace switchContainersUtils {
 template<class, class = void>
 constexpr bool has_function_data = false;
 
 //this verifies that T has a method gatherForces_custom that can be called with this signature
 template<class T>
-constexpr bool has_function_data <
-T,
-std::void_t<
+constexpr bool has_function_data <T, std::void_t<
 decltype(T::function(
            std::declval<const Data& >(),
            std::declval<double >(),
            std::declval<double& >()
-         ))
->
-> = true;
-// } //namespace switchContainersUtils
+         ))> > = true;
+} //namespace switchContainersUtils
 
 /// container for the actual switching function used by PLMD::SwitchingFunction
 template<typename switching>
@@ -79,7 +74,7 @@ struct baseSwitch {
       res = 1.0;
       const double rdist = (distance-data.d0)*data.invr0;
       if(rdist > 0.0) {
-        if constexpr (has_function_data<switching>) {
+        if constexpr (switchContainersUtils::has_function_data<switching>) {
           res = switching::function(data,rdist,dfunc);
         } else {
           res = switching::function(rdist,dfunc);
@@ -176,24 +171,6 @@ public:
     }
     return {switchType::rational,data};
   }
-  // rational(double D0,double DMAX, double R0, int N, int M)
-  //   :baseSwitch(D0,DMAX,R0,"rational"),
-  //    nn(N),
-  //    mm([](int m,int n) {
-  //   if (m==0) {
-  //     return n*2;
-  //   } else {
-  //     return m;
-  //   }
-  // }(M,N)),
-  // preRes(static_cast<double>(nn)/mm),
-  // preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)),
-  // //wolfram <3:lim_(x->1) d^2/(dx^2) (1 - x^N)/(1 - x^M) = (N (M^2 - 3 M (-1 + N) + N (-3 + 2 N)))/(6 M)
-  // preSecDev ((nn * (mm * mm - 3.0* mm * (-1 + nn ) + nn *(-3 + 2* nn )))/(6.0* mm )),
-  // nnf(nn/2),
-  // mmf(mm/2),
-  // preDfuncF(0.5*nnf*(nnf-mmf)/static_cast<double>(mmf)),
-  // preSecDevF((nnf* (mmf*mmf - 3.0* mmf* (-1 + nnf) + nnf*(-3 + 2* nnf)))/(6.0* mmf)) {}
 
   static inline double doRational(const double rdist, double&dfunc,double secDev, const int N,
                                   const int M,double result=0.0) {
@@ -281,7 +258,7 @@ struct exponentialSwitch: public baseSwitch<exponentialSwitch> {
     return{switchType::exponential,
            Data(D0,DMAX,R0)};
   }
-  static inline double function(const Data&,const double rdist,double&dfunc) {
+  static inline double function(const double rdist,double&dfunc) {
     double result = std::exp(-rdist);
     dfunc=-result;
     return result;
@@ -296,7 +273,7 @@ struct gaussianSwitch: public baseSwitch<gaussianSwitch> {
     return{switchType::gaussian,
            Data(D0,DMAX,R0)};
   }
-  static inline double function(const Data&,const double rdist,double&dfunc) {
+  static inline double function(const double rdist,double&dfunc) {
     double result = std::exp(-0.5*rdist*rdist);
     dfunc=-rdist*result;
     return result;
@@ -309,7 +286,7 @@ struct fastgaussianSwitch: public baseSwitch<fastgaussianSwitch> {
     return{switchType::fastgaussian,
            Data(0.0,DMAX,1.0)};
   }
-  static inline double function(const Data&,const double rdist,double&dfunc) {
+  static inline double function(const double rdist,double&dfunc) {
     double result = std::exp(-0.5*rdist*rdist);
     dfunc=-rdist*result;
     return result;
@@ -452,8 +429,8 @@ struct nativeqSwitch: public baseSwitch<nativeqSwitch> {
     return res;
   }
 };
-/*
-class leptonSwitch: public baseSwitch<leptonSwitch> {
+
+class leptonSwitch {
 /// Lepton expression.
   class funcAndDeriv {
     lepton::CompiledExpression expression;
@@ -591,17 +568,16 @@ class leptonSwitch: public baseSwitch<leptonSwitch> {
   /// Set to true if lepton only uses x2
   bool leptonx2=false;
 protected:
-  std::string specificDescription() const override {
+  std::string specificDescription() const  {
     std::ostringstream ostr;
     ostr<<" func=" << lepton_func;
     return ostr.str();
   }
-  static inline double calculate(const Data& ,const double,double&) const override {
-    return 0.0;
-  }
+  Data data;
 public:
+  leptonSwitch()=default;
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
-    :baseSwitch(D0,DMAX,R0,"lepton"),
+    :data(D0,DMAX,R0),
      lepton_func(func),
      expressions  (OpenMP::getNumThreads(), lepton_func) {
     //this is a bit odd, but it works
@@ -609,50 +585,79 @@ public:
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
 
-  static inline double calculate(const Data& ,const double distance,double&dfunc) const override {
+  inline double calculate(const double distance,double&dfunc) const  {
     double res = 0.0;
     dfunc = 0.0;
     if(leptonx2) {
       res= calculateSqr(distance*distance,dfunc);
     } else {
-      if(distance<=dmax) {
+      if(distance<=data.dmax) {
         res = 1.0;
-        const double rdist = (distance-d0)*invr0;
+        const double rdist = (distance-data.d0)*data.invr0;
         if(rdist > 0.0) {
           const unsigned t=OpenMP::getThreadNum();
           plumed_assert(t<expressions.size());
           std::tie(res,dfunc) = expressions[t](rdist);
-          dfunc *= invr0;
+          dfunc *= data.invr0;
           dfunc /= distance;
         }
-        res=res*stretch+shift;
-        dfunc*=stretch;
+        res=res*data.stretch+data.shift;
+        dfunc*=data.stretch;
       }
     }
     return res;
   }
 
-  double calculateSqr(const double distance2,double&dfunc) const override {
+  double calculateSqr(const double distance2,double&dfunc) const  {
     double result =0.0;
     dfunc=0.0;
     if(leptonx2) {
-      if(distance2<=dmax_2) {
+      if(distance2<=data.dmax_2) {
         const unsigned t=OpenMP::getThreadNum();
-        const double rdist_2 = distance2*invr0_2;
+        const double rdist_2 = distance2*data.invr0_2;
         plumed_assert(t<expressions.size());
         std::tie(result,dfunc) = expressions[t](rdist_2);
         // chain rule:
-        dfunc*=2*invr0_2;
+        dfunc*=2*data.invr0_2;
         // stretch:
-        result=result*stretch+shift;
-        dfunc*=stretch;
+        result=result*data.stretch+data.shift;
+        dfunc*=data.stretch;
       }
     } else {
       result = calculate(std::sqrt(distance2),dfunc);
     }
     return result;
   }
-};*/
+  const Data & getData() const {
+    return data;
+  }
+  void setupStretch() {
+    if(data.dmax!=std::numeric_limits<double>::max()) {
+      data.stretch=1.0;
+      data.shift=0.0;
+      double dummy;
+      double s0=calculate(0.0,dummy);
+      double sd=calculate(data.dmax,dummy);
+      data.stretch=1.0/(s0-sd);
+      data.shift=-sd*data.stretch;
+    }
+  }
+  void removeStretch() {
+    data.stretch=1.0;
+    data.shift=0.0;
+  }
+  std::string description() {
+    using namespace switchContainers;
+    std::ostringstream ostr;
+    ostr<<1.0/data.invr0
+        <<".  Using "
+        << typeToString(switchType::lepton)
+        <<" switching function with parameters d0="<< data.d0;
+    ostr<<" func=" << lepton_func;
+    return ostr.str();
+  }
+};
+
 double calculate(const switchType type,
                  const Data& data,
                  const double rdist,
@@ -811,6 +816,9 @@ std::string description(switchType type, const Data& data) {
 
 } // namespace switchContainers
 
+SwitchingFunction::SwitchingFunction()=default;
+SwitchingFunction::~SwitchingFunction()=default;
+
 void SwitchingFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","the value of R_0 in the switching function");
   keys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
@@ -907,8 +915,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     } else if((name=="MATHEVAL" || name=="CUSTOM")) {
       std::string func;
       Tools::parse(data,"FUNC",func);
-      // std::tie(switchtype,
-      //          switchData) = switchContainers::leptonSwitch::init(d0,dmax,r0,func);
+      lepton = std::make_unique<switchContainers::leptonSwitch>(d0,dmax,r0,func);
+      switchtype=switchContainers::switchType::lepton;
+      switchData = lepton->getData();
     } else {
       errormsg="cannot understand switching function type '"+name+"'";
     }
@@ -924,23 +933,41 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   }
 
   if(dostretch && dmax!=std::numeric_limits<double>::max()) {
-    switchContainers::setupStretch(switchtype, switchData);
+    if (switchtype!=switchContainers::switchType::lepton) {
+      switchContainers::setupStretch(switchtype, switchData);
+    } else {
+      lepton->setupStretch();
+    }
   }
 }
 
 std::string SwitchingFunction::description() const {
   // if this error is necessary, something went wrong in the constructor
   //  plumed_merror("Unknown switching function type");
-  return switchContainers::description(switchtype, switchData);
+  if (switchtype!=switchContainers::switchType::lepton) {
+    return switchContainers::description(switchtype, switchData);
+  } else {
+    return lepton->description();
+  }
 }
 
 double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
-  return switchContainers::calculateSqr(switchtype, switchData, distance2, dfunc);
+  switch (switchtype) {
+  case switchContainers::switchType::lepton:
+    return lepton->calculateSqr( distance2, dfunc);
+  default:
+    return switchContainers::calculateSqr(switchtype, switchData, distance2, dfunc);
+  }
 }
 
 double SwitchingFunction::calculate(double distance,double&dfunc)const {
   plumed_massert(init,"you are trying to use an unset SwitchingFunction");
-  return switchContainers::calculate(switchtype, switchData, distance, dfunc);
+  switch (switchtype) {
+  case switchContainers::switchType::lepton:
+    return lepton->calculate( distance, dfunc);
+  default:
+    return switchContainers::calculate(switchtype, switchData, distance, dfunc);
+  }
 
 }
 

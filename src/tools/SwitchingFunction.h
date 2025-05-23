@@ -91,6 +91,7 @@ struct Data {
   Data(double D0,double DMAX, double R0);
   Data();
 };
+class leptonSwitch;
 } // namespace switchContainers
 
 /// \ingroup TOOLBOX
@@ -106,7 +107,10 @@ class SwitchingFunction {
   bool init=false;
   switchContainers::Data switchData;
   switchContainers::switchType switchtype;
+  std::unique_ptr<switchContainers::leptonSwitch> lepton{nullptr};
 public:
+  SwitchingFunction();
+  ~SwitchingFunction();
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
