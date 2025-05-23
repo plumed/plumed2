@@ -32,7 +32,65 @@ namespace PLMD {
 class Log;
 class Keywords;
 namespace switchContainers {
-class mybaseSwitch{};
+class mybaseSwitch {};
+
+enum class switchType {
+  rationalfix12,
+  rationalfix10,
+  rationalfix8,
+  rationalfix6,
+  rationalfix4,
+  rationalfix2,
+  rational,
+  rationalFast,
+  rationalSimple,
+  rationalSimpleFast,
+  exponential,
+  gaussian,
+  fastgaussian,
+  smap,
+  cubic,
+  tanh,
+  cosinus,
+  nativeq,
+  lepton
+};
+struct Data {
+  /// Minimum distance (before this, function is one)
+  double d0=0.0;
+  /// Maximum distance (after this, function is zero)
+  double dmax=0.0;
+  /// Square of dmax, useful in calculateSqr()
+  double dmax_2=0.0;
+  /// We store the inverse to avoid a division
+  double invr0=0.0;
+  /// Square of invr0, useful in calculateSqr()
+  double invr0_2=0.0;
+  /// Parameters for stretching the function to zero at d_max
+  double stretch=1.0;
+  double shift=0.0;
+  //Rational stuff
+  int nn=6;
+  int mm=12;
+  double preRes;
+  double preDfunc;
+  double preSecDev;
+  int nnf;
+  int mmf;
+  double preDfuncF;
+  double preSecDevF;
+  //smap stuff
+  int a=0;
+  int b=0;
+  double c=0.0;
+  double d=0.0;
+  //nativeq
+  double beta = 50.0;  // nm-1
+  double lambda = 1.8; // unitless
+  double ref=0.0;
+  Data(double D0,double DMAX, double R0);
+  Data();
+};
 } // namespace switchContainers
 
 /// \ingroup TOOLBOX
@@ -46,7 +104,8 @@ class mybaseSwitch{};
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
-  std::unique_ptr<switchContainers::mybaseSwitch> function;
+  switchContainers::Data switchData;
+  switchContainers::switchType switchtype;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
