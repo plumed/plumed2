@@ -27,6 +27,7 @@
 #include <limits>
 #include <algorithm>
 #include <optional>
+
 #pragma GCC diagnostic error "-Wswitch"
 /*
 IMPORTANT NOTE FOR DEVELOPERS:
@@ -70,26 +71,7 @@ decltype(T::function(
 
 /// container for the actual switching function used by PLMD::SwitchingFunction
 template<typename switching>
-class baseSwitch {
-protected:
-  // Data data;
-public:
-  // baseSwitch(double D0,double DMAX, double R0, std::string_view name)
-  //   : d0(D0),
-  //     dmax(DMAX),
-  //     dmax_2([](const double d) {
-  //   if(d<std::sqrt(std::numeric_limits<double>::max())) {
-  //     return  d*d;
-  //   } else {
-  //     return std::numeric_limits<double>::max();
-  //   }
-  // }(dmax)),
-  // invr0(1.0/R0),
-  // invr0_2(invr0*invr0),
-  // mytype(name) {}
-
-  // ~baseSwitch()=default;
-
+struct baseSwitch {
   static double calculate(const Data&data, const double distance, double& dfunc) {
     double res = 0.0;
     dfunc = 0.0;
@@ -122,17 +104,10 @@ public:
   static double calculateSqr(const Data&data, double distance2,double&dfunc) {
     return switching::calculate(data,std::sqrt(distance2),dfunc);
   }
-
-  // const Data& get_data() const {
-  //   return data
-  // }
 };
 
 template<int N, std::enable_if_t< (N >0), bool> = true, std::enable_if_t< (N %2 == 0), bool> = true>
-    class fixedRational :public baseSwitch<fixedRational<N>> {
-public:
-  // fixedRational(double D0,double DMAX, double R0)
-  //   :baseSwitch(D0,DMAX,R0,"rational") {}
+    struct fixedRational :public baseSwitch<fixedRational<N>> {
 
   template <int POW>
   static inline double doRational(const double rdist, double&dfunc, double result=0.0) {
@@ -270,7 +245,7 @@ public:
       }
       return result;
     } else {
-      return baseSwitch<rational<isFast,nis2m>>::calculate(std::sqrt(distance2),dfunc);
+      return baseSwitch<rational<isFast,nis2m>>::calculate(data,std::sqrt(distance2),dfunc);
     }
   }
 };
@@ -361,7 +336,7 @@ struct smapSwitch: public baseSwitch<smapSwitch> {
     const double R0,
     const int A,
     const int B) {
-    auto data =Data(D0,DMAX,DMAX-D0);
+    auto data =Data(D0,DMAX,R0);
     data.a= A;
     data.b= B;
     data.c= std::pow(2., static_cast<double>(data.a)/static_cast<double>(data.b) ) - 1.0;
@@ -683,8 +658,22 @@ double calculate(const switchType type,
                  const double rdist,
                  double&dfunc) {
 #define SWITCHCALL(x) case switchType::x: return x##Switch::calculate(data, rdist,dfunc);
+#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculate(data, rdist,dfunc);
   switch (type) {
-    // SWITCHCALL(rational)
+    RATCALL(12)
+    RATCALL(10)
+    RATCALL(8)
+    RATCALL(6)
+    RATCALL(4)
+    RATCALL(2)
+  case switchType::rational:
+    return rational<rationalPow::standard,rationalForm::standard>::calculate(data, rdist,dfunc);
+  case switchType::rationalFast:
+    return rational<rationalPow::fast,rationalForm::standard>::calculate(data, rdist,dfunc);
+  case switchType::rationalSimple:
+    return rational<rationalPow::standard,rationalForm::simplified>::calculate(data, rdist,dfunc);
+  case switchType::rationalSimpleFast:
+    return rational<rationalPow::fast,rationalForm::simplified>::calculate(data, rdist,dfunc);
     SWITCHCALL(exponential)
     SWITCHCALL(gaussian)
     SWITCHCALL(fastgaussian)
@@ -693,11 +682,11 @@ double calculate(const switchType type,
     SWITCHCALL(tanh)
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
-  // SWITCHCALL(lepton)
-  default:
+  case switchType::lepton:
     return 0.0;
   }
-#undef  SWITCHCALL
+#undef SWITCHCALL
+#undef RATCALL
 }
 
 double calculateSqr(const switchType type,
@@ -705,8 +694,22 @@ double calculateSqr(const switchType type,
                     const double rdist2,
                     double&dfunc) {
 #define SWITCHCALL(x) case switchType::x: return x##Switch::calculateSqr(data, rdist2,dfunc);
+#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculateSqr(data, rdist2,dfunc);
   switch (type) {
-    // SWITCHCALL(rational)
+    RATCALL(12)
+    RATCALL(10)
+    RATCALL(8)
+    RATCALL(6)
+    RATCALL(4)
+    RATCALL(2)
+  case switchType::rational:
+    return rational<rationalPow::standard,rationalForm::standard>::calculateSqr(data, rdist2,dfunc);
+  case switchType::rationalFast:
+    return rational<rationalPow::fast,rationalForm::standard>::calculateSqr(data, rdist2,dfunc);
+  case switchType::rationalSimple:
+    return rational<rationalPow::standard,rationalForm::simplified>::calculateSqr(data, rdist2,dfunc);
+  case switchType::rationalSimpleFast:
+    return rational<rationalPow::fast,rationalForm::simplified>::calculateSqr(data, rdist2,dfunc);
     SWITCHCALL(exponential)
     SWITCHCALL(gaussian)
     SWITCHCALL(fastgaussian)
@@ -715,11 +718,11 @@ double calculateSqr(const switchType type,
     SWITCHCALL(tanh)
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
-  // SWITCHCALL(lepton)
-  default:
+  case switchType::lepton:
     return 0.0;
   }
-#undef  SWITCHCALL
+#undef SWITCHCALL
+#undef RATCALL
 }
 
 
