@@ -46,15 +46,10 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
       row_sum += off_diag;
     }
     double bound = std::fabs(K[i][i]) + row_sum;
-    lambda_shift = (bound > lambda_shift) ? bound : lambda_shift;
+    lambda_shift = std::fmax(lambda_shift, bound);
   }
 
-  Tensor4d A=-K;
-
-  A[0][0]+=lambda_shift;
-  A[1][1]+=lambda_shift;
-  A[2][2]+=lambda_shift;
-  A[3][3]+=lambda_shift;
+  auto A = -K + Tensor4d::identity()*lambda_shift;
 
   for(unsigned i=0; i<nsquare; i++) {
     A=matmul(A,A);
@@ -69,52 +64,17 @@ void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_mi
 
   // Inverse iteration to find smallest eigenvalue of K
   Vector4d v = {1.0, 1.0, 1.0, 1.0};
-  Vector4d z;
 
   for (int iter = 0; iter < niter; ++iter) {
-    for (int i = 0; i < 4; ++i) {
-      double sum = 0.0, c = 0.0;
-      for (int j = 0; j < 4; ++j) {
-        double y = A[i][j] * v[j] - c;
-        double t = sum + y;
-        c = (t - sum) - y;
-        sum = t;
-      }
-      z[i] = sum;
-    }
-    double norm = std::sqrt(z[0]*z[0] + z[1]*z[1] + z[2]*z[2] + z[3]*z[3]);
-    norm = (norm > 0.0) ? norm : 1.0;
-    for (int i = 0; i < 4; ++i) {
-      v[i] = z[i] / norm;
-    }
-  }
-
-  // Normalize vector
-  double norm = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
-  norm = (norm > 0.0) ? norm : 1.0;
-  for (int i = 0; i < 4; ++i) {
-    v[i] /= norm;
+    v = matmul(A, v);
+    v /= modulo(v);
   }
 
   // Compute Rayleigh quotient for lambda_min
-  lambda_min = 0.0;
-  for (int i = 0; i < 4; ++i) {
-    double sum = 0.0, c = 0.0;
-    for (int j = 0; j < 4; ++j) {
-      double y = K[i][j] * v[j] - c;
-      double t = sum + y;
-      c = (t - sum) - y;
-      sum = t;
-    }
-    lambda_min += v[i] * sum;
-  }
+  lambda_min = matmul(v,K,v);
 
   // Store eigenvector
-  norm = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
-  norm = (norm > 0.0) ? norm : 1.0;
-  for (int i = 0; i < 4; ++i) {
-    q[i] = v[i] / norm;
-  }
+  q=v;
 }
 
 
