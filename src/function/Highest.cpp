@@ -264,8 +264,10 @@ void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions&
 }
 
 void Highest::calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
-  for(unsigned i=0; i<args.size(); ++i) {
-    funcout.derivs[0][i] = 0;
+  if( !noderiv ) {
+    for(unsigned i=0; i<args.size(); ++i) {
+      funcout.derivs[0][i] = 0;
+    }
   }
   if( func.min ) {
     funcout.values[0] = *std::min_element(args.begin(), args.end());
