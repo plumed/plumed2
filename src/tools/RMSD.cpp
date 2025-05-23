@@ -34,8 +34,10 @@ namespace {
 void compute_quaternion_from_K(const Tensor4d& K, Vector4d& q, double& lambda_min) {
 
 // empirical:
-  constexpr unsigned nsquare=32;
-  constexpr unsigned niter=10;
+  constexpr unsigned nsquare = 20;
+  constexpr unsigned niter = 32;
+  //constexpr unsigned nsquare=32;
+  //constexpr unsigned niter=10;
 
   // Estimate upper bound for largest eigenvalue using Gershgorin disks (branch-free)
   double lambda_shift = 0.0;
