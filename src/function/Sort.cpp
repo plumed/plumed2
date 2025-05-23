@@ -83,6 +83,7 @@ Sort the elements in a vector according to their magnitudes
 class Sort : public FunctionTemplateBase {
 private:
   bool scalar_out;
+  bool zero_der;
   unsigned nargs;
 public:
   void registerKeywords(Keywords& keys) override ;
@@ -90,6 +91,7 @@ public:
   bool zeroRank() const override {
     return true;
   }
+  bool getDerivativeZeroIfValueIsZero() const override ;
   bool doWithTasks() const override {
     return !scalar_out;
   }
@@ -119,11 +121,19 @@ void Sort::read( ActionWithArguments* action ) {
     nargs = action->getPntrToArgument(0)->getNumberOfValues();
   }
 
+  zero_der=true;
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
     if((action->getPntrToArgument(i))->isPeriodic()) {
       action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
     }
+    if(!(action->getPntrToArgument(i))->isDerivativeZeroWhenValueIsZero() ) {
+      zero_der=false;
+    }
   }
+}
+
+bool Sort::getDerivativeZeroIfValueIsZero() const {
+  return zero_der;
 }
 
 std::vector<std::string> Sort::getComponentsPerLabel() const {

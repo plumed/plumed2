@@ -52,7 +52,7 @@
 namespace PLMD {
 namespace ves {
 
-//+PLUMEDOC VES_TOOLS ves_md_linearexpansion
+//+PLUMEDOC TOOLS ves_md_linearexpansion
 /*
 Simple MD code for dynamics on a potential energy surface given by a linear basis set expansion.
 
@@ -62,16 +62,23 @@ dimensions.
 
 It is possible to run more than one replica of the system in parallel.
 
-\par Examples
+## Examples
 
 In the following example we perform dynamics on the
 Wolfe-Quapp potential that is defined as
-\f[
+
+$$
 U(x,y) = x^4 + y^4 - 2 x^2 - 4 y^2 + xy + 0.3 x + 0.1 y
-\f]
+$$
+
+This function has minima at (-1.174,1.477); (-0.831,-1.366); (1.124,-1.486),
+a maxima at (0.100,0.050) and saddle points around (-1.013,-0.036); (0.093,0.174); (-0.208,-1.407).
+
 To define the potential we employ polynomial power basis
-functions (\ref BF_POWERS). The input file is given as
-\verbatim
+functions ([BF_POWERS](BF_POWERS.md)). The input file is given as
+
+```plumed
+#TOOL=ves_md_linearexpansion
 nstep             10000
 tstep             0.005
 temperature       1.0
@@ -87,21 +94,17 @@ initial_position   -1.174,+1.477
 output_potential        potential.data
 output_potential_grid   150
 output_histogram        histogram.data
-
-# Wolfe-Quapp potential given by the equation
-# U(x,y) = x**4 + y**4 - 2.0*x**2 - 4.0*y**2 + x*y + 0.3*x + 0.1*y
-# Minima around (-1.174,1.477); (-0.831,-1.366); (1.124,-1.486)
-# Maxima around (0.100,0.050)
-# Saddle points around (-1.013,-0.036); (0.093,0.174); (-0.208,-1.407)
-\endverbatim
+```
 
 This input is then run by using the following command.
-\verbatim
+
+```plumed
 plumed ves_md_linearexpansion input
-\endverbatim
+```
 
 The corresponding pot_coeffs_input.data file is
-\verbatim
+
+````
 #! FIELDS idx_dim1 idx_dim2 pot.coeffs index description
 #! SET type LinearBasisSet
 #! SET ndimensions  2
@@ -117,15 +120,16 @@ The corresponding pot_coeffs_input.data file is
        0       2        -4.0000000000000000e+00      10  1*s^2
        0       4         1.0000000000000000e+00      20  1*s^4
 #!-------------------
-\endverbatim
+````
 
-One then uses the (x,y) position of the particle as CVs by using the \ref POSITION
+One then uses the (x,y) position of the particle as CVs by using the [POSITION](POSITION.md)
 action as shown in the following PLUMED input
-\plumedfile
+
+```plumed
 p: POSITION ATOM=1
 ene: ENERGY
 PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f
-\endplumedfile
+```
 
 
 

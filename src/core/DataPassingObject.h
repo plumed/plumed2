@@ -71,9 +71,9 @@ public:
 /// this can be used even when you don't pass a pointer from the MD code
   virtual void saveValueAsDouble( const TypesafePtr & val )=0;
 /// Set the pointer to the value
-  virtual void setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst )=0;
+  virtual void setValuePointer( const TypesafePtr & val, const std::vector<std::size_t>& shape, const bool& isconst )=0;
 /// Set the pointer to the force
-  virtual void setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape )=0;
+  virtual void setForcePointer( const TypesafePtr & val, const std::vector<std::size_t>& shape )=0;
 /// This gets the data in the pointer and passes it to the output value
   virtual void share_data( std::vector<double>& values ) const = 0;
 /// Share the data and put it in the value from sequential data

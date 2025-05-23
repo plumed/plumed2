@@ -1,0 +1,7 @@
+name: gridtools
+authors: Gareth Tribello
+description: tools for manipulating functions that are stored on grids
+dois: ["10.1063/1.5027528", "10.1021/acs.jctc.7b01027", "10.1088/1361-648X/aa893d", "10.1063/1.5134461"]
+tags:
+  GRIDCALC: actions that output a function computed on a grid
+  GRIDANALYSIS: actions that take a function computed on a grid in input

@@ -40,53 +40,56 @@ Target distribution given by a sum of Von Mises distributions (static).
 Employ a target distribution that is given by a sum where each
 term is a product of one-dimensional
 [Von Mises distributions](https://en.wikipedia.org/wiki/Von_Mises_distribution),
-\f[
+
+$$
 p(\mathbf{s}) = \sum_{i} \, w_{i}
 \prod_{k}^{d}
 \frac{\exp\left(\kappa_{k,i} \, \cos (s_{k}-\mu_{k,i}) \right)}
 {2\pi I_{0}(\kappa_{k,i})}
-\f]
-where \f$(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})\f$
+$$
+
+where $(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})$
 are the centers of the distributions,
-\f$(\kappa_{1,i},\kappa_{2,i},\ldots,\kappa_{d,i})\f$
+$(\kappa_{1,i},\kappa_{2,i},\ldots,\kappa_{d,i})$
 are parameters that determine the extend of each distribution,
-and \f$I_{0}(x)\f$ is the modified Bessel function of order 0.
-The weights \f$w_{i}\f$ are normalized to 1, \f$\sum_{i}w_{i}=1\f$.
+and $I_{0}(x)$ is the modified Bessel function of order 0.
+The weights $w_{i}$ are normalized to 1, $\sum_{i}w_{i}=1$.
 
 The Von Mises distribution is defined for periodic variables with a
-periodicity of \f$2\pi\f$ and is analogous to the Gaussian distribution.
-The parameter \f$ \sqrt{1/\kappa}\f$ is comparable to the standard deviation
-\f$\sigma\f$ for the Gaussian distribution.
+periodicity of $2\pi$ and is analogous to the Gaussian distribution.
+The parameter $ \sqrt{1/\kappa}$ is comparable to the standard deviation
+$\sigma$ for the Gaussian distribution.
 
 To use this target distribution you need to give the centers
-\f$(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})\f$ by
+$(\mu_{1,i},\mu_{2,i},\ldots,\mu_{d,i})$ by
 using the numbered CENTER keywords and the "standard deviations"
-\f$(\sqrt{1/\kappa_{1,i}},\sqrt{1/\kappa_{2,i}},\ldots,\sqrt{1/\kappa_{d,i}})\f$ using the numbered SIGMA keywords.
+$(\sqrt{1/\kappa_{1,i}},\sqrt{1/\kappa_{2,i}},\ldots,\sqrt{1/\kappa_{d,i}})$ using the numbered SIGMA keywords.
 
-
-\par Examples
+## Examples
 
 Sum of two Von Mises distribution in one dimension that have equal weights
 as no weights are given.
-\plumedfile
+
+```plumed
 TD_VONMISES ...
  CENTER1=+2.0 SIGMA1=0.6
  CENTER2=-2.0 SIGMA2=0.7
  LABEL=td
 ... TD_VONMISES
-\endplumedfile
+```
 
 Sum of two Von Mises distribution in two dimensions that have different weights.
 Note that the weights are automatically normalized to 1 such that
 specifying WEIGHTS=1.0,2.0 is equal to specifying WEIGHTS=0.33333,0.66667.
-\plumedfile
+
+```plumed
 TD_VONMISES ...
  CENTER1=+2.0,+2.0 SIGMA1=0.6,0.7
  CENTER2=-2.0,+2.0 SIGMA2=0.7,0.6
  WEIGHTS=1.0,2.0
  LABEL=td
 ... TD_VONMISES
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

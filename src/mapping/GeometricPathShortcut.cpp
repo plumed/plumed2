@@ -27,8 +27,48 @@
 /*
 Distance along and from a path calculated using geometric formulas
 
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that
+paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating
+the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their
+method, the progress along the path $s$ is calculated using:
 
-\par Examples
+$$
+s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
+$$
+
+where $\mathbf{v}_1$ and $\mathbf{v}_3$ are the vectors connecting the current position to the closest and second closest node of the path,
+respectfully and $i_1$ and $i_2$ are the projections of the closest and second closest frames of the path. $\mathbf{v}_2$, meanwhile, is the
+vector connecting the closest frame to the second closest frame.  The distance from the path, $z$ is calculated using:
+
+$$
+z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
+$$
+
+The symbols here are as they were for $s$.
+
+## Examples
+
+The example input below shows how to use this shortcut.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+pp: GPATH ARG=d1.x,d1.y REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
+```
+
+The curved path here is defined using a series of points in a two dimensional space.  The input below illustrates how to the positions of atoms to define the path:
+
+```plumed
+##SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1b: GPATH REFERENCE=regtest/trajectories/path_msd/all.pdb
+PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
+```
+
+When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
+action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
+of mass and rotation of the reference frame.
 
 */
 //+ENDPLUMEDOC
@@ -54,6 +94,8 @@ void GeometricPathShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("GEOMETRIC_PATH");
   keys.needsAction("PDB2CONSTANT");
   keys.needsAction("CONSTANT");
+  keys.addDOI("10.1063/1.2432340");
+  keys.addDOI("10.1103/PhysRevLett.109.020601");
 }
 
 GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
@@ -97,7 +139,7 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
       Tools::convert( mypdb.getBeta()[0], num );
       displace_str += "," + num;
     }
-    std::string metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
+    std::string metric = "RMSD DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
     readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
   }
 }

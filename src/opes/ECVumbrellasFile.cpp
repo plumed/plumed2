@@ -27,42 +27,40 @@ namespace opes {
 /*
 Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 
-Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
-The positions \f$\mathbf{s}_i\f$ and dimension \f$\mathbf{\sigma}_i\f$ of the umbrellas are read from file.
-\f[
+Any set of collective variables $\mathbf{s}$ can be used as ARG.
+The positions $\mathbf{s}_i$ and dimension $\mathbf{\sigma}_i$ of the umbrellas are read from file.
+
+$$
   \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{([s]_j-[s_i]_j)^2}{2[\sigma_i]_j^2}\, .
-\f]
-Notice that \f$\mathbf{\sigma}_i\f$ is diagonal, thus only one SIGMA per CV has to be specified for each umbrella.
-You can choose the umbrellas manually, or place them on a grid, or along a path, similar to \ref PATH.
+$$
+
+Notice that $\mathbf{\sigma}_i$ is diagonal, thus only one SIGMA per CV has to be specified for each umbrella.
+You can choose the umbrellas manually, or place them on a grid, or along a path, similar to [PATH](PATH.md).
 They must cover all the CV space that one wishes to sample.
 
 The first column of the umbrellas file is always ignored and must be called "time".
-You can also use as input file a STATE file from an earlier \ref OPES_METAD run (or an \ref OPES_MEAD_EXPLORE run, if you combine it with other ECVs).
+You can also use as input file a STATE file from an earlier [OPES_METAD](OPES_METAD.md) run (or an [OPES_METAD_EXPLORE](OPES_METAD_EXPLORE.md) run, if you combine it with other ECVs).
 
-Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
+Similarly to [ECV_UMBRELLAS_LINE](ECV_UMBRELLAS_LINE.md), you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
 You can also use BARRIER to set the maximum barrier height to be explored, and avoid huge biases at the beginning of your simulation.
-See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
+See also Appendix B of the paper cited below for more details on these last two options.
 
-\par Examples
+## Examples
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=extras/Umbrellas.data
+
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
 cv3: DISTANCE ATOMS=4,1
-ecv: ECV_UMBRELLAS_FILE ARG=cv1,cv2,cv3 FILE=Umbrellas.data ADD_P0 BARRIER=70
+ecv: ECV_UMBRELLAS_FILE ...
+   ARG=cv1,cv2,cv3
+   FILE=extras/Umbrellas.data
+   ADD_P0 BARRIER=70
+...
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=cv1,cv2,cv3,opes.bias
-\endplumedfile
-
-The umbrellas file might look like this:
-\auxfile{Umbrellas.data}
-#! FIELDS time cv1 cv2 cv3 sigma_cv1 sigma_cv2 sigma_cv3
-1  1.17958  2.93697  1.06109  0.19707  0.28275  0.32427
-2  2.04023  2.69714  1.84770  0.22307  0.25933  0.31783
-3  1.99693  1.10299  1.13351  0.19517  0.26260  0.37427
-4  1.15954  1.37447  2.25975  0.20096  0.27168  0.33353
-5  1.10126  2.45936  2.40260  0.19747  0.24215  0.35523
-\endauxfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -100,6 +98,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("LOWER_HALF_ONLY",false,"use only the lower half of each umbrella potentials");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):

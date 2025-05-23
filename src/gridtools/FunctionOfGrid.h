@@ -62,8 +62,10 @@ template <class T>
 void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   ActionWithGrid::registerKeywords(keys);
   std::string name = keys.getDisplayName();
-  std::size_t und=name.find("_GRID");
-  keys.setDisplayName( name.substr(0,und) );
+  if( name!="INTEGRATE_GRID" ) {
+    std::size_t und=name.find("_GRID");
+    keys.setDisplayName( name.substr(0,und) );
+  }
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc;
   tfunc.registerKeywords( keys );
@@ -94,12 +96,12 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
     error("first input to this action must be a grid");
   }
   // Get the shape of the input grid
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
     if( getPntrToArgument(i)->getRank()==0 ) {
       continue;
     }
-    std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
+    std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
     if( s.size()!=shape.size() ) {
       error("mismatch between dimensionalities of input grids");
     }
@@ -138,12 +140,12 @@ void FunctionOfGrid<T>::setupOnFirstStep( const bool incalc ) {
   const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
   unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
   if( mygrid.getGridType()=="flat" ) {
-    std::vector<unsigned> shape( getGridCoordinatesObject().getNbin(true) );
+    std::vector<std::size_t> shape( getGridCoordinatesObject().getNbin(true) );
     for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
       if( getPntrToArgument(i)->getRank()==0 ) {
         continue;
       }
-      std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
+      std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
       for(unsigned j=0; j<shape.size(); ++j) {
         if( shape[j]!=s[j] ) {
           error("mismatch between sizes of input grids");
@@ -217,28 +219,27 @@ void FunctionOfGrid<T>::performTask( const unsigned& current, MultiValue& myvals
   myfunc.calc( this, args, vals, derivatives );
   unsigned np = myvals.getTaskIndex();
   // And set the values and derivatives
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.addValue( ostrn, vals[0] );
+  myvals.addValue( 0, vals[0] );
   if( !myfunc.zeroRank() ) {
     // Add the derivatives for a grid
     for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
       // We store all the derivatives of all the input values - i.e. the grid points these are used in apply
-      myvals.addDerivative( ostrn, getConstPntrToComponent(0)->getRank()+j-argstart, derivatives(0,j-argstart) );
+      myvals.addDerivative( 0, getConstPntrToComponent(0)->getRank()+j-argstart, derivatives(0,j-argstart) );
       // And now we calculate the derivatives of the value that is stored on the grid correctly so that we can interpolate functions
       if( getPntrToArgument(j)->getRank()!=0 ) {
         for(unsigned k=0; k<getPntrToArgument(j)->getRank(); ++k) {
-          myvals.addDerivative( ostrn, k, derivatives(0,j-argstart)*getPntrToArgument(j)->getGridDerivative( np, k ) );
+          myvals.addDerivative( 0, k, derivatives(0,j-argstart)*getPntrToArgument(j)->getGridDerivative( np, k ) );
         }
       }
     }
     unsigned nderivatives = getConstPntrToComponent(0)->getNumberOfGridDerivatives();
     for(unsigned j=0; j<nderivatives; ++j) {
-      myvals.updateIndex( ostrn, j );
+      myvals.updateIndex( 0, j );
     }
   } else if( !doNotCalculateDerivatives() ) {
     // These are the derivatives of the integral
-    myvals.addDerivative( ostrn, current, derivatives(0,0) );
-    myvals.updateIndex( ostrn, current );
+    myvals.addDerivative( 0, current, derivatives(0,0) );
+    myvals.updateIndex( 0, current );
   }
 }
 
@@ -248,11 +249,10 @@ void FunctionOfGrid<T>::gatherStoredValue( const unsigned& valindex, const unsig
   if( getConstPntrToComponent(0)->getRank()>0 && getConstPntrToComponent(0)->hasDerivatives() ) {
     plumed_dbg_assert( getNumberOfComponents()==1 && valindex==0 );
     unsigned nder = getConstPntrToComponent(0)->getNumberOfGridDerivatives();
-    unsigned ostr = getConstPntrToComponent(0)->getPositionInStream();
     unsigned kp = bufstart + code*(1+nder);
-    buffer[kp] += myvals.get( ostr );
+    buffer[kp] += myvals.get( 0 );
     for(unsigned i=0; i<nder; ++i) {
-      buffer[kp + 1 + i] += myvals.getDerivative( ostr, i );
+      buffer[kp + 1 + i] += myvals.getDerivative( 0, i );
     }
   } else {
     ActionWithVector::gatherStoredValue( valindex, code, myvals, bufstart, buffer );

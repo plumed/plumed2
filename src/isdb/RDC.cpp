@@ -37,21 +37,21 @@ namespace isdb {
 /*
 Calculates the (Residual) Dipolar Coupling between two atoms.
 
-The Dipolar Coupling between two nuclei depends on the \f$\theta\f$ angle between
+The Dipolar Coupling between two nuclei depends on the $\theta$ angle between
 the inter-nuclear vector and the external magnetic field.
 
-\f[
+$$
 D=D_{max}0.5(3\cos^2(\theta)-1)
-\f]
+$$
 
 where
 
-\f[
+$$
 D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
-\f]
+$$
 
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$.
-\f$\mu\f$ is the magnetic constant and h is the Planck constant.
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio $\gamma$.
+$\mu$ is the magnetic constant and h is the Planck constant.
 
 Common Gyromagnetic Ratios (C.G.S)
 - H(1) 26.7513
@@ -72,23 +72,24 @@ the above definition.
 
 In a standard MD simulation the average over time of the DC should then be zero. If one wants to model the meaning of a set of measured RDCs it is possible to try to solve the following problem: "what is the distribution of structures and orientations that reproduce the measured RDCs".
 
-This collective variable can then be use to break the rotational symmetry of a simulation by imposing that the average of the DCs over the conformational ensemble must be equal to the measured RDCs \cite Camilloni:2015ka . Since measured RDCs are also a function of the fraction of aligned molecules in the sample it is better to compare them modulo a constant or looking at the correlation.
+This collective variable can then be use to break the rotational symmetry of a simulation by imposing that the average of the DCs over the conformational ensemble must be equal to the measured RDCs as discussed in the first of the papers cited below. Since measured RDCs are also a function of the fraction of aligned molecules in the sample it is better to compare them modulo a constant or looking at the correlation.
 
 Alternatively if the molecule is rigid it is possible to use the experimental data to calculate the alignment tensor and the use that to back calculate the RDCs, this is what is usually call the Single Value Decomposition approach. In this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be performed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+Replica-Averaged simulations can be performed using RDCs, [ENSEMBLE](ENSEMBLE.md), [STATS](STATS.md) and [RESTRAINT](RESTRAINT.md).
+[METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
-Additional material and examples can be also found in the tutorial \ref isdb-1
+Additional material and examples can be also found in the tutorials
 
-\par Examples
+## Examples
+
 In the following example five N-H RDCs are defined and averaged over multiple replicas,
 their correlation is then calculated with respect to a set of experimental data and restrained.
 In addition, and only for analysis purposes, the same RDCs each single conformation are calculated
 using a Single Value Decomposition algorithm, then averaged and again compared with the experimental data.
 
-\plumedfile
+```plumed
 #SETTINGS NREPLICAS=2
 RDC ...
 GYROM=-72.5388
@@ -123,7 +124,7 @@ esvd: ENSEMBLE ARG=(svd\.rdc-.*)
 st_svd: STATS ARG=esvd.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 
 PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -132,24 +133,24 @@ PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 /*
 Calculates the Pseudo-contact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
 
-The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
- and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf . While in principle the averaging
+The PCS of an atomic nucleus depends on the $\theta$ angle between the vector from the spin-label to the nucleus
+ and the external magnetic field and the module of the vector itself the second of the two papers cited below. While in principle the averaging
 resulting from the tumbling should remove the pseudo-contact shift, in presence of the NMR magnetic field the magnetically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable values for the PCS and RDC.
 
 PCS values can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be performed using PCS values, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
-Metainference simulations can be performed with this CV and \ref METAINFERENCE .
+Replica-Averaged simulations can be performed using PCS values, [ENSEMBLE](ENSEMBLE.md), [STATS](STATS.md) and [RESTRAINT](RESTRAINT.md) .
+Metainference simulations can be performed with this CV and [METAINFERENCE](METAINFERENCE.md).
 
-\par Examples
+## Examples
 
 In the following example five PCS values are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same PCS values are calculated using a Single Value
 Decomposition algorithm.
 
-\plumedfile
+```plumed
 PCS ...
 ATOMS1=20,21
 ATOMS2=20,38
@@ -166,7 +167,7 @@ st: STATS ARG=enh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 pcse: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 
 PRINT ARG=st.corr,pcse.bias FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -238,6 +239,8 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("Sxy","SVD","scalar","Tensor component");
   keys.addOutputComponent("Sxz","SVD","scalar","Tensor component");
   keys.addOutputComponent("Syz","SVD","scalar","Tensor component");
+  keys.addDOI("10.1021/jp5021824");
+  keys.addDOI("10.1021/acs.biochem.5b01138");
 }
 
 RDC::RDC(const ActionOptions&ao):

@@ -1,0 +1,4 @@
+name: piv
+authors: S. Pipolo and F. Pietrucci 
+description: an implementation of the permutation invariant collective variable
+dois: ["10.1063/1.4818005", "10.1103/PhysRevLett.119.245701"]

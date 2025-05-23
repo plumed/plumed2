@@ -12,7 +12,7 @@ dd: VSTACK ARG=norm_q1_rm-n1,norm_q1_im-n1,norm_q1_rm-0,norm_q1_im-0,norm_q1_rm-
 ddT: TRANSPOSE ARG=dd
 
 con: CONTACT_MATRIX GROUP=q1 SWITCH={RATIONAL R_0=4}
-dot: MATRIX_PRODUCT ARG=dd,ddT
+dot: MATRIX_PRODUCT ARG=dd,ddT MASK=con
 
 mm: CUSTOM ARG=con,dot FUNC=x*y PERIODIC=NO
 

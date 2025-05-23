@@ -43,7 +43,7 @@ namespace isdb {
 /*
 Calculate the fit of a structure or ensemble of structures with a cryo-EM density map.
 
-This action implements the multi-scale Bayesian approach to cryo-EM data fitting introduced in  Ref. \cite Hanot113951 .
+This action implements the multi-scale Bayesian approach to cryo-EM data fitting introduced in the first paper cited below.
 This method allows efficient and accurate structural modeling of cryo-electron microscopy density maps at multiple scales, from coarse-grained to atomistic resolution, by addressing the presence of random and systematic errors in the data, sample heterogeneity, data correlation, and noise correlation.
 
 The experimental density map is fit by a Gaussian Mixture Model (GMM), which is provided as an external file specified by the keyword
@@ -52,33 +52,34 @@ this operation. In the meantime, the user can request a stand-alone version of t
 
 When run in single-replica mode, this action allows atomistic, flexible refinement of an individual structure into a density map.
 Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an ensemble of structures using
-the Metainference approach \cite Bonomi:2016ip .
+the Metainference approach that is discussed in the second paper cited below.
 
-\warning
-To use \ref EMMI, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
+> [! warning]
+> To use [EMMI](EMMI.md), the user should always add a [MOLINFO](MOLINFO.md) line and specify a pdb file of the system.
 
-\note
-To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
-In this case, the user should add the NO_AVER flag to the input line. To use a replica-based enhanced sampling scheme such as
-Parallel-Bias Metadynamics (\ref PBMETAD), one should use the REWEIGHT flag and pass the Metadynamics bias using the ARG keyword.
+> [! note]
+> To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
+> In this case, the user should add the NO_AVER flag to the input line. To use a replica-based enhanced sampling scheme such as
+> Parallel-Bias Metadynamics ([PBMETAD](PBMETAD.md)), one should use the REWEIGHT flag and pass the Metadynamics bias using the ARG keyword.
 
-\note
-\ref EMMI can be used in combination with periodic and non-periodic systems. In the latter case, one should
-add the NOPBC flag to the input line
+> [! nota]
+> [EMMI](EMMI.md) can be used in combination with periodic and non-periodic systems. In the latter case, one should
+> add the NOPBC flag to the input line
 
-\par Examples
+## Examples
 
 In this example, we perform a single-structure refinement based on an experimental cryo-EM map. The map is fit with a GMM, whose
 parameters are listed in the file GMM_fit.dat. This file contains one line per GMM component in the following format:
 
-\plumedfile
+````
 #! FIELDS Id Weight Mean_0 Mean_1 Mean_2 Cov_00 Cov_01 Cov_02 Cov_11 Cov_12 Cov_22 Beta
      0  2.9993805e+01   6.54628 10.37820 -0.92988  2.078920e-02 1.216254e-03 5.990827e-04 2.556246e-02 8.411835e-03 2.486254e-02  1
      1  2.3468312e+01   6.56095 10.34790 -0.87808  1.879859e-02 6.636049e-03 3.682865e-04 3.194490e-02 1.750524e-03 3.017100e-02  1
      ...
-\endplumedfile
+````
 
 To accelerate the computation of the Bayesian score, one can:
+
 - use neighbor lists, specified by the keywords NL_CUTOFF and NL_STRIDE;
 - calculate the restraint every other step (or more).
 
@@ -87,7 +88,7 @@ using a GROMACS index file.
 
 The input file looks as follows:
 
-\plumedfile
+```plumed
 # include pdb info
 MOLINFO STRUCTURE=prot.pdb
 
@@ -101,8 +102,7 @@ gmm: EMMI NOPBC SIGMA_MIN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=
 emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
 
 PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
-\endplumedfile
-
+```
 
 */
 //+ENDPLUMEDOC
@@ -361,7 +361,7 @@ void EMMI::apply() {
   }
   if( wasforced ) {
     unsigned ind=0;
-    addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
+    addForcesOnArguments( 0, forcesToApply, ind );
     if( getNumberOfAtoms()>0 ) {
       setForcesOnAtoms( forcesToApply, ind );
     }
@@ -444,6 +444,8 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("biasDer",      "REWEIGHT","scalar",     "derivatives with respect to the bias");
   keys.addOutputComponent("sigma",      "NOISETYPE","scalar",     "uncertainty in the forward models and experiment");
   keys.addOutputComponent("neff",         "default","scalar",      "effective number of replicas");
+  keys.addDOI("10.1101/113951");
+  keys.addDOI("10.1126/sciadv.1501177");
 }
 
 EMMI::EMMI(const ActionOptions&ao):

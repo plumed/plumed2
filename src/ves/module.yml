@@ -1,0 +1,10 @@
+name: ves
+authors: Omar Valsson, Michele Invernizzi, Pablo Piaggi and Benjamin Pampel
+description: implementations of methods based on Variationally Enhanced Sampling (VES)
+dois: ["10.1103/PhysRevLett.113.090601"]
+tags:
+  VES_BIAS: biases for variationally enhanced sampling
+  VES_BASISF: one-dimensional basis functions for variationally enhanced sampling
+  VES_TARGETDIST: target distributions for variationally enhanced sampling
+  VES_OPTIMIZER: optimizers for variationally enhanced sampling
+  VES_UTILS: utilities for variationally enhanced sampling

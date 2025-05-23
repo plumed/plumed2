@@ -29,47 +29,49 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC OPES_BIAS OPES_EXPANDED
+//+PLUMEDOC BIAS OPES_EXPANDED
 /*
 On-the-fly probability enhanced sampling with expanded ensembles for the target distribution.
 
-This method is similar to the OPES method (\ref OPES "OPES") with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
+This method is similar to the [OPES method](module_opes.md) with expanded ensembles target distribution (replica-exchange-like) that is discussed in the paper cited below.
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
-Such ensembles can be sampled via methods like replica exchange, or this \ref OPES_EXPANDED bias action.
+Such ensembles can be sampled via methods like replica exchange, or this [OPES_EXPANDED](OPES_EXPANDED.md) bias action.
 A typical example is a multicanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
-In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs), \f$\Delta u_\lambda(\mathbf{x})\f$.
-The bias at step \f$n\f$ is
-\f[
-  V_n(\mathbf{x})=-\frac{1}{\beta}\log \left(\frac{1}{N_{\{\lambda\}}}\sum_\lambda e^{-\Delta u_\lambda(\mathbf{x})+\beta\Delta F_n(\lambda)}\right)\, .
-\f]
-See Ref.\cite Invernizzi2020unified for more details on the method.
+In oreder to define an expanded target ensemble we use the EXPANSION_CV (ECVs) that are discussed on the [module page](module_opes.md), $\Delta u_\lambda(\mathbf{x})$.
+The bias at step $n$ is
 
-Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
-The DELTAFS file also contains an estimate of \f$c(t)=\frac{1}{\beta} \log \langle e^{\beta V}\rangle\f$.
-Similarly to \ref OPES_METAD, it is printed only for reference, since \f$c(t)\f$ reaches a fixed value as the bias converges, and should NOT be used for reweighting.
+$$
+  V_n(\mathbf{x})=-\frac{1}{\beta}\log \left(\frac{1}{N_{\{\lambda\}}}\sum_\lambda e^{-\Delta u_\lambda(\mathbf{x})+\beta\Delta F_n(\lambda)}\right)\, .
+$$
+
+See the paper cited below for more details on the method.
+
+Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by $\beta$ to be dimensionless as in the paper cited below.
+The DELTAFS file also contains an estimate of $c(t)=\frac{1}{\beta} \log \langle e^{\beta V}\rangle$.
+Similarly to [OPES_METAD](OPES_METAD.md), it is printed only for reference, since $c(t)$ reaches a fixed value as the bias converges, and should NOT be used for reweighting.
 Its value is also needed for restarting a simulation.
 
-You can store the instantaneous \f$\Delta F_n(\lambda)\f$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
+You can store the instantaneous $\Delta F_n(\lambda)$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
 Restart can be done either from a DELTAFS file or from a STATE_RFILE, it is equivalent.
 
-Contrary to \ref OPES_METAD, \ref OPES_EXPANDED does not use kernel density estimation.
+Contrary to [OPES_METAD](OPES_METAD.md), OPES_EXPANDED does not use kernel density estimation.
 
-\par Examples
+## Examples
 
-\plumedfile
+```plumed
 # simulate multiple temperatures, as in parallel tempering
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene TEMP_MAX=1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
-\endplumedfile
+```
 
 You can easily combine multiple ECVs.
-The \ref OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
+The OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
 
-\plumedfile
+```plumed
 # simulate multiple temperatures while biasing a CV
 ene: ENERGY
 dst: DISTANCE ATOMS=1,2
@@ -79,12 +81,12 @@ ecv2: ECV_UMBRELLAS_LINE ARG=dst CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5
 opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500 OBSERVATION_STEPS=1
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
-\endplumedfile
+```
 
 If an ECV is based on more than one CV you must provide all the output component, in the proper order.
-You can use \ref Regex for that, like in the following example.
+You can use the regular expressions discussed [here](specifying_arguments.md) for that, like in the following example.
 
-\plumedfile
+```plumed
 # simulate multiple temperatures and pressures while biasing a two-CVs linear path
 ene: ENERGY
 vol: VOLUME
@@ -105,8 +107,7 @@ ecv_umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 CV_MIN=0.1,0.1 CV_MAX=1.5,1.5 S
 opes: OPES_EXPANDED ARG=(ecv_.*) PACE=500 WALKERS_MPI PRINT_STRIDE=1000
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
-\endplumedfile
-
+```
 
 */
 //+ENDPLUMEDOC
@@ -201,6 +202,7 @@ void OPESexpanded::registerKeywords(Keywords& keys) {
 
 //output components
   keys.addOutputComponent("work","CALC_WORK","scalar","total accumulated work done by the bias");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)

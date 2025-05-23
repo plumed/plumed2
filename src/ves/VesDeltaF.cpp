@@ -35,82 +35,68 @@ namespace ves {
 /*
 Implementation of VES Delta F method
 
-Implementation of VES\f$\Delta F\f$ method \cite Invernizzi2019vesdeltaf (step two only).
+Implementation of VES$\Delta F$ method discussed in the paper cited below (step two only).
 
-\warning
-  Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
+> [! warning]
+> Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
 
 First you should create some estimate of the local free energy basins of your system,
-using e.g. multiple \ref METAD short runs, and combining them with the \ref sum_hills utility.
+using e.g. multiple [METAD](METAD.md) short runs, and combining them with the [sum_hills](sum_hills.md) utility.
 Once you have them, you can use this bias Action to perform the VES optimization part of the method.
 
-These \f$N+1\f$ local basins are used to model the global free energy.
-In particular, given the conditional probabilities \f$P(\mathbf{s}|i)\propto e^{-\beta F_i(\mathbf{s})}\f$
-and the probabilities of being in a given basin \f$P_i\f$, we can write:
-\f[
+These $N+1$ local basins are used to model the global free energy.
+In particular, given the conditional probabilities $P(\mathbf{s}|i)\propto e^{-\beta F_i(\mathbf{s})}$
+and the probabilities of being in a given basin $P_i$, we can write:
+
+$$
   e^{-\beta F(\mathbf{s})}\propto P(\mathbf{s})=\sum_{i=0}^N P(\mathbf{s}|i)P_i \, .
-\f]
-We use this free energy model and the chosen bias factor \f$\gamma\f$ to build the bias potential:
-\f$V(\mathbf{s})=-(1-1/\gamma)F(\mathbf{s})\f$.
+$$
+
+We use this free energy model and the chosen bias factor $\gamma$ to build the bias potential:
+$V(\mathbf{s})=-(1-1/\gamma)F(\mathbf{s})$.
 Or, more explicitly:
-\f[
+$$
   V(\mathbf{s})=(1-1/\gamma)\frac{1}{\beta}\log\left[e^{-\beta F_0(\mathbf{s})}
   +\sum_{i=1}^{N} e^{-\beta F_i(\mathbf{s})} e^{-\beta \alpha_i}\right] \, ,
-\f]
-where the parameters \f$\boldsymbol{\alpha}\f$ are the \f$N\f$ free energy differences (see below) from the \f$F_0\f$ basin.
+$$
+where the parameters $\boldsymbol{\alpha}$ are the $N$ free energy differences (see below) from the $F_0$ basin.
 
-By default the \f$F_i(\mathbf{s})\f$ are shifted so that \f$\min[F_i(\mathbf{s})]=0\f$ for all \f$i=\{0,...,N\}\f$.
-In this case the optimization parameters \f$\alpha_i\f$ are the difference in height between the minima of the basins.
+By default the $F_i(\mathbf{s})$ are shifted so that $\min[F_i(\mathbf{s})]=0$ for all $i=\{0,...,N\}$.
+In this case the optimization parameters $\alpha_i$ are the difference in height between the minima of the basins.
 Using the keyword `NORMALIZE`, you can also decide to normalize the local free energies so that
-\f$\int d\mathbf{s}\, e^{-\beta F_i(\mathbf{s})}=1\f$.
+$\int d\mathbf{s}\, e^{-\beta F_i(\mathbf{s})}=1$.
 In this case the parameters will represent not the difference in height (which depends on the chosen CVs),
-but the actual free energy difference, \f$\alpha_i=\Delta F_i\f$.
+but the actual free energy difference, $\alpha_i=\Delta F_i$.
 
-However, as discussed in Ref. \cite Invernizzi2019vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
+However, as discussed in the paper cited below, a better estimate of $\Delta F_i$ should be obtained through the reweighting procedure.
 
-\par Examples
+## Examples
 
 The following performs the optimization of the free energy difference between two metastable basins:
 
-\plumedfile
-cv: DISTANCE ATOMS=1,2
+```plumed
+#SETTINGS INPUTFILES=regtest/ves/rt-VesDeltaF/fesA.data,regtest/ves/rt-VesDeltaF/fesB.data
+
+cv: TORSION ATOMS=7,9,15,17
+
 ves: VES_DELTA_F ...
   ARG=cv
   TEMP=300
-  FILE_F0=fesA.data
-  FILE_F1=fesB.data
+  FILE_F0=regtest/ves/rt-VesDeltaF/fesA.data
+  FILE_F1=regtest/ves/rt-VesDeltaF/fesB.data
   BIASFACTOR=10.0
   M_STEP=0.1
   AV_STRIDE=500
   PRINT_STRIDE=100
 ...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
-\endplumedfile
+```
 
-The local FES files can be obtained as described in Sec. 4.2 of Ref. \cite Invernizzi2019vesdeltaf, i.e. for example:
-- run 4 independent metad runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. \ref COMMITTOR)
-- \verbatim cat HILLS* > all_HILLS \endverbatim
-- \verbatim plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100 \endverbatim
-- \verbatim awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
-
-The header of both FES files must be identical, and should be similar to the following:
-
-\auxfile{fesA.data}
-#! FIELDS cv file.free der_cv
-#! SET min_cv 0
-#! SET max_cv 1
-#! SET nbins_cv  100
-#! SET periodic_cv false
-0 0 0
-\endauxfile
-\auxfile{fesB.data}
-#! FIELDS cv file.free der_cv
-#! SET min_cv 0
-#! SET max_cv 1
-#! SET nbins_cv  100
-#! SET periodic_cv false
-0 0 0
-\endauxfile
+The local FES files can be obtained as described in Sec. 4.2 of the paper cited below, i.e. for example:
+- run 4 independent metad runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. [COMMITTOR](COMMITTOR.md))
+- `cat HILLS* > all_HILLS`
+- `plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100`
+- `awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data`
 
 */
 //+ENDPLUMEDOC
@@ -211,6 +197,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 //output components
   keys.addOutputComponent("rct","default","scalar","the reweighting factor c(t)");
   keys.addOutputComponent("work","default","scalar","the work done by the bias in one AV_STRIDE");
+  keys.addDOI("10.1021/acs.jctc.9b00032");
 }
 
 VesDeltaF::VesDeltaF(const ActionOptions&ao)

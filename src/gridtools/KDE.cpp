@@ -32,8 +32,82 @@
 /*
 Create a histogram from the input scalar/vector/matrix using KDE
 
-\par Examples
+This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation]().
+The input arguments must all have the same rank and size but you can use a scalar, vector or matrix in input.  The distribution
+of this quantity on a grid is then computed using kernel density estimation.
 
+The following example demonstrates how this action can be used with a scalar as input:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+This input outputs a different file on every time step. These files contain a function stored on a grid.  The function output in this case
+consists of a single Gaussian with $\sigma=0.2$ that is centered on the instantaneous value of the distance between atoms 1 and 2.  Obviously,
+you are unlikely to use an input like the one above. The more usual thing to do would be to accumulate the histogram over the course of a
+few trajectory frames using the [ACCUMULATE](ACCUMULATE.md) command as has been done in the input below, which estimates a histogram as a function
+of two collective variables:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1,d2 GRID_MIN=0.0,0.0 GRID_MAX=1.0,1.0 GRID_BIN=100,100 BANDWIDTH=0.2,0.2
+histo: ACCUMULATE ARG=kde STRIDE=1
+DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
+```
+
+Notice, that you can also achieve something similar by using the [HISTOGRAM](HISTOGRAM.md) shortcut.
+
+## Working with vectors and scalars
+
+If the input to your KDE action is a set of scalars it appears odd to separate the process of computing the KDE from the process of accumulating the histogram. However, if
+you are using vectors as in the example below, this division can be helpful.
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+```
+
+In the papea cited in the bibliography below, the [KL_ENTROPY](KL_ENTROPY.md) between the instantaneous distribution of CVs and a reference distribution was introduced
+as a collective variable. As is detailed in the documentation for that action, the ability to calculate the instaneous histogram from an input vector is essential to
+reproducing these calculations.
+
+Notice that you can also use a one or multiple matrices in the input for a KDE object.  The example below uses the angles between the z axis and set of bonds aroud two
+atoms:
+
+```plumed
+d1: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3-10 COMPONENTS
+phi: CUSTOM ARG=d1.z,d1.w FUNC=acos(x/y) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi GRID_BIN=200 BANDWIDTH=0.1
+```
+
+## Using different weights
+
+In all the inputs above the kernels that are added to the grid on each step are Gaussians with that are normalised so that their integral over all space is one. If you want your
+Gaussians to have a particular height you can use the HEIGHT keyword as illustrated below:
+
+```plumed
+d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
+phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi HEIGHTS=d1.w GRID_BIN=200 BANDWIDTH=0.1
+```
+
+As indicated above, the HEIGHTS keyword should be passed a Value that has the same rank and size as the arguments that are passed using the ARG keyword. Each of the Gaussian kernels
+that are added to the grid in this case have a value equal to the weight at the maximum of the function.
+
+Notice that you can also use the VOLUMES keyword in a similar way as shown below:
+
+```plumed
+d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
+phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi VOLUMES=d1.w GRID_BIN=200 BANDWIDTH=0.1
+```
+
+Now, however, the integral of the Gaussians over all space are equal to the elements of d1.w.
 
 */
 //+ENDPLUMEDOC
@@ -42,8 +116,23 @@ Create a histogram from the input scalar/vector/matrix using KDE
 /*
 Create a histogram from the input scalar/vector/matrix using SPHERICAL_KDE
 
-\par Examples
+This action operates similarly to [KDE](KDE.md) but it is designed to be used for investigating [directional statistics]().
+It is particularly useful if you are looking at the distribution of bond vectors as illustrated in the input below:
 
+```plumed
+# Calculate all the bond vectors
+d1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1} COMPONENTS
+# Normalise the bond vectors
+mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+d1x: CUSTOM ARG=d1.x,mag FUNC=x/y PERIODIC=NO
+d1y: CUSTOM ARG=d1.y,mag FUNC=x/y PERIODIC=NO
+d1z: CUSTOM ARG=d1.z,mag FUNC=x/y PERIODIC=NO
+# And construct the KDE
+kde: SPHERICAL_KDE ARG=d1x,d1y,d1z HEIGHTS=d1.w CONCENTRATION=100 GRID_BIN=144
+```
+
+Each bond vector here contributes a [Fisher von-Mises kernel](https://en.wikipedia.org/wiki/Von_Mises–Fisher_distribution) to the spherical grid.  This spherical grid is constructed
+using a [Fibonnacci sphere algorithm](https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere) so the number of specified using the GRID_BIN keyword must be a Fibonacci number.
 
 */
 //+ENDPLUMEDOC
@@ -64,7 +153,8 @@ private:
   std::vector<double> gspacing;
   unsigned num_neigh, bwargno;
   std::vector<Value> grid_diff_value;
-  std::vector<unsigned> nbin, nneigh, neighbors;
+  std::vector<std::size_t> nbin;
+  std::vector<unsigned> nneigh, neighbors;
   unsigned numberOfKernels, nbins;
   SwitchingFunction switchingFunction;
   double von_misses_concentration, von_misses_norm;
@@ -82,12 +172,12 @@ public:
   void setupOnFirstStep( const bool incalc ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
-  void updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const override ;
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(KDE,"KDE")
@@ -113,6 +203,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   // Keywords for spherical KDE
   keys.add("compulsory","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions (only required for SPHERICAL_KDE)");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("grid","a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
 }
 
@@ -121,7 +212,7 @@ KDE::KDE(const ActionOptions&ao):
   ActionWithGrid(ao),
   hasheight(false),
   fixed_width(false) {
-  std::vector<unsigned> shape( getNumberOfArguments() );
+  std::vector<std::size_t> shape( getNumberOfArguments() );
   center.resize( getNumberOfArguments() );
   numberOfKernels=getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=1; i<shape.size(); ++i) {
@@ -312,12 +403,7 @@ KDE::KDE(const ActionOptions&ao):
   addValueWithDerivatives( shape );
   setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
-  // Make sure we store all the arguments
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    getPntrToArgument(i)->buildDataStore();
-  }
   // Check for task reduction
-  updateTaskListReductionStatus();
   setupOnFirstStep( false );
 }
 
@@ -360,7 +446,7 @@ void KDE::setupOnFirstStep( const bool incalc ) {
   }
   // And setup the grid object
   gridobject.setBounds( gmin, gmax, nbin, gspacing );
-  std::vector<unsigned> shape( gridobject.getNbin(true) );
+  std::vector<std::size_t> shape( gridobject.getNbin(true) );
   getPntrToComponent(0)->setShape( shape );
   bool hasauto=false;
   for(unsigned i=0; i<gmin.size(); ++i) {
@@ -497,6 +583,22 @@ void KDE::getNumberOfTasks( unsigned& ntasks ) {
   return;
 }
 
+int KDE::checkTaskIsActive( const unsigned& itask ) const {
+  if( numberOfKernels>1 ) {
+    if( hasheight && getPntrToArgument(gridobject.getDimension())->getRank()>0
+        && fabs(getPntrToArgument(gridobject.getDimension())->get(itask))<epsilon ) {
+      return -1;
+    }
+    return 1;
+  }
+  for(unsigned i=0; i<num_neigh; ++i) {
+    if( itask==neighbors[i] ) {
+      return 1;
+    }
+  }
+  return -1;
+}
+
 int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {
   if( numberOfKernels>1 ) {
     if( hasheight && getPntrToArgument(gridobject.getDimension())->getRank()>0
@@ -517,7 +619,6 @@ void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( numberOfKernels==1 ) {
     double newval;
     std::vector<double> args( gridobject.getDimension() ), der( gridobject.getDimension() );
-    unsigned valout = getConstPntrToComponent(0)->getPositionInStream();
     gridobject.getGridPointCoordinates( current, args );
     if( getName()=="KDE" ) {
       if( kerneltype=="DISCRETE" ) {
@@ -563,10 +664,10 @@ void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
         der[i] = von_misses_concentration*newval*args[i];
       }
     }
-    myvals.setValue( valout, newval );
+    myvals.setValue( 0, newval );
     for(unsigned i=0; i<der.size(); ++i) {
-      myvals.addDerivative( valout, i, der[i] );
-      myvals.updateIndex( valout, i );
+      myvals.addDerivative( 0, i, der[i] );
+      myvals.updateIndex( 0, i );
     }
   }
 }
@@ -661,10 +762,9 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
   plumed_dbg_assert( valindex==0 );
   if( numberOfKernels==1 ) {
     unsigned istart = bufstart + (1+gridobject.getDimension())*code;
-    unsigned valout = getConstPntrToComponent(0)->getPositionInStream();
-    buffer[istart] += myvals.get( valout );
+    buffer[istart] += myvals.get( 0 );
     for(unsigned i=0; i<gridobject.getDimension(); ++i) {
-      buffer[istart+1+i] += myvals.getDerivative( valout, i );
+      buffer[istart+1+i] += myvals.getDerivative( 0, i );
     }
     return;
   }
@@ -728,25 +828,12 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
   }
 }
 
-void KDE::updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const {
-  if( !myval->forcesWereAdded() ) {
-    return ;
-  }
+void KDE::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( numberOfKernels==1 ) {
     plumed_error();
+    return;
   }
-
-  int flag=1;
-  for(unsigned i=0; i<numberOfKernels; ++i) {
-    if( checkTaskStatus( i, flag ) ) {
-      force_tasks.push_back(i);
-    }
-  }
-}
-
-void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( numberOfKernels==1 ) {
-    plumed_error();
+  if( !checkComponentsForForce() ) {
     return;
   }
   double height;
@@ -803,7 +890,7 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
         for(unsigned j=0; j<gpoint.size(); ++j) {
           dot += args[j]*gpoint[j];
         }
-        double fforce = myval->getForce( neighbors[i] );
+        double fforce = getConstPntrToComponent(0)->getForce( neighbors[i] );
         double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
         if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) {
           forces[ hforce_start ] += newval*fforce / height;

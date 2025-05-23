@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithArguments.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/OFile.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "FindContour.h"
 
 namespace PLMD {
@@ -33,15 +33,47 @@ namespace contour {
 /*
 Print the contour
 
-\par Examples
+This is a special action that is used to print the output from a [FIND_CONTOUR](FIND_CONTOUR.md) action.
+The following example illustrates how this method is used to output a xyz file that contains the set of
+points that [FIND_CONTOUR](FIND_CONTOUR.md) found on the isocontour of interest.
+
+```plumed
+UNITS NATURAL
+
+# This calculates the value of a set of symmetry functions for the atoms of interest
+fcc: FCCUBIC ...
+  SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619
+...
+
+# Transform the symmetry functions with a switching function
+tfcc: LESS_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+
+# Now compute the center of the solid like region
+center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
+
+# This determines the positions of the atoms of interest relative to the center of the solid region
+dens_dist: DISTANCES ORIGIN=center ATOMS=1-96000 COMPONENTS
+# This computes the numerator in the expression above for the phase field
+dens_numer: KDE VOLUMES=tfcc ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+# This computes the denominator
+dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+# This computes the final phase field
+dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
+
+# Find the isocontour
+cont: FIND_CONTOUR ARG=dens CONTOUR=0.5
+# Use the special method for outputting the contour to a file
+DUMPCONTOUR ARG=cont FILE=surface.xyz
+```
 
 */
 //+ENDPLUMEDOC
 
 class DumpContour :
-  public ActionWithArguments,
   public ActionPilot {
 private:
+  FindContour* fc;
   std::string fmt, filename;
 public:
   static void registerKeywords( Keywords& keys );
@@ -57,8 +89,7 @@ PLUMED_REGISTER_ACTION(DumpContour,"DUMPCONTOUR")
 void DumpContour::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  keys.addInputKeyword("compulsory","ARG","vector","the labels of the values that should be output to the file");
+  keys.addInputKeyword("compulsory","ARG","vector","the labels of the FIND_CONTOUR action that you would like to output");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -66,23 +97,23 @@ void DumpContour::registerKeywords( Keywords& keys ) {
 
 DumpContour::DumpContour(const ActionOptions&ao):
   Action(ao),
-  ActionWithArguments(ao),
   ActionPilot(ao),
   fmt("%f") {
-  if( getNumberOfArguments()!=1 ) {
-    error("should only be one argument");
-  }
-  FindContour* fc=dynamic_cast<FindContour*>( getPntrToArgument(0)->getPntrToAction() );
+
+  std::string argname;
+  parse("ARG",argname);
+  fc=plumed.getActionSet().selectWithLabel<FindContour*>( argname );
   if( !fc ) {
-    error("can only use this action to print data from FIND_CONTOUR actions");
+    error("cannot find FIND_CONTOUR action with label " + argname );
   }
+  addDependency(fc);
 
   parse("FILE",filename);
   if(filename.length()==0) {
     error("name out output file was not specified");
   }
 
-  log.printf("  outputting contour with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
+  log.printf("  outputting contour with label %s to file named %s",argname.c_str(), filename.c_str() );
   parse("FMT",fmt);
   log.printf(" with format %s \n", fmt.c_str() );
   fmt = " " + fmt;
@@ -94,7 +125,6 @@ void DumpContour::update() {
   ofile.setBackupString("analysis");
   ofile.open( filename );
 
-  FindContour* fc=dynamic_cast<FindContour*>( getPntrToArgument(0)->getPntrToAction() );
   unsigned maxp = fc->active_cells.size(), ncomp = fc->getNumberOfComponents();
   unsigned ntasks = 0;
   for(unsigned i=0; i<maxp; ++i) {

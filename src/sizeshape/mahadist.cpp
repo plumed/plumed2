@@ -25,31 +25,37 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace sizeshape {
 
-//+PLUMEDOC sizeshapeMOD_COLVAR SIZESHAPE_POSITION_MAHA_DIST
+//+PLUMEDOC COLVAR SIZESHAPE_POSITION_MAHA_DIST
 /*
 Calculates Mahalanobis distance of a current configuration from a  given reference configurational distribution in size-and-shape space.
 
 The Mahalanobis distance is given as:
 
-\f[
+$$
 d(\mathbf{x}, \mathbf{\mu}, \mathbf{\Sigma}) = \sqrt{(\mathbf{x}-\mathbf{\mu})^T \mathbf{\Sigma}^{-1} (\mathbf{x}-\mathbf{\mu})}
-\f]
+$$
 
-Here \f$\mathbf{x}\f$ is the configuration at time t, \f$\mathbf{\mu}\f$ is the reference and \f$\mathbf{\Sigma}^{-1}\f$ is the \f$N \times N\f$ precision matrix.
+Here $\mathbf{x}$ is the configuration at time t, $\mathbf{\mu}$ is the reference and $\mathbf{\Sigma}^{-1}$ is the $N \times N$ precision matrix.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference \f$(\mathbf{\mu})\f$ and precision \f$(\mathbf{\Sigma}^{-1})\f$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference
+$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
 
-\par Examples
+## Examples
 In the following example, a group is defined with atom indices of selected atoms and then Mahalanobis distance is calculated with respect to the given reference and precision. Each file is a space separated list of 3N floating point numbers.
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/sizeshape/rt-mahadist/global_avg.txt
+#SETTINGS INPUTFILES=regtest/sizeshape/rt-mahadist/global_precision.txt
+
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
-#SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_avg.txt
-#SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_precision.txt
-d: SIZESHAPE_POSITION_MAHA_DIST REFERENCE=global_avg.txt PRECISION=global_precision.txt GROUP=ga_list
+d: SIZESHAPE_POSITION_MAHA_DIST ...
+   REFERENCE=regtest/sizeshape/rt-mahadist/global_avg.txt
+   PRECISION=regtest/sizeshape/rt-mahadist/global_precision.txt
+   GROUP=ga_list
+...
 PRINT ARG=d STRIDE=1 FILE=output FMT=%8.8f
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

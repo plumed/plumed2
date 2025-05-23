@@ -70,31 +70,19 @@ values outside the boundary of the external grid file are the same as at
 the boundary. This can be changed by using the ZERO_OUTSIDE keyword which
 will make values outside to be taken as zero.
 
-\par Examples
+## Examples
 
 Generally you only need to provide the the filename of the external grid
 file.
-\plumedfile
-td: TD_GRID FILE=input-grid.data
-\endplumedfile
 
-The input grid is then specified using the usual format employed by PLUMED an example of which
-is shown below:
+```plumed
+#SETTINGS INPUTFILES=regtest/ves/rt-td-grid/targetdist-input-grid-1d.data INPUTFILELINES=1-20
 
-\auxfile{input-grid.data}
-#! FIELDS d1 external.bias der_d1
-#! SET min_d1 1.14
-#! SET max_d1 1.32
-#! SET nbins_d1 6
-#! SET periodic_d1 false
-   1.1400   0.0031   0.1101
-   1.1700   0.0086   0.2842
-   1.2000   0.0222   0.6648
-   1.2300   0.0521   1.4068
-   1.2600   0.1120   2.6873
-   1.2900   0.2199   4.6183
-   1.3200   0.3948   7.1055
-\endauxfile
+td: TD_GRID FILE=regtest/ves/rt-td-grid/targetdist-input-grid-1d.data
+```
+
+The input grid is then specified using the usual format employed by PLUMED. You can see an example
+by clicking on the name of the file in the input above.
 
 */
 //+ENDPLUMEDOC

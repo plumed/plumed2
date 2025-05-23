@@ -41,29 +41,32 @@ Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
-This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis. See \cite ValssonPampel_Wavelets_2022 for full details.
+This basis set uses the Daubechies Wavelets that are discussed in the first article cited below to construct a complete and orthogonal basis. See the second paper cited below for full details.
 
-The basis set is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
-They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
+The basis set is based on using a pair of functions, the scaling function (or father wavelet) $\phi$ and the wavelet function (or mother wavelet) $\psi$.
+They are defined via the two-scale relations for scale $j$ and shift $k$:
 
-\f{align*}{
+$$
+\begin{aligned}
   \phi_k^j \left(x\right) = 2^{-j/2} \phi \left( 2^{-j} x - k\right)\\
   \psi_k^j \left(x\right) = 2^{-j/2} \psi \left( 2^{-j} x - k\right)
-\f}
+\end{aligned}
+$$
 
-The exact properties are set by choosing filter coefficients, e.g. choosing \f$h_k\f$ for the father wavelet:
+The exact properties are set by choosing filter coefficients, e.g. choosing $h_k$ for the father wavelet:
 
-\f[
+$$
   \phi\left(x\right) = \sqrt{2} \sum_k h_k\, \phi \left( 2 x - k\right)
-\f]
+$$
 
 The filter coefficients by Daubechies result in an orthonormal basis of all integer shifted functions:
-\f[
+
+$$
   \int \phi(x+i) \phi(x+j) \mathop{}\!\mathrm{d}x = \delta_{ij} \quad \text{for} \quad i,j \in \mathbb{Z}
-\f]
+$$
 
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
-The method of construction is close to the "Vector cascade algorithm" described in \cite strang_wavelets_1997 .
+The method of construction is close to the "Vector cascade algorithm" described in [this book](https://epubs.siam.org/doi/book/10.1137/1.9780961408879?mi=0&af=R&pubType=book&sortBy=EpubDate&target=browse).
 The needed filter coefficients of the scaling function are hardcoded, and were previously generated via a python script.
 Currently the "maximum phase" type (Db) and the "least asymmetric" (Sym) type are implemented.
 We recommend to use Symlets.
@@ -71,22 +74,23 @@ We recommend to use Symlets.
 As an example two adjacent basis functions of both Sym8 (ORDER=8, TYPE=SYMLET) and Db8 (ORDER=8, TYPE=DAUBECHIES) is shown in the figure.
 The full basis consists of shifted wavelets in the full specified interval.
 
-\image html ves_basisf-wavelets.png
+![A graph illustrating the wavelet basic functions](figures/ves_basisf-wavelets.png)
 
-
-\par Specify the wavelet type
+## Specify the wavelet type
 
 The TYPE keyword sets the type of Wavelet, at the moment "DAUBECHIES" and "SYMLETS" are available.
 The specified ORDER of the basis corresponds to the number of vanishing moments of the wavelet, i.e. if TYPE was specified as "DAUBECHIES" an order of 8 results in Db8 wavelets.
 
 
-\par Specify the number of functions
+## Specify the number of functions
 
-The resulting basis set consists of integer shifts of the wavelet with some scaling \f$j\f$,
-\f[
+The resulting basis set consists of integer shifts of the wavelet with some scaling $j$,
+
+$$
   V(x) = \sum_i \alpha_i * \phi_i (x) = \sum_i \alpha_i * \phi(\frac{x+i}{j})
-\f]
-with the variational parameters \f$ \alpha \f$.
+$$
+
+with the variational parameters $\alpha$.
 Additionally a constant basis function is included.
 
 There are two different ways to specify the number of used basis functions implemented.
@@ -103,7 +107,7 @@ If you do not specify anything, it is assumed that the range of the bias should 
 More precise, the basis functions are scaled to match the specified size of the CV space (MINIMUM and MAXIMUM keywords).
 This has so far been a good initial choice.
 
-If the wavelets are scaled to match the CV range exactly there would be \f$4*\text{ORDER} -3\f$ basis functions whose domain is at least partially in this region.
+If the wavelets are scaled to match the CV range exactly there would be $4*\text{ORDER} -3$ basis functions whose domain is at least partially in this region.
 This number is adjusted if FUNCTION_LENGTH or NUM_BF is specified.
 Additionally, some of the shifted basis functions will not have significant contributions because of their function values being close to zero over the full range of the bias.
 These 'tail wavelets' can be omitted by using the TAILS_THRESHOLD keyword.
@@ -120,27 +124,28 @@ Then the shift between the functions will be chosen such that the function at th
 If the FUNCTION_LENGTH keyword is used together with PERIODIC, a smaller length might be chosen to satisfy this requirement.
 
 
-\par Grid
+## Grid
 
 The values of the wavelet function are generated on a grid.
 Using the cascade algorithm results in doubling the grid values for each iteration.
-This means that the grid size will always be a power of two multiplied by the number of coefficients (\f$ 2*\text{ORDER} -1\f$) for the specified wavelet.
+This means that the grid size will always be a power of two multiplied by the number of coefficients ($ 2*\text{ORDER} -1$) for the specified wavelet.
 Using the MIN_GRID_SIZE keyword a lower bound for the number of grid points can be specified.
 By default at least 1,000 grid points are used.
 Function values in between grid points are calculated by linear interpolation.
 
-\par Optimization notes
+## Optimization notes
 
-To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the \ref VES_LINEAR_EXPANSION (set it to a small value, e.g. 1e-6)
+To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the [VES_LINEAR_EXPANSION](VES_LINEAR_EXPANSION.md) (set it to a small value, e.g. 1e-6)
 
-\par Examples
+## Examples
 
 
 First a very simple example that relies on the default values.
 We want to bias some CV in the range of 0 to 4.
 The wavelets will therefore be scaled to match that range.
-Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by \f$ -14*\frac{4}{15}, -13*\frac{4}{15}, \cdots , 0 , \cdots, 13*\frac{4}{15}, 14*\frac{4}{15} \f$.
-\plumedfile
+Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by $ -14*\frac{4}{15}, -13*\frac{4}{15}, \cdots , 0 , \cdots, 13*\frac{4}{15}, 14*\frac{4}{15}$.
+
+```plumed
 BF_WAVELETS ...
  ORDER=8
  TYPE=DAUBECHIES
@@ -148,11 +153,12 @@ BF_WAVELETS ...
  MAXIMUM=4.0
  LABEL=bf
 ... BF_WAVELETS
-\endplumedfile
+```
 
 
 By omitting wavelets with only insignificant parts, we can reduce the number of basis functions. Using a threshold of 0.01 will in this example remove the 8 leftmost shifts, which we can check in the logfile.
-\plumedfile
+
+```plumed
 BF_WAVELETS ...
  ORDER=8
  TYPE=DAUBECHIES
@@ -161,12 +167,12 @@ BF_WAVELETS ...
  TAILS_THRESHOLD=0.01
  LABEL=bf
 ... BF_WAVELETS
-\endplumedfile
-
+```
 
 The length of the individual basis functions can also be adjusted to fit the specific problem.
-If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at \f$ -14*\frac{3}{15}, -13*\frac{3}{15}, \cdots, 0, \cdots, 18*\frac{3}{15}, 19*\frac{3}{15} \f$.
-\plumedfile
+If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at $ -14*\frac{3}{15}, -13*\frac{3}{15}, \cdots, 0, \cdots, 18*\frac{3}{15}, 19*\frac{3}{15} $.
+
+```plumed
 BF_WAVELETS ...
  ORDER=8
  TYPE=DAUBECHIES
@@ -175,11 +181,11 @@ BF_WAVELETS ...
  FUNCTION_LENGTH=3
  LABEL=bf
 ... BF_WAVELETS
-\endplumedfile
-
+```
 
 Alternatively you can also specify the number of basis functions. Here we specify the usage of 40 Sym10 wavelet functions. We also used a custom minimum size for the grid and want it to be printed to a file with a specific numerical format.
-\plumedfile
+
+```plumed
 BF_WAVELETS ...
  ORDER=10
  TYPE=SYMLETS
@@ -191,7 +197,7 @@ BF_WAVELETS ...
  WAVELET_FILE_FMT=%11.4f
  LABEL=bf
 ... BF_WAVELETS
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -230,6 +236,8 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","WAVELET_FILE_FMT","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
+  keys.addDOI("10.1137/1.9781611970104");
+  keys.addDOI("10.1021/acs.jctc.2c00197");
 }
 
 

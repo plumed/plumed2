@@ -52,17 +52,17 @@ namespace isdb {
 Bayesian single-structure and ensemble refinement with cryo-EM maps.
 
 This action implements the Bayesian approach for single-structure and ensemble refinement from cryo-EM maps introduced <a href="https://www.biorxiv.org/content/10.1101/2023.10.18.562710v1">here</a>.
-EMMIVox does not require fitting the cryo-EM map with a Gaussian Mixture Model, as done in \ref EMMI, but uses directly the voxels in the deposited map.
+EMMIVox does not require fitting the cryo-EM map with a Gaussian Mixture Model, as done in [EMMI](EMMI.md), but uses directly the voxels in the deposited map.
 
 When run in single-replica mode, this action allows atomistic, flexible refinement (and B-factors inference) of an individual structure into a density map.
 A coarse-grained forward model can also be used in combination with the MARTINI force field.
 Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an ensemble of structures using
-the Metainference approach \cite Bonomi:2016ip . The approach can be used to model continous dynamics of flexible regions as well as semi-ordered waters, lipids, and ions.
+the Metainference approach that is introduced in the paper  cited below. The approach can be used to model continous dynamics of flexible regions as well as semi-ordered waters, lipids, and ions.
 
-\warning
-    To use EMMIVOX, PLUMED must be linked against the LibTorch library as described \ref ISDB "here"
+> [! Note]
+>    To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb.md).
 
-\par Examples
+## Examples
 
 Complete tutorials for single-structure and ensemble refinement can be found <a href="https://github.com/COSBlab/EMMIVox">here</a>.
 
@@ -257,6 +257,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("accB",  "default","scalar", "Bfactor MC acceptance");
   keys.addOutputComponent("kbt",   "default","scalar", "temperature in energy unit");
   keys.addOutputComponent("corr",  "CORRELATION","scalar", "correlation coefficient");
+  keys.addDOI("10.1126/sciadv.1501177");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):

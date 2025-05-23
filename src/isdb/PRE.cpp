@@ -38,15 +38,15 @@ The additional parameters needed for the calculation are given as INEPT, the ine
 time, TAUC the correlation time, OMEGA, the Larmor frequency and RTWO for the relaxation
 time.
 
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+[METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
-\par Examples
+## Examples
 
 In the following example five PRE intensities are calculated using the distance between the
 oxygen of the spin label and the backbone hydrogen atoms. Omega is the NMR frequency, RTWO the
 R2 for the hydrogen atoms, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
 
-\plumedfile
+```plumed
 PRE ...
 LABEL=HN_pre
 INEPT=8
@@ -61,8 +61,7 @@ GROUPA5=451 RTWO5=0.0086341843
 ... PRE
 
 PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
-
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

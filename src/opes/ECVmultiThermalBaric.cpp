@@ -26,30 +26,32 @@ namespace opes {
 /*
 Expand a simulation to sample multiple temperatures and pressures.
 
-The potential \ref ENERGY, \f$E\f$, and the \ref VOLUME, \f$V\f$, of the system should be used as ARG.
-\f[
+The potential [ENERGY](ENERGY.md), $E$, and the [VOLUME](VOLUME.md), $V$, of the system should be used as ARG.
+
+$$
   \Delta u_{\beta',p'}=(\beta'-\beta) E + (\beta' p' -\beta p) V\, ,
-\f]
-where \f$\beta', p'\f$ are the temperatures and pressures to be sampled, while \f$\beta, p\f$ is the temperature and pressure at which the simulation is conducted.
+$$
 
-If instead you wish to sample multiple temperatures and a single pressure, you should use \ref ECV_MULTITHERMAL with as ARG the internal energy \f$U=E+pV\f$.
+where $\beta', p'$ are the temperatures and pressures to be sampled, while $\beta, p$ is the temperature and pressure at which the simulation is conducted.
 
-The TEMP_STEPS and PRESSURE_STEPS are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
-The algorithm for this guess is described in \cite Invernizzi2020unified should provide a rough estimate useful for most applications.
+If instead you wish to sample multiple temperatures and a single pressure, you should use [ECV_MULTITHERMAL](ECV_MULTITHERMAL.md) with as ARG the internal energy $U=E+pV$.
+
+The TEMP_STEPS and PRESSURE_STEPS are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in [OPES_EXPANDED](OPES_EXPANDED.md)), unless explicitly set.
+The algorithm for this guess is described in the paper cited below should provide a rough estimate useful for most applications.
 The pressures are uniformely spaced, while the temperatures steps are geometrically spaced.
 Use instead the keyword NO_GEOM_SPACING for a linear spacing in inverse temperature (beta).
 For more detailed control you can use instead TEMP_SET_ALL and/or PRESSURE_SET_ALL to explicitly set all of them.
 The temperatures and pressures are then combined in a 2D grid.
 
 You can use CUT_CORNER to avoid a high-temperature/low-pressure region.
-This can be useful e.g. to increase the temperature for greater ergodicity, while avoiding water to vaporize, as in Ref.\cite Invernizzi2020unified.
+This can be useful e.g. to increase the temperature for greater ergodicity, while avoiding water to vaporize, as in the paper cited below.
 
-You can reweight the resulting simulation at any temperature and pressure in chosen target, using e.g. \ref REWEIGHT_TEMP_PRESS.
-A similar target distribution can be sampled using \ref TD_MULTITHERMAL_MULTIBARIC.
+You can reweight the resulting simulation at any temperature and pressure in chosen target, using e.g. [REWEIGHT_TEMP_PRESS](REWEIGHT_TEMP_PRESS.md).
+A similar target distribution can be sampled using TD_MULTITHERMAL_MULTIBARIC](TD_MULTITHERMAL_MULTIBARIC.md).
 
-\par Examples
+## Examples
 
-\plumedfile
+```plumed
 ene: ENERGY
 vol: VOLUME
 ecv: ECV_MULTITHERMAL_MULTIBARIC ...
@@ -63,10 +65,10 @@ ecv: ECV_MULTITHERMAL_MULTIBARIC ...
   CUT_CORNER=500,0.06022140857,800,0.06022140857*1000
 ...
 opes: OPES_EXPANDED ARG=ecv.* FILE=DeltaF.data PACE=500 WALKERS_MPI
-\endplumedfile
+```
 
-Notice that \f$p=0.06022140857\f$ corresponds to 1 bar only when using the default PLUMED units.
-If you modify them via the \ref UNITS command, then the pressure has to be rescaled accordingly.
+Notice that $p=0.06022140857$ corresponds to 1 bar only when using the default PLUMED units.
+If you modify them via the [UNITS](UNITS.md) command, then the pressure has to be rescaled accordingly.
 
 */
 //+ENDPLUMEDOC
@@ -124,6 +126,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
 //other
   keys.add("optional","SET_ALL_TEMP_PRESSURE","manually set all the target temperature_pressure pairs. An underscore separates temperature and pressure, while different points are comma-separated, e.g.: temp1_pres1,temp1_pres2,...");
   keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: \\f$T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}\\f$");
+  keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
 ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)

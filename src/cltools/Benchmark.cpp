@@ -29,6 +29,7 @@
 #include "tools/Log.h"
 #include "tools/DLLoader.h"
 #include "tools/Random.h"
+#include "tools/TrajectoryParser.h"
 
 #include <cstdio>
 #include <string>
@@ -41,6 +42,7 @@
 #include <algorithm>
 #include <chrono>
 #include <string_view>
+#include <optional>
 
 namespace PLMD {
 namespace cltools {
@@ -274,15 +276,13 @@ struct Kernel :
   }
 };
 
-namespace  {
-
 class UniformSphericalVector {
   //double rminCub;
   double rCub;
 
 public:
   //assuming rmin=0
-  UniformSphericalVector(const double rmax):
+  explicit UniformSphericalVector(const double rmax):
     rCub (rmax*rmax*rmax/*-rminCub*/) {}
   PLMD::Vector operator()(Random& rng) {
     double rho = std::cbrt (/*rminCub + */rng.RandU01()*rCub);
@@ -297,26 +297,43 @@ public:
 
 ///Acts as a template for any distribution
 struct AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&)=0;
-  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
-    std::fill(box.begin(), box.end(),0);
-  };
+  ///Update the input vectors with the position and the box of the frame
+  virtual void frame(std::vector<Vector>& posToUpdate,
+                     std::vector<double>& box,
+                     unsigned /*step*/,
+                     Random& /*rng*/)=0;
   virtual ~AtomDistribution() noexcept {}
+  ///If necessary changes the number of atoms, returns true if that number has been changed
+  virtual bool overrideNat(unsigned& ) {
+    return false;
+  }
 };
 
 struct theLine:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned step, Random&rng) override {
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned step,
+             Random& rng) override {
     auto nat = posToUpdate.size();
     UniformSphericalVector usv(0.5);
 
     for (unsigned i=0; i<nat; ++i) {
       posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
     }
+    box[0]=nat;
+    box[1]=0.0;
+    box[2]=0.0;
+    box[3]=0.0;
+    box[4]=1.75;
+    box[5]=0.0;
+    box[6]=0.0;
+    box[7]=0.0;
+    box[8]=1.75;
   }
 };
 
 struct uniformSphere:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
 
     //giving more or less a cubic udm of volume for each atom: V=nat
     const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
@@ -330,29 +347,26 @@ struct uniformSphere:public AtomDistribution {
       *s = usv (rng);
     }
 
-  }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-    const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
-    box[0]=rmax;
+    box[0]=2.0*rmax;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=2.0*rmax;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=2.0*rmax;
 
   }
 };
 
 struct twoGlobs: public AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) {
+  virtual void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random&rng) override {
     //I am using two unigform spheres and 2V=n
     const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
 
     UniformSphericalVector usv(rmax);
-    std::array<Vector,2> centers{
+    const std::array<const Vector,2> centers{
       PLMD::Vector{0.0,0.0,0.0},
 //so they do not overlap
       PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
@@ -362,25 +376,21 @@ struct twoGlobs: public AtomDistribution {
       // return usv (rng) + centers[rng.RandInt(1)];
       return usv (rng) + centers[rng.RandU01()>0.5];
     });
-  }
 
-  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
-
-    const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
-    box[0]=rmax;
+    box[0]=4.0 *rmax;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=4.0 *rmax;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=4.0 *rmax;
   };
 };
 
 struct uniformCube:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
 
@@ -396,25 +406,22 @@ struct uniformCube:public AtomDistribution {
     for (unsigned i=0; s!=e; ++s,++i) {
       *s = Vector (rng.RandU01()*rmax,rng.RandU01()*rmax,rng.RandU01()*rmax);
     }
-  }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     //+0.05 to avoid overlap
-    const double rmax= std::cbrt(natoms)+0.05;
-    box[0]=rmax;
+    box[0]=rmax+0.05;
     box[1]=0.0;
     box[2]=0.0;
     box[3]=0.0;
-    box[4]=rmax;
+    box[4]=rmax+0.05;
     box[5]=0.0;
     box[6]=0.0;
     box[7]=0.0;
-    box[8]=rmax;
+    box[8]=rmax+0.05;
 
   }
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box, unsigned /*step*/, Random& rng) override {
     //Tiling the space in this way will not tests 100% the pbc, but
     //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
     //could be a good idea, in this case
@@ -432,9 +439,6 @@ struct tiledSimpleCubic:public AtomDistribution {
         }
       }
     }
-  }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-    const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
     box[0]=rmax;
     box[1]=0.0;
     box[2]=0.0;
@@ -447,6 +451,110 @@ struct tiledSimpleCubic:public AtomDistribution {
 
   }
 };
+
+/// atomic distribution from a trajectory file
+class fileTraj:public AtomDistribution {
+  TrajectoryParser parser;
+  std::vector<double> masses{};
+  std::vector<double> charges{};
+  std::vector<Vector> coordinates{};
+  std::vector<double> cell{0.0,0.0,0.0,
+        0.0,0.0,0.0,
+        0.0,0.0,0.0};
+  bool read=false;
+  bool dont_read_pbc=false;
+  void rewind() {
+    auto errormessage=parser.rewind();
+    if (errormessage) {
+      // A workarounf for not implemented rewind is to dump the trajectory in an xyz and then read that
+      plumed_error()<<*errormessage;
+    }
+    //the extra false prevents an infinite loop in case of unexpected consecutice EOFs after a rewind
+    step(false);
+  }
+  //read the next step
+  void step(bool doRewind=true) {
+    read=false;
+    long long int mystep=0;
+    double timeStep;
+    std::optional<std::string> errormessage;
+    if (masses.empty()) {
+      errormessage=parser.readHeader(
+                     mystep,
+                     timeStep
+                   );
+      if (errormessage) {
+        plumed_error()<<*errormessage;
+      }
+      const size_t natoms = parser.nOfAtoms();
+
+      masses.assign(natoms,0.0);
+      charges.assign(natoms,0.0);
+      coordinates.assign(natoms,Vector(0.0,0.0,0.0));
+      cell.assign(9,0.0);
+      errormessage=parser.readAtoms(1,
+                                    dont_read_pbc,
+                                    false,
+                                    0,
+                                    0,
+                                    mystep,
+                                    masses.data(),
+                                    charges.data(),
+                                    &coordinates[0][0],
+                                    cell.data()
+                                   );
+    } else {
+      errormessage=parser.readFrame(1,
+                                    dont_read_pbc,
+                                    false,
+                                    0,
+                                    0,
+                                    mystep,
+                                    timeStep,
+                                    masses.data(),
+                                    charges.data(),
+                                    &coordinates[0][0],
+                                    cell.data()
+                                   );
+    }
+
+    if (errormessage) {
+      if (*errormessage =="EOF" && doRewind) {
+        rewind();
+      } else {
+        plumed_error()<<*errormessage;
+      }
+    }
+  }
+public:
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned /*step*/,
+             Random& /*rng*/) override {
+    if (read) {
+      step();
+    }
+    read=true;
+    std::copy(coordinates.begin(),coordinates.end(),posToUpdate.begin());
+    std::copy(cell.begin(),cell.end(),box.begin());
+  }
+
+  fileTraj(std::string_view fmt,
+           std::string_view fname,
+           bool useMolfile,
+           int command_line_natoms) {
+    parser.init(fmt,
+                fname,
+                useMolfile,
+                command_line_natoms);
+    step();
+  }
+  bool overrideNat(unsigned& natoms) override {
+    natoms = masses.size();
+    return true;
+  }
+};
+
 std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr) {
   std::unique_ptr<AtomDistribution> distribution;
   if(atomicDistr == "line") {
@@ -465,15 +573,176 @@ std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDis
   }
   return distribution;
 }
-} //anonymus namespace for benchmark distributions
+
+
+///a decorator for replicate the atomic distribution
+class repliedTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  unsigned rX=1;
+  unsigned rY=1;
+  unsigned rZ=1;
+  std::vector<Vector> coordinates;
+public:
+  repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                    const unsigned repeatX,
+                    const unsigned repeatY,
+                    const unsigned repeatZ,
+                    // I think 4294967295 maximum atoms before the multiplication is more than enough
+                    const unsigned nat):
+    distribution(std::move(d)),
+    rX(repeatX),
+    rY(repeatY),
+    rZ(repeatZ),
+    coordinates(nat,Vector{})
+  {}
+
+  void frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+             unsigned step,
+             Random& rng) override {
+    distribution->frame(coordinates,box,step,rng);
+
+    // repetitions
+    auto p = posToUpdate.begin();
+    const auto nat = coordinates.size();
+
+    assert((rX*rY*rZ)*nat == posToUpdate.size());
+
+    Vector boxX(box[0],box[1],box[2]);
+    Vector boxY(box[3],box[4],box[5]);
+    Vector boxZ(box[6],box[7],box[8]);
+    for (unsigned x=0; x<rX; ++x) {
+      for (unsigned y=0; y<rY; ++y) {
+        for (unsigned z=0; z<rZ; ++z) {
+          for (unsigned i=0; i<nat; ++i) {
+            *p=coordinates[i]
+               + x * boxX
+               + y * boxY
+               + z * boxZ;
+            ++p;
+          }
+        }
+      }
+    }
+    box[0]*=rX;
+    box[1]*=rX;
+    box[2]*=rX;
+
+    box[3]*=rY;
+    box[4]*=rY;
+    box[5]*=rY;
+
+    box[6]*=rZ;
+    box[7]*=rZ;
+    box[8]*=rZ;
+  }
+
+  bool overrideNat(unsigned& natoms) override {
+    natoms = (rX*rY*rZ)*coordinates.size();
+    return true;
+  }
+};
+
+
 class Benchmark:
   public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
+
   std::string description()const override {
     return "run a calculation with a fixed trajectory to find bottlenecks in PLUMED";
+  }
+
+  //this does the parsing
+  std::optional<std::unique_ptr<AtomDistribution>> parseAtomDistribution(Log& log) {
+    {
+      std::string trajectoryFile="";
+      int nn=0;
+      std::string trajectory_fmt="";
+      for (const auto & trj_type : TrajectoryParser::trajectoryOptions()) {
+        std::string tmp;
+        parse("--i"+trj_type, tmp);
+        if (tmp.length()>0) {
+          log << "Using --i"<<trj_type<<"=" << tmp << "\n";
+          trajectory_fmt=trj_type;
+          ++nn;
+          trajectoryFile=tmp;
+        }
+      }
+      bool use_molfile=false;
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+      {
+        auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
+        for(unsigned i=0; i<plugins_names.size(); i++) {
+          std::string molfile_key="--mf_"+plugins_names[i];
+          std::string traj_molfile;
+          parse(molfile_key,traj_molfile);
+          if(traj_molfile.length()>0) {
+            ++nn;
+            log << "Using --mf_"<<plugins_names[i]<<"=" << traj_molfile << "\n";
+            trajectoryFile=traj_molfile;
+            trajectory_fmt=plugins_names[i];
+            use_molfile=true;
+          }
+        }
+      }
+#endif
+      if(nn>1) {
+        std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+        //let the "main"
+        return std::nullopt;
+      }
+      if (nn==1) {
+        return std::make_unique<fileTraj>(
+                 trajectory_fmt,
+                 trajectoryFile,
+                 use_molfile,
+                 -1
+               );
+      }
+    }
+    std::string atomicDistr;
+    parse("--atom-distribution",atomicDistr);
+    if(atomicDistr != "") {
+      log << "Using --atom-distribution=" << atomicDistr << "\n";
+      return getAtomDistribution(atomicDistr);
+    }
+    return std::nullopt;
+  }
+
+//parse and evenually decorate the AtomDistribution
+  std::optional<std::unique_ptr<AtomDistribution>> createAtomDistribution(Log& log, unsigned nat) {
+    auto toret= parseAtomDistribution(log);
+    if (!toret.has_value()) {
+      return std::nullopt;
+    }
+    ///@todo: add a the possibility to add the pcbbox via CLI
+    /// this is necessary for some molfile plugins
+    int repeatX=0;
+    int repeatY=0;
+    int repeatZ=0;
+    parse("--repeatX",repeatX);
+    log << "Using --repeatX=" << repeatX << "\n";
+    parse("--repeatY",repeatY);
+    log << "Using --repeatY=" << repeatY << "\n";
+    parse("--repeatZ",repeatZ);
+    log << "Using --repeatZ=" << repeatZ << "\n";
+    if (repeatX<1 || repeatY<1 || repeatZ<1) {
+      log << "ERROR: repetitions of the trajectory must be >=1\n";
+      return std::nullopt;
+    }
+    if (repeatX*repeatY*repeatZ >1) {
+      //In case it is needed
+      (*toret)->overrideNat(nat);
+      return std::make_unique<repliedTrajectory>(std::move(*toret),
+             repeatX,
+             repeatY,
+             repeatZ,
+             nat
+                                                );
+    }
+    return toret;
   }
 };
 
@@ -484,13 +753,22 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
+  // Maybe "--natoms" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
+  TrajectoryParser::registerKeywords(keys);
+  keys.add("compulsory","--repeatX","1","number of time to align the read trajectory along the fist box component,"
+           " ingnored with a atomic distribution");
+  keys.add("compulsory","--repeatY","1","number of time to align the read trajectory along the second box component,"
+           " ingnored with a atomic distribution");
+  keys.add("compulsory","--repeatZ","1","number of time to align the read trajectory along the third box component,"
+           " ingnored with a atomic distribution");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -503,7 +781,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
   generator rng;
   PLMD::Random atomicGenerator;
-  std::unique_ptr<AtomDistribution> distribution;
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -585,14 +862,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
             c=distrib(bootstrapRng);
           }
           long long int reference=0;
-          for(auto & c : choice) {
+          for(const auto & c : choice) {
             reference+=blocks[0][c];
           }
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
             // for(auto & c : choice){c=distrib(bootstrapRng);}
-            for(auto & c : choice) {
+            for(const auto & c : choice) {
               estimate+=blocks[i][c];
             }
             ratios[i][b]=double(estimate)/double(reference);
@@ -717,12 +994,16 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log << "Using --sleep=" << timeToSleep << "\n";
 
   std::vector<int> shuffled_indexes;
-
-  {
-    std::string atomicDistr;
-    parse("--atom-distribution",atomicDistr);
-    distribution = getAtomDistribution(atomicDistr);
-    log << "Using --atom-distribution=" << atomicDistr << "\n";
+  std::unique_ptr<AtomDistribution> distribution;
+  if(auto checkDistr = createAtomDistribution(log,natoms);
+      checkDistr.has_value()) {
+    distribution = std::move (*checkDistr);
+    if (distribution->overrideNat(natoms)) {
+      log << "Distribution overrode --natoms, Using --natoms=" << natoms << "\n";
+    }
+  } else {
+    std::fprintf(stderr,"ERROR: problem with setting up the trajectory for the benchmark\n");
+    return 1;
   }
 
   {
@@ -738,13 +1019,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       }
       for(int step=0; step<nf; ++step) {
         auto sw=kernels[0].stopwatch.startStop("TrajectoryGeneration");
-        distribution->positions(pos,step,atomicGenerator);
-        distribution->box(cell,natoms,step,atomicGenerator);
+        distribution->frame(pos,cell,step,atomicGenerator);
+
         ofile << natoms << "\n"
               << cell[0] << " " << cell[1] << " " << cell[2] << " "
               << cell[3] << " " << cell[4] << " " << cell[5] << " "
               << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
-        for(int i=0; i<natoms; ++i) {
+        for(unsigned i=0; i<natoms; ++i) {
           ofile << "X\t" << pos[i]<< "\n";
         }
       }
@@ -804,8 +1085,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
-    distribution->positions(pos,step,atomicGenerator);
-    distribution->box(cell,natoms,step,atomicGenerator);
+    distribution->frame(pos,cell,step,atomicGenerator);
+
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;

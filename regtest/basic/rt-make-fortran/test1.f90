@@ -6,6 +6,7 @@ SUBROUTINE TEST1(testdat,testme)
   CHARACTER(kind=C_CHAR,len=32) :: p
   INTEGER :: i
   INTEGER(C_INT) :: natoms
+  INTEGER(C_INT), ALLOCATABLE :: indexes(:)
   REAL(C_DOUBLE), ALLOCATABLE :: positions(:,:)
   REAL(C_DOUBLE), ALLOCATABLE :: forces(:,:)
   REAL(C_DOUBLE), ALLOCATABLE :: masses(:)
@@ -24,6 +25,7 @@ SUBROUTINE TEST1(testdat,testme)
   ALLOCATE(positions(3,10))
   ALLOCATE(forces(3,10))
   ALLOCATE(masses(10))
+  ALLOCATE(indexes(10))
   positions=0.0
   box=0.0
   virial=0.0
@@ -101,4 +103,22 @@ SUBROUTINE TEST1(testdat,testme)
 
     close(unit=10)
 
+  ! global interface with setAtomsFGatIndex
+    call plumed_f_gcreate()
+    call plumed_f_gcmd("setNatoms"//char(0),10) ! pass a temporary
+    call plumed_f_gcmd("init"//char(0),0)
+    call plumed_f_gcmd("readInputLine"//char(0),"DUMPATOMS ATOMS=1-10 FILE="//testme//"3"//char(0))
+    call plumed_f_gcmd("setStep"//char(0),1)
+    call plumed_f_gcmd("setPositions"//char(0),positions)
+    call plumed_f_gcmd("setForces"//char(0),forces)
+    call plumed_f_gcmd("setMasses"//char(0),masses)
+    do i=1,10
+      indexes(i)=11-i
+    end do
+    call plumed_f_gcmd("setAtomsNlocal"//char(0),10);
+    call plumed_f_gcmd("setAtomsFGatindex"//char(0),indexes)
+    call plumed_f_gcmd("setBox"//char(0),box)
+    call plumed_f_gcmd("setVirial"//char(0),virial)
+    call plumed_f_gcmd("calc"//char(0),0)
+    call plumed_f_gfinalize()
 END SUBROUTINE

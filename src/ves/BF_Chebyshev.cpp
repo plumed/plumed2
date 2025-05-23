@@ -33,55 +33,62 @@ namespace ves {
 Chebyshev polynomial basis functions.
 
 Use as basis functions [Chebyshev polynomials](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
-of the first kind \f$T_{n}(x)\f$ defined on a bounded interval.
-You need to provide the interval \f$[a,b]\f$
+of the first kind $T_{n}(x)$ defined on a bounded interval.
+You need to provide the interval $[a,b]$
 on which the basis functions are to be used, and the order of the
-expansion \f$N\f$ (i.e. the highest order polynomial used).
-The total number of basis functions is \f$N+1\f$ as the constant \f$T_{0}(x)=1\f$
+expansion $N$ (i.e. the highest order polynomial used).
+The total number of basis functions is $N+1$ as the constant $T_{0}(x)=1$
 is also included.
 These basis functions should not be used for periodic CVs.
 
-Intrinsically the Chebyshev polynomials are defined on the interval \f$[-1,1]\f$.
-A variable \f$t\f$ in the interval \f$[a,b]\f$ is transformed to a variable \f$x\f$
-in the intrinsic interval \f$[-1,1]\f$ by using the transform function
-\f[
+Intrinsically the Chebyshev polynomials are defined on the interval $[-1,1]$.
+A variable $t$ in the interval $[a,b]$ is transformed to a variable $x$
+in the intrinsic interval $[-1,1]$ by using the transform function
+
+$$
 x(t) = \frac{t-(a+b)/2}
 {(b-a)/2}
-\f]
+$$
 
 The Chebyshev polynomials are given by the recurrence relation
-\f{align}{
+
+$$
+\begin{aligned}
 T_{0}(x)    &= 1 \\
 T_{1}(x)    &= x \\
 T_{n+1}(x)  &= 2 \, x \, T_{n}(x) - T_{n-1}(x)
-\f}
+\end{aligned}
+$$
 
 The first 6 polynomials are shown below
-\image html ves_basisf-chebyshev.png
 
-The Chebyshev polynomial are orthogonal over the interval \f$[-1,1]\f$
-with respect to the weight \f$\frac{1}{\sqrt{1-x^2}}\f$
-\f[
+![Graph showing first 6 Chebyshev polynomials](figures/ves_basisf-chebyshev.png)
+
+The Chebyshev polynomial are orthogonal over the interval $[-1,1]$
+with respect to the weight $\frac{1}{\sqrt{1-x^2}}$
+
+$$
 \int_{-1}^{1} dx \, T_{n}(x)\, T_{m}(x) \, \frac{1}{\sqrt{1-x^2}} =
 \begin{cases}
 0 & n \neq m \\
 \pi & n = m = 0 \\
 \pi/2 & n = m \neq 0
 \end{cases}
-\f]
+$$
 
 For further mathematical properties of the Chebyshev polynomials see for example
 the [Wikipedia page](https://en.wikipedia.org/wiki/Chebyshev_polynomials).
 
-\par Examples
+## Examples
 
 Here we employ a Chebyshev expansion of order 20 over the interval 0.0 to 10.0.
 This results in a total number of 21 basis functions.
 The label used to identify  the basis function action can then be
 referenced later on in the input file.
-\plumedfile
+
+```plumed
 bfC: BF_CHEBYSHEV MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

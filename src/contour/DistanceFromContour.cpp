@@ -26,38 +26,42 @@
 /*
 Calculate the perpendicular distance from a Willard-Chandler dividing surface.
 
-Suppose that you have calculated a multicolvar.  By doing so you have calculated a
-set of colvars, \f$s_i\f$, and each of these colvars has a well defined position in
-space \f$(x_i,y_i,z_i)\f$.  You can use this information to calculate a phase-field
-model of the colvar density using:
+As discussed in the documentation for the [contour](module_contour.md) module, you
+can generate a continuous representation for the density as a function of positions for a set
+of $N$ atoms with positions $(x_i,y_i,z_i)$ using:
 
-\f[
-p(x,y,x) = \sum_{i} s_i K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
-\f]
+$$
+p(x,y,x) = \sum_{i=1}^N K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
+$$
 
-In this expression \f$\sigma_x, \sigma_y\f$ and \f$\sigma_z\f$ are bandwidth parameters and
-\f$K\f$ is one of the \ref kernelfunctions.  This is what is done within \ref MULTICOLVARDENS
+In this expression $\sigma_x, \sigma_y$ and $\sigma_z$ are bandwidth parameters and
+$K$ is one of a Gaussian kernel function.
 
-The Willard-Chandler surface is a surface of constant density in the above phase field \f$p(x,y,z)\f$.
-In other words, it is a set of points, \f$(x',y',z')\f$, in your box which have:
+The Willard-Chandler surface is defined a surface of constant density in the above field $p(x,y,z)$.
+In other words, it is a set of points, $(x',y',z')$, in your box which have:
 
-\f[
+$$
 p(x',y',z') = \rho
-\f]
+$$
 
-where \f$\rho\f$ is some target density.  This action calculates the distance projected on the \f$x, y\f$ or
-\f$z\f$ axis between the position of some test particle and this surface of constant field density.
+where $\rho$ is some target density. This action calculates the distance projected on the $x, y$ or
+$z$ axis between the position of some test particle and this surface of constant field density.
 
-\par Examples
+## Examples
 
-In this example atoms 2-100 are assumed to be concentrated along some part of the \f$z\f$ axis so that you
-an interface between a liquid/solid and the vapor.  The quantity dc measures the distance between the
-surface at which the density of 2-100 atoms is equal to 0.2 and the position of the test particle atom 1.
+In this example atoms 2-100 are assumed to be concentrated along some part of the $z$ axis so that you
+an interface between a liquid/solid and the vapor.  The quantity `dc.dist1` measures the projection on $z$ of the distance
+between the position of atom 1 and the nearest point at which density of atoms 2-100 is equal to 0.2.
 
-\plumedfile
-dens: DENSITY SPECIES=2-100
-dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2
-\endplumedfile
+```plumed
+dc: DISTANCE_FROM_CONTOUR POSITIONS=2-100 ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2
+PRINT ARG=dc.dist1 FILE=colvar
+```
+
+Notice that, as discussed in the paper cited below, if you are running with periodic boundary conditions there will be two
+isocontours in the box where the density is equal to 0.2.  If you wish to find the distance betwene atom 1 and the second
+closest of these two contours you would print `dc.dist2`. `dc.thickness` tells you the difference between `dc.dist1` and
+`dc.dist2` and `dc.qdist` is the quantity with continuous derivatives that is introduced in the paper cited below.
 
 */
 //+ENDPLUMEDOC
@@ -94,6 +98,7 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
            "should have it so that the sums of the absolute values of the distances to the two "
            "contours is approximately the distance between the two contours.  There can be numerical errors in these calculations, however, so "
            "we specify a small tolerance here");
+  keys.addDOI("10.1021/acs.jpcb.8b03661");
 }
 
 DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
@@ -133,7 +138,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   // Read in the tolerance for the pbc parameter
   parse("TOLERANCE",pbc_param);
 
-  std::vector<unsigned> shape;
+  std::vector<std::size_t> shape;
   // Create the values
   addComponent("thickness", shape );
   componentIsNotPeriodic("thickness");

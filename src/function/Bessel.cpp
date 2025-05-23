@@ -93,6 +93,9 @@ public:
   }
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
+    return args.size()>1;
+  }
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -110,7 +113,10 @@ void Bessel::registerKeywords(Keywords& keys) {
 
 void Bessel::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) {
-    action->error("should only be one argument to bessel actions");
+    ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
+    if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
+      action->error("should only be one argument to less_than actions");
+    }
   }
   if( action->getPntrToArgument(0)->isPeriodic() ) {
     action->error("cannot use this function on periodic functions");

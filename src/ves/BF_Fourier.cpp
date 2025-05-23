@@ -33,16 +33,18 @@ namespace ves {
 Fourier basis functions.
 
 Use as basis functions Fourier series defined on a periodic interval.
-You need to provide the periodic interval \f$[a,b]\f$
+You need to provide the periodic interval $[a,b]$
 on which the basis functions are to be used, and the order of the
-expansion \f$N\f$ (i.e. the highest Fourier mode used).
-The total number of basis functions is \f$2N+1\f$ as for each Fourier
+expansion $N$ (i.e. the highest Fourier mode used).
+The total number of basis functions is $2N+1$ as for each Fourier
 mode there is both the cosine and sine term,
-and the constant \f$f_{0}(x)=1\f$ is also included.
+and the constant $f_{0}(x)=1$ is also included.
 These basis functions should only be used for periodic CVs.
 
 The Fourier series basis functions are given by
-\f{align}{
+
+$$
+\begin{aligned}
 f_{0}(x)    &= 1 \\
 f_{1}(x)    &= cos(\frac{2\pi }{P} x) \\
 f_{2}(x)    &= sin(\frac{2\pi }{P} x) \\
@@ -54,29 +56,32 @@ f_{2k}(x)   &= sin(k \cdot \frac{2\pi}{P} x) \\
 & \vdots \\
 f_{2N-1}(x) &= cos(N \cdot \frac{2\pi}{P} x) \\
 f_{2N}(x)   &= sin(N \cdot \frac{2\pi}{P} x) \\
-\f}
-where \f$P=(b-a)\f$ is the periodicity of the interval.
-They are orthogonal over the interval \f$[a,b]\f$
-\f[
+\end{aligned}
+$$
+
+where $P=(b-a)$ is the periodicity of the interval.
+They are orthogonal over the interval $[a,b]$
+
+$$
 \int_{a}^{b} dx \, f_{n}(x)\, f_{m}(x)  =
 \begin{cases}
 0 & n \neq m \\
 (b-a) & n = m = 0 \\
 (b-a)/2 & n = m \neq 0
 \end{cases}.
-\f]
+$$
 
-
-\par Examples
+## Examples
 
 Here we employ a Fourier expansion of order 10 over the periodic interval
-\f$-\pi\f$ to \f$+\pi\f$.
+$-\pi$ to $+\pi$.
 This results in a total number of 21 basis functions.
 The label used to identify  the basis function action can then be
 referenced later on in the input file.
-\plumedfile
+
+```plumed
 BF_FOURIER MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bf_fourier
-\endplumedfile
+```
 
 
 */

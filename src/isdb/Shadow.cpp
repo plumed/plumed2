@@ -34,21 +34,21 @@ namespace isdb {
 /*
 Communicate atoms positions among replicas and calculate the RMSD with respect to a mother (reference) simulation.
 
-The option \ref UPDATE allows to specify the stride for communication between mother and replica systems.
-The flag \ref REFERENCE needs to be specified in the input file of the mother replica.
+The option UPDATE allows to specify the stride for communication between mother and replica systems.
+The flag REFERENCE needs to be specified in the input file of the mother replica.
 This action must be run in a multi-replica framework (such as the -multi option in GROMACS).
 
-\par Examples
+## Examples
 
 In this example, we perform a simulation of a RNA molecule using two replicas: a mother and a shadow replica.
 The mother simulation communicates the coordinates of the RNA backbone to the replica every 100 steps.
-The RMSD of the replica with respect to the mother is calculated on the RNA backbone atoms and an \ref UPPER_WALLS is applied at 0.2 nm.
-The mother replica contains also the \ref UPPER_WALLS action. However, the forces on the RNA atoms of the mother replica are automatically set to zero
-inside the \ref SHADOW action.
+The RMSD of the replica with respect to the mother is calculated on the RNA backbone atoms and an [UPPER_WALLS](UPPER_WALLS.md) is applied at 0.2 nm.
+The mother replica contains also the [UPPER_WALLS](UPPER_WALLS.md) action. However, the forces on the RNA atoms of the mother replica are automatically set to zero
+inside the [SHADOW](SHADOW.md) action.
 
 The input file for the mother simulation looks as follows:
 
-\plumedfile
+```plumed
 # Reference PDB
 MOLINFO STRUCTURE=conf_emin_PLUMED.pdb WHOLE
 # Define RNA nucleic backbone
@@ -63,11 +63,11 @@ uws: UPPER_WALLS ARG=rmsd AT=0.2 KAPPA=10000.0 STRIDE=1
 
 # Print useful info
 PRINT FILE=COLVAR STRIDE=500 ARG=rmsd,uws.bias
-\endplumedfile
+```
 
 while the input file for a shadow replica looks like:
 
-\plumedfile
+```plumed
 # Reference PDB
 MOLINFO STRUCTURE=conf_emin_PLUMED.pdb WHOLE
 # Define RNA nucleic backbone
@@ -82,7 +82,7 @@ uws: UPPER_WALLS ARG=rmsd AT=0.2 KAPPA=10000.0 STRIDE=1
 
 # Print useful info
 PRINT FILE=COLVAR STRIDE=500 ARG=rmsd,uws.bias
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

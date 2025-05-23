@@ -14,21 +14,19 @@ Box -- Box --> d1
 linkStyle 2 stroke:red,color:red;
 MD --> d1
 linkStyle 3 stroke:violet,color:violet;
-subgraph subd1 [d1]
 d1(["label=d1 
  DISTANCE 
 "])
+d1 -- d1 --> d1l
+linkStyle 4 stroke:blue,color:blue;
 d1l(["label=d1l 
  LESS_THAN 
 "])
+d1l -- d1l --> d1c
+linkStyle 5 stroke:blue,color:blue;
 d1c(["label=d1c 
  SUM 
 "])
-end
-d1 -- d1 --> d1l
-linkStyle 4 stroke:blue,color:blue;
-d1l -- d1l --> d1c
-linkStyle 5 stroke:blue,color:blue;
 c1 -- c1 --> 7
 d1c -- d1c --> 7
 7("label=#64;7 

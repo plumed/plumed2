@@ -170,48 +170,6 @@ number of atoms are requested to the host MD engine. This is typically true when
 \ref COORDINATION of a small number of atoms (e.g. a ligand) again many atoms (e.g. water).
 When the neighbor list is used, only the water atoms close to the ligand will be requested at each step.
 
-
-\page Openmp OpenMP
-
-PLUMED is partly parallelized using OpenMP.
-This should be enabled by default if your compiler supports it,
-and can be disabled with `--disable-openmp`..
-At runtime, you should set the environment variable
-PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
-The number of OpenMP threads can be set either by the MD code, if implemented in the patch, or generally by setting PLUMED_NUM_THREADS.
-If they are not set openmp will be disabled at runtime. 
-
-E.g., to run with gromacs you can do:
-\verbatim
-export PLUMED_NUM_THREADS=8
-mdrun -plumed
-\endverbatim
-
-or as well
-
-\verbatim
-mdrun -plumed -ntomp 8
-\endverbatim
-
-In the first case the number of OpenMP threads used by plumed is 8 while the one used by gromacs can be 1 or something else, this is usually sub optimal.
-In the second case GROMACS and plumed will use the same number of OpenMP threads.
-
-Notice that:
-- This option is likely to improve the performance, but could also slow down
-  the code in some case.
-- Results could be slightly different because of numerical round off and
-  different order in summations. This should be harmless.
-- The optimum number of threads is not necessary "all of them", nor should be
-  equal to the number of threads used to parallelize MD.
-- Only a few CVs are parallelized with openMP (currently, \ref COORDINATION and
-  \ref DHENERGY).
-- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
-  by default 512, to set the size of cache lines on your machine. This is used
-  by PLUMED to decrease the number of threads to be used in each loop so as to
-  avoid clashes in memory access. This variable is expected to affect
-  performance only, not results.
-
-
 \page Secondary Secondary Structure
 
 Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)

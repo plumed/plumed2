@@ -33,13 +33,11 @@ namespace s2cm {
 
 //
 
-//+PLUMEDOC S2CMMOD_COLVAR S2CM
+//+PLUMEDOC COLVAR S2CM
 /*
 S2 contact model CV.
 
-This CV was used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers.
-
-\par Examples
+This CV was used in the first paper cited below.  It is based on NH order parameter from the second paper cited below and the methyl order parameter from the third. Input parameters can be found in the relevant papers.
 
 
 */
@@ -97,6 +95,9 @@ void S2ContactModel::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","N_I"," n_i in the equation");
   keys.add("optional","R_SHIFT","shift all distances by given amount");
   keys.setValueDescription("scalar","the value of the CV");
+  keys.addDOI("10.1021/acs.jpclett.7b01770");
+  keys.addDOI("10.1021/ja027847a");
+  keys.addDOI("10.1023/B:JNMR.0000032612.70767.35");
 }
 
 S2ContactModel::S2ContactModel(const ActionOptions&ao):

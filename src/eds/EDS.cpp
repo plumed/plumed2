@@ -34,16 +34,16 @@ using namespace bias;
 namespace PLMD {
 namespace eds {
 
-//+PLUMEDOC EDSMOD_BIAS EDS
+//+PLUMEDOC BIAS EDS
 /*
 Add a linear bias on a set of observables.
 
-This force is the same as the linear part of the bias in \ref
-RESTRAINT, but this bias has the ability to compute the prefactors
-adaptively using the scheme of White and Voth \cite white2014efficient
+This force is the same as the linear part of the bias in
+[RESTRAINT](RESTRAINT.md), but this bias has the ability to compute the prefactors
+adaptively using the scheme of White and Voth that is discussed in the first paper cited below
 in order to match target observable values for a set of CVs.
-Further updates to the algorithm are described in \cite hocky2017cgds
-and you can read a review on the method and its applications here: \cite Amirkulova2019Recent.
+Further updates to the algorithm are described in the second paper cited below.
+The third paper cited below is a review on the method and its applications.
 
 You can
 see a tutorial on EDS specifically for biasing coordination number at
@@ -52,24 +52,26 @@ href="http://thewhitelab.org/blog/tutorial/2017/05/10/lammps-coordination-number
 Andrew White's webpage</a>.
 
 The addition to the potential is of the form
-\f[
-  \sum_i \frac{\alpha_i}{s_i} x_i
-\f]
 
-where for CV \f$x_i\f$, a coupling constant \f${\alpha}_i\f$ is determined
+$$
+  \sum_i \frac{\alpha_i}{s_i} x_i
+$$
+
+where for CV $x_i$, a coupling constant ${\alpha}_i$ is determined
 adaptively or set by the user to match a target value for
-\f$x_i\f$. \f$s_i\f$ is a scale parameter, which by default is set to
+$x_i$. $s_i$ is a scale parameter, which by default is set to
 the target value. It may also be set separately.
 
-\warning
+Notice that a similar method is available as [MAXENT](MAXENT.md), although with different features and using a different optimization algorithm.
+
+## Warning
+
 It is not possible to set the target value of the observable
-to zero with the default value of \f$s_i\f$ as this will cause a
-divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
+to zero with the default value of $s_i$ as this will cause a
+divide-by-zero error. Instead, set $s_i=1$ or modify the CV so the
 desired target value is no longer zero.
 
-Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
-
-\par Virial
+## Virial
 
 The bias forces modify the virial and this can change your simulation density if the bias is used in an NPT simulation.
 One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
@@ -79,7 +81,7 @@ the set-points and minimizing the virial. See \cite Amirkulova2019Recent for det
 are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
 which is almost always the case.
 
-\par Weighting
+## Weighting
 
 EDS computes means and variances as part of its algorithm. If you are
 also using a biasing method like metadynamics, you may wish to remove
@@ -88,7 +90,7 @@ the canonical values (reweighted to be unbiased).  For example, you may be using
 metadynamics to bias a dihedral angle to enhance sampling and be using
 EDS to set the average distance between two particular atoms. Specifically:
 
-\plumedfile
+```plumed
 # set-up metadynamics
 t: TORSION ATOMS=1,2,3,4
 md: METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500 TEMP=300
@@ -97,20 +99,20 @@ bias: REWEIGHT_METAD TEMP=300
 # now do EDS on distance while removing effect of metadynamics
 d: DISTANCE ATOMS=4,7
 eds: EDS ARG=d CENTER=3.0 PERIOD=100 TEMP=300 LOGWEIGHTS=bias
-\endplumedfile
+```
 
 This is an approximation though because EDS uses a finite samples while running to get means/variances.
 At the end of a run,
 you should ensure this approach worked and indeed your reweighted CV matches the target value.
 
-\par Examples
+## Examples
 
 The following input for a harmonic oscillator of two beads will
 adaptively find a linear bias to change the mean and variance to the
 target values. The PRINT line shows how to access the value of the
 coupling constants.
 
-\plumedfile
+```plumed
 dist: DISTANCE ATOMS=1,2
 # this is the squared of the distance
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
@@ -118,12 +120,11 @@ dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 # bias mean and variance
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
-\endplumedfile
-
-<hr>
+```
 
 Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
-\plumedfile
+
+```plumed
 dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
@@ -132,60 +133,47 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
 # same as above, except starting at -0.5,0.5 rather than default of 0,0
 eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
-\endplumedfile
+```
 
-<hr>
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
-\plumedfile
+
+```plumed
 dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
 # add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0 OUT_RESTART=checkpoint.eds
-\endplumedfile
+```
 
-The first few lines of the restart file that is output if we run a calculation with one CV will look something like this:
-
-\auxfile{restart.eds}
-#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad d1_accum d1_mean d1_std
-#! SET adaptive  1
-#! SET update_period  1
-#! SET seed  0
-#! SET kbt    2.4943
-   0.0000   1.0000   0.0000   0.0000   0.0000   7.4830   0.1497   0.0000   0.0000   0.0000
-   1.0000   1.0000   0.0000   0.0000   0.0000   7.4830   0.1497   0.0000   0.0000   0.0000
-   2.0000   1.0000  -7.4830   0.0000   0.0000   7.4830   0.1497   0.0224   0.0000   0.0000
-   3.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
-   4.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
-\endauxfile
-
-<hr>
+You can see extracts from the restart files that are output from these simulations in the following example inputs
+that fallow as these read in the restart file.
 
 Read in a previous restart file. Adding RESTART flag makes output append
-\plumedfile
+
+```plumed
+#SETTINGS INPUTFILES=extras/restart.eds
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
-\endplumedfile
-
-<hr>
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=extras/restart.eds RESTART=YES
+```
 
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
-\plumedfile
+
+```plumed
+#SETTINGS INPUTFILES=extras/restart.eds
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE
-\endplumedfile
-
-<hr>
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=extras/restart.eds FREEZE
+```
 
 Read in a previous restart file and freeze the bias at the mean from the previous simulation
-\plumedfile
+
+```plumed
+#SETTINGS INPUTFILES=extras/restart.eds
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
-\endplumedfile
-
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=extras/restart.eds FREEZE MEAN
+```
 
 */
 //+ENDPLUMEDOC
@@ -314,6 +302,9 @@ void EDS::registerKeywords(Keywords &keys) {
   keys.addOutputComponent("force2", "default", "scalar", "squared value of force from the bias");
   keys.addOutputComponent("pressure", "default", "scalar", "If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
   keys.addOutputComponent("_coupling", "default", "scalar", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
+  keys.addDOI("10.1021/ct500320c");
+  keys.addDOI("10.1021/acs.jctc.7b00690");
+  keys.addDOI("10.1080/08927022.2019.1608988");
 }
 
 EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),

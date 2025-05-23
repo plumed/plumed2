@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithMatrix.h"
+#include "OuterProduct.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "tools/LeptonCall.h"
 
@@ -81,187 +82,149 @@ the minimum of the two input variables or the maximum respectively.
 namespace PLMD {
 namespace matrixtools {
 
-class OuterProduct : public ActionWithMatrix {
-private:
-  bool domin, domax, diagzero;
-  LeptonCall function;
-  unsigned nderivatives;
-  bool stored_vector1, stored_vector2;
+class OuterProduct : public ActionShortcut {
 public:
+  static void getKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
   explicit OuterProduct(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void prepare() override ;
-  unsigned getNumberOfColumns() const override {
-    return getConstPntrToComponent(0)->getShape()[1];
-  }
-  void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(OuterProduct,"OUTER_PRODUCT")
 
-void OuterProduct::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys);
+void OuterProduct::getKeywords( Keywords& keys ) {
+  keys.setDisplayName("OUTER_PRODUCT");
   keys.addInputKeyword("compulsory","ARG","vector","the labels of the two vectors from which the outer product is being computed");
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.add("compulsory","FUNC","x*y","the function of the input vectors that should be put in the elements of the outer product");
   keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
   keys.setValueDescription("matrix","a matrix containing the outer product of the two input vectors that was obtained using the function that was input");
 }
 
+void OuterProduct::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  getKeywords( keys );
+  keys.addActionNameSuffix("_MIN");
+  keys.addActionNameSuffix("_MAX");
+  keys.addActionNameSuffix("_FUNC");
+}
+
 OuterProduct::OuterProduct(const ActionOptions&ao):
   Action(ao),
-  ActionWithMatrix(ao),
-  domin(false),
-  domax(false) {
-  if( getNumberOfArguments()!=2 ) {
-    error("should be two arguments to this action, a matrix and a vector");
-  }
-  if( getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) {
-    error("first argument to this action should be a vector");
-  }
-  if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) {
-    error("first argument to this action should be a vector");
-  }
+  ActionShortcut(ao) {
 
   std::string func;
   parse("FUNC",func);
   if( func=="min") {
-    domin=true;
-    log.printf("  taking minimum of two input vectors \n");
+    readInputLine( getShortcutLabel() + ": OUTER_PRODUCT_MIN FUNC=" + func + " " + convertInputLineToString() );
   } else if( func=="max" ) {
-    domax=true;
-    log.printf("  taking maximum of two input vectors \n");
+    readInputLine( getShortcutLabel() + ": OUTER_PRODUCT_MAX FUNC=" + func + " " + convertInputLineToString() );
   } else {
-    log.printf("  with function : %s \n", func.c_str() );
+    readInputLine( getShortcutLabel() + ": OUTER_PRODUCT_FUNC FUNC=" + func + " " + convertInputLineToString() );
+  }
+}
+
+class OutputProductMin {
+public:
+  static void registerKeywords( Keywords& keys );
+  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action );
+  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+};
+
+typedef OuterProductBase<OutputProductMin> opmin;
+PLUMED_REGISTER_ACTION(opmin,"OUTER_PRODUCT_MIN")
+
+void OutputProductMin::registerKeywords( Keywords& keys ) {
+  OuterProduct::getKeywords( keys );
+}
+
+void OutputProductMin::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action ) {
+  plumed_assert( func=="min" );
+  action->log.printf("  taking minimum of two input vectors \n");
+}
+
+void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+  if( vals[0]<vals[1] ) {
+    output.derivs[0][0] = 1;
+    output.derivs[0][1] = 0;
+    output.values[0] = vals[0];
+    return;
+  }
+  output.derivs[0][0] = 0;
+  output.derivs[0][1] = 1;
+  output.values[0] = vals[1];
+}
+
+class OutputProductMax {
+public:
+  static void registerKeywords( Keywords& keys );
+  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action );
+  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+};
+
+typedef OuterProductBase<OutputProductMax> opmax;
+PLUMED_REGISTER_ACTION(opmax,"OUTER_PRODUCT_MAX")
+
+void OutputProductMax::registerKeywords( Keywords& keys ) {
+  OuterProduct::getKeywords( keys );
+}
+
+void OutputProductMax::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action ) {
+  plumed_assert( func=="max" );
+  action->log.printf("  taking maximum of two input vectors \n");
+}
+
+void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+  if( vals[0]>vals[1] ) {
+    output.derivs[0][0] = 1;
+    output.derivs[0][1] = 0;
+    output.values[0] = vals[0];
+    return;
+  }
+  output.derivs[0][0] = 0;
+  output.derivs[0][1] = 1;
+  output.values[0] = vals[1];
+}
+
+class OutputProductFunc {
+public:
+  std::string inputf;
+  LeptonCall function;
+  static void registerKeywords( Keywords& keys );
+  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action );
+  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  OutputProductFunc& operator=( const OutputProductFunc& m ) {
+    inputf = m.inputf;
     std::vector<std::string> var(2);
     var[0]="x";
     var[1]="y";
-    function.set( func, var, this );
+    function.set( inputf, var );
+    return *this;
   }
-  parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",diagzero);
-  if( diagzero ) {
-    log.printf("  setting diagonal elements equal to zero\n");
-  }
+};
 
-  std::vector<unsigned> shape(2);
-  shape[0]=getPntrToArgument(0)->getShape()[0];
-  shape[1]=getPntrToArgument(1)->getShape()[0];
-  addValue( shape );
-  setNotPeriodic();
-  nderivatives = buildArgumentStore(0);
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored_vector1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
-  stored_vector2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
-  if( getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() || getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) {
-    getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
-  }
+typedef OuterProductBase<OutputProductFunc> opfunc;
+PLUMED_REGISTER_ACTION(opfunc,"OUTER_PRODUCT_FUNC")
+
+void OutputProductFunc::registerKeywords( Keywords& keys ) {
+  OuterProduct::getKeywords( keys );
 }
 
-unsigned OuterProduct::getNumberOfDerivatives() {
-  return nderivatives;
+void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action ) {
+  action->log.printf("  with function : %s \n", func.c_str() );
+  inputf = func;
+  std::vector<std::string> var(2);
+  var[0]="x";
+  var[1]="y";
+  function.set( func, var, action );
 }
 
-void OuterProduct::prepare() {
-  ActionWithVector::prepare();
-  Value* myval=getPntrToComponent(0);
-  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[0] ) {
-    return;
-  }
-  std::vector<unsigned> shape(2);
-  shape[0] = getPntrToArgument(0)->getShape()[0];
-  shape[1] = getPntrToArgument(1)->getShape()[0];
-  myval->setShape( shape );
-}
-
-void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[0];
-  if( diagzero ) {
-    if( indices.size()!=size_v ) {
-      indices.resize( size_v );
-    }
-    unsigned k=1;
-    for(unsigned i=0; i<size_v; ++i) {
-      if( task_index==i ) {
-        continue ;
-      }
-      indices[k] = size_v + i;
-      k++;
-    }
-    myvals.setSplitIndex( size_v );
-  } else {
-    if( indices.size()!=size_v+1 ) {
-      indices.resize( size_v+1 );
-    }
-    for(unsigned i=0; i<size_v; ++i) {
-      indices[i+1] = start_n + i;
-    }
-    myvals.setSplitIndex( size_v + 1 );
-  }
-}
-
-void OuterProduct::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
-  if( index2>=getPntrToArgument(0)->getShape()[0] ) {
-    ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-  }
-  if( diagzero && index1==ind2 ) {
-    return;
-  }
-
-  double fval;
-  unsigned jarg = 0, kelem = index1;
-  bool jstore=stored_vector1;
-  std::vector<double> args(2);
-  args[0] = getArgumentElement( 0, index1, myvals );
-  args[1] = getArgumentElement( 1, ind2, myvals );
-  if( domin ) {
-    fval=args[0];
-    if( args[1]<args[0] ) {
-      fval=args[1];
-      jarg=1;
-      kelem=ind2;
-      jstore=stored_vector2;
-    }
-  } else if( domax ) {
-    fval=args[0];
-    if( args[1]>args[0] ) {
-      fval=args[1];
-      jarg=1;
-      kelem=ind2;
-      jstore=stored_vector2;
-    }
-  } else {
-    fval=function.evaluate( args );
-  }
-
-  myvals.addValue( ostrn, fval );
-  if( doNotCalculateDerivatives() ) {
-    return ;
-  }
-
-  if( domin || domax ) {
-    addDerivativeOnVectorArgument( jstore, 0, jarg, kelem, 1.0, myvals );
-  } else {
-    addDerivativeOnVectorArgument( stored_vector1, 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
-    addDerivativeOnVectorArgument( stored_vector2, 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
-  }
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
-    return ;
-  }
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = arg_deriv_starts[1] + ind2;
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
-}
-
-void OuterProduct::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
-    return ;
-  }
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = ival;
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
+void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+  std::vector<double> vvv(2);
+  vvv[0]=vals[0];
+  vvv[1] = vals[1];
+  output.values[0] = actdata.function.evaluate( vvv );
+  output.derivs[0][0] = actdata.function.evaluateDeriv( 0, vvv );
+  output.derivs[0][1] = actdata.function.evaluateDeriv( 1, vvv );
 }
 
 }

@@ -1,0 +1,4 @@
+name: pytorch
+authors: Luigi Bonati
+description: an interface between PLUMED and the PyTorch machine learning library
+dois: ["10.1021/acs.jpclett.0c00535", "10.1073/pnas.2113533118"]

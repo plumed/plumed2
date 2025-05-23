@@ -45,7 +45,7 @@ pathtools can be used to construct paths from pdb data
 The path CVs in PLUMED are curvilinear coordinates through a high dimensional vector space.
 Enhanced sampling calculations are often run using the progress along the paths and the distance from the path as CVs
 as this provides a convenient way of defining a reaction coordinate for a complicated process.  This method is explained
-in the documentation for \ref PATH.
+in the documentation for [PATH](PATH.md).
 
 The path itself is an ordered set of equally-spaced, high-dimensional frames the way in which these frames
 should be constructed will depend on the problem in hand.  In other words, you will need to understand the reaction
@@ -59,47 +59,61 @@ of the frames in order to make them equally spaced so that they can be used as t
 output from this method may be useful as an initial guess path.  It is arguable that a linear path rather defeats the
 purpose of the path CV method, however, as the whole purpose is to be able to define non-linear paths.
 
-Notice that you can use these two methods and take advantage of all the ways of measuring \ref dists that are available within
-PLUMED. The way you do this with each of these tools described above is explained in the example below.
+## Examples
 
-\par Examples
-
-The example below shows how you can take a set of unequally spaced frames from a pdb file named in_path.pdb
+The example below shows how you can take a set of unequally spaced frames from a pdb file named `in_path.pdb`
 and use pathtools to make them equally spaced so that they can be used as the basis for a path CV.  The file
 containing this final path is named final_path.pdb.
 
-\verbatim
+```plumed
 plumed pathtools --path in_path.pdb --metric EUCLIDEAN --out final_path.pdb
-\endverbatim
+```
+
+In this case, each frame in the path is defined using a set of collective variable values.  An extract from the input pdb file
+will look something like this:
+
+````
+EMARK t1=-4.3345  t2=3.4725
+END
+REMARK t1=-4.1940  t2=3.3420
+END
+REMARK t1=-4.0535  t2=3.2114
+END
+REMARK t1=-3.9130  t2=3.0809
+END
+````
 
 The example below shows how can create an initial linear path connecting the two pdb frames in start.pdb and
 end.pdb.  In this case the path output to path.pdb will consist of 6 frames: the initial and final frames that
 were contained in start.pdb and end.pdb as well as four equally spaced frames along the vector connecting
 start.pdb to end.pdb.
 
-\verbatim
+```plumed
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb
-\endverbatim
+```
+
+The vectors connecting frames here are calculated using the [RMSD](RMSD.md) action with the DISPLACEMENT option.  The positions on the path
+are thus positions of atoms so the input files are normally formatted pdb files.
 
 Often the idea with path collective variables is to create a path connecting some initial state A to some final state B.  You would
 in this case have representative configurations from your A and B states defined in the input files to pathtools
-that we have called start.pdb and end.pdb in the example above.  Furthermore, it may be useful to have a few frames
+that we have called `start.pdb` and `end.pdb` in the example above.  Furthermore, it may be useful to have a few frames
 before your start frame and after your end frame.  You can use path tools to create these extended paths as shown below.
 In this case the final path would now consist of 8 frames.  Four of these frames would lie on the vector connecting state
 A to state B, there would be one frame each at start.pdb and end.pdb as well as one frame just before start.pdb and one
 frame just after end.pdb.  All these frames would be equally spaced.
 
-\verbatim
+```plumed
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb --nframes-before-start 2 --nframes-after-end 2
-\endverbatim
+```
 
 Notice also that when you re-parameterize paths you must choose two frames to fix.  Generally you chose to fix the states
 that are representative of your states A and B.  By default pathtools will fix the first and last frames.  You can, however,
 change the states to fix by taking advantage of the fixed flag as shown below.
 
-\verbatim
+```plumed
 plumed pathtools --path inpath.pdb --metric EUCLIDEAN --out outpath.pdb --fixed 2,12
-\endverbatim
+```
 
 */
 //+ENDPLUMEDOC
@@ -227,7 +241,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // Now create the metric object
     reparam_str += " METRIC=";
     if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-      reparam_str += "{RMSD_VECTOR DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype;
+      reparam_str += "{RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype;
       // Get the align values
       std::string anum;
       Tools::convert( alig[0], anum );
@@ -410,7 +424,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       alig[i] = pdb.getOccupancy()[i];
       disp[i]= pdb.getBeta()[i];
     }
-    std::string minput = "d: RMSD_VECTOR DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " ARG=endT,start";
+    std::string minput = "d: RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " ARG=endT,start";
     // Get the align values
     std::string anum;
     Tools::convert( alig[0], anum );
@@ -468,7 +482,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( !av ) {
     error("invalid input for metric" );
   }
-  if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD_VECTOR" ) {
+  if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) {
     error("cannot use multi component actions as metric");
   }
   std::string mydisp = av->copyOutput(0)->getName();
@@ -653,7 +667,7 @@ void PathTools::printLambda( const std::string& mtype, const std::vector<std::st
       std::string strv = "ref_" + jstr + "T: TRANSPOSE ARG=ref_" + jstr;
       const char* cstrv = strv.c_str();
       plmd.cmd("readInputLine",cstrv);
-      std::string dstring = "d" + istr + ": RMSD_VECTOR TYPE=" + mtype + " ARG=ref_" + jstr + "T,ref_" + istr;
+      std::string dstring = "d" + istr + ": RMSD TYPE=" + mtype + " ARG=ref_" + jstr + "T,ref_" + istr;
       // Get the align values
       std::string anum;
       Tools::convert( alig[0], anum );

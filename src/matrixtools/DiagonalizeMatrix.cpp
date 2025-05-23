@@ -115,8 +115,8 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   }
 
   std::string num;
-  std::vector<unsigned> eval_shape(0);
-  std::vector<unsigned> evec_shape(1);
+  std::vector<std::size_t> eval_shape(0);
+  std::vector<std::size_t> evec_shape(1);
   evec_shape[0] = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     Tools::convert( desired_vectors[i], num );
@@ -125,7 +125,6 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
     addComponent( "vecs-" + num, evec_shape );
     componentIsNotPeriodic( "vecs-" + num );
     // Make sure eigenvalues are always stored
-    getPntrToComponent( 2*i+1 )->buildDataStore();
   }
 
   std::vector<unsigned> eigvecs_shape(2);
@@ -136,7 +135,7 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
 }
 
 void DiagonalizeMatrix::prepare() {
-  std::vector<unsigned> shape(1);
+  std::vector<std::size_t> shape(1);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     if( getPntrToComponent( 2*i+1 )->getShape()[0]!=shape[0] ) {

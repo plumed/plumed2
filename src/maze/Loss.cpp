@@ -31,7 +31,7 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_LOSS MAZE_LOSS
+//+PLUMEDOC MAZE_LOSS_FUNCTION MAZE_LOSS
 /*
 
 Define a coarse-grained loss function describing interactions in a
@@ -39,22 +39,25 @@ ligand-protein complex, which is minimized during the simulation to
 obtain ligand unbinding pathways.
 
 The loss function is the following:
-\f[
+
+$$
 \mathcal{L}=
 \sum_{i=1}^{N_p}
 r_i^{-\alpha}\text{e}^{-\beta r_i^{-\gamma}},
-\f]
-where \f$N_p\f$ is the number of ligand-protein atom pairs, \f$r\f$
-is a re-scaled distance between the \f$i\f$th pair, and \f$\alpha,
-\beta, \gamma\f$ are the positive parameters defined in that order by
+$$
+
+where $N_p$ is the number of ligand-protein atom pairs, $r$
+is a re-scaled distance between the $i$th pair, and $\alpha,
+\beta, \gamma$ are the positive parameters defined in that order by
 the PARAMS keyword.
 
-\par Examples
+## Examples
 
 The loss function can be defined in the following way:
-\plumedfile
+
+```plumed
 l: MAZE_LOSS PARAMS=1,1,1
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

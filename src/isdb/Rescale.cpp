@@ -40,33 +40,33 @@ Scales the value of an another action, being a Collective Variable or a Bias.
 
 The rescaling factor is determined by a parameter defined on a logarithmic grid of dimension NBIN in the range
 from 1 to MAX_RESCALE. The current value of the rescaling parameter is stored and shared across
-other actions using a \ref SELECTOR. A Monte Carlo procedure is used to update the value
+other actions using a [SELECTOR](SELECTOR.md). A Monte Carlo procedure is used to update the value
 of the rescaling factor every MC_STRIDE steps of molecular dynamics. Well-tempered metadynamics, defined by the
 parameters W0 and BIASFACTOR, is used to enhance the sampling in the space of the rescaling factor.
 The well-tempered metadynamics bias potential is written to the file BFILE every BSTRIDE steps and read
-when restarting the simulation using the directive \ref RESTART.
+when restarting the simulation using the directive [RESTART](RESTART.md).
 
-\note
-Additional arguments not to be scaled, one for each bin in the rescaling parameter ladder, can be
-provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
-These arguments will be not be scaled, but they will be
-considered as bias potentials and used in the computation of the Metropolis
-acceptance probability when proposing a move in the rescaling parameter. See example below.
+> [! note]
+> Additional arguments not to be scaled, one for each bin in the rescaling parameter ladder, can be
+> provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
+> These arguments will be not be scaled, but they will be
+> considered as bias potentials and used in the computation of the Metropolis
+> acceptance probability when proposing a move in the rescaling parameter. See example below.
 
-\note
-If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
-the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
-\ref SELECTOR will be shared and thus will be the same in all replicas.
+> [! note]
+> If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
+> the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
+> [SELECTOR](SELECTOR.md) will be shared and thus will be the same in all replicas.
 
-\par Examples
+## Examples
 
-In this example we use \ref RESCALE to implement a simulated-tempering like approach.
+In this example we use [RESCALE](RESCALE.md) to implement a simulated-tempering like approach.
 The total potential energy of the system is scaled by a parameter defined on a logarithmic grid
 of 5 bins in the range from 1 to 1.5.
 A well-tempered metadynamics bias potential is used to ensure diffusion in the space of the rescaling
 parameter.
 
-\plumedfile
+```plumed
 ene: ENERGY
 
 SELECTOR NAME=GAMMA VALUE=0
@@ -78,16 +78,16 @@ W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
 ...
 
 PRINT FILE=COLVAR ARG=* STRIDE=100
-\endplumedfile
+```
 
 In this second example, we add to the simulated-tempering approach introduced above
-one Parallel Bias metadynamics simulation (see \ref PBMETAD) for each value of the rescaling parameter.
-At each moment of the simulation, only one of the \ref PBMETAD
-actions is activated, based on the current value of the associated \ref SELECTOR.
-The \ref PBMETAD bias potentials are not scaled, but just used in the calculation of
+one Parallel Bias metadynamics simulation (see [PBMETAD](PBMETAD.md)) for each value of the rescaling parameter.
+At each moment of the simulation, only one of the [PBMETAD](PBMETAD.md)
+actions is activated, based on the current value of the associated [SELECTOR](SELECTOR.md).
+The [PBMETAD](PBMETAD.md) bias potentials are not scaled, but just used in the calculation of
 the Metropolis acceptance probability when proposing a move in the rescaling parameter.
 
-\plumedfile
+```plumed
 ene: ENERGY
 d: DISTANCE ATOMS=1,2
 
@@ -107,8 +107,7 @@ W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
 ...
 
 PRINT FILE=COLVAR ARG=* STRIDE=100
-\endplumedfile
-
+```
 
 
 */

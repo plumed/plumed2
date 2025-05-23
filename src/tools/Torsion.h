@@ -43,8 +43,10 @@ public:
 /// to v2. To have a "normal" definition (= plumed1), use it as
 /// compute(r01,r12,r23);
 /// See ColvarTorsion for a practical usage...
+#pragma acc routine seq
   double compute(const Vector& v1,const Vector& v2,const Vector& v3)const;
 /// This is the version which also computes the derivatives wrt the arguments.
+#pragma acc routine seq
   double compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const;
 };
 

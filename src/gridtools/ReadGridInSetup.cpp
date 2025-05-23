@@ -28,7 +28,34 @@
 /*
 Setup a constant grid by either reading values from a file or definining a function in input
 
-\par Examples
+This action allows you to create a constant function and store the values that this function takes
+at a grid of points.  There are two ways that you can create the constant function.  You can either
+read in the value of the function at a set of  grid points from a file as is done in this example input:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/gridtools/rt-test-fib-read/kde.grid
+ffg: REFERENCE_GRID FILE=regtest/gridtools/rt-test-fib-read/kde.grid VALUE=h
+DUMPGRID ARG=ffg FILE=output.grid
+```
+
+The input file in this case has the format for grids that is discussed in the documentation for [DUMPGRID](DUMPGRID.md).
+
+The second way you can create these constant functions is illustrated below.
+
+```plumed
+d2: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 GRID_BIN=20 FUNC=d1*d1 VAR=d1 PERIODIC=NO
+d1: DISTANCE ATOMS=1,2
+ff: EVALUATE_FUNCTION_FROM_GRID GRID=d2
+PRINT ARG=d1,ff FMT=%8.4f FILE=colvar
+```
+
+This input illustrates a rather elaborate (and approximate) method for evaluating the square of the distance between atoms 1 and 2.
+As you can see, the option involves using the GRID_MIN, GRID_MAX and GRID_BIN options to create a grid of points.  You can then use the FUNC option
+to specify the function that should be evaluated at each of those grid points.
+If you use this option the lepton library that is discussed in the documentation for [CUSTOM](CUSTOM.md) is used to evaluate the
+function at the various grid points.
+
+N.B. This method with lepton was implemented to facilitate the implementation of the normalisation in the implementation of the [RDF](RDF.md) shortcut.
 
 */
 //+ENDPLUMEDOC
@@ -58,7 +85,7 @@ private:
   std::vector<std::string> dernames;
   void createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
                            const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-                           const std::vector<unsigned>& gbin );
+                           const std::vector<std::size_t>& gbin );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ReadGridInSetup(const ActionOptions&ao);
@@ -101,7 +128,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     parseVector("GRID_MIN",gmin);
     std::vector<std::string> gmax(gmin.size());
     parseVector("GRID_MAX",gmax);
-    std::vector<unsigned> gbin(gmin.size());
+    std::vector<std::size_t> gbin(gmin.size());
     parseVector("GRID_BIN",gbin);
     std::vector<std::string> pbc(gmin.size());
     parseVector("PERIODIC",pbc);
@@ -147,9 +174,9 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
       log.printf(" %s",dernames[i].c_str());
     }
     log.printf("\n");
-    log.printf("  on %d", gbin[0]);
+    log.printf("  on %ld", gbin[0]);
     for(unsigned i=1; i<gbin.size(); ++i) {
-      log.printf(" by %d \n", gbin[i]);
+      log.printf(" by %ld \n", gbin[i]);
     }
     log.printf(" grid of points between (%s", gmin[0].c_str() );
     for(unsigned i=1; i<gmin.size(); ++i) {
@@ -243,7 +270,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     std::vector<std::string> gmin( dernames.size() ), gmax( dernames.size() );
     std::string pstring;
     int gbin1;
-    std::vector<unsigned> gbin( dernames.size() );
+    std::vector<std::size_t> gbin( dernames.size() );
     std::vector<bool> ipbc( dernames.size() );
     if( !flatgrid ) {
       ifile.scanField( "nbins", gbin1);
@@ -257,10 +284,10 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
         ifile.scanField( "nbins_" + dernames[i], gbin1);
         gbin[i]=gbin1;
         if( pstring=="true" ) {
-          log.printf("   for periodic coordinate %s minimum is %s maximum is %s and number of bins is %d \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+          log.printf("   for periodic coordinate %s minimum is %s maximum is %s and number of bins is %ld \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
           ipbc[i]=true;
         } else if( pstring=="false" ) {
-          log.printf("   for coordinate %s minimum is %s maximum is %s and number of bins is %d \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+          log.printf("   for coordinate %s minimum is %s maximum is %s and number of bins is %ld \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
           ipbc[i]=false;
         } else {
           error("do not understand periodidicy of " + dernames[i] );
@@ -311,17 +338,17 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
 
 void ReadGridInSetup::createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
     const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-    const std::vector<unsigned>& gbin ) {
+    const std::vector<std::size_t>& gbin ) {
   gridobject.setup( gtype, ipbc, nfermi, 0.0 );
   std::vector<double> gspacing;
   if( gtype=="flat" ) {
     gridobject.setBounds( gmin, gmax, gbin, gspacing );
     // Now create the value
-    std::vector<unsigned> shape( gridobject.getNbin(true) );
+    std::vector<std::size_t> shape( gridobject.getNbin(true) );
     ActionWithValue::addValueWithDerivatives( shape );
     setNotPeriodic();
   } else {
-    std::vector<unsigned> shape( 3 );
+    std::vector<std::size_t> shape( 3 );
     shape[0]=gbin[0];
     shape[1]=shape[2]=1;
     ActionWithValue::addValueWithDerivatives( shape );

@@ -40,7 +40,7 @@ gen_json constructs a json file that includes a dictionary of actions, the keywo
 
 This command is used during the build process of plumed. It constructs a json file that contains documentation information on all actions and cltools. This json
 file is then used by the python package [PlumedToHTML](https://github.com/plumed/PlumedToHTML). This package is used to construct the example input files that
-appear in [the plumed nest](www.plumed-nest.org), [plumed tutorials](www.plumed-tutorials.org) and this manual.
+appear in [the plumed nest](https://www.plumed-nest.org), [plumed tutorials](https://www.plumed-tutorials.org) and this manual.
 
 You will likely not ever need to run this command.  When it runs during the build proess we use the following command:
 
@@ -277,12 +277,12 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"  },"<<std::endl;
   std::cout<<"  \"modules\" : {"<<std::endl;
   std::cout<<"    \""<<allmodules[0]<<"\" : { "<<std::endl;
-  printHyperlink( allmodules[0] );
+  printHyperlink( "module_" + allmodules[0] );
   std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   for(unsigned i=1; i<allmodules.size(); ++i) {
     std::cout<<"    },"<<std::endl;
     std::cout<<"    \""<<allmodules[i]<<"\" : { "<<std::endl;
-    printHyperlink( allmodules[i] );
+    printHyperlink( "module_" + allmodules[i] );
     std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;

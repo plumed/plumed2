@@ -47,9 +47,6 @@ PathProjectionCalculator::PathProjectionCalculator( Action* act ):
     }
   }
   // Ensure that values are stored in base calculation and that PLUMED doesn't try to calculate this in the stream
-  if( mypath_obj ) {
-    mypath_obj->buildDataStore();
-  }
   // Check that the input is a matrix
   if( mypath_obj )
     if( mypath_obj->getRank()!=2 ) {

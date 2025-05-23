@@ -2,3 +2,5 @@ name: matrixtools
 authors: Gareth Tribello
 description: tools for constructing and manipulating matrices
 dois: []
+tags: 
+  MATRIXF: actions that perform operations on input matrices

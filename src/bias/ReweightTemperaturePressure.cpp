@@ -26,54 +26,60 @@
 /*
 Calculate weights for ensemble averages at temperatures and/or pressures different than those used in your original simulation.
 
-We can use our knowledge of the probability distribution in the canonical (N\f$\mathcal{V}\f$T) or the isothermal-isobaric ensemble (NPT) to reweight the data
+We can use our knowledge of the probability distribution in the canonical (N$\mathcal{V}$T) or the isothermal-isobaric ensemble (NPT) to reweight the data
 contained in trajectories and obtain ensemble averages at different temperatures and/or pressures.
 
-Consider the ensemble average of an observable \f$O(\mathbf{R},\mathcal{V})\f$ that depends on the atomic coordinates \f$\mathbf{R}\f$ and the volume \f$\mathcal{V}\f$.
-This observable is in practice any collective variable (CV) calculated by Plumed.
-The ensemble average of the observable in an ensemble \f$ \xi' \f$  can be calculated from a simulation performed in an ensemble \f$ \xi \f$ using:
-\f[
+Consider the ensemble average of an observable $O(\mathbf{R},\mathcal{V})$ that depends on the atomic coordinates $\mathbf{R}$ and the volume $\mathcal{V}$.
+This observable is in practice any collective variable (CV) calculated by PLUMED.
+The ensemble average of the observable in an ensemble $\xi'$  can be calculated from a simulation performed in an ensemble $\xi$ using:
+
+$$
 \langle O(\mathbf{R},\mathcal{V}) \rangle_{\xi'} = \frac{\langle O(\mathbf{R},\mathcal{V}) w(\mathbf{R},\mathcal{V}) \rangle_{\xi}}
                                                      {\langle w(\mathbf{R},\mathcal{V}) \rangle_{\xi}}
-\f]
-where \f$\langle \cdot \rangle_{\xi}\f$ and  \f$\langle \cdot \rangle_{\xi'}\f$ are mean values in the simulated and targeted ensemble, respectively, \f$ E(\mathbf{R}) \f$ is the potential energy of the system, and \f$ w (\mathbf{R},\mathcal{V}) \f$ are the appropriate weights to take from \f$ \xi \f$ to \f$ \xi' \f$.
-This action calculates the weights  \f$ w (\mathbf{R},\mathcal{V}) \f$ and handles 4 different cases:
-  1. Change of temperature from T to T' at constant volume. That is to say, from a simulation performed in the N\f$\mathcal{V}\f$T (canonical) ensemble, obtain an ensemble average in the N\f$\mathcal{V}\f$T' ensemble. The weights in this case are  \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R})} \f$ with \f$ \beta \f$ and \f$ \beta' \f$ the inverse temperatures.
-  2. Change of temperature from T to T' at constant pressure. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NPT' ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')(E(\mathbf{R}) + P\mathcal{V}) } \f$.
-  3. Change of pressure from P to P' at constant temperature. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{\beta (P - P') \mathcal{V}} \f$.
-  4. Change of temperature and pressure from T,P to T',P'. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T' ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R}) + (\beta P - \beta' P') \mathcal{V}} \f$.
+$$
 
-These weights can be used in any action that computes ensemble averages.
-For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE.
+where $\langle \cdot \rangle_{\xi}$ and  $\langle \cdot \rangle_{\xi'}$ are mean values in the simulated and targeted ensemble, respectively, $E(\mathbf{R})$ is the potential energy of the system, and $w (\mathbf{R},\mathcal{V})$ are the appropriate weights to take from $\xi$ to $\xi'$.
+This action calculates the weights  $ w (\mathbf{R},\mathcal{V})$ and handles 4 different cases:
+
+  1. Change of temperature from T to T' at constant volume. That is to say, from a simulation performed in the N$\mathcal{V}$T (canonical) ensemble, obtain an ensemble average in the N$\mathcal{V}$T' ensemble. The weights in this case are $ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R})}$ with $\beta$ and $\beta'$ the inverse temperatures.
+  2. Change of temperature from T to T' at constant pressure. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NPT' ensemble. The weights in this case are $w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')(E(\mathbf{R}) + P\mathcal{V}) }$.
+  3. Change of pressure from P to P' at constant temperature. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T ensemble. The weights in this case are $w(\mathbf{R},\mathcal{V}) = e^{\beta (P - P') \mathcal{V}}$.
+  4. Change of temperature and pressure from T,P to T',P'. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T' ensemble. The weights in this case are $w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R}) + (\beta P - \beta' P') \mathcal{V}}$.
+
+These weights can be used in any action that computes ensemble averages.  For example this action can be used in tandem with [HISTOGRAM](HISTOGRAM.md) or [AVERAGE](AVERAGE.md).
 
 
 The above equation is often impractical since the overlap between the distributions of energy and volume at different temperatures and pressures is only significant for neighboring temperatures and pressures.
 For this reason an unbiased simulation is of little use to reweight at different temperatures and/or pressures.
-A successful approach has been altering the probability of observing a configuration in order to increase this overlap \cite wanglandau.
-This is done through a bias potential \f$ V(\mathbf{s}) \f$ where \f$ \mathbf{s} \f$ is a set of CVs, that often is the energy (and possibly the volume).
+A successful approach that is discussed in the first paper cited below is altering the probability of observing a configuration in order to increase this overlap.
+This is done through a bias potential $V(\mathbf{s})$ where $\mathbf{s}$ is a set of CVs, that often is the energy (and possibly the volume).
 In order to calculate ensemble averages, also the effect of this bias must be taken into account.
-The ensemble average of the observable in the ensemble \f$ \xi' \f$ can be calculated from a biased simulation performed in the ensemble \f$\xi\f$ with bias \f$ V(\mathbf{s}) \f$ using:
-\f[
+The ensemble average of the observable in the ensemble $\xi'$ can be calculated from a biased simulation performed in the ensemble $\xi$ with bias $V(\mathbf{s})$ using:
+
+$$
 \langle O(\mathbf{R},\mathcal{V}) \rangle_{\xi'} = \frac{\langle O(\mathbf{R},\mathcal{V})  w (\mathbf{R},\mathcal{V}) e^{\beta V(\mathbf{s})}  \rangle_{\xi,V}}
                                                      {\langle w (\mathbf{R},\mathcal{V})  e^{\beta V(\mathbf{s})}  \rangle_{\xi,V}}
-\f]
-where \f$\langle \cdot \rangle_{\xi,V}\f$ is a mean value in the biased ensemble with static bias \f$ V(\mathbf{s}) \f$.
-Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action \f$ w (\mathbf{R},\mathcal{V}) \f$ together with the weights of \ref REWEIGHT_BIAS (see the examples below).
+$$
 
-The bias potential \f$ V(\mathbf{s}) \f$ can be constructed with \ref METAD using \ref ENERGY as a CV \cite mich+04prl.
-More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-JCP-2019 within \ref VES.
+where $\langle \cdot \rangle_{\xi,V}$ is a mean value in the biased ensemble with static bias $V(\mathbf{s})$.
+Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action $w (\mathbf{R},\mathcal{V})$ together with the weights of [REWEIGHT_BIAS](REWEIGHT_BIAS.md) (see the examples below).
+
+The bias potential $V(\mathbf{s})$ can be constructed with [METAD](METAD.md) using [ENERGY](ENERGY.md) as a CV as discussed in the second paper cited below.
+The remaining papers cited below discuss more specialized tools that available, that, for instance, use bespoke target distributions such as [TD_MULTICANONICAL](TD_MULTICANONICAL.md) and [TD_MULTITHERMAL_MULTIBARIC](TD_MULTITHERMAL_MULTIBARIC.md) that are implemented within the [VES](module_ves.md).
 In the latter algorithms the interval of temperatures and pressures in which the trajectory can be reweighted is chosen explicitly.
 
-\par Examples
+## Examples
 
-We consider the 4 cases described above.
+We consider the 4 cases described above in the following examples
 
 The following input can be used to postprocess a molecular dynamics trajectory of a system of 1000 particles run at 500 K and constant volume using a static bias potential.
 
-\plumedfile
-energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
-distance: READ FILE=COLVAR VALUES=distance  IGNORE_TIME
-mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
+```plumed
+#SETTINGS INPUTFILES=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ
+
+energy: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=energy  IGNORE_TIME
+distance: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=distance  IGNORE_TIME
+mybias: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=mybias.bias  IGNORE_TIME
 
 # Shift energy (to avoid numerical issues)
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
@@ -86,26 +92,21 @@ temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=500 REWEIGHT_TEMP=300 ENERGY=renerg
 avg_dist: AVERAGE ARG=distance LOGWEIGHTS=bias_weights,temp_press_weights
 
 PRINT ARG=avg_dist FILE=COLVAR_REWEIGHT STRIDE=1
-\endplumedfile
+```
 
-Clearly, in performing the analysis above we would read from the potential energy, a distance, and the value of the bias potential from a COLVAR file like the one shown below.  We would then be able
-to calculate the ensemble average of the distance at 300 K.
-
-\auxfile{COLVAR}
-#! FIELDS time energy volume mybias.bias distance
- 10000.000000 -13133.769283 7.488921 63.740530 0.10293
- 10001.000000 -13200.239722 7.116548 36.691988 0.16253
- 10002.000000 -13165.108850 7.202273 44.408815 0.17625
-\endauxfile
+Clearly, in performing the analysis above we read from the potential energy, a distance, and the value of the bias potential from a COLVAR file.  Having done the reweighting
+we can then calculate the ensemble average of the distance at 300 K.
 
 The next three inputs can be used to postprocess a molecular dynamics trajectory of a system of 1000 particles run at 500 K and 1 bar using a static bias potential.
 
 We read from a file COLVAR the potential energy, the volume, and the value of the bias potential and calculate the ensemble average of the (particle) density at 300 K and 1 bar (the simulation temperature was 500 K).
 
-\plumedfile
-energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
-volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
-mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
+```plumed
+#SETTINGS INPUTFILES=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ
+
+energy: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=energy  IGNORE_TIME
+volume: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=volume  IGNORE_TIME
+mybias: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=mybias.bias  IGNORE_TIME
 
 # Shift energy and volume (to avoid numerical issues)
 rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
@@ -121,13 +122,15 @@ avg_vol: AVERAGE ARG=volume LOGWEIGHTS=bias_weights,temp_press_weights
 avg_density: CUSTOM ARG=avg_vol FUNC=1000/x PERIODIC=NO
 
 PRINT ARG=avg_density FILE=COLVAR_REWEIGHT STRIDE=1
-\endplumedfile
+```
 
 In the next example we calculate the ensemble average of the (particle) density at 500 K and 300 MPa (the simulation pressure was 1 bar).
 
-\plumedfile
-volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
-mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
+```plumed
+#SETTINGS INPUTFILES=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ
+
+volume: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=volume  IGNORE_TIME
+mybias: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=mybias.bias  IGNORE_TIME
 
 # Shift volume (to avoid numerical issues)
 rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
@@ -142,15 +145,16 @@ avg_vol: AVERAGE ARG=volume LOGWEIGHTS=bias_weights,temp_press_weights
 avg_density: CUSTOM ARG=avg_vol FUNC=1000/x PERIODIC=NO
 
 PRINT ARG=avg_density FILE=COLVAR_REWEIGHT STRIDE=1
-\endplumedfile
-
+```
 
 In this final example we calculate the ensemble average of the (particle) density at 300 K and 300 MPa (the simulation temperature and pressure were 500 K and 1 bar).
 
-\plumedfile
-energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
-volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
-mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
+```plumed
+#SETTINGS INPUTFILES=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ
+
+energy: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=energy  IGNORE_TIME
+volume: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=volume  IGNORE_TIME
+mybias: READ FILE=regtest/landmarks/rt-reweight-temp-press/COLVAR-READ VALUES=mybias.bias  IGNORE_TIME
 
 # Shift energy and volume (to avoid numerical issues)
 rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
@@ -166,7 +170,7 @@ avg_vol: AVERAGE ARG=volume LOGWEIGHTS=bias_weights,temp_press_weights
 avg_density: CUSTOM ARG=avg_vol FUNC=1000/x PERIODIC=NO
 
 PRINT ARG=avg_density FILE=COLVAR_REWEIGHT STRIDE=1
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -195,6 +199,10 @@ void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   keys.add("optional","PRESSURE","The system pressure");
   keys.add("optional","REWEIGHT_TEMP","Reweighting temperature");
   keys.setValueDescription("scalar","the weight to use for this frame to determine its contribution at a different temperature/pressure");
+  keys.addDOI("10.1103/PhysRevLett.86.2050");
+  keys.addDOI("10.1103/PhysRevLett.92.170601");
+  keys.addDOI("10.1103/PhysRevLett.122.050601");
+  keys.addDOI("10.1063/1.5102104");
 }
 
 ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao):

@@ -140,26 +140,30 @@ that each hydrogen atom participates in.
 namespace PLMD {
 namespace pamm {
 
-class HBPammMatrix : public adjmat::AdjacencyMatrixBase {
-private:
+class HBPammMatrix {
+public:
   double regulariser;
   Tensor incoord_to_hbcoord;
   std::vector<double> weight;
   std::vector<Vector> centers;
   std::vector<Tensor> kmat;
-public:
-/// Create manual
   static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit HBPammMatrix(const ActionOptions&);
-///
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
+  void parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action );
+  HBPammMatrix& operator=( const HBPammMatrix& m ) {
+    regulariser = m.regulariser;
+    incoord_to_hbcoord = m.incoord_to_hbcoord;
+    weight = m.weight;
+    centers = m.centers;
+    kmat = m.kmat;
+    return *this;
+  }
+  static void calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
+typedef adjmat::AdjacencyMatrixBase<HBPammMatrix> hbpmap;
+PLUMED_REGISTER_ACTION(hbpmap,"HBPAMM_MATRIX")
 
 void HBPammMatrix::registerKeywords( Keywords& keys ) {
-  adjmat::AdjacencyMatrixBase::registerKeywords( keys );
   keys.use("GROUPC");
   keys.add("compulsory","ORDER","dah","the order in which the groups are specified in the input.  Can be dah (donor/acceptor/hydrogens), "
            "adh (acceptor/donor/hydrogens) or hda (hydrogens/donor/acceptors");
@@ -173,13 +177,11 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
   keys.addDOI("10.1021/acs.jctc.7b00993");
 }
 
-HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
-  Action(ao),
-  AdjacencyMatrixBase(ao) {
+void HBPammMatrix::parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action ) {
   double DP2CUTOFF;
-  parse("GAUSS_CUTOFF",DP2CUTOFF);
+  action->parse("GAUSS_CUTOFF",DP2CUTOFF);
   std::string sorder;
-  parse("ORDER",sorder);
+  action->parse("ORDER",sorder);
   if( sorder=="dah" ) {
     incoord_to_hbcoord(0,0)=1;
     incoord_to_hbcoord(0,1)=-1;
@@ -190,7 +192,7 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
     incoord_to_hbcoord(2,0)=0;
     incoord_to_hbcoord(2,1)=0;
     incoord_to_hbcoord(2,2)=1;
-    log.printf("  GROUPA is list of donor atoms \n");
+    action->log.printf("  GROUPA is list of donor atoms \n");
   } else if( sorder=="adh" ) {
     incoord_to_hbcoord(0,0)=-1;
     incoord_to_hbcoord(0,1)=1;
@@ -201,7 +203,7 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
     incoord_to_hbcoord(2,0)=0;
     incoord_to_hbcoord(2,1)=0;
     incoord_to_hbcoord(2,2)=1;
-    log.printf("  GROUPA is list of acceptor atoms \n");
+    action->log.printf("  GROUPA is list of acceptor atoms \n");
   } else if( sorder=="hda" ) {
     incoord_to_hbcoord(0,0)=-1;
     incoord_to_hbcoord(0,1)=0;
@@ -212,18 +214,18 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
     incoord_to_hbcoord(2,0)=0;
     incoord_to_hbcoord(2,1)=1;
     incoord_to_hbcoord(2,2)=0;
-    log.printf("  GROUPA is list of hydrogen atoms \n");
+    action->log.printf("  GROUPA is list of hydrogen atoms \n");
   } else {
     plumed_error();
   }
   // Read in the regularisation parameter
-  parse("REGULARISE",regulariser);
+  action->parse("REGULARISE",regulariser);
 
   // Read in the kernels
   double sqr2pi = sqrt(2*pi);
   double sqrt2pi3 = sqr2pi*sqr2pi*sqr2pi;
   std::string fname;
-  parse("CLUSTERS", fname);
+  action->parse("CLUSTERS", fname);
   double sfmax=0, ww;
   Vector cent;
   Tensor covar;
@@ -268,62 +270,79 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
     ifile.scanField();
   }
   ifile.close();
-  setLinkCellCutoff( false, sfmax );
+  action->setLinkCellCutoff( false, sfmax );
 }
 
-double HBPammMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector ddij, ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;
-  ddin = pbcDistance( pos1, pos2 );
+void HBPammMatrix::calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput& output ) {
+  Vector ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;
+  ddin = input.pos;
   in_dists[2] = ddin.modulo();
   if( in_dists[2]<epsilon ) {
-    return 0;
+    return;
   }
 
-  double tot=0;
+  output.val[0]=0;
   Vector disp, der, tmp_der;
-  for(unsigned i=0; i<natoms; ++i) {
-    ddij = getPosition(i,myvals);
+  for(unsigned i=0; i<input.natoms; ++i) {
+    Vector ddij( input.extra_positions[i][0], input.extra_positions[i][1], input.extra_positions[i][2] );
     in_dists[0] = ddij.modulo();
-    ddik = pbcDistance( pos2, getPosition(i,myvals) );
+    ddik = input.pbc->distance( input.pos, ddij );
     in_dists[1] = ddik.modulo();
     if( in_dists[1]<epsilon ) {
       continue;
     }
 
-    hb_pamm_dists = matmul( incoord_to_hbcoord, in_dists );
-    disp = hb_pamm_dists - centers[0];
-    der = matmul( kmat[0], disp );
-    double vv = weight[0]*exp( -dotProduct( disp, der ) / 2. );
+    hb_pamm_dists = matmul( data.incoord_to_hbcoord, in_dists );
+    disp = hb_pamm_dists - data.centers[0];
+    der = matmul( data.kmat[0], disp );
+    double vv = data.weight[0]*exp( -dotProduct( disp, der ) / 2. );
     der *= -vv;
 
-    double denom = regulariser + vv;
+    double denom = data.regulariser + vv;
     for(unsigned j=0; j<3; ++j) {
       hb_pamm_ders[j] = der[j];
     }
-    for(unsigned k=1; k<weight.size(); ++k) {
-      disp = hb_pamm_dists - centers[k];
-      tmp_der = matmul( kmat[k], disp );
-      double tval = weight[k]*exp( -dotProduct( disp, tmp_der ) / 2. );
+    for(unsigned k=1; k<data.weight.size(); ++k) {
+      disp = hb_pamm_dists - data.centers[k];
+      tmp_der = matmul( data.kmat[k], disp );
+      double tval = data.weight[k]*exp( -dotProduct( disp, tmp_der ) / 2. );
       denom += tval;
       hb_pamm_ders += -tmp_der*tval;
     }
     double vf = vv / denom;
-    tot += vf;
+    output.val[0] += vf;
     if( fabs(vf)<epsilon ) {
       continue;
     }
     // Now get derivatives
-    real_ders = matmul( der / denom - vf*hb_pamm_ders/denom, incoord_to_hbcoord );
+    real_ders = matmul( der / denom - vf*hb_pamm_ders/denom, data.incoord_to_hbcoord );
 
     // And add the derivatives to the underlying atoms
-    addAtomDerivatives( 0, -(real_ders[0]/in_dists[0])*ddij - (real_ders[2]/in_dists[2])*ddin, myvals );
-    addAtomDerivatives( 1, -(real_ders[1]/in_dists[1])*ddik + (real_ders[2]/in_dists[2])*ddin, myvals );
-    addThirdAtomDerivatives( i, (real_ders[0]/in_dists[0])*ddij + (real_ders[1]/in_dists[1])*ddik, myvals );
-    addBoxDerivatives( -(real_ders[0]/in_dists[0])*Tensor( ddij, ddij )
-                       -(real_ders[1]/in_dists[1])*Tensor( ddik, ddik )
-                       -(real_ders[2]/in_dists[2])*Tensor( ddin, ddin ), myvals );
+    Vector d1 = -(real_ders[0]/in_dists[0])*ddij - (real_ders[2]/in_dists[2])*ddin;
+    output.deriv[0] += d1[0];
+    output.deriv[1] += d1[1];
+    output.deriv[2] += d1[2];
+    Vector d2 = -(real_ders[1]/in_dists[1])*ddik + (real_ders[2]/in_dists[2])*ddin;
+    output.deriv[3] += d2[0];
+    output.deriv[4] += d2[1];
+    output.deriv[5] += d2[2];
+    Vector d3 = (real_ders[0]/in_dists[0])*ddij + (real_ders[1]/in_dists[1])*ddik;
+    output.deriv[6+i*3+0] = d3[0];
+    output.deriv[6+i*3+1] = d3[1];
+    output.deriv[6+i*3+2] = d3[2];
+    Tensor vir = -(real_ders[0]/in_dists[0])*Tensor( ddij, ddij )
+                 -(real_ders[1]/in_dists[1])*Tensor( ddik, ddik )
+                 -(real_ders[2]/in_dists[2])*Tensor( ddin, ddin );
+    output.deriv[6 + 3*input.natoms + 0] += vir[0][0];
+    output.deriv[6 + 3*input.natoms + 1] += vir[0][1];
+    output.deriv[6 + 3*input.natoms + 2] += vir[0][2];
+    output.deriv[6 + 3*input.natoms + 3] += vir[1][0];
+    output.deriv[6 + 3*input.natoms + 4] += vir[1][1];
+    output.deriv[6 + 3*input.natoms + 5] += vir[1][2];
+    output.deriv[6 + 3*input.natoms + 6] += vir[2][0];
+    output.deriv[6 + 3*input.natoms + 7] += vir[2][1];
+    output.deriv[6 + 3*input.natoms + 8] += vir[2][2];
   }
-  return tot;
 }
 
 class HBPammShortcut : public ActionShortcut {
@@ -337,7 +356,7 @@ PLUMED_REGISTER_ACTION(HBPammShortcut,"HBPAMM_SA")
 PLUMED_REGISTER_ACTION(HBPammShortcut,"HBPAMM_SH")
 
 void HBPammShortcut::registerKeywords( Keywords& keys ) {
-  HBPammMatrix::registerKeywords( keys );
+  adjmat::AdjacencyMatrixBase<HBPammMatrix>::registerKeywords( keys );
   keys.remove("GROUP");
   keys.remove("GROUPA");
   keys.remove("GROUPB");

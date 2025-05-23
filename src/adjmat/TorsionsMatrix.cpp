@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionWithMatrix.h"
 #include "core/ActionRegister.h"
+#include "core/ParallelTaskManager.h"
 #include "tools/Torsion.h"
 
 //+PLUMEDOC MCOLVAR TORSIONS_MATRIX
@@ -69,36 +70,51 @@ that was specified.  The final output is $2 \times 3$ matrix that contains all t
 namespace PLMD {
 namespace adjmat {
 
+class TorsionsMatrixInput {
+public:
+  RequiredMatrixElements outmat;
+};
+
 class TorsionsMatrix : public ActionWithMatrix {
+public:
+  using input_type = TorsionsMatrixInput;
+  using PTM = ParallelTaskManager<TorsionsMatrix>;
 private:
-  unsigned nderivatives;
-  bool stored_matrix1, stored_matrix2;
+  PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
   explicit TorsionsMatrix(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override {
-    return getConstPntrToComponent(0)->getShape()[1];
-  }
-  void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
+  unsigned getNumberOfDerivatives() override ;
+  void prepare() override ;
+  void calculate() override ;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+  void getInputData( std::vector<double>& inputdata ) const override ;
+  static void performTask( std::size_t task_index, const TorsionsMatrixInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const TorsionsMatrixInput& actiondata );
+  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const TorsionsMatrixInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(TorsionsMatrix,"TORSIONS_MATRIX")
 
 void TorsionsMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of this matrix to compute");
   keys.addInputKeyword("compulsory","ARG","matrix","an Nx3 and a 3xN matrix that contain the bond vectors that you would like to determine the torsion angles between");
   keys.add("atoms","POSITIONS1","the positions to use for the molecules specified using the first argument");
   keys.add("atoms","POSITIONS2","the positions to use for the molecules specified using the second argument");
+  PTM::registerKeywords( keys );
   keys.setValueDescription("matrix","the matrix of torsions between the two vectors of input directors");
 }
 
 TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   Action(ao),
-  ActionWithMatrix(ao) {
-  if( getNumberOfArguments()!=2 ) {
+  ActionWithMatrix(ao),
+  taskmanager(this) {
+  int nm=getNumberOfMasks();
+  if( nm<0 ) {
+    nm = 0;
+  }
+  if( getNumberOfArguments()-nm!=2 ) {
     error("should be two arguments to this action, a matrix and a vector");
   }
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
@@ -140,114 +156,181 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   log.printf("\n");
   requestAtoms( atoms_a, false );
 
-  std::vector<unsigned> shape(2);
+  std::vector<std::size_t> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape );
   setPeriodic("-pi","pi");
-  nderivatives = buildArgumentStore(0) + 3*getNumberOfAtoms() + 9;
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
-  stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+
+  if( nm>0 ) {
+    unsigned iarg = getNumberOfArguments()-1;
+    if( getPntrToArgument(iarg)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
+      error("argument passed to MASK keyword should be a matrix");
+    }
+    if( getPntrToArgument(iarg)->getShape()[0]!=shape[0] || getPntrToArgument(iarg)->getShape()[1]!=shape[1] ) {
+      error("argument passed to MASK keyword has the wrong shape");
+    }
+  }
+  taskmanager.setActionInput( TorsionsMatrixInput() );
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() {
-  return nderivatives;
+  return 3*getNumberOfAtoms() + 9 + getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(1)->getNumberOfStoredValues();
 }
 
-void TorsionsMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
-  if( indices.size()!=size_v+1 ) {
-    indices.resize( size_v+1 );
-  }
-  for(unsigned i=0; i<size_v; ++i) {
-    indices[i+1] = start_n + i;
-  }
-  myvals.setSplitIndex( size_v + 1 );
-}
-
-void TorsionsMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
-  if( index2>=getPntrToArgument(0)->getShape()[0] ) {
-    ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-  }
-
-  Vector v1, v2, dv1, dv2, dconn;
-  // Compute the distance connecting the two centers
-  Vector conn=pbcDistance( getPosition(index1), getPosition(index2) );
-  if( conn.modulo2()<epsilon ) {
+void TorsionsMatrix::prepare() {
+  ActionWithVector::prepare();
+  Value* myval = getPntrToComponent(0);
+  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[1] ) {
     return;
   }
+  std::vector<std::size_t> shape(2);
+  shape[0]=getPntrToArgument(0)->getShape()[0];
+  shape[1]=getPntrToArgument(1)->getShape()[1];
+  myval->setShape(shape);
+  myval->reshapeMatrixStore( shape[1] );
+}
 
-  // Get the two vectors
-  for(unsigned i=0; i<3; ++i) {
-    v1[i] = getElementOfMatrixArgument( 0, index1, i, myvals );
-    v2[i] = getElementOfMatrixArgument( 1, i, ind2, myvals );
+void TorsionsMatrix::calculate() {
+  updateBookeepingArrays( taskmanager.getActionInput().outmat );
+  unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
+  taskmanager.setupParallelTaskManager( 21, getNumberOfDerivatives() - getPntrToArgument(0)->getNumberOfStoredValues() );
+  taskmanager.runAllTasks();
+}
+
+void TorsionsMatrix::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(1)->getNumberOfStoredValues() + 3*getNumberOfAtoms();
+
+  if( inputdata.size()!=total_data ) {
+    inputdata.resize( total_data );
   }
-  // Evaluate angle
+
+  total_data = 0;
+  Value* myarg = getPntrToArgument(0);
+  for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+    inputdata[total_data] = myarg->get(j,false);
+    total_data++;
+  }
+  myarg = getPntrToArgument(1);
+  for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+    inputdata[total_data] = myarg->get(j,false);
+    total_data++;
+  }
+  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+    Vector pos( getPosition(j) );
+    inputdata[total_data+0] = pos[0];
+    inputdata[total_data+1] = pos[1];
+    inputdata[total_data+2] = pos[2];
+    total_data += 3;
+  }
+
+}
+
+void TorsionsMatrix::performTask( std::size_t task_index,
+                                  const TorsionsMatrixInput& actiondata,
+                                  ParallelActionsInput& input,
+                                  ParallelActionsOutput& output ) {
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
+  std::size_t nelements = actiondata.outmat.bookeeping[fstart];
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t nargdata = arg1.start + arg1.shape[0]*arg1.ncols;
+
+  // Get the position and orientation for the first molecule
+  std::size_t atbase = nargdata + 3*task_index;
+  Vector atom1( input.inputdata[atbase], input.inputdata[atbase+1], input.inputdata[atbase+2] );
+  std::size_t agbase = arg0.ncols*task_index;
+  Vector v1( input.inputdata[agbase], input.inputdata[agbase+1], input.inputdata[agbase+2] );
+
+  // Get the distances to all the molecules in the coordination sphere
+  std::vector<Vector> atom2( nelements );
+  for(unsigned i=0; i<nelements; ++i) {
+    std::size_t at2base = nargdata + 3*arg0.shape[0] + 3*actiondata.outmat.bookeeping[fstart+1+i];
+    atom2[i] = Vector( input.inputdata[at2base], input.inputdata[at2base+1], input.inputdata[at2base+2] ) - atom1;
+  }
+  input.pbc->apply( atom2, nelements );
+
+  // Now compute all the torsions
   Torsion t;
-  double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
-  myvals.addValue( ostrn, angle );
-
-  if( doNotCalculateDerivatives() ) {
-    return;
-  }
-
-  // Add the derivatives on the matrices
-  for(unsigned i=0; i<3; ++i) {
-    addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, dv1[i], myvals );
-    addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, dv2[i], myvals );
-  }
-  // And derivatives on positions
-  unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
-  for(unsigned i=0; i<3; ++i) {
-    myvals.addDerivative( ostrn, narg_derivatives + 3*index1+i, -dconn[i] );
-    myvals.addDerivative( ostrn, narg_derivatives + 3*index2+i, dconn[i] );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+i );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index2+i );
-  }
-  //And virial
-  Tensor vir( -extProduct( conn, dconn ) );
-  unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
-  for(unsigned i=0; i<3; ++i)
-    for(unsigned j=0; j<3; ++j ) {
-      myvals.addDerivative( ostrn, virbase+3*i+j, vir(i,j) );
-      myvals.updateIndex( ostrn, virbase+3*i+j );
+  Vector dv1, dconn, dv2 ;
+  for(unsigned i=0; i<nelements; ++i) {
+    if( atom2[i].modulo2()<epsilon ) {
+      if( !input.noderiv ) {
+        View<double, 21> der( output.derivatives.data() + 21*i );
+        for(unsigned j=0; j<21; ++j) {
+          der[j] = 0;
+        }
+      }
+      continue ;
     }
+
+    std::size_t ag2base = arg1.start + actiondata.outmat.bookeeping[fstart+1+i];
+    Vector v2(input.inputdata[ag2base], input.inputdata[ag2base+arg1.ncols], input.inputdata[ag2base+2*arg1.ncols] );
+    output.values[i] = t.compute( v1, atom2[i], v2, dv1, dconn, dv2 );
+
+    if( input.noderiv ) {
+      continue ;
+    }
+
+    std::size_t base = + 21*i;
+    View<double, 3> deriv1( output.derivatives.data() + base );
+    deriv1 = dv1;
+    View<double, 3> deriv2( output.derivatives.data() + base + 3 );
+    deriv2 = dv2;
+    View<double, 3> deriv3( output.derivatives.data() + base + 6 );
+    deriv3 = -dconn;
+    View<double, 3> deriv4( output.derivatives.data() + base + 9 );
+    deriv4 = dconn;
+    Tensor vir( -extProduct( atom2[i], dconn ) );
+    View2D<double,3,3> virial( output.derivatives.data() + base + 12 );
+    for(unsigned j=0; j<3; ++j) {
+      for(unsigned k=0; k<3; ++k) {
+        virial[j][k] = vir[j][k];
+      }
+    }
+  }
+
 }
 
-void TorsionsMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) {
-    return ;
-  }
+void TorsionsMatrix::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
 
-  unsigned mat1s = 3*ival, ss = getPntrToArgument(1)->getShape()[1];
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-  unsigned ntwo_atoms = myvals.getSplitIndex();
-  for(unsigned j=0; j<3; ++j) {
-    matrix_indices[nmat_ind] = mat1s + j;
-    nmat_ind++;
-    matrix_indices[nmat_ind] = narg_derivatives + mat1s + j;
-    nmat_ind++;
-    for(unsigned i=1; i<ntwo_atoms; ++i) {
-      unsigned ind2 = indices[i];
-      if( ind2>=getPntrToArgument(0)->getShape()[0] ) {
-        ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
-      }
-      matrix_indices[nmat_ind] = arg_deriv_starts[1] + j*ss + ind2;
-      nmat_ind++;
-      matrix_indices[nmat_ind] = narg_derivatives + 3*indices[i] + j;
-      nmat_ind++;
-    }
+int TorsionsMatrix::getNumberOfValuesPerTask( std::size_t task_index, const TorsionsMatrixInput& actiondata ) {
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
+  return actiondata.outmat.bookeeping[fstart];
+}
+
+void TorsionsMatrix::getForceIndices( std::size_t task_index,
+                                      std::size_t colno,
+                                      std::size_t ntotal_force,
+                                      const TorsionsMatrixInput& actiondata,
+                                      const ParallelActionsInput& input,
+                                      ForceIndexHolder force_indices ) {
+  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
+  std::size_t arg1start = task_index*arg0.ncols;
+  force_indices.indices[0][0] = arg1start;
+  force_indices.indices[0][1] = arg1start + 1;
+  force_indices.indices[0][2] = arg1start + 2;
+  force_indices.threadsafe_derivatives_end[0] = 3;
+  force_indices.indices[0][3] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno];
+  force_indices.indices[0][4] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno] + arg1.ncols;
+  force_indices.indices[0][5] = arg1.start + actiondata.outmat.bookeeping[fstart+1+colno] + 2*arg1.ncols;
+  std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
+  std::size_t atom1start = atomstart + 3*task_index;
+  force_indices.indices[0][6] = atom1start;
+  force_indices.indices[0][7] = atom1start + 1;
+  force_indices.indices[0][8] = atom1start + 2;
+  std::size_t atom2start = atomstart + 3*arg0.shape[0] + 3*actiondata.outmat.bookeeping[fstart+1+colno];
+  force_indices.indices[0][9] = atom2start;
+  force_indices.indices[0][10] = atom2start + 1;
+  force_indices.indices[0][11] = atom2start + 2;
+  std::size_t n=12;
+  for(unsigned j=ntotal_force-9; j<ntotal_force; ++j) {
+    force_indices.indices[0][n] = j;
+    ++n;
   }
-  unsigned base = narg_derivatives + 3*getNumberOfAtoms();
-  for(unsigned j=0; j<9; ++j) {
-    matrix_indices[nmat_ind] = base + j;
-    nmat_ind++;
-  }
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
+  force_indices.tot_indices[0] = 21;
 }
 
 }

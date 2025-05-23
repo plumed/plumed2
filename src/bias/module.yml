@@ -1,0 +1,7 @@
+name: bias
+authors: The PLUMED core developers
+description: bias potentials that can be used to force rare events to occur in MD simulations 
+dois: []
+tags:
+  BIAS: bias potentials that can be used to force rare events to occur in MD simulations
+  REWEIGHTING: actions for computing weights that can be used when calculating the unbiased distribution

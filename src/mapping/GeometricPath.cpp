@@ -28,7 +28,82 @@
 /*
 Distance along and from a path calculated using geometric formulas
 
-\par Examples
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that
+paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating
+the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their
+method, the progress along the path $s$ is calculated using:
+
+$$
+s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
+$$
+
+where $\mathbf{v}_1$ and $\mathbf{v}_3$ are the vectors connecting the current position to the closest and second closest node of the path,
+respectfully and $i_1$ and $i_2$ are the projections of the closest and second closest frames of the path. $\mathbf{v}_2$, meanwhile, is the
+vector connecting the closest frame to the second closest frame.  The distance from the path, $z$ is calculated using:
+
+$$
+z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
+$$
+
+The symbols here are as they were for $s$.
+
+Please note that the shortcut [GPATH](GPATH.md) provides an interface to this action that is less flexible than using this action directly but that is easier to use.
+
+## Examples
+
+The example input below shows how to use this action
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
+# Calculate the instaneous position in the high dimensional space
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+# Read in the refence coordinates from the path
+ref_d1x: PDB2CONSTANT REFERENCE=regtest/mapping/rt-adapt/mypath.pdb ARG=d1.x
+ref_d1y: PDB2CONSTANT REFERENCE=regtest/mapping/rt-adapt/mypath.pdb ARG=d1.y
+path: CONSTANT VALUES=-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5
+# Now calculate the differences between our instantaneous position and the milestones on the high dimensional space
+d1_data: DISPLACEMENT ARG1=d1.x,d1.y ARG2=ref_d1x,ref_d1y
+# And finally the path CV
+pp: GEOMETRIC_PATH ARG=d1_data METRIC={DIFFERENCE} REFERENCE=ref_d1x,ref_d1y PROPERTY=path
+PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
+```
+
+The curved path here is defined using a series of points in a two dimensional space.  The input above includes actions ([PDB2CONSTANT](PDB2CONSTANT.md)) that set up
+constant values that hold the values of the arguments for each of the milestones on the path.  A [DISPLACEMENT](DISPLACEMENT.md) shortcut is then used to calculate the vectors
+connecting each of the path milestones to the instantenous coordinates of the system in the high dimensional space.  Notice, how the METRIC keyword is used in the input
+to GEOMETRIC_PATH.  This keyword is necessary as the vectors connecting adjacent milestones on the path appear in the equations for $s$ and $z$ above.  The METRIC keyword tells
+this action how distances between frames should be calculated.  There are essentially two options that we have tested here.  You can use [DIFFERENCE](DIFFERENCE.md) as has been done above.  In that
+case the assumption is the path milestones are vectors of coordinates and the difference $\mathbf{v}$ between two of them, $\mathbf{m}_1$ and $\mathbf{m}_2$, can be calculated as:
+
+$$
+\mathbf{v} = \mathbf{m}_1 - \mathbf{m}_2
+$$
+
+with periodic variables treated appropriately.  Alternatively, the path milestones might be the positions of atoms and you may want to calculate differences between
+them using an [RMSD](RMSD.md) action as has been done in the example below.
+
+```plumed
+##SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+# Positions for all the frames in the path
+path: CONSTANT VALUES=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42
+# Calculate the vectors connecting the instantaneous position to the path milesones
+vecs: RMSD DISPLACEMENT SQUARED REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL
+p1b: GEOMETRIC_PATH ARG=vecs.disp REFERENCE=vecs_ref METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} PROPERTY=path METRIC_COMPONENT=disp
+PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
+```
+
+Here an [RMSD](RMSD.md) action with label `vecs` is used to calculate the vector connecting the instantaneous position and each of the path milestones.  These vectors thus describe
+how far each atom has been displaced in going from one structure to the other in a way that neglects translation of the center of mass and rotation of the reference frame.  When we
+compute the formula aboves, which include the vectors that connect various milestone configurations on our path we must compute the vector connecting the milestones using the same
+approach. The input associated with the METRIC keyword is thus the same input as was used in the RMSD action that was used to calculate the vectors connecting the milestones to the
+instantaneous configuration.  Furthermore, we must also use METRIC_COMPONENT here to specify that it is the `disp` component of the [RMSD](RMSD.md) action that contains the vector of
+interest.
+
+It is worth noting that the METRIC keyword in the inputs above can accept inputs for one or multiple PLUMED actions.  There is thus flexibility to implement more complicated variants on the geometric path
+implemented here by using the input for different actions as input to the METRIC keyword. If you are interested in using these features you can look at the code within `src/mapping/PathProjectionCalculator.h
+and `src/mapping/PathProjectionCalculator.cpp` to see how this method called a separate PLUMED instance to calculate the vectors connecting the various milesones in the path.
+
 
 */
 //+ENDPLUMEDOC
@@ -57,6 +132,8 @@ void GeometricPath::registerKeywords(Keywords& keys) {
   keys.addInputKeyword("compulsory","PROPERTY","vector","the label of a value that contains the coordinates we are projecting these points onto");
   keys.addOutputComponent("s","default","scalar","the position on the path");
   keys.addOutputComponent("z","default","scalar","the distance from the path");
+  keys.addDOI("10.1063/1.2432340");
+  keys.addDOI("10.1103/PhysRevLett.109.020601");
   keys.needsAction("GEOMETRIC_PATH");
   keys.needsAction("PDB2CONSTANT");
 }
@@ -65,7 +142,6 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   path_projector(this) {
-  plumed_assert( !actionInChain() );
   // Get the coordinates in the low dimensional space
   std::vector<std::string> pcoord;
   parseVector("PROPERTY", pcoord );

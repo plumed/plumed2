@@ -165,7 +165,6 @@ Print::Print(const ActionOptions&ao):
   log.printf("  with format %s\n",fmt.c_str());
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ofile.setupPrintValue( getPntrToArgument(i) );
-    getPntrToArgument(i)->buildDataStore(true);
   }
 /////////////////////////////////////////
 // these are crazy things just for debug:

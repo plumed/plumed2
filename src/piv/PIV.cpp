@@ -35,14 +35,14 @@ using namespace std;
 namespace PLMD {
 namespace piv {
 
-//+PLUMEDOC PIVMOD_COLVAR PIV
+//+PLUMEDOC COLVAR PIV
 /*
 Calculates the PIV-distance.
 
-PIV distance is the squared Cartesian distance between the PIV \cite gallet2013structural \cite pipolo2017navigating
+PIV distance is the squared Cartesian distance between the PIV
 associated to the configuration of the system during the dynamics and a reference configuration provided
 as input (PDB file format).
-PIV can be used together with \ref FUNCPATHMSD to define a path in the PIV space.
+PIV can be used together with [FUNCPATHMSD](FUNCPATHMSD.md) to define a path in the PIV space.
 
 \par Examples
 
@@ -57,7 +57,7 @@ Values for SORT, SFACTOR and the neighbor list parameters have to be specified f
 The order is the following: AA,BB,CC,AB,AC,BC. If ONLYDIRECT (ONLYCROSS) is used the order is AA,BB,CC (AB,AC,BC).
 The sorting operation within each PIV block is performed using the counting sort algorithm, PRECISION specifies the size of the counting array.
 
-\plumedfile
+```plumed
 PIV ...
 LABEL=Pivd1
 PRECISION=1000
@@ -117,23 +117,23 @@ NL_SKIN=0.1,0.1,0.1,0.1,0.1,0.1
 ... PIV
 
 PRINT ARG=Pivd1,Pivd2,Pivd3 FILE=colvar
-\endplumedfile
+````
 
 WARNING:
 Both the "CRYST" and "ATOM" lines of the PDB files must conform precisely to the official pdb format, including the width of each alphanumerical field:
 
-\verbatim
+````
 CRYST1   31.028   36.957   23.143  89.93  92.31  89.99 P 1           1
 ATOM      1  OW1 wate    1      15.630  19.750   1.520  1.00  0.00
-\endverbatim
+````
 
 In each pdb frame, atoms must be numbered in the same order and with the same element symbol as in the input of the MD program.
 
 The following example calculates the PIV-distances from two reference configurations Ref1.pdb and Ref2.pdb
-and uses PIV-distances to define a Path Collective Variable (\ref FUNCPATHMSD) with only two references (Ref1.pdb and Ref2.pdb).
+and uses PIV-distances to define a Path Collective Variable ([FUNCPATHMSD](FUNCPATHMSD.md)) with only two references (Ref1.pdb and Ref2.pdb).
 With the VOLUME keyword one scales the atom-atom distances by the cubic root of the ratio between the specified value and the box volume of the initial step of the trajectory file.
 
-\plumedfile
+```plumed
 PIV ...
 LABEL=c1
 PRECISION=1000
@@ -172,11 +172,9 @@ NL_SKIN=0.1,0.1
 p1: FUNCPATHMSD ARG=c1,c2 LAMBDA=0.180338
 METAD ARG=p1.s,p1.z SIGMA=0.01,0.2 HEIGHT=0.8 PACE=500   LABEL=res
 PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
-\endplumedfile
+```
 
-When using PIV please cite \cite pipolo2017navigating .
-
-(See also \ref PRINT)
+When using PIV please cite the papers from the reference section below.
 
 */
 //+ENDPLUMEDOC
@@ -258,6 +256,8 @@ void PIV::registerKeywords( Keywords& keys ) {
   keys.add("optional","NL_SKIN","The maximum atom displacement tolerated for the neighbor lists update.");
   keys.reset_style("SWITCH","compulsory");
   keys.setValueDescription("scalar","the PIV-distance");
+  keys.addDOI("10.1063/1.4818005");
+  keys.addDOI("10.1103/PhysRevLett.119.245701");
 }
 
 PIV::PIV(const ActionOptions&ao):

@@ -30,38 +30,46 @@ namespace bias {
 Defines a wall for the value of one or more collective variables,
  which limits the region of the phase space accessible during the simulation.
 
-The restraining potential starts acting on the system when the value of the CV is greater
-(in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT)
-minus an offset \f$o_i\f$ (OFFSET).
-The expression for the bias due to the wall is given by:
+If the inputs to the arguments are scalars the restraining potential starts acting on the system when the value of the CV is greater
+than a certain limit $a_i$ (AT) minus an offset $o_i$ (OFFSET).  The expression for the bias due to the wall is given by:
 
-for UPPER_WALLS:
-\f$
+$$
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
-\f$
+$$
 
-for LOWER_WALLS:
-\f$
-  \sum_i {k_i}|(x_i-a_i-o_i)/s_i|^e_i
-\f$
-
-\f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and
-\f$e_i\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFFSET = 0.
-
-
-\par Examples
+In this expression $k_i$ (KAPPA) is an energy constant in internal unit of the code, $s_i$ (EPS) a rescaling factor and
+$e_i$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFFSET = 0.
 
 The following input tells plumed to add both a lower and an upper walls on the distance
 between atoms 3 and 5 and the distance between atoms 2 and 4. The lower and upper limits
 are defined at different values. The strength of the walls is the same for the four cases.
 It also tells plumed to print the energy of the walls.
-\plumedfile
-DISTANCE ATOMS=3,5 LABEL=d1
-DISTANCE ATOMS=2,4 LABEL=d2
-UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=uwall
-LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=lwall
+
+```plumed
+d1: DISTANCE ATOMS=3,5
+d2: DISTANCE ATOMS=2,4
+uwall: UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0
+lwall: LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0
 PRINT ARG=uwall.bias,lwall.bias
-\endplumedfile
+```
+
+Alternatively, if the input to this action is a vector as in the example shown below:
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+uwall: UPPER_WALLS ARG=d1 AT=1.0 KAPPA=150.0 EXP=2 EPS=1 OFFSET=0
+PRINT ARG=uwall.bias
+```
+
+The bias that acts is given by the following expression:
+
+$$
+  \sum_i \sum_j {k_i}((x_{ij}-a_i+o_i)/s_i)^e_i
+$$
+
+The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
+Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be
+equal to the number of arguments to the action.
 
 */
 //+ENDPLUMEDOC

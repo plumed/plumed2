@@ -30,162 +30,122 @@
 /*
 Accumulate the average probability density along a few CVs from a trajectory.
 
-When using this method it is supposed that you have some collective variable \f$\zeta\f$ that
+When using this shortcut it is supposed that you have some collective variable $\zeta$ that
 gives a reasonable description of some physical or chemical phenomenon.  As an example of what we
 mean by this suppose you wish to examine the following SN2 reaction:
 
-\f[
+$$
  \textrm{OH}^- + \textrm{CH}_3Cl  \rightarrow \textrm{CH}_3OH + \textrm{Cl}^-
-\f]
+$$
 
-The distance between the chlorine atom and the carbon is an excellent collective variable, \f$\zeta\f$,
-in this case because this distance is short for the reactant, \f$\textrm{CH}_3Cl\f$, because the carbon
+The distance between the chlorine atom and the carbon is an excellent collective variable, $\zeta$,
+in this case because this distance is short for the reactant, $\textrm{CH}_3Cl$, because the carbon
 and chlorine are chemically bonded, and because it is long for the product state when these two atoms are
-not chemically bonded.  We thus might want to accumulate the probability density, \f$P(\zeta)\f$, as a function of this distance
+not chemically bonded.  We thus might want to accumulate the probability density, $P(\zeta)$, as a function of this distance
 as this will provide us with information about the overall likelihood of the reaction.   Furthermore, the
-free energy, \f$F(\zeta)\f$, is related to this probability density via:
+free energy, $F(\zeta)$, is related to this probability density via:
 
-\f[
+$$
 F(\zeta) = - k_B T \ln P(\zeta)
-\f]
+$$
 
-Accumulating these probability densities is precisely what this Action can be used to do.  Furthermore, the conversion
-of the histogram to the free energy can be achieved by using the method \ref CONVERT_TO_FES.
+Accumulating these probability densities is precisely what this shortcut can be used to do.  Furthermore, the conversion
+of the histogram to the free energy can be achieved by using the method [CONVERT_TO_FES](CONVERT_TO_FES.md).
 
-We calculate histograms within PLUMED using a method known as kernel density estimation, which you can read more about here:
+We calculate histograms within PLUMED using a method known as [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
+This shortcut action thus uses the [KDE](KDE.md) and [ACCUMULATE](ACCUMULATE.md) actions to build up the time average of the histogram.
 
-https://en.wikipedia.org/wiki/Kernel_density_estimation
-
-In PLUMED the value of \f$\zeta\f$ at each discrete instant in time in the trajectory is accumulated.  A kernel, \f$K(\zeta-\zeta(t'),\sigma)\f$,
-centered at the current value, \f$\zeta(t)\f$, of this quantity is generated with a bandwidth \f$\sigma\f$, which
+In PLUMED the value of $\zeta$ at each discrete instant in time in the trajectory is accumulated.  A kernel, $K(\zeta-\zeta(t'),\sigma)$,
+centered at the current value, $\zeta(t)$, of this quantity is generated with a bandwidth $\sigma$, which
 is set by the user.  These kernels are then used to accumulate the ensemble average for the probability density:
 
-\f[
+$$
 \langle P(\zeta) \rangle = \frac{ \sum_{t'=0}^t w(t') K(\zeta-\zeta(t'),\sigma) }{ \sum_{t'=0}^t w(t') }
-\f]
+$$
 
 Here the sums run over a portion of the trajectory specified by the user.  The final quantity evaluated is a weighted
-average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space
-sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
+average as the weights, $w(t')$, allow us to negate the effect any bias might have on the region of phase space
+sampled by the system.
 
 A discrete analogue of kernel density estimation can also be used.  In this analogue the kernels in the above formula
 are replaced by Dirac delta functions.   When this method is used the final function calculated is no longer a probability
 density - it is instead a probability mass function as each element of the function tells you the value of an integral
 between two points on your grid rather than the value of a (continuous) function on a grid.
 
-Additional material and examples can be also found in the tutorials \ref lugano-1.
+Additional material and examples can be also found in [this tutorial](https://www.plumed-tutorials.org/lessons/21/002/data/NAVIGATION.html),
+which also introduces the technique known as block averaging.
 
-\par A note on block averaging and errors
-
-Some particularly important
-issues related to the convergence of histograms and the estimation of error bars around the ensemble averages you calculate are covered in \ref trieste-2.
-The technique for estimating error bars that is known as block averaging is introduced in this tutorial.  The essence of this technique is that
-the trajectory is split into a set of blocks and separate ensemble averages are calculated from each separate block of data.  If \f$\{A_i\}\f$ is
-the set of \f$N\f$ block averages that are obtained from this technique then the final error bar is calculated as:
-
-\f[
-\textrm{error} = \sqrt{ \frac{1}{N} \frac{1}{N-1} \sum_{i=1}^N (A_i^2 - \langle A \rangle )^2 } \qquad \textrm{where} \qquad \langle A \rangle = \frac{1}{N} \sum_{i=1}^N A_i
-\f]
-
-If the simulation is biased and reweighting is performed then life is a little more complex as each of the block averages should be calculated as a
-weighted average.  Furthermore, the weights should be taken into account when the final ensemble and error bars are calculated.  As such the error should be:
-
-\f[
-\textrm{error} = \sqrt{ \frac{1}{N} \frac{\sum_{i=1}^N W_i }{\sum_{i=1}^N W_i - \sum_{i=1}^N W_i^2 / \sum_{i=1}^N W_i} \sum_{i=1}^N W_i (A_i^2 - \langle A \rangle )^2 }
-\f]
-
-where \f$W_i\f$ is the sum of all the weights for the \f$i\f$th block of data.
-
-If we wish to calculate a normalized histogram we must calculate ensemble averages from our biased simulation using:
-\f[
- \langle H(x) \rangle = \frac{\sum_{t=1}^M w_t K( x - x_t,\sigma) }{\sum_{t=1}^M w_t}
-\f]
-where the sums runs over the trajectory, \f$w_t\f$ is the weight of the \f$t\f$th trajectory frame, \f$x_t\f$ is the value of the CV for the \f$t\f$th
-trajectory frame and \f$K\f$ is a kernel function centered on \f$x_t\f$ with bandwidth \f$\sigma\f$.  The quantity that is evaluated is the value of the
-normalized histogram at point \f$x\f$.  The following ensemble average will be calculated if you use the NORMALIZATION=true option in HISTOGRAM.
-If the ensemble average is calculated in this way we must calculate the associated error bars from our block averages using the second of the expressions
-above.
-
-A number of works have shown that when biased simulations are performed it is often better to calculate an estimate of the histogram that is not normalized using:
-\f[
-\langle H(x) \rangle = \frac{1}{M} \sum_{t=1}^M w_t K( x - x_t,\sigma)
-\f]
-instead of the expression above.  As such this is what is done by default in HISTOGRAM or if the NORMALIZATION=ndata option is used.
-When the histogram is calculated in this second way the first of the two formula above can be used when calculating error bars from
-block averages.
-
-\par Examples
+## Examples
 
 The following input monitors two torsional angles during a simulation
 and outputs a continuous histogram as a function of them at the end of the simulation.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo STRIDE=100000
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
 previous example.
 
-\plumedfile
-TORSION ATOMS=1,2,3,4 LABEL=r1
-TORSION ATOMS=2,3,4,5 LABEL=r2
-HISTOGRAM ...
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
   ARG=r1,r2 CLEAR=100000
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  LABEL=hh
-... HISTOGRAM
+...
 
-DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endplumedfile
+DUMPGRID ARG=hh FILE=histo STRIDE=100000
+```
 
 */
 //+ENDPLUMEDOC

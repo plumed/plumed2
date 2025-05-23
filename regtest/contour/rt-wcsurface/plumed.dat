@@ -13,4 +13,4 @@ dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f
 
 cont: FIND_CONTOUR ARG=dens CONTOUR=0.42
-DUMPCONTOUR ARG=cont.dens_dist.x FILE=surface.xyz FMT=%8.4f
+DUMPCONTOUR ARG=cont FILE=surface.xyz FMT=%8.4f

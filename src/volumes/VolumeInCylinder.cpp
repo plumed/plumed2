@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include "tools/HistogramBead.h"
 #include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES INCYLINDER
@@ -87,50 +88,56 @@ Calculate a vector from the input positions with elements equal to one when the 
 namespace PLMD {
 namespace volumes {
 
-class VolumeInCylinder : public ActionVolume {
-private:
+class VolumeInCylinder {
+public:
   bool docylinder;
-  Vector origin;
-  HistogramBead bead;
+  double min, max, sigma;
+  std::string kerneltype;
+  std::string swinput;
   std::vector<unsigned> dir;
   SwitchingFunction switchingFunction;
-public:
   static void registerKeywords( Keywords& keys );
-  explicit VolumeInCylinder (const ActionOptions& ao);
-  void setupRegions() override;
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
+  void parseInput( ActionVolume<VolumeInCylinder>* action );
+  void setupRegions( ActionVolume<VolumeInCylinder>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
+  static void parseAtoms( ActionVolume<VolumeInCylinder>* action, std::vector<AtomNumber>& atom );
+  VolumeInCylinder& operator=( const VolumeInCylinder& m ) {
+    docylinder=m.docylinder;
+    min=m.min;
+    max=m.max;
+    sigma=m.sigma;
+    kerneltype=m.kerneltype;
+    dir=m.dir;
+    swinput=m.swinput;
+    std::string errors;
+    switchingFunction.set(swinput,errors);
+    return *this;
+  }
+  static void calculateNumberInside( const VolumeInput& input, const VolumeInCylinder& actioninput, VolumeOutput& output );
 };
 
-PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER_CALC")
+typedef ActionVolume<VolumeInCylinder> Volc;
+PLUMED_REGISTER_ACTION(Volc,"INCYLINDER_CALC")
 char glob_cylinder[] = "INCYLINDER";
 typedef VolumeShortcut<glob_cylinder> VolumeInCylinderShortcut;
 PLUMED_REGISTER_ACTION(VolumeInCylinderShortcut,"INCYLINDER")
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
   keys.setDisplayName("INCYLINDER");
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
+  keys.add("optional","SIGMA","the width of the function to be used for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
   keys.add("compulsory","RADIUS","a switching function that gives the extent of the cylinder in the plane perpendicular to the direction");
   keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
   keys.add("compulsory","UPPER","0.0","the upper boundary on the direction parallel to the long axis of the cylinder");
-  keys.reset_style("SIGMA","optional");
   keys.linkActionInDocs("RADIUS","LESS_THAN");
 }
 
-VolumeInCylinder::VolumeInCylinder(const ActionOptions& ao):
-  Action(ao),
-  ActionVolume(ao),
-  docylinder(false) {
-  std::vector<AtomNumber> atom;
-  parseAtomList("CENTER",atom);
-  if( atom.size()!=1 ) {
-    error("should only be one atom specified");
-  }
-  log.printf("  center of cylinder is at position of atom : %d\n",atom[0].serial() );
-
+void VolumeInCylinder::parseInput( ActionVolume<VolumeInCylinder>* action ) {
+  action->parse("SIGMA",sigma);
+  action->parse("KERNEL",kerneltype);
   std::string sdir;
-  parse("DIRECTION",sdir);
+  action->parse("DIRECTION",sdir);
   if( sdir=="X") {
     dir.push_back(1);
     dir.push_back(2);
@@ -144,65 +151,69 @@ VolumeInCylinder::VolumeInCylinder(const ActionOptions& ao):
     dir.push_back(1);
     dir.push_back(2);
   } else {
-    error(sdir + "is not a valid direction.  Should be X, Y or Z");
+    action->error(sdir + "is not a valid direction.  Should be X, Y or Z");
   }
-  log.printf("  cylinder's long axis is along %s axis\n",sdir.c_str() );
+  action->log.printf("  cylinder's long axis is along %s axis\n",sdir.c_str() );
 
-  std::string sw, errors;
-  parse("RADIUS",sw);
-  if(sw.length()==0) {
-    error("missing RADIUS keyword");
+  std::string errors;
+  action->parse("RADIUS",swinput);
+  if(swinput.length()==0) {
+    action->error("missing RADIUS keyword");
   }
-  switchingFunction.set(sw,errors);
+  switchingFunction.set(swinput,errors);
   if( errors.length()!=0 ) {
-    error("problem reading RADIUS keyword : " + errors );
+    action->error("problem reading RADIUS keyword : " + errors );
   }
-  log.printf("  radius of cylinder is given by %s \n", ( switchingFunction.description() ).c_str() );
+  action->log.printf("  radius of cylinder is given by %s \n", ( switchingFunction.description() ).c_str() );
 
-  double min, max;
-  parse("LOWER",min);
-  parse("UPPER",max);
+  docylinder=false;
+  action->parse("LOWER",min);
+  action->parse("UPPER",max);
   if( min!=0.0 ||  max!=0.0 ) {
     if( min>max ) {
-      error("minimum of cylinder should be less than maximum");
+      action->error("minimum of cylinder should be less than maximum");
     }
     docylinder=true;
-    log.printf("  cylinder extends from %f to %f along the %s axis\n",min,max,sdir.c_str() );
-    bead.isNotPeriodic();
-    bead.setKernelType( getKernelType() );
-    bead.set( min, max, getSigma() );
+    action->log.printf("  cylinder extends from %f to %f along the %s axis\n",min,max,sdir.c_str() );
   }
-
-  checkRead();
-  requestAtoms(atom);
 }
 
-void VolumeInCylinder::setupRegions() { }
+void VolumeInCylinder::parseAtoms( ActionVolume<VolumeInCylinder>* action, std::vector<AtomNumber>& atom ) {
+  action->parseAtomList("CENTER",atom);
+  if( atom.size()!=1 ) {
+    action->error("should only be one atom specified");
+  }
+  action->log.printf("  center of cylinder is at position of atom : %d\n",atom[0].serial() );
+}
 
-double VolumeInCylinder::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
+void VolumeInCylinder::calculateNumberInside( const VolumeInput& input, const VolumeInCylinder& actioninput, VolumeOutput& output ) {
   // Calculate position of atom wrt to origin
-  Vector fpos=pbcDistance( getPosition(0), cpos );
+  Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
 
   double vcylinder, dcylinder;
-  if( docylinder ) {
-    vcylinder=bead.calculate( fpos[dir[2]], dcylinder );
+  if( actioninput.docylinder ) {
+    HistogramBead bead;
+    bead.isNotPeriodic();
+    bead.setKernelType( actioninput.kerneltype );
+    bead.set( actioninput.min, actioninput.max, actioninput.sigma );
+    vcylinder=bead.calculate( fpos[actioninput.dir[2]], dcylinder );
   } else {
     vcylinder=1.0;
     dcylinder=0.0;
   }
 
-  const double dd = fpos[dir[0]]*fpos[dir[0]] + fpos[dir[1]]*fpos[dir[1]];
-  double dfunc, vswitch = switchingFunction.calculateSqr( dd, dfunc );
-  derivatives.zero();
-  double value=vswitch*vcylinder;
-  derivatives[dir[0]]=vcylinder*dfunc*fpos[dir[0]];
-  derivatives[dir[1]]=vcylinder*dfunc*fpos[dir[1]];
-  derivatives[dir[2]]=vswitch*dcylinder;
+  const double dd = fpos[actioninput.dir[0]]*fpos[actioninput.dir[0]] + fpos[actioninput.dir[1]]*fpos[actioninput.dir[1]];
+  double dfunc, vswitch = actioninput.switchingFunction.calculateSqr( dd, dfunc );
+  output.values[0]=vswitch*vcylinder;
+  output.derivatives[actioninput.dir[0]]=vcylinder*dfunc*fpos[actioninput.dir[0]];
+  output.derivatives[actioninput.dir[1]]=vcylinder*dfunc*fpos[actioninput.dir[1]];
+  output.derivatives[actioninput.dir[2]]=vswitch*dcylinder;
   // Add derivatives wrt to position of origin atom
-  refders[0] = -derivatives;
+  output.refders[0][0] = -output.derivatives[0];
+  output.refders[0][1] = -output.derivatives[1];
+  output.refders[0][2] = -output.derivatives[2];
   // Add virial contribution
-  vir -= Tensor(fpos,derivatives);
-  return value;
+  output.virial.set( 0, -Tensor(fpos,Vector(output.derivatives[0], output.derivatives[1], output.derivatives[2])) );
 }
 
 }

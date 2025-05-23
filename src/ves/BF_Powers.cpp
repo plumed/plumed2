@@ -32,22 +32,24 @@ namespace ves {
 /*
 Polynomial power basis functions.
 
-\attention
-__These basis functions should not be used in conventional biasing simulations__.
-Instead you should use orthogonal basis functions like Legendre or
-Chebyshev polynomials. They are only included for usage in \ref ves_md_linearexpansion
-and some special cases.
+> [!attention]
+> __These basis functions should not be used in conventional biasing simulations__.
+> Instead you should use orthogonal basis functions like Legendre or
+> Chebyshev polynomials. They are only included for usage in [ves_md_linearexpansion](ves_md_linearexpansion.md)
+> and some special cases.
 
 Basis functions given by polynomial powers defined on a bounded interval.
-You need to provide the interval \f$[a,b]\f$
+You need to provide the interval $[a,b]$
 on which the basis functions are to be used, and the order of the
-expansion \f$N\f$ (i.e. the highest power used).
-The total number of basis functions is \f$N+1\f$ as the constant \f$f_{0}(x)=1\f$
+expansion $N$ (i.e. the highest power used).
+The total number of basis functions is $N+1$ as the constant $f_{0}(x)=1$
 is also included.
 These basis functions should not be used for periodic CVs.
 
 The basis functions are given by
-\f{align}{
+
+$$
+\begin{aligned}
 f_{0}(x)    &= 1 \\
 f_{1}(x)    &= x \\
 f_{2}(x)    &= x^2 \\
@@ -55,23 +57,25 @@ f_{2}(x)    &= x^2 \\
 f_{n}(x)    &= x^n \\
 & \vdots \\
 f_{N}(x)    &= x^N \\
-\f}
+\end{aligned}
+$$
 
 Note that these basis functions are __not__ orthogonal. In fact the integral
 over the uniform target distribution blows up as the interval is increased.
 Therefore they should not be used in conventional biasing simulations.
-However, they can be useful for usage with \ref ves_md_linearexpansion.
+However, they can be useful for usage with [ves_md_linearexpansion](ves_md_linearexpansion.md).
 
-\par Examples
+## Examples
 
 Here we employ a polynomial power expansion of order 5
 over the interval -2.0 to 2.0.
 This results in a total number of 6 basis functions.
 The label used to identify  the basis function action can then be
 referenced later on in the input file.
-\plumedfile
+
+```plumed
 BF_POWERS MINIMUM=-2.0 MAXIMUM=2.0 ORDER=5 LABEL=bf_pow
-\endplumedfile
+```
 
 
 */

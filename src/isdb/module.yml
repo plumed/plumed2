@@ -1,0 +1,9 @@
+name: isdb
+authors: Max Bonomi and Carlo Camilloni
+description: tools for doing integrative structural and dynamical biology 
+dois: ["10.1093/bioinformatics/btx529"]
+tags:
+  ISDB_COLVAR: collective variables that are used in integrative structural and dynamical biology
+  ISDB_FUNCTION: functions that are used in integrative structural and dynamical biology
+  ISDB_GENERIC: generic tools for integrative structural and dynamical biology 
+  ISDB_BIAS: biases that are used in integrative structural and dynamical biology

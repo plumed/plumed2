@@ -438,7 +438,10 @@ void LessThan::registerKeywords(Keywords& keys) {
 
 void LessThan::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) {
-    action->error("should only be one argument to less_than actions");
+    ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
+    if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
+      action->error("should only be one argument to less_than actions");
+    }
   }
   if( action->getPntrToArgument(0)->isPeriodic() ) {
     action->error("cannot use this function on periodic functions");
@@ -474,7 +477,6 @@ void LessThan::read( ActionWithArguments* action ) {
 }
 
 void LessThan::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  plumed_dbg_assert( args.size()==1 );
   if( squared ) {
     vals[0] = switchingFunction.calculateSqr( args[0], derivatives(0,0) );
   } else {

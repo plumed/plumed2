@@ -29,6 +29,12 @@
 
 namespace PLMD {
 
+// this is ugly, I am sorry
+template <typename T>
+View<T> make_view(const std::vector<T>& d) {
+  return View<T> {const_cast<T*>(d.data()),d.size()};
+}
+
 RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false) {}
 
 ///
@@ -76,7 +82,7 @@ void RMSD::clear() {
   positions_center_is_removed=false;
 }
 
-std::string RMSD::getMethod() {
+std::string RMSD::getMethod() const {
   std::string mystring;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -195,7 +201,7 @@ std::vector<double> RMSD::getDisplace() {
 ///
 /// This is the main workhorse for rmsd that decides to use specific optimal alignment versions
 ///
-double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared)const {
+double RMSD::calculate(const View<Vector> positions,std::vector<Vector> &derivatives, bool squared)const {
 
   double ret=0.;
 
@@ -231,6 +237,9 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 
 }
 
+double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared)const {
+  return calculate(make_view(positions),derivatives,squared);
+}
 
 /// convenience method for calculating the standard derivatives and the derivative of the rmsd respect to the reference position
 double RMSD::calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef, const bool squared  ) {
@@ -241,16 +250,16 @@ double RMSD::calc_DDistDRef( const std::vector<Vector>& positions, std::vector<V
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef<false,true>(align,displace,positions,reference,derivatives,DDistDRef, squared);
+      ret=optimalAlignment_DDistDRef<false,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, squared);
     } else {
-      ret=optimalAlignment_DDistDRef<false,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_DDistDRef<false,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef<true,true>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_DDistDRef<true,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     } else {
-      ret=optimalAlignment_DDistDRef<true,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_DDistDRef<true,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     }
     break;
   }
@@ -268,16 +277,16 @@ double RMSD::calc_SOMA( const std::vector<Vector>& positions, std::vector<Vector
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_SOMA<false,true>(align,displace,positions,reference,derivatives,DDistDRef, squared);
+      ret=optimalAlignment_SOMA<false,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, squared);
     } else {
-      ret=optimalAlignment_SOMA<false,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_SOMA<false,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_SOMA<true,true>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_SOMA<true,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     } else {
-      ret=optimalAlignment_SOMA<true,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+      ret=optimalAlignment_SOMA<true,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef,squared);
     }
     break;
   }
@@ -293,16 +302,16 @@ double RMSD::calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, 
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos,  squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos,  squared);
     } else {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
     } else {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
     }
     break;
   }
@@ -317,16 +326,16 @@ double RMSD::calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& po
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,   squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,   squared);
     } else {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,  squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,  squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,true>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
     } else {
-      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
+      ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,false>(align,displace,make_view(positions),reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
     }
     break;
   }
@@ -341,16 +350,16 @@ double RMSD::calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & 
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_Rot_DRotDRr01<false,true>(align,displace,positions,reference, Rotation, DRotDRr01,   squared);
+      ret=optimalAlignment_Rot_DRotDRr01<false,true>(align,displace,make_view(positions),reference, Rotation, DRotDRr01,   squared);
     } else {
-      ret=optimalAlignment_Rot_DRotDRr01<false,false>(align,displace,positions,reference, Rotation, DRotDRr01,  squared);
+      ret=optimalAlignment_Rot_DRotDRr01<false,false>(align,displace,make_view(positions),reference, Rotation, DRotDRr01,  squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_Rot_DRotDRr01<true,true>(align,displace,positions,reference, Rotation, DRotDRr01, squared);
+      ret=optimalAlignment_Rot_DRotDRr01<true,true>(align,displace,make_view(positions),reference, Rotation, DRotDRr01, squared);
     } else {
-      ret=optimalAlignment_Rot_DRotDRr01<true,false>(align,displace,positions,reference, Rotation, DRotDRr01, squared);
+      ret=optimalAlignment_Rot_DRotDRr01<true,false>(align,displace,make_view(positions),reference, Rotation, DRotDRr01, squared);
     }
     break;
   }
@@ -365,16 +374,16 @@ double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector>
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_Rot<false,true>(align,displace,positions,reference,derivatives, Rotation, squared);
+      ret=optimalAlignment_Rot<false,true>(align,displace,make_view(positions),reference,derivatives, Rotation, squared);
     } else {
-      ret=optimalAlignment_Rot<false,false>(align,displace,positions,reference,derivatives, Rotation, squared);
+      ret=optimalAlignment_Rot<false,false>(align,displace,make_view(positions),reference,derivatives, Rotation, squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_Rot<true,true>(align,displace,positions,reference,derivatives, Rotation, squared);
+      ret=optimalAlignment_Rot<true,true>(align,displace,make_view(positions),reference,derivatives, Rotation, squared);
     } else {
-      ret=optimalAlignment_Rot<true,false>(align,displace,positions,reference,derivatives, Rotation, squared);
+      ret=optimalAlignment_Rot<true,false>(align,displace,make_view(positions),reference,derivatives, Rotation, squared);
     }
     break;
   }
@@ -389,16 +398,16 @@ double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, 
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignmentWithCloseStructure<false,true>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+      ret=optimalAlignmentWithCloseStructure<false,true>(align,displace,make_view(positions),reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
     } else {
-      ret=optimalAlignmentWithCloseStructure<false,false>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+      ret=optimalAlignmentWithCloseStructure<false,false>(align,displace,make_view(positions),reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignmentWithCloseStructure<true,true>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+      ret=optimalAlignmentWithCloseStructure<true,true>(align,displace,make_view(positions),reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
     } else {
-      ret=optimalAlignmentWithCloseStructure<true,false>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+      ret=optimalAlignmentWithCloseStructure<true,false>(align,displace,make_view(positions),reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
     }
     break;
   }
@@ -413,16 +422,16 @@ double RMSD::calc_PCAelements( const std::vector<Vector>& positions, std::vector
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_PCA<false,true>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+      ret=optimalAlignment_PCA<false,true>(align,displace,make_view(positions),reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
     } else {
-      ret=optimalAlignment_PCA<false,false>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+      ret=optimalAlignment_PCA<false,false>(align,displace,make_view(positions),reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_PCA<true,true>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+      ret=optimalAlignment_PCA<true,true>(align,displace,make_view(positions),reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
     } else {
-      ret=optimalAlignment_PCA<true,false>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+      ret=optimalAlignment_PCA<true,false>(align,displace,make_view(positions),reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
     }
     break;
   }
@@ -438,16 +447,16 @@ double RMSD::calc_FitElements( const std::vector<Vector>& positions, Tensor & Ro
     break;
   case OPTIMAL_FAST:
     if(align==displace) {
-      ret=optimalAlignment_Fit<false,true>(align,displace,positions,reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);
+      ret=optimalAlignment_Fit<false,true>(align,displace,make_view(positions),reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);
     } else {
-      ret=optimalAlignment_Fit<false,false>(align,displace,positions,reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);
+      ret=optimalAlignment_Fit<false,false>(align,displace,make_view(positions),reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);
     }
     break;
   case OPTIMAL:
     if(align==displace) {
-      ret=optimalAlignment_Fit<true,true>(align,displace,positions,reference,Rotation,DRotDPos,centeredpositions,center_positions,squared);
+      ret=optimalAlignment_Fit<true,true>(align,displace,make_view(positions),reference,Rotation,DRotDPos,centeredpositions,center_positions,squared);
     } else {
-      ret=optimalAlignment_Fit<true,false>(align,displace,positions,reference,Rotation,DRotDPos,centeredpositions,center_positions,squared);
+      ret=optimalAlignment_Fit<true,false>(align,displace,make_view(positions),reference,Rotation,DRotDPos,centeredpositions,center_positions,squared);
     }
     break;
   }
@@ -461,7 +470,7 @@ double RMSD::calc_FitElements( const std::vector<Vector>& positions, Tensor & Ro
 
 double RMSD::simpleAlignment(const  std::vector<double>  & align,
                              const  std::vector<double>  & displace,
-                             const std::vector<Vector> & positions,
+                             const View<Vector> positions,
                              const std::vector<Vector> & reference,
                              std::vector<Vector>  & derivatives,
                              std::vector<Vector>  & displacement,
@@ -511,7 +520,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
-                              const std::vector<Vector> & positions,
+                              const View<Vector> positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector>  & derivatives, bool squared)const {
   const unsigned n=reference.size();
@@ -713,12 +722,12 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
-                              const std::vector<Vector> & positions,
+                              const View<Vector> positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector>  & derivatives,
                               bool squared) const {
   //std::cerr<<"setting up the core data \n";
-  RMSDCoreData cd(align,displace,positions,reference);
+  RMSDCoreData cd(align,displace,make_view(positions),reference);
 
   // transfer the settings for the center to let the CoreCalc deal with it
   cd.setPositionsCenterIsRemoved(positions_center_is_removed);
@@ -747,7 +756,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_DDistDRef(const  std::vector<double>  & align,
                                         const  std::vector<double>  & displace,
-                                        const std::vector<Vector> & positions,
+                                        const View<Vector> positions,
                                         const std::vector<Vector> & reference,
                                         std::vector<Vector>  & derivatives,
                                         std::vector<Vector> & ddistdref,
@@ -784,7 +793,7 @@ double RMSD::optimalAlignment_DDistDRef(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_SOMA(const  std::vector<double>  & align,
                                    const  std::vector<double>  & displace,
-                                   const std::vector<Vector> & positions,
+                                   const View<Vector> positions,
                                    const std::vector<Vector> & reference,
                                    std::vector<Vector>  & derivatives,
                                    std::vector<Vector> & ddistdref,
@@ -822,7 +831,7 @@ double RMSD::optimalAlignment_SOMA(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
     std::vector<Vector> & ddistdref,
@@ -865,7 +874,7 @@ double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double> 
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
     std::vector<Vector> & ddistdref,
@@ -910,7 +919,7 @@ double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef(const  std::vector
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     Tensor & Rotation,
     std::array<std::array<Tensor,3>,3> & DRotDRr01,
@@ -947,7 +956,7 @@ double RMSD::optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_Rot(const  std::vector<double>  & align,
                                   const  std::vector<double>  & displace,
-                                  const std::vector<Vector> & positions,
+                                  const View<Vector> positions,
                                   const std::vector<Vector> & reference,
                                   std::vector<Vector>  & derivatives,
                                   Tensor & Rotation,
@@ -984,7 +993,7 @@ double RMSD::optimalAlignment_Rot(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
     const Tensor & rotationPosClose,
@@ -1022,7 +1031,7 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
                                   const  std::vector<double>  & displace,
-                                  const std::vector<Vector> & positions,
+                                  const View<Vector> positions,
                                   const std::vector<Vector> & reference,
                                   std::vector<Vector> & alignedpositions,
                                   std::vector<Vector> & centeredpositions,
@@ -1072,7 +1081,7 @@ double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_Fit(const  std::vector<double>  & align,
                                   const  std::vector<double>  & displace,
-                                  const std::vector<Vector> & positions,
+                                  const View<Vector> positions,
                                   const std::vector<Vector> & reference,
                                   Tensor & Rotation,
                                   Matrix<std::vector<Vector> > & DRotDPos,
@@ -1732,22 +1741,22 @@ const std::array<std::array<Tensor,3>,3> &  RMSDCoreData::getDRotationDRr01() co
 
 template double RMSD::optimalAlignment<true,true>(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives, bool squared)const;
 template double RMSD::optimalAlignment<true,false>(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives, bool squared)const;
 template double RMSD::optimalAlignment<false,true>(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives, bool squared)const;
 template double RMSD::optimalAlignment<false,false>(const  std::vector<double>  & align,
     const  std::vector<double>  & displace,
-    const std::vector<Vector> & positions,
+    const View<Vector> positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives, bool squared)const;
 

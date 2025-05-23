@@ -1,0 +1,6 @@
+name: dimred
+authors: Gareth Tribello
+description: tools for performing dimensionality reduction 
+dois: ["10.1007/978-1-4939-9608-7_19", "10.3389/fmolb.2019.00046"]
+tags: 
+  DIMRED: dimensionality reduction algorithms

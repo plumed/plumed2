@@ -49,23 +49,23 @@ namespace isdb {
 /*
 Calculates the backbone chemical shifts for a protein.
 
-The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shift
+The functional form is that of CamShift, which is discussed in the first paper cited below. The chemical shift
 of the selected nuclei can be saved as components. Alternatively one can calculate either
-the CAMSHIFT score (useful as a collective variable \cite Granata:2013dk or as a scoring
-function \cite Robustelli:2010dn) or a \ref METAINFERENCE score (using DOSCORE).
+the CAMSHIFT score (useful as a collective variable as you can see in the second paper cited below or as a scoring
+function as discussed in the third paper cited below) or a [METAINFERENCE](METAINFERENCE.md) score (using DOSCORE).
 For these two latter cases experimental chemical shifts must be provided.
 
 CS2BACKBONE calculation can be relatively heavy because it often uses a large number of atoms, it can
-be run in parallel using MPI and \ref Openmp.
+be run in parallel using MPI and Openmp (see [here](actions.md) for more details).
 
-As a general rule, when using \ref CS2BACKBONE or other experimental restraints it may be better to
+As a general rule, when using [CS2BACKBONE](CS2BACKBONE.md) or other experimental restraints it may be better to
 increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure.
 In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
 In general the system for which chemical shifts are calculated must be completely included in
 ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATADIR.
 The system is made automatically whole unless NOPBC is used, in particular if the system is made
-by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
+by multiple chains it is usually better to use NOPBC and make the molecule whole [WHOLEMOLECULES](WHOLEMOLECULES.md)
 selecting an appropriate order of the atoms. The pdb file is needed to the generate a simple topology of the protein.
 For histidine residues in protonation states different from D the HIE/HSE HIP/HSP name should be used.
 GLH and ASH can be used for the alternative protonation of GLU and ASP. Non-standard amino acids and other
@@ -86,7 +86,7 @@ For practical purposes the value can correspond to the experimental value.
 Residues numbers should match that used in the pdb file, but must be positive, so double check the pdb.
 The first and last residue of each chain should be preceded by a # character.
 
-\verbatim
+````
 CAshifts.dat:
 #1 0.0
 2 55.5
@@ -97,7 +97,7 @@ CAshifts.dat:
 #first of second chain
 .
 #last of second chain
-\endverbatim
+````
 
 The default behavior is to store the values for the active nuclei in components (ca-#, cb-#,
 co-#, ha-#, hn-#, nh-# and expca-#, expcb-#, expco-#, expha-#, exphn-#, exp-nh#) with NOEXP it is possible
@@ -106,46 +106,53 @@ to only store the back-calculated values, where # includes a chain and residue n
 One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
 calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-Additional material and examples can be also found in the tutorial \ref isdb-1 as well as in the cs2backbone regtests
+Additional material and examples can be also found in the tutorials as well as in the cs2backbone regtests
 in the isdb folder.
 
-\par Examples
+## Examples
 
 In this first example the chemical shifts are used to calculate a collective variable to be used
-in NMR driven Metadynamics \cite Granata:2013dk :
+in NMR driven Metadynamics that is similar to what was done in the second paper cited below:
 
-\plumedfile
-#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
+```plumed
+#SETTINGS
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 DATADIR=data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
+cs: CS2BACKBONE ...
+   ATOMS=1-2612
+   DATADIR=regtest/isdb/rt-cs2backbone/data/
+   TEMPLATE=template.pdb CAMSHIFT NOPBC
+...
+
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
-\endplumedfile
+```
 
-In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs .
+In this second example the chemical shifts are used as replica-averaged restrained as was done in the fourth and fifth paper cited below.
 
-\plumedfile
-#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
+```plumed
+#SETTINGS NREPLICAS=2
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=regtest/isdb/rt-cs2backbone/data/
 encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
 PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
+```
 
-\endplumedfile
+This third example show how to use chemical shifts to calculate a [METAINFERENCE](METAINFERENCE.md) score .
 
-This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
-
-\plumedfile
-#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
+```plumed
+cs: CS2BACKBONE ...
+   ATOMS=1-174
+   DATADIR=regtest/isdb/rt-cs2backbone/data/
+   SIGMA_MEAN0=1.0 DOSCORE
+...
 csbias: BIASVALUE ARG=cs.score
 
 PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=CS.dat STRIDE=1000
 PRINT ARG=cs.score FILE=BIAS STRIDE=100
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -561,6 +568,11 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("expcb","default","scalar","the experimental Cb carbon chemical shifts");
   keys.addOutputComponent("expco","default","scalar","the experimental C' carbon chemical shifts");
   keys.setValueDescription("scalar","the backbone chemical shifts");
+  keys.addDOI("10.1021/ja903772t");
+  keys.addDOI("10.1073/pnas.1218350110");
+  keys.addDOI("10.1016/j.str.2010.04.016");
+  keys.addDOI("10.1021/ja210951z");
+  keys.addDOI("10.1021/jp3106666");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):

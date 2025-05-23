@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "core/ActionRegister.h"
@@ -90,9 +93,8 @@ namespace colvar {
 class Plane : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
+  std::vector<double> value;
+  std::vector<double> derivs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Plane(const ActionOptions&);
@@ -100,9 +102,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
 };
 
 typedef ColvarShortcut<Plane> PlaneShortcut;
@@ -148,12 +148,7 @@ unsigned Plane::getModeAndSetupValues( ActionWithValue* av ) {
 Plane::Plane(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  value(3),
-  derivs(3),
-  virial(3) {
-  for(unsigned i=0; i<3; ++i) {
-    derivs[i].resize(4);
-  }
+  value(3) {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   bool nopbc=!pbc;
@@ -176,41 +171,40 @@ void Plane::calculate() {
   if(pbc) {
     makeWhole();
   }
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
+  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) {
-    setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
   }
-  setBoxDerivatives( virial[0] );
+  setBoxDerivatives( cvout.virial[0] );
 }
 
-void Plane::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                         const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  Vector d1=delta( pos[1], pos[0] );
-  Vector d2=delta( pos[2], pos[3] );
+void Plane::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
+  Vector d1=delta( cvin.pos[1], cvin.pos[0] );
+  Vector d2=delta( cvin.pos[2], cvin.pos[3] );
   Vector cp = crossProduct( d1, d2 );
 
-  derivs[0][0] = crossProduct( Vector(-1.0,0,0), d2 );
-  derivs[0][1] = crossProduct( Vector(+1.0,0,0), d2 );
-  derivs[0][2] = crossProduct( Vector(-1.0,0,0), d1 );
-  derivs[0][3] = crossProduct( Vector(+1.0,0,0), d1 );
-  virial[0] = Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1));
-  vals[0] = cp[0];
+  cvout.derivs[0][0] = crossProduct( Vector(-1.0,0,0), d2 );
+  cvout.derivs[0][1] = crossProduct( Vector(+1.0,0,0), d2 );
+  cvout.derivs[0][2] = crossProduct( Vector(-1.0,0,0), d1 );
+  cvout.derivs[0][3] = crossProduct( Vector(+1.0,0,0), d1 );
+  cvout.virial.set( 0, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
+  cvout.values[0] = cp[0];
 
-  derivs[1][0] = crossProduct( Vector(0,-1.0,0), d2 );
-  derivs[1][1] = crossProduct( Vector(0,+1.0,0), d2 );
-  derivs[1][2] = crossProduct( Vector(0,-1.0,0), d1 );
-  derivs[1][3] = crossProduct( Vector(0,+1.0,0), d1 );
-  virial[1] = Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1));
-  vals[1] = cp[1];
+  cvout.derivs[1][0] = crossProduct( Vector(0,-1.0,0), d2 );
+  cvout.derivs[1][1] = crossProduct( Vector(0,+1.0,0), d2 );
+  cvout.derivs[1][2] = crossProduct( Vector(0,-1.0,0), d1 );
+  cvout.derivs[1][3] = crossProduct( Vector(0,+1.0,0), d1 );
+  cvout.virial.set(1, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
+  cvout.values[1] = cp[1];
 
-  derivs[2][0] = crossProduct( Vector(0,0,-1.0), d2 );
-  derivs[2][1] = crossProduct( Vector(0,0,+1.0), d2 );
-  derivs[2][2] = crossProduct( Vector(0,0,-1.0), d1 );
-  derivs[2][3] = crossProduct( Vector(0,0,+1.0), d1 );
-  virial[2] = Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1));
-  vals[2] = cp[2];
+  cvout.derivs[2][0] = crossProduct( Vector(0,0,-1.0), d2 );
+  cvout.derivs[2][1] = crossProduct( Vector(0,0,+1.0), d2 );
+  cvout.derivs[2][2] = crossProduct( Vector(0,0,-1.0), d1 );
+  cvout.derivs[2][3] = crossProduct( Vector(0,0,+1.0), d1 );
+  cvout.virial.set(2, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
+  cvout.values[2] = cp[2];
 }
 
 }

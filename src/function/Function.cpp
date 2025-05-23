@@ -57,7 +57,7 @@ void Function::apply() {
     return;
   }
   unsigned ind=0;
-  addForcesOnArguments( 0, getForcesToApply(), ind, getLabel() );
+  addForcesOnArguments( 0, getForcesToApply(), ind );
 }
 
 }

@@ -44,18 +44,20 @@ Target distribution given by linear combination of distributions (static or dyna
 
 Employ a target distribution that is a linear combination of the other
 distributions, defined as
-\f[
-p(\mathbf{s}) = \sum_{i} w_{i} \, p_{i}(\mathbf{s})
-\f]
-where the weights \f$w_{i}\f$ are normalized to 1, \f$\sum_{i}w_{i}=1\f$.
 
-The labels of the distributions \f$p_{i}(\mathbf{s})\f$ to be used in the
+$$
+p(\mathbf{s}) = \sum_{i} w_{i} \, p_{i}(\mathbf{s})
+$$
+
+where the weights $w_{i}$ are normalized to 1, $\sum_{i}w_{i}=1$.
+
+The labels of the distributions $p_{i}(\mathbf{s})$ to be used in the
 linear combination are given in the DISTRIBUTIONS keyword.
 
-The weights \f$w_{i}\f$ can be given using
+The weights $w_{i}$ can be given using
 the WEIGHTS keyword. The distributions are weighted equally if no weights are given.
 
-It is assumed that all the distributions \f$p_{i}(\mathbf{s})\f$ are normalized.
+It is assumed that all the distributions $p_{i}(\mathbf{s})$ are normalized.
 If that is not the case for some reason should you
 normalize each distribution separately by using the NORMALIZE
 keyword when defining them in the input file (i.e. before the
@@ -68,22 +70,24 @@ The linear combination will be a dynamic target distribution if one or more
 of the distributions used is a dynamic distribution, otherwise it will be a
 static distribution.
 
-\par Examples
+## Examples
 
 Here we employ a linear combination of a uniform and a Gaussian distribution.
 No weights are given so the two distributions will be weighted equally.
-\plumedfile
+
+```plumed
 td_uni: TD_UNIFORM
 
 td_gauss: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
 td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uni,td_gauss
-\endplumedfile
+```
 
 Here we employ a linear combination of a uniform and two Gaussian distribution.
 The weights are automatically normalized to 1 such that giving
 WEIGHTS=1.0,1.0,2.0 as we do here is equal to giving WEIGHTS=0.25,0.25,0.50.
-\plumedfile
+
+```plumed
 td_uni: TD_UNIFORM
 
 td_gauss1: TD_GAUSSIAN CENTER1=-2.0,-2.0 SIGMA1=0.5,0.3
@@ -95,15 +99,16 @@ TD_LINEAR_COMBINATION ...
  WEIGHTS=1.0,1.0,2.0
  LABEL=td_comb
 ... TD_LINEAR_COMBINATION
-\endplumedfile
+```
 
 In the above example the two Gaussian kernels are given using two separate
-DISTRIBUTION keywords. As the \ref TD_GAUSSIAN target distribution allows multiple
+DISTRIBUTION keywords. As the [TD_GAUSSIAN](TD_GAUSSIAN.md) target distribution allows multiple
 centers is it also possible to use just one DISTRIBUTION keyword for the two
 Gaussian kernels. This is shown in the following example which will give the
 exact same result as the one above as the weights have been appropriately
 adjusted
-\plumedfile
+
+```plumed
 td_uni: TD_UNIFORM
 
 TD_GAUSSIAN ...
@@ -118,7 +123,7 @@ TD_LINEAR_COMBINATION ...
  WEIGHTS=0.25,0.75
  LABEL=td_comb
 ... TD_LINEAR_COMBINATION
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

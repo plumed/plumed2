@@ -246,6 +246,18 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       readact->error("documentation for input type is not provided in " + readact->getName() );
     }
   }
+  if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) {
+    return;
+  }
+  for(unsigned i=0; i<arg.size(); ++i) {
+    if( arg[i]->getRank()==0 ) {
+      continue;
+    }
+    ActionWithVector* av=dynamic_cast<ActionWithVector*>( arg[i]->getPntrToAction() );
+    if( av && av->getNumberOfMasks()>=0 ) {
+      readact->error("cannot use argument " + arg[i]->getName() + " in input as not all elements are computed");
+    }
+  }
 }
 
 void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {
@@ -362,17 +374,20 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c  ) {
-  for(unsigned i=0; i<arguments.size(); ++i) {
+void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind ) {
+  unsigned nargs=arguments.size();
+  const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( this );
+  if( av && av->getNumberOfMasks()>0 ) {
+    nargs=nargs-av->getNumberOfMasks();
+  }
+  for(unsigned i=0; i<nargs; ++i) {
     if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) {
       continue ;
     }
-    if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
-      unsigned nvals = arguments[i]->getNumberOfStoredValues();
-      for(unsigned j=0; j<nvals; ++j) {
-        arguments[i]->addForce( j, forces[ind], false );
-        ind++;
-      }
+    unsigned nvals = arguments[i]->getNumberOfStoredValues();
+    for(unsigned j=0; j<nvals; ++j) {
+      arguments[i]->addForce( j, forces[ind], false );
+      ind++;
     }
   }
 }
