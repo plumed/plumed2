@@ -612,7 +612,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
 
 template<unsigned n>
 double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
-                          unsigned nsquare = 20, unsigned niter = 32) {
+                          unsigned nsquare = 20, unsigned niter = 20) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
   double lambda_shift = 0.0;
   for (unsigned i = 0; i < n; ++i) {
@@ -639,60 +639,30 @@ double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenv
     A /= (frob > 0.0 ? frob : 1.0);
   }
 
-  // Initialize candidate vectors as columns of M
-  TensorGeneric<n, n> M;
-  for (unsigned j = 0; j < n; ++j)
-    for (unsigned i = 0; i < n; ++i) {
-      M[i][j] = ((i + j) % 2 == 0) ? 1.0 : -1.0;
-    }
-
-  // Power iteration
-  for (unsigned it = 0; it < niter; ++it) {
-    TensorGeneric<n, n> newM = matmul(A, M);
-
-    // Normalize each column
-    for (unsigned j = 0; j < n; ++j) {
-      double norm2 = 0.0;
-      for (unsigned i = 0; i < n; ++i) {
-        norm2 += newM[i][j] * newM[i][j];
-      }
-      double inv_norm = 1.0 / std::sqrt((norm2 > 0.0) ? norm2 : 1.0);
-      for (unsigned i = 0; i < n; ++i) {
-        newM[i][j] *= inv_norm;
-      }
-    }
-
-    M = newM;
-  }
-
-  // Select the column with the largest norm² (redundant if normalized, but safe)
+  // Extract dominant eigenvector from projector A
+  VectorGeneric<n> v;
   double best_norm2 = 0.0;
-  for (unsigned i = 0; i < n; ++i) {
-    eigenvector[i] = 0.0;
-  }
-
   for (unsigned j = 0; j < n; ++j) {
-    double norm2 = 0.0;
-    for (unsigned i = 0; i < n; ++i) {
-      norm2 += M[i][j] * M[i][j];
-    }
-
+    VectorGeneric<n> col;
+    for (unsigned i = 0; i < n; ++i) col[i] = A[i][j];
+    double norm2 = modulo2(col);
     double use = static_cast<double>(norm2 > best_norm2);
     best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
-
-    for (unsigned i = 0; i < n; ++i) {
-      eigenvector[i] = use * M[i][j] + (1.0 - use) * eigenvector[i];
-    }
+    for (unsigned i = 0; i < n; ++i)
+      v[i] = use * col[i] + (1.0 - use) * v[i];
   }
 
-  // Compute Rayleigh quotient λ = vᵀ K v
-  VectorGeneric<n> Kv = matmul(K, eigenvector);
-  double eigenvalue = 0.0;
-  for (unsigned i = 0; i < n; ++i) {
-    eigenvalue += eigenvector[i] * Kv[i];
+  v /= modulo(v);
+
+  // Power iteration on v only
+  for (unsigned iter = 0; iter < niter; ++iter) {
+    v = matmul(A, v);
+    v /= modulo(v);
   }
 
-  return eigenvalue;
+  eigenvector = v;
+
+  return  matmul(eigenvector, K, eigenvector);
 }
 
 
