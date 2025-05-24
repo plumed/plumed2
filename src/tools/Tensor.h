@@ -617,7 +617,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
 
 template<unsigned n>
 double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
-                          unsigned nsquare = 20, unsigned niter = 20) {
+                          unsigned nsquare = 24) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
   double lambda_shift = 0.0;
   for (unsigned i = 0; i < n; ++i) {
@@ -660,12 +660,6 @@ double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenv
   }
 
   v /= modulo(v);
-
-  // Power iteration on v only
-  for (unsigned iter = 0; iter < niter; ++iter) {
-    v = matmul(A, v);
-    v /= modulo(v);
-  }
 
   eigenvector = v;
 
