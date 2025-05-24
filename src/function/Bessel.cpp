@@ -106,7 +106,7 @@ void Bessel::registerKeywords(Keywords& keys) {
 }
 
 Bessel::Bessel():
-order(0) {
+  order(0) {
   A = {-4.41534164647933937950E-18,
        3.33079451882223809783E-17,
        -2.43127984654795469359E-16,

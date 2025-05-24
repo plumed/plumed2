@@ -118,7 +118,7 @@ void FunctionWithSingleArgument<T>::calculate() {
     }
 
     for(unsigned j=0; j<args.size(); ++j) {
-      myval->addDerivative( j, funcout.derivs[i][j] );
+      myval->setDerivative( j, funcout.derivs[i][j] );
     }
   }
 }
