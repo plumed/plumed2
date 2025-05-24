@@ -23,20 +23,28 @@
 #define __PLUMED_function_FunctionOfMatrix_h
 
 #include "core/ActionWithVector.h"
-#include "FunctionOfVector.h"
-#include "Sum.h"
-#include "tools/Matrix.h"
+#include "core/ParallelTaskManager.h"
+#include "FunctionSetup.h"
+#include "Custom.h"
 
 namespace PLMD {
 namespace function {
 
 template <class T>
 class FunctionOfMatrix : public ActionWithVector {
+public:
+  using input_type = FunctionData<T>;
+  using PTM = ParallelTaskManager<FunctionOfMatrix<T>>;
 private:
+/// The parallel task manager
+  PTM taskmanager;
+/// Set equal to one if we are doing EvaluateGridFunction
+  unsigned argstart;
 /// The function that is being computed
-  T myfunc;
 /// Used to hold the list of tasks we are running
   std::vector<unsigned> active_tasks;
+/// Get the number of arguments the function uses
+  unsigned getNumberOfFunctionArguments() const ;
 /// Get the shape of the output matrix
   std::vector<std::size_t> getValueShapeFromArguments();
 /// Get a pointer to the first matrix argument
@@ -45,11 +53,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfMatrix(const ActionOptions&);
 /// Get the label to write in the graph
-  std::string writeInGraph() const override {
-    return myfunc.getGraphInfo( getName() );
-  }
-/// Make sure the derivatives are turned on
-  void turnOnDerivatives() override;
+  std::string writeInGraph() const override ;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Resize the matrices
@@ -57,7 +61,24 @@ public:
   void calculate() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  void getInputData( std::vector<double>& inputdata ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
+  static void performTask( std::size_t task_index,
+                           const FunctionData<T>& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+/// Add some forces
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// Get the indices of the forces
+  static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const FunctionData<T>& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -70,8 +91,7 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
   keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
-  T tfunc;
-  tfunc.registerKeywords( keys );
+  T::registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
     keys.setValueDescription("scalar","the sum of all the elements in the input matrix");
   } else if( keys.getDisplayName()=="HIGHEST" ) {
@@ -81,17 +101,32 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
   } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("matrix","the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
   }
+  PTM::registerKeywords( keys );
+}
+
+template <class T>
+unsigned FunctionOfMatrix<T>::getNumberOfFunctionArguments() const {
+  unsigned nargs=getNumberOfArguments();
+  if( getNumberOfMasks()>0 ) {
+    return nargs - getNumberOfMasks();
+  }
+  return nargs;
 }
 
 template <class T>
 FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   Action(ao),
-  ActionWithVector(ao) {
+  ActionWithVector(ao),
+  taskmanager(this),
+  argstart(0) {
+  // Check if first argument is grid
+  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+    argstart=1;
+  }
   // Get the shape of the output
   std::vector<std::size_t> shape( getValueShapeFromArguments() );
   // Check if the output matrix is symmetric
   bool symmetric=true;
-  unsigned argstart=myfunc.getArgStart();
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==2 ) {
       if( !getPntrToArgument(i)->isSymmetric() ) {
@@ -99,83 +134,30 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
       }
     }
   }
-  unsigned nargs = getNumberOfArguments();
-  if( getNumberOfMasks()>0 ) {
-    nargs = nargs - getNumberOfMasks();
+  // Setup the values
+  FunctionData<T> myfunc;
+  myfunc.argstart = argstart;
+  FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
+  // Copy the fact that this is a symmetric matrix if the input matrices are all symmetric
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->setSymmetric( symmetric );
   }
-  // Read the input and do some checks
-  myfunc.read( this );
-  // Check we are not calculating a sum
-  if( myfunc.zeroRank() ) {
-    shape.resize(0);
-  }
-  // Get the names of the components
-  std::vector<std::string> components( keywords.getOutputComponents() );
-  // Create the values to hold the output
-  std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  for(unsigned i=0; i<components.size(); ++i) {
-    if( str_ind.size()>0 ) {
-      std::string compstr = components[i];
-      if( components[i]==".#!value" ) {
-        compstr = "";
-      }
-      for(unsigned j=0; j<str_ind.size(); ++j) {
-        if( myfunc.zeroRank() ) {
-          addComponentWithDerivatives( compstr + str_ind[j], shape );
-        } else {
-          addComponent( compstr + str_ind[j], shape );
-          getPntrToComponent(i*str_ind.size()+j)->setSymmetric( symmetric );
-        }
-      }
-    } else if( components[i]==".#!value" && myfunc.zeroRank() ) {
-      addValueWithDerivatives( shape );
-    } else if( components[i]==".#!value" ) {
-      addValue( shape );
-      getPntrToComponent(0)->setSymmetric( symmetric );
-    } else if( components[i].find_first_of("_")!=std::string::npos ) {
-      if( nargs-argstart==1 ) {
-        addValue( shape );
-        getPntrToComponent(0)->setSymmetric( symmetric );
-      } else {
-        for(unsigned j=argstart; j<nargs; ++j) {
-          addComponent( getPntrToArgument(j)->getName() + components[i], shape );
-          getPntrToComponent(i*(nargs-argstart)+j-argstart)->setSymmetric( symmetric );
-        }
-      }
-    } else {
-      addComponent( components[i], shape );
-      getPntrToComponent(i)->setSymmetric( symmetric );
-    }
-  }
-  // Check if this can be sped up
-  if( myfunc.getDerivativeZeroIfValueIsZero() )  {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
-    }
-  }
-  // Set the periodicities of the output components
-  myfunc.setPeriodicityForOutputs( this );
+  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart, 0 );
+  // Pass the function to the parallel task manager
+  taskmanager.setActionInput( myfunc );
 }
 
 template <class T>
-void FunctionOfMatrix<T>::turnOnDerivatives() {
-  if( !myfunc.derivativesImplemented() ) {
-    error("derivatives have not been implemended for " + getName() );
-  }
-  ActionWithValue::turnOnDerivatives();
-  myfunc.setup(this);
+std::string FunctionOfMatrix<T>::writeInGraph() const {
+  std::size_t und = getName().find_last_of("_");
+  return getName().substr(0,und);
 }
 
 template <class T>
 std::vector<std::size_t> FunctionOfMatrix<T>::getValueShapeFromArguments() {
-  unsigned argstart=myfunc.getArgStart();
   std::vector<std::size_t> shape(2);
   shape[0]=shape[1]=0;
-  unsigned nargs = getNumberOfArguments();
-  if( getNumberOfMasks()>0 ) {
-    nargs = nargs - getNumberOfMasks();
-  }
-  for(unsigned i=argstart; i<nargs; ++i) {
+  for(unsigned i=argstart; i<getNumberOfFunctionArguments(); ++i) {
     plumed_assert( getPntrToArgument(i)->getRank()==2 || getPntrToArgument(i)->getRank()==0 );
     if( getPntrToArgument(i)->getRank()==2 ) {
       if( shape[0]>0 && (getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1]) ) {
@@ -187,19 +169,14 @@ std::vector<std::size_t> FunctionOfMatrix<T>::getValueShapeFromArguments() {
       plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
     }
   }
-  myfunc.setPrefactor( this, 1.0 );
   return shape;
 }
 
 
 template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
-  unsigned nder=0, argstart = myfunc.getArgStart();
-  unsigned nargs = getNumberOfArguments();
-  if( getNumberOfMasks()>0 ) {
-    nargs = nargs - getNumberOfMasks();
-  }
-  for(unsigned i=argstart; i<nargs; ++i) {
+  unsigned nder=0;
+  for(unsigned i=argstart; i<getNumberOfFunctionArguments(); ++i) {
     nder += getPntrToArgument(i)->getNumberOfStoredValues();
   }
   return nder;
@@ -207,20 +184,17 @@ unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
 
 template <class T>
 void FunctionOfMatrix<T>::prepare() {
-  unsigned argstart = myfunc.getArgStart();
-  std::vector<std::size_t> shape(2);
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==2 ) {
-      shape[0] = getPntrToArgument(i)->getShape()[0];
-      shape[1] = getPntrToArgument(i)->getShape()[1];
-      break;
-    }
-  }
+  bool resizerequired = false;
+  std::vector<std::size_t> shape(getPntrToFirstMatrixArgument()->getShape());
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = getPntrToComponent(i);
     if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) {
       myval->setShape(shape);
+      resizerequired=true;
     }
+  }
+  if( resizerequired ) {
+    taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments()-argstart, 0 );
   }
   ActionWithVector::prepare();
   active_tasks.resize(0);
@@ -228,7 +202,6 @@ void FunctionOfMatrix<T>::prepare() {
 
 template <class T>
 Value* FunctionOfMatrix<T>::getPntrToFirstMatrixArgument() const {
-  unsigned argstart=myfunc.getArgStart();
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==2 ) {
       return getPntrToArgument(i);
@@ -272,7 +245,6 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
 // I can do everything I want to do with this limitation.  If
 // anyone wants to make this smarter in the future they can
 #ifndef DNDEBUG
-  unsigned argstart=myfunc.getArgStart();
   for(unsigned k=argstart; k<getNumberOfArguments(); ++k) {
     if( getPntrToArgument(k)->getRank()!=2 ) {
       continue ;
@@ -293,69 +265,42 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
 }
 
 template <class T>
-void FunctionOfMatrix<T>::performTask( const unsigned& taskno, MultiValue& myvals) const {
-  unsigned nargs = getNumberOfArguments();
-  if( getNumberOfMasks()>0 ) {
-    nargs = nargs - getNumberOfMasks();
-  }
-  unsigned argstart=myfunc.getArgStart();
-  std::vector<double> args( nargs - argstart );
+void FunctionOfMatrix<T>::getInputData( std::vector<double>& inputdata ) const {
+  int nmasks = getNumberOfMasks();
+  unsigned nargs = getNumberOfFunctionArguments();
 
-  // Retrieve the arguments
-  if( getNumberOfMasks()>0 ) {
-    Value* maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
-    unsigned index1 = std::floor( taskno / maskarg->getNumberOfColumns() );
-    unsigned index2 = taskno - index1*maskarg->getNumberOfColumns();
-    unsigned tind2 = maskarg->getRowIndex( index1, index2 );
-    unsigned maskncol = maskarg->getRowLength(index1);
-    for(unsigned i=argstart; i<nargs; ++i) {
-      if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getRowLength(index1)>maskncol ) {
-        args[i-argstart]=getPntrToArgument(i)->get( index1*getPntrToArgument(i)->getShape()[1] + tind2 );
-      } else if( getPntrToArgument(i)->getRank()==2 ) {
-        plumed_dbg_assert( maskncol==getPntrToArgument(i)->getRowLength(index1) );
-        args[i-argstart]=getPntrToArgument(i)->get( taskno, false );
-      } else {
-        args[i-argstart] = getPntrToArgument(i)->get();
-      }
-    }
-  } else {
-    for(unsigned i=argstart; i<nargs; ++i) {
-      if( getPntrToArgument(i)->getRank()==2 ) {
-        args[i-argstart]=getPntrToArgument(i)->get( taskno, false );
-      } else {
-        args[i-argstart] = getPntrToArgument(i)->get();
-      }
-    }
-  }
-  // Calculate the function and its derivatives
-  std::vector<double> vals( getNumberOfComponents() );
-  Matrix<double> derivatives( getNumberOfComponents(), nargs-argstart );
-  myfunc.calc( this, args, vals, derivatives );
-
-  // And set the values
-  for(unsigned i=0; i<vals.size(); ++i) {
-    myvals.addValue( i, vals[i] );
+  const Value* myval = getConstPntrToComponent(0);
+  unsigned ntasks = myval->getNumberOfStoredValues();
+  if( inputdata.size()!=(nargs-argstart)*ntasks ) {
+    inputdata.resize( (nargs-argstart)*ntasks );
   }
 
-  // Return if we are not computing derivatives
-  if( doNotCalculateDerivatives() ) {
-    return;
-  }
-
-  unsigned base=0;
   for(unsigned j=argstart; j<nargs; ++j) {
-    if( getPntrToArgument(j)->getRank()==2 ) {
-      for(int i=0; i<getNumberOfComponents(); ++i) {
-        myvals.addDerivative( i, base + taskno, derivatives(i,j) );
-        myvals.updateIndex( i, base + taskno );
+    const Value* jarg =  getPntrToArgument(j);
+    if( jarg->getRank()==0 ) {
+      double val = jarg->get();
+      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+        unsigned colbase=i*myval->getNumberOfColumns();
+        for(unsigned k=0; k<myval->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
+        }
+      }
+    } else if( nmasks>0 ) {
+      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+        unsigned jcolbase = i*jarg->getShape()[1];
+        unsigned vcolbase = i*myval->getNumberOfColumns();
+        for(unsigned k=0; k<myval->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(vcolbase+k) + j-argstart] = jarg->get(jcolbase+myval->getRowIndex(i,k),true);
+        }
       }
     } else {
-      for(int i=0; i<getNumberOfComponents(); ++i) {
-        myvals.addDerivative( i, base, derivatives(i,j) );
-        myvals.updateIndex( i, base );
+      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+        unsigned colbase=i*jarg->getNumberOfColumns();
+        for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
+        }
       }
     }
-    base += getPntrToArgument(j)->getNumberOfStoredValues();
   }
 }
 
@@ -369,13 +314,50 @@ void FunctionOfMatrix<T>::calculate() {
   }
   // Copy bookeeping arrays from input matrices to output matrices
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->getRank()==2 ) {
-      getPntrToComponent(i)->copyBookeepingArrayFromArgument( myarg );
-    } else {
-      getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
+    getPntrToComponent(i)->copyBookeepingArrayFromArgument( myarg );
+  }
+  taskmanager.runAllTasks();
+}
+
+template <class T>
+void FunctionOfMatrix<T>::performTask( std::size_t task_index,
+                                       const FunctionData<T>& actiondata,
+                                       ParallelActionsInput& input,
+                                       ParallelActionsOutput& output ) {
+  FunctionOutput funcout( input.ncomponents, output.values.data(), input.nderivatives_per_scalar, output.derivatives.data() );
+  T::calc( actiondata.f, input.noderiv, View<const double,helpers::dynamic_extent>( input.inputdata + task_index*input.nderivatives_per_scalar, input.nderivatives_per_scalar ), funcout );
+}
+
+template <class T>
+void FunctionOfMatrix<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
+
+template <class T>
+int FunctionOfMatrix<T>::getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata ) {
+  return 1;
+}
+
+template <class T>
+void FunctionOfMatrix<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const FunctionData<T>& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
+  for(unsigned k=actiondata.argstart; k<actiondata.argstart+input.nderivatives_per_scalar; ++k) {
+    unsigned nindex = input.argstarts[k] + task_index;
+    if( input.ranks[k]==0 ) {
+      nindex = input.argstarts[k];
+    }
+    for(unsigned j=0; j<input.ncomponents; ++j) {
+      force_indices.indices[j][k-actiondata.argstart] = nindex;
     }
   }
-  runAllTasks();
+  for(unsigned j=0; j<input.ncomponents; ++j) {
+    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar;
+    force_indices.tot_indices[j] = input.nderivatives_per_scalar;
+  }
 }
 
 }

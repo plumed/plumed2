@@ -42,12 +42,12 @@ linkStyle 7 stroke:blue,color:blue;
 s(["label=s 
  SUM 
 "])
-s -- s --> 12
-12("label=#64;12 
+s -- s --> 11
+11("label=#64;11 
  PRINT
 FILE=fcolvar 
 ")
-s -- s --> 13
-13(["label=#64;13 
+s -- s --> 12
+12(["label=#64;12 
  BIASVALUE 
 "])

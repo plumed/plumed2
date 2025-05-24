@@ -61,8 +61,8 @@
 }, 
 "sfinal" : { 
 "action" : "SORT", 
-"sfinal.1" : { "type": "scalar", "desciption": "1th" }
-"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+"sfinal.1" : { "type": "vector", "desciption": "1th" }
+"sfinal.2" : { "type": "vector", "desciption": "2th" }
 }, 
 "dallk_vatom1" : { 
 "action" : "CENTER_FAST", 

@@ -65,9 +65,7 @@ inline
 unsigned Function::getNumberOfDerivatives() {
   unsigned narg=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==0 ) {
-      narg++;
-    }
+    narg += getPntrToArgument(i)->getNumberOfStoredValues();
   }
   return narg;
 }

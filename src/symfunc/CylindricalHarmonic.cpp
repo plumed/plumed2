@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "function/FunctionTemplateBase.h"
+#include "function/FunctionSetup.h"
 #include "function/FunctionShortcut.h"
 #include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -83,14 +83,16 @@ Calculate the cylindrical harmonic function from the elements in two input matri
 //+ENDPLUMEDOC
 
 
-class CylindricalHarmonic : public function::FunctionTemplateBase {
-private:
-  int tmom;
+class CylindricalHarmonic {
 public:
-  void registerKeywords( Keywords& keys ) override;
-  void read( ActionWithArguments* action ) override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  int tmom;
+  static void registerKeywords( Keywords& keys );
+  static void read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options );
+  static void calc( const CylindricalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
+  CylindricalHarmonic& operator=(const CylindricalHarmonic& m) {
+    tmom=m.tmom;
+    return *this;
+  }
 };
 
 typedef function::FunctionShortcut<CylindricalHarmonic> CyHarmShortcut;
@@ -104,26 +106,16 @@ void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("im","default","matrix","the imaginary part of the cylindrical harmonic");
 }
 
-void CylindricalHarmonic::read( ActionWithArguments* action ) {
-  parse(action,"DEGREE",tmom);
-  action->log.printf("  calculating %dth order cylindrical harmonic with %s and %s as input \n", tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str() );
+void CylindricalHarmonic::read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options ) {
+  action->parse("DEGREE",func.tmom);
+  action->log.printf("  calculating %dth order cylindrical harmonic with %s and %s as input \n", func.tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str() );
   if( action->getNumberOfArguments()==3 ) {
     action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(2)->getName().c_str() );
   }
+  options.derivativeZeroIfValueIsZero = (action->getNumberOfArguments()==3 && (action->getPntrToArgument(2))->isDerivativeZeroWhenValueIsZero());
 }
 
-void CylindricalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
-  action->componentIsNotPeriodic("rm");
-  action->componentIsNotPeriodic("im");
-  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
-  plumed_assert( aarg );
-  if( aarg->getNumberOfArguments()==3 && (aarg->getPntrToArgument(2))->isDerivativeZeroWhenValueIsZero() ) {
-    (action->copyOutput(0))->setDerivativeIsZeroWhenValueIsZero();
-    (action->copyOutput(1))->setDerivativeIsZeroWhenValueIsZero();
-  }
-}
-
-void CylindricalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void CylindricalHarmonic::calc( const CylindricalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout ) {
   double dlen2 = args[0]*args[0] + args[1]*args[1];
   double dlen = sqrt( dlen2 );
   double dlen3 = dlen2*dlen;
@@ -132,19 +124,22 @@ void CylindricalHarmonic::calc( const ActionWithArguments* action, const std::ve
   if( args.size()==3 ) {
     weight=args[2];
   }
-  std::complex<double> ppp = pow( com1, tmom-1 ), ii( 0, 1 );
+  std::complex<double> ppp = pow( com1, func.tmom-1 ), ii( 0, 1 );
   double real_z = real( ppp*com1 ), imag_z = imag( ppp*com1 );
-  std::complex<double> dp_x = static_cast<double>(tmom)*ppp*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
-  std::complex<double> dp_y = static_cast<double>(tmom)*ppp*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
-  vals[0] = weight*real_z;
-  derivatives(0,0) = weight*real(dp_x);
-  derivatives(0,1) = weight*real(dp_y);
-  vals[1] = weight*imag_z;
-  derivatives(1,0) = weight*imag(dp_x);
-  derivatives(1,1) = weight*imag(dp_y);
-  if( args.size()==3 ) {
-    derivatives(0,2) = real_z;
-    derivatives(1,2) = imag_z;
+  std::complex<double> dp_x = static_cast<double>(func.tmom)*ppp*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
+  std::complex<double> dp_y = static_cast<double>(func.tmom)*ppp*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
+  funcout.values[0] = weight*real_z;
+  funcout.values[1] = weight*imag_z;
+
+  if( !noderiv ) {
+    funcout.derivs[0][0] = weight*real(dp_x);
+    funcout.derivs[0][1] = weight*real(dp_y);
+    funcout.derivs[1][0] = weight*imag(dp_x);
+    funcout.derivs[1][1] = weight*imag(dp_y);
+    if( args.size()==3 ) {
+      funcout.derivs[0][2] = real_z;
+      funcout.derivs[1][2] = imag_z;
+    }
   }
 }
 

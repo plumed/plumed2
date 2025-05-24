@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "LessThan.h"
+#include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
+#include "tools/SwitchingFunction.h"
 
 #include <cmath>
 
@@ -415,6 +416,24 @@ Transform all the elements of a matrix using a switching function that is one wh
 */
 //+ENDPLUMEDOC
 
+class LessThan {
+public:
+  bool squared;
+  std::string sfinput;
+  SwitchingFunction switchingFunction;
+  static void registerKeywords( Keywords& keys );
+  static void read( LessThan& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const LessThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  LessThan& operator=(const LessThan& m ) {
+    squared = m.squared;
+    sfinput = m.sfinput;
+    std::string errors;
+    switchingFunction.set( sfinput, errors );
+    plumed_assert( errors.length()==0 );
+    return *this;
+  }
+};
+
 typedef FunctionShortcut<LessThan> LessThanShortcut;
 PLUMED_REGISTER_ACTION(LessThanShortcut,"LESS_THAN")
 typedef FunctionOfScalar<LessThan> ScalarLessThan;
@@ -436,7 +455,8 @@ void LessThan::registerKeywords(Keywords& keys) {
   keys.setValueDescription("scalar/vector/matrix","a function that is one if the input is less than a threshold");
 }
 
-void LessThan::read( ActionWithArguments* action ) {
+void LessThan::read( LessThan& func, ActionWithArguments* action, FunctionOptions& options ) {
+  options.derivativeZeroIfValueIsZero = true;
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
@@ -448,10 +468,10 @@ void LessThan::read( ActionWithArguments* action ) {
   }
 
 
-  std::string sw,errors;
-  action->parse("SWITCH",sw);
-  if(sw.length()>0) {
-    switchingFunction.set(sw,errors);
+  std::string errors;
+  action->parse("SWITCH",func.sfinput);
+  if(func.sfinput.length()>0) {
+    func.switchingFunction.set(func.sfinput,errors);
     if( errors.length()!=0 ) {
       action->error("problem reading SWITCH keyword : " + errors );
     }
@@ -467,22 +487,31 @@ void LessThan::read( ActionWithArguments* action ) {
     action->parse("D_0",d0);
     action->parse("NN",nn);
     action->parse("MM",mm);
-    switchingFunction.set(nn,mm,r0,d0);
+    func.switchingFunction.set(nn,mm,r0,d0);
+    std::string str_nn, str_mm, str_d0, str_r0;
+    Tools::convert( nn, str_nn );
+    Tools::convert( mm, str_mm );
+    Tools::convert( d0, str_d0 );
+    Tools::convert( r0, str_r0 );
+    func.sfinput = "RATIONAL R_0=" + str_r0 + " D_0=" + str_d0 + " NN=" + str_nn + " MM=" + str_mm;
   }
-  action->log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
-  action->parseFlag("SQUARED",squared);
-  if( squared ) {
+  action->log<<"  using switching function with cutoff "<<func.switchingFunction.description()<<"\n";
+  action->parseFlag("SQUARED",func.squared);
+  if( func.squared ) {
     action->log<<"  input quantity is square of quantity that switching function acts upon\n";
   }
 }
 
-void LessThan::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  if( squared ) {
-    vals[0] = switchingFunction.calculateSqr( args[0], derivatives(0,0) );
+void LessThan::calc( const LessThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+  double d;
+  if( func.squared ) {
+    funcout.values[0] = func.switchingFunction.calculateSqr( args[0], d );
   } else {
-    vals[0] = switchingFunction.calculate( args[0], derivatives(0,0) );
+    funcout.values[0] = func.switchingFunction.calculate( args[0], d );
   }
-  derivatives(0,0) = args[0]*derivatives(0,0);
+  if( !noderiv ) {
+    funcout.derivs[0][0] = args[0]*d;
+  }
 }
 
 }

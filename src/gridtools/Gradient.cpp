@@ -64,7 +64,7 @@ void Gradient::registerKeywords( Keywords& keys ) {
   keys.needsAction("KDE");
   keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("CUSTOM");
-  keys.needsAction("SUM_GRID");
+  keys.needsAction("SUM");
   keys.needsAction("COMBINE");
 }
 
@@ -94,7 +94,7 @@ Gradient::Gradient(const ActionOptions&ao):
     }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_xhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_xhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
-    readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
+    readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="y" || dir=="xy" || dir=="yz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_yhisto: KDE ARG=" + getShortcutLabel() + "_dist.y GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
@@ -104,7 +104,7 @@ Gradient::Gradient(const ActionOptions&ao):
     }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_yhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_yhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
-    readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
+    readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_zhisto: KDE ARG=" + getShortcutLabel() + "_dist.z GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
@@ -114,7 +114,7 @@ Gradient::Gradient(const ActionOptions&ao):
     }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_zhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_zhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
-    readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
+    readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="xy" ) {
     readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_xgrad," + getShortcutLabel() + "_ygrad PERIODIC=NO");

@@ -19,11 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Between.h"
+#include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
+#include "tools/HistogramBead.h"
 #include "core/ActionRegister.h"
 
 #include <cmath>
@@ -157,6 +158,32 @@ Transform all the elements of a matrix using a switching function that is oen wh
 */
 //+ENDPLUMEDOC
 
+class Between {
+public:
+  bool isPeriodic;
+  double min=0, max=0;
+  std::string hinput;
+  HistogramBead hist;
+  static void registerKeywords( Keywords& keys );
+  static void read( Between& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  Between& operator=( const Between& m ) {
+    hinput = m.hinput;
+    std::string errors;
+    hist.set( m.hinput, errors );
+    plumed_assert( errors.size()==0 );
+    isPeriodic = m.isPeriodic;
+    min = m.min;
+    max = m.max;
+    if( !isPeriodic ) {
+      hist.isNotPeriodic();
+    } else {
+      hist.isPeriodic( min, max );
+    }
+    return *this;
+  }
+};
+
 typedef FunctionShortcut<Between> BetweenShortcut;
 PLUMED_REGISTER_ACTION(BetweenShortcut,"BETWEEN")
 typedef FunctionOfScalar<Between> ScalarBetween;
@@ -176,7 +203,8 @@ void Between::registerKeywords(Keywords& keys) {
   keys.setValueDescription("scalar/vector/matrix","a function that is one if the input falls within a particular range and zero otherwise");
 }
 
-void Between::read( ActionWithArguments* action ) {
+void Between::read( Between& func, ActionWithArguments* action, FunctionOptions& options ) {
+  options.derivativeZeroIfValueIsZero = true;
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
@@ -187,42 +215,43 @@ void Between::read( ActionWithArguments* action ) {
     action->error("should only be one argument to between actions");
   }
 
-  std::string str_min, str_max, tstr_min, tstr_max;
-  bool isPeriodic = action->getPntrToArgument(0)->isPeriodic();
-  if( isPeriodic ) {
+  std::string str_min, str_max;
+  func.isPeriodic = action->getPntrToArgument(0)->isPeriodic();
+  if( func.isPeriodic ) {
     action->getPntrToArgument(0)->getDomain( str_min, str_max );
   }
 
-  std::string hinput;
-  action->parse("SWITCH",hinput);
-  if(hinput.length()==0) {
+  action->parse("SWITCH",func.hinput);
+  if(func.hinput.length()==0) {
     std::string low, up, sme;
     action->parse("LOWER",low);
     action->parse("UPPER",up);
     action->parse("SMEAR",sme);
-    hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
+    func.hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
   }
   std::string errors;
-  hist.set( hinput, errors );
+  func.hist.set( func.hinput, errors );
   if( errors.size()!=0 ) {
     action->error( errors );
   }
-  action->log.printf("  %s \n", hist.description().c_str() );
+  action->log.printf("  %s \n", func.hist.description().c_str() );
 
-  if( !isPeriodic ) {
-    hist.isNotPeriodic();
+  if( !func.isPeriodic ) {
+    func.hist.isNotPeriodic();
   } else {
-    double min;
-    Tools::convert( str_min, min );
-    double max;
-    Tools::convert( str_max, max );
-    hist.isPeriodic( min, max );
+    Tools::convert( str_min, func.min );
+    Tools::convert( str_max, func.max );
+    func.hist.isPeriodic( func.min, func.max );
   }
 }
 
-void Between::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Between::calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
   plumed_dbg_assert( args.size()==1 );
-  vals[0] = hist.calculate( args[0], derivatives(0,0) );
+  double deriv;
+  funcout.values[0] = func.hist.calculate( args[0], deriv );
+  if( !noderiv ) {
+    funcout.derivs[0][0] = deriv;
+  }
 }
 
 }

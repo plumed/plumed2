@@ -27,9 +27,9 @@ linkStyle 5 stroke:blue,color:blue;
 d1c(["label=d1c 
  SUM 
 "])
-c1 -- c1 --> 7
-d1c -- d1c --> 7
-7("label=#64;7 
+c1 -- c1 --> 6
+d1c -- d1c --> 6
+6("label=#64;6 
  PRINT
 FILE=colvar 
 ")

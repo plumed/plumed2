@@ -22,27 +22,30 @@
 #ifndef __PLUMED_function_Custom_h
 #define __PLUMED_function_Custom_h
 
-#include "FunctionTemplateBase.h"
+#include "FunctionSetup.h"
 #include "tools/LeptonCall.h"
 
 namespace PLMD {
 namespace function {
 
-class Custom : public FunctionTemplateBase {
+class Custom {
+public:
   std::string func;
+  std::vector<std::string> var;
   bool zerowhenallzero;
   LeptonCall function;
-/// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
-/// to speed things up
   std::vector<unsigned> check_multiplication_vars;
-public:
-  void registerKeywords( Keywords& keys ) override;
-  std::string getGraphInfo( const std::string& lab ) const override;
-  void read( ActionWithArguments* action ) override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override ;
-  bool getDerivativeZeroIfValueIsZero() const override;
-  std::vector<Value*> getArgumentsToCheck( const std::vector<Value*>& args ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  static void registerKeywords( Keywords& keys );
+  static void read( Custom& f, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Custom& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  Custom& operator=( const Custom& m ) {
+    func = m.func;
+    var = m.var;
+    function.set( func, var, NULL );
+    zerowhenallzero = m.zerowhenallzero;
+    check_multiplication_vars = m.check_multiplication_vars;
+    return *this;
+  }
 };
 
 }

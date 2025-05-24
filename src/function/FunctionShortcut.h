@@ -48,6 +48,7 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_ONEARG");
   keys.addActionNameSuffix("_VECTOR");
   keys.addActionNameSuffix("_MATRIX");
   keys.addActionNameSuffix("_GRID");
@@ -105,6 +106,8 @@ void FunctionShortcut<T>::createAction( ActionShortcut* action, const std::vecto
     } else {
       plumed_merror("there is no action registered that allows you to do " + action->getName() + " with scalars");
     }
+  } else if( vals.size()==1 && actionRegister().check( action->getName() + "_ONEARG") ) {
+    action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_ONEARG ARG=" + allargs + " " + action->convertInputLineToString() );
   } else if( maxrank==1 ) {
     if( actionRegister().check( action->getName() + "_VECTOR") ) {
       action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_VECTOR ARG=" + allargs + " " + action->convertInputLineToString() );

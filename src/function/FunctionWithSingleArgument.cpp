@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,30 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_function_MoreThan_h
-#define __PLUMED_function_MoreThan_h
+#include "FunctionWithSingleArgument.h"
 
-#include "FunctionTemplateBase.h"
-#include "tools/SwitchingFunction.h"
 
-namespace PLMD {
-namespace function {
-
-class MoreThan : public FunctionTemplateBase {
-  bool squared;
-  SwitchingFunction switchingFunction;
-public:
-  void registerKeywords( Keywords& keys ) override;
-  void read( ActionWithArguments* action ) override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
-    return args.size()>1;
-  }
-  bool getDerivativeZeroIfValueIsZero() const override {
-    return true;
-  }
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
-};
-
-}
-}
-#endif
