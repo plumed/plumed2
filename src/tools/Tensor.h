@@ -220,7 +220,7 @@ public:
 /// seems sufficient for most applications.
 /// In principle, it could be extended to compute m eigenvalues by:
 /// - computing the lowest
-/// - compute the proper projector and reduce the matrix to <n-1,n1>
+/// - compute the proper projector and reduce the matrix to <n-1,n-1>
 /// - proceed iteratively
 /// The interface should then be likely the same as diagMatSym
   template<unsigned n_>
@@ -630,13 +630,12 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
 }
 
 template<unsigned n>
-double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
-                          unsigned niter = 24) {
+double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector, unsigned niter) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
   double upper_bound = std::numeric_limits<double>::lowest();
   for (unsigned i = 0; i < n; ++i) {
     auto row = K.getRow(i);
-    double center = std::fabs(row[i]);
+    double center = row[i];
     row[i] = 0.0;  // zero out the diagonal entry
 
     // Compute sum of absolute values of the off-diagonal elements
@@ -665,11 +664,11 @@ double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenv
   VectorGeneric<n> v;
   double best_norm2 = 0.0;
   for (unsigned j = 0; j < n; ++j) {
-    auto col = A.getCol(j);
-    double norm2 = modulo2(col);
+    auto row = A.getRow(j);
+    double norm2 = modulo2(row);
     double use = static_cast<double>(norm2 > best_norm2);
     best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
-    v = use * col + (1.0 - use) * v;
+    v = use * row + (1.0 - use) * v;
   }
 
   v /= modulo(v);
