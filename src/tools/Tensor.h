@@ -224,7 +224,7 @@ public:
 /// - proceed iteratively
 /// The interface should then be likely the same as diagMatSym
   template<unsigned n_>
-  double lowestEigenpairSym(const TensorGeneric<n_, n_>& K, VectorGeneric<n_>& eigenvector, unsigned niter = 24);
+  double lowestEigenpairSym(const TensorGeneric<n_, n_>& K, VectorGeneric<n_>& eigenvector, unsigned niter);
 };
 
 template <unsigned n,unsigned m>
@@ -630,7 +630,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
 }
 
 template<unsigned n>
-double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector, unsigned niter) {
+double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector, unsigned niter = 24) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
   double upper_bound = std::numeric_limits<double>::lowest();
   for (unsigned i = 0; i < n; ++i) {
