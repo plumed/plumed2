@@ -199,6 +199,9 @@ public:
   friend TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&,const VectorGeneric<3>&);
 /// Derivative of a normalized vector
   friend TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
+/// Compute the Frobenius norm 2.
+  template<unsigned n_,unsigned m_>
+  friend double frobeniusNorm(const TensorGeneric<m_,n_>&t);
 /// << operator.
 /// Allows printing tensor `t` with `std::cout<<t;`
   template<unsigned n_,unsigned m_>
@@ -211,6 +214,17 @@ public:
 /// Notice that tensor is assumed to be symmetric!!!
   template<unsigned n_,unsigned m_>
   friend void diagMatSym(const TensorGeneric<n_,n_>&,VectorGeneric<m_>&evals,TensorGeneric<m_,n_>&evec);
+/// Compute lowest eigenvalue and eigenvector, using a branchless iterative implementation.
+/// This function is amenable for running on openACC.
+/// The accuracy could be controlled increasing the number of iterations. The default value (24)
+/// seems sufficient for most applications.
+/// In principle, it could be extended to compute m eigenvalues by:
+/// - computing the lowest
+/// - compute the proper projector and reduce the matrix to <n-1,n1>
+/// - proceed iteratively
+/// The interface should then be likely the same as diagMatSym
+  template<unsigned n_>
+  double lowestEigenpairSym(const TensorGeneric<n_, n_>& K, VectorGeneric<n_>& eigenvector, unsigned niter = 24);
 };
 
 template <unsigned n,unsigned m>
@@ -617,9 +631,9 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
 
 template<unsigned n>
 double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector,
-                          unsigned nsquare = 24) {
+                          unsigned niter = 24) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
-  double lambda_shift = 0.0;
+  double upper_bound = std::numeric_limits<double>::lowest();
   for (unsigned i = 0; i < n; ++i) {
     auto row = K.getRow(i);
     double center = std::fabs(row[i]);
@@ -631,18 +645,17 @@ double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenv
       row_sum += std::fabs(row[j]);
     }
 
-    double radius = center + row_sum;
-    lambda_shift = std::fmax(lambda_shift, radius);
+    upper_bound = std::fmax(upper_bound, center + row_sum);
   }
 
   // Build shifted matrix A = -K + lambda_shift * I
   TensorGeneric<n, n> A = -K;
   for (unsigned i = 0; i < n; ++i) {
-    A[i][i] += lambda_shift;
+    A[i][i] += upper_bound;
   }
 
   // Repeated squaring + normalization to project onto dominant eigenspace
-  for (unsigned k = 0; k < nsquare; ++k) {
+  for (unsigned k = 0; k < niter; ++k) {
     A = matmul(A, A);
     auto frob = frobeniusNorm(A);
     A /= (frob > 0.0 ? frob : 1.0);
