@@ -199,6 +199,9 @@ public:
   friend TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&,const VectorGeneric<3>&);
 /// Derivative of a normalized vector
   friend TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
+/// Compute the Frobenius norm 2.
+  template<unsigned n_,unsigned m_>
+  friend double frobeniusNorm(const TensorGeneric<m_,n_>&t);
 /// << operator.
 /// Allows printing tensor `t` with `std::cout<<t;`
   template<unsigned n_,unsigned m_>
@@ -211,6 +214,17 @@ public:
 /// Notice that tensor is assumed to be symmetric!!!
   template<unsigned n_,unsigned m_>
   friend void diagMatSym(const TensorGeneric<n_,n_>&,VectorGeneric<m_>&evals,TensorGeneric<m_,n_>&evec);
+/// Compute lowest eigenvalue and eigenvector, using a branchless iterative implementation.
+/// This function is amenable for running on openACC.
+/// The accuracy could be controlled increasing the number of iterations. The default value (24)
+/// seems sufficient for most applications.
+/// In principle, it could be extended to compute m eigenvalues by:
+/// - computing the lowest
+/// - compute the proper projector and reduce the matrix to <n-1,n-1>
+/// - proceed iteratively
+/// The interface should then be likely the same as diagMatSym
+  template<unsigned n_>
+  double lowestEigenpairSym(const TensorGeneric<n_, n_>& K, VectorGeneric<n_>& eigenvector, unsigned niter);
 };
 
 template <unsigned n,unsigned m>
@@ -507,6 +521,11 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
 }
 
 template<unsigned n,unsigned m>
+double frobeniusNorm(const TensorGeneric<m,n>&t) {
+  return std::sqrt(LoopUnroller<m*n>::_dot(&t[0][0],&t[0][0]));
+}
+
+template<unsigned n,unsigned m>
 std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t) {
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -609,6 +628,56 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
         }
   }
 }
+
+template<unsigned n>
+double lowestEigenpairSym(const TensorGeneric<n, n>& K, VectorGeneric<n>& eigenvector, unsigned niter = 24) {
+  // Estimate upper bound for largest eigenvalue using Gershgorin disks
+  double upper_bound = std::numeric_limits<double>::lowest();
+  for (unsigned i = 0; i < n; ++i) {
+    auto row = K.getRow(i);
+    double center = row[i];
+    row[i] = 0.0;  // zero out the diagonal entry
+
+    // Compute sum of absolute values of the off-diagonal elements
+    double row_sum = 0.0;
+    for (unsigned j = 0; j < n; ++j) {
+      row_sum += std::fabs(row[j]);
+    }
+
+    upper_bound = std::fmax(upper_bound, center + row_sum);
+  }
+
+  // Build shifted matrix A = -K + lambda_shift * I
+  TensorGeneric<n, n> A = -K;
+  for (unsigned i = 0; i < n; ++i) {
+    A[i][i] += upper_bound;
+  }
+
+  // Repeated squaring + normalization to project onto dominant eigenspace
+  for (unsigned k = 0; k < niter; ++k) {
+    A = matmul(A, A);
+    auto frob = frobeniusNorm(A);
+    A /= (frob > 0.0 ? frob : 1.0);
+  }
+
+  // Extract dominant eigenvector from projector A
+  VectorGeneric<n> v;
+  double best_norm2 = 0.0;
+  for (unsigned j = 0; j < n; ++j) {
+    auto row = A.getRow(j);
+    double norm2 = modulo2(row);
+    double use = static_cast<double>(norm2 > best_norm2);
+    best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
+    v = use * row + (1.0 - use) * v;
+  }
+
+  v /= modulo(v);
+
+  eigenvector = v;
+
+  return  matmul(eigenvector, K, eigenvector);
+}
+
 
 static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 
