@@ -40,15 +40,13 @@ private:
   PTM taskmanager;
 /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart;
+/// Number of scalars that appear in the input
+  std::size_t nscalars;
 /// The function that is being computed
 /// Used to hold the list of tasks we are running
   std::vector<unsigned> active_tasks;
 /// Get the number of arguments the function uses
   unsigned getNumberOfFunctionArguments() const ;
-/// Get the shape of the output matrix
-  std::vector<std::size_t> getValueShapeFromArguments();
-/// Get a pointer to the first matrix argument
-  Value* getPntrToFirstMatrixArgument() const ;
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfMatrix(const ActionOptions&);
@@ -118,13 +116,48 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this),
-  argstart(0) {
+  argstart(0),
+  nscalars(0) {
   // Check if first argument is grid
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
     argstart=1;
   }
+  if( getNumberOfArguments()==argstart ) error("no arguments specified");
+
+  if( getPntrToArgument(argstart)->getRank()!=2 ) {
+      error("first argument to this action must be a matrix");
+  } 
+
+  // Get the number of arguments
+  unsigned nargs = getNumberOfArguments();
+  int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
   // Get the shape of the output
-  std::vector<std::size_t> shape( getValueShapeFromArguments() );
+  std::vector<std::size_t> shape( 2 );
+  shape[0] = getPntrToArgument(argstart)->getShape()[0];
+  shape[1] = getPntrToArgument(argstart)->getShape()[1];
+  for(unsigned i=argstart+1; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) {
+         nscalars++; 
+      } else if( getPntrToArgument(i)->getRank()==2 ) {
+         if( getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1] ) {
+             error("mismatch between sizes of input arguments");
+         } else if( nscalars>0 ) {
+             error("scalars should be specified in argument list after all matrices");
+         }
+      } else {
+         error("input arguments should be matricesor scalars");
+      }
+  }
+  if( nmasks>0 ) {
+      if( getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] || 
+          getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[1]!=shape[1] ) {
+          error("input mask has wrong size");
+      }
+  }
+
   // Check if the output matrix is symmetric
   bool symmetric=true;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
@@ -137,12 +170,13 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   // Setup the values
   FunctionData<T> myfunc;
   myfunc.argstart = argstart;
+  myfunc.nscalars = nscalars;
   FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
   // Copy the fact that this is a symmetric matrix if the input matrices are all symmetric
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setSymmetric( symmetric );
   }
-  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart, 0 );
+  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart, nscalars );
   // Pass the function to the parallel task manager
   taskmanager.setActionInput( myfunc );
 }
@@ -152,26 +186,6 @@ std::string FunctionOfMatrix<T>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
   return getName().substr(0,und);
 }
-
-template <class T>
-std::vector<std::size_t> FunctionOfMatrix<T>::getValueShapeFromArguments() {
-  std::vector<std::size_t> shape(2);
-  shape[0]=shape[1]=0;
-  for(unsigned i=argstart; i<getNumberOfFunctionArguments(); ++i) {
-    plumed_assert( getPntrToArgument(i)->getRank()==2 || getPntrToArgument(i)->getRank()==0 );
-    if( getPntrToArgument(i)->getRank()==2 ) {
-      if( shape[0]>0 && (getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1]) ) {
-        error("all matrices input should have the same shape");
-      } else if( shape[0]==0 ) {
-        shape[0]=getPntrToArgument(i)->getShape()[0];
-        shape[1]=getPntrToArgument(i)->getShape()[1];
-      }
-      plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
-    }
-  }
-  return shape;
-}
-
 
 template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
@@ -185,7 +199,7 @@ unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
 template <class T>
 void FunctionOfMatrix<T>::prepare() {
   bool resizerequired = false;
-  std::vector<std::size_t> shape(getPntrToFirstMatrixArgument()->getShape());
+  std::vector<std::size_t> shape(getPntrToArgument(argstart)->getShape());
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = getPntrToComponent(i);
     if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) {
@@ -194,21 +208,10 @@ void FunctionOfMatrix<T>::prepare() {
     }
   }
   if( resizerequired ) {
-    taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments()-argstart, 0 );
+    taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments()-argstart, nscalars );
   }
   ActionWithVector::prepare();
   active_tasks.resize(0);
-}
-
-template <class T>
-Value* FunctionOfMatrix<T>::getPntrToFirstMatrixArgument() const {
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==2 ) {
-      return getPntrToArgument(i);
-    }
-  }
-  plumed_merror("could not find matrix argument");
-  return NULL;
 }
 
 template <class T>
@@ -226,7 +229,7 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
   if( getNumberOfMasks()>0 ) {
     myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   } else {
-    myarg = getPntrToFirstMatrixArgument();
+    myarg = getPntrToArgument(argstart);
   }
 
   unsigned base=0;
@@ -310,7 +313,7 @@ void FunctionOfMatrix<T>::calculate() {
   if( getNumberOfMasks()>0 ) {
     myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   } else {
-    myarg = getPntrToFirstMatrixArgument();
+    myarg = getPntrToArgument(argstart);
   }
   // Copy bookeeping arrays from input matrices to output matrices
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
@@ -345,17 +348,16 @@ void FunctionOfMatrix<T>::getForceIndices( std::size_t task_index,
     const FunctionData<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  for(unsigned k=actiondata.argstart; k<actiondata.argstart+input.nderivatives_per_scalar; ++k) {
-    unsigned nindex = input.argstarts[k] + task_index;
-    if( input.ranks[k]==0 ) {
-      nindex = input.argstarts[k];
-    }
-    for(unsigned j=0; j<input.ncomponents; ++j) {
-      force_indices.indices[j][k-actiondata.argstart] = nindex;
-    }
-  }
+  unsigned matrix_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
-    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar;
+    for(unsigned k=actiondata.argstart; k<matrix_end; ++k) {
+        unsigned nindex = input.argstarts[k] + task_index;
+        force_indices.indices[j][k-actiondata.argstart] = nindex;
+    }
+    for(unsigned k=matrix_end; k<matrix_end+actiondata.nscalars; ++k) {
+        force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
+    }
+    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
     force_indices.tot_indices[j] = input.nderivatives_per_scalar;
   }
 }
