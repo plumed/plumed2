@@ -49,18 +49,21 @@ public:
     type(d.first),
     data(d.second) {}
   double calculate(double distance, double& dfunc) const override {
-    return SF::calculate(data,distance,dfunc);
+    auto [f,d] = SF::calculate(data,distance);
+    dfunc=d;
+    return f;
   }
   double calculateSqr(double distance2, double& dfunc) const override {
-    return SF::calculateSqr(data,distance2,dfunc);
+    auto [f,d] = SF::calculateSqr(data,distance2);
+    dfunc=d;
+    return f;
   }
   void setupStretch() override {
     if(data.dmax!=std::numeric_limits<double>::max()) {
       data.stretch=1.0;
       data.shift=0.0;
-      double dummy;
-      double s0=SF::calculate(data,0.0,dummy);
-      double sd=SF::calculate(data,data.dmax,dummy);
+      double s0=SF::calculate(data,0.0).first;
+      double sd=SF::calculate(data,data.dmax).first;
       data.stretch=1.0/(s0-sd);
       data.shift=-sd*data.stretch;
     }
@@ -95,25 +98,25 @@ template<class T>
 constexpr bool has_function_data <T, std::void_t<
 decltype(T::function(
            std::declval<const Data& >(),
-           std::declval<double >(),
-           std::declval<double& >()
+           std::declval<double >()
          ))> > = true;
 } //namespace switchContainersUtils
 
+using ValueDerivative=std::pair<double,double>;
 /// container for the actual switching function used by PLMD::SwitchingFunction
 template<typename switching>
 struct baseSwitch {
-  static double calculate(const Data&data, const double distance, double& dfunc) {
+  static ValueDerivative calculate(const Data&data, const double distance) {
     double res = 0.0;
-    dfunc = 0.0;
+    double dfunc = 0.0;
     if(distance <= data.dmax) {
       res = 1.0;
       const double rdist = (distance-data.d0)*data.invr0;
       if(rdist > 0.0) {
         if constexpr (switchContainersUtils::has_function_data<switching>) {
-          res = switching::function(data,rdist,dfunc);
+          std::tie(res,dfunc) = switching::function(data,rdist);
         } else {
-          res = switching::function(rdist,dfunc);
+          std::tie(res,dfunc) = switching::function(rdist);
         }
         //the following comments came from the original
         // this is for the chain rule (derivative of rdist):
@@ -129,11 +132,11 @@ struct baseSwitch {
       res=res*data.stretch+data.shift;
       dfunc*=data.stretch;
     }
-    return res;
+    return {res,dfunc};
   }
 
-  static double calculateSqr(const Data&data, double distance2,double&dfunc) {
-    return switching::calculate(data,std::sqrt(distance2),dfunc);
+  static ValueDerivative calculateSqr(const Data&data, double distance2) {
+    return switching::calculate(data,std::sqrt(distance2));
   }
 };
 
@@ -143,32 +146,30 @@ template<int N,
              struct fixedRational :public baseSwitch<fixedRational<N>> {
 
   template <int POW>
-  static inline double doRational(const double rdist, double&dfunc, double result=0.0) {
+  static inline ValueDerivative doRational(const double rdist, double dfunc=0.0, double result=0.0) {
     const double rNdist=Tools::fastpow<POW-1>(rdist);
     result=1.0/(1.0+rNdist*rdist);
     dfunc = -POW*rNdist*result*result;
-    return result;
+    return {result,dfunc};
   }
 
-  static inline double function(const Data&, double rdist,double&dfunc) {
+  static inline ValueDerivative function(const Data&, double rdist) {
     //preRes and preDfunc are passed already set
-    dfunc=0.0;
-    double result = doRational<N>(rdist,dfunc);
-    return result;
+    return doRational<N>(rdist);
   }
 
-  static double calculateSqr(const Data& data,double distance2,double&dfunc) {
+  static ValueDerivative calculateSqr(const Data& data,double distance2) {
     double result=0.0;
-    dfunc=0.0;
+    double dfunc=0.0;
     if(distance2 <= data.dmax_2) {
       const double rdist = distance2*data.invr0_2;
-      result = doRational<N/2>(rdist,dfunc);
+      std::tie(result,dfunc) = doRational<N/2>(rdist);
       dfunc*=2*data.invr0_2;
       // stretch:
       result=result*data.stretch+data.shift;
       dfunc*=data.stretch;
     }
-    return result;
+    return {result,dfunc};
   }
 };
 
@@ -208,8 +209,8 @@ struct rational : public baseSwitch<rational<isFast,nis2m>> {
     return {switchType::rational,data};
   }
 
-  static inline double doRational(const double rdist, double&dfunc,double secDev, const int N,
-                                  const int M,double result=0.0) {
+  static inline ValueDerivative doRational(const double rdist,double secDev, const int N,
+      const int M, double dfunc=0.0,double result=0.0) {
     //the result and dfunc are assigned in the drivers for doRational
     //if(rdist>(1.0-100.0*epsilon) && rdist<(1.0+100.0*epsilon)) {
     //result=preRes;
@@ -234,31 +235,29 @@ struct rational : public baseSwitch<rational<isFast,nis2m>> {
         dfunc  = dfunc + x * secDev;
       }
     }
-    return result;
+    return {result,dfunc};
   }
-  static inline double function(const Data&data, double rdist,double&dfunc) {
+  static inline ValueDerivative function(const Data&data, double rdist) {
     //preRes and preDfunc are passed already set
-    dfunc=data.preDfunc;
-    double result = doRational(rdist,dfunc,data.preSecDev,data.nn,data.mm,data.preRes);
-    return result;
+    return doRational(rdist,data.preSecDev,data.nn,data.mm,data.preDfunc,data.preRes);
   }
 
-  static double calculateSqr(const Data&data, double distance2,double&dfunc) {
+  static ValueDerivative calculateSqr(const Data&data, double distance2) {
     if constexpr (isFast==rationalPow::fast) {
       double result=0.0;
-      dfunc=0.0;
+      double dfunc=0.0;
       if(distance2 <= data.dmax_2) {
         const double rdist = distance2*data.invr0_2;
-        dfunc=data.preDfuncF;
-        result = doRational(rdist,dfunc,data.preSecDevF,data.nnf,data.mmf,data.preRes);
+        std::tie(result,dfunc) =
+          doRational(rdist,data.preSecDevF,data.nnf,data.mmf,data.preDfuncF,data.preRes);
         dfunc*=2*data.invr0_2;
 // stretch:
         result=result*data.stretch+data.shift;
         dfunc*=data.stretch;
       }
-      return result;
+      return {result,dfunc};
     } else {
-      return baseSwitch<rational<isFast,nis2m>>::calculate(data,std::sqrt(distance2),dfunc);
+      return baseSwitch<rational<isFast,nis2m>>::calculate(data,std::sqrt(distance2));
     }
   }
 };
@@ -312,10 +311,9 @@ struct exponentialSwitch: public baseSwitch<exponentialSwitch> {
     return{switchType::exponential,
            Data::init(D0,DMAX,R0)};
   }
-  static inline double function(const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const double rdist) {
     double result = std::exp(-rdist);
-    dfunc=-result;
-    return result;
+    return {result,-result};
   }
 };
 
@@ -327,10 +325,9 @@ struct gaussianSwitch: public baseSwitch<gaussianSwitch> {
     return{switchType::gaussian,
            Data::init(D0,DMAX,R0)};
   }
-  static inline double function(const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const double rdist) {
     double result = std::exp(-0.5*rdist*rdist);
-    dfunc=-rdist*result;
-    return result;
+    return {result,-rdist*result};
   }
 };
 
@@ -340,23 +337,21 @@ struct fastgaussianSwitch: public baseSwitch<fastgaussianSwitch> {
     return{switchType::fastgaussian,
            Data::init(0.0,DMAX,1.0)};
   }
-  static inline double function(const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const double rdist) {
     double result = std::exp(-0.5*rdist*rdist);
-    dfunc=-rdist*result;
-    return result;
+    return {result,-rdist*result};
   }
-  static inline double calculateSqr(const Data& data,const double distance2,double&dfunc) {
+  static inline ValueDerivative calculateSqr(const Data& data,const double distance2) {
     double result = 0.0;
-    if(distance2>data.dmax_2) {
-      dfunc=0.0;
-    } else  {
+    double dfunc = 0.0;
+    if(distance2<data.dmax_2) {
       result = exp(-0.5*distance2);
       dfunc = -result;
       // stretch:
       result=result*data.stretch+data.shift;
       dfunc*=data.stretch;
     }
-    return result;
+    return {result,dfunc};
   }
 };
 
@@ -375,11 +370,11 @@ struct smapSwitch: public baseSwitch<smapSwitch> {
     return{switchType::smap,data};
   }
 
-  static inline double function(const Data& data,const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const Data& data,const double rdist) {
     const double sx=data.c*Tools::fastpow( rdist, data.a );
     double result=std::pow( 1.0 + sx, data.d );
-    dfunc=-data.b*sx/rdist*result/(1.0+sx);
-    return result;
+    double dfunc=-data.b*sx/rdist*result/(1.0+sx);
+    return {result,dfunc};
   }
 };
 
@@ -388,12 +383,12 @@ struct cubicSwitch: public baseSwitch<cubicSwitch> {
     return{switchType::cubic,
            Data::init(D0,DMAX,DMAX-D0)};
   }
-  static inline double function(const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const double rdist) {
     const double tmp1 = rdist - 1.0;
     const double tmp2 = 1.0+2.0*rdist;
     //double result = tmp1*tmp1*tmp2;
-    dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
-    return tmp1*tmp1*tmp2;
+    double dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
+    return {tmp1*tmp1*tmp2,dfunc};
   }
 };
 
@@ -407,12 +402,12 @@ struct tanhSwitch: public baseSwitch<tanhSwitch> {
     return{switchType::tanh,
            Data::init(D0,DMAX,R0)};
   }
-  static inline double function(const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const double rdist) {
     const double tmp1 = std::tanh(rdist);
     //was dfunc=-(1-tmp1*tmp1);
-    dfunc = tmp1 * tmp1 - 1.0;
+    double dfunc = tmp1 * tmp1 - 1.0;
     //return result;
-    return 1.0 - tmp1;
+    return {1.0 - tmp1,dfunc };
   }
 };
 
@@ -424,16 +419,16 @@ struct cosinusSwitch: public baseSwitch<cosinusSwitch> {
     return{switchType::cosinus,
            Data::init(D0,DMAX,R0)};
   }
-  static inline double function(const Data& data,const double rdist,double&dfunc) {
+  static inline ValueDerivative function(const Data& data,const double rdist) {
     double result = 0.0;
-    dfunc=0.0;
+    double dfunc=0.0;
     if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
       double rdistPI = rdist * PLMD::pi;
       result = 0.5 * (std::cos ( rdistPI ) + 1.0);
       dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI ) * data.invr0;
     }
-    return result;
+    return {result,dfunc};
   }
 };
 
@@ -451,9 +446,9 @@ struct nativeqSwitch: public baseSwitch<nativeqSwitch> {
     data.ref=REF;
     return{switchType::nativeq,data};
   }
-  static inline double calculate(const Data& data,const double distance, double& dfunc) {
+  static inline ValueDerivative calculate(const Data& data,const double distance) {
     double res = 0.0;
-    dfunc = 0.0;
+    double dfunc = 0.0;
     if(distance<=data.dmax) {
       res = 1.0;
       if(distance > data.d0) {
@@ -477,7 +472,7 @@ struct nativeqSwitch: public baseSwitch<nativeqSwitch> {
       }
       res=res*data.stretch+data.shift;
     }
-    return res;
+    return {res,dfunc};
   }
 };
 
@@ -705,12 +700,11 @@ public:
 };
 
 //call to calculate with no inheritance
-double calculate(const switchType type,
-                 const Data& data,
-                 const double rdist,
-                 double&dfunc) {
-#define SWITCHCALL(x) case switchType::x: return x##Switch::calculate(data, rdist,dfunc);
-#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculate(data, rdist,dfunc);
+ValueDerivative calculate(const switchType type,
+                          const Data& data,
+                          const double rdist) {
+#define SWITCHCALL(x) case switchType::x: return x##Switch::calculate(data, rdist);
+#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculate(data, rdist);
   switch (type) {
     RATCALL(12)
     RATCALL(10)
@@ -719,13 +713,13 @@ double calculate(const switchType type,
     RATCALL(4)
     RATCALL(2)
   case switchType::rational:
-    return rational<rationalPow::standard,rationalForm::standard>::calculate(data, rdist,dfunc);
+    return rational<rationalPow::standard,rationalForm::standard>::calculate(data, rdist);
   case switchType::rationalFast:
-    return rational<rationalPow::fast,rationalForm::standard>::calculate(data, rdist,dfunc);
+    return rational<rationalPow::fast,rationalForm::standard>::calculate(data, rdist);
   case switchType::rationalSimple:
-    return rational<rationalPow::standard,rationalForm::simplified>::calculate(data, rdist,dfunc);
+    return rational<rationalPow::standard,rationalForm::simplified>::calculate(data, rdist);
   case switchType::rationalSimpleFast:
-    return rational<rationalPow::fast,rationalForm::simplified>::calculate(data, rdist,dfunc);
+    return rational<rationalPow::fast,rationalForm::simplified>::calculate(data, rdist);
     SWITCHCALL(exponential)
     SWITCHCALL(gaussian)
     SWITCHCALL(fastgaussian)
@@ -735,19 +729,18 @@ double calculate(const switchType type,
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
   case switchType::lepton:
-    return 0.0;
+    return {0.0,0.0};
   }
 #undef SWITCHCALL
 #undef RATCALL
 }
 
 //call to calculateSqr with no inheritance
-double calculateSqr(const switchType type,
-                    const Data& data,
-                    const double rdist2,
-                    double&dfunc) {
-#define SWITCHCALL(x) case switchType::x: return x##Switch::calculateSqr(data, rdist2,dfunc);
-#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculateSqr(data, rdist2,dfunc);
+ValueDerivative calculateSqr(const switchType type,
+                             const Data& data,
+                             const double rdist2) {
+#define SWITCHCALL(x) case switchType::x: return x##Switch::calculateSqr(data, rdist2);
+#define RATCALL(x) case switchType::rationalfix##x:return fixedRational<x>::calculateSqr(data, rdist2);
   switch (type) {
     RATCALL(12)
     RATCALL(10)
@@ -756,13 +749,13 @@ double calculateSqr(const switchType type,
     RATCALL(4)
     RATCALL(2)
   case switchType::rational:
-    return rational<rationalPow::standard,rationalForm::standard>::calculateSqr(data, rdist2,dfunc);
+    return rational<rationalPow::standard,rationalForm::standard>::calculateSqr(data, rdist2);
   case switchType::rationalFast:
-    return rational<rationalPow::fast,rationalForm::standard>::calculateSqr(data, rdist2,dfunc);
+    return rational<rationalPow::fast,rationalForm::standard>::calculateSqr(data, rdist2);
   case switchType::rationalSimple:
-    return rational<rationalPow::standard,rationalForm::simplified>::calculateSqr(data, rdist2,dfunc);
+    return rational<rationalPow::standard,rationalForm::simplified>::calculateSqr(data, rdist2);
   case switchType::rationalSimpleFast:
-    return rational<rationalPow::fast,rationalForm::simplified>::calculateSqr(data, rdist2,dfunc);
+    return rational<rationalPow::fast,rationalForm::simplified>::calculateSqr(data, rdist2);
     SWITCHCALL(exponential)
     SWITCHCALL(gaussian)
     SWITCHCALL(fastgaussian)
@@ -772,7 +765,7 @@ double calculateSqr(const switchType type,
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
   case switchType::lepton:
-    return 0.0;
+    return {0.0,0.0};
   }
 #undef SWITCHCALL
 #undef RATCALL
@@ -784,8 +777,8 @@ void setupStretch(switchType type, Data& data) {
     data.stretch=1.0;
     data.shift=0.0;
     double dummy;
-    double s0=calculate(type,data,0.0,dummy);
-    double sd=calculate(type,data,data.dmax,dummy);
+    double s0=calculate(type,data,0.0).first;
+    double sd=calculate(type,data,data.dmax).first;
     data.stretch=1.0/(s0-sd);
     data.shift=-sd*data.stretch;
   }
