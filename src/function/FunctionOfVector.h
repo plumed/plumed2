@@ -276,8 +276,7 @@ void FunctionOfVector<T>::getForceIndices( std::size_t task_index,
   unsigned vector_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
     for(unsigned k=actiondata.argstart; k<vector_end; ++k) {
-      unsigned nindex = input.argstarts[k] + task_index;
-      force_indices.indices[j][k-actiondata.argstart] = nindex;
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k] + task_index;
     }
     for(unsigned k=vector_end; k<vector_end+actiondata.nscalars; ++k) {
       force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];

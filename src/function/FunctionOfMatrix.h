@@ -200,17 +200,12 @@ unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
 
 template <class T>
 void FunctionOfMatrix<T>::prepare() {
-  bool resizerequired = false;
   std::vector<std::size_t> shape(getPntrToArgument(argstart)->getShape());
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = getPntrToComponent(i);
     if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) {
       myval->setShape(shape);
-      resizerequired=true;
     }
-  }
-  if( resizerequired ) {
-    taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments()-argstart, nscalars );
   }
   ActionWithVector::prepare();
   active_tasks.resize(0);
@@ -322,6 +317,7 @@ void FunctionOfMatrix<T>::calculate() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myarg );
   }
+  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments()-argstart, nscalars );
   taskmanager.runAllTasks();
 }
 
@@ -354,8 +350,7 @@ void FunctionOfMatrix<T>::getForceIndices( std::size_t task_index,
   unsigned matrix_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
     for(unsigned k=actiondata.argstart; k<matrix_end; ++k) {
-      unsigned nindex = input.argstarts[k] + task_index;
-      force_indices.indices[j][k-actiondata.argstart] = nindex;
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k] + task_index;
     }
     for(unsigned k=matrix_end; k<matrix_end+actiondata.nscalars; ++k) {
       force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
