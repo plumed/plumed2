@@ -103,36 +103,62 @@ decltype(T::function(
 } //namespace switchContainersUtils
 
 using ValueDerivative=std::pair<double,double>;
+
+inline ValueDerivative applystretch(const Data&data,double distance,ValueDerivative in) {
+  in.first=in.first*data.stretch+data.shift;
+  in.second*=data.stretch;
+  in.second *= data.invr0;
+  in.second /= distance;
+  return in;
+}
+
 /// container for the actual switching function used by PLMD::SwitchingFunction
 template<typename switching>
 struct baseSwitch {
   static ValueDerivative calculate(const Data&data, const double distance) {
-    double res = 0.0;
-    double dfunc = 0.0;
-    if(distance <= data.dmax) {
-      res = 1.0;
-      const double rdist = (distance-data.d0)*data.invr0;
-      if(rdist > 0.0) {
-        if constexpr (switchContainersUtils::has_function_data<switching>) {
-          std::tie(res,dfunc) = switching::function(data,rdist);
-        } else {
-          std::tie(res,dfunc) = switching::function(rdist);
-        }
-        //the following comments came from the original
-        // this is for the chain rule (derivative of rdist):
-        dfunc *= data.invr0;
-        // for any future switching functions, be aware that multiplying invr0 is only
-        // correct for functions of rdist = (r-d0)/r0.
-
-        // this is because calculate() sets dfunc to the derivative divided times the
-        // distance.
-        // (I think this is misleading and I would like to modify it - GB)
-        dfunc /= distance;
-      }
-      res=res*data.stretch+data.shift;
-      dfunc*=data.stretch;
+    const double rdist = (distance-data.d0)*data.invr0;
+    if constexpr (switchContainersUtils::has_function_data<switching>) {
+      return (distance > data.dmax) ? ValueDerivative{0.0,0.0}
+             :
+             (rdist > 0.0) ?
+             applystretch(data,distance,switching::function(data,rdist))
+             : ValueDerivative{data.stretch+data.shift,0.0};
+    } else {
+      return  (distance > data.dmax) ? ValueDerivative{0.0,0.0}
+              :
+              (rdist > 0.0) ?
+              applystretch(data,distance,switching::function(rdist))
+              : ValueDerivative{data.stretch+data.shift,0.0};
     }
+    /*
+        double res = 0.0;
+        double dfunc = 0.0;
+
+        if(distance <= data.dmax) {
+          res = 1.0;
+          const double rdist = (distance-data.d0)*data.invr0;
+          if(rdist > 0.0) {
+            if constexpr (switchContainersUtils::has_function_data<switching>) {
+              std::tie(res,dfunc) = switching::function(data,rdist);
+            } else {
+              std::tie(res,dfunc) = switching::function(rdist);
+            }
+            //the following comments came from the original
+            // this is for the chain rule (derivative of rdist):
+            dfunc *= data.invr0;
+            // for any future switching functions, be aware that multiplying invr0 is only
+            // correct for functions of rdist = (r-d0)/r0.
+
+            // this is because calculate() sets dfunc to the derivative divided times the
+            // distance.
+            // (I think this is misleading and I would like to modify it - GB)
+            dfunc /= distance;
+          }
+          res=res*data.stretch+data.shift;
+          dfunc*=data.stretch;
+        }
     return {res,dfunc};
+    */
   }
 
   static ValueDerivative calculateSqr(const Data&data, double distance2) {
