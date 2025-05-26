@@ -137,8 +137,10 @@ struct baseSwitch {
   }
 };
 
-template<int N, std::enable_if_t< (N >0), bool> = true, std::enable_if_t< (N %2 == 0), bool> = true>
-    struct fixedRational :public baseSwitch<fixedRational<N>> {
+template<int N,
+         std::enable_if_t< (N >0), bool> = true,
+         std::enable_if_t< (N %2 == 0), bool> = true>
+             struct fixedRational :public baseSwitch<fixedRational<N>> {
 
   template <int POW>
   static inline double doRational(const double rdist, double&dfunc, double result=0.0) {
@@ -176,12 +178,10 @@ enum class rationalPow:bool {standard, fast};
 enum class rationalForm:bool {standard, simplified};
 
 template<rationalPow isFast, rationalForm nis2m>
-class rational : public baseSwitch<rational<isFast,nis2m>> {
-protected:
+struct rational : public baseSwitch<rational<isFast,nis2m>> {
   //I am using PLMD::epsilon to be certain to call the one defined in Tools.h
   static constexpr double moreThanOne=1.0+5.0e10*PLMD::epsilon;
   static constexpr double lessThanOne=1.0-5.0e10*PLMD::epsilon;
-public:
   static std::pair <switchType,Data> init(double D0,double DMAX, double R0, int N, int M) {
     auto data= Data::init(D0,DMAX,R0);
     data.nn=N;
@@ -438,15 +438,12 @@ struct cosinusSwitch: public baseSwitch<cosinusSwitch> {
 };
 
 struct nativeqSwitch: public baseSwitch<nativeqSwitch> {
-  // double beta = 50.0;  // nm-1
-  // double lambda = 1.8; // unitless
-  // double ref=0.0;
   static std::pair <switchType,Data> init(
     const double D0,
     const double DMAX,
     const double R0,
-    const double BETA,
-    const double LAMBDA,
+    const double BETA, // nm-1
+    const double LAMBDA,// unitless
     const double REF) {
     auto data=Data::init(D0,DMAX,R0);
     data.beta=BETA;
@@ -621,7 +618,6 @@ class leptonSwitch {
   std::vector <funcAndDeriv> expressions{};
   /// Set to true if lepton only uses x2
   bool leptonx2=false;
-protected:
   Data data;
 public:
   // leptonSwitch()=default;
@@ -708,6 +704,7 @@ public:
   }
 };
 
+//call to calculate with no inheritance
 double calculate(const switchType type,
                  const Data& data,
                  const double rdist,
@@ -744,6 +741,7 @@ double calculate(const switchType type,
 #undef RATCALL
 }
 
+//call to calculateSqr with no inheritance
 double calculateSqr(const switchType type,
                     const Data& data,
                     const double rdist2,
@@ -780,7 +778,7 @@ double calculateSqr(const switchType type,
 #undef RATCALL
 }
 
-
+//call to setupStretch with no inheritance
 void setupStretch(switchType type, Data& data) {
   if(data.dmax!=std::numeric_limits<double>::max()) {
     data.stretch=1.0;
@@ -887,14 +885,6 @@ public:
 };
 
 } // namespace switchContainers
-
-// SwitchingFunction::SwitchingFunction()=default;
-// SwitchingFunction::SwitchingFunction()=default;
-// // SwitchingFunction::SwitchingFunction(const SwitchingFunction&)=default;
-// SwitchingFunction::SwitchingFunction(SwitchingFunction&&)=default;
-// // SwitchingFunction& SwitchingFunction::operator=(const SwitchingFunction&)=default;
-// SwitchingFunction& SwitchingFunction::operator=(SwitchingFunction&&)=default;
-// SwitchingFunction::~SwitchingFunction()=default;
 
 void SwitchingFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","the value of R_0 in the switching function");
