@@ -61,7 +61,7 @@ it points from the tail atom to the head atom.
 GROUP LABEL=tails ATOMS=1,21,41
 GROUP LABEL=heads ATOMS=20,40,60
 
-# Compute nemtic order parameter for the three molecules.
+# Compute nematic order parameter for the three molecules.
 S: NEMATIC_ORDER ATOMS=tails,heads
 PRINT FILE=colvar ARG=S
 

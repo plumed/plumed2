@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --igro conf.gro --debug-forces=forces"
