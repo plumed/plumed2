@@ -32,7 +32,6 @@ namespace PLMD {
 class Log;
 class Keywords;
 namespace switchContainers {
-class mybaseSwitch {};
 
 enum class switchType {
   rationalfix12,
@@ -88,10 +87,16 @@ struct Data {
   double beta = 50.0;  // nm-1
   double lambda = 1.8; // unitless
   double ref=0.0;
-  Data(double D0,double DMAX, double R0);
-  Data();
+  static Data init(double D0,double DMAX, double R0);
 };
-class leptonSwitch;
+
+struct Switch {
+  virtual double calculate(double distance, double& dfunc) const = 0;
+  virtual double calculateSqr(double distance2, double& dfunc) const = 0;
+  virtual const Data& getData() const = 0;
+  virtual std::string description() const = 0;
+  virtual void setupStretch() = 0;
+};
 } // namespace switchContainers
 
 /// \ingroup TOOLBOX
@@ -105,12 +110,8 @@ class leptonSwitch;
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
-  switchContainers::Data switchData;
-  switchContainers::switchType switchtype;
-  std::unique_ptr<switchContainers::leptonSwitch> lepton{nullptr};
+  std::unique_ptr<switchContainers::Switch> function{nullptr};
 public:
-  SwitchingFunction();
-  ~SwitchingFunction();
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
