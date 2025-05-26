@@ -41,8 +41,6 @@ private:
   PTM taskmanager;
 /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart;
-/// Get the size of the task list at the end of the run
-  unsigned getNumberOfFinalTasks();
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfVector(const ActionOptions&);
@@ -118,20 +116,47 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
     argstart=1;
   }
-  // Get the shape of the output
-  std::vector<std::size_t> shape(1);
-  shape[0]=getNumberOfFinalTasks();
-  // Setup the function and the values values
-  FunctionData<T> myfunc;
-  myfunc.argstart = argstart;
-  FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
-  // Setup the parallel task manager
+  if( getNumberOfArguments()==argstart ) error("no arguments specified");
+
+  if( getPntrToArgument(argstart)->getRank()!=1 ) {
+      error("first argument to this action must be a vector");
+  }
+
+  // Get the number of arguments
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
     nargs = nargs - nmasks;
   }
-  taskmanager.setupParallelTaskManager( nargs-argstart, 0 );
+
+  // Get the shape of the output
+  std::size_t nscalars = 0;
+  std::vector<std::size_t> shape(1);
+  shape[0]=getPntrToArgument(argstart)->getShape()[0];
+  for(unsigned i=argstart+1; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) {
+         nscalars++; 
+      } else if( getPntrToArgument(i)->getRank()==1 ) {
+         if( getPntrToArgument(i)->getShape()[0]!=shape[0] ) {
+             error("mismatch between sizes of input arguments");
+         } else if( nscalars>0 ) {
+             error("scalars should be specified in argument list after all vectors");
+         }
+      } else {
+         error("input arguments should be vectors or scalars");
+      }
+  }
+  if( nmasks>0 && getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] ) {
+      error("input mask has wrong size");
+  }
+
+  // Setup the function and the values values
+  FunctionData<T> myfunc;
+  myfunc.argstart = argstart;
+  myfunc.nscalars = nscalars;
+  FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
+  // Setup the parallel task manager
+  taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
   // Pass the function to the parallel task manager
   taskmanager.setActionInput( myfunc );
 }
@@ -213,25 +238,6 @@ void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
 }
 
 template <class T>
-unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
-  unsigned nelements=0;
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    plumed_assert( getPntrToArgument(i)->getRank()<2 );
-    if( getPntrToArgument(i)->getRank()==1 ) {
-      if( nelements>0 ) {
-        if(getPntrToArgument(i)->getShape()[0]!=nelements ) {
-          error("all vectors input should have the same length");
-        }
-      } else if( nelements==0 ) {
-        nelements=getPntrToArgument(i)->getShape()[0];
-      }
-      plumed_massert( !getPntrToArgument(i)->hasDerivatives(), "failing in " + getName() + " action with label " + getLabel() + " for argument " + getPntrToArgument(i)->getName() );
-    }
-  }
-  return nelements;
-}
-
-template <class T>
 void FunctionOfVector<T>::calculate() {
   // This is done if we are calculating a function of multiple cvs
   taskmanager.runAllTasks();
@@ -263,17 +269,17 @@ void FunctionOfVector<T>::getForceIndices( std::size_t task_index,
     const FunctionData<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  for(unsigned k=actiondata.argstart; k<actiondata.argstart+input.nderivatives_per_scalar; ++k) {
-    unsigned nindex = input.argstarts[k] + task_index;
-    if( input.ranks[k]==0 ) {
-      nindex = input.argstarts[k];
-    }
-    for(unsigned j=0; j<input.ncomponents; ++j) {
-      force_indices.indices[j][k-actiondata.argstart] = nindex;
-    }
-  }
+
+  unsigned vector_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
-    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar;
+    for(unsigned k=actiondata.argstart; k<vector_end; ++k) {
+        unsigned nindex = input.argstarts[k] + task_index;
+        force_indices.indices[j][k-actiondata.argstart] = nindex;
+    }
+    for(unsigned k=vector_end; k<vector_end+actiondata.nscalars; ++k) {
+        force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
+    }
+    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
     force_indices.tot_indices[j] = input.nderivatives_per_scalar;
   }
 }

@@ -42,9 +42,12 @@ class FunctionData {
 public:
   /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart = 0;
+  // Number of scalars that appear in input 
+  unsigned nscalars = 0;
   T f;
   FunctionData<T>& operator=( const FunctionData<T>& m ) {
     argstart = m.argstart;
+    nscalars = m.nscalars;
     f = m.f;
     return *this;
   }

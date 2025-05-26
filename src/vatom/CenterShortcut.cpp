@@ -132,7 +132,7 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
     // Calculate the sum of the weights
     readInputLine( getShortcutLabel() + "_wnorm: SUM PERIODIC=NO ARG=" + wlab );
     // Compute the normalised weights
-    readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_wnorm," + wlab + " FUNC=y/x PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + wlab + "," + getShortcutLabel() + "_wnorm FUNC=x/y PERIODIC=NO");
     // Get the positions into a multicolvar
     if( phases || nopbc ) {
       readInputLine( getShortcutLabel() + "_pos: POSITION NOPBC ATOMS=" + atlist );

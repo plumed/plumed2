@@ -114,7 +114,7 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   mapping::Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Normalise the vector of weights
   readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights + "_ref");
-  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_wsum," +  weights + "_ref FUNC=y/x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + weights + "_ref," + getShortcutLabel() + "_wsum FUNC=x/y PERIODIC=NO");
   // Transform the high dimensional distances
   std::string hdfunc;
   parse("HIGH_DIM_FUNCTION",hdfunc);

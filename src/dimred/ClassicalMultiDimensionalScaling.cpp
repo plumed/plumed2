@@ -264,7 +264,7 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   for(unsigned i=0; i<ndim; ++i) {
     std::string num;
     Tools::convert( i+1, num );
-    readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vecs-" + num + "," + getShortcutLabel() + "_eig.vals-" + num + " FUNC=sqrt(y)*x PERIODIC=NO");
   }
   std::string eigvec_args = " ARG=" + getShortcutLabel() + "-1";
   // The final output is a stack of all the low dimensional coordinates

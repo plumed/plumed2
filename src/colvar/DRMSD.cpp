@@ -315,7 +315,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
       }
     }
     // And calculate the euclidean distances between the true distances and the references
-    readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG1=" + arg_str1 + " ARG2=" + arg_str2 );
+    readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG2=" + arg_str1 + " ARG1=" + arg_str2 );
   }
   // And final value
   std::string nvals;
