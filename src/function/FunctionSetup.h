@@ -45,12 +45,6 @@ public:
   // Number of scalars that appear in input 
   unsigned nscalars = 0;
   T f;
-  FunctionData<T>& operator=( const FunctionData<T>& m ) {
-    argstart = m.argstart;
-    nscalars = m.nscalars;
-    f = m.f;
-    return *this;
-  }
   // This is for setting up the functions
   static void setup( T& myfunc, const std::vector<std::string>& components, const std::vector<std::size_t>& shape, bool hasderiv, ActionWithValue* action );
 };
@@ -89,8 +83,6 @@ void FunctionData<T>::setup( T& myfunc, const std::vector<std::string>& componen
           action->addValue( shape );
         }
       } else if( components[i].find_first_of("_")!=std::string::npos ) {
-        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
-        plumed_assert( aarg );
         if( aarg->getNumberOfArguments()==1 && hasderiv ) {
           action->addValueWithDerivatives( shape );
         } else if( aarg->getNumberOfArguments()==1 ) {
@@ -135,8 +127,6 @@ void FunctionData<T>::setup( T& myfunc, const std::vector<std::string>& componen
       (action->copyOutput(i))->setDomain( period[0], period[1] );
     }
   } else if( action->keywords.getDisplayName()=="DIFFERENCE" ) {
-    ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
-    plumed_assert( aarg );
     if( aarg->getPntrToArgument(0)->isPeriodic() ) {
       std::string min, max;
       aarg->getPntrToArgument(0)->getDomain( min, max );

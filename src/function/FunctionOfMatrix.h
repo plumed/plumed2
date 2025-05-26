@@ -273,9 +273,10 @@ void FunctionOfMatrix<T>::getInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfFunctionArguments();
 
   const Value* myval = getConstPntrToComponent(0);
-  unsigned ntasks = myval->getNumberOfStoredValues();
-  if( inputdata.size()!=(nargs-argstart)*ntasks ) {
-    inputdata.resize( (nargs-argstart)*ntasks );
+  std::size_t ntasks = myval->getNumberOfStoredValues();
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
   }
 
   for(unsigned j=argstart; j<nargs; ++j) {

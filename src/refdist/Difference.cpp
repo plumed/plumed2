@@ -123,12 +123,6 @@ public:
   static void registerKeywords(Keywords& keys);
   static void read( Difference& func, ActionWithArguments* action, function::FunctionOptions& options );
   static void calc( const Difference& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
-  Difference& operator=(const Difference& m) {
-    periodic = m.periodic;
-    max_minus_min = m.max_minus_min;
-    inv_max_minus_min = m.inv_max_minus_min;
-    return *this;
-  }
 };
 
 

@@ -98,16 +98,6 @@ public:
   static void registerKeywords(Keywords& keys);
   static void read( Moments& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Moments& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Moments& operator=(const Moments& m ) {
-    isperiodic = m.isperiodic;
-    min = m.min;
-    max = m.max;
-    pfactor = m.pfactor;
-    max_minus_min = m.max_minus_min;
-    inv_max_minus_min = m.inv_max_minus_min;
-    powers = m.powers;
-    return *this;
-  }
 };
 
 typedef FunctionShortcut<Moments> MomentsShortcut;

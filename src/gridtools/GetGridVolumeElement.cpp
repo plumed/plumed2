@@ -96,6 +96,7 @@ unsigned GetGridVolumeElement::getNumberOfDerivatives() {
 void GetGridVolumeElement::calculate() {
   double volume;
   ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  plumed_assert( ag );
   const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
   unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
   if( mygrid.getGridType()=="flat" ) {

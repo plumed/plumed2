@@ -85,9 +85,6 @@ public:
   static void registerKeywords(Keywords& keys);
   static void read( Sort& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Sort& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Sort& operator=(const Sort& m) {
-    return *this;
-  }
 };
 
 typedef FunctionShortcut<Sort> SortShortcut;

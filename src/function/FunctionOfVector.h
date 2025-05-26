@@ -210,7 +210,7 @@ void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
     nargs = nargs - nmasks;
   }
 
-  unsigned ntasks = 0;
+  std::size_t ntasks = 0;
   for(unsigned i=argstart; i<nargs; ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
       ntasks = getPntrToArgument(i)->getShape()[0];
@@ -218,8 +218,9 @@ void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
     }
   }
 
-  if( inputdata.size()!=(nargs-argstart)*ntasks ) {
-    inputdata.resize( (nargs-argstart)*ntasks );
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
   }
 
   for(unsigned j=argstart; j<nargs; ++j) {

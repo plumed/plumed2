@@ -104,10 +104,6 @@ public:
   static void registerKeywords(Keywords& keys);
   static void read( Piecewise& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Piecewise& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Piecewise& operator=(const Piecewise& m) {
-    points = m.points;
-    return *this;
-  }
 };
 
 

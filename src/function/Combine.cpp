@@ -88,10 +88,10 @@ PRINT ARG=c FILE=colvar
 ```
 
 The output from the COMBINE action here is also a vector with four elements. The first element of this vector is the square of the
-distance betwen atoms 1 and 2, the secton is the square of the distance between atoms 3 and 4 and so on.
+distance betwen atoms 1 and 2, the second is the square of the distance between atoms 3 and 4 and so on.
 
-The COMBINE action can also take a mixture of scalars and vectors in input.  The following input illustrates an
-COMBINE action that takes vectors and scalars in input.
+The COMBINE action can also take a mixture of scalars and vectors in input as long as the labels of vectors appear before the labels of scalars
+in the input to the ARG keyword.  The following input illustrates an COMBINE action that takes vectors and scalars in input.
 
 ```plumed
 p: CONSTANT VALUE=2
@@ -140,7 +140,8 @@ The input to the combine action here consists of three $2\times3$ matrices. The 
 distances between the atoms in GROUPA and the atoms in GROUPB.  Notice that all the input matrices must have the same size as the elements of the final
 matrix are calculated by applying the formula in the first section of this input to each set of elements to the input matrices in turn.
 
-The input to this action can be a combination of matrices and scalars.  If your input arguments are an $N\times M$ matrix and a scalar the scalar is treated as if
+The input to this action can be a combination of matrices and scalars as long as the labels of the matrices appear before the labels of the scalars in the input for the ARG keyword.  
+If your input arguments are an $N\times M$ matrix and a scalar the scalar is treated as if
 it is a $N\times M$ matrix which has all its elements equal to the input scalar. You __cannot__ use a mixture of vectors and matrices in the input to this action.
 
 Furthermore, if you pass a single matrix to COMBINE the output is a matrix.  To calculate a linear combination of all the elements in a matrix using the formula at the top of the page you should use
@@ -187,15 +188,6 @@ public:
   static void registerKeywords(Keywords& keys);
   static void read( Combine& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Combine& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Combine& operator=( const Combine& m ) {
-    coefficients = m.coefficients;
-    parameters = m.parameters;
-    powers = m.powers;
-    periodic = m.periodic;
-    max_minus_min = m.max_minus_min;
-    inv_max_minus_min = m.inv_max_minus_min;
-    return *this;
-  }
 };
 
 typedef FunctionShortcut<Combine> CombineShortcut;

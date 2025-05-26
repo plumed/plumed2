@@ -223,10 +223,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void read( Highest& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Highest& operator=( const Highest& m ) {
-    min = m.min;
-    return *this;
-  }
 };
 
 typedef FunctionShortcut<Highest> HighestShortcut;
