@@ -310,10 +310,10 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
 
     if( pdb.getPositions().size()==0 ) {
       if( displacements ) {
-          action->readInputLine( action->getShortcutLabel() + "_dataP: " + comname + instargs + refargs );
-          action->readInputLine( action->getShortcutLabel() + "_data: CUSTOM ARG=" + action->getShortcutLabel() + "_dataP FUNC=-x PERIODIC=NO");
+        action->readInputLine( action->getShortcutLabel() + "_dataP: " + comname + instargs + refargs );
+        action->readInputLine( action->getShortcutLabel() + "_data: CUSTOM ARG=" + action->getShortcutLabel() + "_dataP FUNC=-x PERIODIC=NO");
       } else {
-          action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
+        action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
       }
     } else {
       action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );

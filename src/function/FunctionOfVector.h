@@ -116,10 +116,12 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
     argstart=1;
   }
-  if( getNumberOfArguments()==argstart ) error("no arguments specified");
+  if( getNumberOfArguments()==argstart ) {
+    error("no arguments specified");
+  }
 
   if( getPntrToArgument(argstart)->getRank()!=1 ) {
-      error("first argument to this action must be a vector");
+    error("first argument to this action must be a vector");
   }
 
   // Get the number of arguments
@@ -134,20 +136,20 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   std::vector<std::size_t> shape(1);
   shape[0]=getPntrToArgument(argstart)->getShape()[0];
   for(unsigned i=argstart+1; i<nargs; ++i) {
-      if( getPntrToArgument(i)->getRank()==0 ) {
-         nscalars++; 
-      } else if( getPntrToArgument(i)->getRank()==1 ) {
-         if( getPntrToArgument(i)->getShape()[0]!=shape[0] ) {
-             error("mismatch between sizes of input arguments");
-         } else if( nscalars>0 ) {
-             error("scalars should be specified in argument list after all vectors");
-         }
-      } else {
-         error("input arguments should be vectors or scalars");
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      nscalars++;
+    } else if( getPntrToArgument(i)->getRank()==1 ) {
+      if( getPntrToArgument(i)->getShape()[0]!=shape[0] ) {
+        error("mismatch between sizes of input arguments");
+      } else if( nscalars>0 ) {
+        error("scalars should be specified in argument list after all vectors");
       }
+    } else {
+      error("input arguments should be vectors or scalars");
+    }
   }
   if( nmasks>0 && getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] ) {
-      error("input mask has wrong size");
+    error("input mask has wrong size");
   }
 
   // Setup the function and the values values
@@ -274,11 +276,11 @@ void FunctionOfVector<T>::getForceIndices( std::size_t task_index,
   unsigned vector_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
     for(unsigned k=actiondata.argstart; k<vector_end; ++k) {
-        unsigned nindex = input.argstarts[k] + task_index;
-        force_indices.indices[j][k-actiondata.argstart] = nindex;
+      unsigned nindex = input.argstarts[k] + task_index;
+      force_indices.indices[j][k-actiondata.argstart] = nindex;
     }
     for(unsigned k=vector_end; k<vector_end+actiondata.nscalars; ++k) {
-        force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
     }
     force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
     force_indices.tot_indices[j] = input.nderivatives_per_scalar;

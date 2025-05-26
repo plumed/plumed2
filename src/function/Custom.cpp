@@ -302,7 +302,7 @@ PRINT ARG=c FILE=colvar
 
 Notice, when we multiply two vectors in CUSTOM the output is a vector.  This product that emerges from using a CUSTOM action is __not__ the scalar or cross product of the input vectors.
 
-Lastly, notice that you can pass a mixture of vectors and scalars in the input to a CUSTOM action. However, the labels of the scalar values that appear in the input for the ARG keyword 
+Lastly, notice that you can pass a mixture of vectors and scalars in the input to a CUSTOM action. However, the labels of the scalar values that appear in the input for the ARG keyword
 must appear after the labels of vector vectors as shown below:
 
 ```plumed
@@ -377,7 +377,7 @@ Similarly, if you want to calculate the product of a matrix and a vector you sho
 command.
 
 Lastly, note that you can pass a mixture of scalars and $N\times M$ matrices in the input to a CUSTOM command. As with vectors, you can think of
-any scalars you pass as being converted into $N\times M$ matrix in which every element is equal to the input scalar.  Furthermore, the labels of 
+any scalars you pass as being converted into $N\times M$ matrix in which every element is equal to the input scalar.  Furthermore, the labels of
 the input scalars must appear __after__ the labels fo the input matrices in the input for the ARG keyword.
 
 ## CUSTOM with grid arguments

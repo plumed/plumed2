@@ -42,7 +42,7 @@ class FunctionData {
 public:
   /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart = 0;
-  // Number of scalars that appear in input 
+  // Number of scalars that appear in input
   unsigned nscalars = 0;
   T f;
   // This is for setting up the functions

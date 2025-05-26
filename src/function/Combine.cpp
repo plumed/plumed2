@@ -140,7 +140,7 @@ The input to the combine action here consists of three $2\times3$ matrices. The 
 distances between the atoms in GROUPA and the atoms in GROUPB.  Notice that all the input matrices must have the same size as the elements of the final
 matrix are calculated by applying the formula in the first section of this input to each set of elements to the input matrices in turn.
 
-The input to this action can be a combination of matrices and scalars as long as the labels of the matrices appear before the labels of the scalars in the input for the ARG keyword.  
+The input to this action can be a combination of matrices and scalars as long as the labels of the matrices appear before the labels of the scalars in the input for the ARG keyword.
 If your input arguments are an $N\times M$ matrix and a scalar the scalar is treated as if
 it is a $N\times M$ matrix which has all its elements equal to the input scalar. You __cannot__ use a mixture of vectors and matrices in the input to this action.
 

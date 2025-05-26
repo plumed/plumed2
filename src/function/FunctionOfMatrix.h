@@ -122,11 +122,13 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
     argstart=1;
   }
-  if( getNumberOfArguments()==argstart ) error("no arguments specified");
+  if( getNumberOfArguments()==argstart ) {
+    error("no arguments specified");
+  }
 
   if( getPntrToArgument(argstart)->getRank()!=2 ) {
-      error("first argument to this action must be a matrix");
-  } 
+    error("first argument to this action must be a matrix");
+  }
 
   // Get the number of arguments
   unsigned nargs = getNumberOfArguments();
@@ -139,23 +141,23 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   shape[0] = getPntrToArgument(argstart)->getShape()[0];
   shape[1] = getPntrToArgument(argstart)->getShape()[1];
   for(unsigned i=argstart+1; i<nargs; ++i) {
-      if( getPntrToArgument(i)->getRank()==0 ) {
-         nscalars++; 
-      } else if( getPntrToArgument(i)->getRank()==2 ) {
-         if( getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1] ) {
-             error("mismatch between sizes of input arguments");
-         } else if( nscalars>0 ) {
-             error("scalars should be specified in argument list after all matrices");
-         }
-      } else {
-         error("input arguments should be matricesor scalars");
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      nscalars++;
+    } else if( getPntrToArgument(i)->getRank()==2 ) {
+      if( getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1] ) {
+        error("mismatch between sizes of input arguments");
+      } else if( nscalars>0 ) {
+        error("scalars should be specified in argument list after all matrices");
       }
+    } else {
+      error("input arguments should be matricesor scalars");
+    }
   }
   if( nmasks>0 ) {
-      if( getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] || 
-          getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[1]!=shape[1] ) {
-          error("input mask has wrong size");
-      }
+    if( getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] ||
+        getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[1]!=shape[1] ) {
+      error("input mask has wrong size");
+    }
   }
 
   // Check if the output matrix is symmetric
@@ -352,11 +354,11 @@ void FunctionOfMatrix<T>::getForceIndices( std::size_t task_index,
   unsigned matrix_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
   for(unsigned j=0; j<input.ncomponents; ++j) {
     for(unsigned k=actiondata.argstart; k<matrix_end; ++k) {
-        unsigned nindex = input.argstarts[k] + task_index;
-        force_indices.indices[j][k-actiondata.argstart] = nindex;
+      unsigned nindex = input.argstarts[k] + task_index;
+      force_indices.indices[j][k-actiondata.argstart] = nindex;
     }
     for(unsigned k=matrix_end; k<matrix_end+actiondata.nscalars; ++k) {
-        force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
     }
     force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
     force_indices.tot_indices[j] = input.nderivatives_per_scalar;
