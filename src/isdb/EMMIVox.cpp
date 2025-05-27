@@ -59,8 +59,9 @@ A coarse-grained forward model can also be used in combination with the MARTINI 
 Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an ensemble of structures using
 the Metainference approach that is introduced in the paper  cited below. The approach can be used to model continous dynamics of flexible regions as well as semi-ordered waters, lipids, and ions.
 
-> [! Note]
->    To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb.md).
+!!! note "installing libtorch" 
+
+    To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb.md).
 
 ## Examples
 

@@ -51,8 +51,11 @@ the order in which atoms are specified is irrelevant.
 This is often convenient at a post processing stage (using the driver), but sometime
 it is required during the simulation if collective variables need atoms to be in a specific periodic image.
 
-> [!CAUTION]
-> This directive modifies the stored position at the precise moment it is executed. This means that only collective variables which are below it in the input script will see the corrected positions. As a general rule, put it at the top of the input file. Also, unless you know exactly what you are doing, leave the default stride (1), so that this action is performed at every MD step.
+!!! caution "modifies stored positions 
+
+    This directive modifies the stored position at the precise moment it is executed. This means that only collective variables which are below it in 
+    the input script will see the corrected positions. As a general rule, put it at the top of the input file. Also, unless you know exactly what you are doing, 
+    leave the default stride (1), so that this action is performed at every MD step.
 
 The computational cost of this action grows with the product
 of the size of the two lists (ATOMS and AROUND), so this action can become very expensive.

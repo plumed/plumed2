@@ -53,17 +53,19 @@ rotates the box so that the first lattice vector is in the form (ax,0,0),
 the second lattice vector is in the form (bx,by,0), and the third lattice vector is
 arbitrary.
 
-> [!CAUTION]
-> The implementation of this action is available but should be considered in testing phase. Please report any
-> strange behavior.
+!!! caution ""
 
-> [!CAUTION]
-> This directive modifies the stored position at the precise moment
-> it is executed. This means that only collective variables
-> which are below it in the input script will see the corrected positions.
-> Unless you
-> know exactly what you are doing, leave the default stride (1), so that
-> this action is performed at every MD step.
+    The implementation of this action is available but should be considered in testing phase. Please report any
+    strange behavior.
+
+!!! caution ""
+
+    This directive modifies the stored position at the precise moment
+    it is executed. This means that only collective variables
+    which are below it in the input script will see the corrected positions.
+    Unless you
+    know exactly what you are doing, leave the default stride (1), so that
+    this action is performed at every MD step.
 
 ## Examples
 

@@ -64,17 +64,19 @@ change the result. Examples are:
 - [CELL](CELL.md) components for a similar reason.
 - [DISTANCE](DISTANCE.md) from a [FIXEDATOM](FIXEDATOM.md), provided the fixed atom is introduced _after_ the FIT_TO_TEMPLATE action.
 
-> [!CAUTION]
-> The implementation of TYPE=OPTIMAL is available but should be considered in testing phase. Please report any
-> strange behavior.
+!!! caution ""
 
-> [!CAUTION]
-> This directive modifies the stored position at the precise moment
-> it is executed. This means that only collective variables
-> which are below it in the input script will see the corrected positions.
-> As a general rule, put it at the top of the input file. Also, unless you
-> know exactly what you are doing, leave the default stride (1), so that
-> this action is performed at every MD step.
+    The implementation of TYPE=OPTIMAL is available but should be considered in testing phase. Please report any
+    strange behavior.
+
+!!! caution "directive modifies stored positions"
+
+    This directive modifies the stored position at the precise moment
+    it is executed. This means that only collective variables
+    which are below it in the input script will see the corrected positions.
+    As a general rule, put it at the top of the input file. Also, unless you
+    know exactly what you are doing, leave the default stride (1), so that
+    this action is performed at every MD step.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,

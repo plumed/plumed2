@@ -80,10 +80,11 @@ which actually modifies the coordinates stored in PLUMED.  If you want to recove
 you should use the NOPBC flag.  In that case you need to take care that atoms are in the correct
 periodic image.
 
-> [!CAUTION]
-> If the total charge Q of any of the specified groups is non zero, then a charge Q/N will be subtracted from every atom,
-> where N is the number of atoms. This implies that the dipole (which for a charged system depends
-> on the position) is computed on the geometric center of the group.
+!!! caution "behaviour for non charge neutral groups"
+
+    If the total charge Q of any of the specified groups is non zero, then a charge Q/N will be subtracted from every atom,
+    where N is the number of atoms. This implies that the dipole (which for a charged system depends
+    on the position) is computed on the geometric center of the group.
 
 */
 //+ENDPLUMEDOC

@@ -77,12 +77,14 @@ t3: TORSION ATOMS=3,4,5,6
 METAD ARG=@replicas:t1,t2,t3 HEIGHT=0.1 PACE=100 SIGMA=0.3
 ```
 
-> [!CAUTION]
-> Multi replica simulations are presently only working with gromacs.
+!!! caution "" 
 
-> [!CAUTION]
-> The directive should appear in the input file for every replica. If SEED is specified, it
-> should be the same in all input files.
+    Multi replica simulations are presently only working with gromacs.
+
+!!! caution ""
+
+    The directive should appear in the input file for every replica. If SEED is specified, it
+    should be the same in all input files.
 
 */
 //+ENDPLUMEDOC

@@ -3,7 +3,7 @@
 You need to install the following:
 
 ````
-pip install mkdocs
+pip install mkdocs-material
 pip install python-markdown-math 
 ````
 

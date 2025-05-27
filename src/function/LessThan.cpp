@@ -390,10 +390,11 @@ s: LESS_THAN ARG=d SWITCH={MATHEVAL FUNC=1/(1+x2^3) R_0=0.1}
 For this input $d_0$ is set to its default value of 0. Furthermore, as D_MAX is unset the stretching and scaling that
 was described in the previous section is not performed.
 
-> [!CAUTION]
-> With the default implementation CUSTOM is slower than other functions
-> (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
-> You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md)
+!!!  caution "performance of CUSTOM
+
+     With the default implementation CUSTOM is slower than other functions
+     (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
+     You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md)
 
 */
 //+ENDPLUMEDOC

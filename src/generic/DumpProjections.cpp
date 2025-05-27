@@ -61,9 +61,10 @@ DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
 
 PLUMED will output these 69 derivatives to the proj file.
 
-> [!CAUTION]
-> This action cannot be used if non rank zero objects are passed between actions that are used to calculate the quantity (`d` in the above examples)
-> whose projections are being output using the DUMPPROJECTIONS command
+!!! caution "only works for scalars"
+
+    This action cannot be used if non rank zero objects are passed between actions that are used to calculate the quantity (`d` in the above examples)
+    whose projections are being output using the DUMPPROJECTIONS command
 
 */
 //+ENDPLUMEDOC

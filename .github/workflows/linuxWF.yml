@@ -105,7 +105,7 @@ jobs:
         pip install requests
         pip install PlumedToHTML
         pip install networkx
-        pip install mkdocs
+        pip install mkdocs-material
         pip install python-markdown-math
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
