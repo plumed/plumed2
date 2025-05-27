@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
@@ -79,19 +82,20 @@ namespace volumes {
 
 class VolumeInSphere {
 public:
-  std::string swinput;
   SwitchingFunction switchingFunction;
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeInSphere>* action );
   void setupRegions( ActionVolume<VolumeInSphere>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
   static void parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom );
-  VolumeInSphere& operator=( const VolumeInSphere& m ) {
-    swinput=m.swinput;
-    std::string errors;
-    switchingFunction.set(swinput,errors);
-    return *this;
-  }
   static void calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output );
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+    switchingFunction.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(this[0:1])
+  }
 };
 
 typedef ActionVolume<VolumeInSphere> Vols;
@@ -110,15 +114,19 @@ void VolumeInSphere::registerKeywords( Keywords& keys ) {
 
 void VolumeInSphere::parseInput( ActionVolume<VolumeInSphere>* action ) {
   std::string errors;
+  std::string swinput;
   action->parse("RADIUS",swinput);
   if(swinput.length()==0) {
     action->error("missing RADIUS keyword");
   }
+
   switchingFunction.set(swinput,errors);
   if( errors.length()!=0 ) {
     action->error("problem reading RADIUS keyword : " + errors );
   }
-  action->log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
+
+  action->log.printf("  radius of sphere is given by %s \n",
+                     switchingFunction.description().c_str() );
 }
 
 void VolumeInSphere::parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom ) {
@@ -132,7 +140,9 @@ void VolumeInSphere::parseAtoms( ActionVolume<VolumeInSphere>* action, std::vect
   action->log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 }
 
-void VolumeInSphere::calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output ) {
+void VolumeInSphere::calculateNumberInside( const VolumeInput& input,
+    const VolumeInSphere& actioninput,
+    VolumeOutput& output ) {
   // Calculate position of atom wrt to origin
   Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
   double dfunc;

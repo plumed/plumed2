@@ -88,6 +88,8 @@ struct Data {
   double lambda = 1.8; // unitless
   double ref=0.0;
   static Data init(double D0,double DMAX, double R0);
+  void toACCDevice() const;
+  void removeFromACCDevice() const;
 };
 
 struct Switch {
@@ -110,7 +112,9 @@ struct Switch {
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
-  std::unique_ptr<switchContainers::Switch> function{nullptr};
+  switchContainers::Data switchData;
+  switchContainers::switchType type;
+  // std::unique_ptr<switchContainers::Switch> function{nullptr};
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
@@ -126,6 +130,7 @@ public:
 /// Compute the switching function.
 /// Returns s(x). df will be set to the value of the derivative
 /// of the switching function _divided_by_x
+#pragma acc routine seq
   double calculate(double x,double&df)const;
 /// Compute the switching function.
 /// Returns \f$ s(\sqrt{x})\f$ .
@@ -133,6 +138,7 @@ public:
 /// (same as calculate()).
 /// The advantage is that in some case the expensive square root can be avoided
 /// (namely for rational functions, if nn and mm are even and d0 is zero)
+#pragma acc routine seq
   double calculateSqr(double distance2,double&dfunc)const;
 /// Returns d0
   double get_d0() const;
@@ -142,6 +148,8 @@ public:
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;
+  void toACCDevice() const;
+  void removeFromACCDevice() const;
 };
 
 } //namespace PLMD
