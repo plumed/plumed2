@@ -30,17 +30,20 @@ namespace PLMD {
 namespace volumes {
 
 template <class T>
-class VolumeData {
-public:
+struct VolumeData {
   bool not_in;
   std::size_t numberOfNonReferenceAtoms;
   T voldata;
-  VolumeData<T>& operator=( const VolumeData<T>& m ) {
-    not_in=m.not_in;
-    numberOfNonReferenceAtoms=m.numberOfNonReferenceAtoms;
-    voldata=m.voldata;
-    return *this;
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],not_in,numberOfNonReferenceAtoms)
+    voldata.toACCDevice();
   }
+  void removeFromACCDevice() const {
+    voldata.removeFromACCDevice();
+#pragma acc exit data delete(numberOfNonReferenceAtoms,not_in,this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 struct VolumeInput {
@@ -135,22 +138,36 @@ ActionVolume<T>::ActionVolume(const ActionOptions&ao):
     error("no atoms were specified");
   }
   log.printf("  examining positions of atoms ");
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    log.printf(" %d", atoms[i].serial() );
-  }
+  // for(unsigned i=0; i<atoms.size(); ++i) {
+  log.printf(" %d", atoms[0].serial() );
+  log.printf("...");
+  std::cout <<std::flush;
+  log.printf(" %d", atoms.back().serial() );
+  std::cout <<std::flush;
+  // }
   log.printf("\n");
-  std::vector<std::size_t> shape(1);
-  shape[0]=atoms.size();
-
+  std::cout <<std::flush;
+  std::vector<std::size_t> shape(1,atoms.size());
+  log.printf("ref atoms\n");
+  std::cout <<std::flush;
   std::vector<AtomNumber> refatoms;
   T::parseAtoms( this, refatoms );
+  log.printf("ref atoms\n");
+  std::cout <<std::flush;
   for(unsigned i=0; i<refatoms.size(); ++i) {
     atoms.push_back( refatoms[i] );
   }
+  log.printf("request atoms\n");
+  std::cout <<std::flush;
   requestAtoms( atoms );
+  log.printf("request atoms\n");
+  std::cout <<std::flush;
   VolumeData<T> actioninput;
+  log.printf("reading voldata\n");
+  std::cout <<std::flush;
   actioninput.voldata.parseInput(this);
-
+  log.printf("reading voldata\n");
+  std::cout <<std::flush;
   actioninput.numberOfNonReferenceAtoms=shape[0];
   parseFlag("OUTSIDE",actioninput.not_in);
 
