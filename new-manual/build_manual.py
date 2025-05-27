@@ -173,15 +173,57 @@ You can find a list of all the commands that you can use in a PLUMED input file 
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
 
+You can find instructions for installing PLUMED [here](https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html).
+
 If you are completely unfamiliar with PLUMED we would recommend that you start by working through [the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html).
 
 You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials.org) and you can find examples of how PLUMED has been used in many academic research articles [here](https://www.plumed-nest.org).
 
-If you would like to add new functionality to PLUMED you can find developer documentation [here](../../developer-doc/html/index.html).
+If you would like to add new functionality to PLUMED you can find developer documentation [here](../../developer-doc/html/index.html) and a change log [here](changelog.md).
 
 The documentation in this manual was built on [{date.today().strftime('%B %d, %Y')}](summary.md).
     """
     of.write(content)
+
+def printChangeLog(clf) :
+    content=f"""
+Change Log
+----------
+
+This page contains the history of changes across different PLUMED versions.
+The future releases are expected to follow more or less the pace
+of the old release. This means:
+- Approximately one release per year, after summer, a new release (2.X). These releases
+  typically group together all the features that were contributed during the
+  year.
+- Approximately every three months, we announce a patch (e.g. 2.2.X).
+  These releases typically contains bug fixes, and could occasionally contain a new feature.
+
+A few months before each new release we provide a beta release.
+We typically maintain release branches until the fifth patch release (2.X.5),
+which should come out approximately 15 month after the original release (2.X).
+After that, branches are not supported anymore.
+
+Notice that occasionally we publish patches on the mailing list.
+These patches are always included in the following release, but we encourage
+users that want to be up to date to follow the mailing list.
+
+Below you can find change logs for all the published releases.
+We mostly add new features without breaking existing ones.
+However, some of the changes lead to incompatible behavior.
+In the Change Log we try to give as much visibility as possible to these changes
+to avoid surprises.
+
+We also log changes that are relevant if you are developing the code. However, these
+change lists are not complete, and if you want to put your hands in the code
+and maintain your own collective variables we suggest you to follow the development
+on [github](https://github.com/plumed/plumed2).
+
+"""
+    clf.write(content)
+    for version in glob.glob("../CHANGES/*.md") :
+        shutil.copy(version, "docs/" + version.split("/")[-1] )
+        clf.write("- Changes for [Version " + version.split("/")[-1].replace("v","").replace(".md","") + "](" + version.split("/")[-1] + ")\n")       
 
 def printActionListPage(af,version,tabledata,tagdictionary) :
     content=f"""
@@ -610,6 +652,8 @@ if __name__ == "__main__" :
 
    # Create the index file
    with open("docs/index.md", "w+") as of : printIndexFile(of,version)
+   # Create the changelog file
+   with open("docs/changelog.md", "w+") as clf : printChangeLog(clf)
    # Copy the extra files we need to process all the inputs 
    shutil.copytree("extras","docs/extras")
    # Copy the figures 
