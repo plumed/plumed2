@@ -2,6 +2,7 @@ site_name: PLUMED manual
 
 nav:
   - Introduction: 'index.md'
+  - Installation: 'https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html'
   - Modules: 'modules.md'
   - Actions: 'actionlist.md'
   - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
