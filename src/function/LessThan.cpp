@@ -399,24 +399,6 @@ was described in the previous section is not performed.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION LESS_THAN_VECTOR
-/*
-Use a switching function to determine how many components of the vector are less than a certain cutoff.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR LESS_THAN_MATRIX
-/*
-Transform all the elements of a matrix using a switching function that is one when the input value is smaller than a threshold
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class LessThan {
 public:
   bool squared;

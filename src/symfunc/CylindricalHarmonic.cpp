@@ -72,16 +72,6 @@ PRINT ARG=c.im FILE=imaginary_part
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR CYLINDRICAL_HARMONIC_MATRIX
-/*
-Calculate the cylindrical harmonic function from the elements in two input matrices
-
-\par Examples
-
-
-*/
-//+ENDPLUMEDOC
-
 
 class CylindricalHarmonic {
 public:

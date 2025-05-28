@@ -81,7 +81,6 @@ PRINT ARG=m FILE=colvar
 */
 //+ENDPLUMEDOC
 
-
 namespace PLMD {
 namespace function {
 

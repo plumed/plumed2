@@ -92,24 +92,6 @@ PRINT ARG=a4,a5,a6 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR ANGLE_SCALAR
-/*
-Calculate an angle.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR ANGLE_VECTOR
-/*
-Calculate multiple angles.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Angle : public Colvar {
   bool pbc;
   std::vector<double> value;

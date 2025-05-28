@@ -36,7 +36,7 @@ The reference values can be either provided as values using PARAMETERS or using 
 from other actions using PARARG (for example using experimental values from collective variables such as
 [CS2BACKBONE](CS2BACKBONE.md), [RDC](RDC.md), [NOE](NOE.md), [PRE](PRE.md)).
 
-\par Examples
+## Examples
 
 The following input tells plumed to print the distance between three couple of atoms
 and compare them with three reference distances.

@@ -51,3 +51,9 @@ Once you have specified the base quantities that are to be calculated from the a
 you need to specify what function of these base quantities is to be calculated.  For most multicolvars you can calculate
 the minimum, the number less than a target value, the number within a certain range, the number more than a target
 value and the average value directly.
+
+## Multicolvar functions and biases
+
+In older versions of PLUMED there were actions that took the label of a multicolvar as input and computed things from the vector
+of CVs directly from them. In newer versions this functionality is easier to use as the multicolvars are shortcuts.  You thus use 
+the outputs from the commmands that output the vectors of CV values in the input to other actions directly. 

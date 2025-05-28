@@ -70,7 +70,7 @@ pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
 PRINT ARG=pb FILE=colvar
 ```
 
-Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
+Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb

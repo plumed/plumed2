@@ -70,26 +70,6 @@ values. Commands similar to these are used within the [DIHCOR](DIHCOR.md) shortc
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR DIHEDRAL_CORRELATION_SCALAR
-/*
-Measure the correlation between a multiple pairs of dihedral angles
-
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR DIHEDRAL_CORRELATION_VECTOR
-/*
-Measure the correlation between a multiple pairs of dihedral angles
-
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;

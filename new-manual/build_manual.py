@@ -165,7 +165,9 @@ PLUMED Version {version}
 ------------------------
 
 PLUMED is a community-developed code that can be used to incorporate additional functionality into multiple molecular dynamics codes and for analysing
-trajectories. PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
+trajectories. PLUMED is currently interfaced with the list of codes described [here](mdcodes.md).
+
+PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
 a list of the modules that are available within PLUMED [here](modules.md) or you can see a graphical view of the modules and the dependencies between them [here](modulegraph.md).
 
 Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md). 
@@ -175,7 +177,8 @@ Please also note that some developers prefer not to include their codes in PLUME
 
 You can find instructions for installing PLUMED [here](https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html).
 
-If you are completely unfamiliar with PLUMED we would recommend that you start by working through [the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html).
+To run PLUMED you need to provide one input file.  If you are completely unfamiliar with PLUMED we would recommend that you start by working through 
+[the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html) or the following [10-minute video](http://www.youtube.com/watch?v=PxJP16qNCYs).
 
 You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials.org) and you can find examples of how PLUMED has been used in many academic research articles [here](https://www.plumed-nest.org).
 
@@ -254,6 +257,36 @@ The remainder of the modules are not compiled unless you explicitly request PLUM
 ```bash
 ./configure --enable-module=module-name
 ```
+
+To enable or disable multiple modules one should provide them as a : separated list. Notice that `+modulename` and `modulename` both activate the module, whereas
+`-modulename` deactivates it. E.g.
+
+```bash
+./configure --enable-modules=+adjmat:-colvar
+```
+
+will disable the colvar module and enable the adjmat module.  The : can, in fact, be ommitted when you use + and -.  In other words, the following command can 
+be used in place of the previous one:
+
+```bash
+./configure --enable-modules=+adjmat-colvar
+```
+
+If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-colvar` will _not_ do what you expect!
+
+!!! note "old implementation"
+
+    Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
+    in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
+    in this manner will be overwritten next time `./configure` is used.
+
+There are also some shortcuts available:
+
+- `./configure --enable-modules=all` can be used to enable all optional modules. This includes the maximum number of features in PLUMED, including modules that might not be properly functional.
+- `./configure --enable-modules=none` or `./configure --disable-modules` can be used to disable all optional modules. This produces a minimal PLUMED which can be used as a library but which has no command line tools and no collective variables or biasing methods.
+- `./configure --enable-modules=reset` or `./configure --enable-modules` can be used to enable the default modules.
+
+The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
    
 The table below lists all the available modules and tells you whether they are always compiled, on by default or off by default.  An alternative, graphical
 view of this information is available [here](modulegraph.md).

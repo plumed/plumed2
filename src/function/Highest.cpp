@@ -105,24 +105,6 @@ than 0.05 nm then the corresponding value in the vector `h` is set equal to 0.05
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR HIGHEST_SCALAR
-/*
-Calculate the highest of a set of sclalar arguments
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR HIGHEST_VECTOR
-/*
-Calculate the largest element in a vector of inputs
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC FUNCTION LOWEST
 /*
 This function can be used to find the lowest colvar by magnitude in a set.
@@ -195,24 +177,6 @@ PRINT ARG=h FILE=colvar
 For the input above the LOWEST action outputs a vector with two elements.  The elements of this vector are equal to the distances between the pairs
 of atoms that are specified in the DISTANCE command as long as those distances are less than 0.5 nm.  If either of the two input distances is more
 han 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm.
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR LOWEST_SCALAR
-/*
-Calculate the lowest of a set of sclalar arguments
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR LOWEST_VECTOR
-/*
-Calculate the lowest element in a vector of inputs
-
-\par Examples
 
 */
 //+ENDPLUMEDOC

@@ -80,24 +80,6 @@ PRINT ARG=p.x,p.y,p.z
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR POSITION_SCALAR
-/*
-Calculate the components of the position of an atom.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR POSITION_VECTOR
-/*
-Create a vector that holds the components of the position of a set of atoms.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Position : public Colvar {
   bool scaled_components;
   bool pbc;

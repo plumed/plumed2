@@ -104,24 +104,6 @@ tells you how many of these distances are greater than 0.2 nm.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION MORE_THAN_VECTOR
-/*
-Use a switching function to determine how many of elements in the input vector are more than a certain cutoff.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR MORE_THAN_MATRIX
-/*
-Transform all the elements of a matrix using a switching function that is one when the input value is larger than a threshold
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class MoreThan {
 public:
   bool squared;

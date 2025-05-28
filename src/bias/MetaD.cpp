@@ -81,10 +81,10 @@ of the CVs and the metadynamics bias potential are written to the COLVAR file ev
 
 ## Using grids
 
-In the simplest possible implementation of a metadynamics calculation the expense associated with calculating the
+In the simplest possible implementation of a metadynamics calculation __the expense associated with calculating the
 bias potential increases with the length of the simulation as one has to, at every step, evaluate
 the values of a larger and larger number of Gaussian kernels. To avoid this issue you can
-store the bias on a grid.  This approach is similar to that proposed in the second paper cited below but has the
+store the bias on a grid.__  This approach is similar to that proposed in the second paper cited below but has the
 advantage that the grid spacing is independent of the Gaussian width.  An example input for a calculation
 that uses a grid to store the bias is shown below:
 

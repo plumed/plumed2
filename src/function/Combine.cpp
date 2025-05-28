@@ -150,33 +150,6 @@ the [CUSTOM](CUSTOM.md) action to transform all the components of the input vect
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION COMBINE_SCALAR
-/*
-Calculate a polynomial combination of a set of other variables.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION COMBINE_VECTOR
-/*
-Add together the elements of a set of vectors elementwise
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR COMBINE_MATRIX
-/*
-Calculate the sum of a number of matrices
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Combine  {
 public:
   std::vector<double> coefficients;

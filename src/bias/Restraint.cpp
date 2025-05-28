@@ -69,15 +69,6 @@ equal to the number of arguments to the action.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC BIAS RESTRAINT_SCALAR
-/*
-Adds harmonic and/or linear restraints on one or more scalar variables.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Restraint : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;

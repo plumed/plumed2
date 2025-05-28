@@ -65,15 +65,6 @@ still be used with this new version of the command.  However, we strongly recomm
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR INSPHERE_CALC
-/*
-Calculate a vector from the input positions with elements equal to one when the positions are in a particular part of the cell and elements equal to zero otherwise
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace volumes {
 

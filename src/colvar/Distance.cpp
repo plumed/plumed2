@@ -142,24 +142,6 @@ with domain (-0.5,+0.5).
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR DISTANCE_SCALAR
-/*
-Calculate the distance between a pair of atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR DISTANCE_VECTOR
-/*
-Calculate a vector containing the distances between various pairs of atoms
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Distance : public Colvar {
   bool components;
   bool scaled_components;

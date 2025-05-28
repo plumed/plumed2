@@ -30,24 +30,6 @@
 namespace PLMD {
 namespace symfunc {
 
-//+PLUMEDOC MCOLVAR FCCUBIC_FUNC
-/*
-Measure how similar the environment around atoms is to that found in a FCC structure.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR FCCUBIC_FUNC_MATRIX
-/*
-Measure how similar the environment around atoms is to that found in a FCC structure.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC MCOLVAR FCCUBIC
 /*
 Measure how similar the environment around atoms is to that found in a FCC structure.
@@ -111,6 +93,7 @@ typedef function::FunctionOfMatrix<Fccubic> MatrixFccubic;
 PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
+  keys.setDisplayName("FCCUBIC");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
   keys.setValueDescription("matrix","a function that measures the similarity with an fcc environment");
 }
