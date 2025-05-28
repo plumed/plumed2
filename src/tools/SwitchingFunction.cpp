@@ -962,7 +962,7 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction& other):
 
 SwitchingFunction::SwitchingFunction(SwitchingFunction&& other):
   init(other.init),
-  function(other.function.release()) {}
+  function(std::move(other.function)) {}
 
 SwitchingFunction& SwitchingFunction::operator=(const SwitchingFunction& other) {
   if (this != &other) {
@@ -977,11 +977,13 @@ SwitchingFunction& SwitchingFunction::operator=(const SwitchingFunction& other) 
 
 SwitchingFunction& SwitchingFunction::operator=(SwitchingFunction&& other) {
   init=other.init;
+  function.reset();
   function=std::move(other.function);
   return *this;
 }
 
 void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
+  function.reset();
   using namespace switchContainers;
   const auto settings = std::make_pair(other.function->getType(),other.function->getData());
 #define SWITCHCALL(x) case switchType::x: \
@@ -1030,6 +1032,7 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
 }
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
+  function.reset();
   std::vector<std::string> data=Tools::getWords(definition);
 #define CHECKandPARSE(datastring,keyword,variable,errormsg) \
   if(Tools::findKeyword(datastring,keyword) && !Tools::parse(datastring,keyword,variable))\
@@ -1151,6 +1154,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
 }
 
 void SwitchingFunction::set(const int nn,int mm, const double r0, const double d0) {
+  function.reset();
   init=true;
   if(mm == 0) {
     mm = 2*nn;
