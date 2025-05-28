@@ -80,8 +80,7 @@ Calculate a vector from the input positions with elements equal to one when the 
 namespace PLMD {
 namespace volumes {
 
-class VolumeInSphere {
-public:
+struct VolumeInSphere {
 #ifdef __PLUMED_USE_OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
