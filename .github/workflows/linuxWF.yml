@@ -171,6 +171,8 @@ jobs:
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
         ccache -s -M 100M
+
+        ldd ./src/lib/plumed
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
       run: |
