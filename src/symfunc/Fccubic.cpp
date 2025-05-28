@@ -72,6 +72,20 @@ function in the above expression as is discussed in the documentation for [COORD
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC MCOLVAR FCCUBIC_FUNC
+/*
+Measure how similar the environment around atoms is to that found in a FCC structure.
+
+This is the function that is used in the [FCCUBIC](FCCUBIC.md) shortcut. You can see an example that shows how it is used
+if you expand the FCCUBIC shortcut in the following example input:
+
+```plumed
+d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN
+PRINT ARG=d.* FILE=colv
+```
+
+*/
+//+ENDPLUMEDOC
 
 class Fccubic {
 public:
