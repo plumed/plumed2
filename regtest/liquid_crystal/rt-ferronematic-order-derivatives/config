@@ -1,4 +1,4 @@
 type=driver
-arg="--plumed plumed.dat --igro conf.gro --debug-forces=forces --dump-forces-fmt=%10.6f"
+arg="--plumed plumed.dat --igro conf.gro --debug-forces=forces --dump-forces-fmt=%10.5f"
 extra_files="../rt-nematic-order-derivatives/conf.gro"
 
