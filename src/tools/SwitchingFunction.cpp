@@ -952,6 +952,7 @@ public:
 } // namespace switchContainers
 
 SwitchingFunction::SwitchingFunction()=default;
+SwitchingFunction::~SwitchingFunction()=default;
 
 SwitchingFunction::SwitchingFunction(const SwitchingFunction& other):
   init(other.init) {
@@ -987,9 +988,11 @@ void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
   using namespace switchContainers;
   const auto settings = std::make_pair(other.function->getType(),other.function->getData());
 #define SWITCHCALL(x) case switchType::x: \
-  function = std::make_unique<SwitchInterface<x##Switch>>(settings);
+  function = std::make_unique<SwitchInterface<x##Switch>>(settings); \
+  break;
 #define RATCALL(x) case switchType::rationalfix##x:\
-  function = std::make_unique<SwitchInterface<fixedRational<x>>>(settings);
+  function = std::make_unique<SwitchInterface<fixedRational<x>>>(settings); \
+  break;
   switch (settings.first) {
     RATCALL(12)
     RATCALL(10)
@@ -999,12 +1002,16 @@ void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
     RATCALL(2)
   case switchType::rational:
     function = std::make_unique<SwitchInterface<rational<rationalPow::standard,rationalForm::standard>>>(settings);
+    break;
   case switchType::rationalFast:
     function = std::make_unique<SwitchInterface<rational<rationalPow::fast,rationalForm::standard>>>(settings);
+    break;
   case switchType::rationalSimple:
     function = std::make_unique<SwitchInterface<rational<rationalPow::standard,rationalForm::simplified>>>(settings);
+    break;
   case switchType::rationalSimpleFast:
     function = std::make_unique<SwitchInterface<rational<rationalPow::fast,rationalForm::simplified>>>(settings);
+    break;
     SWITCHCALL(exponential)
     SWITCHCALL(gaussian)
     SWITCHCALL(fastgaussian)

@@ -121,7 +121,7 @@ public:
   SwitchingFunction(SwitchingFunction&&);
   SwitchingFunction& operator=(const SwitchingFunction&);
   SwitchingFunction& operator=(SwitchingFunction&&);
-
+  ~SwitchingFunction();
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
