@@ -138,36 +138,22 @@ ActionVolume<T>::ActionVolume(const ActionOptions&ao):
     error("no atoms were specified");
   }
   log.printf("  examining positions of atoms ");
-  // for(unsigned i=0; i<atoms.size(); ++i) {
-  log.printf(" %d", atoms[0].serial() );
-  log.printf("...");
-  std::cout <<std::flush;
-  log.printf(" %d", atoms.back().serial() );
-  std::cout <<std::flush;
-  // }
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf(" %d", atoms[i].serial() );
+  }
   log.printf("\n");
-  std::cout <<std::flush;
-  std::vector<std::size_t> shape(1,atoms.size());
-  log.printf("ref atoms\n");
-  std::cout <<std::flush;
+  std::vector<std::size_t> shape(1);
+  shape[0]=atoms.size();
+
   std::vector<AtomNumber> refatoms;
   T::parseAtoms( this, refatoms );
-  log.printf("ref atoms\n");
-  std::cout <<std::flush;
   for(unsigned i=0; i<refatoms.size(); ++i) {
     atoms.push_back( refatoms[i] );
   }
-  log.printf("request atoms\n");
-  std::cout <<std::flush;
   requestAtoms( atoms );
-  log.printf("request atoms\n");
-  std::cout <<std::flush;
   VolumeData<T> actioninput;
-  log.printf("reading voldata\n");
-  std::cout <<std::flush;
   actioninput.voldata.parseInput(this);
-  log.printf("reading voldata\n");
-  std::cout <<std::flush;
+
   actioninput.numberOfNonReferenceAtoms=shape[0];
   parseFlag("OUTSIDE",actioninput.not_in);
 
