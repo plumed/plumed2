@@ -41,17 +41,17 @@ $$
 M_{jk} = \sum_i s_A(r_{ij})s_B(r_{ik})
 $$
 
-In this expression, the sum runs over all the atoms that were specified using the `BRIDGING_ATOMS` keyword, $s_A$ and 
+In this expression, the sum runs over all the atoms that were specified using the `BRIDGING_ATOMS` keyword, $s_A$ and
 $s_B$ are switching functions, and $r_{ij}$ and $r_{ik}$ are the distances between atom $i$ and $j$ and between atoms
-$i$ and $k$.  Less formally, this formula ensures that $j,k$ element of the output matrix is one if there is a bridging 
-atom between atom $j$ and $k$.  
+$i$ and $k$.  Less formally, this formula ensures that $j,k$ element of the output matrix is one if there is a bridging
+atom between atom $j$ and $k$.
 
-In the following example input atoms 100-200 can serve as bridging atoms between the atoms in GROUPA and GROUPB and the 
+In the following example input atoms 100-200 can serve as bridging atoms between the atoms in GROUPA and GROUPB and the
 two switching functions $s_A$ and $s_B$ in the formula above are identical.
 
 ```plumed
 w1: BRIDGE_MATRIX BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
-```  
+```
 
 */
 //+ENDPLUMEDOC

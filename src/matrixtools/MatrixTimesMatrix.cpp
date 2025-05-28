@@ -26,7 +26,7 @@
 /*
 Calculate the product of two matrices
 
-This action allows you to [multiply](https://en.wikipedia.org/wiki/Matrix_multiplication) two matrices. The following input shows an 
+This action allows you to [multiply](https://en.wikipedia.org/wiki/Matrix_multiplication) two matrices. The following input shows an
 example where two contact matrices are multiplied together.
 
 ```plumed
@@ -37,7 +37,7 @@ PRINT ARG=m FILE=colvar
 ```
 
 The functionality in this action is useful for claculating the relative orientations of large numbers of molecules.  For example in
-his input the [DISTANCE](DISTANCE.md) command is used to calculate the orientation of a collection of molecules.  We then can then use the [VSTACK](VSTACK.md), [TRANSPOSE](TRANSPOSE.md) and the 
+his input the [DISTANCE](DISTANCE.md) command is used to calculate the orientation of a collection of molecules.  We then can then use the [VSTACK](VSTACK.md), [TRANSPOSE](TRANSPOSE.md) and the
 MATRIX_PRODUCT commands to calculate the dot products between all these vectors
 
 ```plumed
@@ -60,21 +60,21 @@ PRINT ARG=m FILE=colvar
 /*
 Calculate the matrix of dissimilarities between a trajectory of atomic configurations.
 
-This action allows you to calculate a dissimilarity matrix, which is a square matrix tht describes the 
-pairwise distinction between a set of objects. This action is routinely used in dimensionality reduction 
-calculations. The example shown below shows how we might get a matrix of dissimilarities upon which we can run a 
+This action allows you to calculate a dissimilarity matrix, which is a square matrix tht describes the
+pairwise distinction between a set of objects. This action is routinely used in dimensionality reduction
+calculations. The example shown below shows how we might get a matrix of dissimilarities upon which we can run a
 dimensionality reduction calculation.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 # Collect the values of the two distances and store them for later analysis
-ff: COLLECT_FRAMES ARG=d1,d2 STRIDE=1 
+ff: COLLECT_FRAMES ARG=d1,d2 STRIDE=1
 # Transpose the matrix that is collected above
 ff_dataT: TRANSPOSE ARG=ff_data
 # Now compute all the dissimilarities between the collected frames
 ss1: DISSIMILARITIES ARG=ff_data,ff_dataT
-DUMPVECTOR ARG=ss1 FILE=mymatrix.dat 
+DUMPVECTOR ARG=ss1 FILE=mymatrix.dat
 ```
 
 */

@@ -412,7 +412,7 @@ DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f
 
 ## Making lepton library faster
 
-If you use a lot of [CUSTOM](CUSTOM.md) actions or CUSTOM [switching functions](LESS_THAN.md) it can slow down PLUMED.  
+If you use a lot of [CUSTOM](CUSTOM.md) actions or CUSTOM [switching functions](LESS_THAN.md) it can slow down PLUMED.
 These commands use the lepton library that is included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
@@ -432,7 +432,7 @@ c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
 d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
 ```
 
-I (GB) obtained the following timings (on a Macbook laptop): 
+I (GB) obtained the following timings (on a Macbook laptop):
 
 ````
 ...

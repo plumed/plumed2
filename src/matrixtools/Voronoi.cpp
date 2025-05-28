@@ -28,7 +28,7 @@ Do a voronoi analysis
 
 This shortcut allows you to perform a [Voronoi analysis](https://en.wikipedia.org/wiki/Voronoi_diagram).
 The input to this action is a rectangular matrix that describes the distances between two sets of points.
-The points for which this action is receiving distances between could be atom positions or they could represent the 
+The points for which this action is receiving distances between could be atom positions or they could represent the
 dissimilarities between various trajectory frames that have been stored using [COLLECT_FRAMES](COLLECT_FRAMES.md).
 In the example below the matrix of input distances are distances between the positions of atoms:
 
@@ -37,10 +37,10 @@ d: DISTANCE_MATRIX GROUPA=1-10 GROUPB=11-100
 v: VORONOI ARG=d
 ones: ONES SIZE=90
 c: MATRIX_VECTOR_PRODUCT ARG=v,ones
-PRINT ARG=c FILE=colvar 
+PRINT ARG=c FILE=colvar
 ```
 
-The VORONOI action outputs a rectangular matrix, $V$, with the same shape as the input matrix, $D$. $V_{ij}$ 
+The VORONOI action outputs a rectangular matrix, $V$, with the same shape as the input matrix, $D$. $V_{ij}$
 is 1 if $D_{ij}$ is the shortest distance in row $i$.
 
 

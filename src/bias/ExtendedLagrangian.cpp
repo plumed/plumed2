@@ -71,7 +71,7 @@ a Gaussian thermostat.
      acceptace can be expected to be extremely low unless (by chance) two neighboring
      replicas have the fictitious variables located properly in space.
 
-!!! warning "restart not supported" 
+!!! warning "restart not supported"
 
     [RESTART](RESTART.md) is not properly supported by this action. Indeed,
     at every start the position of the fictitious variable is reset to the value

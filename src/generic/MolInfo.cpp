@@ -197,7 +197,7 @@ For instance, `@OW-100` will select oxygen of water molecule with residue number
 Finally, notice that some shortcuts are available even when you not using the MOLINFO command.
 
 !!! caution ""
-    
+
     If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
 !!! caution ""

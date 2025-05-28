@@ -34,7 +34,7 @@ namespace ves {
 Cubic B spline basis functions.
 
 !!! attention ""
- 
+
     __These basis functions do not form orthogonal bases. We recommend using wavelets ([BF_WAVELETS](BF_WAVELETS.md)) instead that do for orthogonal bases__.
 
 A basis using cubic B spline functions according to the first paper cited below. See the second paper cited below for full details.

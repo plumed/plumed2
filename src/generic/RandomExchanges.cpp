@@ -77,7 +77,7 @@ t3: TORSION ATOMS=3,4,5,6
 METAD ARG=@replicas:t1,t2,t3 HEIGHT=0.1 PACE=100 SIGMA=0.3
 ```
 
-!!! caution "" 
+!!! caution ""
 
     Multi replica simulations are presently only working with gromacs.
 

@@ -47,7 +47,7 @@ Calculate the RMSD with respect to a reference structure.
 One colvar that has been shown to be very successful in studying protein folding is the distance between the instantaneous configuration
 and a reference configuration - often the structure of the folded state.  When the free energy of a protein is shown as a function
 of this collective variable there is a minima for low values of the CV, which is due to the folded state of the protein.  There is
-then a second minima at higher values of the CV, which is the minima corresponding to the unfolded state.  The aim of this colvar is 
+then a second minima at higher values of the CV, which is the minima corresponding to the unfolded state.  The aim of this colvar is
 thus to calculate something like:
 
 $$
@@ -205,8 +205,8 @@ periodic image.
 
 ## A final thought
 
-Notice that there are many other ways of calculating the distance from a particular reference structure. These normally work by computing the square root of the sum of the squares 
-of the differences in collective variable values. To compute these distances you use the functionality in the [refdist](module_refdist.md) module. 
+Notice that there are many other ways of calculating the distance from a particular reference structure. These normally work by computing the square root of the sum of the squares
+of the differences in collective variable values. To compute these distances you use the functionality in the [refdist](module_refdist.md) module.
 
 */
 //+ENDPLUMEDOC

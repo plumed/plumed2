@@ -27,7 +27,7 @@
 /*
 Calculate the product of two matrices and return a vector that contains the diagonal elements of the ouptut vector
 
-This action allows you to [multiply](https://en.wikipedia.org/wiki/Matrix_multiplication) two matrices and recover the diagonal of the 
+This action allows you to [multiply](https://en.wikipedia.org/wiki/Matrix_multiplication) two matrices and recover the diagonal of the
 product of the matrices. The following input shows an example where two contact matrices are multiplied together.
 
 ```plumed
@@ -37,7 +37,7 @@ m: MATRIX_PRODUCT_DIAGONAL ARG=c1,c2
 PRINT ARG=m FILE=colvar
 ```
 
-As you can see from the documentation for the shortcut [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md) this action is useful for computing distances between 
+As you can see from the documentation for the shortcut [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md) this action is useful for computing distances between
 vectors.
 
 */

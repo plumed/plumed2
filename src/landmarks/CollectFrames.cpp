@@ -81,7 +81,7 @@ You can learn how to use COLLECT_FRAMES to perform dimensionality reduction calc
 
 One of the simplest things that we can do if we have stored a set of trajectory frames using this action is we can calculate the dissimilarity between
 every pair of frames we have stored.  This is the first step for many of the dimensionality reduction algorithms described in [the dimred module](module_dimred.md).
-To calculate these dissimilarities you use the [DISSIMILARITIES](DISSIMILARITIES.md) command.  
+To calculate these dissimilarities you use the [DISSIMILARITIES](DISSIMILARITIES.md) command.
 
 Notice that instead of reading in a trajectory and computing dissimilarities you can read in the dissimilarity matrix directly using [CONSTANT](CONSTANT.md) and then perform all analyses with PLUMED.
 
