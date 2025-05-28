@@ -22,8 +22,9 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
+#include "FunctionWithSingleArgument.h"
 #include "core/ActionRegister.h"
-#include "FunctionTemplateBase.h"
+#include "FunctionSetup.h"
 
 #include <cmath>
 
@@ -87,26 +88,22 @@ Calculate the moments of the distribution of input vectors
 */
 //+ENDPLUMEDOC
 
-class Moments : public FunctionTemplateBase {
-  bool isperiodic, scalar_out;
-  double min, max, pfactor;
-  std::vector<int> powers;
+class Moments {
 public:
-  void registerKeywords(Keywords& keys) override;
-  void read( ActionWithArguments* action ) override;
-  bool zeroRank() const override {
-    return scalar_out;
-  }
-  bool doWithTasks() const override {
-    return !scalar_out;
-  }
-  std::vector<std::string> getComponentsPerLabel() const override ;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  bool isperiodic;
+  double min, max, pfactor;
+  double max_minus_min;
+  double inv_max_minus_min;
+  std::vector<int> powers;
+  static void registerKeywords(Keywords& keys);
+  static void read( Moments& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Moments& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Moments> MomentsShortcut;
 PLUMED_REGISTER_ACTION(MomentsShortcut,"MOMENTS")
+typedef FunctionWithSingleArgument<Moments> SingleargMoments;
+PLUMED_REGISTER_ACTION(SingleargMoments,"MOMENTS_ONEARG")
 typedef FunctionOfScalar<Moments> ScalarMoments;
 PLUMED_REGISTER_ACTION(ScalarMoments,"MOMENTS_SCALAR")
 typedef FunctionOfVector<Moments> VectorMoments;
@@ -122,14 +119,9 @@ void Moments::registerKeywords(Keywords& keys) {
                           "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");
 }
 
-void Moments::read( ActionWithArguments* action ) {
-  scalar_out = action->getNumberOfArguments()==1;
-  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) {
-    action->error("cannot calculate moments if only given one variable");
-  }
-
-  isperiodic = (action->getPntrToArgument(0))->isPeriodic();
-  if( isperiodic ) {
+void Moments::read( Moments& func, ActionWithArguments* action, FunctionOptions& options ) {
+  func.isperiodic = (action->getPntrToArgument(0))->isPeriodic();
+  if( func.isperiodic ) {
     std::string str_min, str_max;
     (action->getPntrToArgument(0))->getDomain( str_min, str_max );
     for(unsigned i=1; i<action->getNumberOfArguments(); ++i) {
@@ -142,9 +134,11 @@ void Moments::read( ActionWithArguments* action ) {
         action->error("all input arguments should have same domain when calculating moments");
       }
     }
-    Tools::convert(str_min,min);
-    Tools::convert(str_max,max);
-    pfactor = 2*pi / ( max-min );
+    Tools::convert(str_min,func.min);
+    Tools::convert(str_max,func.max);
+    func.max_minus_min = func.max - func.min;
+    func.inv_max_minus_min = 1 / func.max_minus_min;
+    func.pfactor = 2*pi*func.inv_max_minus_min;
   } else {
     for(unsigned i=1; i<action->getNumberOfArguments(); ++i) {
       if( (action->getPntrToArgument(i))->isPeriodic() ) {
@@ -153,45 +147,30 @@ void Moments::read( ActionWithArguments* action ) {
     }
   }
 
-  parseVector(action,"POWERS",powers);
-  for(unsigned i=0; i<powers.size(); ++i) {
-    if( powers[i]<2 ) {
+  action->parseVector("POWERS",func.powers);
+  for(unsigned i=0; i<func.powers.size(); ++i) {
+    if( func.powers[i]<2 ) {
       action->error("first central moment is zero do you really need to calculate that");
     }
-    action->log.printf("  computing %dth central moment of distribution of input cvs \n", powers[i]);
-  }
-}
-
-std::vector<std::string> Moments::getComponentsPerLabel() const {
-  std::vector<std::string> comp;
-  std::string num;
-  for(unsigned i=0; i<powers.size(); ++i) {
-    Tools::convert(powers[i],num);
-    comp.push_back( "-" + num );
-  }
-  return comp;
-}
-
-void Moments::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0; i<powers.size(); ++i) {
+    action->log.printf("  computing %dth central moment of distribution of input cvs \n", func.powers[i]);
     std::string num;
-    Tools::convert(powers[i],num);
-    action->componentIsNotPeriodic("moment-" + num);
+    Tools::convert(func.powers[i],num);
+    options.multipleValuesForEachRegisteredComponent.push_back( "-" + num );
   }
 }
 
-void Moments::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Moments::calc( const Moments& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
   double mean=0;
   double inorm = 1.0 / static_cast<double>( args.size() );
-  if( isperiodic ) {
+  if( func.isperiodic ) {
     double sinsum=0, cossum=0, val;
     for(unsigned i=0; i<args.size(); ++i) {
-      val=pfactor*( args[i] - min );
+      val=func.pfactor*( args[i] - func.min );
       sinsum+=sin(val);
       cossum+=cos(val);
     }
     mean = 0.5 + atan2( inorm*sinsum, inorm*cossum ) / (2*pi);
-    mean = min + (max-min)*mean;
+    mean = func.min + (func.max-func.min)*mean;
   } else {
     for(unsigned i=0; i<args.size(); ++i) {
       mean+=args[i];
@@ -199,19 +178,42 @@ void Moments::calc( const ActionWithArguments* action, const std::vector<double>
     mean *= inorm;
   }
 
-  Value* arg0 = action->getPntrToArgument(0);
-  for(unsigned npow=0; npow<powers.size(); ++npow) {
-    double dev1=0;
-    for(unsigned i=0; i<args.size(); ++i) {
-      dev1+=pow( arg0->difference( mean, args[i] ), powers[npow] - 1 );
+  if( func.isperiodic ) {
+    for(unsigned npow=0; npow<func.powers.size(); ++npow) {
+      double dev1=0;
+      for(unsigned i=0; i<args.size(); ++i) {
+        double s = func.inv_max_minus_min*( args[i] - mean );
+        s = Tools::pbc(s);
+        dev1+=pow( s*func.max_minus_min, func.powers[npow] - 1 );
+      }
+      dev1*=inorm;
+      funcout.values[npow] = 0;
+      double prefactor = func.powers[npow]*inorm;
+      for(unsigned i=0; i<args.size(); ++i) {
+        double tmp = func.inv_max_minus_min*( args[i] - mean );
+        tmp = func.max_minus_min*Tools::pbc(tmp);
+        funcout.values[npow] += inorm*pow( tmp, func.powers[npow] );
+        if( !noderiv ) {
+          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1);
+        }
+      }
     }
-    dev1*=inorm;
-    vals[npow] = 0;
-    double prefactor = powers[npow]*inorm;
-    for(unsigned i=0; i<args.size(); ++i) {
-      double tmp=arg0->difference( mean, args[i] );
-      vals[npow] += inorm*pow( tmp, powers[npow] );
-      derivatives(npow,i) = prefactor*(pow( tmp, powers[npow] - 1 ) - dev1);
+  } else {
+    for(unsigned npow=0; npow<func.powers.size(); ++npow) {
+      double dev1=0;
+      for(unsigned i=0; i<args.size(); ++i) {
+        dev1+=pow( args[i] - mean, func.powers[npow] - 1 );
+      }
+      dev1*=inorm;
+      funcout.values[npow] = 0;
+      double prefactor = func.powers[npow]*inorm;
+      for(unsigned i=0; i<args.size(); ++i) {
+        double tmp=args[i] - mean;
+        funcout.values[npow] += inorm*pow( tmp, func.powers[npow] );
+        if( !noderiv ) {
+          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1);
+        }
+      }
     }
   }
 }

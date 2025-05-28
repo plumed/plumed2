@@ -23,7 +23,7 @@
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "core/ActionRegister.h"
-#include "FunctionTemplateBase.h"
+#include "FunctionSetup.h"
 
 namespace PLMD {
 namespace function {
@@ -80,24 +80,11 @@ Sort the elements in a vector according to their magnitudes
 */
 //+ENDPLUMEDOC
 
-class Sort : public FunctionTemplateBase {
-private:
-  bool scalar_out;
-  bool zero_der;
-  unsigned nargs;
+class Sort {
 public:
-  void registerKeywords(Keywords& keys) override ;
-  void read( ActionWithArguments* action ) override;
-  bool zeroRank() const override {
-    return true;
-  }
-  bool getDerivativeZeroIfValueIsZero() const override ;
-  bool doWithTasks() const override {
-    return !scalar_out;
-  }
-  std::vector<std::string> getComponentsPerLabel() const override ;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  static void registerKeywords(Keywords& keys);
+  static void read( Sort& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Sort& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Sort> SortShortcut;
@@ -114,47 +101,30 @@ void Sort::registerKeywords(Keywords& keys) {
 }
 
 
-void Sort::read( ActionWithArguments* action ) {
-  scalar_out = action->getNumberOfArguments()==1;
-  nargs = action->getNumberOfArguments();
-  if( scalar_out ) {
-    nargs = action->getPntrToArgument(0)->getNumberOfValues();
+void Sort::read( Sort& func, ActionWithArguments* action, FunctionOptions& options ) {
+  if( action->getNumberOfArguments()==1 ) {
+    action->warning("if there is only one argument to sort is this function really needed?");
   }
 
-  zero_der=true;
+  options.derivativeZeroIfValueIsZero=true;
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
     if((action->getPntrToArgument(i))->isPeriodic()) {
       action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
     }
     if(!(action->getPntrToArgument(i))->isDerivativeZeroWhenValueIsZero() ) {
-      zero_der=false;
+      options.derivativeZeroIfValueIsZero=false;
     }
   }
 }
 
-bool Sort::getDerivativeZeroIfValueIsZero() const {
-  return zero_der;
-}
-
-std::vector<std::string> Sort::getComponentsPerLabel() const {
-  std::vector<std::string> comp;
-  std::string num;
-  for(unsigned i=0; i<nargs; ++i) {
-    Tools::convert(i+1,num);
-    comp.push_back( num );
+void Sort::calc( const Sort& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+  if( !noderiv ) {
+    for(unsigned i=0; i<args.size(); ++i) {
+      for(unsigned j=0; j<args.size(); ++j) {
+        funcout.derivs[i][j] = 0;
+      }
+    }
   }
-  return comp;
-}
-
-void Sort::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0; i<nargs; ++i) {
-    std::string num;
-    Tools::convert(i+1,num);
-    action->componentIsNotPeriodic( num );
-  }
-}
-
-void Sort::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   std::vector<std::pair<double,int> > data(args.size());
   for(unsigned i=0; i<args.size(); ++i) {
     data[i].first=args[i];
@@ -163,10 +133,11 @@ void Sort::calc( const ActionWithArguments* action, const std::vector<double>& a
   }
 // STL sort sorts based on first element (value) then second (index)
   std::sort(data.begin(),data.end());
-  derivatives = 0;
-  for(int i=0; i<vals.size(); ++i) {
-    vals[i] = data[i].first;
-    derivatives(i, data[i].second ) = 1;
+  for(int i=0; i<funcout.values.size(); ++i) {
+    funcout.values[i] = data[i].first;
+    if( !noderiv ) {
+      funcout.derivs[i][data[i].second] = 1;
+    }
   }
 }
 

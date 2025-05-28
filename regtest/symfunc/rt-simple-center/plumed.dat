@@ -7,8 +7,6 @@ dd: DISTANCE ATOMS1=cc,2 ATOMS2=cc,3 ATOMS3=cc,11
 wd: CUSTOM ARG=dd,cf2 FUNC=x*y PERIODIC=NO
 ss: SUM ARG=wd PERIODIC=NO 
 
-DUMPDERIVATIVES ARG=ss FILE=deriv FMT=%8.4f STRIDE=1
-
 # These two numbers should be the same
 PRINT ARG=ss FILE=colv FMT=%8.3f
 

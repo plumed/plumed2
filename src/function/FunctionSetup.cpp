@@ -19,25 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_function_Combine_h
-#define __PLUMED_function_Combine_h
+#include "FunctionSetup.h"
 
-#include "FunctionTemplateBase.h"
 
-namespace PLMD {
-namespace function {
-
-class Combine : public FunctionTemplateBase {
-  bool normalize;
-  std::vector<double> coefficients;
-  std::vector<double> parameters;
-  std::vector<double> powers;
-public:
-  void registerKeywords(Keywords& keys) override;
-  void read( ActionWithArguments* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
-};
-
-}
-}
-#endif

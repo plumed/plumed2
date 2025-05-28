@@ -1,12 +1,12 @@
 flowchart BT 
-11(["label=#64;11 
+9(["label=#64;9 
  BIASVALUE 
 "])
-11 -- b --> b
-10(["label=#64;10 
+9 -- b --> b
+8(["label=#64;8 
  BIASVALUE 
 "])
-10 -- d1c --> d1c
+8 -- d1c --> d1c
 d1c(["label=d1c 
  SUM 
 "])

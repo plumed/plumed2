@@ -184,7 +184,7 @@ NormalizedEuclideanDistance::NormalizedEuclideanDistance( const ActionOptions& a
     readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones);
     // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
     if( av->copyOutput(0)->getShape()[0]==1 ) {
-      readInputLine( getShortcutLabel() + "_" + metstr + "T: CUSTOM ARG=" + metstr + "," + getShortcutLabel() + "_ones FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_" + metstr + "T: CUSTOM ARG=" + getShortcutLabel() + "_ones," + metstr + " FUNC=x*y PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_" + metstr + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + metstr + "T");
     } else {
       readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr + "," + getShortcutLabel() + "_ones");

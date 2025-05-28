@@ -195,7 +195,7 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // Now calculate the sum of thse weights
   readInputLine( wvec + "_sum: SUM ARG=" + wvec + " PERIODIC=NO");
   // And normalise the vector of weights using this sum
-  readInputLine( wvec + "_normed: CUSTOM ARG=" + wvec + "_sum," + wvec + " FUNC=y/x PERIODIC=NO");
+  readInputLine( wvec + "_normed: CUSTOM ARG=" + wvec + "," + wvec + "_sum FUNC=x/y PERIODIC=NO");
   // And now create the matrix of weights
   readInputLine( wvec + "_mat: OUTER_PRODUCT ARG=" + wvec + "_normed," + wvec + "_normed");
   // Run the arrange points object

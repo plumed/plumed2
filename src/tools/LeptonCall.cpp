@@ -88,6 +88,10 @@ void LeptonCall::set(const std::string & func, const std::vector<std::string>& v
 }
 
 double LeptonCall::evaluate( const std::vector<double>& args ) const {
+  return evaluate( View<const double,helpers::dynamic_extent>( args.data(), args.size() ) );
+}
+
+double LeptonCall::evaluate( const View<const double,helpers::dynamic_extent>& args ) const {
   plumed_dbg_assert( allow_extra_args || args.size()==nargs );
   const unsigned t=OpenMP::getThreadNum(), tbas=t*nargs;
   for(unsigned i=0; i<nargs; ++i) {
@@ -99,6 +103,10 @@ double LeptonCall::evaluate( const std::vector<double>& args ) const {
 }
 
 double LeptonCall::evaluateDeriv( const unsigned& ider, const std::vector<double>& args ) const {
+  return evaluateDeriv( ider, View<const double,helpers::dynamic_extent>( args.data(), args.size() ) );
+}
+
+double LeptonCall::evaluateDeriv( const unsigned& ider, const View<const double,helpers::dynamic_extent>& args ) const {
   plumed_dbg_assert( allow_extra_args || args.size()==nargs );
   plumed_dbg_assert( ider<nargs );
   const unsigned t=OpenMP::getThreadNum(), dbas = ider*OpenMP::getNumThreads()*nargs + t*nargs;

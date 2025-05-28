@@ -23,7 +23,7 @@
 #include "function/FunctionOfScalar.h"
 #include "function/FunctionOfVector.h"
 #include "core/ActionRegister.h"
-#include "function/FunctionTemplateBase.h"
+#include "function/FunctionSetup.h"
 
 #include <cmath>
 
@@ -115,15 +115,14 @@ Calculate the differences between the elements of two vectors
 //+ENDPLUMEDOC
 
 
-class Difference : public function::FunctionTemplateBase {
-private:
-  bool periodic;
-  std::string min0, max0;
+class Difference {
 public:
-  void registerKeywords(Keywords& keys) override ;
-  void read( ActionWithArguments* action ) override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  bool periodic;
+  double max_minus_min;
+  double inv_max_minus_min;
+  static void registerKeywords(Keywords& keys);
+  static void read( Difference& func, ActionWithArguments* action, function::FunctionOptions& options );
+  static void calc( const Difference& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
 };
 
 
@@ -138,7 +137,7 @@ void Difference::registerKeywords(Keywords& keys) {
   keys.setValueDescription("scalar/vector","a function that measures the difference");
 }
 
-void Difference::read( ActionWithArguments* action ) {
+void Difference::read( Difference& func, ActionWithArguments* action, function::FunctionOptions& options ) {
   if( action->getNumberOfArguments()!=2 ) {
     action->error("should be two arguments to this action");
   }
@@ -151,9 +150,10 @@ void Difference::read( ActionWithArguments* action ) {
     }
   }
 
-  periodic=false;
+  func.periodic=false;
+  std::string min0, max0;
   if( action->getPntrToArgument(0)->isPeriodic() ) {
-    periodic=true;
+    func.periodic=true;
     action->getPntrToArgument(0)->getDomain( min0, max0 );
     if( !action->getPntrToArgument(1)->isConstant() && !action->getPntrToArgument(1)->isPeriodic() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 0");
@@ -168,7 +168,7 @@ void Difference::read( ActionWithArguments* action ) {
       action->getPntrToArgument(1)->setDomain( min0, max0 );
     }
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
-    periodic=true;
+    func.periodic=true;
     action->getPntrToArgument(1)->getDomain( min0, max0 );
     if( !action->getPntrToArgument(0)->isConstant() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
@@ -176,21 +176,26 @@ void Difference::read( ActionWithArguments* action ) {
       action->getPntrToArgument(0)->setDomain( min0, max0 );
     }
   }
-}
-
-void Difference::setPeriodicityForOutputs( ActionWithValue* action ) {
-  if( periodic ) {
-    action->setPeriodic( min0, max0 );
-  } else {
-    action->setNotPeriodic();
+  if( func.periodic ) {
+    double min, max;
+    Tools::convert( min0, min );
+    Tools::convert( max0, max );
+    func.max_minus_min=max-min;
+    func.inv_max_minus_min=1.0/func.max_minus_min;
   }
 }
 
-void Difference::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Difference::calc( const Difference& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout ) {
   plumed_dbg_assert( args.size()==2 );
-  vals[0] = action->getPntrToArgument(0)->difference( args[1], args[0] );
-  derivatives(0,0) = 1.0;
-  derivatives(0,1)=-1;
+  if( func.periodic ) {
+    funcout.values[0] = func.max_minus_min*Tools::pbc( func.inv_max_minus_min*(args[0] - args[1]) );
+  } else {
+    funcout.values[0] = args[0] - args[1];
+  }
+  if( !noderiv ) {
+    funcout.derivs[0][0] = 1.0;
+    funcout.derivs[0][1]=-1;
+  }
 }
 
 }
