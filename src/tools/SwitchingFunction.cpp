@@ -70,6 +70,9 @@ public:
   const Data& getData() const override {
     return data;
   }
+  switchType getType() const override {
+    return type;
+  }
   std::string description() const override {
     return switchContainers::description(type,data);
   }
@@ -141,7 +144,7 @@ struct baseSwitch {
               applystretch(data,distance,switching::function(rdist))
               : ValueDerivative{data.stretch+data.shift,0.0};
     }
-    /*
+    /* not branchless implementation
         double res = 0.0;
         double dfunc = 0.0;
 
@@ -176,7 +179,6 @@ struct baseSwitch {
     return switching::calculate(data,std::sqrt(distance2));
   }
 };
-
 template<int N,
          std::enable_if_t< (N >0), bool> = true,
          std::enable_if_t< (N %2 == 0), bool> = true>
@@ -214,7 +216,6 @@ template<int N,
 //and the code is autodocumented ;)
 enum class rationalPow:bool {standard, fast};
 enum class rationalForm:bool {standard, simplified};
-
 template<rationalPow isFast, rationalForm nis2m>
 struct rational : public baseSwitch<rational<isFast,nis2m>> {
   //I am using PLMD::epsilon to be certain to call the one defined in Tools.h
@@ -299,8 +300,49 @@ struct rational : public baseSwitch<rational<isFast,nis2m>> {
   }
 };
 
+std::unique_ptr<Switch>
+rationalFactory (double D0,double DMAX, double R0, int N, int M) {
+  bool fast = N%2==0 && M%2==0 && D0==0.0;
+  //if (M==0) M will automatically became 2*NN
+  constexpr int highestPrecompiledPower=12;
+  //precompiled rational
+  if(((2*N)==M || M == 0) && fast && N<=highestPrecompiledPower) {
+#define FIXEDRATIONALENUM(x) case x: \
+return std::make_unique<SwitchInterface<fixedRational<x>>>( \
+  std::pair <switchType,Data> {switchType::rationalfix##x,Data::init(D0,DMAX,R0)});
+    switch (N) {
+      FIXEDRATIONALENUM(12)
+      FIXEDRATIONALENUM(10)
+      FIXEDRATIONALENUM(8)
+      FIXEDRATIONALENUM(6)
+      FIXEDRATIONALENUM(4)
+      FIXEDRATIONALENUM(2)
+    default:
+      break;
+    }
+  }
+  //continue with the 'at runtime implementation'
+  auto data = rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
+  if(2*N==M || M == 0) {
+    if(fast) {
+      //fast rational
+      return PLMD::Tools::make_unique<SwitchInterface<rational<
+             rationalPow::fast,rationalForm::simplified>>>(data);
+    }
+    return PLMD::Tools::make_unique<SwitchInterface<rational<
+           rationalPow::standard,rationalForm::simplified>>>(data);
+  }
+  if(fast) {
+    //fast rational
+    return PLMD::Tools::make_unique<SwitchInterface<rational<
+           rationalPow::fast,rationalForm::standard>>>(data);
+  }
+  return PLMD::Tools::make_unique<SwitchInterface<rational<
+         rationalPow::standard,rationalForm::standard>>>(data);
+}
+
 std::pair <switchType,Data>
-rationalFactory(double D0,double DMAX, double R0, int N, int M) {
+initRational(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
   constexpr int highestPrecompiledPower=12;
@@ -321,22 +363,6 @@ return std::pair <switchType,Data> {switchType::rationalfix##x,Data::init(D0,DMA
   }
   //continue with the 'at runtime implementation'
   return rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
-  // if(2*N==M || M == 0) {
-  //   if(fast) {
-  //     //fast rational
-  //     return PLMD::Tools::make_unique<SwitchInterface<rational<
-  //            rationalPow::fast,rationalForm::simplified>>>(data);
-  //   }
-  //   return PLMD::Tools::make_unique<SwitchInterface<rational<
-  //          rationalPow::standard,rationalForm::simplified>>>(data);
-  // }
-  // if(fast) {
-  //   //fast rational
-  //   return PLMD::Tools::make_unique<SwitchInterface<rational<
-  //          rationalPow::fast,rationalForm::standard>>>(data);
-  // }
-  // return PLMD::Tools::make_unique<SwitchInterface<rational<
-  //        rationalPow::standard,rationalForm::standard>>>(data);
 }
 
 struct exponentialSwitch: public baseSwitch<exponentialSwitch> {
@@ -429,8 +455,6 @@ struct cubicSwitch: public baseSwitch<cubicSwitch> {
 };
 
 struct tanhSwitch: public baseSwitch<tanhSwitch> {
-  // tanhSwitch(double D0, double DMAX, double R0)
-  //   :baseSwitch(D0,DMAX,R0,"tanh") {}
   static std::pair <switchType,Data> init(
     const double D0,
     const double DMAX,
@@ -651,11 +675,18 @@ class leptonSwitch {
   bool leptonx2=false;
   Data data;
 public:
-  // leptonSwitch()=default;
-  // leptonSwitch&operator=(const leptonSwitch&)=default;
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
     :data(Data::init(D0,DMAX,R0)),
      lepton_func(func),
+     expressions  (OpenMP::getNumThreads(), lepton_func) {
+    //this is a bit odd, but it works
+    auto vars=expressions[0].getVariables();
+    leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+  }
+
+  leptonSwitch(const leptonSwitch& other)
+    :data(other.data),
+     lepton_func(other.lepton_func),
      expressions  (OpenMP::getNumThreads(), lepton_func) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
@@ -896,6 +927,8 @@ class SwitchInterface_lepton: public Switch {
 public:
   SwitchInterface_lepton(double D0, double DMAX, double R0, const std::string & func):
     function(D0,DMAX,R0,func) {}
+  SwitchInterface_lepton(const SwitchInterface_lepton& other):
+    function(other.function) {}
   double calculate(double distance, double& dfunc) const override {
     return function.calculate(distance,dfunc);
   }
@@ -908,12 +941,83 @@ public:
   const Data& getData() const override {
     return function.getData();
   }
+  switchType getType() const override {
+    return switchType::lepton;
+  }
   std::string description() const override {
     return function.description();
   }
 };
 
 } // namespace switchContainers
+
+SwitchingFunction::SwitchingFunction()=default;
+
+SwitchingFunction::SwitchingFunction(const SwitchingFunction& other):
+  init(other.init) {
+  if(init) {
+    copyFunction(other);
+  }
+}
+
+SwitchingFunction::SwitchingFunction(SwitchingFunction&& other):
+  init(other.init),
+  function(other.function.release()) {}
+
+SwitchingFunction& SwitchingFunction::operator=(const SwitchingFunction& other) {
+  if (this != &other) {
+    init=other.init;
+    if(init) {
+      copyFunction(other);
+    }
+
+  }
+  return *this;
+}
+
+SwitchingFunction& SwitchingFunction::operator=(SwitchingFunction&& other) {
+  init=other.init;
+  function=std::move(other.function);
+  return *this;
+}
+
+void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
+  using namespace switchContainers;
+  const auto settings = std::make_pair(other.function->getType(),other.function->getData());
+#define SWITCHCALL(x) case switchType::x: \
+  function = std::make_unique<SwitchInterface<x##Switch>>(settings);
+#define RATCALL(x) case switchType::rationalfix##x:\
+  function = std::make_unique<SwitchInterface<fixedRational<x>>>(settings);
+  switch (settings.first) {
+    RATCALL(12)
+    RATCALL(10)
+    RATCALL(8)
+    RATCALL(6)
+    RATCALL(4)
+    RATCALL(2)
+  case switchType::rational:
+    function = std::make_unique<SwitchInterface<rational<rationalPow::standard,rationalForm::standard>>>(settings);
+  case switchType::rationalFast:
+    function = std::make_unique<SwitchInterface<rational<rationalPow::fast,rationalForm::standard>>>(settings);
+  case switchType::rationalSimple:
+    function = std::make_unique<SwitchInterface<rational<rationalPow::standard,rationalForm::simplified>>>(settings);
+  case switchType::rationalSimpleFast:
+    function = std::make_unique<SwitchInterface<rational<rationalPow::fast,rationalForm::simplified>>>(settings);
+    SWITCHCALL(exponential)
+    SWITCHCALL(gaussian)
+    SWITCHCALL(fastgaussian)
+    SWITCHCALL(smap)
+    SWITCHCALL(cubic)
+    SWITCHCALL(tanh)
+    SWITCHCALL(cosinus)
+    SWITCHCALL(nativeq)
+  case switchType::lepton:
+    function = std::make_unique<SwitchInterface_lepton>(*dynamic_cast<SwitchInterface_lepton*>(other.function.get()));
+  }
+#undef SWITCHCALL
+#undef RATCALL
+}
+
 
 void SwitchingFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","the value of R_0 in the switching function");
@@ -958,6 +1062,157 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   using namespace switchContainers;
   if(name=="CUBIC") {
     //cubic is the only switch type that only uses d0 and dmax
+    function= std::make_unique<SwitchInterface<cubicSwitch>>(
+                cubicSwitch::init(d0,dmax));
+  } else {
+    REQUIREDPARSE(data,"R_0",r0,errormsg);
+    if(name=="RATIONAL") {
+      int nn=6;
+      int mm=0;
+      CHECKandPARSE(data,"NN",nn,errormsg);
+      CHECKandPARSE(data,"MM",mm,errormsg);
+      function = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
+
+    } else if(name=="SMAP") {
+      int a=0;
+      int b=0;
+      //in the original a and b are "default=0",
+      //but you divide by a and b during the initialization!
+      //better an error message than an UB, so no default
+      REQUIREDPARSE(data,"A",a,errormsg);
+      REQUIREDPARSE(data,"B",b,errormsg);
+      function= std::make_unique<SwitchInterface<smapSwitch>>(
+                  smapSwitch::init(d0,dmax,r0,a,b));
+    } else if(name=="Q") {
+      double beta = 50.0;  // nm-1
+      double lambda = 1.8; // unitless
+      double ref;
+      CHECKandPARSE(data,"BETA",beta,errormsg);
+      CHECKandPARSE(data,"LAMBDA",lambda,errormsg);
+      REQUIREDPARSE(data,"REF",ref,errormsg);
+      //the original error message was not standard
+      // if(!Tools::parse(data,"REF",ref))
+      //   errormsg="REF (reference distaance) is required for native Q";
+      function= std::make_unique<SwitchInterface<nativeqSwitch>>(
+                  nativeqSwitch::init(d0,dmax,r0,beta,lambda,ref));
+    } else if(name=="EXP") {
+      function= std::make_unique<SwitchInterface<exponentialSwitch>>(
+                  exponentialSwitch::init(d0,dmax,r0));
+    } else if(name=="GAUSSIAN") {
+      if ( r0==1.0 && d0==0.0 ) {
+        function= std::make_unique<SwitchInterface<fastgaussianSwitch>>(
+                    fastgaussianSwitch::init(dmax));
+      } else {
+        function= std::make_unique<SwitchInterface<gaussianSwitch>>(
+                    gaussianSwitch::init(d0,dmax,r0));
+      }
+    } else if(name=="TANH") {
+      function= std::make_unique<SwitchInterface<tanhSwitch>>(
+                  tanhSwitch::init(d0,dmax,r0));
+    } else if(name=="COSINUS") {
+      function= std::make_unique<SwitchInterface<cosinusSwitch>>(
+                  cosinusSwitch::init(d0,dmax,r0));
+    } else if((name=="MATHEVAL" || name=="CUSTOM")) {
+      std::string func;
+      Tools::parse(data,"FUNC",func);
+      function= std::make_unique<SwitchInterface_lepton>(d0,dmax,r0,func);
+    } else {
+      errormsg="cannot understand switching function type '"+name+"'";
+    }
+  }
+#undef CHECKandPARSE
+#undef REQUIREDPARSE
+
+  if( !data.empty() ) {
+    errormsg="found the following rogue keywords in switching function input : ";
+    for(unsigned i=0; i<data.size(); ++i) {
+      errormsg = errormsg + data[i] + " ";
+    }
+  }
+
+  if(dostretch && dmax!=std::numeric_limits<double>::max()) {
+    function->setupStretch();
+  }
+}
+
+std::string SwitchingFunction::description() const {
+  // if this error is necessary, something went wrong in the constructor
+  //  plumed_merror("Unknown switching function type");
+  return function->description();
+}
+
+double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
+  return function->calculateSqr( distance2, dfunc);
+}
+
+double SwitchingFunction::calculate(double distance,double&dfunc)const {
+  plumed_massert(init,"you are trying to use an unset SwitchingFunction");
+  return function->calculate( distance, dfunc);
+}
+
+void SwitchingFunction::set(const int nn,int mm, const double r0, const double d0) {
+  init=true;
+  if(mm == 0) {
+    mm = 2*nn;
+  }
+  double dmax=d0+r0*std::pow(0.00001,1./(nn-mm));
+  function = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
+  function->setupStretch();
+}
+
+double SwitchingFunction::get_r0() const {
+  return 1.0/function->getData().invr0;
+}
+
+double SwitchingFunction::get_d0() const {
+  return function->getData().d0;
+}
+
+double SwitchingFunction::get_dmax() const {
+  return function->getData().dmax;
+}
+
+double SwitchingFunction::get_dmax2() const {
+  return function->getData().dmax_2;
+}
+
+void SwitchingFunctionAccelerable::registerKeywords( Keywords& keys ) {
+  SwitchingFunction::registerKeywords(keys);
+}
+
+void SwitchingFunctionAccelerable::set(const std::string & definition,std::string& errormsg) {
+  std::vector<std::string> data=Tools::getWords(definition);
+#define CHECKandPARSE(datastring,keyword,variable,errormsg) \
+  if(Tools::findKeyword(datastring,keyword) && !Tools::parse(datastring,keyword,variable))\
+    errormsg="could not parse " keyword; //adiacent strings are automagically concatenated
+#define REQUIREDPARSE(datastring,keyword,variable,errormsg) \
+  if(!Tools::parse(datastring,keyword,variable))\
+    errormsg=keyword " is required for " + name ; //adiacent strings are automagically concatenated
+
+  if( data.size()<1 ) {
+    errormsg="missing all input for switching function";
+    return;
+  }
+  std::string name=data[0];
+  data.erase(data.begin());
+  double r0=0.0;
+  double d0=0.0;
+  double dmax=std::numeric_limits<double>::max();
+  init=true;
+  CHECKandPARSE(data,"D_0",d0,errormsg);
+  CHECKandPARSE(data,"D_MAX",dmax,errormsg);
+
+  bool dostretch=false;
+  Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
+  dostretch=true;
+  bool dontstretch=false;
+  Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
+  if(dontstretch) {
+    dostretch=false;
+  }
+  using namespace switchContainers;
+  if(name=="CUBIC") {
+    //cubic is the only switch type that only uses d0 and dmax
     std::tie(type,switchData) = cubicSwitch::init(d0,dmax);
   } else {
     REQUIREDPARSE(data,"R_0",r0,errormsg);
@@ -966,7 +1221,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       int mm=0;
       CHECKandPARSE(data,"NN",nn,errormsg);
       CHECKandPARSE(data,"MM",mm,errormsg);
-      std::tie(type,switchData) = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
+      std::tie(type,switchData) = switchContainers::initRational(d0,dmax,r0,nn,mm);
 
     } else if(name=="SMAP") {
       int a=0;
@@ -1003,7 +1258,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     } else if((name=="MATHEVAL" || name=="CUSTOM")) {
       std::string func;
       Tools::parse(data,"FUNC",func);
-      // function= std::make_unique<SwitchInterface_lepton>(d0,dmax,r0,func);
+      errormsg="the custom switching function is not comatible with acceleration";
     } else {
       errormsg="cannot understand switching function type '"+name+"'";
     }
@@ -1024,20 +1279,20 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   }
 }
 
-std::string SwitchingFunction::description() const {
+std::string SwitchingFunctionAccelerable::description() const {
   // if this error is necessary, something went wrong in the constructor
   //  plumed_merror("Unknown switching function type");
   // return function->description();
   return switchContainers::description(type,switchData);
 }
 
-double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
+double SwitchingFunctionAccelerable::calculateSqr(double distance2,double&dfunc)const {
   double result;
   std::tie(result, dfunc) = switchContainers::calculateSqr(type,switchData,distance2);
   return result;
 }
 
-double SwitchingFunction::calculate(double distance,double&dfunc)const {
+double SwitchingFunctionAccelerable::calculate(double distance,double&dfunc)const {
   //massert do not go with openacc
   // plumed_massert(init,"you are trying to use an unset SwitchingFunction");
   double result;
@@ -1045,36 +1300,38 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
   return result;
 }
 
-void SwitchingFunction::set(const int nn,int mm, const double r0, const double d0) {
+void SwitchingFunctionAccelerable::set(const int nn,int mm, const double r0, const double d0) {
   init=true;
   if(mm == 0) {
     mm = 2*nn;
   }
   double dmax=d0+r0*std::pow(0.00001,1./(nn-mm));
-  std::tie(type,switchData) = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
+  std::tie(type,switchData) = switchContainers::initRational(d0,dmax,r0,nn,mm);
   setupStretch(type,switchData);
 }
 
-double SwitchingFunction::get_r0() const {
+double SwitchingFunctionAccelerable::get_r0() const {
   return 1.0/switchData.invr0;
 }
 
-double SwitchingFunction::get_d0() const {
+double SwitchingFunctionAccelerable::get_d0() const {
   return switchData.d0;
 }
 
-double SwitchingFunction::get_dmax() const {
+double SwitchingFunctionAccelerable::get_dmax() const {
   return switchData.dmax;
 }
 
-double SwitchingFunction::get_dmax2() const {
+double SwitchingFunctionAccelerable::get_dmax2() const {
   return switchData.dmax_2;
 }
-void SwitchingFunction::toACCDevice() const {
+
+void SwitchingFunctionAccelerable::toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],type)
   switchData.toACCDevice();
 }
-void SwitchingFunction::removeFromACCDevice() const {
+
+void SwitchingFunctionAccelerable::removeFromACCDevice() const {
   switchData.removeFromACCDevice();
 #pragma acc exit data delete(type,this[0:1])
 }

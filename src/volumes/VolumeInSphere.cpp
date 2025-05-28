@@ -82,12 +82,17 @@ namespace volumes {
 
 class VolumeInSphere {
 public:
+#ifdef __PLUMED_USE_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
+#endif //__PLUMED_USE_OPENACC
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeInSphere>* action );
   void setupRegions( ActionVolume<VolumeInSphere>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
   static void parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom );
   static void calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output );
+#ifdef __PLUMED_USE_OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     switchingFunction.toACCDevice();
@@ -96,6 +101,7 @@ public:
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef ActionVolume<VolumeInSphere> Vols;
