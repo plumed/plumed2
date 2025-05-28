@@ -96,6 +96,7 @@ struct Switch {
   virtual double calculate(double distance, double& dfunc) const = 0;
   virtual double calculateSqr(double distance2, double& dfunc) const = 0;
   virtual const Data& getData() const = 0;
+  virtual switchType getType() const = 0;
   virtual std::string description() const = 0;
   virtual void setupStretch() = 0;
 };
@@ -110,6 +111,58 @@ struct Switch {
 /// of a square root in some case, thus potentially increasing
 /// performances.
 class SwitchingFunction {
+/// This is to check that switching function has been initialized
+  bool init=false;
+  std::unique_ptr<switchContainers::Switch> function{nullptr};
+  void copyFunction(const SwitchingFunction&);
+public:
+  SwitchingFunction();
+  SwitchingFunction(const SwitchingFunction&);
+  SwitchingFunction(SwitchingFunction&&);
+  SwitchingFunction& operator=(const SwitchingFunction&);
+  SwitchingFunction& operator=(SwitchingFunction&&);
+
+  static void registerKeywords( Keywords& keys );
+/// Set a "rational" switching function.
+/// Notice that a d_max is set automatically to a value such that
+/// f(d_max)=0.00001.
+  void set(int nn,int mm,double r_0,double d_0);
+/// Set an arbitrary switching function.
+/// Parse the string in definition and possibly returns errors
+/// in the errormsg string
+  void set(const std::string& definition, std::string& errormsg);
+/// Returns a string with a description of the switching function
+  std::string description() const ;
+/// Compute the switching function.
+/// Returns s(x). df will be set to the value of the derivative
+/// of the switching function _divided_by_x
+  double calculate(double x,double&df)const;
+/// Compute the switching function.
+/// Returns \f$ s(\sqrt{x})\f$ .
+/// df will be set to the \f$ \frac{1}{\sqrt{x}}\frac{ds}{d\sqrt{x}}= 2 \frac{ds}{dx}\f$
+/// (same as calculate()).
+/// The advantage is that in some case the expensive square root can be avoided
+/// (namely for rational functions, if nn and mm are even and d0 is zero)
+  double calculateSqr(double distance2,double&dfunc)const;
+/// Returns d0
+  double get_d0() const;
+/// Returns r0
+  double get_r0() const;
+/// Return dmax
+  double get_dmax() const;
+/// Return dmax squared
+  double get_dmax2() const;
+};
+
+/// \ingroup TOOLBOX
+/// Small class to compute switching functions.
+/// Switching functions are created using set() and
+/// then can be used with function calculate() or calculateSqr().
+/// Since this is typically computed on a distance vector,
+/// the second all (calculateSqr()) allows to skip the calculation
+/// of a square root in some case, thus potentially increasing
+/// performances.
+class SwitchingFunctionAccelerable {
 /// This is to check that switching function has been initialized
   bool init=false;
   switchContainers::Data switchData;
@@ -151,6 +204,7 @@ public:
   void toACCDevice() const;
   void removeFromACCDevice() const;
 };
+
 
 } //namespace PLMD
 
