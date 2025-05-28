@@ -1,9 +1,0 @@
-
-#include "LCM.itp"
-
-[ system ]
-supercell
-
-[ molecules ]
-; molecule name  nr.
-MOL  4

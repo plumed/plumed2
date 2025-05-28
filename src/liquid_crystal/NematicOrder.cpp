@@ -21,9 +21,9 @@
 #include "tools/Matrix.h"
 
 namespace PLMD {
-namespace colvar {
+namespace liquid_crystal {
 
-//+PLUMEDOC COLVAR NEMATIC_ORDER
+//+PLUMEDOC LIQUID_CRYSTAL NEMATIC_ORDER
 /*
 Calculate the nematic order parameter.
 
@@ -88,11 +88,11 @@ PLUMED_REGISTER_ACTION(NematicOrder,"NEMATIC_ORDER")
 void NematicOrder::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("atoms", "ATOMS",
-    "The molecular axes are specified by pairs of atoms. "
-    "For N molecules, therefore, 2*N atom indices have to be provided. "
-    "The first half of the atom list contains the head and the second half the tail atoms.");
+           "The molecular axes are specified by pairs of atoms. "
+           "For N molecules, therefore, 2*N atom indices have to be provided. "
+           "The first half of the atom list contains the head and the second half the tail atoms.");
   keys.setValueDescription("scalar",
-    "The nematic order parameter S, S=0 for the isotropic phase and S=1 for the nematic/aligned phase)");
+                           "The nematic order parameter S, S=0 for the isotropic phase and S=1 for the nematic/aligned phase)");
 }
 
 NematicOrder::NematicOrder(const ActionOptions&ao):
@@ -109,10 +109,10 @@ NematicOrder::NematicOrder(const ActionOptions&ao):
   checkRead();
 
   num_molecules = atoms.size() / 2;
-  log.printf("  %d molecules\n", num_molecules);
+  log.printf("  %zu molecules\n", num_molecules);
   for (size_t i = 0; i < num_molecules; i++) {
-    log.printf("  molecular axis for molecule %d points from atom %d to atom %d\n",
-      i, atoms[i].serial(), atoms[num_molecules+i].serial());
+    log.printf("  molecular axis for molecule %zu points from atom %d to atom %d\n",
+               i, atoms[i].serial(), atoms[num_molecules+i].serial());
   }
   if(pbc) {
     log.printf("  using periodic boundary conditions\n");
