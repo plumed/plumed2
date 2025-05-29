@@ -44,7 +44,7 @@ class SwitchInterface :public Switch {
   switchType type;
   Data data;
 public:
-  SwitchInterface(std::pair <switchType,Data> d):
+  SwitchInterface(const std::pair <switchType,Data>& d):
     type(d.first),
     data(d.second) {}
   double calculate(double distance, double& dfunc) const override {
@@ -58,7 +58,7 @@ public:
     return f;
   }
   void setupStretch() override {
-    if(data.dmax!=std::numeric_limits<double>::max()) {
+    if(data.dmax<std::numeric_limits<double>::max()) {
       data.stretch=1.0;
       data.shift=0.0;
       double s0=SF::calculate(data,0.0).first;
@@ -760,8 +760,8 @@ public:
     ostr<<1.0/data.invr0
         <<".  Using "
         << typeToString(switchType::lepton)
-        <<" switching function with parameters d0="<< data.d0;
-    ostr<<" func=" << lepton_func;
+        <<" switching function with parameters d0="<< data.d0
+        <<" func=" << lepton_func;
     return ostr.str();
   }
 };
@@ -912,9 +912,6 @@ std::string description(switchType type, const Data& data) {
   case switchType::nativeq:
     ostr<<" beta="<<data.beta<<" lambda="<<data.lambda<<" ref="<<data.ref;
     break;
-// case lepton:
-// ostr<<" func=" << lepton_func;
-// break;
   default:
 
     break;
@@ -1285,7 +1282,6 @@ void SwitchingFunctionAccelerable::set(const std::string & definition,std::strin
   }
 
   if(dostretch && dmax!=std::numeric_limits<double>::max()) {
-    // function->setupStretch();
     setupStretch(type,switchData);
   }
 }
@@ -1293,7 +1289,6 @@ void SwitchingFunctionAccelerable::set(const std::string & definition,std::strin
 std::string SwitchingFunctionAccelerable::description() const {
   // if this error is necessary, something went wrong in the constructor
   //  plumed_merror("Unknown switching function type");
-  // return function->description();
   return switchContainers::description(type,switchData);
 }
 

@@ -167,7 +167,6 @@ class SwitchingFunctionAccelerable {
   bool init=false;
   switchContainers::Data switchData;
   switchContainers::switchType type;
-  // std::unique_ptr<switchContainers::Switch> function{nullptr};
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
