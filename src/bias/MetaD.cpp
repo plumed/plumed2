@@ -2121,7 +2121,7 @@ double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hi
   // but when using doInt it is easier to locally replace cv[0] with
   // the upper/lower limit in case it is out of range
   double tmpcv[1];
-  const double *pcv=NULL; // pointer to cv
+  const double *pcv=nullptr; // pointer to cv
   if(ncv>0) {
     pcv=&cv[0];
   }
@@ -2136,7 +2136,7 @@ double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hi
     }
     pcv=&(tmpcv[0]);
   }
-
+  plumed_assert(pcv);
   double dp2=0.0;
   if(hill.multivariate) {
     unsigned k=0;
