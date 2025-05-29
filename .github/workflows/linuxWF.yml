@@ -171,13 +171,15 @@ jobs:
         # echo "CPATH=$nvmathdir/include:$nvcommdir/nccl/include:$nvcommdir/nvshmem/include:$nvcompdir/extras/qd/include/qd:$CPATH" >> $GITHUB_ENV
         # echo "NVHPC_CUDA_HOME=$nvcudadir/12.3" >> $GITHUB_ENV
 
-        echo "CXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
-        echo "CC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
+        # echo "CXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
+        echo "CXX=nvc++" >> $GITHUB_ENV
+        # echo "CC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
+        echo "CC=nvcc" >> $GITHUB_ENV
         #echo "FC=$nvcommdir/mpi/bin/mpif90" >> $GITHUB_ENV
         echo "Testing (at least the compilation) with openacc, discarding membranefusion due to some incompatibilities with nvhpc"
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-openacc --enable-modules=all:-membranefusion" >> $GITHUB_ENV
         echo "PLUMED_CXXFLAGS=$PLUMED_CXXFLAGS -O3 -gpu=cc80" >> $GITHUB_ENV
-        echo "MPIEXEC=mpirun -oversubscribe" >> $GITHUB_ENV
+        # echo "MPIEXEC=mpirun -oversubscribe" >> $GITHUB_ENV
         
         # Using the same environment variables as the plain mpi installation
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
