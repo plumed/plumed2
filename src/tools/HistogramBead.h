@@ -38,27 +38,41 @@ A class for calculating whether or not values are within a given range using : \
 */
 
 class HistogramBead {
+public:
+  enum class KernelType {gaussian,triangular};
 private:
-  bool init;
-  double lowb;
-  double highb;
-  double width;
-  double cutoff;
-  enum {gaussian,triangular} type;
-  enum {unset,periodic,notperiodic} periodicity;
-  double min, max, max_minus_min, inv_max_minus_min;
-  double difference( const double& d1, const double& d2 ) const ;
+  bool init{false};
+  double lowb{0.0};
+  double highb{0.0};
+  double width{0.0};
+  double cutoff{std::numeric_limits<double>::max()};
+  //given how this is initialized, it is not possible to get to an unknown state of the kernel type
+  //so, it is not necessary to throw an exception if the type is not set
+  KernelType type{KernelType::gaussian};
+  enum {unset,periodic,notperiodic} periodicity{unset};
+  double min{0.0};
+  double max{0.0};
+  double max_minus_min{0.0};
+  double inv_max_minus_min{0.0};
+
+  double difference(double d1, double d2 ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   static void generateBins( const std::string& params, std::vector<std::string>& bins );
-  HistogramBead();
   std::string description() const ;
+  //implicit constructor ;D
   bool hasBeenSet() const;
+#pragma acc routine seq
   void isNotPeriodic();
   void isPeriodic( const double& mlow, const double& mhigh );
+  static KernelType getKernelType( const std::string& ktype );
   void setKernelType( const std::string& ktype );
+#pragma acc routine seq
+  void setKernelType( KernelType ktype );
   void set(const std::string& params, std::string& errormsg);
+#pragma acc routine seq
   void set(double l, double h, double w);
+#pragma acc routine seq
   double calculate(double x, double&df) const;
   double calculateWithCutoff( double x, double& df ) const;
   double lboundDerivative( const double& x ) const;
@@ -101,22 +115,6 @@ double HistogramBead::getbigb() const {
 inline
 double HistogramBead::getCutoff() const {
   return cutoff*width;
-}
-
-inline
-double HistogramBead::difference( const double& d1, const double& d2 ) const {
-  if(periodicity==notperiodic) {
-    return d2-d1;
-  } else if(periodicity==periodic) {
-    // Make sure the point is in the target range
-    double newx=d1*inv_max_minus_min;
-    newx=Tools::pbc(newx);
-    newx*=max_minus_min;
-    return d2-newx;
-  } else {
-    plumed_merror("periodicty was not set");
-  }
-  return 0;
 }
 
 }
