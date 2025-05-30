@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/HistogramBead.h"
@@ -129,31 +132,32 @@ namespace volumes {
 
 class VolumeAround {
 public:
-  bool dox, doy, doz;
+  bool dox{true}, doy{true}, doz{true};
   double sigma;
-  double xlow, xhigh;
-  double ylow, yhigh;
-  double zlow, zhigh;
-  std::string kerneltype;
+  double xlow{0.0}, xhigh{0.0};
+  double ylow{0.0}, yhigh{0.0};
+  double zlow{0.0}, zhigh{0.0};
+  HistogramBead::KernelType kerneltype;
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeAround>* action );
-  void setupRegions( ActionVolume<VolumeAround>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
-  static void parseAtoms( ActionVolume<VolumeAround>* action, std::vector<AtomNumber>& atom );
-  VolumeAround& operator=( const VolumeAround& m ) {
-    dox=m.dox;
-    doy=m.doy;
-    doz=m.doz;
-    sigma=m.sigma;
-    xlow=m.xlow;
-    xhigh=m.xhigh;
-    ylow=m.ylow;
-    yhigh=m.yhigh;
-    zlow=m.zlow;
-    zhigh=m.zhigh;
-    kerneltype=m.kerneltype;
-    return *this;
+  void setupRegions( ActionVolume<VolumeAround>* action,
+                     const Pbc& pbc,
+                     const std::vector<Vector>& positions ) {}
+  static void parseAtoms( ActionVolume<VolumeAround>* action,
+                          std::vector<AtomNumber>& atom );
+  static void calculateNumberInside( const VolumeInput& input,
+                                     const VolumeAround& actioninput,
+                                     VolumeOutput& output );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],dox,doy,doz,sigma,\
+  xlow,xhigh,ylow,yhigh,zlow,zhigh,kerneltype)
   }
-  static void calculateNumberInside( const VolumeInput& input, const VolumeAround& actioninput, VolumeOutput& output );
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(kerneltype,zhigh,zlow,yhigh,ylow,xhigh,xlow,\
+  sigma,doz,doy,dox,this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef ActionVolume<VolumeAround> Vola;
@@ -189,7 +193,9 @@ void VolumeAround::parseAtoms( ActionVolume<VolumeAround>* action, std::vector<A
 
 void VolumeAround::parseInput( ActionVolume<VolumeAround>* action ) {
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype=HistogramBead::getKernelType(mykerneltype);
   dox=true;
   action->parse("XLOWER",xlow);
   action->parse("XUPPER",xhigh);
@@ -214,14 +220,17 @@ void VolumeAround::parseInput( ActionVolume<VolumeAround>* action ) {
   action->log.printf("  boundaries for region (region of interest about atom) : x %f %f, y %f %f, z %f %f \n",xlow,xhigh,ylow,yhigh,zlow,zhigh);
 }
 
-void VolumeAround::calculateNumberInside( const VolumeInput& input, const VolumeAround& actioninput, VolumeOutput& output ) {
+void VolumeAround::calculateNumberInside( const VolumeInput& input,
+    const VolumeAround& actioninput,
+    VolumeOutput& output ) {
   // Setup the histogram bead
   HistogramBead bead;
   bead.isNotPeriodic();
   bead.setKernelType( actioninput.kerneltype );
 
   // Calculate position of atom wrt to origin
-  Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
+  Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]),
+                                  Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
   double xcontr, ycontr, zcontr, xder, yder, zder;
   if( actioninput.dox ) {
     bead.set( actioninput.xlow, actioninput.xhigh, actioninput.sigma );
@@ -252,7 +261,8 @@ void VolumeAround::calculateNumberInside( const VolumeInput& input, const Volume
   output.refders[0][1] = -output.derivatives[1];
   output.refders[0][2] = -output.derivatives[2];
   // Add virial contribution
-  output.virial.set( 0, -Tensor(fpos,Vector(output.derivatives[0], output.derivatives[1], output.derivatives[2])) );
+  output.virial.set( 0, -Tensor(fpos,
+                                Vector(output.derivatives[0], output.derivatives[1], output.derivatives[2])) );
   output.values[0] = xcontr*ycontr*zcontr;
 }
 
