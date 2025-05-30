@@ -632,6 +632,34 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
             f.write("!!! warning \"Deprecated\"\n\n")
             f.write("    This action has been deprecated and is no longer supported. Use [" + value["replacement"] + "](" + value["replacement"] + ".md) instead.\n\n") 
 
+         f.write("## Details and examples \n")
+         if action in plumeddocs.keys() :
+            if os.path.isfile("../../src/" + value["module"] + "/module.yml") :
+                actions = set()
+                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                if nf[0]>0 :
+                   broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
+                if not depracated and action not in actions :
+                   noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+            else :
+                raise Exception("could not find documentation for action " + action )
+         else :
+            nodoc = ["<a href=\"../" + action + "\">" + action + "</a>", "action"]
+
+         if hasatoms or hasargs :
+            f.write("## Input\n\n")
+            if hasatoms and hasargs : f.write("The [arguments](specifying_arguments.md) and [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
+            elif hasatoms : f.write("The [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
+            elif hasargs : f.write("The [arguments](specifying_arguments.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
+
+            f.write("| Keyword |  Type | Description |\n")
+            f.write("|:--------|:------:|:-----------|\n")
+            for key, docs in value["syntax"].items() :
+                if key=="output" : continue
+                if docs["type"]=="atoms" : f.write("| " + key + " | atoms | " + docs["description"] + " |\n")
+                elif "argtype" in docs.keys() : f.write("| " + key + " | " + docs["argtype"] + " | " + docs["description"] + " |\n")
+            f.write("\n\n")
+
          if "output" in value["syntax"] and len(value["syntax"]["output"].keys())>1 :
             f.write("## Output components\n\n")
             if "value" in value["syntax"]["output"] and len(value["syntax"]["output"])==1 :
@@ -659,41 +687,8 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                          continue 
                       f.write("| " + key + " | " + docs["type"] + " | " + docs["flag"] + " | " + docs["description"] + " | \n")
                   f.write("\n\n")
-         
-         if hasatoms or hasargs : 
-            f.write("## Input\n\n")
-            if hasatoms and hasargs : f.write("The [arguments](specifying_arguments.md) and [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
-            elif hasatoms : f.write("The [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
-            elif hasargs : f.write("The [arguments](specifying_arguments.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
-            
-            f.write("| Keyword |  Type | Description |\n")
-            f.write("|:--------|:------:|:-----------|\n")
-            for key, docs in value["syntax"].items() :
-                if key=="output" : continue
-                if docs["type"]=="atoms" : f.write("| " + key + " | atoms | " + docs["description"] + " |\n")
-                elif "argtype" in docs.keys() : f.write("| " + key + " | " + docs["argtype"] + " | " + docs["description"] + " |\n")
-            f.write("\n\n")
 
-         f.write("## Further details and examples \n")
-         if action in plumeddocs.keys() :
-            if os.path.isfile("../../src/" + value["module"] + "/module.yml") : 
-                actions = set()
-                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
-                if nf[0]>0 :
-                   broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
-                if not depracated and action not in actions :
-                   noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
-            else :
-                raise Exception("could not find documentation for action " + action ) 
-         else :
-            nodoc = ["<a href=\"../" + action + "\">" + action + "</a>", "action"]
-         if "dois" in value and len(value["dois"])>0 : 
-            f.write("## References \n")
-            f.write("More information about how this action can be used is available in the following articles:\n\n")
-            for doi in value["dois"] :
-                ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n")
-         f.write("\n## Syntax \n")
+         f.write("\n## Full list of keywords \n")
          f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
          f.write("| Keyword | Type | Default | Description |\n")
          f.write("|:-------|:----:|:-------:|:-----------|\n")
@@ -730,6 +725,12 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
          if undoc>0 :
             undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+         if "dois" in value and len(value["dois"])>0 :
+            f.write("## References \n")
+            f.write("More information about how this action can be used is available in the following articles:\n\n")
+            for doi in value["dois"] :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n")
     return broken_input, undocumented_keyword, noexample, nodoc
 
 def actionPage(key,plumed_syntax,nest_map,school_map,plumedtags,version,plumeddocs) :
