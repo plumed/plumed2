@@ -143,7 +143,7 @@ def printDataTable( f, titles, tabledata, tagdictionary={}, extraAttributes={} )
         f.write("</tr>\n")
     f.write("</tbody></table>\n")
 
-def createSummaryPage( broken, nodocs, undocumented, noexamples ) :
+def createSummaryPage( broken, nodocs, undocumented, noexamples, unexempled_keywords ) :
     with open("docs/summary.md","w+") as f : 
        f.write("# Summary of manual coverage\n\n Data on this page was generated on " + date.today().strftime('%B %d, %Y') + "\n")
 
@@ -182,7 +182,16 @@ There are {len(undocumented)} actions with undocumented keywords
 There are {len(noexamples)} action pages with no examples.
 """
           f.write( text )
-          printDataTable( f, ["Action","Module"], noexamples )       
+          printDataTable( f, ["Action","Module"], noexamples )   
+
+       if len(unexempled_keywords)>0 : 
+          text=f"""
+## List of actions for which there are not exemplers of all keywords.  
+
+There are {len(unexempled_keywords)} action pages which don't have examples that illustrate how to use all the keywords. On these documentation pages keywords that do not appear in at least one example are shown in red in the syntax table.
+"""
+          f.write( text )
+          printDataTable( f, ["Action","Module"], unexempled_keywords )     
 
 def printIndexFile(of,version) :
     content=f"""
@@ -591,6 +600,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
     broken_input = None
     noexample= None
     nodoc = None
+    unexempled_keywords = None
     with open( action + ".md", "w") as f : 
          hasatoms= False
          hasargs = False
@@ -633,11 +643,21 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
             f.write("!!! warning \"Deprecated\"\n\n")
             f.write("    This action has been deprecated and is no longer supported. Use [" + value["replacement"] + "](" + value["replacement"] + ".md) instead.\n\n") 
 
+         # Build a list of the keywords for this action that we want to see in the documentation
+         example_keywords = set({})
+         for key, docs in value["syntax"].items() :
+             if key=="output" or docs["type"]=="hidden" : continue
+             example_keywords.add(key)
+
          f.write("## Details and examples \n")
          if action in plumeddocs.keys() :
             if os.path.isfile("../../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                print("BEFORE EXAMPLE", action, example_keywords )
+                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False, checkaction=action, checkactionkeywords=example_keywords )
+                print("AFTER EXAMPLE", action, example_keywords )
+                if len(example_keywords)>0 :
+                   unexempled_keywords = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]  
                 if nf[0]>0 :
                    broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
                 if not depracated and action not in actions :
@@ -699,31 +719,37 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
              if "argtype" in docs.keys() and "default" in docs.keys() : 
                 if len(docs["description"])==0 :
                   undoc = undoc + 1
-                f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
              elif docs["type"]=="atoms" or "argtype" in docs.keys() :
                 if len(docs["description"])==0 :
                   undoc = undoc + 1 
-                f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
          for key, docs in value["syntax"].items() : 
              if key=="output" or "argtype" in docs.keys()  : continue
              if docs["type"]=="compulsory" and "default" in docs.keys()  : 
                 if len(docs["description"])==0 :
                   undoc = undoc + 1
-                f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
              elif docs["type"]=="compulsory" : 
                 if len(docs["description"])==0 :
                   undoc = undoc + 1
-                f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
          for key, docs in value["syntax"].items() :
              if key=="output" or "argtype" in docs.keys() : continue
              if docs["type"]=="flag" : 
                 if len(docs["description"])==0 :
                   undoc = undoc + 1
-                f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
              if docs["type"]=="optional" :
                 if len(docs["description"])==0 :
                   undoc = undoc + 1 
-                f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
+                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
          if undoc>0 :
             undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
 
@@ -733,7 +759,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
             for doi in value["dois"] :
                 ref, ref_url = get_reference(doi)
                 f.write("- [" + ref + "](" + ref_url + ")\n")
-    return broken_input, undocumented_keyword, noexample, nodoc
+    return broken_input, undocumented_keyword, noexample, nodoc, unexempled_keywords
 
 def actionPage(key,plumed_syntax,nest_map,school_map,plumedtags,version,plumeddocs) :
     value = plumed_syntax[key]
@@ -742,13 +768,14 @@ def actionPage(key,plumed_syntax,nest_map,school_map,plumedtags,version,plumeddo
     nlessons = school_map[key] if key in school_map.keys() else 0
     print("Building action page", key )
     with cd("docs") :
-       broken_input, undocumented_keyword, noexample, nodoc=createActionPage( version, key, value, plumeddocs, neggs, nlessons,
+       broken_input, undocumented_keyword, noexample, nodoc, unexempled_keywords =createActionPage( version, key, value, plumeddocs, neggs, nlessons,
                          )
     alink = f'<a href="../{key}">{key}</a>'
     return {"broken_input" :broken_input,
              "undocumented_keyword" :undocumented_keyword,
              "noexample" :noexample,
              "nodoc" :nodoc,
+             "unexempled_keywords" :unexempled_keywords,
              "element": [alink, str(value["description"]), str(plumedtags[key])]}
 
 class InvalidJSONError(Exception):
@@ -842,6 +869,8 @@ if __name__ == "__main__" :    # Get the version of plumed that we are building 
    undocumented_keywords = [x["undocumented_keyword"] for x in actiontable if x["undocumented_keyword"] is not None]
    noexamples = [x["noexample"] for x in actiontable if x["noexample"] is not None]
    nodocs = [x["nodoc"] for x in actiontable if x["nodoc"] is not None]
+   unexempled_keywords = [x["unexempled_keywords"] for x in actiontable if x["unexempled_keywords"] is not None]
+   
    # Read in all the module pages
    tagdictionary = {}
    for file in glob.glob("../src/*/module.yml") :
@@ -921,4 +950,4 @@ if __name__ == "__main__" :    # Get the version of plumed that we are building 
    addSpecialGroupsToPage( "docs/MOLINFO.md", special_groups ) 
 
    # And output the summary page
-   createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples )
+   createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples, unexempled_keywords )

@@ -146,6 +146,7 @@ void Accumulate::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","scalar/grid","the label of the argument that is being added to on each timestep");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
