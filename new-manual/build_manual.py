@@ -493,13 +493,6 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
             actions = set()
             ninp, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
             if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
-         dois = mod_dict["dois"] 
-         if len(dois)>0 : 
-            f.write("## References \n")
-            f.write("More information about this module is available in the following articles:\n\n") 
-            for doi in dois :
-                ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n")
          foundaction=False
          for key, value in plumed_syntax.items() :
              if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
@@ -539,7 +532,15 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
                f.write("|:-----|:------------|\n")
                for key, value in plumed_syntax["cltools"].items() :
                    if value["module"]!=modname : continue
-                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n") 
+                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")
+
+         dois = mod_dict["dois"] 
+         if len(dois)>0 : 
+            f.write("\n## References \n")
+            f.write("More information about this module is available in the following articles:\n\n")
+            for doi in dois :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n")         
 
 def getKeywordDescription( docs ) :
     desc = docs["description"] 
@@ -558,18 +559,12 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          if tool in plumeddocs.keys() :
             if os.path.isfile("../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                _, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
+                if ninp==0 : noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
             else :
-                f.write("Text from manual goes here \n")
-                noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
+                raise Exception("could not find yml file for module " + value["module"])
          else : nodocs.append(["<a href=\"../" + tool + "\">" + tool + "</a>", "cltool"] )
-         if "dois" in value and len(value["dois"])>0 :
-            f.write("## References \n")
-            f.write("More information about how this cltool can be used is available in the following articles:\n")
-            for doi in value["dois"] :
-                ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n")
          f.write("\n## Syntax \n")
          if value["inputtype"]=="file" : 
              f.write("The following table describes the keywords that should be used in the input file for this command line tool\n\n")
@@ -584,6 +579,12 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
              f.write("| " + key + " | " + docs["description"] + " |\n")
          if undoc>0 :
             undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+         if "dois" in value and len(value["dois"])>0 :
+            f.write("\n## References \n")
+            f.write("More information about how this cltool can be used is available in the following articles:\n")
+            for doi in value["dois"] :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n") 
 
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
     undocumented_keyword = None
@@ -725,8 +726,9 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
          if undoc>0 :
             undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+
          if "dois" in value and len(value["dois"])>0 :
-            f.write("## References \n")
+            f.write("\n## References \n")
             f.write("More information about how this action can be used is available in the following articles:\n\n")
             for doi in value["dois"] :
                 ref, ref_url = get_reference(doi)
