@@ -1,4 +1,5 @@
 import os
+from sys import platform as sys_platform
 import json
 import shutil
 import requests
@@ -12,6 +13,10 @@ from bs4 import BeautifulSoup
 from contextlib import contextmanager
 from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript, get_css 
 import networkx as nx
+from multiprocessing import Pool, cpu_count
+import functools
+
+
 
 PLUMED="plumed"
 
@@ -25,9 +30,11 @@ def cd(newdir):
         os.chdir(prevdir)
 
 def getActionDocumentationFromPlumed(syntax) :
-    docs, tags = {}, {}
+    docs = {}
+    tags = {}
     for file in glob.glob("../src/*/*.cpp") : 
-        with open(file,"r") as f : content = f.read()
+        with open(file,"r") as f :
+           content = f.read()
         if "//+PLUMEDOC" not in content : continue
         actioname, founddocs,  indocs = "", "", False
         for line in content.splitlines() :
@@ -54,7 +61,8 @@ def getActionDocumentationFromPlumed(syntax) :
 
 def get_reference(doi):
     # initialize strings
-    ref=""; ref_url=""
+    ref=""
+    ref_url=""
     # retrieve citation from doi
     if(len(doi)>0):
       # check if unpublished/submitted
@@ -76,45 +84,62 @@ def get_reference(doi):
 def create_map( URL ) :
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
-    script_elements = soup.find_all("script")
-    xdata, ydata = {}, {} 
-    for script in script_elements : 
-        lines = script.text.splitlines()
-        for line in lines :
-            if "var" not in line or "for" in line : continue
-            if "xValues" in line and "=" in line :
-               xdata = json.loads( line.split("=")[1].replace(";","") )
-            if "yValues" in line and "=" in line :
-               ydata = json.loads( line.split("=")[1].replace(";","") )
+    script = soup.find("script",id="actionChart")
+    xdata = {}
+    ydata = {}
+    for line in script.text.splitlines() :
+        if "var" not in line or "for" in line :
+           continue
+        if "xValues" in line and "=" in line :
+           xdata = json.loads( line.split("=")[1].replace(";","") )
+        if "yValues" in line and "=" in line :
+           ydata = json.loads( line.split("=")[1].replace(";","") )
     
     return dict(map(lambda i,j : (i,j) , xdata,ydata))
 
-def printDataTable( f, titles, tabledata, tagdictionary={} ) :
+def printDataTable( f, titles, tabledata, tagdictionary={}, extraAttributes={} ) :
     if "Tags" in titles : 
         if titles[2]!="Tags" : raise Exception("found tag column in surprising location")
         # Get all tags in table
         mytags = set() 
         for line in tabledata :
-            for tt in line[2].split() : mytags.add(tt)
+            for tt in line[2].split() :
+               mytags.add(tt)
 
         f.write("<div class=\"dropdown\">\n")
         f.write("<button class=\"dropbtn\" onclick=\'clearTagSelection()\'>Tags</button>\n")
         f.write("<div class=\"dropdown-content\">\n")
-        for tag in mytags : f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
+        for tag in mytags :
+           f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
         f.write("</div>\n")
         f.write("<span id=\"tagdisplay\"></span>\n")
         f.write("</div>\n")
         for tag in mytags : 
-            if tag in tagdictionary.keys() : f.write("<span id=\"" + tag + "\" style=\"display:none;\"><b>" + tag + ":</b> " + tagdictionary[tag] + "</span>\n")
+            if tag in tagdictionary.keys() :
+               f.write("<span id=\"" + tag + "\" style=\"display:none;\"><b>" + tag + ":</b> " + tagdictionary[tag] + "</span>\n")
  
     f.write("<table id=\"browse-table\" class=\"display\">\n")
     f.write("<thead><tr>\n")
-    for t in titles : f.write("<th style=\"text-align: left\">" + t + "</th>\n")
+    for t in titles :
+       usestyle = "text-align: left"
+       myattributes = ""
+       if t in extraAttributes.keys() :
+          attributes=extraAttributes[t]
+          if "style" in attributes:
+            usestyle += f";{attributes['style']}"
+          for attr in attributes.keys() :
+            myattributes = f'{attr}="{attributes[attr]}" {myattributes}'
+
+       myattributes = f'style="{usestyle}" {myattributes}'
+
+       f.write(f'<th {myattributes}>{t}</th>\n')
     f.write("</tr></thead><tbody>\n")
     for r in tabledata : 
-        if len(r)!=len(titles) : raise Exception("mismatch between number of columns in tabledata and number of titles")
+        if len(r)!=len(titles) :
+           raise Exception("mismatch between number of columns in tabledata and number of titles")
         f.write("<tr>\n")
-        for e in r : f.write("<td style=\"text-align: left\">" + e + "</td>\n")
+        for e in r :
+           f.write("<td style=\"text-align: left\">" + e + "</td>\n")
         f.write("</tr>\n")
     f.write("</tbody></table>\n")
 
@@ -237,7 +262,10 @@ The [actions](actions.md) that can be used within a PLUMED input file are listed
 
 """
     af.write(content)
-    printDataTable(af,["Name", "Description", "Tags"], tabledata,tagdictionary)
+    printDataTable(af,["Name", "Description", "Tags"],
+                   tabledata,
+                   tagdictionary,
+                   extraAttributes={"Name":{"class":f"actionHeader"}})
 
 def printModuleListPage(mf,version,tabledata) :
     content=f"""
@@ -293,7 +321,9 @@ view of this information is available [here](modulegraph.md).
 
 """
     mf.write(content)
-    printDataTable(mf,["Name","Description","Authors","Type"],tabledata)
+    printDataTable(mf,
+                   ["Name","Description","Authors","Type"],
+                   tabledata)
 
 def addSpecialGroupsToPage( file, groups ) :
     with open(file,"r") as f : lines = f.readlines() 
@@ -324,16 +354,20 @@ def createModuleGraph( version, plumed_syntax ) :
    # Get all the module dependencies from plumed_syntax
    requires = {}
    for key, value in plumed_syntax.items() :
-       if "module" not in value : continue
+       if "module" not in value :
+          continue
        thismodule = value["module"]
-       if thismodule not in requires.keys() : requires[thismodule] = set()
+       if thismodule not in requires.keys() :
+          requires[thismodule] = set()
        if "needs" in value :
           for req in value["needs"] :
-              if plumed_syntax[req]["module"]!=thismodule : requires[thismodule].add( plumed_syntax[req]["module"] )
+              if plumed_syntax[req]["module"]!=thismodule :
+                 requires[thismodule].add( plumed_syntax[req]["module"] )
    # Get dependencies from Makefiles
    for thismodule in requires.keys() :
        for conn in getModuleRequirementsFromMakefile(thismodule) :
-           if conn in requires.keys() : requires[thismodule].add( conn ) 
+           if conn in requires.keys() :
+              requires[thismodule].add( conn ) 
 
    with cd("docs") :
       with open( "modulegraph.md", "w") as of :
@@ -524,7 +558,7 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          if tool in plumeddocs.keys() :
             if os.path.isfile("../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                _, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
             else :
                 f.write("Text from manual goes here \n")
@@ -545,20 +579,32 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          f.write("|:------------|:-----------|\n")
          undoc = 0
          for key, docs in value["syntax"].items() :
-             if len(docs["description"])==0 : undoc = undoc + 1 
+             if len(docs["description"])==0 :
+                undoc = undoc + 1 
              f.write("| " + key + " | " + docs["description"] + " |\n")
-         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+         if undoc>0 :
+            undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
 
-def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
+def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
+    undocumented_keyword = None
+    broken_input = None
+    noexample= None
+    nodoc = None
     with open( action + ".md", "w") as f : 
-         hasatoms, hasargs = False, False
+         hasatoms= False
+         hasargs = False
          for key, docs in value["syntax"].items() :
-             if key=="output" : continue
-             if docs["type"]=="atoms" : hasatoms=True
-             elif "argtype" in docs.keys() : hasargs=True
+             if key=="output" :
+                continue
+             if docs["type"]=="atoms" :
+                hasatoms=True
+             elif "argtype" in docs.keys() :
+                hasargs=True
 
-         if "IS_SHORTCUT" in value["syntax"].keys() : f.write("# [Shortcut](shortcuts.md): " + action + "\n\n")
-         else : f.write("# [Action](actions.md): " + action + "\n\n")
+         if "IS_SHORTCUT" in value["syntax"].keys() : 
+            f.write("# [Shortcut](shortcuts.md): " + action + "\n\n")
+         else :
+            f.write("# [Action](actions.md): " + action + "\n\n")
 
          f.write("| [**Module**](modules.md) | [**" + value["module"] + "**](module_" + value["module"]  + ".md) |\n")
          f.write("|:--------|:--------:|\n")
@@ -587,13 +633,15 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
             else :
                onlydefault = True
                for key, docs in value["syntax"]["output"].items() :
-                   if docs["flag"]!="default" : onlydefault = False
+                   if docs["flag"]!="default" :
+                     onlydefault = False
                if onlydefault :
                   f.write("This action calculates the [values](specifying_arguments.md) in the following table.  These [values](specifying_arguments.md) can be referenced elsewhere in the input by using this Action's label followed by a dot and the name of the [value](specifying_arguments.md) required from the list below.\n\n")
                   f.write("| Name | Type | Description |\n")
                   f.write("|:-------|:-----|:-------|\n")
                   for key, docs in value["syntax"]["output"].items() :
-                      if key=="value" : continue 
+                      if key=="value" :
+                         continue 
                       f.write("| " + key + " | " + docs["type"] + " | " + docs["description"] + " | \n") 
                   f.write("\n\n")
                else : 
@@ -601,7 +649,8 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
                   f.write("| Name | Type | Keyword | Description |\n")
                   f.write("|:-------|:-----|:----:|:-------|\n")
                   for key, docs in value["syntax"]["output"].items() :
-                      if key=="value" : continue 
+                      if key=="value" :
+                         continue 
                       f.write("| " + key + " | " + docs["type"] + " | " + docs["flag"] + " | " + docs["description"] + " | \n")
                   f.write("\n\n")
          
@@ -619,17 +668,18 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
                 elif "argtype" in docs.keys() : f.write("| " + key + " | " + docs["argtype"] + " | " + docs["description"] + " |\n")
             f.write("\n\n")
 
-         ninp, nfail = 0, 0
          f.write("## Further details and examples \n")
          if action in plumeddocs.keys() :
             if os.path.isfile("../../src/" + value["module"] + "/module.yml") : 
                 actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
-                if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
+                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                if nf[0]>0 :
+                   broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
             else : 
                 f.write("Text from manual goes here \n")
-                noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
-         else : nodocs.append(["<a href=\"../" + action + "\">" + action + "</a>", "action"] )
+                noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+         else :
+            nodoc = ["<a href=\"../" + action + "\">" + action + "</a>", "action"]
          if "dois" in value and len(value["dois"])>0 : 
             f.write("## References \n")
             f.write("More information about how this action can be used is available in the following articles:\n\n")
@@ -644,31 +694,59 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          for key, docs in value["syntax"].items() :
              if key=="output" : continue 
              if "argtype" in docs.keys() and "default" in docs.keys() : 
-                if len(docs["description"])==0 : undoc = undoc + 1
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1
                 f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
              elif docs["type"]=="atoms" or "argtype" in docs.keys() :
-                if len(docs["description"])==0 : undoc = undoc + 1 
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1 
                 f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
          for key, docs in value["syntax"].items() : 
              if key=="output" or "argtype" in docs.keys()  : continue
              if docs["type"]=="compulsory" and "default" in docs.keys()  : 
-                if len(docs["description"])==0 : undoc = undoc + 1
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1
                 f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
              elif docs["type"]=="compulsory" : 
-                if len(docs["description"])==0 : undoc = undoc + 1
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1
                 f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
          for key, docs in value["syntax"].items() :
              if key=="output" or "argtype" in docs.keys() : continue
              if docs["type"]=="flag" : 
-                if len(docs["description"])==0 : undoc = undoc + 1
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1
                 f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
              if docs["type"]=="optional" :
-                if len(docs["description"])==0 : undoc = undoc + 1 
+                if len(docs["description"])==0 :
+                  undoc = undoc + 1 
                 f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
-         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+         if undoc>0 :
+            undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+    return broken_input, undocumented_keyword, noexample, nodoc
 
-if __name__ == "__main__" : 
-   # Get the version of plumed that we are building the manual for
+def actionPage(key,plumed_syntax,nest_map,school_map,plumedtags,version,plumeddocs) :
+    value = plumed_syntax[key]
+    # Now create the page contents
+    neggs =  nest_map[key] if key in nest_map.keys() else 0
+    nlessons = school_map[key] if key in school_map.keys() else 0
+    print("Building action page", key )
+    with cd("docs") :
+       broken_input, undocumented_keyword, noexample, nodoc=createActionPage( version, key, value, plumeddocs, neggs, nlessons,
+                         )
+    alink = f'<a href="../{key}">{key}</a>'
+    return {"broken_input" :broken_input,
+             "undocumented_keyword" :undocumented_keyword,
+             "noexample" :noexample,
+             "nodoc" :nodoc,
+             "element": [alink, str(value["description"]), str(plumedtags[key])]}
+
+class InvalidJSONError(Exception):
+      """Raised when the JSON file is not valid."""
+      def __init__(self, message):
+         super().__init__(f"Invalid JSON: {message}")
+
+if __name__ == "__main__" :    # Get the version of plumed that we are building the manual for
    version = subprocess.check_output(f'../src/lib/plumed info --version', shell=True).decode('utf-8').strip()
 
    # Create dictionaries that hold how often each action has been used in nest/tutorials
@@ -681,12 +759,14 @@ if __name__ == "__main__" :
        try:
           plumed_syntax = json.load(f)
        except ValueError as ve:
-          raise InvalidJSONError(ve)
+          raise InvalidJSONError(str(ve))
 
    # Create the index file
-   with open("docs/index.md", "w+") as of : printIndexFile(of,version)
+   with open("docs/index.md", "w+") as of : 
+      printIndexFile(of,version)
    # Create the changelog file
-   with open("docs/changelog.md", "w+") as clf : printChangeLog(clf)
+   with open("docs/changelog.md", "w+") as clf :
+      printChangeLog(clf)
    # Copy the extra files we need to process all the inputs 
    shutil.copytree("extras","docs/extras")
    # Copy the figures 
@@ -694,11 +774,13 @@ if __name__ == "__main__" :
    # Create the assets
    shutil.copytree("assets","docs/assets")
    # Create the javascript
-   with open("docs/assets/plumedtohtml.js", "w+") as jf : jf.write( get_javascript() )
+   with open("docs/assets/plumedtohtml.js", "w+") as jf :
+      jf.write( get_javascript() )
    # Create the css
-   with open("docs/assets/plumedtohtml.css", "w+") as cf : cf.write( get_css() )
+   with open("docs/assets/plumedtohtml.css", "w+") as cf :
+      cf.write( get_css() )
 
-   # Holder for table with pages with broken inputs
+   # Holder for table with pages with broken input
    broken_inputs = []
 
    # Create the general pages
@@ -707,31 +789,58 @@ if __name__ == "__main__" :
        shutil.copy( page, "docs/" + page ) 
        with cd("docs") : 
           ninp, nf = processMarkdown( page, (PLUMED,), (version,), actions, ghmarkdown=False )
-       if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
-       if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
+       if nf[0]>0 :
+          broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
+       if os.path.exists("docs/colvar") :
+          os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
    # Create a page for each action
-   tabledata, undocumented_keywords, noexamples, nodocs = [], [], [], []
    plumeddocs, plumedtags = getActionDocumentationFromPlumed(plumed_syntax)
-   for key, value in plumed_syntax.items() :
-      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
-      # Now create the page contents
-      neggs, nlessons = 0, 0
-      if key in nest_map.keys() : neggs = nest_map[key]
-      if key in school_map.keys() : nlessons = school_map[key] 
-      print("Building action page", key )
-      with cd("docs") : 
-         createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
-      alink = "<a href=\"../" + key + "\">" + key + "</a>"
-      tabledata.append( [alink, str(value["description"]), str(plumedtags[key]) ] ) 
 
+   actionKeys=[]
+   notActionList = ["modules", "vimlink", "replicalink", "groups", "cltools"]
+   
+   biggestkey=[0,""]
+   for key, value in plumed_syntax.items() :
+      if key in notActionList or key!=value["displayname"] :
+        continue
+      actionKeys.append(key)
+      if len(key)>biggestkey[0] :
+         biggestkey = [len(key), key]
+
+   # here for debugging purposes:
+   with open("debugging.txt", "w") as bf :
+      bf.write(biggestkey[1] + " " + str(biggestkey[0]) + "\n")
+      bf.write(f"nest_map={nest_map}\n")
+      bf.write(f"school_map={school_map}\n")
+      print("The biggest action is", biggestkey[1], "with length", biggestkey[0])
+   #create a function that will fix all the inputs but key for action page
+   run_action_page = functools.partial(actionPage, plumed_syntax=plumed_syntax, 
+                                            nest_map=nest_map, school_map=school_map,
+                                            plumedtags=plumedtags, version=version,
+                                            plumeddocs=plumeddocs)
+   if sys_platform == "wasi" or sys_platform == "ios":
+      #multiprocessing is not avaiable on WASI or iOS
+      #https://docs.python.org/3/library/multiprocessing.html
+      actiontable = [run_action_page(key) for key in sorted(actionKeys)]
+   else :
+      with Pool(cpu_count()) as pool:  
+        actiontable = pool.map(run_action_page, sorted(actionKeys))
+   tabledata = [x["element"] for x in actiontable]
+   #append
+   broken_inputs+=[x["broken_input"] for x in actiontable if x["broken_input"] is not None]
+   undocumented_keywords = [x["undocumented_keyword"] for x in actiontable if x["undocumented_keyword"] is not None]
+   noexamples = [x["noexample"] for x in actiontable if x["noexample"] is not None]
+   nodocs = [x["nodoc"] for x in actiontable if x["nodoc"] is not None]
    # Read in all the module pages
    tagdictionary = {}
    for file in glob.glob("../src/*/module.yml") :
-       with open(file) as f : moddict = yaml.load(f,Loader=yaml.BaseLoader)
+       with open(file) as f :
+          moddict = yaml.load(f,Loader=yaml.BaseLoader)
        if "tags" in moddict : 
           for key, value in moddict["tags"].items() :
-              if key in tagdictionary.keys() : raise Exception("found duplicate definitions for tag " + key) 
+              if key in tagdictionary.keys() :
+                 raise Exception("found duplicate definitions for tag " + key) 
               tagdictionary[key] = value
 
    # Find the list of tags in the tag list
@@ -744,7 +853,8 @@ if __name__ == "__main__" :
    print( "THESE ARE THE TAGS WE DIDN'T FIND", unfound_tags )
 
    # Create the page with the list of actions
-   with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata, tagdictionary )
+   with open("docs/actionlist.md","w+") as actdb :
+      printActionListPage( actdb, version, tabledata, tagdictionary )
 
    # Create a page for each cltool
    for key, value in plumed_syntax["cltools"].items() :
@@ -753,23 +863,27 @@ if __name__ == "__main__" :
 
    # Create a list of modules
    modules = {}
-   for key, value in plumed_syntax.items() :  
-     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
-     nlessons, neggs = 0, 0
-     if key in school_map.keys() : nlessons = school_map[key]
-     if key in nest_map.keys() : neggs = nest_map[key]
+   for key in actionKeys :  
+     value = plumed_syntax[key]
+     if key in notActionList or key!=value["displayname"] :
+       continue
+     neggs = nest_map[key] if key in nest_map.keys() else 0
+     nlessons = school_map[key] if key in school_map.keys() else 0
      if value["module"] not in modules.keys() :
         modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
-     else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons
+     else :
+        modules[value["module"]]["neggs"] += neggs
+        modules[value["module"]]["nlessons"] += nlessons
 
    # Take into account command line tools when building list of modules
    for key, value in plumed_syntax["cltools"].items() :
-     nlessons, neggs = 0, 0
-     if key in school_map.keys() : nlessons = school_map[key] 
-     if key in nest_map.keys() : neggs = nest_map[key]
+     neggs =  nest_map[key] if key in nest_map.keys() else 0
+     nlessons = school_map[key] if key in school_map.keys() else 0
      if value["module"] not in modules.keys() :
         modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
-     else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons  
+     else :
+        modules[value["module"]]["neggs"] += neggs
+        modules[value["module"]]["nlessons"] += nlessons  
 
    # And create each module page
    moduletabledata = []
@@ -783,13 +897,15 @@ if __name__ == "__main__" :
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 
           nodocs.append(["<a href=\"../module_" + module + "\">" + module+ "</a>", "module"])
    # And the page with the list of modules
-   with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
+   with open("docs/modules.md","w+") as module_file :
+      printModuleListPage( module_file, version, moduletabledata )
    # Create the graph that shows all the modules
    createModuleGraph( version, plumed_syntax ) 
    
    # Create a list containing all the special groups
    special_groups = []
-   for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
+   for key, value in plumed_syntax["groups"].items() :
+      special_groups.append([ key, str(value["description"]) ])
    # Add tables with special groups to pages that need them
    addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups )
    addSpecialGroupsToPage( "docs/MOLINFO.md", special_groups ) 

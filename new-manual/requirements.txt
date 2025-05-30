@@ -1,0 +1,6 @@
+numpy
+requests
+PlumedToHTML
+networkx
+mkdocs-material
+python-markdown-math
