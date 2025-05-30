@@ -52,7 +52,8 @@ enum class switchType {
   tanh,
   cosinus,
   nativeq,
-  lepton
+  lepton,
+  not_initialized
 };
 struct Data {
   /// Minimum distance (before this, function is one)
@@ -71,13 +72,13 @@ struct Data {
   //Rational stuff
   int nn=6;
   int mm=12;
-  double preRes;
-  double preDfunc;
-  double preSecDev;
-  int nnf;
-  int mmf;
-  double preDfuncF;
-  double preSecDevF;
+  double preRes=0.0;
+  double preDfunc=0.0;
+  double preSecDev=0.0;
+  int nnf=3;
+  int mmf=6;
+  double preDfuncF=0.0;
+  double preSecDevF=0.0;
   //smap stuff
   int a=0;
   int b=0;
@@ -111,8 +112,6 @@ struct Switch {
 /// of a square root in some case, thus potentially increasing
 /// performances.
 class SwitchingFunction {
-/// This is to check that switching function has been initialized
-  bool init=false;
   std::unique_ptr<switchContainers::Switch> function{nullptr};
   void copyFunction(const SwitchingFunction&);
 public:
@@ -163,10 +162,8 @@ public:
 /// of a square root in some case, thus potentially increasing
 /// performances.
 class SwitchingFunctionAccelerable {
-/// This is to check that switching function has been initialized
-  bool init=false;
   switchContainers::Data switchData;
-  switchContainers::switchType type;
+  switchContainers::switchType type=switchContainers::switchType::not_initialized;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.

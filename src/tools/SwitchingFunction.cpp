@@ -44,7 +44,7 @@ class SwitchInterface :public Switch {
   switchType type;
   Data data;
 public:
-  SwitchInterface(const std::pair <switchType,Data>& d):
+  explicit SwitchInterface(const std::pair <switchType,Data>& d):
     type(d.first),
     data(d.second) {}
   double calculate(double distance, double& dfunc) const override {
@@ -678,7 +678,7 @@ public:
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
     :data(Data::init(D0,DMAX,R0)),
      lepton_func(func),
-     expressions  (OpenMP::getNumThreads(), lepton_func) {
+     expressions(OpenMP::getNumThreads(), lepton_func) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
@@ -687,7 +687,7 @@ public:
   leptonSwitch(const leptonSwitch& other)
     :data(other.data),
      lepton_func(other.lepton_func),
-     expressions  (OpenMP::getNumThreads(), lepton_func) {
+     expressions(OpenMP::getNumThreads(), lepton_func) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
@@ -795,11 +795,12 @@ ValueDerivative calculate(const switchType type,
     SWITCHCALL(tanh)
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
-  case switchType::lepton:
-    return {0.0,0.0};
+  default:
+    break;
   }
 #undef SWITCHCALL
 #undef RATCALL
+  return {0.0,0.0};
 }
 
 //call to calculateSqr with no inheritance
@@ -831,11 +832,12 @@ ValueDerivative calculateSqr(const switchType type,
     SWITCHCALL(tanh)
     SWITCHCALL(cosinus)
     SWITCHCALL(nativeq)
-  case switchType::lepton:
-    return {0.0,0.0};
+  default:
+    break;
   }
 #undef SWITCHCALL
 #undef RATCALL
+  return {0.0,0.0};
 }
 
 //call to setupStretch with no inheritance
@@ -843,7 +845,6 @@ void setupStretch(switchType type, Data& data) {
   if(data.dmax!=std::numeric_limits<double>::max()) {
     data.stretch=1.0;
     data.shift=0.0;
-    double dummy;
     double s0=calculate(type,data,0.0).first;
     double sd=calculate(type,data,data.dmax).first;
     data.stretch=1.0/(s0-sd);
@@ -878,6 +879,8 @@ std::string typeToString(switchType type) {
     DEFAULTPRINT(cosinus)
     DEFAULTPRINT(nativeq)
     DEFAULTPRINT(lepton)
+  case switchType::not_initialized:
+    return "not initialized!";
   }
 #undef DEFAULTPRINT
   return "";
@@ -951,37 +954,35 @@ public:
 SwitchingFunction::SwitchingFunction()=default;
 SwitchingFunction::~SwitchingFunction()=default;
 
-SwitchingFunction::SwitchingFunction(const SwitchingFunction& other):
-  init(other.init) {
-  if(init) {
-    copyFunction(other);
-  }
+SwitchingFunction::SwitchingFunction(const SwitchingFunction& other) {
+  copyFunction(other);
 }
 
 SwitchingFunction::SwitchingFunction(SwitchingFunction&& other):
-  init(other.init),
   function(std::move(other.function)) {}
 
 SwitchingFunction& SwitchingFunction::operator=(const SwitchingFunction& other) {
   if (this != &other) {
-    init=other.init;
-    if(init) {
-      copyFunction(other);
-    }
-
+    copyFunction(other);
   }
   return *this;
 }
 
 SwitchingFunction& SwitchingFunction::operator=(SwitchingFunction&& other) {
-  init=other.init;
   function.reset();
   function=std::move(other.function);
   return *this;
 }
 
 void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
+  if (this == &other) {
+    return; // nothing to do
+  }
   function.reset();
+  if (!other.function) {
+    //now both have the function uninitialized
+    return; // nothing to copy
+  }
   using namespace switchContainers;
   const auto settings = std::make_pair(other.function->getType(),other.function->getData());
 #define SWITCHCALL(x) case switchType::x: \
@@ -1019,6 +1020,8 @@ void SwitchingFunction::copyFunction(const SwitchingFunction& other) {
     SWITCHCALL(nativeq)
   case switchType::lepton:
     function = std::make_unique<SwitchInterface_lepton>(*dynamic_cast<SwitchInterface_lepton*>(other.function.get()));
+  case switchType::not_initialized:
+    break;
   }
 #undef SWITCHCALL
 #undef RATCALL
@@ -1051,10 +1054,8 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   }
   std::string name=data[0];
   data.erase(data.begin());
-  double r0=0.0;
   double d0=0.0;
   double dmax=std::numeric_limits<double>::max();
-  init=true;
   CHECKandPARSE(data,"D_0",d0,errormsg);
   CHECKandPARSE(data,"D_MAX",dmax,errormsg);
 
@@ -1072,6 +1073,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     function= std::make_unique<SwitchInterface<cubicSwitch>>(
                 cubicSwitch::init(d0,dmax));
   } else {
+    double r0=0.0;
     REQUIREDPARSE(data,"R_0",r0,errormsg);
     if(name=="RATIONAL") {
       int nn=6;
@@ -1153,13 +1155,12 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
 }
 
 double SwitchingFunction::calculate(double distance,double&dfunc)const {
-  plumed_massert(init,"you are trying to use an unset SwitchingFunction");
+  plumed_massert(function,"you are trying to use an unset SwitchingFunction");
   return function->calculate( distance, dfunc);
 }
 
 void SwitchingFunction::set(const int nn,int mm, const double r0, const double d0) {
   function.reset();
-  init=true;
   if(mm == 0) {
     mm = 2*nn;
   }
@@ -1203,10 +1204,8 @@ void SwitchingFunctionAccelerable::set(const std::string & definition,std::strin
   }
   std::string name=data[0];
   data.erase(data.begin());
-  double r0=0.0;
   double d0=0.0;
   double dmax=std::numeric_limits<double>::max();
-  init=true;
   CHECKandPARSE(data,"D_0",d0,errormsg);
   CHECKandPARSE(data,"D_MAX",dmax,errormsg);
 
@@ -1223,6 +1222,7 @@ void SwitchingFunctionAccelerable::set(const std::string & definition,std::strin
     //cubic is the only switch type that only uses d0 and dmax
     std::tie(type,switchData) = cubicSwitch::init(d0,dmax);
   } else {
+    double r0=0.0;
     REQUIREDPARSE(data,"R_0",r0,errormsg);
     if(name=="RATIONAL") {
       int nn=6;
@@ -1307,7 +1307,6 @@ double SwitchingFunctionAccelerable::calculate(double distance,double&dfunc)cons
 }
 
 void SwitchingFunctionAccelerable::set(const int nn,int mm, const double r0, const double d0) {
-  init=true;
   if(mm == 0) {
     mm = 2*nn;
   }
