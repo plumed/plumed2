@@ -626,6 +626,12 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
          else : 
             f.write(" | \n\n")
 
+         depracated = False
+         if "replacement" in value :
+            depracated = True 
+            f.write("!!! warning \"Deprecated\"\n\n")
+            f.write("    This action has been deprecated and is no longer supported. Use [" + value["replacement"] + "](" + value["replacement"] + ".md) instead.\n\n") 
+
          if "output" in value["syntax"] and len(value["syntax"]["output"].keys())>1 :
             f.write("## Output components\n\n")
             if "value" in value["syntax"]["output"] and len(value["syntax"]["output"])==1 :
@@ -675,9 +681,10 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 :
                    broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
-            else : 
-                f.write("Text from manual goes here \n")
-                noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+                if not depracated and action not in actions :
+                   noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+            else :
+                raise Exception("could not find documentation for action " + action ) 
          else :
             nodoc = ["<a href=\"../" + action + "\">" + action + "</a>", "action"]
          if "dois" in value and len(value["dois"])>0 : 
