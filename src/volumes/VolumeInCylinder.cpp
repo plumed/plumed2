@@ -212,7 +212,8 @@ void VolumeInCylinder::calculateNumberInside( const VolumeInput& input, const Vo
   }
 
   const double dd = fpos[actioninput.dir[0]]*fpos[actioninput.dir[0]] + fpos[actioninput.dir[1]]*fpos[actioninput.dir[1]];
-  double dfunc, vswitch = actioninput.switchingFunction.calculateSqr( dd, dfunc );
+  double dfunc;
+  double vswitch = actioninput.switchingFunction.calculateSqr( dd, dfunc );
   output.values[0]=vswitch*vcylinder;
   output.derivatives[actioninput.dir[0]]=vcylinder*dfunc*fpos[actioninput.dir[0]];
   output.derivatives[actioninput.dir[1]]=vcylinder*dfunc*fpos[actioninput.dir[1]];
