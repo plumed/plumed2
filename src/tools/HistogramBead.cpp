@@ -156,15 +156,14 @@ void HistogramBead::setKernelType( KernelType ktype ) {
 
 double HistogramBead::calculate( double x, double& df ) const {
   // plumed_dbg_assert(init && periodicity!=unset );
-  double lowB, upperB, f;
   if( type==KernelType::gaussian ) {
-    lowB = difference( x, lowb ) / ( std::sqrt(2.0) * width );
-    upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
+    double lowB = difference( x, lowb ) / ( std::sqrt(2.0) * width );
+    double upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
     df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( std::sqrt(2*pi)*width );
-    f = 0.5*( erf( upperB ) - erf( lowB ) );
+    return 0.5*( erf( upperB ) - erf( lowB ) );
   } else if( type==KernelType::triangular ) {
-    lowB = ( difference( x, lowb ) / width );
-    upperB = ( difference( x, highb ) / width );
+    double lowB = ( difference( x, lowb ) / width );
+    double upperB = ( difference( x, highb ) / width );
     df=0;
     if( std::fabs(lowB)<1. ) {
       df = (1 - std::fabs(lowB)) / width;
@@ -173,7 +172,7 @@ double HistogramBead::calculate( double x, double& df ) const {
       df -= (1 - std::fabs(upperB)) / width;
     }
     if (upperB<=-1. || lowB >=1.) {
-      f=0.;
+    return 0.;
     } else {
       double ia, ib;
       if( lowB>-1.0 ) {
@@ -186,7 +185,7 @@ double HistogramBead::calculate( double x, double& df ) const {
       } else {
         ib=1.0;
       }
-      f = (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
+      return (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
     }
   }
   // } else {

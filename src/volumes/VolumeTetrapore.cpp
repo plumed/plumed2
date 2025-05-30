@@ -126,15 +126,14 @@ namespace volumes {
 
 class VolumeTetrapore {
 public:
-  double jacob_det;
-  double len_bi, len_cross, len_perp, sigma;
+  double jacob_det{0.0};
+  double len_bi{0.0}, len_cross{0.0}, len_perp{0.0}, sigma{0.0};
   Vector bi, cross, perp;
-  HistogramBead::KernelType kerneltype;
+  HistogramBead::KernelType kerneltype{HistogramBead::KernelType::gaussian};
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
   static void registerKeywords( Keywords& keys );
-  VolumeTetrapore() : jacob_det(0), len_bi(0), len_cross(0), len_perp(0),
-    sigma(0), dlbi(4), dlcross(4), dlperp(4), dbi(3), dcross(3), dperp(3) {}
+  VolumeTetrapore() : dlbi(4), dlcross(4), dlperp(4), dbi(3), dcross(3), dperp(3) {}
   void setupRegions( ActionVolume<VolumeTetrapore>* action,
                      const Pbc& pbc,
                      const std::vector<Vector>& positions );
