@@ -1,13 +1,7 @@
 WHOLEMOLECULES ENTITY0=1-48
 
-# The indices of the head atoms: 13
-GROUP ATOMS=13 LABEL=tails
-
-# The indices of the tail atoms: 20
-GROUP ATOMS=20 LABEL=heads
-
 # If the ferronematic order parameter is calculated only for a
 # single molecule, its value is exactly 1, since in this case
 # the total polarization and the molecular axis are always parallel.
-P: FERRONEMATIC_ORDER ATOMS=tails,heads
+P: FERRONEMATIC_ORDER MOLECULE_STARTS=13 MOLECULE_ENDS=20
 PRINT FILE=colvar ARG=P

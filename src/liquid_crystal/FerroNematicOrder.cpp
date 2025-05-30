@@ -16,9 +16,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/Colvar.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "tools/Matrix.h"
 
 namespace PLMD {
 namespace liquid_crystal {
@@ -53,11 +52,8 @@ it points from the tail atom to the head atom.
 # In the first molecule the molecular axis vector points from atom 1 to atom 20,
 # in the second molecule it points from atom 21 to atom 40
 # and in the third from atom 41 to atom 60.
-GROUP LABEL=tails ATOMS=1,21,41
-GROUP LABEL=heads ATOMS=20,40,60
-
-# Compute ferronematic order parameter for the three molecules.
-P: FERRONEMATIC_ORDER ATOMS=tails,heads
+# The ferronematic order parameter for the three molecules is computed as
+P: FERRONEMATIC_ORDER MOLECULE_STARTS=1,21,41 MOLECULE_ENDS=20,40,60
 PRINT FILE=colvar ARG=P
 
 # Add a bias to the ferronematic order parameter P.
@@ -67,139 +63,56 @@ BIASVALUE ARG=P
 */
 //+ENDPLUMEDOC
 
-class FerroNematicOrder : public Colvar {
-  bool pbc;
-  size_t num_molecules;
+class FerroNematicOrder : public ActionShortcut {
+  public:
+    static void registerKeywords(Keywords& keys);
+    explicit FerroNematicOrder(const ActionOptions&);
+  };
 
-public:
-  explicit FerroNematicOrder(const ActionOptions&);
-// active methods:
-  void calculate() override;
-  static void registerKeywords(Keywords& keys);
-};
+  PLUMED_REGISTER_ACTION(FerroNematicOrder,"FERRONEMATIC_ORDER")
 
-PLUMED_REGISTER_ACTION(FerroNematicOrder,"FERRONEMATIC_ORDER")
-
-void FerroNematicOrder::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
-  keys.add("atoms", "ATOMS",
-           "The molecular axes are specified by pairs of atoms. "
-           "For N molecules, therefore, 2*N atom indices have to be provided. "
-           "The first half of the atom list contains the head and the second half the tail atoms.");
-  keys.setValueDescription("scalar",
-                           "The ferronematic order parameter P, P=0 for the isotropic or nematic(antiparallel) phases and P=1 for the ferronematic(parallel) phase)");
-}
-
-FerroNematicOrder::FerroNematicOrder(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  pbc(true) {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  if(atoms.size() % 2 != 0) {
-    error("Number of atoms must be multiple of 2");
-  }
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
-  checkRead();
-
-  num_molecules = atoms.size() / 2;
-  log.printf("  %zu molecules\n", num_molecules);
-  for (size_t i = 0; i < num_molecules; i++) {
-    log.printf("  molecular axis for molecule %zu points from atom %d to atom %d\n",
-               i, atoms[i].serial(), atoms[num_molecules+i].serial());
-  }
-  if(pbc) {
-    log.printf("  using periodic boundary conditions\n");
-  } else {
-    log.printf("  without periodic boundary conditions\n");
+  void FerroNematicOrder::registerKeywords(Keywords& keys) {
+    ActionShortcut::registerKeywords( keys );
+    keys.add("atoms","MOLECULE_STARTS","The atoms where the molecular axis starts.");
+    keys.add("atoms","MOLECULE_ENDS","The atoms where the molecular axis ends.");
+    keys.setValueDescription("scalar","the modulus of the average vector");
+    keys.needsAction("DISTANCE");
+    keys.needsAction("CUSTOM");
+    keys.needsAction("MEAN");
   }
 
-  addValueWithDerivatives();
-  setNotPeriodic();
+  FerroNematicOrder:: FerroNematicOrder(const ActionOptions& ao):
+    Action(ao),
+    ActionShortcut(ao) {
+      std::vector<std::string> starts;
+      // It would be better to use somethling like parseAtomList(...) here, so that
+      // atom groups are correctly translated into arrays of indices.
+      parseVector("MOLECULE_STARTS",starts);
+      // This converts strings like 1-4 to 1,2,3,4
+      Tools::interpretRanges(starts);
+      std::vector<std::string> ends;
+      parseVector("MOLECULE_ENDS",ends);
+      Tools::interpretRanges(ends);
 
-  requestAtoms(atoms);
-}
+    if( starts.size()!=ends.size() ) error("mismatched numbers of atoms specified to MOLECULE_STARTS and MOLECULE_ENDS keywords");
 
-
-// calculator
-void FerroNematicOrder::calculate() {
-
-  // Polarization vector, average over molecular axes u(i)
-  //  polarization_a = 1/N ∑_i u_a(i)
-  // where N is the number of molecules and i runs over 1,...,N
-  Vector polarization;
-
-  for (size_t i = 0; i < num_molecules; i++) {
-    // The axis of a molecule is defined by two atoms at opposite ends of the molecule.
-    size_t head = i;
-    size_t tail = num_molecules + i;
-    // The vector `distance` defines the molecular axis.
-    Vector distance;
-    if(pbc) {
-      distance=pbcDistance(getPosition(tail),getPosition(head));
-    } else {
-      distance=delta(getPosition(tail),getPosition(head));
+    std::string dlist = "";
+    for(unsigned i=0; i<starts.size(); ++i) {
+      std::string num;
+      Tools::convert( i+1, num );
+      dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
     }
-    // normalize vector defining the molecular axis
-    Vector u = distance / distance.modulo();
 
-    // Add contribution from molecule i to the polarization vector.
-    polarization += u;
+    readInputLine( getShortcutLabel() + "_dvals: DISTANCE" + dlist );
+    readInputLine( getShortcutLabel() + "_dvecs: DISTANCE COMPONENTS " + dlist );
+    readInputLine( getShortcutLabel() + "_dux: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.x," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_duy: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.y," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_duz: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.z," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_mux: MEAN ARG=" + getShortcutLabel() + "_dux PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_muy: MEAN ARG=" + getShortcutLabel() + "_duy PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_muz: MEAN ARG=" + getShortcutLabel() + "_duz PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_mux," + getShortcutLabel() + "_muy," + getShortcutLabel() + "_muz FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO");
   }
-  // compute the average, polarization_a = 1/N ∑_i u_a(i)
-  polarization *= 1.0/num_molecules;
-  // The ferronematic order parameter is the length of the polarization vector,
-  // P = |polarization|
-  double order_parameter = polarization.modulo();
-  setValue(order_parameter);
-
-  // Now compute the gradients of the order parameter with respect to the atomic positions.
-
-  // virial = - ∑_i (r_head(i) - r_tail(i)) dP/d(r_head(i))
-  Tensor virial;
-
-  // If there is no net polarization (P=0), either because the molecules are perfectly antiparallel
-  // or because the orientation is isotropic, the polarization vector is not defined, in this
-  // case we set it to the 0-vector.
-  Vector director; // = (0,0,0)
-  if (order_parameter > 0.0) {
-    // unit vector in direction of net polarization
-    director = polarization / polarization.modulo();
-  }
-
-  for (size_t i = 0; i < num_molecules; i++) {
-    // The axis of a molecule is defined by two atoms at opposite ends of the molecule.
-    size_t head = i;
-    size_t tail = num_molecules + i;
-    // The vector `distance` defines the molecular axis.
-    Vector distance;
-    if(pbc) {
-      distance=pbcDistance(getPosition(tail),getPosition(head));
-    } else {
-      distance=delta(getPosition(tail),getPosition(head));
-    }
-    // normalize vector defining the molecular axis
-    double length = distance.modulo();
-    Vector u = distance / length;
-
-    // Compute the scalar product between the ferronematic director (net polarization)
-    // and the molecular axis
-    // cos(angle) = <director,u>
-    double cos = dotProduct(director, u);
-
-    // gradient on the head atom of the molecular axis, dP/d(r_head(i))
-    Vector deriv = 1.0/num_molecules * (1.0/length) * (director - cos * u);
-    setAtomsDerivatives(head, deriv);
-    // gradient on the tail atom of the molecular axis,
-    // dP/d(r_tail(i)) = - dP/d(r_head(i))
-    setAtomsDerivatives(tail, -deriv);
-
-    // contribution to virial
-    virial -= Tensor(deriv, distance);
-  }
-  setBoxDerivatives(virial);
-}
 
 }
 }
