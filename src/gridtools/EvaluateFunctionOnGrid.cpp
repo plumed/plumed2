@@ -82,25 +82,6 @@ command.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC GRIDCALC EVALUATE_FUNCTION_FROM_GRID_SCALAR
-/*
-Calculate the function stored on the input grid at an arbitrary point
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC GRIDCALC EVALUATE_FUNCTION_FROM_GRID_VECTOR
-/*
-Calculate the function stored on the input grid for each of the points in the input vector/s
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-
 namespace PLMD {
 namespace gridtools {
 

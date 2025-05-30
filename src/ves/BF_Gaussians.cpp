@@ -32,8 +32,9 @@ namespace ves {
 /*
 Gaussian basis functions.
 
-> [! attention]
-> __These basis functions do not form orthogonal bases. We recommend using wavelets ([BF_WAVELETS](BF_WAVELETS.md)) instead that do form orthogonal bases__.
+!!! attention ""
+
+    __These basis functions do not form orthogonal bases. We recommend using wavelets ([BF_WAVELETS](BF_WAVELETS.md)) instead that do form orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
 bounded interval. See the paper cited below for full details.

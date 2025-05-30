@@ -61,18 +61,6 @@ PRINT ARG=nclust.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC CONCOMP CLUSTER_DISTRIBUTION_CALC
-/*
-Calculate functions of the distribution of properties in your connected components.
-
-See \ref CLUSTER_DISTRIBUTION
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-
 namespace PLMD {
 namespace clusters {
 

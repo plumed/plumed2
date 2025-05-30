@@ -46,8 +46,9 @@ By default PLUMED assumes that any coordinates specified using the AT keyword sp
 However, if you use the SCALED_COMPONENTS flag the coordinates specified using the AT keyword are interpretted as scaled coordinates.
 It is also possible to assign a predefined charge or mass to the atom by using the `SET_MASS` and `SET_CHARGE` keywords.
 
-> [!CAUTION]
-> This action, like [POSITION](POSITION.md) is not invariant for translation of the system so adding a force on it can cause trouble.
+!!! caution ""
+
+    This action, like [POSITION](POSITION.md) is not invariant for translation of the system so adding a force on it can cause trouble.
 
 The problem is that the vector connecting any atom and a virtual atom created using the FIXEDATOM atoms command is not invariant to translation.
 However, if, as has been done in the following example input, one first aligns atoms to a reference using [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md),

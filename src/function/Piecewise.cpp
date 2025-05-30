@@ -89,15 +89,6 @@ elements of the input vector, matrix or function.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION PIECEWISE_SCALAR
-/*
-Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Piecewise {
 public:
   std::vector<std::pair<double,double> > points;

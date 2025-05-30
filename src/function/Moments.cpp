@@ -70,24 +70,6 @@ It does not accept matrices or a list of vectors in input.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION MOMENTS_SCALAR
-/*
-Calculate the moments of the distribution of input quantities
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION MOMENTS_VECTOR
-/*
-Calculate the moments of the distribution of input vectors
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Moments {
 public:
   bool isperiodic;

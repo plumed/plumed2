@@ -67,7 +67,7 @@ alpha: ALPHARMSD RESIDUES=all R_0=0.1
 PRINT ARG=alpha FILE=colvar
 ```
 
-Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
+Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb

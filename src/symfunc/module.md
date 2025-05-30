@@ -13,4 +13,10 @@ coordination sphere has been used in the calculation of the symmetry function.  
 
 Notice that from version 2.10 onwards many of the symmetry functions in this class (particularly the Steinhardt Parameters) have been implemented as shortcuts. The
 implementations that PLUMED provides from these methods are thus very flexible and allow you to calculate the many subtle variationts of this technique for determining the 
-degree of order in the system that have been used in the literature.   
+degree of order in the system that have been used in the literature.  
+
+__You will get a colossal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
+D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result
+PLUMED knows that it does not need to calculate these zero terms in what are essentially sums with a very large number of terms.
+In fact when D_MAX is set PLUMED uses linked lists when calculating these coordination numbers, which is what
+gives you such a dramatic increase in performance.__ 

@@ -54,17 +54,20 @@ When run in single-replica mode, this action allows atomistic, flexible refineme
 Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an ensemble of structures using
 the Metainference approach that is discussed in the second paper cited below.
 
-> [! warning]
-> To use [EMMI](EMMI.md), the user should always add a [MOLINFO](MOLINFO.md) line and specify a pdb file of the system.
+!!! warning ""
 
-> [! note]
-> To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
-> In this case, the user should add the NO_AVER flag to the input line. To use a replica-based enhanced sampling scheme such as
-> Parallel-Bias Metadynamics ([PBMETAD](PBMETAD.md)), one should use the REWEIGHT flag and pass the Metadynamics bias using the ARG keyword.
+    To use [EMMI](EMMI.md), the user should always add a [MOLINFO](MOLINFO.md) line and specify a pdb file of the system.
 
-> [! nota]
-> [EMMI](EMMI.md) can be used in combination with periodic and non-periodic systems. In the latter case, one should
-> add the NOPBC flag to the input line
+!!! note ""
+
+    To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
+    In this case, the user should add the NO_AVER flag to the input line. To use a replica-based enhanced sampling scheme such as
+    Parallel-Bias Metadynamics ([PBMETAD](PBMETAD.md)), one should use the REWEIGHT flag and pass the Metadynamics bias using the ARG keyword.
+
+!!! note ""
+
+    [EMMI](EMMI.md) can be used in combination with periodic and non-periodic systems. In the latter case, one should
+    add the NOPBC flag to the input line
 
 ## Examples
 

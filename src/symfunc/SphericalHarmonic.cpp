@@ -89,16 +89,6 @@ This function is used in the calculation of the Steinhardt order parameters, whi
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR SPHERICAL_HARMONIC_MATRIX
-/*
-Calculate the values of all the spherical harmonic funtions for a particular value of l for all the elements of a set of three input matrices
-
-\par Examples
-
-
-*/
-//+ENDPLUMEDOC
-
 class SphericalHarmonic {
 public:
   int tmom;

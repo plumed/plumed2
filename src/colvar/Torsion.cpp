@@ -92,24 +92,6 @@ This input tells PLUMED to calculate the $\phi$ angles in residues 3-7 of the pr
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR TORSION_SCALAR
-/*
-Calculate a torsional angle.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR TORSION_VECTOR
-/*
-Calculate multiple torsional angles.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Torsion : public Colvar {
   bool pbc;
   bool do_cosine;

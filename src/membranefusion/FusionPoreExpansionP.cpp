@@ -48,7 +48,7 @@ Where $\xi_e$ is the CV, $R_0$ is a normalization constant that makes zero the i
 $R(r)$ is the approximate radius of the fusion pore, which is defined by the number of waters and phosphateoxygens
 beads within a horizontal layer in the center of both membranes.
 
-\par Examples
+## Examples
 
 This example induces the expansion of a nucleated fusion pore ($\xi_e = 0.75$) from a just nucleated fusion pore ($\xi_e = 0.00$).
 

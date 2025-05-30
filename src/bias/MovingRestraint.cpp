@@ -94,8 +94,9 @@ the total bias deposited
 
 (See also [DISTANCE](DISTANCE.md)).
 
-> [!attention]
-> Work is not computed properly when KAPPA is time dependent.
+!!! attention ""
+
+    Work is not computed properly when KAPPA is time dependent.
 
 */
 //+ENDPLUMEDOC

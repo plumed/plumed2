@@ -140,24 +140,6 @@ tells you how many of these distances are between 0.1 and 0.2 nm.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION BETWEEN_VECTOR
-/*
-Use a switching function to determine how many of the input components are within a certain range
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR BETWEEN_MATRIX
-/*
-Transform all the elements of a matrix using a switching function that is oen when the input value is within a particular range
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Between {
 public:
   bool isPeriodic;

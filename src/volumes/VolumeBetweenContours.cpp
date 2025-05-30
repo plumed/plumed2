@@ -61,15 +61,6 @@ values for a symmetry function for those atoms that are within the membrane.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC VOLUMES INENVELOPE_CALC
-/*
-This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace volumes {
 

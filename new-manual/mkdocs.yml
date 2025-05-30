@@ -1,7 +1,10 @@
 site_name: PLUMED manual
+theme: 
+  name: material
 
 nav:
   - Introduction: 'index.md'
+  - Installation: 'https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html'
   - Modules: 'modules.md'
   - Actions: 'actionlist.md'
   - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
@@ -17,6 +20,7 @@ extra_css:
    - assets/plumedtohtml.css
    - assets/mermaid.css
    - assets/dropdown.css
+   - assets/plumedManual.css
    - https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
    - https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
 
@@ -30,5 +34,8 @@ extra_javascript:
   - assets/mermaid.js
 
 markdown_extensions: 
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences 
   - mdx_math:
      enable_dollar_delimiter: True 

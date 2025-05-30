@@ -62,21 +62,23 @@ here a massive Langevin thermostat is used, whereas usually
 TAMD employs an overamped Langevin dynamics while dAFED employs
 a Gaussian thermostat.
 
-> [!warning]
-> The bias potential is reported in the component bias.
-> Notice that this bias potential, although formally compatible with
-> replica exchange framework, probably does not work as expected in that case.
-> Indeed, since fictitious coordinates are not swapped upon exchange,
-> acceptace can be expected to be extremely low unless (by chance) two neighboring
-> replicas have the fictitious variables located properly in space.
+!!!! warning "bias not campatible with replica exchange"
 
-> [!warning]
-> [RESTART](RESTART.md) is not properly supported by this action. Indeed,
-> at every start the position of the fictitious variable is reset to the value
-> of the real variable, and its velocity is set to zero.
-> This is not expected to introduce big errors, but certainly is
-> introducing a small inconsistency between a single long run
-> and many shorter runs.
+     The bias potential is reported in the component bias.
+     Notice that this bias potential, although formally compatible with
+     replica exchange framework, probably does not work as expected in that case.
+     Indeed, since fictitious coordinates are not swapped upon exchange,
+     acceptace can be expected to be extremely low unless (by chance) two neighboring
+     replicas have the fictitious variables located properly in space.
+
+!!! warning "restart not supported"
+
+    [RESTART](RESTART.md) is not properly supported by this action. Indeed,
+    at every start the position of the fictitious variable is reset to the value
+    of the real variable, and its velocity is set to zero.
+    This is not expected to introduce big errors, but certainly is
+    introducing a small inconsistency between a single long run
+    and many shorter runs.
 
 ## Examples
 

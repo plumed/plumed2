@@ -40,8 +40,9 @@ Add a linear biasing potential on one or more variables that satisfies a maximum
 
 Add a linear biasing potential on one or more variables $f_{i}\left(\boldsymbol{x}\right)$ satisfying the maximum entropy principle as proposed in the paper cited below.
 
-> [!warning]
-> Notice that syntax is still under revision and might change
+!!! warning "unfinalized syntax"
+
+    Notice that syntax is still under revision and might change
 
 The resulting biasing potential is given by:
 
