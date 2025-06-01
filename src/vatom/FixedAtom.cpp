@@ -86,6 +86,7 @@ void FixedAtom::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SET_MASS","1","mass of the virtual atom");
   keys.add("compulsory","SET_CHARGE","0","charge of the virtual atom");
   keys.addFlag("SCALED_COMPONENTS",false,"use scaled components");
+  keys.reset_style("ATOMS","hidden");
 }
 
 FixedAtom::FixedAtom(const ActionOptions&ao):

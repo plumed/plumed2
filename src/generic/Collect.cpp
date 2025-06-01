@@ -62,6 +62,19 @@ This outputs files contain from this input contain 1000-frame blocks of the traj
 This type of input might proove useful if you wish to perform separate analysis on different parts of the trajectory for
 later comparison.
 
+An alternative way to collect part of the trajectry is to use the UPDATE_FROM and UPDATE_UNTIL arguments as illustrated in the 
+example shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1 UPDATE_FROM=100 UPDATE_UNTIL=200
+DUMPVECTOR ARG=c FILE=timeseries 
+```
+
+In this input the COLLECT action only starts collecting the data on step 100 so the first 100 values of the trajectory are discarded.
+The COLLECT action then stops collecting data on step 200. These 200 stored distances are then output at the end of the simulation 
+even if the trajectory contains more than 200 frames.
+
 ## Collecting vectors
 
 You can use the collect command even if the input value has a rank that is greater than zero.  For example, the following
@@ -151,6 +164,7 @@ void Collect::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label of the value whose time series is being stored for later analysis");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "

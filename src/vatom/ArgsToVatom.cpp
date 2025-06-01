@@ -97,6 +97,7 @@ void ArgsToVatom::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","XPOS","scalar","the value to use for the x position of the atom");
   keys.addInputKeyword("compulsory","YPOS","scalar","the value to use for the y position of the atom");
   keys.addInputKeyword("compulsory","ZPOS","scalar","the value to use for the z position of the atom");

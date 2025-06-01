@@ -86,7 +86,11 @@ action are modified.  The global positions (i.e. those that are used in all othe
 are not changed when the alignment is performed.
 
 If you believe that PBC should not be applied when calculating the position fo the center of mass you can use the
-NOPBC flag.
+NOPBC flag as shown below:
+
+```plumed
+c: CENTER ATOMS=1-100 NOPBC
+```
 
 An additional way of managing periodic boundary conditions is offered in CENTER by using the PHASES keyword as shown
 in the example input below
@@ -99,7 +103,7 @@ The scaled value for the $x$ component of the position of the center is calculat
 using the following expression when the PHASES option is employed
 
 $$
-x_\textrm{com} = \frac{1}{2\pi} \atan\left( \frac{\sum_{i=1}^n w_i \sin(2 \pi x_i ) }{ \sum_{i=1}^n w_i \cos(2 \pi x_i ) } \right)
+x_\textrm{com} = \frac{1}{2\pi} \arctan\left( \frac{\sum_{i=1}^n w_i \sin(2 \pi x_i ) }{ \sum_{i=1}^n w_i \cos(2 \pi x_i ) } \right)
 $$
 
 Similar, expressions are used to calculae the values of the scaled $y$ and $z$ components.  The final cartesian coordinates of the center are then computed
@@ -109,6 +113,16 @@ In addition, for symmetric Bravais lattices, it is not invariant with respect
 to special symmetries. E.g., if you have an hexagonal cell, the center will
 not be invariant with respect to rotations of 120 degrees.
 On the other hand, it might make the treatment of PBC easier in difficult cases.
+
+As an alternative to PHASES you can use the SAFE_PHASES flag as shown below:
+
+```plumed
+c: CENTER ATOMS=1-100 SAFE_PHASES
+```
+
+This option will use the method described above for the PHASES keyword if the cell coordinates are set.  If, however, the cell coordinates are not set the 
+position of the center will be calculated in the usual way.  We wouldn't recommend using this option in place of PHASES as additional computational overhead 
+is introduced.  Furthermore, you normally know if the cell parameters are not passed to PLUMED in advance of doing the calculation
 
 */
 //+ENDPLUMEDOC

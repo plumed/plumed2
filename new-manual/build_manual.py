@@ -653,9 +653,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
          if action in plumeddocs.keys() :
             if os.path.isfile("../../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                print("BEFORE EXAMPLE", action, example_keywords )
                 _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False, checkaction=action, checkactionkeywords=example_keywords )
-                print("AFTER EXAMPLE", action, example_keywords )
                 if len(example_keywords)>0 :
                    unexempled_keywords = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]  
                 if nf[0]>0 :
@@ -709,49 +707,54 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                       f.write("| " + key + " | " + docs["type"] + " | " + docs["flag"] + " | " + docs["description"] + " | \n")
                   f.write("\n\n")
 
-         f.write("\n## Full list of keywords \n")
-         f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
-         f.write("| Keyword | Type | Default | Description |\n")
-         f.write("|:-------|:----:|:-------:|:-----------|\n")
-         undoc = 0
+         nkeys = 0
          for key, docs in value["syntax"].items() :
-             if key=="output" : continue 
-             if "argtype" in docs.keys() and "default" in docs.keys() : 
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
-             elif docs["type"]=="atoms" or "argtype" in docs.keys() :
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1 
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
-         for key, docs in value["syntax"].items() : 
-             if key=="output" or "argtype" in docs.keys()  : continue
-             if docs["type"]=="compulsory" and "default" in docs.keys()  : 
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
-             elif docs["type"]=="compulsory" : 
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
-         for key, docs in value["syntax"].items() :
-             if key=="output" or "argtype" in docs.keys() : continue
-             if docs["type"]=="flag" : 
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
-             if docs["type"]=="optional" :
-                if len(docs["description"])==0 :
-                  undoc = undoc + 1 
-                if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
-                else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
-         if undoc>0 :
-            undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+             if key!="output" and docs["type"]!="hidden" : nkeys = nkeys + 1 
+
+         if nkeys>0 : 
+            f.write("\n## Full list of keywords \n")
+            f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
+            f.write("| Keyword | Type | Default | Description |\n")
+            f.write("|:-------|:----:|:-------:|:-----------|\n")
+            undoc = 0
+            for key, docs in value["syntax"].items() :
+                if key=="output" : continue 
+                if "argtype" in docs.keys() and "default" in docs.keys() : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
+                elif docs["type"]=="atoms" or "argtype" in docs.keys() :
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1 
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
+            for key, docs in value["syntax"].items() : 
+                if key=="output" or "argtype" in docs.keys()  : continue
+                if docs["type"]=="compulsory" and "default" in docs.keys()  : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
+                elif docs["type"]=="compulsory" : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
+            for key, docs in value["syntax"].items() :
+                if key=="output" or "argtype" in docs.keys() : continue
+                if docs["type"]=="flag" : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
+                if docs["type"]=="optional" :
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1 
+                   if key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | " + docs["type"] + " | " + docs["description"] + " | \n")
+                   else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
+            if undoc>0 :
+               undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
 
          if "dois" in value and len(value["dois"])>0 :
             f.write("\n## References \n")

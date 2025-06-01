@@ -65,7 +65,24 @@ PRINT ARG=a FILE=average.dat STRIDE=1000
 The instructions `CLEAR=1000` in the above input tells PLUMED to set the values `s` and `n` back to
 zero after 1000 new steps have been performed. The PRINT action will thus print a block average that
 is taken from the first 1000 steps of the trajectory, a second block average from the second 1000 steps
-of the trajectory and so on.
+of the trajectory and so on.  Notice that you can achieve a similar effect using UPDATE_FROM and UPDATE_UNTIL as 
+shown below:
+
+```plumed
+c: CONSTANT VALUE=1
+d: DISTANCE ATOMS=1,2
+s1: ACCUMULATE ARG=d STRIDE=1 UPDATE_UNTIL=1000
+n1: ACCUMULATE ARG=c STRIDE=1 UPDATE_UNTIL=1000
+a1: CUSTOM ARG=s1,n1 FUNC=x/y PERIODIC=NO
+s2: ACCUMULATE ARG=d STRIDE=1 UPDATE_FROM=1000
+n2: ACCUMULATE ARG=c STRIDE=1 UPDATE_FROM=1000
+a2: CUSTOM ARG=s2,n2 FUNC=x/y PERIODIC=NO
+diff: CUSTOM ARG=a1,a2 FUNC=x-y PERIODIC=NO
+PRINT ARG=a1,a2,diff FILE=colver STRIDE=2000
+```
+
+This output calculates the average distance for the first 1000 frames of the trajectory and for the second 1000 frames of the trajectory.
+These two averages are then output to a file called colvar as well as the difference between them.
 
 ## Estimating histograms
 
