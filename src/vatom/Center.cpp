@@ -120,8 +120,8 @@ As an alternative to PHASES you can use the SAFE_PHASES flag as shown below:
 c: CENTER ATOMS=1-100 SAFE_PHASES
 ```
 
-This option will use the method described above for the PHASES keyword if the cell coordinates are set.  If, however, the cell coordinates are not set the 
-position of the center will be calculated in the usual way.  We wouldn't recommend using this option in place of PHASES as additional computational overhead 
+This option will use the method described above for the PHASES keyword if the cell coordinates are set.  If, however, the cell coordinates are not set the
+position of the center will be calculated in the usual way.  We wouldn't recommend using this option in place of PHASES as additional computational overhead
 is introduced.  Furthermore, you normally know if the cell parameters are not passed to PLUMED in advance of doing the calculation
 
 */

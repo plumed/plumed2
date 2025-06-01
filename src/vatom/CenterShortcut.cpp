@@ -66,9 +66,9 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
   std::vector<std::string> str_weights;
   parseVector("WEIGHTS",str_weights);
   if( usemass || str_weights.size()==0 || str_weights.size()>1 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
-    std::string useph = ""; 
+    std::string useph = "";
     if( safe_phases ) {
-      useph = " PHASES"; 
+      useph = " PHASES";
     }
     if( usemass && str_weights.size()!=0 ) {
       error("WEIGHTS and MASS keywords cannot not be used simultaneously");

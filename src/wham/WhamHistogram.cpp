@@ -47,7 +47,7 @@ to a file called fes.dat
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 rp: RESTRAINT ARG=phi KAPPA=50.0 AT=@replicas:{-3.00,-1.45,0.10,1.65}
-hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 
+hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50
 fes: CONVERT_TO_FES ARG=hh TEMP=300
 DUMPGRID ARG=fes FILE=fes.dat
 ```
@@ -58,7 +58,7 @@ The script above must be run with multiple replicas using the following command:
 mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
 ````
 
-Notice that if you use the BANDWIDTH keyword, as in the example below, PLUMED will estimate the histogram 
+Notice that if you use the BANDWIDTH keyword, as in the example below, PLUMED will estimate the histogram
 using [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 
 ```plumed
@@ -66,7 +66,7 @@ using [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_e
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 rp: RESTRAINT ARG=phi KAPPA=50.0 AT=@replicas:{-3.00,-1.45,0.10,1.65}
-hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.1 
+hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.1
 fes: CONVERT_TO_FES ARG=hh TEMP=300
 DUMPGRID ARG=fes FILE=fes.dat
 ```

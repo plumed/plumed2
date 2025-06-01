@@ -65,7 +65,7 @@ PRINT ARG=a FILE=average.dat STRIDE=1000
 The instructions `CLEAR=1000` in the above input tells PLUMED to set the values `s` and `n` back to
 zero after 1000 new steps have been performed. The PRINT action will thus print a block average that
 is taken from the first 1000 steps of the trajectory, a second block average from the second 1000 steps
-of the trajectory and so on.  Notice that you can achieve a similar effect using UPDATE_FROM and UPDATE_UNTIL as 
+of the trajectory and so on.  Notice that you can achieve a similar effect using UPDATE_FROM and UPDATE_UNTIL as
 shown below:
 
 ```plumed

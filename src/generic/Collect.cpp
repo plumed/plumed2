@@ -62,17 +62,17 @@ This outputs files contain from this input contain 1000-frame blocks of the traj
 This type of input might proove useful if you wish to perform separate analysis on different parts of the trajectory for
 later comparison.
 
-An alternative way to collect part of the trajectry is to use the UPDATE_FROM and UPDATE_UNTIL arguments as illustrated in the 
+An alternative way to collect part of the trajectry is to use the UPDATE_FROM and UPDATE_UNTIL arguments as illustrated in the
 example shown below:
 
 ```plumed
 d: DISTANCE ATOMS=1,2
 c: COLLECT ARG=d STRIDE=1 UPDATE_FROM=100 UPDATE_UNTIL=200
-DUMPVECTOR ARG=c FILE=timeseries 
+DUMPVECTOR ARG=c FILE=timeseries
 ```
 
 In this input the COLLECT action only starts collecting the data on step 100 so the first 100 values of the trajectory are discarded.
-The COLLECT action then stops collecting data on step 200. These 200 stored distances are then output at the end of the simulation 
+The COLLECT action then stops collecting data on step 200. These 200 stored distances are then output at the end of the simulation
 even if the trajectory contains more than 200 frames.
 
 ## Collecting vectors
