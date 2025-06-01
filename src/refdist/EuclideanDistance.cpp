@@ -91,7 +91,7 @@ ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
 psi: TORSION ATOMS=1,2,3,4
 phi: TORSION ATOMS=13,14,15,16
 
-dd: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
+dd: EUCLIDEAN_DISTANCE ARG2=psi,phi ARG1=ref_psi,ref_phi
 PRINT ARG=dd FILE=colvar
 ```
 
@@ -122,6 +122,12 @@ phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
 dd: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
 PRINT ARG=dd FILE=colvar
 ```
+
+!!! note "scalars must be specified in ARG2"
+
+    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
+    as is done in the example inputs above.
 
 */
 //+ENDPLUMEDOC

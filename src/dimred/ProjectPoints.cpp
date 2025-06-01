@@ -67,7 +67,7 @@ d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
 # Calculate the distances between the instananeous points and the current positions
-ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
+ed: EUCLIDEAN_DISTANCE SQUARED ARG2=d1,d2,d3 ARG1=d1_ref,d2_ref,d3_ref
 
 # And generate the projection
 proj: PROJECT_POINTS ARG=proj1_ref,proj2_ref TARGET1=ed WEIGHTS1=weights
