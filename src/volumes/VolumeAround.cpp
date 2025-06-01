@@ -156,7 +156,7 @@ PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 void VolumeAround::registerKeywords( Keywords& keys ) {
   keys.setDisplayName("AROUND");
   keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
-  keys.add("atoms-2","ATOM","an alternative to ORIGIN");
+  keys.addDeprecatedKeyword("ATOM","ORIGIN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
