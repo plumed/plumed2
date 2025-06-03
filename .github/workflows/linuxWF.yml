@@ -197,6 +197,7 @@ jobs:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-doc-' )
       run: |
+         export PLUMED_MAXBACKUP=0 
          make doc >/dev/null
     - name: Coverage
       env:
