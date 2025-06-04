@@ -104,15 +104,30 @@ class FerroNematicOrder : public ActionShortcut {
       dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
     }
 
-    readInputLine( getShortcutLabel() + "_dvals: DISTANCE" + dlist );
-    readInputLine( getShortcutLabel() + "_dvecs: DISTANCE COMPONENTS " + dlist );
-    readInputLine( getShortcutLabel() + "_dux: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.x," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_duy: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.y," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_duz: CUSTOM ARG=" + getShortcutLabel() + "_dvecs.z," + getShortcutLabel() + "_dvals FUNC=x/y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_mux: MEAN ARG=" + getShortcutLabel() + "_dux PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_muy: MEAN ARG=" + getShortcutLabel() + "_duy PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_muz: MEAN ARG=" + getShortcutLabel() + "_duz PERIODIC=NO");
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_mux," + getShortcutLabel() + "_muy," + getShortcutLabel() + "_muz FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO");
+    std::string L = getShortcutLabel();
+    // Calculate the lengths of the distance vectors
+    //   d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ...
+    readInputLine( L + "_dvals: DISTANCE" + dlist );
+    // Calculate the molecular axes of the molecules
+    //   dc: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ...
+    readInputLine( L + "_dvecs: DISTANCE COMPONENTS " + dlist );
+    // Convert the molecular axes into unit vectors
+    //   dux: CUSTOM ARG=dc.x,d FUNC=x/y PERIODIC=NO
+    //   duy: CUSTOM ARG=dc.y,d FUNC=x/y PERIODIC=NO
+    //   duz: CUSTOM ARG=dc.z,d FUNC=x/y PERIODIC=NO
+    readInputLine( L + "_dux: CUSTOM ARG=" + L + "_dvecs.x," + L + "_dvals FUNC=x/y PERIODIC=NO");
+    readInputLine( L + "_duy: CUSTOM ARG=" + L + "_dvecs.y," + L + "_dvals FUNC=x/y PERIODIC=NO");
+    readInputLine( L + "_duz: CUSTOM ARG=" + L + "_dvecs.z," + L + "_dvals FUNC=x/y PERIODIC=NO");
+    // Now calculate the average of the molecular axes
+    //   mux: MEAN ARG=dux PERIODIC=NO
+    //   muy: MEAN ARG=duz PERIODIC=NO
+    //   muz: MEAN ARG=dyz PERIODIC=NO
+    readInputLine( L + "_mux: MEAN ARG=" + L + "_dux PERIODIC=NO");
+    readInputLine( L + "_muy: MEAN ARG=" + L + "_duy PERIODIC=NO");
+    readInputLine( L + "_muz: MEAN ARG=" + L + "_duz PERIODIC=NO");
+    // Compute the ferronematic order parameter
+    //   p: CUSTOM ARG=mux,muy,muz FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+    readInputLine( L + ": CUSTOM ARG=" + L + "_mux," + L + "_muy," + L + "_muz FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO");
   }
 
 }

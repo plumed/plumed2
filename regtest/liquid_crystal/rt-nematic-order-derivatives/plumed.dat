@@ -16,7 +16,7 @@ GROUP ATOMS=20-192:48 LABEL=heads
 
 # Since the molecules in the crystal structure are all parallel,
 # the nematic order parameter should be close to S=1.
-S: NEMATIC_ORDER ATOMS=tails,heads
+S: NEMATIC_ORDER MOLECULE_STARTS=tails MOLECULE_ENDS=heads
 PRINT FILE=colvar ARG=S
 
 # Add a bias to the nematic order parameter S.
