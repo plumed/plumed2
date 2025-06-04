@@ -48,6 +48,7 @@ of the $3 \times 3$ nematic order tensor,
 $$
 Q_{a,b} = \frac{1}{N} \sum_{i=1}^N \left(\frac{3}{2} u_{a,i} u_{b,i} - \frac{1}{2} \delta_{a,b} \right).
 $$
+Note that if only a single molecular axis is given (N=1), the nematic order parameter is always S=1.
 
 By adding a bias to the nematic order parameter, one can drive a liquid crystal from the
 isotropic to the nematic phase.
@@ -107,6 +108,17 @@ class NematicOrder : public ActionShortcut {
       "The molecular axes are specified by pairs of atoms."
     );
 
+    std::string L = getShortcutLabel();
+
+    if (starts.size() == 1) {
+      // Catch the edge case where there is only a single molecule. In this case the code further below
+      // will not work, since VSTACK returns a (3,) vector instead of a (1,3) matrix.
+
+      // If only a single molecular axis is given, the nematic order parameter is always S=1.
+      readInputLine( L + ": CONSTANT VALUE=1.0");
+      return;
+    }
+
     std::string dlist = "";
     for(unsigned i=0; i<starts.size(); ++i) {
       std::string num;
@@ -114,7 +126,6 @@ class NematicOrder : public ActionShortcut {
       dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
     }
 
-    std::string L = getShortcutLabel();
     // Calculate the lengths of the distance vectors
     //   d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
     readInputLine( L + "_dvals: DISTANCE" + dlist );
@@ -131,7 +142,7 @@ class NematicOrder : public ActionShortcut {
     // Create a Nx3 matrix that contains all the unit vectors
     //   v: VSTACK ARG=dux,duy,duz
     readInputLine( L + "_v: VSTACK ARG=" + L + "_dux," + L + "_duy," + L + "_duz");
-    //   vT: TRANSPOSE ARG=v 
+    //   vT: TRANSPOSE ARG=v
     readInputLine( L + "_vT: TRANSPOSE ARG=" + L + "_v");
     // Now compute the 3x3 matrix Q
     //   c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3
