@@ -49,8 +49,8 @@ private:
   //given how this is initialized, it is not possible to get to an unknown state of the kernel type
   //so, it is not necessary to throw an exception if the type is not set
   KernelType type{KernelType::gaussian};
-  enum class Periodicity {unset,periodic,notperiodic};
-  Periodicity periodicity{Periodicity::unset};
+  enum class Periodicity {periodic,notperiodic};
+  Periodicity periodicity{Periodicity::notperiodic};
   double min{0.0};
   double max{0.0};
   double max_minus_min{0.0};
