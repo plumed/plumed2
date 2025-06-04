@@ -126,17 +126,20 @@ namespace volumes {
 
 class VolumeTetrapore {
 public:
-  double jacob_det;
-  double len_bi, len_cross, len_perp, sigma;
+  double jacob_det{0.0};
+  double len_bi{0.0}, len_cross{0.0}, len_perp{0.0}, sigma{0.0};
   Vector bi, cross, perp;
-  std::string kerneltype;
+  HistogramBead::KernelType kerneltype{HistogramBead::KernelType::gaussian};
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
   static void registerKeywords( Keywords& keys );
-  VolumeTetrapore() : jacob_det(0), len_bi(0), len_cross(0), len_perp(0), sigma(0), dlbi(4), dlcross(4), dlperp(4), dbi(3), dcross(3), dperp(3) {}
-  void setupRegions( ActionVolume<VolumeTetrapore>* action, const Pbc& pbc, const std::vector<Vector>& positions );
+  VolumeTetrapore() : dlbi(4), dlcross(4), dlperp(4), dbi(3), dcross(3), dperp(3) {}
+  void setupRegions( ActionVolume<VolumeTetrapore>* action,
+                     const Pbc& pbc,
+                     const std::vector<Vector>& positions );
   void parseInput( ActionVolume<VolumeTetrapore>* action );
-  static void parseAtoms( ActionVolume<VolumeTetrapore>* action, std::vector<AtomNumber>& atoms );
+  static void parseAtoms( ActionVolume<VolumeTetrapore>* action,
+                          std::vector<AtomNumber>& atoms );
   VolumeTetrapore& operator=( const VolumeTetrapore& m ) {
     jacob_det=m.jacob_det;
     len_bi=m.len_bi;
@@ -164,7 +167,9 @@ void VolumeTetrapore::registerKeywords( Keywords& keys ) {
 
 void VolumeTetrapore::parseInput( ActionVolume<VolumeTetrapore>* action ) {
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype=HistogramBead::getKernelType(mykerneltype);
 }
 
 void VolumeTetrapore::parseAtoms( ActionVolume<VolumeTetrapore>* action, std::vector<AtomNumber>& atoms ) {
@@ -397,9 +402,7 @@ void VolumeTetrapore::setupRegions( ActionVolume<VolumeTetrapore>* action, const
 
 void VolumeTetrapore::calculateNumberInside( const VolumeInput& input, const VolumeTetrapore& actioninput, VolumeOutput& output ) {
   // Setup the histogram bead
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( actioninput.kerneltype );
+  HistogramBead bead( actioninput.kerneltype );
 
   // Calculate distance of atom from origin of new coordinate frame
   Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
