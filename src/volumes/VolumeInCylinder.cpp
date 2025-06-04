@@ -201,9 +201,7 @@ void VolumeInCylinder::calculateNumberInside( const VolumeInput& input, const Vo
 
   double vcylinder, dcylinder;
   if( actioninput.docylinder ) {
-    HistogramBead bead;
-    bead.isNotPeriodic();
-    bead.setKernelType( actioninput.kerneltype );
+    HistogramBead bead( actioninput.kerneltype );
     bead.set( actioninput.min, actioninput.max, actioninput.sigma );
     vcylinder=bead.calculate( fpos[actioninput.dir[2]], dcylinder );
   } else {

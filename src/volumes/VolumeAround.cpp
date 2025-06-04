@@ -224,9 +224,7 @@ void VolumeAround::calculateNumberInside( const VolumeInput& input,
     const VolumeAround& actioninput,
     VolumeOutput& output ) {
   // Setup the histogram bead
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( actioninput.kerneltype );
+  HistogramBead bead(actioninput.kerneltype);
 
   // Calculate position of atom wrt to origin
   Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]),

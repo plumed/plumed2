@@ -34,6 +34,22 @@ If you add a new type of function in this file please add documentation for your
 
 namespace PLMD {
 
+//Non periodic constructor
+HistogramBead::HistogramBead(KernelType kt):
+  type(kt),
+  periodicity(Periodicity::notperiodic) {}
+//periodic constructor
+HistogramBead::HistogramBead(KernelType kt, double mlow, double mhigh):
+  type(kt) {
+  isPeriodic(mlow,mhigh);
+}
+
+HistogramBead::HistogramBead(const HistogramBead&)=default;
+HistogramBead::HistogramBead(HistogramBead&&)=default;
+HistogramBead& HistogramBead::operator=(const HistogramBead&)=default;
+HistogramBead& HistogramBead::operator=(HistogramBead&&)=default;
+// HistogramBead::~HistogramBead()=default;
+
 void HistogramBead::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
@@ -155,7 +171,7 @@ void HistogramBead::setKernelType( KernelType ktype ) {
 }
 
 double HistogramBead::calculate( double x, double& df ) const {
-  // plumed_dbg_assert(init && periodicity!=unset );
+  // plumed_dbg_assert(init && periodicity!=Periodicity::unset );
   if( type==KernelType::gaussian ) {
     double lowB = difference( x, lowb ) / ( std::sqrt(2.0) * width );
     double upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
@@ -172,7 +188,7 @@ double HistogramBead::calculate( double x, double& df ) const {
       df -= (1 - std::fabs(upperB)) / width;
     }
     if (upperB<=-1. || lowB >=1.) {
-    return 0.;
+      return 0.;
     } else {
       double ia, ib;
       if( lowB>-1.0 ) {
@@ -191,11 +207,11 @@ double HistogramBead::calculate( double x, double& df ) const {
   // } else {
   //   assert(false);
   // }
-  return f;
+  // return f;
 }
 
 double HistogramBead::calculateWithCutoff( double x, double& df ) const {
-  plumed_dbg_assert(init && periodicity!=unset );
+  plumed_dbg_assert(init && periodicity!=Periodicity::unset );
 
   double lowB, upperB, f;
   lowB = difference( x, lowb ) / width ;
@@ -257,7 +273,7 @@ double HistogramBead::lboundDerivative( const double& x ) const {
 }
 
 double HistogramBead::uboundDerivative( const double& x ) const {
-  plumed_dbg_assert(init && periodicity!=unset );
+  plumed_dbg_assert(init && periodicity!=Periodicity::unset );
   if( type==KernelType::gaussian ) {
     double upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
     return exp( -upperB*upperB ) / ( std::sqrt(2*pi)*width );
@@ -276,9 +292,9 @@ double HistogramBead::uboundDerivative( const double& x ) const {
 //why here? it can be used ONLY in the .cpp so, there
 inline
 double HistogramBead::difference( const double d1, const double d2 ) const {
-  if(periodicity==notperiodic) {
+  if(periodicity==Periodicity::notperiodic) {
     return d2-d1;
-  } else if(periodicity==periodic) {
+  } else if(periodicity==Periodicity::periodic) {
     // Make sure the point is in the target range
     double newx=d1*inv_max_minus_min;
     newx=Tools::pbc(newx);

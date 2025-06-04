@@ -92,7 +92,7 @@ namespace adjmat {
 class TopologyMatrix {
 public:
   double sigma;
-  std::string kerneltype;
+  HistogramBead::KernelType kerneltype;
 /// The maximum number of bins that will be used
 /// This is calculated based on the dmax of the switching functions
   unsigned maxbins;
@@ -189,7 +189,9 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
   }
   // Read in stuff for grid
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype = HistogramBead::getKernelType(mykerneltype);
   action->parse("BIN_SIZE",binw_mat);
 
   // Set the link cell cutoff
@@ -211,9 +213,7 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const Adjacenc
   double dfuncl, sw = data.switchingFunction.calculateSqr( len2, dfuncl );
 
   // Now run through all sea atoms
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( data.kerneltype );
+  HistogramBead bead( data.kerneltype );
   Vector g1derivf,g2derivf,lderivf;
   Tensor vir;
   double binlength = data.maxbins * data.binw_mat;

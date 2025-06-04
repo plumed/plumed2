@@ -49,7 +49,8 @@ private:
   //given how this is initialized, it is not possible to get to an unknown state of the kernel type
   //so, it is not necessary to throw an exception if the type is not set
   KernelType type{KernelType::gaussian};
-  enum {unset,periodic,notperiodic} periodicity{unset};
+  enum class Periodicity {unset,periodic,notperiodic};
+  Periodicity periodicity{Periodicity::unset};
   double min{0.0};
   double max{0.0};
   double max_minus_min{0.0};
@@ -60,11 +61,21 @@ public:
   static void registerKeywords( Keywords& keys );
   static void generateBins( const std::string& params, std::vector<std::string>& bins );
   std::string description() const ;
-  //implicit constructor ;D
+  // HistogramBead()
+  //Non periodic constructor
+#pragma acc routine seq
+  explicit HistogramBead(KernelType);
+  //with period constructor
+  HistogramBead(KernelType, double mlow, double mhigh);
+  HistogramBead(const HistogramBead&);
+  HistogramBead(HistogramBead&&);
+  HistogramBead& operator=(const HistogramBead&);
+  HistogramBead& operator=(HistogramBead&&);
+  // ~HistogramBead();
   bool hasBeenSet() const;
 #pragma acc routine seq
   void isNotPeriodic();
-  void isPeriodic( const double& mlow, const double& mhigh );
+  void isPeriodic( double mlow, double mhigh );
   static KernelType getKernelType( const std::string& ktype );
   void setKernelType( const std::string& ktype );
 #pragma acc routine seq
@@ -89,12 +100,12 @@ bool HistogramBead::hasBeenSet() const {
 
 inline
 void HistogramBead::isNotPeriodic() {
-  periodicity=notperiodic;
+  periodicity=Periodicity::notperiodic;
 }
 
 inline
-void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ) {
-  periodicity=periodic;
+void HistogramBead::isPeriodic( const double mlow, const double mhigh ) {
+  periodicity=Periodicity::periodic;
   min=mlow;
   max=mhigh;
   max_minus_min=max-min;

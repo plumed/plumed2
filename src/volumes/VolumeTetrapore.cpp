@@ -402,9 +402,7 @@ void VolumeTetrapore::setupRegions( ActionVolume<VolumeTetrapore>* action, const
 
 void VolumeTetrapore::calculateNumberInside( const VolumeInput& input, const VolumeTetrapore& actioninput, VolumeOutput& output ) {
   // Setup the histogram bead
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( actioninput.kerneltype );
+  HistogramBead bead( actioninput.kerneltype );
 
   // Calculate distance of atom from origin of new coordinate frame
   Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
