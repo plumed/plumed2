@@ -74,89 +74,90 @@ BIASVALUE ARG=S
 //+ENDPLUMEDOC
 
 class NematicOrder : public ActionShortcut {
-  public:
-    static void registerKeywords(Keywords& keys);
-    explicit NematicOrder(const ActionOptions&);
-  };
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit NematicOrder(const ActionOptions&);
+};
 
-  PLUMED_REGISTER_ACTION(NematicOrder,"NEMATIC_ORDER")
+PLUMED_REGISTER_ACTION(NematicOrder,"NEMATIC_ORDER")
 
-  void NematicOrder::registerKeywords(Keywords& keys) {
-    ActionShortcut::registerKeywords( keys );
-    keys.add("atoms","MOLECULE_STARTS","The atoms where the molecular axis starts.");
-    keys.add("atoms","MOLECULE_ENDS","The atoms where the molecular axis ends.");
-    keys.setValueDescription("scalar","the modulus of the average vector");
-    keys.needsAction("CONSTANT");
-    keys.needsAction("CUSTOM");
-    keys.needsAction("DIAGONALIZE");
-    keys.needsAction("DISTANCE");
-    keys.needsAction("MATRIX_PRODUCT");
-    keys.needsAction("TRANSPOSE");
-    keys.needsAction("VSTACK");
-  }
+void NematicOrder::registerKeywords(Keywords& keys) {
+  ActionShortcut::registerKeywords( keys );
+  keys.add("atoms","MOLECULE_STARTS","The atoms where the molecular axis starts.");
+  keys.add("atoms","MOLECULE_ENDS","The atoms where the molecular axis ends.");
+  keys.setValueDescription("scalar","the modulus of the average vector");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("DIAGONALIZE");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("VSTACK");
+}
 
-  NematicOrder:: NematicOrder(const ActionOptions& ao):
-    Action(ao),
-    ActionShortcut(ao) {
-      // Fetch indices of atoms that define the tails and the heads of the molecular axes.
-      std::vector<std::string> starts, ends;
-      MultiColvarShortcuts::parseAtomList("MOLECULE_STARTS",starts,this);
-      MultiColvarShortcuts::parseAtomList("MOLECULE_ENDS",ends,this);
+NematicOrder:: NematicOrder(const ActionOptions& ao):
+  Action(ao),
+  ActionShortcut(ao) {
+  // Fetch indices of atoms that define the tails and the heads of the molecular axes.
+  std::vector<std::string> starts, ends;
+  MultiColvarShortcuts::parseAtomList("MOLECULE_STARTS",starts,this);
+  MultiColvarShortcuts::parseAtomList("MOLECULE_ENDS",ends,this);
 
-    if( starts.size()!=ends.size() ) error(
+  if( starts.size()!=ends.size() )
+    error(
       "Mismatched numbers of atoms specified to MOLECULE_STARTS and MOLECULE_ENDS keywords. "
       "The molecular axes are specified by pairs of atoms."
     );
 
-    std::string L = getShortcutLabel();
+  std::string L = getShortcutLabel();
 
-    if (starts.size() == 1) {
-      // Catch the edge case where there is only a single molecule. In this case the code further below
-      // will not work, since VSTACK returns a (3,) vector instead of a (1,3) matrix.
+  if (starts.size() == 1) {
+    // Catch the edge case where there is only a single molecule. In this case the code further below
+    // will not work, since VSTACK returns a (3,) vector instead of a (1,3) matrix.
 
-      // If only a single molecular axis is given, the nematic order parameter is always S=1.
-      readInputLine( L + ": CONSTANT VALUE=1.0");
-      return;
-    }
-
-    std::string dlist = "";
-    for(unsigned i=0; i<starts.size(); ++i) {
-      std::string num;
-      Tools::convert( i+1, num );
-      dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
-    }
-
-    // Calculate the lengths of the distance vectors
-    //   d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
-    readInputLine( L + "_dvals: DISTANCE" + dlist );
-    // Calculate the vectorial orientations of the molecules
-    //   dc: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4  ATOMS3=5,6 ATOMS4=7,8
-    readInputLine( L + "_dvecs: DISTANCE COMPONENTS " + dlist );
-    // Convert the vectors into unit vectors
-    //   dux: CUSTOM ARG=dc.x,d FUNC=x/y PERIODIC=NO
-    //   duy: CUSTOM ARG=dc.y,d FUNC=x/y PERIODIC=NO
-    //   duz: CUSTOM ARG=dc.z,d FUNC=x/y PERIODIC=NO
-    readInputLine( L + "_dux: CUSTOM ARG=" + L + "_dvecs.x," + L + "_dvals FUNC=x/y PERIODIC=NO");
-    readInputLine( L + "_duy: CUSTOM ARG=" + L + "_dvecs.y," + L + "_dvals FUNC=x/y PERIODIC=NO");
-    readInputLine( L + "_duz: CUSTOM ARG=" + L + "_dvecs.z," + L + "_dvals FUNC=x/y PERIODIC=NO");
-    // Create a Nx3 matrix that contains all the unit vectors
-    //   v: VSTACK ARG=dux,duy,duz
-    readInputLine( L + "_v: VSTACK ARG=" + L + "_dux," + L + "_duy," + L + "_duz");
-    //   vT: TRANSPOSE ARG=v
-    readInputLine( L + "_vT: TRANSPOSE ARG=" + L + "_v");
-    // Now compute the 3x3 matrix Q
-    //   c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3
-    readInputLine( L + "_c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3");
-    //   mp: MATRIX_PRODUCT ARG=vT,v
-    readInputLine( L + "_mp: MATRIX_PRODUCT ARG=" + L + "_vT," + L + "_v");
-    //   Q: CUSTOM ARG=mp,c FUNC=((3*x-y)/2)/4 PERIODIC=NO
-    readInputLine( L + "_Q: CUSTOM ARG=" + L + "_mp," + L + "_c " + "FUNC=((3*x-y)/2)/4 PERIODIC=NO");
-    // Diagonalize Q
-    //   diag: DIAGONALIZE ARG=q
-    readInputLine( L + "_diag: DIAGONALIZE ARG=" + L + "_Q");
-    // Nematic order parameter is the largest eigenvalue of Q
-    readInputLine( L + ": CUSTOM ARG=" + L + "_diag.vals-1 FUNC=x PERIODIC=NO");
+    // If only a single molecular axis is given, the nematic order parameter is always S=1.
+    readInputLine( L + ": CONSTANT VALUE=1.0");
+    return;
   }
+
+  std::string dlist = "";
+  for(unsigned i=0; i<starts.size(); ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
+  }
+
+  // Calculate the lengths of the distance vectors
+  //   d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+  readInputLine( L + "_dvals: DISTANCE" + dlist );
+  // Calculate the vectorial orientations of the molecules
+  //   dc: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4  ATOMS3=5,6 ATOMS4=7,8
+  readInputLine( L + "_dvecs: DISTANCE COMPONENTS " + dlist );
+  // Convert the vectors into unit vectors
+  //   dux: CUSTOM ARG=dc.x,d FUNC=x/y PERIODIC=NO
+  //   duy: CUSTOM ARG=dc.y,d FUNC=x/y PERIODIC=NO
+  //   duz: CUSTOM ARG=dc.z,d FUNC=x/y PERIODIC=NO
+  readInputLine( L + "_dux: CUSTOM ARG=" + L + "_dvecs.x," + L + "_dvals FUNC=x/y PERIODIC=NO");
+  readInputLine( L + "_duy: CUSTOM ARG=" + L + "_dvecs.y," + L + "_dvals FUNC=x/y PERIODIC=NO");
+  readInputLine( L + "_duz: CUSTOM ARG=" + L + "_dvecs.z," + L + "_dvals FUNC=x/y PERIODIC=NO");
+  // Create a Nx3 matrix that contains all the unit vectors
+  //   v: VSTACK ARG=dux,duy,duz
+  readInputLine( L + "_v: VSTACK ARG=" + L + "_dux," + L + "_duy," + L + "_duz");
+  //   vT: TRANSPOSE ARG=v
+  readInputLine( L + "_vT: TRANSPOSE ARG=" + L + "_v");
+  // Now compute the 3x3 matrix Q
+  //   c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3
+  readInputLine( L + "_c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3");
+  //   mp: MATRIX_PRODUCT ARG=vT,v
+  readInputLine( L + "_mp: MATRIX_PRODUCT ARG=" + L + "_vT," + L + "_v");
+  //   Q: CUSTOM ARG=mp,c FUNC=((3*x-y)/2)/4 PERIODIC=NO
+  readInputLine( L + "_Q: CUSTOM ARG=" + L + "_mp," + L + "_c " + "FUNC=((3*x-y)/2)/4 PERIODIC=NO");
+  // Diagonalize Q
+  //   diag: DIAGONALIZE ARG=q
+  readInputLine( L + "_diag: DIAGONALIZE ARG=" + L + "_Q");
+  // Nematic order parameter is the largest eigenvalue of Q
+  readInputLine( L + ": CUSTOM ARG=" + L + "_diag.vals-1 FUNC=x PERIODIC=NO");
+}
 
 }
 }
