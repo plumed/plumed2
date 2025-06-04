@@ -33,13 +33,13 @@ that form part of one of the clusters that was identified using DFSCLUSTERING
 
 The input shown below constructs a [CONTACT_MATRIX](CONTACT_MATRIX.md) that describes the connectivity between the atoms.
 The DFS algorithm is then used to find the connected components
-in this matrix.  The indices of the atoms in the largest connected component are then output
+in this matrix.  The indices of the atoms in the largest connected component in each frame of the trajectory are then output
 to a ndx file.
 
 ```plumed
 mat: CONTACT_MATRIX ATOMS=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
 dfs: DFSCLUSTERING ARG=mat
-OUTPUT_CLUSTER ATOMS=1-1996 CLUSTERS=dfs CLUSTER=1 FILE=dfs.ndx
+OUTPUT_CLUSTER ATOMS=1-1996 CLUSTERS=dfs CLUSTER=1 FILE=dfs.ndx STRIDE=1
 ```
 
 */

@@ -86,6 +86,7 @@ void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
+  keys.setDeprecated("CLUSTER_WEIGHTS");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
   keys.setDisplayName("CLUSTER_DISTRIBUTION");

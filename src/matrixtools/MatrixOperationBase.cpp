@@ -30,7 +30,7 @@ void MatrixOperationBase::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","matrix","the input matrix");
   keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add("optional","MATRIX","the input matrix (can use ARG instead)");
+  keys.addDeprecatedKeyword(,"MATRIX","ARG");
 }
 
 MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):

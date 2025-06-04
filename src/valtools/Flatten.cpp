@@ -28,7 +28,7 @@
 Convert a matrix into a vector
 
 This action can be used to convert an input matrix to a vector. The input matrix is flattened
-in row-major order so if the input matrix is $N \times $M$ the output vector has $N\times M$ elements.
+in row-major order so if the input matrix is $N \times M$ the output vector has $N\times M$ elements.
 The first $M$ of these elements contain the first row of the input matrix, the second $M$ contain the
 second row of the input matrix and so on.
 
@@ -74,6 +74,7 @@ void Flatten::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","matrix","the label for the matrix that you would like to flatten to a vector");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("vector","a vector containing all the elements of the input matrix");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 Flatten::Flatten(const ActionOptions& ao):
