@@ -8,10 +8,16 @@ WHOLEMOLECULES ENTITY0=1-48 ENTITY1=49-96 ENTITY2=97-144 ENTITY3=144-192
 # in the second molecule from 13+1*48 to 20+1*48 and in the n-th
 # molecule from 13+n*48 to 20+n*48.
 
+# The indices of the head atoms: 13, 13+1*48, 13+2*48, 13+3*48
+GROUP ATOMS=13-192:48 LABEL=tails
+
+# The indices of the tail atoms: 20, 20+1*48, 20+2*48, 20+3*48
+GROUP ATOMS=20-192:48 LABEL=heads
+
 # Since the molecules in the crystal structure are arranged
 # in an antiparallel fashion, so that there is no net permanent
 # dipole moment, the ferronematic order parameter should be close to P=0.
-P: FERRONEMATIC_ORDER MOLECULE_STARTS=13-192:48 MOLECULE_ENDS=20-192:48
+P: FERRONEMATIC_ORDER MOLECULE_STARTS=tails MOLECULE_ENDS=heads
 PRINT FILE=colvar ARG=P
 
 # Add a bias to the ferronematic order parameter P.

@@ -18,6 +18,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "multicolvar/MultiColvarShortcuts.h"
+
+using namespace PLMD::multicolvar;
 
 namespace PLMD {
 namespace liquid_crystal {
@@ -84,17 +87,15 @@ class FerroNematicOrder : public ActionShortcut {
   FerroNematicOrder:: FerroNematicOrder(const ActionOptions& ao):
     Action(ao),
     ActionShortcut(ao) {
-      std::vector<std::string> starts;
-      // It would be better to use somethling like parseAtomList(...) here, so that
-      // atom groups are correctly translated into arrays of indices.
-      parseVector("MOLECULE_STARTS",starts);
-      // This converts strings like 1-4 to 1,2,3,4
-      Tools::interpretRanges(starts);
-      std::vector<std::string> ends;
-      parseVector("MOLECULE_ENDS",ends);
-      Tools::interpretRanges(ends);
+      // Fetch indices of atoms that define the tails and the heads of the molecular axes.
+      std::vector<std::string> starts, ends;
+      MultiColvarShortcuts::parseAtomList("MOLECULE_STARTS",starts,this);
+      MultiColvarShortcuts::parseAtomList("MOLECULE_ENDS",ends,this);
 
-    if( starts.size()!=ends.size() ) error("mismatched numbers of atoms specified to MOLECULE_STARTS and MOLECULE_ENDS keywords");
+    if( starts.size()!=ends.size() ) error(
+      "Mismatched numbers of atoms specified to MOLECULE_STARTS and MOLECULE_ENDS keywords. "
+      "The molecular axes are specified by pairs of atoms."
+    );
 
     std::string dlist = "";
     for(unsigned i=0; i<starts.size(); ++i) {
