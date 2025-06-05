@@ -31,11 +31,71 @@
 /*
 Calculate functions of the distribution of properties in your connected components.
 
-__This shortcut action is present to ensure that inputs for older PLUMED versions remain compatible.  We STRONGLY
-encourage you to use the newer (and simpler) syntax for clustering calculations__  Look at the documentation for
-[CLUSTER_WEIGHTS](CLUSTER_WEIGHTS.md) and the expanded version of the input below to see how this new input syntax operates.
+This action allows you to calculate the number of atoms in each of the connected components that
+were detected when you performed [DFSCLUSTERING](DFSCLUSTERING.md) on one of the adjacency matrices
+computed using the [admat](module_adjmat.md).  The following example illustrates how you can use
+this to compute the number of atoms in each of the identified clusters:
 
-The input provided below calculates the local q6 Steinhardt parameter on each atom.  The coordination number
+```plumed
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING ARG=cm
+clust: CLUSTER_DISTRIBUTION CLUSTERS=dfs
+PRINT ARG=clust FILE=colvar STRIDE=1
+```
+
+The output from the CLUSTER_DISTRIBUTION action here is a vector with 100 elements.  The first element of this vector
+is the number of atoms in the largest connected component, the second element of the vector is the number of atoms in the
+second largest connected component and so on (many elements of the vector will be zero).
+
+As illustrated in the inputs below there are multiple shortcuts that allow you to probe the distribution of cluster sizes.
+For example, the following input calculates how many clusters with more than 10 atoms are present.
+
+```plumed
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING ARG=cm
+clust: CLUSTER_DISTRIBUTION CLUSTERS=dfs MORE_THAN={RATIONAL D_0=10 R_0=0.0001}
+PRINT ARG=clust.morethan FILE=colvar STRIDE=1
+```
+
+By a similar logic you can compute the number of clusters that were identified as follows:
+
+```plumed
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING ARG=cm
+clust: CLUSTER_DISTRIBUTION CLUSTERS=dfs LESS_THAN={RATIONAL R_0=0.0001}
+nc: CUSTOM ARG=clust.lessthan FUNC=100-x PERIODIC=NO
+PRINT ARG=nc FILE=colvar STRIDE=1
+```
+
+This input calculates the number of zeros in the vector output by the CLUSTER_DISTRIBUTION action.  If we subtract the number of
+non-zero elements from the size of the vector we then get the number of clusters.
+
+Lastly, you can calculate the number of clusters that are within a certain range or a set of ranges using the BETWEEN and HISGTOGRAM keywords
+as indicated below:
+
+```plumed
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING ARG=cm
+clust: CLUSTER_DISTRIBUTION ...
+   CLUSTERS=dfs
+   BETWEEN={GAUSSIAN LOWER=5 UPPER=6 SMEAR=0.5}
+   HISTOGRAM={GAUSSIAN LOWER=6 UPPER=10 NBINS=4 SMEAR=0.5}
+...
+PRINT ARG=clust.* FILE=colvar STRIDE=1
+```
+
+This input will output 5 quantities:
+
+- `clust.between` tells you the number of connected components that contain between 5 and 6 atoms.
+- `clust.between-1` tells you the number of connected components that contain between 6 and 7 atoms.
+- `clust.between-2` tells you the number of connected components that contain between 7 and 8 atoms.
+- `clust.between-3` tells you the number of connected components that contain between 8 and 9 atoms.
+- `clust.between-4` tells you the number of connected components that contain between 9 and 10 atoms.
+
+If you expand the inputs above you can find more details on how these quantities are calculated.
+
+The input provided below shows just how this can be used to perform quite complicated calculations.  The input
+calculates the local q6 Steinhardt parameter on each atom.  The coordination number
 that atoms with a high value for the local q6 Steinhardt parameter have with other atoms that have a high
 value for the local q6 Steinhardt parameter is then computed.  A contact matrix is then computed that measures
 whether atoms atoms $i$ and $j$ have a high value for this coordination number and if they are within
@@ -57,6 +117,10 @@ nclust: CLUSTER_DISTRIBUTION ...
 ...
 PRINT ARG=nclust.* FILE=colvar
 ```
+
+Notice how the WEIGHTS keyword is used here in the input to CLUSTER_DISTRIBUTION. By using this keyword here we ensure that the size of each
+cluster is the sum of the components of the vector `fcc` that are part of the connected component.  The `size` of each cluster that is output
+is thus the number of atoms in that cluster that have a COORDINATIONNUMBER that is greater than 4.
 
 */
 //+ENDPLUMEDOC
@@ -86,10 +150,9 @@ void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.setDeprecated("CLUSTER_WEIGHTS");
+  keys.setDisplayName("CLUSTER_DISTRIBUTION");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
-  keys.setDisplayName("CLUSTER_DISTRIBUTION");
   keys.addInputKeyword("optional","WEIGHTS","vector","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
   keys.setValueDescription("vector","a vector containing the sum of a atomic-cv that is calculated for each of the identified clusters");
   keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
@@ -176,6 +239,13 @@ void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("optional","WEIGHTS","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.reset_style("MIN","hidden");
+  keys.reset_style("MAX","hidden");
+  keys.reset_style("ALT_MIN","hidden");
+  keys.reset_style("HIGHEST","hidden");
+  keys.reset_style("LOWEST","hidden");
+  keys.reset_style("MEAN","hidden");
+  keys.reset_style("SUM","hidden");
   keys.addActionNameSuffix("_CALC");
 }
 

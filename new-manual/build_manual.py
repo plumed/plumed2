@@ -646,7 +646,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
          # Build a list of the keywords for this action that we want to see in the documentation
          example_keywords = set({})
          for key, docs in value["syntax"].items() :
-             if key=="output" or docs["type"]=="hidden" : continue
+             if key=="output" or docs["type"]=="hidden" or docs["type"]=="deprecated" : continue
              example_keywords.add(key)
 
          f.write("## Details and examples \n")

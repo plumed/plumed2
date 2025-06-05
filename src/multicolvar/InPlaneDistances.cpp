@@ -30,6 +30,10 @@
 /*
 Calculate distances in the plane perpendicular to an axis
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [DISTANCE](DISTANCE.md) and [ANGLE](ANGLE.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 Each quantity calculated in this CV uses the positions of two atoms, this indices of which are specified using the VECTORSTART and VECTOREND keywords, to specify the
 orientation of a vector, $\mathbf{n}$.  The perpendicular distance between this vector and the position of some third atom is then computed using:
 
@@ -74,6 +78,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("DISTANCE");
   keys.needsAction("ANGLE");
+  keys.setDeprecated("DISTANCE");
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):

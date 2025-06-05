@@ -29,6 +29,11 @@ namespace gridtools {
 /*
 Evaluate the average value of a multicolvar on a grid.
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [KDE](KDE.md)
+and [ACCUMULATE](ACCUMULATE.md).  This new syntax provides you with much greater control over what is being calculated
+and is also easier to understand.  If you are using this shortcut we strongly encourage you to change to using this new
+syntax.__
+
 This shortcut allows one to construct a phase field representation for a symmetry function from
 an atomistic description.  If each atom has an associated order parameter, $\phi_i$ then a
 smooth phase field function $\phi(r)$ can be computed using:
@@ -110,6 +115,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("ONES");
   keys.needsAction("CUSTOM");
+  keys.setDeprecated("KDE");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):

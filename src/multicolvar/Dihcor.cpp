@@ -38,15 +38,14 @@ $$
 s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \psi_i ) \right]
 $$
 
-where the $\phi_i$ and $\psi_$ values are the instantaneous values for the TORSION angles of interest.
+where the $\phi_i$ and $\psi_i$ values are the instantaneous values for the TORSION angles of interest.
 
 You can see an example input for the DIHCOR action below
 
 ```plumed
-DIHCOR ...
+dih: DIHCOR ...
   ATOMS1=1,2,3,4,5,6,7,8
   ATOMS2=5,6,7,8,9,10,11,12
-  LABEL=dih
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
 ```
@@ -72,6 +71,18 @@ PRINT ARG=dih FILE=colvar STRIDE=10
 
 Here, `@phi-3` tells plumed that you would like to calculate the $\phi$ angle in the third residue of the protein.
 Similarly `@psi-4` tells plumed that you want to calculate the $\psi$ angle of the fourth residue of the protein.
+
+Notice, last of all, that if you want not to reassemble the atoms that have been broken by the periodic boundary conditions using a procedure
+like that outlined in [WHOLEMOLECULES](WHOLEMOLECULES.md) you can add a NOPBC as shown below:
+
+```plumed
+dih: DIHCOR ...
+  ATOMS1=1,2,3,4,5,6,7,8
+  ATOMS2=5,6,7,8,9,10,11,12
+  NOPBC
+... DIHCOR
+PRINT ARG=dih FILE=colvar STRIDE=10
+```
 
 */
 //+ENDPLUMEDOC

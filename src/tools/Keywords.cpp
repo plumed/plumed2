@@ -406,7 +406,7 @@ void Keywords::addDeprecatedFlag( const std::string& key,
 
 void Keywords::addDeprecatedKeyword( std::string_view key,
                                      const std::string& replacement ) {
-  if( exists("replacement") ) {
+  if( exists(replacement) ) {
     std::string docs = "This keyword was used in older versions of PLUMED and is provided for back compatibility only. With newer versions you should use " + replacement + " instead.";
     add("deprecated", key, docs);
   } else {
