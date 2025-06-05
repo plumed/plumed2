@@ -108,10 +108,11 @@ NematicOrder:: NematicOrder(const ActionOptions& ao):
       "Mismatched numbers of atoms specified to MOLECULE_STARTS and MOLECULE_ENDS keywords. "
       "The molecular axes are specified by pairs of atoms."
     );
-
+  // number of molecules with axes
+  size_t n = starts.size();
   std::string L = getShortcutLabel();
 
-  if (starts.size() == 1) {
+  if (n == 1) {
     // Catch the edge case where there is only a single molecule. In this case the code further below
     // will not work, since VSTACK returns a (3,) vector instead of a (1,3) matrix.
 
@@ -121,7 +122,7 @@ NematicOrder:: NematicOrder(const ActionOptions& ao):
   }
 
   std::string dlist = "";
-  for(unsigned i=0; i<starts.size(); ++i) {
+  for(unsigned i=0; i<n; ++i) {
     std::string num;
     Tools::convert( i+1, num );
     dlist += " ATOMS" + num + "=" + starts[i] + "," + ends[i];
@@ -145,18 +146,23 @@ NematicOrder:: NematicOrder(const ActionOptions& ao):
   readInputLine( L + "_v: VSTACK ARG=" + L + "_dux," + L + "_duy," + L + "_duz");
   //   vT: TRANSPOSE ARG=v
   readInputLine( L + "_vT: TRANSPOSE ARG=" + L + "_v");
-  // Now compute the 3x3 matrix Q
+  // Now compute the 3x3 matrix Q (x number of atoms)
   //   c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3
   readInputLine( L + "_c: CONSTANT VALUES=4,0,0,0,4,0,0,0,4 NROWS=3 NCOLS=3");
   //   mp: MATRIX_PRODUCT ARG=vT,v
   readInputLine( L + "_mp: MATRIX_PRODUCT ARG=" + L + "_vT," + L + "_v");
   //   Q: CUSTOM ARG=mp,c FUNC=((3*x-y)/2)/4 PERIODIC=NO
-  readInputLine( L + "_Q: CUSTOM ARG=" + L + "_mp," + L + "_c " + "FUNC=((3*x-y)/2)/4 PERIODIC=NO");
+  readInputLine( L + "_Q: CUSTOM ARG=" + L + "_mp," + L + "_c " + "FUNC=((3*x-y)/2) PERIODIC=NO");
   // Diagonalize Q
   //   diag: DIAGONALIZE ARG=q
   readInputLine( L + "_diag: DIAGONALIZE ARG=" + L + "_Q");
   // Nematic order parameter is the largest eigenvalue of Q
-  readInputLine( L + ": CUSTOM ARG=" + L + "_diag.vals-1 FUNC=x PERIODIC=NO");
+  // The eigenvalue has to be divided by the number of molecular axes,
+  // since Q has been computed as the sum over the axes instead of the average.
+  std::string number_of_molecules;
+  Tools::convert( n, number_of_molecules );
+  readInputLine( L + "_N: CONSTANT VALUE=" + number_of_molecules);
+  readInputLine( L + ": CUSTOM ARG=" + L + "_diag.vals-1," + L + "_N FUNC=x/y PERIODIC=NO");
 }
 
 }
