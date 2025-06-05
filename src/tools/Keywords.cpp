@@ -407,10 +407,10 @@ void Keywords::addDeprecatedFlag( const std::string& key,
 void Keywords::addDeprecatedKeyword( std::string_view key,
                                      const std::string& replacement ) {
   if( exists(replacement) ) {
-    std::string docs = "This keyword was used in older versions of PLUMED and is provided for back compatibility only. With newer versions you should use " + replacement + " instead.";
+    std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
     add("deprecated", key, docs);
   } else {
-    add("deprecated", key, "This keyword was used in older versions of PLUMED and is provided for back compatibility only. Including this keyword in the input to this action in this version makes no difference to the calculation performed");
+    add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
   }
 }
 
