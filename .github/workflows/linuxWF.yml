@@ -50,11 +50,10 @@ jobs:
         python-version: 3.9
     - name: Set paths
       run: |
-        echo "$HOME/opt/bin" >> $GITHUB_PATH
+        echo "/opt/plumed/bin" >> $GITHUB_PATH
         # path required for pytest:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
+        echo "PYTHONPATH=/opt/plumed/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
     - name: Install generic packages
       run: |
         sudo apt-get update -qq
@@ -166,7 +165,7 @@ jobs:
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix="$HOME/opt"
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=/opt/plumed
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
@@ -175,6 +174,9 @@ jobs:
 
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
+      env:
+        LD_LIBRARY_PATH: /opt/plumed/lib
+        CPATH: /opt/plumed/include
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
