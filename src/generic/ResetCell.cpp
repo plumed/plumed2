@@ -76,7 +76,7 @@ Reset cell to be triangular after a rototranslational fit
 DUMPATOMS FILE=dump-original.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=regtest/basic/rt63/align.pdb TYPE=OPTIMAL
 DUMPATOMS FILE=dump-fit.xyz ATOMS=1-20
-RESET_CELL TYPE=TRIANGULAR
+RESET_CELL TYPE=TRIANGULAR STRIDE=1
 DUMPATOMS FILE=dump-reset.xyz ATOMS=1-20
 ```
 

@@ -70,7 +70,7 @@ Notice that you can perform the same calculation with the following single PLUME
 ```plumed
 #SETTINGS NREPLICAS=3
 
-RANDOM_EXCHANGES
+RANDOM_EXCHANGES SEED=23
 t1: TORSION ATOMS=1,2,3,4
 t2: TORSION ATOMS=2,3,4,5
 t3: TORSION ATOMS=3,4,5,6

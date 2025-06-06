@@ -52,9 +52,17 @@ $$
 
 Here $r_{ij}$ is the vector connecting the $i$th and $j$th atoms, which by default is evaluated
 in a way that takes periodic boundary conditions into account. If you wish to disregard the PBC you
-can use the NOPBC flag.
+can use the NOPBC flag as shown in the following input:
 
-Alternatively, we can instruct PLUMED to calculate the angle between the vectors connecting
+```plumed
+a1: ANGLE ATOMS=1,2,3 NOPBC
+PRINT ARG=a1 FILE=colvar
+```
+
+If the NOPBC flag is not included any sets of atoms that are broken by the periodic boundaries are made whole
+using a procedure that is the same as that described in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md).
+
+We can also instruct PLUMED to calculate the angle between the vectors connecting
 atoms 1 and atom 2 and atoms 3 and atom 4 by using the following input:
 
 ```plumed
@@ -118,6 +126,7 @@ void Angle::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the ANGLE involving these atoms");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {

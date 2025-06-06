@@ -157,7 +157,7 @@ d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=colvar UPDATE_FROM=100 UPDATE_UNTIL=500 STRIDE=1
 ```
 
-During the first 100 steps of a simulation with this input the distance between atoms 1 and 2 is not output to the file called colvar.
+During the first 100 ps of the simulation with this input the distance between atoms 1 and 2 is not output to the file called colvar.
 The distance is instead first output after the first 100 ps of trajectory have elapsed.  Furthermore, output of the distance stops
 once the trajectory is longer than 500 ps. In other words, the distance is only output during the 400 ps time interval after the first
 100 ps of the simulation.
