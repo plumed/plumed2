@@ -67,6 +67,16 @@ PRINT ARG=d FILE=colvar
 This input calculates and outputs a two dimensional vector that contains two of these dihedral correlation
 values. Commands similar to these are used within the [DIHCOR](DIHCOR.md) shortcut.
 
+The last thing to note is that by default a procedure akin to that used in [WHOLEMOLECULES](WHOLEMOLECULES.md)
+is used to ensure that the sets of atoms that are specified to each ATOMS keyword are not broken by the periodic
+boundary conditions.  If you would like to turn this off for any reason you add the NOPBC in your input file as shown
+below:
+
+```plumed
+d: DIHEDRAL_CORRELATION ATOMS=1,2,3,4,5,6,7,8 NOPBC
+PRINT ARG=d FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -96,6 +106,7 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used to calculate this quantity");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the DIHEDRAL_CORRELATION for these atoms");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):

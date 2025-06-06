@@ -108,6 +108,7 @@ void Sum::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.setValueDescription("scalar","the " + keys.getDisplayName() + " of the elements in the input value");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Sum::Sum(const ActionOptions&ao):

@@ -105,6 +105,30 @@ DUMPVECTOR ARG=smap,lwe FILE=smap
 DUMPVECTOR ARG=smap_osample,weights FILE=projections
 ```
 
+## Using SMACOF
+
+By default we PLUMED uses the method described in the paper cited below to optimise the sketch-map stress function.
+In other words, we use a combination of conjugate gradients and a pointwise global optimisation algorithm.  Within
+the code there is also an experimental implementation of optimisation using a variant on the [smacof](https://en.wikipedia.org/wiki/Stress_majorization)
+algorithm.  If you would like to experiment with this option you use the USE_SMACOF flag as illustrated below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+
+ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
+lwe: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
+smap: SKETCHMAP ...
+   ARG=ff NLOW_DIM=2 USE_SMACOF
+   HIGH_DIM_FUNCTION={SMAP R_0=2 A=3 B=9}
+   LOW_DIM_FUNCTION={SMAP R_0=2 A=2 B=2}
+   WEIGHTS=lwe
+...
+
+DUMPVECTOR ARG=smap.*,lwe FILE=smap
+```
+
 
 */
 //+ENDPLUMEDOC

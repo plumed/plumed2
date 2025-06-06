@@ -52,7 +52,7 @@ with four frames the `colvar1` file will look like the one shown below:
  1.000000 1.000000 1.000000 1.414214 1.000000
  2.000000 1.000000 1.000000 1.414214 1.000000
  3.000000 1.000000 1.000000 1.414214 1.000000
-```
+````
 
 By contrast the DUMPVECTOR command will produce four output files - for each step of the simulation. Each of these
 output files looks like this:
@@ -63,7 +63,7 @@ output files looks like this:
  3.000000 1 1.000000
  3.000000 2 1.414214
  3.000000 3 1.000000
-```
+````
 
 In other words, the four elements of the vector are printed on different rows of the output.
 The latest file output will be called `colvar2` and all earlier files will be called `analysis.n.colvar` where

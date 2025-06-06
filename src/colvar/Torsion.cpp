@@ -44,11 +44,11 @@ PRINT ARG=t FILE=COLVAR
 ```
 
 Alternatively you can use this action to calculate the angle between two vectors projected on the plane
-orthogonal to an axis.  The example below uses this syntax and computes the same torsion as the first example
+orthogonal to an axis.  The example below uses this syntax and computes the cosine of the torsion that was calculated in the first example
 input above.
 
 ```plumed
-t: TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
+t: TORSION VECTORA=2,1 AXIS=2,3 VECTORB=3,4 COSINE
 PRINT ARG=t FILE=COLVAR
 ```
 
@@ -58,7 +58,7 @@ torsional angle between two bond vectors around the z-axis as shown below:
 ```plumed
 a0: FIXEDATOM AT=0,0,0
 az: FIXEDATOM AT=0,0,1
-t1: TORSION VECTOR1=1,2 AXIS=a0,az VECTOR2=5,6
+t1: TORSION VECTORA=1,2 AXIS=a0,az VECTORB=5,6
 PRINT ARG=t1 FILE=colvar STRIDE=20
 ```
 
@@ -87,6 +87,29 @@ PRINT ARG=t1 FILE=colvar STRIDE=10
 ```
 
 This input tells PLUMED to calculate the $\phi$ angles in residues 3-7 of the protein.  The output, `t1`, is a 5 dimensional vector.
+
+Notice that you can also use the VECTORA, VECTORB axis syntax when calculating multiple torsions as shown below:
+
+```plumed
+t: TORSION ...
+  VECTORA1=2,1 AXIS1=2,3 VECTORB1=3,4
+  VECTORA2=6,5 AXIS2=6,7 VECTORB2=7,8
+  VECTORA3=10,9 AXIS3=10,11 VECTORB3=11,12
+...
+PRINT ARG=t FILE=colvar STRIDE=20
+```
+
+This input would output a three dimensional vector of torsion angles.
+
+The last thing to note is that by default a procedure akin to that used in [WHOLEMOLECULES](WHOLEMOLECULES.md)
+is used to ensure that the sets of atoms that are specified to each ATOMS keyword or set of VECTORA, AXIS and VECTORB keywords are not broken by the periodic
+boundary conditions.  If you would like to turn this off for any reason you add the NOPBC in your input file as shown
+below:
+
+```plumed
+t: TORSION ATOMS=1,2,3,4 NOPBC
+PRINT ARG=t FILE=COLVAR
+```
 
 
 */
@@ -121,11 +144,12 @@ void Torsion::registerKeywords(Keywords& keys) {
   keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTORA and VECTORB keywords.");
   keys.add("atoms-2","VECTORA","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
   keys.add("atoms-2","VECTORB","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
-  keys.add("atoms-3","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
-  keys.add("atoms-3","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+  keys.addDeprecatedKeyword("VECTOR1","VECTORA");
+  keys.addDeprecatedKeyword("VECTOR2","VECTORB");
   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the TORSION involving these atoms");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Torsion::Torsion(const ActionOptions&ao):

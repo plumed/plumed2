@@ -69,6 +69,7 @@ void GetGridVolumeElement::registerKeywords( Keywords& keys ) {
   ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","grid","the label for function on the grid that you need the volume element for");
   keys.setValueDescription("scalar","the volume element ");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 GetGridVolumeElement::GetGridVolumeElement(const ActionOptions&ao):
