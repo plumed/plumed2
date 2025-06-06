@@ -111,7 +111,7 @@ void PCA::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
   keys.add("compulsory","STRIDE","0","the frequency with which to perform this analysis");
   keys.add("optional","FILE","the file on which to output the low dimensional coordinates");
-  keys.add("optional","FMT","the format to use when outputting the low dimensional coordinates");
+  keys.add("compulsory","FMT","%f","the format to use when outputting the low dimensional coordinates");
   keys.setValueDescription("matrix","the projections of the input coordinates on the PCA components that were found from the covariance matrix");
   keys.needsAction("LOGSUMEXP");
   keys.needsAction("TRANSPOSE");

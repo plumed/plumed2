@@ -69,12 +69,13 @@ Since the introduction of PLUMED 2.7 you have been able to use multiple MOLINFO 
 selection, the last available MOLINFO action will be used. This allows you to provide multiple PDB
 files, for instance using different naming conventions (see issue 134).
 
-> [!CAUTION]
-> Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
-> and examine what plumed is actually doing whenever you use the MOLINFO action.
-> Also make sure that the atoms are listed in the pdb with the correct order.
-> If you are using gromacs, the safest way is to use reference pdb file
-> generated with `gmx editconf -f topol.tpr -o reference.pdb`.
+!!! caution "check PDB parser"
+
+    Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
+    and examine what plumed is actually doing whenever you use the MOLINFO action.
+    Also make sure that the atoms are listed in the pdb with the correct order.
+    If you are using gromacs, the safest way is to use reference pdb file
+    generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
 More information of the PDB parser implemented in PLUMED can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) command.
 
@@ -109,9 +110,10 @@ In the table above you will find the following shortcuts that allow you to selec
 @nonhydrogens : all non hydrogen atoms (those for which the first non-number in the name is not a H)
 ````
 
-> [!CAUTION]
-> Be careful since these choices are based on common names used in PDB files. Always check if
-> the selected atoms are correct.
+!!! caution ""
+
+    Be careful since these choices are based on common names used in PDB files. Always check if
+    the selected atoms are correct.
 
 When you would like atoms from a specific residue you will use one of the atom selection commands from the above table with the following form:
 
@@ -194,17 +196,20 @@ For instance, `@OW-100` will select oxygen of water molecule with residue number
 
 Finally, notice that some shortcuts are available even when you not using the MOLINFO command.
 
-> [!CAUTION]
-> If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
+!!! caution ""
 
-> [!CAUTION]
-> At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
-> may not be true - GLY is problematic for secondary structure residues as it is achiral.
+    If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
-> [!CAUTION]
-> If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein
-> ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
-> interpret terminal residue 1.
+!!! caution ""
+
+    At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
+    may not be true - GLY is problematic for secondary structure residues as it is achiral.
+
+!!! caution ""
+
+    If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein
+    ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
+    interpret terminal residue 1.
 
 ## Advanced atom selection with mdtraj or MDAnalysis
 

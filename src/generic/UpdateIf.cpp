@@ -49,11 +49,12 @@ Of course, blocks can be nested at will.
 There are many potential usages for this keyword. One might e.g. decide to analyze some variable
 only when another variable is within a given range.
 
-> [!CAUTION]
-> Notice that not all the possible usage make
-> particular sense. For example, conditionally updating a \ref METAD keyword
-> (that is: adding hills only if a variable is within a given range)
-> can lead to unexpected results.
+!!! caution ""
+
+    Notice that not all the possible usage make
+    particular sense. For example, conditionally updating a \ref METAD keyword
+    (that is: adding hills only if a variable is within a given range)
+    can lead to unexpected results.
 
 ## Examples
 

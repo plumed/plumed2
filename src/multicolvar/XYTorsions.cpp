@@ -27,6 +27,10 @@
 /*
 Calculate the torsional angle around the x axis between an arbitrary vector and the positive y direction
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 The following input tells plumed to calculate the angle around the x direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive y axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
 
@@ -43,6 +47,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 //+PLUMEDOC COLVAR XZTORSIONS
 /*
 Calculate the torsional angle around the x axis between an arbitrary vector and the positive z direction
+
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
 
 The following input tells plumed to calculate the angle around the x direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive z axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
@@ -61,6 +69,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 /*
 Calculate the torsional angle around the y axis between an arbitrary vector and the positive x direction
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 The following input tells plumed to calculate the angle around the y direction between the positive x-axis and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive x axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
 
@@ -77,6 +89,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 //+PLUMEDOC COLVAR YZTORSIONS
 /*
 Calculate the torsional angle around the y axis between an arbitrary vector and the positive z direction
+
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
 
 The following input tells plumed to calculate the angle around the y direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive z axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
@@ -95,6 +111,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 /*
 Calculate the torsional angle around the z axis between an arbitrary vector and the positive x direction
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 The following input tells plumed to calculate the angle around the z direction between the positive x-axis and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive x axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
 
@@ -111,6 +131,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 //+PLUMEDOC COLVAR ZYTORSIONS
 /*
 Calculate the torsional angle around the z axis between an arbitrary vector and the positive y direction
+
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [TORSION](TORSION.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
 
 The following input tells plumed to calculate the angle around the z direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive y-axis and the vector connecting atom 1 to atom 2.  The average of these two quantities is then output
@@ -149,6 +173,7 @@ void XYTorsions::registerKeywords(Keywords& keys) {
   keys.setValueDescription("vector","the angle between the vector connecting each pair of atoms and the the positive X/Y/Z direction around the X/Y/Z axis");
   keys.needsAction("FIXEDATOM");
   keys.needsAction("TORSION");
+  keys.setDeprecated("TORSION");
 }
 
 XYTorsions::XYTorsions(const ActionOptions& ao):

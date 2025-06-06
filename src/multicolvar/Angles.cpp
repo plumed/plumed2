@@ -92,6 +92,7 @@ void Angles::registerKeywords( Keywords& keys ) {
   MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("ANGLE");
   keys.needsAction("COORD_ANGLES");
+  keys.setDeprecated("ANGLE");
 }
 
 Angles::Angles(const ActionOptions&ao):

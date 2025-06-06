@@ -99,11 +99,11 @@ ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
 psi: TORSION ATOMS=1,2,3,4
 phi: TORSION ATOMS=13,14,15,16
 
-dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
+dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG2=psi,phi ARG1=ref_psi,ref_phi METRIC=m
 PRINT ARG=dd FILE=colvar
 ```
 
-This section example calculates the three distances between a single reference value for the two
+This second example calculates the three distances between a single reference value for the two
 torsions and three instances of this pair of torsions.
 
 ```plumed
@@ -133,6 +133,11 @@ dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
 PRINT ARG=dd FILE=colvar
 ```
 
+!!! note "scalars must be specified in ARG2"
+
+    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
+    as is done in the example inputs above.
 */
 //+ENDPLUMEDOC
 
@@ -192,7 +197,7 @@ NormalizedEuclideanDistance::NormalizedEuclideanDistance( const ActionOptions& a
     metstr = getShortcutLabel() + "_" + metstr;
   }
   // Now do the multiplication
-  readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG=" + metstr + "," + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG=" + getShortcutLabel() +"_diffT," + metstr + " FUNC=x*y PERIODIC=NO");
   bool squared;
   parseFlag("SQUARED",squared);
   std::string olab = getShortcutLabel();

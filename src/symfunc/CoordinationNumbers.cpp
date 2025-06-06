@@ -181,7 +181,7 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   shortcutKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
   keys.addOutputComponent("moment","MOMENTS","scalar","the moments of the distribution");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");

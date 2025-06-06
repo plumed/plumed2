@@ -1,0 +1,8 @@
+.actionHeader {
+    /*
+     * This constant defines the width (in em units) for displaying action names.
+     * The value of 17em is chosen to accommodate the longest action name currently in use,
+     * which is "NORMALIZED_EUCLIDEAN_DISTANCE" with 29 characters (!).
+     */
+    min-width: 17em;
+}

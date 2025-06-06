@@ -129,11 +129,20 @@ t1_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t1
 t2_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t2
 ```
 
-Notice that the input must define values with the labels that are being read in from the reference file
-and that separate PDB2CONSTANT commands are required for reading in `t1` and `t2`.  Furthermore, because the
+In this case the input must define values with the labels that are being read in from the reference file
+and separate PDB2CONSTANT commands are required for reading in `t1` and `t2`.  Furthermore, because the
 input PDB file contains multiple frames vectors containing all the values for `t1` and `t2` are output from
 the constant commands that are created by the shortcuts in the above input.  If you want to read only one of the
 configurations in the input PDB file you can use a pdb with a single frame or the `NUMBER` keyword described above.
+
+If, for any reason, you want to read data from a PDB file that is not a reference value for one of the values defined in
+your PLUMED input file you use the NOARGS flag as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-pathtools-4/epath.pdb
+t1_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb NOARGS ARG=t1
+t2_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb NOARGS ARG=t2
+```
 
 ## Occupancy and beta factors
 
@@ -147,16 +156,20 @@ are used as weight for the displacement.
 Since setting the weights to zero is the same as __not__ including an atom in the alignment or
 displacement calculation, the two following reference files would be equivalent when used in an [RMSD](RMSD.md)
 calculation. First file:
-\verbatim
+
+````
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  0.00  0.00
-\endverbatim
+````
+
 Second file:
-\verbatim
+
+````
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
-\endverbatim
+````
+
 However notice that many extra atoms with zero weight might slow down the calculation, so
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
@@ -179,14 +192,16 @@ This format is not particularly widespread, but has the nice feature that it pro
 between numbers up to approximately 80 millions and strings with 5 characters, plus it is backward compatible
 for numbers smaller than 100000. This is not true for notations like the hex notation exported by VMD.
 Using the hybrid 36 format, the ATOM records for atom ranging from 99997 to 100002 would read like these:
-\verbatim
+
+````
 ATOM  99997  Ar      X   1      45.349  38.631  15.116  1.00  1.00
 ATOM  99998  Ar      X   1      46.189  38.631  15.956  1.00  1.00
 ATOM  99999  Ar      X   1      46.189  39.471  15.116  1.00  1.00
 ATOM  A0000  Ar      X   1      45.349  39.471  15.956  1.00  1.00
 ATOM  A0000  Ar      X   1      45.349  38.631  16.796  1.00  1.00
 ATOM  A0001  Ar      X   1      46.189  38.631  17.636  1.00  1.00
-\endverbatim
+````
+
 There are tools that can be found to translate from integers to strings and back using hybrid 36 format
 (a simple python script can be found [here](https://sourceforge.net/p/cctbx/code/HEAD/tree/trunk/iotbx/pdb/hybrid_36.py)).
 In addition, as of PLUMED 2.5, we provide a command line tool that can be used to renumber atoms in a PDB file.

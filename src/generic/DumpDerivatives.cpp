@@ -51,7 +51,7 @@ By contast the following input will only output 1 derivative; namely, the deriva
 ```plumed
 d: DISTANCE ATOMS=1,2
 f: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
-DUMPDERIVATIVES ARG=f STRIDE=1 FILE=deriv
+DUMPDERIVATIVES ARG=f STRIDE=1 FMT=%8.4f FILE=deriv
 ```
 
 __You can only use this command to output the derivatives of rank 0 (scalar) values. You cannot use it to output derivatives of vector, matrix of function values.__

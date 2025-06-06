@@ -31,6 +31,10 @@
 /*
 Calculate the components of the normals to the planes containing groups of three atoms.
 
+__This shortcut action allows you to calculate the planes containing sets of three atoms and reproduces the syntax in older PLUMED versions.
+If you look at the example inputs below you can
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it is simpler and offers greater flexibility.__
+
 An example input using this shortcut is shown below:
 
 ```plumed
@@ -86,6 +90,7 @@ void PlaneShortcut::registerKeywords( Keywords& keys ) {
   keys.needsAction("SUM");
   keys.needsAction("COMBINE");
   keys.needsAction("CUSTOM");
+  keys.setDeprecated("PLANE");
 }
 
 PlaneShortcut::PlaneShortcut(const ActionOptions&ao):

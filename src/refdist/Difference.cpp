@@ -96,25 +96,6 @@ to this action and these two input values __must__ have the same rank and the sa
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION DIFFERENCE_SCALAR
-/*
-Calculate the differences between two scalars
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION DIFFERENCE_VECTOR
-/*
-Calculate the differences between the elements of two vectors
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-
 class Difference {
 public:
   bool periodic;

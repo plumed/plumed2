@@ -200,6 +200,8 @@ Keywords::KeyType::keyStyle Keywords::KeyType::keyStyleFromString(std::string_vi
     return keyStyle::atoms;
   } else if( type=="hidden" ) {
     return keyStyle::hidden;
+  } else if( type=="deprecated" ) {
+    return keyStyle::deprecated;
   } else {
     plumed_massert(false,"invalid keyword specifier " + std::string(type));
   }
@@ -394,6 +396,22 @@ void Keywords::add(std::string_view keytype,
                    std::string_view docstring ) {
   //the 'false' deactivates the "reserve mode"
   addOrReserve(keytype,key,docstring,false);
+}
+
+void Keywords::addDeprecatedFlag( const std::string& key,
+                                  const std::string& replacement ) {
+  addDeprecatedKeyword(key, replacement);
+  keywords.at(key).setDefaultFlag(false);
+}
+
+void Keywords::addDeprecatedKeyword( std::string_view key,
+                                     const std::string& replacement ) {
+  if( exists(replacement) ) {
+    std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
+    add("deprecated", key, docs);
+  } else {
+    add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
+  }
 }
 
 void Keywords::addInputKeyword( const std::string & keyType,

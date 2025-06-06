@@ -63,7 +63,10 @@ ref_d1x: PDB2CONSTANT REFERENCE=regtest/mapping/rt-adapt/mypath.pdb ARG=d1.x
 ref_d1y: PDB2CONSTANT REFERENCE=regtest/mapping/rt-adapt/mypath.pdb ARG=d1.y
 path: CONSTANT VALUES=-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5
 # Now calculate the differences between our instantaneous position and the milestones on the high dimensional space
-d1_data: DISPLACEMENT ARG1=d1.x,d1.y ARG2=ref_d1x,ref_d1y
+d1_dataP: DISPLACEMENT ARG2=d1.x,d1.y ARG1=ref_d1x,ref_d1y
+# We need the vectors pointing from the reference positions to the instantaneous positions here which is
+# minus the vector calculated above. Remember we can only specify the vectors in ARG1 for the DISPLACEMENT command
+d1_data: CUSTOM ARG=d1_dataP FUNC=-x PERIODIC=NO
 # And finally the path CV
 pp: GEOMETRIC_PATH ARG=d1_data METRIC={DIFFERENCE} REFERENCE=ref_d1x,ref_d1y PROPERTY=path
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar

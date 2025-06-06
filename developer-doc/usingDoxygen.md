@@ -12,7 +12,7 @@ Much of the text in the manual is generated automatically, which is possible as 
 pages for PLMD::Action are inside the code and because the manual is created using the 
 following package:
 
-- mkdocs:   https://www.mkdocs.org   (for user documentation)
+- Material for mkdocs:   https://squidfunk.github.io/mkdocs-material/   (for user documentation)
 - Doxygen:   http://www.doxygen.org  (for developer documentation)
 
 In addition a special class, PLMD::Keywords, is used to store the descriptions of the syntax for any given

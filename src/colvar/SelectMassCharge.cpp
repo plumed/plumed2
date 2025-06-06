@@ -30,7 +30,7 @@ Get the charges of one or multiple atoms
 The following example shows how you can print the charge of atom one:
 
 ```plumed
-q: CHARGE ATOM=1
+q: CHARGE ATOMS=1
 PRINT ARG=q FILE=colvar
 ```
 
@@ -53,7 +53,7 @@ Get the mass of one or multiple atoms
 The following example shows how you can print the mass of atom one:
 
 ```plumed
-m: MASS ATOM=1
+m: MASS ATOMS=1
 PRINT ARG=m FILE=colvar
 ```
 
@@ -95,6 +95,7 @@ void SelectMassCharge::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   keys.add("atoms","ATOMS","the atom numbers that you would like to store the masses and charges of");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.setValueDescription("scalar/vector","the " + keys.getDisplayName() + " of the atom/s");
 }
 

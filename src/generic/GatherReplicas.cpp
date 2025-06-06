@@ -93,6 +93,7 @@ void GatherReplicas::registerKeywords( Keywords& keys ) {
   ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the argument from the various replicas that you would like to gather");
   keys.addOutputComponent("rep","default","scalar/vector/matrix/grid","the input arguments for each of the replicas");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 GatherReplicas::GatherReplicas( const ActionOptions& ao ):

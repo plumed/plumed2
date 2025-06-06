@@ -312,7 +312,7 @@ PLUMED_REGISTER_ACTION(Steinhardt,"Q6")
 
 void Steinhardt::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","scalar","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");

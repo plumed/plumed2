@@ -83,7 +83,7 @@ PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ) {
   ClusteringBase::registerKeywords( keys );
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):

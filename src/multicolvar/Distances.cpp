@@ -29,9 +29,9 @@
 /*
 Calculate the distances between multiple piars of atoms
 
-__This shortcut action allows you to calculate function of the distribution of distatnces and reproduces the syntax in older PLUMED versions.
-If you look at the example inputs below you can
-see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__
+__This shortcut action allows you to calculate function of the distribution of distances and reproduces the syntax in older PLUMED versions.
+We think that the syntax in newer versions is more flexible and easier to use and that you should try to avoid using this old syntax.  If you look at the example inputs below you can
+see how the new syntax can be used to replace this old one. We would strongly encourage you to use the newer syntax.__
 
 The following input tells plumed to calculate the distances between atoms 3 and 5 and
 between atoms 1 and 2 and to print the minimum for these two distances.
@@ -271,6 +271,7 @@ PLUMED_REGISTER_ACTION(Distances,"ZDISTANCES")
 
 void Distances::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.setDeprecated("DISTANCE");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
            "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
@@ -280,7 +281,7 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
   keys.reset_style("ATOMS","atoms");
   MultiColvarShortcuts::shortcutKeywords( keys );
   keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");

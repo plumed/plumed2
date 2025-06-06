@@ -52,6 +52,17 @@ ff: CONVERT_TO_FES ARG=hA1 TEMP=300
 DUMPGRID ARG=ff FILE=fes.dat
 ```
 
+In this example we ensure that all the reported values of the free energy are non-negative by finding the minimum in
+the free energy and setting reporting the free energies relative to the estimate of the value of the free energy
+at this  minimum.
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+ff: CONVERT_TO_FES ARG=hA1 TEMP=300 MINTOZERO
+DUMPGRID ARG=ff FILE=fes.dat
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -68,8 +79,8 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("optional","GRID","the histogram that you would like to convert into a free energy surface (old syntax)");
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
+  keys.addDeprecatedKeyword("GRID","ARG");
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
   keys.setValueDescription("grid","the free energy surface");

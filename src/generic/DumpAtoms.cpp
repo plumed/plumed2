@@ -197,10 +197,72 @@ cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 DUMPATOMS ATOMS=1-100 ARG=cc GREATER_THAN_OR_EQUAL=4 FILE=file.xyz
 ```
 
+Alternatively, the following input allows us to output those atoms that have a coordination number that is between 4 and 6:
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+DUMPATOMS ...
+  ATOMS=1-100 ARG=cc
+  GREATER_THAN_OR_EQUAL=4
+  LESS_THAN_OR_EQUAL=6
+  FILE=file.xyz
+...
+```
+
 Commands like these are useful if you want to print the coordinates of the atom that are in a paricular cluster that has been identified using
 the [DFSCLUSTERING](DFSCLUSTERING.md) command.
 
 __You can only use the ARG keyword if you are outputting an xyz file__
+
+## PRINT and RESTART
+
+If you run a calculation with the following input:
+
+```plumed
+DUMPATOMS ATOMS=1-100 FILE=file.xyz
+```
+
+and a file called `file.xyz` is already present in the directory where the calculation is running, the existing file is backed up
+and renamed to `bck.0.file.xyz` so that new data can be output to a new file called `file.xyz`.  If you would like to append to the
+existing file you can use the RESTART command as shown below:
+
+```plumed
+DUMPATOMS ATOMS=1-100 FILE=file.xyz RESTART=YES
+```
+
+You can achieve the same result by using the [RESTART](RESTART.md) action as shown below:
+
+```plumed
+RESTART
+DUMPATOMS ATOMS=1-100 FILE=file.xyz
+```
+
+However, the advantage of using the RESTART keyword is that you can apped to some files and back up others as illustrated below:
+
+```plumed
+DUMPATOMS ATOMS=1-100 FILE=file1.xyz
+DUMPATOMS ATOMS=1-100 FILE=file2.xyz RESTART=YES
+```
+
+If you use the input above the file `file1.xyz` is backed up, while new data will be appended to the file `file2.xyz`.  If you use the
+[RESTART](RESTART.md) action instead data will be appended to both colvar files.
+
+## Switching printing on and off
+
+You can use the UPDATE_FROM and UPDATE_UNTIL flags to make the DUMPATOMS command only output data at certain points during the trajectory.
+To see how this works consider the following example:
+
+```plumed
+DUMPATOMS ATOMS=1-100 FILE=file.xyz UPDATE_FROM=100 UPDATE_UNTIL=500 STRIDE=1
+```
+
+During the first 100 ps of a simulation with this input the atomic positions are not output to the file called file.xyz.
+The positions are instead only output after the first 100 ps of trajectory have elapsed.  Furthermore, output of the positions stops
+once the trajectory is longer than 500 ps. In other words, the positions are only output during the 400 ps time interval after the first
+100 ps of the simulation.
 
 */
 //+ENDPLUMEDOC

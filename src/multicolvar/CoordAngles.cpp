@@ -46,6 +46,10 @@ PRINT ARG=c1.sum FILE=colvar
 
 The input above will output the sum of all the angles in the first coordination sphere.
 
+__As you can see if you expand the shortcut in the input above, the calculation of the above sum is obtained by calculating a [Hadamard product](https://en.wikipedia.org/wiki/Hadamard_product_(matrices))
+of an [OUTER_PRODUCT](OUTER_PRODUCT.md) matrix and a [MATRIX_PRODUCT](MATRIX_PRODUCT.md).  We have thus deprecated this action as we believe that there is value in learning to use the more complicated syntax
+directly.__
+
 */
 //+ENDPLUMEDOC
 
@@ -75,6 +79,7 @@ void CoordAngles::registerKeywords(Keywords& keys) {
   keys.needsAction("TRANSPOSE");
   keys.needsAction("OUTER_PRODUCT");
   keys.needsAction("MATRIX_PRODUCT");
+  keys.setDeprecated("MATRIX_PRODUCT");
 }
 
 void CoordAngles::pruneShortcuts(Keywords& keys) {

@@ -151,7 +151,6 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "\\ref dists");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
   keys.addFlag("GPATH",false,"calculate the trigonometric path");
@@ -296,7 +295,9 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     }
     std::string comname="EUCLIDEAN_DISTANCE SQUARED";
     std::string coeffstr;
-    action->parse("COEFFICIENTS",coeffstr);
+    if( action->keywords.exists("COEFFICIENTS") ) {
+      action->parse("COEFFICIENTS",coeffstr);
+    }
     if( coeffstr.length()>0 ) {
       if( displacements ) {
         action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");

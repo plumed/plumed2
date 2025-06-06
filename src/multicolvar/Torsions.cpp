@@ -27,6 +27,10 @@
 /*
 Calculate whether or not a set of torsional angles are within a particular range.
 
+__This shortcut action allows you to calculate function of a distribution of torsions and reproduces the syntax in older PLUMED versions.
+If you look at the example inputs below you can
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__
+
 The following provides an example of the input for the TORSIONS command
 
 ```plumed
@@ -82,6 +86,7 @@ void Torsions::registerKeywords(Keywords& keys) {
   keys.needsAction("TORSION");
   keys.add("atoms","ATOMS","the four atoms involved in the torsional angle");
   keys.setValueDescription("vector","the TORSION for each set of three atoms that were specified");
+  keys.setDeprecated("TORSION");
 }
 
 Torsions::Torsions(const ActionOptions& ao):

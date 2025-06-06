@@ -27,6 +27,10 @@
 /*
 Calculate the angle between an arbitrary vector and the positive x direction
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [DISTANCE](DISTANCE.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 The following input tells plumed to calculate the angles between the x-axis and the vector connecting atom 3 to atom 5 and between the x-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 
@@ -44,6 +48,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 /*
 Calculate the angle between an arbitrary vector and the positive y direction
 
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [DISTANCE](DISTANCE.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
+
 The following input tells plumed to calculate the angles between the y-axis and the vector connecting atom 3 to atom 5 and between the y-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 
@@ -60,6 +68,10 @@ Notice that this command is a shortcut. You can thus learn more about how to use
 //+PLUMEDOC COLVAR ZANGLES
 /*
 Calculate the angle between an arbitrary vector and the positive z direction
+
+__As you can see if you expand the inputs below, you can achieve what this shortcut action does by using [DISTANCE](DISTANCE.md) together with [CUSTOM](CUSTOM.md),
+[BETWEEN](BETWEEN.md), [LESS_THAN](LESS_THAN.md), [SUM](SUM.md) and [MEAN](MEAN.md).  We strongly encourage you to use these actions instead as using them will provide
+you with a clearer understanding of the equations you are using.__
 
 The following input tells plumed to calculate the angles between the z-axis and the vector connecting atom 3 to atom 5 and between the z-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
@@ -96,6 +108,7 @@ void XAngle::registerKeywords(Keywords& keys) {
   keys.needsAction("DISTANCE");
   keys.needsAction("COMBINE");
   keys.needsAction("CUSTOM");
+  keys.setDeprecated("DISTANCE");
 }
 
 XAngle::XAngle(const ActionOptions& ao):

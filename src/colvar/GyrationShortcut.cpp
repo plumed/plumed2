@@ -23,15 +23,6 @@
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR GYRATION_FAST
-/*
-Calculate the radius of gyration, or other properties related to it.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC MCOLVAR GYRATION_TENSOR
 /*
 Calculate the gyration tensor using a user specified vector of weights

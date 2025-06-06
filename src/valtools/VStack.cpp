@@ -83,6 +83,7 @@ void VStack::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","scalar/vector","the values that you would like to stack together to construct the output matrix");
   keys.setValueDescription("matrix","a matrix that contains the input vectors in its columns");
 }
