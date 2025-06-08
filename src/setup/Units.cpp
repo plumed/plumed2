@@ -39,7 +39,7 @@ The following input demonstrates one way that you can use the UNITS command to c
 
 ```plumed
 # this is using Angstrom - kj/mol - fs
-UNITS LENGTH=A TIME=fs
+UNITS LENGTH=A TIME=fs ENERGY=kj/mol MASS=amu CHARGE=e
 
 # compute distance between atoms 1 and 4
 d: DISTANCE ATOMS=1,4
@@ -80,12 +80,23 @@ UNITS LENGTH=0.1 TIME=0.001
 ```
 
 The input above tells PLUMED that lengths in nm should be divided by 0.1 so as to convert them to Anstroms. Times in ps
-should be divded by 0.001 to convert them from ps to fs.
+should be divded by 0.001 to convert them from ps to fs. Eneriges, masses and charges will be in the default units of
+kJ/mol, amu and e as we have not specified conversion parameters or specific units for these quantities.
 
 To reitterate, the default or the units specified in the UNITS command are used in all input and output
 files.  The only exceptions are file formats for which there is a specific convention concerning
 the units. For example, trajectories written in .gro format (with [DUMPATOMS](DUMPATOMS.md)) will
 always in nm.
+
+## Working with Lennard Jones
+
+If you are using [simplemd](simplemd.md) to perform simulations using the Lennard Jones potential in
+[reduced units](https://en.wikipedia.org/wiki/Lennard-Jones_potential) you can tell PLUMED to use reduced units using the
+`NATURAL` flag as shown below:
+
+```plumed
+UNITS NATURAL
+```
 
 */
 //+ENDPLUMEDOC

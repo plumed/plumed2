@@ -72,6 +72,19 @@ dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=c1,c2,c3 ARG2=d1,d2,d3 METRIC=m
 PRINT ARG=dd FILE=colvar
 ```
 
+Lastly, note that if you want to calculate the square of the distance rather than the distance you can use
+the `SQUARED` flag as shown below:
+
+```plumed
+m: CONSTANT VALUES=0.1,0.2,0.3
+c: CONSTANT VALUES=1,2,3
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=c ARG2=d METRIC=m SQUARED
+PRINT ARG=dd FILE=colvar
+```
+
+Calculating the square of the distance is slightly cheapter than computing the distance as you avoid taking the square root.
+
 ## Calculating multiple distances
 
 Suppose that we now have $m$ reference configurations we can define the following $m$ distances
@@ -84,7 +97,7 @@ $$
 Lets suppose that we put the $m$, $n$-dimensional $(u-v_j)$ vectors in this expression into a
 $n\times m$ matrix, $A$, by using the [DISPLACEMENT](DISPLACEMENT.md) command.  It is then
 straightforward to show that the $d_j^2$ values in the above expression are the diagonal
-elements of the matrix product $A^T K \odot A$, where $K$ is an $n \times $m$ matrix that contains
+elements of the matrix product $A^T K \cdot A$, where $K$ is an $n \times m$ matrix that contains
 $m$ copies of the inverse covariance matrix $a$ in its columns.
 
 We can use this idea to calculate multiple NORMALIZED_EUCLIDEAN_DISTANCE values in the following inputs.

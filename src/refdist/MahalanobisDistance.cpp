@@ -67,6 +67,19 @@ dd: MAHALANOBIS_DISTANCE ARG1=c1,c2 ARG2=d1,d2 METRIC=m
 PRINT ARG=dd FILE=colvar
 ```
 
+Lastly, note that if you want to calculate the square of the distance rather than the distance you can use
+the `SQUARED` flag as shown below:
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+c: CONSTANT VALUES=1,2
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+dd: MAHALANOBIS_DISTANCE ARG1=c ARG2=d METRIC=m SQUARED
+PRINT ARG=dd FILE=colvar
+```
+
+Calculating the square of the distance is slightly cheapter than computing the distance as you avoid taking the square root.
+
 ## Dealing with periodic variables
 
 When you are calculating a distance from a reference point you need to be careful when the input variables

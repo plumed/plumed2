@@ -58,7 +58,19 @@ only when another variable is within a given range.
 
 ## Examples
 
-The following input instructs plumed dump all the snapshots where an atom is in touch with
+The following input instructs plumed to dump all the snapshots in which atoms 1 and 2 are within
+0.3 nm of each other:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+UPDATE_IF ARG=d LESS_THAN=0.3 STRIDE=1
+DUMPATOMS ATOMS=@mdatoms FILE=output.xyz
+UPDATE_IF ARG=d END
+```
+
+Notice, that the STRIDE is set equal to one by default.  You will likely always want to set it to this value.
+
+The following input instructs plumed to dump all the snapshots where an atom is in touch with
 the solute.
 
 ```plumed

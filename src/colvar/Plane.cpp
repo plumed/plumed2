@@ -44,7 +44,13 @@ PRINT ARG=p.x,p.y,p.z FILE=colvar
 
 The three components, p.x, p.y and p.z, output by the PLANE action here are the x, y and z components of the normal
 vector to the plane that is obtained by taking the cross product between the vector connecting atoms 1 and 2 and
-the vector connecting atoms 2 and 3.
+the vector connecting atoms 2 and 3.  Notice that the default here is to evaluate these two vectors in a way that takes
+any periodic boundary conditions (PBC) into account. If you wish to disregard the PBC you can use the NOPBC flag as shown in the following input:
+
+```plumed
+p: PLANE ATOMS=1,2,3 NOPBC
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
 
 To calculate the cross product of the vector connecting atoms 1 and 2 and the vector connecting atoms 3 and 4 you use
 an input like this:

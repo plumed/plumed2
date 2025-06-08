@@ -87,7 +87,7 @@ Further notice that starting from version 2.10 it is possible to directly use an
 DUMPATOMS ATOMS={@ndx:{extras/index.ndx Protein}} FILE=traj.gro
 ```
 
-Lastly notice that it is also possible to remove atoms from the list of atoms specified in a GROUP by using the keywords `REMOVE`, `SORT`, and `UNIQUE` as shown below:
+Notice that it is possible to remove atoms from the list of atoms specified in a GROUP by using the keyword `REMOVE` as shown below:
 
 ```plumed
 # take one atom every three, that is oxygens
@@ -96,6 +96,22 @@ ox: GROUP ATOMS=1-90:3
 hy: GROUP ATOMS=1-90 REMOVE=ox
 DUMPATOMS ATOMS=ox FILE=ox.gro
 DUMPATOMS ATOMS=hy FILE=hy.gro
+```
+
+You can also `SORT` the atoms in a group into ascending order by using the SORT keyword as shown below:
+
+```plumed
+# If you ask for this group in the input to another action the atoms will be
+# in ascending order i.e. the specified atoms will be 2,3,4,4,5,6
+g: GROUP ATOMS=5,4,6,3,4,2 SORT
+```
+
+or you can sort the atoms and remove duplicated atoms by using the `UNIQUE` flag
+
+```plumed
+# If you ask for this group in the input to another action the duplicate atom specifications will be removed
+# and the atoms will be ascending order i.e. the specified atoms will be 2,3,4,5,6
+g: GROUP ATOMS=5,4,6,3,4,2 UNIQUE
 ```
 
 When you used the GROUP command the flow as follows:

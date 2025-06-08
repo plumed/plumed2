@@ -52,6 +52,7 @@ PRINT ARG=d.* FILE=output
 
 This command will output three values d.x, d.y and d.z, which are the x, y and z components of the dipole respectively.
 
+
 You can calculate three instinguishable dipoles using a single DIPOLE command by using an input like the one below:
 
 ```plumed
@@ -71,14 +72,15 @@ PRINT ARG=d.x,d.y,d.z FILE=output
 The output from the DIPOLE command now consists of three three dimensional vectors called d.x, d.y and d.z that contain the
 x, y and z components of the three dipoles respectively.
 
-When running with periodic boundary conditions, the atoms in every group should be
-in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding the molecule with a procedure
-that is equivalent to that done in [WHOLEMOLECULES](WHOLEMOLECULES.md). Notice that
-rebuilding is local to this action. This is different from [WHOLEMOLECULES](WHOLEMOLECULES.md)
-which actually modifies the coordinates stored in PLUMED.  If you want to recover the old behavior
-you should use the NOPBC flag.  In that case you need to take care that atoms are in the correct
-periodic image.
+A final important thing to note is that in all the commands above the default is to use a procedure akin to that used in [WHOLEMOLECULES](WHOLEMOLECULES.md) to ensure
+that the sets of atoms that are specified to each GROUP keyword are not broken by the periodic
+boundary conditions.  If you would like to turn this off for any reason you add the NOPBC in your input file as shown
+below:
+
+```plumed
+d: DIPOLE GROUP=1-10 NOPBC
+PRINT FILE=output STRIDE=5 ARG=d
+```
 
 !!! caution "behaviour for non charge neutral groups"
 

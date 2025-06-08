@@ -42,7 +42,7 @@ $$
 d^2 = (u-v)^T (u-v)
 $$
 
-The inputs below shows an example where this is used to calculate the Euclidean distance
+The input below shows an example where this is used to calculate the Euclidean distance
 between the instaneous values of some torsional angles and some reference values
 for these torsion.  In this first example the input values are vectors:
 
@@ -65,6 +65,18 @@ d3: DISTANCE ATOMS=5,6
 dd: EUCLIDEAN_DISTANCE ARG1=c1,c2,c3 ARG2=d1,d2,d3
 PRINT ARG=dd FILE=colvar
 ```
+
+Lastly, note that if you want to calculate the square of the distance rather than the distance you can use
+the `SQUARED` flag as shown below:
+
+```plumed
+c: CONSTANT VALUES=1,2,3
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+dd: EUCLIDEAN_DISTANCE ARG1=c ARG2=d SQUARED
+PRINT ARG=dd FILE=colvar
+```
+
+Calculating the square of the distance is slightly cheapter than computing the distance as you avoid taking the square root.
 
 ## Calculating multiple distances
 
