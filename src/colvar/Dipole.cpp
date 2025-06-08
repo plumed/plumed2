@@ -123,6 +123,7 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("z","COMPONENTS","scalar/vector","the z-component of the dipole");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the DIPOLE for these atoms");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Dipole::Dipole(const ActionOptions&ao):

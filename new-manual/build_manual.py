@@ -555,6 +555,8 @@ def getKeywordDescription( docs ) :
     desc = docs["description"] 
     if "actionlink" in docs.keys() and docs["actionlink"]!="none" :
        desc = desc + ". Options for this keyword are explained in the documentation for [" + docs["actionlink"] + "](" + docs["actionlink"] + ".md)."
+    if "pagelink" in docs.keys() and docs["pagelink"]!="none" :
+       desc = desc + ". Further information about this flag can be found [here](" + docs["pagelink"] + ")."
     return desc
 
 def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
@@ -646,7 +648,7 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
          # Build a list of the keywords for this action that we want to see in the documentation
          example_keywords = set({})
          for key, docs in value["syntax"].items() :
-             if key=="output" or docs["type"]=="hidden" or docs["type"]=="deprecated" : continue
+             if key=="output" or docs["type"]=="hidden" or docs["type"]=="deprecated" or "pagelink" in docs.keys() : continue
              example_keywords.add(key)
 
          f.write("## Details and examples \n")
@@ -722,12 +724,12 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 if "argtype" in docs.keys() and "default" in docs.keys() : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | " + docs["default"] + " | " + docs["description"] + " | \n")
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
                 elif docs["type"]=="atoms" or "argtype" in docs.keys() :
                    if len(docs["description"])==0 :
                      undoc = undoc + 1 
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | none | " + docs["description"] + " | \n")
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | none | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
             for key, docs in value["syntax"].items() : 
                 if key=="output" or "argtype" in docs.keys()  : continue
@@ -747,12 +749,12 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 if docs["type"]=="flag" : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | optional | false | " + docs["description"] + " | \n")
+                   if not depracated and key in example_keywords and "pagelink" not in docs.keys() : f.write("| <span style=\"color:red\">" + key + "</span> | optional | false | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
                 if docs["type"]=="optional" :
                    if len(docs["description"])==0 :
                      undoc = undoc + 1 
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | optional | not used | " + docs["description"] + " | \n")
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | optional | not used | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
                 if docs["type"]=="deprecated" :
                    ndep = ndep + 1

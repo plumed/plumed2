@@ -154,7 +154,8 @@ will run a command something like this:
 mpirun -np 4 plumed driver --ixyz traj.xyz
 ``` 
 
-When this command is run, any actions that can use MPI will run on four MPI processes.
+When this command is run, any actions that can use MPI will run on four MPI processes unless you use the `SERIAL` keyword in the input for those 
+actions in which case any MPI parallism in that action is turned off.
 
 ### OpenMP
 

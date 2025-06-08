@@ -64,6 +64,65 @@ PRINT ARG=m FILE=matrix
 In this example, the orientations of the molecules are specified using the [PLANE](PLANE.md) action and is given by a normal to the plane containing the three atoms from the molecule
 that was specified.  The final output is $2 \times 3$ matrix that contains all the torsional angles between the molecules defined by the two PLANE actions.
 
+## Performance considerations
+
+Suppose that you are using an input like the one shown below to calculate the average torsion angle between neighboring molecules:
+
+```plumed
+# Notice that in a realistic version of this calculation you would likely
+# by calculating the orientations of many more molecules using this command
+d: DISTANCE COMPONENTS ATOMS1=1,5 ATOMS2=11,15 ATOMS3=21,25 ATOMS4=31,35
+s: VSTACK ARG=d.x,d.y,d.z
+sT: TRANSPOSE ARG=s
+#  Calculate a contact matrix in which element i,j is 1 if molecules
+# i and j are neighbors.
+c: CONTACT_MATRIX GROUP=1,11,21,35 SWITCH={RATIONAL R_0=0.1 D_MAX=0.3}
+# Now calculate all the torsions
+t: TORSIONS_MATRIX ARG=s,sT POSITIONS1=1,11,21,31 POSITIONS2=1,11,21,31
+# And the product between the contact matrix and the torsions
+tc: CUSTOM ARG=c,t FUNC=x*y PERIODIC=NO
+# Total of all the torsional angles in the first coordination sphere
+tsum: SUM ARG=tc PERIODIC=NO
+# Total number of neighbouring atoms
+bsum: SUM ARG=c PERIODIC=NO
+# And finally the average torsion angle
+avt: CUSTOM ARG=tc,c FUNC=x/y PERIODIC=NO
+```
+
+If you have a large number of molecules the most expensive part of this calculation will be the evalulation of the TORSIONS_MATRIX as you need to evaluate one torsion anlge for every pair of molecules.
+Furthermore, this computation is unecessary as most pairs of molecules will __not__ be neighbors.  In other words, for the majority of the molecular pairs element the corresponding element of the
+[CONTACT_MATRIX](CONTACT_MATRIX.md) will be zero.  Consequently, when you compute the the corresponding element `tc` by multiplying the torsion $i,j$ by the crresponding $i,j$ element of the
+[CONTACT_MATRIX](CONTACT_MATRIX.md) you will get zero.
+
+Thankfully PLUMED allows you to exploit this fact through the MASK keyword as illustrated below:
+
+```plumed
+# Notice that in a realistic version of this calculation you would likely
+# by calculating the orientations of many more molecules using this command
+d: DISTANCE COMPONENTS ATOMS1=1,5 ATOMS2=11,15 ATOMS3=21,25 ATOMS4=31,35
+s: VSTACK ARG=d.x,d.y,d.z
+sT: TRANSPOSE ARG=s
+#  Calculate a contact matrix in which element i,j is 1 if molecules
+# i and j are neighbors.
+c: CONTACT_MATRIX GROUP=1,11,21,35 SWITCH={RATIONAL R_0=0.1 D_MAX=0.3}
+# Now calculate all the torsions
+t: TORSIONS_MATRIX ...
+   MASK=c ARG=s,sT
+   POSITIONS1=1,11,21,31 POSITIONS2=1,11,21,31
+...
+# And the product between the contact matrix and the torsions
+tc: CUSTOM ARG=c,t FUNC=x*y PERIODIC=NO
+# Total of all the torsional angles in the first coordination sphere
+tsum: SUM ARG=tc PERIODIC=NO
+# Total number of neighbouring atoms
+bsum: SUM ARG=c PERIODIC=NO
+# And finally the average torsion angle
+avt: CUSTOM ARG=tc,c FUNC=x/y PERIODIC=NO
+```
+
+Adding the instruction `MASK=c` to the TORSIONS_MATRIX command here ensures that element $i,j$ of the matrix `t` is only computed if the corresponding element of `c` is non-zero.  By using this command
+you thus avoid the computational expense associated with evaluating the full set of pairwise torsions.
+
 */
 //+ENDPLUMEDOC
 

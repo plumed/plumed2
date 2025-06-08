@@ -101,6 +101,7 @@ void Plane::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("y","default","scalar/vector","the y-component of the vector that is normal to the plane containing the atoms");
   keys.addOutputComponent("z","default","scalar/vector","the z-component of the vector that is normal to the plane containing the atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {

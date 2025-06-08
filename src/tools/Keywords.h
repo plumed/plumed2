@@ -110,6 +110,8 @@ private:
     std::string atomtag;//no noeed for optional, since the type will state if this is needed
     ///This stores any action documentation that we should link to
     std::string linkaction;
+    ///This stores any pages of doucmentation that we should link to
+    std::string linkpage;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -121,6 +123,7 @@ private:
     keyInfo& setArgumentType(argType a);
     keyInfo& setAllowMultiple(bool a);
     keyInfo& setLinkedAction(std::string_view a);
+    keyInfo& setLinkedPage(std::string_view p);
     bool isArgument() const;
   };
   ///Add o reserve a new keyword (internal tool)
@@ -329,8 +332,12 @@ public:
   const std::vector<std::string>& getDOIList() const ;
 /// Create a link to this action in the documentation for it
   void linkActionInDocs( const std::string& k, const std::string& action );
+/// Create a link to this page in the documentation for a keyword
+  void addLinkInDocForFlag( const std::string& k, const std::string& page );
 /// Get any actions that are linked to this keyword
   std::string getLinkedActions( const std::string& key ) const ;
+/// Get any pages that are linked to this keyword
+  std::string getLinkedPages( const std::string& key ) const ;
 };
 
 //the following templates specializations make the bitmask enum work with the

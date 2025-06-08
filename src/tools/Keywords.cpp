@@ -252,6 +252,10 @@ Keywords::keyInfo& Keywords::keyInfo::setLinkedAction(std::string_view a) {
   linkaction=a;
   return *this;
 }
+Keywords::keyInfo& Keywords::keyInfo::setLinkedPage(std::string_view a) {
+  linkpage=a;
+  return *this;
+}
 bool Keywords::keyInfo::isArgument() const {
   return std::holds_alternative<argType>(argument_type);
 }
@@ -1190,9 +1194,20 @@ void Keywords::linkActionInDocs( const std::string& k, const std::string& action
   keywords.at(k).setLinkedAction(action);
 }
 
+void Keywords::addLinkInDocForFlag( const std::string& k, const std::string& page ) {
+  plumed_massert( exists(k), "no " + k + " keyword" );
+  plumed_massert( style(k,"flag"), k + " is not a flag" );
+  keywords.at(k).setLinkedPage(page);
+}
+
 std::string Keywords::getLinkedActions( const std::string& key ) const {
   plumed_assert( exists( key ) );
   return keywords.at(key).linkaction;
+}
+
+std::string Keywords::getLinkedPages( const std::string& key ) const {
+  plumed_assert( exists( key ) );
+  return keywords.at(key).linkpage;
 }
 
 }// namespace PLMD

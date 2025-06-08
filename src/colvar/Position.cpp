@@ -115,6 +115,7 @@ void Position::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("b","SCALED_COMPONENTS","scalar/vector","the normalized projection on the second lattice vector of the atom position");
   keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the atom position");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Position::Position(const ActionOptions&ao):

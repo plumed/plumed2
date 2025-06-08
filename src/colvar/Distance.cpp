@@ -181,6 +181,7 @@ void Distance::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription(scalarOrVector,"the DISTANCE between this pair of atoms");
   keys.addDOI("10.1007/978-1-4939-9608-7_21");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Distance::Distance(const ActionOptions&ao):
