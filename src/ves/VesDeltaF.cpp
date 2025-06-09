@@ -37,8 +37,9 @@ Implementation of VES Delta F method
 
 Implementation of VES$\Delta F$ method discussed in the paper cited below (step two only).
 
-> [! warning]
-> Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
+!!! warning ""
+
+    Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
 
 First you should create some estimate of the local free energy basins of your system,
 using e.g. multiple [METAD](METAD.md) short runs, and combining them with the [sum_hills](sum_hills.md) utility.

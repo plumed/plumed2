@@ -38,7 +38,7 @@ class Log;
 class Keywords {
 /// This class lets me pass keyword types easily
   struct KeyType {
-    enum class keyStyle {hidden,compulsory,flag,optional,atoms,unknown};
+    enum class keyStyle {hidden,compulsory,flag,optional,atoms,deprecated,unknown};
     keyStyle style;
     static keyStyle keyStyleFromString(std::string_view type );
     explicit KeyType( keyStyle type );
@@ -59,6 +59,9 @@ class Keywords {
     bool isHidden() const {
       return (style==keyStyle::hidden);
     }
+    bool isDeprecated() const {
+      return (style==keyStyle::deprecated);
+    }
     std::string toString() const {
       //if you add a style and you forget to update this function the compiler will refuse to compile
       switch(style) {
@@ -72,6 +75,8 @@ class Keywords {
         return "flag";
       case keyStyle::hidden:
         return "hidden";
+      case keyStyle::deprecated:
+        return "deprecated";
       default:
         plumed_massert(false,"unknown keyword type");
       }
@@ -105,6 +110,8 @@ private:
     std::string atomtag;//no noeed for optional, since the type will state if this is needed
     ///This stores any action documentation that we should link to
     std::string linkaction;
+    ///This stores any pages of doucmentation that we should link to
+    std::string linkpage;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -116,6 +123,7 @@ private:
     keyInfo& setArgumentType(argType a);
     keyInfo& setAllowMultiple(bool a);
     keyInfo& setLinkedAction(std::string_view a);
+    keyInfo& setLinkedPage(std::string_view p);
     bool isArgument() const;
   };
   ///Add o reserve a new keyword (internal tool)
@@ -201,6 +209,10 @@ public:
   void add( const Keywords& keys );
 /// Add a new keyword of type t with name k and description d
   void add( std::string_view keytype, std::string_view key, std::string_view docstring );
+/// Add a keyword that was used in older versions of the code and that has now been replaced
+  void addDeprecatedKeyword( std::string_view key, const std::string& replacement );
+/// Add a flag that was used in older versions of the the code that has now been replaced
+  void addDeprecatedFlag( const std::string& key, const std::string& replacement );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
   void add( std::string_view keytype, std::string_view key, std::string_view defaultValue, std::string_view docstring );
 /// Add a falg with name k that is by default on if def is true and off if def is false.  d should provide a description of the flag
@@ -320,8 +332,12 @@ public:
   const std::vector<std::string>& getDOIList() const ;
 /// Create a link to this action in the documentation for it
   void linkActionInDocs( const std::string& k, const std::string& action );
+/// Create a link to this page in the documentation for a keyword
+  void addLinkInDocForFlag( const std::string& k, const std::string& page );
 /// Get any actions that are linked to this keyword
   std::string getLinkedActions( const std::string& key ) const ;
+/// Get any pages that are linked to this keyword
+  std::string getLinkedPages( const std::string& key ) const ;
 };
 
 //the following templates specializations make the bitmask enum work with the

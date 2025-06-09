@@ -30,9 +30,21 @@
 
 //+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_DRMSD
 /*
-Calclulate the distance between segments of a protein and a reference structure of interest
+Calclulate the DRMSD between segments of a protein and a reference structure of interest
 
-\par Examples
+This action is used in the shortcuts [ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md).  It calculates a
+vector of [DRMSD](DRMSD.md) values between a single reference multiple configurations and the instantaneous
+positions of various groups of atoms.  For example, in the following input we define a single set of reference
+set of coordinates for 3 atoms.
+
+```plumed
+c1: SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=1,2,3 SEGMENT2=4,5,6 SEGMENT3=7,8,9 SEGMENT4=10,11,12
+PRINT ARG=c1 FILE=colvar
+```
+
+A four dimensional vector is then returned that contains the DRMSD distances between the 4 sets of atoms that were specified using the `SEGMENT` keywords
+and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the the number of vectors output
+is equal to the number of times the `STRUCTURE` keyword is used.
 
 */
 //+ENDPLUMEDOC

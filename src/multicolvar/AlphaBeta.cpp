@@ -34,7 +34,7 @@ Measures a distance including pbc between the instantaneous values of a set of t
 This shortcut calculates the following quantity.
 
 $$
-s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]
+s = \frac{1}{2} \sum_i c_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]
 $$
 
 where the $\phi_i$ values are the instantaneous values for the [TORSION](TORSION.md) angles of interest.
@@ -43,24 +43,22 @@ The $\phi_i^{\textrm{Ref}}$ values are reference values for the torsional angles
 The following provides an example of the input for an alpha beta similarity.
 
 ```plumed
-ALPHABETA ...
+ab: ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE1=3.14
 ATOMS2=170,172,188,190 REFERENCE2=3.14
 ATOMS3=188,190,192,230 REFERENCE3=3.14
-LABEL=ab
-... ALPHABETA
+...
 PRINT ARG=ab FILE=colvar STRIDE=10
 ```
 
 Because all the reference values are the same we can also calculate the same quantity using
 
 ```plumed
-ALPHABETA ...
+ab: ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE=3.14
 ATOMS2=170,172,188,190
 ATOMS3=188,190,192,230
-LABEL=ab
-... ALPHABETA
+...
 PRINT ARG=ab FILE=colvar STRIDE=10
 ```
 
@@ -71,17 +69,32 @@ about the topology of the protein molecule.  This means that you can specify tor
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
-ALPHABETA ...
-ATOMS1=@phi-3 REFERENCE=3.14
-ATOMS2=@psi-3
-ATOMS3=@phi-4
-LABEL=ab
-... ALPHABETA
+ab: ALPHABETA ...
+ATOMS1=@phi-3 REFERENCE=3.14 COEFFICIENT1=2
+ATOMS2=@psi-3                COEFFICIENT2=0.5
+ATOMS3=@phi-4                COEFFICIENT3=1
+...
 PRINT ARG=ab FILE=colvar STRIDE=10
 ```
 
 Here, `@phi-3` tells plumed that you would like to calculate the $\phi$ angle in the third residue of the protein.
 Similarly `@psi-4` tells plumed that you want to calculate the $\psi$ angle of the fourth residue of the protein.
+Notice, also, that in the first two examples the coefficients $c_i$ in the expression above were all set equal to one.
+In the example above we use the COEFFICIENT keywords to set these quantities to three different values.
+
+Notice, last of all, that in the above examples we reassemble any molecules that have been broken by the periodic boundary
+conditions using a procedure like that used in [WHOLEMOLECULES](WHOLEMOLECULES.md) before calculating the torsion angles.
+If you wish to turn this off for any reason you use the NOPBC flag as shown below:
+
+```plumed
+ab: ALPHABETA ...
+ATOMS1=168,170,172,188 REFERENCE=3.14
+ATOMS2=170,172,188,190 NOPBC
+ATOMS3=188,190,192,230
+...
+PRINT ARG=ab FILE=colvar STRIDE=10
+```
+
 
 */
 //+ENDPLUMEDOC

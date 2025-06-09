@@ -62,24 +62,6 @@ It does not accept matrices or a list of vectors in input.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION SORT_SCALAR
-/*
-Sort the input scalars in a vector according to their magnitudes
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION SORT_VECTOR
-/*
-Sort the elements in a vector according to their magnitudes
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 class Sort {
 public:
   static void registerKeywords(Keywords& keys);

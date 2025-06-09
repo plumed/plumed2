@@ -13,12 +13,21 @@ predefined as a [GROUP](GROUP.md) that can be reused multiple times. Lists of at
 - atom ranges with a negative stride. So `g4: GROUP ATOMS=100-10:-10` is equivalent to `g4: GROUP ATOMS=100,90,80,70,60,50,40,30,20,10`
 - by using an auxiliary [ndx file](https://manual.gromacs.org/archive/5.0.4/online/ndx.html). So `g5: GROUP ATOMS={@ndx:{index.ndx Protein}}`
 
+All the above methods can be combined just putting one name after the other separated by a comma as shown below:
+
+```plumed
+DUMPATOMS ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5 FILE=test.xyz
+```
+
 If you want to use the atoms in a group as the input for a action you use the label of the group as shown in the following input:
 
 ```plumed
 g5: GROUP ATOMS=1,2
 d1: DISTANCE ATOMS=g5
 ```
+
+Some collective variable must accept a fixed number of atoms, for example a [DISTANCE](DISTANCE.md) is calculated
+using two atoms only, an [ANGLE](ANGLE.md) is calculated using either 3 or 4 atoms and [TORSION](TORSION.md) is calculated using 4 atoms.
 
 A few other wasys of using groups in the input to actions are also available:
 
@@ -75,10 +84,10 @@ RESTRAINT ARG=e2e KAPPA=1 AT=5
 
 Notice that NOPBC is used to in the [DISTANCE](DISTANCE.md) action so as to ensure that if the end-to-end distance is larger than half the simulation box the distance
 is compute properly. Also notice that, since many MD codes break molecules across cell boundary, it might be necessary to use the
-WHOLEMOLECULES keyword (also notice that it should be before distance).
+[WHOLEMOLECULES](WHOLEMOLECULES.md) keyword (also notice that it should be before distance).
 
 Notice that most expressions are invariant with respect to a change in the order of the atoms,
-but some of them depend on that order. E.g., with WHOLEMOLECULES it could be useful to
+but some of them depend on that order. E.g., with [WHOLEMOLECULES](WHOLEMOLECULES.md) it could be useful to
 specify atom lists in a reversed order.
 
 ```plumed

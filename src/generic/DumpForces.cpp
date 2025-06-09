@@ -52,14 +52,66 @@ vectors.  If we modify the input above by adding the DUMPFORCES command as shown
 ```plumed
 r: DISTANCE ATOMS=1,2
 V: RESTRAINT ARG=r AT=0.2 KAPPA=100
-DUMPFORCES ARG=r FILE=forces
+DUMPFORCES ARG=r FILE=forces STRIDE=5 FMT=%10.5f
 ```
 
-we can then monitor the value of $-\frac{\textrm{d}V}{\textrm{d}r}\frac{\partial r}$ in the output file
+we can then monitor the value of $-\frac{\textrm{d}V}{\textrm{d}r}$ in the output file
 `forces`.  As explained by the equation above to get the forces on the atom this 'input force' needs to
 be multiplied by $\frac{\partial r}{\partial x_i}$.  To view the various components of the $\frac{\partial r}{\partial x_i}$
 you would use the [DUMPDERIVATIVES](DUMPDERIVATIVES.md) command.  To control the buffering of output you use the
 [FLUSH](FLUSH.md) command.
+
+## DUMPFORCES and RESTART
+
+If you run a calculation with the following input:
+
+```plumed
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+DUMPFORCES ARG=r FILE=forces
+```
+
+and a file called forces is already present in the directory where the calculation is running, the existing file is backed up
+and renamed to `bck.0.forces` so that new data can be output to a new file called `forces`.  If you would like to append to the
+existing file you can use the RESTART command as shown below:
+
+```plumed
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+DUMPFORCES ARG=r FILE=forces RESTART=YES
+```
+
+You can achieve the same result by using the [RESTART](RESTART.md) action as shown below:
+
+```plumed
+RESTART
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+DUMPFORCES ARG=r FILE=forces
+```
+
+However, the advantage of using the RESTART keyword is that you can apped to some files and back up others.
+If you use the [RESTART](RESTART.md) action instead data will be appended to all output files.
+
+## Switching printing on and off
+
+You can use the UPDATE_FROM and UPDATE_UNTIL flags to make the DUMPFORCES command only output data at certain points during the trajectory.
+To see how this works consider the following example:
+
+```plumed
+r: DISTANCE ATOMS=1,2
+V: RESTRAINT ARG=r AT=0.2 KAPPA=100
+DUMPFORCES ...
+  ARG=r FILE=forces
+  UPDATE_FROM=100 UPDATE_UNTIL=500
+  STRIDE=1
+...
+```
+
+During the first 100 ps of the simulation with this input the force is not output to the file called forces.
+The force is instead first output after the first 100 ps of trajectory have elapsed.  Furthermore, output of the force stops
+once the trajectory is longer than 500 ps. In other words, the force is only output during the 400 ps time interval after the first
+100 ps of the simulation.
 
 */
 //+ENDPLUMEDOC

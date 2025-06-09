@@ -28,15 +28,15 @@
 
 //+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
 /*
-Calclulate the distance between segments of a protein and a reference structure of interest
+Calclulate the RMSD between segments of a protein and a reference structure of interest
 
 This action is used in the shortcuts [ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md).  It calculates a
-vector of RMSD values between a single reference multiple configurations and the instantaneous
+vector of [RMSD](RMSD.md) values between a single reference multiple configurations and the instantaneous
 positions of various groups of atoms.  For example, in the following input we define a single set of reference
 set of coordinates for 3 atoms.
 
 ```plumed
-c1: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=1,2,3 SEGMENT2=4,5,6 SEGMENT3=7,8,9 SEGMENT4=10,11,12 TYPE=OPTIMAL
+c1: SECONDARY_STRUCTURE_RMSD STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=1,2,3 SEGMENT2=4,5,6 SEGMENT3=7,8,9 SEGMENT4=10,11,12 TYPE=OPTIMAL
 PRINT ARG=c1 FILE=colvar
 ```
 

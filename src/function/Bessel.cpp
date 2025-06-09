@@ -59,25 +59,6 @@ of the Bessel function at 1.0, 1.5 and 2.0 respectively.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION BESSEL_SCALAR
-/*
-Calculate the value of a Bessel function.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION BESSEL_VECTOR
-/*
-Calculate the bessel function for all the elements in a vector
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-
 class Bessel {
   VectorGeneric<30> A;
   VectorGeneric<25> B;

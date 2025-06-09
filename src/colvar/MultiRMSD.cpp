@@ -35,8 +35,8 @@ You can see an example in [example from the plumed nest](https://www.plumed-nest
 We felt that the input syntax for the method was not very transparant.  We have thus provided this minimal action
 that creates the input for calculating the MultiDomain RMSD for simple cases.  This action is a shortcut.  If you look at the inputs in the
 egg that is linked above you can see how we
-use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some of the more
-complicated CVs things that this could do with MULTI_RMSD looking at how this shortcut works will help you start.
+use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some
+complicated CVs that are linear combinations of multiple RMSD calculations looking at how this shortcut works will help you start.
 
 */
 //+ENDPLUMEDOC
@@ -59,6 +59,7 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
   keys.addFlag("SQUARED",false," This should be set if you want the mean squared displacement instead of the root mean squared displacement");
   keys.addFlag("NOPBC",false,"don't use periodic boundary conditions");
   keys.setValueDescription("scalar","the sum of the multiple RMSD distances");
+  keys.setDeprecated("RMSD");
   keys.needsAction("CONSTANT");
   keys.needsAction("WHOLEMOLECULES");
   keys.needsAction("POSITION");

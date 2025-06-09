@@ -65,8 +65,9 @@ https://github.com/Colvars/colvars/tree/master/colvartools
 abf_integrate eabf.czar.grad
 ````
 
-> [!note]
-> The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
+!!! note "units"
+
+    The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
 
 */
 //+ENDPLUMEDOC

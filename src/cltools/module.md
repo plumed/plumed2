@@ -95,3 +95,4 @@ _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 _plumed_mpi() { eval "$(plumed_mpi --no-mpi completion 2>/dev/null)";}
 complete -F _plumed_mpi -o default plumed_mpi
+````

@@ -10,3 +10,10 @@ Once you have calculated an adjacency matrix you can use it to calculate symmetr
 [symfunc](module_symfunc.md) module.  Alternatively, you can find the connected components in the graph representation of the matrix
 by using the functionality in the [clusters](module_clusters.md) module.  You can even work with the properties of this graph representation 
 of the matrix directly by exploiting the methods described in the [sprint](module_sprint.md) module.
+
+__You will get a colossal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
+D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result
+PLUMED knows that it does not need to calculate these zero terms in what are essentially sums with a very large number of terms.
+In fact when D_MAX is set PLUMED uses linked lists when calculating these coordination numbers, which is what
+gives you such a dramatic increase in performance.__
+

@@ -32,7 +32,7 @@
 /*
 Create a histogram from the input scalar/vector/matrix using KDE
 
-This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation]().
+This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 The input arguments must all have the same rank and size but you can use a scalar, vector or matrix in input.  The distribution
 of this quantity on a grid is then computed using kernel density estimation.
 

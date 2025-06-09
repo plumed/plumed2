@@ -49,7 +49,7 @@ $$
 but it can be changed using the optional SWITCH option.  You can find more information about the various switching functions that you can
 use with this action in the documentation for [LESS_THAN](LESS_THAN.md).
 
-To make your calculation faster you can use a neighbor list, which makes it that only a relevant subset of the pairwise distance are calculated at every step.
+To make your __calculation faster you can use a neighbor list__, which makes it that only a relevant subset of the pairwise distance are calculated at every step.
 
 If GROUPB is empty, the coordination  number will be calculated based on the $\frac{N(N-1)}{2}$ pairs in GROUPA. This avoids computing
 permuted indexes (e.g. pair (i,j) and (j,i)) twice and ensures that the calculation runs at twice the speed.

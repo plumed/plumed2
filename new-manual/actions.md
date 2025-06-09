@@ -1,7 +1,7 @@
 Actions
 -------
 
-Every command in a PLUMED input file gives the input for an action or a [shortcut](shortcuts.md). The input for an action 
+Every line in a PLUMED input file gives the input for an action or a [shortcut](shortcuts.md). The input for an action 
 can all be on a single line as shown below:
 
 ```plumed
@@ -16,6 +16,32 @@ d1: DISTANCE ...
    COMPONENTS
 ...
 ```
+
+The input for this action can also be written as follows:
+
+```plumed
+DISTANCE ...
+   ATOMS=1,2
+   COMPONENTS
+   LABEL=d1
+... DISTANCE
+```
+
+Notice that the closing `...` is followed by the word `DISTANCE` here. This might be
+useful when it comes to matching the start and ends of multi-line statements.  However, 
+it is important to note that PLUMED checks that the word following the closing `...` is identical to
+the first word in the line with the first `...`. If these are not, it will throw an error. This is why we used 
+`LABEL=d1` here in place of `d1: DISTANCE`. If you want to have matching action names at the start and end of your 
+multiline statements you are perhaps best off doing:
+
+```plumed
+DISTANCE LABEL=d1 ...
+   ATOMS=1,2
+   COMPONENTS
+... DISTANCE
+```
+
+so as to ensure that the label appears at the start of the multiline input.
 
 ## Adding comments
 
@@ -47,6 +73,19 @@ d2: DISTANCE ATOMS=3,4
 ```
 
 PLUMED will evaluate the distance between atom 1 and 2 but will not evaluate the distance between atoms 3 and 4.
+
+Lastly, note that you can include comments in the input for an action or [shortcut](shortcuts.md) that is split over multiple lines as shown below:
+
+```plumed
+dist: DISTANCE ...
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+
+... 
+```
 
 ## Using INCLUDE files
 
@@ -115,7 +154,8 @@ will run a command something like this:
 mpirun -np 4 plumed driver --ixyz traj.xyz
 ``` 
 
-When this command is run, any actions that can use MPI will run on four MPI processes.
+When this command is run, any actions that can use MPI will run on four MPI processes unless you use the `SERIAL` keyword in the input for those 
+actions in which case any MPI parallism in that action is turned off.
 
 ### OpenMP
 

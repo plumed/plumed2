@@ -35,7 +35,7 @@ h: CUSTOM ARG=hu FUNC=x/10 PERIODIC=NO
 iv: INTEGRATE_GRID ARG=h PERIODIC=NO
 ```
 
-As discused in the documentation for [INTEGRAL](INTEGRAL.md) we compute (approximate) integrals in PLUMED using:
+As discused in the documentation for [INTEGRATE_GRID](INTEGRATE_GRID.md) we compute (approximate) integrals in PLUMED using:
 
 $$
 y = \frac{b-a}{n} \sum_{i=0}^{n} f\left( a + \frac{i(b-a)}{n} \right)
@@ -69,6 +69,7 @@ void GetGridVolumeElement::registerKeywords( Keywords& keys ) {
   ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","grid","the label for function on the grid that you need the volume element for");
   keys.setValueDescription("scalar","the volume element ");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 GetGridVolumeElement::GetGridVolumeElement(const ActionOptions&ao):

@@ -67,7 +67,7 @@ c5: CONSTANT VALUE=5
 PRINT ARG=c1,c2,c3,c4,c5 FILE=five_scalars
 ```
 
-Lastly, if you want to create a constant $2\times 3$ matrix you would use an input like the one below:
+If you want to create a constant $2\times 3$ matrix you would use an input like the one below:
 
 ```plumed
 c: CONSTANT VALUES=1,2,3,4,5,6 NROWS=2 NCOLS=3
@@ -86,6 +86,17 @@ M = \left(
 $$
 
 The print action ensures that the six elements of this constant matrix are output on every step.
+
+Notice, that you can also read matrices from files by using a command like the one shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/landmarks/rt-read-dissims/mymatrix.dat
+c: CONSTANT FILE=regtest/landmarks/rt-read-dissims/mymatrix.dat NOLOG
+PRINT ARG=c FILE=constant_matrix
+```
+
+The `NOLOG` flag that is used in this example ensures that all the values read in from the input file are not output
+in the plumed log file.
 
 The CONSTANT  action is useful in combination with functions that take in input constants or parameters.
 For example, the following input instructs plumed to compute the distance

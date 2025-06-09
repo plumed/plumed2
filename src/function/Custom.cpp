@@ -410,67 +410,42 @@ dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f
 ```
 
-*/
-//+ENDPLUMEDOC
+## Making lepton library faster
 
-//+PLUMEDOC FUNCTION MATHEVAL_SCALAR
-/*
-Calculate a function of a set of input scalars
+If you use a lot of [CUSTOM](CUSTOM.md) actions or CUSTOM [switching functions](LESS_THAN.md) it can slow down PLUMED.
+These commands use the lepton library that is included in PLUMED.
+This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
+However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
+As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED.
+As of PLUMED 2.8, ASMJIT is enabled by default on supported architectures (X86/X64).
+You can disable it at runtime setting the environment variable `PLUMED_USE_ASMJIT`:
 
-See \ref MATHEVAL
+```bash
+export PLUMED_USE_ASMJIT=no
+```
 
-\par Examples
+In some case using a custom expression is almost as fast as using a hard-coded
+function. For instance, with an input that contained the following lines:
 
-*/
-//+ENDPLUMEDOC
+```plumed
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
+d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
+```
 
-//+PLUMEDOC FUNCTION CUSTOM_SCALAR
-/*
-Calculate a function of a set of input scalars
+I (GB) obtained the following timings (on a Macbook laptop):
 
-See \ref CUSTOM
+````
+...
+PLUMED: 4A  1 c                                          108     0.126592     0.001172     0.000701     0.002532
+PLUMED: 4A  2 d_fast                                      108     0.135210     0.001252     0.000755     0.002623
+...
+````
 
-\par Examples
+Notice the usage of `x2` as a variable for the switching function, which
+avoids an unnecessary square root calculation (this is done automatically by the hard-coded switching functions
+when you use only even powers). The asmjit calculation (`d_fast`) takes less than 10% more than the hard-coded
+one (`c`).
 
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION MATHEVAL_VECTOR
-/*
-Calculate a function of a set of input vectors elementwise
-
-See \ref MATHEVAL
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC FUNCTION CUSTOM_VECTOR
-/*
-Calculate a function of a set of input vectors elementwise
-
-See \ref CUSTOM
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR CUSTOM_MATRIX
-/*
-Calculate an arbitrary function piecewise for one or multiple input matrices.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR MATHEVAL_MATRIX
-/*
-Calculate an arbitrary function piecewise for one or multiple input matrices.
-
-\par Examples
 
 */
 //+ENDPLUMEDOC
@@ -507,23 +482,13 @@ This alias is kept in order to maintain compatibility with previous PLUMED versi
 However, notice that as of PLUMED 2.5 the libmatheval library is not linked anymore,
 and that the MATHEVAL action evaluates functions [the Lepton library](https://simtk.org/projects/lepton).
 
-\par Examples
-
-Just replace \ref CUSTOM with \ref MATHEVAL.
-
-\plumedfile
-d: DISTANCE ATOMS=10,15
-m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
-# check the function you are applying:
-PRINT ARG=d,m FILE=checkme
-RESTRAINT ARG=d AT=0.5 KAPPA=10.0
-\endplumedfile
-(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
-
 */
 //+ENDPLUMEDOC
 
 void Custom::registerKeywords(Keywords& keys) {
+  if( keys.getDisplayName()=="MATHEVAL") {
+    keys.setDeprecated("CUSTOM");
+  }
   keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");

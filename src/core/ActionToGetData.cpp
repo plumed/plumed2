@@ -65,8 +65,14 @@ You would only use the GET command if you were calling PLUMED from python or an 
 
 ```plumed
 d: DISTANCE ATOMS=1,2
-GET ARG=d
+GET ARG=d STRIDE=1 TYPE=value
 ```
+
+!!! warning "TYPE not fully implemented"
+
+    At the moment you can only use GET to extract the values. The TYPE keyword was added so that we could support passing of the forces
+    on a value or the derivatives of the value.  Currently, we do not support these options. If you are interested in using this feature
+    please let us know as we could implement this functionality here relatively easily.
 
 */
 //+ENDPLUMEDOC

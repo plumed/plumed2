@@ -47,7 +47,7 @@ void MFilterMore::registerKeywords(Keywords& keys) {
   keys.setDeprecated("MORE_THAN");
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
   keys.addOutputComponent("highest","HIGHEST","scalar","the largest of the colvars");
   keys.needsAction("CUSTOM");

@@ -35,6 +35,7 @@ void ActionWithVector::registerKeywords( Keywords& keys ) {
   keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithArguments::registerKeywords( keys );
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
+  keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 
 ActionWithVector::ActionWithVector(const ActionOptions&ao):

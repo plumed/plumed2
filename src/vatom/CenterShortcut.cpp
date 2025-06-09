@@ -34,8 +34,7 @@ PLUMED_REGISTER_ACTION(CenterShortcut,"CENTER")
 
 void CenterShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
-  keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
+  keys.add("atoms","ATOMS","the group of atoms that appear in the definition of this center");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("optional","WEIGHTS","what weights should be used when calculating the center.  If this keyword is not present the geometric center is computed. "
            "If WEIGHTS=@Masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
@@ -62,9 +61,15 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
   // Read in what we are doing with the weights
   bool usemass;
   parseFlag("MASS",usemass);
+  bool safe_phases;
+  parseFlag("SAFE_PHASES",safe_phases);
   std::vector<std::string> str_weights;
   parseVector("WEIGHTS",str_weights);
   if( usemass || str_weights.size()==0 || str_weights.size()>1 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
+    std::string useph = "";
+    if( safe_phases ) {
+      useph = " PHASES";
+    }
     if( usemass && str_weights.size()!=0 ) {
       error("WEIGHTS and MASS keywords cannot not be used simultaneously");
     }
@@ -78,7 +83,7 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
     if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
       wt_str = "MASS";
     }
-    readInputLine( getShortcutLabel() + ": CENTER_FAST " + wt_str + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": CENTER_FAST " + wt_str + " " + convertInputLineToString() + useph );
     return;
   }
   // Read in the atoms
@@ -119,8 +124,7 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_w: CONSTANT VALUES=" + ones );
   }
   // Read in the instructions on how to compute the center of mass
-  bool safe_phases, phases, nopbc;
-  parseFlag("SAFE_PHASES",safe_phases);
+  bool phases, nopbc;
   parseFlag("NOPBC",nopbc);
   if( safe_phases ) {
     phases=true;

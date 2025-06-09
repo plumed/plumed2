@@ -1,7 +1,26 @@
 site_name: PLUMED manual
+theme: 
+  name: material
+  logo: assets/pigeon.png
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+repo_url: https://github.com/plumed/plumed2
 
 nav:
   - Introduction: 'index.md'
+  - Installation: 'https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html'
   - Modules: 'modules.md'
   - Actions: 'actionlist.md'
   - Getting started: 'https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html'
@@ -17,18 +36,21 @@ extra_css:
    - assets/plumedtohtml.css
    - assets/mermaid.css
    - assets/dropdown.css
-   - https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
-   - https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.css
+   - assets/plumedManual.css
+   - https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.1/b-3.2.3/b-html5-3.2.3/datatables.min.css
 
 extra_javascript:
   - assets/plumedtohtml.js
   - https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
   - assets/tablecode.js
   - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
-  - https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.18/b-1.5.6/b-flash-1.5.6/b-html5-1.5.6/datatables.min.js
+  - https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.1/b-3.2.3/b-html5-3.2.3/datatables.min.js
   - https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js
   - assets/mermaid.js
 
 markdown_extensions: 
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences 
   - mdx_math:
      enable_dollar_delimiter: True 

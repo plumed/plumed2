@@ -86,10 +86,11 @@ If you use this command the version of PLUMED that is in your environment calls 
 `--kernel` flag.  Running the benchmark in this way ensures that you are running in a controlled setting, where systematic errors
 in the comparison are minimized.
 
-> [!WARNING]
-> You use the `plumed-runtime` executable here to avoid conflicts between different
-> plumed versions. You will find the `plumed-runtime` executable in your path if you are using the non installed version of plumed,
-> and in `$prefix/lib/plumed` if you installed plumed in $prefix,.
+!!! warning "using plumed-runtime"
+
+    You use the `plumed-runtime` executable here to avoid conflicts between different
+    plumed versions. You will find the `plumed-runtime` executable in your path if you are using the non installed version of plumed,
+    and in `$prefix/lib/plumed` if you installed plumed in $prefix,.
 
 ## Comparing multiple versions
 

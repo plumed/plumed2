@@ -24,9 +24,25 @@
 
 //+PLUMEDOC MCOLVAR BRIDGE
 /*
-Calculate a matrix with elements equal to one if there is a bridging atom between the two atoms
+Calculate the number of briding atoms between two groups
 
-\par Examples
+This quantity calculates:
+
+$$
+f(x) = \sum_{ijk} s_A(r_{ij})s_B(r_{ik})
+$$
+
+where the sum over $i$ is over all the "bridging atoms" and
+$s_A$ and $s_B$ are switching functions.
+
+The following example instructs plumed to calculate the number of water molecules
+that are bridging between atoms 1-10 and atoms 11-20 and to print the value
+to a file
+
+```plumed
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
+PRINT ARG=w1 FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

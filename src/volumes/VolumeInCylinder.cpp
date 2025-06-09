@@ -76,15 +76,6 @@ types of calculations, which can still be used with this new version of the comm
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR INCYLINDER_CALC
-/*
-Calculate a vector from the input positions with elements equal to one when the positions are in a particular part of the cell and elements equal to zero otherwise
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace volumes {
 
