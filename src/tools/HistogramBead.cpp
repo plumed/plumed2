@@ -182,18 +182,19 @@ void HistogramBead::setKernelType( KernelType ktype ) {
   type=ktype;
 }
 
-double HistogramBead::calculate( double x, double& df ) const {
+double HistogramBead::calculate(const double x, double& df ) const {
+  double res=0.0;
   switch (type) {
   case KernelType::gaussian : {
-    double lowB = difference( x, lowb ) / ( std::sqrt(2.0) * width );
-    double upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
-    df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( std::sqrt(2*pi)*width );
-    return 0.5*( erf( upperB ) - erf( lowB ) );
+    const double lowB = difference( x, lowb ) / ( std::sqrt(2.0) * width );
+    const double upperB = difference( x, highb ) / ( std::sqrt(2.0) * width );
+    df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( std::sqrt(PLMD::twopi)*width );
+    res = 0.5*( erf( upperB ) - erf( lowB ) );
   }
   break;
   case KernelType::triangular : {
-    double lowB = ( difference( x, lowb ) / width );
-    double upperB = ( difference( x, highb ) / width );
+    const double lowB = ( difference( x, lowb ) / width );
+    const double upperB = ( difference( x, highb ) / width );
     df=0.0;
     if( std::fabs(lowB)<1. ) {
       df = (1 - std::fabs(lowB)) / width;
@@ -202,13 +203,14 @@ double HistogramBead::calculate( double x, double& df ) const {
       df -= (1 - std::fabs(upperB)) / width;
     }
     if (upperB<=-1. || lowB >=1.) {
-      return 0.0;
+      break;
     }
-    double ia = (lowB>-1.0) ? lowB : -1.0;
-    double ib = (upperB<1.0) ? upperB : 1.0;
-    return (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
+    const double ia = (lowB>-1.0) ? lowB : -1.0;
+    const double ib = (upperB<1.0) ? upperB : 1.0;
+    res = (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
   }
   }
+  return res;
 }
 
 double HistogramBead::calculateWithCutoff( double x, double& df ) const {

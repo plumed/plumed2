@@ -124,7 +124,7 @@ public:
   double jacob_det;
   double len_bi, len_cross, len_perp, sigma;
   Vector bi, cross, perp;
-  HistogramBead::KernelType kerneltype;
+  HistogramBead::KernelType kerneltype{HistogramBead::KernelType::gaussian};
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
   static void registerKeywords( Keywords& keys );
@@ -351,7 +351,7 @@ void VolumeCavity::calculateNumberInside( const VolumeInput& input, const Volume
   double ucontr, uder, vcontr, vder, wcontr, wder;
 
   // Setup the histogram bead
-  HistogramBead bead( actioninput.kerneltype, 0, actioninput.len_bi, actioninput.sigma  );
+  HistogramBead bead( actioninput.kerneltype, 0, actioninput.len_bi, actioninput.sigma);
   // Calculate contribution from integral along bi
   double upos=dotProduct( datom, actioninput.bi );
   ucontr=bead.calculate( upos, uder );
