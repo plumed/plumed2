@@ -213,7 +213,7 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const Adjacenc
   double dfuncl, sw = data.switchingFunction.calculateSqr( len2, dfuncl );
 
   // Now run through all sea atoms
-  HistogramBead bead( data.kerneltype );
+  HistogramBead bead( data.kerneltype, 0.0, data.binw_mat, data.sigma  );
   Vector g1derivf,g2derivf,lderivf;
   Tensor vir;
   double binlength = data.maxbins * data.binw_mat;

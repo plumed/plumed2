@@ -345,15 +345,14 @@ void VolumeCavity::setupRegions( ActionVolume<VolumeCavity>* action, const Pbc& 
 }
 
 void VolumeCavity::calculateNumberInside( const VolumeInput& input, const VolumeCavity& actioninput, VolumeOutput& output ) {
-  // Setup the histogram bead
-  HistogramBead bead( actioninput.kerneltype );
-
   // Calculate distance of atom from origin of new coordinate frame
-  Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
+  Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]),
+                                   Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
   double ucontr, uder, vcontr, vder, wcontr, wder;
 
+  // Setup the histogram bead
+  HistogramBead bead( actioninput.kerneltype, 0, actioninput.len_bi, actioninput.sigma  );
   // Calculate contribution from integral along bi
-  bead.set( 0, actioninput.len_bi, actioninput.sigma );
   double upos=dotProduct( datom, actioninput.bi );
   ucontr=bead.calculate( upos, uder );
   double udlen=bead.uboundDerivative( upos );

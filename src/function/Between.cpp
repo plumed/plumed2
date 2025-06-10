@@ -162,7 +162,7 @@ class Between {
 public:
   bool isPeriodic;
   double min=0, max=0;
-  HistogramBead hist{HistogramBead::KernelType::gaussian};
+  HistogramBead hist{HistogramBead::KernelType::gaussian,0.0,1.0,0.5};
   static void registerKeywords( Keywords& keys );
   static void read( Between& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );

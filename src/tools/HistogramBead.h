@@ -41,7 +41,6 @@ class HistogramBead {
 public:
   enum class KernelType {gaussian,triangular};
 private:
-  bool init{false};
   double lowb{0.0};
   double highb{0.0};
   double width{0.0};
@@ -61,18 +60,16 @@ public:
   static void registerKeywords( Keywords& keys );
   static void generateBins( const std::string& params, std::vector<std::string>& bins );
   std::string description() const ;
-  // HistogramBead()
   //Non periodic constructor
 #pragma acc routine seq
-  explicit HistogramBead(KernelType);
+  explicit HistogramBead(KernelType, double l, double h, double w);
   //with period constructor
-  HistogramBead(KernelType, double mlow, double mhigh);
+  HistogramBead(KernelType, double mlow, double mhigh, double l, double h, double w);
   HistogramBead(const HistogramBead&);
   HistogramBead(HistogramBead&&);
   HistogramBead& operator=(const HistogramBead&);
   HistogramBead& operator=(HistogramBead&&);
-  // ~HistogramBead();
-  bool hasBeenSet() const;
+
 #pragma acc routine seq
   void isNotPeriodic();
   void isPeriodic( double mlow, double mhigh );
@@ -86,17 +83,12 @@ public:
 #pragma acc routine seq
   double calculate(double x, double&df) const;
   double calculateWithCutoff( double x, double& df ) const;
-  double lboundDerivative( const double& x ) const;
-  double uboundDerivative( const double& x ) const;
+  double lboundDerivative( double x ) const;
+  double uboundDerivative( double x ) const;
   double getlowb() const ;
   double getbigb() const ;
   double getCutoff() const ;
 };
-
-inline
-bool HistogramBead::hasBeenSet() const {
-  return init;
-}
 
 inline
 void HistogramBead::isNotPeriodic() {

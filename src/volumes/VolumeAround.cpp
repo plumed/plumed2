@@ -224,33 +224,30 @@ void VolumeAround::calculateNumberInside( const VolumeInput& input,
     const VolumeAround& actioninput,
     VolumeOutput& output ) {
   // Setup the histogram bead
-  HistogramBead bead(actioninput.kerneltype);
+  HistogramBead bead(actioninput.kerneltype, actioninput.xlow, actioninput.xhigh, actioninput.sigma );
 
   // Calculate position of atom wrt to origin
   Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]),
                                   Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
-  double xcontr, ycontr, zcontr, xder, yder, zder;
+  double xcontr=1.0;
+  double xder=0.0;
   if( actioninput.dox ) {
-    bead.set( actioninput.xlow, actioninput.xhigh, actioninput.sigma );
+    //bead parameters set in the constructor
     xcontr=bead.calculate( fpos[0], xder );
-  } else {
-    xcontr=1.;
-    xder=0.;
   }
+  double ycontr=1.0;
+  double yder=0.0;
   if( actioninput.doy ) {
     bead.set( actioninput.ylow, actioninput.yhigh, actioninput.sigma );
     ycontr=bead.calculate( fpos[1], yder );
-  } else {
-    ycontr=1.;
-    yder=0.;
   }
+  double zcontr=1.0;
+  double zder=0.0;
   if( actioninput.doz ) {
     bead.set( actioninput.zlow, actioninput.zhigh, actioninput.sigma );
     zcontr=bead.calculate( fpos[2], zder );
-  } else {
-    zcontr=1.;
-    zder=0.;
   }
+
   output.derivatives[0]=xder*ycontr*zcontr;
   output.derivatives[1]=xcontr*yder*zcontr;
   output.derivatives[2]=xcontr*ycontr*zder;

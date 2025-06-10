@@ -468,7 +468,7 @@ void KDE::setupNeighborsVector() {
     nneigh.resize( gmin.size() );
     if( kerneltype.find("bin")!=std::string::npos ) {
       std::size_t dd = kerneltype.find("-bin");
-      HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ));
+      HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ),0.0,1.0,0.5);
       Value* bw_arg=getPntrToArgument(bwargno);
       if( bw_arg->getRank()<2 ) {
         for(unsigned i=0; i<support.size(); ++i) {
@@ -625,7 +625,8 @@ void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
       } else if( kerneltype.find("bin")!=std::string::npos ) {
         double val=hh;
         std::size_t dd = kerneltype.find("-bin");
-        HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ));
+        HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ),
+                           0.0,1.0,0.5);
         Value* bw_arg=getPntrToArgument(bwargno);
         for(unsigned j=0; j<args.size(); ++j) {
           if( gridobject.isPeriodic(j) ) {
@@ -789,7 +790,8 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
         buffer[ bufstart + gridobject.getIndex( newargs )*(1+args.size()) ] += height;
       } else if( kerneltype.find("bin")!=std::string::npos ) {
         std::vector<HistogramBead> bead( args.size(),HistogramBead{
-          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) )
+          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) ),
+          0.0,1.0,0.5
         } );
         setupHistogramBeads( bead );
         for(unsigned i=0; i<num_neigh; ++i) {
@@ -849,7 +851,8 @@ void KDE::gatherForces( const unsigned& itask, const MultiValue& myvals, std::ve
     if( getName()=="KDE" ) {
       if( kerneltype.find("bin")!=std::string::npos ) {
         std::vector<HistogramBead> bead( args.size(),HistogramBead{
-          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) )
+          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) ),
+          0.0,1.0,0.5
         } );
         setupHistogramBeads( bead );
         for(unsigned i=0; i<num_neigh; ++i) {
