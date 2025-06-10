@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "function/FunctionTemplateBase.h"
+#include "function/FunctionSetup.h"
 #include "function/FunctionShortcut.h"
 #include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -89,33 +89,23 @@ This function is used in the calculation of the Steinhardt order parameters, whi
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC MCOLVAR SPHERICAL_HARMONIC_MATRIX
-/*
-Calculate the values of all the spherical harmonic funtions for a particular value of l for all the elements of a set of three input matrices
-
-\par Examples
-
-
-*/
-//+ENDPLUMEDOC
-
-class SphericalHarmonic : public function::FunctionTemplateBase {
-private:
+class SphericalHarmonic {
+public:
   int tmom;
   std::vector<double> coeff_poly;
   std::vector<double> normaliz;
-  unsigned factorial( const unsigned& n ) const ;
-  double deriv_poly( const unsigned& m, const double& val, double& df ) const ;
-  void addVectorDerivatives( const unsigned& ival, const Vector& der, Matrix<double>& derivatives ) const ;
-public:
-  void registerKeywords( Keywords& keys ) override;
-  void read( ActionWithArguments* action ) override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override {
-    return true;
+  static void registerKeywords( Keywords& keys );
+  static unsigned factorial( const unsigned& n );
+  static void read( SphericalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options );
+  static void calc( const SphericalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
+  static double deriv_poly( const SphericalHarmonic& func, const unsigned& m, const double& val, double& df );
+  static void addVectorDerivatives( const unsigned& ival, const Vector& der, View2D<double>& derivatives );
+  SphericalHarmonic& operator=(const SphericalHarmonic& m) {
+    tmom = m.tmom;
+    coeff_poly = m.coeff_poly;
+    normaliz = m.normaliz;
+    return *this;
   }
-  std::vector<std::string> getComponentsPerLabel() const override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef function::FunctionShortcut<SphericalHarmonic> SpHarmShortcut;
@@ -130,124 +120,118 @@ void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs");
 }
 
-unsigned SphericalHarmonic::factorial( const unsigned& n ) const {
+unsigned SphericalHarmonic::factorial( const unsigned& n ) {
   return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
 }
 
-void SphericalHarmonic::read( ActionWithArguments* action ) {
-  parse(action,"L",tmom);
-  action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n", tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str(), action->getPntrToArgument(2)->getName().c_str() );
+void SphericalHarmonic::read( SphericalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options ) {
+  action->parse("L",func.tmom);
+  action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n", func.tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str(), action->getPntrToArgument(2)->getName().c_str() );
   if( action->getNumberOfArguments()==4 ) {
     action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(3)->getName().c_str() );
   }
 
-  normaliz.resize( tmom+1 );
-  for(unsigned i=0; i<=tmom; ++i) {
-    normaliz[i] = sqrt( (2*tmom+1)*factorial(tmom-i)/(4*pi*factorial(tmom+i)) );
+  func.normaliz.resize( func.tmom+1 );
+  for(unsigned i=0; i<=func.tmom; ++i) {
+    func.normaliz[i] = sqrt( (2*func.tmom+1)*factorial(func.tmom-i)/(4*pi*factorial(func.tmom+i)) );
     if( i%2==1 ) {
-      normaliz[i]*=-1;
+      func.normaliz[i]*=-1;
     }
   }
 
-  coeff_poly.resize( tmom+1 );
-  if( tmom==1 ) {
+  func.coeff_poly.resize( func.tmom+1 );
+  if( func.tmom==1 ) {
     // Legendre polynomial coefficients of order one
-    coeff_poly[0]=0;
-    coeff_poly[1]=1.0;
-  } else if( tmom==2 ) {
+    func.coeff_poly[0]=0;
+    func.coeff_poly[1]=1.0;
+  } else if( func.tmom==2 ) {
     // Legendre polynomial coefficients of order two
-    coeff_poly[0]=-0.5;
-    coeff_poly[1]=0.0;
-    coeff_poly[2]=1.5;
-  } else if( tmom==3 ) {
+    func.coeff_poly[0]=-0.5;
+    func.coeff_poly[1]=0.0;
+    func.coeff_poly[2]=1.5;
+  } else if( func.tmom==3 ) {
     // Legendre polynomial coefficients of order three
-    coeff_poly[0]=0.0;
-    coeff_poly[1]=-1.5;
-    coeff_poly[2]=0.0;
-    coeff_poly[3]=2.5;
-  } else if( tmom==4 ) {
+    func.coeff_poly[0]=0.0;
+    func.coeff_poly[1]=-1.5;
+    func.coeff_poly[2]=0.0;
+    func.coeff_poly[3]=2.5;
+  } else if( func.tmom==4 ) {
     // Legendre polynomial coefficients of order four
-    coeff_poly[0]=0.375;
-    coeff_poly[1]=0.0;
-    coeff_poly[2]=-3.75;
-    coeff_poly[3]=0.0;
-    coeff_poly[4]=4.375;
-  } else if( tmom==5 ) {
+    func.coeff_poly[0]=0.375;
+    func.coeff_poly[1]=0.0;
+    func.coeff_poly[2]=-3.75;
+    func.coeff_poly[3]=0.0;
+    func.coeff_poly[4]=4.375;
+  } else if( func.tmom==5 ) {
     // Legendre polynomial coefficients of order five
-    coeff_poly[0]=0.0;
-    coeff_poly[1]=1.875;
-    coeff_poly[2]=0.0;
-    coeff_poly[3]=-8.75;
-    coeff_poly[4]=0.0;
-    coeff_poly[5]=7.875;
-  } else if( tmom==6 ) {
+    func.coeff_poly[0]=0.0;
+    func.coeff_poly[1]=1.875;
+    func.coeff_poly[2]=0.0;
+    func.coeff_poly[3]=-8.75;
+    func.coeff_poly[4]=0.0;
+    func.coeff_poly[5]=7.875;
+  } else if( func.tmom==6 ) {
     // Legendre polynomial coefficients of order six
-    coeff_poly[0]=-0.3125;
-    coeff_poly[1]=0.0;
-    coeff_poly[2]=6.5625;
-    coeff_poly[3]=0.0;
-    coeff_poly[4]=-19.6875;
-    coeff_poly[5]=0.0;
-    coeff_poly[6]=14.4375;
+    func.coeff_poly[0]=-0.3125;
+    func.coeff_poly[1]=0.0;
+    func.coeff_poly[2]=6.5625;
+    func.coeff_poly[3]=0.0;
+    func.coeff_poly[4]=-19.6875;
+    func.coeff_poly[5]=0.0;
+    func.coeff_poly[6]=14.4375;
   } else {
     action->error("Insert Legendre polynomial coefficients into SphericalHarmonics code");
   }
-}
-
-std::vector<std::string> SphericalHarmonic::getComponentsPerLabel() const {
-  std::vector<std::string> comp;
   std::string num;
-  for(int i=-tmom; i<=tmom; ++i) {
+  for(int i=-func.tmom; i<=func.tmom; ++i) {
     Tools::convert(fabs(i),num);
     if( i<0 ) {
-      comp.push_back( "-n" + num );
+      options.multipleValuesForEachRegisteredComponent.push_back( "-n" + num );
     } else if( i>0 ) {
-      comp.push_back( "-p" + num );
+      options.multipleValuesForEachRegisteredComponent.push_back( "-p" + num );
     } else {
-      comp.push_back( "-0");
+      options.multipleValuesForEachRegisteredComponent.push_back( "-0");
     }
   }
-  return comp;
+  options.derivativeZeroIfValueIsZero = (action->getNumberOfArguments()==4 && (action->getPntrToArgument(3))->isDerivativeZeroWhenValueIsZero() );
 }
 
-void SphericalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
-  std::vector<std::string> comp( getComponentsPerLabel() );
-  for(unsigned i=0; i<comp.size(); ++i) {
-    action->componentIsNotPeriodic("rm" + comp[i]);
-    action->componentIsNotPeriodic("im" + comp[i]);
-  }
-  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
-  plumed_assert( aarg );
-  if( aarg->getNumberOfArguments()==4 && (aarg->getPntrToArgument(3))->isDerivativeZeroWhenValueIsZero() ) {
-    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-      (action->copyOutput(i))->setDerivativeIsZeroWhenValueIsZero();
-    }
-  }
-}
-
-void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void SphericalHarmonic::calc( const SphericalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout ) {
   double weight=1;
   if( args.size()==4 ) {
     weight = args[3];
   }
   if( weight<epsilon ) {
+    if( !noderiv ) {
+      unsigned imbase = 2*func.tmom+1;
+      for(int m=-func.tmom; m<=func.tmom; ++m) {
+        funcout.derivs[func.tmom+m][0] = 0;
+        funcout.derivs[func.tmom+m][1] = 0;
+        funcout.derivs[func.tmom+m][2] = 0;
+        funcout.derivs[func.tmom+m][3] = 0;
+        funcout.derivs[imbase+func.tmom+m][0] = 0;
+        funcout.derivs[imbase+func.tmom+m][1] = 0;
+        funcout.derivs[imbase+func.tmom+m][2] = 0;
+        funcout.derivs[imbase+func.tmom+m][3] = 0;
+      }
+    }
     return;
   }
 
   double dlen2 = args[0]*args[0]+args[1]*args[1]+args[2]*args[2];
   double dlen = sqrt( dlen2 );
   double dlen3 = dlen2*dlen;
-  double dpoly_ass, poly_ass=deriv_poly( 0, args[2]/dlen, dpoly_ass );
+  double dpoly_ass, poly_ass=deriv_poly( func, 0, args[2]/dlen, dpoly_ass );
   // Derivatives of z/r wrt x, y, z
   Vector dz;
   dz[0] = -( args[2] / dlen3 )*args[0];
   dz[1] = -( args[2] / dlen3 )*args[1];
   dz[2] = -( args[2] / dlen3 )*args[2] + (1.0 / dlen);
   // Accumulate for m=0
-  vals[tmom] = weight*poly_ass;
-  addVectorDerivatives( tmom, weight*dpoly_ass*dz, derivatives );
+  funcout.values[func.tmom] = weight*poly_ass;
+  addVectorDerivatives( func.tmom, weight*dpoly_ass*dz, funcout.derivs );
   if( args.size()==4 ) {
-    derivatives(tmom, 3) = poly_ass;
+    funcout.derivs[func.tmom][3] = poly_ass;
   }
 
   // The complex number of which we have to take powers
@@ -256,9 +240,9 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
   std::complex<double> ii( 0.0, 1.0 );
   Vector myrealvec, myimagvec, real_dz, imag_dz;
   // Do stuff for all other m values
-  for(unsigned m=1; m<=tmom; ++m) {
+  for(unsigned m=1; m<=func.tmom; ++m) {
     // Calculate Legendre Polynomial
-    poly_ass=deriv_poly( m, args[2]/dlen, dpoly_ass );
+    poly_ass=deriv_poly( func, m, args[2]/dlen, dpoly_ass );
     // Real and imaginary parts of z
     double real_z = real(com1*powered), imag_z = imag(com1*powered);
 
@@ -285,59 +269,63 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
     myimagvec = weight*dpoly_ass*imag_z*dz + weight*poly_ass*imag_dz;
 
     // Real part
-    vals[tmom+m] = weight*tq6;
-    addVectorDerivatives( tmom+m, myrealvec, derivatives );
+    funcout.values[func.tmom+m] = weight*tq6;
     // Imaginary part
-    vals[3*tmom+1+m] = weight*itq6;
-    addVectorDerivatives( 3*tmom+1+m, myimagvec, derivatives );
+    funcout.values[3*func.tmom+1+m] = weight*itq6;
+    if( !noderiv ) {
+      addVectorDerivatives( func.tmom+m, myrealvec, funcout.derivs );
+      addVectorDerivatives( 3*func.tmom+1+m, myimagvec, funcout.derivs );
+    }
     // Store -m part of vector
     double pref=pow(-1.0,m);
     // -m part of vector is just +m part multiplied by (-1.0)**m and multiplied by complex
     // conjugate of Legendre polynomial
     // Real part
-    vals[tmom-m] = pref*weight*tq6;
-    addVectorDerivatives( tmom-m, pref*myrealvec, derivatives );
+    funcout.values[func.tmom-m] = pref*weight*tq6;
     // Imaginary part
-    vals[3*tmom+1-m] = -pref*weight*itq6;
-    addVectorDerivatives( 3*tmom+1-m, -pref*myimagvec, derivatives );
-    if( args.size()==4 ) {
-      derivatives(tmom+m,3)=tq6;
-      derivatives(3*tmom+1+m, 3)=itq6;
-      derivatives(tmom-m,3)=pref*tq6;
-      derivatives(3*tmom+1-m, 3)=-pref*itq6;
+    funcout.values[3*func.tmom+1-m] = -pref*weight*itq6;
+    if( !noderiv ) {
+      addVectorDerivatives( func.tmom-m, pref*myrealvec, funcout.derivs );
+      addVectorDerivatives( 3*func.tmom+1-m, -pref*myimagvec, funcout.derivs );
+      if( args.size()==4 ) {
+        funcout.derivs[func.tmom+m][3]=tq6;
+        funcout.derivs[3*func.tmom+1+m][3]=itq6;
+        funcout.derivs[func.tmom-m][3]=pref*tq6;
+        funcout.derivs[3*func.tmom+1-m][3]=-pref*itq6;
+      }
     }
     // Calculate next power of complex number
     powered *= com1;
   }
 }
 
-double SphericalHarmonic::deriv_poly( const unsigned& m, const double& val, double& df ) const {
+double SphericalHarmonic::deriv_poly( const SphericalHarmonic& func, const unsigned& m, const double& val, double& df ) {
   double fact=1.0;
   for(unsigned j=1; j<=m; ++j) {
     fact=fact*j;
   }
-  double res=coeff_poly[m]*fact;
+  double res=func.coeff_poly[m]*fact;
 
   double pow=1.0, xi=val, dxi=1.0;
   df=0.0;
-  for(int i=m+1; i<=tmom; ++i) {
+  for(int i=m+1; i<=func.tmom; ++i) {
     fact=1.0;
     for(unsigned j=i-m+1; j<=i; ++j) {
       fact=fact*j;
     }
-    res=res+coeff_poly[i]*fact*xi;
-    df = df + pow*coeff_poly[i]*fact*dxi;
+    res=res+func.coeff_poly[i]*fact*xi;
+    df = df + pow*func.coeff_poly[i]*fact*dxi;
     xi=xi*val;
     dxi=dxi*val;
     pow+=1.0;
   }
-  df = df*normaliz[m];
-  return normaliz[m]*res;
+  df = df*func.normaliz[m];
+  return func.normaliz[m]*res;
 }
 
-void SphericalHarmonic::addVectorDerivatives( const unsigned& ival, const Vector& der, Matrix<double>& derivatives ) const {
+void SphericalHarmonic::addVectorDerivatives( const unsigned& ival, const Vector& der, View2D<double>& derivatives ) {
   for(unsigned j=0; j<3; ++j) {
-    derivatives(ival,j) = der[j];
+    derivatives[ival][j] = der[j];
   }
 }
 

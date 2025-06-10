@@ -64,14 +64,21 @@ position. Only pairs of atoms whose distance in the reference structure is withi
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test1.pdb
-DRMSD REFERENCE=regtest/basic/rt-drmsd/test1.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
+d: DRMSD ...
+  REFERENCE=regtest/basic/rt-drmsd/test1.pdb
+  LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
+...
 ```
 
-The following tells plumed to calculate a DRMSD value for a pair of molecules.
+The following tells plumed to calculate the square of the DRMSD value for a pair of molecules.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test0.pdb
-DRMSD REFERENCE=regtest/basic/rt-drmsd/test0.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
+d: DRMSD ...
+  REFERENCE=regtest/basic/rt-drmsd/test0.pdb
+  LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
+  SQUARED
+...
 ```
 
 Notice that in the input reference file (which you can see by clicking on regtest/basic/rt-drmsd/test0.pdb )
@@ -82,6 +89,20 @@ In this example the INTER-DRMSD type ensures that the set of distances from whic
 quantity is computed involve one atom from each of the two molecules.  If this is replaced
 by INTRA-DRMSD then only those distances involving pairs of atoms that are both in the same
 molecule are computed.
+
+## Periodic boundary conditions
+
+Notice that PLUMED does not use periodic boundary conditions when computing the reference distances.  However, the instantaneous
+values of the distances are computed using periodic boundary conditions.  If you would like not to use periodic boundary conditions
+when computing these instaneous distances you use the NOPBC flag as illustrated below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test1.pdb
+d: DRMSD ...
+  REFERENCE=regtest/basic/rt-drmsd/test1.pdb
+  LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 NOPBC
+...
+```
 
 */
 //+ENDPLUMEDOC
@@ -106,7 +127,7 @@ void DRMSD::registerKeywords( Keywords& keys ) {
   keys.addFlag("SQUARED",false,"This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   // This is just ignored in reality which is probably bad
-  keys.addFlag("NUMERICAL_DERIVATIVES",false,"calculate the derivatives for these quantities numerically");
+  keys.addDeprecatedFlag("NUMERICAL_DERIVATIVES","");
   keys.setValueDescription("scalar/vector","the DRMSD distance between the instantaneous structure and the reference structure");
   keys.needsAction("SUM");
   keys.needsAction("DISTANCE");
@@ -315,7 +336,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
       }
     }
     // And calculate the euclidean distances between the true distances and the references
-    readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG1=" + arg_str1 + " ARG2=" + arg_str2 );
+    readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG2=" + arg_str1 + " ARG1=" + arg_str2 );
   }
   // And final value
   std::string nvals;

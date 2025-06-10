@@ -104,6 +104,7 @@ void Cell::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("cx","default","scalar","the cx component of the cell matrix");
   keys.addOutputComponent("cy","default","scalar","the cy component of the cell matrix");
   keys.addOutputComponent("cz","default","scalar","the cz component of the cell matrix");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 

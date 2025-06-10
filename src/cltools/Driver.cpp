@@ -76,12 +76,13 @@ In addition, you can use the special [READ](READ.md) command inside your plumed 
 to read in colvar files that were generated during your MD simulation.  The values
 read in from the file can then be treated like calculated colvars.
 
-> [!warning]
-> Notice that by default the driver has no knowledge about the masses and charges
-> of your atoms! Thus, if you want to compute quantities that depend on charges (e.g. [DHENERGY](DHENERGY.md))
-> or masses (e.g. [COM](COM.md)) you need to pass masses and charges to driver.
-> You can do this by either using --pdb option or the --mc option. The latter
-> will read a file produced by [DUMPMASSCHARGE](DUMPMASSCHARGE.md).
+!!! warning "masses and chages"
+
+    Notice that by default the driver has no knowledge about the masses and charges
+    of your atoms! Thus, if you want to compute quantities that depend on charges (e.g. [DHENERGY](DHENERGY.md))
+    or masses (e.g. [COM](COM.md)) you need to pass masses and charges to driver.
+    You can do this by either using --pdb option or the --mc option. The latter
+    will read a file produced by [DUMPMASSCHARGE](DUMPMASSCHARGE.md).
 
 
 ## Examples

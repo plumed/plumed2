@@ -76,6 +76,15 @@ fake: CUSTOM ARG=q1.w,q1.i,q1.j,q1.k,q2.w,q2.i,q2.j,q2.k VAR=w1,i1,j1,k1,w2,i2,j
 PRINT ARG=fake FILE=fakeout
 ```
 
+The last thing to note is that by default a procedure akin to that used in [WHOLEMOLECULES](WHOLEMOLECULES.md)
+is used to ensure that the sets of atoms that are specified to each ATOMS keyword are not broken by the periodic
+boundary conditions.  If you would like to turn this off for any reason you add the NOPBC in your input file as shown
+below:
+
+```plumed
+d: QUATERNION ATOMS=1,2,3 NOPBC
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -122,6 +131,7 @@ void Quaternion::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("j","default","scalar/vector","the j component of the quaternion");
   keys.addOutputComponent("k","default","scalar/vector","the k component of the quaternion");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 Quaternion::Quaternion(const ActionOptions&ao):

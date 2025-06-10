@@ -89,7 +89,7 @@ void ClusterWeights::registerKeywords( Keywords& keys ) {
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.addDeprecatedFlag("LOWMEM","");
   // keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
   keys.setValueDescription("vector","vector with elements that are one if the atom of interest is part of the required cluster and zero otherwise");
   keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");

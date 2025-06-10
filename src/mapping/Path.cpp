@@ -151,7 +151,6 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "\\ref dists");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
   keys.addFlag("GPATH",false,"calculate the trigonometric path");
@@ -282,8 +281,8 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
       std::string iargn = fixArgumentName( theargs[i]->getName() );
       action->readInputLine( action->getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
       if( i==0 ) {
-        instargs=" ARG1=" + theargs[i]->getName();
-        refargs=" ARG2=" + action->getShortcutLabel() + "_ref_" + iargn;
+        instargs=" ARG2=" + theargs[i]->getName();
+        refargs=" ARG1=" + action->getShortcutLabel() + "_ref_" + iargn;
       } else {
         instargs +="," + theargs[i]->getName();
         refargs +="," + action->getShortcutLabel() + "_ref_" + iargn;
@@ -296,7 +295,9 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     }
     std::string comname="EUCLIDEAN_DISTANCE SQUARED";
     std::string coeffstr;
-    action->parse("COEFFICIENTS",coeffstr);
+    if( action->keywords.exists("COEFFICIENTS") ) {
+      action->parse("COEFFICIENTS",coeffstr);
+    }
     if( coeffstr.length()>0 ) {
       if( displacements ) {
         action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");
@@ -309,7 +310,12 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     }
 
     if( pdb.getPositions().size()==0 ) {
-      action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
+      if( displacements ) {
+        action->readInputLine( action->getShortcutLabel() + "_dataP: " + comname + instargs + refargs );
+        action->readInputLine( action->getShortcutLabel() + "_data: CUSTOM ARG=" + action->getShortcutLabel() + "_dataP FUNC=-x PERIODIC=NO");
+      } else {
+        action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
+      }
     } else {
       action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );
     }

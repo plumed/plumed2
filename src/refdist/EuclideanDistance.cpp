@@ -42,7 +42,7 @@ $$
 d^2 = (u-v)^T (u-v)
 $$
 
-The inputs below shows an example where this is used to calculate the Euclidean distance
+The input below shows an example where this is used to calculate the Euclidean distance
 between the instaneous values of some torsional angles and some reference values
 for these torsion.  In this first example the input values are vectors:
 
@@ -65,6 +65,18 @@ d3: DISTANCE ATOMS=5,6
 dd: EUCLIDEAN_DISTANCE ARG1=c1,c2,c3 ARG2=d1,d2,d3
 PRINT ARG=dd FILE=colvar
 ```
+
+Lastly, note that if you want to calculate the square of the distance rather than the distance you can use
+the `SQUARED` flag as shown below:
+
+```plumed
+c: CONSTANT VALUES=1,2,3
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+dd: EUCLIDEAN_DISTANCE ARG1=c ARG2=d SQUARED
+PRINT ARG=dd FILE=colvar
+```
+
+Calculating the square of the distance is slightly cheapter than computing the distance as you avoid taking the square root.
 
 ## Calculating multiple distances
 
@@ -91,7 +103,7 @@ ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
 psi: TORSION ATOMS=1,2,3,4
 phi: TORSION ATOMS=13,14,15,16
 
-dd: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
+dd: EUCLIDEAN_DISTANCE ARG2=psi,phi ARG1=ref_psi,ref_phi
 PRINT ARG=dd FILE=colvar
 ```
 
@@ -122,6 +134,12 @@ phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
 dd: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
 PRINT ARG=dd FILE=colvar
 ```
+
+!!! note "scalars must be specified in ARG2"
+
+    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
+    as is done in the example inputs above.
 
 */
 //+ENDPLUMEDOC

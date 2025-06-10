@@ -78,13 +78,15 @@ The different order for purines and pyrimidines is fundamental and allows you to
 sequences as well! Notice that the simplest way to avoid mistakes in choosing these atoms is to use the `@lcs-#` strings
 as shown in the examples (see also [MOLINFO](MOLINFO.md)).
 
-> [!CAUTION]
-> Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
-> to e.g. build path collective variables using ERMSD
+!!! caution "ERMSD paths not possible"
 
-> [!CAUTION]
-> Notice that ERMSD expect a single molecule and makes coordinates whole before anything else. As such, results might be unexpected
-> for a multi molecular system.
+    Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
+    to e.g. build path collective variables using ERMSD
+
+!!! caution "ERMSD with multiple molecules"
+
+    Notice that ERMSD expect a single molecule and makes coordinates whole before anything else. As such, results might be unexpected
+    for a multi molecular system.
 
 ## Examples
 

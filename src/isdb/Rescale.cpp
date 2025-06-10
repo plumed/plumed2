@@ -46,17 +46,19 @@ parameters W0 and BIASFACTOR, is used to enhance the sampling in the space of th
 The well-tempered metadynamics bias potential is written to the file BFILE every BSTRIDE steps and read
 when restarting the simulation using the directive [RESTART](RESTART.md).
 
-> [! note]
-> Additional arguments not to be scaled, one for each bin in the rescaling parameter ladder, can be
-> provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
-> These arguments will be not be scaled, but they will be
-> considered as bias potentials and used in the computation of the Metropolis
-> acceptance probability when proposing a move in the rescaling parameter. See example below.
+!!! note "scaling arguments"
 
-> [! note]
-> If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
-> the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
-> [SELECTOR](SELECTOR.md) will be shared and thus will be the same in all replicas.
+    Additional arguments not to be scaled, one for each bin in the rescaling parameter ladder, can be
+    provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
+    These arguments will be not be scaled, but they will be
+    considered as bias potentials and used in the computation of the Metropolis
+    acceptance probability when proposing a move in the rescaling parameter. See example below.
+
+!!! note "multiple replicas"
+
+    If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
+    the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
+    [SELECTOR](SELECTOR.md) will be shared and thus will be the same in all replicas.
 
 ## Examples
 

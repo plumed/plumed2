@@ -54,6 +54,20 @@ Each frame in your input trajectory generates the three distances so one set of 
 Notice that if you want to generate projections of multiple input points at once you need to use [PROJECT_POINTS](PROJECT_POINTS.md)
 directly rather than this wrapper.
 
+The configurations of the landmark points in your sketch-map input file can also be defined in terms of a set of atomic positions.
+In this case the distance between the reference configurations and the instantaneous coordinates are calculated using [RMSD](RMSD.md).
+An input for this type of calculation is as follows:
+
+```plumed
+#SETTING INPUTFILES=regtest/dimred/rt-mds-rmsd/embed.pdb.reference
+
+smap: SKETCHMAP_PROJECTION ...
+   REFERENCE=regtest/dimred/rt-mds-rmsd/embed.pdb.reference
+   PROPERTY=mds-1,mds-2 CGTOL=1E-3
+   WEIGHT=weights HIGH_DIM_FUNCTION={SMAP R_0=4 A=3 B=2} LOW_DIM_FUNCTION={SMAP R_0=4 A=1 B=2}
+...
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -71,6 +85,10 @@ PLUMED_REGISTER_ACTION(SketchMapProjection,"SKETCHMAP_PROJECTION")
 void SketchMapProjection::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   mapping::Path::registerInputFileKeywords( keys );
+  keys.remove("NOSPATH");
+  keys.remove("NOZPATH");
+  keys.remove("GPATH");
+  keys.remove("COEFFICIENTS");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","WEIGHT","the weight of each individual landmark in the stress fucntion that is to be optimised");
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
@@ -114,7 +132,7 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   mapping::Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Normalise the vector of weights
   readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights + "_ref");
-  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_wsum," +  weights + "_ref FUNC=y/x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + weights + "_ref," + getShortcutLabel() + "_wsum FUNC=x/y PERIODIC=NO");
   // Transform the high dimensional distances
   std::string hdfunc;
   parse("HIGH_DIM_FUNCTION",hdfunc);

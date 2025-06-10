@@ -50,6 +50,16 @@ PRINT ARG=d FILE=colvar STRIDE=10
 With the input above the distance is only output on every 10th step. Notice this distance will only
 be calculated on every step as this quantity is not used on every other step.
 
+You can also control the format of the numbers that are output by using the FMT keyword as shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar FMT=%10.6f
+```
+
+The FMT key takes a [C format specifiers](https://www.simplilearn.com/tutorials/c-tutorial/format-specifiers-in-c)
+in input, which is what determines the appearance of the numbers output.
+
 You can also use the PRINT command to output objects that have a rank that is greater than zero.
 For example, the following input calculates a vector of three distances. These three distances
 are then output to the output colvar file every step.
@@ -99,6 +109,59 @@ Keep into account that even on steps when the action is not updated (and thus th
 the argument will be activated. In other words, if you use `UPDATE_FROM` to start printing at a given time,
 the collective variables this PRINT statement depends on will be computed also before that time.
 
+## PRINT and RESTART
+
+If you run a calculation with the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar
+```
+
+and a file called colvar is already present in the directory where the calculation is running, the existing file is backed up
+and renamed to `bck.0.colvar` so that new data can be output to a new file called `colvar`.  If you would like to append to the
+existing file you can use the RESTART command as shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar RESTART=YES
+```
+
+You can achieve the same result by using the [RESTART](RESTART.md) action as shown below:
+
+```plumed
+RESTART
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar
+```
+
+However, the advantage of using the RESTART keyword is that you can apped to some files and back up others as illustrated below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=colvar1
+d2: DISTANCE ATOMS=3,4
+PRINT ARG=d2 FILE=colvar2 RESTART=YES
+```
+
+If you use the input above the file `colvar1` is backed up, while new data will be appended to the file `colvar2`.  If you use the
+[RESTART](RESTART.md) action instead data will be appended to both colvar files.
+
+## Switching printing on and off
+
+You can use the UPDATE_FROM and UPDATE_UNTIL flags to make the PRINT command only output data at certain points during the trajectory.
+To see how this works consider the following example:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar UPDATE_FROM=100 UPDATE_UNTIL=500 STRIDE=1
+```
+
+During the first 100 ps of the simulation with this input the distance between atoms 1 and 2 is not output to the file called colvar.
+The distance is instead first output after the first 100 ps of trajectory have elapsed.  Furthermore, output of the distance stops
+once the trajectory is longer than 500 ps. In other words, the distance is only output during the 400 ps time interval after the first
+100 ps of the simulation.
+
 */
 //+ENDPLUMEDOC
 
@@ -138,7 +201,7 @@ void Print::registerKeywords(Keywords& keys) {
   keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the labels of the values that you would like to print to the file");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
-  keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
   keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
@@ -149,7 +212,6 @@ Print::Print(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%f"),
   rotate(0) {
   ofile.link(*this);
   parse("FILE",file);

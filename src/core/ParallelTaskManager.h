@@ -389,6 +389,7 @@ public:
   void setWorkspaceSize( std::size_t size );
 /// Get the action input so we can use it
   input_type& getActionInput();
+  const input_type& getActionInput() const ;
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
@@ -408,6 +409,7 @@ public:
 template <class T>
 void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
+  keys.addLinkInDocForFlag("USEGPU","gpu.md");
 }
 
 template <class T>
@@ -486,6 +488,11 @@ void ParallelTaskManager<T>::setActionInput( const input_type& adata ) {
 
 template <class T>
 typename ParallelTaskManager<T>::input_type& ParallelTaskManager<T>::getActionInput() {
+  return actiondata;
+}
+
+template <class T>
+const typename ParallelTaskManager<T>::input_type& ParallelTaskManager<T>::getActionInput() const {
   return actiondata;
 }
 

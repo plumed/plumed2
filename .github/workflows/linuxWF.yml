@@ -105,7 +105,7 @@ jobs:
         pip install requests
         pip install PlumedToHTML
         pip install networkx
-        pip install mkdocs
+        pip install mkdocs-material
         pip install python-markdown-math
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
@@ -197,6 +197,7 @@ jobs:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-doc-' )
       run: |
+         export PLUMED_MAXBACKUP=0 
          make doc >/dev/null
     - name: Coverage
       env:

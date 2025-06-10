@@ -55,16 +55,22 @@ center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
 # This determines the positions of the atoms of interest relative to the center of the solid region
 dens_dist: DISTANCES ORIGIN=center ATOMS=1-96000 COMPONENTS
 # This computes the numerator in the expression above for the phase field
-dens_numer: KDE VOLUMES=tfcc ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+dens_numer: KDE ...
+  VOLUMES=tfcc ARG=dens_dist.x,dens_dist.y,dens_dist.z
+  GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+...
 # This computes the denominator
-dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+dens_denom: KDE ...
+  ARG=dens_dist.x,dens_dist.y,dens_dist.z
+  GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
+...
 # This computes the final phase field
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 
 # Find the isocontour
 cont: FIND_CONTOUR ARG=dens CONTOUR=0.5
 # Use the special method for outputting the contour to a file
-DUMPCONTOUR ARG=cont FILE=surface.xyz
+DUMPCONTOUR ARG=cont FILE=surface.xyz STRIDE=1 FMT=%8.4f
 ```
 
 */
@@ -92,13 +98,12 @@ void DumpContour::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","vector","the labels of the FIND_CONTOUR action that you would like to output");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
-  keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
 }
 
 DumpContour::DumpContour(const ActionOptions&ao):
   Action(ao),
-  ActionPilot(ao),
-  fmt("%f") {
+  ActionPilot(ao) {
 
   std::string argname;
   parse("ARG",argname);

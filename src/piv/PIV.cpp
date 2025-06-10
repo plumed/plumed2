@@ -44,7 +44,7 @@ associated to the configuration of the system during the dynamics and a referenc
 as input (PDB file format).
 PIV can be used together with [FUNCPATHMSD](FUNCPATHMSD.md) to define a path in the PIV space.
 
-\par Examples
+## Examples
 
 The following example calculates PIV-distances from three reference configurations in Ref1.pdb, Ref2.pdb and Ref3.pdb
 and prints the results in a file named colvar.

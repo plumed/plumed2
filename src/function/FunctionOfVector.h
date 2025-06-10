@@ -23,45 +23,58 @@
 #define __PLUMED_function_FunctionOfVector_h
 
 #include "core/ActionWithVector.h"
-//#include "core/CollectFrames.h"
+#include "core/ParallelTaskManager.h"
 #include "core/ActionSetup.h"
-#include "tools/Matrix.h"
-#include "Sum.h"
+#include "FunctionSetup.h"
+#include "Custom.h"
 
 namespace PLMD {
 namespace function {
 
 template <class T>
 class FunctionOfVector : public ActionWithVector {
+public:
+  using input_type = FunctionData<T>;
+  using PTM = ParallelTaskManager<FunctionOfVector<T>>;
 private:
-/// Do the calculation at the end of the run
-  bool doAtEnd;
-/// The function that is being computed
-  T myfunc;
+/// The parallel task manager
+  PTM taskmanager;
+/// Set equal to one if we are doing EvaluateGridFunction
+  unsigned argstart;
 public:
   static void registerKeywords(Keywords&);
-/// This method is used to run the calculation with functions such as highest/lowest and sort.
-/// It is static so we can reuse the functionality in FunctionOfMatrix
-  static void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
   explicit FunctionOfVector(const ActionOptions&);
   ~FunctionOfVector() {}
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
-/// Get the size of the task list at the end of the run
-  unsigned getNumberOfFinalTasks();
-/// Check if derivatives are available
-  void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Resize vectors that are the wrong size
   void prepare() override ;
 /// Get the label to write in the graph
-  std::string writeInGraph() const override {
-    return myfunc.getGraphInfo( getName() );
-  }
+  std::string writeInGraph() const override ;
 /// This builds the task list for the action
   void calculate() override;
+/// Add some forces
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// Get the input data
+  void getInputData( std::vector<double>& inputdata ) const override ;
 /// Calculate the function
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
+/// Calculate the function
+  static void performTask( std::size_t task_index,
+                           const FunctionData<T>& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+/// Get the indices of the forces
+  static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const FunctionData<T>& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -75,8 +88,7 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalar and vector that on which the function is being calculated elementwise");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  T tfunc;
-  tfunc.registerKeywords( keys );
+  T::registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
     keys.setValueDescription("scalar","the sum of all the elements in the input vector");
   } else if( keys.getDisplayName()=="MEAN" ) {
@@ -91,76 +103,64 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
     keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
     keys.setValueDescription("vector","the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
+  PTM::registerKeywords( keys );
 }
 
 template <class T>
 FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  doAtEnd(true) {
+  taskmanager(this),
+  argstart(0) {
+  // Check if first argument is grid
+  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+    argstart=1;
+  }
+  if( getNumberOfArguments()==argstart ) {
+    error("no arguments specified");
+  }
+
+  if( getPntrToArgument(argstart)->getRank()!=1 ) {
+    error("first argument to this action must be a vector");
+  }
+
+  // Get the number of arguments
+  unsigned nargs = getNumberOfArguments();
+  int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+
   // Get the shape of the output
+  std::size_t nscalars = 0;
   std::vector<std::size_t> shape(1);
-  shape[0]=getNumberOfFinalTasks();
-  // Read the input and do some checks
-  myfunc.read( this );
-  // Create the task list
-  if( myfunc.doWithTasks() ) {
-    doAtEnd=false;
-  } else if( getNumberOfArguments()!=1 ) {
-    error("number of arguments should be equal to one");
-  }
-  // Get the names of the components
-  std::vector<std::string> components( keywords.getOutputComponents() );
-  // Create the values to hold the output
-  std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  for(unsigned i=0; i<components.size(); ++i) {
-    if( str_ind.size()>0 ) {
-      std::string strcompn = components[i];
-      if( components[i]==".#!value" ) {
-        strcompn = "";
+  shape[0]=getPntrToArgument(argstart)->getShape()[0];
+  for(unsigned i=argstart+1; i<nargs; ++i) {
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      nscalars++;
+    } else if( getPntrToArgument(i)->getRank()==1 ) {
+      if( getPntrToArgument(i)->getShape()[0]!=shape[0] ) {
+        error("mismatch between sizes of input arguments");
+      } else if( nscalars>0 ) {
+        error("scalars should be specified in argument list after all vectors");
       }
-      for(unsigned j=0; j<str_ind.size(); ++j) {
-        if( myfunc.zeroRank() ) {
-          addComponentWithDerivatives( strcompn + str_ind[j] );
-        } else {
-          addComponent( strcompn + str_ind[j], shape );
-        }
-      }
-    } else if( components[i].find_first_of("_")!=std::string::npos ) {
-      if( getNumberOfArguments()==1 && myfunc.zeroRank() ) {
-        addValueWithDerivatives();
-      } else if( getNumberOfArguments()==1 ) {
-        addValue( shape );
-      } else {
-        unsigned argstart=myfunc.getArgStart();
-        for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-          if( myfunc.zeroRank() ) {
-            addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i] );
-          } else {
-            addComponent( getPntrToArgument(i)->getName() + components[i], shape );
-          }
-        }
-      }
-    } else if( components[i]==".#!value" && myfunc.zeroRank() ) {
-      addValueWithDerivatives();
-    } else if( components[i]==".#!value" ) {
-      addValue(shape);
-    } else if( myfunc.zeroRank() ) {
-      addComponentWithDerivatives( components[i] );
     } else {
-      addComponent( components[i], shape );
+      error("input arguments should be vectors or scalars");
     }
   }
-  // Check if we can turn off the derivatives when they are zero
-  if( myfunc.getDerivativeZeroIfValueIsZero() )  {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
-    }
+  if( nmasks>0 && getPntrToArgument(getNumberOfArguments()-nmasks)->getShape()[0]!=shape[0] ) {
+    error("input mask has wrong size");
   }
-  // Check if this is a timeseries
-  unsigned argstart=myfunc.getArgStart();
-  // Set the periodicities of the output components
-  myfunc.setPeriodicityForOutputs( this );
+
+  // Setup the function and the values values
+  FunctionData<T> myfunc;
+  myfunc.argstart = argstart;
+  myfunc.nscalars = nscalars;
+  FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
+  // Setup the parallel task manager
+  taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
+  // Pass the function to the parallel task manager
+  taskmanager.setActionInput( myfunc );
 }
 
 template <class T>
@@ -168,24 +168,18 @@ std::string FunctionOfVector<T>::getOutputComponentDescription( const std::strin
   if( getName().find("SORT")==std::string::npos ) {
     return ActionWithValue::getOutputComponentDescription( cname, keys );
   }
-  if( getNumberOfArguments()==1 ) {
-    return "the " + cname + "th largest element of the vector " + getPntrToArgument(0)->getName();
-  }
   return "the " + cname + "th largest element in the input vectors";
 }
 
 template <class T>
-void FunctionOfVector<T>::turnOnDerivatives() {
-  if( !getPntrToComponent(0)->isConstant() && !myfunc.derivativesImplemented() ) {
-    error("derivatives have not been implemended for " + getName() );
-  }
-  ActionWithValue::turnOnDerivatives();
-  myfunc.setup(this );
+std::string FunctionOfVector<T>::writeInGraph() const {
+  std::size_t und = getName().find_last_of("_");
+  return getName().substr(0,und);
 }
 
 template <class T>
 unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
-  unsigned nder = 0, argstart = myfunc.getArgStart();
+  unsigned nder = 0;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     nder += getPntrToArgument(i)->getNumberOfStoredValues();
   }
@@ -194,7 +188,6 @@ unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
 
 template <class T>
 void FunctionOfVector<T>::prepare() {
-  unsigned argstart = myfunc.getArgStart();
   std::vector<std::size_t> shape(1);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
@@ -212,95 +205,37 @@ void FunctionOfVector<T>::prepare() {
 }
 
 template <class T>
-void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
-  unsigned nargs=getNumberOfArguments();
-  if( getNumberOfMasks()>0 ) {
-    nargs = nargs - getNumberOfMasks();
+void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
+  unsigned nargs = getNumberOfArguments();
+  int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
   }
-  unsigned argstart=myfunc.getArgStart();
-  std::vector<double> args( nargs-argstart);
+
+  std::size_t ntasks = 0;
   for(unsigned i=argstart; i<nargs; ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
-      args[i-argstart]=getPntrToArgument(i)->get(current);
-    } else {
-      args[i-argstart] = getPntrToArgument(i)->get();
+      ntasks = getPntrToArgument(i)->getShape()[0];
+      break;
     }
   }
-  // Calculate the function and its derivatives
-  std::vector<double> vals( getNumberOfComponents() );
-  Matrix<double> derivatives( getNumberOfComponents(), args.size() );
-  myfunc.calc( this, args, vals, derivatives );
-  // And set the values
-  for(unsigned i=0; i<vals.size(); ++i) {
-    myvals.addValue( i, vals[i] );
-  }
-  // Return if we are not computing derivatives
-  if( doNotCalculateDerivatives() ) {
-    return;
+
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
   }
 
-  unsigned base=0;
-  for(unsigned j=0; j<args.size(); ++j) {
-    if( getPntrToArgument(argstart+j)->getRank()==1 ) {
-      for(int i=0; i<getNumberOfComponents(); ++i) {
-        myvals.addDerivative( i, base+current, derivatives(i,j) );
-        myvals.updateIndex( i, base+current );
+  for(unsigned j=argstart; j<nargs; ++j) {
+    const Value* myarg =  getPntrToArgument(j);
+    if( myarg->getRank()==0 ) {
+      double val = myarg->get();
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = val;
       }
     } else {
-      for(int i=0; i<getNumberOfComponents(); ++i) {
-        myvals.addDerivative( i, base, derivatives(i,j) );
-        myvals.updateIndex( i, base );
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = myarg->get(i);
       }
-    }
-    base += getPntrToArgument(argstart+j)->getNumberOfValues();
-  }
-}
-
-template <class T>
-unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
-  unsigned nelements=0, argstart=myfunc.getArgStart();
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    plumed_assert( getPntrToArgument(i)->getRank()<2 );
-    if( getPntrToArgument(i)->getRank()==1 ) {
-      if( nelements>0 ) {
-        if(getPntrToArgument(i)->getShape()[0]!=nelements ) {
-          error("all vectors input should have the same length");
-        }
-      } else if( nelements==0 ) {
-        nelements=getPntrToArgument(i)->getShape()[0];
-      }
-      plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
-    }
-  }
-  // The prefactor for average and sum is set here so the number of input scalars is guaranteed to be correct
-  myfunc.setPrefactor( this, 1.0 );
-  return nelements;
-}
-
-template <class T>
-void FunctionOfVector<T>::runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f ) {
-  // This is used if we are doing sorting actions on a single vector
-  unsigned nv = arg->getNumberOfValues();
-  std::vector<double> args( nv );
-  for(unsigned i=0; i<nv; ++i) {
-    args[i] = arg->get(i);
-  }
-  std::vector<double> vals( action->getNumberOfComponents() );
-  Matrix<double> derivatives( action->getNumberOfComponents(), nv );
-  ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(action);
-  plumed_assert( aa );
-  f.calc( aa, args, vals, derivatives );
-  for(unsigned i=0; i<vals.size(); ++i) {
-    action->copyOutput(i)->set( vals[i] );
-  }
-  // Return if we are not computing derivatives
-  if( action->doNotCalculateDerivatives() ) {
-    return;
-  }
-  // Now set the derivatives
-  for(unsigned j=0; j<nv; ++j) {
-    for(unsigned i=0; i<vals.size(); ++i) {
-      action->copyOutput(i)->setDerivative( j, derivatives(i,j) );
     }
   }
 }
@@ -308,12 +243,46 @@ void FunctionOfVector<T>::runSingleTaskCalculation( const Value* arg, ActionWith
 template <class T>
 void FunctionOfVector<T>::calculate() {
   // This is done if we are calculating a function of multiple cvs
-  if( !doAtEnd ) {
-    runAllTasks();
-  }
-  // This is used if we are doing sorting actions on a single vector
-  else if( !myfunc.doWithTasks() ) {
-    runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
+  taskmanager.runAllTasks();
+}
+
+template <class T>
+void FunctionOfVector<T>::performTask( std::size_t task_index,
+                                       const FunctionData<T>& actiondata,
+                                       ParallelActionsInput& input,
+                                       ParallelActionsOutput& output ) {
+  FunctionOutput funcout( input.ncomponents, output.values.data(), input.nderivatives_per_scalar, output.derivatives.data() );
+  T::calc( actiondata.f, input.noderiv, View<const double,helpers::dynamic_extent>( input.inputdata + task_index*input.nderivatives_per_scalar, input.nderivatives_per_scalar ), funcout );
+}
+
+template <class T>
+void FunctionOfVector<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
+
+template <class T>
+int FunctionOfVector<T>::getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata ) {
+  return 1;
+}
+
+template <class T>
+void FunctionOfVector<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const FunctionData<T>& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
+
+  unsigned vector_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
+  for(unsigned j=0; j<input.ncomponents; ++j) {
+    for(unsigned k=actiondata.argstart; k<vector_end; ++k) {
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k] + task_index;
+    }
+    for(unsigned k=vector_end; k<vector_end+actiondata.nscalars; ++k) {
+      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
+    }
+    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
+    force_indices.tot_indices[j] = input.nderivatives_per_scalar;
   }
 }
 

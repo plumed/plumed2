@@ -68,6 +68,16 @@ use different quantities to measure whether or not two given atoms/molecules are
 adjacent or not and compute a different type of adjacency matrix. For example you can say that two molecules are
 adjacent if they are within a certain distance of each other and if they have similar orientations or you can argue that
 two molecules are adjacent if there is a hydrogen bond between them.
+
+In the example input below we measure adjacency between atoms using a [BRIDGE_MATRIX](BRIDGE_MATRIX.md) and then compute the SPRINT CVs
+by diagonalizing this matrix.
+
+```plumed
+b: BRIDGE_MATRIX GROUP=1-7 BRIDGING_ATOMS=8-100 SWITCH={RATIONAL R_0=0.2}
+s: SPRINT MATRIX=b
+PRINT ARG=s.* FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -131,8 +141,8 @@ Sprint::Sprint(const ActionOptions& ao):
   // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
   std::string str_natoms;
   Tools::convert( ntot_atoms, str_natoms );
-  readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() +
-                 "_diag.vecs-1 FUNC=sqrt(" + str_natoms + ")*x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG=" + getShortcutLabel() + "_diag.vecs-1," + getShortcutLabel() +
+                 "_diag.vals-1 FUNC=sqrt(" + str_natoms + ")*x*y PERIODIC=NO");
   // Sort sprint coordinates for each group of atoms
   unsigned k=0, kk=0;
   for(unsigned j=0; j<nin_group.size(); ++j) {

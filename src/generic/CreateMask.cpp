@@ -79,7 +79,7 @@ The second mode, which is illustrated below, sets N randomly-chosen elements of 
 ```plumed
 d: DISTANCE ATOMS=1,2
 c: COLLECT ARG=d STRIDE=1
-m: CREATE_MASK TYPE=random NZEROS=20 ARG=c
+m: CREATE_MASK TYPE=random NZEROS=20 SEED=23623 ARG=c
 v: SELECT_WITH_MASK ARG=c MASK=m
 ```
 
@@ -127,6 +127,7 @@ void CreateMask::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","vector","the label of the vector that you would like to construct a mask for");
   keys.add("compulsory","TYPE","the way the zeros are supposed to be set");
   keys.add("compulsory","NZEROS","the number of zeros that you want to put in the mask");

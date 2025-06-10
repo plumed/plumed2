@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "FunctionTemplateBase.h"
+#include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 
@@ -89,22 +89,12 @@ elements of the input vector, matrix or function.
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION PIECEWISE_SCALAR
-/*
-Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-class Piecewise : public FunctionTemplateBase {
-  std::vector<std::pair<double,double> > points;
+class Piecewise {
 public:
-  void registerKeywords(Keywords& keys) override;
-  void read( ActionWithArguments* action ) override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  std::vector<std::pair<double,double> > points;
+  static void registerKeywords(Keywords& keys);
+  static void read( Piecewise& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Piecewise& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
 };
 
 
@@ -122,7 +112,7 @@ void Piecewise::registerKeywords(Keywords& keys) {
                           "user the values of the piece wise functions of each of the arguments.");
 }
 
-void Piecewise::read( ActionWithArguments* action ) {
+void Piecewise::read( Piecewise& func, ActionWithArguments* action, FunctionOptions& options ) {
   for(int i=0;; i++) {
     std::vector<double> pp;
     if(!action->parseNumberedVector("POINT",i,pp) ) {
@@ -131,8 +121,8 @@ void Piecewise::read( ActionWithArguments* action ) {
     if(pp.size()!=2) {
       action->error("points should be in x,y format");
     }
-    points.push_back(std::pair<double,double>(pp[0],pp[1]));
-    if(i>0 && points[i].first<=points[i-1].first) {
+    func.points.push_back(std::pair<double,double>(pp[0],pp[1]));
+    if(i>0 && func.points[i].first<=func.points[i-1].first) {
       action->error("points abscissas should be monotonously increasing");
     }
   }
@@ -143,36 +133,36 @@ void Piecewise::read( ActionWithArguments* action ) {
     }
   }
   action->log.printf("  on points:");
-  for(unsigned i=0; i<points.size(); i++) {
-    action->log.printf("   (%f,%f)",points[i].first,points[i].second);
+  for(unsigned i=0; i<func.points.size(); i++) {
+    action->log.printf("   (%f,%f)",func.points[i].first,func.points[i].second);
   }
   action->log.printf("\n");
 }
 
-void Piecewise::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    action->copyOutput(i)->setNotPeriodic();
-  }
-}
-
-void Piecewise::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Piecewise::calc( const Piecewise& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
   for(unsigned i=0; i<args.size(); i++) {
     unsigned p=0;
-    for(; p<points.size(); p++) {
-      if(args[i]<points[p].first) {
+    for(; p<func.points.size(); p++) {
+      if(args[i]<func.points[p].first) {
         break;
       }
     }
     if(p==0) {
-      vals[i]=points[0].second;
-      derivatives(i,i)=0.0;
-    } else if(p==points.size()) {
-      vals[i]=points[points.size()-1].second;
-      derivatives(i,i)=0.0;
+      funcout.values[i]=func.points[0].second;
+      if( !noderiv ) {
+        funcout.derivs[i][i]=0.0;
+      }
+    } else if(p==func.points.size()) {
+      funcout.values[i]=func.points[func.points.size()-1].second;
+      if( !noderiv ) {
+        funcout.derivs[i][i]=0.0;
+      }
     } else {
-      double m=(points[p].second-points[p-1].second) / (points[p].first-points[p-1].first);
-      vals[i]=m*(args[i]-points[p-1].first)+points[p-1].second;
-      derivatives(i,i)=m;
+      double m=(func.points[p].second-func.points[p-1].second) / (func.points[p].first-func.points[p-1].first);
+      funcout.values[i]=m*(args[i]-func.points[p-1].first)+func.points[p-1].second;
+      if( !noderiv ) {
+        funcout.derivs[i][i]=m;
+      }
     }
   }
 }

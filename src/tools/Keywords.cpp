@@ -200,6 +200,8 @@ Keywords::KeyType::keyStyle Keywords::KeyType::keyStyleFromString(std::string_vi
     return keyStyle::atoms;
   } else if( type=="hidden" ) {
     return keyStyle::hidden;
+  } else if( type=="deprecated" ) {
+    return keyStyle::deprecated;
   } else {
     plumed_massert(false,"invalid keyword specifier " + std::string(type));
   }
@@ -248,6 +250,10 @@ Keywords::keyInfo& Keywords::keyInfo::setAllowMultiple(bool a) {
 }
 Keywords::keyInfo& Keywords::keyInfo::setLinkedAction(std::string_view a) {
   linkaction=a;
+  return *this;
+}
+Keywords::keyInfo& Keywords::keyInfo::setLinkedPage(std::string_view a) {
+  linkpage=a;
   return *this;
 }
 bool Keywords::keyInfo::isArgument() const {
@@ -394,6 +400,22 @@ void Keywords::add(std::string_view keytype,
                    std::string_view docstring ) {
   //the 'false' deactivates the "reserve mode"
   addOrReserve(keytype,key,docstring,false);
+}
+
+void Keywords::addDeprecatedFlag( const std::string& key,
+                                  const std::string& replacement ) {
+  addDeprecatedKeyword(key, replacement);
+  keywords.at(key).setDefaultFlag(false);
+}
+
+void Keywords::addDeprecatedKeyword( std::string_view key,
+                                     const std::string& replacement ) {
+  if( exists(replacement) ) {
+    std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
+    add("deprecated", key, docs);
+  } else {
+    add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
+  }
 }
 
 void Keywords::addInputKeyword( const std::string & keyType,
@@ -1172,9 +1194,20 @@ void Keywords::linkActionInDocs( const std::string& k, const std::string& action
   keywords.at(k).setLinkedAction(action);
 }
 
+void Keywords::addLinkInDocForFlag( const std::string& k, const std::string& page ) {
+  plumed_massert( exists(k), "no " + k + " keyword" );
+  plumed_massert( style(k,"flag"), k + " is not a flag" );
+  keywords.at(k).setLinkedPage(page);
+}
+
 std::string Keywords::getLinkedActions( const std::string& key ) const {
   plumed_assert( exists( key ) );
   return keywords.at(key).linkaction;
+}
+
+std::string Keywords::getLinkedPages( const std::string& key ) const {
+  plumed_assert( exists( key ) );
+  return keywords.at(key).linkpage;
 }
 
 }// namespace PLMD

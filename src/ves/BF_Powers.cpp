@@ -32,11 +32,12 @@ namespace ves {
 /*
 Polynomial power basis functions.
 
-> [!attention]
-> __These basis functions should not be used in conventional biasing simulations__.
-> Instead you should use orthogonal basis functions like Legendre or
-> Chebyshev polynomials. They are only included for usage in [ves_md_linearexpansion](ves_md_linearexpansion.md)
-> and some special cases.
+!!! attention ""
+
+    __These basis functions should not be used in conventional biasing simulations__.
+    Instead you should use orthogonal basis functions like Legendre or
+    Chebyshev polynomials. They are only included for usage in [ves_md_linearexpansion](ves_md_linearexpansion.md)
+    and some special cases.
 
 Basis functions given by polynomial powers defined on a bounded interval.
 You need to provide the interval $[a,b]$

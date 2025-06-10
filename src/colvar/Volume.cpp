@@ -67,6 +67,7 @@ void Volume::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.setValueDescription("scalar","the volume of simulation box");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 

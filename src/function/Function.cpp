@@ -43,13 +43,13 @@ Function::Function(const ActionOptions&ao):
 void Function::addValueWithDerivatives() {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
   ActionWithValue::addValueWithDerivatives();
-  getPntrToValue()->resizeDerivatives(getNumberOfArguments());
+  getPntrToValue()->resizeDerivatives(getNumberOfDerivatives());
 }
 
 void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
   ActionWithValue::addComponentWithDerivatives(name);
-  getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
+  getPntrToComponent(name)->resizeDerivatives(getNumberOfDerivatives());
 }
 
 void Function::apply() {

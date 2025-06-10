@@ -1,4 +1,5 @@
 import os
+from sys import platform as sys_platform
 import json
 import shutil
 import requests
@@ -12,6 +13,10 @@ from bs4 import BeautifulSoup
 from contextlib import contextmanager
 from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript, get_css 
 import networkx as nx
+from multiprocessing import Pool, cpu_count
+import functools
+
+
 
 PLUMED="plumed"
 
@@ -25,9 +30,11 @@ def cd(newdir):
         os.chdir(prevdir)
 
 def getActionDocumentationFromPlumed(syntax) :
-    docs, tags = {}, {}
+    docs = {}
+    tags = {}
     for file in glob.glob("../src/*/*.cpp") : 
-        with open(file,"r") as f : content = f.read()
+        with open(file,"r") as f :
+           content = f.read()
         if "//+PLUMEDOC" not in content : continue
         actioname, founddocs,  indocs = "", "", False
         for line in content.splitlines() :
@@ -54,7 +61,8 @@ def getActionDocumentationFromPlumed(syntax) :
 
 def get_reference(doi):
     # initialize strings
-    ref=""; ref_url=""
+    ref=""
+    ref_url=""
     # retrieve citation from doi
     if(len(doi)>0):
       # check if unpublished/submitted
@@ -76,49 +84,66 @@ def get_reference(doi):
 def create_map( URL ) :
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
-    script_elements = soup.find_all("script")
-    xdata, ydata = {}, {} 
-    for script in script_elements : 
-        lines = script.text.splitlines()
-        for line in lines :
-            if "var" not in line or "for" in line : continue
-            if "xValues" in line and "=" in line :
-               xdata = json.loads( line.split("=")[1].replace(";","") )
-            if "yValues" in line and "=" in line :
-               ydata = json.loads( line.split("=")[1].replace(";","") )
+    script = soup.find("script",id="actionChart")
+    xdata = {}
+    ydata = {}
+    for line in script.text.splitlines() :
+        if "var" not in line or "for" in line :
+           continue
+        if "xValues" in line and "=" in line :
+           xdata = json.loads( line.split("=")[1].replace(";","") )
+        if "yValues" in line and "=" in line :
+           ydata = json.loads( line.split("=")[1].replace(";","") )
     
     return dict(map(lambda i,j : (i,j) , xdata,ydata))
 
-def printDataTable( f, titles, tabledata, tagdictionary={} ) :
+def printDataTable( f, titles, tabledata, tagdictionary={}, extraAttributes={} ) :
     if "Tags" in titles : 
         if titles[2]!="Tags" : raise Exception("found tag column in surprising location")
         # Get all tags in table
         mytags = set() 
         for line in tabledata :
-            for tt in line[2].split() : mytags.add(tt)
+            for tt in line[2].split() :
+               mytags.add(tt)
 
         f.write("<div class=\"dropdown\">\n")
         f.write("<button class=\"dropbtn\" onclick=\'clearTagSelection()\'>Tags</button>\n")
         f.write("<div class=\"dropdown-content\">\n")
-        for tag in mytags : f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
+        for tag in mytags :
+           f.write("<a href=\"#\" onclick=\'displayActionWithTags(\"" + tag + "\")\' onmouseover=\'displayTagData(\"" + tag + "\")\' onmouseleave=\'displayTagData(\"no selection\")\'>" + tag + "</a>\n")
         f.write("</div>\n")
         f.write("<span id=\"tagdisplay\"></span>\n")
         f.write("</div>\n")
         for tag in mytags : 
-            if tag in tagdictionary.keys() : f.write("<span id=\"" + tag + "\" style=\"display:none;\"><b>" + tag + ":</b> " + tagdictionary[tag] + "</span>\n")
+            if tag in tagdictionary.keys() :
+               f.write("<span id=\"" + tag + "\" style=\"display:none;\"><b>" + tag + ":</b> " + tagdictionary[tag] + "</span>\n")
  
     f.write("<table id=\"browse-table\" class=\"display\">\n")
     f.write("<thead><tr>\n")
-    for t in titles : f.write("<th style=\"text-align: left\">" + t + "</th>\n")
+    for t in titles :
+       usestyle = "text-align: left"
+       myattributes = ""
+       if t in extraAttributes.keys() :
+          attributes=extraAttributes[t]
+          if "style" in attributes:
+            usestyle += f";{attributes['style']}"
+          for attr in attributes.keys() :
+            myattributes = f'{attr}="{attributes[attr]}" {myattributes}'
+
+       myattributes = f'style="{usestyle}" {myattributes}'
+
+       f.write(f'<th {myattributes}>{t}</th>\n')
     f.write("</tr></thead><tbody>\n")
     for r in tabledata : 
-        if len(r)!=len(titles) : raise Exception("mismatch between number of columns in tabledata and number of titles")
+        if len(r)!=len(titles) :
+           raise Exception("mismatch between number of columns in tabledata and number of titles")
         f.write("<tr>\n")
-        for e in r : f.write("<td style=\"text-align: left\">" + e + "</td>\n")
+        for e in r :
+           f.write("<td style=\"text-align: left\">" + e + "</td>\n")
         f.write("</tr>\n")
     f.write("</tbody></table>\n")
 
-def createSummaryPage( broken, nodocs, undocumented, noexamples ) :
+def createSummaryPage( broken, nodocs, undocumented, noexamples, unexempled_keywords ) :
     with open("docs/summary.md","w+") as f : 
        f.write("# Summary of manual coverage\n\n Data on this page was generated on " + date.today().strftime('%B %d, %Y') + "\n")
 
@@ -157,7 +182,16 @@ There are {len(undocumented)} actions with undocumented keywords
 There are {len(noexamples)} action pages with no examples.
 """
           f.write( text )
-          printDataTable( f, ["Action","Module"], noexamples )       
+          printDataTable( f, ["Action","Module"], noexamples )   
+
+       if len(unexempled_keywords)>0 : 
+          text=f"""
+## List of actions for which there are not exemplers of all keywords.  
+
+There are {len(unexempled_keywords)} action pages which don't have examples that illustrate how to use all the keywords. On these documentation pages keywords that do not appear in at least one example are shown in red in the syntax table.
+"""
+          f.write( text )
+          printDataTable( f, ["Action","Module"], unexempled_keywords )     
 
 def printIndexFile(of,version) :
     content=f"""
@@ -165,7 +199,9 @@ PLUMED Version {version}
 ------------------------
 
 PLUMED is a community-developed code that can be used to incorporate additional functionality into multiple molecular dynamics codes and for analysing
-trajectories. PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
+trajectories. PLUMED is currently interfaced with the list of codes described [here](mdcodes.md).
+
+PLUMED is a composed of a [modules](modules.md) that contain a variety of different functionalities but that share a common basic syntax. You can find
 a list of the modules that are available within PLUMED [here](modules.md) or you can see a graphical view of the modules and the dependencies between them [here](modulegraph.md).
 
 Each module contains implementations of a number of [actions](actions.md), [shortcuts](shortcuts.md) and [command line tools](module_cltools.md). 
@@ -173,15 +209,58 @@ You can find a list of all the commands that you can use in a PLUMED input file 
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
 
-If you are completely unfamiliar with PLUMED we would recommend that you start by working through [the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html).
+You can find instructions for installing PLUMED [here](https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html).
+
+To run PLUMED you need to provide one input file.  If you are completely unfamiliar with PLUMED we would recommend that you start by working through 
+[the following tutorial](https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html) or the following [10-minute video](http://www.youtube.com/watch?v=PxJP16qNCYs).
 
 You can find many other tutorials for PLUMED [here](https://www.plumed-tutorials.org) and you can find examples of how PLUMED has been used in many academic research articles [here](https://www.plumed-nest.org).
 
-If you would like to add new functionality to PLUMED you can find developer documentation [here](../../developer-doc/html/index.html).
+If you would like to add new functionality to PLUMED you can find developer documentation [here](../../developer-doc/html/index.html) and a change log [here](changelog.md).
 
 The documentation in this manual was built on [{date.today().strftime('%B %d, %Y')}](summary.md).
     """
     of.write(content)
+
+def printChangeLog(clf) :
+    content=f"""
+Change Log
+----------
+
+This page contains the history of changes across different PLUMED versions.
+The future releases are expected to follow more or less the pace
+of the old release. This means:
+- Approximately one release per year, after summer, a new release (2.X). These releases
+  typically group together all the features that were contributed during the
+  year.
+- Approximately every three months, we announce a patch (e.g. 2.2.X).
+  These releases typically contains bug fixes, and could occasionally contain a new feature.
+
+A few months before each new release we provide a beta release.
+We typically maintain release branches until the fifth patch release (2.X.5),
+which should come out approximately 15 month after the original release (2.X).
+After that, branches are not supported anymore.
+
+Notice that occasionally we publish patches on the mailing list.
+These patches are always included in the following release, but we encourage
+users that want to be up to date to follow the mailing list.
+
+Below you can find change logs for all the published releases.
+We mostly add new features without breaking existing ones.
+However, some of the changes lead to incompatible behavior.
+In the Change Log we try to give as much visibility as possible to these changes
+to avoid surprises.
+
+We also log changes that are relevant if you are developing the code. However, these
+change lists are not complete, and if you want to put your hands in the code
+and maintain your own collective variables we suggest you to follow the development
+on [github](https://github.com/plumed/plumed2).
+
+"""
+    clf.write(content)
+    for version in glob.glob("../CHANGES/*.md") :
+        shutil.copy(version, "docs/" + version.split("/")[-1] )
+        clf.write("- Changes for [Version " + version.split("/")[-1].replace("v","").replace(".md","") + "](" + version.split("/")[-1] + ")\n")       
 
 def printActionListPage(af,version,tabledata,tagdictionary) :
     content=f"""
@@ -192,7 +271,10 @@ The [actions](actions.md) that can be used within a PLUMED input file are listed
 
 """
     af.write(content)
-    printDataTable(af,["Name", "Description", "Tags"], tabledata,tagdictionary)
+    printDataTable(af,["Name", "Description", "Tags"],
+                   tabledata,
+                   tagdictionary,
+                   extraAttributes={"Name":{"class":f"actionHeader"}})
 
 def printModuleListPage(mf,version,tabledata) :
     content=f"""
@@ -212,13 +294,45 @@ The remainder of the modules are not compiled unless you explicitly request PLUM
 ```bash
 ./configure --enable-module=module-name
 ```
+
+To enable or disable multiple modules one should provide them as a : separated list. Notice that `+modulename` and `modulename` both activate the module, whereas
+`-modulename` deactivates it. E.g.
+
+```bash
+./configure --enable-modules=+adjmat:-colvar
+```
+
+will disable the colvar module and enable the adjmat module.  The : can, in fact, be ommitted when you use + and -.  In other words, the following command can 
+be used in place of the previous one:
+
+```bash
+./configure --enable-modules=+adjmat-colvar
+```
+
+If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-colvar` will _not_ do what you expect!
+
+!!! note "old implementation"
+
+    Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
+    in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
+    in this manner will be overwritten next time `./configure` is used.
+
+There are also some shortcuts available:
+
+- `./configure --enable-modules=all` can be used to enable all optional modules. This includes the maximum number of features in PLUMED, including modules that might not be properly functional.
+- `./configure --enable-modules=none` or `./configure --disable-modules` can be used to disable all optional modules. This produces a minimal PLUMED which can be used as a library but which has no command line tools and no collective variables or biasing methods.
+- `./configure --enable-modules=reset` or `./configure --enable-modules` can be used to enable the default modules.
+
+The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
    
 The table below lists all the available modules and tells you whether they are always compiled, on by default or off by default.  An alternative, graphical
 view of this information is available [here](modulegraph.md).
 
 """
     mf.write(content)
-    printDataTable(mf,["Name","Description","Authors","Type"],tabledata)
+    printDataTable(mf,
+                   ["Name","Description","Authors","Type"],
+                   tabledata)
 
 def addSpecialGroupsToPage( file, groups ) :
     with open(file,"r") as f : lines = f.readlines() 
@@ -249,16 +363,20 @@ def createModuleGraph( version, plumed_syntax ) :
    # Get all the module dependencies from plumed_syntax
    requires = {}
    for key, value in plumed_syntax.items() :
-       if "module" not in value : continue
+       if "module" not in value :
+          continue
        thismodule = value["module"]
-       if thismodule not in requires.keys() : requires[thismodule] = set()
+       if thismodule not in requires.keys() :
+          requires[thismodule] = set()
        if "needs" in value :
           for req in value["needs"] :
-              if plumed_syntax[req]["module"]!=thismodule : requires[thismodule].add( plumed_syntax[req]["module"] )
+              if plumed_syntax[req]["module"]!=thismodule :
+                 requires[thismodule].add( plumed_syntax[req]["module"] )
    # Get dependencies from Makefiles
    for thismodule in requires.keys() :
        for conn in getModuleRequirementsFromMakefile(thismodule) :
-           if conn in requires.keys() : requires[thismodule].add( conn ) 
+           if conn in requires.keys() :
+              requires[thismodule].add( conn ) 
 
    with cd("docs") :
       with open( "modulegraph.md", "w") as of :
@@ -384,13 +502,6 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
             actions = set()
             ninp, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
             if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
-         dois = mod_dict["dois"] 
-         if len(dois)>0 : 
-            f.write("## References \n")
-            f.write("More information about this module is available in the following articles:\n\n") 
-            for doi in dois :
-                ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n")
          foundaction=False
          for key, value in plumed_syntax.items() :
              if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] or value["module"]!=modname : continue
@@ -430,12 +541,22 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
                f.write("|:-----|:------------|\n")
                for key, value in plumed_syntax["cltools"].items() :
                    if value["module"]!=modname : continue
-                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n") 
+                   f.write("| [" + key + "](" + key + ".md) |" + value["description"] + "|\n")
+
+         dois = mod_dict["dois"] 
+         if len(dois)>0 : 
+            f.write("\n## References \n")
+            f.write("More information about this module is available in the following articles:\n\n")
+            for doi in dois :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n")         
 
 def getKeywordDescription( docs ) :
     desc = docs["description"] 
     if "actionlink" in docs.keys() and docs["actionlink"]!="none" :
        desc = desc + ". Options for this keyword are explained in the documentation for [" + docs["actionlink"] + "](" + docs["actionlink"] + ".md)."
+    if "pagelink" in docs.keys() and docs["pagelink"]!="none" :
+       desc = desc + ". Further information about this flag can be found [here](" + docs["pagelink"] + ")."
     return desc
 
 def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
@@ -451,16 +572,10 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
                 actions = set()
                 ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
+                if ninp==0 : noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
             else :
-                f.write("Text from manual goes here \n")
-                noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
+                raise Exception("could not find yml file for module " + value["module"])
          else : nodocs.append(["<a href=\"../" + tool + "\">" + tool + "</a>", "cltool"] )
-         if "dois" in value and len(value["dois"])>0 :
-            f.write("## References \n")
-            f.write("More information about how this cltool can be used is available in the following articles:\n")
-            for doi in value["dois"] :
-                ref, ref_url = get_reference(doi)
-                f.write("- [" + ref + "](" + ref_url + ")\n")
          f.write("\n## Syntax \n")
          if value["inputtype"]=="file" : 
              f.write("The following table describes the keywords that should be used in the input file for this command line tool\n\n")
@@ -470,20 +585,39 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          f.write("|:------------|:-----------|\n")
          undoc = 0
          for key, docs in value["syntax"].items() :
-             if len(docs["description"])==0 : undoc = undoc + 1 
+             if len(docs["description"])==0 :
+                undoc = undoc + 1 
              f.write("| " + key + " | " + docs["description"] + " |\n")
-         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+         if undoc>0 :
+            undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+         if "dois" in value and len(value["dois"])>0 :
+            f.write("\n## References \n")
+            f.write("More information about how this cltool can be used is available in the following articles:\n")
+            for doi in value["dois"] :
+                ref, ref_url = get_reference(doi)
+                f.write("- [" + ref + "](" + ref_url + ")\n") 
 
-def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs ) :
+def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
+    undocumented_keyword = None
+    broken_input = None
+    noexample= None
+    nodoc = None
+    unexempled_keywords = None
     with open( action + ".md", "w") as f : 
-         hasatoms, hasargs = False, False
+         hasatoms= False
+         hasargs = False
          for key, docs in value["syntax"].items() :
-             if key=="output" : continue
-             if docs["type"]=="atoms" : hasatoms=True
-             elif "argtype" in docs.keys() : hasargs=True
+             if key=="output" :
+                continue
+             if docs["type"]=="atoms" :
+                hasatoms=True
+             elif "argtype" in docs.keys() :
+                hasargs=True
 
-         if "IS_SHORTCUT" in value["syntax"].keys() : f.write("# [Shortcut](shortcuts.md): " + action + "\n\n")
-         else : f.write("# [Action](actions.md): " + action + "\n\n")
+         if "IS_SHORTCUT" in value["syntax"].keys() : 
+            f.write("# [Shortcut](shortcuts.md): " + action + "\n\n")
+         else :
+            f.write("# [Action](actions.md): " + action + "\n\n")
 
          f.write("| [**Module**](modules.md) | [**" + value["module"] + "**](module_" + value["module"]  + ".md) |\n")
          f.write("|:--------|:--------:|\n")
@@ -505,37 +639,40 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
          else : 
             f.write(" | \n\n")
 
-         if "output" in value["syntax"] and len(value["syntax"]["output"].keys())>1 :
-            f.write("## Output components\n\n")
-            if "value" in value["syntax"]["output"] and len(value["syntax"]["output"])==1 :
-               pass
+         depracated = False
+         if "replacement" in value :
+            depracated = True 
+            f.write("!!! warning \"Deprecated\"\n\n")
+            f.write("    This action has been deprecated and is no longer supported. Use [" + value["replacement"] + "](" + value["replacement"] + ".md) instead.\n\n") 
+
+         # Build a list of the keywords for this action that we want to see in the documentation
+         example_keywords = set({})
+         for key, docs in value["syntax"].items() :
+             if key=="output" or docs["type"]=="hidden" or docs["type"]=="deprecated" or "pagelink" in docs.keys() : continue
+             example_keywords.add(key)
+
+         f.write("## Details and examples \n")
+         if action in plumeddocs.keys() :
+            if os.path.isfile("../../src/" + value["module"] + "/module.yml") :
+                actions = set()
+                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False, checkaction=action, checkactionkeywords=example_keywords )
+                if not depracated and len(example_keywords)>0 :
+                   unexempled_keywords = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]  
+                if nf[0]>0 :
+                   broken_input = ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])]
+                if not depracated and action not in actions :
+                   noexample = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
             else :
-               onlydefault = True
-               for key, docs in value["syntax"]["output"].items() :
-                   if docs["flag"]!="default" : onlydefault = False
-               if onlydefault :
-                  f.write("This action calculates the [values](specifying_arguments.md) in the following table.  These [values](specifying_arguments.md) can be referenced elsewhere in the input by using this Action's label followed by a dot and the name of the [value](specifying_arguments.md) required from the list below.\n\n")
-                  f.write("| Name | Type | Description |\n")
-                  f.write("|:-------|:-----|:-------|\n")
-                  for key, docs in value["syntax"]["output"].items() :
-                      if key=="value" : continue 
-                      f.write("| " + key + " | " + docs["type"] + " | " + docs["description"] + " | \n") 
-                  f.write("\n\n")
-               else : 
-                  f.write("This action can calculate the [values](specifying_arguments.md) in the following table when the associated keyword is included in the input for the action. These [values](specifying_arguments.md) can be referenced elsewhere in the input by using this Action's label followed by a dot and the name of the [value](specifying_arguments.md) required from the list below.\n\n")
-                  f.write("| Name | Type | Keyword | Description |\n")
-                  f.write("|:-------|:-----|:----:|:-------|\n")
-                  for key, docs in value["syntax"]["output"].items() :
-                      if key=="value" : continue 
-                      f.write("| " + key + " | " + docs["type"] + " | " + docs["flag"] + " | " + docs["description"] + " | \n")
-                  f.write("\n\n")
-         
-         if hasatoms or hasargs : 
+                raise Exception("could not find documentation for action " + action )
+         else :
+            nodoc = ["<a href=\"../" + action + "\">" + action + "</a>", "action"]
+
+         if hasatoms or hasargs :
             f.write("## Input\n\n")
             if hasatoms and hasargs : f.write("The [arguments](specifying_arguments.md) and [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
             elif hasatoms : f.write("The [atoms](specifying_atoms.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
             elif hasargs : f.write("The [arguments](specifying_arguments.md) that serve as the input for this action are specified using one or more of the keywords in the following table.\n\n")
-            
+
             f.write("| Keyword |  Type | Description |\n")
             f.write("|:--------|:------:|:-----------|\n")
             for key, docs in value["syntax"].items() :
@@ -544,56 +681,125 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons, broke
                 elif "argtype" in docs.keys() : f.write("| " + key + " | " + docs["argtype"] + " | " + docs["description"] + " |\n")
             f.write("\n\n")
 
-         ninp, nfail = 0, 0
-         f.write("## Further details and examples \n")
-         if action in plumeddocs.keys() :
-            if os.path.isfile("../../src/" + value["module"] + "/module.yml") : 
-                actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
-                if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + action + "\">" + action + "</a>", str(nf[0])] )
-            else : 
-                f.write("Text from manual goes here \n")
-                noexamples.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
-         else : nodocs.append(["<a href=\"../" + action + "\">" + action + "</a>", "action"] )
-         if "dois" in value and len(value["dois"])>0 : 
-            f.write("## References \n")
+         if "output" in value["syntax"] and len(value["syntax"]["output"].keys())>1 :
+            f.write("## Output components\n\n")
+            if "value" in value["syntax"]["output"] and len(value["syntax"]["output"])==1 :
+               pass
+            else :
+               onlydefault = True
+               for key, docs in value["syntax"]["output"].items() :
+                   if docs["flag"]!="default" :
+                     onlydefault = False
+               if onlydefault :
+                  f.write("This action calculates the [values](specifying_arguments.md) in the following table.  These [values](specifying_arguments.md) can be referenced elsewhere in the input by using this Action's label followed by a dot and the name of the [value](specifying_arguments.md) required from the list below.\n\n")
+                  f.write("| Name | Type | Description |\n")
+                  f.write("|:-------|:-----|:-------|\n")
+                  for key, docs in value["syntax"]["output"].items() :
+                      if key=="value" :
+                         continue 
+                      f.write("| " + key + " | " + docs["type"] + " | " + docs["description"] + " | \n") 
+                  f.write("\n\n")
+               else : 
+                  f.write("This action can calculate the [values](specifying_arguments.md) in the following table when the associated keyword is included in the input for the action. These [values](specifying_arguments.md) can be referenced elsewhere in the input by using this Action's label followed by a dot and the name of the [value](specifying_arguments.md) required from the list below.\n\n")
+                  f.write("| Name | Type | Keyword | Description |\n")
+                  f.write("|:-------|:-----|:----:|:-------|\n")
+                  for key, docs in value["syntax"]["output"].items() :
+                      if key=="value" :
+                         continue 
+                      f.write("| " + key + " | " + docs["type"] + " | " + docs["flag"] + " | " + docs["description"] + " | \n")
+                  f.write("\n\n")
+
+         nkeys = 0
+         for key, docs in value["syntax"].items() :
+             if key!="output" and docs["type"]!="hidden" : nkeys = nkeys + 1 
+
+         if nkeys>0 : 
+            f.write("\n## Full list of keywords \n")
+            f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
+            f.write("| Keyword | Type | Default | Description |\n")
+            f.write("|:-------|:----:|:-------:|:-----------|\n")
+            undoc = 0
+            for key, docs in value["syntax"].items() :
+                if key=="output" : continue 
+                if "argtype" in docs.keys() and "default" in docs.keys() : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
+                   else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
+                elif docs["type"]=="atoms" or "argtype" in docs.keys() :
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1 
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | none | " + getKeywordDescription( docs ) + " | \n")
+                   else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
+            for key, docs in value["syntax"].items() : 
+                if key=="output" or "argtype" in docs.keys()  : continue
+                if docs["type"]=="compulsory" and "default" in docs.keys()  : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
+                   else : f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
+                elif docs["type"]=="compulsory" : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
+                   else : f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
+            ndep = 0
+            for key, docs in value["syntax"].items() :
+                if key=="output" or "argtype" in docs.keys() : continue
+                if docs["type"]=="flag" : 
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1
+                   if not depracated and key in example_keywords and "pagelink" not in docs.keys() : f.write("| <span style=\"color:red\">" + key + "</span> | optional | false | " + getKeywordDescription( docs ) + " | \n")
+                   else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
+                if docs["type"]=="optional" :
+                   if len(docs["description"])==0 :
+                     undoc = undoc + 1 
+                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | optional | not used | " + getKeywordDescription( docs ) + " | \n")
+                   else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
+                if docs["type"]=="deprecated" :
+                   ndep = ndep + 1
+            if ndep>0 :
+               f.write("\n\n!!! warning \"deprecated keywords\"\n\n")
+               f.write("    The keywords in the following table can still be used with this action but have been deprecated\n\n")
+               f.write("    | Keyword | Description |\n")
+               f.write("    |:-------|:-----------|\n") 
+               for key, docs in value["syntax"].items() :
+                   if key=="output" or docs["type"]!="deprecated" : continue
+                   f.write("    | " + key + " | " + docs["description"] + " | \n") 
+            if undoc>0 :
+               undocumented_keyword = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]
+
+         if "dois" in value and len(value["dois"])>0 :
+            f.write("\n## References \n")
             f.write("More information about how this action can be used is available in the following articles:\n\n")
             for doi in value["dois"] :
                 ref, ref_url = get_reference(doi)
                 f.write("- [" + ref + "](" + ref_url + ")\n")
-         f.write("\n## Syntax \n")
-         f.write("The following table describes the [keywords and options](parsing.md) that can be used with this action \n\n")
-         f.write("| Keyword | Type | Default | Description |\n")
-         f.write("|:-------|:----:|:-------:|:-----------|\n")
-         undoc = 0
-         for key, docs in value["syntax"].items() :
-             if key=="output" : continue 
-             if "argtype" in docs.keys() and "default" in docs.keys() : 
-                if len(docs["description"])==0 : undoc = undoc + 1
-                f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
-             elif docs["type"]=="atoms" or "argtype" in docs.keys() :
-                if len(docs["description"])==0 : undoc = undoc + 1 
-                f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
-         for key, docs in value["syntax"].items() : 
-             if key=="output" or "argtype" in docs.keys()  : continue
-             if docs["type"]=="compulsory" and "default" in docs.keys()  : 
-                if len(docs["description"])==0 : undoc = undoc + 1
-                f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
-             elif docs["type"]=="compulsory" : 
-                if len(docs["description"])==0 : undoc = undoc + 1
-                f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
-         for key, docs in value["syntax"].items() :
-             if key=="output" or "argtype" in docs.keys() : continue
-             if docs["type"]=="flag" : 
-                if len(docs["description"])==0 : undoc = undoc + 1
-                f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
-             if docs["type"]=="optional" :
-                if len(docs["description"])==0 : undoc = undoc + 1 
-                f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
-         if undoc>0 : undocumented_keywords.append( ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]] )
+    return broken_input, undocumented_keyword, noexample, nodoc, unexempled_keywords
 
-if __name__ == "__main__" : 
-   # Get the version of plumed that we are building the manual for
+def actionPage(key,plumed_syntax,nest_map,school_map,plumedtags,version,plumeddocs) :
+    value = plumed_syntax[key]
+    # Now create the page contents
+    neggs =  nest_map[key] if key in nest_map.keys() else 0
+    nlessons = school_map[key] if key in school_map.keys() else 0
+    print("Building action page", key )
+    with cd("docs") :
+       broken_input, undocumented_keyword, noexample, nodoc, unexempled_keywords =createActionPage( version, key, value, plumeddocs, neggs, nlessons,
+                         )
+    alink = f'<a href="../{key}">{key}</a>'
+    return {"broken_input" :broken_input,
+             "undocumented_keyword" :undocumented_keyword,
+             "noexample" :noexample,
+             "nodoc" :nodoc,
+             "unexempled_keywords" :unexempled_keywords,
+             "element": [alink, str(value["description"]), str(plumedtags[key])]}
+
+class InvalidJSONError(Exception):
+      """Raised when the JSON file is not valid."""
+      def __init__(self, message):
+         super().__init__(f"Invalid JSON: {message}")
+
+if __name__ == "__main__" :    # Get the version of plumed that we are building the manual for
    version = subprocess.check_output(f'../src/lib/plumed info --version', shell=True).decode('utf-8').strip()
 
    # Create dictionaries that hold how often each action has been used in nest/tutorials
@@ -606,10 +812,14 @@ if __name__ == "__main__" :
        try:
           plumed_syntax = json.load(f)
        except ValueError as ve:
-          raise InvalidJSONError(ve)
+          raise InvalidJSONError(str(ve))
 
    # Create the index file
-   with open("docs/index.md", "w+") as of : printIndexFile(of,version)
+   with open("docs/index.md", "w+") as of : 
+      printIndexFile(of,version)
+   # Create the changelog file
+   with open("docs/changelog.md", "w+") as clf :
+      printChangeLog(clf)
    # Copy the extra files we need to process all the inputs 
    shutil.copytree("extras","docs/extras")
    # Copy the figures 
@@ -617,11 +827,13 @@ if __name__ == "__main__" :
    # Create the assets
    shutil.copytree("assets","docs/assets")
    # Create the javascript
-   with open("docs/assets/plumedtohtml.js", "w+") as jf : jf.write( get_javascript() )
+   with open("docs/assets/plumedtohtml.js", "w+") as jf :
+      jf.write( get_javascript() )
    # Create the css
-   with open("docs/assets/plumedtohtml.css", "w+") as cf : cf.write( get_css() )
+   with open("docs/assets/plumedtohtml.css", "w+") as cf :
+      cf.write( get_css() )
 
-   # Holder for table with pages with broken inputs
+   # Holder for table with pages with broken input
    broken_inputs = []
 
    # Create the general pages
@@ -630,31 +842,60 @@ if __name__ == "__main__" :
        shutil.copy( page, "docs/" + page ) 
        with cd("docs") : 
           ninp, nf = processMarkdown( page, (PLUMED,), (version,), actions, ghmarkdown=False )
-       if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
-       if os.path.exists("docs/colvar") : os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
+       if nf[0]>0 :
+          broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
+       if os.path.exists("docs/colvar") :
+          os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
 
    # Create a page for each action
-   tabledata, undocumented_keywords, noexamples, nodocs = [], [], [], []
    plumeddocs, plumedtags = getActionDocumentationFromPlumed(plumed_syntax)
-   for key, value in plumed_syntax.items() :
-      if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
-      # Now create the page contents
-      neggs, nlessons = 0, 0
-      if key in nest_map.keys() : neggs = nest_map[key]
-      if key in school_map.keys() : nlessons = school_map[key] 
-      print("Building action page", key )
-      with cd("docs") : 
-         createActionPage( version, key, value, plumeddocs, neggs, nlessons, broken_inputs, undocumented_keywords, noexamples, nodocs )
-      alink = "<a href=\"../" + key + "\">" + key + "</a>"
-      tabledata.append( [alink, str(value["description"]), str(plumedtags[key]) ] ) 
 
+   actionKeys=[]
+   notActionList = ["modules", "vimlink", "replicalink", "groups", "cltools"]
+   
+   biggestkey=[0,""]
+   for key, value in plumed_syntax.items() :
+      if key in notActionList or key!=value["displayname"] :
+        continue
+      actionKeys.append(key)
+      if len(key)>biggestkey[0] :
+         biggestkey = [len(key), key]
+
+   # here for debugging purposes:
+   with open("debugging.txt", "w") as bf :
+      bf.write(biggestkey[1] + " " + str(biggestkey[0]) + "\n")
+      bf.write(f"nest_map={nest_map}\n")
+      bf.write(f"school_map={school_map}\n")
+      print("The biggest action is", biggestkey[1], "with length", biggestkey[0])
+   #create a function that will fix all the inputs but key for action page
+   run_action_page = functools.partial(actionPage, plumed_syntax=plumed_syntax, 
+                                            nest_map=nest_map, school_map=school_map,
+                                            plumedtags=plumedtags, version=version,
+                                            plumeddocs=plumeddocs)
+   if sys_platform == "wasi" or sys_platform == "ios":
+      #multiprocessing is not avaiable on WASI or iOS
+      #https://docs.python.org/3/library/multiprocessing.html
+      actiontable = [run_action_page(key) for key in sorted(actionKeys)]
+   else :
+      with Pool(cpu_count()) as pool:  
+        actiontable = pool.map(run_action_page, sorted(actionKeys))
+   tabledata = [x["element"] for x in actiontable]
+   #append
+   broken_inputs+=[x["broken_input"] for x in actiontable if x["broken_input"] is not None]
+   undocumented_keywords = [x["undocumented_keyword"] for x in actiontable if x["undocumented_keyword"] is not None]
+   noexamples = [x["noexample"] for x in actiontable if x["noexample"] is not None]
+   nodocs = [x["nodoc"] for x in actiontable if x["nodoc"] is not None]
+   unexempled_keywords = [x["unexempled_keywords"] for x in actiontable if x["unexempled_keywords"] is not None]
+   
    # Read in all the module pages
    tagdictionary = {}
    for file in glob.glob("../src/*/module.yml") :
-       with open(file) as f : moddict = yaml.load(f,Loader=yaml.BaseLoader)
+       with open(file) as f :
+          moddict = yaml.load(f,Loader=yaml.BaseLoader)
        if "tags" in moddict : 
           for key, value in moddict["tags"].items() :
-              if key in tagdictionary.keys() : raise Exception("found duplicate definitions for tag " + key) 
+              if key in tagdictionary.keys() :
+                 raise Exception("found duplicate definitions for tag " + key) 
               tagdictionary[key] = value
 
    # Find the list of tags in the tag list
@@ -667,7 +908,8 @@ if __name__ == "__main__" :
    print( "THESE ARE THE TAGS WE DIDN'T FIND", unfound_tags )
 
    # Create the page with the list of actions
-   with open("docs/actionlist.md","w+") as actdb : printActionListPage( actdb, version, tabledata, tagdictionary )
+   with open("docs/actionlist.md","w+") as actdb :
+      printActionListPage( actdb, version, tabledata, tagdictionary )
 
    # Create a page for each cltool
    for key, value in plumed_syntax["cltools"].items() :
@@ -676,23 +918,27 @@ if __name__ == "__main__" :
 
    # Create a list of modules
    modules = {}
-   for key, value in plumed_syntax.items() :  
-     if key=="modules" or key=="vimlink" or key=="replicalink" or key=="groups" or key=="cltools" or key!=value["displayname"] : continue
-     nlessons, neggs = 0, 0
-     if key in school_map.keys() : nlessons = school_map[key]
-     if key in nest_map.keys() : neggs = nest_map[key]
+   for key in actionKeys :  
+     value = plumed_syntax[key]
+     if key in notActionList or key!=value["displayname"] :
+       continue
+     neggs = nest_map[key] if key in nest_map.keys() else 0
+     nlessons = school_map[key] if key in school_map.keys() else 0
      if value["module"] not in modules.keys() :
         modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
-     else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons
+     else :
+        modules[value["module"]]["neggs"] += neggs
+        modules[value["module"]]["nlessons"] += nlessons
 
    # Take into account command line tools when building list of modules
    for key, value in plumed_syntax["cltools"].items() :
-     nlessons, neggs = 0, 0
-     if key in school_map.keys() : nlessons = school_map[key] 
-     if key in nest_map.keys() : neggs = nest_map[key]
+     neggs =  nest_map[key] if key in nest_map.keys() else 0
+     nlessons = school_map[key] if key in school_map.keys() else 0
      if value["module"] not in modules.keys() :
         modules[value["module"]] = { "neggs": neggs, "nlessons": nlessons }
-     else : modules[value["module"]]["neggs"], modules[value["module"]]["nlessons"] = modules[value["module"]]["neggs"] + neggs, modules[value["module"]]["nlessons"] + nlessons  
+     else :
+        modules[value["module"]]["neggs"] += neggs
+        modules[value["module"]]["nlessons"] += nlessons  
 
    # And create each module page
    moduletabledata = []
@@ -706,16 +952,18 @@ if __name__ == "__main__" :
        if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists("../src/" + module + "/module.yml") : 
           nodocs.append(["<a href=\"../module_" + module + "\">" + module+ "</a>", "module"])
    # And the page with the list of modules
-   with open("docs/modules.md","w+") as module_file : printModuleListPage( module_file, version, moduletabledata )
+   with open("docs/modules.md","w+") as module_file :
+      printModuleListPage( module_file, version, moduletabledata )
    # Create the graph that shows all the modules
    createModuleGraph( version, plumed_syntax ) 
    
    # Create a list containing all the special groups
    special_groups = []
-   for key, value in plumed_syntax["groups"].items() : special_groups.append([ key, str(value["description"]) ])
+   for key, value in plumed_syntax["groups"].items() :
+      special_groups.append([ key, str(value["description"]) ])
    # Add tables with special groups to pages that need them
    addSpecialGroupsToPage( "docs/specifying_atoms.md", special_groups )
    addSpecialGroupsToPage( "docs/MOLINFO.md", special_groups ) 
 
    # And output the summary page
-   createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples )
+   createSummaryPage( broken_inputs, nodocs, undocumented_keywords, noexamples, unexempled_keywords )

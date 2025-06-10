@@ -33,8 +33,9 @@ namespace ves {
 /*
 Robbins-Monro stochastic gradient decent.
 
-> [! attention]
-> __This optimizer is only included for reference. We recommend to use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md))__.
+!!! attention ""
+
+    __This optimizer is only included for reference. We recommend to use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md))__.
 
 
 */

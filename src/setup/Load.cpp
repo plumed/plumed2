@@ -111,8 +111,9 @@ Another example is if multiple Plumed objects are created in the C/C++ or Python
 If a LOAD command is used in one of these objects, the loaded action will not affect
 the other objects.
 
-> [!NOTE]
-> The example inputs on this page appear as not working because you cannot use the dynamic loading on GitHub Actions. On a machine where this functionality is available these inputs should work.
+!!! note ""
+
+    The example inputs on this page appear as not working because you cannot use the dynamic loading on GitHub Actions. On a machine where this functionality is available these inputs should work.
 
 */
 //+ENDPLUMEDOC

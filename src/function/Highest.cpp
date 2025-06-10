@@ -23,7 +23,8 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
-#include "FunctionTemplateBase.h"
+#include "FunctionWithSingleArgument.h"
+#include "FunctionSetup.h"
 
 namespace PLMD {
 namespace function {
@@ -104,24 +105,6 @@ than 0.05 nm then the corresponding value in the vector `h` is set equal to 0.05
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR HIGHEST_SCALAR
-/*
-Calculate the highest of a set of sclalar arguments
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR HIGHEST_VECTOR
-/*
-Calculate the largest element in a vector of inputs
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 //+PLUMEDOC FUNCTION LOWEST
 /*
 This function can be used to find the lowest colvar by magnitude in a set.
@@ -198,43 +181,20 @@ han 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR LOWEST_SCALAR
-/*
-Calculate the lowest of a set of sclalar arguments
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR LOWEST_VECTOR
-/*
-Calculate the lowest element in a vector of inputs
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-class Highest : public FunctionTemplateBase {
-private:
-  bool min, scalar_out;
+class Highest {
 public:
-  void registerKeywords( Keywords& keys ) override ;
-  void read( ActionWithArguments* action ) override;
-  bool zeroRank() const override {
-    return scalar_out;
-  }
-  bool doWithTasks() const override {
-    return !scalar_out;
-  }
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override ;
-  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  bool min;
+  static void registerKeywords( Keywords& keys );
+  static void read( Highest& func, ActionWithArguments* action, FunctionOptions& options );
+  static void calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Highest> HighestShortcut;
 PLUMED_REGISTER_ACTION(HighestShortcut,"HIGHEST")
 PLUMED_REGISTER_ACTION(HighestShortcut,"LOWEST")
+typedef FunctionWithSingleArgument<Highest> OneargHighest;
+PLUMED_REGISTER_ACTION(OneargHighest,"HIGHEST_ONEARG")
+PLUMED_REGISTER_ACTION(OneargHighest,"LOWEST_ONEARG")
 typedef FunctionOfScalar<Highest> ScalarHighest;
 PLUMED_REGISTER_ACTION(ScalarHighest,"HIGHEST_SCALAR")
 PLUMED_REGISTER_ACTION(ScalarHighest,"LOWEST_SCALAR")
@@ -251,9 +211,9 @@ void Highest::registerKeywords( Keywords& keys ) {
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs");
 }
 
-void Highest::read( ActionWithArguments* action ) {
-  min=action->getName().find("LOWEST")!=std::string::npos;
-  if( !min ) {
+void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions& options ) {
+  func.min=action->getName().find("LOWEST")!=std::string::npos;
+  if( !func.min ) {
     plumed_assert( action->getName().find("HIGHEST")!=std::string::npos );
   }
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
@@ -261,23 +221,24 @@ void Highest::read( ActionWithArguments* action ) {
       action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
     }
   }
-  scalar_out = action->getNumberOfArguments()==1;
-  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) {
-    action->error("sorting a single scalar is trivial");
+}
+
+void Highest::calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+  if( !noderiv ) {
+    for(unsigned i=0; i<args.size(); ++i) {
+      funcout.derivs[0][i] = 0;
+    }
   }
-}
-
-bool Highest::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
-  return !scalar_out;
-}
-
-void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  if( min ) {
-    vals[0] = *std::min_element(args.begin(), args.end());
-    derivatives(0,std::min_element(args.begin(), args.end()) - args.begin()) = 1;
+  if( func.min ) {
+    funcout.values[0] = *std::min_element(args.begin(), args.end());
+    if( !noderiv ) {
+      funcout.derivs[0][std::min_element(args.begin(), args.end()) - args.begin()] = 1;
+    }
   } else {
-    vals[0] = *std::max_element(args.begin(), args.end());
-    derivatives(0,std::max_element(args.begin(), args.end()) - args.begin()) = 1;
+    funcout.values[0] = *std::max_element(args.begin(), args.end());
+    if( !noderiv ) {
+      funcout.derivs[0][std::max_element(args.begin(), args.end()) - args.begin()] = 1;
+    }
   }
 }
 

@@ -61,14 +61,19 @@ You would only use the PUT command if you were calling PLUMED from python or an 
 # This is how you create a value to hold the energy the MD code passes energy in plumed
 eng: PUT UNIT=energy PERIODIC=NO
 # This is how you create an vector of the 100 x positions to plumed
-xpos: PUT SHAPE=100 UNIT=length PERIODIC=NO
+# Notice how we use ROLE here in order to tell PLUMED that these are the x coordinates.
+# Further note that we need to use the FROM_DOMAINS flag if the MD code we are using uses
+# domain decomposition.
+xpos: PUT SHAPE=100 UNIT=length PERIODIC=NO ROLE=x FROM_DOMAINS
 # This is how you create a scalar to hold the timestep
 # The constant flag indicates that the value of the timestep doesn't change during the simulation
 tstep: PUT CONSTANT UNIT=time PERIODIC=NO
 # This is how you create a value to hold a 10 x 10 matrix in plumed whose elements are unitless
 matrix: PUT SHAPE=10,10 UNIT=number PERIODIC=NO
 # Lastly, if you want to pass a value that has a periodic domain you can do so as follows
-tor: PUT UNIT=number PERIODIC=-pi,pi
+# By adding the MUTABLE flag here we pass the data to PLUMED in a way that ensures that PLUMED can modify
+# the value that was passed from the MD code and thus pass back a different value to the underlying MD code.
+tor: PUT UNIT=number PERIODIC=-pi,pi MUTABLE
 ```
 
 */
@@ -89,6 +94,7 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
   keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.setValueDescription("scalar/vector/matrix/grid","the data that was passed from the MD code");
 }
 

@@ -57,6 +57,15 @@ function at the various grid points.
 
 N.B. This method with lepton was implemented to facilitate the implementation of the normalisation in the implementation of the [RDF](RDF.md) shortcut.
 
+Lastly note that you can specify the grid spacing in the input to this action rather than the number of bins as shown below:
+
+```plumed
+d2: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 GRID_SPACING=0.5 FUNC=d1*d1 VAR=d1 PERIODIC=NO
+d1: DISTANCE ATOMS=1,2
+ff: EVALUATE_FUNCTION_FROM_GRID GRID=d2
+PRINT ARG=d1,ff FMT=%8.4f FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -85,7 +94,7 @@ private:
   std::vector<std::string> dernames;
   void createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
                            const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-                           const std::vector<std::size_t>& gbin );
+                           const std::vector<std::size_t>& gbin, std::vector<double>& gspacing );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ReadGridInSetup(const ActionOptions&ao);
@@ -130,6 +139,8 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     parseVector("GRID_MAX",gmax);
     std::vector<std::size_t> gbin(gmin.size());
     parseVector("GRID_BIN",gbin);
+    std::vector<double> spacing(gmin.size());
+    parseVector("GRID_SPACING",spacing);
     std::vector<std::string> pbc(gmin.size());
     parseVector("PERIODIC",pbc);
     std::vector<bool> ipbc( pbc.size() );
@@ -165,7 +176,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     }
 
     // Create the grid and the value of the grid
-    createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin );
+    createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin, spacing );
 
     // Read in stuff for function
     log.printf("  evaluating function : %s\n",func.c_str());
@@ -275,7 +286,8 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     if( !flatgrid ) {
       ifile.scanField( "nbins", gbin1);
       gbin[0]=gbin1;
-      createGridAndValue( "fibonacci", ipbc, gbin[0], gmin, gmax, gbin );
+      std::vector<double> spacing;
+      createGridAndValue( "fibonacci", ipbc, gbin[0], gmin, gmax, gbin, spacing );
     } else {
       for(unsigned i=0; i<dernames.size(); ++i) {
         ifile.scanField( "min_" + dernames[i], gmin[i]);
@@ -298,7 +310,8 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
           plumed_merror("missing derivatives from grid file");
         }
       }
-      createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin );
+      std::vector<double> spacing;
+      createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin, spacing );
     }
     // And finally read all the grid points
     Value* valout=getPntrToComponent(0);
@@ -338,9 +351,8 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
 
 void ReadGridInSetup::createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi,
     const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
-    const std::vector<std::size_t>& gbin ) {
+    const std::vector<std::size_t>& gbin, std::vector<double>& gspacing ) {
   gridobject.setup( gtype, ipbc, nfermi, 0.0 );
-  std::vector<double> gspacing;
   if( gtype=="flat" ) {
     gridobject.setBounds( gmin, gmax, gbin, gspacing );
     // Now create the value

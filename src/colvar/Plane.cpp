@@ -44,7 +44,13 @@ PRINT ARG=p.x,p.y,p.z FILE=colvar
 
 The three components, p.x, p.y and p.z, output by the PLANE action here are the x, y and z components of the normal
 vector to the plane that is obtained by taking the cross product between the vector connecting atoms 1 and 2 and
-the vector connecting atoms 2 and 3.
+the vector connecting atoms 2 and 3.  Notice that the default here is to evaluate these two vectors in a way that takes
+any periodic boundary conditions (PBC) into account. If you wish to disregard the PBC you can use the NOPBC flag as shown in the following input:
+
+```plumed
+p: PLANE ATOMS=1,2,3 NOPBC
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
 
 To calculate the cross product of the vector connecting atoms 1 and 2 and the vector connecting atoms 3 and 4 you use
 an input like this:
@@ -65,24 +71,6 @@ PRINT ARG=p.x,p.y,p.z FILE=colvar
 The output from this command consists of 3 vectors with 4 components. These vectors, p.x, p.y and p.z, contain the x, y and z components
 of the normals to the planes of the molecules.  Commands similar to this are useful for variables that can be used to monitor
 nucleation of molecular crystals such as [SMAC](SMAC.md).
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR PLANE_SCALAR
-/*
-Calculate the plane perpendicular to two vectors in order to represent the orientation of a planar molecule.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC COLVAR PLANE_VECTOR
-/*
-Calculate the plane perpendicular to two vectors in order to represent the orientation of a planar molecule multiple times.
-
-\par Examples
 
 */
 //+ENDPLUMEDOC
@@ -119,6 +107,7 @@ void Plane::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("y","default","scalar/vector","the y-component of the vector that is normal to the plane containing the atoms");
   keys.addOutputComponent("z","default","scalar/vector","the z-component of the vector that is normal to the plane containing the atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {

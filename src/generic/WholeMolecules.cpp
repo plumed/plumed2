@@ -53,13 +53,14 @@ If you think that you need to use this command a good idea is to use the [DUMPAT
 to output the atomic positions.  This will allow you to see the effect that including/not including WHOLEMOLECULES
 has on the calculation.
 
-> [!ATTENTION]
-> This directive modifies the stored position at the precise moment
-> it is executed. This means that only collective variables
-> which are below it in the input script will see the corrected positions.
-> As a general rule, put it at the top of the input file. Also, unless you
-> know exactly what you are doing, leave the default stride (1), so that
-> this action is performed at every MD step.
+!!! attention "modifies stored positions"
+
+    This directive modifies the stored position at the precise moment
+    it is executed. This means that only collective variables
+    which are below it in the input script will see the corrected positions.
+    As a general rule, put it at the top of the input file. Also, unless you
+    know exactly what you are doing, leave the default stride (1), so that
+    this action is performed at every MD step.
 
 Notice that the behavior of WHOLEMOLECULES is affected by the last [MOLINFO](MOLINFO.md) action
 that is present in the input file before the WHOLEMOLECULES command. Specifically, if the

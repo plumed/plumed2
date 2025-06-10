@@ -41,7 +41,20 @@ plumed pathtools --path in_path.pdb --metric EUCLIDEAN --out final_path.pdb
 ```
 
 If you are using this action directly and not through [pathtools](pathtools.md) or [ADAPTIVE_PATH](ADAPTIVE_PATH.md) you will
-probably be using in the context of the method for reparameterizing paths that is discussed in the example documentation for
+probably be using it in an input something like this:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+rmsd: RMSD REFERENCE=regtest/trajectories/path_msd/all.pdb DISPLACEMENT TYPE=OPTIMAL
+# Accumulate the average displacement between the reference path and the trajectories that have sampled the transition
+disp: AVERAGE_PATH_DISPLACEMENT ARG=rmsd.disp STRIDE=1 METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+# Now displace the original path by the accumulated displacement and reparameterize so that all frames are equally spaced
+REPARAMETERIZE_PATH DISPLACE_FRAMES=disp FIXED=1,42 METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+# And output the final reparameterized path at the end of the simulation
+DUMPPDB DESCRIPTION=PATH STRIDE=0 FILE=outpatb.pdb ATOMS=rmsd_ref ATOM_INDICES=1-13
+```
+
+The method for reparameterizing paths that is implemented in this input is discussed in the example documentation for
 [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md).
 
 */

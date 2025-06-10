@@ -24,16 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/PDB.h"
 
-//+PLUMEDOC DCOLVAR RMSD_VECTOR
-/*
-Calculate the RMSD distance between the instaneous configuration and multiple reference configurations
-
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace colvar {
 

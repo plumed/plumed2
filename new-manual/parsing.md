@@ -129,6 +129,10 @@ For instance, the following single input file can be used to setup a bias exchan
 
 ```plumed
 #SETTINGS NREPLICAS=2 
+
+# Using this command ensures that exchanges between randomly chosen replicas are attempted
+RANDOM_EXCHANGES
+
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=1,2
 
@@ -150,7 +154,7 @@ METAD ...
 #  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=pi
 ```
 
-This input contains a typical setup for a bias exchange simulation.
+This input contains a typical setup for a bias exchange simulation.  
 Notice that even though the actions with labels `d` and `t` are read for both replicas,
 `d` is only computed on replica 0 (and `t` is only computed on replica 1).
 This is because variables that are defined but not used are never actually calculated by PLUMED.
@@ -205,4 +209,3 @@ RESTRAINT ...
 In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input files and this is fact recommended when the
 differences in the inputs for the various replicas are substantial.
-
