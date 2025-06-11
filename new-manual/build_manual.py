@@ -260,6 +260,7 @@ The documentation in this manual was built on [{date.today().strftime('%B %d, %Y
     of.write(content)
 
 def printChangeLog(clf) :
+    from packaging.version import Version
     content=f"""
 Change Log
 ----------
@@ -295,7 +296,8 @@ on [github](https://github.com/plumed/plumed2).
 
 """
     clf.write(content)
-    for version in glob.glob("../CHANGES/*.md") :
+    versions=sorted(glob.glob("../CHANGES/*.md"),key=lambda x:Version(x.split('/')[-1].split('.md')[0]))
+    for version in versions :
         shutil.copy(version, "docs/" + version.split("/")[-1] )
         clf.write("- Changes for [Version " + version.split("/")[-1].replace("v","").replace(".md","") + "](" + version.split("/")[-1] + ")\n")       
 
