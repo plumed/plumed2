@@ -29,35 +29,72 @@ def cd(newdir):
     finally:
         os.chdir(prevdir)
 
+def getActionDocumentation(actionFile:str, syntax:dict) -> tuple[dict, dict]:
+   docs = {}
+   tags = {}
+   with open(actionFile,"r") as f :
+        content = f.read()
+   if "//+PLUMEDOC" in content :
+      actioname = ""
+      founddocs = ""
+      indocs = False
+      for line in content.splitlines() :
+         if "//+ENDPLUMEDOC" in line :
+            if not indocs :
+               raise Exception("Found ENDPLUMEDDOC before PLUMEDOC in " + file)
+            if len(actioname)>0 : 
+               print("Found documentation for ", actioname)
+               docs[actioname] = founddocs
+            actioname = ""
+            founddocs = ""
+            indocs = False
+         elif "//+PLUMEDOC" in line :
+            if indocs :
+               raise Exception("Found PLUMEDDOC before ENDPLUMEDOC in " + file) 
+            indocs = True
+            taglist = ""
+            for key in line.split() :
+                  if key=="//+PLUMEDOC" :
+                     continue 
+                  if key in syntax.keys() or key in syntax["cltools"].keys() :
+                     if len(actioname)>0 :
+                        raise Exception("found more than one action name in input for " + key )
+                     actioname = key
+                  else : 
+                     taglist = key + " "
+            if actioname in syntax.keys() :
+               tags[actioname] = taglist
+         elif indocs and not "/*" in line and not "*/" in line :
+            founddocs += line + "\n"
+   return docs, tags
+
 def getActionDocumentationFromPlumed(syntax) :
     docs = {}
     tags = {}
-    for file in glob.glob("../src/*/*.cpp") : 
-        with open(file,"r") as f :
-           content = f.read()
-        if "//+PLUMEDOC" not in content : continue
-        actioname, founddocs,  indocs = "", "", False
-        for line in content.splitlines() :
-            if "//+ENDPLUMEDOC" in line :
-               if not indocs : raise Exception("Found ENDPLUMEDDOC before PLUMEDOC in " + file)
-               if len(actioname)>0 : 
-                  print("Found documentation for ", actioname)
-                  docs[actioname] = founddocs
-               actioname, founddocs, indocs = "", "", False
-            elif "//+PLUMEDOC" in line :
-               if indocs : raise Exception("Found PLUMEDDOC before ENDPLUMEDOC in " + file) 
-               indocs, taglist = True, ""
-               for key in line.split() :
-                   if key=="//+PLUMEDOC" : continue 
-                   if key in syntax.keys() or key in plumed_syntax["cltools"].keys() :
-                      if len(actioname)>0 : raise Exception("found more than one action name in input for " + key )
-                      actioname = key
-                   else : 
-                      taglist = key + " "
-               if actioname in syntax.keys() :
-                  tags[actioname] = taglist
-            elif indocs and not "/*" in line and not "*/" in line : founddocs += line + "\n"
+    run_action_page = functools.partial(getActionDocumentation, syntax=syntax)
+    files = glob.glob("../src/*/*.cpp")
+    if sys_platform == "wasi" or sys_platform == "ios":
+      #multiprocessing is not avaiable on WASI or iOS
+      #https://docs.python.org/3/library/multiprocessing.html
+      actionpages = [run_action_page(key) for key in files]
+    else :
+      with Pool(cpu_count()) as pool:  
+        actionpages = pool.map(run_action_page, files)
+    for doclist, taglist in actionpages :
+       docs.update(doclist)
+       tags.update(taglist)
     return docs, tags
+
+def generateGeneralPages(page:str,plumed,version):
+   broken_input=None
+   actions = set()
+   shutil.copy( page, "docs/" + page ) 
+   with cd("docs") : 
+      _, nf = processMarkdown( page, (plumed,), (version,), actions, ghmarkdown=False )
+   if nf[0]>0 :
+      broken_input=["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])]
+   return broken_input
+
 
 def get_reference(doi):
     # initialize strings
@@ -223,6 +260,7 @@ The documentation in this manual was built on [{date.today().strftime('%B %d, %Y
     of.write(content)
 
 def printChangeLog(clf) :
+    from packaging.version import Version
     content=f"""
 Change Log
 ----------
@@ -258,7 +296,8 @@ on [github](https://github.com/plumed/plumed2).
 
 """
     clf.write(content)
-    for version in glob.glob("../CHANGES/*.md") :
+    versions=sorted(glob.glob("../CHANGES/*.md"),key=lambda x:Version(x.split('/')[-1].split('.md')[0]))
+    for version in versions :
         shutil.copy(version, "docs/" + version.split("/")[-1] )
         clf.write("- Changes for [Version " + version.split("/")[-1].replace("v","").replace(".md","") + "](" + version.split("/")[-1] + ")\n")       
 
@@ -500,7 +539,7 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
          if os.path.exists("../../src/" + modname + "/module.md") :
             with open("../../src/" + modname + "/module.md") as iff : docs = iff.read()
             actions = set()
-            ninp, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
+            _, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
             if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
          foundaction=False
          for key, value in plumed_syntax.items() :
@@ -838,15 +877,19 @@ if __name__ == "__main__" :    # Get the version of plumed that we are building 
 
    # Create the general pages
    actions = set()
-   for page in glob.glob("*.md") :
-       shutil.copy( page, "docs/" + page ) 
-       with cd("docs") : 
-          ninp, nf = processMarkdown( page, (PLUMED,), (version,), actions, ghmarkdown=False )
-       if nf[0]>0 :
-          broken_inputs.append( ["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])] )
-       if os.path.exists("docs/colvar") :
-          os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
-
+   pages = glob.glob("*.md")
+   run_action_page = functools.partial(generateGeneralPages, 
+                                       plumed=PLUMED, version=version)
+   if sys_platform == "wasi" or sys_platform == "ios":
+      #multiprocessing is not avaiable on WASI or iOS
+      #https://docs.python.org/3/library/multiprocessing.html
+      broken_inputs_table = [run_action_page(key) for key in pages]
+   else :
+      with Pool(cpu_count()) as pool:  
+        broken_inputs_table = pool.map(run_action_page, pages)
+   broken_inputs+=[x for x in broken_inputs_table if x is not None]
+   if os.path.exists("docs/colvar") :
+      os.remove("docs/colvar")   # Do this with Plumed2HTML maybe
    # Create a page for each action
    plumeddocs, plumedtags = getActionDocumentationFromPlumed(plumed_syntax)
 
