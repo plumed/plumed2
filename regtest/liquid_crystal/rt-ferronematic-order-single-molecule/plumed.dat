@@ -1,0 +1,7 @@
+WHOLEMOLECULES ENTITY0=1-48
+
+# If the ferronematic order parameter is calculated only for a
+# single molecule, its value is exactly 1, since in this case
+# the total polarization and the molecular axis are always parallel.
+P: FERRONEMATIC_ORDER MOLECULE_STARTS=13 MOLECULE_ENDS=20
+PRINT FILE=colvar ARG=P
