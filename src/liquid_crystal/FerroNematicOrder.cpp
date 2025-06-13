@@ -29,7 +29,7 @@ namespace liquid_crystal {
 /*
 Calculate the ferronematic order parameter.
 
-The ferronamtic order parameter P depends on the relative orientations of the molecular
+The ferronematic order parameter P depends on the relative orientations of the molecular
 axes. If the axes all point into the same direction, giving rise to a net polarization if
 the molecules have permanent dipole moments, P is close to 1. If the molecular axes are
 oriented isotropically or are aligned antiparallel so that there is no net polarization,
