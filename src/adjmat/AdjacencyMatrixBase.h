@@ -95,6 +95,8 @@ public:
                            ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const AdjacencyMatrixData<T>& actiondata );
   static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const AdjacencyMatrixData<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
+  ///
+  void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 };
 
 template <class T>
@@ -313,6 +315,15 @@ void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) cons
     k++;
     inputdata[k] = mypos[2];
     k++;
+  }
+}
+
+template <class T>
+void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  std::string num;
+  for(unsigned i=0; i<getConstPntrToComponent(0)->getShape()[1]; ++i) {
+      Tools::convert( i+1, num );
+      argnames.push_back( num );
   }
 }
 
