@@ -106,7 +106,7 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPB");
   keys.add("atoms","GROUPB","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPA");
-  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix. This is a depracated syntax that is equivalent to GROUP.  You are strongly recommened to use GROUP instead of ATOMS.");
+  keys.addDeprecatedKeyword("ATOMS","GROUP");
   keys.reserve("atoms","GROUPC","a group of atoms that must be summed over when calculating each element of the adjacency matrix");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
@@ -322,8 +322,8 @@ template <class T>
 void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
   std::string num;
   for(unsigned i=0; i<getConstPntrToComponent(0)->getShape()[1]; ++i) {
-      Tools::convert( i+1, num );
-      argnames.push_back( num );
+    Tools::convert( i+1, num );
+    argnames.push_back( num );
   }
 }
 
