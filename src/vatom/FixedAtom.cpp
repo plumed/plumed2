@@ -43,7 +43,17 @@ RESTRAINT ARG=an AT=0.0 KAPPA=100.0
 ```
 
 By default PLUMED assumes that any coordinates specified using the AT keyword specified are the cartesian coordinates of the fixed atom.
-However, if you use the SCALED_COMPONENTS flag the coordinates specified using the AT keyword are interpretted as scaled coordinates.
+However, if you use the SCALED_COMPONENTS flag as shown below:
+
+```plumed
+a: FIXEDATOM AT=0.25,0.25,0.25 SCALED_COMPONENTS
+DUMPATOMS ATOMS=a FILE=vatom.xyz
+```
+
+the coordinates specified using the AT keyword are interpretted as scaled coordinates. The positions output to the `vatom.xyz` file
+in the input above is thus obtained by multiplying the input vector by the cell vectors on every step.  The position of the atom `a`
+thus changes as the box size changes. 
+
 It is also possible to assign a predefined charge or mass to the atom by using the `SET_MASS` and `SET_CHARGE` keywords.
 
 !!! caution ""

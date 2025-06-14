@@ -32,10 +32,10 @@ Find the point with the lowest value of the function on the grid
 This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input
 function at its lowest point. The other scalars returned are the coordinates for which the function takes this particular value.
 
-As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value.
-If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a
-minimum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is lowest will be used as an initial coordinate
-for the optimisation.
+As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value using
+interpolation and conjugate gradients.  The coordinates of the grid point where the function's value is lowest will be used as an initial coordinate
+for the optimisation.  We then interpolate the function to find the optimum.  You can use use the CGTOL keyword to control the conjugate gradient algorithm that is used to find the location of the
+minimum in the interpolated function.  
 
 To print out the location on the grid where the function is minimised and the value of the function at that point you can use an input like the one shown below:
 
@@ -56,10 +56,12 @@ fes has a value of zero.
 x: DISTANCE ATOMS=1,2
 hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
 ff: CONVERT_TO_FES ARG=hA1 TEMP=300
-min: FIND_GRID_MINIMUM ARG=ff
+min: FIND_GRID_MINIMUM ARG=ff NOINTERPOL
 sff: CUSTOM ARG=ff,min.optval FUNC=x+y PERIODIC=NO
 DUMPGRID ARG=sff FILE=fes.dat
 ```
+
+Notice that the `NOINTERPOL` flag has been used here so the interpolation and conjugate gradient algorithm is not used. The output is simply the grid point at which the function takes its lowest value.
 
 */
 //+ENDPLUMEDOC
@@ -71,21 +73,32 @@ Find the point with the highest value of the function on the grid
 This command takes a function on a grid as input and returns multiple scalars.  One of the returned scalars (the one with component `optval`) is the value of the input
 function at its highest point. The other scalars returned are the coordinates for which the function takes this particular value.
 
-As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its highest value.
-If you wish you can use CGTOL option to specify that the function should be interpolated and the conjugate gradient algorithm should be used to find the location of a
-maximum in the interpolated function.  If you specify this keyword the coordinates of the grid point where the function's value is highest will be used as an initial coordinate
-for the optimisation.
+As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its lowest value using
+interpolation and conjugate gradients.  The coordinates of the grid point where the function's value is highest will be used as an initial coordinate
+for the optimisation.  We then interpolate the function to find the optimum.  You can use use the CGTOL keyword to control the conjugate gradient algorithm that is used to find the location of the
+maximum in the interpolated function. 
 
 To print out the location on the grid where the function is maximised and the value of the function at that point you can use an input like the one shown below:
 
 ```plumed
 x: DISTANCE ATOMS=1,2
 hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
-max: FIND_GRID_MAXImuM ARG=hA1
+max: FIND_GRID_MAXIMUM ARG=hA1
 PRINT ARG=max.x_opt,max.optval STRIDE=0
 ```
 
 Notice that we set STRIDE=0 in the PRINT command here so the position of the maximum is only output once at the end of the simulation.
+
+If for any reason you do not want to use interpolation and conjugate gradient to find the optimum you can use the `NOINTERPOL` flag as shown below.
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+max: FIND_GRID_MAXIMUM ARG=hA1 NOINTERPOL
+PRINT ARG=max.x_opt,max.optval STRIDE=0
+```
+
+The FIND_GRID_MAXIMUM action then outputs the coordinates of the grid point where the function is largest as well as the value of the function on that grid point.
 
 */
 //+ENDPLUMEDOC

@@ -84,9 +84,17 @@ fcc: FCCUBIC ...
 # This determines the positions of the atoms of interest relative to the position of atom 1
 dens2_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS
 # This computes the numerator in the expression above for the phase field
-dens2_numer: KDE VOLUMES=fcc_n ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+dens2_numer: KDE ...
+   VOLUMES=fcc_n ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z 
+   GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 
+   GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+...
 # This computes the denominator
-dens2_denom: KDE ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+dens2_denom: KDE ...
+   ARG=dens2_dist.x,dens2_dist.y,dens2_dist.z 
+   GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 
+   GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0
+...
 # This computes the final phase field
 dens2: CUSTOM ARG=dens2_numer,dens2_denom FUNC=x/y PERIODIC=NO
 
