@@ -30,17 +30,20 @@ namespace PLMD {
 namespace volumes {
 
 template <class T>
-class VolumeData {
-public:
+struct VolumeData {
   bool not_in;
   std::size_t numberOfNonReferenceAtoms;
   T voldata;
-  VolumeData<T>& operator=( const VolumeData<T>& m ) {
-    not_in=m.not_in;
-    numberOfNonReferenceAtoms=m.numberOfNonReferenceAtoms;
-    voldata=m.voldata;
-    return *this;
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],not_in,numberOfNonReferenceAtoms)
+    voldata.toACCDevice();
   }
+  void removeFromACCDevice() const {
+    voldata.removeFromACCDevice();
+#pragma acc exit data delete(numberOfNonReferenceAtoms,not_in,this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 struct VolumeInput {

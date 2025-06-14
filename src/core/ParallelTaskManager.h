@@ -738,11 +738,19 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
             std::size_t task_index = partialTaskList_data[t];
             std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, t_actiondata );
             for(unsigned j=0; j<nfpt; ++j) {
-              ForceIndexHolder force_indices( input.ncomponents, input.nderivatives_per_scalar, indices + t*nind_per_task + j*input.ncomponents*nind_per_scalar );
+              ForceIndexHolder force_indices( input.ncomponents,
+                                              input.nderivatives_per_scalar,
+                                              indices
+                                              + t*nind_per_task
+                                              + j*input.ncomponents*nind_per_scalar );
               auto fdata = ForceInput { input.nscalars,
-                                        value_stash_data+input.nscalars*task_index + j*input.ncomponents,
+                                        value_stash_data
+                                        +input.nscalars*task_index
+                                        + j*input.ncomponents,
                                         input.nderivatives_per_scalar,
-                                        derivatives + i*ndev_per_task + j*input.ncomponents*input.nderivatives_per_scalar }
+                                        derivatives
+                                        + t*ndev_per_task
+                                        + j*input.ncomponents*input.nderivatives_per_scalar };
               for(unsigned i=0; i<input.ncomponents; ++i) {
                 for(unsigned d=force_indices.threadsafe_derivatives_end[i]; d<force_indices.tot_indices[i]; ++d) {
                   if( force_indices.indices[i][d]==v ) {

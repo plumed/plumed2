@@ -144,26 +144,10 @@ class Between {
 public:
   bool isPeriodic;
   double min=0, max=0;
-  std::string hinput;
-  HistogramBead hist;
+  HistogramBead hist{HistogramBead::KernelType::gaussian,0.0,1.0,0.5};
   static void registerKeywords( Keywords& keys );
   static void read( Between& func, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  Between& operator=( const Between& m ) {
-    hinput = m.hinput;
-    std::string errors;
-    hist.set( m.hinput, errors );
-    plumed_assert( errors.size()==0 );
-    isPeriodic = m.isPeriodic;
-    min = m.min;
-    max = m.max;
-    if( !isPeriodic ) {
-      hist.isNotPeriodic();
-    } else {
-      hist.isPeriodic( min, max );
-    }
-    return *this;
-  }
 };
 
 typedef FunctionShortcut<Between> BetweenShortcut;
@@ -202,17 +186,17 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
   if( func.isPeriodic ) {
     action->getPntrToArgument(0)->getDomain( str_min, str_max );
   }
-
-  action->parse("SWITCH",func.hinput);
-  if(func.hinput.length()==0) {
+  std::string hinput;
+  action->parse("SWITCH",hinput);
+  if(hinput.length()==0) {
     std::string low, up, sme;
     action->parse("LOWER",low);
     action->parse("UPPER",up);
     action->parse("SMEAR",sme);
-    func.hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
+    hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
   }
   std::string errors;
-  func.hist.set( func.hinput, errors );
+  func.hist.set( hinput, errors );
   if( errors.size()!=0 ) {
     action->error( errors );
   }
