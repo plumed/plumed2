@@ -35,7 +35,7 @@ function at its lowest point. The other scalars returned are the coordinates for
 As the input grid has the values of the function evaluated over a grid of points we find this minimum value by finding the point on the grid where the function has its lowest value using
 interpolation and conjugate gradients.  The coordinates of the grid point where the function's value is lowest will be used as an initial coordinate
 for the optimisation.  We then interpolate the function to find the optimum.  You can use use the CGTOL keyword to control the conjugate gradient algorithm that is used to find the location of the
-minimum in the interpolated function.  
+minimum in the interpolated function.
 
 To print out the location on the grid where the function is minimised and the value of the function at that point you can use an input like the one shown below:
 
@@ -76,7 +76,7 @@ function at its highest point. The other scalars returned are the coordinates fo
 As the input grid has the values of the function evaluated over a grid of points we find this maximum value by finding the point on the grid where the function has its lowest value using
 interpolation and conjugate gradients.  The coordinates of the grid point where the function's value is highest will be used as an initial coordinate
 for the optimisation.  We then interpolate the function to find the optimum.  You can use use the CGTOL keyword to control the conjugate gradient algorithm that is used to find the location of the
-maximum in the interpolated function. 
+maximum in the interpolated function.
 
 To print out the location on the grid where the function is maximised and the value of the function at that point you can use an input like the one shown below:
 

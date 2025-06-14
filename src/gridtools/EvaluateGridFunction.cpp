@@ -54,10 +54,10 @@ void EvaluateGridFunction::read( EvaluateGridFunction& func, ActionWithArguments
   }
   std::vector<std::string> argn;
   if( action->keywords.exists("ZERO_OUTSIDE_GRID_RANGE") ) {
-     action->parseFlag("ZERO_OUTSIDE_GRID_RANGE",func.set_zero_outside_range);
+    action->parseFlag("ZERO_OUTSIDE_GRID_RANGE",func.set_zero_outside_range);
   } else {
-     func.set_zero_outside_range=false;
-  } 
+    func.set_zero_outside_range=false;
+  }
   if( func.set_zero_outside_range ) {
     action->log.printf("  function is zero outside grid range \n");
   }

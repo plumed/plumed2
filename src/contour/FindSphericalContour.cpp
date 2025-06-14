@@ -107,11 +107,11 @@ cent: CENTER ATOMS=1-512 WEIGHTS=trans1 PHASES
 # Calculate the phase field of the coordination
 dens_dist: DISTANCES ORIGIN=cent ATOMS=c1 COMPONENTS
 dens_numer: KDE ...
-   VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z 
+   VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z
    GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
 ...
 dens_denom: KDE ...
-   VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z 
+   VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z
    GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
 ...
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO

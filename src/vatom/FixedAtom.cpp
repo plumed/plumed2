@@ -52,7 +52,7 @@ DUMPATOMS ATOMS=a FILE=vatom.xyz
 
 the coordinates specified using the AT keyword are interpretted as scaled coordinates. The positions output to the `vatom.xyz` file
 in the input above is thus obtained by multiplying the input vector by the cell vectors on every step.  The position of the atom `a`
-thus changes as the box size changes. 
+thus changes as the box size changes.
 
 It is also possible to assign a predefined charge or mass to the atom by using the `SET_MASS` and `SET_CHARGE` keywords.
 

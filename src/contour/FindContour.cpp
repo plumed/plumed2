@@ -86,12 +86,12 @@ center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
 dens_dist: DISTANCES ORIGIN=center ATOMS=1-96000 COMPONENTS
 # This computes the numerator in the expression above for the phase field
 dens_numer: KDE ...
-   VOLUMES=tfcc ARG=dens_dist.x,dens_dist.y,dens_dist.z 
+   VOLUMES=tfcc ARG=dens_dist.x,dens_dist.y,dens_dist.z
    GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
 ...
 # This computes the denominator
 dens_denom: KDE ...
-   ARG=dens_dist.x,dens_dist.y,dens_dist.z 
+   ARG=dens_dist.x,dens_dist.y,dens_dist.z
    GRID_BIN=80,80,80 BANDWIDTH=1.0,1.0,1.0
 ...
 # This computes the final phase field
