@@ -192,6 +192,69 @@ function `1-sqrt(x2)` returns the distance.
 The second term in our sum over $M$ in the input above has the dissimilarities and distances transformed by the functions that
 we introduced in the previous section.
 
+## Choosing an optimization algorithm
+
+The inputs above use conjugate gradients to optimize the stress function and to find the low dimensional projection. If you
+wish you can change the algorithm used to optimize the sketch-map function.  For example, in the input below the
+[smacof](https://en.wikipedia.org/wiki/Stress_majorization) algorithm is used in place of conjugate gradients.
+
+```plumed
+# Calcuate the instantaneous values of the three distances
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+
+# Collect the calulated distances for later analysis
+ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
+ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
+
+# Generate an initial projection of the high dimensional points using MDS
+mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2
+
+# Generate a matrix of w_ij values
+weights: OUTER_PRODUCT ARG=ff_weights,ff_weights
+
+# And produce the projections
+proj: ARRANGE_POINTS ...
+  ARG=mds-1,mds-2 TARGET1=mds_mat WEIGHTS1=weights
+  MINTYPE=smacof
+...
+
+# And print the projections to a file
+DUMPVECTOR ARG=proj.* FILE=colvar
+```
+
+Alternatively, the following example uses a combination of conjugate gradients and a pointwise global optimisation to optimize the
+stress function
+
+```plumed
+# Calcuate the instantaneous values of the three distances
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+
+# Collect the calulated distances for later analysis
+ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
+ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
+
+# Generate an initial projection of the high dimensional points using MDS
+mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2
+
+# Generate a matrix of w_ij values
+weights: OUTER_PRODUCT ARG=ff_weights,ff_weights
+
+# And produce the projections
+proj: ARRANGE_POINTS ...
+   ARG=mds-1,mds-2 TARGET1=mds_mat
+   WEIGHTS1=weights MINTYPE=pointwise
+...
+
+# And print the projections to a file
+DUMPVECTOR ARG=proj.* FILE=colvar
+```
+
+This is the algorithm that is to optimize the stress function within [SKETCHMAP](SKETCHMAP.md).
+
 */
 //+ENDPLUMEDOC
 
