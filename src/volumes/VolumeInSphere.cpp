@@ -57,10 +57,23 @@ s: SUM ARG=a PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
+If by constrast you want to calculate and print the number of atoms that are not in the sphere of interest you OUTSIDE flag as shown below
+
+```plumed
+f: FIXEDATOM AT=0,0,0
+a: INSPHERE ...
+  ATOMS=1-100 CENTER=f
+  RADIUS={GAUSSIAN R_0=1.5}
+  OUTSIDE
+...
+s: SUM ARG=a PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
 You can also calculate the average values of symmetry functions in the sphere of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
 action. In other words, you can swap out AROUND actions for an INSPHERE actions.  Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these types of calculations, which can
-still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
-
+still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 */
 //+ENDPLUMEDOC
@@ -94,7 +107,7 @@ PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   keys.setDisplayName("INSPHERE");
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
-  keys.add("atoms-2","ATOM","the atom whose vicinity we are interested in examining");
+  keys.addDeprecatedKeyword("ATOM","CENTER");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
   keys.linkActionInDocs("RADIUS","LESS_THAN");
 }

@@ -41,6 +41,32 @@ ones: ONES SIZE=100
 covar: COVARIANCE_MATRIX ARG=d.x,d.y,d.z WEIGHTS=ones
 ```
 
+In the above case the elements of the gyration tensor are computed as follows:
+
+$$
+G_{\alpha\beta} = \frac{\sum_i w_i d_{i,\alpha} d_{i,\beta} }{\sum_i w_i}
+$$
+
+where $\alpha$ and $\beta$ can each be $x$, $y$ or $z$ and $w_i$ is a set of weights that in the above input are all set equal to one.
+
+If you would like to compute:
+
+$$
+G_{\alpha\beta} = \sum_i w_i d_{i,\alpha} d_{i,\beta}
+$$
+
+instead you use the `UNORMALIZED` flag as shown below:
+
+```plumed
+# Calculate the geometric center for 100 atoms
+com: CENTER ATOMS=1-100
+# Calculate the vector connecting each of the 100 atoms to the geometric center
+d: DISTANCES ATOMS=1-100 ORIGIN=com COMPONENTS
+# Now compute the covariance matrix
+ones: ONES SIZE=100
+covar: COVARIANCE_MATRIX ARG=d.x,d.y,d.z WEIGHTS=ones UNORMALIZED
+```
+
 */
 //+ENDPLUMEDOC
 
