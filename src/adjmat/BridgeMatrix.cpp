@@ -50,8 +50,96 @@ In the following example input atoms 100-200 can serve as bridging atoms between
 two switching functions $s_A$ and $s_B$ in the formula above are identical.
 
 ```plumed
-w1: BRIDGE_MATRIX BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
+w1: BRIDGE_MATRIX ...
+   BRIDGING_ATOMS=100-200
+   GROUPA=1-10 GROUPB=11-20
+   SWITCH={RATIONAL R_0=0.2}
+...
 ```
+
+If you use a single GROUP keyword as in the input below as a single SWITCH keyword the output matrix is symmetric.
+
+```plumed
+w2: BRIDGE_MATRIX ...
+   BRIDGING_ATOMS=100-200 GROUP=1-10
+   SWITCH={RATIONAL R_0=0.2}
+...
+```
+
+However, if the two switching functions are not identical, as in the following example, then the output matrix is __not__ symmetric
+even if GROUP is used rather than GROUPA/GROUPB.
+
+```plumed
+w2: BRIDGE_MATRIX ...
+   BRIDGING_ATOMS=100-200 GROUP=1-10
+   SWITCHA={RATIONAL R_0=0.2}
+   SWITCHB={RATIONAL R_0=0.4}
+...
+```
+
+Notice that in all the inputs above the $r_{ij}$ and $r_{ik}$ values that enter the formula above are calculated in a way that takes the
+periodic boundary conditions into account.  If you want to ignore the periodic boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+w2: BRIDGE_MATRIX ...
+   BRIDGING_ATOMS=100-200 GROUP=1-10
+   SWITCH={RATIONAL R_0=0.2}
+   NOPBC
+...
+```
+
+## COMPONENTS flag
+
+If you add the flag COMPONENTS to the input as shown below:
+
+```plumed
+c4: BRIDGE_MATRIX ...
+   BRIDGING_ATOMS=100-200 GROUP=1-10
+   SWITCH={RATIONAL R_0=0.2}
+   COMPONENTS
+...
+```
+
+then four matrices with the labels `c4.w`, `c4.x`, `c4.y` and `c4.z` are output by the action. The matrix with the label `c4.w` is the adjacency matrix
+that would be output if you had not added the COMPONENTS flag. The $i,j$ component of the matrices `c4.x`, `c4.y` and `c4.z` contain the $x$, $y$ and $z$
+components of the vector connecting atoms $j$ and $k$. Importantly, however, the components of these vectors are only stored in `c4.x`, `c4.y` and `c4.z`
+if the elements of `c4.w` are non-zero. Using the COMPONENTS flag in this way ensures that you can use BRIDGE_MATRIX in tandem with many of the functionalities
+that are part of the [symfunc module](module_symfunc.md).
+
+## The MASK keyword
+
+You use the MASK keyword with BRIDGE_MATRIX in the same way that is used in [CONTACT_MATRIX](CONTACT_MATRIX.md).  This keyword thus expects a vector in input,
+which tells BRIDGE_MATRIX that it is safe to not calculate certain rows of the output matrix.  An example where this keyword is used is shown below:
+
+```plumed
+# The atoms that are of interest
+ow: GROUP ATOMS=1-1650
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: BRIDGE_MATRIX ...
+   GROUP=ow BRIDGING_ATOMS=1650-3000
+   SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=sphere
+...
+ones: ONES SIZE=1650
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average for a type of coordination number for those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.  The coordination number for the atoms that is evaluated here counts an atom $k$ in the coordination sphere of atom $j$ if there is a
+bridging atom within 0.34 nm of atoms $j$ and $k$.
 
 */
 //+ENDPLUMEDOC

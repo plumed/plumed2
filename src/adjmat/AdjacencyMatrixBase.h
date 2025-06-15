@@ -132,24 +132,28 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
   threecells(comm) {
   std::vector<std::size_t> shape(2);
   std::vector<AtomNumber> t;
-  parseAtomList("GROUP", t );
-  if( t.size()==0 ) {
-    parseAtomList("ATOMS", t);
-    if( t.size()>0 ) {
-      warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+  if( getName()!="HBOND_MATRIX" ) {
+    parseAtomList("GROUP", t );
+    if( t.size()==0 ) {
+      parseAtomList("ATOMS", t);
+      if( t.size()>0 ) {
+        warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+      }
     }
   }
 
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta;
-    parseAtomList("GROUPA",ta);
-    if( ta.size()==0 && getName()=="HBOND_MATRIX") {
+    if( getName()=="HBOND_MATRIX") {
       parseAtomList("DONORS",ta);
+    } else {
+      parseAtomList("GROUPA",ta);
     }
     std::vector<AtomNumber> tb;
-    parseAtomList("GROUPB",tb);
-    if( tb.size()==0 && getName()=="HBOND_MATRIX") {
+    if( getName()=="HBOND_MATRIX") {
       parseAtomList("ACCEPTORS",tb);
+    } else {
+      parseAtomList("GROUPB",tb);
     }
     if( ta.size()==0 || tb.size()==0 ) {
       error("no atoms have been specified in input");

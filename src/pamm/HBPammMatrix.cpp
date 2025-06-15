@@ -41,26 +41,145 @@ The example shown below illustrates how the method is used in practice
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-m: HBPAMM_MATRIX GROUP=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
 PRINT ARG=m FILE=colvar
 ```
 
-This example could be used to investigate the connectivity between a collection of water molecules in liquid water. Notice, however,
-that the output matrix here is not symmetric.
+The input above is outputting the full hbpamm matrix.  However, this action is perhaps more usefully used to investigate the connectivity between
+a collection of water molecules in liquid water. Importantly, however,
+the output matrix here is __not__ symmetric.  We thus calculate the number of hydrogen bonds that these atoms are donating using the
+following input:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=m,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=donors.xyz
+```
+
+To calculate the number of hydrogen bonds these atoms accept we would use the following input:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+mT: TRANSPOSE ARG=m
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=mT,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=acceptors.xyz
+```
+
+To calculate the total number of hydorgen bonds these atoms participate in you would use an input like this:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+mT: TRANSPOSE ARG=m
+hbmat: CUSTOM ARG=m,mT FUNC=x+y PERIODIC=NO
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=hbmat,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=hbonds.xyz
+```
 
 If you want to investigate whether there are hydrogen bonds between two groups of molecules you can use an input like this:
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-m: HBPAMM_MATRIX GROUPA=1 GROUPB=2-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+m: HBPAMM_MATRIX ...
+  GROUPA=1 GROUPB=2-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
 PRINT ARG=m FILE=colvar
 ```
 
 This input outputs a $1\times 63$ matrix in which the $1,i$th element tells you whether or not atom 1 donates a hydrogen bond
-to the $i$th element in the group of 63 atoms that was specified using the ACCEPTORS keyword.
+to the $i$th element in the group of 63 atoms that was specified using the ACCEPTORS keyword.  The $i,1$th element of the
+transpose of this matrix tells you if the $i$th center donates a hydrogen bond to atom 1.
 
 In general, it is better to use this action through the [HBPAMM_SA](HBPAMM_SA.md), [HBPAMM_SD](HBPAMM_SD.md) and [HBPAMM_SH](HBPAMM_SH.md)
 keywords, which can be used to calculate the number of hydrogen bonds each donor, acceptor or hydrogen atom in your system participates in.
+
+## Periodic boundary conditions
+
+Notice that in all the inputs above the distances values that enter the pamm expressions are calculated in a way that takes the
+periodic boundary conditions into account.  If you want to ignore the periodic boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  NOPBC
+...
+```
+
+## COMPONENTS flag
+
+If you add the flag COMPONENTS to the input as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+c4: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  COMPONENTS
+...
+```
+
+then four matrices with the labels `c4.w`, `c4.x`, `c4.y` and `c4.z` are output by the action. The matrix with the label `c4.w` is the adjacency matrix
+that would be output if you had not added the COMPONENTS flag. The $i,j$ component of the matrices `c4.x`, `c4.y` and `c4.z` contain the $x$, $y$ and $z$
+components of the vector connecting atoms $j$ and $k$. Importantly, however, the components of these vectors are only stored in `c4.x`, `c4.y` and `c4.z`
+if the elements of `c4.w` are non-zero. Using the COMPONENTS flag in this way ensures that you can use HBPAMM_MATRIX in tandem with many of the functionalities
+that are part of the [symfunc module](module_symfunc.md).  Remember, however, that the $i,j$ element of the HBPAMM_MATRIX is only non-zero if atom $i$ donates
+a hydrogen bond to atom $j$.  __You cannot use HBPAMM_MATRIX to identify the set of atoms that each atom is hydrogen bonded to.__
+
+## The MASK keyword
+
+You use the MASK keyword with HBPAMM_MATRIX in the same way that is used in [CONTACT_MATRIX](CONTACT_MATRIX.md).  This keyword thus expects a vector in input,
+which tells HBOND_MATRIX that it is safe to not calculate certain rows of the output matrix.  An example where this keyword is used is shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+# The atoms that are of interest
+ow: GROUP ATOMS=1-1650
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: HBPAMM_MATRIX ...
+  GROUP=ow GROUPC=1650-3000
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  MASK=sphere
+...
+ones: ONES SIZE=1650
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average number of hydrogen bonds each of the atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$ donate.
 
 */
 //+ENDPLUMEDOC
