@@ -60,6 +60,64 @@ DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
 
 Notice, that you can also achieve something similar by using the [HISTOGRAM](HISTOGRAM.md) shortcut.
 
+## Controlloing the grid
+
+If you prefer to specify the grid spacing rather than the number of bins you can do so using the GRID_SPACING keyword as shown below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+If $x$ is one of the input arguments to the KDE action and $x<g_{min}$ or $x>g_{max}$, where $g_{min}$ and $g_{max}$ are the minimum
+and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by default PLUMED will crash.  If you want any values
+that fall outside of the grid range to simply be ignored instead you can add the `IGNORE_IF_OUT_OF_RANGE` to the input as shown below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ...
+   ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0
+   GRID_SPACING=0.01 BANDWIDTH=0.2
+   IGNORE_IF_OUT_OF_RANGE
+...
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+## Constructing the density
+
+If you are performing a simulation in the NVT ensemble and wish to look at the density as a function of position in the cell you can use an input like the one shown below:
+
+```plumed
+a: FIXEDATOM AT=0,0,0
+dens: DISTANCES ATOMS=1-100 ORIGIN=a COMPONENTS
+kde: KDE ARG=dens.x,dens.y,dens.z GRID_BIN=100,100,100 BANDWIDTH=0.05,0.05,0.05
+DUMPGRID ARG=kde STRIDE=1 FILE=density
+```
+
+Notice that you do not need to specify GRID_MIN and GRID_MAX values with this input. In this case PLUMED gets the extent of the grid from the cell vectors during the first
+step of the simulation.
+
+## Specifying a non diagonal bandwidth
+
+If for any reason you want to use a bandwidth that is not diagonal when doing kensity density estimation you can do by using an input similar to the one shown below:
+
+```plumed
+m: CONSTANT VALUES=0.2,0.1,0.1,0.2 NROWS=2 NCOLS=2
+
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=1,2
+kde: KDE ...
+  ARG=d1,d2 GRID_MIN=0.0,0.0
+  GRID_MAX=1.0,1.0 GRID_BIN=100,100
+  METRIC=m
+...
+histo: ACCUMULATE ARG=kde STRIDE=1
+DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
+```
+
+In this case the input metric is a constant.  You could, however, also use a non-constant value as input to the METRIC keyword.
+
 ## Working with vectors and scalars
 
 If the input to your KDE action is a set of scalars it appears odd to separate the process of computing the KDE from the process of accumulating the histogram. However, if
@@ -188,21 +246,27 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label for the value that should be used to construct the histogram");
   keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the Gaussians.");
-  keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "
-           "divided by the volume of the Gaussian are used as weights for the Gaussians");
+  if( keys.getDisplayName()=="KDE" ) {
+    keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "
+             "divided by the volume of the Gaussian are used as weights for the Gaussians");
+  }
   // Keywords for KDE
-  keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
-  keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
-  keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","METRIC","the inverse covariance to use for the kernels that are added to the grid");
-  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
+  if( keys.getDisplayName()=="KDE" ) {
+    keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
+    keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
+    keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
+    keys.add("compulsory","METRIC","the inverse covariance to use for the kernels that are added to the grid");
+    keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
+    keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
+             "in plumed plumed can be found in \\ref kernelfunctions.");
+    keys.addFlag("IGNORE_IF_OUT_OF_RANGE",false,"if a kernel is outside of the range of the grid it is safe to ignore");
+    keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  }
   keys.add("optional","GRID_BIN","the number of bins for the grid");
-  keys.addFlag("IGNORE_IF_OUT_OF_RANGE",false,"if a kernel is outside of the range of the grid it is safe to ignore");
-  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   // Keywords for spherical KDE
-  keys.add("compulsory","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions (only required for SPHERICAL_KDE)");
+  if( keys.getDisplayName()=="SPHERICAL_KDE" ) {
+    keys.add("compulsory","CONCENTRATION","the concentration parameter for the Von Mises-Fisher distributions");
+  }
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("grid","a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
 }
@@ -223,7 +287,9 @@ KDE::KDE(const ActionOptions&ao):
 
   bool weights_are_volumes=true;
   std::vector<std::string> weight_str;
-  parseVector("VOLUMES",weight_str);
+  if( getName()=="KDE" ) {
+    parseVector("VOLUMES",weight_str);
+  }
   if( weight_str.size()==0 ) {
     parseVector("HEIGHTS",weight_str);
     if( weight_str.size()>0 ) {
@@ -374,6 +440,10 @@ KDE::KDE(const ActionOptions&ao):
       }
     }
     gridobject.setup( "flat", ipbc, 0, 0.0 );
+    parseFlag("IGNORE_IF_OUT_OF_RANGE",ignore_out_of_bounds);
+    if( ignore_out_of_bounds ) {
+      log.printf("  ignoring kernels that are outside of grid \n");
+    }
   } else {
     if( shape.size()!=3 ) {
       error("should have three coordinates in input to this action");
@@ -395,10 +465,6 @@ KDE::KDE(const ActionOptions&ao):
     // Setup the grid
     shape[0]=nbins;
     shape[1]=shape[2]=1;
-  }
-  parseFlag("IGNORE_IF_OUT_OF_RANGE",ignore_out_of_bounds);
-  if( ignore_out_of_bounds ) {
-    log.printf("  ignoring kernels that are outside of grid \n");
   }
   addValueWithDerivatives( shape );
   setNotPeriodic();

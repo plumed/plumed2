@@ -230,6 +230,7 @@ void ArrangePoints::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","vector","the initial positions for the projections");
   keys.addInputKeyword("numbered","TARGET","matrix","the matrix of target quantities that you would like to match");
   keys.add("numbered","FUNC","a function that is applied on the distances between the points in the low dimensional space");
