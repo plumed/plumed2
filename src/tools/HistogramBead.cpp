@@ -53,7 +53,6 @@ HistogramBead::HistogramBead(const HistogramBead&)=default;
 HistogramBead::HistogramBead(HistogramBead&&)=default;
 HistogramBead& HistogramBead::operator=(const HistogramBead&)=default;
 HistogramBead& HistogramBead::operator=(HistogramBead&&)=default;
-// HistogramBead::~HistogramBead()=default;
 
 void HistogramBead::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
@@ -69,7 +68,8 @@ std::string HistogramBead::description() const {
         <<highb<<" width of gaussian window equals "<<width;
     break;
   case KernelType::triangular:
-    //TODO: add triangular window description
+    ostr<<"between "<<lowb<<" and "
+        <<highb<<" width of triangular window equals "<<width;
     break;
   }
   return ostr.str();
@@ -266,10 +266,14 @@ double HistogramBead::lboundDerivative( const double x ) const {
   }
   break;
   case  KernelType::triangular : {
-    // plumed_error();
-//      lowB = fabs( difference( x, lowb ) / width );
-//      if( lowB<1 ) return ( 1 - (lowB) ) / 2*width;
-//      else return 0;
+    assert(false);
+    //TODO: something about this:
+    // double lowB = fabs( difference( x, lowb ) / width );
+    // if( lowB<1 ) {
+    //   return ( 1 - (lowB) ) / 2*width;
+    // } else {
+    //   return 0;
+    // }
   }
   }
   //warning::unreachable
@@ -284,11 +288,14 @@ double HistogramBead::uboundDerivative( const double x ) const {
   }
   break;
   case KernelType::triangular : {
-    // plumed_error();
-    // assert(false);
-//      upperB = fabs( difference( x, highb ) / width );
-//      if( upperB<1 ) return ( 1 - (upperB) ) / 2*width;
-//      else return 0;
+    assert(false);
+    //TODO: something about this:
+    // double upperB = fabs( difference( x, highb ) / width );
+    // if( upperB<1 ) {
+    //   return ( 1 - (upperB) ) / 2*width;
+    // } else {
+    //   return 0;
+    // }
   }
   }
   //warning::unreachable

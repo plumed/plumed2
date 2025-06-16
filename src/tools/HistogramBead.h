@@ -45,8 +45,7 @@ private:
   double highb{0.0};
   double width{0.0};
   double cutoff{std::numeric_limits<double>::max()};
-  //given how this is initialized, it is not possible to get to an unknown state of the kernel type
-  //so, it is not necessary to throw an exception if the type is not set
+
   KernelType type{KernelType::gaussian};
   enum class Periodicity {periodic,notperiodic};
   Periodicity periodicity{Periodicity::notperiodic};
