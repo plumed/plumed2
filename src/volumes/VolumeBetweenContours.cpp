@@ -75,10 +75,12 @@ s: SUM ARG=fi PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
-As with [AROUND](AROUND.md) there was syntax for caclulating the average values of order parameters for those atoms that are inside/outside the membrane, which can
-still be used with this new version of the command.  However, the same calculations can be performed in later versions of the code with a better syntax.  We strongly
-recommend using the newer syntax but if you are interested in the old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
-The documentation for that action tells you how that old syntax worked and how you can achieve the same results using the new syntax.
+!!! note ""
+
+    As with [AROUND](AROUND.md) there was syntax for caclulating the average values of order parameters for those atoms that are inside/outside the membrane, which can
+    still be used with this new version of the command.  However, the same calculations can be performed in later versions of the code with a better syntax.  We strongly
+    recommend using the newer syntax but if you are interested in the old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
+    The documentation for that action tells you how that old syntax worked and how you can achieve the same results using the new syntax.
 
 */
 //+ENDPLUMEDOC

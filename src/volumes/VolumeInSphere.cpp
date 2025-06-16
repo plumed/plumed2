@@ -70,10 +70,12 @@ s: SUM ARG=a PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
-You can also calculate the average values of symmetry functions in the sphere of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
-action. In other words, you can swap out AROUND actions for an INSPHERE actions.  Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these types of calculations, which can
-still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
-old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
+!!! note ""
+
+    You can also calculate the average values of symmetry functions in the sphere of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
+    action. In other words, you can swap out AROUND actions for an INSPHERE actions.  Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these types of calculations, which can
+    still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+    old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 */
 //+ENDPLUMEDOC

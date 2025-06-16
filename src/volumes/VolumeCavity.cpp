@@ -117,9 +117,11 @@ mt: SUM ARG=sss PERIODIC=NO
 PRINT ARG=mean,mt FILE=colvar
 ```
 
-As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
-still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
-old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
+!!! note ""
+
+    As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
+    still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+    old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 */
 //+ENDPLUMEDOC
