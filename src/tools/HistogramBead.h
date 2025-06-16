@@ -38,49 +38,65 @@ A class for calculating whether or not values are within a given range using : \
 */
 
 class HistogramBead {
+public:
+  enum class KernelType {gaussian,triangular};
 private:
-  bool init;
-  double lowb;
-  double highb;
-  double width;
-  double cutoff;
-  enum {gaussian,triangular} type;
-  enum {unset,periodic,notperiodic} periodicity;
-  double min, max, max_minus_min, inv_max_minus_min;
-  double difference( const double& d1, const double& d2 ) const ;
+  double lowb{0.0};
+  double highb{0.0};
+  double width{0.0};
+  double cutoff{std::numeric_limits<double>::max()};
+
+  KernelType type{KernelType::gaussian};
+  enum class Periodicity {periodic,notperiodic};
+  Periodicity periodicity{Periodicity::notperiodic};
+  double min{0.0};
+  double max{0.0};
+  double max_minus_min{0.0};
+  double inv_max_minus_min{0.0};
+
+  double difference(double d1, double d2 ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   static void generateBins( const std::string& params, std::vector<std::string>& bins );
-  HistogramBead();
   std::string description() const ;
-  bool hasBeenSet() const;
+  //Non periodic constructor
+#pragma acc routine seq
+  explicit HistogramBead(KernelType, double l, double h, double w);
+  //with period constructor
+  HistogramBead(KernelType, double mlow, double mhigh, double l, double h, double w);
+  HistogramBead(const HistogramBead&);
+  HistogramBead(HistogramBead&&);
+  HistogramBead& operator=(const HistogramBead&);
+  HistogramBead& operator=(HistogramBead&&);
+
+#pragma acc routine seq
   void isNotPeriodic();
-  void isPeriodic( const double& mlow, const double& mhigh );
+  void isPeriodic( double mlow, double mhigh );
+  static KernelType getKernelType( const std::string& ktype );
   void setKernelType( const std::string& ktype );
+#pragma acc routine seq
+  void setKernelType( KernelType ktype );
   void set(const std::string& params, std::string& errormsg);
+#pragma acc routine seq
   void set(double l, double h, double w);
+#pragma acc routine seq
   double calculate(double x, double&df) const;
   double calculateWithCutoff( double x, double& df ) const;
-  double lboundDerivative( const double& x ) const;
-  double uboundDerivative( const double& x ) const;
+  double lboundDerivative( double x ) const;
+  double uboundDerivative( double x ) const;
   double getlowb() const ;
   double getbigb() const ;
   double getCutoff() const ;
 };
 
 inline
-bool HistogramBead::hasBeenSet() const {
-  return init;
-}
-
-inline
 void HistogramBead::isNotPeriodic() {
-  periodicity=notperiodic;
+  periodicity=Periodicity::notperiodic;
 }
 
 inline
-void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ) {
-  periodicity=periodic;
+void HistogramBead::isPeriodic( const double mlow, const double mhigh ) {
+  periodicity=Periodicity::periodic;
   min=mlow;
   max=mhigh;
   max_minus_min=max-min;
@@ -101,22 +117,6 @@ double HistogramBead::getbigb() const {
 inline
 double HistogramBead::getCutoff() const {
   return cutoff*width;
-}
-
-inline
-double HistogramBead::difference( const double& d1, const double& d2 ) const {
-  if(periodicity==notperiodic) {
-    return d2-d1;
-  } else if(periodicity==periodic) {
-    // Make sure the point is in the target range
-    double newx=d1*inv_max_minus_min;
-    newx=Tools::pbc(newx);
-    newx*=max_minus_min;
-    return d2-newx;
-  } else {
-    plumed_merror("periodicty was not set");
-  }
-  return 0;
 }
 
 }

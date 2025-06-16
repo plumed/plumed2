@@ -468,8 +468,7 @@ void KDE::setupNeighborsVector() {
     nneigh.resize( gmin.size() );
     if( kerneltype.find("bin")!=std::string::npos ) {
       std::size_t dd = kerneltype.find("-bin");
-      HistogramBead bead;
-      bead.setKernelType( kerneltype.substr(0,dd) );
+      HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ),0.0,1.0,0.5);
       Value* bw_arg=getPntrToArgument(bwargno);
       if( bw_arg->getRank()<2 ) {
         for(unsigned i=0; i<support.size(); ++i) {
@@ -626,8 +625,8 @@ void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
       } else if( kerneltype.find("bin")!=std::string::npos ) {
         double val=hh;
         std::size_t dd = kerneltype.find("-bin");
-        HistogramBead bead;
-        bead.setKernelType( kerneltype.substr(0,dd) );
+        HistogramBead bead(HistogramBead::getKernelType( kerneltype.substr(0,dd) ),
+                           0.0,1.0,0.5);
         Value* bw_arg=getPntrToArgument(bwargno);
         for(unsigned j=0; j<args.size(); ++j) {
           if( gridobject.isPeriodic(j) ) {
@@ -720,10 +719,8 @@ double KDE::evaluateKernel( const std::vector<double>& gpoint, const std::vector
 }
 
 void KDE::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
-  std::size_t dd = kerneltype.find("-bin");
-  std::string ktype=kerneltype.substr(0,dd);
+  //the beads are already set up with the correct kernel type
   for(unsigned j=0; j<bead.size(); ++j) {
-    bead[j].setKernelType( ktype );
     if( gridobject.isPeriodic(j) ) {
       double lcoord,  ucoord;
       Tools::convert( gmin[j], lcoord );
@@ -792,7 +789,10 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
         plumed_assert( bufstart + gridobject.getIndex( newargs )*(1+args.size())<buffer.size() );
         buffer[ bufstart + gridobject.getIndex( newargs )*(1+args.size()) ] += height;
       } else if( kerneltype.find("bin")!=std::string::npos ) {
-        std::vector<HistogramBead> bead( args.size() );
+        std::vector<HistogramBead> bead( args.size(),HistogramBead{
+          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) ),
+          0.0,1.0,0.5
+        } );
         setupHistogramBeads( bead );
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
@@ -850,7 +850,10 @@ void KDE::gatherForces( const unsigned& itask, const MultiValue& myvals, std::ve
   if( fabs(height)>epsilon ) {
     if( getName()=="KDE" ) {
       if( kerneltype.find("bin")!=std::string::npos ) {
-        std::vector<HistogramBead> bead( args.size() );
+        std::vector<HistogramBead> bead( args.size(),HistogramBead{
+          HistogramBead::getKernelType( kerneltype.substr(0,kerneltype.find("-bin")) ),
+          0.0,1.0,0.5
+        } );
         setupHistogramBeads( bead );
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
