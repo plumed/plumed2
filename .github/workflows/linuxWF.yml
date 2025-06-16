@@ -172,7 +172,7 @@ jobs:
         # echo "NVHPC_CUDA_HOME=$nvcudadir/12.3" >> $GITHUB_ENV
 
         echo "CXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
-        $nvcompdir/nvc++ -help -gpu
+        $nvcompdir/bin/nvc++ -help -gpu
         echo "CC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
         echo "FC=$nvcommdir/mpi/bin/mpif90" >> $GITHUB_ENV
         echo "Testing (at least the compilation) with openacc, discarding membranefusion due to some incompatibilities with nvhpc"
