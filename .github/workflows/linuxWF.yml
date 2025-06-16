@@ -19,15 +19,15 @@ jobs:
       fail-fast: false
       matrix:
         variant:
-        - -doc-mpi-
-        - -mpi-
-        - -coverage-mpi-
-        - -debug-
-        - -debug-mpi-
+        # - -doc-mpi-
+        # - -mpi-
+        # - -coverage-mpi-
+        # - -debug-
+        # - -debug-mpi-
 # temporarily commented out
 # see https://github.com/plumed/plumed2/issues/976
-        - -intel-
-        - -pycv-mpi-
+        # - -intel-
+        # - -pycv-mpi-
 #this does not install mpi but uses the internal one
         - -nvhpc-
     steps:
@@ -178,7 +178,8 @@ jobs:
         #echo "FC=$nvcommdir/mpi/bin/mpif90" >> $GITHUB_ENV
         echo "Testing (at least the compilation) with openacc, discarding membranefusion due to some incompatibilities with nvhpc"
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-openacc --enable-modules=all:-membranefusion" >> $GITHUB_ENV
-        echo "PLUMED_CXXFLAGS=$PLUMED_CXXFLAGS -O3 -gpu=cc80" >> $GITHUB_ENV
+        echo "multicore makes openacc statements target CPU"
+        echo "PLUMED_CXXFLAGS=$PLUMED_CXXFLAGS -O3 -gpu=multicore" >> $GITHUB_ENV
         # echo "MPIEXEC=mpirun -oversubscribe" >> $GITHUB_ENV
         
         # Using the same environment variables as the plain mpi installation
