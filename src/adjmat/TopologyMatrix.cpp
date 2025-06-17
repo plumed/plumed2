@@ -98,35 +98,14 @@ public:
   unsigned maxbins;
 /// The volume of the cells
   double cell_volume;
-/// switching function
-  std::string sfinput;
-  SwitchingFunction switchingFunction;
-  std::string cyinput;
-  SwitchingFunction cylinder_sw;
-  std::string lowsfinput;
-  SwitchingFunction low_sf;
   double binw_mat;
-  std::string thresholdinput;
+/// switching functions
+  SwitchingFunction switchingFunction;
+  SwitchingFunction cylinder_sw;
+  SwitchingFunction low_sf;
   SwitchingFunction threshold_switch;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<TopologyMatrix>* action );
-  TopologyMatrix& operator=( const TopologyMatrix& m ) {
-    sigma=m.sigma;
-    kerneltype=m.kerneltype;
-    maxbins = m.maxbins;
-    cell_volume = m.cell_volume;
-    std::string errors;
-    sfinput = m.sfinput;
-    switchingFunction.set( sfinput, errors );
-    lowsfinput = m.lowsfinput;
-    low_sf.set( lowsfinput, errors );
-    cyinput = m.cyinput;
-    cylinder_sw.set( cyinput, errors );
-    binw_mat = m.binw_mat;
-    thresholdinput = m.thresholdinput;
-    threshold_switch.set( thresholdinput, errors );
-    return *this;
-  }
   static void calculateWeight( const TopologyMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput& output );
@@ -154,6 +133,8 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 
 void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
   std::string errors;
+
+  std::string sfinput;
   action->parse("SWITCH",sfinput);
   if( sfinput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -163,6 +144,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading SWITCH keyword : " + errors );
   }
 
+  std::string lowsfinput;
   action->parse("CYLINDER_SWITCH",lowsfinput);
   if( lowsfinput.length()==0 ) {
     action->error("could not find CYLINDER_SWITCH keyword");
@@ -172,6 +154,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading CYLINDER_SWITCH keyword : " + errors );
   }
 
+  std::string cyinput;
   action->parse("RADIUS",cyinput);
   if( cyinput.length()==0 ) {
     action->error("could not find RADIUS keyword");
@@ -181,6 +164,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading RADIUS keyword : " + errors );
   }
 
+  std::string thresholdinput;
   action->parse("DENSITY_THRESHOLD",thresholdinput);
   if( thresholdinput.length()==0 ) {
     action->error("could not find DENSITY_THRESHOLD keyword");
@@ -203,7 +187,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
   maxbins = std::floor( switchingFunction.get_dmax() / binw_mat ) + 1;
   // Set the cell volume
   double r=cylinder_sw.get_d0() + cylinder_sw.get_r0();
-  cell_volume=binw_mat*pi*r*r;
+  cell_volume=binw_mat*PLMD::pi*r*r;
 }
 
 void TopologyMatrix::calculateWeight( const TopologyMatrix& data,

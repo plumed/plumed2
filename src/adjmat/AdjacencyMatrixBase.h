@@ -434,24 +434,32 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   }
   VectorView atoms( output.buffer.data(), nneigh + n3neigh );
   unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
-  Vector pos0( input.inputdata[3*task_index+0],input.inputdata[3*task_index+1],input.inputdata[3*task_index+2] );
+  Vector pos0( input.inputdata[3*task_index+0],
+               input.inputdata[3*task_index+1],
+               input.inputdata[3*task_index+2] );
   for(unsigned i=0; i<nneigh; ++i) {
     atoms[i][0] = input.inputdata[3*actiondata.nlist[fstart+i]+0] - pos0[0];
     atoms[i][1] = input.inputdata[3*actiondata.nlist[fstart+i]+1] - pos0[1];
     atoms[i][2] = input.inputdata[3*actiondata.nlist[fstart+i]+2] - pos0[2];
   }
   // Retrieve the set of third atoms
-  unsigned fstart3 = actiondata.nlists + task_index*(1+actiondata.natoms_per_three_list);
+  unsigned fstart3 = actiondata.nlists
+                     + task_index*(1+actiondata.natoms_per_three_list);
   for(unsigned i=1; i<n3neigh; ++i) {
-    atoms[nneigh+i-1][0] = input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
-    atoms[nneigh+i-1][1] = input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
-    atoms[nneigh+i-1][2] = input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
+    atoms[nneigh+i-1][0] =
+      input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
+    atoms[nneigh+i-1][1] =
+      input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
+    atoms[nneigh+i-1][2] =
+      input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
   }
   // Apply periodic boundary conditions to all the atoms
   if( actiondata.usepbc ) {
     input.pbc->apply( atoms, atoms.size() );
   }
-  AdjacencyMatrixInput adjinp( input.noderiv, input.pbc, atoms[0], n3neigh, atoms.data() + 3*nneigh );
+  AdjacencyMatrixInput adjinp( input.noderiv,
+                               input.pbc, atoms[0],
+                               n3neigh, atoms.data() + 3*nneigh );
   if( n3neigh>1 ) {
     adjinp.natoms = n3neigh-1;
   }
@@ -474,7 +482,9 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   for(unsigned i=1; i<nneigh; ++i ) {
     adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
     std::size_t valpos = (i-1)*ncomponents;
-    MatrixOutput adjout( nderiv, output.values.data() + valpos, output.derivatives.data() + valpos*nderiv );
+    MatrixOutput adjout( nderiv,
+                         output.values.data() + valpos,
+                         output.derivatives.data() + valpos*nderiv );
     T::calculateWeight( actiondata.matrixdata, adjinp, adjout );
     if( !actiondata.components ) {
       continue ;
@@ -545,7 +555,8 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
   if( actiondata.natoms_per_three_list>0 ) {
     n3neigh = actiondata.nlist_three[task_index];
   }
-  unsigned fstart3 = actiondata.nlists + task_index*(1+actiondata.natoms_per_three_list);
+  unsigned fstart3 = actiondata.nlists
+                     + task_index*(1+actiondata.natoms_per_three_list);
   for(unsigned j=1; j<n3neigh; ++j) {
     unsigned my3atom = actiondata.nlist_three[fstart3+j];
     force_indices.indices[0][n] = 3*my3atom;

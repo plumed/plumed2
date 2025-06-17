@@ -77,24 +77,11 @@ namespace adjmat {
 
 class HbondMatrix {
 public:
-  std::string OOinput;
   SwitchingFunction distanceOOSwitch;
-  std::string OHinput;
   SwitchingFunction distanceOHSwitch;
-  std::string anginput;
   SwitchingFunction angleSwitch;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<HbondMatrix>* action );
-  HbondMatrix& operator=( const HbondMatrix& m ) {
-    OOinput=m.OOinput;
-    std::string errors;
-    distanceOOSwitch.set(OOinput,errors);
-    OHinput=m.OHinput;
-    distanceOHSwitch.set(OHinput,errors);
-    anginput=m.anginput;
-    angleSwitch.set(anginput,errors);
-    return *this;
-  }
   static void calculateWeight( const HbondMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput& output );
@@ -120,6 +107,7 @@ void HbondMatrix::registerKeywords( Keywords& keys ) {
 
 void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
   std::string errors;
+  std::string OOinput;
   action->parse("SWITCH",OOinput);
   if( OOinput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -129,6 +117,7 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
     action->error("problem reading SWITCH keyword : " + errors );
   }
 
+  std::string OHinput;
   action->parse("HSWITCH",OHinput);
   if( OHinput.length()==0 ) {
     action->error("could not find HSWITCH keyword");
@@ -138,6 +127,7 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
     action->error("problem reading HSWITCH keyword : " + errors );
   }
 
+  std::string anginput;
   action->parse("ASWITCH",anginput);
   if( anginput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -159,19 +149,23 @@ void HbondMatrix::calculateWeight( const HbondMatrix& data,
   if( ood_l<epsilon) {
     return;
   }
-  double ood_df, ood_sw=data.distanceOOSwitch.calculateSqr( ood_l, ood_df );
+  double ood_df;
+  double ood_sw=data.distanceOOSwitch.calculateSqr( ood_l, ood_df );
 
   for(unsigned i=0; i<input.natoms; ++i) {
     Vector ohd(input.extra_positions[i][0],
                input.extra_positions[i][1],
                input.extra_positions[i][2]);
     double ohd_l=ohd.modulo2();
-    double ohd_df, ohd_sw=data.distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
+    double ohd_df;
+    double ohd_sw=data.distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
 
     Angle a;
-    Vector ood_adf, ohd_adf;
+    Vector ood_adf;
+    Vector ohd_adf;
     double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
-    double angle_df, angle_sw=data.angleSwitch.calculate( angle, angle_df );
+    double angle_df;
+    double angle_sw=data.angleSwitch.calculate( angle, angle_df );
     output.val[0] += ood_sw*ohd_sw*angle_sw;
 
     if( !input.noderiv ) {

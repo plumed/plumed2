@@ -58,18 +58,10 @@ w1: BRIDGE_MATRIX BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATION
 
 class BridgeMatrix {
 public:
-  std::string sf1input, sf2input;
-  SwitchingFunction sf1,sf2;
+  SwitchingFunction sf1;
+  SwitchingFunction sf2;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<BridgeMatrix>* action );
-  BridgeMatrix & operator=( const BridgeMatrix& m ) {
-    sf1input=m.sf1input;
-    sf2input=m.sf2input;
-    std::string errors;
-    sf1.set(sf1input,errors);
-    sf2.set(sf2input,errors);
-    return *this;
-  }
   static void calculateWeight( const BridgeMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput& output );
@@ -94,6 +86,7 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
 void BridgeMatrix::parseInput( AdjacencyMatrixBase<BridgeMatrix>* action ) {
   bool oneswitch;
   std::string errors;
+  std::string sf1input;
   action->parse("SWITCH",sf1input);
   if( sf1input.length()>0 ) {
     sf1.set(sf1input,errors);
@@ -101,7 +94,6 @@ void BridgeMatrix::parseInput( AdjacencyMatrixBase<BridgeMatrix>* action ) {
     if( errors.length()!=0 ) {
       action->error("problem reading SWITCH keyword : " + errors );
     }
-    sf2input=sf1input;
     sf2.set(sf1input,errors);
     if( errors.length()!=0 ) {
       action->error("problem reading SWITCH keyword : " + errors );
@@ -114,6 +106,7 @@ void BridgeMatrix::parseInput( AdjacencyMatrixBase<BridgeMatrix>* action ) {
       if( errors.length()!=0 ) {
         action->error("problem reading SWITCHA keyword : " + errors );
       }
+      std::string sf2input=sf1input;
       action->parse("SWITCHB",sf2input);
       if(sf2input.length()==0) {
         action->error("found SWITCHA keyword without SWITCHB");

@@ -71,10 +71,6 @@ public:
   double cutoff;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<DistanceMatrix>* action );
-  DistanceMatrix & operator=( const DistanceMatrix& m ) {
-    cutoff = m.cutoff;
-    return *this;
-  }
   static void calculateWeight( const DistanceMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput& output );
