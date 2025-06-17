@@ -48,7 +48,13 @@ namespace isdb {
 /*
 Bayesian refinement of AF models.
 
-More documentation coming soon..
+This action implements the Bayesian approach to refine AF models introduced here and here.
+It can be used to generate conformational ensembles of IDPs or refine AF models prior to small-molecule virtual screening.
+
+## Examples
+
+Complete tutorials can be found <a href="https://github.com/COSBlab/bAIes-IPD">here</a> and here.
+
 */
 //+ENDPLUMEDOC
 
