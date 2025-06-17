@@ -46,7 +46,9 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR BAIES
 /*
-Documentation coming soon...
+Bayesian refinement of AF models.
+
+More documentation coming soon..
 */
 //+ENDPLUMEDOC
 
@@ -100,7 +102,6 @@ void BAIES::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PRIOR", "type of prior to use (NONE, JEFFREYS, CAUCHY");
   keys.add("optional","TEMP", "temperature in kBt units");
   keys.add("optional","SIGMA_MIN", "minimum value of sigma");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("ene","default","Bayesian bAIes energy");
 }
 

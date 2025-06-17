@@ -51,7 +51,7 @@ namespace isdb {
 /*
 Bayesian single-structure and ensemble refinement with cryo-EM maps.
 
-This action implements the Bayesian approach for single-structure and ensemble refinement from cryo-EM maps introduced <a href="https://www.biorxiv.org/content/10.1101/2023.10.18.562710v1">here</a>.
+This action implements the Bayesian approach for single-structure and ensemble refinement from cryo-EM maps introduced <a href="https://doi.org/10.1371/journal.pcbi.1012180">here</a>.
 EMMIVox does not require fitting the cryo-EM map with a Gaussian Mixture Model, as done in [EMMI](EMMI.md), but uses directly the voxels in the deposited map.
 
 When run in single-replica mode, this action allows atomistic, flexible refinement (and B-factors inference) of an individual structure into a density map.
@@ -538,7 +538,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
-  log<<plumed.cite("Hoff, Thomasen, Lindorff-Larsen, Bonomi, bioRxiv (2023) doi: 10.1101/2023.10.18.562710");
+  log<<plumed.cite("Hoff, Thomasen, Lindorff-Larsen, Bonomi, PLoS Comput. Biol. 20 (2024) e1012180");
   if(!no_aver_ && nrep_>1) {
     log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   }
