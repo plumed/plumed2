@@ -33,26 +33,9 @@ namespace adjmat {
 
 class ContactMatrix {
 public:
-  int nn{0}, mm{0};
-  double r_0{-1.0}, d_0{0};
-  std::string swinput;
   SwitchingFunction switchingFunction;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<ContactMatrix>* action );
-  ContactMatrix& operator=( const ContactMatrix& m ) {
-    nn=m.nn;
-    mm=m.mm;
-    r_0=m.r_0;
-    d_0=m.d_0;
-    swinput=m.swinput;
-    std::string errors;
-    if( r_0>0 ) {
-      switchingFunction.set(nn,mm,r_0,d_0);
-    } else {
-      switchingFunction.set(swinput,errors);
-    }
-    return *this;
-  }
   static void calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
 };
 

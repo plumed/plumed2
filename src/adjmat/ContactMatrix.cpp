@@ -76,6 +76,7 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
 
 void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   std::string errors;
+  std::string swinput;
   action->parse("SWITCH",swinput);
   if( swinput.length()>0 ) {
     switchingFunction.set( swinput, errors );
@@ -83,6 +84,10 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
       action->error("problem reading switching function description " + errors);
     }
   } else {
+    int nn=0;
+    int mm=0;
+    double r_0=-1.0;
+    double d_0= 0.0;
     action->parse("NN",nn);
     action->parse("MM",mm);
     action->parse("R_0",r_0);
