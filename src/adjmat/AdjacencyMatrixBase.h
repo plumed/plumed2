@@ -51,14 +51,20 @@ public:
   Vector pos;
   std::size_t natoms{0};
   VectorView extra_positions;
-  AdjacencyMatrixInput( bool n, const Pbc* b, View<double,3> p, unsigned nep, double* ep ) : noderiv(n), pbc(b), pos(p[0],p[1],p[2]), extra_positions(ep,nep) {}
+  AdjacencyMatrixInput( bool n,
+                        const Pbc* b,
+                        View<double,3> p,
+                        unsigned nep,
+                        double* ep )
+    : noderiv(n), pbc(b), pos(p[0],p[1],p[2]), extra_positions(ep,nep) {}
 };
 
 class MatrixOutput {
 public:
   View<double,1> val;
   View<double,helpers::dynamic_extent> deriv;
-  MatrixOutput( std::size_t nd, double* vp, double* dp ) : val(vp), deriv(dp,nd) {}
+  MatrixOutput( std::size_t nd, double* vp, double* dp )
+    : val(vp), deriv(dp,nd) {}
 };
 
 template <class T>
@@ -73,7 +79,8 @@ private:
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
   unsigned nl_stride;
-  void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
+  void setupThirdAtomBlock( const std::vector<AtomNumber>& tc,
+                            std::vector<AtomNumber>& t );
 public:
   static constexpr size_t virialSize = 9;
   static void registerKeywords( Keywords& keys );
@@ -93,8 +100,14 @@ public:
                            const AdjacencyMatrixData<T>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static int getNumberOfValuesPerTask( std::size_t task_index, const AdjacencyMatrixData<T>& actiondata );
-  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const AdjacencyMatrixData<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const AdjacencyMatrixData<T>& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const AdjacencyMatrixData<T>& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -264,7 +277,8 @@ unsigned AdjacencyMatrixBase<T>::getNumberOfDerivatives() {
 }
 
 template <class T>
-void AdjacencyMatrixBase<T>::setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t ) {
+void AdjacencyMatrixBase<T>::setupThirdAtomBlock( const std::vector<AtomNumber>& tc,
+    std::vector<AtomNumber>& t ) {
   threeblocks.resize( tc.size() );
   unsigned base=t.size();
   for(unsigned i=0; i<tc.size(); ++i) {
@@ -276,7 +290,9 @@ void AdjacencyMatrixBase<T>::setupThirdAtomBlock( const std::vector<AtomNumber>&
 }
 
 template <class T>
-void AdjacencyMatrixBase<T>::setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut ) {
+void AdjacencyMatrixBase<T>::setLinkCellCutoff( const bool& symmetric,
+    const double& lcut,
+    double tcut ) {
   if( read_one_group && symmetric ) {
     getPntrToComponent(0)->setSymmetric( true );
   }

@@ -125,7 +125,10 @@ public:
   unsigned nbonds;
   View<const double,helpers::dynamic_extent> matrow;
   View<const std::size_t,helpers::dynamic_extent> bookrow;
-  NeighborCalcInput( unsigned task_index, unsigned n, const ArgumentBookeepingHolder& arg, double* d ):
+  NeighborCalcInput( unsigned task_index,
+                     unsigned n,
+                     const ArgumentBookeepingHolder& arg,
+                     double* d ):
     number(n),
     nind(0),
     ncols(arg.ncols),
@@ -161,10 +164,12 @@ void NeighborCalcInput::getSortedData( std::vector<std::pair<double,unsigned> >&
 class OneLowInput {
 public:
   unsigned number;
-  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+  static void calculate( const NeighborCalcInput& input,
+                         View<double,helpers::dynamic_extent>& output );
 };
 
-void OneLowInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+void OneLowInput::calculate( const NeighborCalcInput& input,
+                             View<double,helpers::dynamic_extent>& output ) {
   unsigned nv = input.bookrow[0];
   double min = input.matrow[0];
   for(unsigned i=1; i<input.nbonds; ++i) {
@@ -179,10 +184,12 @@ void OneLowInput::calculate( const NeighborCalcInput& input, View<double,helpers
 class NLowInput {
 public:
   unsigned number;
-  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+  static void calculate( const NeighborCalcInput& input,
+                         View<double,helpers::dynamic_extent>& output );
 };
 
-void NLowInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+void NLowInput::calculate( const NeighborCalcInput& input,
+                           View<double,helpers::dynamic_extent>& output ) {
   std::vector<std::pair<double,unsigned> > rows( input.nind );
   input.getSortedData( rows );
 
@@ -194,10 +201,12 @@ void NLowInput::calculate( const NeighborCalcInput& input, View<double,helpers::
 class OneHighInput {
 public:
   unsigned number;
-  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+  static void calculate( const NeighborCalcInput& input,
+                         View<double,helpers::dynamic_extent>& output );
 };
 
-void OneHighInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+void OneHighInput::calculate( const NeighborCalcInput& input,
+                              View<double,helpers::dynamic_extent>& output ) {
   unsigned nv = input.bookrow[0];
   double max = input.matrow[0];
   for(unsigned i=1; i<input.nbonds; ++i) {
@@ -212,10 +221,12 @@ void OneHighInput::calculate( const NeighborCalcInput& input, View<double,helper
 class NHighInput {
 public:
   unsigned number;
-  static void calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output );
+  static void calculate( const NeighborCalcInput& input,
+                         View<double,helpers::dynamic_extent>& output );
 };
 
-void NHighInput::calculate( const NeighborCalcInput& input, View<double,helpers::dynamic_extent>& output ) {
+void NHighInput::calculate( const NeighborCalcInput& input,
+                            View<double,helpers::dynamic_extent>& output ) {
   std::vector<std::pair<double,unsigned> > rows( input.nind );
   input.getSortedData( rows );
 
@@ -321,8 +332,15 @@ void Neighbors<T>::calculate() {
 }
 
 template <class T>
-void Neighbors<T>::performTask( std::size_t task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  T::calculate( NeighborCalcInput( task_index, actiondata.number, ArgumentBookeepingHolder( 0, input ), input.inputdata ), output.values );
+void Neighbors<T>::performTask( std::size_t task_index,
+                                const T& actiondata,
+                                ParallelActionsInput& input,
+                                ParallelActionsOutput& output ) {
+  T::calculate( NeighborCalcInput( task_index,
+                                   actiondata.number,
+                                   ArgumentBookeepingHolder( 0, input ),
+                                   input.inputdata ),
+                output.values );
 }
 
 template <class T>

@@ -70,7 +70,9 @@ public:
     sf2.set(sf2input,errors);
     return *this;
   }
-  static void calculateWeight( const BridgeMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const BridgeMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput& output );
 };
 
 typedef AdjacencyMatrixBase<BridgeMatrix> bmap;
@@ -131,13 +133,17 @@ void BridgeMatrix::parseInput( AdjacencyMatrixBase<BridgeMatrix>* action ) {
   action->setLinkCellCutoff( oneswitch, sf1.get_dmax() + sf2.get_dmax() );
 }
 
-void BridgeMatrix::calculateWeight( const BridgeMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void BridgeMatrix::calculateWeight( const BridgeMatrix& data,
+                                    const AdjacencyMatrixInput& input,
+                                    MatrixOutput& output ) {
   output.val[0] = 0;
   if( input.pos.modulo2()<epsilon ) {
     return;
   }
   for(unsigned i=0; i<input.natoms; ++i) {
-    Vector dij(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
+    Vector dij(input.extra_positions[i][0],
+               input.extra_positions[i][1],
+               input.extra_positions[i][2]);
     double dijm = dij.modulo2();
     double dw1, w1=data.sf1.calculateSqr( dijm, dw1 );
     if( dijm<epsilon ) {
