@@ -53,7 +53,7 @@ It can be used to generate conformational ensembles of IDPs or refine AF models 
 
 ## Examples
 
-Complete tutorials can be found <a href="https://github.com/COSBlab/bAIes-IPD">here</a> and here.
+Complete tutorials can be found <a href="https://github.com/COSBlab/bAIes-IDP">here</a> and here.
 
 */
 //+ENDPLUMEDOC
