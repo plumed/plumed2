@@ -140,7 +140,7 @@ struct ParallelActionsInput {
   /// Default constructor
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
-  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy)
+  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy - DR)
   ParallelActionsInput( const ParallelActionsInput& other ) = default;
   ParallelActionsInput(ParallelActionsInput&& other ) = default;
 
@@ -216,8 +216,8 @@ public:
   std::size_t rank;
   std::size_t ncols;
   std::size_t start;
-  View<const std::size_t,helpers::dynamic_extent> shape;
-  View<const std::size_t,helpers::dynamic_extent> bookeeping;
+  View<const std::size_t> shape;
+  View<const std::size_t> bookeeping;
   ArgumentBookeepingHolder( std::size_t argno, const ParallelActionsInput& inp ) :
     rank(inp.ranks[argno]),
     ncols(inp.ncols[argno]),
@@ -239,9 +239,14 @@ struct ParallelActionsOutput {
 
 class ForceIndexHolder {
 public:
-  View<std::size_t,helpers::dynamic_extent> threadsafe_derivatives_end;
-  View<std::size_t,helpers::dynamic_extent> tot_indices;
-  View2D<std::size_t,helpers::dynamic_extent,helpers::dynamic_extent> indices;
+  View<std::size_t> threadsafe_derivatives_end;
+  View<std::size_t> tot_indices;
+  View2D<std::size_t> indices;
+
+/// Constructs a ForceIndexHolder object.
+/// \param nc Definition here (number of components?)
+/// \param nd Definition here (number of derivatives?)
+/// \param ind Pointer to an array storing index data. It should have a size of at least 2*nc + nc*nd.
   ForceIndexHolder( std::size_t nc, std::size_t nd, std::size_t* ind ) :
     threadsafe_derivatives_end(ind,nc),
     tot_indices(ind+nc,nc),
@@ -249,13 +254,10 @@ public:
 };
 
 class ForceInput {
-private:
-  std::size_t nvals;
 public:
   View<double> force;
   View2D<double> deriv;
   ForceInput( std::size_t nv, double* f, std::size_t nd, double* d ) :
-    nvals(nv),
     force(f,nv),
     deriv(d,nv,nd) {}
 };
@@ -398,12 +400,12 @@ public:
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
                                       const ForceIndexHolder& force_indices,
                                       const ForceInput& fdata,
-                                      View<double,helpers::dynamic_extent> forces );
+                                      View<double> forces );
 /// This is used to gather forces that are not thread safe
   static void gatherThreadUnsafeForces( const ParallelActionsInput& input,
                                         const ForceIndexHolder& force_indices,
                                         const ForceInput& fdata,
-                                        View<double,helpers::dynamic_extent> forces );
+                                        View<double> forces );
 };
 
 template <class T>
@@ -657,8 +659,12 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       const auto forcesForApply_size = ffa.size();
 
       const auto ndev_per_task = nderivatives_per_task;
-      const auto nind_per_scalar = 2 + input.nderivatives_per_scalar;
+      const auto nind_per_scalar = (2 + input.nderivatives_per_scalar);
       const auto nind_per_task = input.nscalars*nind_per_scalar;
+
+                                          // indices
+                                          //   + i*nind_per_task
+                                          //   + j*input.ncomponents*nind_per_scalar 
 
       OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
       auto derivatives = dev.devicePtr();
@@ -707,7 +713,11 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
           std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, t_actiondata );
           for(unsigned j=0; j<nfpt; ++j) {
             // Create a force index holder
-            ForceIndexHolder force_indices( input.ncomponents, input.nderivatives_per_scalar, indices + i*nind_per_task + j*input.ncomponents*nind_per_scalar );
+            ForceIndexHolder force_indices( input.ncomponents,
+                                            input.nderivatives_per_scalar,
+                                            indices
+                                            + i*nind_per_task
+                                            + j*input.ncomponents*nind_per_scalar );
             // Get the indices for forces
             T::getForceIndices( task_index,
                                 j,
@@ -718,15 +728,20 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
 
             // Create a force input object
             ForceInput finput( myinput.nscalars,
-                               value_stash_data+input.nscalars*task_index + j*input.ncomponents,
+                               value_stash_data
+                               +input.nscalars*task_index
+                               + j*input.ncomponents,
                                input.nderivatives_per_scalar,
-                               derivatives + i*ndev_per_task + j*input.ncomponents*input.nderivatives_per_scalar );
+                               derivatives
+                               + i*ndev_per_task
+                               + j*input.ncomponents*input.nderivatives_per_scalar );
 
             // Gather forces that can be gathered locally
             gatherThreadSafeForces( input,
                                     force_indices,
                                     finput,
-                                    View<double>(forcesForApply_data,forcesForApply_size));
+                                    View<double>(forcesForApply_data,
+                                                 forcesForApply_size));
           }
         }
 
@@ -745,15 +760,16 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                                               + j*input.ncomponents*nind_per_scalar );
               auto fdata = ForceInput { input.nscalars,
                                         value_stash_data
-                                        +input.nscalars*task_index
+                                        + input.nscalars*task_index
                                         + j*input.ncomponents,
                                         input.nderivatives_per_scalar,
                                         derivatives
                                         + t*ndev_per_task
                                         + j*input.ncomponents*input.nderivatives_per_scalar };
               for(unsigned i=0; i<input.ncomponents; ++i) {
-                for(unsigned d=force_indices.threadsafe_derivatives_end[i]; d<force_indices.tot_indices[i]; ++d) {
-                  if( force_indices.indices[i][d]==v ) {
+                for(unsigned d=force_indices.threadsafe_derivatives_end[i];
+                    d<force_indices.tot_indices[i]; ++d) {
+                  if( (force_indices.indices[i][d]- input.threadunsafe_forces_start)==v ) {
                     tmp += fdata.force[i]*fdata.deriv[i][d];
                     break;
                   }
@@ -796,7 +812,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       std::vector<double> fake_vals( myinput.nscalars );
       std::vector<double> derivatives( nderivatives_per_task );
       std::vector<std::size_t> indices( (2+myinput.nderivatives_per_scalar)*myinput.ncomponents );
-      ForceIndexHolder force_indices( myinput.ncomponents, myinput.nderivatives_per_scalar, indices.data() );
+      ForceIndexHolder force_indices( myinput.ncomponents,
+                                      myinput.nderivatives_per_scalar,
+                                      indices.data() );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         std::size_t task_index = partialTaskList[i];
@@ -822,21 +840,26 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
 
           // Create a force input object
           ForceInput finput( myinput.nscalars,
-                             value_stash.data()+myinput.nscalars*task_index + j*myinput.ncomponents,
+                             value_stash.data()
+                             + myinput.nscalars*task_index
+                             + j*myinput.ncomponents,
                              myinput.nderivatives_per_scalar,
-                             derivatives.data() + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
+                             derivatives.data()
+                             + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
 
           // Gather forces that are thread safe
           gatherThreadSafeForces( myinput,
                                   force_indices,
                                   finput,
-                                  View<double,helpers::dynamic_extent>(forcesForApply.data(),forcesForApply.size()) );
+                                  View<double>(forcesForApply.data(),
+                                               forcesForApply.size()) );
 
           // Gather forces that are not thread safe
           gatherThreadUnsafeForces( myinput,
                                     force_indices,
                                     finput,
-                                    View<double,helpers::dynamic_extent>(omp_forces[t].data(),omp_forces[t].size()) );
+                                    View<double>(omp_forces[t].data(),
+                                                 omp_forces[t].size()) );
         }
       }
 
@@ -855,7 +878,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double,helpers::dynamic_extent> forces ) {
+    View<double> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     double ff = fdata.force[i];
     for(unsigned j=0; j<force_indices.threadsafe_derivatives_end[i]; ++j) {
@@ -865,14 +888,16 @@ void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput&
 }
 
 template <class T>
-void ParallelTaskManager<T>::gatherThreadUnsafeForces( const ParallelActionsInput& input,
+void ParallelTaskManager<T>::gatherThreadUnsafeForces(const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double,helpers::dynamic_extent> forces ) {
+    View<double> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     double ff = fdata.force[i];
-    for(unsigned j=force_indices.threadsafe_derivatives_end[i]; j<force_indices.tot_indices[i]; ++j) {
-      forces[ force_indices.indices[i][j] - input.threadunsafe_forces_start ] += ff*fdata.deriv[i][j];
+    for(unsigned j=force_indices.threadsafe_derivatives_end[i];
+        j<force_indices.tot_indices[i]; ++j) {
+      forces[ force_indices.indices[i][j] - input.threadunsafe_forces_start ]
+      += ff*fdata.deriv[i][j];
     }
   }
 }

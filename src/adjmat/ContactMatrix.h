@@ -22,6 +22,10 @@
 #ifndef __PLUMED_adjmat_ContactMatrix_h
 #define __PLUMED_adjmat_ContactMatrix_h
 
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
+
 #include "AdjacencyMatrixBase.h"
 #include "tools/SwitchingFunction.h"
 
@@ -31,12 +35,27 @@ class SwitchingFunction;
 
 namespace adjmat {
 
-class ContactMatrix {
-public:
+struct ContactMatrix {
+#ifdef __PLUMED_USE_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
+#endif
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<ContactMatrix>* action );
-  static void calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const ContactMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput output );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+    switchingFunction.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 }

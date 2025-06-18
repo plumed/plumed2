@@ -102,14 +102,16 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
 }
 
-void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void ContactMatrix::calculateWeight( const ContactMatrix& data,
+                                     const AdjacencyMatrixInput& input,
+                                     MatrixOutput output ) {
   double mod2 = input.pos.modulo2();
-  if( mod2<epsilon ) {
+  if( mod2<PLMD::epsilon ) {
     return;  // Atoms can't be bonded to themselves
   }
   double dfunc;
   output.val[0] = data.switchingFunction.calculateSqr( mod2, dfunc );
-  if( output.val[0]<epsilon ) {
+  if( output.val[0]<PLMD::epsilon ) {
     output.val[0] = 0.0;
     return;
   }

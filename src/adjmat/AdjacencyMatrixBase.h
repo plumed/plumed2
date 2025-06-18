@@ -32,20 +32,40 @@ namespace PLMD {
 namespace adjmat {
 
 template <class T>
-class AdjacencyMatrixData {
-public:
+struct AdjacencyMatrixData {
   T matrixdata;
   bool usepbc{true};
   bool components{false};
   std::size_t nlists{0};
   unsigned natoms_per_list{0};
-  std::vector<std::size_t> nlist;
+  std::vector<std::size_t> nlist_v;
+  std::size_t *nlist{nullptr};
   unsigned natoms_per_three_list{0};
-  std::vector<std::size_t> nlist_three;
+  std::vector<std::size_t> nlist_three_v;
+  std::size_t* nlist_three{nullptr};
+  void update() {
+    nlist=nlist_v.data();
+    nlist_three=nlist_three_v.data();
+  }
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],usepbc,components,nlists, \
+                              natoms_per_list,nlist[0:nlist_v.size()], \
+                              natoms_per_three_list, \
+                              nlist_three[0:nlist_three_v.size()])
+    matrixdata.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    matrixdata.removeFromACCDevice();
+#pragma acc exit data delete(nlist_three[0:nlist_three_v.size()], \
+                             natoms_per_three_list, \
+                             nlist[0:nlist_v.size()], natoms_per_list, \
+                             nlists, components, usepbc, this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
-class AdjacencyMatrixInput {
-public:
+struct AdjacencyMatrixInput {
   bool noderiv{false};
   const Pbc* pbc;
   Vector pos;
@@ -59,10 +79,9 @@ public:
     : noderiv(n), pbc(b), pos(p[0],p[1],p[2]), extra_positions(ep,nep) {}
 };
 
-class MatrixOutput {
-public:
+struct MatrixOutput {
   View<double,1> val;
-  View<double,helpers::dynamic_extent> deriv;
+  View<double> deriv;
   MatrixOutput( std::size_t nd, double* vp, double* dp )
     : val(vp), deriv(dp,nd) {}
 };
@@ -99,7 +118,7 @@ public:
   static void performTask( std::size_t task_index,
                            const AdjacencyMatrixData<T>& actiondata,
                            ParallelActionsInput& input,
-                           ParallelActionsOutput& output );
+                           ParallelActionsOutput output );
   static int getNumberOfValuesPerTask( std::size_t task_index,
                                        const AdjacencyMatrixData<T>& actiondata );
   static void getForceIndices( std::size_t task_index,
@@ -344,7 +363,8 @@ void AdjacencyMatrixBase<T>::calculate() {
   } else {
     error("neighbour list non updates are not actually implemented or tested");
   }
-  unsigned fbsize=0, lstart = getConstPntrToComponent(0)->getShape()[0];
+  unsigned fbsize=0;
+  unsigned lstart = getConstPntrToComponent(0)->getShape()[0];
   // This is triggered if you have GROUPA/GROUPB
   // in that case the second index for the matrix is recovered from the neighbour list
   // by subtracting the number of atoms in GROUPA as we do here.
@@ -357,7 +377,7 @@ void AdjacencyMatrixBase<T>::calculate() {
   for(unsigned i=0; i<ntasks; ++i) {
     ltmp_pos2[i] = ActionAtomistic::getPosition(pTaskList[i]);
   }
-  AdjacencyMatrixData<T> & matdata = taskmanager.getActionInput();
+  auto & matdata = taskmanager.getActionInput();
   // Now update the neighbor lists
   if( getStep()%nl_stride==0 ) {
     // Build the link cells
@@ -365,14 +385,31 @@ void AdjacencyMatrixBase<T>::calculate() {
     for(unsigned i=0; i<ablocks.size(); ++i) {
       ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
     }
-    linkcells.createNeighborList( getConstPntrToComponent(0)->getShape()[0], ltmp_pos2, pTaskList, pTaskList, ltmp_pos, ablocks, getPbc(), matdata.natoms_per_list, matdata.nlist );
+    linkcells.createNeighborList( getConstPntrToComponent(0)->getShape()[0],
+                                  ltmp_pos2,
+                                  pTaskList,
+                                  pTaskList,
+                                  ltmp_pos,
+                                  ablocks,
+                                  getPbc(),
+                                  matdata.natoms_per_list,
+                                  matdata.nlist_v );
     if( threeblocks.size()>0 ) {
       std::vector<Vector> ltmp_pos3( threeblocks.size() );
       for(unsigned i=0; i<threeblocks.size(); ++i) {
         ltmp_pos3[i]=ActionAtomistic::getPosition( threeblocks[i] );
       }
-      threecells.createNeighborList( getConstPntrToComponent(0)->getShape()[0], ltmp_pos2, pTaskList, pTaskList, ltmp_pos3, threeblocks, getPbc(), matdata.natoms_per_three_list, matdata.nlist_three );
+      threecells.createNeighborList( getConstPntrToComponent(0)->getShape()[0],
+                                     ltmp_pos2,
+                                     pTaskList,
+                                     pTaskList,
+                                     ltmp_pos3,
+                                     threeblocks,
+                                     getPbc(),
+                                     matdata.natoms_per_three_list,
+                                     matdata.nlist_three_v);
     }
+    matdata.update();
   } else {
     error("neighbour list non updates are not actually implemented or tested");
   }
@@ -427,11 +464,11 @@ template <class T>
 void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     const AdjacencyMatrixData<T>& actiondata,
     ParallelActionsInput& input,
-    ParallelActionsOutput& output ) {
-  unsigned n3neigh=0, nneigh=actiondata.nlist[task_index];
-  if( actiondata.natoms_per_three_list>0 ) {
-    n3neigh = actiondata.nlist_three[task_index];
-  }
+    ParallelActionsOutput output ) {
+
+  unsigned nneigh=actiondata.nlist[task_index];
+  unsigned n3neigh=(actiondata.natoms_per_three_list>0) ?
+                   actiondata.nlist_three[task_index]:0;
   VectorView atoms( output.buffer.data(), nneigh + n3neigh );
   unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
   Vector pos0( input.inputdata[3*task_index+0],
@@ -442,24 +479,31 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     atoms[i][1] = input.inputdata[3*actiondata.nlist[fstart+i]+1] - pos0[1];
     atoms[i][2] = input.inputdata[3*actiondata.nlist[fstart+i]+2] - pos0[2];
   }
-  // Retrieve the set of third atoms
-  unsigned fstart3 = actiondata.nlists
-                     + task_index*(1+actiondata.natoms_per_three_list);
-  for(unsigned i=1; i<n3neigh; ++i) {
-    atoms[nneigh+i-1][0] =
-      input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
-    atoms[nneigh+i-1][1] =
-      input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
-    atoms[nneigh+i-1][2] =
-      input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
+
+  if( actiondata.natoms_per_three_list>0 ) {
+    // Retrieve the set of third atoms
+    unsigned fstart3 = actiondata.nlists
+                       + task_index*(1+actiondata.natoms_per_three_list);
+    for(unsigned i=1; i<n3neigh; ++i) {
+      atoms[nneigh+i-1][0] =
+        input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
+      atoms[nneigh+i-1][1] =
+        input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
+      atoms[nneigh+i-1][2] =
+        input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
+    }
   }
+
   // Apply periodic boundary conditions to all the atoms
   if( actiondata.usepbc ) {
     input.pbc->apply( atoms, atoms.size() );
   }
   AdjacencyMatrixInput adjinp( input.noderiv,
-                               input.pbc, atoms[0],
-                               n3neigh, atoms.data() + 3*nneigh );
+                               input.pbc,
+                               atoms[0],
+                               n3neigh,
+                               atoms.data() + 3*nneigh );
+
   if( n3neigh>1 ) {
     adjinp.natoms = n3neigh-1;
   }
@@ -551,21 +595,21 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
     return ;
   }
   force_indices.threadsafe_derivatives_end[0] = 0;
-  unsigned n = 6, n3neigh = 0;
+  unsigned n = 6;
   if( actiondata.natoms_per_three_list>0 ) {
-    n3neigh = actiondata.nlist_three[task_index];
-  }
-  unsigned fstart3 = actiondata.nlists
-                     + task_index*(1+actiondata.natoms_per_three_list);
-  for(unsigned j=1; j<n3neigh; ++j) {
-    unsigned my3atom = actiondata.nlist_three[fstart3+j];
-    force_indices.indices[0][n] = 3*my3atom;
-    force_indices.indices[0][n+1] = 3*my3atom+1;
-    force_indices.indices[0][n+2] = 3*my3atom+2;
-    n += 3;
+    unsigned n3neigh = actiondata.nlist_three[task_index];
+    unsigned fstart3 = actiondata.nlists
+                       + task_index*(1+actiondata.natoms_per_three_list);
+    for(unsigned j=1; j<n3neigh; ++j) {
+      unsigned my3atom = actiondata.nlist_three[fstart3+j];
+      force_indices.indices[0][n  ] = 3*my3atom;
+      force_indices.indices[0][n+1] = 3*my3atom+1;
+      force_indices.indices[0][n+2] = 3*my3atom+2;
+      n += 3;
+    }
   }
   unsigned virstart = ntotal_force - 9;
-  force_indices.indices[0][n] = virstart + 0;
+  force_indices.indices[0][n  ] = virstart + 0;
   force_indices.indices[0][n+1] = virstart + 1;
   force_indices.indices[0][n+2] = virstart + 2;
   force_indices.indices[0][n+3] = virstart + 3;
