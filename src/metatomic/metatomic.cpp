@@ -288,12 +288,15 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
 
     size_t n_species = 0;
     if (all_atoms.empty()) {
-        std::vector<AtomNumber> t;
+        // first parse each of the 'SPECIES' entry
+        std::vector<std::vector<AtomNumber>> atoms_per_species;
         int i = 0;
         while (true) {
             i += 1;
-            this->parseAtomList("SPECIES", i, t);
-            if (t.empty()) {
+            auto atoms = std::vector<AtomNumber>();
+            this->parseAtomList("SPECIES", i, atoms);
+
+            if (atoms.empty()) {
                 break;
             }
 
@@ -312,14 +315,34 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
             }
 
             log.printf("  atoms with type %d are: ", type);
-            for(unsigned j=0; j<t.size(); j++) {
-                log.printf("%d ", t[j]);
-                all_atoms.push_back(t[j]);
-                atomic_types.push_back(type);
+            for(unsigned j=0; j<atoms.size(); j++) {
+                log.printf("%d ", atoms[j]);
             }
-            log.printf("\n"); t.resize(0);
+            log.printf("\n");
 
             n_species += 1;
+            atoms_per_species.emplace_back(std::move(atoms));
+        }
+
+        size_t n_atoms = 0;
+        for (const auto& atoms: atoms_per_species) {
+            n_atoms += atoms.size();
+        }
+
+        // then fill the atomic_types as required
+        atomic_types.resize(n_atoms, 0);
+        i = 0;
+        for (const auto& atoms: atoms_per_species) {
+            i += 1;
+
+            int32_t type = i;
+            if (has_custom_types) {
+                type = species_to_types[static_cast<size_t>(i - 1)];
+            }
+
+            for (const auto& atom: atoms) {
+                atomic_types[atom.index()] = type;
+            }
         }
     } else {
         n_species = 1;
@@ -339,8 +362,14 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
         );
     }
 
-    this->atomic_types_ = torch::tensor(std::move(atomic_types));
+    // request atoms in order
+    all_atoms.clear();
+    for (size_t i=0; i<atomic_types.size(); i++) {
+        all_atoms.push_back(AtomNumber::index(i));
+    }
     this->requestAtoms(all_atoms);
+
+    this->atomic_types_ = torch::tensor(std::move(atomic_types));
 
     this->check_consistency_ = false;
     this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);

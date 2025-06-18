@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 import torch
+import metatensor.torch as mts
 from metatensor.torch import Labels, TensorBlock, TensorMap
 from metatomic.torch import (
     AtomisticModel,
@@ -51,9 +52,6 @@ class TestCollectiveVariable(torch.nn.Module):
         device = torch.device("cpu")
         if len(systems) > 0:
             device = systems[0].positions.device
-
-        if selected_atoms is not None:
-            raise ValueError("selected atoms is not supported")
 
         output = outputs["features"]
 
@@ -117,6 +115,14 @@ class TestCollectiveVariable(torch.nn.Module):
             blocks=[block],
         )
 
+        if selected_atoms is not None:
+            if output.per_atom:
+                cv = mts.slice(cv, axis="samples", selection=selected_atoms)
+            else:
+                raise ValueError(
+                    "selected atoms is only supported with per-atom output"
+                )
+
         return {"features": cv}
 
     def requested_neighbor_lists(self) -> List[NeighborListOptions]:
@@ -130,8 +136,8 @@ capabilities = ModelCapabilities(
     interaction_range=CUTOFF,
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
-    atomic_types=[6],
-    dtype="float32",
+    atomic_types=[6, 8],
+    dtype="float64",
 )
 
 # export all variations of the model
@@ -150,8 +156,8 @@ capabilities = ModelCapabilities(
     interaction_range=CUTOFF,
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
-    atomic_types=[6],
-    dtype="float32",
+    atomic_types=[6, 8],
+    dtype="float64",
 )
 
 cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
