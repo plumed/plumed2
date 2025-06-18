@@ -20,16 +20,3 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FunctionOfVector.h"
-#include "Custom.h"
-
-namespace PLMD {
-namespace function {
-
-template <>
-std::string FunctionOfVector<Custom>::writeInGraph() const {
-  std::size_t und = getName().find_last_of("_");
-  return getName().substr(0,und) + "\nFUNC=" + taskmanager.getActionInput().f.func;
-}
-
-}
-}
