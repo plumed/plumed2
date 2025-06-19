@@ -53,10 +53,6 @@ jobs:
         echo "$HOME/opt/bin" >> $GITHUB_PATH
         # path required for pytest:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
-        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
     - name: Install generic packages
       run: |
@@ -77,28 +73,31 @@ jobs:
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
-        pip install --user Cython
-        pip install --user numpy
-        pip install --user pytest
-        pip install --user six ;
-        pip install --user pandas ;
-        pip install --user mdtraj ;
-        pip install --user MDAnalysis ;
-        python -c "import MDAnalysis" ;
-        python -c "import mdtraj" ;
-    - name: Install Libtorch
-      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # libtorch is not compiled with GLIBCXX_DEBUG
+        pip install --user --extra-index-url=https://download.pytorch.org/whl/cpu \
+              Cython \
+              numpy \
+              pytest \
+              six \
+              pandas \
+              mdtraj \
+              MDAnalysis \
+              "torch>=2.7" \
+              "metatomic-torch>=0.1,<0.2" \
+              "featomic-torch==0.7.0"
+
+        # torch 2.7 above is the first one to use cxx11 ABI for the PyPI wheels
+
+    - name: Configure libmetatomic & libtorch
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # the libraries on PyPI are not compiled with GLIBCXX_DEBUG
       run: |
-        # added by luigibonati
-        mkdir -p $HOME/opt/
-        cd $HOME/opt/ # GB: install in $HOME/opt/libtorch
-        wget --no-check-certificate https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.0%2Bcpu.zip ;
-        unzip libtorch-cxx11-abi-shared-with-deps-2.0.0+cpu.zip ;
-        echo "LIBRARY_PATH=$PWD/libtorch/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$PWD/libtorch/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "CPATH=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$CPATH" >> $GITHUB_ENV
-        echo "INCLUDE=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$INCLUDE" >> $GITHUB_ENV
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
+        PIP_CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags)
+        PIP_LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags)
+
+        echo "LDFLAGS=$PIP_LDFLAGS $LDFLAGS" >> $GITHUB_ENV
+        echo "CPPFLAGS=$PIP_CPPFLAGS $CPPFLAGS" >> $GITHUB_ENV
+
+        # the flags above enable the use of both libmetatomic and libtorch
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |
@@ -167,15 +166,18 @@ jobs:
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=$HOME/opt
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
         ccache -s -M 100M
+
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
       run: |
+         export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH
+         export CPATH=$HOME/opt/include:CPATH
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
               sleep 15
