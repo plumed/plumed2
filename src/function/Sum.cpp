@@ -130,7 +130,7 @@ Sum::Sum(const ActionOptions&ao):
       error("input to PERIODIC keyword does not make sense");
     }
     setNotPeriodic();
-  } else if( period.size()!=2 ) {
+  } else if( period.size()==2 ) {
     setPeriodic( period[0], period[1] );
   } else {
     error("input to PERIODIC keyword does not make sense");
