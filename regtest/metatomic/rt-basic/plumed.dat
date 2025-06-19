@@ -4,8 +4,9 @@ scalar_global: METATOMIC ...
       # DEVICE=cuda
       # DEVICE=mps
 
-      SPECIES1=1-9
-      SPECIES_TO_TYPES=6
+      SPECIES1=1,4,7
+      SPECIES2=2,3,5,6,8,9
+      SPECIES_TO_TYPES=6,8
 ...
 
 PRINT ARG=scalar_global FILE=scalar_global FMT=%8.2f
@@ -17,8 +18,11 @@ scalar_per_atom: METATOMIC ...
       # DEVICE=cuda
       # DEVICE=mps
 
-      SPECIES1=1-9
-      SPECIES_TO_TYPES=6
+      SPECIES1=1,4,7
+      SPECIES2=2,3,5,6,8,9
+      SPECIES_TO_TYPES=6,8
+
+      SELECTED_ATOMS=1,4,2,8
 ...
 
 PRINT ARG=scalar_per_atom FILE=scalar_per_atom FMT=%8.2f
@@ -30,8 +34,9 @@ vector_global: METATOMIC ...
       # DEVICE=cuda
       # DEVICE=mps
 
-      SPECIES1=1-9
-      SPECIES_TO_TYPES=6
+      SPECIES1=1,4,7
+      SPECIES2=2,3,5,6,8,9
+      SPECIES_TO_TYPES=6,8
 ...
 
 PRINT ARG=vector_global FILE=vector_global FMT=%8.2f
@@ -43,8 +48,9 @@ vector_per_atom: METATOMIC ...
       # DEVICE=cuda
       # DEVICE=mps
 
-      SPECIES1=1-9
-      SPECIES_TO_TYPES=6
+      SPECIES1=1,4,7
+      SPECIES2=2,3,5,6,8,9
+      SPECIES_TO_TYPES=6,8
 ...
 
 PRINT ARG=vector_per_atom FILE=vector_per_atom FMT=%8.2f

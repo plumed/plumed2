@@ -199,7 +199,7 @@ BAIES::BAIES(const ActionOptions&ao):
   log<<"\n";
 }
 
-void BAIES::read_data_file(std::string datafile, std::vector<AtomNumber> atoms, double smin) {
+void BAIES::read_data_file(const std::string datafile, const std::vector<AtomNumber> atoms, double smin) {
   unsigned id, ai, aj;
   double mu, sigma;
 // map serials to index in position array
