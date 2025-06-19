@@ -51,6 +51,7 @@ Bayesian refinement of AF models.
 This action implements the Bayesian approach to refine AF models introduced here and here.
 It can be used to generate conformational ensembles of IDPs or refine AF models prior to small-molecule virtual screening.
 
+\par Examples
 ## Examples
 
 Complete tutorials can be found <a href="https://github.com/COSBlab/bAIes-IDP">here</a> and here.
