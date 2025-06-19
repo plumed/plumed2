@@ -237,8 +237,7 @@ struct ParallelActionsOutput {
       buffer(b,nb) {}
 };
 
-class ForceIndexHolder {
-public:
+struct ForceIndexHolder {
   View<std::size_t> threadsafe_derivatives_end;
   View<std::size_t> tot_indices;
   View2D<std::size_t> indices;
@@ -247,10 +246,29 @@ public:
 /// \param nc Definition here (number of components?)
 /// \param nd Definition here (number of derivatives?)
 /// \param ind Pointer to an array storing index data. It should have a size of at least 2*nc + nc*nd.
-  ForceIndexHolder( std::size_t nc, std::size_t nd, std::size_t* ind ) :
-    threadsafe_derivatives_end(ind,nc),
-    tot_indices(ind+nc,nc),
-    indices(ind+2*nc,nc,nd) {}
+  static ForceIndexHolder makeForceIndexHolder(const std::size_t nc,
+      const std::size_t nd,
+      std::size_t* ind ) {
+    return ForceIndexHolder{
+      {ind,nc},
+      {ind+nc,nc},
+      {ind+2*nc,nc,nd}
+    };
+  }
+
+/// \brief Returns the number of indexes needed by a ForceIndexHolder
+///        for each scalar.
+///
+/// \param nc Definition here (number of components?)
+/// \param nd Definition here (number of derivatives?)
+///
+/// \return the number of indexes needed by a ForceIndexHolder
+///         for each scalar.
+  static size_t indexesPerScalar(const std::size_t nc, const std::size_t nd) {
+    return nc //threadsafe_derivatives_end
+           + nc //tot_indices
+           + nc*nd; //indices
+  }
 };
 
 class ForceInput {
@@ -624,10 +642,154 @@ void ParallelTaskManager<T>::runAllTasks() {
   action->transferStashToValues( value_stash );
 }
 
+#ifdef __PLUMED_USE_OPENACC
+template <class T>
+void applyForcesWithACC(PLMD::View<double> forcesForApply,
+                        typename T::input_type actiondata,
+                        ParallelActionsInput input,
+                        const std::vector<double>& value_stash,
+                        std::vector<unsigned> & partialTaskList,
+                        const unsigned nactive_tasks,
+                        const std::size_t ndev_per_task,
+                        const std::size_t workspaceSize
+                       ) {
+  auto myinput_acc = OpenACC::fromToDataHelper(input);
+  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
+
+  //template type is deduced
+  OpenACC::memoryManager vs{value_stash};
+  auto value_stash_data = vs.devicePtr();
+
+  OpenACC::memoryManager ptl{partialTaskList};
+  auto partialTaskList_data = ptl.devicePtr();
+
+  OpenACC::memoryManager ffa {forcesForApply};
+  auto forcesForApply_data = ffa.devicePtr();
+  const auto forcesForApply_size = ffa.size();
+
+  const auto nind_per_scalar = ForceIndexHolder::indexesPerScalar(input.ncomponents,
+                               input.nderivatives_per_scalar);
+  //nscalars is >=ncomponents (see setupParallelTaskManager )
+  const auto nind_per_task = nind_per_scalar*input.nscalars;
+
+  OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
+  auto derivatives = dev.devicePtr();
+  OpenACC::memoryManager<std::size_t> ind{nind_per_task*nactive_tasks};
+  auto indices = ind.devicePtr();
+  OpenACC::memoryManager<double> vtmp{input.ncomponents*nactive_tasks};
+  auto valstmp = vtmp.devicePtr();
+  OpenACC::memoryManager<double> buff{};
+  if ( workspaceSize>0 ) {
+    buff.resize(workspaceSize*nactive_tasks);
+  }
+  auto buffer = buff.devicePtr();
+
+#pragma acc data present(input,actiondata) \
+                  copyin(nactive_tasks, \
+                         forcesForApply_size, \
+                         ndev_per_task, nind_per_task,nind_per_scalar, \
+                         workspaceSize) \
+               deviceptr(derivatives, \
+                         indices, \
+                         value_stash_data, \
+                         partialTaskList_data, \
+                         forcesForApply_data, \
+                         valstmp, \
+                         buffer) \
+                 default(none)
+  {
+#pragma acc parallel loop
+    for(unsigned t=0; t<nactive_tasks; ++t) {
+      std::size_t task_index = partialTaskList_data[t];
+      ParallelActionsOutput myout { input.nscalars,
+                                    valstmp+input.nscalars*t,
+                                    ndev_per_task,
+                                    derivatives+ndev_per_task*t,
+                                    workspaceSize,
+                                    (workspaceSize>0)?
+                                    buffer+workspaceSize*t
+                                    :nullptr  };
+      // Calculate the stuff in the loop for this action
+      T::performTask( task_index, actiondata, input, myout );
+#define forces_indicesArg(taskID,scalarID) ForceIndexHolder::makeForceIndexHolder(input.ncomponents, \
+                          input.nderivatives_per_scalar, \
+                          indices + taskID*nind_per_task + scalarID*nind_per_scalar)
+      // If this is a matrix this returns a number that isn't one as we have to loop over the columns
+      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+#pragma acc loop seq
+      for(unsigned vID=0; vID<nvpt; ++vID) {
+        auto force_indices = forces_indicesArg(t,vID);
+        printf("force_indices: %p,%p,%p\n",
+               force_indices.threadsafe_derivatives_end.data(),
+               force_indices.tot_indices.data(),
+               force_indices.indices.data());
+        // Create a force index holder
+        // Get the indices for forces
+        T::getForceIndices( task_index,
+                            vID,
+                            forcesForApply_size,
+                            actiondata,
+                            input,
+                            force_indices );
+
+        // Create a force input object
+        ForceInput finput( input.nscalars,
+                           value_stash_data
+                           +input.nscalars*task_index
+                           + vID*input.ncomponents,
+                           input.nderivatives_per_scalar,
+                           derivatives + t*ndev_per_task
+                           + vID*input.ncomponents*input.nderivatives_per_scalar );
+
+        // Gather forces that can be gathered locally
+        ParallelTaskManager<T>::gatherThreadSafeForces( input,
+            force_indices,
+            finput,
+            View<double>(forcesForApply_data,
+                         forcesForApply_size));
+      }
+    }
+
+#pragma acc parallel loop
+    for(unsigned v=input.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
+      double tmp = 0.0;
+#pragma acc loop reduction(+:tmp)
+      for(unsigned t=0; t<nactive_tasks; ++t) {
+        std::size_t task_index = partialTaskList_data[t];
+        const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+        for(unsigned vID=0; vID<nvpt; ++vID) {
+          auto force_indices = forces_indicesArg(t,vID);
+
+          auto fdata = ForceInput { input.nscalars,
+                                    value_stash_data
+                                    + input.nscalars*task_index
+                                    + vID*input.ncomponents,
+                                    input.nderivatives_per_scalar,
+                                    derivatives + t*ndev_per_task
+                                    + vID*input.ncomponents*input.nderivatives_per_scalar };
+          for(unsigned i=0; i<input.ncomponents; ++i) {
+            for(unsigned d=force_indices.threadsafe_derivatives_end[i];
+                d<force_indices.tot_indices[i]; ++d) {
+              if( force_indices.indices[i][d]==v ) {
+                tmp += fdata.force[i]*fdata.deriv[i][d];
+                break;
+              }
+            }
+          }
+        }
+      }
+      forcesForApply_data[v] = tmp;
+    }
+  }
+#undef forces_indicesArg
+  ffa.copyFromDevice(forcesForApply.data());
+}
+#endif
+
 template <class T>
 void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action ) ;
   unsigned nactive_tasks=partialTaskList.size();
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
@@ -637,150 +799,20 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
   myinput.noderiv = false;
   // Retrieve the forces from the values
   action->transferForcesToStash( value_stash );
-
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
+    std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
     if (comm.Get_rank() == 0) {
-      std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
-      ParallelActionsInput input = myinput;
-      auto myinput_acc = OpenACC::fromToDataHelper(input);
-      input_type t_actiondata = actiondata;
-      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
-
-      //template type is deduced
-      OpenACC::memoryManager vs{value_stash};
-      auto value_stash_data = vs.devicePtr();
-
-      OpenACC::memoryManager ptl{partialTaskList};
-      auto partialTaskList_data = ptl.devicePtr();
-
-      OpenACC::memoryManager ffa {forcesForApply};
-      auto forcesForApply_data = ffa.devicePtr();
-      const auto forcesForApply_size = ffa.size();
-
-      const auto ndev_per_task = nderivatives_per_task;
-      const auto nind_per_scalar = (2 + input.nderivatives_per_scalar);
-      const auto nind_per_task = input.nscalars*nind_per_scalar;
-
-                                          // indices
-                                          //   + i*nind_per_task
-                                          //   + j*input.ncomponents*nind_per_scalar 
-
-      OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
-      auto derivatives = dev.devicePtr();
-      OpenACC::memoryManager<std::size_t> ind{nind_per_task*nactive_tasks};
-      auto indices = ind.devicePtr();
-      OpenACC::memoryManager<double> vtmp{input.ncomponents*nactive_tasks};
-      auto valstmp = vtmp.devicePtr();
-      OpenACC::memoryManager<double> buff{};
-      if ( workspace_size>0 ) {
-        buff.resize(workspace_size*nactive_tasks);
-      }
-      auto workspaceSize = workspace_size;
-      auto buffer = buff.devicePtr();
-
-#pragma acc data present(input,t_actiondata) \
-                  copyin(nactive_tasks, \
-                         nderivPerComponent, \
-                         forcesForApply_size, \
-                         ndev_per_task, \
-                         workspaceSize, \
-                         omp_forces_size) \
-               deviceptr(derivatives, \
-                         indices, \
-                         value_stash_data, \
-                         partialTaskList_data, \
-                         forcesForApply_data, \
-                         valstmp, \
-                         buffer) \
-                 default(none)
-      {
-#pragma acc parallel loop
-        for(unsigned i=0; i<nactive_tasks; ++i) {
-          std::size_t task_index = partialTaskList_data[i];
-          ParallelActionsOutput myout { input.nscalars,
-                                        valstmp+input.nscalars*i,
-                                        ndev_per_task,
-                                        derivatives+ndev_per_task*i,
-                                        workspaceSize,
-                                        (workspaceSize>0)?
-                                        buffer+workspaceSize*i
-                                        :nullptr  };
-          // Calculate the stuff in the loop for this action
-          T::performTask( task_index, t_actiondata, input, myout );
-
-          // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-          std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, t_actiondata );
-          for(unsigned j=0; j<nfpt; ++j) {
-            // Create a force index holder
-            ForceIndexHolder force_indices( input.ncomponents,
-                                            input.nderivatives_per_scalar,
-                                            indices
-                                            + i*nind_per_task
-                                            + j*input.ncomponents*nind_per_scalar );
-            // Get the indices for forces
-            T::getForceIndices( task_index,
-                                j,
-                                forcesForApply_size,
-                                t_actiondata,
-                                input,
-                                force_indices );
-
-            // Create a force input object
-            ForceInput finput( myinput.nscalars,
-                               value_stash_data
-                               +input.nscalars*task_index
-                               + j*input.ncomponents,
-                               input.nderivatives_per_scalar,
-                               derivatives
-                               + i*ndev_per_task
-                               + j*input.ncomponents*input.nderivatives_per_scalar );
-
-            // Gather forces that can be gathered locally
-            gatherThreadSafeForces( input,
-                                    force_indices,
-                                    finput,
-                                    View<double>(forcesForApply_data,
-                                                 forcesForApply_size));
-          }
-        }
-
-#pragma acc parallel loop
-        for(unsigned v=input.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
-          double tmp = 0.0;
-#pragma acc loop reduction(+:tmp)
-          for(unsigned t=0; t<nactive_tasks; ++t) {
-            std::size_t task_index = partialTaskList_data[t];
-            std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, t_actiondata );
-            for(unsigned j=0; j<nfpt; ++j) {
-              ForceIndexHolder force_indices( input.ncomponents,
-                                              input.nderivatives_per_scalar,
-                                              indices
-                                              + t*nind_per_task
-                                              + j*input.ncomponents*nind_per_scalar );
-              auto fdata = ForceInput { input.nscalars,
-                                        value_stash_data
-                                        + input.nscalars*task_index
-                                        + j*input.ncomponents,
-                                        input.nderivatives_per_scalar,
-                                        derivatives
-                                        + t*ndev_per_task
-                                        + j*input.ncomponents*input.nderivatives_per_scalar };
-              for(unsigned i=0; i<input.ncomponents; ++i) {
-                for(unsigned d=force_indices.threadsafe_derivatives_end[i];
-                    d<force_indices.tot_indices[i]; ++d) {
-                  if( (force_indices.indices[i][d]- input.threadunsafe_forces_start)==v ) {
-                    tmp += fdata.force[i]*fdata.deriv[i][d];
-                    break;
-                  }
-                }
-              }
-            }
-          }
-          forcesForApply_data[v] = tmp;
-        }
-      }
-      ffa.copyFromDevice(forcesForApply.data());
+      applyForcesWithACC<T>(
+        PLMD::View<double> { forcesForApply.data(), forcesForApply.size() },
+        actiondata,
+        myinput,
+        value_stash,
+        partialTaskList,
+        nactive_tasks,
+        nderivatives_per_task,
+        workspace_size
+      );
     }
 #else
     plumed_merror("cannot use USEGPU flag if PLUMED has not been compiled with openACC");
@@ -811,10 +843,13 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       std::vector<double> buffer( workspace_size );
       std::vector<double> fake_vals( myinput.nscalars );
       std::vector<double> derivatives( nderivatives_per_task );
-      std::vector<std::size_t> indices( (2+myinput.nderivatives_per_scalar)*myinput.ncomponents );
-      ForceIndexHolder force_indices( myinput.ncomponents,
-                                      myinput.nderivatives_per_scalar,
-                                      indices.data() );
+      std::vector<std::size_t> indices(
+        ForceIndexHolder::indexesPerScalar(myinput.ncomponents,
+                                           myinput.nderivatives_per_scalar)
+      );
+      auto force_indices = ForceIndexHolder::makeForceIndexHolder( myinput.ncomponents,
+                           myinput.nderivatives_per_scalar,
+                           indices.data() );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         std::size_t task_index = partialTaskList[i];
@@ -828,8 +863,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
         T::performTask( task_index, actiondata, myinput, myout );
 
         // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-        std::size_t nfpt = T::getNumberOfValuesPerTask( task_index, actiondata );
-        for(unsigned j=0; j<nfpt; ++j) {
+        const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+        for(unsigned j=0; j<nvpt; ++j) {
           // Get the force indices
           T::getForceIndices( task_index,
                               j,
