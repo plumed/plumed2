@@ -54,6 +54,7 @@ PRINT ARG=csums FILE=colvar
 
 */
 //+ENDPLUMEDOC
+#define vpf(x,p) printf( #x "=" #p "\n",x);
 
 
 namespace PLMD {
@@ -76,6 +77,7 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
 
 void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   std::string errors;
+  std::string swinput;
   action->parse("SWITCH",swinput);
   if( swinput.length()>0 ) {
     switchingFunction.set( swinput, errors );
@@ -83,6 +85,10 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
       action->error("problem reading switching function description " + errors);
     }
   } else {
+    int nn=0;
+    int mm=0;
+    double r_0=-1.0;
+    double d_0= 0.0;
     action->parse("NN",nn);
     action->parse("MM",mm);
     action->parse("R_0",r_0);
@@ -97,14 +103,16 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
 }
 
-void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void ContactMatrix::calculateWeight( const ContactMatrix& data,
+                                     const AdjacencyMatrixInput& input,
+                                     MatrixOutput output ) {
   double mod2 = input.pos.modulo2();
-  if( mod2<epsilon ) {
+  if( mod2<PLMD::epsilon ) {
     return;  // Atoms can't be bonded to themselves
   }
   double dfunc;
   output.val[0] = data.switchingFunction.calculateSqr( mod2, dfunc );
-  if( output.val[0]<epsilon ) {
+  if( output.val[0]<PLMD::epsilon ) {
     output.val[0] = 0.0;
     return;
   }
@@ -118,6 +126,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyM
   output.deriv[3] = -v[0];
   output.deriv[4] = -v[1];
   output.deriv[5] = -v[2];
+
   Tensor t = (-dfunc)*Tensor(input.pos,input.pos);
   output.deriv[6] = t[0][0];
   output.deriv[7] = t[0][1];

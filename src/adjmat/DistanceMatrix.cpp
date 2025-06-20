@@ -71,11 +71,9 @@ public:
   double cutoff;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<DistanceMatrix>* action );
-  DistanceMatrix & operator=( const DistanceMatrix& m ) {
-    cutoff = m.cutoff;
-    return *this;
-  }
-  static void calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const DistanceMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput& output );
 };
 
 typedef AdjacencyMatrixBase<DistanceMatrix> dmap;
@@ -97,7 +95,9 @@ void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {
   }
 }
 
-void DistanceMatrix::calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void DistanceMatrix::calculateWeight( const DistanceMatrix& data,
+                                      const AdjacencyMatrixInput& input,
+                                      MatrixOutput& output ) {
   output.val[0] = input.pos.modulo();
   if( data.cutoff<0 || output.val[0]<data.cutoff ) {
     double invd = 1.0/output.val[0];
