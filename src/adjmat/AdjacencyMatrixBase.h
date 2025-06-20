@@ -28,6 +28,7 @@
 #include "core/PlumedMain.h"
 #include "tools/LinkCells.h"
 
+#define vpf(x,p) printf( #x "=" #p "\n",x)
 namespace PLMD {
 namespace adjmat {
 
@@ -71,19 +72,11 @@ struct AdjacencyMatrixInput {
   Vector pos;
   std::size_t natoms{0};
   VectorView extra_positions;
-  AdjacencyMatrixInput( bool n,
-                        const Pbc* b,
-                        View<double,3> p,
-                        unsigned nep,
-                        double* ep )
-    : noderiv(n), pbc(b), pos(p[0],p[1],p[2]), extra_positions(ep,nep) {}
 };
 
 struct MatrixOutput {
   View<double,1> val;
   View<double> deriv;
-  MatrixOutput( std::size_t nd, double* vp, double* dp )
-    : val(vp), deriv(dp,nd) {}
 };
 
 template <class T>
@@ -465,12 +458,11 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     const AdjacencyMatrixData<T>& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput output ) {
-
-  unsigned nneigh=actiondata.nlist[task_index];
-  unsigned n3neigh=(actiondata.natoms_per_three_list>0) ?
+  const unsigned nneigh=actiondata.nlist[task_index];
+  const unsigned n3neigh=(actiondata.natoms_per_three_list>0) ?
                    actiondata.nlist_three[task_index]:0;
   VectorView atoms( output.buffer.data(), nneigh + n3neigh );
-  unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
+  const unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
   Vector pos0( input.inputdata[3*task_index+0],
                input.inputdata[3*task_index+1],
                input.inputdata[3*task_index+2] );
@@ -498,23 +490,20 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   if( actiondata.usepbc ) {
     input.pbc->apply( atoms, atoms.size() );
   }
-  AdjacencyMatrixInput adjinp( input.noderiv,
+  AdjacencyMatrixInput adjinp {input.noderiv,
                                input.pbc,
-                               atoms[0],
-                               n3neigh,
-                               atoms.data() + 3*nneigh );
+                               Vector{atoms[0][0],atoms[0][1],atoms[0][2]},
+                               0,
+                               VectorView{ atoms.data() + 3*nneigh,n3neigh}};
 
   if( n3neigh>1 ) {
     adjinp.natoms = n3neigh-1;
   }
 
   // And calculate this row of the matrices
-  unsigned ncomponents = 1;
   std::size_t nderiv(6 + 3*adjinp.natoms + virialSize);
-  if( actiondata.components ) {
-    ncomponents = 4;
-  }
-
+const unsigned ncomponents =(actiondata.components) ? 4 : 1;
+  
   // Must clear the derivatives here as otherwise sparsity pattern
   // of derivatives does not match sparsity pattern for forces
   if( !input.noderiv ) {
@@ -526,9 +515,8 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   for(unsigned i=1; i<nneigh; ++i ) {
     adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
     std::size_t valpos = (i-1)*ncomponents;
-    MatrixOutput adjout( nderiv,
-                         output.values.data() + valpos,
-                         output.derivatives.data() + valpos*nderiv );
+    MatrixOutput adjout{View<double,1>{output.values.data() + valpos},
+                        View{output.derivatives.data() + valpos*nderiv,nderiv}};
     T::calculateWeight( actiondata.matrixdata, adjinp, adjout );
     if( !actiondata.components ) {
       continue ;
@@ -539,21 +527,22 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     if( input.noderiv ) {
       continue ;
     }
-    output.derivatives[ valpos*nderiv + nderiv ] = -1;
-    output.derivatives[ valpos*nderiv + nderiv + 1 ] = 1;
-    output.derivatives[ valpos*nderiv + nderiv + 2 ] = -atoms[i][0];
-    output.derivatives[ valpos*nderiv + nderiv + 3 ] = -atoms[i][1];
-    output.derivatives[ valpos*nderiv + nderiv + 4 ] = -atoms[i][2];
-    output.derivatives[ valpos*nderiv + 2*nderiv ] = -1;
-    output.derivatives[ valpos*nderiv + 2*nderiv + 1 ] = 1;
-    output.derivatives[ valpos*nderiv + 2*nderiv + 2 ] = -atoms[i][0];
-    output.derivatives[ valpos*nderiv + 2*nderiv + 3 ] = -atoms[i][1];
-    output.derivatives[ valpos*nderiv + 2*nderiv + 4 ] = -atoms[i][2];
-    output.derivatives[ valpos*nderiv + 3*nderiv ] = -1;
-    output.derivatives[ valpos*nderiv + 3*nderiv + 1 ] = 1;
-    output.derivatives[ valpos*nderiv + 3*nderiv + 2 ] = -atoms[i][0];
-    output.derivatives[ valpos*nderiv + 3*nderiv + 3 ] = -atoms[i][1];
-    output.derivatives[ valpos*nderiv + 3*nderiv + 4 ] = -atoms[i][2];
+    PLMD::View derivs( output.derivatives.data() + valpos*nderiv, 3*nderiv + 4 );
+    derivs[ nderiv ] = -1;
+    derivs[ nderiv + 1 ] = 1;
+    derivs[ nderiv + 2 ] = -atoms[i][0];
+    derivs[ nderiv + 3 ] = -atoms[i][1];
+    derivs[ nderiv + 4 ] = -atoms[i][2];
+    derivs[ 2*nderiv ] = -1;
+    derivs[ 2*nderiv + 1 ] = 1;
+    derivs[ 2*nderiv + 2 ] = -atoms[i][0];
+    derivs[ 2*nderiv + 3 ] = -atoms[i][1];
+    derivs[ 2*nderiv + 4 ] = -atoms[i][2];
+    derivs[ 3*nderiv ] = -1;
+    derivs[ 3*nderiv + 1 ] = 1;
+    derivs[ 3*nderiv + 2 ] = -atoms[i][0];
+    derivs[ 3*nderiv + 3 ] = -atoms[i][1];
+    derivs[ 3*nderiv + 4 ] = -atoms[i][2];
   }
 }
 
@@ -569,17 +558,17 @@ int AdjacencyMatrixBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
 }
 
 template <class T>
-void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
-    std::size_t colno,
-    std::size_t ntotal_force,
+void AdjacencyMatrixBase<T>::getForceIndices( const std::size_t task_index,
+    const std::size_t colno,
+    const std::size_t ntotal_force,
     const AdjacencyMatrixData<T>& actiondata,
-    const ParallelActionsInput& input,
+    const ParallelActionsInput& /*input*/,
     ForceIndexHolder force_indices ) {
   force_indices.indices[0][0] = 3*task_index;
   force_indices.indices[0][1] = 3*task_index + 1;
   force_indices.indices[0][2] = 3*task_index + 2;
-  unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
-  unsigned myatom = actiondata.nlist[fstart+1+colno];
+  const unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
+  const unsigned myatom = actiondata.nlist[fstart+1+colno];
   force_indices.indices[0][3] = 3*myatom;
   force_indices.indices[0][4] = 3*myatom+ 1;
   force_indices.indices[0][5] = 3*myatom+ 2;
@@ -591,14 +580,14 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
     force_indices.indices[3][0] = 3*task_index + 2;
     force_indices.indices[3][1] = 3*myatom + 2;
   }
-  if( colno>0 ) {
-    return ;
-  }
+  // if( colno>0 ) {
+  //   return ;
+  // }
   force_indices.threadsafe_derivatives_end[0] = 0;
   unsigned n = 6;
   if( actiondata.natoms_per_three_list>0 ) {
-    unsigned n3neigh = actiondata.nlist_three[task_index];
-    unsigned fstart3 = actiondata.nlists
+    const unsigned n3neigh = actiondata.nlist_three[task_index];
+    const unsigned fstart3 = actiondata.nlists
                        + task_index*(1+actiondata.natoms_per_three_list);
     for(unsigned j=1; j<n3neigh; ++j) {
       unsigned my3atom = actiondata.nlist_three[fstart3+j];
@@ -608,7 +597,8 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
       n += 3;
     }
   }
-  unsigned virstart = ntotal_force - 9;
+
+  const unsigned virstart = ntotal_force - 9;
   force_indices.indices[0][n  ] = virstart + 0;
   force_indices.indices[0][n+1] = virstart + 1;
   force_indices.indices[0][n+2] = virstart + 2;
@@ -618,6 +608,7 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
   force_indices.indices[0][n+6] = virstart + 6;
   force_indices.indices[0][n+7] = virstart + 7;
   force_indices.indices[0][n+8] = virstart + 8;
+  
   force_indices.tot_indices[0] = n+9;
   if( actiondata.components ) {
     force_indices.threadsafe_derivatives_end[1] = 0;
@@ -638,7 +629,7 @@ void AdjacencyMatrixBase<T>::getForceIndices( std::size_t task_index,
   }
 }
 
-}
-}
+} // namespace adjmat
+} // namespace PLMD
 
-#endif
+#endif //__PLUMED_adjmat_AdjacencyMatrixBase_h

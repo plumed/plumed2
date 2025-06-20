@@ -32,6 +32,7 @@
 #include "tools/ColvarOutput.h"
 #include "tools/OpenACC.h"
 
+#define vpf(x,p) printf( #x "=" #p "\n",x);
 namespace PLMD {
 
 struct ArgumentsBookkeeping {
@@ -140,7 +141,8 @@ struct ParallelActionsInput {
   /// Default constructor
   ParallelActionsInput( const Pbc& box )
     : pbc(&box) {}
-  /// the copy is needed due to some openACC resistance to pass the inputdata as a std::vector (and some "this" problems, please do not ask, I'll get grumpy - DR)
+  // the copy is needed due to some openACC resistance to pass the inputdata as
+  // a std::vector (and some "this" problems, please do not ask, I'll get grumpy - DR)
   ParallelActionsInput( const ParallelActionsInput& other ) = default;
   ParallelActionsInput(ParallelActionsInput&& other ) = default;
 
@@ -706,23 +708,21 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
                                     ndev_per_task,
                                     derivatives+ndev_per_task*t,
                                     workspaceSize,
-                                    (workspaceSize>0)?
-                                    buffer+workspaceSize*t
-                                    :nullptr  };
+                                    (workspaceSize>0)?buffer+workspaceSize*t:nullptr};
       // Calculate the stuff in the loop for this action
       T::performTask( task_index, actiondata, input, myout );
 #define forces_indicesArg(taskID,scalarID) ForceIndexHolder::makeForceIndexHolder(input.ncomponents, \
                           input.nderivatives_per_scalar, \
                           indices + taskID*nind_per_task + scalarID*nind_per_scalar)
+#define derivativeDrift(taskID,scalarID)  taskID*ndev_per_task \
+                           + scalarID*input.ncomponents*input.nderivatives_per_scalar
+#define stashDrift(taskID,scalarID) taskID*input.nscalars \
+                           + scalarID*input.ncomponents
       // If this is a matrix this returns a number that isn't one as we have to loop over the columns
       const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
         auto force_indices = forces_indicesArg(t,vID);
-        printf("force_indices: %p,%p,%p\n",
-               force_indices.threadsafe_derivatives_end.data(),
-               force_indices.tot_indices.data(),
-               force_indices.indices.data());
         // Create a force index holder
         // Get the indices for forces
         T::getForceIndices( task_index,
@@ -733,13 +733,10 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
                             force_indices );
 
         // Create a force input object
-        ForceInput finput( input.nscalars,
-                           value_stash_data
-                           +input.nscalars*task_index
-                           + vID*input.ncomponents,
-                           input.nderivatives_per_scalar,
-                           derivatives + t*ndev_per_task
-                           + vID*input.ncomponents*input.nderivatives_per_scalar );
+        auto finput = ForceInput { input.nscalars,
+                                   value_stash_data + stashDrift(task_index,vID),
+                                   input.nderivatives_per_scalar,
+                                   derivatives + derivativeDrift(t,vID)};
 
         // Gather forces that can be gathered locally
         ParallelTaskManager<T>::gatherThreadSafeForces( input,
@@ -755,18 +752,15 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
       double tmp = 0.0;
 #pragma acc loop reduction(+:tmp)
       for(unsigned t=0; t<nactive_tasks; ++t) {
-        std::size_t task_index = partialTaskList_data[t];
+        const std::size_t task_index = partialTaskList_data[t];
         const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
         for(unsigned vID=0; vID<nvpt; ++vID) {
           auto force_indices = forces_indicesArg(t,vID);
 
           auto fdata = ForceInput { input.nscalars,
-                                    value_stash_data
-                                    + input.nscalars*task_index
-                                    + vID*input.ncomponents,
+                                    value_stash_data + stashDrift(task_index,vID),
                                     input.nderivatives_per_scalar,
-                                    derivatives + t*ndev_per_task
-                                    + vID*input.ncomponents*input.nderivatives_per_scalar };
+                                    derivatives + derivativeDrift(t,vID)};
           for(unsigned i=0; i<input.ncomponents; ++i) {
             for(unsigned d=force_indices.threadsafe_derivatives_end[i];
                 d<force_indices.tot_indices[i]; ++d) {
@@ -782,6 +776,8 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
     }
   }
 #undef forces_indicesArg
+#undef derivativeDrift
+#undef stashDrift
   ffa.copyFromDevice(forcesForApply.data());
 }
 #endif

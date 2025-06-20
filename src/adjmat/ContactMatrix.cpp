@@ -54,6 +54,7 @@ PRINT ARG=csums FILE=colvar
 
 */
 //+ENDPLUMEDOC
+#define vpf(x,p) printf( #x "=" #p "\n",x);
 
 
 namespace PLMD {
@@ -125,6 +126,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data,
   output.deriv[3] = -v[0];
   output.deriv[4] = -v[1];
   output.deriv[5] = -v[2];
+
   Tensor t = (-dfunc)*Tensor(input.pos,input.pos);
   output.deriv[6] = t[0][0];
   output.deriv[7] = t[0][1];
