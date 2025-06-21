@@ -50,8 +50,35 @@ DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=100
 If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_STRIDE shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action
 that calculates the distances between the input frames. We need to calculate these dissimilarities here because the LANDMARK_SELECT_STRIDE shortcut computes the
 weights of the landmarks by doing a [VORONOI](VORONOI.md) analysis.  If you would like to turn this and the computing of dissimilarities off you can use the
-NODISSIMILARITIES flag.  If you do not want to compute VORONOI weights you can use the NOVORONOI flag.  Be aware, however, that dissimilarities are still computed
-if you only the the NOVORONOI flag.
+NODISSIMILARITIES flag as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=100 NODISSIMILARITIES
+
+# Output the data to a file
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+If the NODISSIMILARITIES flag is __not__ present the weights of the landmark points are calculated by using VORONOI procedure as is illustrated in the expanded
+version of the first example input above.  If you wish to turn this off you can use the NOVORONOI flag as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=100 NOVORONOI
+
+# Output the data to a file
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+Be aware, however, that dissimilarities are still computed if you only the the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
+and the dissimilarities are not computed.
 
 If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_STRIDE funtion as shown below:
 
@@ -83,7 +110,8 @@ Select a random set of landmarks from a large set of configurations.
 
 If you have collected a set of trajectory frames using [COLLECT_FRAMES](COLLECT_FRAMES.md) you can use this action to
 select a subset of the configurations you have collected.  This particular method for landmark selection reduces the number of frames by
-chooseing NLANDMARKS points from the data collected by COLLECT_FRAMES at random.  So, for example, if you use the input 100 randomly-selected
+chooseing NLANDMARKS points from the data collected by COLLECT_FRAMES at random by using a quasi random number generator for which you may way to specify a seed using
+the SEED keyword.  So, for example, if you use the input 100 randomly-selected
 points from the 1000 trajectory frames that were by collected by the COLLECT_FRAMES action are transferred to the `ll_data` Value that is output which is output in the PDB file.
 
 ```plumed
@@ -91,7 +119,7 @@ points from the 1000 trajectory frames that were by collected by the COLLECT_FRA
 cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
 
 # Select landmarks
-ll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=100
+ll: LANDMARK_SELECT_RANDOM ARG=cc SEED=23 NLANDMARKS=100
 
 # Output the data to a file
 DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
@@ -100,8 +128,35 @@ DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=100
 If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_RANDOM shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action
 that calculates the distances between the input frames. We need to calculate these dissimilarities here because the LANDMARK_SELECT_RANDOM shortcut computes the
 weights of the landmarks by doing a [VORONOI](VORONOI.md) analysis.  If you would like to turn this and the computing of dissimilarities off you can use the
-NODISSIMILARITIES flag.  If you do not want to compute VORONOI weights you can use the NOVORONOI flag.  Be aware, however, that dissimilarities are still computed
-if you only the the NOVORONOI flag.
+NODISSIMILARITIES flag as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=100 NODISSIMILARITIES
+
+# Output the data to a file
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+If the NODISSIMILARITIES flag is __not__ present the weights of the landmark points are calculated by using VORONOI procedure as is illustrated in the expanded
+version of the first example input above.  If you wish to turn this off you can use the NOVORONOI flag as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=100 NOVORONOI
+
+# Output the data to a file
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
+
+Be aware, however, that dissimilarities are still computed if you only the the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
+and the dissimilarities are not computed.
 
 If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_RANDOM funtion as shown below:
 
@@ -133,7 +188,7 @@ Select a of landmarks from a large set of configurations using farthest point sa
 
 If you have collected a set of trajectory frames using [COLLECT_FRAMES](COLLECT_FRAMES.md) you can use this action to
 select a subset of the configurations you have collected. This shortcut does this using [FARTHEST_POINT_SAMPLING](FARTHEST_POINT_SAMPLING.md)
-the first point is thus selected at random.  The remaining points are then selected by taking the unselected point in the input data set that is the furthest
+the first point is thus selected at random, which is why you may want to set a random SEED using the `SEED` keyword.  The remaining points are then selected by taking the unselected point in the input data set that is the furthest
 from all the points that have been selected thus far.  The following input demonstrates how you can use this method:
 
 ```plumed
@@ -141,7 +196,7 @@ from all the points that have been selected thus far.  The following input demon
 cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
 
 # Select landmarks
-ll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=100
+ll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=100 SEED=23
 
 # Output the data to a file
 DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
@@ -150,7 +205,18 @@ DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=100
 If you expand the shortcuts in the input above you will notice that the LANDMARK_SELECT_RANDOM shortcut creates a [DISSIMILARITIES](DISSIMILARITIES.md) action
 that calculates the distances between the input frames. We have to compute these dissimilarities in order to perform the farthest point sampling here so you cannot use the
 NODISSIMILARITIES flag with this action.  However, we also need the dissimilarities to compute the weights of the landmarks as this is done by performing a [VORONOI](VORONOI.md) analysis.
-If you would like to turn off the computation of the VORONOI weights you can use the NOVORONOI flag.
+If you would like to turn off the computation of the VORONOI weights you can use the NOVORONOI flag as shown below:
+
+```plumed
+# This stores the positions of all the first 10 atoms in the system for later analysis
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1 CLEAR=1000
+
+# Select landmarks
+ll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=100 NOVORONOI
+
+# Output the data to a file
+DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
+```
 
 If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_FPS funtion as shown below:
 
@@ -194,9 +260,13 @@ void LandmarkSelection::registerKeywords( Keywords& keys ) {
   keys.add("optional","ARG","the COLLECT_FRAMES action that you used to get the data");
   keys.add("optional","DISSIMILARITIES","the matrix of dissimilarities if this is not provided the squared dissimilarities are calculated");
   keys.add("compulsory","NLANDMARKS","the numbe rof landmarks you would like to create");
-  keys.add("optional","SEED","a random number seed");
+  if( keys.getDisplayName()!="LANDMARK_SELECT_STRIDE" ) {
+    keys.add("optional","SEED","a random number seed");
+  }
   keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
-  keys.addFlag("NODISSIMILARITIES",false,"do not calculate the dissimilarities");
+  if( keys.getDisplayName()!="LANDMARK_SELECT_FPS" ) {
+    keys.addFlag("NODISSIMILARITIES",false,"do not calculate the dissimilarities");
+  }
   keys.addOutputComponent("data","ARG","matrix","the data that is being collected by this action");
   keys.addOutputComponent("logweights","ARG","vector","the logarithms of the weights of the data points");
   keys.addOutputComponent("rectdissims","DISSIMILARITIES","matrix","a rectangular matrix containing the distances between the landmark points and the rest of the points");
@@ -222,8 +292,10 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
   bool novoronoi;
   parseFlag("NOVORONOI",novoronoi);
 
-  bool nodissims;
-  parseFlag("NODISSIMILARITIES",nodissims);
+  bool nodissims=false;
+  if( keywords.exists("NODISSIMILARITIES") ) {
+    parseFlag("NODISSIMILARITIES",nodissims);
+  }
   std::string argn, dissims;
   parse("ARG",argn);
   parse("DISSIMILARITIES",dissims);

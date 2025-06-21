@@ -106,8 +106,14 @@ trans1: CUSTOM ARG=cf,clust1 FUNC=x*x*y PERIODIC=NO
 cent: CENTER ATOMS=1-512 WEIGHTS=trans1 PHASES
 # Calculate the phase field of the coordination
 dens_dist: DISTANCES ORIGIN=cent ATOMS=c1 COMPONENTS
-dens_numer: KDE VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
-dens_denom: KDE VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
+dens_numer: KDE ...
+   VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z
+   GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
+...
+dens_denom: KDE ...
+   VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z
+   GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0
+...
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 # Find the isocontour around the nucleus
 sc: FIND_SPHERICAL_CONTOUR ARG=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 NPOINTS=100
