@@ -56,12 +56,12 @@ DUMPDERIVATIVES ARG=f STRIDE=1 FMT=%8.4f FILE=deriv
 
 !!! warning ""
 
-    You can only use this command to output the derivatives of rank 0 (scalar) values. 
+    You can only use this command to output the derivatives of rank 0 (scalar) values.
     You cannot use it to output derivatives of vector, matrix of function values.
 
 ## RESTART, UPDATE_FROM and UPDATE_UNTIL
 
-Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords 
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
 can be used in this action in the same way as they are used for [PRINT](PRINT.md).
 Consequently, if you would like to append derivatives to an existing file called `deriv` instead of backing that
 file up at the start of the calculation and outputting the data from the calculation on a new file called `deriv`

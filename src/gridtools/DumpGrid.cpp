@@ -62,7 +62,7 @@ hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=1
 DUMPCUBE ARG=hA1 FILE=histoA1.cube
 ```
 
-In the input above the cube file is output at the end of the simulation or when the full trajectory has been read.  
+In the input above the cube file is output at the end of the simulation or when the full trajectory has been read.
 If you want to output the cube file every 1000 steps you would use an input like the one shown below:
 
 ```plumed
@@ -74,10 +74,10 @@ hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=1
 DUMPCUBE ARG=hA1 FILE=histoA1.cube STRIDE=1000
 ```
 
-The default option is used here and thus multiple cube files are output.  The cube file that is obtained from the 
-first 1000 steps of the trajectory will be named `analysis.0.histoA1.cube`, the one from the second 1000 steps of 
-trajectory is named `analysis.1.histoA1.cube` and so on until the final histogram output, which will called 
-`histoA1.cube`.  If you would like to output the data from all these cube files in a single file you use the 
+The default option is used here and thus multiple cube files are output.  The cube file that is obtained from the
+first 1000 steps of the trajectory will be named `analysis.0.histoA1.cube`, the one from the second 1000 steps of
+trajectory is named `analysis.1.histoA1.cube` and so on until the final histogram output, which will called
+`histoA1.cube`.  If you would like to output the data from all these cube files in a single file you use the
 `PRINT_ONE_FILE` flag as shown below:
 
 ```plumed
@@ -166,7 +166,7 @@ hh: HISTOGRAM ...
   GRID_BIN=200,200
 ...
 
-DUMPGRID ARG=hh FILE=histo FMT=%10.6f 
+DUMPGRID ARG=hh FILE=histo FMT=%10.6f
 ```
 
 The following input monitors two torsional angles during a simulation
@@ -189,7 +189,7 @@ DUMPGRID ARG=hh FILE=histo STRIDE=100000
 By default each of the histogram estimates are output to separate files.  There will thus be one
 file called `analysis.0.histo` which contains the histogram that was obtained from the first 100000
 steps of the simulation.  The file `analysis.1.histo` contains the histogram that was obtained from the first
-200000 steps of the simulation and so on until the final estimate of the histogram is output to a file 
+200000 steps of the simulation and so on until the final estimate of the histogram is output to a file
 called `histo`.  If you would like to output all estimates of the histogram to a single file you can use the `PRINT_ONE_FILE`
 keyword as shown below:
 
@@ -230,7 +230,7 @@ DUMPGRID ARG=hh FILE=histo STRIDE=100000
 
 ## Working with Fibonacci grids
 
-If you have accumulated a histogram using the [SPHERICAL_KDE](SPHERICAL_KDE.md) keyword as has been done in the following input, we recommend you use 
+If you have accumulated a histogram using the [SPHERICAL_KDE](SPHERICAL_KDE.md) keyword as has been done in the following input, we recommend you use
 the `PRINT_XYZ` keyword when using DUMPGRID as shown below:
 
 ```plumed
@@ -243,7 +243,7 @@ b1_y: CUSTOM ARG=d1c.y,d1 FUNC=x/y PERIODIC=NO
 b1_z: CUSTOM ARG=d1c.z,d1 FUNC=x/y PERIODIC=NO
 hu: SPHERICAL_KDE HEIGHTS=d1lt ARG=b1_x,b1_y,b1_z CONCENTRATION=100 GRID_BIN=144
 h: CUSTOM ARG=hu,d1lts FUNC=x/y PERIODIC=NO
-DUMPGRID PRINT_XYZ ARG=h PRINT_ONE_FILE STRIDE=1 FILE=allkde.xyz 
+DUMPGRID PRINT_XYZ ARG=h PRINT_ONE_FILE STRIDE=1 FILE=allkde.xyz
 ```
 
 This input outputs an xyz file in which atom represents one of the grid points on your spherical grid. These atoms are shifted in and out radially
@@ -280,7 +280,7 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   if( keys.getDisplayName()!="DUMPCUBE" ) {
-      keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
+    keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
   }
   keys.addFlag("PRINT_ONE_FILE",false,"output grids one after the other in a single file");
 }
@@ -324,7 +324,7 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   parseFlag("PRINT_ONE_FILE", onefile);
   xyzfile=false;
   if( getName()!="DUMPCUBE" ) {
-      parseFlag("PRINT_XYZ",xyzfile);
+    parseFlag("PRINT_XYZ",xyzfile);
   }
   if( xyzfile ) {
     if( getName()=="DUMPCUBE" ) {

@@ -55,10 +55,10 @@ cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 # This command then prints the indices of the atoms that have a coordination number that is equal to 4
 # on every 10th step of the simulation
 PRINT_NDX ...
-   ATOMS=1-100 ARG=cc FILE=index.ndx 
+   ATOMS=1-100 ARG=cc FILE=index.ndx
    LESS_THAN_OR_EQUAL=4
    GREATER_THAN_OR_EQUAL=4
-   STRIDE=10 
+   STRIDE=10
 ...
 ```
 
@@ -67,7 +67,7 @@ of the atoms that are in a particular cluster.
 
 ## RESTART, UPDATE_FROM and UPDATE_UNTIL
 
-Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords 
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
 can be used in this action in the same way as they are used for [PRINT](PRINT.md).
 Consequently, if you would like to append to an existing file called `index.ndx` instead of backing that
 file up at the start of the calculation and outputting the data from the calculation on a new file called `index.ndx`
@@ -79,7 +79,7 @@ ones: ONES SIZE=100
 cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 
 PRINT_NDX ...
-  ATOMS=1-100 ARG=cc FILE=index.ndx 
+  ATOMS=1-100 ARG=cc FILE=index.ndx
   GREATER_THAN_OR_EQUAL=4 RESTART=YES
 ...
 ```
@@ -93,8 +93,8 @@ ones: ONES SIZE=100
 cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 
 PRINT_NDX ...
-  ATOMS=1-100 ARG=cc FILE=index.ndx 
-  GREATER_THAN_OR_EQUAL=4 
+  ATOMS=1-100 ARG=cc FILE=index.ndx
+  GREATER_THAN_OR_EQUAL=4
   UPDATE_FROM=100 UPDATE_UNTIL=500
 ...
 ```

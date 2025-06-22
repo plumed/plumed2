@@ -68,7 +68,7 @@ PLUMED will output these 69 derivatives to the proj file.
 
 ## RESTART, UPDATE_FROM and UPDATE_UNTIL
 
-Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords 
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
 can be used in this action in the same way as they are used for [PRINT](PRINT.md).
 Consequently, if you would like to append derivatives to an existing file called `proj` instead of backing that
 file up at the start of the calculation and outputting the data from the calculation on a new file called `proj`

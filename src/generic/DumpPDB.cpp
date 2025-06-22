@@ -55,7 +55,7 @@ and beta values for each of the collected atoms.
 ```plumed
 ff: COLLECT_FRAMES ATOMS=1-4 STRIDE=1 CLEAR=100
 DUMPPDB ...
-  ATOM_INDICES=1-4 ATOMS=ff_data 
+  ATOM_INDICES=1-4 ATOMS=ff_data
   DESCRIPTION=title
   RESIDUE_INDICES=1,1,2,2
   OCCUPANCY=1,0.5,0.5,0.75
@@ -89,7 +89,7 @@ DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=cd,ca FILE=pos.pdb
 
 The outputted pdb file has the format described in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
 The names that are used for each of the arguments in the pdb file are the same as the labels of the values in the input above (`d` and `a` in the above case).
-If for any reason you want to use different names for each of the arguments in the PDB file you can use the `ARG_NAMES` keyword as 
+If for any reason you want to use different names for each of the arguments in the PDB file you can use the `ARG_NAMES` keyword as
 shown below:
 
 ```plumed
@@ -106,7 +106,7 @@ ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1
 # Output a PDB file that contains the collected atomic positions
 # and the collected distances and angles
 DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=cd,ca ARG_NAMES=m,n FILE=pos.pdb
-``` 
+```
 
 The distance will be shown with the name `m` for the input above while the angle will have the name `n`.
 
