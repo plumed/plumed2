@@ -421,6 +421,9 @@ KDE::KDE(const ActionOptions&ao):
     parse("CUTOFF",dp2cutoff);
     if( kerneltype.find("bin")==std::string::npos && kerneltype!="DISCRETE" ) {
       std::string errors;
+      for(auto & c: kerneltype) {
+        c = std::toupper(c);
+      }
       switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH", errors );
       if( errors.length()!=0 ) {
         error("problem reading switching function description " + errors);

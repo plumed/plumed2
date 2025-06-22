@@ -132,14 +132,16 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
   threecells(comm) {
   std::vector<std::size_t> shape(2);
   std::vector<AtomNumber> t;
+  parseAtomList("GROUP", t );
   if( getName()!="HBOND_MATRIX" ) {
-    parseAtomList("GROUP", t );
     if( t.size()==0 ) {
       parseAtomList("ATOMS", t);
       if( t.size()>0 ) {
         warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
       }
     }
+  } else if( t.size()>0 ) {
+    warning("GROUP keyword has been deprecated for HBOND_MATRIX as it may lead users to wrongly assume that the matrices calculated by this action are symmetric.  We strongly recommend using DONORS/ACCEPTORS instead");
   }
 
   if( t.size()==0 ) {

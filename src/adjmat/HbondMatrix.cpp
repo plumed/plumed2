@@ -231,7 +231,7 @@ typedef AdjacencyMatrixBase<HbondMatrix> hmap;
 PLUMED_REGISTER_ACTION(hmap,"HBOND_MATRIX")
 
 void HbondMatrix::registerKeywords( Keywords& keys ) {
-  keys.remove("GROUP");
+  keys.reset_style("GROUP","deprecated");
   keys.remove("ATOMS");
   keys.remove("GROUPA");
   keys.remove("GROUPB");
