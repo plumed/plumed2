@@ -77,6 +77,7 @@ z_{ij}
 -\sin(\psi)*\cos(\phi)-\cos(\theta)*\sin(\phi)*\cos(\psi) & -\sin(\psi)*\sin(\phi)+\cos(\theta)*\cos(\phi)*std::cos(\psi), & \cos(\psi)*\sin(\theta) \\
 \sin(\theta)*\sin(\phi) & \sin(\theta)*\cos(\phi) & \cos(\theta)
 \end{matrix}
+\right)
 \left(
 \begin{matrix}
 x_{ij}' \\
@@ -149,10 +150,73 @@ The following input tells plumed to calculate the simple cubic parameter for the
 The mean value is then calculated.
 
 ```plumed
-SIMPLECUBIC SPECIES=1-100 R_0=1.0 MEAN
+sc: SIMPLECUBIC SPECIES=1-100 R_0=1.0
+sc_mean: MEAN ARG=sc PERIODIC=NO
+PRINT ARG=sc_mean FILE=colvar
 ```
 
-The following input tells plumed to look at the ways atoms 1-100 are within 3.0 are arranged about atoms
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+d: SIMPLECUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+dm: MEAN ARG=d PERIODIC=NO
+PRINT ARG=dm FILE=colv
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atom
+
+If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in an tetrahedral structure you use an input like the one
+shown below:
+
+```plumed
+d: SIMPLECUBIC SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+s: SUM ARG=lt PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells SIMPLECUBIC that it is safe not to calculate the SIMPLECUBIC parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the SIMPLECUBIC parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the tetrahedral parameter of the atoms
+cc: SIMPLECUBIC ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the SIMPLECUBIC parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+
+The following command illustrates how this deprecated syntax works. It tells plumed to look at the ways atoms 1-100 are within 3.0 are arranged about atoms
 from 101-110.  The number of simple cubic parameters that are greater than 0.8 is then output
 
 ```plumed
@@ -189,11 +253,73 @@ The following command calculates the average value of the TETRAHEDRAL parameter 
 and outputs this quantity to a file called colvar.
 
 ```plumed
-tt: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
-PRINT ARG=tt.mean FILE=colvar
+tt: TETRAHEDRAL SPECIES=1-64 D_0=3.0 R_0=1.5 NN=6 MM=12
+tt_mean: MEAN ARG=tt PERIODIC=NO
+PRINT ARG=tt_mean FILE=colvar
 ```
 
-The following command calculates the number of TETRAHEDRAL parameters that are greater than 0.8 in a set of 10 atoms.
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+d: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+dm: MEAN ARG=d PERIODIC=NO
+PRINT ARG=dm FILE=colv
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atom
+
+If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in an tetrahedral structure you use an input like the one
+shown below:
+
+```plumed
+d: TETRAHEDRAL SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+s: SUM ARG=lt PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells TETRAHEDRAL that it is safe not to calculate the TETRAHEDRAL parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the TETRAHEDRAL parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the tetrahedral parameter of the atoms
+cc: TETRAHEDRAL ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the TETRAHEDRAL parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+
+The following command illustrates how this deprecated syntax works.  It calculates the number of TETRAHEDRAL parameters that are greater than 0.8 in a set of 10 atoms.
 In this calculation it is assumed that there are two atom types A and B and that the first coordination sphere of the
 10 atoms of type A contains atoms of type B.  The formula above is thus calculated for ten different A atoms and within
 it the sum over $j$ runs over 40 atoms of type B that could be in the first coordination sphere.
@@ -229,7 +355,9 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PHI","0.0","The Euler rotational angle phi");
   keys.add("compulsory","THETA","0.0","The Euler rotational angle theta");
   keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
-  keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
+  if( keys.getDisplayName()=="FCCUBIC" ) {
+    keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
+  }
   keys.addDeprecatedFlag("LOWMEM","");
   keys.setValueDescription("vector","the symmetry function for each of the specified atoms");
   keys.needsAction("CONTACT_MATRIX");

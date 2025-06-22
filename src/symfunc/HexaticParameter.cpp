@@ -85,8 +85,9 @@ DUMPATOMS ATOMS=1-400 ARG=hex2_rmn,hex2_imn,hex2_denom FILE=hexparam.xyz
 
 This input outputs the values of the order parameters for all the atoms to an extended xyz file .
 
-> ![CAUTION]
-> Virial is not working currently
+!!! caution ""
+
+    Virial is not working currently
 
 
 */
