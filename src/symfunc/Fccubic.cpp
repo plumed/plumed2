@@ -56,18 +56,80 @@ $$
 
 This action was been used in all the articles in the bibliography. We thus wrote an explict
 action to calculate it in PLUMED instead of using a shortcut as we did for [SIMPLECUBIC](SIMPLECUBIC.md) so that we could get
-good computational performance.
+good computational performance.  Notice also that you can you can rotate the bond vectors before computing the
+function in the above expression by using the PHI, THETA and PSI keywords as is discussed in the documentation for [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md).
 
 The following input calculates the FCCUBIC parameter for the 64 atoms in the system
 and then calculates and prints the average value for this quantity.
 
 ```plumed
-d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN
-PRINT ARG=d.* FILE=colv
+d: FCCUBIC SPECIES=1-64 D_0=3.0 R_0=1.5 NN=6 MM=12
+dm: MEAN ARG=d PERIODIC=NO
+PRINT ARG=dm FILE=colv
 ```
 
-Notice that you can you can rotate the bond vectors before computing the
-function in the above expression as is discussed in the documentation for [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+dm: MEAN ARG=d PERIODIC=NO
+PRINT ARG=dm FILE=colv
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atom
+
+If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in in an FCC structure you use an input like the one
+shown below:
+
+```plumed
+d: FCCUBIC SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+s: SUM ARG=lt PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+This input calculates how many of the 64 atoms that were input to the SPECIESA keyword have an fcc value that is greater than 0.5.
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells FCCUBIC that it is safe not to calculate the FCCUBIC parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the FCCUBIC parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the fccubic parameter of the atoms
+cc: FCCUBIC ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the FCCUBIC parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
 
 */
 //+ENDPLUMEDOC

@@ -49,7 +49,7 @@ atom $k$ and atom $j$.  This angle is multiplied by the imaginary number $i$ - t
 $e^{i\theta_j}$ as follows:
 
 $$
-e^{i\theta_j) = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
+e^{i\theta_j} = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
 $$
 
 We then take the 6th power of this complex number directly before compupting the magnitude by multiplying the result by its complex conjugate.

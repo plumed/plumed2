@@ -223,7 +223,9 @@ PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_AVERAGE")
 
 void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
-  keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate");
+  if( keys.getDisplayName()=="COORDINATION_SHELL_FUNCTION" || keys.getDisplayName()=="COORDINATION_SHELL_AVERAGE" ) {
+    keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate");
+  }
   keys.add("compulsory","PHI","0.0","The Euler rotational angle phi");
   keys.add("compulsory","THETA","0.0","The Euler rotational angle theta");
   keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
