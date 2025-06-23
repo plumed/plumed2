@@ -324,7 +324,7 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
-PLUMED_CONFIG_ENABLE([openacc],[search for openacc],[no])
+PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -332,7 +332,8 @@ AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
 AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
-
+AC_ARG_VAR(PLUMED_ACC_TYPE,[with --enable-openacc this is the setting  ('host' or 'gpu') for determining the target of the OPENACC pragmas - default: 'gpu'])
+AC_ARG_VAR(PLUMED_ACC_GPU,[if PLUMED_ACC_TYPE is 'gpu', this is read as a space separated list of '-gpu' options for openacc (example "cc75 managed")])
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
 # include symbol information (obj files are huge)
@@ -1004,25 +1005,25 @@ fi
 
 acc_found=ko
 if test $openacc = true; then
-  acc_found=ko
+  if test -z "$PLUMED_ACC_TYPE"; then
+    PLUMED_ACC_TYPE=gpu
+  fi
 # optional libraries follow
   PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
   if test "$__PLUMED_HAS_OPENACC" = yes; then
     acc_found=ok
     #test if we can compile with openacc
     PLUMED_CHECK_CXXFLAG([-acc])
-    PLUMED_CHECK_CXXFLAG([-acc=gpu])
-    #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
-    #use CXXFLAGS="-O3 -gpu=cc80" at configure time
-    #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
-    #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
-    #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
-    #PLUMED_CHECK_CXXFLAG([-stdpar])
-    #PLUMED_CHECK_CXXFLAG([-gpu=managed])
-    #PLUMED_CHECK_LDFLAGS([-static-nvidia])
-    #PLUMED_CHECK_LDFLAGS([-acc])
+    PLUMED_CHECK_CXXFLAG([-acc=$PLUMED_ACC_TYPE])
+    if test "$PLUMED_ACC_TYPE" = "gpu"; then
+      if test -n "$PLUMED_ACC_GPU"; then
+        for flag in $PLUMED_ACC_GPU; do
+          PLUMED_CHECK_CXXFLAG([-gpu=$flag])
+        done
+      fi
+    fi
     LDSHARED="$LDSHARED -acc -static-nvidia"
-    AC_MSG_WARN([Please remember to add "CXXFLAGS" the compute capability flag of your device, for example "-gpu=cc80"])
+    AC_MSG_WARN([Please remember to personalize the openacc settings with  "PLUMED_ACC_GPU"])
   fi
 else
   acc_found=ko
@@ -1584,7 +1585,7 @@ if test $openacc = true; then
   if test $acc_found = ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using OPENACC])
   else
-    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because OPENACC have not been found!])
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!])
   fi
 else
     AC_MSG_NOTICE([**** PLUMED will be compiled without OPENACC])

@@ -660,6 +660,8 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+PLUMED_ACC_GPU
+PLUMED_ACC_TYPE
 MPIEXEC
 BASH_COMPLETION_DIR
 PYTHON_BIN
@@ -764,6 +766,8 @@ LDSHARED
 PYTHON_BIN
 BASH_COMPLETION_DIR
 MPIEXEC
+PLUMED_ACC_TYPE
+PLUMED_ACC_GPU
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1455,7 +1459,9 @@ Optional Features:
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
   --enable-libmetatomic   enable search for libmetatomic, default: no
-  --enable-openacc        enable search for openacc, default: no
+  --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
+                          PLUMED_ACC_GPU for controlling the settings),
+                          default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -1472,6 +1478,12 @@ Some influential environment variables:
   MPIEXEC     command to run mpi programs in tests - default not specified,
               which means use PLUMED_MPIRUN env var at runtime for backward
               compatibility
+  PLUMED_ACC_TYPE
+              with --enable-openacc this is the setting ('host' or 'gpu') for
+              determining the target of the OPENACC pragmas - default: 'gpu'
+  PLUMED_ACC_GPU
+              if PLUMED_ACC_TYPE is 'gpu', this is read as a space separated
+              list of '-gpu' options for openacc (example "cc75 managed")
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3257,6 +3269,7 @@ else
   esac
 
 fi
+
 
 
 
@@ -10169,7 +10182,9 @@ fi
 
 acc_found=ko
 if test $openacc = true; then
-  acc_found=ko
+  if test -z "$PLUMED_ACC_TYPE"; then
+    PLUMED_ACC_TYPE=gpu
+  fi
 # optional libraries follow
 
     found=ko
@@ -10358,9 +10373,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -acc=gpu"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc=gpu" >&5
-$as_echo_n "checking whether $CXX accepts -acc=gpu... " >&6; }
+  CXXFLAGS="$CXXFLAGS -acc=$PLUMED_ACC_TYPE"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc=$PLUMED_ACC_TYPE" >&5
+$as_echo_n "checking whether $CXX accepts -acc=$PLUMED_ACC_TYPE... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10402,18 +10417,61 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-    #the cc must be an user input!!!!!!!!!!!!!!!!!!!!!
-    #use CXXFLAGS="-O3 -gpu=cc80" at configure time
-    #PLUMED_CHECK_CXXFLAG([-gpu=cc75])
-    #PLUMED_CHECK_CXXFLAG([-gpu=ccall])
-    #PLUMED_CHECK_CXXFLAG([-gpu=rdc])
-    #PLUMED_CHECK_CXXFLAG([-stdpar])
-    #PLUMED_CHECK_CXXFLAG([-gpu=managed])
-    #PLUMED_CHECK_LDFLAGS([-static-nvidia])
-    #PLUMED_CHECK_LDFLAGS([-acc])
+    if test "$PLUMED_ACC_TYPE" = "gpu"; then
+      if test -n "$PLUMED_ACC_GPU"; then
+        for flag in $PLUMED_ACC_GPU; do
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -gpu=$flag"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -gpu=$flag" >&5
+$as_echo_n "checking whether $CXX accepts -gpu=$flag... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+        done
+      fi
+    fi
     LDSHARED="$LDSHARED -acc -static-nvidia"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please remember to add \"CXXFLAGS\" the compute capability flag of your device, for example \"-gpu=cc80\"" >&5
-$as_echo "$as_me: WARNING: Please remember to add \"CXXFLAGS\" the compute capability flag of your device, for example \"-gpu=cc80\"" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please remember to personalize the openacc settings with  \"PLUMED_ACC_GPU\"" >&5
+$as_echo "$as_me: WARNING: Please remember to personalize the openacc settings with  \"PLUMED_ACC_GPU\"" >&2;}
   fi
 else
   acc_found=ko
@@ -11313,8 +11371,8 @@ if test $openacc = true; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using OPENACC" >&5
 $as_echo "$as_me: **** PLUMED will be compiled using OPENACC" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** PLUMED will NOT be compiled using MPI because OPENACC have not been found!" >&5
-$as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using MPI because OPENACC have not been found!" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!" >&5
+$as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!" >&2;}
   fi
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without OPENACC" >&5
