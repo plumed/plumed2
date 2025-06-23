@@ -60,7 +60,19 @@ DUMPATOMS ATOMS=c ARG=c FILE=coords.xyz
 ```
 
 This input will produce an output file called coords that contains the coordination numbers of the 100 input atoms.  The cutoff
-that is used to calculate the coordination number in this case is 1.0.
+that is used to calculate the coordination number in this case is 1.0.  In the input above we use a rational [switching function](LESS_THAN.md)
+with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+c: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=1.0}
+DUMPATOMS ATOMS=c ARG=c FILE=coords.xyz
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
 The vectors that are output by the COORDINATIONNUMBER shortcut can be used in the input for many other functions that are within
 PLUMED. In addition, in order to ensure compatibility with older versions of PLUMED you can add additional keywords on the input
@@ -76,11 +88,62 @@ from 101-110.  In the first 101 is the central atom, in the second 102 is the ce
 number of coordination numbers that are more than 6 is then computed.
 
 ```plumed
-c: COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
+c: COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0
+mt: MORE_THAN ARG=c SWITCH={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
+s: SUM ARG=mt PERIODIC=NO
 ```
 
-Notice that these inputs both use shortcuts.  If you expand the inputs above you can determine the set of actions
-that are being used to calculate each of the quantities of interest.
+## The MASK keyword
+
+Supppose that you want to calculate the average coordination number for the atoms that are within a sphere in the center of your simulation box. You can do so by exploiting an input similar to the one shown
+below:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the coordination numbers
+cc: COORDINATIONNUMBER SPECIES=1-400 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This calculation is slow because you have to calculate the coordination numbers of all the atoms even though only a small subset of these quanitties are required to compute the average coordination number in the
+sphere.  To avoid all these unecessary calculations you use the `MASK` keyword as shown below:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the coordination numbers
+cc: COORDINATIONNUMBER SPECIES=1-400 MASK=sphere SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+Adding the instruction `MASK=sphere` to the CONTACT_MATRIX line in this input tells PLUMED to only calculate the $i$th row in the adjacency matrix if the $i$th element of the vector `sphere` is non-zero.
+In other words, by adding this command we have ensured that we are not calculating coordination numbers for atoms that are not in the sphere that is of interest.  In this way we can thus reduce the computational
+expense of the calculation enormously.
+
+Notice, that there are other places where we can use this same trick.  Some further examples are given in the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
 */
 //+ENDPLUMEDOC
@@ -100,13 +163,81 @@ where $k$ is the value that is input using the R_POWER keyword, $r_{ij}$ is the 
 The following example shows how this action can be used.
 
 ```plumed
-cn0: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} MEAN
-cn1: COORDINATION_MOMENTS SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=1 MEAN
-cn2: COORDINATION_MOMENTS SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=2 MEAN
-PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
+cn1: COORDINATION_MOMENTS SPECIES=1-10 R_0=1.0 R_POWER=1
+cn1_mean: MEAN ARG=cn1 PERIODIC=NO
+PRINT ARG=cn1_mean FILE=colvar
 ```
 
-As you can see, it works similarlly to [COORDINATIONNUMBER](COORDINATIONNUMBER.md).
+As you can see, the action works similarlly to [COORDINATIONNUMBER](COORDINATIONNUMBER.md).
+
+In the input above we use a rational [switching function](LESS_THAN.md)
+with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+
+```plumed
+cn0: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8}
+cn0_mean: MEAN ARG=cn0 PERIODIC=NO
+cn1: COORDINATION_MOMENTS SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=1
+cn1_mean: MEAN ARG=cn1 PERIODIC=NO
+cn2: COORDINATION_MOMENTS SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=2
+cn2_mean: MEAN ARG=cn2 PERIODIC=NO
+PRINT ARG=cn0_mean,cn1_mean,cn2_mean STRIDE=1 FILE=cn_out
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atom
+
+If you would like a way of indirectly biasing the radial distribution function that describes how the atoms in GROUPB are arranged around the atoms in GROUPA you use an input like the one
+shown below:
+
+```plumed
+d: COORDINATION_MOMENTS ...
+   SPECIESA=1-64 SPECIESB=65-200 R_POWER=1
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+s: MEAN ARG=d PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells COORDINATION_MOMENTS that it is safe not to calculate the COORDINATION_MOMENTS parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the COORDINATION_MOMENTS parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the coordination moments of the atoms
+cc: COORDINATION_MOMENTS ...
+  SPECIES=1-400 MASK=sphere R_POWER=1
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply coordination moments by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the COORDINATION_MOMENTS parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
 
 
 */
@@ -180,10 +311,13 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   shortcutKeywords( keys );
-  keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
+  if( keys.getDisplayName()=="COORDINATION_MOMENTS" ) {
+    keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
+  }
   keys.addDeprecatedFlag("LOWMEM","");
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
   keys.addOutputComponent("moment","MOMENTS","scalar","the moments of the distribution");
+  keys.reset_style("MOMENTS","deprecated");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("ONES");
   keys.needsAction("MOMENTS");

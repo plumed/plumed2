@@ -51,13 +51,31 @@ of atom $i$.
 Below you can see a simple example that shows how this action can be used in practise.
 
 ```plumed
-cv: COORDINATION_SHELL_FUNCTION SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+cv: COORDINATION_SHELL_FUNCTION SPECIES=1-64 D_0=3.0 R_0=1.5 FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
 PRINT ARG=cv FILE=colvar
 ```
 
 The above input calculates 64 $s_i$ values - one $s_i$ values for each of the atoms specified using the SPECIES keyword.  These 64 numbers are then output to a file.
 The function of x, y, z and r to be evaluated is specified using the FUNCTION keyword.  Obviously, if your function does not depend on all four of these variables
 they can be excluded from your function.
+
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+cv: COORDINATION_SHELL_FUNCTION ...
+   SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=7.0}
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+...
+PRINT ARG=cv FILE=colvar
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Rotating the reference frame
 
 As discussed in [this paper](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.180102) it is sometimes useful to rotate the bond vectors before computing the
 arbitrary function $f$ in the above expression.  To perform such rotations you use the PHI, THETA and PSI keywords.  The $x_{ij}, y_{ij}$ and $z_{ij}$ values that enter $f$ in the
@@ -90,6 +108,57 @@ $$
 $x_{ij}', y_{ij}'$ and $z_{ij}'$ in this expression are the bond vectors that are calculated in the lab frame.  The matrix in the above expression is thus just a
 [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix) that converts the lab frame to some frame of interest.
 
+## Working with two types of atom
+
+If you would like to calculate a function of the bonds connecting the atoms in GROUPA to the atoms in GROUPB you can use an input like the one
+shown below:
+
+```plumed
+d: COORDINATION_SHELL_FUNCTION ...
+   SPECIESA=1-64 SPECIESB=65-200
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+s: SUM ARG=lt PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the TETRAHEDRAL parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the tetrahedral parameter of the atoms
+d: COORDINATION_SHELL_FUNCTION ...
+   SPECIES=1-400 MASK=sphere
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=d,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the function for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
 
 */
 //+ENDPLUMEDOC
@@ -112,7 +181,7 @@ of atom $i$.
 Below you can see a simple example that shows how this action can be used in practise.
 
 ```plumed
-cv: COORDINATION_SHELL_AVERAGE SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+cv: COORDINATION_SHELL_AVERAGE SPECIES=1-64 D_0=3.0 R_0=1.5 FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
 PRINT ARG=cv FILE=colvar
 ```
 
@@ -120,8 +189,76 @@ The above input calculates 64 $s_i$ values - one $s_i$ values for each of the at
 The function of x, y, z and r to be evaluated is specified using the FUNCTION keyword.  Obviously, if your function does not depend on all four of these variables
 they can be excluded from your function.
 
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+cv: COORDINATION_SHELL_AVERAGE ...
+   SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=7.0}
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+...
+PRINT ARG=cv FILE=colvar
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
 Notice that you can you can rotate the bond vectors before computing the
 arbitrary function $f$ in the above expression as is discussed in the documentation for [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
+
+## Working with two types of atom
+
+If you would like to calculate a function of the bonds connecting the atoms in GROUPA to the atoms in GROUPB you can use an input like the one
+shown below:
+
+```plumed
+d: COORDINATION_SHELL_AVERAGE ...
+   SPECIESA=1-64 SPECIESB=65-200
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+s: SUM ARG=lt PERIODIC=NO
+PRINT ARG=s FILE=colv
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the TETRAHEDRAL parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the function for the atoms
+d: COORDINATION_SHELL_AVERAGE ...
+   SPECIES=1-400 MASK=sphere
+   FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=d,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the function for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
 
 */
 //+ENDPLUMEDOC
