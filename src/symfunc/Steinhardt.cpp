@@ -41,7 +41,7 @@ around an atom is ordered with the atoms aranged on a line.  The Steinhardt para
 calculated using the following formula:
 
 $$
-q_{1m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{1m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{1m}(i) = \sum_j \sigma( r_{ij} ) Y_{1m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{1m}$ is one of the 1st order spherical harmonics so $m$ is a number that runs from $-1$ to
@@ -54,7 +54,7 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_1(i) = \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
+Q_1(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
 $$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
@@ -149,7 +149,7 @@ PRINT ARG=q1.* FILE=colvar
 The following example illustrates how you can use VSUM to calculate a global vector of $Q_{1m}$ values as follows:
 
 $$
-Q_{1m} = \sum_i q_{1m}(i)
+Q_{1m} = \sum_i \frac{q_{1m}(i)}{\sum_j \sigma(r_{ij})}
 $$
 
 where the sum runs over all the atoms.  You can then take these $Q_{1m}$ values and compute the following norm:
@@ -178,7 +178,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{3m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{3m}(i) = \sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{3m}$ is one of the 3rd order spherical harmonics so $m$ is a number that runs from $-3$ to
@@ -191,7 +191,7 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_3(i) = \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
+Q_3(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
 $$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered.  The following input illustrates
@@ -286,7 +286,7 @@ PRINT ARG=q3.* FILE=colvar
 The following example illustrates how you can use VSUM to calculate a global vector of $Q_{3m}$ values as follows:
 
 $$
-Q_{3m} = \sum_i q_{3m}(i)
+Q_{3m} = \sum_i \frac{q_{3m}(i)}{\sum_j \sigma(r_{ij})}
 $$
 
 where the sum runs over all the atoms.  You can then take these $Q_{3m}$ values and compute the following norm:
@@ -315,7 +315,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{4m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{4m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{4m}(i) = \sum_j \sigma( r_{ij} ) Y_{4m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{4m}$ is one of the 4th order spherical harmonics so $m$ is a number that runs from $-4$ to
@@ -328,7 +328,7 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_4(i) = \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
+Q_4(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
 $$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
@@ -423,7 +423,7 @@ PRINT ARG=q4.* FILE=colvar
 The following example illustrates how you can use VSUM to calculate a global vector of $Q_{4m}$ values as follows:
 
 $$
-Q_{4m} = \sum_i q_{4m}(i)
+Q_{4m} = \sum_i \frac{q_{4m}(i)}{\sum_j \sigma(r_{ij})}
 $$
 
 where the sum runs over all the atoms.  You can then take these $Q_{4m}$ values and compute the following norm:
@@ -452,7 +452,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{6m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{6m}(i) = \sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{6m}$ is one of the 6th order spherical harmonics so $m$ is a number that runs from $-6$ to
@@ -465,7 +465,7 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_6(i) = \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
+Q_6(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
 $$
 
 This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
@@ -560,7 +560,7 @@ PRINT ARG=q6.* FILE=colvar
 The following example illustrates how you can use VSUM to calculate a global vector of $Q_{6m}$ values as follows:
 
 $$
-Q_{6m} = \sum_i q_{6m}(i)
+Q_{6m} = \sum_i \frac{q_{6m}(i)}{\sum_j \sigma(r_{ij})}
 $$
 
 where the sum runs over all the atoms.  You can then take these $Q_{6m}$ values and compute the following norm:

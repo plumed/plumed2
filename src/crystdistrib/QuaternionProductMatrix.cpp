@@ -55,6 +55,30 @@ qp: QUATERNION_PRODUCT_MATRIX ARG=quats12.*,quats34.* #notice the asterisk
 bpw: CUSTOM ARG=qp.* VAR=w,x,y,z FUNC=exp(w/2+x/2+y/2+z/2) PERIODIC=NO
 ```
 
+A common strategy when using this action is to multiply a function of elements of the quaternion product matrix by a contact matrix as shown below:
+
+```plumed
+# Calculate some quaternions
+quats12: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9 ATOMS4=10,11,12
+# Calculate a contact matrix
+cmap: CONTACT_MATRIX GROUP=1,4,7,10 SWITCH={RATIONAL R_0=0.2 D_MAX=0.7}
+# Calculate the quaternion product matrix
+qp: QUATERNION_PRODUCT_MATRIX ARG=quats12.*,quats12.* MASK=cmap
+# Now calculate a function of the quaternion elements (normally something more complicated than the following is performed
+func: CUSTOM ARG=cmap,qp.* VAR=x,w,i,j,k FUNC=x*(w+i+j+k) PERIODIC=NO
+# Now sum the rows of the above matrix
+ones: ONES SIZE=4
+op: MATRIX_VECTOR_PRODUCT ARG=func,ones
+# And output the values of the order parameter
+DUMPATOMS ATOMS=1,4,7,10 ARG=op FILE=func.yxz
+```
+
+Notice how the MASK keyword is used in the CUSTOM in the input to QUATERNION_PRODUCT_MATRIX to prevent PLUMED from calculating the
+elements of the QUATERNION_PRODUCT_MATRIX that will be multiplied by the elements of that matrix `cmap` that is calculated in the
+CONTACT_MATRIX action when the calculations in the CUSTOM action with label `func` are performed.  This is the same procedure that is performed
+in [TORSIONS_MATRIX](TORSIONS_MATRIX.md) and [MATRIX_PRODUCT](MATRIX_PRODUCT.md) to avoid computational expense.  This procedure is automatically
+performed when you use the [ROPS](ROPS.md) shortcut.
+
 */
 //+ENDPLUMEDOC
 

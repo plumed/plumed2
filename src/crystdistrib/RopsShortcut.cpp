@@ -43,7 +43,11 @@ This example file calculates the ROPS for a system of 3 molecules.
 ```plumed
 #SETTINGS INPUTFILES=regtest/crystdistrib/rt-rops-shortcut/kernels.dat,regtest/crystdistrib/rt-rops-shortcut/kernels2.dat
 quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
-bops: ROPS SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0 KERNELFILE_DOPS=regtest/crystdistrib/rt-rops-shortcut/kernels.dat KERNELFILE_ROPS=regtest/crystdistrib/rt-rops-shortcut/kernels2.dat
+bops: ROPS ...
+   SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0
+   KERNELFILE_DOPS=regtest/crystdistrib/rt-rops-shortcut/kernels.dat
+   KERNELFILE_ROPS=regtest/crystdistrib/rt-rops-shortcut/kernels2.dat
+...
 ```
 
 */
@@ -59,18 +63,7 @@ PLUMED_REGISTER_ACTION(RopsShortcut,"ROPS")
 
 void RopsShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
-           "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
-           "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
-           "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
-           "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
-           "coordination number more than four for example");
-  keys.add("atoms-2","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
-           "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
-           "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
-           "using the label of another multicolvar");
-  keys.add("atoms-2","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
-           "the documentation for that keyword");
+  keys.add("atoms","SPECIES","the list of atoms for which the ROPS are being calculated and the atoms that can be in the environments");
   keys.add("compulsory","QUATERNIONS","the label of the action that computes the quaternions that should be used");
   keys.add("compulsory","KERNELFILE_DOPS","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","KERNELFILE_ROPS","the file containing the list of kernel parameters.  We expect the normalization factor (height), concentration parameter (kappa), and 4 quaternion pieces of the mean for a bipolar watson distribution (mu_w,mu_i,mu_j,mu_k)): (h*exp(kappa*dot(q_mean,q))), where dot is the dot product ");
@@ -151,8 +144,8 @@ RopsShortcut::RopsShortcut(const ActionOptions&ao):
   std::string sp_str, specA, specB, grpinfo;
   double cutoff;
   parse("SPECIES",sp_str);
-  parse("SPECIESA",specA);
-  parse("SPECIESB",specB);
+  //parse("SPECIESA",specA);
+  //parse("SPECIESB",specB);
   parse("CUTOFF",cutoff);
   if( sp_str.length()>0 ) {
     grpinfo="GROUP=" + sp_str;

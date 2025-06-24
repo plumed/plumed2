@@ -39,9 +39,20 @@ The DOPS kernel file has FIELDS height, mu, and sigma corresponding to the norma
 DOPS returns one order parameter per atom given, evaluated over each atom's neighbors within the cutoff given. The kernel file defines a radial distribution function. The order parameter is obtained by evaluating the RDF at each neighbor's position within the cutoff, and summing them up.
 
 This example file calculates the DOPS for a system of 3 molecules.
+
 ```plumed
 #SETTINGS INPUTFILES=regtest/crystdistrib/rt-dops-forces/kernels.dat
 dops: DOPS SPECIES=1,4,7 CUTOFF=7.4 KERNELFILE=regtest/crystdistrib/rt-dops-forces/kernels.dat
+```
+
+If you want to calculate DOPS from the radial distribution function of the GROUPB atoms around the GROUPA atoms you use an input like the one shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/crystdistrib/rt-dops-forces/kernels.dat
+dops: DOPS ...
+  SPECIESA=1,4,7 SPECIESB=10,13,16,19 CUTOFF=7.4
+  KERNELFILE=regtest/crystdistrib/rt-dops-forces/kernels.dat
+...
 ```
 
 */
@@ -58,18 +69,9 @@ PLUMED_REGISTER_ACTION(DopsShortcut,"DOPS")
 
 void DopsShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
-           "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
-           "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
-           "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
-           "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
-           "coordination number more than four for example");
-  keys.add("atoms-2","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
-           "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
-           "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
-           "using the label of another multicolvar");
-  keys.add("atoms-2","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
-           "the documentation for that keyword");
+  keys.add("atoms","SPECIES","the list of atoms for which the DOPS are being calculated and the atoms that can be in the environments");
+  keys.add("atoms-2","SPECIESA","the list of atoms for which DOPS are being calculated.  This keyword must be used in conjunction with SPECIESB, which specifies the atoms that are in the environment");
+  keys.add("atoms-2","SPECIESB","the list of atoms that can be in the environments of each of the atoms for which the DOPS are being calculated. This keyword must be used in conjunction with SPECIESA, which specifies the atoms for which DOPS are being calculated.");
   keys.add("compulsory","KERNELFILE","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","CUTOFF","6.25","to make the calculation faster we calculate a cutoff value on the distances.  The input to this keyword determines x in this expreession max(mu + sqrt(2*x)/sigma)");
   keys.setValueDescription("vector","the values of the DOPS order parameters");
