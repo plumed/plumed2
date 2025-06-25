@@ -180,8 +180,6 @@ jobs:
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
       run: |
-         export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH
-         export CPATH=$HOME/opt/include:CPATH
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
               sleep 15
