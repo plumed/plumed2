@@ -40,7 +40,7 @@ struct ContactMatrix {
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<ContactMatrix>* action );
   static void calculateWeight( const ContactMatrix& data,
-                               AdjacencyMatrixInput input,
+                               const AdjacencyMatrixInput& input,
                                MatrixOutput output );
 #ifdef __PLUMED_USE_OPENACC
   void toACCDevice() const {

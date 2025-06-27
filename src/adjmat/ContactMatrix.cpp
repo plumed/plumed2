@@ -102,7 +102,7 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
 }
 
 void ContactMatrix::calculateWeight( const ContactMatrix& data,
-                                     const AdjacencyMatrixInput input,
+                                     const AdjacencyMatrixInput& input,
                                      MatrixOutput output ) {
   const double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
