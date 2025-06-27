@@ -23,6 +23,8 @@
 #define __PLUMED_tools_OpenACC_h
 
 #include <vector>
+#include "View.h"
+
 #ifdef __PLUMED_HAS_OPENACC
 #include <openacc.h>
 #endif //__PLUMED_HAS_OPENACC
@@ -116,10 +118,21 @@ public:
   /// @param sz the number of T that you want to allocate
   memoryManager(size_t sz)
     : size_{sz},
-      stored_ {sz},
-      ptr_{acc_malloc(size_ * sizeof(T))} {}
+      stored_ {sz} {
+    if (size_ > 0) {
+      ptr_ = acc_malloc(size_ * sizeof(T));
+    }
+  }
   /// @brief allocates and copies to the memory of the device the given vector
   memoryManager(const std::vector<T>& data)
+    : size_{data.size()},
+      stored_{data.size()},
+      ptr_{acc_malloc(size_ * sizeof(T))} {
+    copyToDevice(data.data());
+  }
+  /// @brief allocates and copies to the memory of the device the given vector
+  template <size_t N>
+  memoryManager(const View<T,N>& data)
     : size_{data.size()},
       stored_{data.size()},
       ptr_{acc_malloc(size_ * sizeof(T))} {

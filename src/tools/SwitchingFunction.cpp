@@ -92,7 +92,7 @@ Data Data::init(const double D0,const double DMAX, const double R0) {
 
 void Data::toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], d0, dmax, dmax_2, invr0, invr0_2, \
-                              stretch, shift, nn, mm, preRespreDfunc, preSecDev, \
+                              stretch, shift, nn, mm, preRes, preDfunc, preSecDev, \
                               nnf, mmf, preDfuncF, preSecDevF, a, b, c, d, beta, \
                               lambda, ref )
 }
@@ -144,7 +144,7 @@ struct baseSwitch {
               applystretch(data,distance,switching::function(rdist))
               : ValueDerivative{data.stretch+data.shift,0.0};
     }
-    /* not branchless implementation
+    /* //not branchless (legacy) implementation
         double res = 0.0;
         double dfunc = 0.0;
 

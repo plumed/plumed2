@@ -55,7 +55,6 @@ PRINT ARG=csums FILE=colvar
 */
 //+ENDPLUMEDOC
 
-
 namespace PLMD {
 namespace adjmat {
 
@@ -76,6 +75,7 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
 
 void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   std::string errors;
+  std::string swinput;
   action->parse("SWITCH",swinput);
   if( swinput.length()>0 ) {
     switchingFunction.set( swinput, errors );
@@ -83,6 +83,10 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
       action->error("problem reading switching function description " + errors);
     }
   } else {
+    int nn=0;
+    int mm=0;
+    double r_0=-1.0;
+    double d_0= 0.0;
     action->parse("NN",nn);
     action->parse("MM",mm);
     action->parse("R_0",r_0);
@@ -97,8 +101,10 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix>* action ) {
   action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
 }
 
-void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
-  double mod2 = input.pos.modulo2();
+void ContactMatrix::calculateWeight( const ContactMatrix& data,
+                                     const AdjacencyMatrixInput input,
+                                     MatrixOutput output ) {
+  const double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
     return;  // Atoms can't be bonded to themselves
   }
@@ -111,25 +117,18 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data, const AdjacencyM
   if( input.noderiv ) {
     return;
   }
-  Vector v = (-dfunc)*input.pos;
+  const Vector v { (-dfunc)*input.pos[0],
+                   (-dfunc)*input.pos[1],
+                   (-dfunc)*input.pos[2] };
   output.deriv[0] = v[0];
   output.deriv[1] = v[1];
   output.deriv[2] = v[2];
-  output.deriv[3] = -v[0];
-  output.deriv[4] = -v[1];
-  output.deriv[5] = -v[2];
-  Tensor t = (-dfunc)*Tensor(input.pos,input.pos);
-  output.deriv[6] = t[0][0];
-  output.deriv[7] = t[0][1];
-  output.deriv[8] = t[0][2];
-  output.deriv[9] = t[1][0];
-  output.deriv[10] = t[1][1];
-  output.deriv[11] = t[1][2];
-  output.deriv[12] = t[2][0];
-  output.deriv[13] = t[2][1];
-  output.deriv[14] = t[2][2];
+  output.deriv[3] =-v[0];
+  output.deriv[4] =-v[1];
+  output.deriv[5] =-v[2];
+
+  output.assignOuterProduct( 6, v, input.pos);
 }
 
-}
-}
-
+} // namespace adjmat
+} // namespace PLMD

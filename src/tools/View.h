@@ -72,7 +72,7 @@ public:
   template <size_t NN = N, typename = std::enable_if_t<NN != helpers::dynamic_extent>>
   explicit View(pointer p) noexcept: ptr_(p) {}
   //generic constructor, works also for non fixed view (this might change)
-  View(pointer p, std::size_t NN)  noexcept: ptr_(p), size_(NN) {}
+  View(pointer p, std::size_t const NN)  noexcept: ptr_(p), size_(NN) {}
   View(const View&) noexcept =default;
   View(View&&) noexcept =default;
   View&operator =(const View&) noexcept =default;
@@ -192,6 +192,19 @@ public:
     }
     return *this;
   }
+  //some mathematical helper operations
+  template <size_t M=N>
+  std::enable_if_t<M!=helpers::dynamic_extent, double>
+  modulo2() const {
+    return LoopUnroller<N>::_sum2(ptr_);
+  }
+
+  template <size_t M=N>
+  std::enable_if_t<M!=helpers::dynamic_extent, double>
+  modulo() const {
+    return sqrt(modulo2<M>());;
+  }
+
 };
 
 template<typename T>
