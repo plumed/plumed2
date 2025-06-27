@@ -186,8 +186,12 @@ void MatrixProductDiagonal::applyNonZeroRankForces( std::vector<double>& outforc
   taskmanager.applyForces( outforces );
 }
 
-void MatrixProductDiagonal::performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+void MatrixProductDiagonal::performTask( std::size_t task_index,
+    const MatrixProductDiagonalInput& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
+  auto arg0=ArgumentBookeepingHolder::create( 0, input );
+  auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
   std::size_t vstart = task_index*arg0.ncols;
@@ -216,7 +220,8 @@ void MatrixProductDiagonal::getForceIndices( std::size_t task_index,
     const MatrixProductDiagonalInput& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  auto arg0=ArgumentBookeepingHolder::create( 0, input );
+  auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
   std::size_t vstart = task_index*arg0.ncols;

@@ -259,7 +259,11 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   const double* zpntr=NULL;
   /// This function uses lepton so it is unlikely that we will GPU it.  that is why I have allowed myself to create vectors here
   std::vector<double> xvals, yvals, zvals;
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input ), arg2( 2, input), arg3( 3, input );
+  auto arg0 = ArgumentBookeepingHolder::create( 0, input );
+  auto arg1 = ArgumentBookeepingHolder::create( 1, input );
+  auto arg2 = ArgumentBookeepingHolder::create( 2, input);
+  auto arg3 = ArgumentBookeepingHolder::create( 3, input );
+
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   View<const double,helpers::dynamic_extent> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
   if( actiondata.multi_action_input ) {
@@ -358,7 +362,10 @@ void ThreeBodyGFunctions::getForceIndices( std::size_t task_index,
     const ThreeBodyGFunctionsInput& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input ), arg2( 2, input), arg3( 3, input );
+  auto arg0 = ArgumentBookeepingHolder::create( 0, input );
+  auto arg1 = ArgumentBookeepingHolder::create( 1, input );
+  auto arg2 = ArgumentBookeepingHolder::create( 2, input);
+  auto arg3 = ArgumentBookeepingHolder::create( 3, input );
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   if( actiondata.multi_action_input ) {
     View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);

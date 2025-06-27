@@ -71,11 +71,9 @@ public:
   double cutoff;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<DistanceMatrix>* action );
-  DistanceMatrix & operator=( const DistanceMatrix& m ) {
-    cutoff = m.cutoff;
-    return *this;
-  }
-  static void calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const DistanceMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput output );
 };
 
 typedef AdjacencyMatrixBase<DistanceMatrix> dmap;
@@ -97,7 +95,9 @@ void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {
   }
 }
 
-void DistanceMatrix::calculateWeight( const DistanceMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void DistanceMatrix::calculateWeight( const DistanceMatrix& data,
+                                      const AdjacencyMatrixInput& input,
+                                      MatrixOutput output ) {
   output.val[0] = input.pos.modulo();
   if( data.cutoff<0 || output.val[0]<data.cutoff ) {
     double invd = 1.0/output.val[0];
@@ -108,16 +108,9 @@ void DistanceMatrix::calculateWeight( const DistanceMatrix& data, const Adjacenc
     output.deriv[3] = -v[0];
     output.deriv[4] = -v[1];
     output.deriv[5] = -v[2];
-    Tensor t = (-invd)*Tensor(input.pos,input.pos);
-    output.deriv[6] = t[0][0];
-    output.deriv[7] = t[0][1];
-    output.deriv[8] = t[0][2];
-    output.deriv[9] = t[1][0];
-    output.deriv[10] = t[1][1];
-    output.deriv[11] = t[1][2];
-    output.deriv[12] = t[2][0];
-    output.deriv[13] = t[2][1];
-    output.deriv[14] = t[2][2];
+
+    output.assignOuterProduct(6,v,input.pos);
+
   }
 }
 

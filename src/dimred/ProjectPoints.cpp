@@ -446,7 +446,7 @@ void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInpu
   std::size_t nland = input.shapedata[0];
   std::size_t base = task_index;
   if( input.ranks[input.ncomponents]==2 ) {
-    ArgumentBookeepingHolder myargh( input.ncomponents, input );
+    auto myargh = ArgumentBookeepingHolder::create( input.ncomponents, input );
     base = task_index*myargh.shape[1];
   }
   unsigned closest=0;
@@ -467,7 +467,7 @@ void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInpu
   // And do the optimisation
   actiondata.action->rowstart[OpenMP::getThreadNum()]=task_index;
   if( input.ranks[input.ncomponents]==2 ) {
-    ArgumentBookeepingHolder myargh( input.ncomponents, input );
+    auto myargh=ArgumentBookeepingHolder::create( input.ncomponents, input );
     actiondata.action->rowstart[OpenMP::getThreadNum()] = task_index*myargh.shape[1];
   }
   actiondata.action->myminimiser.minimise( actiondata.cgtol, point, &ProjectPoints::calculateStress );
@@ -478,7 +478,7 @@ void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInpu
 
 void ProjectPoints::calculate() {
   if( getPntrToComponent(0)->getRank()==0 ) {
-    ParallelActionsInput myinput( getPbc() );
+    auto myinput =ParallelActionsInput::create( getPbc() );
     myinput.noderiv = true;
     myinput.ncomponents = getNumberOfComponents();
     std::vector<double> input_buffer;
@@ -490,7 +490,7 @@ void ProjectPoints::calculate() {
     myinput.setupArguments( abk );
     std::vector<double> buffer;
     std::vector<double> derivatives, point( getNumberOfComponents() );
-    ParallelActionsOutput output( myinput.ncomponents, point.data(), 0, derivatives.data(), 0, buffer.data() );
+    auto output = ParallelActionsOutput::create( myinput.ncomponents, point.data(), 0, derivatives.data(), 0, buffer.data() );
     performTask( 0, taskmanager.getActionInput(), myinput, output );
     for(unsigned i=0; i<point.size(); ++i) {
       getPntrToComponent(i)->set(point[i]);
