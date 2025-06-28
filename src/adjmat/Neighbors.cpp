@@ -57,6 +57,35 @@ ucv: MATRIX_VECTOR_PRODUCT ARG=f,ones
 cv: CUSTOM ARG=ucv PERIODIC=NO FUNC=x/4
 ```
 
+You can even use these ideas with the functionality that is in the [volumes module](module_volumes.md) as shown below:
+
+```plumed
+# The atoms that are of interest
+ow: GROUP ATOMS=1-16500
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# The distance matrix
+dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow CUTOFF=1.0 MASK=sphere
+# Find the four nearest neighbors
+acv_neigh: NEIGHBORS ARG=dmap.w NLOWEST=4 MASK=sphere
+# Compute a function for the atoms that are in the first coordination sphere
+acv_g8: GSYMFUNC_THREEBODY ...
+  WEIGHT=acv_neigh ARG=dmap.x,dmap.y,dmap.z
+  FUNCTION1={FUNC=(cos(ajik)+1/3)^2 LABEL=g8}
+  MASK=sphere
+...
+# Now compute the value of the function above for those atoms that are in the
+# sphere of interest
+acv: CUSTOM ARG=acv_g8.g8,sphere FUNC=y*(1-(3*x/8)) PERIODIC=NO
+# And now compute the final average
+acv_sum: SUM ARG=acv PERIODIC=NO
+acv_norm: SUM ARG=sphere PERIODIC=NO
+mean: CUSTOM ARG=acv_sum,acv_norm FUNC=x/y PERIODIC=NO
+PRINT ARG=mean FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -73,6 +102,7 @@ PLUMED_REGISTER_ACTION(NeighborsShortcut,"NEIGHBORS")
 
 void NeighborsShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
+  keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the neighbors matrix to compute");
   keys.addInputKeyword("compulsory","ARG","matrix","the label of an adjacency/distance matrix that will be used to find the nearest neighbors");
   keys.add("compulsory","NLOWEST","0","in each row of the output matrix set the elements that correspond to the n lowest elements in each row of the input matrix equal to one");
   keys.add("compulsory","NHIGHEST","0","in each row of the output matrix set the elements that correspond to the n highest elements in each row of the input matrix equal to one");
@@ -262,6 +292,7 @@ template <class T>
 void Neighbors<T>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
   keys.setDisplayName("NEIGHBORS");
+  keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the neighbors matrix to compute");
   keys.addInputKeyword("compulsory","ARG","matrix","the label of an adjacency/distance matrix that will be used to find the nearest neighbors");
   keys.add("compulsory","N","the number of non-zero elements in each row of the output matrix");
   keys.setValueDescription("matrix","a matrix in which the ij element is one if the ij-element of the input matrix is one of the NLOWEST/NHIGHEST elements on that row of the input matrix and zero otherwise");
@@ -273,7 +304,11 @@ Neighbors<T>::Neighbors(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this) {
-  if( getNumberOfArguments()!=1 ) {
+  unsigned nargs = getNumberOfArguments();
+  if( getNumberOfMasks()>0 ) {
+    nargs = nargs - getNumberOfMasks();
+  }
+  if( nargs!=1 ) {
     error("found wrong number of arguments in input");
   }
   if( getPntrToArgument(0)->getRank()!=2 ) {

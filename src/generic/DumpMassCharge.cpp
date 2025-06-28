@@ -49,9 +49,9 @@ Output the masses and charges in this way is useful if you want to do some postp
 on knowing the masses and charges of atoms.  To use the mcfile tht is output by the command above you would
 use the following driver command to read in the charges and masses from the mcfile.
 
-\verbatim
+```plumed
 plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
-\endverbatim
+```
 
 DUMPMASSCHARGE outputs the masses of all the atoms by default.  However, if you want to write the masses and charges
 for a particular subset of the atoms you can use the `ATOMS` keyword as illustrated in the example input below:
@@ -60,6 +60,14 @@ for a particular subset of the atoms you can use the `ATOMS` keyword as illustra
 solute_ions: GROUP ATOMS=1-121,200-2012
 DUMPATOMS FILE=traj.gro ATOMS=solute_ions STRIDE=100
 DUMPMASSCHARGE FILE=mcfile ATOMS=solute_ions
+```
+
+Notice, also, that you can print the masses and charges on separate files by using the `ONLY_MASSES` and `ONLY_CHARGES` flags
+as shown below:
+
+```plumed
+DUMPMASSCHARGE FILE=mfile ATOMS=1-100 ONLY_MASSES
+DUMPMASSCHARGE FILE=qfile ATOMS=1-100 ONLY_CHARGES
 ```
 
 */
@@ -92,7 +100,7 @@ void DumpMassCharge::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
+  keys.add("hidden","STRIDE","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose charges and masses you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output charges and masses.");
   keys.addFlag("ONLY_MASSES",false,"Only output masses to file");

@@ -25,7 +25,7 @@ using namespace PLMD::multicolvar;
 namespace PLMD {
 namespace liquid_crystal {
 
-//+PLUMEDOC LIQUID_CRYSTAL FERRONEMATIC_ORDER
+//+PLUMEDOC COLVAR FERRONEMATIC_ORDER
 /*
 Calculate the ferronematic order parameter.
 

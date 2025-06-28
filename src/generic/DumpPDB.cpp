@@ -48,6 +48,26 @@ DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data FILE=pos.pdb
 ```
 
 From this example alone it is clear that this command works very differently to the [DUMPATOMS](DUMPATOMS.md) command.
+
+As indcated below, you can specify what should appear in the title line of your PDB file as well as the residue indices, occupancies
+and beta values for each of the collected atoms.
+
+```plumed
+ff: COLLECT_FRAMES ATOMS=1-4 STRIDE=1 CLEAR=100
+DUMPPDB ...
+  ATOM_INDICES=1-4 ATOMS=ff_data
+  DESCRIPTION=title
+  RESIDUE_INDICES=1,1,2,2
+  OCCUPANCY=1,0.5,0.5,0.75
+  BETA=0.5,1,0.2,0.6
+  FILE=pos.pdb
+  STRIDE=100
+...
+```
+
+Notice, furthermore, that we store 100 and output 100 frame blocks of data here from the trajectory.  The input above will thus output
+multiple pdb files.
+
 Notice, furthermore, that you can output the positions of atoms along with the argument values that correspond to each
 set of atomic positions as follows:
 
@@ -68,6 +88,27 @@ DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=cd,ca FILE=pos.pdb
 ```
 
 The outputted pdb file has the format described in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
+The names that are used for each of the arguments in the pdb file are the same as the labels of the values in the input above (`d` and `a` in the above case).
+If for any reason you want to use different names for each of the arguments in the PDB file you can use the `ARG_NAMES` keyword as
+shown below:
+
+```plumed
+# Calculate the distance between atoms 1 and 2
+d: DISTANCE ATOMS=1,2
+# Collect the distance between atoms 1 and 2
+cd: COLLECT ARG=d
+# Calculate the angle involving atoms 1, 2 and 3
+a: ANGLE ATOMS=1,2,3
+# Collect the angle involving atoms 1, 2 and 3
+ca: COLLECT ARG=a
+# Now collect the positions
+ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1
+# Output a PDB file that contains the collected atomic positions
+# and the collected distances and angles
+DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=cd,ca ARG_NAMES=m,n FILE=pos.pdb
+```
+
+The distance will be shown with the name `m` for the input above while the angle will have the name `n`.
 
 */
 //+ENDPLUMEDOC
@@ -101,8 +142,8 @@ void DumpPDB::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("optional","ARG","vector/matrix","the values that are being output in the PDB file");
   keys.add("optional","ATOMS","value containing positions of atoms that should be output");
   keys.add("compulsory","STRIDE","0","the frequency with which the atoms should be output");
+  keys.add("hidden","FMT","the format that should be used to output real numbers in the title");
   keys.add("compulsory","FILE","the name of the file on which to output these quantities");
-  keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
   keys.add("compulsory","OCCUPANCY","1.0","vector of values to output in the occupancy column of the pdb file");
   keys.add("compulsory","BETA","1.0","vector of values to output in the beta column of the pdb file");
   keys.add("optional","DESCRIPTION","the title to use for your PDB output");
@@ -162,6 +203,7 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
   if( argnames.size()==0 ) {
     buildArgnames();
   }
+  fmt="%f";
   parse("FMT",fmt);
   fmt=" "+fmt;
   if( getStride()==0 ) {

@@ -67,13 +67,26 @@ This realisation about the relationship between the contact map and the coordina
 and print the coordination numbers of the first 7 atoms in the system with themselves you would use an input something like this:
 
 ```plumed
-c1: CONTACT_MATRIX GROUP=1-7 SWITCH={RATIONAL R_0=2.6 NN=6 MM=12}
+c1: CONTACT_MATRIX GROUP=1-7 D_0=0.0 R_0=2.6 NN=6 MM=12
 ones: ONES SIZE=7
 cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 PRINT ARG=cc FILE=colvar
 ```
 
-Implmenting the coordination number this way is useful as there are many different ways to define whether two atoms/molecules and to construct a "contact" matrix based on
+This input transforms the distances using the RATIONAL switching function that is discussed in the documentation for [LESS_THAN](LESS_THAN.md)
+The parameters for this type of switching function can be specified using `D_0`, `R_0`, `NN` and `MM` keywords as indicated above. However, we would recommend
+using the following syntax instead as this allows you to use the full range of switching function types. Most importantly, if you use the following syntax you can
+set the D_MAX parameter, as shown below. As discussed in the optimization details section below, __if you want good computational performance on large systems it is essential to set the D_MAX parameter.__
+
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-7 SWITCH={RATIONAL R_0=2.6 NN=6 MM=12 D_MAX=5.0}
+ones: ONES SIZE=7
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+PRINT ARG=cc FILE=colvar
+```
+
+Implmenting the coordination number as a product of a matrix and a vector is useful as there are many different ways to define whether two atoms/molecules and to construct a "contact" matrix based on
 the result.  For example:
 
 * You could say that two molecules are connected if they are within a certain distance of each other and if they have the same orientation (see [TORSIONS_MATRIX](TORSIONS_MATRIX.md)).
@@ -156,6 +169,17 @@ that would be output if you had not added the COMPONENTS flag. The $i,j$ compone
 components of the vector connecting atoms $i$ and $j$. Importantly, however, the components of these vectors are only stored in `c4.x`, `c4.y` and `c4.z`
 if the elements of `c4.w` are non-zero.
 
+## NOPBC flag
+
+By default PLUMED calculates the distances that are transformed by the switching function in the CONTACT_MATRIX action in a way that accounts for the periodic boundary
+conditions.  If for any reason you do not want PLUMED to account for the periodic boundary conditions you can use the NOPBC flag as shown below:
+
+```plumed
+c: CONTACT_MATRIX GROUP=1-7 NOPBC SWITCH={RATIONAL R_0=2.6 NN=6 MM=12}
+```
+
+If you also add the COMPONENTS flag in this input then the vector connecting each pairs of atoms will also be calculated without taking the periodic boundary conditions into account.
+
 ## Optimisation details
 
 Adjacency matrices are sparse.  Each atom is only be connected to a small number of neighbours and the vast majority of the elements of the contact matrix are thus zero.  To reduce
@@ -166,7 +190,124 @@ when the elements of `c4.w` are non-zero.
 We can also use the sparsity of the adjacency matrix to make the time required to compute a contact matrix scale linearly rather than quadratically with the number of atoms. Element
 $i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $r_c$. We can determine that many pairs of atoms are further appart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists.  __To turn on these features you need to set the `D_MAX` parameter in the
-switching functions.__  The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
+switching functions.__ The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
+
+In theory we could further optimize the implementation of the CONTACT_MATRIX action by exploiting neighbor lists. If we were to do this we would likely add two further keywords as shown
+below:
+
+```plumed
+c4: CONTACT_MATRIX GROUP=1-10000 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12 D_MAX=0.5} NL_CUTOFF=0.7 NL_STRIDE=5
+```
+
+The `NL_CUTOFF` keyword would be used to specify the cutoff (in nm) to use when constructing neighbor lists.  This value would need to be slightly larger than the D_MAX parameter for the switching function.
+The `NL_STRIDE` keyword would then be used to specify how frequently the neighbour list should be updated.  Thus far we have not found it necessary to implement this algorithm. We have been happy with the
+performance even if we use the linked list algorithm to update the neighbors on every step. If you feel that you need this CV to perform better please get in touch as adding a neighbor list for this action
+should be relatively straightforward.
+
+## The MASK keyword
+
+Suppose that you want to calculate the average coordination number for the atoms that are within a sphere in the center of your simulation box. You can do so by exploiting an input similar to the one shown
+below:
+
+```plumed
+# The atoms that are of interest
+ow: GROUP ATOMS=1-16500
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: CONTACT_MATRIX GROUP=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34}
+ones: ONES SIZE=16500
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This calculation is slow because you have to calculate the coordination numbers of all the atoms even though only a small subset of these quanitties are required to compute the average coordination number in the
+sphere.  To avoid all these unecessary calculations you use the `MASK` keyword as shown below:
+
+```plumed
+# The atoms that are of interest
+ow: GROUP ATOMS=1-16500
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: CONTACT_MATRIX GROUP=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=sphere
+ones: ONES SIZE=16500
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+Adding the instruction `MASK=sphere` to the CONTACT_MATRIX line in this input tells PLUMED to only calculate the $i$th row in the adjacency matrix if the $i$th element of the vector `sphere` is non-zero.
+In other words, by adding this command we have ensured that we are not calculating coordination numbers for atoms that are not in the sphere that is of interest.  In this way we can thus reduce the computational
+expense of the calculation enormously.
+
+Notice, that there are other places where we can use this same trick.  For example, we could have used MASK as shown below for our calculation of the CV for perovskite nucleation as shown below:
+
+```plumed
+# Lead ions
+Pb: GROUP ATOMS=1-64
+# Iodide atoms
+I: GROUP ATOMS=65-256
+# Methylamonium "atoms" -- in the real CV these are centers of mass rather than single atoms
+cn: GROUP ATOMS=257-320
+
+ones192: ONES SIZE=192
+# Contact matrix that determines if methylamoinium moleulcule and I atom are within 6.5 A of each other
+cm_cnI: CONTACT_MATRIX GROUPA=cn GROUPB=I SWITCH={RATIONAL R_0=0.65 D_MAX=1.0}
+# Coordination number of methylamonium with I
+cc_cnI: MATRIX_VECTOR_PRODUCT ARG=cm_cnI,ones192
+# Vector with elements that are one if coordination of methylamounium with lead is >11
+mt_cnI: MORE_THAN ARG=cc_cnI SWITCH={RATIONAL R_0=11 NN=12 MM=24}
+
+ones64: ONES SIZE=64
+# Contact matrix that determines if methylamoinium moleulcule and Pb atom are within 7.5 A of each other
+cm_cnpb: CONTACT_MATRIX GROUPA=cn GROUPB=Pb SWITCH={RATIONAL R_0=0.75 D_MAX=1.5} MASK=mt_cnI
+# Coordination number of methylamonium with Pb
+cc_cnpb: MATRIX_VECTOR_PRODUCT ARG=cm_cnpb,ones64
+# Vector with elements that are one if coordination of methylamounium with lead is >7
+mt_cnpb: MORE_THAN ARG=cc_cnpb SWITCH={RATIONAL R_0=7 NN=12 MM=24}
+
+# Contact matrix that determines if methylamonium molecules are within 8 A of each other
+cm_cncn: CONTACT_MATRIX GROUP=cn SWITCH={RATIONAL R_0=0.8 D_MAX=1.75} MASK=mt_cnI
+# Coordination number of methylamounium with methylamonium
+cc_cncn: MATRIX_VECTOR_PRODUCT ARG=cm_cncn,ones64
+# Vector with elements that are one if coordiantion of methylamonium with methylamonium >5
+mt_cncn: MORE_THAN ARG=cc_cncn SWITCH={RATIONAL R_0=5 NN=12 MM=24}
+
+# Element wise product of these three input vectors.
+# mm[i]==1 if coordination number of corrsponding methylamounium with methylamonium is >5
+# and if coordination of methylamounium with Pb is >7 and if coordination of methylamounium with I > 11
+mm: CUSTOM ARG=mt_cncn,mt_cnpb,mt_cnI FUNC=x*y*z PERIODIC=NO
+
+# Sum of coordination numbers and thus equal to number of methylamoniums with desired coordination numbers
+ff: SUM ARG=mm PERIODIC=NO
+
+rr: RESTRAINT ARG=ff AT=62 KAPPA=10
+```
+
+This trick works here because when we find that there are methylamoinium moleulcules with fewer than 11 lead atoms in there first coordination sphere we know that there
+is no point calculating the second two coordination numbers.
 
 */
 //+ENDPLUMEDOC

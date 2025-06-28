@@ -83,6 +83,69 @@ The switching functions $s_1$, $s_2$, $s_3$ and $s_4$ are specified using the `R
 We loop over the atoms in the group specified using the `BACKGROUND_ATOMS` keyword when looping over $k$ in the formulas above.  An $85 \times 85$ matrix is output
 from the method as we are determining the connectivity between the atoms specified via the `GROUP` keyword.
 
+The above example assumes that you want to calculate the connectivity within a single group of atoms.  If you would calculate connectivity between two different groups
+of atoms you use the GROUPA and GROUPB keywords as shown below:
+
+```plumed
+mat: TOPOLOGY_MATRIX ...
+    GROUPA=1-20 GROUPB=21-85 BACKGROUND_ATOMS=86-210
+    BIN_SIZE=1.02 SIGMA=0.17 KERNEL=triangular
+    CYLINDER_SWITCH={RATIONAL R_0=0.5 D_MAX=1.0}
+    SWITCH={RATIONAL D_0=30 R_0=0.5 D_MAX=32}
+    RADIUS={RATIONAL D_0=0.375 R_0=0.1 D_MAX=0.43}
+    DENSITY_THRESHOLD={RATIONAL R_0=0.1 D_MAX=0.5}
+    COMPONENTS NOPBC
+...
+```
+
+Notice that we have also added the NOPBC and COMPONENTS keywords in this input. The action above thus outputs four matrices with the labels
+`mat.w`, `mat.x`, `mat.y` and `mat.z.`  The matrix with the label `mat.w` is the adjacency matrix
+that would be output if you had not added the COMPONENTS flag. The $i,j$ component of the matrices `mat.x`, `mat.y` and `mat.z` contain the $x$, $y$ and $z$
+components of the vector connecting atoms $i$ and $k$. Importantly, however, the components of these vectors are only stored in `mat.x`, `mat.y` and `mat.z`
+if the elements of `mat.w` are non-zero. Using the COMPONENTS flag in this way ensures that you can use HBOND_MATRIX in tandem with many of the functionalities
+that are part of the [symfunc module](module_symfunc.md).
+
+The NOPBC flag, meanwhile, ensures that all distances are calculated in a way that __does not__ take the periodic boundary conditions into account. By default,
+distances are calculated in a way that takes periodic boundary conditions into account.
+
+## The MASK keyword
+
+You use the MASK keyword with TOPOLOGY_MATRIX in the same way that is used in [CONTACT_MATRIX](CONTACT_MATRIX.md).  This keyword thus expects a vector in input,
+which tells TOPOLOGY_MATRIX that it is safe to not calculate certain rows of the output matrix.  An example where this keyword is used is shown below:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-85 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: TOPOLOGY_MATRIX ...
+  GROUP=1-85 BACKGROUND_ATOMS=86-210
+  BIN_SIZE=1.02 SIGMA=0.17 KERNEL=triangular
+  CYLINDER_SWITCH={RATIONAL R_0=0.5 D_MAX=1.0}
+  SWITCH={RATIONAL D_0=30 R_0=0.5 D_MAX=32}
+  RADIUS={RATIONAL D_0=0.375 R_0=0.1 D_MAX=0.43}
+  DENSITY_THRESHOLD={RATIONAL R_0=0.1 D_MAX=0.5}
+  MASK=sphere
+...
+ones: ONES SIZE=85
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,sphere FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average number of topological connections there are for each of the atoms that are within a spherical region
+that is centered on the point $(2.5,2.5,2.5)$.
+
+
 */
 //+ENDPLUMEDOC
 

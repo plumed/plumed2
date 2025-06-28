@@ -37,7 +37,12 @@ This action can be used to calculate whether each of the atoms are within a part
 
 ```plumed
 f: FIXEDATOM AT=0,0,0
-a: INCYLINDER ATOMS=1-100 CENTER=f DIRECTION=Z RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-1.0 UPPER=1.0
+a: INCYLINDER ...
+   ATOMS=1-100 CENTER=f DIRECTION=Z
+   RADIUS={TANH R_0=1.5} SIGMA=0.1
+   LOWER=-1.0 UPPER=1.0
+   KERNEL=gaussian
+...
 PRINT ARG=a FILE=colvar
 ```
 
@@ -64,16 +69,37 @@ If you want to caluclate and print the number of atoms in the cylinder of intere
 
 ```plumed
 f: FIXEDATOM AT=0,0,0
-a: INCYLINDER ATOMS=1-100 CENTER=f DIRECTION=X RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-1.0 UPPER=1.0
+a: INCYLINDER ...
+  ATOMS=1-100 CENTER=f DIRECTION=X
+  RADIUS={TANH R_0=1.5} SIGMA=0.1
+  LOWER=-1.0 UPPER=1.0
+...
+s: SUM ARG=a PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+Alternatively, if you want to calculate an print the number of atoms that are not in the cylinder of interest you can use the OUTSIDE flag as shown below:
+
+```plumed
+f: FIXEDATOM AT=0,0,0
+a: INCYLINDER ...
+  ATOMS=1-100 CENTER=f DIRECTION=X
+  RADIUS={TANH R_0=1.5} SIGMA=0.1
+  LOWER=-1.0 UPPER=1.0
+  OUTSIDE
+...
 s: SUM ARG=a PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
 Notice that now the cylinder is centered on the `x` axis rather than the `z` axis as we have changed the input for the `DIRECTION` keyword.
 
-You can also calculate the average values of symmetry functions in the cylinder of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
-action. In other words, you can swap out AROUND actions for an INCLYLINDER actions. Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these
-types of calculations, which can still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
+!!! note ""
+
+    You can also calculate the average values of symmetry functions in the cylinder of interest by using inputs similar to those described the documentation for the [AROUND](AROUND.md)
+    action. In other words, you can swap out AROUND actions for an INCLYLINDER actions. Also as with [AROUND](AROUND.md), earlier versions of PLUMED used a different syntax for doing these
+    types of calculations, which can still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+    old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 
 */

@@ -49,7 +49,7 @@ atom $k$ and atom $j$.  This angle is multiplied by the imaginary number $i$ - t
 $e^{i\theta_j}$ as follows:
 
 $$
-e^{i\theta_j) = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
+e^{i\theta_j} = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
 $$
 
 We then take the 6th power of this complex number directly before compupting the magnitude by multiplying the result by its complex conjugate.
@@ -85,8 +85,9 @@ DUMPATOMS ATOMS=1-400 ARG=hex2_rmn,hex2_imn,hex2_denom FILE=hexparam.xyz
 
 This input outputs the values of the order parameters for all the atoms to an extended xyz file .
 
-> ![CAUTION]
-> Virial is not working currently
+!!! caution ""
+
+    Virial is not working currently
 
 
 */

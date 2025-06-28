@@ -49,22 +49,48 @@ p: POSITION ATOMS=1-4
 PRINT ARG=p.x,p.y,p.z FILE=colvar
 ```
 
-The three output values, p.x, p.y and p.z, here are all four dimensional vectors.
+The three output values, p.x, p.y and p.z, here are all four dimensional vectors.  Furthermore, if you wish
+to use a procedure akin to that described in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md) to ensure
+that molecules are reassembled if they are broken by periodic boundary conditions you can use the `WHOLEMOLECULES`
+flag as shown below:
 
-[!CAUTION]
-Notice that single components will not have the proper periodicity!
+```plumed
+p: POSITION ATOMS=1-4 WHOLEMOLECULES
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
 
-If you need the values to be consistent through PBC you can use SCALED_COMPONENTS,
-which defines values that by construction are in the -0.5,0.5 domain. This is
+This is used in the [CENTER](CENTER.md) when we compute centers with arbitrary weights for shortcuts.
+
+## Periodic boundary conditions
+
+!!! warning ""
+
+    Notice that single components will not have the proper periodicity!
+
+If you need the values to be consistent through PBC you can use SCALED_COMPONENTS flag as shown below:
+
+```plumed
+p: POSITION ATOM=1 SCALED_COMPONENTS
+PRINT ARG=p.a,p.b,p.c FILE=colvar
+```
+
+This flag ensures that values are output that are, by construction, in the -0.5,0.5 domain. The output is
 similar to the equivalent flag for [DISTANCE](DISTANCE.md).
-Also notice that by default the minimal image distance from the
-origin is considered (can be changed with NOPBC).
 
-[!CAUTION]
-This variable should be used with extreme care since it allows you to easily get in troubles.
-It can be only be used if the
-Hamiltonian is not invariant for translation (i.e. there are other absolute positions which are biased, e.g. by position restraints)
-and cell size and shapes are fixed through the simulation.
+If it also important to note that by default the positions are output by calculating minimal image distance between
+the instantaneous position of the atoms and the position of the origin, $(0.0,0.0,0.0)$.
+This behaviour can be changed by using NOPBC as shown below, which will output the position of the atom directly.
+
+```plumed
+p: POSITION ATOM=1 NOPBC
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
+
+!!! warning ""
+
+    This variable should be used with extreme care since it allows you to easily get in troubles.
+    It can be only be used if the Hamiltonian is not invariant for translation (i.e. there are other absolute positions which are biased, e.g. by position restraints)
+    and cell size and shapes are fixed through the simulation.
 
 If you are not in this situation and still want to use the absolute position of an atom you should first fix the reference frame
 by using [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md) as shown in the example below

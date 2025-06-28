@@ -34,7 +34,12 @@ was used in the paper, which can be found [here](https://sites.google.com/site/p
 The following example illustrates how this shortcut can be used to calculate and print the descriptor for a set of 64 atoms:
 
 ```plumed
-pp: PAIRENTROPIES ATOMS=1-64 MAXR=2 GRID_BIN=20 BANDWIDTH=0.13
+pp: PAIRENTROPIES ...
+   ATOMS=1-64 MAXR=2
+   GRID_BIN=20 BANDWIDTH=0.13
+   KERNEL=gaussian CUTOFF=6.25
+   DENSITY=1.0
+...
 DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz
 ```
 
@@ -42,6 +47,19 @@ If you expand the shortcut you will notice that this shortcut creates __a lot__ 
 [here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-fingerprint?authuser=0). However, we hope that the implementation here is a
 useful reference implementation that anyone interested in using this method can use to test their implementations of it. In addition, we hope that the shortcut
 illustrates how the calculation of this complex descriptor can be broken down into a set of simpler calculations.
+
+Notice also that you do not need to use the DENSITY keyword to set the density as has been done above.  You can instead use an input like the one below:
+
+```plumed
+pp: PAIRENTROPIES ...
+   ATOMS=1-64 MAXR=2
+   GRID_BIN=20 BANDWIDTH=0.13
+   KERNEL=gaussian CUTOFF=6.25
+...
+DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz
+```
+
+As you can see, if you expand the shortcut in the above input, the density in this case is calculated by dividing the number of atoms by the volume of the box.
 
 */
 //+ENDPLUMEDOC
@@ -84,6 +102,9 @@ PairEntropies::PairEntropies(const ActionOptions&ao):
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
+  if( dens.length()>0 ) {
+    readInputLine( getShortcutLabel() + "_vol: CONSTANT VALUE=" + dens );
+  }
   std::string grid_setup = "GRID_MIN=0 GRID_MAX=" + maxr + " GRID_BIN=" + nbins;
   RDF::createX2ReferenceObject( getShortcutLabel(), grid_setup, dens.length()==0, this );
   // Create the number of input atoms
