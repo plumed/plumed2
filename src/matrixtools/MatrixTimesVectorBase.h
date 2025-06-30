@@ -32,35 +32,50 @@ class MatrixTimesVectorData {
 public:
   std::size_t fshift;
   Matrix<std::size_t> pairs;
-  MatrixTimesVectorData& operator=( const MatrixTimesVectorData& m ) {
-    fshift = m.fshift;
-    pairs = m.pairs;
-    return *this;
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],fshift)
+    pairs.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    pairs.removeFromACCDevice();
+#pragma acc exit data delete(fshift,this[0:1])
   }
 };
 
 class MatrixForceIndexInput {
 public:
   std::size_t rowlen;
-  View<const std::size_t,helpers::dynamic_extent> indices;
-  MatrixForceIndexInput( std::size_t task_index, std::size_t ipair, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input ):
-    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
-    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen) {
-  }
+  View<const std::size_t> indices;
+  MatrixForceIndexInput( std::size_t task_index,
+                         std::size_t ipair,
+                         const MatrixTimesVectorData& actiondata,
+                         const ParallelActionsInput& input ):
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]]
+                            + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]]
+            + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,
+            rowlen) {}
 };
 
 class MatrixTimesVectorInput {
 public:
   bool noderiv;
   std::size_t rowlen;
-  View<const std::size_t,helpers::dynamic_extent> indices;
-  View<const double,helpers::dynamic_extent> matrow;
-  View<const double,helpers::dynamic_extent> vector;
-  MatrixTimesVectorInput( std::size_t task_index, std::size_t ipair, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, double* argdata ):
+  View<const std::size_t> indices;
+  View<const double> matrow;
+  View<const double> vector;
+  MatrixTimesVectorInput( std::size_t task_index,
+                          std::size_t ipair,
+                          const MatrixTimesVectorData& actiondata,
+                          const ParallelActionsInput& input,
+                          double* argdata ):
     noderiv(input.noderiv),
-    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
-    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
-    matrow(argdata + input.argstarts[actiondata.pairs[ipair][0]] + task_index*input.ncols[actiondata.pairs[ipair][0]],rowlen),
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]]
+                            + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+    indices(input.bookeeping + input.bookstarts[actiondata.pairs[ipair][0]]
+            + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index + 1,rowlen),
+    matrow(argdata + input.argstarts[actiondata.pairs[ipair][0]]
+           + task_index*input.ncols[actiondata.pairs[ipair][0]],rowlen),
     vector(argdata + input.argstarts[actiondata.pairs[ipair][1]], input.shapedata[1]) {
   }
 };
@@ -69,10 +84,16 @@ class MatrixTimesVectorOutput {
 public:
   std::size_t rowlen;
   View<double,1> values;
-  View<double,helpers::dynamic_extent> matrow_deriv;
-  View<double,helpers::dynamic_extent> vector_deriv;
-  MatrixTimesVectorOutput( std::size_t task_index, std::size_t ipair, std::size_t nder, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ParallelActionsOutput& output ):
-    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]] + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
+  View<double> matrow_deriv;
+  View<double> vector_deriv;
+  MatrixTimesVectorOutput( std::size_t task_index,
+                           std::size_t ipair,
+                           std::size_t nder,
+                           const MatrixTimesVectorData& actiondata,
+                           const ParallelActionsInput& input,
+                           ParallelActionsOutput& output ):
+    rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]]
+                            + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
     values(output.values.data()+ipair),
     matrow_deriv(output.derivatives.data()+ipair*nder,rowlen),
     vector_deriv(output.derivatives.data()+ipair*nder+rowlen,rowlen) {
@@ -104,9 +125,18 @@ public:
   std::string writeInGraph() const override {
     return "MATRIX_VECTOR_PRODUCT";
   }
-  static void performTask( std::size_t task_index, const MatrixTimesVectorData& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixTimesVectorData& actiondata );
-  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixTimesVectorData& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
+  static void performTask( std::size_t task_index,
+                           const MatrixTimesVectorData& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const MatrixTimesVectorData& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const MatrixTimesVectorData& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -128,7 +158,8 @@ void MatrixTimesVectorBase<T>::registerLocalKeywords( Keywords& keys ) {
 }
 
 template <class T>
-std::string MatrixTimesVectorBase<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+std::string MatrixTimesVectorBase<T>::getOutputComponentDescription( const std::string& cname,
+    const Keywords& keys ) const {
   if( getPntrToArgument(1)->getRank()==1 ) {
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getName().find(cname)!=std::string::npos ) {
@@ -282,10 +313,23 @@ int MatrixTimesVectorBase<T>::checkTaskIsActive( const unsigned& itask ) const {
 }
 
 template <class T>
-void MatrixTimesVectorBase<T>::performTask( std::size_t task_index, const MatrixTimesVectorData& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+void MatrixTimesVectorBase<T>::performTask( std::size_t task_index,
+    const MatrixTimesVectorData& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
-    MatrixTimesVectorOutput doutput( task_index, i, input.nderivatives_per_scalar, actiondata, input, output );
-    T::performTask( MatrixTimesVectorInput( task_index, i, actiondata, input, input.inputdata ), doutput );
+    MatrixTimesVectorOutput doutput( task_index,
+                                     i,
+                                     input.nderivatives_per_scalar,
+                                     actiondata,
+                                     input,
+                                     output );
+    T::performTask( MatrixTimesVectorInput( task_index,
+                                            i,
+                                            actiondata,
+                                            input,
+                                            input.inputdata ),
+                    doutput );
   }
 }
 
@@ -308,13 +352,18 @@ void MatrixTimesVectorBase<T>::getForceIndices( std::size_t task_index,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
-    std::size_t base = input.argstarts[actiondata.pairs[i][0]] + task_index*input.ncols[actiondata.pairs[i][0]];
-    std::size_t n = input.bookeeping[input.bookstarts[actiondata.pairs[i][0]] + (1+input.ncols[actiondata.pairs[i][0]])*task_index];
+    std::size_t base = input.argstarts[actiondata.pairs[i][0]]
+                       + task_index*input.ncols[actiondata.pairs[i][0]];
+    std::size_t n = input.bookeeping[input.bookstarts[actiondata.pairs[i][0]]
+                                     + (1+input.ncols[actiondata.pairs[i][0]])*task_index];
     for(unsigned j=0; j<n; ++j) {
       force_indices.indices[i][j] = base + j;
     }
     force_indices.threadsafe_derivatives_end[i] = n;
-    force_indices.tot_indices[i] = T::getAdditionalIndices( n, input.argstarts[actiondata.pairs[i][1]], MatrixForceIndexInput( task_index, i, actiondata, input ), force_indices.indices[i] );
+    force_indices.tot_indices[i] = T::getAdditionalIndices( n,
+                                   input.argstarts[actiondata.pairs[i][1]],
+                                   MatrixForceIndexInput( task_index, i, actiondata, input ),
+                                   force_indices.indices[i] );
   }
 }
 
