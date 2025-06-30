@@ -26,10 +26,24 @@
 
 namespace PLMD {
 
-class RequiredMatrixElements {
-public:
+struct RequiredMatrixElements {
   std::size_t ncols;
   std::vector<std::size_t> bookeeping;
+  void update() const {
+    bookeeping_data = bookeeping.data();
+  }
+  void toACCDevice() const {
+    update();
+#pragma acc enter data copyin(this[0:1], bookeeping_data[0:bookeeping.size()])
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(bookeeping_data[0:bookeeping.size()],this[0:1])
+  }
+  std::size_t operator[]( std::size_t i ) const {
+    return bookeeping_data[i];
+  }
+private:
+  mutable std::size_t const* bookeeping_data;
 };
 
 class MatrixElementOutput {

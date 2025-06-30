@@ -41,7 +41,18 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   }
 }
 
+
+class RequiredMatrixElementsUpdater {
+  RequiredMatrixElements& outmat;
+public:
+  RequiredMatrixElementsUpdater( RequiredMatrixElements& outmat ) : outmat(outmat) {}
+  ~RequiredMatrixElementsUpdater() {
+    outmat.update();
+  }
+};
+
 void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) {
+  RequiredMatrixElementsUpdater updater(outmat);
   Value* myval = getPntrToComponent(0);
   unsigned lstart = myval->getShape()[0];
   if( getNumberOfMasks()>0 ) {
