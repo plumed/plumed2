@@ -226,7 +226,7 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
     setupThirdAtomBlock( tc, t );
   }
   // Request the atoms from the ActionAtomistic
-  requestAtoms( t );
+  requestAtoms( t, false );
   bool components;
   parseFlag("COMPONENTS",components);
   parseFlag("NOPBC",nopbc);
