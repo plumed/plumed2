@@ -48,3 +48,5 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [AROUND](AROUND.md)
    - [INCYLINDER](INCYLINDER.md)
    - [INSPHERE](INSPHERE.md)
+- adjmat
+   - [CONTACT_MATRIX](CONTACT_MATRIX.md)
