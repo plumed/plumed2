@@ -29,15 +29,15 @@ namespace PLMD {
 class ActionWithMatrix;
 class RequiredMatrixElements {
   std::vector<std::size_t> bookeeping;
-  mutable std::size_t const* bookeeping_data;
+  std::size_t const* bookeeping_data;
 public:
   friend class ActionWithMatrix;
   std::size_t ncols;
-  void update() const {
+  void update() {
     bookeeping_data = bookeeping.data();
   }
   void toACCDevice() const {
-    update();
+    //this assumes that update() has already been called
 #pragma acc enter data copyin(this[0:1], bookeeping_data[0:bookeeping.size()])
   }
   void removeFromACCDevice() const {
