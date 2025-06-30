@@ -130,30 +130,6 @@ public:
   bool align_strands{false};
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms{};
-  SecondaryStructureDRMSDInput() = default;
-  ~SecondaryStructureDRMSDInput() = default;
-  SecondaryStructureDRMSDInput (const SecondaryStructureDRMSDInput& m ):
-    drmsd_targets(m.drmsd_targets),
-    drmsd_atoms(m.drmsd_atoms),
-    natoms(m.natoms),
-    nstructures(m.nstructures),
-    nopbc(m.nopbc),
-    align_strands(m.align_strands),
-    colvar_atoms(m.colvar_atoms) {}
-
-  SecondaryStructureDRMSDInput& operator=( const SecondaryStructureDRMSDInput& m ) {
-    if (this!=&m) {
-      natoms = m.natoms;
-      nstructures = m.nstructures;
-      nindices_per_task = m.nindices_per_task;
-      nopbc = m.nopbc;
-      align_strands = m.align_strands;
-      colvar_atoms=m.colvar_atoms;
-      drmsd_targets = m.drmsd_targets;
-      drmsd_atoms = m.drmsd_atoms;
-    }
-    return *this;
-  }
   static void calculateDistance( unsigned n,
                                  bool noderiv,
                                  const SecondaryStructureDRMSDInput& actiondata,
@@ -161,7 +137,7 @@ public:
                                  ColvarOutput& output );
   void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure );
   void toACCDevice()const {
-#pragma acc enter data copyin(this[0:1], natoms,nstructures,nopbc,align_strands)
+#pragma acc enter data copyin(this[0:1], natoms,nstructures,nindices_per_task,nopbc,align_strands)
     drmsd_targets.toACCDevice();
     drmsd_atoms.toACCDevice();
     colvar_atoms.toACCDevice();
@@ -170,7 +146,7 @@ public:
     colvar_atoms.removeFromACCDevice();
     drmsd_atoms.removeFromACCDevice();
     drmsd_targets.removeFromACCDevice();
-#pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,this[0:1])
+#pragma acc exit data delete(align_strands,nopbc,nindices_per_task,nstructures,natoms,this[0:1])
 
   }
 };

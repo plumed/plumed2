@@ -165,7 +165,8 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
                                         const MatrixTimesMatrixInput<T>& actiondata,
                                         ParallelActionsInput& input,
                                         ParallelActionsOutput& output ) {
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  auto arg0=ArgumentBookeepingHolder::create( 0, input );
+  auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
   std::size_t vstart = task_index*arg0.ncols;
@@ -246,7 +247,8 @@ void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
     const MatrixTimesMatrixInput<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  ArgumentBookeepingHolder arg0( 0, input ), arg1( 1, input );
+  auto arg0=ArgumentBookeepingHolder::create( 0, input );
+  auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[fpos];
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);

@@ -157,7 +157,7 @@ public:
     kmat = m.kmat;
     return *this;
   }
-  static void calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput& output );
+  static void calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput output );
 };
 
 typedef adjmat::AdjacencyMatrixBase<HBPammMatrix> hbpmap;
@@ -273,7 +273,7 @@ void HBPammMatrix::parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action
   action->setLinkCellCutoff( false, sfmax );
 }
 
-void HBPammMatrix::calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput& output ) {
+void HBPammMatrix::calculateWeight( const HBPammMatrix& data, const adjmat::AdjacencyMatrixInput& input, adjmat::MatrixOutput output ) {
   Vector ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;
   ddin = input.pos;
   in_dists[2] = ddin.modulo();
