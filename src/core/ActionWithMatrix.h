@@ -26,9 +26,13 @@
 
 namespace PLMD {
 
-struct RequiredMatrixElements {
-  std::size_t ncols;
+class ActionWithMatrix;
+class RequiredMatrixElements {
   std::vector<std::size_t> bookeeping;
+  mutable std::size_t const* bookeeping_data;
+public:
+  friend class ActionWithMatrix;
+  std::size_t ncols;
   void update() const {
     bookeeping_data = bookeeping.data();
   }
@@ -42,8 +46,7 @@ struct RequiredMatrixElements {
   std::size_t operator[]( std::size_t i ) const {
     return bookeeping_data[i];
   }
-private:
-  mutable std::size_t const* bookeeping_data;
+
 };
 
 class MatrixElementOutput {
