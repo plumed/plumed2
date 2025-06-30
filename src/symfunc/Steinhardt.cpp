@@ -127,7 +127,7 @@ numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
 denom: SUM ARG=sphere PERIODIC=NO
 # Average coordination number for atoms in sphere of interest
-av: CUSTOM ARG=numer,sphere FUNC=x/y PERIODIC=NO
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
 # And print out final CV to a file
 PRINT ARG=av FILE=colvar STRIDE=1
 ```
@@ -264,7 +264,7 @@ numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
 denom: SUM ARG=sphere PERIODIC=NO
 # Average coordination number for atoms in sphere of interest
-av: CUSTOM ARG=numer,sphere FUNC=x/y PERIODIC=NO
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
 # And print out final CV to a file
 PRINT ARG=av FILE=colvar STRIDE=1
 ```
@@ -401,7 +401,7 @@ numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
 denom: SUM ARG=sphere PERIODIC=NO
 # Average coordination number for atoms in sphere of interest
-av: CUSTOM ARG=numer,sphere FUNC=x/y PERIODIC=NO
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
 # And print out final CV to a file
 PRINT ARG=av FILE=colvar STRIDE=1
 ```
@@ -538,7 +538,7 @@ numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
 denom: SUM ARG=sphere PERIODIC=NO
 # Average coordination number for atoms in sphere of interest
-av: CUSTOM ARG=numer,sphere FUNC=x/y PERIODIC=NO
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
 # And print out final CV to a file
 PRINT ARG=av FILE=colvar STRIDE=1
 ```

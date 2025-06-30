@@ -62,7 +62,19 @@ p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL LAMBDA=690
 PRINT ARG=p1.spath,p1.zpath STRIDE=1 FILE=colvar
 ```
 
-In the example below the path is defined using the values of two torsional angles (t1 and t2).
+In the example below the path is defined using the values of two torsional angles (t1 and t2).  You can specify these arguments in the PLUMED input
+as illustrated below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: PATH ARG=t1,t2 REFERENCE=regtest/mapping/rt-tpath/epath.pdb LAMBDA=1.0
+PRINT ARG=pp.* FILE=colvar
+```
+
+However, this is not strictly necessary as PLUMED can also get the names of the arguments from the input pdb file directly as illustrated in the following
+input.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
@@ -134,8 +146,14 @@ PLUMED_REGISTER_ACTION(Path,"GPROPERTYMAP")
 void Path::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   Path::registerInputFileKeywords( keys );
-  keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  if( keys.getDisplayName()=="GPROPERTYMAP" ) {
+    keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  }
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
+  keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
+  keys.addFlag("GPATH",false,"calculate the trigonometric path");
+  keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   keys.addOutputComponent("gspath","GPATH","scalar","the position along the path calculated using the geometric formula");
   keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
   keys.addOutputComponent("spath","default","scalar","the position along the path calculated");
@@ -150,10 +168,6 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
-  keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
-  keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
-  keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
-  keys.addFlag("GPATH",false,"calculate the trigonometric path");
   keys.needsAction("DRMSD");
   keys.needsAction("RMSD");
   keys.needsAction("LOWEST");

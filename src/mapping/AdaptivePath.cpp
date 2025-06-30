@@ -60,7 +60,11 @@ The example input below shows how to use the adaptive path.
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH ARG=d1.x,d1.y UPDATE=50 FIXED=5,15 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+pp: ADAPTIVE_PATH ...
+   ARG=d1.x,d1.y UPDATE=50 FIXED=5,15
+   WFILE=out-path.pdb WSTRIDE=50
+   REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+...
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 ```
 
@@ -105,7 +109,6 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
-  keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
   keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");
