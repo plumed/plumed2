@@ -1302,7 +1302,7 @@ double SwitchingFunctionAccelerable::calculate(double distance,double&dfunc)cons
   //massert do not go with openacc
   // plumed_massert(init,"you are trying to use an unset SwitchingFunction");
   double result;
-  std::tie(result, dfunc) = switchContainers::calculateSqr(type,switchData,distance);
+  std::tie(result, dfunc) = switchContainers::calculate(type,switchData,distance);
   return result;
 }
 
