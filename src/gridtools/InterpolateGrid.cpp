@@ -193,8 +193,14 @@ void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals )
   std::vector<double> pos( output_grid.getDimension() );
   output_grid.getGridPointCoordinates( current, pos );
   std::vector<double> val(1), der( output_grid.getDimension() );
-  function::FunctionOutput funcout( 1, val.data(), output_grid.getDimension(), der.data() );
-  EvaluateGridFunction::calc( input_grid, false, View<const double,helpers::dynamic_extent>(pos.data(),pos.size()), funcout );
+  auto funcout = function::FunctionOutput::create( 1,
+                 val.data(),
+                 output_grid.getDimension(),
+                 der.data() );
+  EvaluateGridFunction::calc( input_grid,
+                              false,
+                              View<const double>(pos.data(),pos.size()),
+                              funcout );
   myvals.setValue( 0, val[0] );
   for(unsigned i=0; i<output_grid.getDimension(); ++i) {
     myvals.addDerivative( 0, i, der[i] );

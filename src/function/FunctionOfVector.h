@@ -251,8 +251,15 @@ void FunctionOfVector<T>::performTask( std::size_t task_index,
                                        const FunctionData<T>& actiondata,
                                        ParallelActionsInput& input,
                                        ParallelActionsOutput& output ) {
-  FunctionOutput funcout( input.ncomponents, output.values.data(), input.nderivatives_per_scalar, output.derivatives.data() );
-  T::calc( actiondata.f, input.noderiv, View<const double,helpers::dynamic_extent>( input.inputdata + task_index*input.nderivatives_per_scalar, input.nderivatives_per_scalar ), funcout );
+  auto funcout = FunctionOutput::create( input.ncomponents,
+                                         output.values.data(),
+                                         input.nderivatives_per_scalar,
+                                         output.derivatives.data() );
+  T::calc( actiondata.f,
+           input.noderiv,
+           View<const double>( input.inputdata + task_index*input.nderivatives_per_scalar,
+                               input.nderivatives_per_scalar ),
+           funcout );
 }
 
 template <class T>
