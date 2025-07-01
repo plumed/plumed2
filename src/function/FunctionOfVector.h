@@ -152,15 +152,14 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
     error("input mask has wrong size");
   }
 
-  // Setup the function and the values values
-  FunctionData<T> myfunc;
+  // Setup the function and the values
+  // Get the function data from the parallel task manager, to avoid copies
+  auto & myfunc = taskmanager.getActionInput();
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
   FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
   // Setup the parallel task manager
   taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
-  // Pass the function to the parallel task manager
-  taskmanager.setActionInput( myfunc );
 }
 
 template <class T>

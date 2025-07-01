@@ -170,7 +170,8 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
     }
   }
   // Setup the values
-  FunctionData<T> myfunc;
+  // Get the function data from the parallel task manager, to avoid copies
+  auto & myfunc = taskmanager.getActionInput();
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
   FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
@@ -178,9 +179,8 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setSymmetric( symmetric );
   }
-  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart, nscalars );
-  // Pass the function to the parallel task manager
-  taskmanager.setActionInput( myfunc );
+  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart,
+                                        nscalars );
 }
 
 template <class T>
