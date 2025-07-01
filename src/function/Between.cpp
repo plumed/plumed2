@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
@@ -140,14 +143,25 @@ tells you how many of these distances are between 0.1 and 0.2 nm.
 */
 //+ENDPLUMEDOC
 
-class Between {
-public:
-  bool isPeriodic;
-  double min=0, max=0;
+struct Between {
   HistogramBead hist{HistogramBead::KernelType::gaussian,0.0,1.0,0.5};
   static void registerKeywords( Keywords& keys );
-  static void read( Between& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void read( Between& func, ActionWithArguments* action,
+                    FunctionOptions& options );
+  static void calc( const Between& func,
+                    bool noderiv,
+                    const View<const double> args,
+                    FunctionOutput& funcout );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+    hist.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    hist.removeFromACCDevice();
+#pragma acc exit data delete(order, this[0:1])
+  }
+#endif // __PLUMED_USE_OPENACC
 };
 
 typedef FunctionShortcut<Between> BetweenShortcut;
@@ -182,8 +196,8 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
   }
 
   std::string str_min, str_max;
-  func.isPeriodic = action->getPntrToArgument(0)->isPeriodic();
-  if( func.isPeriodic ) {
+  bool isPeriodic = action->getPntrToArgument(0)->isPeriodic();
+  if( isPeriodic ) {
     action->getPntrToArgument(0)->getDomain( str_min, str_max );
   }
   std::string hinput;
@@ -202,17 +216,23 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
   }
   action->log.printf("  %s \n", func.hist.description().c_str() );
 
-  if( !func.isPeriodic ) {
+  if( !isPeriodic ) {
     func.hist.isNotPeriodic();
   } else {
-    Tools::convert( str_min, func.min );
-    Tools::convert( str_max, func.max );
-    func.hist.isPeriodic( func.min, func.max );
+    double min;
+    double max;
+    Tools::convert( str_min, min );
+    Tools::convert( str_max, max );
+    func.hist.isPeriodic( min, max );
   }
 }
 
-void Between::calc( const Between& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
-  plumed_dbg_assert( args.size()==1 );
+void Between::calc( const Between& func,
+                    bool noderiv,
+                    const View<const double> args,
+                    FunctionOutput& funcout ) {
+  // the presence of NDEBUG seems to be ignored by nvcc...
+  // plumed_dbg_assert( args.size()==1 );
   double deriv;
   funcout.values[0] = func.hist.calculate( args[0], deriv );
   if( !noderiv ) {

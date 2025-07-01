@@ -87,6 +87,17 @@ public:
   double getlowb() const ;
   double getbigb() const ;
   double getCutoff() const ;
+  //openacc support functions
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], lowb, highb, width, cutoff, type, \
+                              periodicity, min, max, max_minus_min, \
+                              inv_max_minus_min)
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(inv_max_minus_min, max_minus_min, max, min,\
+                             periodicity, type, cutoff, width, highb, lowb,\
+                             this[0:1])
+  }
 };
 
 inline
