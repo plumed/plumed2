@@ -49,6 +49,16 @@ struct FunctionData {
                      const std::vector<std::size_t>& shape,
                      bool hasderiv,
                      ActionWithValue* action );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], argstart, nscalars)
+    f.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    f.removeFromACCDevice();
+#pragma acc exit data delete(nscalars, argstart, this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 template <class T>
