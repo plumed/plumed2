@@ -29,10 +29,21 @@ namespace PLMD {
 namespace matrixtools {
 
 template <class T>
-class MatrixTimesMatrixInput {
-public:
+struct MatrixTimesMatrixInput {
   T funcinput;
   RequiredMatrixElements outmat;
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+    funcinput.toACCDevice();
+    outmat.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    funcinput.removeFromACCDevice();
+    outmat.removeFromACCDevice();
+#pragma acc exit data delete(this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 class InputVectors {
@@ -173,7 +184,7 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
   InputVectors vectors( nmult, output.buffer.data() );
   if( arg1.ncols<arg1.shape[1] ) {
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-    std::size_t nelements = actiondata.outmat.bookeeping[fstart];
+    std::size_t nelements = actiondata.outmat[fstart];
     for(unsigned i=0; i<nelements; ++i) {
       std::size_t nm = 0;
       for(unsigned j=0; j<nmult; ++j) {
@@ -181,7 +192,7 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
         std::size_t bstart = kind*(arg1.ncols + 1);
         std::size_t nr = arg1.bookeeping[bstart];
         for(unsigned k=0; k<nr; ++k) {
-          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
+          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat[fstart+1+i] ) {
             nm++;
             break;
           }
@@ -194,7 +205,7 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
         std::size_t bstart = kind*(arg1.ncols + 1);
         std::size_t nr = arg1.bookeeping[bstart];
         for(unsigned k=0; k<nr; ++k) {
-          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+i] ) {
+          if( arg1.bookeeping[bstart+1+k]==actiondata.outmat[fstart+1+i] ) {
             vectors.arg1[nm] = input.inputdata[ vstart + j ];
             vectors.arg2[nm] = input.inputdata[ arg1.start + kind*arg1.ncols + k ];
             nm++;
@@ -216,9 +227,9 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
 
     // Now do our multiplications
     std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-    std::size_t nelements = actiondata.outmat.bookeeping[fstart];
+    std::size_t nelements = actiondata.outmat[fstart];
     for(unsigned i=0; i<nelements; ++i) {
-      std::size_t base = arg1.start + actiondata.outmat.bookeeping[fstart+1+i];
+      std::size_t base = arg1.start + actiondata.outmat[fstart+1+i];
       for(unsigned j=0; j<nmult; ++j) {
         vectors.arg2[j] = input.inputdata[ base + arg1.ncols*arg0.bookeeping[fpos+1+j] ];
       }
@@ -237,7 +248,7 @@ template <class T>
 int MatrixTimesMatrix<T>::getNumberOfValuesPerTask( std::size_t task_index,
     const MatrixTimesMatrixInput<T>& actiondata ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-  return actiondata.outmat.bookeeping[fstart];
+  return actiondata.outmat[fstart];
 }
 
 template <class T>
@@ -259,7 +270,7 @@ void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
       std::size_t bstart = kind*(arg1.ncols + 1);
       std::size_t nr = arg1.bookeeping[bstart];
       for(unsigned k=0; k<nr; ++k) {
-        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+colno] ) {
+        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat[fstart+1+colno] ) {
           nmult_r++;
           break;
         }
@@ -271,7 +282,7 @@ void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
       std::size_t bstart = kind*(arg1.ncols + 1);
       std::size_t nr = arg1.bookeeping[bstart];
       for(unsigned k=0; k<nr; ++k) {
-        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat.bookeeping[fstart+1+colno] ) {
+        if( arg1.bookeeping[bstart+1+k]==actiondata.outmat[fstart+1+colno] ) {
           force_indices.indices[0][n] = task_index*arg0.ncols + j;
           force_indices.indices[0][nmult+n] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + k;
           n++;
@@ -284,7 +295,7 @@ void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
   } else {
     for(unsigned j=0; j<nmult; ++j) {
       force_indices.indices[0][j] = task_index*arg0.ncols + j;
-      force_indices.indices[0][nmult+j] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + actiondata.outmat.bookeeping[fstart+1+colno];
+      force_indices.indices[0][nmult+j] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + actiondata.outmat[fstart+1+colno];
     }
     force_indices.threadsafe_derivatives_end[0] = nmult;
     force_indices.tot_indices[0] = 2*nmult;

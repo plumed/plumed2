@@ -308,7 +308,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
                                   ParallelActionsInput& input,
                                   ParallelActionsOutput& output ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-  std::size_t nelements = actiondata.outmat.bookeeping[fstart];
+  std::size_t nelements = actiondata.outmat[fstart];
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t nargdata = arg1.start + arg1.shape[0]*arg1.ncols;
@@ -328,7 +328,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
   for(unsigned i=0; i<nelements; ++i) {
     std::size_t at2base = nargdata
                           + 3*arg0.shape[0]
-                          + 3*actiondata.outmat.bookeeping[fstart+1+i];
+                          + 3*actiondata.outmat[fstart+1+i];
     atom2[i] = Vector( input.inputdata[at2base],
                        input.inputdata[at2base+1],
                        input.inputdata[at2base+2] ) - atom1;
@@ -349,7 +349,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
       continue ;
     }
 
-    std::size_t ag2base = arg1.start + actiondata.outmat.bookeeping[fstart+1+i];
+    std::size_t ag2base = arg1.start + actiondata.outmat[fstart+1+i];
     Vector v2(input.inputdata[ag2base],
               input.inputdata[ag2base+arg1.ncols],
               input.inputdata[ag2base+2*arg1.ncols] );
@@ -386,7 +386,7 @@ void TorsionsMatrix::applyNonZeroRankForces( std::vector<double>& outforces ) {
 int TorsionsMatrix::getNumberOfValuesPerTask( std::size_t task_index,
     const TorsionsMatrixInput& actiondata ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-  return actiondata.outmat.bookeeping[fstart];
+  return actiondata.outmat[fstart];
 }
 
 void TorsionsMatrix::getForceIndices( std::size_t task_index,
@@ -404,12 +404,12 @@ void TorsionsMatrix::getForceIndices( std::size_t task_index,
   force_indices.indices[0][2] = arg1start + 2;
   force_indices.threadsafe_derivatives_end[0] = 3;
   force_indices.indices[0][3] = arg1.start
-                                + actiondata.outmat.bookeeping[fstart+1+colno];
+                                + actiondata.outmat[fstart+1+colno];
   force_indices.indices[0][4] = arg1.start
-                                + actiondata.outmat.bookeeping[fstart+1+colno]
+                                + actiondata.outmat[fstart+1+colno]
                                 + arg1.ncols;
   force_indices.indices[0][5] = arg1.start
-                                + actiondata.outmat.bookeeping[fstart+1+colno]
+                                + actiondata.outmat[fstart+1+colno]
                                 + 2*arg1.ncols;
   std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
   std::size_t atom1start = atomstart + 3*task_index;
@@ -418,7 +418,7 @@ void TorsionsMatrix::getForceIndices( std::size_t task_index,
   force_indices.indices[0][8] = atom1start + 2;
   std::size_t atom2start = atomstart
                            + 3*arg0.shape[0]
-                           + 3*actiondata.outmat.bookeeping[fstart+1+colno];
+                           + 3*actiondata.outmat[fstart+1+colno];
   force_indices.indices[0][9] = atom2start;
   force_indices.indices[0][10] = atom2start + 1;
   force_indices.indices[0][11] = atom2start + 2;

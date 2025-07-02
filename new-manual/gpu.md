@@ -50,3 +50,6 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [INSPHERE](INSPHERE.md)
 - adjmat
    - [CONTACT_MATRIX](CONTACT_MATRIX.md)
+- matrixtools
+   - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
+   - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)

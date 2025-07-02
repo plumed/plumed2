@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "MatrixTimesMatrix.h"
 #include "core/ActionRegister.h"
 
@@ -83,11 +86,21 @@ DUMPVECTOR ARG=ss1 FILE=mymatrix.dat
 namespace PLMD {
 namespace matrixtools {
 
-class MatrixProduct {
-public:
+struct MatrixProduct {
   static void registerKeywords( Keywords& keys );
   void setup( MatrixTimesMatrix<MatrixProduct>* action, const Value* myval ) {}
-  static void calculate( bool noderiv, const MatrixProduct& actdata, const InputVectors& vectors, MatrixElementOutput& output );
+  static void calculate( bool noderiv,
+                         const MatrixProduct& actdata,
+                         const InputVectors& vectors,
+                         MatrixElementOutput& output );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1])
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef MatrixTimesMatrix<MatrixProduct> mtimes;
@@ -97,7 +110,10 @@ void MatrixProduct::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("matrix","the product of the two input matrices");
 }
 
-void MatrixProduct::calculate( bool noderiv, const MatrixProduct& actdata, const InputVectors& vectors, MatrixElementOutput& output ) {
+void MatrixProduct::calculate( bool noderiv,
+                               const MatrixProduct& actdata,
+                               const InputVectors& vectors,
+                               MatrixElementOutput& output ) {
   std::size_t pp = vectors.arg1.size();
   for(unsigned i=0; i<vectors.nelem; ++i) {
     output.values[0] += vectors.arg1[i]*vectors.arg2[i];
@@ -106,14 +122,31 @@ void MatrixProduct::calculate( bool noderiv, const MatrixProduct& actdata, const
   }
 }
 
-class Dissimilarities {
-public:
+struct Dissimilarities {
   bool squared{false};
   bool periodic{false};
-  double min{0}, max{0}, max_minus_min{0}, inv_max_minus_min{0};
+  double min{0};
+  double max{0};
+  double max_minus_min{0};
+  double inv_max_minus_min{0};
   static void registerKeywords( Keywords& keys );
-  void setup( MatrixTimesMatrix<Dissimilarities>* action, const Value* myval );
-  static void calculate( bool noderiv, const Dissimilarities& actdata, const InputVectors& vectors, MatrixElementOutput& output );
+  void setup( MatrixTimesMatrix<Dissimilarities>* action,
+              const Value* myval );
+  static void calculate( bool noderiv,
+                         const Dissimilarities& actdata,
+                         const InputVectors& vectors,
+                         MatrixElementOutput& output );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], squared, periodic, min, max, \
+                              max_minus_min, inv_max_minus_min)
+
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(inv_max_minus_min, max_minus_min, max, \
+                             min, periodic, squared, this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef MatrixTimesMatrix<Dissimilarities> dissims;
