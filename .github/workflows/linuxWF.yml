@@ -182,15 +182,15 @@ jobs:
         echo "FC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
 
         echo "Testing (at least the compilation) with openacc, discarding membranefusion due to some incompatibilities with nvhpc"
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-openacc PLUMED_ACC_GPU=cc80 --enable-modules=all:-membranefusion:-ves:-isdb" >> $GITHUB_ENV
-        # echo "MPIEXEC=mpirun -oversubscribe" >> $GITHUB_ENV
-        
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-openacc PLUMED_ACC_TYPE=gpu PLUMED_ACC_GPU=cc80 --enable-modules=all:-membranefusion:-ves:-isdb" >> $GITHUB_ENV
+                
         # Using the same environment variables as the plain mpi installation
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
         echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
         echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
+        echo "PLUMED_CXXFLAGS_KEY=-O3 -Minfo=all" >> $GITHUB_ENV
       # nvhpcinstalls his own mpi compilers
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
