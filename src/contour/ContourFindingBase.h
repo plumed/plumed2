@@ -59,8 +59,14 @@ void ContourFindingBase::findContour( const std::vector<double>& direction, std:
 inline
 double ContourFindingBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
   std::vector<double> vals(1), derivs( x.size() );
-  function::FunctionOutput funcout( 1, vals.data(), x.size(), derivs.data() );
-  gridtools::EvaluateGridFunction::calc( function, false, View<const double,helpers::dynamic_extent>(x.data(),x.size()), funcout );
+  auto funcout = function::FunctionOutput::create( 1,
+                 vals.data(),
+                 x.size(),
+                 derivs.data() );
+  gridtools::EvaluateGridFunction::calc( function,
+                                         false,
+                                         View<const double>(x.data(),x.size()),
+                                         funcout );
   for(unsigned i=0; i<der.size(); ++i) {
     der[i] = derivs[i];
   }

@@ -178,8 +178,14 @@ void FunctionOfGrid<T>::performTask( const unsigned& current, MultiValue& myvals
   }
   // Calculate the function and its derivatives
   std::vector<double> vals(getNumberOfComponents()), deriv( getNumberOfComponents()*args.size() );
-  function::FunctionOutput funcout( getNumberOfComponents(), vals.data(), args.size(), deriv.data() );
-  T::calc( myfunc, false, View<const double,helpers::dynamic_extent>(args.data(), args.size()), funcout );
+  auto funcout = function::FunctionOutput::create( getNumberOfComponents(),
+                 vals.data(),
+                 args.size(),
+                 deriv.data() );
+  T::calc( myfunc,
+           false,
+           View<const double>(args.data(), args.size()),
+           funcout );
   unsigned np = myvals.getTaskIndex();
   // And set the values and derivatives
   myvals.addValue( 0, vals[0] );

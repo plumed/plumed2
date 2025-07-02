@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
@@ -402,19 +405,29 @@ was described in the previous section is not performed.
 class LessThan {
 public:
   bool squared;
-  std::string sfinput;
+#ifdef __PLUMED_USE_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
+#endif //__PLUMED_USE_OPENACC
   static void registerKeywords( Keywords& keys );
-  static void read( LessThan& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const LessThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  LessThan& operator=(const LessThan& m ) {
-    squared = m.squared;
-    sfinput = m.sfinput;
-    std::string errors;
-    switchingFunction.set( sfinput, errors );
-    plumed_assert( errors.length()==0 );
-    return *this;
+  static void read( LessThan& func,
+                    ActionWithArguments* action,
+                    FunctionOptions& options );
+  static void calc( const LessThan& func,
+                    bool noderiv,
+                    const View<const double>& args,
+                    FunctionOutput& funcout );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],squared)
+    switchingFunction.toACCDevice();
   }
+  void removeFromACCDevice() const {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(squared,this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef FunctionShortcut<LessThan> LessThanShortcut;
@@ -452,9 +465,10 @@ void LessThan::read( LessThan& func, ActionWithArguments* action, FunctionOption
 
 
   std::string errors;
-  action->parse("SWITCH",func.sfinput);
-  if(func.sfinput.length()>0) {
-    func.switchingFunction.set(func.sfinput,errors);
+  std::string sfinput;
+  action->parse("SWITCH",sfinput);
+  if(sfinput.length()>0) {
+    func.switchingFunction.set(sfinput,errors);
     if( errors.length()!=0 ) {
       action->error("problem reading SWITCH keyword : " + errors );
     }
@@ -471,12 +485,6 @@ void LessThan::read( LessThan& func, ActionWithArguments* action, FunctionOption
     action->parse("NN",nn);
     action->parse("MM",mm);
     func.switchingFunction.set(nn,mm,r0,d0);
-    std::string str_nn, str_mm, str_d0, str_r0;
-    Tools::convert( nn, str_nn );
-    Tools::convert( mm, str_mm );
-    Tools::convert( d0, str_d0 );
-    Tools::convert( r0, str_r0 );
-    func.sfinput = "RATIONAL R_0=" + str_r0 + " D_0=" + str_d0 + " NN=" + str_nn + " MM=" + str_mm;
   }
   action->log<<"  using switching function with cutoff "<<func.switchingFunction.description()<<"\n";
   action->parseFlag("SQUARED",func.squared);
@@ -485,7 +493,10 @@ void LessThan::read( LessThan& func, ActionWithArguments* action, FunctionOption
   }
 }
 
-void LessThan::calc( const LessThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void LessThan::calc( const LessThan& func,
+                     bool noderiv,
+                     const View<const double>& args,
+                     FunctionOutput& funcout ) {
   double d;
   if( func.squared ) {
     funcout.values[0] = func.switchingFunction.calculateSqr( args[0], d );

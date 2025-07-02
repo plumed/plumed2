@@ -103,8 +103,14 @@ void FunctionOfScalar<T>::calculate() {
     args[i-argstart]=getPntrToArgument(i)->get();
   }
   std::vector<double> vals( getNumberOfComponents() ), deriv( getNumberOfComponents()*args.size() );
-  FunctionOutput funcout( getNumberOfComponents(), vals.data(), args.size(), deriv.data() );
-  T::calc( myfunc, doNotCalculateDerivatives(), View<const double,helpers::dynamic_extent>(args.data(),args.size()), funcout );
+  auto funcout = FunctionOutput::create( getNumberOfComponents(),
+                                         vals.data(),
+                                         args.size(),
+                                         deriv.data() );
+  T::calc( myfunc,
+           doNotCalculateDerivatives(),
+           View<const double>(args.data(),args.size()),
+           funcout );
   for(unsigned i=0; i<vals.size(); ++i) {
     copyOutput(i)->set(vals[i]);
   }

@@ -152,15 +152,14 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
     error("input mask has wrong size");
   }
 
-  // Setup the function and the values values
-  FunctionData<T> myfunc;
+  // Setup the function and the values
+  // Get the function data from the parallel task manager, to avoid copies
+  auto & myfunc = taskmanager.getActionInput();
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
   FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
   // Setup the parallel task manager
   taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
-  // Pass the function to the parallel task manager
-  taskmanager.setActionInput( myfunc );
 }
 
 template <class T>
@@ -251,8 +250,15 @@ void FunctionOfVector<T>::performTask( std::size_t task_index,
                                        const FunctionData<T>& actiondata,
                                        ParallelActionsInput& input,
                                        ParallelActionsOutput& output ) {
-  FunctionOutput funcout( input.ncomponents, output.values.data(), input.nderivatives_per_scalar, output.derivatives.data() );
-  T::calc( actiondata.f, input.noderiv, View<const double,helpers::dynamic_extent>( input.inputdata + task_index*input.nderivatives_per_scalar, input.nderivatives_per_scalar ), funcout );
+  auto funcout = FunctionOutput::create( input.ncomponents,
+                                         output.values.data(),
+                                         input.nderivatives_per_scalar,
+                                         output.derivatives.data() );
+  T::calc( actiondata.f,
+           input.noderiv,
+           View<const double>( input.inputdata + task_index*input.nderivatives_per_scalar,
+                               input.nderivatives_per_scalar ),
+           funcout );
 }
 
 template <class T>

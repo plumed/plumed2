@@ -50,3 +50,8 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [INSPHERE](INSPHERE.md)
 - adjmat
    - [CONTACT_MATRIX](CONTACT_MATRIX.md)
+- function
+   - [LESS_THAN](LESS_THAN.md)
+   - [MORE_THAN](MORE_THAN.md)
+   - [BETWEEN](BETWEEN.md)
+   - [COMBINE](COMBINE.md)

@@ -107,8 +107,14 @@ void FunctionWithSingleArgument<T>::calculate() {
     }
   }
   std::vector<double> vals( getNumberOfComponents() ), deriv( getNumberOfComponents()*args.size() );
-  FunctionOutput funcout( getNumberOfComponents(), vals.data(), args.size(), deriv.data() );
-  T::calc( f, doNotCalculateDerivatives(), View<const double,helpers::dynamic_extent>(args.data(), args.size()), funcout );
+  auto funcout = FunctionOutput::create( getNumberOfComponents(),
+                                         vals.data(),
+                                         args.size(),
+                                         deriv.data() );
+  T::calc( f,
+           doNotCalculateDerivatives(),
+           View<const double>(args.data(), args.size()),
+           funcout );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval=getPntrToComponent(i);
     myval->set( vals[i] );
