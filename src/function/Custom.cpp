@@ -450,6 +450,25 @@ one (`c`).
 */
 //+ENDPLUMEDOC
 
+template <>
+std::string FunctionOfScalar<Custom>::writeInGraph() const {
+  std::size_t und = getName().find_last_of("_");
+  std::cerr <<"FunctionOfScalar<Custom>::writeInGraph()\n";
+  return getName().substr(0,und) + "\nFUNC=" + myfunc.func;
+}
+
+template <>
+std::string FunctionOfVector<Custom>::writeInGraph() const {
+  std::size_t und = getName().find_last_of("_");
+  return getName().substr(0,und) + "\nFUNC=" + taskmanager.getActionInput().f.func;
+}
+
+template <>
+std::string FunctionOfMatrix<Custom>::writeInGraph() const {
+  std::size_t und = getName().find_last_of("_");
+  return getName().substr(0,und) + "\nFUNC=" + taskmanager.getActionInput().f.func;
+}
+
 typedef FunctionShortcut<Custom> CustomShortcut;
 PLUMED_REGISTER_ACTION(CustomShortcut,"CUSTOM")
 PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")
