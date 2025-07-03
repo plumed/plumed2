@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
@@ -109,27 +112,30 @@ class VolumeInCylinder {
 public:
   bool docylinder;
   double min, max, sigma;
-  std::string kerneltype;
-  std::string swinput;
-  std::vector<unsigned> dir;
+  HistogramBead::KernelType kerneltype;
+  std::array<unsigned,3> dir;
+#ifdef __PLUMED_USE_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
+#endif //__PLUMED_USE_OPENACC
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeInCylinder>* action );
   void setupRegions( ActionVolume<VolumeInCylinder>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
   static void parseAtoms( ActionVolume<VolumeInCylinder>* action, std::vector<AtomNumber>& atom );
-  VolumeInCylinder& operator=( const VolumeInCylinder& m ) {
-    docylinder=m.docylinder;
-    min=m.min;
-    max=m.max;
-    sigma=m.sigma;
-    kerneltype=m.kerneltype;
-    dir=m.dir;
-    swinput=m.swinput;
-    std::string errors;
-    switchingFunction.set(swinput,errors);
-    return *this;
-  }
   static void calculateNumberInside( const VolumeInput& input, const VolumeInCylinder& actioninput, VolumeOutput& output );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], \
+docylinder, min, max, sigma, kerneltype, dir[0:3])
+    switchingFunction.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(dir[0:3], kerneltype, sigma, max, min, \
+      docylinder, this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef ActionVolume<VolumeInCylinder> Volc;
@@ -152,27 +158,30 @@ void VolumeInCylinder::registerKeywords( Keywords& keys ) {
 
 void VolumeInCylinder::parseInput( ActionVolume<VolumeInCylinder>* action ) {
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype=HistogramBead::getKernelType(mykerneltype);
   std::string sdir;
   action->parse("DIRECTION",sdir);
   if( sdir=="X") {
-    dir.push_back(1);
-    dir.push_back(2);
-    dir.push_back(0);
+    dir[0]=1;
+    dir[1]=2;
+    dir[2]=0;
   } else if( sdir=="Y") {
-    dir.push_back(0);
-    dir.push_back(2);
-    dir.push_back(1);
+    dir[0]=0;
+    dir[1]=2;
+    dir[2]=1;
   } else if( sdir=="Z") {
-    dir.push_back(0);
-    dir.push_back(1);
-    dir.push_back(2);
+    dir[0]=0;
+    dir[1]=1;
+    dir[2]=2;
   } else {
     action->error(sdir + "is not a valid direction.  Should be X, Y or Z");
   }
   action->log.printf("  cylinder's long axis is along %s axis\n",sdir.c_str() );
 
   std::string errors;
+  std::string swinput;
   action->parse("RADIUS",swinput);
   if(swinput.length()==0) {
     action->error("missing RADIUS keyword");
@@ -209,10 +218,8 @@ void VolumeInCylinder::calculateNumberInside( const VolumeInput& input, const Vo
 
   double vcylinder, dcylinder;
   if( actioninput.docylinder ) {
-    HistogramBead bead;
-    bead.isNotPeriodic();
-    bead.setKernelType( actioninput.kerneltype );
-    bead.set( actioninput.min, actioninput.max, actioninput.sigma );
+    HistogramBead bead( actioninput.kerneltype,
+                        actioninput.min, actioninput.max, actioninput.sigma );
     vcylinder=bead.calculate( fpos[actioninput.dir[2]], dcylinder );
   } else {
     vcylinder=1.0;
@@ -220,7 +227,8 @@ void VolumeInCylinder::calculateNumberInside( const VolumeInput& input, const Vo
   }
 
   const double dd = fpos[actioninput.dir[0]]*fpos[actioninput.dir[0]] + fpos[actioninput.dir[1]]*fpos[actioninput.dir[1]];
-  double dfunc, vswitch = actioninput.switchingFunction.calculateSqr( dd, dfunc );
+  double dfunc;
+  double vswitch = actioninput.switchingFunction.calculateSqr( dd, dfunc );
   output.values[0]=vswitch*vcylinder;
   output.derivatives[actioninput.dir[0]]=vcylinder*dfunc*fpos[actioninput.dir[0]];
   output.derivatives[actioninput.dir[1]]=vcylinder*dfunc*fpos[actioninput.dir[1]];

@@ -134,7 +134,7 @@ public:
   double jacob_det;
   double len_bi, len_cross, len_perp, sigma;
   Vector bi, cross, perp;
-  std::string kerneltype;
+  HistogramBead::KernelType kerneltype{HistogramBead::KernelType::gaussian};
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
   static void registerKeywords( Keywords& keys );
@@ -175,8 +175,10 @@ void VolumeCavity::registerKeywords( Keywords& keys ) {
 
 void VolumeCavity::parseInput( ActionVolume<VolumeCavity>* action ) {
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
-  action->log.printf("  using %s kernels with a bandwidth of %d \n", kerneltype.c_str(), sigma );
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype=HistogramBead::getKernelType(mykerneltype);
+  action->log.printf("  using %s kernels with a bandwidth of %d \n", mykerneltype.c_str(), sigma );
 }
 
 void VolumeCavity::parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms ) {
@@ -353,17 +355,14 @@ void VolumeCavity::setupRegions( ActionVolume<VolumeCavity>* action, const Pbc& 
 }
 
 void VolumeCavity::calculateNumberInside( const VolumeInput& input, const VolumeCavity& actioninput, VolumeOutput& output ) {
-  // Setup the histogram bead
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( actioninput.kerneltype );
-
   // Calculate distance of atom from origin of new coordinate frame
-  Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
+  Vector datom=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]),
+                                   Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
   double ucontr, uder, vcontr, vder, wcontr, wder;
 
+  // Setup the histogram bead
+  HistogramBead bead( actioninput.kerneltype, 0, actioninput.len_bi, actioninput.sigma);
   // Calculate contribution from integral along bi
-  bead.set( 0, actioninput.len_bi, actioninput.sigma );
   double upos=dotProduct( datom, actioninput.bi );
   ucontr=bead.calculate( upos, uder );
   double udlen=bead.uboundDerivative( upos );

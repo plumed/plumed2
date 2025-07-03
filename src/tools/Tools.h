@@ -60,6 +60,12 @@ constexpr double kBoltzmann(0.0083144621);
 /// \ingroup TOOLBOX
 /// PI
 constexpr double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
+/// \ingroup TOOLBOX
+/// PI / 2
+constexpr double halfpi=PLMD::pi*0.5;
+/// \ingroup TOOLBOX
+/// PI * 2
+constexpr double twopi=PLMD::pi*2.0;
 
 constexpr double dp2cutoff(6.25);
 

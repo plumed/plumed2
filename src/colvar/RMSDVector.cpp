@@ -49,7 +49,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   firststep(true),
-  input(getPbc()),
+  input(ParallelActionsInput::create(getPbc())),
   taskmanager(this) {
   if( getPntrToArgument(0)->getRank()!=1 ) {
     error("first argument should be vector");
@@ -227,7 +227,7 @@ void RMSDVector::calculate() {
     std::vector<double> buffer;
     std::vector<double> values( input.nscalars );
     std::vector<double> deriv( input_buffer.size(), 0 );
-    ParallelActionsOutput output( input.nscalars, values.data(), input_buffer.size(), deriv.data(), 0, buffer.data() );
+    auto output = ParallelActionsOutput::create( input.nscalars, values.data(), input_buffer.size(), deriv.data(), 0, buffer.data() );
     performTask( 0, taskmanager.getActionInput(), input, output );
 
     getPntrToComponent(0)->set( values[0] );
@@ -471,12 +471,12 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       std::size_t task_index = partialTaskList[i];
-      ParallelActionsOutput myout( input.nscalars,
-                                   fake_vals.data(),
-                                   derivatives.size(),
-                                   derivatives.data(),
-                                   0,
-                                   buffer.data() );
+      auto myout = ParallelActionsOutput::create( input.nscalars,
+                   fake_vals.data(),
+                   derivatives.size(),
+                   derivatives.data(),
+                   0,
+                   buffer.data() );
       // Calculate the stuff in the loop for this action
       performTask( task_index, taskmanager.getActionInput(), input, myout );
 

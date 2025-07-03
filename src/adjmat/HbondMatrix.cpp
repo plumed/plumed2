@@ -206,25 +206,14 @@ namespace adjmat {
 
 class HbondMatrix {
 public:
-  std::string OOinput;
   SwitchingFunction distanceOOSwitch;
-  std::string OHinput;
   SwitchingFunction distanceOHSwitch;
-  std::string anginput;
   SwitchingFunction angleSwitch;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<HbondMatrix>* action );
-  HbondMatrix& operator=( const HbondMatrix& m ) {
-    OOinput=m.OOinput;
-    std::string errors;
-    distanceOOSwitch.set(OOinput,errors);
-    OHinput=m.OHinput;
-    distanceOHSwitch.set(OHinput,errors);
-    anginput=m.anginput;
-    angleSwitch.set(anginput,errors);
-    return *this;
-  }
-  static void calculateWeight( const HbondMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const HbondMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput output );
 };
 
 typedef AdjacencyMatrixBase<HbondMatrix> hmap;
@@ -251,6 +240,7 @@ void HbondMatrix::registerKeywords( Keywords& keys ) {
 
 void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
   std::string errors;
+  std::string OOinput;
   action->parse("SWITCH",OOinput);
   if( OOinput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -260,6 +250,7 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
     action->error("problem reading SWITCH keyword : " + errors );
   }
 
+  std::string OHinput;
   action->parse("HSWITCH",OHinput);
   if( OHinput.length()==0 ) {
     action->error("could not find HSWITCH keyword");
@@ -269,6 +260,7 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
     action->error("problem reading HSWITCH keyword : " + errors );
   }
 
+  std::string anginput;
   action->parse("ASWITCH",anginput);
   if( anginput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -282,40 +274,54 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
   action->setLinkCellCutoff( false, distanceOOSwitch.get_dmax() );
 }
 
-void HbondMatrix::calculateWeight( const HbondMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void HbondMatrix::calculateWeight( const HbondMatrix& data,
+                                   const AdjacencyMatrixInput& input,
+                                   MatrixOutput output ) {
   Vector ood = input.pos;
   double ood_l = ood.modulo2(); // acceptor - donor
   if( ood_l<epsilon) {
     return;
   }
-  double ood_df, ood_sw=data.distanceOOSwitch.calculateSqr( ood_l, ood_df );
+  double ood_df;
+  double ood_sw=data.distanceOOSwitch.calculateSqr( ood_l, ood_df );
 
   for(unsigned i=0; i<input.natoms; ++i) {
-    Vector ohd(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
+    Vector ohd(input.extra_positions[i][0],
+               input.extra_positions[i][1],
+               input.extra_positions[i][2]);
     double ohd_l=ohd.modulo2();
-    double ohd_df, ohd_sw=data.distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
+    double ohd_df;
+    double ohd_sw=data.distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
 
     Angle a;
-    Vector ood_adf, ohd_adf;
+    Vector ood_adf;
+    Vector ohd_adf;
     double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
-    double angle_df, angle_sw=data.angleSwitch.calculate( angle, angle_df );
+    double angle_df;
+    double angle_sw=data.angleSwitch.calculate( angle, angle_df );
     output.val[0] += ood_sw*ohd_sw*angle_sw;
 
     if( !input.noderiv ) {
-      Vector d1 = angle_sw*ohd_sw*(-ood_df)*ood + angle_sw*ood_sw*(-ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*(-ood_adf-ohd_adf);
+      Vector d1 = angle_sw*ohd_sw*(-ood_df)*ood
+                  + angle_sw*ood_sw*(-ohd_df)*ohd
+                  + ood_sw*ohd_sw*angle_df*angle*(-ood_adf-ohd_adf);
       output.deriv[0] += d1[0];
       output.deriv[1] += d1[1];
       output.deriv[2] += d1[2];
-      Vector d2 = angle_sw*ohd_sw*(+ood_df)*ood + ood_sw*ohd_sw*angle_df*angle*ood_adf;
+      Vector d2 = angle_sw*ohd_sw*(+ood_df)*ood
+                  + ood_sw*ohd_sw*angle_df*angle*ood_adf;
       output.deriv[3] += d2[0];
       output.deriv[4] += d2[1];
       output.deriv[5] += d2[2];
-      Vector d3 = angle_sw*ood_sw*(+ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*ohd_adf;
+      Vector d3 = angle_sw*ood_sw*(+ohd_df)*ohd
+                  + ood_sw*ohd_sw*angle_df*angle*ohd_adf;
       output.deriv[6+i*3+0] = d3[0];
       output.deriv[6+i*3+1] = d3[1];
       output.deriv[6+i*3+2] = d3[2];
-      Tensor vir = angle_sw*ohd_sw*(-ood_df)*Tensor(ood,ood) + angle_sw*ood_sw*(-ohd_df)*Tensor(ohd,ohd) -
-                   ood_sw*ohd_sw*angle_df*angle*(Tensor(ood,ood_adf)+Tensor(ohd,ohd_adf));
+      Tensor vir = angle_sw*ohd_sw*(-ood_df)*Tensor(ood,ood)
+                   + angle_sw*ood_sw*(-ohd_df)*Tensor(ohd,ohd)
+                   - ood_sw*ohd_sw*angle_df*angle*(Tensor(ood,ood_adf)
+                       + Tensor(ohd,ohd_adf));
       output.deriv[6 + 3*input.natoms + 0] += vir[0][0];
       output.deriv[6 + 3*input.natoms + 1] += vir[0][1];
       output.deriv[6 + 3*input.natoms + 2] += vir[0][2];

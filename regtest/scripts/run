@@ -183,7 +183,7 @@ else
   export PLUMED_LIB="$root/src/lib/libplumed.$($plumed_nompi info --soext)"
 fi
 if type -t plumed_regtest_before 1>/dev/null ; then
-  plumed_regtest_before
+  plumed_regtest_before || exit 1
 fi
 
 case "$type" in

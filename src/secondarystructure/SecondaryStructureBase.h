@@ -335,7 +335,7 @@ int SecondaryStructureBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
 
 template <class T>
 void SecondaryStructureBase<T>::getForceIndices( std::size_t task_index,
-    std::size_t colno,
+    std::size_t /* colno */,
     std::size_t ntotal_force,
     const T& actiondata,
     const ParallelActionsInput& input,

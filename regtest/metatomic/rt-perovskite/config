@@ -1,0 +1,9 @@
+plumed_modules=metatomic
+plumed_needs=libmetatomic
+type=driver
+
+arg="--plumed plumed.dat --ixyz frames.xyz --length-units A --dump-forces forces --dump-full-virial"
+
+function plumed_regtest_before(){
+  python BaTiO3-CV.py && echo Generated model using BaTiO3-CV.py
+}

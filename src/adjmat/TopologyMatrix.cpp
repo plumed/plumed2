@@ -155,42 +155,23 @@ namespace adjmat {
 class TopologyMatrix {
 public:
   double sigma;
-  std::string kerneltype;
+  HistogramBead::KernelType kerneltype;
 /// The maximum number of bins that will be used
 /// This is calculated based on the dmax of the switching functions
   unsigned maxbins;
 /// The volume of the cells
   double cell_volume;
-/// switching function
-  std::string sfinput;
-  SwitchingFunction switchingFunction;
-  std::string cyinput;
-  SwitchingFunction cylinder_sw;
-  std::string lowsfinput;
-  SwitchingFunction low_sf;
   double binw_mat;
-  std::string thresholdinput;
+/// switching functions
+  SwitchingFunction switchingFunction;
+  SwitchingFunction cylinder_sw;
+  SwitchingFunction low_sf;
   SwitchingFunction threshold_switch;
   static void registerKeywords( Keywords& keys );
   void parseInput( AdjacencyMatrixBase<TopologyMatrix>* action );
-  TopologyMatrix& operator=( const TopologyMatrix& m ) {
-    sigma=m.sigma;
-    kerneltype=m.kerneltype;
-    maxbins = m.maxbins;
-    cell_volume = m.cell_volume;
-    std::string errors;
-    sfinput = m.sfinput;
-    switchingFunction.set( sfinput, errors );
-    lowsfinput = m.lowsfinput;
-    low_sf.set( lowsfinput, errors );
-    cyinput = m.cyinput;
-    cylinder_sw.set( cyinput, errors );
-    binw_mat = m.binw_mat;
-    thresholdinput = m.thresholdinput;
-    threshold_switch.set( thresholdinput, errors );
-    return *this;
-  }
-  static void calculateWeight( const TopologyMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output );
+  static void calculateWeight( const TopologyMatrix& data,
+                               const AdjacencyMatrixInput& input,
+                               MatrixOutput output );
 };
 
 typedef AdjacencyMatrixBase<TopologyMatrix> tmap;
@@ -215,6 +196,8 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 
 void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
   std::string errors;
+
+  std::string sfinput;
   action->parse("SWITCH",sfinput);
   if( sfinput.length()==0 ) {
     action->error("could not find SWITCH keyword");
@@ -224,6 +207,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading SWITCH keyword : " + errors );
   }
 
+  std::string lowsfinput;
   action->parse("CYLINDER_SWITCH",lowsfinput);
   if( lowsfinput.length()==0 ) {
     action->error("could not find CYLINDER_SWITCH keyword");
@@ -233,6 +217,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading CYLINDER_SWITCH keyword : " + errors );
   }
 
+  std::string cyinput;
   action->parse("RADIUS",cyinput);
   if( cyinput.length()==0 ) {
     action->error("could not find RADIUS keyword");
@@ -242,6 +227,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
     action->error("problem reading RADIUS keyword : " + errors );
   }
 
+  std::string thresholdinput;
   action->parse("DENSITY_THRESHOLD",thresholdinput);
   if( thresholdinput.length()==0 ) {
     action->error("could not find DENSITY_THRESHOLD keyword");
@@ -252,31 +238,35 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
   }
   // Read in stuff for grid
   action->parse("SIGMA",sigma);
-  action->parse("KERNEL",kerneltype);
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  kerneltype = HistogramBead::getKernelType(mykerneltype);
   action->parse("BIN_SIZE",binw_mat);
 
   // Set the link cell cutoff
-  action->setLinkCellCutoff( true, switchingFunction.get_dmax(), std::numeric_limits<double>::max() );
+  action->setLinkCellCutoff( true, switchingFunction.get_dmax(),
+                             std::numeric_limits<double>::max() );
   // Set the number of bins
   maxbins = std::floor( switchingFunction.get_dmax() / binw_mat ) + 1;
   // Set the cell volume
   double r=cylinder_sw.get_d0() + cylinder_sw.get_r0();
-  cell_volume=binw_mat*pi*r*r;
+  cell_volume=binw_mat*PLMD::pi*r*r;
 }
 
-void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const AdjacencyMatrixInput& input, MatrixOutput& output ) {
+void TopologyMatrix::calculateWeight( const TopologyMatrix& data,
+                                      const AdjacencyMatrixInput& input,
+                                      MatrixOutput output ) {
   // Compute switching function on distance between atoms
   Vector distance = input.pos;
   double len2 = distance.modulo2();
   if( len2>data.switchingFunction.get_dmax2() ) {
     return;
   }
-  double dfuncl, sw = data.switchingFunction.calculateSqr( len2, dfuncl );
+  double dfuncl;
+  double  sw = data.switchingFunction.calculateSqr( len2, dfuncl );
 
   // Now run through all sea atoms
-  HistogramBead bead;
-  bead.isNotPeriodic();
-  bead.setKernelType( data.kerneltype );
+  HistogramBead bead( data.kerneltype, 0.0, data.binw_mat, data.sigma  );
   Vector g1derivf,g2derivf,lderivf;
   Tensor vir;
   double binlength = data.maxbins * data.binw_mat;
@@ -286,7 +276,9 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const Adjacenc
   // tvals.resize( data.maxbins, 6 + 3*input.natoms + 9, 0 );
   for(unsigned i=0; i<input.natoms; ++i) {
     // Position of sea atom (this will be the origin)
-    Vector d2(input.extra_positions[i][0],input.extra_positions[i][1],input.extra_positions[i][2]);
+    Vector d2(input.extra_positions[i][0],
+              input.extra_positions[i][1],
+              input.extra_positions[i][2]);
     // Vector connecting sea atom and first in bond taking pbc into account
     Vector d20 = input.pbc->distance( d2, Vector(0,0,0) );
     // Vector connecting sea atom and second in bond taking pbc into account
@@ -348,13 +340,16 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data, const Adjacenc
         dc3 = dfuncr*( -dstart - proj*dd3 );
 
         // Calculate derivatives of excess
-        de1 = eval2*edf1*excess*(dd1 + 0.5*d1 ) + eval1*edf2*proj_between*(dd1 - 0.5*d1);
-        de2 = eval2*edf1*excess*(dd2 - 0.5*d1 ) + eval1*edf2*proj_between*(dd2 + 0.5*d1);
+        de1 = eval2*edf1*excess*(dd1 + 0.5*d1 )
+              + eval1*edf2*proj_between*(dd1 - 0.5*d1);
+        de2 = eval2*edf1*excess*(dd2 - 0.5*d1 )
+              + eval1*edf2*proj_between*(dd2 + 0.5*d1);
         de3 = ( eval2*edf1*excess + eval1*edf2*proj_between )*dd3;
       }
       for(unsigned bin=0; bin<data.maxbins; ++bin) {
         bead.set( bin*data.binw_mat, (bin+1)*data.binw_mat, data.sigma );
-        if( proj<(bin*data.binw_mat-bead.getCutoff()) || proj>data.binw_mat*(bin+1)+bead.getCutoff() ) {
+        if( proj<(bin*data.binw_mat-bead.getCutoff())
+            || proj>data.binw_mat*(bin+1)+bead.getCutoff() ) {
           continue;
         }
         double der, contr=bead.calculateWithCutoff( proj, der ) / data.cell_volume;

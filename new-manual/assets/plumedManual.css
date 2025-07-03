@@ -6,3 +6,7 @@
      */
     min-width: 17em;
 }
+
+.missingExample {
+    color: red;
+}

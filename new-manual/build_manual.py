@@ -636,6 +636,9 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
                 ref, ref_url = get_reference(doi)
                 f.write("- [" + ref + "](" + ref_url + ")\n") 
 
+def missingExample(key):
+   return f'<span class="plumedtooltip missingExample">{key}<span class="right">This keyword do not have examples</span></span>'
+
 def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
     undocumented_keyword = None
     broken_input = None
@@ -763,24 +766,24 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 if "argtype" in docs.keys() and "default" in docs.keys() : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
+                   if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | input | " + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n")
                 elif docs["type"]=="atoms" or "argtype" in docs.keys() :
                    if len(docs["description"])==0 :
                      undoc = undoc + 1 
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | input | none | " + getKeywordDescription( docs ) + " | \n")
+                   if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | input | none | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | input | none | " +  getKeywordDescription( docs ) + " |\n") 
             for key, docs in value["syntax"].items() : 
                 if key=="output" or "argtype" in docs.keys()  : continue
                 if docs["type"]=="compulsory" and "default" in docs.keys()  : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
+                   if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | compulsory | "  + docs["default"] + " | " + getKeywordDescription( docs ) + " |\n") 
                 elif docs["type"]=="compulsory" : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
+                   if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
                    else : f.write("| " + key + " | compulsory | none | " + getKeywordDescription( docs ) + " |\n")
             ndep = 0
             for key, docs in value["syntax"].items() :
@@ -788,12 +791,12 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                 if docs["type"]=="flag" : 
                    if len(docs["description"])==0 :
                      undoc = undoc + 1
-                   if not depracated and key in example_keywords and "pagelink" not in docs.keys() : f.write("| <span style=\"color:red\">" + key + "</span> | optional | false | " + getKeywordDescription( docs ) + " | \n")
+                   if not depracated and key in example_keywords and "pagelink" not in docs.keys() : f.write("| " + missingExample(key) + " | optional | false | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | optional | false | " + getKeywordDescription( docs ) + " |\n")
                 if docs["type"]=="optional" :
                    if len(docs["description"])==0 :
                      undoc = undoc + 1 
-                   if not depracated and key in example_keywords : f.write("| <span style=\"color:red\">" + key + "</span> | optional | not used | " + getKeywordDescription( docs ) + " | \n")
+                   if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | optional | not used | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
                 if depracated and docs["type"]=="deprecated" :
                    f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n") 
