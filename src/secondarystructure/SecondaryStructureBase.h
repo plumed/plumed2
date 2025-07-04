@@ -112,6 +112,7 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
     keys.remove("TYPE");
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
+  keys.reset_style("VERBOSE","hidden");
   keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
            "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
   keys.add("optional","R_0","The r_0 parameter of the switching function.");
