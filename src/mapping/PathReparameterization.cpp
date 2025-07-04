@@ -41,15 +41,24 @@ plumed pathtools --path in_path.pdb --metric EUCLIDEAN --out final_path.pdb
 ```
 
 If you are using this action directly and not through [pathtools](pathtools.md) or [ADAPTIVE_PATH](ADAPTIVE_PATH.md) you will
-probably be using it in an input something like this:
+probably be using it in an input something like this if your path is defined using atomic coordinates:
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
 rmsd: RMSD REFERENCE=regtest/trajectories/path_msd/all.pdb DISPLACEMENT TYPE=OPTIMAL
 # Accumulate the average displacement between the reference path and the trajectories that have sampled the transition
-disp: AVERAGE_PATH_DISPLACEMENT ARG=rmsd.disp STRIDE=1 METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+disp: AVERAGE_PATH_DISPLACEMENT ...
+  ARG=rmsd.disp STRIDE=1
+  METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1}
+  METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+...
 # Now displace the original path by the accumulated displacement and reparameterize so that all frames are equally spaced
-REPARAMETERIZE_PATH DISPLACE_FRAMES=disp FIXED=1,42 METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1} METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+REPARAMETERIZE_PATH ...
+  DISPLACE_FRAMES=disp FIXED=1,42
+  METRIC={RMSD DISPLACEMENT TYPE=OPTIMAL ALIGN=1,1,1,1,1,1,1,1,1,1,1,1,1 DISPLACE=1,1,1,1,1,1,1,1,1,1,1,1,1}
+  METRIC_COMPONENT=disp REFERENCE=rmsd_ref
+  MAXCYLES=100 TOL=1E-4 STRIDE=0
+...
 # And output the final reparameterized path at the end of the simulation
 DUMPPDB DESCRIPTION=PATH STRIDE=0 FILE=outpatb.pdb ATOMS=rmsd_ref ATOM_INDICES=1-13
 ```
@@ -99,6 +108,7 @@ void PathReparameterization::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   PathProjectionCalculator::registerKeywords(keys);
+  keys.remove("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which to reparameterize the path");
   keys.add("compulsory","FIXED","0","the frames in the path to fix");
   keys.add("compulsory","MAXCYLES","100","number of cycles of the algorithm to run");
