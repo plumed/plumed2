@@ -54,11 +54,17 @@ The example input below shows how to use this shortcut.
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: GPATH ARG=d1.x,d1.y REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+pp: GPATH ...
+   ARG=d1.x,d1.y PROPERTY=path
+   REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+...
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 ```
 
-The curved path here is defined using a series of points in a two dimensional space.  The input below illustrates how to the positions of atoms to define the path:
+The curved path here is defined using a series of points in a two dimensional space.  Furthermore, the coordinates that these points should be projected at on the low dimensional path
+(the $i$ values in the equation for $s$ above) are specified in the `path` property of the input pdb file.
+
+The input below illustrates how to the positions of atoms to define the path:
 
 ```plumed
 ##SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
@@ -68,7 +74,8 @@ PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 
 When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
 action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
-of mass and rotation of the reference frame.
+of mass and rotation of the reference frame.  Furthermore, because we have not used the PROPERTY keyword in this input, the $i$ values in the equation for $s$
+above are set equal to 1, 2, 3...
 
 */
 //+ENDPLUMEDOC

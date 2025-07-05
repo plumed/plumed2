@@ -34,13 +34,33 @@ implementation have been tested against the implementation that was used in the 
 An example input that calculates and prints the PAIRENTROPY CV is shown below:
 
 ```plumed
-pp: PAIRENTROPY GROUP=1-108 MAXR=2.0 GRID_BIN=20 CUTOFF=1.5 BANDWIDTH=0.13
+pp: PAIRENTROPY ...
+   GROUP=1-108 MAXR=2.0 GRID_BIN=20
+   BANDWIDTH=0.13 KERNEL=gaussian
+   CUTOFF=6.25
+...
 PRINT ARG=pp FILE=colvar
 ```
 
 By expanding the shortct in the input above you can see how features that are already avaialble within PLUMED can be reused to calculate this CV.  The resulting implementation is likely slower than the
 direct implementation that is available [here](https://sites.google.com/site/pablompiaggi/scripts/pair-entropy/pair-entropy-cv?authuser=0).  We hope, however, that this implementation helps others to understand
 how this CV is constructed.
+
+If you would like to calculate the pair entropy based on the radial distribution of the atoms in GROUPB around GROUPA you can use an input similar to the one shown below:
+
+```plumed
+pp: PAIRENTROPY ...
+   GROUPA=1-108 GROUPB=109-300
+   GRID_BIN=20 MAXR=2.0
+   BANDWIDTH=0.13 KERNEL=gaussian
+   CUTOFF=6.25 DENSITY=1.0
+...
+PRINT ARG=pp FILE=colvar
+```
+
+Notice that we have also used the `DENSITY` keyword to set the background density that is used when normalizing the radial distribution function explicity to 1 atom$/nm^{3}$.
+When this keyword is not used, this density is calculated by dividing the number of atoms by the volume of the box as you can see if you expand the shortcut in the
+first input above.
 
 */
 //+ENDPLUMEDOC
@@ -59,7 +79,7 @@ PLUMED_REGISTER_ACTION(PairEntropy,"PAIRENTROPY")
 void PairEntropy::registerKeywords( Keywords& keys ) {
   RDF::registerKeywords( keys );
   keys.needsAction("RDF");
-  keys.add("compulsory","SIGMA","use bandwidth","an alternative method for specifying the bandwidth instead of using the BANDWIDTH keyword");
+  keys.addDeprecatedKeyword("SIGMA","BANDWIDTH");
   keys.setValueDescription("scalar","the KL-entropy that is computed from the radial distribution function");
   keys.addDOI("10.1103/PhysRevLett.119.015701");
   keys.needsAction("INTERPOLATE_GRID");
@@ -94,20 +114,21 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
     Tools::convert( awords.size()+1, natoms );
   }
   // Read in all other keywords and create the RDF object
-  std::string maxr, nbins, dens, bw, cutoff;
+  std::string maxr, nbins, dens, bw="", cutoff, kernel;
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
-  parse("SIGMA",bw);
-  if( bw=="use bandwidth" ) {
-    parse("BANDWIDTH",bw);
+  parse("BANDWIDTH",bw);
+  if( bw.length()==0 ) {
+    parse("SIGMA",bw);
   }
   parse("CUTOFF",cutoff);
+  parse("KERNEL",kernel);
   std::string dens_str;
   if( dens.length()>0 ) {
     dens_str = " DENSITY=" + dens;
   }
-  readInputLine( getShortcutLabel() + "_rdf: RDF " + atom_str + " CUTOFF=" + cutoff + " GRID_BIN=" + nbins + " MAXR=" + maxr + dens_str + " BANDWIDTH=" + bw + " " + ref_str);
+  readInputLine( getShortcutLabel() + "_rdf: RDF " + atom_str + " KERNEL=" + kernel + " CUTOFF=" + cutoff + " GRID_BIN=" + nbins + " MAXR=" + maxr + dens_str + " BANDWIDTH=" + bw + " " + ref_str);
   // And compute the two functions we are integrating (we use two matheval objects here and sum them in order to avoid nans from taking logarithms of zero)
   readInputLine( getShortcutLabel() + "_conv_t1: CUSTOM ARG=" + getShortcutLabel() + "_rdf," + ref_name + "_x2 FUNC=x*y*log(x) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_conv_t2: CUSTOM ARG=" + getShortcutLabel() + "_rdf," + ref_name + "_x2 FUNC=(1-x)*y PERIODIC=NO");

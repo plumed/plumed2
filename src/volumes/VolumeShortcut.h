@@ -42,16 +42,16 @@ template <const char* v>
 void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   actionRegister().getKeywords( std::string(v) + "_CALC", keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
-  keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
-  keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
+  keys.addDeprecatedKeyword("DATA","");
+  keys.addDeprecatedKeyword("LESS_THAN","");
   keys.addOutputComponent("lessthan","LESS_THAN","scalar","the number of cvs in the region of interest that are less than a certain threshold");
-  keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
+  keys.addDeprecatedKeyword("MORE_THAN","");
   keys.addOutputComponent("morethan","MORE_THAN","scalar","the number of cvs in the region of interest that are more than a certain threshold");
-  keys.add("optional","BETWEEN","calculate the number of colvars that are inside the region of interest and that have a CV value that is between a particular set of bounds");
+  keys.addDeprecatedKeyword("BETWEEN","");
   keys.addOutputComponent("between","BETWEEN","scalar","the number of cvs in the region of interest that are within a certain range");
-  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
+  keys.addDeprecatedFlag("SUM","");
   keys.addOutputComponent("sum","SUM","scalar","the sum of all the colvars weighted by the function that determines if we are in the region");
-  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
+  keys.addDeprecatedFlag("MEAN","");
   keys.addOutputComponent("mean","MEAN","scalar","the average values of the colvar in the region of interest");
   keys.addActionNameSuffix("_CALC");
   keys.needsAction("LESS_THAN");
@@ -96,7 +96,7 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + mc_lab + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
       std::string tlab = getShortcutLabel() + "_numer";
       if( dosum ) {
-        tlab = getShortcutLabel() + "_sum:";
+        tlab = getShortcutLabel() + "_sum";
       }
       readInputLine( tlab + ": SUM ARG=" + getShortcutLabel() + "_prod PERIODIC=NO");
     }

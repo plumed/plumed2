@@ -51,17 +51,20 @@ g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=w
 PRINT ARG=g FILE=colvar
 ```
 
-In the above input the weights in the expressions above are set equal to the eleemnts of a constant vector, `w`.  A more common
-approach is to use the masses of the atoms as in the input below:
+In the above input the weights in the expressions above are set equal to the elemnts of a constant vector, `w`.  A more common
+approach is to use the masses of the atoms, which you can do using any one of the three inputs below:
 
 ```plumed
 g: GYRATION ATOMS=1-5 TYPE=RADIUS MASS_WEIGHTED
 # This input is equivalent
-# g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=@Masses
-PRINT ARG=g FILE=colvar
+g2: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=@Masses
+# As is this one
+g3: GYRATION ATOMS=1-5 TYPE=RADIUS MASS
+# The following print statement thus outputs the same number three times
+PRINT ARG=g,g2,g3 FILE=colvar
 ```
 
-or to set all the input weights equal to one as is done in the input below;
+Alternatively, you can set all the input weights equal to one as is done in the input below;
 
 ```plumed
 g: GYRATION ATOMS=1-5 TYPE=RADIUS
@@ -89,7 +92,17 @@ g: GYRATION ATOMS=1-5 TYPE=TRACE WEIGHTS=w
 PRINT ARG=g FILE=colvar
 ```
 
-You can also calculate the largest, middle and smallest principal moments of the tensor:
+Notice, that when you compute the gyration tensor in the above calculation it is unormalized.  If you want to calculate any other
+quantity from the unormalized gyration tensor you can add the UNORMALIZED flag as shown below, which computes the unormalized radius
+of gyration.
+
+```plumed
+w: CONSTANT VALUES=1,2,2,3,4
+g: GYRATION ATOMS=1-5 UNORMALIZED TYPE=RADIUS WEIGHTS=w
+PRINT ARG=g FILE=colvar
+```
+
+You can also calculate the largest, middle and smallest principal moments of the normalized tensor:
 
 ```plumed
 w: CONSTANT VALUES=1,2,2,3,4
@@ -139,11 +152,21 @@ would normally be part of the same molecule.  When computing this CV it is impor
 are calculated correctly.  There are two ways that you can manage periodic boundary conditions when using this action.  The
 first and simplest is to reconstruct the molecule similarly to the way that [WHOLEMOLECULES](WHOLEMOLECULES.md) operates.
 This reconstruction of molecules has been done automatically since PLUMED 2.2.  If for some reason you want to turn it off
-you can use the NOPBC flag.
+you can use the NOPBC flag as shown below:
+
+```plumed
+g: GYRATION ATOMS=1-5 TYPE=RADIUS MASS_WEIGHTED NOPBC
+PRINT ARG=g FILE=colvar
+```
 
 An alternative approach to handling PBC is to use the PHASES keyword.  This keyword instructs PLUMED to use the PHASES option
 when computing the position of the center using the [CENTER](CENTER.md) command.  Distances of atoms from this center are then
-computed using PBC as usual.
+computed using PBC as usual. The example shown below shows you how to use this option
+
+```plumed
+g: GYRATION ATOMS=1-5 TYPE=RADIUS MASS_WEIGHTED PHASES
+PRINT ARG=g FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -168,7 +191,7 @@ void Gyration::registerKeywords(Keywords& keys) {
   keys.setDisplayName("GYRATION");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
-  keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
+  keys.addFlag("MASS_WEIGHTED",false,"use the masses of the atoms as the weights when calculating the gyration tensor");
   keys.setValueDescription("scalar","the radius of gyration");
 }
 

@@ -85,10 +85,6 @@ PLUMED_REGISTER_ACTION(SketchMapProjection,"SKETCHMAP_PROJECTION")
 void SketchMapProjection::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   mapping::Path::registerInputFileKeywords( keys );
-  keys.remove("NOSPATH");
-  keys.remove("NOZPATH");
-  keys.remove("GPATH");
-  keys.remove("COEFFICIENTS");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","WEIGHT","the weight of each individual landmark in the stress fucntion that is to be optimised");
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");

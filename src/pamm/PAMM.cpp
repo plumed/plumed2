@@ -62,7 +62,10 @@ In this example I will explain in detail what the following input is computing:
 MOLINFO MOLTYPE=protein STRUCTURE=regtest/pamm/rt-pamm-periodic/M1d.pdb
 psi: TORSION ATOMS1=@psi-2 ATOMS2=@psi-3 ATOMS3=@psi-4
 phi: TORSION ATOMS1=@phi-2 ATOMS2=@phi-3 ATOMS3=@phi-4
-p: PAMM ARG=phi,psi CLUSTERS=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp MEAN
+p: PAMM ...
+  ARG=phi,psi MEAN
+  CLUSTERS=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp
+...
 PRINT ARG=p-1_mean,p-2_mean FILE=colvar
 ```
 

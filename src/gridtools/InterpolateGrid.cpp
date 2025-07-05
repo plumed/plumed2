@@ -29,7 +29,7 @@
 Interpolate a smooth function stored on a grid onto a grid with a smaller grid spacing.
 
 This action takes a function evaluated on a grid as input and can be used to interpolate the values of that
-function on to a finer grained grid.  The interpolation within this algorithm is done using splines.
+function on to a finer grained grid.  By default the interpolation within this algorithm is done using splines.
 
 ## Examples
 
@@ -44,6 +44,31 @@ hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
 ii: INTERPOLATE_GRID ARG=hA1 GRID_BIN=200
 DUMPGRID ARG=ii FILE=histo.dat
 ```
+
+When specifying the parameters of the interpolating grid you can use GRID_BIN to specify the number of grid points
+or GRID_SPACING to specify the spacing between grid points as shown below:
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+ii: INTERPOLATE_GRID ARG=hA1 GRID_SPACING=0.05 INTERPOLATION_TYPE=floor
+DUMPGRID ARG=ii FILE=histo.dat
+```
+
+In the above input spline interpolation is not used. Instead, if you evaluating the function at value $x$, which
+is $x_n < x < x_{n+1}$ where $x_n$ and $x_{n+1}$ are two points where the values for the function on the input grid
+are $f(x_n)$ and $f(x_{n+1})$ then $f(x)=f(x_n)$. If you want $f(x)=f(x_{n+1})$ you use `INTERPOLATION_TYPE=ceiling`.
+Alternatively, you can use linear interpolation as has been done in the following input.
+
+```plumed
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
+ii: INTERPOLATE_GRID ARG=hA1 MIDPOINTS INTERPOLATION_TYPE=linear
+DUMPGRID ARG=ii FILE=histo.dat
+```
+
+In this input the `MIDPOINTS` flag is used in place of GRID_BIN/GRID_SPACING. The interpolated grid is thus evaluated
+at the $n-1$ mid points that lie between the points on the input grid.
 
 */
 //+ENDPLUMEDOC
@@ -80,6 +105,7 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
   EvaluateGridFunction::registerKeywords( keys );
+  keys.remove("ZERO_OUTSIDE_GRID_RANGE");
   keys.setValueDescription("grid","the function evaluated onto the interpolated grid");
 }
 

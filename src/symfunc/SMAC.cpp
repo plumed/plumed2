@@ -75,6 +75,36 @@ of transformed $s_i$ are then added together to determine the final quantity tha
 
 Incidentally, the authors who designed the SMAC symmetry function have forgotten what the letters in this acronym stand for.
 
+## Working with two types of molecule
+
+You can use two different sets of vectors in the input to this action as shown below:
+
+```plumed
+m3: DISTANCES ...
+   ATOMS1=9,10 LOCATION1=9
+   ATOMS2=89,90 LOCATION2=89
+   ATOMS3=473,474 LOCATION3=473
+   ATOMS4=1161,1162 LOCATION4=1161
+   COMPONENTS
+...
+
+m4: DISTANCES ...
+   ATOMS1=1521,1522 LOCATION1=1521
+   ATOMS2=1593,1594 LOCATION2=1593
+   ATOMS3=1601,1602 LOCATION3=1601
+   ATOMS4=2201,2202 LOCATION4=2201
+   COMPONENTS
+...
+
+s2: SMAC SPECIESA=m3 SPECIESB=m4 KERNEL1={GAUSSIAN CENTER=0 SIGMA=0.480} KERNEL2={GAUSSIAN CENTER=pi SIGMA=0.480} SWITCH={RATIONAL R_0=0.6} MORE_THAN={RATIONAL R_0=0.7} SWITCH_COORD={EXP R_0=4}
+
+PRINT ARG=s2_morethan FILE=colvar
+```
+
+In this input the $s_i$ values defined using the equation above is evaluated for the four vectors that are specified in the DISTANCE action with label m3.  In evaluating the sum in that expression
+we run over the four vectors that are specified in the action with label `m4` above.
+
+
 */
 //+ENDPLUMEDOC
 

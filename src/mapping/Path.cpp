@@ -62,7 +62,19 @@ p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL LAMBDA=690
 PRINT ARG=p1.spath,p1.zpath STRIDE=1 FILE=colvar
 ```
 
-In the example below the path is defined using the values of two torsional angles (t1 and t2).
+In the example below the path is defined using the values of two torsional angles (t1 and t2).  You can specify these arguments in the PLUMED input
+as illustrated below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: PATH ARG=t1,t2 REFERENCE=regtest/mapping/rt-tpath/epath.pdb LAMBDA=1.0
+PRINT ARG=pp.* FILE=colvar
+```
+
+However, this is not strictly necessary as PLUMED can also get the names of the arguments from the input pdb file directly as illustrated in the following
+input.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
@@ -74,6 +86,70 @@ PRINT ARG=pp.* FILE=colvar
 
 If you look at the pdb file for the input above you can see that the remarks tell PLUMED the labels that are being used to define the position in the
 high dimensional space and the values that these arguments have at each point on the path.
+
+## Controlling what is calculated
+
+If you only want to calculate the $s$ coordinate you can use the NOZPATH flag as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL NOZPATH LAMBDA=69087
+PRINT ARG=p1.spath STRIDE=1 FILE=colvar
+```
+
+Similarly, if you only want to calculate the $z$ coordinate you use the NOSPATH flag as shown below
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL NOSPATH LAMBDA=69087
+PRINT ARG=p1.zpath STRIDE=1 FILE=colvar
+```
+
+You can also tell PLUMED to calculate the distance along and distance from the path using the formulas that are given in the documentation for the
+[GPATH](GPATH.md) shortcut as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/all.pdb
+p1: PATH REFERENCE=regtest/trajectories/path_msd/all.pdb TYPE=OPTIMAL GPATH LAMBDA=69087
+PRINT ARG=p1.spath,p1.zpath,p1.gspath,p1.gzpath STRIDE=1 FILE=colvar
+```
+
+The PATH command in this input calculates four quantities:
+
+- p1.spath - the s coordinate evaluated using the expression above
+- p1.zpath - the z coordinate evluated using the expression above
+- p1.gspath - the s coordinate evaluated using the expression in the documentation for [GPATH](GPATH.md)
+- p1.gzpath - the z coordinate evaluated using the expression in the documentation for [GPATH](GPATH.md)
+
+## Paths using normalized Euclidean distances
+
+If you are defining the positions of the frames in the path using arguments you may wish to calculate the distances between the instantaneous values of the
+arguments and the values of these arguments on the path using the [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) rather than the
+[EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md). In other words, instead of calculating the distance between the vectors coordinates of coordinates $x$ and $y$ using:
+
+$$
+D^2 = \sum_{i=1}^N (x_i - y_i)^2
+$$
+
+where the sum runs over the number of arguments, you can calculate this distance as:
+
+$$
+D^2 = \sum_{i=1}^N C_i (x_i - y_i)^2
+$$
+
+where the $C_i$ are a set of coefficients that are specified using the COEFFICIENTS keyword as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: PATH ...
+  ARG=t1,t2 COEFFICIENTS=0.2,0.3
+  REFERENCE=regtest/mapping/rt-tpath/epath.pdb
+  LAMBDA=1.0
+...
+PRINT ARG=pp.* FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -118,7 +194,66 @@ two torsions `t1` and `t2`.
 #SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
 t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
-pp: GPROPERTYMAP REFERENCE=regtest/mapping/rt-tpath/epath.pdb PROPERTY=X LAMBDA=1.0
+pp: GPROPERTYMAP ...
+   ARG=t1,t2 REFERENCE=regtest/mapping/rt-tpath/epath.pdb
+   PROPERTY=X LAMBDA=1.0
+...
+PRINT ARG=pp.* FILE=colvar
+```
+
+Notice that you can use the ARG keyword to specify the arguments are used in the definition of the PATH.  However, you do not have to
+use this keyword.  The following input also works as PLUMED gets the input arguments from the file that contains the definition of the
+path.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: GPROPERTYMAP ...
+   REFERENCE=regtest/mapping/rt-tpath/epath.pdb
+   PROPERTY=X LAMBDA=1.0
+...
+PRINT ARG=pp.* FILE=colvar
+
+## Controlling what is calculated
+
+If you dont want to bother calculating the z coordinate you can use the NOZPATH flag as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/allv.pdb
+p2: GPROPERTYMAP ...
+   REFERENCE=regtest/trajectories/path_msd/allv.pdb
+   PROPERTY=X,Y LAMBDA=69087 NOZPATH
+...
+PRINT ARG=p2_X,p2_Y STRIDE=1 FILE=colvar
+```
+
+## Property maps using normalized Euclidean distances
+
+If you are defining the positions of the frames in the path using arguments you may wish to calculate the distances between the instantaneous values of the
+arguments and the values of these arguments on the path using the [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) rather than the
+[EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md). In other words, instead of calculating the distance between the vectors coordinates of coordinates $x$ and $y$ using:
+
+$$
+D^2 = \sum_{i=1}^N (x_i - y_i)^2
+$$
+
+where the sum runs over the number of arguments, you can calculate this distance as:
+
+$$
+D^2 = \sum_{i=1}^N C_i (x_i - y_i)^2
+$$
+
+where the $C_i$ are a set of coefficients that are specified using the COEFFICIENTS keyword as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-tpath/epath.pdb
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: GPROPERTYMAP ...
+   REFERENCE=regtest/mapping/rt-tpath/epath.pdb
+   PROPERTY=X COEFFICIENTS=0.2,0.3 LAMBDA=1.0
+...
 PRINT ARG=pp.* FILE=colvar
 ```
 
@@ -134,10 +269,18 @@ PLUMED_REGISTER_ACTION(Path,"GPROPERTYMAP")
 void Path::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   Path::registerInputFileKeywords( keys );
-  keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  if( keys.getDisplayName()=="GPROPERTYMAP" ) {
+    keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  }
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
-  keys.addOutputComponent("gspath","GPATH","scalar","the position along the path calculated using the geometric formula");
-  keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
+  keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
+  keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
+  if( keys.getDisplayName()=="PATH" ) {
+    keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
+    keys.addFlag("GPATH",false,"calculate the geometric path");
+    keys.addOutputComponent("gspath","GPATH","scalar","the position along the path calculated using the geometric formula");
+    keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
+  }
   keys.addOutputComponent("spath","default","scalar","the position along the path calculated");
   keys.addOutputComponent("zpath","default","scalar","the distance from the path calculated");
   keys.addDOI("10.1063/1.2432340");
@@ -150,10 +293,6 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
-  keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
-  keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
-  keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
-  keys.addFlag("GPATH",false,"calculate the trigonometric path");
   keys.needsAction("DRMSD");
   keys.needsAction("RMSD");
   keys.needsAction("LOWEST");
@@ -170,12 +309,19 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
 Path::Path( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao) {
-  bool nospath, nozpath, gpath;
-  parseFlag("NOSPATH",nospath);
+  // Now create all other parts of the calculation
+  std::string lambda;
+  parse("LAMBDA",lambda);
+  std::string reference;
+  parse("REFERENCE",reference);
+  bool nospath=false, nozpath=false, gpath=false;
+  if( getName()=="PATH" ) {
+    parseFlag("NOSPATH",nospath);
+    parseFlag("GPATH",gpath);
+  }
   parseFlag("NOZPATH",nozpath);
-  parseFlag("GPATH",gpath);
   if( gpath ) {
-    readInputLine( getShortcutLabel() + "_gpath: GPATH " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + "_gpath: GPATH REFERENCE=" + reference );
     readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + "_gpath.s PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + "_gpath.z PERIODIC=NO");
   }
@@ -190,8 +336,7 @@ Path::Path( const ActionOptions& ao ):
     parseVector("PROPERTY",pnames);
     properties.resize( pnames.size() );
   }
-  std::string type, reference_data, reference;
-  parse("REFERENCE",reference);
+  std::string type, reference_data;
   std::vector<std::string> argnames;
   parseVector("ARG",argnames);
   parse("TYPE",type);
@@ -202,9 +347,6 @@ Path::Path( const ActionOptions& ao ):
   }
   // Find the shortest distance to the frames
   readInputLine( getShortcutLabel() + "_mindist: LOWEST ARG=" + getShortcutLabel() + "_data");
-  // Now create all other parts of the calculation
-  std::string lambda;
-  parse("LAMBDA",lambda);
   // Now create MATHEVAL object to compute exponential functions
   readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_data," + getShortcutLabel() + "_mindist FUNC=exp(-(x-y)*" + lambda + ") PERIODIC=NO" );
   // Create denominator

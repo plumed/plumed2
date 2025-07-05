@@ -40,6 +40,8 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+  keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
+  keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
@@ -55,6 +57,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.needsAction("WHOLEMOLECULES");
   keys.needsAction("POSITION");
   keys.needsAction("CONCATENATE");
+  keys.needsAction("RMSD");
   keys.addDOI("10.1107/S0108767388010128");
 }
 
@@ -126,7 +129,7 @@ RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
     readInputLine( pos_line );
     // Concatenate the three positions together
     readInputLine( getShortcutLabel() + "_pos: CONCATENATE ARG=" + getShortcutLabel() + "_cpos.x," + getShortcutLabel() + "_cpos.y," + getShortcutLabel() + "_cpos.z");
-    rmsd_line += "RMSD_VECTOR ARG=" + getShortcutLabel() + "_pos," + getShortcutLabel() + "_ref";
+    rmsd_line += "RMSD ARG=" + getShortcutLabel() + "_pos," + getShortcutLabel() + "_ref";
     if( disp ) {
       rmsd_line += " DISPLACEMENT";
     }

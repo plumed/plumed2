@@ -55,6 +55,16 @@ The input above would calculate 64 instances of $s_i$ using the formula above.  
 $\sigma$ are specified using the SWITCH keyword, while the parameters for $\gamma$ are specified using SWITCH_COORD.  As you can see if you expand the shortcut in the input above, the 64 values
 for $s_i$ are stored in a vector.  All the elements of this vector are then added together to produce the single quantity that is output in the colvar file.
 
+Notice that you can also use different groups of atoms by using the SPECIESA and SPECIESB keywords as shown below:
+
+```plumed
+smac: ATOMIC_SMAC SPECIESA=1-64 SPECIESB=65-128 KERNEL1={GAUSSIAN CENTER=pi/2 SIGMA=1.0} KERNEL2={GAUSSIAN CENTER=pi/4 SIGMA=1.0} SWITCH_COORD={EXP R_0=4.0} SWITCH={RATIONAL R_0=2.0 D_0=2.0} SUM
+PRINT ARG=smac.* FILE=colvar
+```
+
+In this input one $s_i$ value is evaluated for each of the 64 atoms specified in the SPECIESA keyword.  In evaluating each of these $s_i$ values using the sum in the expression above runs over the 64 atoms
+that were specified using SPECIESB.
+
 */
 //+ENDPLUMEDOC
 

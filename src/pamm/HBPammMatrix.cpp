@@ -41,26 +41,145 @@ The example shown below illustrates how the method is used in practice
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-m: HBPAMM_MATRIX GROUP=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
 PRINT ARG=m FILE=colvar
 ```
 
-This example could be used to investigate the connectivity between a collection of water molecules in liquid water. Notice, however,
-that the output matrix here is not symmetric.
+The input above is outputting the full hbpamm matrix.  However, this action is perhaps more usefully used to investigate the connectivity between
+a collection of water molecules in liquid water. Importantly, however,
+the output matrix here is __not__ symmetric.  We thus calculate the number of hydrogen bonds that these atoms are donating using the
+following input:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=m,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=donors.xyz
+```
+
+To calculate the number of hydrogen bonds these atoms accept we would use the following input:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+mT: TRANSPOSE ARG=m
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=mT,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=acceptors.xyz
+```
+
+To calculate the total number of hydorgen bonds these atoms participate in you would use an input like this:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
+mT: TRANSPOSE ARG=m
+hbmat: CUSTOM ARG=m,mT FUNC=x+y PERIODIC=NO
+ones: ONES SIZE=64
+rsums: MATRIX_VECTOR_PRODUCT ARG=hbmat,ones
+DUMPATOMS ATOMS=1-192:3 ARG=rsums FILE=hbonds.xyz
+```
 
 If you want to investigate whether there are hydrogen bonds between two groups of molecules you can use an input like this:
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-m: HBPAMM_MATRIX GROUPA=1 GROUPB=2-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm GROUPC=2-192:3,3-192:3
+m: HBPAMM_MATRIX ...
+  GROUPA=1 GROUPB=2-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+...
 PRINT ARG=m FILE=colvar
 ```
 
 This input outputs a $1\times 63$ matrix in which the $1,i$th element tells you whether or not atom 1 donates a hydrogen bond
-to the $i$th element in the group of 63 atoms that was specified using the ACCEPTORS keyword.
+to the $i$th element in the group of 63 atoms that was specified using the ACCEPTORS keyword.  The $i,1$th element of the
+transpose of this matrix tells you if the $i$th center donates a hydrogen bond to atom 1.
 
 In general, it is better to use this action through the [HBPAMM_SA](HBPAMM_SA.md), [HBPAMM_SD](HBPAMM_SD.md) and [HBPAMM_SH](HBPAMM_SH.md)
 keywords, which can be used to calculate the number of hydrogen bonds each donor, acceptor or hydrogen atom in your system participates in.
+
+## Periodic boundary conditions
+
+Notice that in all the inputs above the distances values that enter the pamm expressions are calculated in a way that takes the
+periodic boundary conditions into account.  If you want to ignore the periodic boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+m: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  NOPBC
+...
+```
+
+## COMPONENTS flag
+
+If you add the flag COMPONENTS to the input as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+c4: HBPAMM_MATRIX ...
+  GROUP=1-192:3 GROUPC=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  COMPONENTS
+...
+```
+
+then four matrices with the labels `c4.w`, `c4.x`, `c4.y` and `c4.z` are output by the action. The matrix with the label `c4.w` is the adjacency matrix
+that would be output if you had not added the COMPONENTS flag. The $i,j$ component of the matrices `c4.x`, `c4.y` and `c4.z` contain the $x$, $y$ and $z$
+components of the vector connecting atoms $j$ and $k$. Importantly, however, the components of these vectors are only stored in `c4.x`, `c4.y` and `c4.z`
+if the elements of `c4.w` are non-zero. Using the COMPONENTS flag in this way ensures that you can use HBPAMM_MATRIX in tandem with many of the functionalities
+that are part of the [symfunc module](module_symfunc.md).  Remember, however, that the $i,j$ element of the HBPAMM_MATRIX is only non-zero if atom $i$ donates
+a hydrogen bond to atom $j$.  __You cannot use HBPAMM_MATRIX to identify the set of atoms that each atom is hydrogen bonded to.__
+
+## The MASK keyword
+
+You use the MASK keyword with HBPAMM_MATRIX in the same way that is used in [CONTACT_MATRIX](CONTACT_MATRIX.md).  This keyword thus expects a vector in input,
+which tells HBOND_MATRIX that it is safe to not calculate certain rows of the output matrix.  An example where this keyword is used is shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+# The atoms that are of interest
+ow: GROUP ATOMS=1-1650
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculates cooordination numbers
+cmap: HBPAMM_MATRIX ...
+  GROUP=ow GROUPC=1650-3000
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  MASK=sphere
+...
+ones: ONES SIZE=1650
+cc: MATRIX_VECTOR_PRODUCT ARG=cmap,ones
+# Multiply coordination numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=prod,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average number of hydrogen bonds each of the atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$ donate.
 
 */
 //+ENDPLUMEDOC
@@ -78,13 +197,106 @@ a box of water accepts from its neighbours.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-acceptors: HBPAMM_SA SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+acceptors: HBPAMM_SA ...
+  SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  REGULARISE=0.001 GAUSS_CUTOFF=6.25
+...
 DUMPATOMS ARG=acceptors ATOMS=1-192:3 FILE=acceptors.xyz
 ```
 
 The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
 columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
 that have been accepted by each of the atoms.
+
+In the example input above all the atoms specified using the SITE keyword can both accept and donate hydrogen bonds.  If the group
+of atoms that can accept hydrogen bonds is different from the group of atoms that can donate hydrogen bonds then you use the ACCEPTORS and
+DONORS keyword as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+acceptors: HBPAMM_SA ...
+  ACCEPTORS=1-9:3 DONORS=1-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  HYDROGENS=2-192:3,3-192:3
+...
+DUMPATOMS ARG=acceptors ATOMS=1-9:3 FILE=acceptors.xyz
+```
+
+This input will still output an xyz file with five columns. The fifth column in this file will give the number of hydrogen bonds that each
+of the three atoms that were specified using the ACCEPTORS keyword accept from the atoms that were specified by the DONORS keyword.  Notice also that the
+as the REGULARISE and GAUSS_CUTOFF keywords were not used in this input these quantities are set to the default values that are given in the table below.
+
+## The NOPBC flag
+
+When you use the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) you need to calculate the distances between various pairs of atoms.  In all the inputs that have been provided
+above we calculate these distances between pairs of atoms in a way that takes the periodic boundary conditions into account.  If you want to ignore the periodic
+boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+acceptors: HBPAMM_SA ...
+   SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+   CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+   NOPBC
+...
+DUMPATOMS ARG=acceptors ATOMS=1-192:3 FILE=acceptors.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the number of hydrogen bonds.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average number of hydrogen bonds those atoms that lie in a certain part of the simulation box accept from their neighbors.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-192:3 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the number of hydrogen bonds that have been accepted
+acceptors: HBPAMM_SA ...
+   SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+   CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+   MASK=sphere
+...
+# Multiply number of hydrogen bonds by sphere vector
+prod: CUSTOM ARG=acceptors,sphere FUNC=x*y PERIODIC=NO
+# Total number of hydrogen bonds accepted for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average number of accepted hydrogen bonds for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the number of hydrogen bonds that are accepted by those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Optimisation details
+
+If you expand the inputs above you will see that they all the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) action.  The matrix that this action computes is sparse
+as each atom only forms hydroen bonds with a relatively small number of neighbors.  The vast majority of the elements in the [HBPAMM_MATRIX](HBPAMM_MATRIX.md)
+are thsu zero.  To reduce the amount of memory that PLUMED requires PLUMED uses sparse matrix storage.  Consequently, whenever you calculate and store a contact
+matrix only the elements of the matrix that are non-zero are stored.
+
+We also use the sparsity of the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) to make the time required to compute the matrix scale linearly rather than quadratically with
+the number of atoms. We know that element $i,j$ is only non-zero if the donor and acceptor atoms are within:
+
+$$
+r_c = \textrm{max}_i \left( \mu_i^{(ad)} + \sqrt(2 g_{cut}) | \sqrt{\lambda_{i,max}} v_\textrm{i,max}^{(ad)} | \right)
+$$
+
+where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
+keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
+eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
+need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
+from the parameters of the Gaussian kernels directly.
 
 */
 //+ENDPLUMEDOC
@@ -102,13 +314,106 @@ a box of water donates to its neighbours.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-donors: HBPAMM_SD SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+donors: HBPAMM_SD ...
+  SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  REGULARISE=0.001 GAUSS_CUTOFF=6.25
+...
 DUMPATOMS ARG=donors ATOMS=1-192:3 FILE=donors.xyz
 ```
 
 The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
 columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
 that have been donated by each of the atoms.
+
+In the example input above all the atoms specified using the SITE keyword can both accept and donate hydrogen bonds.  If the group
+of atoms that can accept hydrogen bonds is different from the group of atoms that can donate hydrogen bonds then you use the ACCEPTORS and
+DONORS keyword as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+donors: HBPAMM_SD ...
+  DONORS=1-9:3 ACCEPTORS=1-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  HYDROGENS=2-192:3,3-192:3
+...
+DUMPATOMS ARG=donors ATOMS=1-9:3 FILE=donors.xyz
+```
+
+This input will still output an xyz file with five columns. The fifth column in this file will give the number of hydrogen bonds that each
+of the three atoms that were specified using the DONORS keyword donate to atoms that were specified by the ACCEPTORS keyword.  Notice also that the
+as the REGULARISE and GAUSS_CUTOFF keywords were not used in this input these quantities are set to the default values that are given in the table below.
+
+## The NOPBC flag
+
+When you use the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) you need to calculate the distances between various pairs of atoms.  In all the inputs that have been provided
+above we calculate these distances between pairs of atoms in a way that takes the periodic boundary conditions into account.  If you want to ignore the periodic
+boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+donors: HBPAMM_SD ...
+   SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+   CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+   NOPBC
+...
+DUMPATOMS ARG=donors ATOMS=1-192:3 FILE=donors.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the number of hydrogen bonds.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average number of hydrogen bonds those atoms that lie in a certain part of the simulation box donoate to their neighbors.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-192:3 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the number of hydrogen bonds that have been donated
+donors: HBPAMM_SD ...
+   SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+   CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+   MASK=sphere
+...
+# Multiply number of hydrogen bonds by sphere vector
+prod: CUSTOM ARG=donors,sphere FUNC=x*y PERIODIC=NO
+# Total number of hydrogen bonds donated for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average number of donated hydrogen bonds for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the number of hydrogen bonds that have been donated by those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Optimisation details
+
+If you expand the inputs above you will see that they all the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) action.  The matrix that this action computes is sparse
+as each atom only forms hydroen bonds with a relatively small number of neighbors.  The vast majority of the elements in the [HBPAMM_MATRIX](HBPAMM_MATRIX.md)
+are thsu zero.  To reduce the amount of memory that PLUMED requires PLUMED uses sparse matrix storage.  Consequently, whenever you calculate and store a contact
+matrix only the elements of the matrix that are non-zero are stored.
+
+We also use the sparsity of the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) to make the time required to compute the matrix scale linearly rather than quadratically with
+the number of atoms. We know that element $i,j$ is only non-zero if the donor and acceptor atoms are within:
+
+$$
+r_c = \textrm{max}_i \left( \mu_i^{(ad)} + \sqrt(2 g_{cut}) | \sqrt{\lambda_{i,max}} v_\textrm{i,max}^{(ad)} | \right)
+$$
+
+where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
+keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
+eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
+need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
+from the parameters of the Gaussian kernels directly.
 
 */
 //+ENDPLUMEDOC
@@ -126,13 +431,107 @@ a box of water donates to its neighbours.
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
-hyd: HBPAMM_SH SITES=1-192:3 CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm HYDROGENS=2-192:3,3-192:3 MEAN
+hyd: HBPAMM_SH ...
+  SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  REGULARISE=0.001 GAUSS_CUTOFF=6.25
+...
 DUMPATOMS ARG=hyd ATOMS=2-192:3,3-192:3 FILE=hydrogens.xyz
 ```
 
 The output here is an xyz with five columns. As explained in the documentation for [DUMPATOMS](DUMPATOMS.md), the first four
 columns are the usual columns that you would expect in an xyz file.  The fifth column then contains the number of hydrogen bonds
 that each hydrogen atom participates in.
+
+In the example input above all the atoms specified using the SITE keyword can both accept and donate hydrogen bonds.  If the group
+of atoms that can accept hydrogen bonds is different from the group of atoms that can donate hydrogen bonds then you use the ACCEPTORS and
+DONORS keyword as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+hyd: HBPAMM_SH ...
+  ACCEPTORS=1-9:3 DONORS=1-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  HYDROGENS=2-192:3,3-192:3
+...
+DUMPATOMS ARG=hyd ATOMS=2-192:3,3-192:3 FILE=hydrogens.xyz
+```
+
+This input will still output an xyz file with five columns. The fifth column in this file will give the number of hydrogen bonds that each of the hydrogen
+atoms that were specified in this input participate within.  For this atom for a hydrogen atom to particpiate in a hydrogen bond the second closest atom to
+it must be either atom 1, 4 or 7 as these are the only atoms that can accept hydrogen bonds according to the above input.  Notice also that the
+as the REGULARISE and GAUSS_CUTOFF keywords were not used in this input these quantities are set to the default values that are given in the table below.
+
+## The NOPBC flag
+
+When you use the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) you need to calculate the distances between various pairs of atoms.  In all the inputs that have been provided
+above we calculate these distances between pairs of atoms in a way that takes the periodic boundary conditions into account.  If you want to ignore the periodic
+boundary conditions you can use the NOPBC flag as shown below.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+hyd: HBPAMM_SH ...
+  SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+  CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+  NOPBC
+...
+DUMPATOMS ARG=hyd ATOMS=2-192:3,3-192:3 FILE=hydrogens.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the number of hydrogen bonds.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average number of hydrogen bonds those hydrogen atoms that lie in a certain part of the simulation box partipipate in.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-hbpamm/b3lyp.pamm
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if hydrogen i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=2-192:3,3-192:3 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the number of bonds each hydrogen participates in
+hyd: HBPAMM_SH ...
+   SITES=1-192:3 HYDROGENS=2-192:3,3-192:3
+   CLUSTERS=regtest/pamm/rt-hbpamm/b3lyp.pamm
+   MASK=sphere
+...
+# Multiply number of hydrogen bonds by sphere vector
+prod: CUSTOM ARG=hyd,sphere FUNC=x*y PERIODIC=NO
+# Total number of hydrogn bonds that the atoms in the sphere of interest participate in
+numer: SUM ARG=prod PERIODIC=NO
+# Number of hydrogen atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average number of hydrogen bonds each hydrogen atoms in sphere of interest participates in
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average number of hydrogen bonds each of the hydrogen atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$ participates in.
+
+## Optimisation details
+
+If you expand the inputs above you will see that they all the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) action.  The matrix that this action computes is sparse
+as each atom only forms hydroen bonds with a relatively small number of neighbors.  The vast majority of the elements in the [HBPAMM_MATRIX](HBPAMM_MATRIX.md)
+are thsu zero.  To reduce the amount of memory that PLUMED requires PLUMED uses sparse matrix storage.  Consequently, whenever you calculate and store a contact
+matrix only the elements of the matrix that are non-zero are stored.
+
+We also use the sparsity of the [HBPAMM_MATRIX](HBPAMM_MATRIX.md) to make the time required to compute the matrix scale linearly rather than quadratically with
+the number of atoms. We know that element $i,j$ is only non-zero if the donor and acceptor atoms are within:
+
+$$
+r_c = \textrm{max}_i \left( \mu_i^{(ad)} + \sqrt(2 g_{cut}) | \sqrt{\lambda_{i,max}} v_\textrm{i,max}^{(ad)} | \right)
+$$
+
+where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
+keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
+eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
+need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
+from the parameters of the Gaussian kernels directly.
 
 */
 //+ENDPLUMEDOC
@@ -360,24 +759,28 @@ void HBPammShortcut::registerKeywords( Keywords& keys ) {
   keys.remove("GROUP");
   keys.remove("GROUPA");
   keys.remove("GROUPB");
+  keys.remove("GROUPC");
+  keys.remove("ORDER");
   keys.remove("COMPONENTS");
-  keys.add("optional","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
+  keys.reset_style("NL_CUTOFF","hidden");
+  keys.reset_style("NL_STRIDE","hidden");
+  keys.add("atoms","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
            "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("optional","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
+  keys.add("atoms","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("optional","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
+  keys.add("atoms","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
+  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
            "an index range or by using a \\ref GROUP");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("HBPAMM_MATRIX");

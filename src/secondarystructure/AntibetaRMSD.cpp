@@ -85,6 +85,25 @@ expanded version of the inputs above this keyword reduces the computational cost
 avoiding calculations of the RMSD values for segments that have the two strands of the beta sheet further apart
 than a cutoff.
 
+## Periodic boundary conditions
+
+You can turn off periodic boundary conditions by using the NOPBC flag as shown below:
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
+ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1 NOPBC
+PRINT ARG=ab FILE=colvar
+```
+
+If you are using [DRMSD](DRMSD.md) to measure distances and you __don't__ use the NOPBC flag then
+all distances in the instaneous structure are evaluated in a way that takes the periodic boundary conditions
+into account. Using the NOPBC flag turns off this treatment.
+
+If you are using [RMSD](RMSD.md) to measure distances and you __don't__ use the NOPBC flag the the instaneous positions of
+each segment for which the RMSD is computed is reconstructed using the procedure outlined in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md)
+before the RMSD is computed. Using the NOPBC flag turns off this treatment.
+
 */
 //+ENDPLUMEDOC
 
@@ -98,8 +117,11 @@ PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureBase<Vector>::registerKeywords( keys );
+  keys.remove("ATOMS");
   keys.remove("SEGMENT");
   keys.remove("STRUCTURE");
+  keys.remove("MASK");
+  keys.remove("ALIGN_STRANDS");
   keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
   keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "

@@ -49,7 +49,24 @@ This example file calculates the BOPS for a system of 3 molecules.
 ```plumed
 #SETTINGS INPUTFILES=regtest/crystdistrib/rt-bops-shortcut/kernels.dat,regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
 quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
-bops: BOPS SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0 KERNELFILE_DOPS=regtest/crystdistrib/rt-bops-shortcut/kernels.dat KERNELFILE_BOPS=regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+bops: BOPS ...
+   SPECIES=1,4,7 QUATERNIONS=quat CUTOFF=100.0
+   KERNELFILE_DOPS=regtest/crystdistrib/rt-bops-shortcut/kernels.dat
+   KERNELFILE_BOPS=regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+...
+```
+
+To calculate the BOPS between the orientation of the molecules in GROUPA and the bonds to the atoms in GROUPB you use an input like the one shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/crystdistrib/rt-bops-shortcut/kernels.dat,regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+bops: BOPS ...
+   QUATERNIONS=quat CUTOFF=100.0
+   SPECIESA=1,4,7 SPECIESB=10,11,12,13,14
+   KERNELFILE_DOPS=regtest/crystdistrib/rt-bops-shortcut/kernels.dat
+   KERNELFILE_BOPS=regtest/crystdistrib/rt-bops-shortcut/kernels2.dat
+...
 ```
 
 */
@@ -65,18 +82,9 @@ PLUMED_REGISTER_ACTION(BopsShortcut,"BOPS")
 
 void BopsShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
-           "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
-           "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
-           "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
-           "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
-           "coordination number more than four for example");
-  keys.add("atoms-2","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
-           "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
-           "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
-           "using the label of another multicolvar");
-  keys.add("atoms-2","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
-           "the documentation for that keyword");
+  keys.add("atoms","SPECIES","the list of atoms for which the BOPS are being calculated and the atoms that can be in the environments");
+  keys.add("atoms-2","SPECIESA","the list of atoms for which BOPS are being calculated.  This keyword must be used in conjunction with SPECIESB, which specifies the atoms that are in the environment");
+  keys.add("atoms-2","SPECIESB","the list of atoms that can be in the environments of each of the atoms for which the BOPS are being calculated. This keyword must be used in conjunction with SPECIESA, which specifies the atoms for which BOPS are being calculated.");
   keys.add("compulsory","QUATERNIONS","the label of the action that computes the quaternions that should be used");
   keys.add("compulsory","KERNELFILE_DOPS","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","KERNELFILE_BOPS","the second file containing the list of kernel parameters. Expecting a normalization factor (height), concentration parameter (kappa), and 3 norm vector pieces of the mean (mu_i, mu_j, mu_k )for a fisher distribution. of the form h*exp(kappa*dot(r_mean,r)), where dot is a standard dot product.");
@@ -173,13 +181,13 @@ BopsShortcut::BopsShortcut(const ActionOptions&ao):
 //  std::string switchstr; parse("SWITCH",switchstr);
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr + " COMPONENTS");
 
-  if( specA.length()==0 ) {
-    std::string quatstr;
-    parse("QUATERNIONS",quatstr);
-    readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_BOND_PRODUCT_MATRIX ARG=" + quatstr + ".*," + getShortcutLabel() + "_cmat.*" );
-  }  else {
-    plumed_error();
-  }
+  // if( specA.length()==0 ) {
+  std::string quatstr;
+  parse("QUATERNIONS",quatstr);
+  readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_BOND_PRODUCT_MATRIX ARG=" + quatstr + ".*," + getShortcutLabel() + "_cmat.*" );
+  // }  else {
+  //   plumed_error();
+  // }
   //
 
   ///////////////////
