@@ -92,33 +92,37 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
   PTM::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
-  keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
-           "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
-           "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
-           "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
-           "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
-           "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
-           "As such if you define portions of the chain with fewer than N residues the code will crash.");
   keys.add("atoms","ATOMS","this is the full list of atoms that we are investigating");
   keys.add("numbered","SEGMENT","this is the lists of atoms in the segment that are being considered");
   if( keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD" ) {
     keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
   }
   keys.add("numbered","STRUCTURE","the reference structure");
-  keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
-           "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
-           "DRMSD method see \\ref DRMSD.");
-  if( keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD" ) {
-    keys.remove("TYPE");
+  if( keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD" ) {
+    keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
+             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD.");
+  } else if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" ) {
+    keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
+             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
+             "DRMSD method see \\ref DRMSD.");
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.reset_style("VERBOSE","hidden");
-  keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-           "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
-  keys.add("optional","R_0","The r_0 parameter of the switching function.");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","NN","8","The n parameter of the switching function");
-  keys.add("compulsory","MM","12","The m parameter of the switching function");
+  if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" && keys.getDisplayName()!="SECONDARY_STRUCTURE_RMSD" ) {
+    keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
+             "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
+             "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
+             "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
+             "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
+             "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
+             "As such if you define portions of the chain with fewer than N residues the code will crash.");
+    keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
+             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+    keys.add("optional","R_0","The r_0 parameter of the switching function.");
+    keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+    keys.add("compulsory","NN","8","The n parameter of the switching function");
+    keys.add("compulsory","MM","12","The m parameter of the switching function");
+  }
   keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
   keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
   keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
@@ -190,6 +194,9 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   parseAtomList("ATOMS",all_atoms);
+  if( all_atoms.size()==0 ) {
+    error("no atoms were specified -- use ATOMS");
+  }
   requestAtoms( all_atoms );
 
   std::vector<std::vector<unsigned> > colvar_atoms;
