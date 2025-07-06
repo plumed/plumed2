@@ -387,7 +387,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     if( ltmap.length()>0 ) {
       // Create the lowest line
       readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1,"
-                     + getShortcutLabel() + "_both.struct-2" );
+                     + getShortcutLabel() + "_both.struct-2 MASK=" + getShortcutLabel() + "_cut");
       // Create the less than object
       readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
                      + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");

@@ -146,6 +146,31 @@ d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN
 PRINT ARG=d.* FILE=colv
 ```
 
+Notice that the decomposition of the function that is illustrated above allows you to do things like the calculation in the following input:
+
+```plumed
+# Calculate the distances between atoms
+d_mat: DISTANCE_MATRIX GROUP=1-64 CUTOFF=4.5 COMPONENTS
+# Find the six nearest atom to each of the coordinates
+nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
+# Evalulate the FCC function
+d_vfunc: FCCUBIC_FUNC ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn ALPHA=3.0
+# Take the product of the weights with the fcc function evaluations
+d_wvfunc: CUSTOM ARG=d_vfunc,nn FUNC=x*y PERIODIC=NO
+# Calculate the sum of fcc cubic function values for each atom
+d_ones: ONES SIZE=64
+d: MATRIX_VECTOR_PRODUCT ARG=d_wvfunc,d_ones
+# Calculate the number of neighbours
+d_denom: MATRIX_VECTOR_PRODUCT ARG=nn,d_ones
+# Calculate the average value of the fcc cubic function per bonds
+d_n: CUSTOM ARG=d,d_denom FUNC=x/y PERIODIC=NO
+d_mean: MEAN ARG=d_n PERIODIC=NO
+PRINT ARG=d_mean FILE=colv
+```
+
+In this input we evaluate the [FCCUBIC](FCCUBIC.md) function for the six nearest neighbours to each atom rather than the atoms that are within a certain cutoff.
+By using the MASK keyword in the input to FCCUBIC_FUNC we ensure that the [FCCUBIC](FCCUBIC.md) function is only evaluated for the six nearest neighbors.
+
 */
 //+ENDPLUMEDOC
 
