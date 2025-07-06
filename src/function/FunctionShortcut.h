@@ -59,8 +59,8 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   } else {
     keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the values input to this function");
   }
-  if( keys.outputComponentExists(".#!value") ) {
-    keys.add("optional","MASK","the label for a sparse vector/matrix that should be used to determine which elements of the vector/matrix should be computed");
+  if( keys.outputComponentExists(".#!value") && keys.getDisplayName()!="DIFFERENCE" ) {
+    keys.addInputKeyword("optional","MASK","vector/matrix","the label for a sparse vector/matrix that should be used to determine which elements of the vector/matrix should be computed");
   }
 }
 

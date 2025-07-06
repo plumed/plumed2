@@ -57,6 +57,19 @@ s: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
 The output here is close to one when the distance between atoms 1 and 2 is less than 0.2 nm close to zero
 for values that are greater than 0.2.
 
+## Transforming squares of quantities
+
+If you have computed the square of the distance you can use the flag SQUARED to indicate that the input
+quantity is the square of the distance as indicated below:
+
+```plumed
+d: DISTANCE COMPONENTS ATOMS=1,2
+dm: CUSTOM ARG=d.x,d.y,d.z FUNC=x*x+y*y+z*z PERIODIC=NO
+s: LESS_THAN ARG=dm SQUARED SWITCH={RATIONAL R_0=0.2}
+```
+
+This option can be useful for improving performance by removing the expensive square root operations.
+
 ## Non rank zero arguments
 
 Instead of passing a single scalar in the input to the `LESS_THAN` action you can pass a single vector as shown here:
@@ -101,6 +114,36 @@ PRINT ARG=s FILE=colvar
 This input tells PLUMED to calculate the 100 distances between the atoms in the two input groups. The final value that is printed to the colvar file then
 tells you how many of these distances are less than 0.2 nm.
 
+## The MASK keyword
+
+Consider the following input:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Compute the coordination numbers
+adj: CONTACT_MATRIX GROUP=1-400 SWITCH={RATIONAL R_0=0.3 D_MAX=1.0} MASK=sphere
+ones: ONES SIZE=400
+coord: MATRIX_VECTOR_PRODUCT ARG=adj,ones
+# Determine if coordination numbers are less than 4 or not
+lt: LESS_THAN ARG=coord MASK=sphere SWITCH={RATIONAL R_0=4.0}
+# And calculate how many atoms in the region of interst have a coordination number that is less than four
+ltsphere: CUSTOM ARG=lt,sphere FUNC=x*y PERIODIC=NO
+cv: SUM ARG=ltsphere PERIODIC=NO
+PRINT ARG=cv FILE=colvar
+```
+
+This input calculates the total number of atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$ and have a
+coordination number that is less than 4.  Notice that to reduce the computational expense we use the MASK keyword in the input to
+[CONTACT_MATRIX](CONTACT_MATRIX.md) so PLUMED knows to not bother calculating the coordination numbers of atoms that are not within the spherical region of
+interest. Further notice that we have also used this MASK keyword in the input to LESS_THAN to prevent PLUMED from transforming the coordination numbers
+that have not been calculated with the switching function to get a further speed up.
+
+Using the MASK keyword in this way is necessary if the input argument is a vector. If the input argument is a matrix then you should never need to use the
+MASK keyword. PLUMED will use the sparsity pattern for the input matrix to reduce the number of transformations that are performed within LESS_THAN.
+
 ## Switching functions types
 
 PLUMED allows you to use a range of different switching function types.  Most of these
@@ -136,6 +179,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 \frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{m} } & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 The following example illustrates how you can use the rational switching function is used in practice:
@@ -190,6 +234,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 \exp\left(-\frac{ r - d_0 }{ r_0 }\right) & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 You can also specify that an exponential switching function is to be used by using the following input:
@@ -218,6 +263,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 \exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right) & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 You can also specify that an gaussian switching function is to be used by using the following input:
@@ -246,6 +292,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a} & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 This type of swtiching function would be used with PLUMED's implementation of [SKETCHMAP](SKETCHMAP.md). If you are
@@ -275,6 +322,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 s(r) = \frac{1}{1 + \exp(\beta(r_{ij} - \lambda r_{ij}^0))} & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 The value of $r_{ij}^0$ is specified in the above input by the `REF` keyword.  Notice that you can also specify this type of switching function using
@@ -301,7 +349,7 @@ s: LESS_THAN ARG=d SWITCH={CUBIC D_0=0.1 D_MAX=0.5}
 If this type of expression is used then the $s(r)$ is calculated as:
 
 $$
-s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{d_0 - d_{max}}{d_0-d_{max}}$
+s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{d_0 - d_{max}}{d_0-d_{max}}
 $$
 
 No stretching is required for this type of switching function as its functional form ensures that it is zero at $d_{max}$.
@@ -322,6 +370,7 @@ s'(r) = \begin{cases}
 1 & \textrm{if} \quad r<d_0 \\
 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right) & \textrm{if} \quad d_0 < r < d_{max} \\
 0 & \textrm{otherwise}
+\end{cases}
 $$
 
 You can also specify that a tanh switching function is to be used by using the following input:
@@ -350,6 +399,7 @@ s(r) =\left\{\begin{array}{ll}
    1                                                           & \mathrm{if } r \leq d_0 \\
    0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } \pi ) + 1 \right) & \mathrm{if } d_0 < r\leq d_0 + r_0 \\
    0
+\end{array} \right\}
 $$
 
 No stretching is required for this type of switching function as its functional form ensures that it is zero at $d_0+r_0$
@@ -390,11 +440,11 @@ s: LESS_THAN ARG=d SWITCH={MATHEVAL FUNC=1/(1+x2^3) R_0=0.1}
 For this input $d_0$ is set to its default value of 0. Furthermore, as D_MAX is unset the stretching and scaling that
 was described in the previous section is not performed.
 
-!!!  caution "performance of CUSTOM
+!!! caution "performance of CUSTOM"
 
-     With the default implementation CUSTOM is slower than other functions
-     (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
-     You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md)
+    With the default implementation CUSTOM is slower than other functions
+    (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
+    You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md)
 
 */
 //+ENDPLUMEDOC

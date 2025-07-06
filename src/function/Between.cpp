@@ -53,7 +53,7 @@ The BETWEEN action here is used to determine whether the input distance is betwe
 
 ```plumed
 d: DISTANCE ATOMS=1,2
-b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+b: BETWEEN ARG=d LOWER=0.1 UPPER=0.2 SMEAR=0.5
 ```
 
 ## The Kernel function
@@ -71,7 +71,15 @@ $$
 w(s) = \frac{1}{\sqrt{2\pi}\sigma} \int_a^b \exp\left( -\frac{(x-s)^2}{2\sigma^2}\right) \textrm{d}x
 $$
 
-The Gaussian kernel in this expression can be replaced by a triangular Kernel by changing the input to:
+You can achieve the same result as the first example input by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+```
+
+The advantage of this syntax, however, is that you can replace the Gaussian kernel in the expression can be replaced by a
+triangular Kernel by changing the input to:
 
 ```plumed
 d: DISTANCE ATOMS=1,2
@@ -137,6 +145,36 @@ PRINT ARG=s FILE=colvar
 This input tells PLUMED to calculate the 100 distances between the atoms in the two input groups. The final value that is printed to the colvar file then
 tells you how many of these distances are between 0.1 and 0.2 nm.
 
+## The MASK keyword
+
+Consider the following input:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Compute the coordination numbers
+adj: CONTACT_MATRIX GROUP=1-400 SWITCH={RATIONAL R_0=0.3 D_MAX=1.0} MASK=sphere
+ones: ONES SIZE=400
+coord: MATRIX_VECTOR_PRODUCT ARG=adj,ones
+# Determine if coordination numbers are less than 4 or not
+lt: BETWEEN ARG=coord MASK=sphere SWITCH={GAUSSIAN LOWER=4.0 UPPER=6 SMEAR=0.5}
+# And calculate how many atoms in the region of interst have a coordination number that is less than four
+ltsphere: CUSTOM ARG=lt,sphere FUNC=x*y PERIODIC=NO
+cv: SUM ARG=ltsphere PERIODIC=NO
+PRINT ARG=cv FILE=colvar
+```
+
+This input calculates the total number of atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$ and have a
+coordination number that is between 4 and 6.  Notice that to reduce the computational expense we use the MASK keyword in the input to
+[CONTACT_MATRIX](CONTACT_MATRIX.md) so PLUMED knows to not bother calculating the coordination numbers of atoms that are not within the spherical region of
+interest. Further notice that we have also used this MASK keyword in the input to BETWEEN to prevent PLUMED from transforming the coordination numbers
+that have not been calculated with the switching function to get a further speed up.
+
+Using the MASK keyword in this way is necessary if the input argument is a vector. If the input argument is a matrix then you should never need to use the
+MASK keyword. PLUMED will use the sparsity pattern for the input matrix to reduce the number of transformations that are performed within BETWEEN.
+
 */
 //+ENDPLUMEDOC
 
@@ -176,9 +214,6 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
       action->error("should only be one argument to less_than actions");
     }
-  }
-  if( action->getNumberOfArguments()!=1 ) {
-    action->error("should only be one argument to between actions");
   }
 
   std::string str_min, str_max;
