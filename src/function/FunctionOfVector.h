@@ -95,15 +95,15 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
     keys.setValueDescription("scalar","the mean of all the elements in the input vector");
   } else if( keys.getDisplayName()=="HIGHEST" ) {
     keys.setValueDescription("scalar/vector","the largest element of the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
-    keys.add("optional","MASK","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
+    keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   } else if( keys.getDisplayName()=="LOWEST" ) {
     keys.setValueDescription("scalar/vector","the smallest element in the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
-    keys.add("optional","MASK","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
+    keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   } else if( keys.getDisplayName()=="SORT" ) {
     keys.setValueDescription("vector","a vector that has been sorted into ascending order");
-    keys.add("optional","MASK","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
+    keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   } else if( keys.outputComponentExists(".#!value") ) {
-    keys.add("optional","MASK","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
+    keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
     keys.setValueDescription("vector","the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
   PTM::registerKeywords( keys );

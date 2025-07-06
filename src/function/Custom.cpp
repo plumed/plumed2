@@ -324,10 +324,48 @@ f: CUSTOM ARG=d,c FUNC=x+y PERIODIC=NO
 PRINT ARG=f FILE=colvar
 ```
 
+## CUSTOM, MASK and vector arguments
+
+The example input below illustrates a way you can use the MASK keyword to improve PLUMED performance for inputs that use CUSTOM actions that take arguments that
+are vectors:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+ow: GROUP ATOMS=1-400
+hw: GROUP ATOMS=401-1200
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate coordination with oxygen atoms
+ow_ones: ONES SIZE=400
+ow_mat: CONTACT_MATRIX GROUP=ow MASK=sphere SWITCH={RATIONAL R_0=0.3 D_MAX=0.8}
+ow_coord: MATRIX_VECTOR_PRODUCT ARG=ow_mat,ow_ones
+# And transform the coordination numbers by a switching function
+ow_mt: MORE_THAN ARG=ow_coord MASK=sphere SWITCH={RATIONAL R_0=4}
+# Calculate the coordination with hydrogen atoms
+hw_ones: ONES SIZE=800
+hw_mat: CONTACT_MATRIX GROUPA=ow GROUPB=hw MASK=sphere SWITCH={RATIONAL R_0=0.1 D_MAX=0.5}
+hw_coord: MATRIX_VECTOR_PRODUCT ARG=hw_mat,hw_ones
+# And transform the coordination numbers by a switching function
+hw_mt: MORE_THAN ARG=hw_coord MASK=sphere SWITCH={RATIONAL R_0=2}
+# And multiply the two vectors of transformed coordination numbers together
+prod: CUSTOM ARG=hw_mt,ow_mt FUNC=x*y MASK=sphere PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+cv: SUM ARG=prod PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=cv FILE=colvar STRIDE=1
+```
+
+The variable being computed here measures the number of oxygen atoms in a spherical region centered on the point $(2.5,2.5,2.5)$ that have a coordination
+that is greater than 4 with other oxygen atoms and a coordination that is greater than 2 with other hydrogen atoms.  Notice how by using the MASK keyword
+in the [CONTACT_MATRIX](CONTACT_MATRIX.md), [MORE_THAN](MORE_THAN.md and CUSTOM actions we avoid calculating the order parameters that are not in the spherical
+region of interest in the way that is described in more detail in the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+
 ## CUSTOM with matrix arguments
 
 You can also pass matrices in the argument to a CUSTOM action. These input matrices are treated similarly to input vectors. In other words, any function you define
-is applied to each element of the matrix in turn so if the input matrix is $N \times $M$ the output matrix is also $N \times M$.  The following example illustrates how you
+is applied to each element of the matrix in turn so if the input matrix is $N \times M$ the output matrix is also $N \times M$.  The following example illustrates how you
 can use this functionality to calculate all the angles between a set of bond vectors.
 
 ```plumed
@@ -379,6 +417,70 @@ command.
 Lastly, note that you can pass a mixture of scalars and $N\times M$ matrices in the input to a CUSTOM command. As with vectors, you can think of
 any scalars you pass as being converted into $N\times M$ matrix in which every element is equal to the input scalar.  Furthermore, the labels of
 the input scalars must appear __after__ the labels fo the input matrices in the input for the ARG keyword.
+
+## CUSTOM, MASK and matrix arguments
+
+The example input below illustrates a way you can use the MASK keyword to improve PLUMED performance for inputs that use CUSTOM actions that take arguments that
+are matrices:
+
+```plumed
+# Calculate the distances between atoms
+d_mat: DISTANCE_MATRIX GROUP=1-64 CUTOFF=4.5 COMPONENTS
+# Find the six nearest atom to each of the coordinates
+nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
+# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+r: CUSTOM ...
+   ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn
+   FUNC=sqrt(x*x+y*y+z*z)
+   PERIODIC=NO
+...
+# Evaluate a function of the nearest neighbors
+d_wvfunc: CUSTOM ...
+   ARG=nn,d_mat.x,d_mat.y,d_mat.z,r MASK=nn
+   FUNC=w*(((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3)
+   VAR=w,x,y,z,r
+   PERIODIC=NO
+...
+# Calculate the sum of fcc cubic function values for each atom
+d_ones: ONES SIZE=64
+d: MATRIX_VECTOR_PRODUCT ARG=d_wvfunc,d_ones
+# Calculate the number of neighbours
+d_denom: MATRIX_VECTOR_PRODUCT ARG=nn,d_ones
+# Calculate the average value of the fcc cubic function per bonds
+d_n: CUSTOM ARG=d,d_denom FUNC=x/y PERIODIC=NO
+d_mean: MEAN ARG=d_n PERIODIC=NO
+PRINT ARG=d_mean FILE=colv
+```
+
+Using the MASK here ensures that we only calculate the CUSTOM functions for the six nearest neighbors of each of the input atoms. However, it is important to note that
+this input is rather unsual.  In general you rarely need to use the MASK keyword for CUSTOM actions that take matrices in input.  For example, if we use the following
+(more conventional version) of the above CV the MASK is unecessary as the sparsity pattern of the input matrices are all identical.
+
+```plumed
+cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={RATIONAL R_0=1.0 D_MAX=4.5} COMPONENTS
+# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+r: CUSTOM ...
+   ARG=cmat.x,cmat.y,cmat.z
+   FUNC=sqrt(x*x+y*y+z*z)
+   PERIODIC=NO
+...
+# Evaluate a function of the nearest neighbors
+d_wvfunc: CUSTOM ...
+   ARG=cmat.w,cmat.x,cmat.y,cmat.z,r
+   FUNC=w*(((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3)
+   VAR=w,x,y,z,r
+   PERIODIC=NO
+...
+# Calculate the sum of fcc cubic function values for each atom
+d_ones: ONES SIZE=64
+d: MATRIX_VECTOR_PRODUCT ARG=d_wvfunc,d_ones
+# Calculate the number of neighbours
+d_denom: MATRIX_VECTOR_PRODUCT ARG=cmat.w,d_ones
+# Calculate the average value of the fcc cubic function per bonds
+d_n: CUSTOM ARG=d,d_denom FUNC=x/y PERIODIC=NO
+d_mean: MEAN ARG=d_n PERIODIC=NO
+PRINT ARG=d_mean FILE=colv
+```
 
 ## CUSTOM with grid arguments
 
