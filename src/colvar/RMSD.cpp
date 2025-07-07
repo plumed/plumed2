@@ -118,7 +118,7 @@ should be in your natural length unit.  You can find more details on the PDB fil
 Please make sure your PDB file is correctly formatted.  More detail on the format for PDB files can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
 
 The following input uses a different method to calculate the RMSD distance as you can tell from the TYPE=OPTIMAL on the input line.  In addition, because we have added the
-SQURED flag on the input line, we are calculating $d(X,X')^2$ rather than $d(X,X')$.  Calculating $d(X,X')^2$ is less computationally expensive than computing $d(X,X')$ as
+SQURED flag on the input line, we are calculating $d(X,X')^2$ rather than $d(X,X')$.  Calculating $d(X,X')^2$ is slightly less computationally expensive than computing $d(X,X')$ as
 you avoid a square root operation.
 
 ```plumed
@@ -146,7 +146,7 @@ all the atoms in the segment are assumed to be part of both the alignment and di
 
 ## Numerical derivatives
 
-If you are calculating the RMSD distance from a single RMSD reference frame you calculate numerical derivtives of the RMSD distance as shown below for the simple metric:
+If you are calculating the RMSD distance from a single RMSD reference frame you calculate numerical derivatives of the RMSD distance as shown below for the simple metric:
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
