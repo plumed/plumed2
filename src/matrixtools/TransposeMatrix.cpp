@@ -93,6 +93,7 @@ void TransposeMatrix::registerKeywords( Keywords& keys ) {
   MatrixOperationBase::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","vector/matrix","the label of the vector or matrix that should be transposed");
   keys.setValueDescription("vector/matrix","the transpose of the input matrix");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
 }
 
 TransposeMatrix::TransposeMatrix(const ActionOptions& ao):

@@ -61,7 +61,40 @@ z: CUSTOM ARG=znum,mass FUNC=x/y PERIODIC=NO
 p: ARGS2VATOM XPOS=x YPOS=y ZPOS=z MASS=mass CHARGE=charge
 ```
 
-This input provides a very slow way of providing a center of mass - PLUMED contains a faster implementation that does all this.
+In the following input by contrast we use the PHASES method that is discussed in the documentation for [CENTER](CENTER.md) to calculate the position of the center of mass:
+
+```plumed
+# Calculate the total mass of the atoms
+m: MASS ATOMS=1-10
+mass: SUM ARG=m PERIODIC=NO
+# Calculate the totla charge of the atoms
+q: CHARGE ATOMS=1-10
+charge: SUM ARG=q PERIODIC=NO
+# Now get the positions of the atoms
+pos: POSITION SCALED_COMPONENTS ATOMS=1-10
+# Multiply the sins and cosines of the scaled positions by the weights
+sina: CUSTOM ARG=m,pos.a FUNC=x*sin(2*pi*y) PERIODIC=NO
+cosa: CUSTOM ARG=m,pos.a FUNC=x*cos(2*pi*y) PERIODIC=NO
+sinb: CUSTOM ARG=m,pos.b FUNC=x*sin(2*pi*y) PERIODIC=NO
+cosb: CUSTOM ARG=m,pos.b FUNC=x*cos(2*pi*y) PERIODIC=NO
+sinc: CUSTOM ARG=m,pos.c FUNC=x*sin(2*pi*y) PERIODIC=NO
+cosc: CUSTOM ARG=m,pos.c FUNC=x*cos(2*pi*y) PERIODIC=NO
+# And accumulate the sums
+sinsuma: SUM ARG=sina PERIODIC=NO
+cossuma: SUM ARG=cosa PERIODIC=NO
+sinsumb: SUM ARG=sinb PERIODIC=NO
+cossumb: SUM ARG=cosb PERIODIC=NO
+sinsumc: SUM ARG=sinc PERIODIC=NO
+cossumc: SUM ARG=cosc PERIODIC=NO
+# And get the position of the center in fractional coordinates
+a: CUSTOM ARG=sinsuma,cossuma FUNC=atan2(x,y)/(2*pi) PERIODIC=NO
+b: CUSTOM ARG=sinsumb,cossumb FUNC=atan2(x,y)/(2*pi) PERIODIC=NO
+c: CUSTOM ARG=sinsumc,cossumc FUNC=atan2(x,y)/(2*pi) PERIODIC=NO
+# And now create the virtual atom
+p: ARGS2VATOM XPOS=a YPOS=b ZPOS=c MASS=mass CHARGE=charge FRACTIONAL
+```
+
+These inputs provide very slow ways of computing a center of mass - PLUMED contains faster implementations that do calculations that are equivalent to both of these inputs.
 This type of input is nevertheless useful if you are using arbitary weights when computing the sums in the numerator
 and denominator of the expression for the center as is detailed in the documentation for the [CENTER](CENTER.md) command.
 

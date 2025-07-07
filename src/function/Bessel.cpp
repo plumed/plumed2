@@ -56,6 +56,20 @@ b: BESSEL ARG=c ORDER=0
 The value output by BESSEL in this case is also a vector with three components.  These components give the values
 of the Bessel function at 1.0, 1.5 and 2.0 respectively.
 
+## The MASK keyword
+
+As this action only takes one argument in input the MASK keyword action works in the way that is described in the documentation for
+[LESS_THAN](LESS_THAN.md).  This keyword is only used if the input argument is a vector.  You pass to it a vector that contains ones
+and zeros and that has the same length as the vector that is passed in the input to ARG. If the $i$th element of the vector that was passed
+in the input to MASK is one then the corresponding element of the output vector is evaluated.  If it is equal to zero then that element is not
+evaluated.  Consequently in the example input shown below only the 1st and 4th element of the output vector are evaluated.
+
+```plumed
+m: CONSTANT VALUES=1,0,0,1
+c: CONSTANT VALUES=1,1,5,2
+b: BESSEL ARG=c MASK=m ORDER=0
+```
+
 */
 //+ENDPLUMEDOC
 

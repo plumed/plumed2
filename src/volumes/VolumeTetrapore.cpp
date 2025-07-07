@@ -80,7 +80,24 @@ The following commands illustrate how this works in practise.  We are using PLUM
 in a tetrahedral pore.  The extent of the pore is calculated from the positions of atoms 1, 4, 5 and 11.
 
 ```plumed
-cav: TETRAHEDRALPORE ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+cav: TETRAHEDRALPORE ...
+   ATOMS=20-500 BOX=1,4,5,11
+   SIGMA=0.1 KERNEL=gaussian
+...
+s: SUM ARG=cav PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+If you want to calculate the number of atoms that are not in the pore you can use the `OUTSIDE` flag as shown below:
+
+```plumed
+cav: TETRAHEDRALPORE ...
+   ATOMS=20-500 BOX=1,4,5,11
+   SIGMA=0.1 KERNEL=gaussian
+   OUTSIDE
+...
+s: SUM ARG=cav PERIODIC=NO
+PRINT ARG=s FILE=colvar
 ```
 
 By contrst the following command tells plumed to calculate the coordination numbers for the atoms
@@ -106,8 +123,11 @@ mt: SUM ARG=sss PERIODIC=NO
 PRINT ARG=mean,mt FILE=colvar
 ```
 
-As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
-still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
+!!! note ""
+
+    As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
+    still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+    old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 */
 //+ENDPLUMEDOC

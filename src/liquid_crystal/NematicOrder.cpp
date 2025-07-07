@@ -25,7 +25,7 @@ using namespace PLMD::multicolvar;
 namespace PLMD {
 namespace liquid_crystal {
 
-//+PLUMEDOC LIQUID_CRYSTAL NEMATIC_ORDER
+//+PLUMEDOC COLVAR NEMATIC_ORDER
 /*
 Calculate the nematic order parameter.
 

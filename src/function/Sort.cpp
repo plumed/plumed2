@@ -59,6 +59,57 @@ are elements in the input vector - that contain the elements of the input vector
 These examples are representative the only two ways you can use this action.  In input it can accept either a list of scalars or a single vector.
 It does not accept matrices or a list of vectors in input.
 
+## Using multiple vectors in input
+
+If you input multiple vectors with the same numbers of elements to this action, as shown below, the output will be a set of vectors.
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+sort: SORT ARG=d1,d2,d3
+PRINT ARG=sort.1,sort.2,sort.3 FILE=colvar
+```
+
+The elements of the three output vector here are determined by doing an elementwise comparison of the elements in the input vectors.  In the above
+input the first element of `sort.1` is equal to the distance between atoms 1 and 2 if this distance is smaller than the distances between atoms 5 and 6 and the distance between atoms 9 and 10.
+By the same token the second element of `sort.1` is equal to the distance between atoms 3 and 4 if this is smaller than the distance between atoms 7 and 8 and the distance between atoms 11 and 12.
+The elements of `sort.2` are the second largest of these distances, while the elements of `sort.3` are three largest distances
+
+Notice that you can also use a combination of scalars and vectors in the input to this action as shown below:
+
+```plumed
+c: CONSTANT VALUE=0.5
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+sort: SORT ARG=d,c
+PRINT ARG=sort.1,sort.2 FILE=colvar
+```
+
+For the input above the SORT action outputs two vectors with two elements.  The elements of `sort.1` are equal to the distances between the pairs
+of atoms that are specified in the DISTANCE command as long as those distances are less than 0.5 nm.  If either of the two input distances is more
+than 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm.  Similarly, the elements of `sort.2` are equal to the distances between
+of the atoms that are  specified in the DISTANCE command as long as those distances are more than 0.5 nm.
+
+## The MASK keyword
+
+You should only use the MASK keyword for this action if you are using multiple arguments and at least one vector in the input to this action.
+The following input illustrates how this keyword works:
+
+```plumed
+m: CONSTANT VALUES=1,0
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+sort: SORT ARG=d1,d2,d3 MASK=m
+```
+
+By using the MASK keyword here you ensure that only the first elements of the output vectors for `sort` is calculated. These elements of the output vectors
+are evaluated as the corresponding element of the vector that is passed in the input to the MASK keyword is one.  By the same logic the second element
+of the output vectors are not computed because the corresponding element in the mask vector is 0.
+
+The input above illustrates the key idea for the MASK keyword and is probably not very useful. To see an example where using a MASK for this type of action
+is useful you should look at the expanded shortcuts in the documentation for [PARABETARMSD](PARABETARMSD.md).
+
 */
 //+ENDPLUMEDOC
 

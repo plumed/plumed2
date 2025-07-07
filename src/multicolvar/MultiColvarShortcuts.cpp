@@ -32,41 +32,52 @@ void MultiColvarShortcuts::shortcutKeywords( Keywords& keys ) {
            "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
   keys.linkActionInDocs("LESS_THAN","LESS_THAN");
+  keys.reset_style("LESS_THAN","deprecated");
   keys.addOutputComponent("lessthan","LESS_THAN","scalar","the number of colvars that have a value less than a threshold");
   keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
            "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
   keys.linkActionInDocs("MORE_THAN","MORE_THAN");
+  keys.reset_style("MORE_THAN","deprecated");
   keys.addOutputComponent("morethan","MORE_THAN","scalar","the number of colvars that have a value more than a threshold");
   keys.add("optional","ALT_MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
+  keys.reset_style("ALT_MIN","deprecated");
   keys.addOutputComponent("altmin","ALT_MIN","scalar","the minimum value of the cv");
   keys.add("optional","MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+  keys.reset_style("MIN","deprecated");
   keys.addOutputComponent("min","MIN","scalar","the minimum colvar");
   keys.add("optional","MAX","calculate the maximum value. "
            "To make this quantity continuous the maximum is calculated using "
            "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+  keys.reset_style("MAX","deprecated");
   keys.addOutputComponent("max","MAX","scalar","the maximum colvar");
   keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "
            "These quantities are calculated using kernel density estimation as described on "
            "\\ref histogrambead.");
   keys.linkActionInDocs("BETWEEN","BETWEEN");
+  keys.reset_style("BETWEEN","deprecated");
   keys.addOutputComponent("between","BETWEEN","scalar","the number of colvars that have a value that lies in a particular interval");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
+  keys.reset_style("HIGHEST","deprecated");
   keys.addOutputComponent("highest","HIGHEST","scalar","the largest of the colvars");
   keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
            "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+  keys.reset_style("HISTOGRAM","deprecated");
   keys.addFlag("LOWEST",false,"this flag allows you to recover the lowest of these variables.");
+  keys.reset_style("LOWEST","deprecated");
   keys.addOutputComponent("lowest","LOWEST","scalar","the smallest of the colvars");
   keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
+  keys.reset_style("SUM","deprecated");
   keys.addOutputComponent("sum","SUM","scalar","the sum of the colvars");
   keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
+  keys.reset_style("MEAN","deprecated");
   keys.addOutputComponent("mean","MEAN","scalar","the mean of the colvars");
   keys.needsAction("SUM");
   keys.needsAction("MEAN");

@@ -63,6 +63,26 @@ isocontours in the box where the density is equal to 0.2.  If you wish to find t
 closest of these two contours you would print `dc.dist2`. `dc.thickness` tells you the difference between `dc.dist1` and
 `dc.dist2` and `dc.qdist` is the quantity with continuous derivatives that is introduced in the paper cited below.
 
+PLUMED also contains an experimental implementation that allows you to find the density from a isosurface in a density that is calculated using:
+
+$$
+p(x,y,x) = \sum_{i=1}^N w_i K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
+$$
+
+where $w_i$ is a non-constant weight that is ascribed to each of the points.  The following illustrates how this functionality can be used
+to find the distance from an isocontour in a phase field that describes the average value of the coordination number at each point in the box:
+
+```plumed
+mat: CONTACT_MATRIX GROUPA=2-100 GROUPB=101-1000 SWITCH={RATIONAL R_0=0.2}
+ones: ONES SIZE=900
+cc: MATRIX_VECTOR_PRODUCT ARG=mat,ones
+dc: DISTANCE_FROM_CONTOUR ARG=cc POSITIONS=2-100 ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2
+PRINT ARG=dc.dist1 FILE=colvar
+```
+
+Notice that, although you can calculate derivatives for the first example input above, you __cannot__ calculate derivatives if you use the ARG keyword
+that appears in the second example input above.
+
 */
 //+ENDPLUMEDOC
 

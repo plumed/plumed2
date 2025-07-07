@@ -60,11 +60,19 @@ The example input below shows how to use the adaptive path.
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH ARG=d1.x,d1.y UPDATE=50 FIXED=5,15 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+pp: ADAPTIVE_PATH ...
+   ARG=d1.x,d1.y UPDATE=50 FIXED=5,15
+   WFILE=out-path.pdb WSTRIDE=50
+   REFERENCE=regtest/mapping/rt-adapt/mypath.pdb
+   PROPERTY=path
+...
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 ```
 
-The curved path here is defined using a series of points in a two dimensional space.  As you can see if you expand the shortcuts in the input above
+The curved path here is defined using a series of points in a two dimensional space.  Furthermore, the coordinates that these points should be projected at
+on the low dimensional path (the $i$ values in the equation for $s$ above) are specified in the `path` property of the input pdb file.
+
+If you expand the shortcuts in the input above you can see how
 we use a [GEOMETRIC_PATH](GEOMETRIC_PATH.md) shortcut to calculate our position along the path and distance from the path.  In addition, we also collect
 information on the average displacement from the path using an [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) so that we can update the path every step.
 During these update steps the reference points on the path are shifted by the values that are stored in the [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md)
@@ -79,10 +87,14 @@ p1b: ADAPTIVE_PATH REFERENCE=regtest/trajectories/path_msd/all.pdb FIXED=1,42 UP
 PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 ```
 
-When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
+As we have not used the PROPERTY keyword in the input the $i$ values in the equation for $s$ above are set equal to 1, 2, 3...
+Furthermore, when an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
 action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
 of mass and rotation of the reference frame. These vector of atomic displacements that do not include the translation and rotation are also used in the
 [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) action that is used to update the path.
+
+As we have not used the PROPERTY keyword in the input the $i$ values in the equation for $s$ above are set equal to 1, 2, 3...
+
 
 */
 //+ENDPLUMEDOC
@@ -105,7 +117,6 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
-  keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
   keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");

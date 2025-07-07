@@ -50,17 +50,28 @@ use [REFERENCE_GRID](REFERENCE_GRID.md) to read in the values of the function at
 ff: REFERENCE_GRID FILE=regtest/gridtools/rt-weights-integral/kde.grid VALUE=h
 aa: ANGLE ATOMS=1,2,3
 tt: TORSION ATOMS=1,2,3,4
-val: EVALUATE_FUNCTION_FROM_GRID GRID=ff
+val: EVALUATE_FUNCTION_FROM_GRID ...
+  GRID=ff INTERPOLATION_TYPE=spline
+  ZERO_OUTSIDE_GRID_RANGE
+...
 PRINT ARG=aa,tt,val FILE=colvar
 ```
 
-Notice that the ARG command is not used with the EVALUATE_FUNCTION_FROM_GRID command to specify the labels of the input arguments at which you
-would like the function to be evaluated.  Instead, yaou only specify the GRID that is being used as input for the interpolation.  The reason that it is not
+Notice that the ARG command does not need to be used with the EVALUATE_FUNCTION_FROM_GRID command to specify the labels of the input arguments at which you
+would like the function to be evaluated.  Instead, you only specify the GRID that is being used as input for the interpolation.  The reason that it is not
 necessary to specify the arguments is that PLUMED stores labels for each coordinate axis of a grid.  These labels appear at the top of the
 columns that contain the grid points when you output grids using [DUMPGRID](DUMPGRID.md). Furthermore, in the first of the inputs above the labels of these
 input arguments are specified using the VAR option for [REFERENCE_GRID](REFERENCE_GRID.md). Meanwhile, for the second  the titles of the columsn are
 read in from the input file.  Consequently, PLUMED searches for a value named `d1` when evaluating `ff` in the first input.  For the second input it searches
-for values labelled `aa` and `tt` and evaluates `val` from them.
+for values labelled `aa` and `tt` and evaluates `val` from them.  You can, however, also use an ARG keyword in the input file as illustrated below if this helps
+you to remember what precisely is being evluated:
+
+```plumed
+d2: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 GRID_BIN=20 FUNC=d1*d1 VAR=d1 PERIODIC=NO
+d1: DISTANCE ATOMS=1,2
+ff: EVALUATE_FUNCTION_FROM_GRID GRID=d2 ARG=d1
+PRINT ARG=d1,ff FILE=colvar
+```
 
 Notice that input the inputs above the input values are scalars.  The output from EVALUATE_FUNCTION_FROM_GRID is thus also a scalar.  If, however, one uses an
 input such as the one shown below:
@@ -78,6 +89,28 @@ PRINT ARG=aa,tt,val FILE=colvar
 The value, `val`, that is output by the EVALUATE_FUNCTION_FROM_GRID action will be a vector.  In other words, in the same way you can use scalars, vectors, matrices and even
 functions on grids in the input to the [CUSTOM](CUSTOM.md) command you can also use scalars, vectors, matrices and functions on grid in the input to the EVALUATE_FUNCTION_FROM_GRID
 command.
+
+## The MASK keyword
+
+If the input to this action is a vector you can use the MASK keyword as illustrated below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/gridtools/rt-weights-integral/kde.grid
+
+ff: REFERENCE_GRID FILE=regtest/gridtools/rt-weights-integral/kde.grid VALUE=h
+d: DISTANCE ATOMS1=1,2 ATOMS2=4,5 ATOMS3=7,8
+m: LESS_THAN ARG=d SWITCH={CUSTOM R_0=1 FUNC=step(0.1-x)}
+aa: ANGLE ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+tt: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+val: EVALUATE_FUNCTION_FROM_GRID GRID=ff MASK=m
+prod: CUSTOM ARG=m,val FUNC=x*y PERIODIC=NO
+sum: SUM ARG=prod PERIODIC=NO
+PRINT ARG=sum FILE=colvar
+```
+
+This input calculates the function of the angles and torsions that is provided in the input grid file for the three pairs of input angles and torsions.  The sum of these quantities
+is then computed.  Importantly, however, each of the evaluated values of the function is only added to the final sum if the corresponding distance that is calculated by the [DISTANCE](DISTANCE.md)
+action with label `d` is less than 0.1 nm.
 
 */
 //+ENDPLUMEDOC
@@ -102,6 +135,7 @@ void EvaluateFunctionOnGrid::registerKeywords(Keywords& keys ) {
   keys.addInputKeyword("compulsory","GRID","grid","the name of the grid that we are using to evaluate the function");
   keys.addInputKeyword("optional","ARG","scalar/vector","the arguments that you would like to use when evaluating the function.  If not specified these are determined from the names of the grid dimensions");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.addInputKeyword("optional","MASK","vector/matrix","the label for a sparse vector/matrix that should be used to determine which elements of the vector/matrix should be computed");
   EvaluateGridFunction ii;
   ii.registerKeywords( keys );
   keys.addActionNameSuffix("_SCALAR");

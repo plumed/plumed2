@@ -38,9 +38,9 @@ Calculate a polynomial combination of a set of other variables.
 
 This action takes in $N_{arg}$ arguments ($x_i$) and computes the following function of them:
 
-\f[
+$$
 C=\sum_{i=1}^{N_{arg}} c_i (x_i-a_i)^{p_i}
-\f]
+$$
 
 The $c_i$, $a_i$ and $p_i$ values in this expression are provided through the COEFFICIENTS, PARAMETERS and POWERS keywords respectively.
 The following example illustrates how this action can be used to calculate and print the square of the distance between atom 1 and atom 2.
@@ -62,6 +62,27 @@ PRINT ARG=c FILE=colvar
 ```
 
 Notice that we cannot remove the POWERS keyword here as if it is absent all the $p_i$ values are set equal to 1.
+
+## The NORMALIZE flag
+
+Using the NORAMALIZE flag in the input below ensures that the coefficients of the three input scalars are all set equal to one:
+
+```plumed
+d: DISTANCE ATOMS=1,2 COMPONENTS
+c: COMBINE ARG=d.x,d.y,d.z NORMALIZE PERIODIC=NO
+PRINT ARG=c FILE=colvar
+```
+
+Notice that you can use this flag together with the coefficient keyword as shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2 COMPONENTS
+c: COMBINE ARG=d.x,d.y,d.z NORMALIZE COEFFICIENTS=2,1,3 PERIODIC=NO
+PRINT ARG=c FILE=colvar
+```
+
+The coefficients of `d.x`, `d.y` and `d.z` for this input are 1/3, 1/6 and 1/2 respectively.
+
 
 ## Periodic arguments
 
@@ -150,6 +171,42 @@ it is a $N\times M$ matrix which has all its elements equal to the input scalar.
 
 Furthermore, if you pass a single matrix to COMBINE the output is a matrix.  To calculate a linear combination of all the elements in a matrix using the formula at the top of the page you should use
 the [CUSTOM](CUSTOM.md) action to transform all the components of the input vector.  You can then add all the results from these transformations together using [SUM](SUM.md).
+
+## The MASK keyword
+
+The example input below illustrates a way you can use the MASK keyword to improve PLUMED performance for inputs that use COMBINE actions that take arguments that
+are vectors:
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+ow: GROUP ATOMS=1-400
+hw: GROUP ATOMS=401-1200
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate coordination with oxygen atoms
+ow_ones: ONES SIZE=400
+ow_mat: CONTACT_MATRIX GROUP=ow MASK=sphere SWITCH={RATIONAL R_0=0.3 D_MAX=0.8}
+ow_coord: MATRIX_VECTOR_PRODUCT ARG=ow_mat,ow_ones
+# Calculate the coordination with hydrogen atoms
+hw_ones: ONES SIZE=800
+hw_mat: CONTACT_MATRIX GROUPA=ow GROUPB=hw MASK=sphere SWITCH={RATIONAL R_0=0.1 D_MAX=0.5}
+hw_coord: MATRIX_VECTOR_PRODUCT ARG=hw_mat,hw_ones
+# And do the linear combination of the transformed coordination numbers together
+prod: COMBINE ARG=hw_coord,ow_coord COEFFICIENTS=2,8 MASK=sphere PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+denom: SUM ARG=sphere PERIODIC=NO
+cv: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=cv FILE=colvar STRIDE=1
+```
+
+The variable being computed is computed for the oxygen atoms in a spherical region centered on the point $(2.5,2.5,2.5)$ and is a linear combination of
+the coordination number of the atoms in this region with the oxygen atoms and the coordination number of the atoms in this region with the hydrogen atoms.
+The average value of this linear combination for the atoms that are within this region is output.
+
+If the arguments input to the COMBINE action are matrices then the MASK keyword is used in the way that is described in the documentation for the [CUSTOM](CUSTOM.md).
 
 */
 //+ENDPLUMEDOC

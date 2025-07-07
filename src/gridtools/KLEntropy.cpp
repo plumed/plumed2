@@ -95,7 +95,7 @@ d1ny: CUSTOM ARG=d1c.y,d1l FUNC=x/y PERIODIC=NO
 d1nz: CUSTOM ARG=d1c.z,d1l FUNC=x/y PERIODIC=NO
 
 # Now compute our instaneous normalised histogram of the bond directions
-hu: SPHERICAL_KDE VOLUMES=d1lt ARG=d1nx,d1ny,d1nz GRID_BIN=400 CONCENTRATION=100.0
+hu: SPHERICAL_KDE HEIGHTS=d1lt ARG=d1nx,d1ny,d1nz GRID_BIN=400 CONCENTRATION=100.0
 de: SUM ARG=d1lt PERIODIC=NO
 h: CUSTOM ARG=hu,de FUNC=x/y PERIODIC=NO
 

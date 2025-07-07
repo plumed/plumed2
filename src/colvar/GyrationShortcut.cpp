@@ -47,11 +47,58 @@ g: GYRATION_TENSOR ATOMS=1-10
 PRINT ARG=g FILE=colvar
 ```
 
-The 9 elements of the gyration matrix will be output to the file `colvar` here.
+In this example input the weights of all the atoms are set equal to one. The 9 elements of the resulting gyration matrix will
+be output to the file `colvar` here.  If you want the weights of the atoms to be set equal to the masses you can use either of the following
+equivalent commands:
 
-Similar functionality to the functionality in the example above is used in the [GYRATION](GYRATION.md) shortcut.  There is, however,
+```plumed
+g: GYRATION_TENSOR ATOMS=1-10 MASS
+g2: GYRATION_TENSOR ATOMS=1-10 WEIGHTS=@Masses
+g3: GYRATION_TENSOR ATOMS=1-10 MASS_WEIGHTED
+PRINT ARG=g,g2,g3 FILE=colvar
+```
+
+This input above should output three identical $3\times 3$ matrices.
+
+If you want to use an arbitrary set of weights for the atoms you can use the following syntax.
+
+```plumed
+c: CONSTANT VALUES=1,3,2,4
+g: GYRATION_TENSOR ATOMS=1-4 WEIGHTS=c UNORMALIZED
+PRINT ARG=g FILE=colvar
+```
+
+Although the input weights are [CONSTANT](CONSTANT.md) here that is not a requirement.  You can use a vector of weights from any action
+that outputs a vector in the input for the WEIGHTS keyword here.  Notice, also that the denominator in the expression for $G_{\alpha\beta}$
+is set equal to one rather than the sum of the weights as we used the UNORMALIZED flag.
+
+Similar functionality to the functionality in the examples above is used in the [GYRATION](GYRATION.md) shortcut.  There is, however,
 no fast version of the GYRATION_TENSOR command in the way that there is a fast version of the [GYRATION](GYRATION.md) command that is
 used when the weights are all one or when the masses are used as the weights.
+
+## A note on periodic boundary conditions
+
+Calculating the gyration tensor is normally used to determine the shape of a molecule so all the specified atoms
+would normally be part of the same molecule.  When computing gyration tensors it is important to ensure that the periodic boundaries
+are calculated correctly.  There are two ways that you can manage periodic boundary conditions when using this action.  The
+first and simplest is to reconstruct the molecule similarly to the way that [WHOLEMOLECULES](WHOLEMOLECULES.md) operates.
+This reconstruction of molecules has been done automatically since PLUMED 2.2.  If for some reason you want to turn it off
+you can use the NOPBC flag as shown below:
+
+```plumed
+g: GYRATION_TENSOR ATOMS=1-5 NOPBC
+PRINT ARG=g FILE=colvar
+```
+
+An alternative approach to handling PBC is to use the PHASES keyword.  This keyword instructs PLUMED to use the PHASES option
+when computing the position of the center using the [CENTER](CENTER.md) command.  Distances of atoms from this center are then
+computed using PBC as usual. The example shown below shows you how to use this option
+
+```plumed
+g: GYRATION_TENSOR ATOMS=1-5 PHASES
+PRINT ARG=g FILE=colvar
+```
+
 
 */
 //+ENDPLUMEDOC
@@ -68,7 +115,9 @@ PLUMED_REGISTER_ACTION(GyrationShortcut,"GYRATION_TENSOR")
 void GyrationShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
-  keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
+  if( keys.getDisplayName()=="GYRATION" ) {
+    keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
+  }
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("optional","WEIGHTS","what weights should be used when calculating the center.  If this keyword is not present the geometric center is computed. "
            "If WEIGHTS=@Masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
@@ -100,8 +149,12 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
 GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  bool usemass, phases;
+  bool usemass, phases, massw;
   parseFlag("MASS",usemass);
+  parseFlag("MASS_WEIGHTED",massw);
+  if( massw ) {
+    usemass = true;
+  }
   parseFlag("PHASES",phases);
   std::vector<std::string> str_weights;
   parseVector("WEIGHTS",str_weights);
@@ -116,7 +169,7 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
         }
       }
       if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
-        wt_str = "MASS";
+        wt_str = "MASS_WEIGHTED";
       }
       readInputLine( getShortcutLabel() + ": GYRATION_FAST " + wt_str + " " + convertInputLineToString() );
       return;

@@ -41,20 +41,81 @@ To use this CV you define a series of unit vectors, $g_k$, using multiple instan
 [symmetry function](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html) for the $i$th atom as:
 
 $$
-s_i = \sum_k \left| \frac{\sum_j \sigma(|r_{ij}|) e^{ig_k r_{ij}}}{\sum_j \sigma(|r_{ij}|) \right|^2
+s_i = \sum_k \left| \frac{\sum_j \sigma(|r_{ij}|) e^{ig_k r_{ij}}}{\sum_j \sigma(|r_{ij}|)} \right|^2
 $$
 
 In this expression $r_{ij}$ is the vector connecting atom $i$ to atom $j$ and $\sigma$ is a switching function that acts upon the magnidue of this vector, $|r_{ij}|$.
 The following input is an example that shows how this symmetry function can be used in practice.
 
 ```plumed
-lc: LOCAL_CRYSTALINITY SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM
+lc: LOCAL_CRYSTALINITY ...
+   SPECIES=1-64 D_0=3.0 R_0=1.5
+   GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM
+...
 PRINT ARG=lc_sum FILE=colvar
 ```
 
 As you can see if you expand the shortcut in this input, the sum over $k$ in the above expression has three terms in this input as 3 GVECTORS are specified.
 Sixty four values for the expression above are computed.  These sixty four numbers are then added together in order to give a global mesuare of the crystallinity
 for the simulated system.
+
+In the input above $\sigma(|r_{ij}|)$ is a rational [switching function](LESS_THAN.md)
+with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+```plumed
+lc: LOCAL_CRYSTALINITY ...
+   SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=3.0}
+   GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM
+...
+PRINT ARG=lc_sum FILE=colvar
+```
+
+## Working with two types of atom
+
+If you would like to calculate the function above for the bonds connecting the atoms in GROUPA to the atoms in GROUPB you can use an input like the one
+shown below:
+
+```plumed
+lc: LOCAL_CRYSTALINITY ...
+   SPECIESA=1-5 SPECIESB=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=3.0}
+   GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM
+...
+PRINT ARG=lc_sum FILE=colvar
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the TETRAHEDRAL parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-64 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the local crystallinity parameters
+lc: LOCAL_CRYSTALINITY ...
+   SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=3.0}
+   GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 MASK=sphere
+...
+# Multiply local crystallinity parameters numbers by sphere vector
+prod: CUSTOM ARG=lc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average local crystallinity parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
 
 */
 //+ENDPLUMEDOC
