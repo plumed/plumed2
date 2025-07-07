@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "FunctionSetup.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
@@ -107,19 +110,29 @@ tells you how many of these distances are greater than 0.2 nm.
 class MoreThan {
 public:
   bool squared;
-  std::string sfinput;
+#ifdef __PLUMED_USE_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
+#endif //__PLUMED_USE_OPENACC
   static void registerKeywords( Keywords& keys );
-  static void read( MoreThan& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const MoreThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
-  MoreThan& operator=(const MoreThan& m ) {
-    squared = m.squared;
-    sfinput = m.sfinput;
-    std::string errors;
-    switchingFunction.set( sfinput, errors );
-    plumed_assert( errors.length()==0 );
-    return *this;
+  static void read( MoreThan& func,
+                    ActionWithArguments* action,
+                    FunctionOptions& options );
+  static void calc( const MoreThan& func,
+                    bool noderiv,
+                    const View<const double>& args,
+                    FunctionOutput& funcout );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],squared)
+    switchingFunction.toACCDevice();
   }
+  void removeFromACCDevice() const {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(squared,this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 typedef FunctionShortcut<MoreThan> MoreThanShortcut;
@@ -157,9 +170,10 @@ void MoreThan::read( MoreThan& func, ActionWithArguments* action, FunctionOption
 
 
   std::string errors;
-  action->parse("SWITCH",func.sfinput);
-  if(func.sfinput.length()>0) {
-    func.switchingFunction.set(func.sfinput,errors);
+  std::string sfinput;
+  action->parse("SWITCH", sfinput);
+  if(sfinput.length()>0) {
+    func.switchingFunction.set(sfinput, errors);
     if( errors.length()!=0 ) {
       action->error("problem reading SWITCH keyword : " + errors );
     }
@@ -176,12 +190,6 @@ void MoreThan::read( MoreThan& func, ActionWithArguments* action, FunctionOption
     action->parse("NN",nn);
     action->parse("MM",mm);
     func.switchingFunction.set(nn,mm,r0,d0);
-    std::string str_nn, str_mm, str_d0, str_r0;
-    Tools::convert( nn, str_nn );
-    Tools::convert( mm, str_mm );
-    Tools::convert( d0, str_d0 );
-    Tools::convert( r0, str_r0 );
-    func.sfinput = "RATIONAL R_0=" + str_r0 + " D_0=" + str_d0 + " NN=" + str_nn + " MM=" + str_mm;
   }
   action->log<<"  using switching function with cutoff "<<func.switchingFunction.description()<<"\n";
   action->parseFlag("SQUARED",func.squared);
@@ -190,8 +198,9 @@ void MoreThan::read( MoreThan& func, ActionWithArguments* action, FunctionOption
   }
 }
 
-void MoreThan::calc( const MoreThan& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
-  plumed_dbg_assert( args.size()==1 );
+void MoreThan::calc( const MoreThan& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
+  // the presence of NDEBUG seems to be ignored by nvcc...
+  // plumed_dbg_assert( args.size()==1 );
   double d;
   if( func.squared ) {
     funcout.values[0] = 1.0 - func.switchingFunction.calculateSqr( args[0], d );

@@ -29,8 +29,7 @@
 namespace PLMD {
 namespace function {
 
-class FunctionOptions {
-public:
+struct FunctionOptions {
   /// Is the derivative zero if the value is zero
   bool derivativeZeroIfValueIsZero = false;
 /// Are multiple components registered with a single name as in SphericalHarmonic and Moments
@@ -38,20 +37,37 @@ public:
 };
 
 template <class T>
-class FunctionData {
-public:
+struct FunctionData {
   /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart = 0;
   // Number of scalars that appear in input
   unsigned nscalars = 0;
   T f;
   // This is for setting up the functions
-  static void setup( T& myfunc, const std::vector<std::string>& components, const std::vector<std::size_t>& shape, bool hasderiv, ActionWithValue* action );
+  static void setup( T& myfunc,
+                     const std::vector<std::string>& components,
+                     const std::vector<std::size_t>& shape,
+                     bool hasderiv,
+                     ActionWithValue* action );
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1], argstart, nscalars)
+    f.toACCDevice();
+  }
+  void removeFromACCDevice() const {
+    f.removeFromACCDevice();
+#pragma acc exit data delete(nscalars, argstart, this[0:1])
+  }
+#endif //__PLUMED_USE_OPENACC
 };
 
 template <class T>
-void FunctionData<T>::setup( T& myfunc, const std::vector<std::string>& components, const std::vector<std::size_t>& shape, bool hasderiv, ActionWithValue* action ) {
-  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( action );
+void FunctionData<T>::setup( T& myfunc,
+                             const std::vector<std::string>& components,
+                             const std::vector<std::size_t>& shape,
+                             bool hasderiv,
+                             ActionWithValue* action ) {
+  ActionWithArguments* aarg = action->castToActionWithArguments();
   plumed_assert( aarg );
   FunctionOptions options;
   T::read( myfunc, aarg, options );
@@ -145,20 +161,20 @@ void FunctionData<T>::setup( T& myfunc, const std::vector<std::string>& componen
   }
 }
 
-class FunctionOutput {
-public:
-  unsigned nvals;
-  View<double,helpers::dynamic_extent> values;
-  unsigned nder;
-  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivs;
-  FunctionOutput( unsigned nv, double* v, unsigned na, double* d ):
-    nvals(nv),
-    values(v,nv),
-    nder(na),
-    derivs(d,nv,na) {
+struct FunctionOutput {
+  View<double> values;
+  View2D<double> derivs;
+  static FunctionOutput create( unsigned nvals,
+                                double* vals,
+                                unsigned ndev,
+                                double* devs ) {
+    return FunctionOutput{
+      View<double>(vals,nvals),
+      View2D<double>(devs,nvals,ndev)
+    };
   }
 };
 
-}
-}
+} // namespace function
+} // namespace PLMD
 #endif

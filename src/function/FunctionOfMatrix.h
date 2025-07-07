@@ -170,7 +170,8 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
     }
   }
   // Setup the values
-  FunctionData<T> myfunc;
+  // Get the function data from the parallel task manager, to avoid copies
+  auto & myfunc = taskmanager.getActionInput();
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
   FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
@@ -178,9 +179,8 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setSymmetric( symmetric );
   }
-  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart, nscalars );
-  // Pass the function to the parallel task manager
-  taskmanager.setActionInput( myfunc );
+  taskmanager.setupParallelTaskManager( getNumberOfFunctionArguments() - argstart,
+                                        nscalars );
 }
 
 template <class T>
@@ -326,8 +326,15 @@ void FunctionOfMatrix<T>::performTask( std::size_t task_index,
                                        const FunctionData<T>& actiondata,
                                        ParallelActionsInput& input,
                                        ParallelActionsOutput& output ) {
-  FunctionOutput funcout( input.ncomponents, output.values.data(), input.nderivatives_per_scalar, output.derivatives.data() );
-  T::calc( actiondata.f, input.noderiv, View<const double,helpers::dynamic_extent>( input.inputdata + task_index*input.nderivatives_per_scalar, input.nderivatives_per_scalar ), funcout );
+  auto funcout = FunctionOutput::create( input.ncomponents,
+                                         output.values.data(),
+                                         input.nderivatives_per_scalar,
+                                         output.derivatives.data() );
+  T::calc( actiondata.f,
+           input.noderiv,
+           View<const double>( input.inputdata + task_index*input.nderivatives_per_scalar,
+                               input.nderivatives_per_scalar ),
+           funcout );
 }
 
 template <class T>
