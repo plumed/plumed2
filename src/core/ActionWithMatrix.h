@@ -26,10 +26,27 @@
 
 namespace PLMD {
 
+class ActionWithMatrix;
 class RequiredMatrixElements {
-public:
-  std::size_t ncols;
   std::vector<std::size_t> bookeeping;
+  std::size_t const* bookeeping_data;
+public:
+  friend class ActionWithMatrix;
+  std::size_t ncols;
+  void update() {
+    bookeeping_data = bookeeping.data();
+  }
+  void toACCDevice() const {
+    //this assumes that update() has already been called
+#pragma acc enter data copyin(this[0:1], bookeeping_data[0:bookeeping.size()])
+  }
+  void removeFromACCDevice() const {
+#pragma acc exit data delete(bookeeping_data[0:bookeeping.size()],this[0:1])
+  }
+  std::size_t operator[]( std::size_t i ) const {
+    return bookeeping_data[i];
+  }
+
 };
 
 class MatrixElementOutput {

@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "MatrixTimesVectorBase.h"
 #include "core/ActionRegister.h"
 
@@ -27,8 +30,12 @@ namespace matrixtools {
 
 class MatrixTimesVectorRowSums {
 public:
-  static void performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output );
-  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices ) {
+  static void performTask( const MatrixTimesVectorInput& input,
+                           MatrixTimesVectorOutput& output );
+  static std::size_t getAdditionalIndices( std::size_t n,
+      std::size_t vecstart,
+      const MatrixForceIndexInput& fin,
+      View<std::size_t> indices ) {
     return n;
   }
 };
@@ -36,7 +43,8 @@ public:
 typedef MatrixTimesVectorBase<MatrixTimesVectorRowSums> mycr;
 PLUMED_REGISTER_ACTION(mycr,"MATRIX_VECTOR_PRODUCT_ROWSUMS")
 
-void MatrixTimesVectorRowSums::performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output ) {
+void MatrixTimesVectorRowSums::performTask( const MatrixTimesVectorInput& input,
+    MatrixTimesVectorOutput& output ) {
   for(unsigned i=0; i<input.rowlen; ++i) {
     output.values[0] += input.matrow[i];
     if( input.noderiv ) {
@@ -49,13 +57,17 @@ void MatrixTimesVectorRowSums::performTask( const MatrixTimesVectorInput& input,
 class MatrixTimesVectorProper {
 public:
   static void performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output );
-  static std::size_t getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices );
+  static std::size_t getAdditionalIndices( std::size_t n,
+      std::size_t vecstart,
+      const MatrixForceIndexInput& fin,
+      View<std::size_t> indices );
 };
 
 typedef MatrixTimesVectorBase<MatrixTimesVectorProper> mycp;
 PLUMED_REGISTER_ACTION(mycp,"MATRIX_VECTOR_PRODUCT_PROPER")
 
-void MatrixTimesVectorProper::performTask( const MatrixTimesVectorInput& input, MatrixTimesVectorOutput& output ) {
+void MatrixTimesVectorProper::performTask( const MatrixTimesVectorInput& input,
+    MatrixTimesVectorOutput& output ) {
   for(unsigned i=0; i<input.rowlen; ++i) {
     std::size_t ind = input.indices[i];
     output.values[0] += input.matrow[i]*input.vector[ind];
@@ -67,7 +79,10 @@ void MatrixTimesVectorProper::performTask( const MatrixTimesVectorInput& input, 
   }
 }
 
-std::size_t MatrixTimesVectorProper::getAdditionalIndices( std::size_t n, std::size_t vecstart, const MatrixForceIndexInput& fin, View<std::size_t,helpers::dynamic_extent> indices ) {
+std::size_t MatrixTimesVectorProper::getAdditionalIndices( std::size_t n,
+    std::size_t vecstart,
+    const MatrixForceIndexInput& fin,
+    View<std::size_t> indices ) {
   for(unsigned i=0; i<fin.rowlen; ++i) {
     indices[n+i] = vecstart + fin.indices[i];
   }

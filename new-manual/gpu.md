@@ -55,3 +55,6 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [MORE_THAN](MORE_THAN.md)
    - [BETWEEN](BETWEEN.md)
    - [COMBINE](COMBINE.md)
+- matrixtools
+   - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
+   - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)

@@ -169,9 +169,9 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
     args[i] = input.inputdata[input.argstarts[i] + task_index];
   }
   unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-  unsigned nelements = actiondata.outmat.bookeeping[fstart];
+  unsigned nelements = actiondata.outmat[fstart];
   for(unsigned i=0; i<nelements; ++i) {
-    std::size_t argpos = actiondata.outmat.bookeeping[fstart+1+i];
+    std::size_t argpos = actiondata.outmat[fstart+1+i];
     for(unsigned j=0; j<input.ncomponents; ++j) {
       args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
     }
@@ -189,7 +189,7 @@ template <class T>
 int OuterProductBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
     const OuterProductInput<T>& actiondata ) {
   unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-  return actiondata.outmat.bookeeping[fstart];
+  return actiondata.outmat[fstart];
 }
 
 template <class T>
@@ -203,7 +203,7 @@ void OuterProductBase<T>::getForceIndices( std::size_t task_index,
   for(unsigned j=0; j<input.ncomponents; ++j) {
     for(unsigned k=0; k<input.ncomponents; ++k) {
       force_indices.indices[j][k] = input.argstarts[k] + task_index;
-      force_indices.indices[j][input.ncomponents+k] = input.argstarts[input.ncomponents+k] + actiondata.outmat.bookeeping[fstart+1+colno];
+      force_indices.indices[j][input.ncomponents+k] = input.argstarts[input.ncomponents+k] + actiondata.outmat[fstart+1+colno];
     }
     force_indices.threadsafe_derivatives_end[j] = input.ncomponents;
     force_indices.tot_indices[j] = 2*input.ncomponents;
