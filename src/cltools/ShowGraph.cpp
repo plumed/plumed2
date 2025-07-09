@@ -338,7 +338,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     if( a->getName()=="DOMAIN_DECOMPOSITION" || a->getLabel()=="posx" || a->getLabel()=="posy" || a->getLabel()=="posz" || a->getLabel()=="Masses" || a->getLabel()=="Charges" ) {
       continue;
     }
-    ActionToPutData* ap=dynamic_cast<ActionToPutData*>(a);
+    ActionToPutData* ap=a->castToActionToPutData();
     if( ap ) {
       ofile.printf("%s(\"label=%s \n %s \n\")\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
       continue;
@@ -347,12 +347,13 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     if( as ) {
       continue ;
     }
-    ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
-    ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
-    ActionAtomistic* at=dynamic_cast<ActionAtomistic*>(a);
+
     // Print out the connections between nodes
+    ActionAtomistic* at=a->castToActionAtomistic();
     printAtomConnections( at, linkcount, false, ofile );
+    ActionWithArguments* aaa=a->castToActionWithArguments();
     printArgumentConnections( aaa, linkcount, false, ofile );
+    ActionWithValue* av=a->castToActionWithValue();
     // Print out the nodes
     if( !av ) {
       ofile.printf("%s(\"label=%s \n %s \n\")\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );

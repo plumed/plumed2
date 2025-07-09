@@ -20,17 +20,3 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FunctionOfScalar.h"
-#include "Custom.h"
-
-namespace PLMD {
-namespace function {
-
-template <>
-std::string FunctionOfScalar<Custom>::writeInGraph() const {
-  std::size_t und = getName().find_last_of("_");
-  return getName().substr(0,und) + "\nFUNC=" + myfunc.func;
-}
-
-}
-}
-
