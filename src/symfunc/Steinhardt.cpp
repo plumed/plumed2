@@ -397,43 +397,55 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   bool do_vsum;
   parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
+    auto makeString=[&](const std::string& snum,
+    const std::string& realImg)->std::string{
+      //realImg is "r" or "i"
+      return getShortcutLabel() + "_" +realImg + "mn-" + snum + ": CUSTOM "
+      "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + snum + ","
+      + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO";
+    };
     // Divide all components by coordination numbers
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmn-" + snum + ": CUSTOM "
-                     "ARG=" + getShortcutLabel() + "_sp.rm-" + snum + ","
-                     + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine(makeString(snum,"r"));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imn-" + snum + ": CUSTOM "
-                     "ARG=" + getShortcutLabel() + "_sp.im-" + snum + ","
-                     + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine(makeString(snum,"i"));
     }
   }
 
   if( do_vmean ) {
+    auto makeString=[&](const std::string& snum,
+    const std::string& realImg)->std::string{
+      //realImg is "r" or "i"
+      return getShortcutLabel() + "_" +realImg + "ms-" + snum + ": MEAN "
+      "ARG=" + getShortcutLabel() + "_" +realImg + "mn-" + snum
+      + " PERIODIC=NO";
+    };
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rms-" + snum + ": MEAN "
-                     "ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"r"));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_ims-" + snum + ": MEAN "
-                     "ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"i"));
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(),
                            getShortcutLabel() + "_vmean", l, "_", "ms" );
   }
   if( do_vsum ) {
+    auto makeString=[&](const std::string& snum,
+    const std::string& realImg)->std::string{
+      return getShortcutLabel() + "_" +realImg + "mz-" + snum + ": SUM "
+      "ARG=" + getShortcutLabel() + "_" + realImg + "mn-" + snum
+      + " PERIODIC=NO";
+    };
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmz-" + snum + ": SUM "
-                     "ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"r"));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imz-" + snum + ": SUM "
-                     "ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"i"));
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(),
