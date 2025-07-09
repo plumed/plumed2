@@ -303,7 +303,8 @@ private:
                               const std::string& olab,
                               int l,
                               const std::string& sep,
-                              const std::string& vlab );
+                              const std::string& vlab,
+                              bool usegpu = false);
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -332,16 +333,21 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.needsAction("SUM");
   keys.setValueDescription("vector",
                            "the norms of the vectors of spherical harmonic coefficients");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  bool lowmem;
-  parseFlag("LOWMEM",lowmem);
-  if( lowmem ) {
-    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  {
+    bool lowmem;
+    parseFlag("LOWMEM",lowmem);
+    if( lowmem ) {
+      warning("LOWMEM flag is deprecated and is no longer required for this action");
+    }
   }
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
   std::string sp_str, specA, specB;
   parse("SPECIES",sp_str);
   parse("SPECIESA",specA);
@@ -431,7 +437,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(),
-                           getShortcutLabel() + "_vmean", l, "_", "ms" );
+                           getShortcutLabel() + "_vmean",
+                           l,
+                           "_",
+                           "ms",
+                           usegpu );
   }
   if( do_vsum ) {
     auto makeString=[&](const std::string& snum,
@@ -449,12 +459,20 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(),
-                           getShortcutLabel() + "_vsum", l, "_", "mz" );
+                           getShortcutLabel() + "_vsum",
+                           l,
+                           "_",
+                           "mz",
+                           usegpu );
   }
 
   // Now calculate the total length of the vector
   createVectorNormInput( getShortcutLabel() + "_sp",
-                         getShortcutLabel() + "_norm", l, ".", "m" );
+                         getShortcutLabel() + "_norm",
+                         l,
+                         ".",
+                         "m",
+                         usegpu );
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
@@ -467,7 +485,8 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
                                         const std::string& olab,
                                         const int l,
                                         const std::string& sep,
-                                        const std::string& vlab ) {
+                                        const std::string& vlab,
+                                        const bool usegpu) {
   std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
   std::string arg_inp = "";
@@ -481,7 +500,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
     norm_input += comma + "2,2";
     comma=",";
   }
-  readInputLine( norm_input + " ARG=" + arg_inp );
+  readInputLine( norm_input + " ARG=" + arg_inp + (usegpu?" USEGPU":"") );
   readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
