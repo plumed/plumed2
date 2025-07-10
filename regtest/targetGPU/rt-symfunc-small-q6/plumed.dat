@@ -6,7 +6,7 @@ ddA: VSTACK ARG=q1a_sp.rm-n1,q1a_sp.im-n1,q1a_sp.rm-0,q1a_sp.im-0,q1a_sp.rm-p1,q
 ddBT: VSTACK ARG=q1b_sp.rm-n1,q1b_sp.im-n1,q1b_sp.rm-0,q1b_sp.im-0,q1b_sp.rm-p1,q1b_sp.im-p1 
 ddB: TRANSPOSE ARG=ddBT
 
-dd: MATRIX_VECTOR_PRODUCT ARG=ddA,ddB
+dd: MATRIX_VECTOR_PRODUCT ARG=ddA,ddB USEGPU
 ff: SUM ARG=dd PERIODIC=NO
 PRINT ARG=dd FILE=cc
 BIASVALUE ARG=ff 

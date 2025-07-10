@@ -105,6 +105,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.needsAction("OUTER_PRODUCT");
   keys.setValueDescription("vector","the values of the local averages");
   keys.addDOI("10.1063/1.2977970");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):
@@ -114,6 +115,11 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
   parse("SPECIES",sp_str);
   parse("SPECIESA",specA);
   parse("SPECIESB",specB);
+
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
+
   CoordinationNumbers::expandMatrix( false,
                                      getShortcutLabel(),
                                      sp_str,
@@ -134,7 +140,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine(onesLab + ": ONES SIZE=" + size );
-  readInputLine(coordLab + ": MATRIX_VECTOR_PRODUCT ARG=" + matLab + "," + onesLab );
+  readInputLine(coordLab + ": MATRIX_VECTOR_PRODUCT ARG=" + matLab + "," + onesLab + doUSEGPU);
 
   int l=-1;
   std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
@@ -148,6 +154,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
     }
   }
 
+  const std::string prodLab=getShortcutLabel() + "_prod";
   if( l>0 ) {
     std::string vargs="";
     std::string svargs="";
@@ -176,7 +183,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
     const std::string vstackLab=getShortcutLabel() + "_vstack";
     const std::string vpstackLab=getShortcutLabel() + "_vpstack";
     readInputLine(vstackLab + ": VSTACK " + vargs );
-    readInputLine(prodLab + ": MATRIX_VECTOR_PRODUCT " + sargs);
+    readInputLine(prodLab + ": MATRIX_VECTOR_PRODUCT " + sargs + doUSEGPU);
     readInputLine(vpstackLab + ": VSTACK " + svargs );
     std::string twolplusone;
     Tools::convert( 2*(2*l+1), twolplusone );
@@ -196,17 +203,17 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
 
     const std::string twoLab=getShortcutLabel() + "_2";
     readInputLine( twoLab+": MATRIX_VECTOR_PRODUCT ARG=" +av2Lab + "," + lonesLab
-                  );
+                   + doUSEGPU);
     readInputLine( getShortcutLabel() + ": CUSTOM "
                    "ARG=" + twoLab + " FUNC=sqrt(x) PERIODIC=NO");
   } else {
 
     readInputLine( prodLab + ": MATRIX_VECTOR_PRODUCT "
                    "ARG=" +matLab + ","+ sp_str
-                   + " " + convertInputLineToString() );
+                   + " " + convertInputLineToString()  + doUSEGPU);
     readInputLine( getShortcutLabel() + ": CUSTOM "
                    "ARG=" + prodLab + "," + sp_str + "," +coordLab
-                   + " FUNC=(x+y)/(1+z) PERIODIC=NO");
+                   + " FUNC=(x+y)/(1+z) PERIODIC=NO" + doUSEGPU);
   }
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
       getShortcutLabel(),

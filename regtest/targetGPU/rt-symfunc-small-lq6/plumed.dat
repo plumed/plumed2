@@ -5,7 +5,7 @@ ddA: VSTACK ARG=q1a_sp.rm-n1,q1a_sp.im-n1,q1a_sp.rm-0,q1a_sp.im-0,q1a_sp.rm-p1,q
 ddBT: VSTACK ARG=q1b_sp.rm-n1,q1b_sp.im-n1,q1b_sp.rm-0,q1b_sp.im-0,q1b_sp.rm-p1,q1b_sp.im-p1
 ddB: TRANSPOSE ARG=ddBT
 
-con: CONTACT_MATRIX GROUPA=q1a GROUPB=q1b SWITCH={RATIONAL R_0=4}
+con: CONTACT_MATRIX GROUPA=q1a GROUPB=q1b SWITCH={RATIONAL R_0=4} USEGPU
 dd: MATRIX_VECTOR_PRODUCT ARG=ddA,ddB
 ss: SELECT_COMPONENTS ARG=con COMPONENTS=1.1
 mm: MATHEVAL ARG=ss,dd FUNC=x*y PERIODIC=NO
