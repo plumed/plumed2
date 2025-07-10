@@ -346,8 +346,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
       warning("LOWMEM flag is deprecated and is no longer required for this action");
     }
   }
+
   bool usegpu;
   parseFlag("USEGPU",usegpu);
+  std::string doUSEGPU = usegpu?" USEGPU":"";
+
   std::string sp_str, specA, specB;
   parse("SPECIES",sp_str);
   parse("SPECIESA",specA);
@@ -380,7 +383,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   } else {
     plumed_merror("invalid input");
   }
-  readInputLine( sph_input + (usegpu?" USEGPU":""));
+  readInputLine( sph_input + doUSEGPU);
 
   // Input for denominator (coord)
   ActionWithValue* av = plumed.getActionSet()
@@ -391,10 +394,12 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
                  "ARG=" + getShortcutLabel() + "_mat.w,"
-                 + getShortcutLabel() + "_denom_ones" );
+                 + getShortcutLabel() + "_denom_ones"
+                 + doUSEGPU);
   readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
                  "ARG=" + getShortcutLabel() + "_sh.*,"
-                 + getShortcutLabel() + "_denom_ones");
+                 + getShortcutLabel() + "_denom_ones"
+                 + doUSEGPU);
 
   // If we are doing VMEAN determine sum of vector components
   std::string snum;
