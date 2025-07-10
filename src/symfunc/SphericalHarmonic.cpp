@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifdef __PLUMED_HAS_OPENACC
+#define __PLUMED_USE_OPENACC 1
+#endif //__PLUMED_HAS_OPENACC
 #include "function/FunctionSetup.h"
 #include "function/FunctionShortcut.h"
 #include "function/FunctionOfMatrix.h"
@@ -91,8 +94,10 @@ This function is used in the calculation of the Steinhardt order parameters, whi
 
 class SphericalHarmonic {
   int tmom=0;
-  std::vector<double> coeff_poly{};
-  std::vector<double> normaliz{};
+  std::vector<double> coeff_poly_v{};
+  std::vector<double> normaliz_v{};
+  double *coeff_poly=nullptr;
+  double *normaliz=nullptr;
 public:
   static void registerKeywords( Keywords& keys );
   static unsigned factorial( unsigned n );
@@ -109,6 +114,54 @@ public:
   static inline void addVectorDerivatives( unsigned ival,
       const Vector& der,
       View2D<double> derivatives );
+  void update() {
+    coeff_poly = coeff_poly_v.data();
+    normaliz = normaliz_v.data();
+  }
+  SphericalHarmonic() = default;
+  ~SphericalHarmonic() = default;
+  SphericalHarmonic(const SphericalHarmonic&x):
+    tmom(x.tmom),
+    coeff_poly_v(x.coeff_poly_v),
+    normaliz_v(x.normaliz_v) {
+    update();
+  }
+  SphericalHarmonic(SphericalHarmonic&&x):
+    tmom(x.tmom),
+    coeff_poly_v(std::move(x.coeff_poly_v)),
+    normaliz_v(std::move(x.normaliz_v)) {
+    update();
+  }
+  SphericalHarmonic &operator=(const SphericalHarmonic&x) {
+    if (this!=&x) {
+      tmom=x.tmom;
+      coeff_poly_v=x.coeff_poly_v;
+      normaliz_v=x.normaliz_v;
+      update();
+    }
+    return *this;
+  }
+  SphericalHarmonic &operator=(SphericalHarmonic&&x) {
+    if (this!=&x) {
+      tmom=x.tmom;
+      coeff_poly_v=std::move(x.coeff_poly_v);
+      normaliz_v=std::move(x.normaliz_v);
+      update();
+    }
+    return *this;
+  }
+#ifdef __PLUMED_USE_OPENACC
+  void toACCDevice() const {
+    const auto num=tmom+1;
+#pragma acc enter data copyin(this[0:1], \
+  tmom, coeff_poly[0:num], normaliz[0:num])
+  }
+  void removeFromACCDevice() const {
+    const auto num=tmom+1;
+#pragma acc exit data delete(normaliz[0:num], \
+  coeff_poly[0:num], tmom, this[0:1])
+  }
+#endif // __PLUMED_USE_OPENACC
 };
 
 typedef function::FunctionShortcut<SphericalHarmonic> SpHarmShortcut;
@@ -144,8 +197,9 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
                        action->getPntrToArgument(3)->getName().c_str() );
   }
 
-  func.normaliz.resize( func.tmom+1 );
-  func.coeff_poly.resize( func.tmom+1 );
+  func.normaliz_v.resize( func.tmom+1 );
+  func.coeff_poly_v.resize( func.tmom+1 );
+  func.update();
 
   for(unsigned i=0; i<=func.tmom; ++i) {
     func.normaliz[i] = ( i%2==0 ? 1.0 : -1.0 )

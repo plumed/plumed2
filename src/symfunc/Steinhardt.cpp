@@ -380,7 +380,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   } else {
     plumed_merror("invalid input");
   }
-  readInputLine( sph_input );
+  readInputLine( sph_input + (usegpu?" USEGPU":""));
 
   // Input for denominator (coord)
   ActionWithValue* av = plumed.getActionSet()
