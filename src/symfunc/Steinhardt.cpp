@@ -349,11 +349,13 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  std::string doUSEGPU = usegpu?" USEGPU":"";
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
 
-  std::string sp_str, specA, specB;
+  std::string sp_str;
   parse("SPECIES",sp_str);
+  std::string specA;
   parse("SPECIESA",specA);
+  std::string specB;
   parse("SPECIESB",specB);
   CoordinationNumbers::expandMatrix( true,
                                      getShortcutLabel(),
@@ -409,7 +411,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
     auto makeString=[&](const std::string& snum,
-    const std::string& realImg)->std::string{
+    const char realImg)->std::string{
       //realImg is "r" or "i"
       return getShortcutLabel() + "_" +realImg + "mn-" + snum + ": CUSTOM "
       "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + snum + ","
@@ -419,15 +421,15 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine(makeString(snum,"r"));
+      readInputLine(makeString(snum,'r'));
       // Imaginary part
-      readInputLine(makeString(snum,"i"));
+      readInputLine(makeString(snum,'i'));
     }
   }
 
   if( do_vmean ) {
     auto makeString=[&](const std::string& snum,
-    const std::string& realImg)->std::string{
+    const char realImg)->std::string{
       //realImg is "r" or "i"
       return getShortcutLabel() + "_" +realImg + "ms-" + snum + ": MEAN "
       "ARG=" + getShortcutLabel() + "_" +realImg + "mn-" + snum
@@ -436,9 +438,9 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine(makeString(snum,"r"));
+      readInputLine(makeString(snum,'r'));
       // Imaginary part
-      readInputLine(makeString(snum,"i"));
+      readInputLine(makeString(snum,'i'));
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(),
