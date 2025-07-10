@@ -714,7 +714,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
               def.push_back( "defaults " + aa->getDefaultString() );
               data[ as->getShortcutLabel() ] = def;
             }
-            std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+            const auto & shortcut_commands = as->getSavedInputLines();
             if( shortcut_commands.size()==0 ) {
               continue;
             }
@@ -818,7 +818,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           ActionShortcut* as=pp->castToActionShortcut();
           if( as ) {
-            std::vector<std::string> cnames( as->getSavedOutputs() );
+            const auto & cnames = as->getSavedOutputs();
             if( cnames.size()==0 ) {
               continue ;
             }
