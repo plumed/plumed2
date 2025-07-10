@@ -165,6 +165,7 @@ public:
 //   template <size_t VD, typename TT= T, size_t NN = N, typename = std::enable_if_t<NN == VD&&
 //       std::is_same_v<TT,double>>>
 ///assignment from a PLMD::VectorGeneric
+  template<size_t M =N, typename = std::enable_if_t<M>=3>>
   View& operator=( const VectorGeneric<3>& v ) {
     for(unsigned i=0; i<3; ++i) {
       ptr_[i] = v[i];
