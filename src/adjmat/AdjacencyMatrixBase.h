@@ -544,7 +544,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     }
     //sugar for not having to repeat [valpos*nderiv+something]
     for(int ii=1; ii<4; ++ii) {
-      PLMD::View derivs( output.derivatives.data() + valpos*nderiv+ii*nderiv, 5);
+      auto derivs  = output.derivatives.subview_n<5>(valpos*nderiv+ii*nderiv);
       derivs[0] = -1.0;
       derivs[1] =  1.0;
       derivs[2] = -atoms[i][0];

@@ -51,8 +51,8 @@ public:
 
 class MatrixElementOutput {
 public:
-  View<double,helpers::dynamic_extent> values;
-  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivs;
+  View<double> values;
+  View2D<double> derivs;
   MatrixElementOutput( std::size_t nv, std::size_t nd, double* v, double* d ) :
     values( v, nv ),
     derivs( d, nv, nd ) {
