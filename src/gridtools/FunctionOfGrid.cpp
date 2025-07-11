@@ -33,7 +33,7 @@ PLUMED_REGISTER_ACTION(GridCustom,"MATHEVAL_GRID")
 template <>
 std::string FunctionOfGrid<function::Custom>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
-  return getName().substr(0,und) + "\nFUNC=" + myfunc.func;
+  return getName().substr(0,und) + "\nFUNC=" + function::Custom::getFunctionString( myfunc.func );
 }
 
 }

@@ -166,13 +166,29 @@ void ShowGraph::printArgumentConnections( const ActionWithArguments* a, unsigned
   if( !a ) {
     return;
   }
+  unsigned kargs = 0, nargs = a->getNumberOfArguments();
+  const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( a );
+  if( av && av->getNumberOfMasks()>0 ) {
+    nargs = nargs - av->getNumberOfMasks();
+  }
   for(const auto & v : a->getArguments() ) {
+    kargs++;
     if( force && v->forcesWereAdded() ) {
-      ofile.printf("%s -- %s --> %s\n", getLabel(a).c_str(), v->getName().c_str(), getLabel(v->getPntrToAction()).c_str() );
-      printStyle( linkcount, v, ofile );
-      linkcount++;
+      if( !v->isConstant() ) {
+        if( kargs>nargs ) {
+          ofile.printf("%s -. %s .-> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(a).c_str() );
+        } else {
+          ofile.printf("%s -- %s --> %s\n", getLabel(a).c_str(), v->getName().c_str(), getLabel(v->getPntrToAction()).c_str() );
+        }
+        printStyle( linkcount, v, ofile );
+        linkcount++;
+      }
     } else if( !force ) {
-      ofile.printf("%s -- %s --> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(a).c_str() );
+      if( kargs>nargs ) {
+        ofile.printf("%s -. %s .-> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(a).c_str() );
+      } else {
+        ofile.printf("%s -- %s --> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(a).c_str() );
+      }
       printStyle( linkcount, v, ofile );
       linkcount++;
     }
@@ -279,6 +295,16 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
         if( avv ) {
           for(const auto & v : aaa->getArguments() ) {
             v->addForce();
+          }
+          for(const auto & d : a->getDependencies() ) {
+            ActionToPutData* dp=dynamic_cast<ActionToPutData*>( d );
+            if( dp && (dp->getLabel()=="posx" || dp->getLabel()=="Box") ) {
+              (dp->copyOutput(0))->addForce();
+            }
+            ActionWithVirtualAtom* ava=dynamic_cast<ActionWithVirtualAtom*>( d );
+            if( ava ) {
+              (ava->copyOutput(0))->addForce();
+            }
           }
         } else {
           a->apply();

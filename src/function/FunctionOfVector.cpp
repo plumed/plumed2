@@ -28,7 +28,7 @@ namespace function {
 template <>
 std::string FunctionOfVector<Custom>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
-  return getName().substr(0,und) + "\nFUNC=" + taskmanager.getActionInput().f.func;
+  return getName().substr(0,und) + "\nFUNC=" + Custom::getFunctionString( taskmanager.getActionInput().f.func );
 }
 
 }

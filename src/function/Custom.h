@@ -36,6 +36,7 @@ public:
   LeptonCall function;
   std::vector<unsigned> check_multiplication_vars;
   static void registerKeywords( Keywords& keys );
+  static std::string getFunctionString( const std::string& func );
   static void read( Custom& f, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Custom& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
   Custom& operator=( const Custom& m ) {

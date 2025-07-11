@@ -1,0 +1,59 @@
+flowchart BT 
+15(["label=#64;15 
+ BIASVALUE 
+"])
+15 -- mean --> mean
+mean(["label=mean 
+ CUSTOM
+FUNC=x/y 
+"])
+mean -- numer --> numer
+mean -- denom --> denom
+denom(["label=denom 
+ SUM 
+"])
+denom -- sphere --> sphere
+linkStyle 3 stroke:blue,color:blue;
+numer(["label=numer 
+ SUM 
+"])
+numer -- fval --> fval
+linkStyle 4 stroke:blue,color:blue;
+fval(["label=fval 
+ CUSTOM
+FUNC=x\*y 
+"])
+fval -- sphere --> sphere
+linkStyle 5 stroke:blue,color:blue;
+fval -- coord --> coord
+linkStyle 6 stroke:blue,color:blue;
+coord(["label=coord 
+ MATRIX_VECTOR_PRODUCT 
+"])
+coord -- adjmat --> adjmat
+linkStyle 7 stroke:red,color:red;
+adjmat(["label=adjmat 
+ CONTACT_MATRIX 
+"])
+sphere -. sphere .-> adjmat
+linkStyle 8 stroke:blue,color:blue;
+sphere(["label=sphere 
+ INSPHERE_CALC 
+"])
+c(["label=c 
+ FIXEDATOM 
+"])
+Box("label=Box 
+ PBC 
+")
+sphere -- Box --> Box
+linkStyle 9 stroke:red,color:red;
+sphere --> MD
+linkStyle 10 stroke:violet,color:violet;
+sphere -- c --> c
+linkStyle 11 stroke:violet,color:violet;
+adjmat -- Box --> Box
+linkStyle 12 stroke:red,color:red;
+adjmat --> MD
+linkStyle 13 stroke:violet,color:violet;
+MD(positions from MD)
