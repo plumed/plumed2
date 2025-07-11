@@ -83,7 +83,7 @@ mt_cnI -- mt_cnI --> mm
 linkStyle 17 stroke:blue,color:blue;
 mm(["label=mm 
  CUSTOM
-FUNC=x*y*z 
+FUNC=x\*y\*z 
 "])
 mm -- mm --> ff
 linkStyle 18 stroke:blue,color:blue;

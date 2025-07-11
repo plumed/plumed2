@@ -10,7 +10,7 @@ ff -- mm --> mm
 linkStyle 1 stroke:blue,color:blue;
 mm(["label=mm 
  CUSTOM
-FUNC=x*y*z 
+FUNC=x\*y\*z 
 "])
 mm -- mt_cncn --> mt_cncn
 linkStyle 2 stroke:blue,color:blue;
