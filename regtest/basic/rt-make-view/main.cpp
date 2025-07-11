@@ -25,15 +25,23 @@ public:
     std::cout <<t;
     return *this;
   }
+  template<typename Iterable>
+  tee&  dump(const Iterable& v) {
+    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(ofs," "));
+    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(std::cout," "));
+    return *this;
+  }
 };
 
 void basics(tee& out);
 void nonspanlikeInteractions(tee& out);
+void viewVectorInteractions(tee& out);
 
 int main() {
   tee out("output");
   basics(out);
   nonspanlikeInteractions(out);
+  viewVectorInteractions(out);
 
   return 0;
 }
@@ -121,6 +129,7 @@ void basics(tee& out) {
 }
 
 void nonspanlikeInteractions(tee& out) {
+  //These are the original tests against PLMD::VectorGeneric<3>
   //Here I am using the three way of obtaining a subview from a view:
   // - v_all.subview<3,3>(); when both offset and count are known at comile time (safest in principle)
   // - v_all.subview<3>(6); when only the count is known at compile time, and the offset is known at run time
@@ -128,10 +137,7 @@ void nonspanlikeInteractions(tee& out) {
   std::vector<double> data(24,0.0);
   View<double> v_all(data.data(),data.size());
   out << "Original data:\n";
-  for (const auto& x: data)  {
-    out << x <<" ";
-  }
-  out << "\n";
+  out.dump(data) << "\n";
   //there are also some useful functions:
   //A view<T,3> can be combined with a PLMD::Vector<3>:
   PLMD::Vector myv {1,1,1};
@@ -142,21 +148,62 @@ void nonspanlikeInteractions(tee& out) {
   v_all.subview<10,3>() = 2.0*myv;
 
   out << "Data after the +={1,1,1} to head+3 and -={1,1,1} to head+6, and assign={2,2,2} to head+10:\n";
-  for (const auto& x: data)  {
-    out << x <<" ";
-  }
-  out << "\n";
+  out.dump(data) << "\n";
+
   auto v3 = v_all.subview(5,2);
   v3*=-2.0;
   //A View can be *= with a double
   out << "Data: after the *=2.0 on head+5 (2):\n";
-  for (const auto& x: data)  {
-    out << x <<" ";
-  }
-  out << "\n";
+  out.dump(data) << "\n";
+
   //Two view <T,3> can be combined with delta to form a PLMD::Vector<3>
   auto result = delta(v2,v1);
   out << displaycall(result) << "\n";
   //only on the output stream, I prefer to not risk the test outcome on name mangle implementation
   std::cout << displaycall( typeid(delta(v2,v1)).name()) << "\n";
+}
+
+void viewVectorInteractions(tee& out) {
+  //These are the new tests against PLMD::VectorGeneric<N> with N!=3
+  //Here I am checking that the PLMD::View - PLMD::Vector interactions work
+  std::vector<double> data(24,0.0);
+  out << "viewVectorInteractions\n";
+  out << "Original data:\n";
+  out.dump(data) << "\n";
+  View<double> v_all(data.data(),data.size());
+  PLMD::VectorGeneric<4> myv {1,2,3,4};
+  v_all = myv;
+  out << "operator=(PLMD::VectorGeneric<N>) works on bigger view, by copying only the first N elements\n";
+  out.dump(data) << "\n";
+  auto v2 = v_all.subview_n<3>(6);
+  // operator= will refuse to compile if the fixed view
+  // v2 = myv; //this do not compile, as expected
+  // v2 += myv; //this do not compile, as expected
+  // v2 -= myv; //this do not compile, as expected
+  PLMD::VectorGeneric<2> myv2 {5,6};
+  v2-=myv2;
+  out.dump(data) << "\n";
+  out << "using the subview inline:\n";
+  v_all.subview<10,6>() += PLMD::VectorGeneric<6> {6,4,2,3,2,1};
+  out.dump(data) << "\n";
+  v_all.subview<10,3>() /=2.0;
+  v_all.subview<13,3>() *=3.0;
+  out.dump(data) << "\n";
+
+  auto v4 = v_all.subview<20,4>() =PLMD::VectorGeneric<4> {1,5,3,1};
+  out << "the modulo of v4: { ";
+  out.dump(v4) << "} is " << v4.modulo() << " (" << v4.modulo2() << ")\n";
+  auto v4_dynamic = v_all.subview(20,4);
+  out << "the modulo of v4_dynamic: { ";
+  out.dump(v4_dynamic) << "} is " << v4_dynamic.modulo() << " (" << v4_dynamic.modulo2() << ")\n";
+  out <<"zeroing:\n";
+  out.dump(data) << "\n";
+  v_all.subview<11,4>().zero();
+  out.dump(data) << "\n";
+  v_all.subview_n<2>(1).zero();
+  out.dump(data) << "\n";
+  v_all.subview(21,3).zero();
+  out.dump(data) << "\n";
+  v_all.zero();
+  out.dump(data) << "\n";
 }
