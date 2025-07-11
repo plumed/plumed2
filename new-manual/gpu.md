@@ -58,3 +58,10 @@ It is also possible to pass some extra options by exporting or specifying the th
 - matrixtools
    - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
    - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)
+- symfunc
+   - [Q1](Q1.md)
+   - [Q3](Q3.md)
+   - [Q4](Q4.md)
+   - [Q6](Q6.md)
+   - [LOCAL_AVERAGE](LOCAL_AVERAGE.md)
+   
