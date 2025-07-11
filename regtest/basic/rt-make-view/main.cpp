@@ -46,7 +46,7 @@ void basics(tee& out) {
                                  PLMD::Vector{4,4,4}
                                 };
   View<PLMD::Vector,4> v(a.data());
-  out << "Dimension of View<int,4> should be 4: " << displaycall(v.size()) << "\n";
+  out << "Dimension of View<PLMD::Vector,4> should be 4: " << displaycall(v.size()) << "\n";
   assert(v.size()==4);
   out << "View must access to the element of the array: \n";
   for (std::size_t i=0; i<a.size(); ++i) {

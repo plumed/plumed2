@@ -1,4 +1,4 @@
-Dimension of View<int,4> should be 4: v.size() = 4
+Dimension of View<PLMD::Vector,4> should be 4: v.size() = 4
 View must access to the element of the array: 
 i = 0, a[i] = 1 1 1, v[i] = 1 1 1
 i = 1, a[i] = 2 2 2, v[i] = 2 2 2
