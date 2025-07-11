@@ -592,7 +592,7 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   options.derivativeZeroIfValueIsZero = f.check_multiplication_vars.size()>0;
 }
 
-void Custom::calc( const Custom& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Custom::calc( const Custom& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
   if( args.size()>1 ) {
     bool allzero=false;
     if( func.check_multiplication_vars.size()>0 ) {

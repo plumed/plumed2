@@ -265,12 +265,12 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   auto arg3 = ArgumentBookeepingHolder::create( 3, input );
 
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
-  View<const double,helpers::dynamic_extent> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
+  View<const double> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
   if( actiondata.multi_action_input ) {
     xvals.resize( rowlen );
     yvals.resize( rowlen );
     zvals.resize( rowlen );
-    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
+    const auto wbooks = arg3.bookeeping.subview((1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned i=0; i<rowlen; ++i) {
       xvals[i] = input.inputdata[arg0.start + getIndex( task_index, wbooks[i], arg0) ];
       yvals[i] = input.inputdata[arg1.start + getIndex( task_index, wbooks[i], arg1) ];
@@ -284,13 +284,13 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
     ypntr = input.inputdata + arg1.start + arg1.ncols*task_index;
     zpntr = input.inputdata + arg2.start + arg2.ncols*task_index;
   }
-  View<const double,helpers::dynamic_extent> xval( xpntr, rowlen );
-  View<const double,helpers::dynamic_extent> yval( ypntr, rowlen );
-  View<const double,helpers::dynamic_extent> zval( zpntr, rowlen );
+  View<const double> xval( xpntr, rowlen );
+  View<const double> yval( ypntr, rowlen );
+  View<const double> zval( zpntr, rowlen );
   for(unsigned i=0; i<output.derivatives.size(); ++i) {
     output.derivatives[i] = 0;
   }
-  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*arg3.shape[1] );
+  View2D<double> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*arg3.shape[1] );
 
   Angle angle;
   Vector disti, distj;
@@ -368,7 +368,7 @@ void ThreeBodyGFunctions::getForceIndices( std::size_t task_index,
   auto arg3 = ArgumentBookeepingHolder::create( 3, input );
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   if( actiondata.multi_action_input ) {
-    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
+    View<const std::size_t> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned j=0; j<rowlen; ++j) {
       std::size_t matpos = task_index*arg3.ncols + j;
       std::size_t xpos = getIndex( task_index, wbooks[j], arg0 );

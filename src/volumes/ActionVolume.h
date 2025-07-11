@@ -69,11 +69,11 @@ private:
   };
   ColvarOutput fulldata;
 public:
-  View<double,helpers::dynamic_extent>& values;
+  View<double>& values;
   ColvarOutput::VirialHelper& virial;
   View<double,3> derivatives;
   RefderHelper refders;
-  VolumeOutput( View<double,helpers::dynamic_extent>& v, std::size_t nder, double* d ) :
+  VolumeOutput( View<double>& v, std::size_t nder, double* d ) :
     fulldata(v, nder, d),
     values(fulldata.values),
     virial(fulldata.virial),
@@ -199,7 +199,7 @@ void ActionVolume<T>::calculate() {
     getInputData( posvec );
     std::vector<double> deriv( getNumberOfDerivatives() );
     std::vector<double> val(1);
-    View<double,helpers::dynamic_extent> valview(val.data(),1);
+    View<double> valview(val.data(),1);
     VolumeOutput output( valview, getNumberOfDerivatives(), deriv.data() );
     T::calculateNumberInside( VolumeInput( 0, nref, posvec.data(), posvec.data()+3, getPbc() ), taskmanager.getActionInput().voldata, output );
     if( taskmanager.getActionInput().not_in ) {

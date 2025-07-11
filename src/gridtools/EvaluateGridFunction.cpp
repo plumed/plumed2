@@ -75,7 +75,7 @@ void EvaluateGridFunction::read( EvaluateGridFunction& func, ActionWithArguments
   action->log.printf("  generating off grid points using %s interpolation \n", itype.c_str() );
 }
 
-void EvaluateGridFunction::calc( const EvaluateGridFunction& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout ) {
+void EvaluateGridFunction::calc( const EvaluateGridFunction& func, bool noderiv, const View<const double> args, function::FunctionOutput& funcout ) {
   const GridCoordinatesObject & gridobject = func.getGridObject();
   if( func.set_zero_outside_range && !gridobject.inbounds( args ) ) {
     funcout.values[0]=0.0;

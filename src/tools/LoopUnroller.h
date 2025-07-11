@@ -52,106 +52,119 @@ class LoopUnroller {
 public:
 /// Set to zero.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=0.0;`
-  static void _zero(double*d);
+  static constexpr void _zero(double*d) noexcept;
+/// copy the content o v into v
+/// Same as `for(unsigned i=0;i<n;i++) d[i]=v[i];`
+  static constexpr void _copy(double*d,const double*v) noexcept;
 /// Add v to d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]+=v[i];`
-  static void _add(double*d,const double*v);
+  static constexpr void _add(double*d,const double*v) noexcept;
 /// Subtract v from d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]-=v[i];`
-  static void _sub(double*d,const double*v);
+  static constexpr void _sub(double*d,const double*v) noexcept;
 /// Multiply d by s.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]*=s;`
-  static void _mul(double*d,const double s);
+  static constexpr void _mul(double*d,const double s) noexcept;
 /// Set d to -v.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=-v[i];`
-  static void _neg(double*d,const double*v);
+  static constexpr void _neg(double*d,const double*v) noexcept;
 /// Squared modulo of d;
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*d[i]; return r;`
-  static double _sum2(const double*d);
+  static constexpr double _sum2(const double*d) noexcept;
 /// Dot product of d and v
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*v[i]; return r;`
-  static double _dot(const double*d,const double*v);
+  static constexpr double _dot(const double*d,const double*v) noexcept;
 };
 
 template<unsigned n>
-void LoopUnroller<n>::_zero(double*d) {
+constexpr void LoopUnroller<n>::_zero(double*d) noexcept {
   LoopUnroller<n-1>::_zero(d);
   d[n-1]=0.0;
 }
 
 template<>
 inline
-void LoopUnroller<1>::_zero(double*d) {
+constexpr void LoopUnroller<1>::_zero(double*d) noexcept {
   d[0]=0.0;
 }
 
 template<unsigned n>
-void LoopUnroller<n>::_add(double*d,const double*a) {
+constexpr void LoopUnroller<n>::_copy(double*d,const double*v) noexcept {
+  if constexpr (n==1) {
+    d[0]=v[0];
+  } else {
+    LoopUnroller<n-1>::_copy(d,v);
+    d[n-1]=v[n-1];
+  }
+}
+
+template<unsigned n>
+constexpr void LoopUnroller<n>::_add(double*d,const double*a) noexcept {
   LoopUnroller<n-1>::_add(d,a);
   d[n-1]+=a[n-1];
 }
 
 template<>
 inline
-void LoopUnroller<1>::_add(double*d,const double*a) {
+constexpr void LoopUnroller<1>::_add(double*d,const double*a) noexcept {
   d[0]+=a[0];
 }
 
 template<unsigned n>
-void LoopUnroller<n>::_sub(double*d,const double*a) {
+constexpr void LoopUnroller<n>::_sub(double*d,const double*a) noexcept {
   LoopUnroller<n-1>::_sub(d,a);
   d[n-1]-=a[n-1];
 }
 
 template<>
 inline
-void LoopUnroller<1>::_sub(double*d,const double*a) {
+constexpr void LoopUnroller<1>::_sub(double*d,const double*a) noexcept {
   d[0]-=a[0];
 }
 
 template<unsigned n>
-void LoopUnroller<n>::_mul(double*d,const double s) {
+constexpr void LoopUnroller<n>::_mul(double*d,const double s) noexcept {
   LoopUnroller<n-1>::_mul(d,s);
   d[n-1]*=s;
 }
 
 template<>
 inline
-void LoopUnroller<1>::_mul(double*d,const double s) {
+constexpr void LoopUnroller<1>::_mul(double*d,const double s) noexcept {
   d[0]*=s;
 }
 
 template<unsigned n>
-void LoopUnroller<n>::_neg(double*d,const double*a ) {
+constexpr void LoopUnroller<n>::_neg(double*d,const double*a ) noexcept {
   LoopUnroller<n-1>::_neg(d,a);
   d[n-1]=-a[n-1];
 }
 
 template<>
 inline
-void LoopUnroller<1>::_neg(double*d,const double*a) {
+constexpr void LoopUnroller<1>::_neg(double*d,const double*a) noexcept {
   d[0]=-a[0];
 }
 
 template<unsigned n>
-double LoopUnroller<n>::_sum2(const double*d) {
+constexpr double LoopUnroller<n>::_sum2(const double*d) noexcept {
   return LoopUnroller<n-1>::_sum2(d)+d[n-1]*d[n-1];
 }
 
 template<>
 inline
-double LoopUnroller<1>::_sum2(const double*d) {
+constexpr double LoopUnroller<1>::_sum2(const double*d) noexcept {
   return d[0]*d[0];
 }
 
 template<unsigned n>
-double LoopUnroller<n>::_dot(const double*d,const double*v) {
+constexpr double LoopUnroller<n>::_dot(const double*d,const double*v) noexcept {
   return LoopUnroller<n-1>::_dot(d,v)+d[n-1]*v[n-1];
 }
 
 template<>
 inline
-double LoopUnroller<1>::_dot(const double*d,const double*v) {
+constexpr double LoopUnroller<1>::_dot(const double*d,const double*v) noexcept {
   return d[0]*v[0];
 }
 

@@ -192,10 +192,10 @@ unsigned GridCoordinatesObject::getIndex( const std::vector<unsigned>& indices )
 }
 
 bool GridCoordinatesObject::inbounds( const std::vector<double>& point ) const {
-  return inbounds( View<const double,helpers::dynamic_extent>( point.data(), point.size() ) );
+  return inbounds( View<const double>( point.data(), point.size() ) );
 }
 
-bool GridCoordinatesObject::inbounds( const View<const double,helpers::dynamic_extent>& point ) const {
+bool GridCoordinatesObject::inbounds( const View<const double> point ) const {
   if( gtype==fibonacci ) {
     return true;
   }
@@ -212,10 +212,10 @@ bool GridCoordinatesObject::inbounds( const View<const double,helpers::dynamic_e
 }
 
 void GridCoordinatesObject::getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const {
-  getIndices( View<const double,helpers::dynamic_extent>( point.data(), point.size() ), indices );
+  getIndices( View<const double>( point.data(), point.size() ), indices );
 }
 
-void GridCoordinatesObject::getIndices( const View<const double,helpers::dynamic_extent>& point, std::vector<unsigned>& indices ) const {
+void GridCoordinatesObject::getIndices( const View<const double> point, std::vector<unsigned>& indices ) const {
   plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension && indices.size()==dimension );
   for(unsigned i=0; i<dimension; ++i) {
     indices[i]=std::floor( (point[i] - min[i])/dx[i] );
@@ -228,10 +228,10 @@ void GridCoordinatesObject::getIndices( const View<const double,helpers::dynamic
 }
 
 unsigned GridCoordinatesObject::getIndex( const std::vector<double>& point ) const {
-  return getIndex( View<const double,helpers::dynamic_extent>(point.data(),point.size()) );
+  return getIndex( View<const double>(point.data(),point.size()) );
 }
 
-unsigned GridCoordinatesObject::getIndex( const View<const double,helpers::dynamic_extent>& point ) const {
+unsigned GridCoordinatesObject::getIndex( const View<const double> point ) const {
   plumed_dbg_assert( bounds_set && point.size()==dimension );
   if( gtype==flat ) {
     std::vector<unsigned> indices(dimension);
@@ -244,7 +244,7 @@ unsigned GridCoordinatesObject::getIndex( const View<const double,helpers::dynam
   }
 }
 
-unsigned GridCoordinatesObject::getFibonacciIndex( const View<const double,helpers::dynamic_extent>& p ) const {
+unsigned GridCoordinatesObject::getFibonacciIndex( const View<const double> p ) const {
   plumed_dbg_assert( gtype==fibonacci );
   // Convert input point to coordinates on cylinder
   int k=2;
@@ -446,7 +446,7 @@ void GridCoordinatesObject::getNeighbors( const std::vector<double>& pp, const s
     }
     getNeighbors( indices, nneigh, num_neighbors, neighbors );
   } else if( gtype == fibonacci ) {
-    unsigned find = getFibonacciIndex( View<const double,helpers::dynamic_extent>(pp.data(), pp.size()) );
+    unsigned find = getFibonacciIndex( View<const double>(pp.data(), pp.size()) );
     num_neighbors = 1 + fib_nlist[find].size();
     if( neighbors.size()<num_neighbors ) {
       neighbors.resize( num_neighbors );

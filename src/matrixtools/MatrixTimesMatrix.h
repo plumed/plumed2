@@ -49,7 +49,8 @@ struct MatrixTimesMatrixInput {
 class InputVectors {
 public:
   std::size_t nelem;
-  View<double,helpers::dynamic_extent> arg1, arg2;
+  View<double> arg1;
+  View<double> arg2;
   InputVectors( std::size_t n,  double* b ) : nelem(n), arg1(b,n), arg2(b+n,n) {}
 };
 

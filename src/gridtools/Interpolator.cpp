@@ -25,10 +25,10 @@ namespace PLMD {
 namespace gridtools {
 
 double Interpolator::splineInterpolation( const std::vector<double>& x, std::vector<double>& der ) const {
-  return splineInterpolation( View<const double,helpers::dynamic_extent>(x.data(),x.size()), der );
+  return splineInterpolation( View<const double>(x.data(),x.size()), der );
 }
 
-double Interpolator::splineInterpolation( const View<const double,helpers::dynamic_extent>& x, std::vector<double>& der ) const {
+double Interpolator::splineInterpolation( const View<const double> x, std::vector<double>& der ) const {
   plumed_dbg_assert( gridobject.getGridType()=="flat" );
   unsigned dimension = gridobject.getDimension();
 

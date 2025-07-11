@@ -44,7 +44,7 @@ public:
 /// This is used to setup the input gridobject's bounds with the grid data from values
   static void registerKeywords( Keywords& keys );
   static void read( EvaluateGridFunction& func, ActionWithArguments* action, function::FunctionOptions& options );
-  static void calc( const EvaluateGridFunction& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
+  static void calc( const EvaluateGridFunction& func, bool noderiv, View<const double> args, function::FunctionOutput& funcout );
 /// Get the vector containing the minimum value of the grid in each dimension
   std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension

@@ -92,7 +92,7 @@ public:
   double alpha, a1, b1;
   static void registerKeywords( Keywords& keys );
   static void read( Fccubic& func, ActionWithArguments* action, function::FunctionOptions& funcout );
-  static void calc( const Fccubic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
+  static void calc( const Fccubic& func, bool noderiv, View<const double> args, function::FunctionOutput& funcout );
   Fccubic& operator=(const Fccubic& m) {
     alpha = m.alpha;
     a1 = m.a1;
@@ -120,7 +120,7 @@ void Fccubic::read( Fccubic& func, ActionWithArguments* action, function::Functi
   action->log.printf("  setting alpha paramter equal to %f \n",func.alpha);
 }
 
-void Fccubic::calc( const Fccubic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout ) {
+void Fccubic::calc( const Fccubic& func, bool noderiv, const View<const double> args, function::FunctionOutput& funcout ) {
   double x2 = args[0]*args[0];
   double x4 = x2*x2;
 

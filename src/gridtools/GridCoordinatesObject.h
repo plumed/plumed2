@@ -60,7 +60,7 @@ private:
 /// The dimensionality of the grid
   unsigned dimension;
 /// Get the index of the closest point on the fibonacci sphere
-  unsigned getFibonacciIndex( const View<const double,helpers::dynamic_extent>& p ) const ;
+  unsigned getFibonacciIndex( View<const double> p ) const ;
 /// Get the flat grid coordinates
   void getFlatGridCoordinates( const unsigned& ipoint, std::vector<unsigned>& tindices, std::vector<double>& x ) const ;
 /// Get the coordinates on the Fibonacci grid
@@ -74,17 +74,17 @@ public:
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Check if a point is within the grid boundaries
   bool inbounds( const std::vector<double>& point ) const ;
-  bool inbounds( const View<const double>& point ) const ;
+  bool inbounds( View<const double> point ) const ;
 /// Convert a point in space the the correspoinding grid point
   unsigned getIndex( const std::vector<double>& p ) const ;
-  unsigned getIndex( const View<const double,helpers::dynamic_extent>& point ) const ;
+  unsigned getIndex( View<const double> point ) const ;
 ///  Flatten the grid and get the grid index for a point
   unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
   void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 /// Get the indices of a particular point
   void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
-  void getIndices( const View<const double,helpers::dynamic_extent>& point, std::vector<unsigned>& indices ) const ;
+  void getIndices( View<const double> point, std::vector<unsigned>& indices ) const ;
 /// Get the number of points in the grid
   unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid

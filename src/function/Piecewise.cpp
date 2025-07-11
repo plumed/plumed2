@@ -94,7 +94,7 @@ public:
   std::vector<std::pair<double,double> > points;
   static void registerKeywords(Keywords& keys);
   static void read( Piecewise& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Piecewise& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void calc( const Piecewise& func, bool noderiv, View<const double> args, FunctionOutput& funcout );
 };
 
 
@@ -139,7 +139,7 @@ void Piecewise::read( Piecewise& func, ActionWithArguments* action, FunctionOpti
   action->log.printf("\n");
 }
 
-void Piecewise::calc( const Piecewise& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Piecewise::calc( const Piecewise& func, bool noderiv, const View<const double> args, FunctionOutput& funcout ) {
   for(unsigned i=0; i<args.size(); i++) {
     unsigned p=0;
     for(; p<func.points.size(); p++) {

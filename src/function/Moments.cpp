@@ -79,7 +79,7 @@ public:
   std::vector<int> powers;
   static void registerKeywords(Keywords& keys);
   static void read( Moments& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Moments& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void calc( const Moments& func, bool noderiv, View<const double> args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Moments> MomentsShortcut;
@@ -141,7 +141,7 @@ void Moments::read( Moments& func, ActionWithArguments* action, FunctionOptions&
   }
 }
 
-void Moments::calc( const Moments& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Moments::calc( const Moments& func, bool noderiv, const View<const double> args, FunctionOutput& funcout ) {
   double mean=0;
   double inorm = 1.0 / static_cast<double>( args.size() );
   if( func.isperiodic ) {

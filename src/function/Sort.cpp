@@ -66,7 +66,7 @@ class Sort {
 public:
   static void registerKeywords(Keywords& keys);
   static void read( Sort& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Sort& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void calc( const Sort& func, bool noderiv, View<const double> args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Sort> SortShortcut;
@@ -99,7 +99,7 @@ void Sort::read( Sort& func, ActionWithArguments* action, FunctionOptions& optio
   }
 }
 
-void Sort::calc( const Sort& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Sort::calc( const Sort& func, bool noderiv, const View<const double> args, FunctionOutput& funcout ) {
   if( !noderiv ) {
     for(unsigned i=0; i<args.size(); ++i) {
       for(unsigned j=0; j<args.size(); ++j) {

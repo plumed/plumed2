@@ -270,7 +270,7 @@ void RMSDVector::apply() {
     }
 
     std::vector<double> forces( getNumberOfDerivatives(), 0 );
-    gatherForces( 0, taskmanager.getActionInput(), input, View<const double,helpers::dynamic_extent>( f.data(), input.nscalars ), deriv, forces );
+    gatherForces( 0, taskmanager.getActionInput(), input, View<const double>( f.data(), input.nscalars ), deriv, forces );
 
     unsigned ss=0;
     addForcesOnArguments( 0, forces, ss  );
@@ -280,7 +280,7 @@ void RMSDVector::apply() {
 }
 
 void RMSDVector::getPositionsFromInputData( const ParallelActionsInput& input, std::vector<Vector>& pos ) {
-  View2D<const double,helpers::dynamic_extent,helpers::dynamic_extent> argpos( input.inputdata, 3, pos.size() );
+  View2D<const double> argpos( input.inputdata, 3, pos.size() );
   // At some stage it would be good to get rid of this and to be able to pass the 2D view directly to the methods in RMSD
   for(unsigned i=0; i<pos.size(); ++i) {
     pos[i][0] = argpos[0][i];
@@ -374,7 +374,7 @@ void RMSDVector::transferForcesToStash( std::vector<double>& stash ) const {
 void RMSDVector::gatherForces( std::size_t task_index,
                                const RMSDVectorData& actiondata,
                                const ParallelActionsInput& input,
-                               View<const double,helpers::dynamic_extent> f,
+                               View<const double> f,
                                const std::vector<double>& deriv,
                                std::vector<double>& outforces ) {
   std::size_t natoms = actiondata.align.size();
@@ -484,7 +484,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
       gatherForces( task_index,
                     taskmanager.getActionInput(),
                     input,
-                    View<const double,helpers::dynamic_extent>( force_stash.data()+input.nscalars*task_index, input.nscalars ),
+                    View<const double>( force_stash.data()+input.nscalars*task_index, input.nscalars ),
                     derivatives,
                     omp_forces );
     }

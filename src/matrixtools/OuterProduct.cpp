@@ -127,7 +127,7 @@ class OutputProductMin {
 public:
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action );
-  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMin> opmin;
@@ -142,7 +142,7 @@ void OutputProductMin::setup( const std::vector<std::size_t>& shape, const std::
   action->log.printf("  taking minimum of two input vectors \n");
 }
 
-void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output ) {
   if( vals[0]<vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -158,7 +158,7 @@ class OutputProductMax {
 public:
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action );
-  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMax> opmax;
@@ -173,7 +173,7 @@ void OutputProductMax::setup( const std::vector<std::size_t>& shape, const std::
   action->log.printf("  taking maximum of two input vectors \n");
 }
 
-void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output ) {
   if( vals[0]>vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -191,7 +191,7 @@ public:
   LeptonCall function;
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action );
-  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output );
   OutputProductFunc& operator=( const OutputProductFunc& m ) {
     inputf = m.inputf;
     std::vector<std::string> var(2);
@@ -218,7 +218,7 @@ void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std:
   function.set( func, var, action );
 }
 
-void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output ) {
   std::vector<double> vvv(2);
   vvv[0]=vals[0];
   vvv[1] = vals[1];
