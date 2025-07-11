@@ -258,11 +258,11 @@ const std::string & ActionShortcut::getShortcutLabel() const {
   return shortcutlabel;
 }
 
-std::vector<std::string> ActionShortcut::getSavedInputLines() const {
+const std::vector<std::string>& ActionShortcut::getSavedInputLines() const {
   return savedInputLines;
 }
 
-std::vector<std::string> ActionShortcut::getSavedOutputs() const {
+const std::vector<std::string>& ActionShortcut::getSavedOutputs() const {
   return savedOutputs;
 }
 
