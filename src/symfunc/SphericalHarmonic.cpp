@@ -302,19 +302,21 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
     return;
   }
 
-  double dlen2 = args[0]*args[0] + args[1]*args[1] + args[2]*args[2];
-  double dlen  = sqrt( dlen2 );
-  double dlen3 = dlen2*dlen;
+  const double dlen2 = args[0]*args[0] + args[1]*args[1] + args[2]*args[2];
+  const double dlen  = sqrt( dlen2 );
+  const double dleninv = 1.0/dlen;
+  const double dlen3 = dlen2*dlen;
+  const double dlen3inv = 1.0/dlen3;
   double dpoly_ass;
-  double poly_ass=func.deriv_poly( 0, args[2]/dlen, dpoly_ass );
+  double poly_ass=func.deriv_poly( 0, args[2]*dleninv, dpoly_ass );
   // Accumulate for m=0
   funcout.values[func.tmom] = weight*poly_ass;
   // Derivatives of z/r wrt x, y, z
   Vector dz;
   if( !noderiv ) {
-    dz[0] = -( args[2] / dlen3 )*args[0];
-    dz[1] = -( args[2] / dlen3 )*args[1];
-    dz[2] = -( args[2] / dlen3 )*args[2] + (1.0 / dlen);
+    dz[0] = -( args[2] * dlen3inv )*args[0];
+    dz[1] = -( args[2] * dlen3inv )*args[1];
+    dz[2] = -( args[2] * dlen3inv )*args[2] + (1.0 * dleninv);
     funcout.derivs[func.tmom] = weight*dpoly_ass*dz ;
     if( args.size()==4 ) {
       funcout.derivs[func.tmom][3] = poly_ass;
@@ -322,7 +324,7 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
   }
 
   // The complex number of which we have to take powers
-  std::complex<double> com1( args[0]/dlen,args[1]/dlen );
+  std::complex<double> com1( args[0]*dleninv, args[1]*dleninv );
   std::complex<double> powered(1.0, 0.0);
   constexpr std::complex<double> ii(0.0, 1.0);
   std::complex<double> dp_x;
@@ -334,9 +336,10 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
   Vector imag_dz;
   // Do stuff for all other m values
   const unsigned imbase = 3*func.tmom+1;
+  double pref = -1.0;
   for(unsigned m=1; m<=func.tmom; ++m) {
     // Calculate Legendre Polynomial
-    poly_ass=func.deriv_poly( m, args[2]/dlen, dpoly_ass );
+    poly_ass=func.deriv_poly( m, args[2]*dleninv, dpoly_ass );
     // Real and imaginary parts of z
     double real_z = real(com1*powered);
     double imag_z = imag(com1*powered);
@@ -350,7 +353,6 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
     // Imaginary part
     funcout.values[imbase    + m] = weight*itq6;
     // Store -m part of vector
-    const double pref = (m%2==0)?1.0:-1.0;
     // -m part of vector is just +m part multiplied by (-1.0)**m and multiplied by complex
     // conjugate of Legendre polynomial
     // Real part
@@ -360,9 +362,9 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
     if( !noderiv ) {
       // Derivatives wrt ( x/r + iy )^m
       double md=static_cast<double>(m);
-      dp_x = md*powered*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
-      dp_y = md*powered*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
-      dp_z = md*powered*( -(args[0]*args[2])/dlen3-ii*(args[1]*args[2])/dlen3 );
+      dp_x = md*powered*( (1.0*dleninv)-(args[0]*args[0])*dlen3inv-ii*(args[0]*args[1])*dlen3inv );
+      dp_y = md*powered*( ii*(1.0*dleninv)-(args[0]*args[1])*dlen3inv-ii*(args[1]*args[1])*dlen3inv );
+      dp_z = md*powered*( -(args[0]*args[2])*dlen3inv-ii*(args[1]*args[2])*dlen3inv );
       // Derivatives of real and imaginary parts of above
       real_dz[0] = real( dp_x );
       real_dz[1] = real( dp_y );
@@ -387,6 +389,8 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
     }
     // Calculate next power of complex number
     powered *= com1;
+    //hopefully the compiler will optimize with bitflipping the sign here
+    pref = -pref;
   }
 }
 
