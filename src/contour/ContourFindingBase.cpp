@@ -30,6 +30,7 @@ void ContourFindingBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   gridtools::EvaluateGridFunction gg;
   gg.registerKeywords(keys);
+  keys.remove("ZERO_OUTSIDE_GRID_RANGE");
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):

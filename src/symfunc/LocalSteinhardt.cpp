@@ -33,7 +33,7 @@ namespace symfunc {
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the q_1 vector on the central atom and the q_3 vector on the atoms in the first coordination sphere.
 
-The [Q1](Q1.md) command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
+The [Q1](Q1.md) command allows one to calculate one complex vector for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
 measure of the global degree of order for the system. The simplest way of doing this - calculating the average Steinhardt parameter - can be problematic. If one is
 examining nucleation say only the order parameters for those atoms in the nucleus will change significantly when the nucleus forms. The order parameters for the
@@ -82,8 +82,9 @@ quantity to a file called colvar.
 
 ```plumed
 q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2
-lq1: LOCAL_Q1 SPECIES=q1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
-PRINT ARG=lq1.mean FILE=colvar
+lq1: LOCAL_Q1 SPECIES=q1 SWITCH={RATIONAL D_0=1.3 R_0=0.2}
+lq1_mean: MEAN ARG=lq1 PERIODIC=NO
+PRINT ARG=lq1_mean FILE=colvar
 ```
 
 The following input calculates the distribution of LOCAL_Q1 parameters at any given time and outputs this information to a file.
@@ -100,9 +101,42 @@ are done with those of all the other atoms in the system.  The final quantity is
 ```plumed
 q1a: Q1 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2
 q1b: Q1 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2
-w1: LOCAL_Q1 SPECIES=q1a,q1b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+w1: LOCAL_Q1 SPECIESA=q1a SPECIESB=q1b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
 PRINT ARG=w1.* FILE=colvar
 ```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the $s_i$ parameter that is defined by the equation above for only those atoms that
+lie in a certain part of the simulation box.
+
+```plumed
+# Calculate the Q1 parameters for all the atoms
+q1: Q1 SPECIES=1-400 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the local_q1 parameters
+lq1: LOCAL_Q1 SPECIES=q1 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MASK=sphere
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=lq1,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average $s_i$ parameter for those atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$. By including the MASK
+keyword in the LOCAL_Q1 line we reduce the number of $s_i$ values we have to compute using the expression above. However, we are still asking PLUMED to calculate the $q_{lm}$ vectors for many atoms that
+will not contribute to the final averaged quantity. The documentation for [LOCAL_AVERAGE](LOCAL_AVERAGE.md) discusses how you can create a mask vector that can act upon
+the [Q1](Q1.md) action here that will ensure that you are not calculating $q_{lm}$  parameters that are not required.
 
 */
 //+ENDPLUMEDOC
@@ -160,7 +194,8 @@ quantity to a file called colvar.
 
 ```plumed
 q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2
-lq3: LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+lq3: LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2}
+lq3_mean: MEAN ARG=lq3 PERIODIC=NO
 PRINT ARG=lq3.mean FILE=colvar
 ```
 
@@ -178,9 +213,42 @@ are done with those of all the other atoms in the system.  The final quantity is
 ```plumed
 q3a: Q3 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2
 q3b: Q3 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2
-w3: LOCAL_Q3 SPECIES=q3a,q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+w3: LOCAL_Q3 SPECIESA=q3a SPECIESB=q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
 PRINT ARG=w3.* FILE=colvar
 ```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the $s_i$ parameter that is defined by the equation above for only those atoms that
+lie in a certain part of the simulation box.
+
+```plumed
+# Calculate the Q3 parameters for all the atoms
+q3: Q3 SPECIES=1-400 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the local_q3 parameters
+lq3: LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MASK=sphere
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=lq3,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average $s_i$ parameter for those atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$. By including the MASK
+keyword in the LOCAL_Q3 line we reduce the number of $s_i$ values we have to compute using the expression above. However, we are still asking PLUMED to calculate the $q_{lm}$ vectors for many atoms that
+will not contribute to the final averaged quantity. The documentation for [LOCAL_AVERAGE](LOCAL_AVERAGE.md) discusses how you can create a mask vector that can act upon
+the [Q3](Q3.md) action here that will ensure that you are not calculating $q_{lm}$ vectors that are not required.
 
 */
 //+ENDPLUMEDOC
@@ -238,8 +306,9 @@ quantity to a file called colvar.
 
 ```plumed
 q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2
-lq4: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
-PRINT ARG=lq4.mean FILE=colvar
+lq4: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2}
+lq4_mean: MEAN ARG=lq4 PERIODIC=NO
+PRINT ARG=lq4_mean FILE=colvar
 ```
 
 The following input calculates the distribution of LOCAL_Q4 parameters at any given time and outputs this information to a file.
@@ -256,9 +325,42 @@ are done with those of all the other atoms in the system.  The final quantity is
 ```plumed
 q4a: Q4 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2
 q4b: Q4 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2
-w4: LOCAL_Q4 SPECIES=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+w4: LOCAL_Q4 SPECIESA=q4a SPECIESB=q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
 PRINT ARG=w4.* FILE=colvar
 ```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the $s_i$ parameter that is defined by the equation above for only those atoms that
+lie in a certain part of the simulation box.
+
+```plumed
+# Calculate the Q4 parameters for all the atoms
+q4: Q4 SPECIES=1-400 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the local_q4 parameters
+lq4: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MASK=sphere
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=lq4,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average $s_i$ parameter for those atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$. By including the MASK
+keyword in the LOCAL_Q4 line we reduce the number of $s_i$ values we have to compute using the expression above. However, we are still asking PLUMED to calculate the $q_{lm}$ vectors for many atoms that
+will not contribute to the final averaged quantity. The documentation for [LOCAL_AVERAGE](LOCAL_AVERAGE.md) discusses how you can create a mask vector that can act upon
+the [Q4](Q4.md) action here that will ensure that you are not calculating $q_{lm}$ vectors that are not required.
 
 */
 //+ENDPLUMEDOC
@@ -316,8 +418,9 @@ quantity to a file called colvar.
 
 ```plumed
 q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2
-lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
-PRINT ARG=lq6.mean FILE=colvar
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2}
+lq6_mean: MEAN ARG=lq6 PERIODIC=NO
+PRINT ARG=lq6_mean FILE=colvar
 ```
 
 The following input calculates the distribution of LOCAL_Q6 parameters at any given time and outputs this information to a file.
@@ -334,9 +437,42 @@ are done with those of all the other atoms in the system.  The final quantity is
 ```plumed
 q6a: Q6 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2
 q6b: Q6 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2
-w6: LOCAL_Q6 SPECIES=q6a,q6b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+w6: LOCAL_Q6 SPECIESA=q6a SPECIESB=q6b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
 PRINT ARG=w6.* FILE=colvar
 ```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the $s_i$ parameter that is defined by the equation above for only those atoms that
+lie in a certain part of the simulation box.
+
+```plumed
+# Calculate the Q6 parameters for all the atoms
+q6: Q6 SPECIES=1-400 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the local_q6 parameters
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MASK=sphere
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=lq6,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculates the average $s_i$ parameter for those atoms that are within a spherical region that is centered on the point $(2.5,2.5,2.5)$. By including the MASK
+keyword in the LOCAL_Q6 line we reduce the number of $s_i$ values we have to compute using the expression above. However, we are still asking PLUMED to calculate the $q_{lm}$ vectors for many atoms that
+will not contribute to the final averaged quantity. The documentation for [LOCAL_AVERAGE](LOCAL_AVERAGE.md) discusses how you can create a mask vector that can act upon
+the [Q6](Q6.md) action here that will ensure that you are not calculating $q_{lm}$ vectors that are not required.
 
 */
 //+ENDPLUMEDOC
@@ -504,7 +640,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecsA: CUSTOM ARG=" + getShortcutLabel() + "_uvecsA," + getShortcutLabel() + "_nmatA FUNC=x/y PERIODIC=NO");
     // Now do second matrix
     if( sp_labb.size()==1 ) {
-      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");
+      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" +  getShortcutLabel() + "_uvec," + sp_labb[0] + "_norm");
       readInputLine( getShortcutLabel() + "_uvecsBT: VSTACK" + getArgsForStack( l, sp_labb[0] ) );
       readInputLine( getShortcutLabel() + "_uvecsB: TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT");
     } else {

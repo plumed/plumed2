@@ -30,6 +30,15 @@ namespace PLMD {
 namespace helpers {
 ///A way of specifying a dynamic extent for a view
 inline constexpr std::size_t dynamic_extent = std::numeric_limits<std::size_t>::max();
+template<unsigned N, typename T>
+static constexpr void _zero(T*d) noexcept {
+  if constexpr (N==1) {
+    d[0]=T(0);
+  } else {
+    _zero<N-1>(d);
+    d[N-1]=T(0);
+  }
+}
 }
 
 /**A not-owning view for generic data
@@ -99,7 +108,7 @@ public:
 
   ///return a subview on consecutive elements
   constexpr View<element_type,helpers::dynamic_extent> subview(size_t offset,
-      size_t count=helpers::dynamic_extent) const {
+      size_t count=helpers::dynamic_extent) const noexcept {
     /// @TODO: enforce these or accept the risk of undefined behaviour in exchange for performance
     // assert(offset <= size(), "subview: offset out of range");
     // if (count != helpers::dynamic_extent) {
@@ -110,7 +119,7 @@ public:
 
 ///return a subview on consecutive elements
   template<size_t Offset, size_t Count=helpers::dynamic_extent>
-  constexpr auto subview() const {
+  constexpr auto subview() const noexcept {
     //I am more or less implementing the subspan form the std
     constexpr size_t FinalExtent =
       (Count != helpers::dynamic_extent)
@@ -127,7 +136,7 @@ public:
 
   ///return a subview of specific size consecutive elements
   template<size_t Count>
-  constexpr auto subview_n(size_t offset) const {
+  constexpr auto subview_n(size_t offset) const noexcept {
     /// @TODO: enforce these or accept the risk of undefined behaviour in exchange for performance
     // assert(offset <= size(), "subview: offset out of range");
     // if (count != helpers::dynamic_extent) {
@@ -161,61 +170,78 @@ public:
     return ptr_+size_;
   }
 
-//sadly this do not seems to work
-//   template <size_t VD, typename TT= T, size_t NN = N, typename = std::enable_if_t<NN == VD&&
-//       std::is_same_v<TT,double>>>
+  void zero() noexcept {
+    if constexpr (N!=helpers::dynamic_extent) {
+      helpers::_zero<N>(ptr_);
+    } else {
+      for(unsigned i=0; i<size_; ++i) {
+        ptr_[i] = T(0);
+      }
+    }
+  }
+
 ///assignment from a PLMD::VectorGeneric
-  template<size_t M =N, typename = std::enable_if_t<M>=3>>
-  View& operator=( const VectorGeneric<3>& v ) {
-    for(unsigned i=0; i<3; ++i) {
-      ptr_[i] = v[i];
+  template<size_t M =N, unsigned VD, typename = std::enable_if_t< M>=VD >>
+  auto& operator=( const VectorGeneric<VD>& v ) noexcept {
+    //if N==dynamic_extent and size_<VD, this is UB
+    PLMD::LoopUnroller<VD>::_copy(ptr_,v.data());
+    return *this;
+  }
+
+  template<size_t M =N, unsigned VD, typename = std::enable_if_t< M>=VD >>
+  auto& operator+=( const VectorGeneric<VD>& v ) noexcept {
+    //if N==dynamic_extent and size_<VD, this is UB
+    PLMD::LoopUnroller<VD>::_add(ptr_,v.data());
+    return *this;
+  }
+
+  template<size_t M =N, unsigned VD, typename = std::enable_if_t< M>=VD >>
+  auto& operator-=( const VectorGeneric<VD>& v ) noexcept {
+    //if N==dynamic_extent and size_<VD, this is UB
+    PLMD::LoopUnroller<VD>::_sub(ptr_,v.data());
+    return *this;
+  }
+
+  auto& operator*=( const double v ) noexcept {
+    if constexpr (N!=helpers::dynamic_extent) {
+      PLMD::LoopUnroller<N>::_mul(ptr_,v);
+    } else {
+      for(unsigned i=0; i<size_; ++i) {
+        ptr_[i] *= v;
+      }
     }
     return *this;
   }
 
-  View<T,3>& operator+=( const VectorGeneric<3>& v ) {
-    for(unsigned i=0; i<3; ++i) {
-      ptr_[i] += v[i];
-    }
-    return *this;
-  }
-
-  View<T,3>& operator-=( const VectorGeneric<3>& v ) {
-    for(unsigned i=0; i<3; ++i) {
-      ptr_[i] -= v[i];
-    }
-    return *this;
-  }
-
-  View<T,N> operator*=( double v ) {
-    for(unsigned i=0; i<size_; ++i) {
-      ptr_[i] *= v;
-    }
-    return *this;
+  auto& operator/=( const double v ) noexcept {
+    return operator*=(1.0/v);
   }
   //some mathematical helper operations
-  template <size_t M=N>
-  std::enable_if_t<M!=helpers::dynamic_extent, double>
-  modulo2() const {
-    return LoopUnroller<N>::_sum2(ptr_);
+  double modulo2() const noexcept {
+    if constexpr (N!=helpers::dynamic_extent) {
+      return LoopUnroller<N>::_sum2(ptr_);
+    } else {
+      double sum=0.0;
+      for(unsigned i=0; i<size_; ++i) {
+        sum += ptr_[i]*ptr_[i];
+      }
+      return sum;
+    }
   }
 
-  template <size_t M=N>
-  std::enable_if_t<M!=helpers::dynamic_extent, double>
-  modulo() const {
-    return sqrt(modulo2<M>());;
+  double modulo() const noexcept {
+    return sqrt(modulo2());;
   }
 
 };
 
 template<typename T>
-VectorGeneric<3> delta(const View<T,3>& v1, const View<T,3>& v2 )  noexcept {
-  VectorGeneric<3> v{
+VectorGeneric<3> delta(const View<T,3> v1, const View<T,3> v2 )  noexcept {
+  return VectorGeneric<3> {
     v2[0] - v1[0],
     v2[1] - v1[1],
     v2[2] - v1[2]
   };
-  return v;
 }
 
 } // namespace PLMD

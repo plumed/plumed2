@@ -91,6 +91,10 @@ public:
   VectorGeneric(double first,Args... arg);
 /// create it null
   VectorGeneric();
+/// Returns a pointer to the underlying array serving as element storage.
+  constexpr double* data() noexcept;
+/// Returns a pointer to the underlying array serving as element storage.
+  constexpr const double* data()const noexcept;
 /// set it to zero
   void zero();
 /// array-like access [i]
@@ -181,6 +185,18 @@ template <unsigned n>
 VectorGeneric<n>::VectorGeneric() {
   LoopUnroller<n>::_zero(d.data());
 }
+
+
+template <unsigned n>
+constexpr double* VectorGeneric<n>::data() noexcept {
+  return d.data();
+}
+
+template <unsigned n>
+constexpr const double* VectorGeneric<n>::data()const noexcept {
+  return d.data();
+}
+
 
 template <unsigned n>
 double & VectorGeneric<n>::operator[](unsigned i) {

@@ -54,7 +54,31 @@ f: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
 DUMPDERIVATIVES ARG=f STRIDE=1 FMT=%8.4f FILE=deriv
 ```
 
-__You can only use this command to output the derivatives of rank 0 (scalar) values. You cannot use it to output derivatives of vector, matrix of function values.__
+!!! warning ""
+
+    You can only use this command to output the derivatives of rank 0 (scalar) values.
+    You cannot use it to output derivatives of vector, matrix of function values.
+
+## RESTART, UPDATE_FROM and UPDATE_UNTIL
+
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
+can be used in this action in the same way as they are used for [PRINT](PRINT.md).
+Consequently, if you would like to append derivatives to an existing file called `deriv` instead of backing that
+file up at the start of the calculation and outputting the data from the calculation on a new file called `deriv`
+you would use an input like the one shown below:
+
+```plumed
+distance: DISTANCE ATOMS=1,2
+DUMPDERIVATIVES ARG=distance STRIDE=1 FILE=deriv RESTART=YES
+```
+
+Similarly, if you want to only output the derivatives during the 400 ps time interval after the first
+100 ps of the simulation you would use an input like the one shown below:
+
+```plumed
+distance: DISTANCE ATOMS=1,2
+DUMPDERIVATIVES ARG=distance STRIDE=1 FILE=deriv UPDATE_FROM=100 UPDATE_UNTIL=500
+```
 
 */
 //+ENDPLUMEDOC

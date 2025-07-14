@@ -120,6 +120,15 @@ es: ENVIRONMENTSIMILARITY SPECIES=1-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYST
 PRINT ARG=es.mean FILE=COLVAR
 ```
 
+If you want to use a different set of atoms in the environments to the atoms for which you are calculating
+the ENVIRONMENTSIMILARITY kernel you use the SPECIESA and SPECIESB keywords as shown below:
+
+```plumed
+es: ENVIRONMENTSIMILARITY SPECIESA=1-100 SPECIESB=101-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYSTAL_STRUCTURE=BCC MEAN
+
+PRINT ARG=es.mean FILE=COLVAR
+```
+
 The next example compares the environments of the 96 selected atoms with a user specified reference
 environment. The reference environment is contained in the env1.pdb file. Once the kernel is computed
  the average and the number of atoms with a kernel larger than 0.5 are computed.

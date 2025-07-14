@@ -164,7 +164,7 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
                                        const OuterProductInput<T>& actiondata,
                                        ParallelActionsInput& input,
                                        ParallelActionsOutput& output ) {
-  View<double,helpers::dynamic_extent> args(output.buffer.data(), 2*input.ncomponents);
+  auto args = output.buffer.subview(0, 2*input.ncomponents);
   for(unsigned i=0; i<input.ncomponents; ++i) {
     args[i] = input.inputdata[input.argstarts[i] + task_index];
   }

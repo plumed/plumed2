@@ -44,6 +44,30 @@ w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=
 PRINT ARG=w1 FILE=colvar
 ```
 
+You can use the following input instead to calculate the number of atoms that bridge between the
+45 pairs of distinct pairs of atoms that can be selected from the set of atoms with indexes between
+1 and 10.
+
+```plumed
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUP=1-10 SWITCH={RATIONAL R_0=0.2}
+PRINT ARG=w1 FILE=colvar
+```
+
+In the above inputs the switching functions $s_A$ and $s_B$ are identical.  If you want to use two different
+switching functions you would use an input like the one shown below:
+
+```plumed
+w1: BRIDGE ...
+  BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20
+  SWITCHA={RATIONAL R_0=0.2}
+  SWITCHB={RATIONAL R_0=0.4}
+...
+PRINT ARG=w1 FILE=colvar
+```
+
+With this input an atom is calculated as bridging if it is (approximately) within 0.2 nm of one of the atoms in
+GROUPA and within 0.4 nm of one of the atoms in GROUPB.
+
 */
 //+ENDPLUMEDOC
 

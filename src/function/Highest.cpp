@@ -102,6 +102,26 @@ For the input above the HIGHEST action outputs a vector with two elements.  The 
 of atoms that are specified in the DISTANCE command as long as those distances are greater than 0.05 nm.  If either of the two input distances is less
 than 0.05 nm then the corresponding value in the vector `h` is set equal to 0.05 nm.
 
+## The MASK keyword
+
+You should only use the MASK keyword for this action if you are using multiple arguments and at least one vector in the input to this action.
+The following input illustrates how this keyword works:
+
+```plumed
+m: CONSTANT VALUES=1,0
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+h2: HIGHEST ARG=d1,d2,d3 MASK=m
+```
+
+By using the MASK keyword here you ensure that only the first element of the output vector for `h2` is calculated. This element of the output vector
+is evaluated as the corresponding element of the vector that is passed in the input to the MASK keyword is one.  By the same logic the second element
+of the output vector is not computed because the corresponding element in the mask vector is 0.
+
+The input above illustrates the key idea for the MASK keyword and is probably not very useful. To see an example where using a MASK for this type of action
+is useful you should look at the expanded shortcuts in the documentation for [PARABETARMSD](PARABETARMSD.md).
+
 */
 //+ENDPLUMEDOC
 
@@ -176,7 +196,27 @@ PRINT ARG=h FILE=colvar
 
 For the input above the LOWEST action outputs a vector with two elements.  The elements of this vector are equal to the distances between the pairs
 of atoms that are specified in the DISTANCE command as long as those distances are less than 0.5 nm.  If either of the two input distances is more
-han 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm.
+than 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm.
+
+## The MASK keyword
+
+You should only use the MASK keyword for this action if you are using multiple arguments and at least one vector in the input to this action.
+The following input illustrates how this keyword works:
+
+```plumed
+m: CONSTANT VALUES=1,0
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+h2: LOWEST ARG=d1,d2,d3 MASK=m
+```
+
+By using the MASK keyword here you ensure that only the first element of the output vector for `h2` is calculated. This element of the output vector
+is evaluated as the corresponding element of the vector that is passed in the input to the MASK keyword is one.  By the same logic the second element
+of the output vector is not computed because the corresponding element in the mask vector is 0.
+
+The input above illustrates the key idea for the MASK keyword and is probably not very useful. To see an example where using a MASK for this type of action
+is useful you should look at the expanded shortcuts in the documentation for [PARABETARMSD](PARABETARMSD.md).
 
 */
 //+ENDPLUMEDOC
@@ -186,7 +226,7 @@ public:
   bool min;
   static void registerKeywords( Keywords& keys );
   static void read( Highest& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Highest> HighestShortcut;
@@ -223,7 +263,7 @@ void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions&
   }
 }
 
-void Highest::calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Highest::calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
   if( !noderiv ) {
     for(unsigned i=0; i<args.size(); ++i) {
       funcout.derivs[0][i] = 0;

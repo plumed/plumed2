@@ -798,7 +798,9 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
                      undoc = undoc + 1 
                    if not depracated and key in example_keywords : f.write("| " + missingExample(key) + " | optional | not used | " + getKeywordDescription( docs ) + " | \n")
                    else : f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n")
-                if docs["type"]=="deprecated" :
+                if depracated and docs["type"]=="deprecated" :
+                   f.write("| " + key + " | optional | not used | " + getKeywordDescription( docs ) + " |\n") 
+                elif docs["type"]=="deprecated" :
                    ndep = ndep + 1
             if ndep>0 :
                f.write("\n\n!!! warning \"deprecated keywords\"\n\n")

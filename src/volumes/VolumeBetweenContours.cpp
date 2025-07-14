@@ -49,14 +49,38 @@ as many elements as atoms that were specified using the ATOMS keyword.  The $i$t
 being the position of the $i$th atom that was specified using that ATOMS keyword.
 
 ```plumed
-fi: INENVELOPE ATOMS=14401-74134:3 FIELD_ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1
+fi: INENVELOPE ...
+  ATOMS=14401-74134:3 FIELD_ATOMS=1-14400
+  CONTOUR={RATIONAL D_0=2.0 R_0=1.0}
+  KERNEL=gaussian BANDWIDTH=0.1,0.1,0.1
+  CUTOFF=6.25
+...
 PRINT ARG=fi FILE=colvar
 ```
 
 This particular action was developed with the intention of determining whether water molecules had penetrated a membrane or not. The FIELD_ATOMS were thus the atoms of the
 lipid molecules that made up the membrane and the ATOMS were the oxygens of the water molecules. The vector that is output by this action can be used in all the ways that the
 vector that is output by the [AROUND](AROUND.md) action is used.  In other words, this action can be used to calculate the number of water molecules in the membrane or the average
-values for a symmetry function for those atoms that are within the membrane.
+values for a symmetry function for those atoms that are within the membrane.  You can also use this action to calculate the number of atoms that are not in the membrane by using
+an input like the one shown below:
+
+```plumed
+fi: INENVELOPE ...
+  ATOMS=14401-74134:3 FIELD_ATOMS=1-14400
+  CONTOUR={RATIONAL D_0=2.0 R_0=1.0}
+  BANDWIDTH=0.1,0.1,0.1
+  OUTSIDE
+...
+s: SUM ARG=fi PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+!!! note ""
+
+    As with [AROUND](AROUND.md) there was syntax for caclulating the average values of order parameters for those atoms that are inside/outside the membrane, which can
+    still be used with this new version of the command.  However, the same calculations can be performed in later versions of the code with a better syntax.  We strongly
+    recommend using the newer syntax but if you are interested in the old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
+    The documentation for that action tells you how that old syntax worked and how you can achieve the same results using the new syntax.
 
 */
 //+ENDPLUMEDOC

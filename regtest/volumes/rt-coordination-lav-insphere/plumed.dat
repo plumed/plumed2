@@ -1,0 +1,35 @@
+# Water oxygens: atoms 1-N with stride 4 (TIP4P geometry)
+ow: GROUP ATOMS=1-16500:4
+
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+
+# Probe volume
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+
+ones: ONES SIZE=4125
+# Calculate a elements of adjacency matrix for those elements that are inside the sphere
+vol_cmap: CONTACT_MATRIX GROUP=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=sphere
+# Create a matrix that for the sphere stuff
+sphere_mat: OUTER_PRODUCT ARG=sphere,ones MASK=vol_cmap
+# Multiply this contact matrix by the map
+bonds_mat: CUSTOM ARG=vol_cmap,sphere_mat FUNC=x*y PERIODIC=NO
+# Transpose the above matrix
+bonds_matT: TRANSPOSE ARG=bonds_mat
+# And multiply by the volume
+bonds: MATRIX_VECTOR_PRODUCT ARG=bonds_matT,sphere
+#  And make sure we calculate the coordination numbers for the atoms in the volume too
+mask: CUSTOM ARG=bonds,sphere FUNC=x+y PERIODIC=NO
+
+# Calculates cooordination numbers
+cc: COORDINATIONNUMBER SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=mask 
+
+# Calculate local average
+cc_lav: LOCAL_AVERAGE SPECIES=cc SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=sphere
+prod: CUSTOM ARG=cc_lav,sphere FUNC=x*y PERIODIC=NO
+sphere_sum: SUM ARG=prod PERIODIC=NO
+
+# Bias the mean value of the OP in the sphere
+BIASVALUE ARG=sphere_sum
+
+print: PRINT ARG=sphere_sum FILE=colvar FMT=%8.4f

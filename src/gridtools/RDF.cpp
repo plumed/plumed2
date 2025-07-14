@@ -38,8 +38,21 @@ DUMPGRID ARG=rdf FILE=rdf.dat
 If you expand the shortcut in this input you can see how the radial distribution function is computed using [KDE](KDE.md) actions and that the
 average is obtained by using [ACCUMULATE](ACCUMULATE.md) actions.  By using expanded versions of this shortcut you can thus calculate and print
 the instantaneous value of the radial distribution function.  Alternatively, if you use the CLEAR option in the [ACCUMULATE](ACCUMULATE.md) commands
-you can calculate radial distribution functions from various parts of the trajectory.  Notice finally that you can replace the DISCRETE kernel that
-is used in the input above with a continuous function and hence compute a radial distribution function via [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
+you can calculate radial distribution functions from various parts of the trajectory.
+
+The following example shows how you can use this function to calculate the radial distribution for the atoms in GROUPB around the atoms in GROUPA.
+Notice that the DISCRETE keyword has been removed here so we are using [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation)
+to compute the radial distribution function.
+
+```plumed
+rdf: RDF GROUPA=1-108 GROUPB=109-300 MAXR=2.5 GRID_BIN=25 BANDWIDTH=0.01 DENSITY=1 STRIDE=1 CLEAR=0
+DUMPGRID ARG=rdf FILE=rdf.dat
+```
+
+We have also used the `DENSITY` keyword to set the background density that is used when normalizing the radial distribution function explicity to 1 atom$/nm^{3}$.
+When this keyword is not used, this density is calculated by dividing the number of atoms by the volume of the box as you can see if you expand the shortcut in the
+first input above.
+
 
 */
 //+ENDPLUMEDOC
@@ -61,7 +74,7 @@ void RDF::createX2ReferenceObject( const std::string& lab, const std::string& gr
 void RDF::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("atoms","GROUP","the atoms that are being used to calculate the RDF");
-  keys.add("atoms","ATOMS","the atoms that are being used to calculate the RDF");
+  keys.addDeprecatedKeyword("ATOMS","GROUP");
   keys.add("atoms-2","GROUPA","the atoms that you would like to compute the RDF about.  Must be used with GROUPB.");
   keys.add("atoms-2","GROUPB","the atoms that you would like to to use when computing the RDF around the atoms that were specified with GROUPA");
   keys.add("compulsory","GRID_BIN","the number of bins to use when computing the RDF");
@@ -69,8 +82,10 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
   keys.add("compulsory","MAXR","the maximum distance to use for the rdf");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CLEAR","1","the frequency with which to clear the estimate of the rdf.  Set equal to 0 if you want to compute an rdf over the whole trajectory");
-  keys.add("compulsory","STRIDE","1","the frequency with which to compute the rdf and accumulate averages");
+  if( keys.getDisplayName()=="RDF") {
+    keys.add("compulsory","CLEAR","1","the frequency with which to clear the estimate of the rdf.  Set equal to 0 if you want to compute an rdf over the whole trajectory");
+    keys.add("compulsory","STRIDE","1","the frequency with which to compute the rdf and accumulate averages");
+  }
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
   keys.setValueDescription("grid","the radial distribution function");
