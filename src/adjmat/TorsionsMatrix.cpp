@@ -341,10 +341,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
   for(unsigned i=0; i<nelements; ++i) {
     if( atom2[i].modulo2()<epsilon ) {
       if( !input.noderiv ) {
-        View<double, 21> der( output.derivatives.data() + 21*i );
-        for(unsigned j=0; j<21; ++j) {
-          der[j] = 0;
-        }
+        output.derivatives.subview_n<21>( 21*i ).zero();
       }
       continue ;
     }
@@ -360,14 +357,11 @@ void TorsionsMatrix::performTask( std::size_t task_index,
     }
 
     std::size_t base = + 21*i;
-    View<double, 3> deriv1( output.derivatives.data() + base );
-    deriv1 = dv1;
-    View<double, 3> deriv2( output.derivatives.data() + base + 3 );
-    deriv2 = dv2;
-    View<double, 3> deriv3( output.derivatives.data() + base + 6 );
-    deriv3 = -dconn;
-    View<double, 3> deriv4( output.derivatives.data() + base + 9 );
-    deriv4 = dconn;
+    output.derivatives.subview_n<3>(base) = dv1;
+    output.derivatives.subview_n<3>(base+3) = dv2;
+    output.derivatives.subview_n<3>(base+6) = -dconn;
+    output.derivatives.subview_n<3>(base+9) = dconn;
+
     Tensor vir( -extProduct( atom2[i], dconn ) );
     View2D<double,3,3> virial( output.derivatives.data() + base + 12 );
     for(unsigned j=0; j<3; ++j) {

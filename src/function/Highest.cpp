@@ -186,7 +186,7 @@ public:
   bool min;
   static void registerKeywords( Keywords& keys );
   static void read( Highest& func, ActionWithArguments* action, FunctionOptions& options );
-  static void calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout );
+  static void calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout );
 };
 
 typedef FunctionShortcut<Highest> HighestShortcut;
@@ -223,7 +223,7 @@ void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions&
   }
 }
 
-void Highest::calc( const Highest& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, FunctionOutput& funcout ) {
+void Highest::calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
   if( !noderiv ) {
     for(unsigned i=0; i<args.size(); ++i) {
       funcout.derivs[0][i] = 0;
