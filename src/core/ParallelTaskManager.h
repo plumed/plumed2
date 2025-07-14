@@ -537,6 +537,72 @@ void ParallelTaskManager<T>::setWorkspaceSize( std::size_t size ) {
   workspace_size = size;
 }
 
+#ifdef __PLUMED_USE_OPENACC
+//use the __PLUMED_USE_OPENACC_TASKSMINE macro to debug the ptm ins a single file
+//so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
+#ifndef __PLUMED_USE_OPENACC_TASKSMINE
+template <class T>
+void runAllTasksACC(typename T::input_type actiondata,
+                    ParallelActionsInput myinput,
+                    std::vector<double>& value_stash,
+                    const std::vector<unsigned> & partialTaskList,
+                    const unsigned nactive_tasks,
+                    const std::size_t nderivatives_per_task,
+                    const std::size_t workspace_size
+                   ) {
+  auto myinput_acc = OpenACC::fromToDataHelper(myinput);
+  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
+
+  //template type is deduced
+  OpenACC::memoryManager vs{value_stash};
+  auto value_stash_data = vs.devicePtr();
+
+  OpenACC::memoryManager ptl{partialTaskList};
+  auto partialTaskList_data = ptl.devicePtr();
+
+  OpenACC::memoryManager<double> buff{workspace_size*nactive_tasks};
+
+  auto buffer = buff.devicePtr();
+  OpenACC::memoryManager<double> dev(nderivatives_per_task*nactive_tasks);
+  auto derivatives = dev.devicePtr();
+#pragma acc parallel loop present(myinput, actiondata) \
+                           copyin(nactive_tasks, \
+                                 nderivatives_per_task, \
+                                 workspace_size)\
+                        deviceptr(derivatives, \
+                                  partialTaskList_data, \
+                                  value_stash_data, \
+                                  buffer) \
+                          default(none)
+  for(unsigned i=0; i<nactive_tasks; ++i) {
+    std::size_t task_index = partialTaskList_data[i];
+    std::size_t val_pos = task_index*myinput.nscalars;
+    auto myout = ParallelActionsOutput::create (myinput.nscalars,
+                 value_stash_data+val_pos,
+                 nderivatives_per_task,
+                 derivatives+nderivatives_per_task*i,
+                 workspace_size,
+                 (workspace_size>0)?
+                 buffer+workspace_size*i
+                 :nullptr  );
+    // Calculate the stuff in the loop for this action
+    T::performTask( task_index, actiondata, myinput, myout );
+  }
+  vs.copyFromDevice(value_stash.data());
+}
+#else
+template <class T>
+void runAllTasksACC(typename T::input_type actiondata,
+                    ParallelActionsInput myinput,
+                    std::vector<double>& value_stash,
+                    const std::vector<unsigned> & partialTaskList,
+                    const unsigned nactive_tasks,
+                    const std::size_t nderivatives_per_task,
+                    const std::size_t workspace_size
+                   ) ;
+#endif //__PLUMED_USE_OPENACC_TASKSMINE
+#endif //__PLUMED_USE_OPENACC
+
 template <class T>
 void ParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
@@ -559,54 +625,15 @@ void ParallelTaskManager<T>::runAllTasks() {
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
     if (comm.Get_rank()== 0) {// no multigpu shenanigans until this works
-      //I have a few problem with "this" <- meaning "this" pointer-  being copyed,
-      // so I workarounded it with few copies
-      ParallelActionsInput input = myinput;
-      auto myinput_acc = OpenACC::fromToDataHelper(input);
-      input_type t_actiondata = actiondata;
-      auto actiondata_acc = OpenACC::fromToDataHelper(t_actiondata);
-
-      //template type is deduced
-      OpenACC::memoryManager vs{value_stash};
-      auto value_stash_data = vs.devicePtr();
-
-      OpenACC::memoryManager ptl{partialTaskList};
-      auto partialTaskList_data = ptl.devicePtr();
-
-      const auto ndev_per_task = nderivatives_per_task;
-
-      OpenACC::memoryManager<double> buff{};
-      if ( workspace_size>0 ) {
-        buff.resize(workspace_size*nactive_tasks);
-      }
-      auto workspaceSize = workspace_size;
-      auto buffer = buff.devicePtr();
-      OpenACC::memoryManager<double>dev(ndev_per_task*nactive_tasks);
-      auto derivatives = dev.devicePtr();
-#pragma acc parallel loop present(input, t_actiondata) \
-                           copyin(nactive_tasks, \
-                                 ndev_per_task, \
-                                 workspace_size)\
-                        deviceptr(derivatives, \
-                                  partialTaskList_data, \
-                                  value_stash_data, \
-                                  buffer) \
-                          default(none)
-      for(unsigned i=0; i<nactive_tasks; ++i) {
-        std::size_t task_index = partialTaskList_data[i];
-        std::size_t val_pos = task_index*input.nscalars;
-        auto myout = ParallelActionsOutput::create (input.nscalars,
-                     value_stash_data+val_pos,
-                     ndev_per_task,
-                     derivatives+ndev_per_task*i,
-                     workspaceSize,
-                     (workspaceSize>0)?
-                     buffer+workspaceSize*i
-                     :nullptr  );
-        // Calculate the stuff in the loop for this action
-        T::performTask( task_index, t_actiondata, input, myout );
-      }
-      vs.copyFromDevice(value_stash.data());
+      runAllTasksACC<T>(
+        actiondata,
+        myinput,
+        value_stash,
+        partialTaskList,
+        nactive_tasks,
+        nderivatives_per_task,
+        workspace_size
+      );
     }
     comm.Bcast( value_stash.data(), value_stash.size(), 0);
 #else
@@ -658,18 +685,20 @@ void ParallelTaskManager<T>::runAllTasks() {
 }
 
 #ifdef __PLUMED_USE_OPENACC
-#ifndef __PLUMED_USE_OPENACC_MINE
+//use the __PLUMED_USE_OPENACC_FORCESMINE macro to debug the ptm ins a single file
+//so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
+#ifndef __PLUMED_USE_OPENACC_FORCESMINE
 template <class T>
 void applyForcesWithACC(PLMD::View<double> forcesForApply,
                         typename T::input_type actiondata,
-                        ParallelActionsInput input,
+                        ParallelActionsInput myinput,
                         const std::vector<double>& value_stash,
-                        std::vector<unsigned> & partialTaskList,
+                        const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
-                        const std::size_t ndev_per_task,
-                        const std::size_t workspaceSize
+                        const std::size_t nderivatives_per_task,
+                        const std::size_t workspace_size
                        ) {
-  auto myinput_acc = OpenACC::fromToDataHelper(input);
+  auto myinput_acc = OpenACC::fromToDataHelper(myinput);
   auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   //template type is deduced
@@ -682,31 +711,31 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
   OpenACC::memoryManager ffa {forcesForApply};
   auto forcesForApply_data = ffa.devicePtr();
   const auto forcesForApply_size = ffa.size();
-  const auto nind_per_scalar = ForceIndexHolder::indexesPerScalar(input);
+  const auto nind_per_scalar = ForceIndexHolder::indexesPerScalar(myinput);
   //nscalars is >=ncomponents (see setupParallelTaskManager )
-  const auto nind_per_task = nind_per_scalar*input.nscalars;
+  const auto nind_per_task = nind_per_scalar*myinput.nscalars;
 
-  OpenACC::memoryManager<double> dev{ndev_per_task*nactive_tasks};
+  OpenACC::memoryManager<double> dev{nderivatives_per_task*nactive_tasks};
   auto derivatives = dev.devicePtr();
   OpenACC::memoryManager<std::size_t> ind{nind_per_task*nactive_tasks};
   auto indices = ind.devicePtr();
-  OpenACC::memoryManager<double> vtmp{input.sizeOfFakeVals()*nactive_tasks};
+  OpenACC::memoryManager<double> vtmp{myinput.sizeOfFakeVals()*nactive_tasks};
   auto valstmp = vtmp.devicePtr();
-  OpenACC::memoryManager<double> buff{workspaceSize*nactive_tasks};
+  OpenACC::memoryManager<double> buff{workspace_size*nactive_tasks};
   auto buffer = buff.devicePtr();
 
-#define forces_indicesArg(taskID,scalarID) ForceIndexHolder::create(input, \
+#define forces_indicesArg(taskID,scalarID) ForceIndexHolder::create(myinput, \
                           indices + taskID*nind_per_task + scalarID*nind_per_scalar)
-#define derivativeDrift(taskID,scalarID)  taskID*ndev_per_task \
-                           + scalarID*input.ncomponents*input.nderivatives_per_scalar
-#define stashDrift(taskID,scalarID) taskID*input.nscalars \
-                           + scalarID*input.ncomponents
+#define derivativeDrift(taskID,scalarID)  taskID*nderivatives_per_task \
+                           + scalarID*myinput.ncomponents*myinput.nderivatives_per_scalar
+#define stashDrift(taskID,scalarID) taskID*myinput.nscalars \
+                           + scalarID*myinput.ncomponents
 
-#pragma acc data present(input,actiondata) \
+#pragma acc data present(myinput,actiondata) \
                   copyin(nactive_tasks, \
                          forcesForApply_size, \
-                         ndev_per_task, nind_per_task,nind_per_scalar, \
-                         workspaceSize) \
+                         nderivatives_per_task, nind_per_task,nind_per_scalar, \
+                         workspace_size) \
                deviceptr(derivatives, \
                          indices, \
                          value_stash_data, \
@@ -719,14 +748,14 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
 #pragma acc parallel loop
     for(unsigned t=0; t<nactive_tasks; ++t) {
       std::size_t task_index = partialTaskList_data[t];
-      auto myout = ParallelActionsOutput::create( input.nscalars,
-                   valstmp+input.nscalars*t,
-                   ndev_per_task,
-                   derivatives+ndev_per_task*t,
-                   workspaceSize,
-                   (workspaceSize>0)?buffer+workspaceSize*t:nullptr);
+      auto myout = ParallelActionsOutput::create( myinput.nscalars,
+                   valstmp+myinput.nscalars*t,
+                   nderivatives_per_task,
+                   derivatives+nderivatives_per_task*t,
+                   workspace_size,
+                   (workspace_size>0)?buffer+workspace_size*t:nullptr);
       // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, input, myout );
+      T::performTask( task_index, actiondata, myinput, myout );
       // If this is a matrix this returns a number that isn't one as we have to loop over the columns
       const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
@@ -738,17 +767,17 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
                             vID,
                             forcesForApply_size,
                             actiondata,
-                            input,
+                            myinput,
                             force_indices );
 
         // Create a force input object
-        auto finput = ForceInput::create ( input.nscalars,
+        auto finput = ForceInput::create ( myinput.nscalars,
                                            value_stash_data + stashDrift(task_index,vID),
-                                           input.nderivatives_per_scalar,
+                                           myinput.nderivatives_per_scalar,
                                            derivatives + derivativeDrift(t,vID));
 
         // Gather forces that can be gathered locally
-        ParallelTaskManager<T>::gatherThreadSafeForces( input,
+        ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
             force_indices,
             finput,
             View<double>(forcesForApply_data,
@@ -757,7 +786,7 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
     }
 
 #pragma acc parallel loop
-    for(unsigned v=input.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
+    for(unsigned v=myinput.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
       double tmp = 0.0;
 #pragma acc loop reduction(+:tmp)
       for(unsigned t=0; t<nactive_tasks; ++t) {
@@ -766,11 +795,11 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
         for(unsigned vID=0; vID<nvpt; ++vID) {
           auto force_indices = forces_indicesArg(t,vID);
 
-          auto fdata = ForceInput::create( input.nscalars,
+          auto fdata = ForceInput::create( myinput.nscalars,
                                            value_stash_data + stashDrift(task_index,vID),
-                                           input.nderivatives_per_scalar,
+                                           myinput.nderivatives_per_scalar,
                                            derivatives + derivativeDrift(t,vID));
-          for(unsigned i=0; i<input.ncomponents; ++i) {
+          for(unsigned i=0; i<myinput.ncomponents; ++i) {
             const double ff = fdata.force[i];
             for(unsigned d=force_indices.threadsafe_derivatives_end[i];
                 d<force_indices.tot_indices[i]; ++d) {
@@ -794,16 +823,15 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
 template <class T>
 void applyForcesWithACC(PLMD::View<double> forcesForApply,
                         typename T::input_type actiondata,
-                        ParallelActionsInput input,
+                        ParallelActionsInput myinput,
                         const std::vector<double>& value_stash,
-                        std::vector<unsigned> & partialTaskList,
+                        const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
-                        const std::size_t ndev_per_task,
-                        const std::size_t workspaceSize
+                        const std::size_t nderivatives_per_task,
+                        const std::size_t workspace_size
                        );
-#endif //__PLUMED_USE_OPENACC_MINE
-#endif
-
+#endif //__PLUMED_USE_OPENACC_FORCESMINE
+#endif //__PLUMED_USE_OPENACC
 template <class T>
 void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
