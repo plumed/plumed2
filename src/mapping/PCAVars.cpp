@@ -85,6 +85,16 @@ As you can see from the example above, the reference configurations are specifie
 which is referred to in the above expressions as $X^{ref}$.  Subsequent configurations give the directions of row vectors that are contained in
 the matrix $A$ above.  These directions are specified by giving a second configuration that describes the components of $A$ explicitly.
 
+When you use an input like the one in the example above PLUMED assumes that the atoms for which RMSD displacements are being computed together form a molecule.
+A procedure akin to that in [WHOLEMOLECULES](WHOLEMOLECULES.md) is thus performed to ensure that any bonds that are broken by the periodic boundary conditions are
+reformed.  If you would like to turn this feature off for any reason you add the NOPBC flag to the input line as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt-pca/reference.pdb
+pca2: PCAVARS REFERENCE=regtest/mapping/rt-pca/reference.pdb NOPBC TYPE=OPTIMAL
+PRINT ARG=pca2.* FILE=colvar2
+```
+
 Notice that the PCAVARS command is a shortcut.  If you look at how the shortcut in the above input is expanded you should be able to see how the command works
 by calculating the RMSD displacement between the instantaneous and reference configuration and how those displacements are then projected on the eigenvector that
 was specified in the second frame of the pdb input above. Understanding the expanded version of this shortcut command allows you to recognise that you can project
@@ -118,7 +128,7 @@ pca: MATRIX_VECTOR_PRODUCT ARG=eigT,rmsd.disp
 PRINT ARG=pca FILE=colvar
 ```
 
-You also project vectors of differences of arguments on reference vectors.  For example, the input below can be used to look at the projection
+You can also project vectors of differences of arguments on reference vectors.  For example, the input below can be used to look at the projection
 of the vector connecting the instantanous configuraiton to a reference point in CV on a reference vector that has been specified in the PDB file.
 
 ```plumed

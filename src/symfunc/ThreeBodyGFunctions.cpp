@@ -90,6 +90,35 @@ beh3: GSYMFUNC_THREEBODY ...
 PRINT ARG=beh3.g4,beh3.g5,beh3.g6,beh3.g7 FILE=colvar
 ```
 
+You can even use this action in tandem with the features that are in the [volumes module](module_volumes.md) as shown below:
+
+```plumed
+# The atoms that are of interest
+ow: GROUP ATOMS=1-16500
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# The distance matrix
+dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow CUTOFF=1.0 MASK=sphere
+# Find the four nearest neighbors
+acv_neigh: NEIGHBORS ARG=dmap.w NLOWEST=4 MASK=sphere
+# Compute a function for the atoms that are in the first coordination sphere
+acv_g8: GSYMFUNC_THREEBODY ...
+  WEIGHT=acv_neigh ARG=dmap.x,dmap.y,dmap.z
+  FUNCTION1={FUNC=(cos(ajik)+1/3)^2 LABEL=g8}
+  MASK=sphere
+...
+# Now compute the value of the function above for those atoms that are in the
+# sphere of interest
+acv: CUSTOM ARG=acv_g8.g8,sphere FUNC=y*(1-(3*x/8)) PERIODIC=NO
+# And now compute the final average
+acv_sum: SUM ARG=acv PERIODIC=NO
+acv_norm: SUM ARG=sphere PERIODIC=NO
+mean: CUSTOM ARG=acv_sum,acv_norm FUNC=x/y PERIODIC=NO
+PRINT ARG=mean FILE=colvar
+```
+
 You can read more about how to calculate more Behler-type symmetry functions [here](https://www.plumed-tutorials.org/lessons/23/001/data/Behler.html).
 
 */
@@ -157,6 +186,7 @@ PLUMED_REGISTER_ACTION(ThreeBodyGFunctions,"GSYMFUNC_THREEBODY")
 
 void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
+  keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which symmetry functions should be calculated");
   keys.addInputKeyword("compulsory","ARG","matrix","three matrices containing the bond vectors of interest");
   keys.addInputKeyword("compulsory","WEIGHT","matrix","the matrix that contains the weights that should be used for each connection");
   keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
@@ -169,7 +199,11 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this) {
-  if( getNumberOfArguments()!=3 ) {
+  unsigned nargs = getNumberOfArguments();
+  if( getNumberOfMasks()>0 ) {
+    nargs = nargs - getNumberOfMasks();
+  }
+  if( nargs!=3 ) {
     error("found wrong number of arguments in input");
   }
   std::vector<Value*> wval;
@@ -265,12 +299,12 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
   auto arg3 = ArgumentBookeepingHolder::create( 3, input );
 
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
-  View<const double,helpers::dynamic_extent> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
+  View<const double> wval( input.inputdata + arg3.start + arg3.ncols*task_index, rowlen );
   if( actiondata.multi_action_input ) {
     xvals.resize( rowlen );
     yvals.resize( rowlen );
     zvals.resize( rowlen );
-    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
+    const auto wbooks = arg3.bookeeping.subview((1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned i=0; i<rowlen; ++i) {
       xvals[i] = input.inputdata[arg0.start + getIndex( task_index, wbooks[i], arg0) ];
       yvals[i] = input.inputdata[arg1.start + getIndex( task_index, wbooks[i], arg1) ];
@@ -284,13 +318,13 @@ void ThreeBodyGFunctions::performTask( std::size_t task_index, const ThreeBodyGF
     ypntr = input.inputdata + arg1.start + arg1.ncols*task_index;
     zpntr = input.inputdata + arg2.start + arg2.ncols*task_index;
   }
-  View<const double,helpers::dynamic_extent> xval( xpntr, rowlen );
-  View<const double,helpers::dynamic_extent> yval( ypntr, rowlen );
-  View<const double,helpers::dynamic_extent> zval( zpntr, rowlen );
+  View<const double> xval( xpntr, rowlen );
+  View<const double> yval( ypntr, rowlen );
+  View<const double> zval( zpntr, rowlen );
   for(unsigned i=0; i<output.derivatives.size(); ++i) {
     output.derivatives[i] = 0;
   }
-  View2D<double,helpers::dynamic_extent,helpers::dynamic_extent> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*arg3.shape[1] );
+  View2D<double> derivatives( output.derivatives.data(), actiondata.functions.size(), 4*arg3.shape[1] );
 
   Angle angle;
   Vector disti, distj;
@@ -368,7 +402,7 @@ void ThreeBodyGFunctions::getForceIndices( std::size_t task_index,
   auto arg3 = ArgumentBookeepingHolder::create( 3, input );
   std::size_t rowlen = arg3.bookeeping[(1+arg3.ncols)*task_index];
   if( actiondata.multi_action_input ) {
-    View<const std::size_t,helpers::dynamic_extent> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
+    View<const std::size_t> wbooks( arg3.bookeeping.data()+(1+arg3.ncols)*task_index+1, rowlen);
     for(unsigned j=0; j<rowlen; ++j) {
       std::size_t matpos = task_index*arg3.ncols + j;
       std::size_t xpos = getIndex( task_index, wbooks[j], arg0 );

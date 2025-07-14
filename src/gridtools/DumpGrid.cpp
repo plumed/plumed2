@@ -62,6 +62,35 @@ hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=1
 DUMPCUBE ARG=hA1 FILE=histoA1.cube
 ```
 
+In the input above the cube file is output at the end of the simulation or when the full trajectory has been read.
+If you want to output the cube file every 1000 steps you would use an input like the one shown below:
+
+```plumed
+x1: DISTANCE ATOMS=1,2
+x2: DISTANCE ATOMS=1,3
+x3: ANGLE ATOMS=1,2,3
+
+hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=10,10,10 BANDWIDTH=1.0,1.0,1.0
+DUMPCUBE ARG=hA1 FILE=histoA1.cube STRIDE=1000
+```
+
+The default option is used here and thus multiple cube files are output.  The cube file that is obtained from the
+first 1000 steps of the trajectory will be named `analysis.0.histoA1.cube`, the one from the second 1000 steps of
+trajectory is named `analysis.1.histoA1.cube` and so on until the final histogram output, which will called
+`histoA1.cube`.  If you would like to output the data from all these cube files in a single file you use the
+`PRINT_ONE_FILE` flag as shown below:
+
+```plumed
+x1: DISTANCE ATOMS=1,2
+x2: DISTANCE ATOMS=1,3
+x3: ANGLE ATOMS=1,2,3
+
+hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=10,10,10 BANDWIDTH=1.0,1.0,1.0
+DUMPCUBE ARG=hA1 FILE=histoA1.cube STRIDE=1000 FMT=%10.6f PRINT_ONE_FILE
+```
+
+Notice that we have also used the `FMT` keyword here to control the format of the numbers in our output cube file.
+
 */
 //+ENDPLUMEDOC
 
@@ -123,6 +152,8 @@ DUMPGRID ARG=hh FILE=histo
 
 The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
+In this input we have also used the FMT keyword to control the appearance of the numbers
+in the output file.
 
 ```plumed
 r1: TORSION ATOMS=1,2,3,4
@@ -135,7 +166,7 @@ hh: HISTOGRAM ...
   GRID_BIN=200,200
 ...
 
-DUMPGRID ARG=hh FILE=histo
+DUMPGRID ARG=hh FILE=histo FMT=%10.6f
 ```
 
 The following input monitors two torsional angles during a simulation
@@ -155,10 +186,33 @@ hh: HISTOGRAM ...
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```
 
+By default each of the histogram estimates are output to separate files.  There will thus be one
+file called `analysis.0.histo` which contains the histogram that was obtained from the first 100000
+steps of the simulation.  The file `analysis.1.histo` contains the histogram that was obtained from the first
+200000 steps of the simulation and so on until the final estimate of the histogram is output to a file
+called `histo`.  If you would like to output all estimates of the histogram to a single file you can use the `PRINT_ONE_FILE`
+keyword as shown below:
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
+  ARG=r1,r2
+  GRID_MIN=-3.14,-3.14
+  GRID_MAX=3.14,3.14
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05
+...
+
+DUMPGRID ARG=hh FILE=histo STRIDE=100000 PRINT_ONE_FILE
+```
+
+Now all estimates of the histogram are contained in a single file called `histo`.
+
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
-previous example.
+previous two examples.
 
 ```plumed
 r1: TORSION ATOMS=1,2,3,4
@@ -173,6 +227,27 @@ hh: HISTOGRAM ...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
 ```
+
+## Working with Fibonacci grids
+
+If you have accumulated a histogram using the [SPHERICAL_KDE](SPHERICAL_KDE.md) keyword as has been done in the following input, we recommend you use
+the `PRINT_XYZ` keyword when using DUMPGRID as shown below:
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5 ATOMS5=2,3 ATOMS6=2,4 ATOMS7=2,5 ATOMS8=3,4 ATOMS9=3,5 ATOMS10=4,5
+d1lt: LESS_THAN ARG=d1 SWITCH={RATIONAL D_0=2.0 R_0=0.5 D_MAX=5.0}
+d1lts: SUM ARG=d1lt PERIODIC=NO
+d1c: DISTANCE ATOMS1=2,1 ATOMS2=3,1 ATOMS3=4,1 ATOMS4=5,1 ATOMS5=3,2 ATOMS6=4,2 ATOMS7=5,2 ATOMS8=4,3 ATOMS9=5,3 ATOMS10=5,4 COMPONENTS
+b1_x: CUSTOM ARG=d1c.x,d1 FUNC=x/y PERIODIC=NO
+b1_y: CUSTOM ARG=d1c.y,d1 FUNC=x/y PERIODIC=NO
+b1_z: CUSTOM ARG=d1c.z,d1 FUNC=x/y PERIODIC=NO
+hu: SPHERICAL_KDE HEIGHTS=d1lt ARG=b1_x,b1_y,b1_z CONCENTRATION=100 GRID_BIN=144
+h: CUSTOM ARG=hu,d1lts FUNC=x/y PERIODIC=NO
+DUMPGRID PRINT_XYZ ARG=h PRINT_ONE_FILE STRIDE=1 FILE=allkde.xyz
+```
+
+This input outputs an xyz file in which atom represents one of the grid points on your spherical grid. These atoms are shifted in and out radially
+based on the value of the function at the grid point.
 
 */
 //+ENDPLUMEDOC
@@ -200,11 +275,13 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","grid","the label for the grid that you would like to output");
-  keys.add("optional","GRID","the grid you would like to print (can also use ARG for specifying what is being printed)");
+  keys.addDeprecatedKeyword("GRID","ARG");
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  Default of zero means dump at end of calculation");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");
-  keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
+  if( keys.getDisplayName()!="DUMPCUBE" ) {
+    keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
+  }
   keys.addFlag("PRINT_ONE_FILE",false,"output grids one after the other in a single file");
 }
 
@@ -245,7 +322,10 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
     fmt = fmt + " ";
   }
   parseFlag("PRINT_ONE_FILE", onefile);
-  parseFlag("PRINT_XYZ",xyzfile);
+  xyzfile=false;
+  if( getName()!="DUMPCUBE" ) {
+    parseFlag("PRINT_XYZ",xyzfile);
+  }
   if( xyzfile ) {
     if( getName()=="DUMPCUBE" ) {
       error("PRINT_XYZ flag not compatible with DUMPCUBE");

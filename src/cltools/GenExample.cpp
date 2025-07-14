@@ -282,7 +282,7 @@ std::vector<std::vector<std::string> > GenExample::createLongInput( const std::v
       myplumed.readInputLine( myinputline );
       ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
       plumed_assert( as );
-      std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+      const auto & shortcut_commands = as->getSavedInputLines();
       for(unsigned i=0; i<shortcut_commands.size(); ++i) {
         std::vector<std::string> words = Tools::getWords( shortcut_commands[i] );
         long_input.push_back( words );

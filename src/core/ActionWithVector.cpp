@@ -71,7 +71,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
           j++;
         }
       }
-      if( getNumberOfArguments()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+      if( getNumberOfArguments()>0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")==std::string::npos && getPntrToArgument(0)->hasDerivatives() ) {
         error("input for mask should be vector or matrix");
       } else if( mask[0]->getRank()==2 ) {
         if( mask.size()>1 ) {

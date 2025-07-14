@@ -73,12 +73,27 @@ The following commands illustrate how this works in practise.  We are using PLUM
 in an ion channel in a protein.  The extent of the channel is calculated from the positions of atoms 1, 4, 5 and 11.
 
 ```plumed
-cav: CAVITY ATOMS=20-500 BOX=1,4,5,11 SIGMA=0.1
+cav: CAVITY ...
+  ATOMS=20-500 BOX=1,4,5,11
+  SIGMA=0.1 KERNEL=gaussian
+...
 s: SUM ARG=cav PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```
 
-By contrst the following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
+If you want to calculate the number of atoms that are not inthe protein chanel you can use the `OUTSIDE` flag as shown below:
+
+```plumed
+cav: CAVITY ...
+  ATOMS=20-500 BOX=1,4,5,11
+  SIGMA=0.1 KERNEL=gaussian
+  OUTSIDE
+...
+s: SUM ARG=cav PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+By contrast the following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
 molecules in the protein channel described above. The average coordination number and the number of coordination
 numbers more than 4 is then calculated for those molecules that are in the region of interest.
 
@@ -94,15 +109,19 @@ nnn: CUSTOM ARG=cav,d1 FUNC=x*y PERIODIC=NO
 numer: SUM ARG=nnn PERIODIC=NO
 denom: SUM ARG=cav PERIODIC=NO
 mean: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
-# Calculate the number of atoms that are in the channel and that have a coordination number that is greater than 4
+# Calculate the number of atoms that are in the channel and that
+# have a coordination number that is greater than 4
 sss: CUSTOM ARG=fd1,cav FUNC=x*y PERIODIC=NO
 mt: SUM ARG=sss PERIODIC=NO
 # And print these two quantities to a file
 PRINT ARG=mean,mt FILE=colvar
 ```
 
-As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
-still be used with this new version of the command.  However, we strongly recommend using the newer syntax.
+!!! note ""
+
+    As with [AROUND](AROUND.md) earlier version of PLUMED used a different syntax for doing these types of calculations, which can
+    still be used with this new version of the command.  We strongly recommend using the newer syntax but if you are interested in the
+    old syntax you can find more information in the old syntax section of the documentation for [AROUND](AROUND.md).
 
 */
 //+ENDPLUMEDOC

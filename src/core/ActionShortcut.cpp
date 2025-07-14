@@ -36,7 +36,14 @@ void ActionShortcut::registerKeywords( Keywords& keys ) {
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
   for (auto& keyname:keys.getKeys()) {
     std::string t;
-    if( keys.style( keyname, "optional") || keys.style( keyname, "compulsory") ) {
+    bool def;
+    if( keys.getLogicalDefault(keyname,def) ) {
+      bool found=false;
+      parseFlag(keyname,found);
+      if( found ) {
+        keymap.insert(std::pair<std::string,std::string>(keyname,""));
+      }
+    } else if( keys.style( keyname, "optional") || keys.style( keyname, "compulsory") || keys.style( keyname, "deprecated") ) {
       parse(keyname,t);
       if( t.length()>0 ) {
         keymap.insert(std::pair<std::string,std::string>(keyname,t));
@@ -49,12 +56,6 @@ void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::s
           }
           keymap.insert(std::pair<std::string,std::string>(keyname + istr,t));
         }
-      }
-    } else if( keys.style( keyname, "flag") ) {
-      bool found=false;
-      parseFlag(keyname,found);
-      if( found ) {
-        keymap.insert(std::pair<std::string,std::string>(keyname,""));
       }
     } else {
       plumed_merror("shortcut keywords should be optional, compulsory or flags");
@@ -258,11 +259,11 @@ const std::string & ActionShortcut::getShortcutLabel() const {
   return shortcutlabel;
 }
 
-std::vector<std::string> ActionShortcut::getSavedInputLines() const {
+const std::vector<std::string>& ActionShortcut::getSavedInputLines() const {
   return savedInputLines;
 }
 
-std::vector<std::string> ActionShortcut::getSavedOutputs() const {
+const std::vector<std::string>& ActionShortcut::getSavedOutputs() const {
   return savedOutputs;
 }
 

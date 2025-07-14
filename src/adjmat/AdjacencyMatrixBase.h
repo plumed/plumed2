@@ -135,6 +135,7 @@ public:
                                const AdjacencyMatrixData<T>& actiondata,
                                const ParallelActionsInput& input,
                                ForceIndexHolder force_indices );
+  void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 };
 
 template <class T>
@@ -144,7 +145,7 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPB");
   keys.add("atoms","GROUPB","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPA");
-  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix. This is a depracated syntax that is equivalent to GROUP.  You are strongly recommened to use GROUP instead of ATOMS.");
+  keys.addDeprecatedKeyword("ATOMS","GROUP");
   keys.reserve("atoms","GROUPC","a group of atoms that must be summed over when calculating each element of the adjacency matrix");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
@@ -171,23 +172,29 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
   std::vector<std::size_t> shape(2);
   std::vector<AtomNumber> t;
   parseAtomList("GROUP", t );
-  if( t.size()==0 ) {
-    parseAtomList("ATOMS", t);
-    if( t.size()>0 ) {
-      warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+  if( getName()!="HBOND_MATRIX" ) {
+    if( t.size()==0 ) {
+      parseAtomList("ATOMS", t);
+      if( t.size()>0 ) {
+        warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+      }
     }
+  } else if( t.size()>0 ) {
+    warning("GROUP keyword has been deprecated for HBOND_MATRIX as it may lead users to wrongly assume that the matrices calculated by this action are symmetric.  We strongly recommend using DONORS/ACCEPTORS instead");
   }
 
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta;
-    parseAtomList("GROUPA",ta);
-    if( ta.size()==0 && getName()=="HBOND_MATRIX") {
+    if( getName()=="HBOND_MATRIX") {
       parseAtomList("DONORS",ta);
+    } else {
+      parseAtomList("GROUPA",ta);
     }
     std::vector<AtomNumber> tb;
-    parseAtomList("GROUPB",tb);
-    if( tb.size()==0 && getName()=="HBOND_MATRIX") {
+    if( getName()=="HBOND_MATRIX") {
       parseAtomList("ACCEPTORS",tb);
+    } else {
+      parseAtomList("GROUPB",tb);
     }
     if( ta.size()==0 || tb.size()==0 ) {
       error("no atoms have been specified in input");
@@ -258,7 +265,7 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
     setupThirdAtomBlock( tc, t );
   }
   // Request the atoms from the ActionAtomistic
-  requestAtoms( t );
+  requestAtoms( t, false );
   bool components;
   parseFlag("COMPONENTS",components);
   parseFlag("NOPBC",nopbc);
@@ -356,6 +363,15 @@ void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) cons
     k++;
     inputdata[k] = mypos[2];
     k++;
+  }
+}
+
+template <class T>
+void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  std::string num;
+  for(unsigned i=0; i<getConstPntrToComponent(0)->getShape()[1]; ++i) {
+    Tools::convert( i+1, num );
+    argnames.push_back( num );
   }
 }
 
@@ -544,7 +560,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     }
     //sugar for not having to repeat [valpos*nderiv+something]
     for(int ii=1; ii<4; ++ii) {
-      PLMD::View derivs( output.derivatives.data() + valpos*nderiv+ii*nderiv, 5);
+      auto derivs  = output.derivatives.subview_n<5>(valpos*nderiv+ii*nderiv);
       derivs[0] = -1.0;
       derivs[1] =  1.0;
       derivs[2] = -atoms[i][0];

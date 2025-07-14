@@ -62,19 +62,52 @@ cf: MORE_THAN ARG=cc SWITCH={RATIONAL D_0=5.5 R_0=0.5}
 # atoms are close to each other and both have a coordination number that is bigger than six
 c2: CONTACT_MATRIX GROUP=1-100 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3}
 # Now make a matrix in which element i,j is one if atom i and atom j both have a coordination number that is greater than 6
-cfm: OUTER_PRODUCT ARG=cf,cf
+cfm: OUTER_PRODUCT ARG=cf,cf MASK=c2
 # And multiply this by our contact matrix to determine the desired adjacency matrix
 m: CUSTOM ARG=c2,cfm FUNC=x*y PERIODIC=NO
-PRINT ARG=m FILE=colvar
+f: SUM ARG=m PERIODIC=NO
+PRINT ARG=f FILE=colvar
 ```
 
 This input calculates a adjacency matrix which has element $(i,j)$ equal to one if atoms $i$ and $j$ have coordination numbers
-that are greater than 6 and if they are within 5.3 nm of each other.
+that are greater than 6 and if they are within 5.3 nm of each other.  Notice how the `MASK` keyword is used in the input to the
+OUTER_PRODUCT action here to ensure that do not calculate elements of the `cfm` matrix that will be mulitplied by elements of the
+matrix `c2` that are zero.  The final quantity output is equal to two times the number of pairs of atoms that are within 5.3 nm of each
+and which both have coordination numbers of six.
 
 Notice that you can specify the function of the two input vectors that is to be calculated by using the `FUNC` keyword which accepts
 mathematical expressions of $x$ and $y$.  In other words, the elements of the outer product are calculated using the lepton library
 that is used in the [CUSTOM](CUSTOM.md) action.  In addition, you can set `FUNC=min` or `FUNC=max` to set the elements of the outer product equal to
 the minimum of the two input variables or the maximum respectively.
+
+## Calculating angles in the first coordination sphere
+
+We can use OUTER_PRODUCT to calculate a matrix of angles between bonds as shown below:
+
+```plumed
+# Calculate the directors for a set of vectors
+d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5 ATOMS5=1,6
+dm: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5 ATOMS5=1,6
+dx: CUSTOM ARG=d.x,dm FUNC=x/y PERIODIC=NO
+dy: CUSTOM ARG=d.y,dm FUNC=x/y PERIODIC=NO
+dz: CUSTOM ARG=d.z,dm FUNC=x/y PERIODIC=NO
+# Construct a matrix that contains all the directors of the vectors calculated
+v: VSTACK ARG=dx,dy,dz
+# Transpose v
+vT: TRANSPOSE ARG=v
+# Transform the distances by a switching functions to determine pairs of atoms that are bonded
+sw: LESS_THAN ARG=dm SWITCH={RATIONAL R_0=0.2}
+# Calculate the matrix of dot products between the input directors
+dpmat: MATRIX_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=v,vT
+# Use the transformed distances to determine which triples of atoms are bonded
+swmat: OUTER_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=sw,sw
+# And calculate the angles
+angles: CUSTOM ARG=swmat,dpmat FUNC=x*acos(y) PERIODIC=NO
+# Print the matrix of angles
+PRINT ARG=angles FILE=colvar
+```
+
+Notice that we have to use the `ELEMENTS_ON_DIAGONAL_ARE_ZERO` flag here to avoid numerical issues in the calculation.
 
 */
 //+ENDPLUMEDOC
@@ -127,7 +160,7 @@ class OutputProductMin {
 public:
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action );
-  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMin> opmin;
@@ -142,7 +175,7 @@ void OutputProductMin::setup( const std::vector<std::size_t>& shape, const std::
   action->log.printf("  taking minimum of two input vectors \n");
 }
 
-void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output ) {
   if( vals[0]<vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -158,7 +191,7 @@ class OutputProductMax {
 public:
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action );
-  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMax> opmax;
@@ -173,7 +206,7 @@ void OutputProductMax::setup( const std::vector<std::size_t>& shape, const std::
   action->log.printf("  taking maximum of two input vectors \n");
 }
 
-void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output ) {
   if( vals[0]>vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -191,7 +224,7 @@ public:
   LeptonCall function;
   static void registerKeywords( Keywords& keys );
   void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action );
-  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output );
+  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output );
   OutputProductFunc& operator=( const OutputProductFunc& m ) {
     inputf = m.inputf;
     std::vector<std::string> var(2);
@@ -218,7 +251,7 @@ void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std:
   function.set( func, var, action );
 }
 
-void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double,helpers::dynamic_extent> vals, MatrixElementOutput& output ) {
+void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output ) {
   std::vector<double> vvv(2);
   vvv[0]=vals[0];
   vvv[1] = vals[1];

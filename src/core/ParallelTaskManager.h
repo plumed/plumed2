@@ -632,7 +632,6 @@ void ParallelTaskManager<T>::runAllTasks() {
 
     #pragma omp parallel num_threads(nt)
     {
-      const unsigned t=OpenMP::getThreadNum();
       std::vector<double> buffer( workspace_size );
       std::vector<double> derivatives( nderivatives_per_task );
       #pragma omp for nowait

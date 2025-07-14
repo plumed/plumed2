@@ -41,7 +41,7 @@ around an atom is ordered with the atoms aranged on a line.  The Steinhardt para
 calculated using the following formula:
 
 $$
-q_{1m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{1m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{1m}(i) = \sum_j \sigma( r_{ij} ) Y_{1m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{1m}$ is one of the 1st order spherical harmonics so $m$ is a number that runs from $-1$ to
@@ -54,25 +54,33 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_1(i) = \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
+Q_1(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-1}^1 q_{1m}(i)^{*} q_{1m}(i) }
 $$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
-the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
-that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
+how by averaging the value of this norm over all the atoms in the system you can measure the global degree of order in the system:
 
 ```plumed
-q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q1.mean FILE=colvar
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2
+q1_mean: MEAN ARG=q1 PERIODIC=NO
+PRINT ARG=q1_mean FILE=colvar
 ```
 
-Another similar command is provided below. This time the histogram of Q1 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
-to a file called colvar:
+In the above input the rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
 
 ```plumed
-q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
-PRINT ARG=q1.* FILE=colvar
+q1: Q1 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+q1_mean: MEAN ARG=q1 PERIODIC=NO
+PRINT ARG=q1_mean FILE=colvar
 ```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atoms
 
 The command below could be used to measure the Q1 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
@@ -80,19 +88,82 @@ with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q
 file called colvar
 
 ```plumed
-q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q1.mean FILE=colvar
+q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2
+q1_mean: MEAN ARG=q1 PERIODIC=NO
+PRINT ARG=q1_mean FILE=colvar
 ```
 
 If you simply want to examine the values of the Q1 parameters for each of the atoms in your system you can do so by exploiting the
 command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q1.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q1 parameter, columns
-6-12 will contain the real parts of the director of the $q_{1m}$ vector while columns 12-19 will contain the imaginary parts of this director.
+6-8 will contain the real parts of the director of the $q_{1m}$ vector while columns 9-11 will contain the imaginary parts of this director.
 
 ```plumed
 q1: Q1 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 DUMPATOMS ATOMS=q1 ARG=q1 FILE=q1.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells Q1 that it is safe not to calculate the Q1 parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the Q1 parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the fccubic parameter of the atoms
+cc: Q1 ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the Q1 parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+Below is an example where these deprecated keywords are used to calculate the histogram of Q1 parameters for the 64 atoms in a box of Lennard Jones print them
+to a file called colvar:
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
+PRINT ARG=q1.* FILE=colvar
+```
+
+The following example illustrates how you can use VSUM to calculate a global vector of $Q_{1m}$ values as follows:
+
+$$
+Q_{1m} = \sum_i \frac{q_{1m}(i)}{\sum_j \sigma(r_{ij})}
+$$
+
+where the sum runs over all the atoms.  You can then take these $Q_{1m}$ values and compute the following norm:
+
+$$
+s = \sqrt{ \sum_{m=-1}^1 Q_{1m}^{*} Q_{1m} }
+$$
+
+The VMEAN command that is also used in the input below performs a similar operations.  The only difference is that
+we divide the sums in the first expression above by the number of atoms.
+
+```plumed
+q1: Q1 SPECIES=1-64 D_0=1.3 R_0=0.2 VMEAN VSUM
+PRINT ARG=q1.* FILE=colvar
 ```
 
 */
@@ -107,7 +178,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{3m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{3m}(i) = \sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{3m}$ is one of the 3rd order spherical harmonics so $m$ is a number that runs from $-3$ to
@@ -120,25 +191,33 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_3(i) = \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
+Q_3(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-3}^3 q_{3m}(i)^{*} q_{3m}(i) }
 $$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
-the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
-that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered.  The following input illustrates
+how by averaging the value of this norm over all the atoms in the system you can measure the global degree of order in the system:
 
 ```plumed
-q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q3.mean FILE=colvar
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2
+q3_mean: MEAN ARG=q3 PERIODIC=NO
+PRINT ARG=q3_mean FILE=colvar
 ```
 
-Another similar command is provided below. This time the histogram of Q3 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
-to a file called colvar:
+In the above input the rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
 
 ```plumed
-q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
-PRINT ARG=q3.* FILE=colvar
+q3: Q3 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+q3_mean: MEAN ARG=q3 PERIODIC=NO
+PRINT ARG=q3_mean FILE=colvar
 ```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atoms
 
 The command below could be used to measure the Q3 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
@@ -146,19 +225,82 @@ with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q
 file called colvar
 
 ```plumed
-q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q3.mean FILE=colvar
+q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2
+q3_mean: MEAN ARG=q3 PERIODIC=NO
+PRINT ARG=q3_mean FILE=colvar
 ```
 
 If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the
 command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q3.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q3 parameter, columns
-6-12 will contain the real parts of the director of the $q_{3m}$ vector while columns 12-19 will contain the imaginary parts of this director.
+6-12 will contain the real parts of the director of the $q_{3m}$ vector while columns 13-19 will contain the imaginary parts of this director.
 
 ```plumed
 q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 DUMPATOMS ATOMS=q3 ARG=q3 FILE=q3.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells Q3 that it is safe not to calculate the Q3 parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the Q3 parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the fccubic parameter of the atoms
+cc: Q3 ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the Q3 parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+Below is an example where these deprecated keywords are used to calculate the histogram of Q3 parameters for the 64 atoms in a box of Lennard Jones print them
+to a file called colvar:
+
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
+PRINT ARG=q3.* FILE=colvar
+```
+
+The following example illustrates how you can use VSUM to calculate a global vector of $Q_{3m}$ values as follows:
+
+$$
+Q_{3m} = \sum_i \frac{q_{3m}(i)}{\sum_j \sigma(r_{ij})}
+$$
+
+where the sum runs over all the atoms.  You can then take these $Q_{3m}$ values and compute the following norm:
+
+$$
+s = \sqrt{ \sum_{m=-3}^3 Q_{3m}^{*} Q_{3m} }
+$$
+
+The VMEAN command that is also used in the input below performs a similar operations.  The only difference is that
+we divide the sums in the first expression above by the number of atoms.
+
+```plumed
+q3: Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 VMEAN VSUM
+PRINT ARG=q3.* FILE=colvar
 ```
 
 */
@@ -173,7 +315,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{4m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{4m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{4m}(i) = \sum_j \sigma( r_{ij} ) Y_{4m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{4m}$ is one of the 4th order spherical harmonics so $m$ is a number that runs from $-4$ to
@@ -186,25 +328,33 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_4(i) = \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
+Q_4(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-4}^4 q_{4m}(i)^{*} q_{4m}(i) }
 $$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
-the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
-that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
+how by averaging the value of this norm over all the atoms in the system you can measure the global degree of order in the system:
 
 ```plumed
-q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q4.mean FILE=colvar
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2
+q4_mean: MEAN ARG=q4 PERIODIC=NO
+PRINT ARG=q4_mean FILE=colvar
 ```
 
-Another similar command is provided below. This time the histogram of Q4 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
-to a file called colvar:
+In the above input the rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
 
 ```plumed
-q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
-PRINT ARG=q4.* FILE=colvar
+q4: Q4 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+q4_mean: MEAN ARG=q4 PERIODIC=NO
+PRINT ARG=q4_mean FILE=colvar
 ```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atoms
 
 The command below could be used to measure the Q4 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
@@ -212,19 +362,82 @@ with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q
 file called colvar
 
 ```plumed
-q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q4.mean FILE=colvar
+q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2
+q4_mean: MEAN ARG=q4 PERIODIC=NO
+PRINT ARG=q4_mean FILE=colvar
 ```
 
 If you simply want to examine the values of the Q4 parameters for each of the atoms in your system you can do so by exploiting the
 command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q4.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q4 parameter, columns
-6-12 will contain the real parts of the director of the $q_{4m}$ vector while columns 12-19 will contain the imaginary parts of this director.
+6-14 will contain the real parts of the director of the $q_{4m}$ vector while columns 15-23 will contain the imaginary parts of this director.
 
 ```plumed
 q4: Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 DUMPATOMS ATOMS=q4 ARG=q4 FILE=q4.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells Q4 that it is safe not to calculate the Q4 parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the Q4 parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the fccubic parameter of the atoms
+cc: Q4 ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the Q4 parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+Below is an example where these deprecated keywords are used to calculate the histogram of Q4 parameters for the 64 atoms in a box of Lennard Jones print them
+to a file called colvar:
+
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
+PRINT ARG=q4.* FILE=colvar
+```
+
+The following example illustrates how you can use VSUM to calculate a global vector of $Q_{4m}$ values as follows:
+
+$$
+Q_{4m} = \sum_i \frac{q_{4m}(i)}{\sum_j \sigma(r_{ij})}
+$$
+
+where the sum runs over all the atoms.  You can then take these $Q_{4m}$ values and compute the following norm:
+
+$$
+s = \sqrt{ \sum_{m=-4}^1 Q_{4m}^{*} Q_{4m} }
+$$
+
+The VMEAN command that is also used in the input below performs a similar operations.  The only difference is that
+we divide the sums in the first expression above by the number of atoms.
+
+```plumed
+q4: Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 VMEAN VSUM
+PRINT ARG=q4.* FILE=colvar
 ```
 
 */
@@ -239,7 +452,7 @@ around an atom is ordered.  The Steinhardt parameter for atom, $i$ is complex ve
 calculated using the following formula:
 
 $$
-q_{6m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
+q_{6m}(i) = \sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij})
 $$
 
 where $Y_{6m}$ is one of the 6th order spherical harmonics so $m$ is a number that runs from $-6$ to
@@ -252,25 +465,33 @@ be used to measure the degree of order in the system in a variety of different w
 simplest way of measuring whether or not the coordination sphere is ordered is to simply take the norm of the above vector i.e.
 
 $$
-Q_6(i) = \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
+Q_6(i) = \frac{1}{\sum_j \sigma(r_{ij}) } \sqrt{ \sum_{m=-6}^6 q_{6m}(i)^{*} q_{6m}(i) }
 $$
 
-This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. Furthermore, in inputs like
-the one shown below where the keywords LESS_THAN, MIN, MAX, HISTOGRAM, MEAN and so on are used with it is the distribution of these normed quantities
-that is investigated.  You can investigate precisely what calculation is performed here by expaning the shortcuts in the input below.
+This norm is small when the coordination shell is disordered and larger when the coordination shell is ordered. The following input illustrates
+how by averaging the value of this norm over all the atoms in the system you can measure the global degree of order in the system:
 
 ```plumed
-q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q6.mean FILE=colvar
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2
+q6_mean: MEAN ARG=q6 PERIODIC=NO
+PRINT ARG=q6_mean FILE=colvar
 ```
 
-Another similar command is provided below. This time the histogram of Q6 parameters for the 64 atoms in a box of Lennard Jones is computed and printed to
-to a file called colvar:
+In the above input the rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
 
 ```plumed
-q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
-PRINT ARG=q6.* FILE=colvar
+q6: Q6 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+q6_mean: MEAN ARG=q6 PERIODIC=NO
+PRINT ARG=q6_mean FILE=colvar
 ```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## Working with two types of atoms
 
 The command below could be used to measure the Q6 parameters that describe the arrangement of chlorine ions around the
 sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
@@ -278,19 +499,82 @@ with the 64 Na$^+$ ions followed by the 64 Cl$-$ ions.  Once again the average Q
 file called colvar
 
 ```plumed
-q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-PRINT ARG=q6.mean FILE=colvar
+q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2
+q6_mean: MEAN ARG=q6 PERIODIC=NO
+PRINT ARG=q6_mean FILE=colvar
 ```
 
 If you simply want to examine the values of the Q6 parameters for each of the atoms in your system you can do so by exploiting the
 command [DUMPATOMS](DUMPATOMS.md) as shown in the example below.  The following output file will output a file in an extended xyz format
 called q6.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q6 parameter, columns
-6-12 will contain the real parts of the director of the $q_{6m}$ vector while columns 12-19 will contain the imaginary parts of this director.
+6-18 will contain the real parts of the director of the $q_{6m}$ vector while columns 19-31 will contain the imaginary parts of this director.
 
 ```plumed
 q6: Q6 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
 DUMPATOMS ATOMS=q6 ARG=q6 FILE=q6.xyz
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells Q6 that it is safe not to calculate the Q6 parameter for some of the atoms.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the Q6 parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the fccubic parameter of the atoms
+cc: Q6 ...
+  SPECIES=1-400 MASK=sphere
+  SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply fccubic parameters numbers by sphere vector
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer: SUM ARG=prod PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the Q6 parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.
+
+## Deprecated syntax
+
+More information on the deprecated keywords that are given below is available in the documentation for the [DISTANCES](DISTANCES.md) command.
+Below is an example where these deprecated keywords are used to calculate the histogram of Q6 parameters for the 64 atoms in a box of Lennard Jones print them
+to a file called colvar:
+
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1}
+PRINT ARG=q6.* FILE=colvar
+```
+
+The following example illustrates how you can use VSUM to calculate a global vector of $Q_{6m}$ values as follows:
+
+$$
+Q_{6m} = \sum_i \frac{q_{6m}(i)}{\sum_j \sigma(r_{ij})}
+$$
+
+where the sum runs over all the atoms.  You can then take these $Q_{6m}$ values and compute the following norm:
+
+$$
+s = \sqrt{ \sum_{m=-6}^6 Q_{6m}^{*} Q_{6m} }
+$$
+
+The VMEAN command that is also used in the input below performs a similar operations.  The only difference is that
+we divide the sums in the first expression above by the number of atoms.
+
+```plumed
+q6: Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 VMEAN VSUM
+PRINT ARG=q6.* FILE=colvar
 ```
 
 */

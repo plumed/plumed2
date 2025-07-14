@@ -34,11 +34,11 @@ We think that the syntax in newer versions is more flexible and easier to use an
 see how the new syntax can be used to replace this old one. We would strongly encourage you to use the newer syntax.__
 
 The following input tells plumed to calculate the distances between atoms 3 and 5 and
-between atoms 1 and 2 and to print the minimum for these two distances.
+between atoms 1 and 2 and to print the shorter of these two distances.
 
 ```plumed
-d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
-PRINT ARG=d1.min
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 LOWEST
+PRINT ARG=d1.lowest
 ```
 
 The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2
@@ -50,12 +50,13 @@ d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lessthan
 ```
 
-The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
-1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
+The following input tells plumed to calculate all 3 distances between atoms 1, 2 and 3 (i.e. the distances between atoms
+1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated in two ways.
 
 ```plumed
-d1: DISTANCES GROUP=1-3 MEAN
-PRINT ARG=d1.mean
+d1: DISTANCES GROUP=1-3 MEAN SUM
+d1mean: CUSTOM ARG=d1.sum FUNC=x/3 PERIODIC=NO
+PRINT ARG=d1.mean,d1mean
 ```
 
 The following input tells plumed to calculate all the distances between the atoms in GROUPA and the atoms in GROUPB.
@@ -69,7 +70,18 @@ PRINT ARG=d1.morethan
 
 ## Calculating minimum distances
 
-To calculate and print the minimum distance between two groups of atoms you use the following commands
+There are various way for calculating the minimum distance between two groups of atoms.  The simplest one
+is the one we saw above; namely:
+
+```plumed
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 LOWEST
+PRINT ARG=d1.lowest
+```
+
+A disadvantage of this approach is that the derivatives of the resulting value are not continuous. To be clear,
+the value of the shortest distance is continuous when you use this approach so you will likely be fine if you use
+the quantity output by the command above as an input in a bias. However, if you would like to use a quantity with
+continuous derivatives for the minimum distance you can use the following input:
 
 ```plumed
 d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.}
@@ -79,19 +91,59 @@ PRINT ARG=d1.min FILE=colvar STRIDE=10
 In order to ensure that the minimum value has continuous derivatives we use the following function:
 
 $$
-s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
+d_{min} = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{d_i} \right) }
 $$
 
 where $\beta$ is a user specified parameter.
 
 This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be
 used to calculate minimum coordination numbers (see [COORDINATIONNUMBER](COORDINATIONNUMBER.md)), minimum
-angles (see [ANGLES](ANGLES.md)) and many other variables.
+angles (see [ANGLES](ANGLES.md)) and many other variables. If you expand the input above you will notice that
+the DISTANCES command is a shortcut.  By expanding this shortcut you can see how PLUMED calculates the minimum distance.
 
-This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
-allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you
+An alternative implementation of the minimum distance is provided through the ALT_MIN keyword that is demonstrated below:
+
+```plumed
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 ALT_MIN={BETA=500.}
+PRINT ARG=d1.altmin FILE=colvar STRIDE=10
+```
+
+The minimum value output by this command also has continuous derivatives and is evaluated using the following function:
+
+$$
+d_{min} = -\frac{1}{\beta} \log \left( \sum_i \exp(-\beta d_i) \right)
+$$
+
+## Calculating maximum distances
+
+There are two ways for calculating the maximum distance between two groups of atom. The simplest one is:
+
+```plumed
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 HIGHEST
+PRINT ARG=d1.highest
+```
+
+As with LOWEST above a disadvantage of this approach is that the derivatives of the resulting value are not continuous.
+If you would like to use a quantity with continuous derivatives for the maximum distance you can use the following input:
+
+```plumed
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MAX={BETA=500.}
+PRINT ARG=d1.max
+```
+
+The maximum value output by this command is evaluated using the following function:
+
+$$
+d_{max} = \beta \log \left( \sum_i \exp\left( \frac{x}{\beta} \right) \right)
+$$
+
+## Other parts of the old multicolvar syntax
+
+The ways of calculating the minimum and maximum distance described above are part of plumed 2's multicolvar functionality. In older
+versions of PLUMED these special actions
+allowed you to calculate multiple functions of a distribution of simple collective variables.  As an example you
 can calculate the number of distances less than 1.0, the minimum distance, the number of distances more than
-2.0 and the number of distances between 1.0 and 2.0 by using the following command:
+2.0, the number of distances between 1.0 and 2.0 and histogram that esimates the distribution of distances by using the following command:
 
 ```plumed
 d1: DISTANCES ...
@@ -99,12 +151,17 @@ d1: DISTANCES ...
  LESS_THAN={RATIONAL R_0=1.0}
  MORE_THAN={RATIONAL R_0=2.0}
  BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
+ HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=4.0 NBINS=10}
  MIN={BETA=500.}
 ...
-PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
+PRINT ARG=d1.* FILE=colvar STRIDE=10
 ```
 
 A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only done once per step.
+If you expand the shortcut in the input above you can see how this result is achieved using a combination of many actions.  We recommend you use these combinations of
+actions rather than the shortcut when using newer versions of PLUMED as you will have a more control over what you are doing.  This newer input syntax is easier to
+understand especially when you start evaluating more complicated CVs.
+
 
 */
 //+ENDPLUMEDOC
