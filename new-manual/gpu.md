@@ -64,4 +64,13 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [Q4](Q4.md)
    - [Q6](Q6.md)
    - [LOCAL_AVERAGE](LOCAL_AVERAGE.md)
+   - [FCCUBIC](FCCUBIC.md)
+   - [TETRAHEDRAL](TETRAHEDRAL.md)
+   - [SIMPLECUBIC](SIMPLECUBIC.md)
+   - [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
+   - [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md)
+   - [LOCAL_Q1](LOCAL_qQ1.md)
+   - [LOCAL_Q3](LOCAL_qQ3.md)
+   - [LOCAL_Q4](LOCAL_qQ4.md)
+   - [LOCAL_Q6](LOCAL_qQ6.md)
    
