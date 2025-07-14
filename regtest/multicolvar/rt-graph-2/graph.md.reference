@@ -33,8 +33,8 @@ d1(["label=d1
 Box("label=Box 
  PBC 
 ")
-Box -- Box --> d1
+d1 -- Box --> Box
 linkStyle 6 stroke:red,color:red;
-MD --> d1
+d1 --> MD
 linkStyle 7 stroke:violet,color:violet;
 MD(positions from MD)

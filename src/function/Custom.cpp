@@ -694,6 +694,18 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   options.derivativeZeroIfValueIsZero = f.check_multiplication_vars.size()>0;
 }
 
+std::string Custom::getFunctionString( const std::string& func ) {
+  std::string outstr="", mult="*";
+  for(unsigned i=0; i<func.length(); ++i) {
+    if( func[i]==mult[0] ) {
+      outstr += "\\*";
+    } else {
+      outstr += func[i];
+    }
+  }
+  return outstr;
+}
+
 void Custom::calc( const Custom& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
   if( args.size()>1 ) {
     bool allzero=false;

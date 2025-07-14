@@ -18,16 +18,14 @@ cc(["label=cc
 "])
 cc -- c1 --> c1
 linkStyle 3 stroke:red,color:red;
-cc -- ones --> ones
-linkStyle 4 stroke:blue,color:blue;
 c1(["label=c1 
  CONTACT_MATRIX 
 "])
 Box("label=Box 
  PBC 
 ")
-Box -- Box --> c1
-linkStyle 5 stroke:red,color:red;
-MD --> c1
-linkStyle 6 stroke:violet,color:violet;
+c1 -- Box --> Box
+linkStyle 4 stroke:red,color:red;
+c1 --> MD
+linkStyle 5 stroke:violet,color:violet;
 MD(positions from MD)
