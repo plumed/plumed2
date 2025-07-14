@@ -46,7 +46,7 @@ You can see an example input for the DIHCOR action below
 dih: DIHCOR ...
   ATOMS1=1,2,3,4,5,6,7,8
   ATOMS2=5,6,7,8,9,10,11,12
-... DIHCOR
+...
 PRINT ARG=dih FILE=colvar STRIDE=10
 ```
 
@@ -80,7 +80,7 @@ dih: DIHCOR ...
   ATOMS1=1,2,3,4,5,6,7,8
   ATOMS2=5,6,7,8,9,10,11,12
   NOPBC
-... DIHCOR
+...
 PRINT ARG=dih FILE=colvar STRIDE=10
 ```
 

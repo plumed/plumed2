@@ -49,7 +49,7 @@ atom $k$ and atom $j$.  This angle is multiplied by the imaginary number $i$ - t
 $e^{i\theta_j}$ as follows:
 
 $$
-e^{i\theta_j) = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
+e^{i\theta_j} = \frac{x_{kj}}{r_{kj}} + i \frac{y_{kj}}{r_{kj}}
 $$
 
 We then take the 6th power of this complex number directly before compupting the magnitude by multiplying the result by its complex conjugate.
@@ -58,12 +58,91 @@ Notice, furthermore, that we can replace $x_{kj}$ or $y_{kj}$ with $z_{kj}$ by u
 An example that shows how you can use this shortcut is shown below:
 
 ```plumed
-hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2} MEAN
-PRINT ARG=hex.mean FILE=colvar
+hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy R_0=0.2 D_0=1.4 NN=6 MM=12
+hex_mean: MEAN ARG=hex_norm PERIODIC=NO
+PRINT ARG=hex_mean FILE=colvar
 ```
 
 As you can see if you expand the shortcut above, this input calculates the quantity defined in the equation above for the 400 atoms in the simulated system and stores them in a vector.
 The elements of this vector are then added together so the mean value can be computed.
+
+In the input above we use a rational [switching function](LESS_THAN.md) with the parameters above. We would recommend using SWITCH syntax
+rather than the syntax above when giving the parameters for the switching function as you can then use any of the switching functions described
+in the documentation for [LESS_THAN](LESS_THAN.md).  More importantly, however, using this syntax allows you to set the D_MAX parameter for the
+switching function as demonstrated below:
+
+
+```plumed
+hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2 D_MAX=3.0}
+hex_mean: MEAN ARG=hex_norm PERIODIC=NO
+PRINT ARG=hex_mean FILE=colvar
+```
+
+Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
+of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
+
+## The VMEAN and VSUM options
+
+If you expand the inputs in the previous section you will see that the value `hex_norm` that we are calculating the average of is a vector that contains the magnitude of the
+complex number defined in the equation above.  If you would like to add up the vector of complex numbers directly (or take an average of the vector) __before__ computing the
+magnitude of the complex number you can use the VSUM and VMEAN flags as sillstrated below:
+
+```plumed
+hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2} VMEAN VSUM
+PRINT ARG=hex_vmean,hex_vsum FILE=colvar
+```
+
+If you expand the shortcut in the input above you will see that this input adds the complex numbers together directly before calculating the modulus.  This contrasts with the approach
+in the inputs above, which computes a vector that contains the square moduli for each of the individual hexatic order parameters and then computes the average from this vector.
+
+## Using two types of atom
+
+If you would like to calculate the hexatic parameters using the directors of the bonds connecting the atoms in GROUPA to the atoms in GROUPB you can use an input like the one
+shown below:
+
+```plumed
+hex: HEXACTIC_PARAMETER SPECIESA=1-200 SPECIESB=201-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2 D_MAX=3.0}
+hex_mean: MEAN ARG=hex_norm PERIODIC=NO
+PRINT ARG=hex_mean FILE=colvar
+```
+
+## The MASK keyword
+
+You can use the MASK keyword with this action in the same way that it is used with [COORDINATIONNUMBER](COORDINATIONNUMBER.md).  This keyword thus expects a vector in
+input, which tells PLUMED the atoms for which you do not need to calculate the function.  As illustrated below, this is useful if you are using functionality
+from the [volumes module](module_volumes.md) to calculate the average value of the hexatic parameter for only those atoms that lie in a certain part of the simulation box.
+
+```plumed
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+# Vector in which element i is one if atom i is in sphere of interest and zero otherwise
+sphere: INSPHERE ATOMS=1-400 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+# Calculate the tetrahedral parameter of the atoms
+hex: HEXACTIC_PARAMETER ...
+   SPECIES=1-400 MASK=sphere PLANE=xy
+   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
+...
+# Multiply hexatic parameters by sphere vector
+prod_rm: CUSTOM ARG=hex_rm,sphere FUNC=x*y PERIODIC=NO
+prod_im: CUSTOM ARG=hex_im,sphere FUNC=x*y PERIODIC=NO
+# Sum of coordination numbers for atoms that are in the sphere of interest
+numer_rm: SUM ARG=prod_rm PERIODIC=NO
+numer_im: SUM ARG=prod_im PERIODIC=NO
+# Number of atoms that are in sphere of interest
+denom: SUM ARG=sphere PERIODIC=NO
+# Average coordination number for atoms in sphere of interest
+av_rm: CUSTOM ARG=numer_rm,denom FUNC=x/y PERIODIC=NO
+av_im: CUSTOM ARG=numer_im,denom FUNC=x/y PERIODIC=NO
+# Take the square modulus
+av: CUSTOM ARG=av_rm,av_im FUNC=x*x+y*y PERIODIC=NO
+# And print out final CV to a file
+PRINT ARG=av FILE=colvar STRIDE=1
+```
+
+This input calculate the average value of the (complex) hexatic parameter for only those atoms that are within a spherical region that is centered on the point
+$(2.5,2.5,2.5)$.  The square modulus of this average is then output.
+
+## Using nearest neighbours
 
 In papers where symmetry functions similar to this one have been used a switching function is not employed. The sums over $j$ in the expression above are replaced by sums over the
 six nearest neighbours to each atom.  If you would like to calculate this quantity using PLUMED you can use an input like this:
@@ -85,8 +164,9 @@ DUMPATOMS ATOMS=1-400 ARG=hex2_rmn,hex2_imn,hex2_denom FILE=hexparam.xyz
 
 This input outputs the values of the order parameters for all the atoms to an extended xyz file .
 
-> ![CAUTION]
-> Virial is not working currently
+!!! warning "Broken virial"
+
+    Virial is not working currently
 
 
 */
@@ -118,7 +198,7 @@ void HexacticParameter::registerKeywords( Keywords& keys ) {
   keys.needsAction("MEAN");
   keys.needsAction("SUM");
   keys.needsAction("COMBINE");
-  keys.addDOI("https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.99.215701");
+  keys.addDOI("10.1103/PhysRevLett.99.215701");
 }
 
 HexacticParameter::HexacticParameter( const ActionOptions& ao):

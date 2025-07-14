@@ -66,6 +66,32 @@ PLUMED will output these 69 derivatives to the proj file.
     This action cannot be used if non rank zero objects are passed between actions that are used to calculate the quantity (`d` in the above examples)
     whose projections are being output using the DUMPPROJECTIONS command
 
+## RESTART, UPDATE_FROM and UPDATE_UNTIL
+
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
+can be used in this action in the same way as they are used for [PRINT](PRINT.md).
+Consequently, if you would like to append derivatives to an existing file called `proj` instead of backing that
+file up at the start of the calculation and outputting the data from the calculation on a new file called `proj`
+you would use an input like the one shown below:
+
+```plumed
+x1: CENTER ATOMS=1-10
+x2: CENTER ATOMS=11-20
+d: DISTANCE ATOMS=x1,x2
+DUMPPROJECTIONS ARG=d STRIDE=1 FILE=proj FMT=%10.6f RESTART=YES
+```
+
+Similarly, if you want to only output the derivatives during the 400 ps time interval after the first
+100 ps of the simulation you would use an input like the one shown below:
+
+```plumed
+x1: CENTER ATOMS=1-10
+x2: CENTER ATOMS=11-20
+d: DISTANCE ATOMS=x1,x2
+DUMPPROJECTIONS ARG=d STRIDE=1 FILE=d UPDATE_FROM=100 UPDATE_UNTIL=500
+```
+
+
 */
 //+ENDPLUMEDOC
 

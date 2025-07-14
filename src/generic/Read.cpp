@@ -81,8 +81,13 @@ d: DISTANCE ATOMS=1,2
 r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
 # This CV is being read in from a file that was output with twice as frequency as frames
 r2: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar2 EVERY=2 IGNORE_TIME
-# This outputs our three quantities
+# We start reading this CV from this file after we have read the first 100 ps of the trajectory
+# and stop reading from it after we have read the first 800 ps of the trajectory
+r3: READ VALUES=rmsd0 FILE=regtest/basic/rt19/input_colvar2 UPDATE_FROM=100 UPDATE_UNTIL=800 IGNORE_TIME
+# This outputs our the three quantities that are determined for every step
 PRINT ARG=d,r1,r2 FILE=colvar
+# This outputs the data that we only have for the 700 ps of the trajectory after the first 100 ps
+PRINT ARG=d,r1,r2,r3 FILE=colvar2 UPDATE_FROM=100 UPDATE_UNTIL=800
 ```
 
 The driver command to run this script as follows:

@@ -40,11 +40,64 @@ cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 
 # This command then prints the indices of the atoms that have a coordination number that is greater than 4
 # every step
-PRINT_NDX ATOMS=1-100 ARG=cc GREATER_THAN_OR_EQUAL=4
+PRINT_NDX ATOMS=1-100 ARG=cc FILE=index.ndx GREATER_THAN_OR_EQUAL=4
 ```
 
-This command is used in the [OUTPUT_CLUSTER](OUTPUT_CLUSTER.md) command that you can use to output the indices
+Obviously, if you want to print the indices of the atoms that have a coordination number that is equal to 4
+you use a command like the one shown below:
+
+```plumed
+# These three lines calculate the coordination numbers of 100 atoms
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+
+# This command then prints the indices of the atoms that have a coordination number that is equal to 4
+# on every 10th step of the simulation
+PRINT_NDX ...
+   ATOMS=1-100 ARG=cc FILE=index.ndx
+   LESS_THAN_OR_EQUAL=4
+   GREATER_THAN_OR_EQUAL=4
+   STRIDE=10
+...
+```
+
+A command like the one above is used in the [OUTPUT_CLUSTER](OUTPUT_CLUSTER.md) command that you can use to output the indices
 of the atoms that are in a particular cluster.
+
+## RESTART, UPDATE_FROM and UPDATE_UNTIL
+
+Notice that the RESTART, UPDATE_FROM and UPDATE_UNTIL keywords keywords
+can be used in this action in the same way as they are used for [PRINT](PRINT.md).
+Consequently, if you would like to append to an existing file called `index.ndx` instead of backing that
+file up at the start of the calculation and outputting the data from the calculation on a new file called `index.ndx`
+you would use an input like the one shown below:
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+
+PRINT_NDX ...
+  ATOMS=1-100 ARG=cc FILE=index.ndx
+  GREATER_THAN_OR_EQUAL=4 RESTART=YES
+...
+```
+
+Similarly, if you want to only output the `index.ndx` file during the 400 ps time interval after the first
+100 ps of the simulation you would use an input like the one shown below:
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12}
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+
+PRINT_NDX ...
+  ATOMS=1-100 ARG=cc FILE=index.ndx
+  GREATER_THAN_OR_EQUAL=4
+  UPDATE_FROM=100 UPDATE_UNTIL=500
+...
+```
 
 */
 //+ENDPLUMEDOC

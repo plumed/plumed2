@@ -85,9 +85,25 @@ r1: TORSION ATOMS=1,2,3,4
 r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
-  GRID_MIN=-3.14,-3.14
-  GRID_MAX=3.14,3.14
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
   GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05
+...
+
+DUMPGRID ARG=hh FILE=histo
+```
+
+Instead of the number of bins to use when constructing your histogram you can specify the grid spacing to be used as shown below:
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
+  ARG=r1,r2
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
+  GRID_SPACING=0.01,0.01
   BANDWIDTH=0.05,0.05
 ...
 
@@ -103,8 +119,8 @@ r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
   KERNEL=DISCRETE
-  GRID_MIN=-3.14,-3.14
-  GRID_MAX=3.14,3.14
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
   GRID_BIN=200,200
 ...
 
@@ -119,8 +135,8 @@ r1: TORSION ATOMS=1,2,3,4
 r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2
-  GRID_MIN=-3.14,-3.14
-  GRID_MAX=3.14,3.14
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
 ...
@@ -138,13 +154,55 @@ r1: TORSION ATOMS=1,2,3,4
 r2: TORSION ATOMS=2,3,4,5
 hh: HISTOGRAM ...
   ARG=r1,r2 CLEAR=100000
-  GRID_MIN=-3.14,-3.14
-  GRID_MAX=3.14,3.14
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
 ...
 
 DUMPGRID ARG=hh FILE=histo STRIDE=100000
+```
+
+The following input accumulates a histogram using a subset of the data in this trajectory.
+When you use this input the first 10 ps of simulation time is discarded.  Data is then collected
+in the 190 ps after that first 10 ps. The remainder of the trajectory is not used to update the histogram.
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
+  ARG=r1,r2
+  GRID_MIN=-pi,-pi
+  GRID_MAX=pi,pi
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05
+  UPDATE_FROM=10
+  UPDATE_UNTIL=200
+...
+
+DUMPGRID ARG=hh FILE=histo STRIDE=0
+```
+
+In this final example there is a fixed restraint on the distance between atoms 1 and 2.  Clearly, this
+restraint will have an effect on the region of phase space that will be sampled when an MD simulation is
+run using this variable.  Consequently, when the histogram as a function of the distance, $x$, is accumulated,
+we use reweighting into order to discount the effect of the bias from our final histogram.
+
+```plumed
+x: DISTANCE ATOMS=1,2
+RESTRAINT ARG=x SLOPE=1.0 AT=0.0
+bias: REWEIGHT_BIAS TEMP=300
+
+hB: HISTOGRAM ...
+  ARG=x
+  GRID_MIN=0.0
+  GRID_MAX=3.0
+  GRID_BIN=100
+  BANDWIDTH=0.1
+  LOGWEIGHTS=bias
+...
+
+DUMPGRID ARG=hB FILE=histoB STRIDE=1
 ```
 
 */
@@ -167,7 +225,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.use("UPDATE_UNTIL");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
   keys.addInputKeyword("optional","ARG","scalar/vector/matrix","the quantities that are being used to construct the histogram");
-  keys.add("optional","DATA","an alternative to the ARG keyword");
+  keys.addDeprecatedKeyword("DATA","ARG");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");

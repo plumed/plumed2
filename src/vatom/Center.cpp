@@ -150,15 +150,50 @@ of interest.
 The COM command is a shortcut because it is a wrapper to [CENTER](CENTER.md). CENTER is more powerful than
 comm as it allows you to use arbitrary weights in place of the masses.
 
+## Periodic boundary conditions
+
 If you run with periodic boundary conditions
-these are taken into account automatically when computing the center of mass. The way this is
+these are taken into account automatically when computing the center of mass. By default the way this is
 handled is akin to the way molecules are rebuilt in the [WHOLEMOLECULES](WHOLEMOLECULES.md) command.
 However, at variance to [WHOLEMOLECULES](WHOLEMOLECULES.md), the copies of the atomic positions in this
 action are modified.  The global positions (i.e. those that are used in all other actions)
 are not changed when the alignment is performed.
 
 If you believe that PBC should not be applied when calculating the position fo the center of mass you can use the
-NOPBC flag.
+NOPBC flag as shown below:
+
+```plumed
+c1: COM ATOMS=1-7 NOPBC
+```
+
+Alternatively, if you would like to calculate the position of the center of mass using the PHASES method that is dicussed
+in the documentation for [CENTER](CENTER.md) you can add the keyword PHASES as shwo below:
+
+```plumed
+c1: COM ATOMS=1-7 PHASES
+```
+
+## The mass and charge of the vatom
+
+By default the mass and charge of the COM are calculated by adding the masses and charges of the input atoms together.  In other
+words, if your COM is calculated from the positions of $N$ atoms, the mass of the vatom is calculated as:
+
+$$
+m_\textrm{com} = \sum_{i=1}^N m_i
+$$
+
+where $m_i$ is the mass of the $i$th input atom. The charge is then calculated as:
+
+$$
+q_\textrm{com} = \sum_{i=1}^N q_i
+$$
+
+where $q_i$ is the charge of the $i$th atom.  If for any reason you don't want the mass and charge of the VATOM to be set equal to these
+values you can set them manually by using the `SET_CHARGE` and `SET_MASS` keywords as shown below:
+
+```plumed
+c1: COM ATOMS=1-7 SET_MASS=1 SET_CHARGE=-1
+```
 
 */
 //+ENDPLUMEDOC
@@ -189,12 +224,12 @@ void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   if( keys.getDisplayName()!="COM" ) {
     keys.setDisplayName("CENTER");
+    keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
+    keys.addFlag("MASS",false,"If set center is mass weighted");
   }
-  keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
   keys.add("optional","SET_CHARGE","Set the charge of the virtual atom to a given value.");
   keys.add("optional","SET_MASS","Set the mass of the virtual atom to a given value.");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.addFlag("MASS",false,"If set center is mass weighted");
   keys.addFlag("PHASES",false,"Compute center using trigonometric phases");
 }
 
@@ -212,8 +247,10 @@ Center::Center(const ActionOptions&ao):
   if(atoms.size()==0) {
     error("at least one atom should be specified");
   }
-  parseVector("WEIGHTS",weights);
-  parseFlag("MASS",weight_mass);
+  if( getName()!="COM") {
+    parseVector("WEIGHTS",weights);
+    parseFlag("MASS",weight_mass);
+  }
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
   double charge_=std::numeric_limits<double>::lowest();
