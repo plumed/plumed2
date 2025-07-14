@@ -513,6 +513,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("TRANSPOSE");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
 }
 
 std::string LocalSteinhardt::getSymbol( const int& m ) const {
@@ -531,10 +532,12 @@ std::string LocalSteinhardt::getSymbol( const int& m ) const {
 std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& sp_lab ) const {
   std::string numstr;
   Tools::convert( l, numstr );
-  std::string data_mat = " ARG=" + sp_lab + "_sp.rm-n" + numstr + "," + sp_lab + "_sp.im-n" + numstr;
+  std::string data_mat = " ARG=" + sp_lab + "_sp.rm-n" + numstr + ","
+                         + sp_lab + "_sp.im-n" + numstr;
   for(int i=-l+1; i<=l; ++i) {
     numstr = getSymbol( i );
-    data_mat += "," + sp_lab + "_sp.rm-" + numstr + "," + sp_lab + "_sp.im-" + numstr;
+    data_mat += "," + sp_lab + "_sp.rm-" + numstr + ","
+                + sp_lab + "_sp.im-" + numstr;
   }
   return data_mat;
 }
@@ -542,6 +545,12 @@ std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& s
 LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
+
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
+
+#define createLabel(name) const std::string name##Lab = getShortcutLabel()+"_"#name;
   bool lowmem;
   parseFlag("LOWMEM",lowmem);
   if( lowmem ) {
@@ -553,45 +562,56 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   // Create a vector filled with ones
   std::string twolplusone;
   Tools::convert( 2*(2*l+1), twolplusone );
-  readInputLine( getShortcutLabel() + "_uvec: ONES SIZE=" + twolplusone );
+  createLabel( uvec );
+  readInputLine( uvecLab + ": ONES SIZE=" + twolplusone );
   // Read in species keyword
   std::string sp_str;
   parse("SPECIES",sp_str);
   std::string spa_str;
   parse("SPECIESA",spa_str);
+  createLabel( dpmat );
+  createLabel( cmap );
+  createLabel( grp );
   if( sp_str.length()>0 ) {
     // Create a group with these atoms
-    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
+    readInputLine( grpLab + ": GROUP ATOMS=" + sp_str );
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
     // This creates the stash to hold all the vectors
+    createLabel( uvecs );
+    createLabel( nmat );
     if( sp_lab.size()==1 ) {
       // The lengths of all the vectors in a vector
-      readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + sp_lab[0] + "_norm," + getShortcutLabel() + "_uvec");
+      readInputLine( nmatLab + ": OUTER_PRODUCT "
+                     "ARG=" + sp_lab[0] + "_norm," + uvecLab);
       // The unormalised vectors
-      readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
+      readInputLine( uvecsLab + ": VSTACK" + getArgsForStack( l, sp_lab[0] ) );
     } else {
-      std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" + sp_lab[0] + "_norm";
+      createLabel( mags );
+      std::string len_vec = magsLab + ": CONCATENATE ARG=" + sp_lab[0] + "_norm";
       for(unsigned i=1; i<sp_lab.size(); ++i) {
         len_vec += "," + sp_lab[i] + "_norm";
       }
       // This is the vector that contains all the magnitudes
       readInputLine( len_vec );
-      std::string concat_str = getShortcutLabel() + "_uvecs: CONCATENATE";
+      std::string concat_str = uvecsLab + ": CONCATENATE";
       for(unsigned i=0; i<sp_lab.size(); ++i) {
         std::string snum;
         Tools::convert( i+1, snum );
-        concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecs" + snum;
-        readInputLine( getShortcutLabel() + "_uvecs" + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
+        concat_str += " MATRIX" + snum + "1=" + uvecsLab + snum;
+        readInputLine( uvecsLab + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
       }
       // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
-      readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_mags," + getShortcutLabel() + "_uvec");
+      readInputLine( nmatLab + ": OUTER_PRODUCT ARG=" + magsLab + "," + uvecLab);
       // The unormalised vectors
       readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
-    readInputLine( getShortcutLabel() + "_vecs: CUSTOM ARG=" + getShortcutLabel() + "_uvecs," + getShortcutLabel() + "_nmat FUNC=x/y PERIODIC=NO");
+    createLabel( vecs );
+    readInputLine( vecsLab + ": CUSTOM ARG=" + uvecsLab + ","
+                   + nmatLab + " FUNC=x/y PERIODIC=NO");
     // And transpose the matrix
-    readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
+    createLabel( vecsT );
+    readInputLine( vecsTLab + ": TRANSPOSE ARG=" + vecsLab );
     std::string sw_str;
     parse("SWITCH",sw_str);
     std::string maskstr;
@@ -599,72 +619,88 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     if( maskstr.length()>0 ) {
       maskstr=" MASK=" + maskstr;
     }
-    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}" + maskstr );
+    readInputLine( cmapLab + ": CONTACT_MATRIX GROUP=" + sp_str + " "
+                   "SWITCH={" + sw_str + "}" + maskstr + doUSEGPU);
     // And the matrix of dot products
-    readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT MASK=" + getShortcutLabel() + "_cmap" );
+    readInputLine( dpmatLab + ": MATRIX_PRODUCT ARG=" + vecsLab + ","
+                   + vecsTLab + " MASK=" + cmapLab + doUSEGPU);
   } else if( spa_str.length()>0 ) {
     // Create a group with these atoms
-    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + spa_str );
+    readInputLine( grpLab + ": GROUP ATOMS=" + spa_str );
     std::string spb_str;
     parse("SPECIESB",spb_str);
     if( spb_str.length()==0 ) {
       plumed_merror("need both SPECIESA and SPECIESB in input");
     }
-    std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
-    std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
+    const std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
+    const std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
+    createLabel(nmatA);
+    createLabel(uvecsA);
     if( sp_laba.size()==1 ) {
       // The matrix that is used for normalising
-      readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");
+      readInputLine( nmatALab + ": OUTER_PRODUCT "
+                     "ARG=" +  sp_laba[0] + "_norm," + uvecLab);
       // The unormalised vectors
-      readInputLine( getShortcutLabel() + "_uvecsA: VSTACK" + getArgsForStack( l, sp_laba[0] ) );
+      readInputLine( uvecsALab + ": VSTACK" + getArgsForStack( l, sp_laba[0] ) );
     } else {
-      std::string len_vec = getShortcutLabel() + "_magsA: CONCATENATE ARG=" + sp_laba[0] + "_norm";
+      createLabel(magsA);
+      std::string len_vec = magsALab + ": CONCATENATE "
+                            "ARG=" + sp_laba[0] + "_norm";
       for(unsigned i=1; i<sp_laba.size(); ++i) {
         len_vec += "," + sp_laba[i] + "_norm";
       }
       //  This is the vector that contains all the magnitudes
       readInputLine( len_vec );
-      std::string concat_str = getShortcutLabel() + "_uvecsA: CONCATENATE";
+      std::string concat_str = uvecsALab + ": CONCATENATE";
       for(unsigned i=0; i<sp_laba.size(); ++i) {
         std::string snum;
         Tools::convert( i+1, snum );
-        concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecsA" + snum;
-        readInputLine( getShortcutLabel() + "_uvecsA" + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
+        concat_str += " MATRIX" + snum + "1=" + uvecsALab + snum;
+        readInputLine( uvecsALab + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
       }
       // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
-      readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_magsA," + getShortcutLabel() + "_uvec");
+      readInputLine( nmatALab + ": OUTER_PRODUCT ARG=" + magsALab + "," + uvecLab);
       // The unormalised vector
       readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
-    readInputLine( getShortcutLabel() + "_vecsA: CUSTOM ARG=" + getShortcutLabel() + "_uvecsA," + getShortcutLabel() + "_nmatA FUNC=x/y PERIODIC=NO");
+    createLabel( vecsA );
+    readInputLine( vecsALab + ": CUSTOM ARG=" + uvecsALab + ","
+                   + nmatALab + " FUNC=x/y PERIODIC=NO");
     // Now do second matrix
+    createLabel(nmatB);
+    createLabel(uvecsBT);
+    createLabel(uvecsB);
     if( sp_labb.size()==1 ) {
-      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" +  getShortcutLabel() + "_uvec," + sp_labb[0] + "_norm");
-      readInputLine( getShortcutLabel() + "_uvecsBT: VSTACK" + getArgsForStack( l, sp_labb[0] ) );
-      readInputLine( getShortcutLabel() + "_uvecsB: TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT");
+      readInputLine( nmatBLab + ": OUTER_PRODUCT ARG=" +  uvecLab + ","
+                     + sp_labb[0] + "_norm");
+      readInputLine( uvecsBTLab + ": VSTACK" + getArgsForStack( l, sp_labb[0] ) );
+      readInputLine( uvecsBLab + ": TRANSPOSE ARG=" + uvecsBTLab);
     } else {
-      std::string len_vec = getShortcutLabel() + "_magsB: CONCATENATE ARG=" +  sp_labb[0] + "_norm";
+      createLabel(magsB);
+      std::string len_vec = magsBLab + ": CONCATENATE ARG=" +  sp_labb[0] + "_norm";
       for(unsigned i=1; i<sp_labb.size(); ++i) {
         len_vec += "," + sp_labb[i] + "_norm";
       }
       //  This is the vector that contains all the magnitudes
       readInputLine( len_vec );
-      std::string concat_str = getShortcutLabel() + "_uvecsB: CONCATENATE";
+      std::string concat_str = uvecsBLab + ": CONCATENATE";
       for(unsigned i=0; i<sp_labb.size(); ++i) {
         std::string snum;
         Tools::convert( i+1, snum );
-        concat_str += " MATRIX1" + snum + "=" + getShortcutLabel() + "_uvecsB" + snum;
-        readInputLine( getShortcutLabel() + "_uvecsBT" + snum + ": VSTACK" + getArgsForStack( l, sp_labb[i] ) );
-        readInputLine( getShortcutLabel() + "_uvecsB" + snum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT" + snum );
+        concat_str += " MATRIX1" + snum + "=" + uvecsBLab + snum;
+        readInputLine( uvecsBTLab + snum + ": VSTACK" + getArgsForStack( l, sp_labb[i] ) );
+        readInputLine( uvecsBLab + snum + ": TRANSPOSE ARG=" + uvecsBTLab + snum );
       }
       // And the normalising matrix
-      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_uvec," + getShortcutLabel() + "_magsB");
+      readInputLine( nmatBLab + ": OUTER_PRODUCT ARG=" + uvecLab + "," + magsBLab);
       // The unormalised vectors
       readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
-    readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG=" + getShortcutLabel() + "_uvecsB," + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
+    createLabel(vecsB);
+    readInputLine( vecsBLab + ": CUSTOM ARG=" + uvecsBLab + ","
+                   + nmatBLab + " FUNC=x/y PERIODIC=NO");
     std::string sw_str;
     parse("SWITCH",sw_str);
     std::string maskstr;
@@ -672,25 +708,34 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     if( maskstr.length()>0 ) {
       maskstr=" MASK=" + maskstr;
     }
-    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}" + maskstr );
-    readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB MASK=" + getShortcutLabel() + "_cmap");
+    readInputLine( cmapLab + ": CONTACT_MATRIX GROUPA=" + spa_str
+                   + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}" + maskstr + doUSEGPU);
+    readInputLine( dpmatLab + ": MATRIX_PRODUCT ARG=" + vecsALab + "," + vecsBLab
+                   + " MASK=" + cmapLab + doUSEGPU);
   }
 
   // Now create the product matrix
-  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
+  createLabel( prod );
+  readInputLine( prodLab + ": CUSTOM ARG=" + cmapLab + "," + dpmatLab + " FUNC=x*y PERIODIC=NO");
   // Now the sum of coordination numbers times the switching functions
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( cmapLab);
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
-  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() +"_prod," + getShortcutLabel() +"_ones");
+  createLabel( ones );
+  readInputLine( onesLab + ": ONES SIZE=" + size );
+  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT "
+                 "ARG=" + prodLab +"," + getShortcutLabel() +"_ones" + doUSEGPU);
   // And just the sum of the coordination numbers
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() +"_ones");
+  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
+                 "ARG=" + cmapLab + "," + getShortcutLabel() +"_ones" + doUSEGPU);
   // And matheval to get the final quantity
-  readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  createLabel( av );
+  readInputLine( avLab + ": CUSTOM ARG=" + getShortcutLabel() + ","
+                 + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // And this expands everything
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_av", "", this );
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), avLab, "", this );
+#undef createLabel
 }
 
 }
