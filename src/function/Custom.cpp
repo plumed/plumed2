@@ -162,6 +162,24 @@ c: CUSTOM ARG=d FUNC=pi*x*x PERIODIC=NO
 PRINT ARG=c FILE=colvar
 ```
 
+## The PERIODIC keyword
+
+If the function you have evaluated has a periodic codomain then you have to use the PERIODIC keyword to specify the codomain of the function.
+To see how to use this keyword consider the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2 COMPONENTS
+theta: CUSTOM ARG=d.x,d.y FUNC=atan2(y,x) PERIODIC=-pi,+pi
+PRINT ARG=theta FILE=colvar
+```
+
+The above input calculates the torsional angle between the vector connecting atoms 1 and 2 and positive $x$ direction around the $z$ axis.
+This quantity must lie between $-\pi$ and $\pi$ so we use the PERIODIC keyword to tell PLUMED this fact about the output quantity.  
+
+Notice that PLUMED cannot automatically detect if the codomain of the function is periodic.  You thus always have to specifiy the 
+periodicity of the codomain whenever you use the CUSTOM command.  However, the codomain of most functions that people use are not periodic 
+so you can normally just write `PERIODIC=NO` 
+
 ## The step function
 
 The `step` operation (that is the Heaviside function) from the table above allow you to use if clauses in CUSTOM actions.
