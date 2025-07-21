@@ -174,11 +174,11 @@ PRINT ARG=theta FILE=colvar
 ```
 
 The above input calculates the torsional angle between the vector connecting atoms 1 and 2 and positive $x$ direction around the $z$ axis.
-This quantity must lie between $-\pi$ and $\pi$ so we use the PERIODIC keyword to tell PLUMED this fact about the output quantity.  
+This quantity must lie between $-\pi$ and $\pi$ so we use the PERIODIC keyword to tell PLUMED this fact about the output quantity.
 
-Notice that PLUMED cannot automatically detect if the codomain of the function is periodic.  You thus always have to specifiy the 
-periodicity of the codomain whenever you use the CUSTOM command.  However, the codomain of most functions that people use are not periodic 
-so you can normally just write `PERIODIC=NO` 
+Notice that PLUMED cannot automatically detect if the codomain of the function is periodic.  You thus always have to specifiy the
+periodicity of the codomain whenever you use the CUSTOM command.  However, the codomain of most functions that people use are not periodic
+so you can normally just write `PERIODIC=NO`
 
 ## The step function
 
