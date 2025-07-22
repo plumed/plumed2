@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/ActionAtomistic.h"
 
 namespace PLMD {
 namespace generic {
@@ -71,7 +72,18 @@ Ones::Ones(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
   unsigned size;
-  parse("SIZE",size);
+  std::string size_str;
+  parse("SIZE",size_str);
+  if( size_str=="@natoms" ) {
+    std::vector<Value*> xpos, ypos, zpos, masv, chargev;
+    ActionAtomistic::getAtomValuesFromPlumedObject( plumed, xpos, ypos, zpos, masv, chargev );
+    size = 0;
+    for(unsigned i=0; i<xpos.size(); ++i ) {
+      size += xpos[i]->getNumberOfValues();
+    }
+  } else {
+    Tools::convert( size_str, size );
+  }
   if( size<1 ) {
     error("size should be greater than 0");
   }
