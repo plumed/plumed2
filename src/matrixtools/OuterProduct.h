@@ -154,11 +154,13 @@ void OuterProductBase<T>::prepare() {
 template <class T>
 int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
   if( getNumberOfMasks()>0 ) {
-      return ActionWithVector::checkTaskIsActive( itask );
+    return ActionWithVector::checkTaskIsActive( itask );
   }
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      if( fabs( getPntrToArgument(i)->get(itask))>epsilon ) return 1;
-  } 
+    if( fabs( getPntrToArgument(i)->get(itask))>epsilon ) {
+      return 1;
+    }
+  }
   return -1;
 }
 
