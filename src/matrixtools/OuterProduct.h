@@ -41,6 +41,7 @@ public:
   using input_type = OuterProductInput<T>;
   using PTM = ParallelTaskManager<OuterProductBase<T>>;
 private:
+  bool isproduct;
   PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
@@ -70,6 +71,7 @@ template <class T>
 OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao),
+  isproduct(false),
   taskmanager(this) {
   unsigned nargs=getNumberOfArguments();
   if( getNumberOfMasks()>0 ) {
@@ -114,6 +116,7 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
   std::string func;
   if( keywords.exists("FUNC") ) {
     parse("FUNC",func);
+    isproduct=(func=="x*y");
   }
   OuterProductInput<T> actiondata;
   actiondata.funcinput.setup( shape, func, this );
@@ -153,13 +156,11 @@ void OuterProductBase<T>::prepare() {
 
 template <class T>
 int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
-  if( getNumberOfMasks()>0 ) {
+  if( getNumberOfMasks()>0 || !isproduct ) {
     return ActionWithVector::checkTaskIsActive( itask );
   }
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    if( fabs( getPntrToArgument(i)->get(itask))>epsilon ) {
-      return 1;
-    }
+  if( fabs( getPntrToArgument(0)->get(itask))>epsilon ) {
+    return 1;
   }
   return -1;
 }
