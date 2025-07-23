@@ -26,6 +26,7 @@
 #include "Vector.h"
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
+#include <string_view>
 #include <vector>
 #include <string>
 #include <cctype>
@@ -192,8 +193,8 @@ public:
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
-/// Same as full.find(start)==0
-  static bool startWith(const std::string & full,const std::string &start);
+/// Same as full.find(start)==0, but faster
+  static bool startWith(std::string_view full, std::string_view start);
   /**
     Tool to create a vector of raw pointers from a vector of unique_pointers (const version).
   Returning a vector is fast in C++11. It can be used in order to feed a vector<unique_ptr<T>>

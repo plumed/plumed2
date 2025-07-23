@@ -533,15 +533,18 @@ double Tools::bessel0( const double& val ) {
   return ax*bx;
 }
 
-bool Tools::startWith(const std::string & full,const std::string &start) {
-  return (full.substr(0,start.length())==start);
+bool Tools::startWith(std::string_view full, std::string_view start) {
+  return 0==full.compare(0,start.size(),start);
 }
 
 bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key) {
-  const std::string search(key+"=");
   for(const auto & p : line) {
-    if(startWith(p,search)) {
-      return true;
+    if(startWith(p,key)
+        &&p.size()>key.size()) {
+        //this does not allocate a new string `key+"="`
+      if(p[key.size()]=='=') {
+        return true;
+      }
     }
   }
   return false;
