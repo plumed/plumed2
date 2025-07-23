@@ -138,10 +138,6 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
     }
   } else {
     for(unsigned i=0; i<nargs; ++i) {
-      if( getName().find("OUTER_PRODUCT")!=std::string::npos && i>0 ) {
-        return -1;
-      }
-
       Value* myarg = getPntrToArgument(i);
       if( !myarg->isDerivativeZeroWhenValueIsZero() ) {
         return 1;

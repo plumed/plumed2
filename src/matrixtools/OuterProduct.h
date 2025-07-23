@@ -47,6 +47,7 @@ public:
   explicit OuterProductBase(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   void prepare() override ;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index,
@@ -148,6 +149,17 @@ void OuterProductBase<T>::prepare() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->setShape( shape );
   }
+}
+
+template <class T>
+int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
+  if( getNumberOfMasks()>0 ) {
+      return ActionWithVector::checkTaskIsActive( itask );
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      if( fabs( getPntrToArgument(i)->get(itask))>epsilon ) return 1;
+  } 
+  return -1;
 }
 
 template <class T>
