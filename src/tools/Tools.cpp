@@ -198,7 +198,11 @@ bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   return true;
 }
 
-std::vector<std::string> Tools::getWords(std::string_view line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
+std::vector<std::string> Tools::getWords(std::string_view line,
+    const char* separators,
+    int * parlevel,
+    const char* parenthesis,
+    bool delete_parenthesis) {
   plumed_massert(std::strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
@@ -394,33 +398,40 @@ void Tools::trimComments(std::string & s) {
   }
 }
 
-bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2) {
-  return ((str1.size() == str2.size()) && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
-    return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
+bool Tools::caseInSensStringCompare(std::string_view str1, std::string_view str2) {
+  return ((str1.size() == str2.size())
+  && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
+    return (std::toupper(c1) == std::toupper(c2));
   }));
 }
 
-bool Tools::getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep) {
+bool Tools::getKey(std::vector<std::string>& line,
+                   const std::string & key,
+                   std::string & s,
+                   int rep) {
   s.clear();
-  for(auto p=line.begin(); p!=line.end(); ++p) {
-    if((*p).length()==0) {
+  for(auto pl=line.begin(); pl!=line.end(); ++pl) {
+    std::string_view p(*pl);
+    if(p.length()==0) {
       continue;
     }
-    std::string x=(*p).substr(0,key.length());
+    auto x=p.substr(0,key.length());
     if(caseInSensStringCompare(x,key)) {
-      if((*p).length()==key.length()) {
+      if(p.length()==key.length()) {
         return false;
       }
-      std::string tmp=(*p).substr(key.length(),(*p).length());
-      line.erase(p);
-      s=tmp;
-      const std::string multi("@replicas:");
-      if(rep>=0 && startWith(s,multi)) {
-        s=s.substr(multi.length(),s.length());
-        std::vector<std::string> words=getWords(s,"\t\n ,");
-        plumed_massert(rep<static_cast<int>(words.size()),"Number of fields in " + s + " not consistent with number of replicas");
+      auto tmp=p.substr(key.length(),p.length());
+      constexpr std::string_view multi("@replicas:");
+      if(rep>=0 && startWith(tmp,multi)) {
+        //can be made faster with getWordSimple? the only string allocation will be the one in s=words[rep]
+        auto words=getWords(tmp.substr(multi.length(),tmp.length()),"\t\n ,");
+        plumed_massert(rep<static_cast<int>(words.size()),
+                       "Number of fields in " + s + " not consistent with number of replicas");
         s=words[rep];
+      } else {
+        s=tmp;
       }
+      line.erase(pl);
       return true;
     }
   };
@@ -533,15 +544,18 @@ double Tools::bessel0( const double& val ) {
   return ax*bx;
 }
 
-bool Tools::startWith(const std::string & full,const std::string &start) {
-  return (full.substr(0,start.length())==start);
+bool Tools::startWith(std::string_view full, std::string_view start) {
+  return 0==full.compare(0,start.size(),start);
 }
 
 bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key) {
-  const std::string search(key+"=");
   for(const auto & p : line) {
-    if(startWith(p,search)) {
-      return true;
+    if(startWith(p,key)
+        &&p.size()>key.size()) {
+      //this does not allocate a new string `key+"="`
+      if(p[key.size()]=='=') {
+        return true;
+      }
     }
   }
   return false;

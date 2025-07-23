@@ -489,10 +489,7 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   }
 
   unsigned size=t.size();
-  bool skipcheck=false;
-  if(size==0) {
-    skipcheck=true;
-  }
+  bool skipcheck=size==0;
   std::string num;
   Tools::convert(no,num);
   bool present=Tools::findKeyword(line,key);
