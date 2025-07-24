@@ -106,32 +106,31 @@ The FIND_GRID_MAXIMUM action then outputs the coordinates of the grid point wher
 namespace PLMD {
 namespace gridtools {
 
-class FindGridOptimum : public ActionWithGrid {
+class FindGridOptimum : 
+public ActionWithValue,
+public ActionWithArguments {
 private:
   bool domin;
   double cgtol;
+  std::vector<double> spacing;
   std::unique_ptr<Interpolator> function;
+  double calculateValueAndDerivatives( const std::vector<double>& pp, std::vector<double>& der );
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindGridOptimum(const ActionOptions&ao);
-  void setupOnFirstStep( const bool incalc ) override {
-    plumed_error();
-  }
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
-  std::vector<std::string> getGridCoordinateNames() const override ;
-  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
-  double calculateValueAndDerivatives( const std::vector<double>& pp, std::vector<double>& der );
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MAXIMUM")
 PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MINIMUM")
 
 void FindGridOptimum::registerKeywords( Keywords& keys ) {
-  ActionWithGrid::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","ARG","grid","the label for the function on the grid that you would like to find the optimum in");
   keys.addFlag("NOINTERPOL",false,"do not interpolate the function when finding the optimum");
   keys.add("compulsory","CGTOL","1E-4","the tolerance for the conjugate gradient optimization");
@@ -142,7 +141,8 @@ void FindGridOptimum::registerKeywords( Keywords& keys ) {
 
 FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   Action(ao),
-  ActionWithGrid(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
   cgtol(0) {
   if( getName()=="FIND_GRID_MAXIMUM" ) {
     domin=false;
@@ -152,7 +152,8 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
     plumed_error();
   }
   // Create value for this function
-  std::vector<std::string> argn( getGridCoordinateNames() );
+  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  std::vector<std::string> argn( ag->getGridCoordinateNames() );
   std::vector<std::size_t> shape(0);
   for(unsigned i=0; i<argn.size(); ++i) {
     addComponent( argn[i] + "_opt", shape );
@@ -164,7 +165,7 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   parseFlag("NOINTERPOL",nointerpol);
   if( !nointerpol ) {
     parse("CGTOL",cgtol);
-    function=Tools::make_unique<Interpolator>( getPntrToArgument(0), getGridCoordinatesObject() );
+    function=Tools::make_unique<Interpolator>( getPntrToArgument(0), ag->getGridCoordinatesObject() );
   }
 }
 
@@ -172,23 +173,10 @@ unsigned FindGridOptimum::getNumberOfDerivatives() {
   return 0;
 }
 
-const GridCoordinatesObject& FindGridOptimum::getGridCoordinatesObject() const {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag );
-  return ag->getGridCoordinatesObject();
-}
-
-std::vector<std::string> FindGridOptimum::getGridCoordinateNames() const {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag );
-  return ag->getGridCoordinateNames();
-}
-
 double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>& pp, std::vector<double>& der ) {
   double val = function->splineInterpolation( pp, der );
   // We normalise the derivatives here and set them so that the linesearch is done over the cell that we know
   // in the grid that we know the minimum is inside
-  std::vector<double> spacing( getGridCoordinatesObject().getGridSpacing() );
   double norm = 0;
   for(unsigned i=0; i<der.size(); ++i) {
     norm += der[i]*der[i];
@@ -208,7 +196,9 @@ double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>&
 }
 
 void FindGridOptimum::calculate() {
-  const GridCoordinatesObject& ingrid = getGridCoordinatesObject();
+  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  spacing = ag->getGridCoordinatesObject().getGridSpacing();
+  const GridCoordinatesObject& ingrid = ag->getGridCoordinatesObject();
   Value* gval = getPntrToArgument(0);
   std::vector<double> optargs( gval->getRank() );
   std::vector<unsigned> gridind( gval->getRank() );

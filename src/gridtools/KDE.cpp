@@ -204,6 +204,7 @@ private:
   bool hasheight;
   bool ignore_out_of_bounds, fixed_width;
   double dp2cutoff;
+  bool firststep;
   std::string kerneltype;
   GridCoordinatesObject gridobject;
   std::vector<std::string> gmin, gmax;
@@ -227,11 +228,12 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   unsigned getNumberOfDerivatives() override;
-  void setupOnFirstStep( const bool incalc ) override ;
+  void setupOnFirstStep( const bool incalc );
   void getNumberOfTasks( unsigned& ntasks ) override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   int checkTaskIsActive( const unsigned& itask ) const override ;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
+  void calculate() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
@@ -275,7 +277,8 @@ KDE::KDE(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
   hasheight(false),
-  fixed_width(false) {
+  fixed_width(false),
+  firststep(true) {
   std::vector<std::size_t> shape( getNumberOfArguments() );
   center.resize( getNumberOfArguments() );
   numberOfKernels=getPntrToArgument(0)->getNumberOfValues();
@@ -681,6 +684,14 @@ int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {
     }
   }
   return 0;
+}
+
+void KDE::calculate() {
+  if( firststep ) {
+      setupOnFirstStep( true );
+      firststep=false;
+  } 
+  runAllTasks();
 }
 
 void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {

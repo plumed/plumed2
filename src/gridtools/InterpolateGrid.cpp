@@ -78,6 +78,7 @@ namespace gridtools {
 
 class InterpolateGrid : public ActionWithGrid {
 private:
+  bool firststep;
   bool midpoints;
   std::vector<std::size_t> nbin;
   std::vector<double> gspacing;
@@ -86,10 +87,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void setupOnFirstStep( const bool incalc ) override ;
+  void setupOnFirstStep( const bool incalc );
   unsigned getNumberOfDerivatives() override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
+  void calculate() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -111,7 +113,8 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithGrid(ao) {
+  ActionWithGrid(ao),
+  firststep(true) {
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument to this action");
   }
@@ -213,6 +216,14 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
   ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
+}
+
+void InterpolateGrid::calculate() {
+  if( firststep ) {
+      setupOnFirstStep( true );
+      firststep=false;
+  } 
+  runAllTasks();
 }
 
 void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {

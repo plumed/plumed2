@@ -36,6 +36,7 @@ void ContourFindingBase::registerKeywords( Keywords& keys ) {
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
+  firststep(true),
   mymin(this) {
   parse("CONTOUR",contour);
   function::FunctionOptions options;
@@ -43,8 +44,12 @@ ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 
-void ContourFindingBase::setupOnFirstStep( const bool incalc ) {
-  setupValuesOnFirstStep();
+void ContourFindingBase::calculate() {
+  if( firststep ) {
+      setupValuesOnFirstStep();
+      firststep=false;
+  }
+  runAllTasks();
 }
 
 }

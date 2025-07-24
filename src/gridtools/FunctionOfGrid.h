@@ -33,6 +33,8 @@ namespace gridtools {
 template <class T>
 class FunctionOfGrid : public ActionWithGrid {
 private:
+//// Ensures we setup on first step
+  bool firststep;
 /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart;
 /// The function that is being computed
@@ -41,7 +43,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfGrid(const ActionOptions&);
 /// This does setup required on first step
-  void setupOnFirstStep( const bool incalc ) override ;
+  void setupOnFirstStep( const bool incalc );
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Get the label to write in the graph
@@ -55,6 +57,8 @@ public:
 ///
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
+/// Do the calculation
+  void calculate() override ;
 /// Add the forces
   void apply() override;
 };
@@ -81,6 +85,7 @@ template <class T>
 FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
+  firststep(true),
   argstart(0) {
   if( getNumberOfArguments()==0 ) {
     error("found no arguments");
@@ -164,6 +169,15 @@ template <class T>
 unsigned FunctionOfGrid<T>::getNumberOfDerivatives() {
   unsigned nder = getGridCoordinatesObject().getDimension();
   return getGridCoordinatesObject().getDimension() + getNumberOfArguments() - argstart;
+}
+
+template <class T>
+void FunctionOfGrid<T>::calculate() {
+  if( firststep ) {
+      setupOnFirstStep( true );
+      firststep=false;
+  } 
+  runAllTasks();
 }
 
 template <class T>

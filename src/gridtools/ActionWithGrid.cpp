@@ -41,17 +41,7 @@ void ActionWithGrid::registerKeywords( Keywords& keys ) {
 
 ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithVector(ao),
-  firststep(true) {
-}
-
-void ActionWithGrid::calculate() {
-  if( firststep ) {
-    setupOnFirstStep( true );
-    firststep=false;
-  }
-
-  runAllTasks();
+  ActionWithVector(ao) {
 }
 
 }
