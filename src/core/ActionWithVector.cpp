@@ -467,8 +467,8 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
   }
 }
 
-void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const {
-  nforces=0;
+unsigned ActionWithVector::getNumberOfForceDerivatives() const {
+  unsigned nforces=0;
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
@@ -480,7 +480,7 @@ void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned&
   for(unsigned i=0; i<nargs; ++i) {
     nforces += getPntrToArgument(i)->getNumberOfStoredValues();
   }
-  nderiv = nforces;
+  return nforces;
 }
 
 bool ActionWithVector::checkForForces() {
@@ -606,8 +606,7 @@ void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& my
 }
 
 void ActionWithVector::apply() {
-  unsigned nf, nder;
-  getNumberOfForceDerivatives( nf, nder );
+  unsigned nf =  getNumberOfForceDerivatives();
   if( forcesForApply.size()!=nf ) {
     forcesForApply.resize( nf, 0 );
   }

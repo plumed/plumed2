@@ -124,7 +124,7 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   // Create the values for this grid
   function::FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, true, this  );
   // Setup the task manager
-  taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, 0 );
+  taskmanager.setupParallelTaskManager( 0, 0 );
   // And setup on first step
   setupOnFirstStep( false );
 }

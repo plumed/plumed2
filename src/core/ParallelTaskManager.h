@@ -112,6 +112,8 @@ struct ParallelActionsInput {
   std::size_t ncomponents{0};
   /// The number of scalars we are calculating for each task
   unsigned nscalars{0};
+  /// The number of force scalars for each task
+  unsigned nforcescalars{0};
   /// Number of derivatives for each scalar being calculated
   std::size_t nderivatives_per_scalar{0};
   /// The start of the thread unsafe forces
@@ -497,23 +499,28 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   unsigned ntasks=0;
   action->getNumberOfTasks( ntasks );
   myinput.nscalars = 0;
+  myinput.nforcescalars = 0;
   for(unsigned i=0; i<myinput.ncomponents; ++i) {
     if( (action->copyOutput(i))->hasDerivatives() ) {
       myinput.nscalars += 1 + action->getNumberOfDerivatives();
+      myinput.nforcescalars += 1;
     } else if( (action->copyOutput(i))->getRank()==1 ) {
       myinput.nscalars += 1;
+      myinput.nforcescalars += 1; 
     } else if( (action->copyOutput(i))->getRank()==2 ) {
       if( ntasks==(action->copyOutput(i))->getShape()[0] ) {
         myinput.nscalars += (action->copyOutput(i))->getNumberOfColumns();
+        myinput.nforcescalars += (action->copyOutput(i))->getNumberOfColumns();
       } else {
         myinput.nscalars += 1;
+        myinput.nforcescalars += 1;
       }
     }
   }
   myinput.nderivatives_per_scalar = nder;
   nderivatives_per_task = nder*myinput.nscalars;
   value_stash.resize( getValueStashSize() );
-  myinput.threadunsafe_forces_start = action->getNumberOfDerivatives() - nforce_ts;
+  myinput.threadunsafe_forces_start = action->getNumberOfForceDerivatives() - nforce_ts;
   unsigned t=OpenMP::getNumThreads();
   if( useacc ) {
     t = 1;
@@ -927,9 +934,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                               myinput,
                               force_indices );
           // Create a force input object
-          auto finput=ForceInput::create( myinput.nscalars,
+          auto finput=ForceInput::create( myinput.nforcescalars,
                                           value_stash.data()
-                                          + myinput.nscalars*task_index
+                                          + myinput.nforcescalars*task_index
                                           + j*myinput.ncomponents,
                                           myinput.nderivatives_per_scalar,
                                           derivatives.data()

@@ -120,7 +120,7 @@ public:
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
 /// Get the number of forces to use
-  virtual void getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const ;
+  unsigned getNumberOfForceDerivatives() const ;
 /// Apply the forces on this data
   virtual void apply();
 /// Apply the forces on non-zero rank objects
