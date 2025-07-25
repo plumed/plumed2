@@ -43,6 +43,20 @@ ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao) {
 }
+  
+void ActionWithGrid::transferStashToValues( const std::vector<double>& stash ) {
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    Value* myval = copyOutput(i);
+    std::size_t ngder = myval->getNumberOfGridDerivatives();
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      myval->set( j, stash[(j*ncomponents + i)*(1+ngder)] );
+      for(unsigned k=0; k<ngder; ++k) {
+       myval->setGridDerivatives( j, k, stash[(j*ncomponents + i)*(1+ngder)+1+k] );
+      }
+    }
+  }
+} 
 
 }
 }

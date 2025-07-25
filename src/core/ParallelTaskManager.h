@@ -478,7 +478,12 @@ template <class T>
 std::size_t ParallelTaskManager<T>::getValueStashSize() const {
   std::size_t valuesize=0;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    valuesize += (action->getConstPntrToComponent(i))->getNumberOfStoredValues();
+    const Value* mycomp = action->getConstPntrToComponent(i);
+    if( mycomp->hasDerivatives() ) {
+        valuesize += mycomp->getNumberOfStoredValues()*(1+action->getNumberOfDerivatives());
+    } else {
+        valuesize += mycomp->getNumberOfStoredValues();
+    }
   }
   return valuesize;
 }
@@ -493,7 +498,9 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   action->getNumberOfTasks( ntasks );
   myinput.nscalars = 0;
   for(unsigned i=0; i<myinput.ncomponents; ++i) {
-    if( (action->copyOutput(i))->getRank()==1 ) {
+    if( (action->copyOutput(i))->hasDerivatives() ) {
+      myinput.nscalars += 1 + action->getNumberOfDerivatives();
+    } else if( (action->copyOutput(i))->getRank()==1 ) {
       myinput.nscalars += 1;
     } else if( (action->copyOutput(i))->getRank()==2 ) {
       if( ntasks==(action->copyOutput(i))->getShape()[0] ) {
@@ -610,6 +617,12 @@ void ParallelTaskManager<T>::runAllTasks() {
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+      if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
+           myinput.noderiv=false; 
+           break; 
+      }
+  }
   action->getInputData( input_buffer );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
