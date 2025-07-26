@@ -216,6 +216,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.needsAction("OUTER_PRODUCT");
   keys.setValueDescription("vector","the values of the local averages");
   keys.addDOI("10.1063/1.2977970");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):
@@ -225,19 +226,32 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
   parse("SPECIES",sp_str);
   parse("SPECIESA",specA);
   parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
+
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
+
+  CoordinationNumbers::expandMatrix( false,
+                                     getShortcutLabel(),
+                                     sp_str,
+                                     specA,
+                                     specB,
+                                     this );
   std::map<std::string,std::string> keymap;
   multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   if( sp_str.length()>0 ) {
     specA=specB=sp_str;
   }
+  const std::string matLab=getShortcutLabel() + "_mat";
+  const std::string onesLab=getShortcutLabel() + "_ones";
+  const std::string coordLab=getShortcutLabel() + "_coord";
   // Calculate the coordination numbers
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>(matLab);
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
-  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_coord: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_ones" );
+  readInputLine(onesLab + ": ONES SIZE=" + size );
+  readInputLine(coordLab + ": MATRIX_VECTOR_PRODUCT ARG=" + matLab + "," + onesLab + doUSEGPU);
 
   int l=-1;
   std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
@@ -251,41 +265,70 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
     }
   }
 
+  const std::string prodLab=getShortcutLabel() + "_prod";
   if( l>0 ) {
-    std::string vargs, svargs, sargs = "ARG=" + getShortcutLabel() + "_mat";
+    std::string vargs="";
+    std::string svargs="";
+    std::string comma="ARG=";
+    std::string sargs = "ARG=" + matLab;
+    auto stringDiv=[&](const std::string& num, char realImm) {
+      return specB + "_"+realImm+"mn-" + num + ": CUSTOM ARG="
+             + specB + "_sp."+realImm+"m-" + num + ","
+             + specB + "_denom FUNC=x/y PERIODIC=NO";
+    };
     for(int i=-l; i<=l; ++i) {
       std::string num = getMomentumSymbol(i);
       if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_rmn-" + num) ) {
-        readInputLine( specB + "_rmn-" + num + ": CUSTOM ARG=" + specB + "_sp.rm-" + num + "," + specB + "_denom FUNC=x/y PERIODIC=NO");
+        readInputLine( stringDiv(num,'r') );
       }
       if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_imn-" + num) ) {
-        readInputLine( specB  + "_imn-" + num + ": CUSTOM ARG=" + specB + "_sp.im-" + num + "," + specB  + "_denom FUNC=x/y PERIODIC=NO");
+        readInputLine( stringDiv(num,'i') );
       }
-      if( i==-l ) {
-        vargs = "ARG=" + specB + "_rmn-" + num + "," + specB + "_imn-" + num;
-        svargs = "ARG=" + getShortcutLabel() + "_prod." + specB + "_rmn-" + num + "," + getShortcutLabel() + "_prod." + specB + "_imn-" + num;
-      } else {
-        vargs += "," +  specB + "_rmn-" + num + "," + specB + "_imn-" + num;
-        svargs += "," + getShortcutLabel() + "_prod." + specB + "_rmn-" + num + "," + getShortcutLabel() + "_prod." + specB + "_imn-" + num;
-      }
+      vargs += comma +  specB + "_rmn-" + num + "," + specB + "_imn-" + num;
+      svargs += comma + prodLab + "." + specB + "_rmn-" + num
+                + "," + prodLab + "." + specB + "_imn-" + num;
+      comma=",";
       sargs += "," + specB + "_rmn-" + num + "," + specB  + "_imn-" + num;
     }
-    readInputLine( getShortcutLabel() + "_vstack: VSTACK " + vargs );
-    readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT " + sargs );
-    readInputLine( getShortcutLabel() + "_vpstack: VSTACK " + svargs );
+
+    const std::string vstackLab=getShortcutLabel() + "_vstack";
+    const std::string vpstackLab=getShortcutLabel() + "_vpstack";
+    readInputLine(vstackLab + ": VSTACK " + vargs );
+    readInputLine(prodLab + ": MATRIX_VECTOR_PRODUCT " + sargs + doUSEGPU);
+    readInputLine(vpstackLab + ": VSTACK " + svargs );
     std::string twolplusone;
     Tools::convert( 2*(2*l+1), twolplusone );
-    readInputLine( getShortcutLabel() + "_lones: ONES SIZE=" + twolplusone );
-    readInputLine( getShortcutLabel() + "_unorm: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_coord," + getShortcutLabel() + "_lones" );
-    readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "_vpstack," + getShortcutLabel() + "_vstack," + getShortcutLabel() + "_unorm FUNC=(x+y)/(1+z) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_av2: CUSTOM ARG=" + getShortcutLabel() + "_av FUNC=x*x PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_2: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_av2," + getShortcutLabel() + "_lones");
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+
+    const std::string lonesLab=getShortcutLabel() + "_lones";
+    readInputLine(lonesLab + ": ONES SIZE=" + twolplusone );
+
+    const std::string unormLab=getShortcutLabel() + "_unorm";
+    readInputLine(unormLab + ": OUTER_PRODUCT ARG=" +coordLab + "," + lonesLab );
+
+    const std::string avLab=getShortcutLabel() + "_av";
+    readInputLine(avLab + ": CUSTOM ARG=" + vpstackLab + "," + vstackLab + ","
+                  + unormLab + " FUNC=(x+y)/(1+z) PERIODIC=NO");
+
+    const std::string av2Lab=getShortcutLabel() + "_av2";
+    readInputLine(av2Lab + ": CUSTOM ARG=" +avLab + " FUNC=x*x PERIODIC=NO");
+
+    const std::string twoLab=getShortcutLabel() + "_2";
+    readInputLine( twoLab+": MATRIX_VECTOR_PRODUCT ARG=" +av2Lab + "," + lonesLab
+                   + doUSEGPU);
+    readInputLine( getShortcutLabel() + ": CUSTOM "
+                   "ARG=" + twoLab + " FUNC=sqrt(x) PERIODIC=NO");
   } else {
-    readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + specB );
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_prod," + specA + "," + getShortcutLabel() + "_coord  FUNC=(x+y)/(1+z) PERIODIC=NO");
+    readInputLine( prodLab + ": MATRIX_VECTOR_PRODUCT "
+                   "ARG=" +matLab + ","+ specB
+                   + doUSEGPU);
+    readInputLine( getShortcutLabel() + ": CUSTOM "
+                   "ARG=" + prodLab + "," + specA + "," +coordLab
+                   + " FUNC=(x+y)/(1+z) PERIODIC=NO");
   }
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
+      getShortcutLabel(),
+      "",
+      keymap, this );
 }
 
 std::string LocalAverage::getMomentumSymbol( const int& m ) const {

@@ -582,8 +582,13 @@ PRINT ARG=q6.* FILE=colvar
 
 class Steinhardt : public ActionShortcut {
 private:
-  std::string getSymbol( const int& m ) const ;
-  void createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab );
+  static std::string getSymbol( int m );
+  void createVectorNormInput( const std::string& ilab,
+                              const std::string& olab,
+                              int l,
+                              const std::string& sep,
+                              const std::string& vlab,
+                              bool usegpu = false);
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -610,24 +615,44 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("MEAN");
   keys.needsAction("SUM");
-  keys.setValueDescription("vector","the norms of the vectors of spherical harmonic coefficients");
+  keys.setValueDescription("vector",
+                           "the norms of the vectors of spherical harmonic coefficients");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  bool lowmem;
-  parseFlag("LOWMEM",lowmem);
-  if( lowmem ) {
-    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  {
+    bool lowmem;
+    parseFlag("LOWMEM",lowmem);
+    if( lowmem ) {
+      warning("LOWMEM flag is deprecated and is no longer required for this action");
+    }
   }
-  std::string sp_str, specA, specB;
+
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
+
+  std::string sp_str;
   parse("SPECIES",sp_str);
+  std::string specA;
   parse("SPECIESA",specA);
+  std::string specB;
   parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this );
+  CoordinationNumbers::expandMatrix( true,
+                                     getShortcutLabel(),
+                                     sp_str,
+                                     specA,
+                                     specB,
+                                     this );
   int l;
-  std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w";
+  std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
+                          + getShortcutLabel() + "_mat.x,"
+                          + getShortcutLabel() + "_mat.y,"
+                          + getShortcutLabel() + "_mat.z,"
+                          + getShortcutLabel() + "_mat.w";
 
   if( getName()=="Q1" ) {
     sph_input +=" L=1";
@@ -644,16 +669,23 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   } else {
     plumed_merror("invalid input");
   }
-  readInputLine( sph_input );
+  readInputLine( sph_input + doUSEGPU);
 
   // Input for denominator (coord)
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
+  ActionWithValue* av = plumed.getActionSet()
+                        .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_denom_ones" );
-  readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_sh.*," + getShortcutLabel() + "_denom_ones");
+  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
+                 "ARG=" + getShortcutLabel() + "_mat.w,"
+                 + getShortcutLabel() + "_denom_ones"
+                 + doUSEGPU);
+  readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
+                 "ARG=" + getShortcutLabel() + "_sh.*,"
+                 + getShortcutLabel() + "_denom_ones"
+                 + doUSEGPU);
 
   // If we are doing VMEAN determine sum of vector components
   std::string snum;
@@ -662,63 +694,111 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   bool do_vsum;
   parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
+    auto makeString=[&](const std::string& snum,
+    const char realImg)->std::string{
+      //realImg is "r" or "i"
+      return getShortcutLabel() + "_" +realImg + "mn-" + snum + ": CUSTOM "
+      "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + snum + ","
+      + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO";
+    };
     // Divide all components by coordination numbers
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_sp.rm-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine(makeString(snum,'r'));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_sp.im-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine(makeString(snum,'i'));
     }
   }
 
   if( do_vmean ) {
+    auto makeString=[&](const std::string& snum,
+    const char realImg)->std::string{
+      //realImg is "r" or "i"
+      return getShortcutLabel() + "_" +realImg + "ms-" + snum + ": MEAN "
+      "ARG=" + getShortcutLabel() + "_" +realImg + "mn-" + snum
+      + " PERIODIC=NO";
+    };
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rms-" + snum + ": MEAN ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,'r'));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_ims-" + snum + ": MEAN ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,'i'));
     }
     // Now calculate the total length of the vector
-    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", l, "_", "ms" );
+    createVectorNormInput( getShortcutLabel(),
+                           getShortcutLabel() + "_vmean",
+                           l,
+                           "_",
+                           "ms",
+                           usegpu );
   }
   if( do_vsum ) {
+    auto makeString=[&](const std::string& snum,
+    const std::string& realImg)->std::string{
+      return getShortcutLabel() + "_" +realImg + "mz-" + snum + ": SUM "
+      "ARG=" + getShortcutLabel() + "_" + realImg + "mn-" + snum
+      + " PERIODIC=NO";
+    };
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"r"));
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO");
+      readInputLine(makeString(snum,"i"));
     }
     // Now calculate the total length of the vector
-    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", l, "_", "mz" );
+    createVectorNormInput( getShortcutLabel(),
+                           getShortcutLabel() + "_vsum",
+                           l,
+                           "_",
+                           "mz",
+                           usegpu );
   }
 
   // Now calculate the total length of the vector
-  createVectorNormInput( getShortcutLabel() + "_sp", getShortcutLabel() + "_norm", l, ".", "m" );
+  createVectorNormInput( getShortcutLabel() + "_sp",
+                         getShortcutLabel() + "_norm",
+                         l,
+                         ".",
+                         "m",
+                         usegpu );
   // And take average
-  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_norm," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
+  readInputLine( getShortcutLabel() + ": CUSTOM "
+                 "ARG=" + getShortcutLabel() + "_norm,"
+                 + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
+      getShortcutLabel(), "", this );
 }
 
-void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab ) {
-  std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2,2";
+void Steinhardt::createVectorNormInput( const std::string& ilab,
+                                        const std::string& olab,
+                                        const int l,
+                                        const std::string& sep,
+                                        const std::string& vlab,
+                                        const bool usegpu) {
+  std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
-  arg_inp = " ARG=" + ilab + sep + "r" + vlab + "-" + snum +"," + ilab + sep + "i" + vlab + "-" + snum;
-  for(int i=-l+1; i<=l; ++i) {
+  std::string arg_inp = "";
+
+  std::string arg_inp_real = ilab + sep + "r" + vlab + "-";
+  std::string arg_inp_img = ilab + sep + "i" + vlab + "-";
+  std::string comma="";
+  for(int i=-l; i<=l; ++i) {
     snum = getSymbol( i );
-    arg_inp += "," + ilab + sep + "r" + vlab + "-" + snum + "," + ilab + sep + "i" + vlab + "-" + snum;
-    norm_input += ",2,2";
+    arg_inp += comma + arg_inp_real + snum + "," + arg_inp_img + snum;
+    norm_input += comma + "2,2";
+    comma=",";
   }
-  readInputLine( norm_input + arg_inp );
+  readInputLine( norm_input + " ARG=" + arg_inp + (usegpu?" USEGPU":"") );
   readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
-std::string Steinhardt::getSymbol( const int& m ) const {
+std::string Steinhardt::getSymbol( const int m ) {
   if( m<0 ) {
     std::string num;
-    Tools::convert( -1*m, num );
+    Tools::convert( -m, num );
     return "n" + num;
   } else if( m>0 ) {
     std::string num;
@@ -728,6 +808,5 @@ std::string Steinhardt::getSymbol( const int& m ) const {
   return "0";
 }
 
-}
-}
-
+} // namespace symfunc
+} // namespace PLMD

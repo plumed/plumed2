@@ -502,6 +502,7 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
   keys.addDOI("10.1103/PhysRevB.81.125416");
   keys.addDOI("10.1103/PhysRevB.92.180102");
   keys.addDOI("10.1063/1.4997180");
@@ -511,87 +512,133 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
 CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  std::string matlab, sp_str, specA, specB;
+#define createLabel(name) const std::string name##Lab = getShortcutLabel()+"_"#name;
   bool lowmem;
   parseFlag("LOWMEM",lowmem);
   if( lowmem ) {
     warning("LOWMEM flag is deprecated and is no longer required for this action");
   }
+  bool usegpu;
+  parseFlag("USEGPU",usegpu);
+  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  std::string sp_str;
   parse("SPECIES",sp_str);
+  std::string specA;
   parse("SPECIESA",specA);
+  std::string specB;
   parse("SPECIESB",specB);
+  createLabel(mat);
   if( sp_str.length()>0 || specA.length()>0 ) {
-    matlab = getShortcutLabel() + "_mat";
     CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
   } else {
     error("found no input atoms use SPECIES/SPECIESA");
   }
-  double phi, theta, psi;
+  double phi;
   parse("PHI",phi);
+  double theta;
   parse("THETA",theta);
+  double psi;
   parse("PSI",psi);
   std::vector<std::string> rotelements(9);
-  std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z";
+  std::string xvec = matLab + ".x", yvec = matLab + ".y", zvec = matLab + ".z";
   if( phi!=0 || theta!=0 || psi!=0 ) {
-    Tools::convert( std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi), rotelements[0] );
-    Tools::convert( std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi), rotelements[1] );
+    Tools::convert( std::cos(psi)*std::cos(phi)
+                    - std::cos(theta)*std::sin(phi)*std::sin(psi),
+                    rotelements[0] );
+    Tools::convert( std::cos(psi)*std::sin(phi)
+                    + std::cos(theta)*std::cos(phi)*std::sin(psi),
+                    rotelements[1] );
     Tools::convert( std::sin(psi)*std::sin(theta), rotelements[2] );
 
-    Tools::convert( -std::sin(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::cos(psi), rotelements[3] );
-    Tools::convert( -std::sin(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::cos(psi), rotelements[4] );
+    Tools::convert( -std::sin(psi)*std::cos(phi)
+                    - std::cos(theta)*std::sin(phi)*std::cos(psi),
+                    rotelements[3] );
+    Tools::convert( -std::sin(psi)*std::sin(phi)
+                    + std::cos(theta)*std::cos(phi)*std::cos(psi),
+                    rotelements[4] );
     Tools::convert( std::cos(psi)*std::sin(theta), rotelements[5] );
 
     Tools::convert( std::sin(theta)*std::sin(phi), rotelements[6] );
     Tools::convert( -std::sin(theta)*std::cos(phi), rotelements[7] );
     Tools::convert( std::cos(theta), rotelements[8] );
-    readInputLine( getShortcutLabel() + "_xrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[0] + "*x+" + rotelements[1] + "*y+" + rotelements[2] + "*z PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_yrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[3] + "*x+" + rotelements[4] + "*y+" + rotelements[5] + "*z PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_zrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[6] + "*x+" + rotelements[7] + "*y+" + rotelements[8] + "*z PERIODIC=NO");
+    createLabel(xrot);
+    createLabel(yrot);
+    createLabel(zrot);
+    readInputLine( xrotLab + ": CUSTOM ARG=" + matLab + ".x," + matLab + ".y," + matLab + ".z "
+                   "FUNC=" + rotelements[0] + "*x+" + rotelements[1] + "*y+" + rotelements[2] + "*z "
+                   "PERIODIC=NO");
+    readInputLine( yrotLab + ": CUSTOM ARG=" + matLab + ".x," + matLab + ".y," + matLab + ".z "
+                   "FUNC=" + rotelements[3] + "*x+" + rotelements[4] + "*y+" + rotelements[5] + "*z "
+                   "PERIODIC=NO");
+    readInputLine( zrotLab + ": CUSTOM ARG=" + matLab + ".x," + matLab + ".y," + matLab + ".z "
+                   "FUNC=" + rotelements[6] + "*x+" + rotelements[7] + "*y+" + rotelements[8] + "*z "
+                   "PERIODIC=NO");
   }
   // Calculate FCC cubic function from bond vectors
+  createLabel(vfunc)
+  createLabel(r);
   if( getName()=="FCCUBIC" ) {
     std::string alpha;
     parse("ALPHA",alpha);
-    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha);
+    readInputLine( vfuncLab + ": FCCUBIC_FUNC "
+                   "ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha);
   } else if( getName()=="TETRAHEDRAL" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r"
-                   + " VAR=x,y,z,r PERIODIC=NO FUNC=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3" );
+    readInputLine( rLab + ": CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " "
+                   "PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( vfuncLab + ": CUSTOM "
+                   "ARG=" + xvec + "," + yvec + "," + zvec + "," + rLab
+                   + " VAR=x,y,z,r PERIODIC=NO "
+                   "FUNC=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3" );
   } else if( getName()=="SIMPLECUBIC" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r"
+    readInputLine( rLab + ": CUSTOM ARG=" + xvec + "," + yvec + "," + zvec
+                   + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( vfuncLab + ": CUSTOM "
+                   "ARG=" + xvec + "," + yvec + "," + zvec + "," + rLab
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=(x^4+y^4+z^4)/(r^4)" );
   } else {
     std::string myfunc;
     parse("FUNCTION",myfunc);
     if( myfunc.find("r")!=std::string::npos ) {
-      readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
+      readInputLine( rLab + ": CUSTOM ARG=" + xvec + "," + yvec + "," + zvec
+                     + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+      readInputLine( vfuncLab + ": CUSTOM "
+                     "ARG=" + xvec + "," + yvec + "," + zvec + "," + rLab
+                     + " VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
     } else {
-      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=" + myfunc );
+      readInputLine( vfuncLab + ": CUSTOM ARG=" + xvec + "," + yvec + "," + zvec
+                     + " PERIODIC=NO FUNC=" + myfunc );
     }
   }
   // Hadamard product of function above and weights
-  readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG=" + getShortcutLabel() + "_vfunc," + matlab + ".w FUNC=x*y PERIODIC=NO");
+  createLabel(wvfunc);
+  readInputLine( wvfuncLab + ": CUSTOM ARG=" + vfuncLab + "," + matLab + ".w "
+                 "FUNC=x*y PERIODIC=NO");
   // And coordination numbers
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matLab );
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
-  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_wvfunc," + getShortcutLabel() + "_ones");
+  createLabel(ones);
+  readInputLine( onesLab + ": ONES SIZE=" + size );
+  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT "
+                 "ARG=" + wvfuncLab + "," + onesLab + doUSEGPU);
   std::string olab=getShortcutLabel();
   if( getName()!="COORDINATION_SHELL_FUNCTION" ) {
     olab = getShortcutLabel() + "_n";
     // Calculate coordination numbers for denominator
-    readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + matlab + ".w," + getShortcutLabel() + "_ones");
+    createLabel(denom);
+    readInputLine( denomLab + ": MATRIX_VECTOR_PRODUCT "
+                   "ARG=" + matLab + ".w," + onesLab + doUSEGPU);
     // And normalise
-    readInputLine( getShortcutLabel() + "_n: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    readInputLine( olab + ": CUSTOM "
+                   "ARG=" + getShortcutLabel() + "," + denomLab + " FUNC=x/y PERIODIC=NO");
   }
   // And expand the functions
   std::map<std::string,std::string> keymap;
   multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), olab, "", keymap, this );
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
+      olab, "", keymap, this );
+#undef createLabel
 }
 
 }
