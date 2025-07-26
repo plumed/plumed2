@@ -129,7 +129,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   dirv(3,0.0),
   dirv2(3,0.0),
   perp_dirs(2),
-  atom_deriv(active_list.size()) {
+  atom_deriv(getNumberOfAtoms()-1) {
   // Get the direction
   std::string ldir;
   parse("DIR",ldir );

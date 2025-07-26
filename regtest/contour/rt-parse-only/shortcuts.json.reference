@@ -1,6 +1,6 @@
 {
    "cont" : {
-      "defaults" : " INTERPOLATION_TYPE=spline BUFFER=0"
+      "defaults" : " BUFFER=0 INTERPOLATION_TYPE=spline"
    },
    "dens_denom" : {
       "defaults" : " KERNEL=GAUSSIAN GRID_MIN=auto,auto,auto GRID_MAX=auto,auto,auto CUTOFF=6.25"

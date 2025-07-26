@@ -20,8 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ContourFindingBase.h"
-#include "core/PlumedMain.h"
+#include "ContourFindingObject.h"
+#include "gridtools/ActionWithGrid.h"
+#include "gridtools/EvaluateGridFunction.h"
+#include "core/ParallelTaskManager.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_CONTOUR_SURFACE
 /*
@@ -109,115 +111,155 @@ DUMPGRID ARG=ss2 FILE=contour2.dat STRIDE=1
 namespace PLMD {
 namespace contour {
 
-class FindContourSurface : public ContourFindingBase {
-private:
+class FindContourSurfaceObject {
+public:
   unsigned dir_n;
-  std::vector<unsigned> ones;
   std::vector<unsigned> gdirs;
   std::vector<double> direction;
+  ContourFindingObject<gridtools::EvaluateGridFunction> cf;
+  static void registerKeywords( Keywords& keys ) {
+    ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys );
+    keys.add("compulsory","SEARCHDIR","In which directions do you wish to search for the contour.");   
+  }
+  static void read( FindContourSurfaceObject& func, ActionWithArguments* action, function::FunctionOptions& options ) {
+    ContourFindingObject<gridtools::EvaluateGridFunction>::read( func.cf, action, options );
+    std::string dir;
+    action->parse("SEARCHDIR",dir);
+    action->log.printf("  calculating location of contour on %d dimensional grid \n", (action->getPntrToArgument(0))->getRank()-1 );
+    Value* gval=func.cf.function.function;
+    gridtools::ActionWithGrid* ag = gridtools::ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
+    if( !ag ) {
+      action->error("input argument must be a grid");
+    } 
+    std::vector<std::string> argn( ag->getGridCoordinateNames() ); 
+    func.gdirs.resize( gval->getRank()-1 );
+    unsigned n=0;
+    for(unsigned i=0; i<gval->getRank(); ++i) {
+      if( argn[i]==dir ) {
+        func.dir_n=i;
+      } else {
+        if( n==func.gdirs.size() ) {
+          action->error("could not find " + dir + " direction in input grid");
+        }
+        func.gdirs[n]=i;
+        n++;
+      }
+    }
+    if( n!=(gval->getRank()-1) ) {
+      action->error("output of grid is not understood");
+    }
+  }
+};
+
+class FindContourSurface : public gridtools::ActionWithGrid {
+public:
+  using input_type = FindContourSurfaceObject;
+  using PTM = ParallelTaskManager<FindContourSurface>;
+private:
+  bool firststep;
+/// The parallel task manager
+  PTM taskmanager;
   std::vector<std::string> gnames;
   gridtools::GridCoordinatesObject gridcoords;
+/// Get the input grid object for the grid that we are finding the contour in
+  const gridtools::GridCoordinatesObject& getInputGridObject() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
-  void setupValuesOnFirstStep() override;
   unsigned getNumberOfDerivatives() override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
+  void calculate() override ;
+  void getInputData( std::vector<double>& inputdata ) const ;
+  static void performTask( std::size_t task_index,
+                           const FindContourSurfaceObject& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
 };
 
 PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")
 
 void FindContourSurface::registerKeywords( Keywords& keys ) {
-  ContourFindingBase::registerKeywords( keys );
-  keys.add("compulsory","SEARCHDIR","In which directions do you wish to search for the contour.");
+  ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
+  FindContourSurfaceObject::registerKeywords( keys );
   keys.setValueDescription("grid","a grid containing the location of the points in the Willard-Chandler surface along the chosen direction");
   keys.addDOI("10.1088/1361-648X/aa893d");
+  PTM::registerKeywords( keys );
 }
 
 FindContourSurface::FindContourSurface(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao),
-  ones(getPntrToArgument(0)->getRank(),1) {
+  ActionWithGrid(ao),
+  firststep(true),
+  taskmanager(this) {
   if( getPntrToArgument(0)->getRank()<2 ) {
     error("cannot find dividing surface if input grid is one dimensional");
   }
 
-  std::string dir;
-  parse("SEARCHDIR",dir);
-  log.printf("  calculating location of contour on %d dimensional grid \n", getPntrToArgument(0)->getRank()-1 );
-  checkRead();
-
   Value* gval=getPntrToArgument(0);
-  unsigned n=0;
-  gdirs.resize( gval->getRank()-1 );
   gnames.resize( getPntrToArgument(0)->getRank()-1 );
 
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( gval->getPntrToAction() );
+  gridtools::ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
   if( !ag ) {
     error("input argument must be a grid");
   }
-  if( getInputGridObject().getGridType()=="fibonacci") {
+  const gridtools::GridCoordinatesObject& mygridobj = ag->getGridCoordinatesObject();
+  if( mygridobj.getGridType()=="fibonacci") {
     error("cannot search for contours in fibonacci grids");
   }
-  std::vector<std::string> argn( ag->getGridCoordinateNames() );
-
-  for(unsigned i=0; i<gval->getRank(); ++i) {
-    if( argn[i]==dir ) {
-      dir_n=i;
-    } else {
-      if( n==gdirs.size() ) {
-        error("could not find " + dir + " direction in input grid");
-      }
-      gdirs[n]=i;
-      gnames[n]=argn[i];
-      n++;
-    }
-  }
-  if( n!=(gval->getRank()-1) ) {
-    error("output of grid is not understood");
-  }
-
-  std::vector<bool> ipbc( getInputGridObject().getDimension()-1 );
-  for(unsigned i=0; i<gdirs.size(); ++i) {
-    ipbc[i] = getInputGridObject().isPeriodic(gdirs[i]);
-  }
-  gridcoords.setup( "flat", ipbc, 0, 0.0 );
-
   // Now add a value
-  std::vector<std::size_t> shape( getInputGridObject().getDimension()-1 );
+  std::vector<std::size_t> shape( mygridobj.getDimension()-1 );
   addValueWithDerivatives( shape );
   setNotPeriodic();
+  // Read in the action input
+  function::FunctionOptions options;
+  FindContourSurfaceObject::read( taskmanager.getActionInput(), this, options );
+  // Prepare the grid stuff for this action
+  std::vector<bool> ipbc( mygridobj.getDimension()-1 );
+  for(unsigned i=0; i<gnames.size(); ++i) {
+      ipbc[i] = mygridobj.isPeriodic(taskmanager.getActionInput().gdirs[i]);
+      gnames[i] = ag->getGridCoordinateNames()[taskmanager.getActionInput().gdirs[i]];
+  }
+  gridcoords.setup( "flat", ipbc, 0, 0.0 ); 
+  log.printf("  calculating dividing surface along which function equals %f \n", taskmanager.getActionInput().cf.contour);
+  taskmanager.setupParallelTaskManager( 0, 0 );
 }
 
-void FindContourSurface::setupValuesOnFirstStep() {
-  std::vector<double> fspacing;
-  std::vector<std::size_t> snbins( gridcoords.getDimension() );
-  std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );
-  for(unsigned i=0; i<gdirs.size(); ++i) {
-    smin[i]=getInputGridObject().getMin()[gdirs[i]];
-    smax[i]=getInputGridObject().getMax()[gdirs[i]];
-    snbins[i]=getInputGridObject().getNbin(false)[gdirs[i]];
-  }
-  gridcoords.setBounds( smin, smax, snbins, fspacing );
-  getPntrToComponent(0)->setShape( gridcoords.getNbin(true) );
+const gridtools::GridCoordinatesObject& FindContourSurface::getInputGridObject() const {
+  return taskmanager.getActionInput().cf.function.getGridObject();
+}
 
-  std::vector<unsigned> find( gridcoords.getDimension() );
-  std::vector<unsigned> ind( gridcoords.getDimension() );
-  for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) {
-    find.assign( find.size(), 0 );
-    gridcoords.getIndices( i, ind );
-    for(unsigned j=0; j<gdirs.size(); ++j) {
-      find[gdirs[j]]=ind[j];
-    }
-  }
+void FindContourSurface::calculate() {
+  if( firststep ) {
+      std::vector<double> fspacing;
+      std::vector<std::size_t> snbins( gridcoords.getDimension() );
+      std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );
+      for(unsigned i=0; i<taskmanager.getActionInput().gdirs.size(); ++i) {
+        smin[i]=getInputGridObject().getMin()[taskmanager.getActionInput().gdirs[i]];
+        smax[i]=getInputGridObject().getMax()[taskmanager.getActionInput().gdirs[i]];
+        snbins[i]=getInputGridObject().getNbin(false)[taskmanager.getActionInput().gdirs[i]];
+      }
+      gridcoords.setBounds( smin, smax, snbins, fspacing );
+      getPntrToComponent(0)->setShape( gridcoords.getNbin(true) );
 
-  // Set the direction in which to look for the contour
-  direction.resize( getInputGridObject().getDimension(), 0 );
-  direction[dir_n] = 0.999999999*getInputGridObject().getGridSpacing()[dir_n];
+      std::vector<unsigned> find( gridcoords.getDimension() );
+      std::vector<unsigned> ind( gridcoords.getDimension() );
+      for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) {
+        find.assign( find.size(), 0 );
+        gridcoords.getIndices( i, ind );
+        for(unsigned j=0; j<taskmanager.getActionInput().gdirs.size(); ++j) {
+          find[taskmanager.getActionInput().gdirs[j]]=ind[j];
+        }
+      }
+
+      // Set the direction in which to look for the contour
+      taskmanager.getActionInput().direction.resize( getInputGridObject().getDimension(), 0 );
+      taskmanager.getActionInput().direction[taskmanager.getActionInput().dir_n] = 0.999999999*getInputGridObject().getGridSpacing()[taskmanager.getActionInput().dir_n];
+      firststep=false;
+  }
+  taskmanager.runAllTasks();
 }
 
 unsigned FindContourSurface::getNumberOfDerivatives() {
@@ -232,72 +274,77 @@ const gridtools::GridCoordinatesObject& FindContourSurface::getGridCoordinatesOb
   return gridcoords;
 }
 
-void FindContourSurface::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<unsigned> neighbours;
-  unsigned num_neighbours;
-  unsigned nfound=0;
-  double minv=0, minp;
-  std::vector<std::size_t> bins_n( getInputGridObject().getNbin(false) );
-  unsigned shiftn=current;
-  std::vector<unsigned> ind( getInputGridObject().getDimension() );
-  std::vector<double> point( getInputGridObject().getDimension() );
+void FindContourSurface::getInputData( std::vector<double>& inputdata ) const {
 #ifndef DNDEBUG
-  std::vector<unsigned> oind( gridcoords.getDimension() );
-  gridcoords.getIndices( current, oind );
+  std::size_t rank = gridcoords.getDimension();
+  std::size_t ndata = gridcoords.getNumberOfPoints();
+  if( inputdata.size()!=ndata*rank ) {
+      inputdata.resize( ndata*rank );
+  }
+  std::vector<double> point( rank );
+  for(unsigned i=0; i<ndata; ++i) {
+      gridcoords.getGridPointCoordinates( i, point );
+      for(unsigned j=0; j<rank; ++j) {
+          inputdata[i*rank + j] = point[j];
+      }
+  }
 #endif
-  for(unsigned i=0; i<bins_n[dir_n]; ++i) {
+}
+
+void FindContourSurface::performTask( std::size_t task_index,
+                                      const FindContourSurfaceObject& actiondata,
+                                      ParallelActionsInput& input,
+                                      ParallelActionsOutput& output ) {
+  unsigned nfound=0;
+  const gridtools::GridCoordinatesObject& gridobj = actiondata.cf.function.getGridObject();
+  std::size_t nbins = gridobj.getNbin(false)[actiondata.dir_n];
+  std::size_t shiftn=task_index;
+  std::vector<unsigned> ind( gridobj.getDimension() );
+  std::vector<double> point( gridobj.getDimension() );
 #ifndef DNDEBUG
-    std::vector<unsigned> base_ind( getInputGridObject().getDimension() );
-    getInputGridObject().getIndices( shiftn, base_ind );
-    for(unsigned j=0; j<gdirs.size(); ++j) {
-      plumed_dbg_assert( base_ind[gdirs[j]]==oind[j] );
+  std::size_t rank = gridobj.getDimension()-1;
+  View<const double> oind( input.inputdata+task_index*rank, rank );
+#endif
+  for(unsigned i=0; i<nbins; ++i) {
+#ifndef DNDEBUG
+    std::vector<double> base_ind( gridobj.getDimension() );
+    gridobj.getGridPointCoordinates( shiftn, base_ind );
+    for(unsigned j=0; j<actiondata.gdirs.size(); ++j) {
+      plumed_dbg_assert( base_ind[actiondata.gdirs[j]]==oind[j] );
     }
 #endif
     // Get the index of the current grid point
-    getInputGridObject().getIndices( shiftn, ind );
+    gridobj.getIndices( shiftn, ind );
     // Exit if we are at the edge of the grid
-    if( !getInputGridObject().isPeriodic(dir_n) && (ind[dir_n]+1)==bins_n[dir_n] ) {
-      shiftn += getInputGridObject().getStride()[dir_n];
+    if( !gridobj.isPeriodic(actiondata.dir_n) && (ind[actiondata.dir_n]+1)==nbins ) {
+      shiftn += gridobj.getStride()[actiondata.dir_n];
       continue;
     }
 
-    // Ensure points with inactive neighbours are ignored
-    getInputGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
-
     // Now get the function value at two points
-    double val1=getPntrToArgument(0)->get( shiftn ) - contour;
+    double val1=actiondata.cf.function.function->get( shiftn ) - actiondata.cf.contour;
     double val2;
-    if( (ind[dir_n]+1)==bins_n[dir_n] ) {
-      val2 = getPntrToArgument(0)->get( current ) - contour;
+    if( (ind[actiondata.dir_n]+1)==nbins ) {
+      val2 = actiondata.cf.function.function->get( task_index ) - actiondata.cf.contour;
     } else {
-      val2=getPntrToArgument(0)->get( shiftn + getInputGridObject().getStride()[dir_n] ) - contour;
+      val2 = actiondata.cf.function.function->get( shiftn + gridobj.getStride()[actiondata.dir_n] ) - actiondata.cf.contour;
     }
 
     // Check if the minimum is bracketed
     if( val1*val2<0 ) {
-      getInputGridObject().getGridPointCoordinates( shiftn, point );
-      findContour( direction, point );
-      minp=point[dir_n];
+      gridobj.getGridPointCoordinates( shiftn, point );
+      ContourFindingObject<gridtools::EvaluateGridFunction>::findContour( actiondata.cf, actiondata.direction, point );
+      output.values[0] = point[actiondata.dir_n];
       nfound++;
       break;
     }
 
     // This moves us on to the next point
-    shiftn += getInputGridObject().getStride()[dir_n];
+    shiftn += gridobj.getStride()[actiondata.dir_n];
   }
   if( nfound==0 ) {
-    std::string num;
-    Tools::convert( getStep(), num );
-    error("On step " + num + " failed to find required grid point");
+    plumed_merror("failed to find required grid point");
   }
-  myvals.setValue( 0, minp );
-}
-
-void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_dbg_assert( valindex==0 );
-  unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  buffer[istart] += myvals.get( 0 );
 }
 
 }

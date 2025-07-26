@@ -19,38 +19,4 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ContourFindingBase.h"
-
-namespace PLMD {
-namespace contour {
-
-void ContourFindingBase::registerKeywords( Keywords& keys ) {
-  gridtools::ActionWithGrid::registerKeywords( keys );
-  keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
-  keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
-  gridtools::EvaluateGridFunction gg;
-  gg.registerKeywords(keys);
-  keys.remove("ZERO_OUTSIDE_GRID_RANGE");
-}
-
-ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
-  Action(ao),
-  ActionWithGrid(ao),
-  firststep(true),
-  mymin(this) {
-  parse("CONTOUR",contour);
-  function::FunctionOptions options;
-  gridtools::EvaluateGridFunction::read( function, this, options );
-  log.printf("  calculating dividing surface along which function equals %f \n", contour);
-}
-
-void ContourFindingBase::calculate() {
-  if( firststep ) {
-      setupValuesOnFirstStep();
-      firststep=false;
-  }
-  runAllTasks();
-}
-
-}
-}
+#include "ContourFindingObject.h"
