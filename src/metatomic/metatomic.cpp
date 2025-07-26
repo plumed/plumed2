@@ -762,13 +762,14 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
         torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU)
     );
 
-    auto pair_samples_values = torch::zeros({n_pairs, 5}, labels_options.device(torch::kCPU));
+    auto pair_samples_values = torch::empty({n_pairs, 5}, labels_options.device(torch::kCPU));
+    auto pair_samples_values_ptr = pair_samples_values.accessor<int32_t, 2>();
     for (unsigned i=0; i<n_pairs; i++) {
-        pair_samples_values[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
-        pair_samples_values[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
-        pair_samples_values[i][2] = vesin_neighbor_list->shifts[i][0];
-        pair_samples_values[i][3] = vesin_neighbor_list->shifts[i][1];
-        pair_samples_values[i][4] = vesin_neighbor_list->shifts[i][2];
+        pair_samples_values_ptr[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
+        pair_samples_values_ptr[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
+        pair_samples_values_ptr[i][2] = vesin_neighbor_list->shifts[i][0];
+        pair_samples_values_ptr[i][3] = vesin_neighbor_list->shifts[i][1];
+        pair_samples_values_ptr[i][4] = vesin_neighbor_list->shifts[i][2];
     }
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
