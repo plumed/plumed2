@@ -494,6 +494,7 @@ bool Tools::parseVector(
   for(unsigned i=0; i<words.size(); ++i) {
     T v;
     auto s=std::string(unravelReplicas(words[i],rep));
+    // The erase/remove is there, because @ndx:{file tag} was not passing in some tests
     s.erase(std::remove_if(s.begin(),s.end(),
     [](unsigned char x) {
       switch (x) {
