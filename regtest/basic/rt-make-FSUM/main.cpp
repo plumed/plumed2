@@ -27,41 +27,25 @@ int main() {
     FSUM<int> mymap;
     //insertions
     std::string addr;
-    for (int i=0; i<100; i+=10) {
+    for (int i=0; i<90; i+=10) {
       addr=std::to_string(i);
       mymap[addr]= i;
     }
-    for (const auto &x: {
+    {
+      //This tests that conv will actually insert a  "90\0"
+      //and not a"900" with not null char at the end
+      std::string tmp = "90123456";
+      std::string_view k {tmp.c_str(),2};
+      mymap[k] = 90;
+    }
+    for (const auto & x: {
            "90", "0", "10","20","30","40","50","60","70","80"
          } ) {
       auto kk = mymap.find(x);
       plumed_assert(kk != mymap.end())
-          <<"\""<<x << "\" should have been inserted";
-      out <<std::left<< std::setw(3) <<x << mymap[x] <<"\n";
-      auto k = mymap.getKeys().find(x);
-      plumed_assert(k != mymap.getKeys().end())
-          <<"The key \"" << x << "\" can't be found in the keylist";
-      plumed_assert(&k->first[0] == &k->second[0])
-          << "the key \""<<x<<"\", in the keymap, do not point to its its value";
-      plumed_assert(&kk->first[0] == &k->second[0])
-          << "the key \""<<x<<"\" on the map must point to its value";
+          <<"\""<< x << "\" should have been inserted";
+      out <<std::left<< std::setw(3) << x << mymap[x] <<"\n";
     }
-    //erasing things:
-    for (const auto &x: {
-           "90", "0", "10","70","50","40","30","60","20","80"
-         } ) {
-      out << "Deleting \"" <<x <<"\"";
-      mymap.erase(x);
-      auto kk = mymap.find(x);
-
-      plumed_assert(kk == mymap.end())
-          <<"\""<<x << "\" should have been deleted";
-      out <<", remaining elements: "<< mymap.size() << "\n";
-      auto k = mymap.getKeys().find(x);
-      plumed_assert(k == mymap.getKeys().end())
-          <<"The key \"" << x << "\" should not be be found in the keylist anymore";
-    }
-    out << "The map is empty: " << (mymap.empty()?"true":"false") << "\n";
   } catch(PLMD::Exception &e) {
     std::cerr << "Exception:" << e.what() << "\n";
   }

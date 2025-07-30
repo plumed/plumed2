@@ -23,7 +23,6 @@
 #define __PLUMED_tools_Tools_h
 
 #include "AtomNumber.h"
-#include "Exception.h"
 #include "Vector.h"
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
@@ -46,7 +45,6 @@
 #include <map>
 #include <condition_variable>
 #include <type_traits>
-#include <set>
 
 namespace PLMD {
 
@@ -310,7 +308,7 @@ public:
   class FastStringUnorderedMap {
     using container=std::unordered_map<std::string_view,T>;
     using keytype = std::unique_ptr<const char[]>;
-    using keyholder = std::unordered_map<std::string_view,keytype>;
+    using keyholder = std::vector<keytype>;
     container map;
     keyholder keys;
     // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
@@ -331,23 +329,13 @@ public:
       }
     }
 
-    T& operator[]( const std::string_view key ) {
+    T& operator[]( const std::string_view & key ) {
       auto f=map.find(key);
       if(f!=map.end()) {
         return f->second;
       }
-      auto k = keys.insert([](std::string_view mykey)->keyholder::value_type{
-        //this contraption seems paranoid, but:
-        // if I use the input "key", that contains a pointer to something external,
-        // if anything happens to the pointed object we lose the possibility to
-        // access to actual the stored key with its actual value
-        auto x = conv(mykey);
-        return {
-          std::string_view(x.get()),
-          std::move(x)};
-      }(key));
-      plumed_dbg_assert(k.second);
-      return map[k.first->second.get()];
+      keys.push_back(conv(key));
+      return map[keys.back().get()];
     }
 
     auto begin() noexcept {
@@ -362,39 +350,11 @@ public:
     auto end() const noexcept {
       return map.end();
     }
-    auto find(const std::string_view key) {
+    auto find(const std::string_view & key) {
       return map.find(key);
     }
-    auto find(const std::string_view key) const {
+    auto find(const std::string_view & key) const {
       return map.find(key);
-    }
-    auto erase(typename container::iterator pos) {
-      if(pos != map.end()) {
-        std::string_view tmp = pos->first;
-        auto toret = map.erase(pos);
-        keys.erase(tmp);
-        return toret;
-      }
-      //I am not sure about this
-      return pos;
-    }
-    void erase(const std::string_view key) {
-      map.erase(key);
-      keys.erase(key);
-    }
-    //this is necessary for some testing
-    const auto & getKeys() const {
-      return keys;
-    }
-    typename container::size_type size() const {
-      return map.size();
-    }
-    bool empty() const {
-      return map.empty();
-    }
-    void clear() {
-      map.clear();
-      keys.clear();
     }
   };
 

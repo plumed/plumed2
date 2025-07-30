@@ -8,14 +8,3 @@
 60 60
 70 70
 80 80
-Deleting "90", remaining elements: 9
-Deleting "0", remaining elements: 8
-Deleting "10", remaining elements: 7
-Deleting "70", remaining elements: 6
-Deleting "50", remaining elements: 5
-Deleting "40", remaining elements: 4
-Deleting "30", remaining elements: 3
-Deleting "60", remaining elements: 2
-Deleting "20", remaining elements: 1
-Deleting "80", remaining elements: 0
-The map is empty: true
