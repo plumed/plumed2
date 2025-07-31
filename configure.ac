@@ -324,6 +324,7 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
+PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
@@ -341,7 +342,11 @@ if test -z "$CXXFLAGS"
 then
   CXXFLAGS=-O3
 fi
-
+if test linuxperf=true
+then
+  PLUMED_CHECK_CXXFLAG([-fno-omit-frame-pointer])
+  PLUMED_CHECK_CXXFLAG([-gdwarf])
+fi
 # this is a list of common compilers
 compilers="g++ c++ cxx icpc"
 c_compilers="gcc cc icc"
