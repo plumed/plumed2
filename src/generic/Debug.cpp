@@ -64,8 +64,10 @@ void Debug::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
-  keys.addFlag("LOGACTIVITY",false,"write in the log which actions are inactive and which are inactive");
-  keys.addFlag("LOGREQUESTEDATOMS",false,"write in the log which atoms have been requested at a given time");
+  keys.addFlag("LOGACTIVITY",false,"write in the log which actions are inactive and which are inactive,"
+               " in PLUMED<2.6 and this flag can be activated only as \"logActivity\"");
+  keys.addFlag("LOGREQUESTEDATOMS",false,"write in the log which atoms have been requested at a given time,"
+               " in PLUMED<2.6 and this flag can be activated only as \"logRequestedAtoms\"");
   keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirety of the simulation");
   keys.addFlag("DETAILED_TIMERS",false,"switch on detailed timers");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
