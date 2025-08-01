@@ -47,7 +47,6 @@ public:
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   const gridtools::GridCoordinatesObject& getInputGridObject() const ;
   unsigned getNumberOfDerivatives() override ;
-  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override ;
   void calculate() override;

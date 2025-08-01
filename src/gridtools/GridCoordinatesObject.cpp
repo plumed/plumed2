@@ -95,6 +95,7 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
     // And now construct the neighbor list
     fib_nlist.resize( npoints );
     for(unsigned i=0; i<npoints; ++i) {
+      fib_nlist[i].resize(0);
       getFibonacciCoordinates( i, icoord );
       for(unsigned j=0; j<npoints; ++j) {
         if( i==j ) {

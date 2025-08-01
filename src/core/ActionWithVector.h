@@ -91,14 +91,8 @@ public:
   bool doNotCalculateDerivatives() const override ;
 /// Get the list of tasks that are active
   virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
-/// Do we always need to do all the tasks for this action
-  virtual void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {}
 /// Find out how many tasks we need to perform in this loop
   virtual void getNumberOfTasks( unsigned& ntasks );
-/// Check the status of the ith task
-  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const {
-    return flag;
-  }
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU

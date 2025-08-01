@@ -513,8 +513,7 @@ void ActionWithVector::applyNonZeroRankForces( std::vector<double>& outforces ) 
   }
 
   // Get the number of tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-  unsigned nf_tasks = partialTaskList.size();
+  unsigned nf_tasks = getPntrToArgument(0)->getNumberOfValues();
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
@@ -551,13 +550,13 @@ void ActionWithVector::applyNonZeroRankForces( std::vector<double>& outforces ) 
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nf_tasks; i+=stride) {
-      runTask( partialTaskList[i], myvals[t] );
+      runTask( i, myvals[t] );
 
       // Now get the forces
       if( nt>1 ) {
-        gatherForces( partialTaskList[i], myvals[t], omp_forces[t] );
+        gatherForces( i, myvals[t], omp_forces[t] );
       } else {
-        gatherForces( partialTaskList[i], myvals[t], outforces );
+        gatherForces( i, myvals[t], outforces );
       }
 
       myvals[t].clearAll();

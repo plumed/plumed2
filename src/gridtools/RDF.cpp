@@ -125,7 +125,7 @@ RDF::RDF(const ActionOptions&ao):
     parse("BANDWIDTH",bandwidth);
     double rcut;
     parse("CUTOFF",rcut);
-    kernel_data="KERNEL=" + kernel + " IGNORE_IF_OUT_OF_RANGE BANDWIDTH=" + bandwidth;
+    kernel_data="KERNEL=" + kernel + " BANDWIDTH=" + bandwidth;
     double bw;
     Tools::convert( bandwidth, bw );
     double fcut;

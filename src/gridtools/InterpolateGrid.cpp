@@ -92,7 +92,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void setupOnFirstStep( const bool incalc );
   unsigned getNumberOfDerivatives() override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
@@ -180,7 +179,6 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   } else {
     setNotPeriodic();
   }
-  setupOnFirstStep( false );
   // Setup the task manager
   if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::spline ) {
       taskmanager.setupParallelTaskManager( 0, 0 );
@@ -190,53 +188,6 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
       taskmanager.setupParallelTaskManager( 1, getPntrToArgument(0)->getNumberOfStoredValues() ); 
   } else {
       error("interpolation type not defined");
-  }
-}
-
-void InterpolateGrid::setupOnFirstStep( const bool incalc ) {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag );
-  const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
-  if( midpoints ) {
-    double min, max;
-    nbin.resize( getPntrToComponent(0)->getRank() );
-    std::vector<std::string> str_min( taskmanager.getActionInput().getMin() ), str_max(taskmanager.getActionInput().getMax() );
-    for(unsigned i=0; i<nbin.size(); ++i) {
-      if( incalc ) {
-        Tools::convert( str_min[i], min );
-        Tools::convert( str_max[i], max );
-        min += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-      }
-      if( taskmanager.getActionInput().getPbc()[i] ) {
-        nbin[i] = taskmanager.getActionInput().getNbin()[i];
-        if( incalc ) {
-          max += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-        }
-      } else {
-        nbin[i] = taskmanager.getActionInput().getNbin()[i] - 1;
-        if( incalc ) {
-          max -= 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-        }
-      }
-      if( incalc ) {
-        Tools::convert( min, str_min[i] );
-        Tools::convert( max, str_max[i] );
-      }
-    }
-    output_grid.setBounds( str_min, str_max, nbin,  gspacing );
-  } else {
-    output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
-  }
-  getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
-  if( !incalc ) {
-    gspacing.resize(0);
-  }
-  if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) { 
-     taskmanager.setupParallelTaskManager( 1+getPntrToComponent(0)->getRank(), getPntrToArgument(0)->getNumberOfStoredValues() );
-  } else if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::floor || taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::ceiling ) {
-     taskmanager.setupParallelTaskManager( 1, getPntrToArgument(0)->getNumberOfStoredValues() );
-  } else if( taskmanager.getActionInput().interpolation_type!=EvaluateGridFunction::spline ) {
-     error("interpolation type not defined");
   }
 }
 
@@ -256,7 +207,39 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
 
 void InterpolateGrid::calculate() {
   if( firststep ) {
-      setupOnFirstStep( true );
+      ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+      plumed_assert( ag );         
+      const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
+      if( midpoints ) {            
+        double min, max;           
+        nbin.resize( getPntrToComponent(0)->getRank() );
+        std::vector<std::string> str_min( taskmanager.getActionInput().getMin() ), str_max(taskmanager.getActionInput().getMax() );
+        for(unsigned i=0; i<nbin.size(); ++i) {
+          Tools::convert( str_min[i], min );
+          Tools::convert( str_max[i], max );
+          min += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+          if( taskmanager.getActionInput().getPbc()[i] ) {
+            nbin[i] = taskmanager.getActionInput().getNbin()[i];
+            max += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+          } else {
+            nbin[i] = taskmanager.getActionInput().getNbin()[i] - 1;
+            max -= 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+          }
+          Tools::convert( min, str_min[i] );
+          Tools::convert( max, str_max[i] );
+        }
+        output_grid.setBounds( str_min, str_max, nbin,  gspacing );
+      } else {
+        output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
+      }
+      getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
+      if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) {
+         taskmanager.setupParallelTaskManager( 1+getPntrToComponent(0)->getRank(), getPntrToArgument(0)->getNumberOfStoredValues() );
+      } else if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::floor || taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::ceiling ) {
+         taskmanager.setupParallelTaskManager( 1, getPntrToArgument(0)->getNumberOfStoredValues() );
+      } else if( taskmanager.getActionInput().interpolation_type!=EvaluateGridFunction::spline ) {
+         error("interpolation type not defined");
+      }
       firststep=false;
   } 
   taskmanager.runAllTasks();

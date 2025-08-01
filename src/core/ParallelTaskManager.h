@@ -518,7 +518,7 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
     }
   }
   myinput.nderivatives_per_scalar = nder;
-  nderivatives_per_task = nder*myinput.nscalars;
+  nderivatives_per_task = nder*myinput.nforcescalars;  
   value_stash.resize( getValueStashSize() );
   myinput.threadunsafe_forces_start = action->getNumberOfForceDerivatives() - nforce_ts;
   unsigned t=OpenMP::getNumThreads();

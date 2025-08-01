@@ -249,6 +249,9 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
     if( getPntrToArgument(k)->getRank()!=2 ) {
       continue ;
     }
+    if( getNumberOfMasks()>0 && getPntrToArgument(k)->isConstant() ) {
+      continue ;
+    }
     for(unsigned i=0; i<nrows; ++i) {
       unsigned ncols = myarg->getRowLength(i);
       if( getNumberOfMasks()>0 && ncols==0 ) {

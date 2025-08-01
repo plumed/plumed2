@@ -49,8 +49,6 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfGrid(const ActionOptions&);
-/// This does setup required on first step
-  void setupOnFirstStep( const bool incalc );
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Get the label to write in the graph
@@ -146,46 +144,12 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   function::FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, true, this  );
   // Setup the task manager
   taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
-  // And setup on first step
-  setupOnFirstStep( false );
 }
 
 template <class T>
 std::string FunctionOfGrid<T>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
   return getName().substr(0,und);
-}
-
-template <class T>
-void FunctionOfGrid<T>::setupOnFirstStep( const bool incalc ) {
-  const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
-  unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
-  if( mygrid.getGridType()=="flat" ) {
-    std::vector<std::size_t> shape( getGridCoordinatesObject().getNbin(true) );
-    for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
-      if( getPntrToArgument(i)->getRank()==0 ) {
-        continue;
-      }
-      std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
-      for(unsigned j=0; j<shape.size(); ++j) {
-        if( shape[j]!=s[j] ) {
-          error("mismatch between sizes of input grids");
-        }
-      }
-    }
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      if( getPntrToComponent(i)->getRank()>0 ) {
-        getPntrToComponent(i)->setShape(shape);
-      }
-    }
-  }
-  // This resizes the scalars
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->getRank()==0 ) {
-      getPntrToComponent(i)->resizeDerivatives( npoints );
-    }
-  }
-  taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
 }
 
 template <class T>
@@ -210,7 +174,34 @@ unsigned FunctionOfGrid<T>::getNumberOfDerivatives() {
 template <class T>
 void FunctionOfGrid<T>::calculate() {
   if( firststep ) {
-      setupOnFirstStep( true );
+      const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
+      unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+      if( mygrid.getGridType()=="flat" ) {
+        std::vector<std::size_t> shape( mygrid.getNbin(true) );
+        for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
+          if( getPntrToArgument(i)->getRank()==0 ) {
+            continue;
+          } 
+          std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
+          for(unsigned j=0; j<shape.size(); ++j) {
+            if( shape[j]!=s[j] ) {
+              error("mismatch between sizes of input grids");
+            }
+          }
+        }
+        for(int i=0; i<getNumberOfComponents(); ++i) {
+          if( getPntrToComponent(i)->getRank()>0 ) {
+            getPntrToComponent(i)->setShape(shape);
+          }                    
+        }
+      }
+      // This resizes the scalars
+      for(int i=0; i<getNumberOfComponents(); ++i) {
+        if( getPntrToComponent(i)->getRank()==0 ) {
+          getPntrToComponent(i)->resizeDerivatives( npoints );
+        }
+      }
+      taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
       firststep=false;
   } 
   taskmanager.runAllTasks();

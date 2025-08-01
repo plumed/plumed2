@@ -148,7 +148,6 @@ FindContour::FindContour(const ActionOptions&ao):
   function::FunctionOptions options;
   ContourFindingObject<gridtools::EvaluateGridFunction>::read( taskmanager.getActionInput(), this, options );
   log.printf("  calculating dividing surface along which function equals %f \n", taskmanager.getActionInput().contour);
-  taskmanager.setupParallelTaskManager( 0, 0 );
 }
 
 std::string FindContour::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
@@ -163,6 +162,7 @@ void FindContour::calculate() {
         getPntrToComponent(i)->setShape( shape );
       }
       active_cells.resize( shape[0] );
+      taskmanager.setupParallelTaskManager( 0, 0 ); 
       firststep = false;
   }
   taskmanager.runAllTasks();
@@ -170,10 +170,6 @@ void FindContour::calculate() {
 
 unsigned FindContour::getNumberOfDerivatives() {
   return 0;
-}
-
-void FindContour::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
-  task_reducing_actions.push_back(this);
 }
 
 void FindContour::getNumberOfTasks( unsigned& ntasks ) {
