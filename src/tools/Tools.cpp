@@ -29,6 +29,7 @@
 #include <map>
 #include <iomanip>
 #include <filesystem>
+#include <string_view>
 
 namespace PLMD {
 
@@ -291,6 +292,49 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,std::stri
   }
 }
 
+void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
+                           std::string_view line,
+                           const std::string_view separators) {
+  words.clear();
+  //NOTE::this function is written assuming that we have only a level of parentesis
+  // so "{a b x},{s}" is ok, "x,{{a,r}}" is not
+  // unlike getWords it will not delete the parentesis, in the spirit of returning a view
+  // to remove the parentesis you have to use a erase-remove idiom (see parseVector)
+  constexpr char openPar='{';
+  constexpr char closePar = '}';
+  size_t init=0;
+  std::size_t size=0;
+  int parlevel=0;
+  for(unsigned i=0; i<line.length(); i++) {
+    //being between parenthesis "suspends" the separator check
+    const bool is_separator=(separators.find(line[i])!=separators.npos)&&parlevel==0;
+    const bool is_par = line[i]==openPar || line[i] == closePar;
+    if(!is_separator && !is_par) {
+      size++;
+    } else if(line[i]==openPar) {
+      ++parlevel;
+      ++size;
+    } else if(line[i] == closePar) {
+      --parlevel;
+      ++size;
+    } else {
+      if(size==0) {
+        init++;
+      } else {
+        words.emplace_back(line.substr(init,size));
+        init=i+1;
+        size=0;
+      }
+    }
+//    plumed_assert(parlevel<=1&& parlevel>=0) << "getWordsSimple do not support nested parenthesis ('" << line << "')";
+  }
+  if(size>0) {
+    words.emplace_back(line.substr(init,size));
+  }
+
+  plumed_assert(parlevel==0) << "Unmatching parenthesis in '" << line << "'";
+}
+
 bool Tools::getParsedLine(IFile& ifile,std::vector<std::string> & words, bool trimcomments) {
   std::string line("");
   words.clear();
@@ -436,6 +480,77 @@ bool Tools::getKey(std::vector<std::string>& line,
     }
   };
   return false;
+}
+
+
+void getWords_replicas(gch::small_vector<std::string_view> & words,
+                       std::string_view line,
+                       const std::string_view separators) {
+  words.clear();
+  //NOTE: this function is tested in basic/rt-make-getwords
+  // via unravelReplicas and parseVector
+
+  //NOTE: this function ignores the first parenthesis becasue
+  // expects something like "@replica:{a,b c}" or "@replica:a b c"
+  // the user should cut the "@replica:" before running this.
+  // in case of a '{' being present the vector will be returned as soon the '}' is found
+  constexpr char openPar='{';
+  constexpr char closePar = '}';
+  size_t init=0;
+  std::size_t size=0;
+  int parlevel=0;
+  for(unsigned i=0; i<line.length(); i++) {
+    //being between parenthesis  do not "suspends" the separator check
+    const bool is_separator=(separators.find(line[i])!=separators.npos)
+                            && parlevel<=1;
+    const bool is_par = line[i]==openPar || line[i] == closePar;
+    if(!is_separator && !is_par) {
+      size++;
+    } else if(line[i]==openPar) {
+      ++parlevel;
+      if(parlevel == 1) {
+        init = i+1;
+      }
+    } else if(line[i] == closePar) {
+      --parlevel;
+      if(parlevel == 0) {
+        break;
+      }
+    } else {
+      if(size==0) {
+        init++;
+      } else {
+        words.emplace_back(line.substr(init,size));
+        init=i+1;
+        size=0;
+      }
+    }
+  }
+  if(size>0) {
+    words.emplace_back(line.substr(init,size));
+  }
+
+  plumed_assert(parlevel==0) << "Unmatched parenthesis in '" << line << "'";
+}
+
+std::string_view Tools::unravelReplicas(std::string_view argument,
+                                        int rep) {
+//NOTE: Tested in /basic/rt-make-getwords
+
+//NOTE: as now (exactly like before this PR) a vector will not accept only the first element as replicas:
+// - @replicas:{1,2,3},4,5 do not work (KEY={@replicas:{1,2,3},4,5})
+// - @replicas:{1,4,5},{2,4,5},{3,4,5} works (KEY=@replicas:{{1,4,5},{2,4,5},{3,4,5}}), it should be equivalent to the line above
+// - 1,@replicas:{2,3,4},5 works (KEY={1,@replicas{2,3,4},5})
+  constexpr std::string_view multi("@replicas:");
+  if(rep>=0 && startWith(argument,multi)) {
+    gch::small_vector<std::string_view> replicaValues;
+    getWords_replicas(replicaValues,argument.substr(multi.size()),"\t\n ,");
+    plumed_massert(rep<static_cast<int>(replicaValues.size()),
+                   "Number of fields in " + std::string(argument) + " not consistent with number of replicas");
+    return replicaValues[rep];
+  } else {
+    return argument;
+  }
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s) {
