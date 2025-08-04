@@ -306,13 +306,17 @@ public:
   /// Deletion would be slower instead. It's not even implemented yet.
   template<class T>
   class FastStringUnorderedMap {
-    std::unordered_map<std::string_view,T> map;
-    std::vector<std::unique_ptr<const char[]>> keys;
-
+    using container=std::unordered_map<std::string_view,T>;
+    using keytype = std::unique_ptr<const char[]>;
+    using keyholder = std::vector<keytype>;
+    container map;
+    keyholder keys;
     // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
-    std::unique_ptr<const char[]> conv(std::string_view str) {
+    static keytype conv(std::string_view const str) {
       auto p=std::make_unique<char[]>(str.size()+1);
-      std::memcpy(p.get(), str.data(), str.size()+1);
+      std::memcpy(p.get(), str.data(), str.size());
+      //the string_view might be a view of a longer string, so the last char might not be null
+      p[str.size()]='\0';
       return p;
     }
 
@@ -334,16 +338,16 @@ public:
       return map[keys.back().get()];
     }
 
-    auto begin() {
+    auto begin() noexcept {
       return map.begin();
     }
-    auto end() {
+    auto end() noexcept {
       return map.end();
     }
-    auto begin() const {
+    auto begin() const noexcept {
       return map.begin();
     }
-    auto end() const {
+    auto end() const noexcept {
       return map.end();
     }
     auto find(const std::string_view & key) {
