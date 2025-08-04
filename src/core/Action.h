@@ -75,7 +75,6 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
   friend class ActionShortcut;
-  //using KeyMap = PLMD::Tools::FastStringUnorderedMap<std::string>;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
   const std::string name;
