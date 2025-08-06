@@ -203,9 +203,12 @@ double NonDiagonalKernelParams::evaluateR2( const RegularKernel<NonDiagonalKerne
 double UniversalVonMisses::calc( const UniversalVonMisses& params, const VonMissesKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
   double dot=x[0]*kp.at[0] + x[1]*kp.at[1] + x[2]*kp.at[2];
   double newval = kp.height*exp( kp.concentration*dot );
-  der[0] += paramderivs[0] = newval*kp.concentration*x[0];  // N.B. Derivative with respect to grid point is not equal to derivative with respect to kernel position (change rt-spherical-integral regtest)
-  der[1] += paramderivs[1] = newval*kp.concentration*x[1];
-  der[2] += paramderivs[2] = newval*kp.concentration*x[2];
+  der[0] += newval*kp.concentration*kp.at[0];
+  der[1] += newval*kp.concentration*kp.at[1];
+  der[2] += newval*kp.concentration*kp.at[2];
+  paramderivs[0] = newval*kp.concentration*x[0];  
+  paramderivs[1] = newval*kp.concentration*x[1];
+  paramderivs[2] = newval*kp.concentration*x[2];
   if( fabs(kp.height)>epsilon ) {
       paramderivs[4] = newval / kp.height;
   }
