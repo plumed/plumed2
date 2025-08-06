@@ -76,21 +76,25 @@ Ones::Ones(const ActionOptions& ao):
   std::vector<std::string> size_str;
   parseVector("SIZE",size_str);
   if( size_str.size()==2 ) {
-    unsigned nr, nc; 
+    unsigned nr, nc;
     Tools::convert( size_str[0], nr );
     Tools::convert( size_str[1], nc );
-    size = nr*nc; 
+    size = nr*nc;
     matstr = "NROWS=" + size_str[0] + " NCOLS=" + size_str[1];
   } else if( size_str[0]=="@natoms" ) {
-    if( size_str.size()!=1 ) error("should only be one @natoms string in input");
+    if( size_str.size()!=1 ) {
+      error("should only be one @natoms string in input");
+    }
     std::vector<Value*> xpos, ypos, zpos, masv, chargev;
     ActionAtomistic::getAtomValuesFromPlumedObject( plumed, xpos, ypos, zpos, masv, chargev );
     size = 0;
     for(unsigned i=0; i<xpos.size(); ++i ) {
       size += xpos[i]->getNumberOfValues();
     }
-  } else { 
-    if( size_str.size()!=1 ) error("size should be one or two values");
+  } else {
+    if( size_str.size()!=1 ) {
+      error("size should be one or two values");
+    }
     Tools::convert( size_str[0], size );
   }
   if( size<1 ) {

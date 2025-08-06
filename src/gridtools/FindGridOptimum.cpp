@@ -106,9 +106,9 @@ The FIND_GRID_MAXIMUM action then outputs the coordinates of the grid point wher
 namespace PLMD {
 namespace gridtools {
 
-class FindGridOptimum : 
-public ActionWithValue,
-public ActionWithArguments {
+class FindGridOptimum :
+  public ActionWithValue,
+  public ActionWithArguments {
 private:
   bool domin;
   double cgtol;

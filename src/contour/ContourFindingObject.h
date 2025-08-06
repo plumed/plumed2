@@ -34,7 +34,7 @@ public:
 /// This is the object that does the root finding
   RootFindingBase<ContourFindingObject<T>> mymin;
 /// This holds the input grid
-  // gridtools::EvaluateGridFunction 
+  // gridtools::EvaluateGridFunction
   T function;
 /// Where you would like to find the contour
   double contour;
@@ -47,7 +47,7 @@ public:
 /// Read in the contour object
   static void read( ContourFindingObject& func, ActionWithArguments* action, function::FunctionOptions& options );
 /// Find the contour
-  static void findContour( const ContourFindingObject& myobj, const std::vector<double>& direction, std::vector<double>& point ); 
+  static void findContour( const ContourFindingObject& myobj, const std::vector<double>& direction, std::vector<double>& point );
 };
 
 template <class T>
@@ -55,7 +55,7 @@ void ContourFindingObject<T>::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   T::registerKeywords(keys);
   keys.remove("ZERO_OUTSIDE_GRID_RANGE");
-} 
+}
 
 template <class T>
 void ContourFindingObject<T>::read( ContourFindingObject& func, ActionWithArguments* action, function::FunctionOptions& options ) {

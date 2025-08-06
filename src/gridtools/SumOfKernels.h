@@ -41,9 +41,9 @@ public:
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
   static bool setKernelAndCheckHeight( DiagonalKernelParams& kp, std::size_t ndim, const std::vector<double>& args );
-  static std::size_t getNumberOfParameters( const DiagonalKernelParams& kp ); 
+  static std::size_t getNumberOfParameters( const DiagonalKernelParams& kp );
   static void getSigmaProjections( const DiagonalKernelParams& kp, std::vector<double>& support );
-  static double evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );   
+  static double evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
 
 class NonDiagonalKernelParams {
@@ -97,7 +97,7 @@ public:
 template <class K>
 void RegularKernel<K>::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.");
-}  
+}
 
 template <class K>
 void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {
@@ -121,27 +121,27 @@ template <class K>
 void RegularKernel<K>::setArgumentDomain( const unsigned& i, RegularKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {
   params.periodic[i] = isp;
   if( params.periodic[i] ) {
-      double min, max;
-      Tools::convert( min1, min );
-      Tools::convert( max1, max );
-      params.max_minus_min[i]=max-min;
-      params.inv_max_minus_min[i]=1.0/params.max_minus_min[i];
+    double min, max;
+    Tools::convert( min1, min );
+    Tools::convert( max1, max );
+    params.max_minus_min[i]=max-min;
+    params.inv_max_minus_min[i]=1.0/params.max_minus_min[i];
   }
 }
 
 template <class K>
 double RegularKernel<K>::difference( const RegularKernel<K>& params, unsigned i, const double& val1, const double& val2 ) {
-   if( !params.periodic[i] ) {
-      return val1 - val2;
-   }
-   return params.max_minus_min[i]*Tools::pbc( params.inv_max_minus_min[i]*( val1 - val2 ) );
+  if( !params.periodic[i] ) {
+    return val1 - val2;
+  }
+  return params.max_minus_min[i]*Tools::pbc( params.inv_max_minus_min[i]*( val1 - val2 ) );
 }
 
 template <class K>
 void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const K& kp, double dp2cutoff, std::vector<double>& support ) {
   K::getSigmaProjections( kp, support );
   for(unsigned i=0; i<support.size(); ++i) {
-      support[i] = sqrt(2.0*dp2cutoff)*support[i];
+    support[i] = sqrt(2.0*dp2cutoff)*support[i];
   }
 }
 
@@ -151,12 +151,12 @@ double RegularKernel<K>::calc( const RegularKernel<K>& params, const K& kp, View
   double dval, val = kp.height*params.switchingFunction.calculateSqr( r2, dval );
   dval *= kp.height;
   for(unsigned i=0; i<der.size(); ++i) {
-      der[i] += dval*paramderivs[i];
-      paramderivs[i] = -dval*paramderivs[i];
+    der[i] += dval*paramderivs[i];
+    paramderivs[i] = -dval*paramderivs[i];
   }
   paramderivs[2*kp.at.size()] = val / kp.height;
   return val;
-} 
+}
 
 class VonMissesKernelParams {
 public:
@@ -204,13 +204,13 @@ void SumOfKernels<K,P>::read( SumOfKernels<K,P>& func, ActionWithArguments* acti
 
 template <class K, class P>
 void SumOfKernels<K,P>::calc( View<const std::size_t> klist, const SumOfKernels<K,P>& func, View<const double> args, View<double> values, View<double> der, View<double> paramderivs ) {
-  values[0] = 0; 
+  values[0] = 0;
   for(unsigned i=0; i<der.size(); ++i) {
-      der[i] = 0;
+    der[i] = 0;
   }
   std::size_t nparams = K::getNumberOfParameters( func.kernelParams[0] );
   for(unsigned i=0; i<klist.size(); ++i) {
-      values[0] += P::calc( func.params, func.kernelParams[klist[i]], args, der, View<double>( paramderivs.data() + i*nparams, nparams ) );
+    values[0] += P::calc( func.params, func.kernelParams[klist[i]], args, der, View<double>( paramderivs.data() + i*nparams, nparams ) );
   }
 }
 

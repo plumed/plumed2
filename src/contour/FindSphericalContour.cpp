@@ -23,7 +23,7 @@
 #include "ContourFindingObject.h"
 #include "gridtools/ActionWithGrid.h"
 #include "gridtools/EvaluateGridFunction.h"
-#include "core/ParallelTaskManager.h" 
+#include "core/ParallelTaskManager.h"
 #include "tools/Random.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_SPHERICAL_CONTOUR
@@ -135,8 +135,8 @@ public:
   unsigned nbins;
   ContourFindingObject<gridtools::EvaluateGridFunction> cf;
   static void registerKeywords( Keywords& keys ) {
-    ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys ); 
-    keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour"); 
+    ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys );
+    keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
   }
   static void read( FindSphericalContourObject& func, ActionWithArguments* action, function::FunctionOptions& options ) {
     action->parse("NBINS",func.nbins);
@@ -162,7 +162,9 @@ public:
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
   void getInputData( std::vector<double>& inputdata ) const ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
   static void performTask( std::size_t task_index,
                            const FindSphericalContourObject& actiondata,
                            ParallelActionsInput& input,
@@ -230,18 +232,18 @@ void FindSphericalContour::calculate() {
   taskmanager.runAllTasks();
 }
 
-void FindSphericalContour::getInputData( std::vector<double>& inputdata ) const { 
+void FindSphericalContour::getInputData( std::vector<double>& inputdata ) const {
   std::size_t ndata = gridcoords.getNumberOfPoints();
   if( inputdata.size()!=6*ndata ) {
-      inputdata.resize( 6*ndata );
+    inputdata.resize( 6*ndata );
   }
   std::vector<double> direction(3);
   for(unsigned i=0; i<ndata; ++i) {
-      gridcoords.getGridPointCoordinates( i, direction ); 
-      for(unsigned j=0; j<3; ++j) {
-        inputdata[6*i+j] = min*direction[j];
-        inputdata[6*i+3+j] = (max-min)*direction[j] / static_cast<double>(taskmanager.getActionInput().nbins);
-      }
+    gridcoords.getGridPointCoordinates( i, direction );
+    for(unsigned j=0; j<3; ++j) {
+      inputdata[6*i+j] = min*direction[j];
+      inputdata[6*i+3+j] = (max-min)*direction[j] / static_cast<double>(taskmanager.getActionInput().nbins);
+    }
   }
 }
 
@@ -249,7 +251,7 @@ void FindSphericalContour::performTask( std::size_t task_index,
                                         const FindSphericalContourObject& actiondata,
                                         ParallelActionsInput& input,
                                         ParallelActionsOutput& output ) {
-  bool found=false; 
+  bool found=false;
   View<const double> cp( input.inputdata + 6*task_index, 3 );
   std::vector<double> direction(3), contour_point(3), der(3), tmp(3);
   contour_point[0] = cp[0];
@@ -261,7 +263,7 @@ void FindSphericalContour::performTask( std::size_t task_index,
   direction[2] = d[2];
   for(unsigned k=0; k<actiondata.nbins; ++k) {
     for(unsigned j=0; j<3; ++j) {
-        tmp[j] = contour_point[j] + direction[j];
+      tmp[j] = contour_point[j] + direction[j];
     }
     double val1 = actiondata.cf.getDifferenceFromContour( contour_point, der );
     double val2 = actiondata.cf.getDifferenceFromContour( tmp, der );
@@ -276,7 +278,7 @@ void FindSphericalContour::performTask( std::size_t task_index,
       break;
     }
     for(unsigned j=0; j<3; ++j) {
-        contour_point[j] = tmp[j];
+      contour_point[j] = tmp[j];
     }
   }
   if( !found ) {

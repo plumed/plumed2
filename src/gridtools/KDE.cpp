@@ -215,9 +215,9 @@ template <class K, class P>
 void KDEGridTools<K,P>::registerKeywords( Keywords& keys ) {
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "
-                                "divided by the volume of the Gaussian are used as weights for the Gaussians");
+           "divided by the volume of the Gaussian are used as weights for the Gaussians");
   keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values. The elements of this vector "
-                                        "are used as weights for the Gaussians.");
+           "are used as weights for the Gaussians.");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
@@ -232,13 +232,13 @@ void KDEGridTools<K,P>::readHeightKeyword( bool canusevol, std::size_t nargs, co
   std::string str_nvals;
   Tools::convert( (action->getPntrToArgument(0))->getNumberOfValues(), str_nvals );
   if( weight_str.length()>0 ) {
-      KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( weight_str, action, "_heights", true );
+    KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( weight_str, action, "_heights", true );
   } else if( canusevol ) {
-      action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_volumes: ONES SIZE=" + str_nvals ), false );
-      KDEGridTools<K,P>::convertHeightsToVolumes(nargs,bw,action->getLabel() + "_volumes",action);
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_volumes: ONES SIZE=" + str_nvals ), false );
+    KDEGridTools<K,P>::convertHeightsToVolumes(nargs,bw,action->getLabel() + "_volumes",action);
   } else {
-      action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: ONES SIZE=" + str_nvals ), false );
-      KDEHelper<K,P,KDEGridTools<K,P>>::addArgument( action->getLabel() + "_heights", action );
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: ONES SIZE=" + str_nvals ), false );
+    KDEHelper<K,P,KDEGridTools<K,P>>::addArgument( action->getLabel() + "_heights", action );
   }
 }
 
@@ -252,26 +252,30 @@ template<class K, class P>
 void KDEGridTools<K, P>::readBandwidth( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw ) {
   action->parseVector("BANDWIDTH",bw);
   if( nargs>1 && bw.size()==1 ) {
-      action->error("this requires some work on the implementation");
+    action->error("this requires some work on the implementation");
   } else if( bw.size()==nargs ) {
-      if( typeid(K) != typeid(DiagonalKernelParams) ) action->error("wrong number of arguments specified in input to bandwidth parameter");
-      std::string str_i;
-      for(unsigned i=0; i<nargs; ++i) {
-          Tools::convert( i+1, str_i );
-          KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bw" + str_i, true );
-      }
-  } else if( bw.size()==nargs*nargs ) {
-      if( typeid(K) != typeid(NonDiagonalKernelParams) ) action->error("wrong number of arguments specified in input to bandwidth parameter");
-      std::string str_i, str_j;
-      for(unsigned i=0; i<nargs; ++i) {
-          Tools::convert( i+1, str_i );
-          for(unsigned j=0; j<nargs; ++j) {
-              Tools::convert( j+1, str_j );
-              KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i*nargs+j], action, "_bw" + str_i + "_" + str_j, true );
-          }
-      }
-  } else {
+    if( typeid(K) != typeid(DiagonalKernelParams) ) {
       action->error("wrong number of arguments specified in input to bandwidth parameter");
+    }
+    std::string str_i;
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bw" + str_i, true );
+    }
+  } else if( bw.size()==nargs*nargs ) {
+    if( typeid(K) != typeid(NonDiagonalKernelParams) ) {
+      action->error("wrong number of arguments specified in input to bandwidth parameter");
+    }
+    std::string str_i, str_j;
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      for(unsigned j=0; j<nargs; ++j) {
+        Tools::convert( j+1, str_j );
+        KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i*nargs+j], action, "_bw" + str_i + "_" + str_j, true );
+      }
+    }
+  } else {
+    action->error("wrong number of arguments specified in input to bandwidth parameter");
   }
 }
 
@@ -291,37 +295,39 @@ void KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::rea
   std::string volstr;
   action->parse("VOLUMES",volstr);
   if( volstr.length()>0 ) {
-      if( !params.canusevol ) action->error("cannot use normalized kernels with selected kernel type");
-      // Check if we are using Gaussian kernels
-      KDEHelper<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>>::readKernelParameters( volstr, action, "_volumes", false );
-      convertHeightsToVolumes(nargs, bw, volstr, action);
-  } else { 
-      KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::readHeightKeyword( params.canusevol, nargs, bw, action );
+    if( !params.canusevol ) {
+      action->error("cannot use normalized kernels with selected kernel type");
+    }
+    // Check if we are using Gaussian kernels
+    KDEHelper<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>>::readKernelParameters( volstr, action, "_volumes", false );
+    convertHeightsToVolumes(nargs, bw, volstr, action);
+  } else {
+    KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::readHeightKeyword( params.canusevol, nargs, bw, action );
   }
 }
 
 template <class K, class P>
 void KDEGridTools<K, P>::convertHeightsToVolumes( const std::size_t& nargs, const std::vector<std::string>& bw, const std::string& volstr, ActionWithArguments* action ) {
   if( bw.size()==nargs ) {
-      std::string str_i, nargs_str;
-      Tools::convert( nargs, nargs_str );
-      std::string varstr = "VAR=h", funcstr = "FUNC=h/(sqrt((2*pi)^" + nargs_str + ")", argstr = "ARG=" + volstr;
-      for(unsigned i=0; i<nargs; ++i) {
-          Tools::convert( i+1, str_i );
-          varstr += ",b" + str_i;
-          funcstr += "*b" + str_i;
-          argstr += "," + bw[i]; 
-      }
-      funcstr += ")";
-      if( (action->getPntrToArgument(0))->getNumberOfValues()==1 ) {
-          action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO " + argstr + " " + varstr + " " + funcstr), false );
-      } else { 
-          action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO " + argstr + " " + varstr + " " + funcstr + " MASK=" + volstr), false );
-      }
-      KDEHelper<K,P,KDEGridTools<K,P>>::addArgument( action->getLabel() + "_heights", action );
+    std::string str_i, nargs_str;
+    Tools::convert( nargs, nargs_str );
+    std::string varstr = "VAR=h", funcstr = "FUNC=h/(sqrt((2*pi)^" + nargs_str + ")", argstr = "ARG=" + volstr;
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      varstr += ",b" + str_i;
+      funcstr += "*b" + str_i;
+      argstr += "," + bw[i];
+    }
+    funcstr += ")";
+    if( (action->getPntrToArgument(0))->getNumberOfValues()==1 ) {
+      action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO " + argstr + " " + varstr + " " + funcstr), false );
+    } else {
+      action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO " + argstr + " " + varstr + " " + funcstr + " MASK=" + volstr), false );
+    }
+    KDEHelper<K,P,KDEGridTools<K,P>>::addArgument( action->getLabel() + "_heights", action );
   } else if( bw.size()==nargs*nargs ) {
-      action->error("have not implemented normalization parameter for non-diagonal kernels");
-  }  
+    action->error("have not implemented normalization parameter for non-diagonal kernels");
+  }
 
 }
 
@@ -398,7 +404,7 @@ void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box
         lcoord=-0.5*box(2,2);
         ucoord=0.5*box(2,2);
       } else {
-        plumed_error(); 
+        plumed_error();
       }
       // And convert to strings for bin and bmax
       Tools::convert( lcoord, g.gmin[i] );
@@ -417,14 +423,14 @@ void KDEGridTools<K, P>::getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, c
   std::vector<double> support( ng );
   P::getSupport( p, kp, g.dp2cutoff, support );
   for(unsigned i=0; i<ng; ++i) {
-      nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
+    nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
   }
 }
 
 template <>
 void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getDiscreteSupport( const KDEGridTools<DiagonalKernelParams,DiscreteKernel>& g, DiscreteKernel& p, const DiagonalKernelParams& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
   return;
-} 
+}
 
 template <class K, class P>
 void KDEGridTools<K,P>::getNeighbors( const P& p, K& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
@@ -433,12 +439,12 @@ void KDEGridTools<K,P>::getNeighbors( const P& p, K& kp, const GridCoordinatesOb
 
 template <>
 void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getNeighbors( const DiscreteKernel& p, DiagonalKernelParams& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
- num_neighbors=1;
- neighbors.resize(1);
- for(unsigned i=0; i<kp.at.size(); ++i) { 
-   kp.at[i] += 0.5*gridobject.getGridSpacing()[i];
- } 
- neighbors[0]=gridobject.getIndex( kp.at );
+  num_neighbors=1;
+  neighbors.resize(1);
+  for(unsigned i=0; i<kp.at.size(); ++i) {
+    kp.at[i] += 0.5*gridobject.getGridSpacing()[i];
+  }
+  neighbors[0]=gridobject.getIndex( kp.at );
 }
 
 class SphericalKDEGridTools {
@@ -455,7 +461,7 @@ public:
 void SphericalKDEGridTools::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CONCENTRATION","the concentration parameter for the Von Mises-Fisher distributions");
   keys.add("compulsory","HEIGHTS","1.0","this keyword takes the label of an action that calculates a vector of values. The elements of this vector "
-                                        "are used as weights for the Gaussians.");
+           "are used as weights for the Gaussians.");
   keys.add("compulsory","GRID_BIN","the number of points on the fibonacci sphere at which the density should be evaluated");
 }
 
@@ -468,11 +474,11 @@ void SphericalKDEGridTools::readBandwidthAndHeight( const UniversalVonMisses& pa
   // Read in the heights
   std::string weight_str;
   action->parse("HEIGHTS",weight_str);
-  KDEHelper<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools>::readKernelParameters( weight_str , action, "_volumes", false );
-  if( (action->getPntrToArgument(0))->getNumberOfValues()==1 ) { 
-     action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO ARG=" + weight_str + "," + action->getLabel() + "_vmconcentration FUNC=x*y/(4*pi*sinh(y))" ), false );
+  KDEHelper<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools>::readKernelParameters( weight_str, action, "_volumes", false );
+  if( (action->getPntrToArgument(0))->getNumberOfValues()==1 ) {
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO ARG=" + weight_str + "," + action->getLabel() + "_vmconcentration FUNC=x*y/(4*pi*sinh(y))" ), false );
   } else {
-     action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO ARG=" + weight_str + "," + action->getLabel() + "_vmconcentration FUNC=x*y/(4*pi*sinh(y)) MASK=" + weight_str ), false );
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_heights: CUSTOM PERIODIC=NO ARG=" + weight_str + "," + action->getLabel() + "_vmconcentration FUNC=x*y/(4*pi*sinh(y)) MASK=" + weight_str ), false );
   }
   KDEHelper<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools>::addArgument( action->getLabel() + "_heights", action );
   action->log.printf("  getting heights from %s \n", weight_str.c_str() );
@@ -530,17 +536,17 @@ void KDEShortcut::registerKeywords(Keywords& keys) {
 }
 
 KDEShortcut::KDEShortcut(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao) {
+  Action(ao),
+  ActionShortcut(ao) {
   std::string kerneltype;
   parse("KERNEL",kerneltype);
   if( kerneltype=="DISCRETE" ) {
-      readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + convertInputLineToString() ); 
+    readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + convertInputLineToString() );
   } else if( kerneltype.find("bin")==std::string::npos ) {
-      readInputLine( getShortcutLabel() + ": KDE_KERNELS KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_KERNELS KERNEL=" + kerneltype + " " + convertInputLineToString() );
   } else {
-      std::size_t dd = kerneltype.find("-bin");
-      readInputLine( getShortcutLabel() + ": KDE_BEADS KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+    std::size_t dd = kerneltype.find("-bin");
+    readInputLine( getShortcutLabel() + ": KDE_BEADS KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
   }
 }
 

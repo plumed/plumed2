@@ -115,7 +115,7 @@ PLUMED_REGISTER_ACTION(FindContour,"FIND_CONTOUR")
 
 void FindContour::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
-  ActionWithValue::useCustomisableComponents(keys); 
+  ActionWithValue::useCustomisableComponents(keys);
   keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
   ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys );
   keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
@@ -156,14 +156,14 @@ std::string FindContour::getOutputComponentDescription( const std::string& cname
 
 void FindContour::calculate() {
   if( firststep ) {
-      std::vector<std::size_t> shape(1);
-      shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
-      for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-        getPntrToComponent(i)->setShape( shape );
-      }
-      active_cells.resize( shape[0] );
-      taskmanager.setupParallelTaskManager( 0, 0 ); 
-      firststep = false;
+    std::vector<std::size_t> shape(1);
+    shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      getPntrToComponent(i)->setShape( shape );
+    }
+    active_cells.resize( shape[0] );
+    taskmanager.setupParallelTaskManager( 0, 0 );
+    firststep = false;
   }
   taskmanager.runAllTasks();
 }
@@ -226,18 +226,18 @@ void FindContour::getInputData( std::vector<double>& inputdata ) const {
   std::size_t rank = getPntrToArgument(0)->getRank();
   std::size_t ndata = getInputGridObject().getNumberOfPoints()*rank;
   if( inputdata.size()!=2*rank*ndata ) {
-      inputdata.resize( 2*rank*ndata );
+    inputdata.resize( 2*rank*ndata );
   }
   std::vector<double> point( getPntrToArgument(0)->getRank() );
   for(unsigned i=0; i<getInputGridObject().getNumberOfPoints(); ++i) {
-      getInputGridObject().getGridPointCoordinates( i, point ); 
-      for(unsigned j=0; j<rank; ++j) {
-          for(unsigned k=0; k<rank; ++k) { 
-              inputdata[i*rank*2*rank + j*2*rank + k] = point[k];
-              inputdata[i*rank*2*rank + j*2*rank + rank + k] = 0;
-          }
-          inputdata[i*rank*2*rank + j*2*rank + rank + j] = 0.999999999*getInputGridObject().getGridSpacing()[j];
+    getInputGridObject().getGridPointCoordinates( i, point );
+    for(unsigned j=0; j<rank; ++j) {
+      for(unsigned k=0; k<rank; ++k) {
+        inputdata[i*rank*2*rank + j*2*rank + k] = point[k];
+        inputdata[i*rank*2*rank + j*2*rank + rank + k] = 0;
       }
+      inputdata[i*rank*2*rank + j*2*rank + rank + j] = 0.999999999*getInputGridObject().getGridSpacing()[j];
+    }
   }
 }
 
@@ -246,16 +246,16 @@ void FindContour::performTask( std::size_t task_index,
                                ParallelActionsInput& input,
                                ParallelActionsOutput& output ) {
 
-  std::size_t rank = actiondata.function.getGridObject().getDimension();  
+  std::size_t rank = actiondata.function.getGridObject().getDimension();
   std::vector<double> direction( rank ), point( rank );
   for(unsigned i=0; i<rank; ++i) {
-      point[i] = input.inputdata[ 2*rank*task_index + i];
-      direction[i] = input.inputdata[ 2*rank*task_index + rank + i];
+    point[i] = input.inputdata[ 2*rank*task_index + i];
+    direction[i] = input.inputdata[ 2*rank*task_index + rank + i];
   }
   // Now find the contour
   ContourFindingObject<gridtools::EvaluateGridFunction>::findContour( actiondata, direction, point );
   for(unsigned i=0; i<rank; ++i) {
-      output.values[i] = point[i];
+    output.values[i] = point[i];
   }
 }
 

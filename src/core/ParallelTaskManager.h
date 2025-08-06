@@ -482,9 +482,9 @@ std::size_t ParallelTaskManager<T>::getValueStashSize() const {
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
     const Value* mycomp = action->getConstPntrToComponent(i);
     if( mycomp->hasDerivatives() ) {
-        valuesize += mycomp->getNumberOfStoredValues()*(1+action->getNumberOfDerivatives());
+      valuesize += mycomp->getNumberOfStoredValues()*(1+action->getNumberOfDerivatives());
     } else {
-        valuesize += mycomp->getNumberOfStoredValues();
+      valuesize += mycomp->getNumberOfStoredValues();
     }
   }
   return valuesize;
@@ -506,7 +506,7 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
       myinput.nforcescalars += 1;
     } else if( (action->copyOutput(i))->getRank()==1 ) {
       myinput.nscalars += 1;
-      myinput.nforcescalars += 1; 
+      myinput.nforcescalars += 1;
     } else if( (action->copyOutput(i))->getRank()==2 ) {
       if( ntasks==(action->copyOutput(i))->getShape()[0] ) {
         myinput.nscalars += (action->copyOutput(i))->getNumberOfColumns();
@@ -518,7 +518,7 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
     }
   }
   myinput.nderivatives_per_scalar = nder;
-  nderivatives_per_task = nder*myinput.nforcescalars;  
+  nderivatives_per_task = nder*myinput.nforcescalars;
   value_stash.resize( getValueStashSize() );
   myinput.threadunsafe_forces_start = action->getNumberOfForceDerivatives() - nforce_ts;
   unsigned t=OpenMP::getNumThreads();
@@ -625,10 +625,10 @@ void ParallelTaskManager<T>::runAllTasks() {
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-      if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
-           myinput.noderiv=false; 
-           break; 
-      }
+    if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
+      myinput.noderiv=false;
+      break;
+    }
   }
   action->getInputData( input_buffer );
   myinput.dataSize = input_buffer.size();

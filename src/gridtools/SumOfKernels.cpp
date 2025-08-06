@@ -30,8 +30,8 @@ double DiscreteKernel::calc( const DiscreteKernel& params, const DiagonalKernelP
 
 void HistogramBeadKernel::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.");
-} 
-  
+}
+
 void HistogramBeadKernel::read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {
   std::string kerneltype;
   action->parse("KERNEL",kerneltype);
@@ -42,33 +42,33 @@ void HistogramBeadKernel::read( HistogramBeadKernel& p, ActionWithArguments* act
 void HistogramBeadKernel::setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {
   params.gridspacing[i] = spacing;
   if( isp ) {
-     double lcoord,  ucoord;
-     Tools::convert( min1, lcoord );
-     Tools::convert( max1, ucoord );
-     params.beads[i].isPeriodic( lcoord, ucoord );
+    double lcoord,  ucoord;
+    Tools::convert( min1, lcoord );
+    Tools::convert( max1, ucoord );
+    params.beads[i].isPeriodic( lcoord, ucoord );
   } else {
-     params.beads[i].isNotPeriodic();
+    params.beads[i].isNotPeriodic();
   }
 }
 
 void HistogramBeadKernel::getSupport( HistogramBeadKernel& params, const DiagonalKernelParams& kp, double dp2cutoff, std::vector<double>& support ) {
   for(unsigned i=0; i<support.size(); ++i) {
-      params.beads[i].set( 0, params.gridspacing[i], kp.sigma[i] );
-      support[i] = params.beads[i].getCutoff();
+    params.beads[i].set( 0, params.gridspacing[i], kp.sigma[i] );
+    support[i] = params.beads[i].getCutoff();
   }
 }
 
 double HistogramBeadKernel::calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
   double val = kp.height;
   for(unsigned i=0; i<x.size(); ++i) {
-      paramderivs[i] = params.beads[i].calculateWithCutoff( kp.at[i], x[i], x[i]+params.gridspacing[i], kp.sigma[i], der[i] );
-      val = val*paramderivs[i];
+    paramderivs[i] = params.beads[i].calculateWithCutoff( kp.at[i], x[i], x[i]+params.gridspacing[i], kp.sigma[i], der[i] );
+    val = val*paramderivs[i];
   }
   for(unsigned i=0; i<x.size(); ++i) {
-      if( fabs(paramderivs[i])>epsilon ) {
-          paramderivs[i] = der[i]*val / paramderivs[i];
-          der[i] = 0.0;   // This derivative is set equal to zero because I am not sure what its proper value should be.
-      }
+    if( fabs(paramderivs[i])>epsilon ) {
+      paramderivs[i] = der[i]*val / paramderivs[i];
+      der[i] = 0.0;   // This derivative is set equal to zero because I am not sure what its proper value should be.
+    }
   }
   paramderivs[2*kp.at.size()] = val / kp.height;
   return val;
@@ -76,22 +76,22 @@ double HistogramBeadKernel::calc( const HistogramBeadKernel& params, const Diago
 
 bool DiagonalKernelParams::setKernelAndCheckHeight( DiagonalKernelParams& kp, std::size_t ndim, const std::vector<double>& argval ) {
   if( kp.at.size()==ndim && fabs( argval[argval.size()-1])<epsilon ) {
-      return false; 
+    return false;
   }
   if( kp.at.size()!=ndim ) {
-      kp.at.resize( ndim );
-      kp.sigma.resize( ndim );
+    kp.at.resize( ndim );
+    kp.sigma.resize( ndim );
   }
   if( argval.size()==ndim+1 ) {
-      for(unsigned i=0; i<ndim; ++i) {
-          kp.at[i] = argval[i];
-      }
+    for(unsigned i=0; i<ndim; ++i) {
+      kp.at[i] = argval[i];
+    }
   } else {
-      plumed_assert( argval.size()==2*ndim+1 ); 
-      for(unsigned i=0; i<ndim; ++i) {
-          kp.at[i] = argval[i];
-          kp.sigma[i] = argval[ndim+i];
-      }
+    plumed_assert( argval.size()==2*ndim+1 );
+    for(unsigned i=0; i<ndim; ++i) {
+      kp.at[i] = argval[i];
+      kp.sigma[i] = argval[ndim+i];
+    }
   }
   kp.height = argval[argval.size()-1];
   return fabs( kp.height )>epsilon;
@@ -99,14 +99,18 @@ bool DiagonalKernelParams::setKernelAndCheckHeight( DiagonalKernelParams& kp, st
 
 bool DiagonalKernelParams::bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args ) {
   for(unsigned i=ndim; i<args.size()-1; ++i) {
-      if( !args[i]->isConstant() ) return false;
+    if( !args[i]->isConstant() ) {
+      return false;
+    }
   }
   return true;
 }
 
 bool DiagonalKernelParams::bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args ) {
   for(unsigned i=ndim; i<args.size()-1; ++i) {
-      if( !args[i]->allElementsEqual() ) return false;
+    if( !args[i]->allElementsEqual() ) {
+      return false;
+    }
   }
   return true;
 }
@@ -117,16 +121,16 @@ std::size_t DiagonalKernelParams::getNumberOfParameters( const DiagonalKernelPar
 
 void DiagonalKernelParams::getSigmaProjections( const DiagonalKernelParams& kp, std::vector<double>& support ) {
   for(unsigned i=0; i<support.size(); ++i) {
-      support[i] = kp.sigma[i];
+    support[i] = kp.sigma[i];
   }
 }
 
 double DiagonalKernelParams::evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs ) {
   double r2 = 0;
   for(unsigned i=0; i<x.size(); ++i) {
-      double tmp = RegularKernel<DiagonalKernelParams>::difference( p, i, x[i], kp.at[i] );
-      paramderivs[i] = tmp/(kp.sigma[i]*kp.sigma[i]);
-      r2 += tmp*paramderivs[i];
+    double tmp = RegularKernel<DiagonalKernelParams>::difference( p, i, x[i], kp.at[i] );
+    paramderivs[i] = tmp/(kp.sigma[i]*kp.sigma[i]);
+    r2 += tmp*paramderivs[i];
   }
   return r2;
 }
@@ -134,18 +138,18 @@ double DiagonalKernelParams::evaluateR2( const RegularKernel<DiagonalKernelParam
 bool NonDiagonalKernelParams::setKernelAndCheckHeight( NonDiagonalKernelParams& kp, std::size_t ndim, const std::vector<double>& argval ) {
   plumed_assert( argval.size()==2*ndim+1 );
   if( kp.at.size()==ndim && fabs( argval[argval.size()-1])<epsilon ) {
-      return false;
+    return false;
   }
   if( kp.at.size()!=ndim ) {
-      kp.at.resize( ndim );
-      kp.sigma.resize( ndim, ndim );
-      kp.metric.resize( ndim, ndim );
+    kp.at.resize( ndim );
+    kp.sigma.resize( ndim, ndim );
+    kp.metric.resize( ndim, ndim );
   }
   for(unsigned i=0; i<ndim; ++i) {
-      kp.at[i] = argval[i];
-      for(unsigned j=0; j<ndim; ++j) {
-          kp.sigma[i][j] = argval[ndim + i*ndim + j];
-      }
+    kp.at[i] = argval[i];
+    for(unsigned j=0; j<ndim; ++j) {
+      kp.sigma[i][j] = argval[ndim + i*ndim + j];
+    }
   }
   Invert( kp.sigma, kp.metric );
   kp.height = argval[argval.size()-1];
@@ -186,16 +190,16 @@ double NonDiagonalKernelParams::evaluateR2( const RegularKernel<NonDiagonalKerne
   double r2 = 0;
   double dp_j, dp_k;
   for(unsigned j=0; j<x.size(); ++j) {
-      dp_j = RegularKernel<NonDiagonalKernelParams>::difference( p, j, x[j], kp.at[j] );
-      for(unsigned k=0; k<x.size(); ++k) {
-          if( j==k ) {
-              dp_k = dp_j;
-          } else {
-              dp_k = RegularKernel<NonDiagonalKernelParams>::difference( p, k, x[k], kp.at[k] ); 
-          }
-          paramderivs[j] += kp.metric[j][k]*dp_k;
-          r2 += dp_j*dp_k*kp.metric[j][k];
+    dp_j = RegularKernel<NonDiagonalKernelParams>::difference( p, j, x[j], kp.at[j] );
+    for(unsigned k=0; k<x.size(); ++k) {
+      if( j==k ) {
+        dp_k = dp_j;
+      } else {
+        dp_k = RegularKernel<NonDiagonalKernelParams>::difference( p, k, x[k], kp.at[k] );
       }
+      paramderivs[j] += kp.metric[j][k]*dp_k;
+      r2 += dp_j*dp_k*kp.metric[j][k];
+    }
   }
   return r2;
 }
@@ -206,11 +210,11 @@ double UniversalVonMisses::calc( const UniversalVonMisses& params, const VonMiss
   der[0] += newval*kp.concentration*kp.at[0];
   der[1] += newval*kp.concentration*kp.at[1];
   der[2] += newval*kp.concentration*kp.at[2];
-  paramderivs[0] = newval*kp.concentration*x[0];  
+  paramderivs[0] = newval*kp.concentration*x[0];
   paramderivs[1] = newval*kp.concentration*x[1];
   paramderivs[2] = newval*kp.concentration*x[2];
   if( fabs(kp.height)>epsilon ) {
-      paramderivs[4] = newval / kp.height;
+    paramderivs[4] = newval / kp.height;
   }
   return newval;
 }
@@ -226,7 +230,7 @@ bool VonMissesKernelParams::bandwidthsAllSame( std::size_t ndim, const std::vect
 bool VonMissesKernelParams::setKernelAndCheckHeight( VonMissesKernelParams& kp, std::size_t ndim, const std::vector<double>& argval ) {
   plumed_dbg_assert( argval.size()=5 );
   if( kp.at.size()!=3 ) {
-      kp.at.resize(3);
+    kp.at.resize(3);
   }
 
   kp.at[0] = argval[0];

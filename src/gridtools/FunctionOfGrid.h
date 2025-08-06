@@ -58,7 +58,9 @@ public:
 /// Get the underlying grid coordinates object
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
 /// Calculate the function
-  void performTask( const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
 /// Get the input data for doing the parallel calculation
   void getInputData( std::vector<double>& inputdata ) const override ;
 /// Do the calculation
@@ -168,42 +170,42 @@ std::vector<std::string> FunctionOfGrid<T>::getGridCoordinateNames() const {
 
 template <class T>
 unsigned FunctionOfGrid<T>::getNumberOfDerivatives() {
-  return getGridCoordinatesObject().getDimension(); 
+  return getGridCoordinatesObject().getDimension();
 }
 
 template <class T>
 void FunctionOfGrid<T>::calculate() {
   if( firststep ) {
-      const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
-      unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
-      if( mygrid.getGridType()=="flat" ) {
-        std::vector<std::size_t> shape( mygrid.getNbin(true) );
-        for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
-          if( getPntrToArgument(i)->getRank()==0 ) {
-            continue;
-          } 
-          std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
-          for(unsigned j=0; j<shape.size(); ++j) {
-            if( shape[j]!=s[j] ) {
-              error("mismatch between sizes of input grids");
-            }
+    const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
+    unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+    if( mygrid.getGridType()=="flat" ) {
+      std::vector<std::size_t> shape( mygrid.getNbin(true) );
+      for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
+        if( getPntrToArgument(i)->getRank()==0 ) {
+          continue;
+        }
+        std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
+        for(unsigned j=0; j<shape.size(); ++j) {
+          if( shape[j]!=s[j] ) {
+            error("mismatch between sizes of input grids");
           }
         }
-        for(int i=0; i<getNumberOfComponents(); ++i) {
-          if( getPntrToComponent(i)->getRank()>0 ) {
-            getPntrToComponent(i)->setShape(shape);
-          }                    
-        }
       }
-      // This resizes the scalars
       for(int i=0; i<getNumberOfComponents(); ++i) {
-        if( getPntrToComponent(i)->getRank()==0 ) {
-          getPntrToComponent(i)->resizeDerivatives( npoints );
+        if( getPntrToComponent(i)->getRank()>0 ) {
+          getPntrToComponent(i)->setShape(shape);
         }
       }
-      taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
-      firststep=false;
-  } 
+    }
+    // This resizes the scalars
+    for(int i=0; i<getNumberOfComponents(); ++i) {
+      if( getPntrToComponent(i)->getRank()==0 ) {
+        getPntrToComponent(i)->resizeDerivatives( npoints );
+      }
+    }
+    taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
+    firststep=false;
+  }
   taskmanager.runAllTasks();
 }
 
@@ -220,7 +222,7 @@ void FunctionOfGrid<T>::getInputData( std::vector<double>& inputdata ) const {
     }
   }
 
-  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks*(1+ngder); 
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks*(1+ngder);
   if( inputdata.size()!=ndata ) {
     inputdata.resize( ndata );
   }
@@ -236,7 +238,7 @@ void FunctionOfGrid<T>::getInputData( std::vector<double>& inputdata ) const {
       for(unsigned i=0; i<ntasks; ++i) {
         inputdata[(nargs-argstart)*(1+ngder)*i + j-argstart] = myarg->get(i);
         for(unsigned k=0; k<ngder; ++k) {
-            inputdata[(nargs-argstart)*(1+ngder)*i + (nargs-argstart) + (j-argstart)*ngder + k] = myarg->getGridDerivative( i, k );
+          inputdata[(nargs-argstart)*(1+ngder)*i + (nargs-argstart) + (j-argstart)*ngder + k] = myarg->getGridDerivative( i, k );
         }
       }
     }
@@ -249,12 +251,12 @@ void FunctionOfGrid<T>::performTask( std::size_t task_index,
                                      ParallelActionsInput& input,
                                      ParallelActionsOutput& output ) {
 
-  std::size_t rank=input.ranks[actiondata.argstart]; 
+  std::size_t rank=input.ranks[actiondata.argstart];
   std::size_t spacing = (input.nargs-actiondata.argstart)*(1+rank);
   auto funcout = function::FunctionOutput::create( input.ncomponents,
-                                                   output.values.data(),
-                                                   input.nargs-actiondata.argstart,
-                                                   output.derivatives.data() );
+                 output.values.data(),
+                 input.nargs-actiondata.argstart,
+                 output.derivatives.data() );
   T::calc( actiondata.f,
            input.noderiv,
            View<const double>( input.inputdata + task_index*spacing,
@@ -262,11 +264,11 @@ void FunctionOfGrid<T>::performTask( std::size_t task_index,
            funcout );
 
   for(unsigned j=actiondata.argstart; j<input.nargs; ++j) {
-      double df = output.derivatives[j-actiondata.argstart];
-      View<const double> inders( input.inputdata + task_index*spacing + (input.nargs-actiondata.argstart) + (j-actiondata.argstart)*rank, rank );
-      for(unsigned k=0; k<input.ranks[actiondata.argstart]; ++k) {
-          output.values[1+k] += df*inders[k];
-      }
+    double df = output.derivatives[j-actiondata.argstart];
+    View<const double> inders( input.inputdata + task_index*spacing + (input.nargs-actiondata.argstart) + (j-actiondata.argstart)*rank, rank );
+    for(unsigned k=0; k<input.ranks[actiondata.argstart]; ++k) {
+      output.values[1+k] += df*inders[k];
+    }
   }
 }
 
@@ -288,8 +290,8 @@ void FunctionOfGrid<T>::getForceIndices( std::size_t task_index,
     const function::FunctionData<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-    // The force indices are found in the same way as in FunctionOfVector so we reuse that function here
-    function::FunctionOfVector<T>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
+  // The force indices are found in the same way as in FunctionOfVector so we reuse that function here
+  function::FunctionOfVector<T>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
 }
 
 }

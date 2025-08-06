@@ -376,9 +376,11 @@ void Value::reshapeConstantValue( const std::vector<std::size_t>& sh ) {
   double val = get(0);
   setShape( sh );
   if( getRank()==2 && !hasDeriv ) {
-      reshapeMatrixStore( sh[1] );
+    reshapeMatrixStore( sh[1] );
   }
-  for(unsigned i=0; i<getNumberOfValues(); ++i) set( i, val );
+  for(unsigned i=0; i<getNumberOfValues(); ++i) {
+    set( i, val );
+  }
 }
 
 void Value::writeBinary(std::ostream&o) const {
@@ -505,12 +507,16 @@ std::string Value::getValueType() const {
 }
 
 bool Value::allElementsEqual() const {
-  if( getNumberOfValues()==0 ) return false; 
+  if( getNumberOfValues()==0 ) {
+    return false;
+  }
 
   double refval = get(0);
-  for(unsigned i=1; i<getNumberOfValues();++i) {
-      if( get(i)!=refval ) return false;
-  }   
+  for(unsigned i=1; i<getNumberOfValues(); ++i) {
+    if( get(i)!=refval ) {
+      return false;
+    }
+  }
   return true;
 }
 
