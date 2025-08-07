@@ -108,7 +108,6 @@ PLUMED_REGISTER_ACTION(ReadGridInSetup,"REFERENCE_GRID")
 
 void ReadGridInSetup::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords(keys);
-  keys.remove("SERIAL");
   keys.add("optional","FUNC","the function to compute on the grid");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");

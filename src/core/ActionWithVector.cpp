@@ -34,8 +34,6 @@ void ActionWithVector::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithArguments::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
-  keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 
 ActionWithVector::ActionWithVector(const ActionOptions&ao):
@@ -43,8 +41,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  nmask(-1),
-  serial(false) {
+  nmask(-1) {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
     if( av && av->getNumberOfMasks()>=0 ) {
@@ -52,9 +49,6 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
     }
   }
 
-  if( keywords.exists("SERIAL") ) {
-    parseFlag("SERIAL",serial);
-  }
   if( keywords.exists("MASK") ) {
     std::vector<Value*> mask;
     parseArgumentList("MASK",mask);

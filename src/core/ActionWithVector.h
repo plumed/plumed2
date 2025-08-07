@@ -37,8 +37,6 @@ class ActionWithVector:
 private:
 /// Check if there is a mask value
   int nmask;
-/// Is the calculation to be done in serial
-  bool serial;
 /// The list of active tasks
   std::vector<unsigned> active_tasks;
 protected:
@@ -53,8 +51,6 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   virtual void prepare() override;
-/// Run all calculations in serial
-  bool runInSerial() const ;
 /// Check if a mask has been set
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
@@ -77,11 +73,6 @@ public:
 /// Apply the forces on non-zero rank objects
   virtual void applyNonZeroRankForces( std::vector<double>& outforces ) { plumed_error(); }
 };
-
-inline
-bool ActionWithVector::runInSerial() const {
-  return serial;
-}
 
 inline
 int ActionWithVector::getNumberOfMasks() const {

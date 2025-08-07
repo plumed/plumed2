@@ -390,6 +390,8 @@ private:
   Communicator& comm;
 /// Is this an action with matrix
   bool ismatrix;
+/// True if not using MPI for parllisation
+  bool serial;
 /// Are we using acc for parallisation
   bool useacc;
 /// Number of derivatives calculated for each task
@@ -428,6 +430,8 @@ public:
 /// Get the action input so we can use it
   input_type& getActionInput();
   const input_type& getActionInput() const ;
+/// Is the calculation running in serial
+  bool runInSerial() const { return serial; }  
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
@@ -446,8 +450,10 @@ public:
 
 template <class T>
 void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
+  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 
 template <class T>
@@ -474,6 +480,10 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
     action->error("cannot use USEGPU flag as PLUMED has not been compiled with openacc");
   }
 #endif
+  action->parseFlag("SERIAL",serial);
+  if( serial ) {
+     action->log.printf("  not using MPI to parallelise this action\n");
+  }
 }
 
 template <class T>
@@ -663,7 +673,7 @@ void ParallelTaskManager<T>::runAllTasks() {
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) {
+    if(serial) {
       stride=1;
       rank=0;
     }
@@ -696,7 +706,7 @@ void ParallelTaskManager<T>::runAllTasks() {
       }
     }
     // MPI Gather everything
-    if( !action->runInSerial() ) {
+    if( !serial ) {
       comm.Sum( value_stash );
     }
   }
@@ -888,7 +898,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) {
+    if(serial) {
       stride=1;
       rank=0;
     }
@@ -962,7 +972,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       gatherThreads( ForceOutput::create(omp_forces[t], forcesForApply ) );
     }
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-    if( !action->runInSerial() ) {
+    if( !serial ) {
       comm.Sum( forcesForApply );
     }
   }
