@@ -271,9 +271,6 @@ public:
     return 0;
   }
   void prepare() override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_merror("not neessary");
-  }
   static void performTask( std::size_t task_index, const ProjectPointsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
   void calculate() override ;

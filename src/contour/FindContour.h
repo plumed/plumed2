@@ -50,9 +50,6 @@ public:
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override ;
   void calculate() override;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   void getInputData( std::vector<double>& inputdata ) const ;
   static void performTask( std::size_t task_index,
                            const ContourFindingObject<gridtools::EvaluateGridFunction>& actiondata,

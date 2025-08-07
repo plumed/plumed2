@@ -281,7 +281,6 @@ public:
   void prepare() override ;
   void calculate() override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {}
   static void performTask( std::size_t task_index,
                            const KDEHelper<K, P, G>& actiondata,
                            ParallelActionsInput& input,

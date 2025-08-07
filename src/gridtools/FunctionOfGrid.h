@@ -57,10 +57,6 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
 /// Get the underlying grid coordinates object
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
-/// Calculate the function
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
 /// Get the input data for doing the parallel calculation
   void getInputData( std::vector<double>& inputdata ) const override ;
 /// Do the calculation

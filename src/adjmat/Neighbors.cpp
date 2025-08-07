@@ -270,9 +270,6 @@ public:
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() override;
   void turnOnDerivatives() override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   void transferStashToValues( const std::vector<double>& stash ) override ;
   void prepare() override ;
   void calculate() override ;

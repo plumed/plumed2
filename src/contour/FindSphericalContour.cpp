@@ -162,9 +162,6 @@ public:
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
   void getInputData( std::vector<double>& inputdata ) const ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   static void performTask( std::size_t task_index,
                            const FindSphericalContourObject& actiondata,
                            ParallelActionsInput& input,

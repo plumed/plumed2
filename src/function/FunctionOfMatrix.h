@@ -60,9 +60,6 @@ public:
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   static void performTask( std::size_t task_index,
                            const FunctionData<T>& actiondata,
                            ParallelActionsInput& input,

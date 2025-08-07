@@ -102,9 +102,6 @@ public:
                            const EvaluateGridFunction& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static int getNumberOfValuesPerTask( std::size_t task_index,
                                        const EvaluateGridFunction& actiondata );
