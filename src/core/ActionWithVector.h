@@ -71,7 +71,9 @@ public:
 /// Apply the forces on this data
   virtual void apply();
 /// Apply the forces on non-zero rank objects
-  virtual void applyNonZeroRankForces( std::vector<double>& outforces ) { plumed_error(); }
+  virtual void applyNonZeroRankForces( std::vector<double>& outforces ) {
+    plumed_error();
+  }
 };
 
 inline

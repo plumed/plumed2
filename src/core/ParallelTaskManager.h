@@ -431,7 +431,9 @@ public:
   input_type& getActionInput();
   const input_type& getActionInput() const ;
 /// Is the calculation running in serial
-  bool runInSerial() const { return serial; }  
+  bool runInSerial() const {
+    return serial;
+  }
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
@@ -482,7 +484,7 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
 #endif
   action->parseFlag("SERIAL",serial);
   if( serial ) {
-     action->log.printf("  not using MPI to parallelise this action\n");
+    action->log.printf("  not using MPI to parallelise this action\n");
   }
 }
 
