@@ -154,7 +154,7 @@ Wham::Wham(const ActionOptions&ao):
 
 void Wham::prepare() {
   std::vector<std::size_t> shape(1);
-  shape [0] = getPntrToArgument(0)->getNumberOfValues();
+  shape[0] = getPntrToArgument(0)->getNumberOfValues() / nreplicas;
   if( getPntrToComponent(0)->getNumberOfValues()!=shape[0] ) {
     getPntrToComponent(0)->setShape( shape );
   }

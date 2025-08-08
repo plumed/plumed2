@@ -228,7 +228,7 @@ bool VonMissesKernelParams::bandwidthsAllSame( std::size_t ndim, const std::vect
 }
 
 bool VonMissesKernelParams::setKernelAndCheckHeight( VonMissesKernelParams& kp, std::size_t ndim, const std::vector<double>& argval ) {
-  plumed_dbg_assert( argval.size()=5 );
+  plumed_dbg_assert( argval.size()==5 );
   if( kp.at.size()!=3 ) {
     kp.at.resize(3);
   }
