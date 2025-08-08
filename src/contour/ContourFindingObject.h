@@ -39,7 +39,7 @@ public:
 /// Where you would like to find the contour
   double contour;
 /// Get rid of constructor in future
-  explicit ContourFindingObject() : mymin(this) {}
+  explicit ContourFindingObject() : mymin(this), contour(0.0) {}
 /// Register keywords
   static void registerKeywords( Keywords& keys );
 /// Get the contour value -- this will become static in future

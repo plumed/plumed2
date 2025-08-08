@@ -380,8 +380,14 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
   for(unsigned i=0; i<shape.size(); ++i) {
     if( (action->getPntrToArgument( i ))->isPeriodic() || g.gmin[i]=="auto" ) {
       ipbc[i]=true;
+      if( g.nbin.size()==shape.size() ) {
+        shape[i] = g.nbin[i];
+      }
     } else {
       ipbc[i]=false;
+      if( g.nbin.size()==shape.size() ) {
+        shape[i] = g.nbin[i]+1;
+      }
     }
   }
   gridobject.setup( "flat", ipbc, 0, 0.0 );

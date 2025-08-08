@@ -113,6 +113,7 @@ public:
   unsigned getNumberOfDerivatives() {
     return 0;
   }
+  void prepare() override ;
   void calculate() override ;
   void apply() override {}
 };
@@ -151,6 +152,14 @@ Wham::Wham(const ActionOptions&ao):
   setNotPeriodic();
 }
 
+void Wham::prepare() {
+  std::vector<std::size_t> shape(1);
+  shape [0] = getPntrToArgument(0)->getNumberOfValues();
+  if( getPntrToComponent(0)->getNumberOfValues()!=shape[0] ) {
+    getPntrToComponent(0)->setShape( shape );
+  }
+}
+
 void Wham::calculate() {
   // Retrieve the values that were stored for the biase
   std::vector<double> stored_biases( getPntrToArgument(0)->getNumberOfValues() );
@@ -162,11 +171,6 @@ void Wham::calculate() {
   // Resize final weights array
   plumed_assert( stored_biases.size()%nreplicas==0 );
   std::vector<double> final_weights( stored_biases.size() / nreplicas, 1.0 );
-  if( getPntrToComponent(0)->getNumberOfValues()!=final_weights.size() ) {
-    std::vector<std::size_t> shape(1);
-    shape[0]=final_weights.size();
-    getPntrToComponent(0)->setShape( shape );
-  }
   // Offset and exponential of the bias
   std::vector<double> expv( stored_biases.size() );
   for(unsigned i=0; i<expv.size(); ++i) {
