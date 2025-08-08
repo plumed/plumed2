@@ -54,9 +54,6 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned&, MultiValue& ) const override {
-    plumed_error();
-  }
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const T& actiondata );

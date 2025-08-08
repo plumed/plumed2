@@ -66,9 +66,6 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   static void performTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixProductDiagonalInput& actiondata );
   static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixProductDiagonalInput& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );

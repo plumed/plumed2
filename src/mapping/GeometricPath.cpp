@@ -122,9 +122,6 @@ public:
   explicit GeometricPath(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
 };
 
 PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")

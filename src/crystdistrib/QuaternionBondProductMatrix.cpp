@@ -91,9 +91,6 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_merror("this doesn't do anything");
-  }
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
                            const ParallelActionsInput& input,
