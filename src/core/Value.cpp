@@ -513,7 +513,7 @@ bool Value::allElementsEqual() const {
 
   double refval = get(0);
   for(unsigned i=1; i<getNumberOfValues(); ++i) {
-    if( get(i)!=refval ) {
+    if( fabs(get(i)-refval)>epsilon ) {
       return false;
     }
   }

@@ -106,7 +106,7 @@ void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& bo
     for(unsigned j=0; j<args.size(); ++j) {
       myargs[j] = args[j]->get(0);
     }
-    bool ignore = K::setKernelAndCheckHeight( myk, gridobject.getDimension(), myargs );
+    K::setKernelAndCheckHeight( myk, gridobject.getDimension(), myargs );
     G::getDiscreteSupport( func.g, func.kernelsum.params, myk, func.nneigh, gridobject );
     func.fixed_width = true;
   }
@@ -222,8 +222,6 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
     updateNeighborsOnEachKernel = false;
   }
 
-  unsigned num_neigh;
-  std::vector<unsigned> neighbors;
   std::vector<double> argval( args.size() );
   if( args[args.size()-1]->getRank()==2 ) {
     unsigned nc = args[args.size()-1]->getShape()[1];

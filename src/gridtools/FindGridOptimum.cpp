@@ -153,6 +153,9 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   }
   // Create value for this function
   ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  if( !ag ) {
+    error("input action should be a grid");
+  }
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
   std::vector<std::size_t> shape(0);
   for(unsigned i=0; i<argn.size(); ++i) {
@@ -197,6 +200,7 @@ double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>&
 
 void FindGridOptimum::calculate() {
   ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  plumed_assert( ag );
   spacing = ag->getGridCoordinatesObject().getGridSpacing();
   const GridCoordinatesObject& ingrid = ag->getGridCoordinatesObject();
   Value* gval = getPntrToArgument(0);

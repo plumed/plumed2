@@ -495,7 +495,7 @@ void SphericalKDEGridTools::readGridParameters( SphericalKDEGridTools& g, Action
     action->error("should have three coordinates in input to this action");
   }
   action->parse("GRID_BIN",g.nbins);
-  action->log.printf("  setting number of bins to %d \n", g.nbins );
+  action->log.printf("  setting number of bins to %zu \n", g.nbins );
   std::vector<bool> ipbc( 3, false );
   gridobject.setup( "fibonacci", ipbc, g.nbins, 0 );
   shape[0]=g.nbins;
