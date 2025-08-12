@@ -130,6 +130,7 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
   keys.needsAction("SECONDARY_STRUCTURE_DRMSD");
   keys.needsAction("LESS_THAN");
   keys.needsAction("SUM");
+  keys.addDOI("10.1021/ct900202f");
 }
 
 template <class T>
