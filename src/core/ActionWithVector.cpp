@@ -42,10 +42,12 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   nmask(-1) {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-    if( av && av->getNumberOfMasks()>=0 ) {
-      nmask=0;
+  if( !keywords.exists("MASKED_INPUT_ALLOWED") ) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( av && av->getNumberOfMasks()>=0 ) {
+        nmask=0;
+      }
     }
   }
 
