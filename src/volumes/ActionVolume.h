@@ -103,9 +103,6 @@ public:
   void getInputData( std::vector<double>& inputdata ) const override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void performTask( const unsigned&, MultiValue& ) const {
-    plumed_error();
-  }
   static void performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static void gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
   static int getNumberOfValuesPerTask( std::size_t task_index, const VolumeData<T>& actiondata );

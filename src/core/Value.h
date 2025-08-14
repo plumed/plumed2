@@ -206,6 +206,7 @@ public:
 /// These are used for making constant values
   bool isConstant() const ;
   void setConstant();
+  void reshapeConstantValue( const std::vector<std::size_t>& sh );
 /// Check if forces have been added on this value
   bool forcesWereAdded() const ;
 /// Set a bool that tells us if the derivative is zero when the value is zero true
@@ -246,6 +247,8 @@ public:
   void push_back( const double& val );
 /// Get the type of value that is stored here
   std::string getValueType() const ;
+/// Check if all the elements in the value have the same value
+  bool allElementsEqual() const ;
 };
 
 inline
@@ -420,6 +423,9 @@ double Value::getMaxMinusMin()const {
 
 inline
 unsigned Value::getRank() const {
+  if( valtype==constant && shape.size()==1 && shape[0]==1 ) {
+    return 0;
+  }
   return shape.size();
 }
 
