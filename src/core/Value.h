@@ -423,6 +423,9 @@ double Value::getMaxMinusMin()const {
 
 inline
 unsigned Value::getRank() const {
+  if( valtype==constant && shape.size()==1 && shape[0]==1 ) {
+    return 0;
+  }
   return shape.size();
 }
 

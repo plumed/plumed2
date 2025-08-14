@@ -66,16 +66,16 @@ DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
 If $x$ is one of the input arguments to the KDE action and $x<g_{min}$ or $x>g_{max}$, where $g_{min}$ and $g_{max}$ are the minimum
-and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by default PLUMED will crash.  If you want any values
-that fall outside of the grid range to simply be ignored instead you can add the `IGNORE_IF_OUT_OF_RANGE` to the input as shown below:
+and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by PLUMED will crash.
+
+Notice also that when you use Gaussian kernels to accumulate a denisty as in the input above you need to define a cutoff beyond, which the
+Gaussian (which is a function with infinite support) is assumed not to contribute to the accumulated density.  When setting this cutoff you
+set the value of $x$ in the following expression $\sigma \sqrt{2*x}$, where $\sigma$ is the bandwidth.  By default $x$ is set equal to 6.25 but
+you can change this value by using the CUTOFF keyword as shown below:
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-kde: KDE ...
-   ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0
-   GRID_SPACING=0.01 BANDWIDTH=0.2
-   IGNORE_IF_OUT_OF_RANGE
-...
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2 CUTOFF=6.25
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
@@ -98,6 +98,21 @@ step of the simulation.
 If for any reason you want to use a bandwidth that is not diagonal when doing kensity density estimation you can do by using an input similar to the one shown below:
 
 ```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=1,2
+kde: KDE ...
+  ARG=d1,d2 GRID_MIN=0.0,0.0
+  GRID_MAX=1.0,1.0 GRID_BIN=100,100
+  BANDWIDTH=0.2,0.1,0.1,0.2 HEIGHTS=1
+...
+histo: ACCUMULATE ARG=kde STRIDE=1
+DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
+```
+
+As there are two arguments for this KDE action the four numbers passed in the bandwdith parameter are interepretted as a $2\times 2$ matrix.
+Notice that you can also pass the information for the bandwidth in from another argument as has been done here:
+
+```plumed
 m: CONSTANT VALUES=0.2,0.1,0.1,0.2 NROWS=2 NCOLS=2
 
 d1: DISTANCE ATOMS=1,2
@@ -105,13 +120,13 @@ d2: DISTANCE ATOMS=1,2
 kde: KDE ...
   ARG=d1,d2 GRID_MIN=0.0,0.0
   GRID_MAX=1.0,1.0 GRID_BIN=100,100
-  METRIC=m
+  BANDWIDTH=m HEIGHTS=1
 ...
 histo: ACCUMULATE ARG=kde STRIDE=1
 DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
 ```
 
-In this case the input metric is a constant.  You could, however, also use a non-constant value as input to the METRIC keyword.
+In this case the input is equivalent to the first input above and the bandwidth is a constant.  You could, however, also use a non-constant value as input to the BANDWIDTH keyword.
 
 ## Working with vectors and scalars
 
@@ -203,6 +218,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readHeightKeyword( bool canusevol, std::size_t nargs, const std::vector<std::string>& bw, ActionWithArguments* action );
   static void readBandwidth( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw );
+  static void readBandwidthKeyword( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw, std::vector<Value*>& bwargs );
   static void readBandwidthAndHeight( const P& params, ActionWithArguments* action );
   static void convertHeightsToVolumes( const std::size_t& nargs, const std::vector<std::string>& bw, const std::string& volstr, ActionWithArguments* action );
   static void readGridParameters( KDEGridTools<K,P>& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
@@ -230,7 +246,14 @@ void KDEGridTools<K,P>::readHeightKeyword( bool canusevol, std::size_t nargs, co
   std::string weight_str;
   action->parse("HEIGHTS",weight_str);
   std::string str_nvals;
-  Tools::convert( (action->getPntrToArgument(0))->getNumberOfValues(), str_nvals );
+  if( (action->getPntrToArgument(0))->getRank()==2 ) {
+    std::string nr, nc;
+    Tools::convert( (action->getPntrToArgument(0))->getShape()[0], nr );
+    Tools::convert( (action->getPntrToArgument(0))->getShape()[1], nc );
+    str_nvals = nr + "," + nc;
+  } else {
+    Tools::convert( (action->getPntrToArgument(0))->getNumberOfValues(), str_nvals );
+  }
   if( weight_str.length()>0 ) {
     KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( weight_str, action, "_heights", true );
   } else if( canusevol ) {
@@ -249,30 +272,49 @@ void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::readBandwidthAndHeight( 
 }
 
 template<class K, class P>
-void KDEGridTools<K, P>::readBandwidth( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw ) {
+void KDEGridTools<K, P>::readBandwidthKeyword( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw, std::vector<Value*>& bwargs ) {
   action->parseVector("BANDWIDTH",bw);
   if( nargs>1 && bw.size()==1 ) {
-    action->error("this requires some work on the implementation");
-  } else if( bw.size()==nargs ) {
-    if( typeid(K) != typeid(DiagonalKernelParams) ) {
-      action->error("wrong number of arguments specified in input to bandwidth parameter");
+    ActionWithArguments::interpretArgumentList( bw, action->plumed.getActionSet(), action, bwargs );
+    if( bwargs.size()!=1 ) {
+      action->error("invalid bandwidth found");
     }
+    // Create a vector of ones with the right size
+    std::string nvals;
+    if( (action->getPntrToArgument(0))->getRank()==2 ) {
+      std::string nr, nc;
+      Tools::convert( (action->getPntrToArgument(0))->getShape()[0], nr );
+      Tools::convert( (action->getPntrToArgument(0))->getShape()[1], nc );
+      nvals = nr + "," + nc;
+    } else {
+      Tools::convert( (action->getPntrToArgument(0))->getNumberOfValues(), nvals );
+    }
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_bwones: ONES SIZE=" + nvals ), false );
+  }
+}
+
+template <class K, class P>
+void KDEGridTools<K,P>::readBandwidth( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw ) {
+  plumed_assert( typeid(K)==typeid(DiagonalKernelParams) );
+  std::vector<Value*> bwargs;
+  readBandwidthKeyword( nargs, action, bw, bwargs );
+  if( nargs>1 && bw.size()==1 ) {
+    if( bwargs[0]->getRank()!=1 || bwargs[0]->getNumberOfValues()!=nargs ) {
+      action->error("invalid input for bandwidth parameter");
+    }
+    std::string str_i;
+    bw.resize( nargs );
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_scalar_bw" + str_i + ": SELECT_COMPONENTS ARG=" + bwargs[0]->getName() + " COMPONENTS=" + str_i ), false );
+      bw[i] = action->getLabel() + "_bw" + str_i;
+      action->plumed.readInputWords( Tools::getWords( bw[i] + ": CUSTOM ARG=" + action->getLabel() + "_bwones," + action->getLabel() + "_scalar_bw" + str_i + " FUNC=x*y PERIODIC=NO"), false );
+    }
+  } else if( bw.size()==nargs ) {
     std::string str_i;
     for(unsigned i=0; i<nargs; ++i) {
       Tools::convert( i+1, str_i );
       KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bw" + str_i, true );
-    }
-  } else if( bw.size()==nargs*nargs ) {
-    if( typeid(K) != typeid(NonDiagonalKernelParams) ) {
-      action->error("wrong number of arguments specified in input to bandwidth parameter");
-    }
-    std::string str_i, str_j;
-    for(unsigned i=0; i<nargs; ++i) {
-      Tools::convert( i+1, str_i );
-      for(unsigned j=0; j<nargs; ++j) {
-        Tools::convert( j+1, str_j );
-        KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i*nargs+j], action, "_bw" + str_i + "_" + str_j, true );
-      }
     }
   } else {
     action->error("wrong number of arguments specified in input to bandwidth parameter");
@@ -289,6 +331,7 @@ void KDEGridTools<DiagonalKernelParams,HistogramBeadKernel>::readBandwidthAndHei
 
 template <>
 void KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::readBandwidthAndHeight( const RegularKernel<DiagonalKernelParams>& params, ActionWithArguments* action ) {
+  std::vector<Value*> bwargs;
   std::vector<std::string> bw;
   std::size_t nargs = action->getNumberOfArguments();
   readBandwidth( nargs, action, bw );
@@ -303,6 +346,53 @@ void KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::rea
     convertHeightsToVolumes(nargs, bw, volstr, action);
   } else {
     KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>::readHeightKeyword( params.canusevol, nargs, bw, action );
+  }
+}
+
+template <>
+void KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>::readBandwidthAndHeight( const RegularKernel<NonDiagonalKernelParams>& params, ActionWithArguments* action ) {
+  std::vector<Value*> bwargs;
+  std::vector<std::string> bw;
+  std::size_t nargs = action->getNumberOfArguments();
+  readBandwidthKeyword( nargs, action, bw, bwargs );
+  if( nargs>1 && bw.size()==1 ) {
+    if( bwargs[0]->getRank()!=2 || bwargs[0]->getShape()[0]!=nargs || bwargs[0]->getShape()[1]!=nargs  ) {
+      action->error("invalid input for bandwidth parameter");
+    }
+    std::string str_i, str_j;
+    bw.resize( nargs*nargs );
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      for(unsigned j=0; j<nargs; ++j) {
+        Tools::convert( j+1, str_j );
+        action->plumed.readInputWords( Tools::getWords(action->getLabel() + "_scalar_bw" + str_i + "_" + str_j + ": SELECT_COMPONENTS ARG=" + bwargs[0]->getName() + " COMPONENTS=" + str_i + "." + str_j ), false );
+        bw[i*nargs+j] = action->getLabel() + "_bw" + str_i + "_" + str_j;
+        action->plumed.readInputWords( Tools::getWords( bw[i*nargs+j] + ": CUSTOM ARG=" + action->getLabel() + "_bwones," + action->getLabel() + "_scalar_bw" + str_i + "_" + str_j + " FUNC=x*y PERIODIC=NO"), false );
+      }
+    }
+  } else if( bw.size()==nargs*nargs ) {
+    std::string str_i, str_j;
+    for(unsigned i=0; i<nargs; ++i) {
+      Tools::convert( i+1, str_i );
+      for(unsigned j=0; j<nargs; ++j) {
+        Tools::convert( j+1, str_j );
+        KDEHelper<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>>::readKernelParameters( bw[i*nargs+j], action, "_bw" + str_i + "_" + str_j, true );
+      }
+    }
+  } else {
+    action->error("wrong number of arguments specified in input to bandwidth parameter");
+  }
+  std::string volstr;
+  action->parse("VOLUMES",volstr);
+  if( volstr.length()>0 ) {
+    if( !params.canusevol ) {
+      action->error("cannot use normalized kernels with selected kernel type");
+    }
+    // Check if we are using Gaussian kernels
+    KDEHelper<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>>::readKernelParameters( volstr, action, "_volumes", false );
+    convertHeightsToVolumes(nargs, bw, volstr, action);
+  } else {
+    KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>::readHeightKeyword( params.canusevol, nargs, bw, action );
   }
 }
 
@@ -521,9 +611,8 @@ typedef KDE<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTool
 PLUMED_REGISTER_ACTION(flatkde,"KDE_KERNELS")
 typedef KDE<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools> sphericalkde;
 PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDE")
-// Notice that the following commands would add in a KDE that uses non diagonal covariance matrices if that is ever of interest
-// typedef KDE<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>> flatfkde;
-// PLUMED_REGISTER_ACTION(flatfkde,"KDE_FULLCOVAR")
+typedef KDE<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>> flatfkde;
+PLUMED_REGISTER_ACTION(flatfkde,"KDE_FULLCOVAR")
 
 
 class KDEShortcut : public ActionShortcut {
@@ -539,6 +628,7 @@ void KDEShortcut::registerKeywords(Keywords& keys) {
   keys.addActionNameSuffix("_DISCRETE");
   keys.addActionNameSuffix("_KERNELS");
   keys.addActionNameSuffix("_BEADS");
+  keys.addActionNameSuffix("_FULLCOVAR");
 }
 
 KDEShortcut::KDEShortcut(const ActionOptions&ao):
@@ -548,11 +638,50 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
   parse("KERNEL",kerneltype);
   if( kerneltype=="DISCRETE" ) {
     readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + convertInputLineToString() );
-  } else if( kerneltype.find("bin")==std::string::npos ) {
-    readInputLine( getShortcutLabel() + ": KDE_KERNELS KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    return;
+  }
+  std::vector<std::string> args;
+  parseVector("ARG", args );
+  std::vector<Value*> argvals;
+  ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, argvals );
+  std::string argstr = " ARG=" + argvals[0]->getName();
+  for(unsigned i=1; i<argvals.size(); ++i) {
+    argstr += "," + argvals[i]->getName();
+  }
+  std::vector<std::string> bw;
+  parseVector("BANDWIDTH",bw);
+  std::string bwstr = " BANDWIDTH=" + bw[0];
+  for(unsigned i=1; i<bw.size(); ++i) {
+    bwstr += "," + bw[i];
+  }
+  if( bw.size() == 1 && argvals.size()>1 ) {
+    std::vector<Value*> bwargs;
+    ActionWithArguments::interpretArgumentList( bw, plumed.getActionSet(), this, bwargs );
+    if( bwargs.size()!=1 ) {
+      error("invalid input for bandwidth parameter");
+    } else if( bwargs[0]->getRank()<=1 ) {
+      if( kerneltype.find("bin")==std::string::npos ) {
+        readInputLine( getShortcutLabel() + ": KDE_KERNELS " + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      } else {
+        std::size_t dd = kerneltype.find("-bin");
+        readInputLine( getShortcutLabel() + ": KDE_BEADS " + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+      }
+    } else if( bwargs[0]->getRank()==2 ) {
+      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    } else {
+      error("found strange rank for bandwidth parameter");
+    }
+  } else if( bw.size()==argvals.size() ) {
+    if( kerneltype.find("bin")==std::string::npos ) {
+      readInputLine( getShortcutLabel() + ": KDE_KERNELS " + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    } else {
+      std::size_t dd = kerneltype.find("-bin");
+      readInputLine( getShortcutLabel() + ": KDE_BEADS " + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+    }
+  } else if( bw.size()==argvals.size()*argvals.size() ) {
+    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
   } else {
-    std::size_t dd = kerneltype.find("-bin");
-    readInputLine( getShortcutLabel() + ": KDE_BEADS KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+    error("invalid input for bandwidth");
   }
 }
 

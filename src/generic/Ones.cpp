@@ -80,7 +80,7 @@ Ones::Ones(const ActionOptions& ao):
     Tools::convert( size_str[0], nr );
     Tools::convert( size_str[1], nc );
     size = nr*nc;
-    matstr = "NROWS=" + size_str[0] + " NCOLS=" + size_str[1];
+    matstr = " NROWS=" + size_str[0] + " NCOLS=" + size_str[1];
   } else if( size_str[0]=="@natoms" ) {
     if( size_str.size()!=1 ) {
       error("should only be one @natoms string in input");

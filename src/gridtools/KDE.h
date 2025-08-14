@@ -169,7 +169,8 @@ void KDEHelper<K,P,G>::readKernelParameters( std::string& value, ActionWithArgum
 
 template <class K, class P, class G>
 void KDEHelper<K,P,G>::addArgument( const std::string& value, ActionWithArguments* action ) {
-  ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( value );
+  std::size_t dot = value.find_first_of(".");
+  ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( value.substr(0,dot) );
   plumed_assert( av );
   std::vector<Value*> args( action->getArguments() );
   args.push_back( av->copyOutput(0) );
