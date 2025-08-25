@@ -631,6 +631,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
+  p.cmd("setLog",out);
   p.cmd("setMDLengthUnits",units.getLength());
   p.cmd("setMDChargeUnits",units.getCharge());
   p.cmd("setMDMassUnits",units.getMass());
@@ -639,7 +640,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if( !parseOnly || full_outputfile.length()==0 ) {
     p.cmd("setPlumedDat",plumedFile.c_str());
   }
-  p.cmd("setLog",out);
 
   int natoms;
   int lvl=0;
