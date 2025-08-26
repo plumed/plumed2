@@ -510,10 +510,14 @@ void getWords_replicas(gch::small_vector<std::string_view> & words,
       ++parlevel;
       if(parlevel == 1) {
         init = i+1;
+      } else {
+        ++size;
       }
     } else if(line[i] == closePar) {
       --parlevel;
+      ++size;
       if(parlevel == 0) {
+        --size;
         break;
       }
     } else {
