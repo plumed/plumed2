@@ -47,11 +47,12 @@ struct MultiColvarInput {
   }
 };
 
-template <class T>
+template <class T, typename myPTM=defaultPTM>
 class MultiColvarTemplate : public ActionWithVector {
 public:
   using input_type = MultiColvarInput;
-  using PTM = ParallelTaskManager<MultiColvarTemplate<T>>;
+  using mytype=MultiColvarTemplate<T,myPTM>;
+  using PTM =typename myPTM::template PTM<mytype>;
   constexpr static size_t virialSize = 9;
 private:
 /// The parallel task manager
@@ -89,8 +90,8 @@ public:
                                ForceIndexHolder force_indices );
 };
 
-template <class T>
-void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys );
   PTM::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
@@ -105,8 +106,8 @@ void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   }
 }
 
-template <class T>
-MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
+template <class T, typename myPTM>
+MultiColvarTemplate<T,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this),
@@ -170,40 +171,40 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   taskmanager.setActionInput( MultiColvarInput{ usepbc, mode, natoms_per_task });
 }
 
-template <class T>
-unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
+template <class T, typename myPTM>
+unsigned MultiColvarTemplate<T,myPTM>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 
-template <class T>
-void MultiColvarTemplate<T>::calculate() {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::calculate() {
   if( wholemolecules ) {
     makeWhole();
   }
   taskmanager.runAllTasks();
 }
 
-template <class T>
-void MultiColvarTemplate<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
   std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addValue( s );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
   std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addComponent( name, s );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) const {
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<double>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -231,8 +232,8 @@ void MultiColvarTemplate<T>::getInputData( std::vector<double>& inputdata ) cons
   }
 }
 
-template <class T>
-void MultiColvarTemplate<T>::performTask( std::size_t task_index,
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::performTask( std::size_t task_index,
     const MultiColvarInput& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
@@ -293,14 +294,14 @@ void MultiColvarTemplate<T>::performTask( std::size_t task_index,
                   cvout );
 }
 
-template <class T>
-int MultiColvarTemplate<T>::getNumberOfValuesPerTask( std::size_t task_index,
+template <class T, typename myPTM>
+int MultiColvarTemplate<T,myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const MultiColvarInput& actiondata ) {
   return 1;
 }
 
-template <class T>
-void MultiColvarTemplate<T>::getForceIndices( std::size_t task_index,
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::getForceIndices( std::size_t task_index,
     std::size_t colno,
     std::size_t ntotal_force,
     const MultiColvarInput& actiondata,

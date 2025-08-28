@@ -442,6 +442,11 @@ public:
                                         View<double> forces );
 };
 
+struct defaultPTM {
+  template <typename ACC>
+  using PTM=ParallelTaskManager<ACC>;
+};
+
 template <class T>
 void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
