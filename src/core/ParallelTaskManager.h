@@ -381,7 +381,7 @@ public:
 //  static constexpr bool has_custom_gather=PTMUtils::has_gatherForces_custom<T>;
 //  static constexpr bool has_GPU_gather=PTMUtils::has_gatherForces_GPU<T>;
 //  static constexpr size_t virialSize = PTMUtils::virialSize<T>;
-private:
+protected:
 /// The underlying action for which we are managing parallel tasks
   ActionWithVector* action;
 /// The MPI communicator
