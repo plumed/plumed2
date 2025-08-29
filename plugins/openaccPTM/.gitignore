@@ -1,2 +1,4 @@
 Makefile.conf
+extra/
+.deps/
 
