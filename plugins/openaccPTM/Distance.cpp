@@ -30,5 +30,5 @@ using MCT= PLMD::colvar::MultiColvarTemplate<T,PLMD::ACCPTM>;
 
 typedef MCT<PLMD::colvar::Distance> DistanceMultiAcc;
 
-PLUMED_REGISTER_ACTION(DistanceMultiAcc,"DISTANCE_VECTOR_OPENACC")
+PLUMED_REGISTER_ACTION(DistanceMultiAcc,"DISTANCE_VECTORACC")
 
