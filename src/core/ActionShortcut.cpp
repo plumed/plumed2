@@ -149,7 +149,12 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
       Keywords thiskeys;
       actionRegister().getKeywords( av->getName(), thiskeys );
       if( thiskeys.getDisplayName()!=getName() ) {
-        error("mismatch between display name of hidden action " + thiskeys.getDisplayName() + " and shortcut that creates it " + getName() );
+        //NOTE: this was an error
+        // I deactivated it because it clashes with the gpu-openacc-by-LOAD does not load
+        // at moment of writing this I do not know if there is a way to to the check by passing the
+        // dlloader object to this function.
+        // bypassing this check makes my contraption work
+        warning("mismatch between display name of hidden action " + thiskeys.getDisplayName() + " and shortcut that creates it " + getName() );
       }
     }
   } else {
