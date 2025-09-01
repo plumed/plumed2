@@ -17,8 +17,8 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_PINES_H
-#define __PLUMED_PINES_H
+#ifndef __PLUMED_pines_PINES_h
+#define __PLUMED_pines_PINES_h
 
 #include <unordered_map>
 #include <set>
@@ -28,7 +28,7 @@ freely, subject to the following restrictions:
 #include <functional>
 
 namespace PLMD {
-namespace PINES {
+namespace pines {
 
 struct AtomNumberLess {
   bool operator()(const AtomNumber& a, const AtomNumber& b) const {

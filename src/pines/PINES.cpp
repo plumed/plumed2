@@ -29,6 +29,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <vector>
 
+namespace PLMD {
+namespace pines {
+
 constexpr int CACHE_LINE_SIZE = 64;
 
 template<typename T>
@@ -39,9 +42,6 @@ struct alignas(CACHE_LINE_SIZE) Padded {
   Padded() : value() {}
   explicit Padded(const T& val) : value(val) {}
 };
-
-namespace PLMD {
-namespace PINES {
 
 void PINES::registerKeywords(Keywords &keys) {
   Colvar::registerKeywords(keys);
