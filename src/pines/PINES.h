@@ -17,18 +17,15 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_PINES_vec_PINES_h
-#define __PLUMED_PINES_vec_PINES_h
+#ifndef __PLUMED_PINES_H
+#define __PLUMED_PINES_H
+
 #include <unordered_map>
 #include <set>
 #include <fstream>
-#include "tools/AtomNumber.h"
 #include <unordered_set>
 #include <utility>
 #include <functional>
-#include "tools/Stopwatch.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace PINES {
@@ -52,8 +49,7 @@ using PLMD::Colvar;
 
 
 
-class PINES      : public Colvar
-{
+class PINES      : public Colvar {
 private:
   PLMD::Stopwatch timer;
   int N_Blocks;
@@ -110,9 +106,9 @@ private:
   void resizeAllContainers(int N);
 
 public:
-  static void registerKeywords( Keywords& keys );                                                                       
-  explicit PINES(const ActionOptions&); 
-  //~PINES();                                                                                                               
+  static void registerKeywords( Keywords& keys );
+  explicit PINES(const ActionOptions&);
+  //~PINES();
   // active methods:
   struct MinCompareDist {
     bool operator()(const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p1, const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p2) {
@@ -124,10 +120,10 @@ public:
       return p1.first > p2.first; // Max heap
     }
   };
-                                                                                            
+
   virtual void calculate();
-  void checkFieldsAllowed() {}                                                                                           
-  // -- SD prepare to requestAtoms during simulation 
+  void checkFieldsAllowed() {}
+  // -- SD prepare to requestAtoms during simulation
   void prepare() override;
 };
 
