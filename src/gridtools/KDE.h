@@ -237,7 +237,7 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
         unsigned jind = args[args.size()-1]->getRowIndex( i, j );
         for(unsigned k=0; k<args.size(); ++k) {
           plumed_massert( args[k]->isConstant() || jind==args[k]->getRowIndex( i, j ), "all input matrices must have same sparsity pattern" );
-          argval[k] = args[k]->get( i*nc+ jind );
+          argval[k] = args[k]->get( i*ncs+ j, false );
         }
         KDEHelper<K,P,G>::transferParamsToKernel( argval, func, gridobject, updateNeighborsOnEachKernel, nkernels, i*ncs+j, func.kernelsum.kernelParams[i*ncs+j] );
       }
