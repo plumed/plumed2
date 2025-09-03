@@ -29,16 +29,13 @@ namespace PLMD {
 namespace gridtools {
 
 class ActionWithGrid : public ActionWithVector {
-private:
-  bool firststep;
 public:
   static void registerKeywords( Keywords& keys );
   static ActionWithGrid* getInputActionWithGrid( Action* action );
   explicit ActionWithGrid(const ActionOptions&ao);
-  virtual void calculate() override ;
+  void transferStashToValues( const std::vector<double>& stash ) override ;
   virtual std::vector<std::string> getGridCoordinateNames() const = 0;
   virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
-  virtual void setupOnFirstStep( const bool incalc ) = 0;
 };
 
 }

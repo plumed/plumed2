@@ -1,0 +1,43 @@
+# Calculate the coordination number of the atoms
+# coord here is a vector
+cmap: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4 R_0=0.5 D_MAX=6}
+ones: ONES SIZE=512
+coord: MATRIX_VECTOR_PRODUCT ARG=cmap,ones 
+
+# Trasform the vector by a switching function that determines
+# if the coordination number of the atom is greater than one or not
+# Output here is also a vector
+mtc: MORE_THAN ARG=coord SWITCH={RATIONAL R_0=1}
+# The sum of the vector above, which is used for normalising the RDF
+sumcoord: SUM ARG=mtc PERIODIC=NO
+
+# Calculate the distances between all the atoms that are or interest
+dmat: DISTANCE_MATRIX GROUP=1-512 CUTOFF=8 
+# Create a matrix that identifies pairs of atoms that both have a coordination 
+# number that is greater than one
+dweights: OUTER_PRODUCT ARG=mtc,mtc MASK=dmat
+# This basically ensures we are only considering pairs of atoms that both have the approrpriate
+# coordination number and that are within the cutoff distance
+heights: CUSTOM ARG=dweights,dmat FUNC=x*step(8-y) PERIODIC=NO
+
+# Calculate the distribution of distances for distances that were calculated above
+kde: KDE ARG=dmat HEIGHTS=heights BANDWIDTH=0.2 KERNEL=gaussian GRID_BIN=20 GRID_MIN=0 GRID_MAX=8
+# This is a grid that holds the function y=x*x, which we use for normalising the RDF
+norm: REFERENCE_GRID PERIODIC=NO FUNC=x*x GRID_BIN=20 GRID_MIN=0 GRID_MAX=8 
+# Normalisation by grid volumes - we assume a density of 1.0 here
+# notice also that we are dividing by the total number of atoms with a coordination number of 
+# that is greater than one 
+rdf: CUSTOM ARG=kde,norm,sumcoord FUNC=x/(4*pi*y*z) PERIODIC=NO
+
+# Now we start calculating the entropy
+conv: CUSTOM ARG=rdf,norm FUNC=x*y*log(x)+(1-x)*y PERIODIC=NO
+# Interpolate above function on to midpoints so we can integrate using trapezium rule
+midp: INTERPOLATE_GRID ARG=conv INTERPOLATION_TYPE=linear MIDPOINTS
+# This sums the values of the functions at the midpoints and multiplies by the grid spacing
+# essentially trapezium rule
+int: INTEGRATE_GRID ARG=midp PERIODIC=NO
+# And this is the final entropy CV
+entropy: CUSTOM PERIODIC=NO ARG=int FUNC=-2*pi*x
+
+PRINT ARG=entropy FILE=colvar
+BIASVALUE ARG=entropy

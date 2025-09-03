@@ -81,6 +81,7 @@ public:
   void set(double l, double h, double w);
 #pragma acc routine seq
   double calculate(double x, double&df) const;
+  double calculateWithCutoff( double x, double l, double u, double s, double& df ) const ;
   double calculateWithCutoff( double x, double& df ) const;
   double lboundDerivative( double x ) const;
   double uboundDerivative( double x ) const;

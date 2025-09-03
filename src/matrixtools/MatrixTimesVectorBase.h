@@ -119,9 +119,6 @@ public:
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
-    plumed_merror("This should not be needed");
-  }
   int checkTaskIsActive( const unsigned& itask ) const override ;
   /// Override this so we write the graph properly
   std::string writeInGraph() const override {

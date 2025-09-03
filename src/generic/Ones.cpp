@@ -72,9 +72,19 @@ Ones::Ones(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
   unsigned size;
-  std::string size_str;
-  parse("SIZE",size_str);
-  if( size_str=="@natoms" ) {
+  std::string matstr = "";
+  std::vector<std::string> size_str;
+  parseVector("SIZE",size_str);
+  if( size_str.size()==2 ) {
+    unsigned nr, nc;
+    Tools::convert( size_str[0], nr );
+    Tools::convert( size_str[1], nc );
+    size = nr*nc;
+    matstr = " NROWS=" + size_str[0] + " NCOLS=" + size_str[1];
+  } else if( size_str[0]=="@natoms" ) {
+    if( size_str.size()!=1 ) {
+      error("should only be one @natoms string in input");
+    }
     std::vector<Value*> xpos, ypos, zpos, masv, chargev;
     ActionAtomistic::getAtomValuesFromPlumedObject( plumed, xpos, ypos, zpos, masv, chargev );
     size = 0;
@@ -82,7 +92,10 @@ Ones::Ones(const ActionOptions& ao):
       size += xpos[i]->getNumberOfValues();
     }
   } else {
-    Tools::convert( size_str, size );
+    if( size_str.size()!=1 ) {
+      error("size should be one or two values");
+    }
+    Tools::convert( size_str[0], size );
   }
   if( size<1 ) {
     error("size should be greater than 0");
@@ -91,7 +104,7 @@ Ones::Ones(const ActionOptions& ao):
   for(unsigned i=1; i<size; ++i) {
     ones +=",1";
   }
-  readInputLine( getShortcutLabel() + ": CONSTANT NOLOG VALUES=" + ones );
+  readInputLine( getShortcutLabel() + ": CONSTANT NOLOG VALUES=" + ones + matstr );
 }
 
 }
