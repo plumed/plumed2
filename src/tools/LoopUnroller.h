@@ -57,32 +57,32 @@ public:
   static constexpr void _zero(T*d);
 /// copy the content o v into v
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=v[i];`
-  template<typename T>
-  static constexpr void _copy(T*d,const T*v) noexcept;
+  template<typename T,typename TT>
+  static constexpr void _copy(T*d,TT const*v) noexcept;
 /// Add v to d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]+=v[i];`
-  template<typename T>
-  static constexpr void _add(T*d,const T*v);
+  template<typename T,typename TT>
+  static constexpr void _add(T*d,TT const*v);
 /// Subtract v from d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]-=v[i];`
-  template<typename T>
-  static constexpr void _sub(T*d,const T*v);
+  template<typename T,typename TT>
+  static constexpr void _sub(T*d,TT const*v);
 /// Multiply d by s.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]*=s;`
-  template<typename T>
-  static constexpr void _mul(T*d,const T s);
+  template<typename T,typename TT>
+  static constexpr void _mul(T*d,TT const s);
 /// Set d to -v.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=-v[i];`
-  template<typename T>
-  static constexpr void _neg(T*d,const T*v);
+  template<typename T,typename TT>
+  static constexpr void _neg(T*d,TT const*v);
 /// Squared modulo of d;
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*d[i]; return r;`
   template<typename T>
-  static constexpr T _sum2(const T*d);
+  static constexpr T _sum2(T const*d);
 /// Dot product of d and v
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*v[i]; return r;`
-  template<typename T>
-  static constexpr T _dot(const T*d,const T*v);
+  template<typename T,typename TT>
+  static constexpr T _dot(T const*d,TT const*v);
 };
 
 template<unsigned n>
@@ -95,8 +95,8 @@ constexpr void LoopUnroller<n>::_zero(T*d) {
 }
 
 template<unsigned n>
-template<typename T>
-constexpr void LoopUnroller<n>::_copy(T*d,const T*v) noexcept {
+template<typename T,typename TT>
+constexpr void LoopUnroller<n>::_copy(T*d,TT const*v) noexcept {
   if constexpr (n==1) {
     d[0]=v[0];
   } else {
@@ -106,8 +106,8 @@ constexpr void LoopUnroller<n>::_copy(T*d,const T*v) noexcept {
 }
 
 template<unsigned n>
-template<typename T>
-constexpr void LoopUnroller<n>::_add(T*d,const T*a) {
+template<typename T, typename TT>
+constexpr void LoopUnroller<n>::_add(T*d,TT const*a) {
   if constexpr (n>1) {
     LoopUnroller<n-1>::_add(d,a);
   }
@@ -115,8 +115,8 @@ constexpr void LoopUnroller<n>::_add(T*d,const T*a) {
 }
 
 template<unsigned n>
-template<typename T>
-constexpr void LoopUnroller<n>::_sub(T*d,const T*a) {
+template<typename T, typename TT>
+constexpr void LoopUnroller<n>::_sub(T*d,TT const*a) {
   if constexpr (n>1) {
     LoopUnroller<n-1>::_sub(d,a);
   }
@@ -124,8 +124,8 @@ constexpr void LoopUnroller<n>::_sub(T*d,const T*a) {
 }
 
 template<unsigned n>
-template<typename T>
-constexpr void LoopUnroller<n>::_mul(T*d,const T s) {
+template<typename T, typename TT>
+constexpr void LoopUnroller<n>::_mul(T*d,TT const s) {
   if constexpr (n>1) {
     LoopUnroller<n-1>::_mul(d,s);
   }
@@ -133,8 +133,8 @@ constexpr void LoopUnroller<n>::_mul(T*d,const T s) {
 }
 
 template<unsigned n>
-template<typename T>
-constexpr void LoopUnroller<n>::_neg(T*d,const T*a ) {
+template<typename T, typename TT>
+constexpr void LoopUnroller<n>::_neg(T*d,TT const*a ) {
   if constexpr (n>1) {
     LoopUnroller<n-1>::_neg(d,a);
   }
@@ -143,7 +143,7 @@ constexpr void LoopUnroller<n>::_neg(T*d,const T*a ) {
 
 template<unsigned n>
 template<typename T>
-constexpr T LoopUnroller<n>::_sum2(const T*d) {
+constexpr T LoopUnroller<n>::_sum2(T const*d) {
   if constexpr (n>1) {
     return LoopUnroller<n-1>::_sum2(d)+d[n-1]*d[n-1];
   } else {
@@ -151,8 +151,8 @@ constexpr T LoopUnroller<n>::_sum2(const T*d) {
   }
 }
 template<unsigned n>
-template<typename T>
-constexpr T LoopUnroller<n>::_dot(const T*d,const T*v) {
+template<typename T, typename TT>
+constexpr T LoopUnroller<n>::_dot(T const*d,TT const*v) {
   if constexpr (n>1) {
     return LoopUnroller<n-1>::_dot(d,v)+d[n-1]*v[n-1];
   } else {
