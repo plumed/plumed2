@@ -175,7 +175,7 @@ jobs:
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=$HOME/opt
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=$HOME/opt --disable-basic-warnings
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
