@@ -524,7 +524,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
         double tmpcos = std::cos ( rdist * PI );
         double tmpsin = std::sin ( rdist * PI );
         result = 0.5 * (tmpcos + 1.0);
-        dfunc=-0.5 * PI * tmpsin * invr0;
+        dfunc=-0.5 * PI * tmpsin;
       } else {
         result=0.;
         dfunc=0.0;
