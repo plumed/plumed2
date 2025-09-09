@@ -581,7 +581,7 @@ protected:
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
       double rdistPI = rdist * PLMD::pi;
       result = 0.5 * (std::cos ( rdistPI ) + 1.0);
-      dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI ) * invr0;
+      dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI );
     }
     return result;
   }
