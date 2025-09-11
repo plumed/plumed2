@@ -115,7 +115,8 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void getInputData( std::vector<double>& inputdata ) const ;
+  void getInputData( std::vector<double>& inputdata ) const override;
+  void getInputData( std::vector<float>& inputdata ) const override;
   std::string writeInGraph() const override {
     if( getName()=="CONTACT_MATRIX_PROPER" ) {
       return "CONTACT_MATRIX";
@@ -350,6 +351,24 @@ void AdjacencyMatrixBase<T>::setLinkCellCutoff( const bool& symmetric,
 
 template <class T>
 void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) const {
+  if( inputdata.size()!=3*getNumberOfAtoms() ) {
+    inputdata.resize( 3*getNumberOfAtoms() );
+  }
+
+  std::size_t k=0;
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    Vector mypos( ActionAtomistic::getPosition(i) );
+    inputdata[k] = mypos[0];
+    k++;
+    inputdata[k] = mypos[1];
+    k++;
+    inputdata[k] = mypos[2];
+    k++;
+  }
+}
+
+template <class T>
+void AdjacencyMatrixBase<T>::getInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }

@@ -72,6 +72,7 @@ public:
   void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   void performTask( const unsigned&, MultiValue& ) const override {
     plumed_error();
   }
@@ -205,6 +206,35 @@ void MultiColvarTemplate<T,myPTM>::addComponentWithDerivatives( const std::strin
 
 template <class T, typename myPTM>
 void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  if( inputdata.size()!=5*natoms_per_task*ntasks ) {
+    inputdata.resize( 5*natoms_per_task*ntasks );
+  }
+
+  std::size_t k=0;
+  for(unsigned i=0; i<ntasks; ++i) {
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      Vector mypos( getPosition( natoms_per_task*i + j ) );
+      inputdata[k] = mypos[0];
+      k++;
+      inputdata[k] = mypos[1];
+      k++;
+      inputdata[k] = mypos[2];
+      k++;
+    }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getMass( natoms_per_task*i + j );
+      k++;
+    }
+    for(unsigned j=0; j<natoms_per_task; ++j) {
+      inputdata[k] = getCharge( natoms_per_task*i + j );
+      k++;
+    }
+  }
+}
+
+template <class T, typename myPTM>
+void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<float>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );

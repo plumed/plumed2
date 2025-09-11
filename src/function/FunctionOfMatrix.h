@@ -60,6 +60,7 @@ public:
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override {
     plumed_error();
   }
@@ -266,6 +267,47 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
 
 template <class T>
 void FunctionOfMatrix<T>::getInputData( std::vector<double>& inputdata ) const {
+  int nmasks = getNumberOfMasks();
+  unsigned nargs = getNumberOfFunctionArguments();
+
+  const Value* myval = getConstPntrToComponent(0);
+  std::size_t ntasks = myval->getNumberOfStoredValues();
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
+  }
+
+  for(unsigned j=argstart; j<nargs; ++j) {
+    const Value* jarg =  getPntrToArgument(j);
+    if( jarg->getRank()==0 ) {
+      double val = jarg->get();
+      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+        unsigned colbase=i*myval->getNumberOfColumns();
+        for(unsigned k=0; k<myval->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
+        }
+      }
+    } else if( nmasks>0 ) {
+      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+        unsigned jcolbase = i*jarg->getShape()[1];
+        unsigned vcolbase = i*myval->getNumberOfColumns();
+        for(unsigned k=0; k<myval->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(vcolbase+k) + j-argstart] = jarg->get(jcolbase+myval->getRowIndex(i,k),true);
+        }
+      }
+    } else {
+      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+        unsigned colbase=i*jarg->getNumberOfColumns();
+        for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
+          inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
+        }
+      }
+    }
+  }
+}
+
+template <class T>
+void FunctionOfMatrix<T>::getInputData( std::vector<float>& inputdata ) const {
   int nmasks = getNumberOfMasks();
   unsigned nargs = getNumberOfFunctionArguments();
 

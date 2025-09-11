@@ -54,6 +54,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override;
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   void performTask( const unsigned&, MultiValue& ) const override {
     plumed_error();
   }
@@ -276,6 +277,24 @@ void SecondaryStructureBase<T>::calculate() {
 
 template <class T>
 void SecondaryStructureBase<T>::getInputData( std::vector<double>& inputdata ) const {
+  if( inputdata.size()!=3*getNumberOfAtoms() ) {
+    inputdata.resize( 3*getNumberOfAtoms() );
+  }
+
+  std::size_t k=0;
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    Vector mypos( getPosition(i) );
+    inputdata[k] = mypos[0];
+    k++;
+    inputdata[k] = mypos[1];
+    k++;
+    inputdata[k] = mypos[2];
+    k++;
+  }
+}
+
+template <class T>
+void SecondaryStructureBase<T>::getInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
