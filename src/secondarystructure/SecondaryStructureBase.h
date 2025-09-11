@@ -54,13 +54,15 @@ constexpr bool needsBondLength<T,std::void_t<decltype(T::needsBondLength)>> =T::
 }
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
-template <class T>
+template <class T, typename myPTM=defaultPTM>
 class SecondaryStructureBase: public ActionWithVector {
 public:
   using input_type = T;
-  using PTM = ParallelTaskManager<SecondaryStructureBase<T>>;
+  using mytype=SecondaryStructureBase<T,myPTM>;
+  using PTM =typename myPTM::template PTM<mytype>;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
+  using precision = cvprecision_t<T>;
   static constexpr size_t virialSize=9;
   static constexpr unsigned customGatherStep=3;
   static constexpr unsigned customGatherStopBefore=virialSize;
@@ -87,13 +89,13 @@ public:
   static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const T& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
 
-template <class T>
-unsigned SecondaryStructureBase<T>::getNumberOfDerivatives() {
+template <class T,typename myPTM>
+unsigned SecondaryStructureBase<T,myPTM>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+virialSize;
 }
 
-template <class T>
-bool SecondaryStructureBase<T>::readShortcutWords( std::string& ltmap, ActionShortcut* action ) {
+template <class T,typename myPTM>
+bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, ActionShortcut* action ) {
   action->parse("LESS_THAN",ltmap);
   if( ltmap.length()==0 ) {
     std::string nn, mm, d_0, r_0;
@@ -110,8 +112,8 @@ bool SecondaryStructureBase<T>::readShortcutWords( std::string& ltmap, ActionSho
   return true;
 }
 
-template <class T>
-void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
   PTM::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
@@ -158,8 +160,8 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
   keys.addDOI("10.1021/ct900202f");
 }
 
-template <class T>
-void SecondaryStructureBase<T>::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms ) {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms ) {
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(action);
   if( ! moldat ) {
     action->error("Unable to find MOLINFO in input");
@@ -193,8 +195,8 @@ void SecondaryStructureBase<T>::readBackboneAtoms( ActionShortcut* action, Plume
   }
 }
 
-template <class T>
-SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
+template <class T,typename myPTM>
+SecondaryStructureBase<T,myPTM>::SecondaryStructureBase(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this) {
@@ -294,13 +296,13 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   taskmanager.setActionInput( myinput );
 }
 
-template <class T>
-void SecondaryStructureBase<T>::calculate() {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::calculate() {
   taskmanager.runAllTasks();
 }
 
-template <class T>
-void SecondaryStructureBase<T>::getInputData( std::vector<double>& inputdata ) const {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<double>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -317,8 +319,8 @@ void SecondaryStructureBase<T>::getInputData( std::vector<double>& inputdata ) c
   }
 }
 
-template <class T>
-void SecondaryStructureBase<T>::getInputData( std::vector<float>& inputdata ) const {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -335,8 +337,8 @@ void SecondaryStructureBase<T>::getInputData( std::vector<float>& inputdata ) co
   }
 }
 
-template <class T>
-void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
   // std::vector<Vector> pos( actiondata.natoms );
   std::array<Vector,30> pos;
 
@@ -374,19 +376,19 @@ void SecondaryStructureBase<T>::performTask( unsigned task_index, const T& actio
   }
 }
 
-template <class T>
-void SecondaryStructureBase<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-int SecondaryStructureBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+template <class T,typename myPTM>
+int SecondaryStructureBase<T,myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const T& actiondata ) {
   return 1;
 }
 
-template <class T>
-void SecondaryStructureBase<T>::getForceIndices( std::size_t task_index,
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::getForceIndices( std::size_t task_index,
     std::size_t /* colno */,
     std::size_t ntotal_force,
     const T& actiondata,

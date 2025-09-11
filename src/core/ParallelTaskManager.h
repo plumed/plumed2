@@ -398,11 +398,14 @@ struct cvprecision<CV,std::void_t<typename CV::precision>> {
   typedef typename CV::precision type;
 };
 
+template <typename CV>
+using cvprecision_t = typename cvprecision<CV>::type;
+
 template <class T>
 class ParallelTaskManager {
 public:
   using input_type= typename T::input_type;
-  using precision = typename cvprecision<T>::type;
+  using precision = cvprecision_t<T>;
   typedef ParActionsInput<precision> ParallelActionsInput;
   typedef ParActionsOutput<precision> ParallelActionsOutput;
   typedef ForcesInput<precision> ForceInput;

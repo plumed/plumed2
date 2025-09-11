@@ -19,9 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-// #ifdef __PLUMED_HAS_OPENACC
-// #define __PLUMED_USE_OPENACC 1
-// #endif //__PLUMED_HAS_OPENACC
 #include "SecondaryStructureBase.h"
 #include "SecondaryStructureShortcut.h"
 #include "core/ActionRegister.h"
@@ -169,9 +166,10 @@ public:
 };
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
-PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
-typedef SecondaryStructureShortcut<colv> shortcut;
-PLUMED_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
+PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD");
+//PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
+//typedef SecondaryStructureShortcut<colv> shortcut;
+//PLUMED_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   Vector center;

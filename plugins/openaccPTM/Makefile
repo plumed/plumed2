@@ -7,8 +7,10 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
 #-dc adds relocatable device code 
 #-dlto Perform link-time optimization of device code. 
-OBJS = Angle.o DihedralCorrelation.o Dipole.o Distance.o Plane.o Position.o Torsion.o extra/colvar/ColvarInput.o extra/tools/Pbc.o
+CVS_OBJS = $(wildcard *.cpp)
+TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o
 
+OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
 ADDCLDFLAGS=-acc -static-nvidia
 
