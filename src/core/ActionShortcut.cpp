@@ -78,6 +78,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
 }
 
 void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
+//	std::cerr << "readInputLine: " << input << "\n";
   std::vector<std::string> words=Tools::getWords(input);
   Tools::interpretLabel(words);
   // Check if this action name has been registered

@@ -23,6 +23,7 @@
 // #define __PLUMED_USE_OPENACC 1
 // #endif //__PLUMED_HAS_OPENACC
 #include "SecondaryStructureBase.h"
+#include "SecondaryStructureShortcut.h"
 #include "core/ActionRegister.h"
 #include "tools/RMSD.h"
 
@@ -128,6 +129,7 @@ class SecondaryStructureRMSDInput {
 /// The list of reference configurations
   std::vector<RMSD> myrmsd;
 public:
+  static constexpr bool needsType=true;
 /// The number of atoms
   std::size_t natoms;
 /// The number of structures
@@ -167,7 +169,9 @@ public:
 };
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
-PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD");
+PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
+typedef SecondaryStructureShortcut<colv> shortcut;
+PLUMED_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   Vector center;

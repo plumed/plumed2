@@ -193,6 +193,7 @@ private:
   flexibleMemory<unsigned> drmsd_atoms{};
 /// The general input for the secondary structure variable
 public:
+  static constexpr bool needsBondLength=true;
   size_t natoms{0};
   size_t nstructures{0};
   size_t nindices_per_task{0};

@@ -30,9 +30,28 @@
 #include "core/ParallelTaskManager.h"
 #include "tools/ColvarOutput.h"
 #include <vector>
+#include <type_traits>
 
 namespace PLMD {
 namespace secondarystructure {
+
+namespace helpers {
+//this makes the variabe needstype only needed to be declared explicitly
+//needsType activate the reading of "TYPE" during the parsing
+template <typename T, typename=void>
+constexpr bool needsType=false;
+//specialization to intercept needsType
+template <typename T>
+constexpr bool needsType<T,std::void_t<decltype(T::needsType)>> =T::needsType;
+
+//this makes the variabe needstype only needed to be declared explicitly
+//needsBondLength activate the reading of "TYPE" during the parsing
+template <typename T, typename=void>
+constexpr bool needsBondLength=false;
+//specialization to intercept needsBondLength
+template <typename T>
+constexpr bool needsBondLength<T,std::void_t<decltype(T::needsBondLength)>> =T::needsBondLength;
+}
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 template <class T>
@@ -48,6 +67,8 @@ public:
 
 private:
   PTM taskmanager;
+  static constexpr bool needsType = helpers::needsType<T>;
+  static constexpr bool needsBondLength = helpers::needsBondLength<T>;
 public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
@@ -97,21 +118,22 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
   keys.add("atoms","ATOMS","this is the full list of atoms that we are investigating");
   keys.add("numbered","SEGMENT","this is the lists of atoms in the segment that are being considered");
-  if( keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD" ) {
+  if constexpr ( needsBondLength /*keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
   }
   keys.add("numbered","STRUCTURE","the reference structure");
-  if( keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD" ) {
+  if ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
              "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD.");
-  } else if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" ) {
+  } else if constexpr ( !needsBondLength /*keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
              "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
              "DRMSD method see \\ref DRMSD.");
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.reset_style("VERBOSE","hidden");
-  if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" && keys.getDisplayName()!="SECONDARY_STRUCTURE_RMSD" ) {
+  //if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" && keys.getDisplayName()!="SECONDARY_STRUCTURE_RMSD" ) {
+  if constexpr ( !needsBondLength && !needsType ) {
     keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
              "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
              "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
@@ -183,7 +205,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   input_type myinput;
   parseFlag("NOPBC",myinput.nopbc);
   std::string alignType="";
-  if( getName()=="SECONDARY_STRUCTURE_RMSD" ) {
+  if constexpr ( needsType ) {
     parse("TYPE",alignType);
   }
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n", alignType.c_str() );
@@ -229,7 +251,7 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
   }
 
   double bondlength=0.0;
-  if( getName()=="SECONDARY_STRUCTURE_DRMSD" ) {
+  if constexpr ( needsBondLength ) {
     parse("BONDLENGTH",bondlength);
     bondlength=bondlength/getUnits().getLength();
   }
