@@ -430,9 +430,9 @@ constexpr TensorTyped<T,n,l> matmul(const TensorTyped<T,n,m>&a,const TensorTyped
   return t;
 }
 
-/// matrix-vector multiplication
-template<typename T, unsigned n, unsigned m>
-constexpr VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<T,m>&b) {
+/// matrix-vector multiplicationi, the first argument determines the type of the result
+template<typename T,typename TT, unsigned n, unsigned m>
+constexpr VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<TT,m>&b) {
   VectorTyped<T,n> t;
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -441,9 +441,9 @@ constexpr VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<T
   return t;
 }
 
-/// vector-matrix multiplication
-template<typename T, unsigned n, unsigned m>
-constexpr VectorTyped<T,n> matmul(const VectorTyped<T,m>&a,const TensorTyped<T,m,n>&b) {
+/// vector-matrix multiplication, the first argument determines the type of the result
+template<typename T,typename TT, unsigned n, unsigned m>
+constexpr VectorTyped<T,n> matmul(const VectorTyped<T,m>&a,const TensorTyped<TT,m,n>&b) {
   VectorTyped<T,n> t;
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -559,6 +559,22 @@ typedef TensorGeneric<4,4> Tensor4d;
 typedef TensorGeneric<5,5> Tensor5d;
 /// \ingroup TOOLBOX
 typedef Tensor3d Tensor;
+
+/// \ingroup TOOLBOX
+typedef TensorTyped<float,1,1> Tensor1f;
+/// \ingroup TOOLBOX
+typedef TensorTyped<float,2,2> Tensor2f;
+/// \ingroup TOOLBOX
+typedef TensorTyped<float,3,3> Tensor3f;
+/// \ingroup TOOLBOX
+typedef TensorTyped<float,4,4> Tensor4f;
+/// \ingroup TOOLBOX
+typedef TensorTyped<float,5,5> Tensor5f;
+
+/// \ingroup TOOLBOX
+/// Alias for three by three Tensor of any type:
+template <typename T>
+using TensorT=TensorTyped<T,3,3>;
 
 template <typename T>
 inline

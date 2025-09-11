@@ -165,6 +165,9 @@ public:
 /// friend version of modulo (to simplify some syntax)
   template<typename U, unsigned m>
   friend constexpr U modulo(const VectorTyped<U, m>&);
+///conversion to another type
+  template<typename TT>
+  constexpr VectorTyped<TT,n> convert()const;
 /// << operator.
 /// Allows printing vector `v` with `std::cout<<v;`
   friend std::ostream & operator<< <>(std::ostream &os, const VectorTyped&);
@@ -270,6 +273,13 @@ constexpr VectorTyped<T, n> operator+(const VectorTyped<T, n>&v1,const VectorTyp
   return v+=v2;
 }
 
+template<typename T, typename  TT, unsigned n>
+constexpr VectorTyped<T, n> sumT(const VectorTyped<T, n>&v1,const VectorTyped<TT, n>&v2) {
+  VectorTyped<T, n> v(v1);
+  LoopUnroller<n>::_add(v.data(),v2.data());
+  return v;
+}
+
 template<typename T, unsigned n>
 constexpr VectorTyped<T, n> operator-(VectorTyped<T, n>v1,const VectorTyped<T, n>&v2) {
   return v1-=v2;
@@ -330,6 +340,14 @@ constexpr T modulo(const VectorTyped<T, n>&v) {
 }
 
 template<typename T, unsigned n>
+template<typename TT>
+constexpr VectorTyped<TT,n> VectorTyped<T,n>::convert()const {
+  VectorTyped<TT,n> target;
+  LoopUnroller<n>::_copy(target.data(),d.data());
+  return target;
+}
+
+template<typename T, unsigned n>
 std::ostream & operator<<(std::ostream &os, const VectorTyped<T, n>& v) {
   for(unsigned i=0; i<n-1; i++) {
     os<<v(i)<<" ";
@@ -361,10 +379,56 @@ typedef VectorGeneric<5> Vector5d;
 using Vector=Vector3d;
 //using the using keyword seems to be more trasparent
 
+/// \ingroup TOOLBOX
+/// Alias for one dimensional vectors
+typedef VectorTyped<float,1> Vector1f;
+/// \ingroup TOOLBOX
+/// Alias for two dimensional vectors
+typedef VectorTyped<float,2> Vector2f;
+/// \ingroup TOOLBOX
+/// Alias for three dimensional vectors
+typedef VectorTyped<float,3> Vector3f;
+/// \ingroup TOOLBOX
+/// Alias for four dimensional vectors
+typedef VectorTyped<float,4> Vector4f;
+/// \ingroup TOOLBOX
+/// Alias for five dimensional vectors
+typedef VectorTyped<float,5> Vector5f;
+
+/// \ingroup TOOLBOX
+/// Alias for three dimensional vectors of any type:
+template <typename T>
+using VectorT=VectorTyped<T,3>;
+
 static_assert(sizeof(VectorGeneric<2>)==2*sizeof(double), "code cannot work if this is not satisfied");
 static_assert(sizeof(VectorGeneric<3>)==3*sizeof(double), "code cannot work if this is not satisfied");
 static_assert(sizeof(VectorGeneric<4>)==4*sizeof(double), "code cannot work if this is not satisfied");
-
+namespace Versors {
+template <typename T>
+constexpr auto xp= PLMD::VectorTyped<T,3>( {
+  T( 1),T( 0),T( 0)
+});
+template <typename T>
+constexpr auto xm= PLMD::VectorTyped<T,3>( {
+  T(-1),T( 0),T( 0)
+});
+template <typename T>
+constexpr auto yp= PLMD::VectorTyped<T,3>( {
+  T( 0),T( 1),T( 0)
+});
+template <typename T>
+constexpr auto ym= PLMD::VectorTyped<T,3>( {
+  T( 0),T(-1),T( 0)
+});
+template <typename T>
+constexpr auto zp= PLMD::VectorTyped<T,3>( {
+  T( 0),T( 0),T( 1)
+});
+template <typename T>
+constexpr auto zm= PLMD::VectorTyped<T,3>( {
+  T( 0),T( 0),T(-1)
+});
+} // namespace Versors
 } //PLMD
 
 #endif //__PLUMED_tools_Vector_h
