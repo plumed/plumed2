@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_acc_ParallelTaskManager_h
 #define __PLUMED_acc_ParallelTaskManager_h
-
 #include "plumed/core/ActionWithVector.h"
 #include "plumed/core/ActionWithMatrix.h"
 #include "plumed/core/ParallelTaskManager.h"

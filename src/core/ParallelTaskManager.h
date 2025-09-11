@@ -463,12 +463,12 @@ public:
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
                                       const ForceIndexHolder& force_indices,
                                       const ForceInput& fdata,
-                                      View<double> forces );
+                                      View<precision> forces );
 /// This is used to gather forces that are not thread safe
   static void gatherThreadUnsafeForces( const ParallelActionsInput& input,
                                         const ForceIndexHolder& force_indices,
                                         const ForceInput& fdata,
-                                        View<double> forces );
+                                        View<precision> forces );
 };
 
 struct defaultPTM {
@@ -1007,7 +1007,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double> forces ) {
+    View<precision> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     double ff = fdata.force[i];
     for(unsigned j=0; j<force_indices.threadsafe_derivatives_end[i]; ++j) {
@@ -1020,7 +1020,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreadUnsafeForces(const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double> forces ) {
+    View<precision> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     const double ff = fdata.force[i];
     for(unsigned d=force_indices.threadsafe_derivatives_end[i];
