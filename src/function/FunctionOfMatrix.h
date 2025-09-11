@@ -35,6 +35,8 @@ class FunctionOfMatrix : public ActionWithVector {
 public:
   using input_type = FunctionData<T>;
   using PTM = ParallelTaskManager<FunctionOfMatrix<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

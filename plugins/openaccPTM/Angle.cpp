@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Angle,PLMD::ACCPTM> AngleMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Angle<double>,PLMD::ACCPTM> AngleMultiAcc;
 
 PLUMED_REGISTER_ACTION(AngleMultiAcc,"ANGLE_VECTORACC")

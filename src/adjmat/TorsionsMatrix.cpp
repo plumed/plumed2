@@ -138,6 +138,8 @@ class TorsionsMatrix : public ActionWithMatrix {
 public:
   using input_type = TorsionsMatrixInput;
   using PTM = ParallelTaskManager<TorsionsMatrix>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
 public:

@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Torsion,PLMD::ACCPTM> TorsionMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Torsion<float>,PLMD::ACCPTM> TorsionMultiAcc;
 
 PLUMED_REGISTER_ACTION(TorsionMultiAcc,"TORSION_VECTORACC")

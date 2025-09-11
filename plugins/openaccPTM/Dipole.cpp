@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Dipole,PLMD::ACCPTM> DipoleMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Dipole<double>,PLMD::ACCPTM> DipoleMultiAcc;
 
 PLUMED_REGISTER_ACTION(DipoleMultiAcc,"DIPOLE_VECTORACC")

@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::DihedralCorrelation,PLMD::ACCPTM> DihedralCorrelationMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::DihedralCorrelation<double>,PLMD::ACCPTM> DihedralCorrelationMultiAcc;
 
 PLUMED_REGISTER_ACTION(DihedralCorrelationMultiAcc,"DIHEDRALCORRELATION_VECTORACC")

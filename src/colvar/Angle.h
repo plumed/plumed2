@@ -34,6 +34,7 @@ class Angle : public Colvar {
   std::vector<double> value;
   std::vector<double> derivs;
 public:
+  using precision=T;
   explicit Angle(const ActionOptions&);
 // active methods:
   void calculate() override;

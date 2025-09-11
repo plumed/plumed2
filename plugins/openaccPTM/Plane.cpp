@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Plane,PLMD::ACCPTM> PlaneMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Plane<double>,PLMD::ACCPTM> PlaneMultiAcc;
 
 PLUMED_REGISTER_ACTION(PlaneMultiAcc,"PLANE_VECTORACC")

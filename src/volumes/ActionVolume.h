@@ -93,6 +93,8 @@ class ActionVolume : public ActionWithVector {
 public:
   using input_type = VolumeData<T>;
   using PTM = ParallelTaskManager<ActionVolume<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

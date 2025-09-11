@@ -59,6 +59,8 @@ class MatrixTimesMatrix : public ActionWithMatrix {
 public:
   using input_type = MatrixTimesMatrixInput<T>;
   using PTM = ParallelTaskManager<MatrixTimesMatrix<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
 public:

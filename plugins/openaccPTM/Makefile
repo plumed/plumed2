@@ -7,7 +7,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
 #-dc adds relocatable device code 
 #-dlto Perform link-time optimization of device code. 
-OBJS = Angle.o DihedralCorrelation.o Dipole.o Distance.o Plane.o Position.o Torsion.o extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/Torsion.o extra/tools/Angle.o
+OBJS = Angle.o DihedralCorrelation.o Dipole.o Distance.o Plane.o Position.o Torsion.o extra/colvar/ColvarInput.o extra/tools/Pbc.o
 
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
 ADDCLDFLAGS=-acc -static-nvidia
@@ -36,13 +36,6 @@ extra/tools/Pbc.o: plumed/tools/Pbc.cpp $(DEPDIR)/extra/tools/Pbc.d | $(DEPDIR)/
 	@echo Compiling object $@
 	$(NVCXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
 
-extra/tools/Torsion.o: plumed/tools/Torsion.cpp $(DEPDIR)/extra/tools/Torsion.d | $(DEPDIR)/extra/tools extra/tools
-	@echo Compiling object $@
-	$(NVCXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
-
-extra/tools/Angle.o: plumed/tools/Angle.cpp $(DEPDIR)/extra/tools/Angle.d | $(DEPDIR)/extra/tools extra/tools
-	@echo Compiling object $@
-	$(NVCXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
 
 $(DEPDIR): ; @mkdir -p $@
 $(DEPDIR)/extra/colvar: ; @mkdir -p $@

@@ -99,6 +99,8 @@ class AdjacencyMatrixBase : public ActionWithMatrix {
 public:
   using input_type = AdjacencyMatrixData<T>;
   using PTM = ParallelTaskManager<AdjacencyMatrixBase<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
   bool nopbc, read_one_group;
@@ -470,7 +472,7 @@ void AdjacencyMatrixBase<T>::calculate() {
 
   // Reshape the matrix store if the number of columns has changed
   if( maxcol!=myval->getNumberOfColumns() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maxcol );
     }
   }
@@ -579,7 +581,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     }
     //sugar for not having to repeat [valpos*nderiv+something]
     for(int ii=1; ii<4; ++ii) {
-      auto derivs  = output.derivatives.subview_n<5>(valpos*nderiv+ii*nderiv);
+      auto derivs  = output.derivatives.template subview_n<5>(valpos*nderiv+ii*nderiv);
       derivs[0] = -1.0;
       derivs[1] =  1.0;
       derivs[2] = -atoms[i][0];

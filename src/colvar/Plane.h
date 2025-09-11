@@ -38,6 +38,7 @@ private:
   std::vector<double> value;
   std::vector<double> derivs;
 public:
+  using precision=T;
   static void registerKeywords( Keywords& keys );
   explicit Plane(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
@@ -102,7 +103,7 @@ Plane<T>::Plane(const ActionOptions&ao):
     log.printf("  without periodic boundary conditions\n");
   }
 
-  auto mode = getModeAndSetupValues( this );
+  /**/getModeAndSetupValues( this );
   requestAtoms(atoms);
   checkRead();
 }

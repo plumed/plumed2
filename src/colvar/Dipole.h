@@ -42,6 +42,7 @@ class Dipole : public Colvar {
   Value* valuey=nullptr;
   Value* valuez=nullptr;
 public:
+  using precision=T;
   explicit Dipole(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );

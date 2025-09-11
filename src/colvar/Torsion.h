@@ -36,6 +36,7 @@ class Torsion : public Colvar {
   std::vector<double> value;
   std::vector<double> derivs;
 public:
+  using precision=T;
   explicit Torsion(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );

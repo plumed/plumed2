@@ -40,6 +40,8 @@ class SecondaryStructureBase: public ActionWithVector {
 public:
   using input_type = T;
   using PTM = ParallelTaskManager<SecondaryStructureBase<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
   static constexpr size_t virialSize=9;
   static constexpr unsigned customGatherStep=3;
   static constexpr unsigned customGatherStopBefore=virialSize;

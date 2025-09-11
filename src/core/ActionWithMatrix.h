@@ -73,8 +73,12 @@ public:
   }
 /// Get the elements of the matrices into the output values
   void transferStashToValues( const std::vector<double>& stash ) override ;
+/// Get the elements of the matrices into the output values
+  void transferStashToValues( const std::vector<float>& stash ) override ;
 /// Get the forces from the output values and transfer them to the stash
   void transferForcesToStash( std::vector<double>& stash ) const override ;
+/// Get the forces from the output values and transfer them to the stash
+  void transferForcesToStash( std::vector<float>& stash ) const override ;
 };
 
 }

@@ -47,12 +47,15 @@ struct MultiColvarInput {
   }
 };
 
-template <class T, typename myPTM=defaultPTM>
+template <class CV, typename myPTM=defaultPTM>
 class MultiColvarTemplate : public ActionWithVector {
 public:
   using input_type = MultiColvarInput;
-  using mytype=MultiColvarTemplate<T,myPTM>;
+  using mytype=MultiColvarTemplate<CV,myPTM>;
   using PTM =typename myPTM::template PTM<mytype>;
+  using precision = typename cvprecision<CV>::type;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
   constexpr static size_t virialSize = 9;
 private:
 /// The parallel task manager
@@ -91,9 +94,9 @@ public:
                                ForceIndexHolder force_indices );
 };
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::registerKeywords(Keywords& keys ) {
-  T::registerKeywords( keys );
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::registerKeywords(Keywords& keys ) {
+  CV::registerKeywords( keys );
   PTM::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   unsigned nkeys = keys.size();
@@ -107,8 +110,8 @@ void MultiColvarTemplate<T,myPTM>::registerKeywords(Keywords& keys ) {
   }
 }
 
-template <class T, typename myPTM>
-MultiColvarTemplate<T,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
+template <class CV, typename myPTM>
+MultiColvarTemplate<CV,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this),
@@ -124,7 +127,7 @@ MultiColvarTemplate<T,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
-      T::parseAtomList( i, t, this );
+      CV::parseAtomList( i, t, this );
       if( t.empty() ) {
         break;
       }
@@ -165,47 +168,47 @@ MultiColvarTemplate<T,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   }
 
   // Setup the values
-  mode = T::getModeAndSetupValues( this );
+  mode = CV::getModeAndSetupValues( this );
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
   taskmanager.setupParallelTaskManager( 3*natoms_per_task + virialSize, virialSize );
   taskmanager.setActionInput( MultiColvarInput{ usepbc, mode, natoms_per_task });
 }
 
-template <class T, typename myPTM>
-unsigned MultiColvarTemplate<T,myPTM>::getNumberOfDerivatives() {
+template <class CV, typename myPTM>
+unsigned MultiColvarTemplate<CV,myPTM>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::calculate() {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::calculate() {
   if( wholemolecules ) {
     makeWhole();
   }
   taskmanager.runAllTasks();
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::addValueWithDerivatives( const std::vector<std::size_t>& shape ) {
   std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addValue( s );
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
   std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
   addComponent( name, s );
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -233,8 +236,8 @@ void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<double>& inputdata 
   }
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<float>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -262,19 +265,20 @@ void MultiColvarTemplate<T,myPTM>::getInputData( std::vector<float>& inputdata )
   }
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::performTask( std::size_t task_index,
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::performTask( std::size_t task_index,
     const MultiColvarInput& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
   std::size_t pos_start = 5*actiondata.nindices_per_task*task_index;
+  using V3=VectorT<precision>;
   if( actiondata.usepbc ) {
     if( actiondata.nindices_per_task==1 ) {
       //this may be changed to input.pbc.apply() en mass or only on this one
-      Vector fpos=input.pbc->distance(Vector(0.0,0.0,0.0),
-                                      Vector(input.inputdata[pos_start],
-                                             input.inputdata[pos_start+1],
-                                             input.inputdata[pos_start+2]) );
+      V3 fpos=input.pbc->distance(V3(0.0,0.0,0.0),
+                                  V3(input.inputdata[pos_start],
+                                     input.inputdata[pos_start+1],
+                                     input.inputdata[pos_start+2]) );
       input.inputdata[pos_start]  =fpos[0];
       input.inputdata[pos_start+1]=fpos[1];
       input.inputdata[pos_start+2]=fpos[2];
@@ -283,12 +287,12 @@ void MultiColvarTemplate<T,myPTM>::performTask( std::size_t task_index,
       std::size_t apos_start = pos_start;
       //if accidentaly nindices_per_task is 0, this will work by looping on all possible unsigned integers!!!!
       for(unsigned j=0; j<actiondata.nindices_per_task-1; ++j) {
-        Vector first(input.inputdata[apos_start],
-                     input.inputdata[apos_start+1],
-                     input.inputdata[apos_start+2]);
-        Vector second(input.inputdata[apos_start+3],
-                      input.inputdata[apos_start+4],
-                      input.inputdata[apos_start+5]);
+        V3 first(input.inputdata[apos_start],
+                 input.inputdata[apos_start+1],
+                 input.inputdata[apos_start+2]);
+        V3 second(input.inputdata[apos_start+3],
+                  input.inputdata[apos_start+4],
+                  input.inputdata[apos_start+5]);
         //calling the pbc here gives problems
         second=first+input.pbc->distance(first,second);
         input.inputdata[apos_start+3]=second[0];
@@ -300,10 +304,10 @@ void MultiColvarTemplate<T,myPTM>::performTask( std::size_t task_index,
   } else if( actiondata.nindices_per_task==1 ) {
     //isn't this equivalent to x = x-0?
     //why this is needed?
-    Vector fpos=delta(Vector(0.0,0.0,0.0),
-                      Vector(input.inputdata[pos_start],
-                             input.inputdata[pos_start+1],
-                             input.inputdata[pos_start+2]));
+    V3 fpos=delta(V3(0.0,0.0,0.0),
+                  V3(input.inputdata[pos_start],
+                     input.inputdata[pos_start+1],
+                     input.inputdata[pos_start+2]));
     input.inputdata[pos_start]=fpos[0];
     input.inputdata[pos_start+1]=fpos[1];
     input.inputdata[pos_start+2]=fpos[2];
@@ -315,23 +319,23 @@ void MultiColvarTemplate<T,myPTM>::performTask( std::size_t task_index,
   ColvarOutput cvout { output.values,
                        local_ndev,
                        output.derivatives.data() };
-  T::calculateCV( ColvarInput{actiondata.mode,
-                              actiondata.nindices_per_task,
-                              input.inputdata+pos_start,
-                              input.inputdata+mass_start,
-                              input.inputdata+charge_start,
-                              *input.pbc},
-                  cvout );
+  CV::calculateCV( ColvarInput{actiondata.mode,
+                               actiondata.nindices_per_task,
+                               input.inputdata+pos_start,
+                               input.inputdata+mass_start,
+                               input.inputdata+charge_start,
+                               *input.pbc},
+                   cvout );
 }
 
-template <class T, typename myPTM>
-int MultiColvarTemplate<T,myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
+template <class CV, typename myPTM>
+int MultiColvarTemplate<CV,myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const MultiColvarInput& actiondata ) {
   return 1;
 }
 
-template <class T, typename myPTM>
-void MultiColvarTemplate<T,myPTM>::getForceIndices( std::size_t task_index,
+template <class CV, typename myPTM>
+void MultiColvarTemplate<CV,myPTM>::getForceIndices( std::size_t task_index,
     std::size_t colno,
     std::size_t ntotal_force,
     const MultiColvarInput& actiondata,

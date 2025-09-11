@@ -38,6 +38,7 @@ private:
   std::vector<double> value;
   std::vector<double> derivs;
 public:
+  using precision=T;
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
