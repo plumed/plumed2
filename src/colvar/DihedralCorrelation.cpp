@@ -75,10 +75,11 @@ PRINT ARG=d FILE=colvar
 //+ENDPLUMEDOC
 
 
-typedef ColvarShortcut<DihedralCorrelation> DihedralCorrelationShortcut;
+typedef DihedralCorrelation<double> DihedralCorrelationD;
+typedef ColvarShortcut<DihedralCorrelationD> DihedralCorrelationShortcut;
 PLUMED_REGISTER_ACTION(DihedralCorrelationShortcut,"DIHEDRAL_CORRELATION")
-PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHEDRAL_CORRELATION_SCALAR")
-typedef MultiColvarTemplate<DihedralCorrelation> DihedralCorrelationMulti;
+PLUMED_REGISTER_ACTION(DihedralCorrelationD,"DIHEDRAL_CORRELATION_SCALAR")
+typedef MultiColvarTemplate<DihedralCorrelationD> DihedralCorrelationMulti;
 PLUMED_REGISTER_ACTION(DihedralCorrelationMulti,"DIHEDRAL_CORRELATION_VECTOR")
 
 }

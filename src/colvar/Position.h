@@ -28,8 +28,9 @@
 namespace PLMD {
 namespace colvar {
 
+template <typename T>
 class Position : public Colvar {
-  bool scaled_components;
+  enum components:unsigned {scaled=1,standard=0} mode{standard};
   bool pbc;
   std::vector<double> value;
   std::vector<double> derivs;
@@ -40,10 +41,11 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout );
 };
 
-void Position::registerKeywords( Keywords& keys ) {
+template <typename T>
+void Position<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("POSITION");
   keys.add("atoms","ATOM","the atom number");
@@ -60,17 +62,14 @@ void Position::registerKeywords( Keywords& keys ) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-Position::Position(const ActionOptions&ao):
+template <typename T>
+Position<T>::Position(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  scaled_components(false),
   pbc(true),
   value(3) {
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
-  unsigned mode=getModeAndSetupValues(this);
-  if( mode==1 ) {
-    scaled_components=true;
-  }
+  mode=static_cast<components>(getModeAndSetupValues(this));
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -86,7 +85,8 @@ Position::Position(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+template <typename T>
+void Position<T>::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOM",num,t);
   if( t.size()==1 ) {
     aa->log.printf("  for atom %d\n",t[0].serial());
@@ -95,7 +95,8 @@ void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, Action
   }
 }
 
-unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned Position<T>::getModeAndSetupValues( ActionWithValue* av ) {
   bool sc;
   av->parseFlag("SCALED_COMPONENTS",sc);
   if(sc) {
@@ -105,7 +106,7 @@ unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
     av->componentIsPeriodic("b","-0.5","+0.5");
     av->addComponentWithDerivatives("c");
     av->componentIsPeriodic("c","-0.5","+0.5");
-    return 1;
+    return components::scaled;
   }
   av->addComponentWithDerivatives("x");
   av->componentIsNotPeriodic("x");
@@ -114,11 +115,12 @@ unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
   av->addComponentWithDerivatives("z");
   av->componentIsNotPeriodic("z");
   av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-  return 0;
+  return components::standard;
 }
 
 // calculator
-void Position::calculate() {
+template <typename T>
+void Position<T>::calculate() {
 
   std::vector<Vector> distance(1);
   if(pbc) {
@@ -127,9 +129,9 @@ void Position::calculate() {
     distance[0]=delta(Vector(0.0,0.0,0.0),getPosition(0));
   }
 
-  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
-  if(scaled_components) {
-    calculateCV( ColvarInput::createColvarInput( 1, distance, this ), cvout );
+  ColvarOutput<double> cvout = ColvarOutput<double>::createColvarOutput(value,derivs,this);
+  Position<double>::calculateCV( ColvarInput<double>::createColvarInput( mode, distance, this ), cvout );
+  if(mode==components::scaled) {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -140,7 +142,6 @@ void Position::calculate() {
     setAtomsDerivatives (valuec,0,cvout.getAtomDerivatives(2,0));
     valuec->set(value[2]);
   } else {
-    calculateCV( ColvarInput::createColvarInput( 0, distance, this ), cvout );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -159,25 +160,29 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  if( cvin.mode==1 ) {
-    Vector d=cvin.pbc.realToScaled(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]));
+template <typename T>
+void Position<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  if( cvin.mode==components::scaled ) {
+    auto d=cvin.pbc.realToScaled(VectorTyped<T,3>(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]));
     cvout.values[0]=Tools::pbc(d[0]);
     cvout.values[1]=Tools::pbc(d[1]);
     cvout.values[2]=Tools::pbc(d[2]);
-    cvout.derivs[0][0]=matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
-    cvout.derivs[1][0]=matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
-    cvout.derivs[2][0]=matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
+    cvout.derivs[0][0]=matmul(cvin.pbc.getInvBox(),Versors::xp<T>);
+    cvout.derivs[1][0]=matmul(cvin.pbc.getInvBox(),Versors::yp<T>);
+    cvout.derivs[2][0]=matmul(cvin.pbc.getInvBox(),Versors::zp<T>);
   } else {
     for(unsigned i=0; i<3; ++i) {
       cvout.values[i]=cvin.pos[0][i];
     }
-    cvout.derivs[0][0]=Vector(+1,0,0);
-    cvout.derivs[1][0]=Vector(0,+1,0);
-    cvout.derivs[2][0]=Vector(0,0,+1);
-    cvout.virial.set(0, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(-1,0,0)) );
-    cvout.virial.set(1, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,-1,0)) );
-    cvout.virial.set(2, Tensor(Vector(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),Vector(0,0,-1)) );
+    cvout.derivs[0][0]=Versors::xp<T>;
+    cvout.derivs[1][0]=Versors::yp<T>;
+    cvout.derivs[2][0]=Versors::zp<T>;
+    cvout.virial.set(0, TensorTyped<T,3,3>(VectorTyped<T,3>(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),
+                                           Versors::xm<T>));
+    cvout.virial.set(1, TensorTyped<T,3,3>(VectorTyped<T,3>(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),
+                                           Versors::ym<T>));
+    cvout.virial.set(2, TensorTyped<T,3,3>(VectorTyped<T,3>(cvin.pos[0][0],cvin.pos[0][1],cvin.pos[0][2]),
+                                           Versors::zm<T>));
   }
 }
 

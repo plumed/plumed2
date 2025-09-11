@@ -97,10 +97,11 @@ PRINT ARG=a4,a5,a6 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-typedef ColvarShortcut<Angle> AngleShortcut;
+typedef Angle<double> AngleD;
+typedef ColvarShortcut<AngleD> AngleShortcut;
 PLUMED_REGISTER_ACTION(AngleShortcut,"ANGLE")
-PLUMED_REGISTER_ACTION(Angle,"ANGLE_SCALAR")
-typedef MultiColvarTemplate<Angle> AngleMulti;
+PLUMED_REGISTER_ACTION(AngleD,"ANGLE_SCALAR")
+typedef MultiColvarTemplate<AngleD> AngleMulti;
 PLUMED_REGISTER_ACTION(AngleMulti,"ANGLE_VECTOR")
 
 } //namespace colvar

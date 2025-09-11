@@ -31,6 +31,7 @@
 namespace PLMD {
 namespace colvar {
 
+template <typename T>
 class Plane : public Colvar {
 private:
   bool pbc;
@@ -43,10 +44,11 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout );
 };
 
-void Plane::registerKeywords( Keywords& keys ) {
+template <typename T>
+void Plane<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("PLANE");
   keys.add("atoms","ATOMS","the three or four atoms whose plane we are computing");
@@ -57,7 +59,8 @@ void Plane::registerKeywords( Keywords& keys ) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
+template <typename T>
+void Plane<T>::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,atoms);
   if(atoms.size()==3) {
     aa->log.printf("  containing atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
@@ -71,7 +74,8 @@ void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, Actio
   }
 }
 
-unsigned Plane::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned Plane<T>::getModeAndSetupValues( ActionWithValue* av ) {
   av->addComponentWithDerivatives("x");
   av->componentIsNotPeriodic("x");
   av->addComponentWithDerivatives("y");
@@ -81,7 +85,8 @@ unsigned Plane::getModeAndSetupValues( ActionWithValue* av ) {
   return 0;
 }
 
-Plane::Plane(const ActionOptions&ao):
+template <typename T>
+Plane<T>::Plane(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   value(3) {
@@ -97,18 +102,19 @@ Plane::Plane(const ActionOptions&ao):
     log.printf("  without periodic boundary conditions\n");
   }
 
-  unsigned mode = getModeAndSetupValues( this );
+  auto mode = getModeAndSetupValues( this );
   requestAtoms(atoms);
   checkRead();
 }
 
-void Plane::calculate() {
+template <typename T>
+void Plane<T>::calculate() {
 
   if(pbc) {
     makeWhole();
   }
-  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
+  auto cvout = ColvarOutput<double>::createColvarOutput(value,derivs,this);
+  Plane<double>::calculateCV( ColvarInput<double>::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
   for(unsigned i=0; i<getPositions().size(); ++i) {
     setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
@@ -116,30 +122,34 @@ void Plane::calculate() {
   setBoxDerivatives( cvout.virial[0] );
 }
 
-void Plane::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  Vector d1=delta( cvin.pos[1], cvin.pos[0] );
-  Vector d2=delta( cvin.pos[2], cvin.pos[3] );
-  Vector cp = crossProduct( d1, d2 );
-
-  cvout.derivs[0][0] = crossProduct( Vector(-1.0,0,0), d2 );
-  cvout.derivs[0][1] = crossProduct( Vector(+1.0,0,0), d2 );
-  cvout.derivs[0][2] = crossProduct( Vector(-1.0,0,0), d1 );
-  cvout.derivs[0][3] = crossProduct( Vector(+1.0,0,0), d1 );
-  cvout.virial.set( 0, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
+template <typename T>
+void Plane<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  const auto d1=delta( cvin.pos[1], cvin.pos[0] );
+  const auto d2=delta( cvin.pos[2], cvin.pos[3] );
+  const auto cp = crossProduct( d1, d2 );
+  using T33 = TensorTyped<T,3,3>;
+  cvout.derivs[0][0] = crossProduct( Versors::xm<T>, d2 );
+  cvout.derivs[0][1] = crossProduct( Versors::xp<T>, d2 );
+  cvout.derivs[0][2] = crossProduct( Versors::xm<T>, d1 );
+  cvout.derivs[0][3] = crossProduct( Versors::xp<T>, d1 );
+  cvout.virial.set( 0, T33(d1,crossProduct(Versors::xp<T>, d2))
+                    + T33(d2, crossProduct(Versors::xm<T>, d1)));
   cvout.values[0] = cp[0];
 
-  cvout.derivs[1][0] = crossProduct( Vector(0,-1.0,0), d2 );
-  cvout.derivs[1][1] = crossProduct( Vector(0,+1.0,0), d2 );
-  cvout.derivs[1][2] = crossProduct( Vector(0,-1.0,0), d1 );
-  cvout.derivs[1][3] = crossProduct( Vector(0,+1.0,0), d1 );
-  cvout.virial.set(1, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
+  cvout.derivs[1][0] = crossProduct( Versors::ym<T>, d2 );
+  cvout.derivs[1][1] = crossProduct( Versors::yp<T>, d2 );
+  cvout.derivs[1][2] = crossProduct( Versors::ym<T>, d1 );
+  cvout.derivs[1][3] = crossProduct( Versors::yp<T>, d1 );
+  cvout.virial.set(1, T33(d1,crossProduct(Versors::yp<T>, d2))
+                   + T33(d2, crossProduct(Versors::ym<T>, d1)));
   cvout.values[1] = cp[1];
 
-  cvout.derivs[2][0] = crossProduct( Vector(0,0,-1.0), d2 );
-  cvout.derivs[2][1] = crossProduct( Vector(0,0,+1.0), d2 );
-  cvout.derivs[2][2] = crossProduct( Vector(0,0,-1.0), d1 );
-  cvout.derivs[2][3] = crossProduct( Vector(0,0,+1.0), d1 );
-  cvout.virial.set(2, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
+  cvout.derivs[2][0] = crossProduct( Versors::zm<T>, d2 );
+  cvout.derivs[2][1] = crossProduct( Versors::zp<T>, d2 );
+  cvout.derivs[2][2] = crossProduct( Versors::zm<T>, d1 );
+  cvout.derivs[2][3] = crossProduct( Versors::zp<T>, d1 );
+  cvout.virial.set(2, T33(d1,crossProduct(Versors::zp<T>, d2))
+                   + T33(d2, crossProduct(Versors::zm<T>, d1)));
   cvout.values[2] = cp[2];
 }
 

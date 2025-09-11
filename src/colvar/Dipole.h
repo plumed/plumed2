@@ -28,9 +28,13 @@
 namespace PLMD {
 namespace colvar {
 
+template <typename T>
 class Dipole : public Colvar {
   std::vector<AtomNumber> ga_lista;
-  bool components;
+  enum /*class*/ modes:unsigned {
+    components=1,
+    scalar=0
+  } mode{scalar};
   bool nopbc;
   std::vector<double> value;
   std::vector<double> derivs;
@@ -43,10 +47,11 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout );
 };
 
-void Dipole::registerKeywords(Keywords& keys) {
+template <typename T>
+void Dipole<T>::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.setDisplayName("DIPOLE");
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
@@ -59,18 +64,18 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-Dipole::Dipole(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  components(false),
-  value(1) {
+template <typename T>
+Dipole<T>::Dipole(const ActionOptions&ao):
+  PLUMED_COLVAR_INIT(ao) {
   parseAtomList(-1,ga_lista,this);
-  components=(getModeAndSetupValues(this)==1);
-  if( components ) {
+  mode=static_cast<modes>(getModeAndSetupValues(this));
+  if( mode==modes::components ) {
     value.resize(3);
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
   } else {
+    value.resize(1);
     derivs.resize(1,ga_lista.size());
   }
   parseFlag("NOPBC",nopbc);
@@ -85,7 +90,8 @@ Dipole::Dipole(const ActionOptions&ao):
   requestAtoms(ga_lista);
 }
 
-void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+template <typename T>
+void Dipole<T>::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("GROUP",num,t);
   if( t.size()>0 ) {
     aa->log.printf("  of %u atoms\n",static_cast<unsigned>(t.size()));
@@ -96,7 +102,8 @@ void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAt
   }
 }
 
-unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned Dipole<T>::getModeAndSetupValues( ActionWithValue* av ) {
   bool c;
   av->parseFlag("COMPONENTS",c);
   if( c ) {
@@ -106,15 +113,16 @@ unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
     av->componentIsNotPeriodic("y");
     av->addComponentWithDerivatives("z");
     av->componentIsNotPeriodic("z");
-    return 1;
+    return modes::components;
   }
   av->addValueWithDerivatives();
   av->setNotPeriodic();
-  return 0;
+  return modes::scalar;
 }
 
 // calculator
-void Dipole::calculate() {
+template <typename T>
+void Dipole<T>::calculate() {
   if( !chargesWereSet ) {
     error("charges were not set by MD code");
   }
@@ -122,19 +130,18 @@ void Dipole::calculate() {
   if(!nopbc) {
     makeWhole();
   }
-  unsigned N=getNumberOfAtoms();
+  const unsigned N=getNumberOfAtoms();
 
-  if(!components) {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
-    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
+  auto cvout= ColvarOutput<double>::createColvarOutput(value, derivs, this);
+  Dipole<double>::calculateCV( ColvarInput<double>::createColvarInput( mode, getPositions(), this ),
+                               cvout );
+  if(mode==modes::scalar) {
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i));
     }
     setBoxDerivatives(cvout.virial[0]);
     setValue(value[0]);
   } else {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
-    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,cvout.getAtomDerivatives(0,i));
       setAtomsDerivatives(valuey,i,cvout.getAtomDerivatives(1,i));
@@ -149,37 +156,39 @@ void Dipole::calculate() {
   }
 }
 
-void Dipole::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  unsigned N=cvin.pos.size();
-  double ctot=0.;
+template <typename T>
+void Dipole<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  using V3 = VectorTyped<T,3>;
+  const unsigned N=cvin.pos.size();
+  T ctot=0.;
   for(unsigned i=0; i<N; ++i) {
     ctot += cvin.charges[i];
   }
-  ctot/=(double)N;
+  ctot/=T(N);
 
-  Vector dipje;
+  V3 dipje;
   for(unsigned i=0; i<N; ++i) {
-    dipje += (cvin.charges[i]-ctot)*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
+    dipje += (cvin.charges[i]-ctot)*V3(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
   }
 
-  if( cvin.mode==1 ) {
+  if( cvin.mode==modes::components ) {
     for(unsigned i=0; i<N; i++) {
-      cvout.derivs[0][i]=(cvin.charges[i]-ctot)*Vector(1.0,0.0,0.0);
-      cvout.derivs[1][i]=(cvin.charges[i]-ctot)*Vector(0.0,1.0,0.0);
-      cvout.derivs[2][i]=(cvin.charges[i]-ctot)*Vector(0.0,0.0,1.0);
+      cvout.derivs[0][i]=(cvin.charges[i]-ctot)*V3(1.0,0.0,0.0);
+      cvout.derivs[1][i]=(cvin.charges[i]-ctot)*V3(0.0,1.0,0.0);
+      cvout.derivs[2][i]=(cvin.charges[i]-ctot)*V3(0.0,0.0,1.0);
     }
     for(unsigned i=0; i<3; ++i ) {
       cvout.values[i] = dipje[i];
     }
   } else {
     cvout.values[0] = dipje.modulo();
-    double idip = 1./cvout.values[0];
+    T idip = 1./cvout.values[0];
     for(unsigned i=0; i<N; i++) {
-      double dfunc=(cvin.charges[i]-ctot)*idip;
+      T dfunc=(cvin.charges[i]-ctot)*idip;
       cvout.derivs[0][i] = dfunc*dipje;
     }
   }
-  ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+  ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
 }
 
 }

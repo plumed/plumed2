@@ -72,13 +72,12 @@ nucleation of molecular crystals such as [SMAC](SMAC.md).
 namespace PLMD {
 namespace colvar {
 
-typedef ColvarShortcut<Plane> PlaneShortcut;
+typedef Plane<double> PlaneD;
+typedef ColvarShortcut<PlaneD> PlaneShortcut;
 PLUMED_REGISTER_ACTION(PlaneShortcut,"PLANE")
-PLUMED_REGISTER_ACTION(Plane,"PLANE_SCALAR")
-typedef MultiColvarTemplate<Plane> PlaneMulti;
+PLUMED_REGISTER_ACTION(PlaneD,"PLANE_SCALAR")
+typedef MultiColvarTemplate<PlaneD> PlaneMulti;
 PLUMED_REGISTER_ACTION(PlaneMulti,"PLANE_VECTOR")
-
-
 }
 }
 

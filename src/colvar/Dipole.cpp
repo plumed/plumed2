@@ -88,10 +88,11 @@ PRINT FILE=output STRIDE=5 ARG=d
 */
 //+ENDPLUMEDOC
 
-typedef ColvarShortcut<Dipole> DipoleShortcut;
+typedef Dipole<double> DipoleD;
+typedef ColvarShortcut<DipoleD> DipoleShortcut;
 PLUMED_REGISTER_ACTION(DipoleShortcut,"DIPOLE")
-PLUMED_REGISTER_ACTION(Dipole,"DIPOLE_SCALAR")
-typedef MultiColvarTemplate<Dipole> DipoleMulti;
+PLUMED_REGISTER_ACTION(DipoleD,"DIPOLE_SCALAR")
+typedef MultiColvarTemplate<DipoleD> DipoleMulti;
 PLUMED_REGISTER_ACTION(DipoleMulti,"DIPOLE_VECTOR")
 
 }

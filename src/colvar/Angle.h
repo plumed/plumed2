@@ -28,6 +28,7 @@
 namespace PLMD {
 namespace colvar {
 
+template <typename T>
 class Angle : public Colvar {
   bool pbc;
   std::vector<double> value;
@@ -39,10 +40,11 @@ public:
   static void registerKeywords( Keywords& keys );
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
-  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout );
 };
 
-void Angle::registerKeywords( Keywords& keys ) {
+template <typename T>
+void Angle<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
   keys.setDisplayName("ANGLE");
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
@@ -51,7 +53,8 @@ void Angle::registerKeywords( Keywords& keys ) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
+template <typename T>
+void Angle<T>::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,atoms);
   if(atoms.size()==3) {
     aa->log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
@@ -65,13 +68,15 @@ void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, Actio
   }
 }
 
-unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned Angle<T>::getModeAndSetupValues( ActionWithValue* av ) {
   av->addValueWithDerivatives();
   av->setNotPeriodic();
   return 0;
 }
 
-Angle::Angle(const ActionOptions&ao):
+template <typename T>
+Angle<T>::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   value(1) {
@@ -94,13 +99,14 @@ Angle::Angle(const ActionOptions&ao):
 }
 
 // calculator
-void Angle::calculate() {
+template <typename T>
+void Angle<T>::calculate() {
 
   if(pbc) {
     makeWhole();
   }
-  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
+  ColvarOutput<double> cvout = ColvarOutput<double>::createColvarOutput(value,derivs,this);
+  Angle<double>::calculateCV( ColvarInput<double>::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
   for(unsigned i=0; i<getPositions().size(); ++i) {
     setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
@@ -108,18 +114,18 @@ void Angle::calculate() {
   setBoxDerivatives( cvout.virial[0] );
 }
 
-void Angle::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  Vector dij,dik;
-  dij=delta(cvin.pos[2],cvin.pos[3]);
-  dik=delta(cvin.pos[1],cvin.pos[0]);
-  Vector ddij,ddik;
-  PLMD::Angle a;
-  cvout.values[0]=a.compute(dij,dik,ddij,ddik);
+template <typename T>
+void Angle<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  auto dij=delta(cvin.pos[2],cvin.pos[3]);
+  auto dik=delta(cvin.pos[1],cvin.pos[0]);
+  VectorTyped<T,3> ddij,ddik;
+
+  cvout.values[0]=PLMD::Angle::compute(dij,dik,ddij,ddik);
   cvout.derivs[0][0]=ddik;
   cvout.derivs[0][1]=-ddik;
   cvout.derivs[0][2]=-ddij;
   cvout.derivs[0][3]=ddij;
-  ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+  ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
 }
 
 } //namespace colvar

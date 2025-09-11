@@ -102,10 +102,11 @@ PRINT ARG=p.x,p.y,p.z
 */
 //+ENDPLUMEDOC
 
-typedef ColvarShortcut<Position> PositionShortcut;
+typedef Position<double> PositionD;
+typedef ColvarShortcut<PositionD> PositionShortcut;
 PLUMED_REGISTER_ACTION(PositionShortcut,"POSITION")
-PLUMED_REGISTER_ACTION(Position,"POSITION_SCALAR")
-typedef MultiColvarTemplate<Position> PositionMulti;
+PLUMED_REGISTER_ACTION(PositionD,"POSITION_SCALAR")
+typedef MultiColvarTemplate<PositionD> PositionMulti;
 PLUMED_REGISTER_ACTION(PositionMulti,"POSITION_VECTOR")
 
 

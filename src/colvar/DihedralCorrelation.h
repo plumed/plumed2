@@ -31,6 +31,7 @@
 namespace PLMD {
 namespace colvar {
 
+template <typename T>
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
@@ -42,10 +43,11 @@ public:
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout );
 };
 
-void DihedralCorrelation::registerKeywords( Keywords& keys ) {
+template <typename T>
+void DihedralCorrelation<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("DIHEDRAL_CORRELATION");
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used to calculate this quantity");
@@ -54,7 +56,8 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
+template <typename T>
+DihedralCorrelation<T>::DihedralCorrelation(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   value(1) {
@@ -77,7 +80,8 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   setNotPeriodic();
 }
 
-void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+template <typename T>
+void DihedralCorrelation<T>::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( num<0 && t.size()!=8 ) {
     aa->error("Number of specified atoms should be 8");
@@ -88,19 +92,21 @@ void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>
   }
 }
 
-unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned DihedralCorrelation<T>::getModeAndSetupValues( ActionWithValue* av ) {
   av->addValueWithDerivatives();
   av->setNotPeriodic();
   return 0;
 }
 
-void DihedralCorrelation::calculate() {
+template <typename T>
+void DihedralCorrelation<T>::calculate() {
 
   if(pbc) {
     makeWhole();
   }
-  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
-  calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
+  auto cvout = ColvarOutput<double>::createColvarOutput(value,derivs,this);
+  DihedralCorrelation<double>::calculateCV( ColvarInput<double>::createColvarInput( 0, getPositions(), this ), cvout );
   setValue( value[0] );
   for(unsigned i=0; i<getPositions().size(); ++i) {
     setAtomsDerivatives( i, cvout.getAtomDerivatives(0, i) );
@@ -108,28 +114,27 @@ void DihedralCorrelation::calculate() {
   setBoxDerivatives( cvout.virial[0] );
 }
 
-void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  const Vector d10=delta(cvin.pos[1],cvin.pos[0]);
-  const Vector d11=delta(cvin.pos[2],cvin.pos[1]);
-  const Vector d12=delta(cvin.pos[3],cvin.pos[2]);
+template <typename T>
+void DihedralCorrelation<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  const auto d10=delta(cvin.pos[1],cvin.pos[0]);
+  const auto d11=delta(cvin.pos[2],cvin.pos[1]);
+  const auto d12=delta(cvin.pos[3],cvin.pos[2]);
 
-  Vector dd10,dd11,dd12;
-  PLMD::Torsion t1;
-  const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
+  VectorTyped<T,3> dd10,dd11,dd12;
+  const T phi1  = PLMD::Torsion::compute(d10,d11,d12,dd10,dd11,dd12);
 
-  const Vector d20=delta(cvin.pos[5],cvin.pos[4]);
-  const Vector d21=delta(cvin.pos[6],cvin.pos[5]);
-  const Vector d22=delta(cvin.pos[7],cvin.pos[6]);
+  const auto d20=delta(cvin.pos[5],cvin.pos[4]);
+  const auto d21=delta(cvin.pos[6],cvin.pos[5]);
+  const auto d22=delta(cvin.pos[7],cvin.pos[6]);
 
-  Vector dd20,dd21,dd22;
-  PLMD::Torsion t2;
-  const double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
+  VectorTyped<T,3> dd20,dd21,dd22;
+  const T phi2 = PLMD::Torsion::compute( d20, d21, d22, dd20, dd21, dd22 );
 
   // Calculate value
-  const double diff = phi2 - phi1;
+  const T diff = phi2 - phi1;
   cvout.values[0] = 0.5*(1.+std::cos(diff));
   // Derivatives wrt phi1
-  const double dval = 0.5*std::sin(diff);
+  const T dval = 0.5*std::sin(diff);
   dd10 *= dval;
   dd11 *= dval;
   dd12 *= dval;
@@ -149,9 +154,9 @@ void DihedralCorrelation::calculateCV( const ColvarInput& cvin, ColvarOutput& cv
   cvout.derivs[0][7]=-dd22;
   cvout.virial.set( 0,
                     -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12))
-                    - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
+                    -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)) );
 }
 
-}
-}
+} // namespace colvar
+} // namespace PLMD
 #endif  //__PLUMED_colvar_DihedralCorrelation_h

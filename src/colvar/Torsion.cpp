@@ -109,11 +109,11 @@ PRINT ARG=t FILE=COLVAR
 
 */
 //+ENDPLUMEDOC
-
-typedef ColvarShortcut<Torsion> TorsionShortcut;
+typedef Torsion<double> TorsionD;
+typedef ColvarShortcut<TorsionD> TorsionShortcut;
 PLUMED_REGISTER_ACTION(TorsionShortcut,"TORSION")
-PLUMED_REGISTER_ACTION(Torsion,"TORSION_SCALAR")
-typedef MultiColvarTemplate<Torsion> TorsionMulti;
+PLUMED_REGISTER_ACTION(TorsionD,"TORSION_SCALAR")
+typedef MultiColvarTemplate<TorsionD> TorsionMulti;
 PLUMED_REGISTER_ACTION(TorsionMulti,"TORSION_VECTOR")
 
 }

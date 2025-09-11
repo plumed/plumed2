@@ -67,10 +67,10 @@ private:
       return View<double,3>( derivatives + 3*(i+1) );
     }
   };
-  ColvarOutput fulldata;
+  ColvarOutput<double> fulldata;
 public:
   View<double>& values;
-  ColvarOutput::VirialHelper& virial;
+  ColvarOutput<double>::VirialHelper& virial;
   View<double,3> derivatives;
   RefderHelper refders;
   VolumeOutput( View<double>& v, std::size_t nder, double* d ) :

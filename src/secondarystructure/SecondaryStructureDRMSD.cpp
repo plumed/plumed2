@@ -206,7 +206,7 @@ public:
                                  bool noderiv,
                                  const SecondaryStructureDRMSDInput& actiondata,
                                  View<Vector> pos,
-                                 ColvarOutput& output );
+                                 ColvarOutput<double>& output );
   void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure );
   void toACCDevice()const {
 #pragma acc enter data copyin(this[0:1], natoms,nstructures,nindices_per_task,nopbc,align_strands)
@@ -261,7 +261,7 @@ void SecondaryStructureDRMSDInput::calculateDistance(
   const bool noderiv,
   const SecondaryStructureDRMSDInput& actiondata,
   const View<Vector> pos,
-  ColvarOutput& output ) {
+  ColvarOutput<double>& output ) {
   const auto targetList = actiondata.drmsd_atoms.get(n);
   const auto targetAtoms=targetList.size();
   if( !noderiv ) {

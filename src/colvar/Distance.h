@@ -22,20 +22,23 @@
 #ifndef __PLUMED_colvar_Distance_h
 #define __PLUMED_colvar_Distance_h
 #include "Colvar.h"
+#include "ColvarInput.h"
 #include "MultiColvarTemplate.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {
 namespace colvar {
 
+template <typename T=double>
 class Distance : public Colvar {
-  bool components;
-  bool scaled_components;
+  enum components:unsigned {scaled=2,standard=1,scalar=0} mode{scalar};
   bool pbc;
 
+  //not Typep, the float version is only used for the PTM
   std::vector<double> value;
   std::vector<double> derivs;
 public:
+  using precision = T;
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
   static void parseAtomList( const int& num,
@@ -44,11 +47,12 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const ColvarInput& cvin,
-                           ColvarOutput& cvout );
+  static void calculateCV( const ColvarInput<T>& cvin,
+                           ColvarOutput<T>& cvout );
 };
 
-void Distance::registerKeywords( Keywords& keys ) {
+template <typename T>
+void  Distance<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("DISTANCE");
   constexpr auto scalarOrVector = Keywords::componentType::scalar
@@ -68,10 +72,9 @@ void Distance::registerKeywords( Keywords& keys ) {
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
-Distance::Distance(const ActionOptions&ao):
+template <typename T>
+Distance<T>::Distance(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  components(false),
-  scaled_components(false),
   pbc(true),
   value(1) {
   std::vector<AtomNumber> atoms;
@@ -90,28 +93,25 @@ Distance::Distance(const ActionOptions&ao):
     log.printf("  without periodic boundary conditions\n");
   }
 
-  unsigned mode = getModeAndSetupValues( this );
-  if(mode==1) {
-    components=true;
-  } else if(mode==2) {
-    scaled_components=true;
-  }
-  if( components || scaled_components ) {
+  mode = static_cast<components>(getModeAndSetupValues(this));
+  if( mode == components::standard || mode == components::scaled ) {
     value.resize(3);
   }
   requestAtoms(atoms);
 }
 
-void Distance::parseAtomList( const int& num,
-                              std::vector<AtomNumber>& t,
-                              ActionAtomistic* aa ) {
+template <typename T>
+void  Distance<T>::parseAtomList( const int& num,
+                                  std::vector<AtomNumber>& t,
+                                  ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( t.size()==2 ) {
     aa->log.printf("  between atoms %d %d\n",t[0].serial(),t[1].serial());
   }
 }
 
-unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
+template <typename T>
+unsigned  Distance<T>::getModeAndSetupValues( ActionWithValue* av ) {
   bool c;
   av->parseFlag("COMPONENTS",c);
   bool sc;
@@ -119,7 +119,6 @@ unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
   if( c && sc ) {
     av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
   }
-
   if(c) {
     av->addComponentWithDerivatives("x");
     av->componentIsNotPeriodic("x");
@@ -128,7 +127,7 @@ unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
     av->addComponentWithDerivatives("z");
     av->componentIsNotPeriodic("z");
     av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-    return 1;
+    return components::standard;
   } else if(sc) {
     av->addComponentWithDerivatives("a");
     av->componentIsPeriodic("a","-0.5","+0.5");
@@ -136,23 +135,25 @@ unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
     av->componentIsPeriodic("b","-0.5","+0.5");
     av->addComponentWithDerivatives("c");
     av->componentIsPeriodic("c","-0.5","+0.5");
-    return 2;
+    return components::scaled;
   }
   av->addValueWithDerivatives();
   av->setNotPeriodic();
-  return 0;
+  return components::scalar;
 }
 
 // calculator
-void Distance::calculate() {
+template <typename T>
+void  Distance<T>::calculate() {
 
   if(pbc) {
     makeWhole();
   }
-
-  if( components ) {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
-    calculateCV( ColvarInput::createColvarInput( 1, getPositions(), this ), cvout );
+  using CVInput= ColvarInput<double>;
+  using CVOutput=ColvarOutput<double>;
+  auto cvout =  CVOutput::createColvarOutput(value, derivs, this);
+  Distance<double>::calculateCV( CVInput::createColvarInput( mode, getPositions(), this ), cvout );
+  if( mode==components::standard ) {
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -174,9 +175,7 @@ void Distance::calculate() {
     }
     setBoxDerivatives(valuez,cvout.virial[2]);
     valuez->set(value[2]);
-  } else if( scaled_components ) {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
-    calculateCV( ColvarInput::createColvarInput( 2, getPositions(), this ), cvout );
+  } else if( mode==components::scaled ) {
 
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
@@ -194,8 +193,6 @@ void Distance::calculate() {
     }
     valuec->set(value[2]);
   } else  {
-    ColvarOutput cvout( ColvarOutput::createColvarOutput(value, derivs, this) );
-    calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
     for(unsigned i=0; i<2; ++i) {
       setAtomsDerivatives(i,cvout.getAtomDerivatives(0,i) );
     }
@@ -204,39 +201,47 @@ void Distance::calculate() {
   }
 }
 
-void Distance::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {
-  Vector distance=delta(cvin.pos[0],cvin.pos[1]);
+template <typename T>
+void  Distance<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
+  auto distance=delta(cvin.pos[0],cvin.pos[1]);
+  //these six can be compacted in a scoped `using namespac3 PLMD::Versors` but plumedcheck won't approve (even in a comment, hence the 3)
+  using PLMD::Versors::xp;
+  using PLMD::Versors::xm;
+  using PLMD::Versors::yp;
+  using PLMD::Versors::ym;
+  using PLMD::Versors::zp;
+  using PLMD::Versors::zm;
+  if(cvin.mode==components::standard) {
 
-  if(cvin.mode==1) {
-    cvout.derivs[0][0] = Vector(-1,0,0);
-    cvout.derivs[0][1] = Vector(+1,0,0);
+    cvout.derivs[0][0] = xm<T>;
+    cvout.derivs[0][1] = xp<T>;
     cvout.values[0] = distance[0];
 
-    cvout.derivs[1][0] = Vector(0,-1,0);
-    cvout.derivs[1][1] = Vector(0,+1,0);
+    cvout.derivs[1][0] = ym<T>;
+    cvout.derivs[1][1] = yp<T>;
     cvout.values[1] = distance[1];
 
-    cvout.derivs[2][0] = Vector(0,0,-1);
-    cvout.derivs[2][1] = Vector(0,0,+1);
+    cvout.derivs[2][0] = zm<T>;
+    cvout.derivs[2][1] = zp<T>;
     cvout.values[2] = distance[2];
-    ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
-  } else if(cvin.mode==2) {
-    Vector d=cvin.pbc.realToScaled(distance);
-    cvout.derivs[0][0] = matmul(cvin.pbc.getInvBox(),Vector(-1,0,0));
-    cvout.derivs[0][1] = matmul(cvin.pbc.getInvBox(),Vector(+1,0,0));
+    ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
+  } else if(cvin.mode==components::scaled) {
+    auto d=cvin.pbc.realToScaled(distance);
+    cvout.derivs[0][0].copyConv(matmul(cvin.pbc.getInvBox(),xm<T>));
+    cvout.derivs[0][1].copyConv(matmul(cvin.pbc.getInvBox(),xp<T>));
     cvout.values[0] = Tools::pbc(d[0]);
-    cvout.derivs[1][0] = matmul(cvin.pbc.getInvBox(),Vector(0,-1,0));
-    cvout.derivs[1][1] = matmul(cvin.pbc.getInvBox(),Vector(0,+1,0));
+    cvout.derivs[1][0].copyConv(matmul(cvin.pbc.getInvBox(),ym<T>));
+    cvout.derivs[1][1].copyConv(matmul(cvin.pbc.getInvBox(),yp<T>));
     cvout.values[1] = Tools::pbc(d[1]);
-    cvout.derivs[2][0] = matmul(cvin.pbc.getInvBox(),Vector(0,0,-1));
-    cvout.derivs[2][1] = matmul(cvin.pbc.getInvBox(),Vector(0,0,+1));
+    cvout.derivs[2][0].copyConv(matmul(cvin.pbc.getInvBox(),zm<T>));
+    cvout.derivs[2][1].copyConv(matmul(cvin.pbc.getInvBox(),zp<T>));
     cvout.values[2] = Tools::pbc(d[2]);
   } else {
     const double value=distance.modulo();
     const double invvalue=1.0/value;
     cvout.derivs[0][0] = -invvalue*distance;
     cvout.derivs[0][1] = invvalue*distance;
-    ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+    ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
     cvout.values[0] = value;
   }
 }

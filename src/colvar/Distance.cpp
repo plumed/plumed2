@@ -136,11 +136,11 @@ with domain (-0.5,+0.5).
 
 */
 //+ENDPLUMEDOC
-
-typedef ColvarShortcut<Distance> DistanceShortcut;
+typedef Distance<double> DistanceD;
+typedef ColvarShortcut<DistanceD> DistanceShortcut;
 PLUMED_REGISTER_ACTION(DistanceShortcut,"DISTANCE")
-PLUMED_REGISTER_ACTION(Distance,"DISTANCE_SCALAR")
-typedef MultiColvarTemplate<Distance> DistanceMulti;
+PLUMED_REGISTER_ACTION(DistanceD,"DISTANCE_SCALAR")
+typedef MultiColvarTemplate<DistanceD> DistanceMulti;
 PLUMED_REGISTER_ACTION(DistanceMulti,"DISTANCE_VECTOR")
 
 } //namespace colvar

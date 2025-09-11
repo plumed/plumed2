@@ -25,6 +25,6 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Distance,PLMD::ACCPTM> DistanceMultiAcc;
+typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Distance<float>,PLMD::ACCPTM> DistanceMultiAcc;
 
 PLUMED_REGISTER_ACTION(DistanceMultiAcc,"DISTANCE_VECTORACC")
