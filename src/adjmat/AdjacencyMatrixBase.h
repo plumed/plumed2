@@ -99,6 +99,8 @@ class AdjacencyMatrixBase : public ActionWithMatrix {
 public:
   using input_type = AdjacencyMatrixData<T>;
   using PTM = ParallelTaskManager<AdjacencyMatrixBase<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
   bool nopbc, read_one_group;
@@ -115,7 +117,8 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void getInputData( std::vector<double>& inputdata ) const ;
+  void getInputData( std::vector<double>& inputdata ) const override;
+  void getInputData( std::vector<float>& inputdata ) const override;
   std::string writeInGraph() const override {
     if( getName()=="CONTACT_MATRIX_PROPER" ) {
       return "CONTACT_MATRIX";
@@ -367,6 +370,24 @@ void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) cons
 }
 
 template <class T>
+void AdjacencyMatrixBase<T>::getInputData( std::vector<float>& inputdata ) const {
+  if( inputdata.size()!=3*getNumberOfAtoms() ) {
+    inputdata.resize( 3*getNumberOfAtoms() );
+  }
+
+  std::size_t k=0;
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    Vector mypos( ActionAtomistic::getPosition(i) );
+    inputdata[k] = mypos[0];
+    k++;
+    inputdata[k] = mypos[1];
+    k++;
+    inputdata[k] = mypos[2];
+    k++;
+  }
+}
+
+template <class T>
 void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
   std::string num;
   for(unsigned i=0; i<getConstPntrToComponent(0)->getShape()[1]; ++i) {
@@ -451,7 +472,7 @@ void AdjacencyMatrixBase<T>::calculate() {
 
   // Reshape the matrix store if the number of columns has changed
   if( maxcol!=myval->getNumberOfColumns() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maxcol );
     }
   }
@@ -560,7 +581,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     }
     //sugar for not having to repeat [valpos*nderiv+something]
     for(int ii=1; ii<4; ++ii) {
-      auto derivs  = output.derivatives.subview_n<5>(valpos*nderiv+ii*nderiv);
+      auto derivs  = output.derivatives.template subview_n<5>(valpos*nderiv+ii*nderiv);
       derivs[0] = -1.0;
       derivs[1] =  1.0;
       derivs[2] = -atoms[i][0];

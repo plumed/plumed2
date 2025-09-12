@@ -262,6 +262,8 @@ class Neighbors : public ActionWithVector {
 public:
   using input_type = T;
   using PTM = ParallelTaskManager<Neighbors<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

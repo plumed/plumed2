@@ -103,7 +103,8 @@ void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
   }
 }
 
-struct ParallelActionsInput {
+template<typename precision>
+struct ParActionsInput {
   /// Do we need to calculate the derivatives
   bool noderiv{false};
   /// Periodic boundary conditions
@@ -118,7 +119,7 @@ struct ParallelActionsInput {
   unsigned threadunsafe_forces_start{0};
   /// This holds all the input data that is required to calculate all values for all tasks
   unsigned dataSize{0};
-  double *inputdata{nullptr};
+  precision *inputdata{nullptr};
   /// Bookeeping stuff for arguments
   std::size_t nargs{0};
   std::size_t ranks_size{0};
@@ -137,8 +138,8 @@ struct ParallelActionsInput {
   const std::size_t* bookeeping{nullptr};
   std::size_t argstarts_size{0};
   const std::size_t* argstarts{nullptr};
-  static ParallelActionsInput create( const Pbc& box ) {
-    auto toret=ParallelActionsInput();
+  static ParActionsInput create( const Pbc& box ) {
+    auto toret=ParActionsInput();
     toret.pbc=&box;
     return toret;
   }
@@ -191,7 +192,8 @@ struct ParallelActionsInput {
   }
 };
 
-inline void ParallelActionsInput::setupArguments( const ArgumentsBookkeeping& ab ) {
+template<typename precision>
+inline void ParActionsInput<precision>::setupArguments( const ArgumentsBookkeeping& ab ) {
   nargs = ab.nargs;
   ranks = ab.ranks.data();
   ranks_size = ab.ranks.size();
@@ -218,7 +220,8 @@ struct ArgumentBookeepingHolder {
   View<const std::size_t> shape;
   View<const std::size_t> bookeeping;
 
-  static ArgumentBookeepingHolder create ( std::size_t argno, const ParallelActionsInput& inp ) {
+  template<typename precision>
+  static ArgumentBookeepingHolder create ( std::size_t argno, const ParActionsInput<precision>& inp ) {
     return ArgumentBookeepingHolder{
       inp.ranks[argno], // rank
       inp.ncols[argno], // ncols
@@ -229,13 +232,19 @@ struct ArgumentBookeepingHolder {
   }
 };
 
-struct ParallelActionsOutput {
-  View<double> values;
-  View<double> derivatives;
-  View<double> buffer;
+template<typename precision>
+struct ParActionsOutput {
+  View<precision> values;
+  View<precision> derivatives;
+  View<precision> buffer;
 
-  static ParallelActionsOutput create( std::size_t ncomp, double* v, std::size_t ndev, double* d, std::size_t nb, double* b ) {
-    return ParallelActionsOutput{
+  static ParActionsOutput create( std::size_t ncomp,
+                                  precision* v,
+                                  std::size_t ndev,
+                                  precision* d,
+                                  std::size_t nb,
+                                  precision* b ) {
+    return ParActionsOutput{
       View{v,ncomp}, //values
       View{d,ndev},  // derivatives
       View{b,nb}     // buffer
@@ -261,7 +270,9 @@ struct ForceIndexHolder {
       View2D{ind+2*nc,nc,nd} // indices
     };
   }
-  static ForceIndexHolder create(const ParallelActionsInput& inp,
+
+  template<typename precision>
+  static ForceIndexHolder create(const ParActionsInput<precision>& inp,
                                  std::size_t* ind ) {
     return create(inp.ncomponents,
                   inp.nderivatives_per_scalar,ind);
@@ -280,18 +291,20 @@ struct ForceIndexHolder {
            + nc     // tot_indices
            + nc*nd; // indices
   }
-  static size_t indexesPerScalar(const ParallelActionsInput& inp) {
+  template<typename precision>
+  static size_t indexesPerScalar(const ParActionsInput<precision>& inp) {
     return indexesPerScalar(inp.ncomponents,
                             inp.nderivatives_per_scalar);
   }
 };
 
-class ForceInput {
+template <typename precision>
+class ForcesInput {
 public:
-  View<double> force;
-  View2D<double> deriv;
-  static ForceInput create( std::size_t nv, double* f, std::size_t nd, double* d ) {
-    return ForceInput{
+  View<precision> force;
+  View2D<precision> deriv;
+  static ForcesInput create( std::size_t nv, precision* f, std::size_t nd, precision* d ) {
+    return ForcesInput{
       View{f,nv},     //force
       View2D{d,nv,nd} //deriv
     };
@@ -299,22 +312,23 @@ public:
 };
 
 //There is no need to pass this as reference:
-struct ForceOutput {
+template <typename precision>
+struct ForcesOutput {
   //I would suggest to invert the name or to be clearer
 // like something that recalls that "thread_safe" will be need to be reducted (hence it is NOT thread safe)
-  View<double> thread_safe;
+  View<precision> thread_safe;
   //these are the forces that we promise will not provoke races
-  View<double> thread_unsafe;
+  View<precision> thread_unsafe;
   //const T* is a ptr to const T
   //T* const is a conts ptr to a modifiable T
-  static ForceOutput create(std::vector<double>& reduced, std::vector<double>& notReduced) {
-    return ForceOutput{
+  static ForcesOutput create(std::vector<precision>& reduced, std::vector<precision>& notReduced) {
+    return ForcesOutput{
       View{reduced.data(),reduced.size()},      // thread_safe
       View{notReduced.data(),notReduced.size()} // thread_unsafe
     };
   }
-  static ForceOutput create(double* reduced, size_t rs, double* notReduce, size_t nrsz) {
-    return ForceOutput{
+  static ForcesOutput create(precision* reduced, size_t rs, precision* notReduce, size_t nrsz) {
+    return ForcesOutput{
       View{reduced,rs},    // thread_safe
       View{notReduce,nrsz} // thread_unsafe
     };
@@ -335,7 +349,7 @@ struct ForceOutput {
 //            std::declval<size_t >(),
 //            std::declval<size_t >(),
 //            std::declval<const typename T::input_type & >(),
-//            std::declval<const ParallelActionsInput& >(),
+//            std::declval<const ParActionsInput& >(),
 //            std::declval<View<unsigned> >(),
 //            std::declval<double *>(),
 //            std::declval<double *>(),
@@ -355,7 +369,7 @@ struct ForceOutput {
 // decltype(T::gatherForcesGPU(
 //            std::declval<unsigned >(),
 //            std::declval<const typename T::input_type & >(),
-//            std::declval<const ParallelActionsInput& >(),
+//            std::declval<const ParActionsInput& >(),
 //            std::declval<const ForceInput& >(),
 //            std::declval<ForceOutput >()
 //          ))
@@ -374,14 +388,32 @@ struct ForceOutput {
 //           = T::virialSize;
 // } //namespace PTMUtils
 
+template <typename CV, typename=void>
+struct cvprecision {
+  typedef double type;
+};
+
+template <typename CV>
+struct cvprecision<CV,std::void_t<typename CV::precision>> {
+  typedef typename CV::precision type;
+};
+
+template <typename CV>
+using cvprecision_t = typename cvprecision<CV>::type;
+
 template <class T>
 class ParallelTaskManager {
 public:
   using input_type= typename T::input_type;
+  using precision = cvprecision_t<T>;
+  typedef ParActionsInput<precision> ParallelActionsInput;
+  typedef ParActionsOutput<precision> ParallelActionsOutput;
+  typedef ForcesInput<precision> ForceInput;
+  typedef ForcesOutput<precision> ForceOutput;
 //  static constexpr bool has_custom_gather=PTMUtils::has_gatherForces_custom<T>;
 //  static constexpr bool has_GPU_gather=PTMUtils::has_gatherForces_GPU<T>;
 //  static constexpr size_t virialSize = PTMUtils::virialSize<T>;
-private:
+protected:
 /// The underlying action for which we are managing parallel tasks
   ActionWithVector* action;
 /// The MPI communicator
@@ -396,14 +428,14 @@ private:
 /// The number of forces on each thread
   std::size_t nthreaded_forces;
 /// This holds the values before we pass them to the value
-  std::vector<double> value_stash;
+  std::vector<precision> value_stash;
 /// A tempory set of vectors for holding forces over threads
-  std::vector<std::vector<double> > omp_forces;
+  std::vector<std::vector<precision> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
   ParallelActionsInput myinput;
   ArgumentsBookkeeping argumentsMap;
 //this holds the data for myinput that will be passed though myinput
-  std::vector<double> input_buffer;
+  std::vector<precision> input_buffer;
 /// This holds tempory data that we use in performTask
   std::size_t workspace_size;
 /// This holds data for that the underlying action needs to do the calculation
@@ -434,12 +466,17 @@ public:
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
                                       const ForceIndexHolder& force_indices,
                                       const ForceInput& fdata,
-                                      View<double> forces );
+                                      View<precision> forces );
 /// This is used to gather forces that are not thread safe
   static void gatherThreadUnsafeForces( const ParallelActionsInput& input,
                                         const ForceIndexHolder& force_indices,
                                         const ForceInput& fdata,
-                                        View<double> forces );
+                                        View<precision> forces );
+};
+
+struct defaultPTM {
+  template <typename ACC>
+  using PTM=ParallelTaskManager<ACC>;
 };
 
 template <class T>
@@ -541,10 +578,10 @@ void ParallelTaskManager<T>::setWorkspaceSize( std::size_t size ) {
 //use the __PLUMED_USE_OPENACC_TASKSMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_TASKSMINE
-template <class T>
+template <class T, typename precision>
 void runAllTasksACC(typename T::input_type actiondata,
-                    ParallelActionsInput myinput,
-                    std::vector<double>& value_stash,
+                    ParActionsInput<precision> myinput,
+                    std::vector<precision>& value_stash,
                     const std::vector<unsigned> & partialTaskList,
                     const unsigned nactive_tasks,
                     const std::size_t nderivatives_per_task,
@@ -560,10 +597,10 @@ void runAllTasksACC(typename T::input_type actiondata,
   OpenACC::memoryManager ptl{partialTaskList};
   auto partialTaskList_data = ptl.devicePtr();
 
-  OpenACC::memoryManager<double> buff{workspace_size*nactive_tasks};
+  OpenACC::memoryManager<precision> buff{workspace_size*nactive_tasks};
 
   auto buffer = buff.devicePtr();
-  OpenACC::memoryManager<double> dev(nderivatives_per_task*nactive_tasks);
+  OpenACC::memoryManager<precision> dev(nderivatives_per_task*nactive_tasks);
   auto derivatives = dev.devicePtr();
 #pragma acc parallel loop present(myinput, actiondata) \
                            copyin(nactive_tasks, \
@@ -577,7 +614,7 @@ void runAllTasksACC(typename T::input_type actiondata,
   for(unsigned i=0; i<nactive_tasks; ++i) {
     std::size_t task_index = partialTaskList_data[i];
     std::size_t val_pos = task_index*myinput.nscalars;
-    auto myout = ParallelActionsOutput::create (myinput.nscalars,
+    auto myout = ParActionsOutput<precision>::create (myinput.nscalars,
                  value_stash_data+val_pos,
                  nderivatives_per_task,
                  derivatives+nderivatives_per_task*i,
@@ -591,15 +628,15 @@ void runAllTasksACC(typename T::input_type actiondata,
   vs.copyFromDevice(value_stash.data());
 }
 #else
-template <class T>
+template <class T, typename precision>
 void runAllTasksACC(typename T::input_type actiondata,
-                    ParallelActionsInput myinput,
-                    std::vector<double>& value_stash,
+                    ParActionsInput<precision> myinput,
+                    std::vector<precision>& value_stash,
                     const std::vector<unsigned> & partialTaskList,
                     const unsigned nactive_tasks,
                     const std::size_t nderivatives_per_task,
                     const std::size_t workspace_size
-                   ) ;
+                   );
 #endif //__PLUMED_USE_OPENACC_TASKSMINE
 #endif //__PLUMED_USE_OPENACC
 
@@ -621,7 +658,7 @@ void ParallelTaskManager<T>::runAllTasks() {
   if( value_stash.size()!=totalvals ) {
     value_stash.resize(totalvals);
   }
-  std::fill (value_stash.begin(),value_stash.end(), 0.0);
+  std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC
     if (comm.Get_rank()== 0) {// no multigpu shenanigans until this works
@@ -659,8 +696,8 @@ void ParallelTaskManager<T>::runAllTasks() {
 
     #pragma omp parallel num_threads(nt)
     {
-      std::vector<double> buffer( workspace_size );
-      std::vector<double> derivatives( nderivatives_per_task );
+      std::vector<precision> buffer( workspace_size );
+      std::vector<precision> derivatives( nderivatives_per_task );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
         std::size_t task_index = partialTaskList[i];
@@ -688,11 +725,11 @@ void ParallelTaskManager<T>::runAllTasks() {
 //use the __PLUMED_USE_OPENACC_FORCESMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_FORCESMINE
-template <class T>
-void applyForcesWithACC(PLMD::View<double> forcesForApply,
+template <class T, typename precision>
+void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         typename T::input_type actiondata,
-                        ParallelActionsInput myinput,
-                        const std::vector<double>& value_stash,
+                        ParActionsInput<precision> myinput,
+                        const std::vector<precision>& value_stash,
                         const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
@@ -715,13 +752,13 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
   //nscalars is >=ncomponents (see setupParallelTaskManager )
   const auto nind_per_task = nind_per_scalar*myinput.nscalars;
 
-  OpenACC::memoryManager<double> dev{nderivatives_per_task*nactive_tasks};
+  OpenACC::memoryManager<precision> dev{nderivatives_per_task*nactive_tasks};
   auto derivatives = dev.devicePtr();
   OpenACC::memoryManager<std::size_t> ind{nind_per_task*nactive_tasks};
   auto indices = ind.devicePtr();
-  OpenACC::memoryManager<double> vtmp{myinput.sizeOfFakeVals()*nactive_tasks};
+  OpenACC::memoryManager<precision> vtmp{myinput.sizeOfFakeVals()*nactive_tasks};
   auto valstmp = vtmp.devicePtr();
-  OpenACC::memoryManager<double> buff{workspace_size*nactive_tasks};
+  OpenACC::memoryManager<precision> buff{workspace_size*nactive_tasks};
   auto buffer = buff.devicePtr();
 
 #define forces_indicesArg(taskID,scalarID) ForceIndexHolder::create(myinput, \
@@ -771,22 +808,23 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
                             force_indices );
 
         // Create a force input object
-        auto finput = ForceInput::create ( myinput.nscalars,
-                                           value_stash_data + stashDrift(task_index,vID),
-                                           myinput.nderivatives_per_scalar,
-                                           derivatives + derivativeDrift(t,vID));
+        auto finput = ForcesInput<precision>::create ( myinput.nscalars,
+                      value_stash_data + stashDrift(task_index,vID),
+                      myinput.nderivatives_per_scalar,
+                      derivatives + derivativeDrift(t,vID));
 
         // Gather forces that can be gathered locally
         ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
             force_indices,
             finput,
-            View<double>(forcesForApply_data,
-                         forcesForApply_size));
+            View<precision>(forcesForApply_data,
+                            forcesForApply_size));
       }
     }
 
 #pragma acc parallel loop
     for(unsigned v=myinput.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
+      //using double for paranoid reasons
       double tmp = 0.0;
 #pragma acc loop reduction(+:tmp)
       for(unsigned t=0; t<nactive_tasks; ++t) {
@@ -795,10 +833,10 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
         for(unsigned vID=0; vID<nvpt; ++vID) {
           auto force_indices = forces_indicesArg(t,vID);
 
-          auto fdata = ForceInput::create( myinput.nscalars,
-                                           value_stash_data + stashDrift(task_index,vID),
-                                           myinput.nderivatives_per_scalar,
-                                           derivatives + derivativeDrift(t,vID));
+          auto fdata = ForcesInput<precision>::create( myinput.nscalars,
+                       value_stash_data + stashDrift(task_index,vID),
+                       myinput.nderivatives_per_scalar,
+                       derivatives + derivativeDrift(t,vID));
           for(unsigned i=0; i<myinput.ncomponents; ++i) {
             const double ff = fdata.force[i];
             for(unsigned d=force_indices.threadsafe_derivatives_end[i];
@@ -820,11 +858,10 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
   ffa.copyFromDevice(forcesForApply.data());
 }
 #else
-template <class T>
-void applyForcesWithACC(PLMD::View<double> forcesForApply,
+void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         typename T::input_type actiondata,
-                        ParallelActionsInput myinput,
-                        const std::vector<double>& value_stash,
+                        ParActionsInput<precision> myinput,
+                        const std::vector<precision>& value_stash,
                         const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
@@ -832,15 +869,35 @@ void applyForcesWithACC(PLMD::View<double> forcesForApply,
                        );
 #endif //__PLUMED_USE_OPENACC_FORCESMINE
 #endif //__PLUMED_USE_OPENACC
+
+template<typename prec>
+struct forceData {
+  std::vector<prec> ffa;
+  forceData( std::vector<double>& forcesForApply ):
+    ffa(forcesForApply.size()),destination(forcesForApply) {}
+  void update() {
+    std::copy(ffa.begin(),ffa.end(),destination.begin());
+  }
+private:
+  std::vector<double>& destination;
+};
+
+template<>
+struct forceData<double> {
+  PLMD::View<double> ffa;
+  forceData( std::vector<double>& forcesForApply ):
+    ffa(forcesForApply.data(),forcesForApply.size()) {}
+  void update() {
+  }
+};
 template <class T>
 void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action ) ;
   unsigned nactive_tasks=partialTaskList.size();
+  forceData<precision> forces(forcesForApply);
   // Clear force buffer
-  forcesForApply.assign( forcesForApply.size(), 0.0 );
-  //TODO: check if std::fill is faster (i get conflicting answers on the net)
-  //std::fill (forcesForApply.begin(),forcesForApply.end(), 0.0);
+  std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
@@ -851,7 +908,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
     if (comm.Get_rank() == 0) {
       applyForcesWithACC<T>(
-        PLMD::View<double> { forcesForApply.data(), forcesForApply.size() },
+        PLMD::View<precision> { forcesForApply.data(), forcesForApply.size() },
         actiondata,
         myinput,
         value_stash,
@@ -885,9 +942,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     {
       const unsigned t=OpenMP::getThreadNum();
       omp_forces[t].assign( omp_forces[t].size(), 0.0 );
-      std::vector<double> buffer( workspace_size );
-      std::vector<double> fake_vals( myinput.sizeOfFakeVals() );
-      std::vector<double> derivatives( nderivatives_per_task );
+      std::vector<precision> buffer( workspace_size );
+      std::vector<precision> fake_vals( myinput.sizeOfFakeVals() );
+      std::vector<precision> derivatives( nderivatives_per_task );
       std::vector<std::size_t> indices(ForceIndexHolder::indexesPerScalar(myinput));
 
       auto force_indices = ForceIndexHolder::create( myinput,indices.data() );
@@ -909,7 +966,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
           // Get the force indices
           T::getForceIndices( task_index,
                               j,
-                              forcesForApply.size(),
+                              forces.ffa.size(),
                               actiondata,
                               myinput,
                               force_indices );
@@ -926,21 +983,22 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
           gatherThreadSafeForces( myinput,
                                   force_indices,
                                   finput,
-                                  View<double>(forcesForApply.data(),
-                                               forcesForApply.size()) );
+                                  View<double>(forces.ffa.data(),
+                                               forces.ffa.size()) );
 
           // Gather forces that are not thread safe
           gatherThreadUnsafeForces( myinput,
                                     force_indices,
                                     finput,
-                                    View<double>(omp_forces[t].data(),
-                                                 omp_forces[t].size()) );
+                                    View<precision>(omp_forces[t].data(),
+                                        omp_forces[t].size()) );
         }
       }
 
       #pragma omp critical
       gatherThreads( ForceOutput::create(omp_forces[t], forcesForApply ) );
     }
+    forces.update();
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
     if( !action->runInSerial() ) {
       comm.Sum( forcesForApply );
@@ -952,7 +1010,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreadSafeForces( const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double> forces ) {
+    View<precision> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     double ff = fdata.force[i];
     for(unsigned j=0; j<force_indices.threadsafe_derivatives_end[i]; ++j) {
@@ -965,7 +1023,7 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreadUnsafeForces(const ParallelActionsInput& input,
     const ForceIndexHolder& force_indices,
     const ForceInput& fdata,
-    View<double> forces ) {
+    View<precision> forces ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     const double ff = fdata.force[i];
     for(unsigned d=force_indices.threadsafe_derivatives_end[i];

@@ -29,20 +29,20 @@
 #include "View2D.h"
 #include "Vector.h"
 #include "Tensor.h"
+#include "core/Colvar.h"
 
 namespace PLMD {
 
-class Colvar;
-
+template <typename T>
 class ColvarOutput {
 private:
   class DerivHelper {
   private:
     std::size_t nderivPerComponent;
-    double* derivatives;
+    T* derivatives;
   public:
-    DerivHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
-    View2D<double, helpers::dynamic_extent, 3> operator[](std::size_t i) {
+    DerivHelper(T* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
+    View2D<T, helpers::dynamic_extent, 3> operator[](std::size_t i) {
       //the -9 is to "exclude" the virial (even if tecnically is still accessible)
       return { derivatives + i*nderivPerComponent, nderivPerComponent-9 };
     }
@@ -52,18 +52,18 @@ private:
       return Vector( derivatives[base], derivatives[base+1], derivatives[base+2] );
     }
 
-    View<double,3> getView( std::size_t valueID, std::size_t atomID) {
+    View<T,3> getView( std::size_t valueID, std::size_t atomID) {
       std::size_t base = valueID*nderivPerComponent + 3*atomID;
-      return View<double,3> { derivatives +base};
+      return View<T,3> { derivatives +base};
     }
   };
 public:
   class VirialHelper {
   private:
     std::size_t nderivPerComponent;
-    double* derivatives;
+    T* derivatives;
   public:
-    VirialHelper(double* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
+    VirialHelper(T* d, std::size_t n ) : nderivPerComponent(n), derivatives(d) {}
     Tensor operator[](std::size_t i) const {
       std::size_t n=(i+1)*nderivPerComponent;
       return Tensor( derivatives[n-9],
@@ -76,9 +76,9 @@ public:
                      derivatives[n-2],
                      derivatives[n-1] );
     }
-    View<double,9> getView(std::size_t i) const {
+    View<T,9> getView(std::size_t i) const {
       std::size_t n=(i+1)*nderivPerComponent-9;
-      return View<double,9> {derivatives+n};
+      return View<T,9> {derivatives+n};
     }
     void set( std::size_t i, const Tensor& v ) {
       std::size_t n=(i+1)*nderivPerComponent;
@@ -94,18 +94,18 @@ public:
     }
   };
   std::size_t ncomponents;
-  View<double> values;
+  View<T> values;
   DerivHelper derivs;
   VirialHelper virial;
-  ColvarOutput( View<double> v, std::size_t nderivPerComponent, double *derivatives ):
+  ColvarOutput( View<T> v, std::size_t nderivPerComponent, T *derivatives ):
     ncomponents(v.size()),
     values(v),
     derivs(derivatives,nderivPerComponent),
     virial(derivatives,nderivPerComponent)
   {}
 
-  static ColvarOutput createColvarOutput( std::vector<double>& v,
-                                          std::vector<double>& d,
+  static ColvarOutput createColvarOutput( std::vector<T>& v,
+                                          std::vector<T>& d,
                                           Colvar* action );
 
   Vector getAtomDerivatives( std::size_t i, std::size_t a ) {
@@ -113,6 +113,14 @@ public:
   }
 };
 
+template <typename T>
+ColvarOutput<T> ColvarOutput<T>::createColvarOutput( std::vector<T>& v,
+    std::vector<T>& d,
+    Colvar* action ) {
+  View<T> val(v.data(),v.size());
+  d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
+  return ColvarOutput( val, action->getNumberOfDerivatives(), d.data() );
+}
 } //namespace PLMD
 
 #endif // __PLUMED_tools_ColvarOutput_h

@@ -416,12 +416,74 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
   return d;
 }
 
+Vector3f Pbc::distance(const Vector3f&v1,const Vector3f&v2)const {
+  Vector3f d=delta(v1,v2);
+  if(type==unset) {
+    // do nothing
+  } else if(type==orthorombic) {
+#ifdef __PLUMED_PBC_WHILE
+    for(unsigned i=0; i<3; i++) {
+      while(d[i]>hdiag[i]) {
+        d[i]-=diag[i];
+      }
+      while(d[i]<=mdiag[i]) {
+        d[i]+=diag[i];
+      }
+    }
+#else
+    for(int i=0; i<3; i++) {
+      d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+    }
+#endif
+  } else if(type==generic) {
+    Vector3f s=matmul(d,invReduced);
+// check if images have to be computed:
+//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
+// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
+//         since it does not apply Tools::pbc in many cases. Moreover, it does not
+//         introduce a significant gain. I thus leave it out for the moment.
+    if constexpr (true) {
+// bring to -0.5,+0.5 region in scaled coordinates:
+      for(int i=0; i<3; i++) {
+        s[i]=Tools::pbc(s[i]);
+      }
+      d=matmul(s,reduced);
+// check if shifts have to be attempted:
+      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+// list of shifts is specific for that "octant" (depends on signs of s[i]):
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        Vector3f best(d);
+        double lbest(modulo2(best));
+// loop over possible shifts:
+        for(unsigned i=0; i<myshifts.size(); i++) {
+          Vector3f trial=sumT(d,myshifts[i]);
+          double ltrial=modulo2(trial);
+          if(ltrial<lbest) {
+            lbest=ltrial;
+            best=trial;
+          }
+        }
+        d=best;
+      }
+    }
+    // no throws on the GPU
+  } //else plumed_merror("unknown pbc type");
+  return d;
+}
+
 Vector Pbc::realToScaled(const Vector&d)const {
   return matmul(invBox.transpose(),d);
 }
 
+Vector3f Pbc::realToScaled(const Vector3f&d)const {
+  return matmul(invBox.transpose(),d).convert<float>();
+}
+
 Vector Pbc::scaledToReal(const Vector&d)const {
   return matmul(box.transpose(),d);
+}
+Vector3f Pbc::scaledToReal(const Vector3f&d)const {
+  return matmul(box.transpose(),d).convert<float>();
 }
 
 bool Pbc::isOrthorombic()const {

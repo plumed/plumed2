@@ -48,6 +48,8 @@ class MatrixForceIndexInput {
 public:
   std::size_t rowlen;
   View<const std::size_t> indices;
+//temporary template for compilation
+  template <typename ParallelActionsInput>
   MatrixForceIndexInput( std::size_t task_index,
                          std::size_t ipair,
                          const MatrixTimesVectorData& actiondata,
@@ -66,6 +68,8 @@ public:
   View<const std::size_t> indices;
   View<const double> matrow;
   View<const double> vector;
+//temporary template for compilation
+  template <typename ParallelActionsInput>
   MatrixTimesVectorInput( std::size_t task_index,
                           std::size_t ipair,
                           const MatrixTimesVectorData& actiondata,
@@ -88,6 +92,8 @@ public:
   View<double,1> values;
   View<double> matrow_deriv;
   View<double> vector_deriv;
+//temporary template for compilation
+  template <typename ParallelActionsInput, typename ParallelActionsOutput>
   MatrixTimesVectorOutput( std::size_t task_index,
                            std::size_t ipair,
                            std::size_t nder,
@@ -107,6 +113,8 @@ class MatrixTimesVectorBase : public ActionWithVector {
 public:
   using input_type = MatrixTimesVectorData;
   using PTM = ParallelTaskManager<MatrixTimesVectorBase<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

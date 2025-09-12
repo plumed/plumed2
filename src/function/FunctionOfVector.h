@@ -36,6 +36,8 @@ class FunctionOfVector : public ActionWithVector {
 public:
   using input_type = FunctionData<T>;
   using PTM = ParallelTaskManager<FunctionOfVector<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -58,6 +60,7 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
 /// Get the input data
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
 /// Calculate the function
   void performTask( const unsigned& current, MultiValue& myvals ) const override {
     plumed_error();
@@ -208,6 +211,42 @@ void FunctionOfVector<T>::prepare() {
 
 template <class T>
 void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
+  unsigned nargs = getNumberOfArguments();
+  int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+
+  std::size_t ntasks = 0;
+  for(unsigned i=argstart; i<nargs; ++i) {
+    if( getPntrToArgument(i)->getRank()==1 ) {
+      ntasks = getPntrToArgument(i)->getShape()[0];
+      break;
+    }
+  }
+
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
+  }
+
+  for(unsigned j=argstart; j<nargs; ++j) {
+    const Value* myarg =  getPntrToArgument(j);
+    if( myarg->getRank()==0 ) {
+      double val = myarg->get();
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = val;
+      }
+    } else {
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = myarg->get(i);
+      }
+    }
+  }
+}
+
+template <class T>
+void FunctionOfVector<T>::getInputData( std::vector<float>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {

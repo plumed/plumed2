@@ -67,10 +67,10 @@ private:
       return View<double,3>( derivatives + 3*(i+1) );
     }
   };
-  ColvarOutput fulldata;
+  ColvarOutput<double> fulldata;
 public:
   View<double>& values;
-  ColvarOutput::VirialHelper& virial;
+  ColvarOutput<double>::VirialHelper& virial;
   View<double,3> derivatives;
   RefderHelper refders;
   VolumeOutput( View<double>& v, std::size_t nder, double* d ) :
@@ -93,6 +93,8 @@ class ActionVolume : public ActionWithVector {
 public:
   using input_type = VolumeData<T>;
   using PTM = ParallelTaskManager<ActionVolume<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -101,13 +103,13 @@ public:
   explicit ActionVolume(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void performTask( const unsigned&, MultiValue& ) const {
     plumed_error();
   }
   static void performTask( std::size_t task_index, const VolumeData<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static void gatherForces( std::size_t task_index, const VolumeData<T>& actiondata, const ParallelActionsInput& input, const ForceInput& fdata, ForceOutput& forces );
   static int getNumberOfValuesPerTask( std::size_t task_index, const VolumeData<T>& actiondata );
   static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const VolumeData<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
 };
@@ -171,6 +173,20 @@ ActionVolume<T>::ActionVolume(const ActionOptions&ao):
 
 template <class T>
 void ActionVolume<T>::getInputData( std::vector<double>& inputdata ) const {
+  if( inputdata.size()!=3*getNumberOfAtoms() ) {
+    inputdata.resize( 3*getNumberOfAtoms() );
+  }
+
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    Vector ipos = getPosition(i);
+    for(unsigned j=0; j<3; ++j) {
+      inputdata[3*i+j] = ipos[j];
+    }
+  }
+}
+
+template <class T>
+void ActionVolume<T>::getInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
