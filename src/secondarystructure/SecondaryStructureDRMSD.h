@@ -160,7 +160,7 @@ public:
     }
   }
 
-  void setReferenceStructure( std::string type, double bondlength, std::vector<Vector>& structure ) {
+  void setReferenceStructure( const std::string& /*type*/, double bondlength, std::vector<Vector>& structure ) {
     std::vector<pairDistance> targets;
     //set is ordered and contains no duplicated data
     std::set<unsigned> atoms_targets;
