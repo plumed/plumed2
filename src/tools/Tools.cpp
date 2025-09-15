@@ -29,6 +29,7 @@
 #include <map>
 #include <iomanip>
 #include <filesystem>
+#include <string_view>
 
 namespace PLMD {
 
@@ -198,7 +199,11 @@ bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   return true;
 }
 
-std::vector<std::string> Tools::getWords(std::string_view line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
+std::vector<std::string> Tools::getWords(std::string_view line,
+    const char* separators,
+    int * parlevel,
+    const char* parenthesis,
+    bool delete_parenthesis) {
   plumed_massert(std::strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
@@ -285,6 +290,49 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,std::stri
   if(size>0) {
     words.emplace_back(ptr,size);
   }
+}
+
+void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
+                           std::string_view line,
+                           const std::string_view separators) {
+  words.clear();
+  //NOTE::this function is written assuming that we have only a level of parentesis
+  // so "{a b x},{s}" is ok, "x,{{a,r}}" is not
+  // unlike getWords it will not delete the parentesis, in the spirit of returning a view
+  // to remove the parentesis you have to use a erase-remove idiom (see parseVector)
+  constexpr char openPar='{';
+  constexpr char closePar = '}';
+  size_t init=0;
+  std::size_t size=0;
+  int parlevel=0;
+  for(unsigned i=0; i<line.length(); i++) {
+    //being between parenthesis "suspends" the separator check
+    const bool is_separator=(separators.find(line[i])!=separators.npos)&&parlevel==0;
+    const bool is_par = line[i]==openPar || line[i] == closePar;
+    if(!is_separator && !is_par) {
+      size++;
+    } else if(line[i]==openPar) {
+      ++parlevel;
+      ++size;
+    } else if(line[i] == closePar) {
+      --parlevel;
+      ++size;
+    } else {
+      if(size==0) {
+        init++;
+      } else {
+        words.emplace_back(line.substr(init,size));
+        init=i+1;
+        size=0;
+      }
+    }
+//    plumed_assert(parlevel<=1&& parlevel>=0) << "getWordsSimple do not support nested parenthesis ('" << line << "')";
+  }
+  if(size>0) {
+    words.emplace_back(line.substr(init,size));
+  }
+
+  plumed_assert(parlevel==0) << "Unmatching parenthesis in '" << line << "'";
 }
 
 bool Tools::getParsedLine(IFile& ifile,std::vector<std::string> & words, bool trimcomments) {
@@ -394,37 +442,119 @@ void Tools::trimComments(std::string & s) {
   }
 }
 
-bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2) {
-  return ((str1.size() == str2.size()) && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
-    return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
+bool Tools::caseInSensStringCompare(std::string_view str1, std::string_view str2) {
+  return ((str1.size() == str2.size())
+  && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
+    return (std::toupper(c1) == std::toupper(c2));
   }));
 }
 
-bool Tools::getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep) {
+bool Tools::getKey(std::vector<std::string>& line,
+                   const std::string & key,
+                   std::string & s,
+                   int rep) {
   s.clear();
-  for(auto p=line.begin(); p!=line.end(); ++p) {
-    if((*p).length()==0) {
+  for(auto pl=line.begin(); pl!=line.end(); ++pl) {
+    std::string_view p(*pl);
+    if(p.length()==0) {
       continue;
     }
-    std::string x=(*p).substr(0,key.length());
+    auto x=p.substr(0,key.length());
     if(caseInSensStringCompare(x,key)) {
-      if((*p).length()==key.length()) {
+      if(p.length()==key.length()) {
         return false;
       }
-      std::string tmp=(*p).substr(key.length(),(*p).length());
-      line.erase(p);
-      s=tmp;
-      const std::string multi("@replicas:");
-      if(rep>=0 && startWith(s,multi)) {
-        s=s.substr(multi.length(),s.length());
-        std::vector<std::string> words=getWords(s,"\t\n ,");
-        plumed_massert(rep<static_cast<int>(words.size()),"Number of fields in " + s + " not consistent with number of replicas");
+      auto tmp=p.substr(key.length(),p.length());
+      constexpr std::string_view multi("@replicas:");
+      if(rep>=0 && startWith(tmp,multi)) {
+        //can be made faster with getWordSimple? the only string allocation will be the one in s=words[rep]
+        auto words=getWords(tmp.substr(multi.length(),tmp.length()),"\t\n ,");
+        plumed_massert(rep<static_cast<int>(words.size()),
+                       "Number of fields in " + s + " not consistent with number of replicas");
         s=words[rep];
+      } else {
+        s=tmp;
       }
+      line.erase(pl);
       return true;
     }
   };
   return false;
+}
+
+
+void getWords_replicas(gch::small_vector<std::string_view> & words,
+                       std::string_view line,
+                       const std::string_view separators) {
+  words.clear();
+  //NOTE: this function is tested in basic/rt-make-getwords
+  // via unravelReplicas and parseVector
+
+  //NOTE: this function ignores the first parenthesis becasue
+  // expects something like "@replica:{a,b c}" or "@replica:a b c"
+  // the user should cut the "@replica:" before running this.
+  // in case of a '{' being present the vector will be returned as soon the '}' is found
+  constexpr char openPar='{';
+  constexpr char closePar = '}';
+  size_t init=0;
+  std::size_t size=0;
+  int parlevel=0;
+  for(unsigned i=0; i<line.length(); i++) {
+    //being between parenthesis  do not "suspends" the separator check
+    const bool is_separator=(separators.find(line[i])!=separators.npos)
+                            && parlevel<=1;
+    const bool is_par = line[i]==openPar || line[i] == closePar;
+    if(!is_separator && !is_par) {
+      size++;
+    } else if(line[i]==openPar) {
+      ++parlevel;
+      if(parlevel == 1) {
+        init = i+1;
+      } else {
+        ++size;
+      }
+    } else if(line[i] == closePar) {
+      --parlevel;
+      ++size;
+      if(parlevel == 0) {
+        --size;
+        break;
+      }
+    } else {
+      if(size==0) {
+        init++;
+      } else {
+        words.emplace_back(line.substr(init,size));
+        init=i+1;
+        size=0;
+      }
+    }
+  }
+  if(size>0) {
+    words.emplace_back(line.substr(init,size));
+  }
+
+  plumed_assert(parlevel==0) << "Unmatched parenthesis in '" << line << "'";
+}
+
+std::string_view Tools::unravelReplicas(std::string_view argument,
+                                        int rep) {
+//NOTE: Tested in /basic/rt-make-getwords
+
+//NOTE: as now (exactly like before this PR) a vector will not accept only the first element as replicas:
+// - @replicas:{1,2,3},4,5 do not work (KEY={@replicas:{1,2,3},4,5})
+// - @replicas:{1,4,5},{2,4,5},{3,4,5} works (KEY=@replicas:{{1,4,5},{2,4,5},{3,4,5}}), it should be equivalent to the line above
+// - 1,@replicas:{2,3,4},5 works (KEY={1,@replicas{2,3,4},5})
+  constexpr std::string_view multi("@replicas:");
+  if(rep>=0 && startWith(argument,multi)) {
+    gch::small_vector<std::string_view> replicaValues;
+    getWords_replicas(replicaValues,argument.substr(multi.size()),"\t\n ,");
+    plumed_massert(rep<static_cast<int>(replicaValues.size()),
+                   "Number of fields in " + std::string(argument) + " not consistent with number of replicas");
+    return replicaValues[rep];
+  } else {
+    return argument;
+  }
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s) {
@@ -533,15 +663,18 @@ double Tools::bessel0( const double& val ) {
   return ax*bx;
 }
 
-bool Tools::startWith(const std::string & full,const std::string &start) {
-  return (full.substr(0,start.length())==start);
+bool Tools::startWith(std::string_view full, std::string_view start) {
+  return 0==full.compare(0,start.size(),start);
 }
 
 bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key) {
-  const std::string search(key+"=");
   for(const auto & p : line) {
-    if(startWith(p,search)) {
-      return true;
+    if(startWith(p,key)
+        &&p.size()>key.size()) {
+      //this does not allocate a new string `key+"="`
+      if(p[key.size()]=='=') {
+        return true;
+      }
     }
   }
   return false;
