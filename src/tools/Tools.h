@@ -282,16 +282,16 @@ public:
     if(s==0) {
       return;
     }
-    set_to_zero(&vec[0][0],s*n);
+    set_to_zero(vec[0].data(),s*n);
   }
 
-  template<unsigned n,unsigned m>
-  static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
+  template<typename T, unsigned n,unsigned m>
+  static void set_to_zero(std::vector<TensorTyped<T,n,m>> & vec) {
     unsigned s=vec.size();
     if(s==0) {
       return;
     }
-    set_to_zero(&vec[0](0,0),s*n*m);
+    set_to_zero(vec[0].data(),s*n*m);
   }
 
   static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
