@@ -90,10 +90,8 @@ std::ostream & operator<<(std::ostream &os, const TensorTyped<T,n,m>& t);
 
 /// Compute the Frobenius norm 2.
 template<typename T, unsigned n, unsigned m>
-double frobeniusNorm(const TensorTyped<T,m,n>&t);
+T frobeniusNorm(const TensorTyped<T,m,n>&t);
 
-template<typename T, unsigned n, unsigned m>
-double frobeniusNorm(const TensorTyped<T,m,n>&t);
 /// Diagonalize tensor.
 /// Syntax is the same as Matrix::diagMat.
 /// In addition, it is possible to call if with m smaller than n. In this case,
@@ -121,10 +119,10 @@ class TensorTyped:
   public MatrixSquareBracketsAccess<TensorTyped<T,n,m>,T> {
   std::array<T,n*m> d;
 /// Auxiliary private function for constructor
-  void auxiliaryConstructor();
+  constexpr void auxiliaryConstructor();
 /// Auxiliary private function for constructor
   template<typename... Args>
-  void auxiliaryConstructor(T first,Args... arg);
+  constexpr void auxiliaryConstructor(T first,Args... arg);
 public:
 //upload the tensor to the current acc device
   void toACCDevice()const  {
@@ -138,83 +136,83 @@ public:
 /// Can be used as Tensor<2,2>(1.0,2.0,3.0,4.0)
 /// In case a wrong number of parameters is given, a static assertion will fail.
   template<typename... Args>
-  TensorTyped(T first,Args... arg);
+  constexpr TensorTyped(T first,Args... arg);
 /// initialize the tensor to zero
-  TensorTyped();
+  constexpr TensorTyped();
 /// initialize a tensor as an external product of two Vector
-  TensorTyped(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2);
+  constexpr TensorTyped(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2);
 /// set it to zero
-  void zero();
+  constexpr void zero();
 /// get the underline pointer to data
-  T* data();
+  constexpr T* data();
 /// get the underline pointer to data
-  const T* data() const;
+  constexpr const T* data() const;
 /// access element
-  T & operator() (unsigned i,unsigned j);
+  constexpr T & operator() (unsigned i,unsigned j);
 /// access element
-  const T & operator() (unsigned i,unsigned j)const;
+  constexpr const T & operator() (unsigned i,unsigned j)const;
 /// increment
-  TensorTyped& operator +=(const TensorTyped& b);
+  constexpr TensorTyped& operator +=(const TensorTyped& b);
 /// decrement
-  TensorTyped& operator -=(const TensorTyped& b);
+  constexpr TensorTyped& operator -=(const TensorTyped& b);
 /// multiply
-  TensorTyped& operator *=(T);
+  constexpr TensorTyped& operator *=(T);
 /// divide
-  TensorTyped& operator /=(T);
+  constexpr TensorTyped& operator /=(T);
 /// return +t
-  TensorTyped operator +()const;
+  constexpr TensorTyped operator +()const;
 /// return -t
-  TensorTyped operator -()const;
+  constexpr TensorTyped operator -()const;
 /// set j-th column
-  TensorTyped& setCol(unsigned j,const VectorTyped<T,n> & c);
+  constexpr TensorTyped& setCol(unsigned j,const VectorTyped<T,n> & c);
 /// set i-th row
-  TensorTyped& setRow(unsigned i,const VectorTyped<T,m> & r);
+  constexpr TensorTyped& setRow(unsigned i,const VectorTyped<T,m> & r);
 /// get j-th column
-  VectorTyped<T,n> getCol(unsigned j)const;
+  constexpr VectorTyped<T,n> getCol(unsigned j)const;
 /// get i-th row
-  VectorTyped<T,m> getRow(unsigned i)const;
+  constexpr VectorTyped<T,m> getRow(unsigned i)const;
 /// returns the determinant
-  T determinant()const;
+  constexpr T determinant()const;
 /// return an identity tensor
-  static TensorTyped<T,n,n> identity();
+  static constexpr TensorTyped<T,n,n> identity();
 /// return the matrix inverse
-  TensorTyped inverse()const;
-/// return the transposed matrix
-  TensorTyped<T,m,n> transpose()const;
+  constexpr TensorTyped inverse()const;
+/// return the transpose matrix
+  constexpr TensorTyped<T,m,n> transpose()const;
 /// << operator.
 /// Allows printing tensor `t` with `std::cout<<t;`
   friend std::ostream & operator<< <>(std::ostream &os, const TensorTyped&);
 };
 
 template<typename T, unsigned n, unsigned m>
-void TensorTyped<T,n,m>::auxiliaryConstructor()
+constexpr void TensorTyped<T,n,m>::auxiliaryConstructor()
 {}
 
 template<typename T, unsigned n, unsigned m>
 template<typename... Args>
-void TensorTyped<T,n,m>::auxiliaryConstructor(T first,Args... arg) {
+constexpr void TensorTyped<T,n,m>::auxiliaryConstructor(T first,Args... arg) {
   d[n*m-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
 template<typename T, unsigned n, unsigned m>
 template<typename... Args>
-TensorTyped<T,n,m>::TensorTyped(T first,Args... arg) {
+constexpr TensorTyped<T,n,m>::TensorTyped(T first,Args... arg) {
   static_assert((sizeof...(Args))+1==n*m,"you are trying to initialize a Tensor with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
 
 template<typename T, unsigned n, unsigned m>
-T* TensorTyped<T,n,m>::data() {
+constexpr T* TensorTyped<T,n,m>::data() {
   return d.data();
 }
 template<typename T, unsigned n, unsigned m>
-const T* TensorTyped<T,n,m>::data() const {
+constexpr const T* TensorTyped<T,n,m>::data() const {
   return d.data();
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>::TensorTyped() {
+constexpr TensorTyped<T,n,m>::TensorTyped() {
   LoopUnroller<n*m>::_zero(d.data());
 }
 
@@ -240,7 +238,7 @@ TensorGeneric<T,n,m>::TensorGeneric(const VectorGeneric<T,n>&v1,const VectorGene
 */
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>::TensorTyped(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2) {
+constexpr TensorTyped<T,n,m>::TensorTyped(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2) {
   for(unsigned i=0; i<n; i++) {
     for(unsigned j=0; j<m; j++) {
       d[i*m+j]=v1[i]*v2[j];
@@ -249,12 +247,12 @@ TensorTyped<T,n,m>::TensorTyped(const VectorTyped<T,n>&v1,const VectorTyped<T,m>
 }
 
 template<typename T, unsigned n, unsigned m>
-void TensorTyped<T,n,m>::zero() {
+constexpr void TensorTyped<T,n,m>::zero() {
   LoopUnroller<n*m>::_zero(d.data());
 }
 
 template<typename T, unsigned n, unsigned m>
-T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j) {
+constexpr T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j) {
 #ifdef _GLIBCXX_DEBUG
 // index i is implicitly checked by the std::array class
   plumed_assert(j<m);
@@ -263,7 +261,7 @@ T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j) {
 }
 
 template<typename T, unsigned n, unsigned m>
-const T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j)const {
+constexpr const T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j)const {
 #ifdef _GLIBCXX_DEBUG
 // index i is implicitly checked by the std::array class
   plumed_assert(j<m);
@@ -272,43 +270,43 @@ const T & TensorTyped<T,n,m>::operator() (unsigned i,unsigned j)const {
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator +=(const TensorTyped<T,n,m>& b) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator +=(const TensorTyped<T,n,m>& b) {
   LoopUnroller<n*m>::_add(d.data(),b.d.data());
   return *this;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator -=(const TensorTyped<T,n,m>& b) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator -=(const TensorTyped<T,n,m>& b) {
   LoopUnroller<n*m>::_sub(d.data(),b.d.data());
   return *this;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator *=(T s) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator *=(T s) {
   LoopUnroller<n*m>::_mul(d.data(),s);
   return *this;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator /=(T s) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::operator /=(T s) {
   LoopUnroller<n*m>::_mul(d.data(),1.0/s);
   return *this;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> TensorTyped<T,n,m>::operator+()const {
+constexpr TensorTyped<T,n,m> TensorTyped<T,n,m>::operator+()const {
   return *this;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> TensorTyped<T,n,m>::operator-()const {
+constexpr TensorTyped<T,n,m> TensorTyped<T,n,m>::operator-()const {
   TensorTyped<T,n,m> r;
   LoopUnroller<n*m>::_neg(r.d.data(),d.data());
   return r;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::setCol(unsigned j,const VectorTyped<T,n> & c) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::setCol(unsigned j,const VectorTyped<T,n> & c) {
   for(unsigned i=0; i<n; ++i) {
     (*this)(i,j)=c(i);
   }
@@ -316,7 +314,7 @@ TensorTyped<T,n,m>& TensorTyped<T,n,m>::setCol(unsigned j,const VectorTyped<T,n>
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m>& TensorTyped<T,n,m>::setRow(unsigned i,const VectorTyped<T,m> & r) {
+constexpr TensorTyped<T,n,m>& TensorTyped<T,n,m>::setRow(unsigned i,const VectorTyped<T,m> & r) {
   for(unsigned j=0; j<m; ++j) {
     (*this)(i,j)=r(j);
   }
@@ -324,7 +322,7 @@ TensorTyped<T,n,m>& TensorTyped<T,n,m>::setRow(unsigned i,const VectorTyped<T,m>
 }
 
 template<typename T, unsigned n, unsigned m>
-VectorTyped<T,n> TensorTyped<T,n,m>::getCol(unsigned j)const {
+constexpr VectorTyped<T,n> TensorTyped<T,n,m>::getCol(unsigned j)const {
   VectorTyped<T,n> v;
   for(unsigned i=0; i<n; ++i) {
     v(i)=(*this)(i,j);
@@ -333,7 +331,7 @@ VectorTyped<T,n> TensorTyped<T,n,m>::getCol(unsigned j)const {
 }
 
 template<typename T, unsigned n, unsigned m>
-VectorTyped<T,m> TensorTyped<T,n,m>::getRow(unsigned i)const {
+constexpr VectorTyped<T,m> TensorTyped<T,n,m>::getRow(unsigned i)const {
   VectorTyped<T,m> v;
   for(unsigned j=0; j<m; ++j) {
     v(j)=(*this)(i,j);
@@ -342,39 +340,38 @@ VectorTyped<T,m> TensorTyped<T,n,m>::getRow(unsigned i)const {
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> operator+(const TensorTyped<T,n,m>&t1,const TensorTyped<T,n,m>&t2) {
+constexpr TensorTyped<T,n,m> operator+(const TensorTyped<T,n,m>&t1,const TensorTyped<T,n,m>&t2) {
   TensorTyped<T,n,m> t(t1);
   t+=t2;
   return t;
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> operator-(const TensorTyped<T,n,m>&t1,const TensorTyped<T,n,m>&t2) {
+constexpr TensorTyped<T,n,m> operator-(const TensorTyped<T,n,m>&t1,const TensorTyped<T,n,m>&t2) {
   TensorTyped<T,n,m> t(t1);
   t-=t2;
   return t;
 }
 
 template<typename T, typename J, unsigned n, unsigned m>
-TensorTyped<T,n,m> operator*(const TensorTyped<T,n,m>&t1,J s) {
+constexpr TensorTyped<T,n,m> operator*(const TensorTyped<T,n,m>&t1,J s) {
   TensorTyped<T,n,m> t(t1);
   t*=s;
   return t;
 }
 
 template<typename T, typename J, unsigned n, unsigned m>
-TensorTyped<T,n,m> operator*(J s,const TensorTyped<T,n,m>&t1) {
+constexpr TensorTyped<T,n,m> operator*(J s,const TensorTyped<T,n,m>&t1) {
   return t1*s;
 }
 
 template<typename T, typename J, unsigned n, unsigned m>
-TensorTyped<T,n,m> operator/(const TensorTyped<T,n,m>&t1,J s) {
+constexpr TensorTyped<T,n,m> operator/(const TensorTyped<T,n,m>&t1,J s) {
   return t1*(T(1.0)/s);
 }
 
 template<typename T, unsigned n, unsigned m>
-inline
-T TensorTyped<T,n,m>::determinant()const {
+constexpr inline T TensorTyped<T,n,m>::determinant()const {
   static_assert(n==3&&m==3,"determinanat can be called only for 3x3 Tensors");
   return
     d[0]*d[4]*d[8]
@@ -387,8 +384,7 @@ T TensorTyped<T,n,m>::determinant()const {
 
 //consider to make this a constexpr function
 template<typename T, unsigned n, unsigned m>
-inline
-TensorTyped<T,n,n> TensorTyped<T,n,m>::identity() {
+constexpr inline TensorTyped<T,n,n> TensorTyped<T,n,m>::identity() {
   TensorTyped<T,n,n> t;
   for(unsigned i=0; i<n; i++) {
     t(i,i)=1.0;
@@ -397,7 +393,7 @@ TensorTyped<T,n,n> TensorTyped<T,n,m>::identity() {
 }
 
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,m,n> TensorTyped<T,n,m>::transpose()const {
+constexpr TensorTyped<T,m,n> TensorTyped<T,n,m>::transpose()const {
   TensorTyped<T,m,n> t;
   for(unsigned i=0; i<m; i++)
     for(unsigned j=0; j<n; j++) {
@@ -407,8 +403,7 @@ TensorTyped<T,m,n> TensorTyped<T,n,m>::transpose()const {
 }
 
 template<typename T, unsigned n, unsigned m>
-inline
-TensorTyped<T,n,m> TensorTyped<T,n,m>::inverse()const {
+constexpr inline TensorTyped<T,n,m> TensorTyped<T,n,m>::inverse()const {
   static_assert(n==3&&m==3,"inverse can be called only for 3x3 Tensors");
   TensorTyped t;
   T invdet=1.0/determinant();
@@ -421,7 +416,7 @@ TensorTyped<T,n,m> TensorTyped<T,n,m>::inverse()const {
 
 /// matrix-matrix multiplication
 template<typename T, unsigned n, unsigned m, unsigned l>
-TensorTyped<T,n,l> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b) {
+constexpr TensorTyped<T,n,l> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b) {
   TensorTyped<T,n,l> t;
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<l; j++)
@@ -433,7 +428,7 @@ TensorTyped<T,n,l> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b)
 
 /// matrix-vector multiplication
 template<typename T, unsigned n, unsigned m>
-VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<T,m>&b) {
+constexpr VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<T,m>&b) {
   VectorTyped<T,n> t;
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -444,7 +439,7 @@ VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const VectorTyped<T,m>&b) {
 
 /// vector-matrix multiplication
 template<typename T, unsigned n, unsigned m>
-VectorTyped<T,n> matmul(const VectorTyped<T,m>&a,const TensorTyped<T,m,n>&b) {
+constexpr VectorTyped<T,n> matmul(const VectorTyped<T,m>&a,const TensorTyped<T,m,n>&b) {
   VectorTyped<T,n> t;
   for(unsigned i=0; i<n; i++)
     for(unsigned j=0; j<m; j++) {
@@ -455,61 +450,61 @@ VectorTyped<T,n> matmul(const VectorTyped<T,m>&a,const TensorTyped<T,m,n>&b) {
 
 /// vector-vector multiplication (maps to dotProduct)
 template<typename T, unsigned n_>
-T matmul(const VectorTyped<T,n_>&a,const VectorTyped<T,n_>&b) {
+constexpr T matmul(const VectorTyped<T,n_>&a,const VectorTyped<T,n_>&b) {
   return dotProduct(a,b);
 }
 
 /// matrix-matrix-matrix multiplication
 template<typename T, unsigned n, unsigned m, unsigned l, unsigned i>
-TensorTyped<T,n,i> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b,const TensorTyped<T,l,i>&c) {
+constexpr TensorTyped<T,n,i> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b,const TensorTyped<T,l,i>&c) {
   return matmul(matmul(a,b),c);
 }
 
 /// matrix-matrix-vector multiplication
 template<typename T, unsigned n, unsigned m, unsigned l>
-VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b,const VectorTyped<T,l>&c) {
+constexpr VectorTyped<T,n> matmul(const TensorTyped<T,n,m>&a,const TensorTyped<T,m,l>&b,const VectorTyped<T,l>&c) {
   return matmul(matmul(a,b),c);
 }
 
 /// vector-matrix-matrix multiplication
 template<typename T, unsigned n, unsigned m, unsigned l>
-VectorTyped<T,l> matmul(const VectorTyped<T,n>&a,const TensorTyped<T,n,m>&b,const TensorTyped<T,m,l>&c) {
+constexpr VectorTyped<T,l> matmul(const VectorTyped<T,n>&a,const TensorTyped<T,n,m>&b,const TensorTyped<T,m,l>&c) {
   return matmul(matmul(a,b),c);
 }
 
 /// vector-matrix-vector multiplication
 template<typename T, unsigned n, unsigned m>
-T matmul(const VectorTyped<T,n>&a,const TensorTyped<T,n,m>&b,const VectorTyped<T,m>&c) {
+constexpr T matmul(const VectorTyped<T,n>&a,const TensorTyped<T,n,m>&b,const VectorTyped<T,m>&c) {
   return matmul(matmul(a,b),c);
 }
 
 template <typename T>
 inline
-T determinant(const TensorTyped<T,3,3>&t) {
+constexpr T determinant(const TensorTyped<T,3,3>&t) {
   return t.determinant();
 }
 
 template <typename T>
 inline
-TensorTyped<T,3,3> inverse(const TensorTyped<T,3,3>&t) {
+constexpr TensorTyped<T,3,3> inverse(const TensorTyped<T,3,3>&t) {
   return t.inverse();
 }
 
 /// returns the transpose of a tensor (same as TensorGeneric::transpose())
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> transpose(const TensorTyped<T,m,n>&t) {
+constexpr TensorTyped<T,n,m> transpose(const TensorTyped<T,m,n>&t) {
   return t.transpose();
 }
 
 /// returns the transpose of a tensor (same as TensorGeneric(const VectorGeneric&,const VectorGeneric&))
 template<typename T, unsigned n, unsigned m>
-TensorTyped<T,n,m> extProduct(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2) {
+constexpr TensorTyped<T,n,m> extProduct(const VectorTyped<T,n>&v1,const VectorTyped<T,m>&v2) {
   return TensorTyped<T,n,m>(v1,v2);
 }
 
 template <typename T>
 inline
-TensorTyped<T,3,3> dcrossDv1(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2) {
+constexpr TensorTyped<T,3,3> dcrossDv1(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2) {
   (void) v1; // this is to avoid warnings. still the syntax of this function is a bit dummy...
   return TensorTyped<T,3,3>(
            T(0.0),  v2[2], -v2[1],
@@ -519,7 +514,7 @@ TensorTyped<T,3,3> dcrossDv1(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2
 
 template <typename T>
 inline
-TensorTyped<T,3,3> dcrossDv2(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2) {
+constexpr TensorTyped<T,3,3> dcrossDv2(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2) {
   (void) v2; // this is to avoid warnings. still the syntax of this function is a bit dummy...
   return TensorTyped<T,3,3>(
            T(0.0),-v1[2], v1[1],
@@ -528,7 +523,7 @@ TensorTyped<T,3,3> dcrossDv2(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2
 }
 
 template<typename T, unsigned n,unsigned m>
-double frobeniusNorm(const TensorTyped<T,m,n>&t) {
+T frobeniusNorm(const TensorTyped<T,m,n>&t) {
   return std::sqrt(LoopUnroller<m*n>::_dot(t.data(),t.data()));
 }
 

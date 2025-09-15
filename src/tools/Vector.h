@@ -76,10 +76,10 @@ int main(){
 template<typename T, unsigned n> class VectorTyped;
 
 template<typename T, unsigned n>
-VectorTyped<T, n> delta(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
+constexpr VectorTyped<T, n> delta(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
 
 template<typename T, unsigned n>
-T dotProduct(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
+constexpr T dotProduct(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
 
 
 template<typename T, unsigned n>
@@ -88,98 +88,98 @@ template<typename T, unsigned n>
 class VectorTyped {
   std::array<T,n> d;
 /// Auxiliary private function for constructor
-  void auxiliaryConstructor();
+  constexpr void auxiliaryConstructor();
 /// Auxiliary private function for constructor
   template<typename... Args>
-  void auxiliaryConstructor(T first,Args... arg);
+  constexpr void auxiliaryConstructor(T first,Args... arg);
 public:
 /// Constructor accepting n T parameters.
 /// Can be used as Vector<3>(1.0,2.0,3.0) or Vector<2>(2.0,3.0).
 /// In case a wrong number of parameters is given, a static assertion will fail.
   template<typename... Args>
-  VectorTyped(T first,Args... arg);
+  constexpr VectorTyped(T first,Args... arg);
 /// create it null
-  VectorTyped();
+  constexpr VectorTyped();
 /// Returns a pointer to the underlying array serving as element storage.
   constexpr T* data() noexcept;
 /// Returns a pointer to the underlying array serving as element storage.
   constexpr const T* data() const noexcept;
 /// set it to zero
-  void zero();
+  constexpr void zero();
 /// array-like access [i]
-  T & operator[](unsigned i);
+  constexpr T & operator[](unsigned i);
 /// array-like access [i]
-  const T & operator[](unsigned i)const;
+  constexpr const T & operator[](unsigned i)const;
 /// parenthesis access (i)
-  T & operator()(unsigned i);
+  constexpr T & operator()(unsigned i);
 /// parenthesis access (i)
-  const T & operator()(unsigned i)const;
+  constexpr const T & operator()(unsigned i)const;
 /// increment
-  VectorTyped& operator +=(const VectorTyped& b);
+  constexpr VectorTyped& operator +=(const VectorTyped& b);
 /// decrement
-  VectorTyped& operator -=(const VectorTyped& b);
+  constexpr VectorTyped& operator -=(const VectorTyped& b);
 /// multiply
-  VectorTyped& operator *=(T s);
+  constexpr VectorTyped& operator *=(T s);
 /// divide
-  VectorTyped& operator /=(T s);
+  constexpr VectorTyped& operator /=(T s);
 /// sign +
-  VectorTyped operator +()const;
+  constexpr VectorTyped operator +()const;
 /// sign -
-  VectorTyped operator -()const;
+  constexpr VectorTyped operator -()const;
 /// return v1+v2
   template<typename U, unsigned m>
-  friend VectorTyped<U, m> operator+(const VectorTyped<U, m>&,const VectorTyped<U, m>&);
+  friend constexpr VectorTyped<U, m> operator+(const VectorTyped<U, m>&,const VectorTyped<U, m>&);
 /// return v1-v2
   template<typename U, unsigned m>
-  friend VectorTyped<U, m> operator-(VectorTyped<U, m>,const VectorTyped<U, m>&);
+  friend constexpr VectorTyped<U, m> operator-(VectorTyped<U, m>,const VectorTyped<U, m>&);
 /// return s*v
   template<typename U, typename J, unsigned m>
-  friend VectorTyped<U, m> operator*(J,VectorTyped<U, m>);
+  friend constexpr VectorTyped<U, m> operator*(J,VectorTyped<U, m>);
 /// return v*s
   template<typename U, typename J, unsigned m>
-  friend VectorTyped<U, m> operator*(VectorTyped<U, m>,J);
+  friend constexpr VectorTyped<U, m> operator*(VectorTyped<U, m>,J);
 /// return v/s
   template<typename U, typename J, unsigned m>
-  friend VectorTyped<U, m> operator/(const VectorTyped<U, m>&,J);
+  friend constexpr VectorTyped<U, m> operator/(const VectorTyped<U, m>&,J);
 /// return v2-v1
-  friend VectorTyped delta<>(const VectorTyped&v1,const VectorTyped&v2);
+  friend constexpr VectorTyped delta<>(const VectorTyped&v1,const VectorTyped&v2);
 /// return v1 .scalar. v2
-  friend T dotProduct<>(const VectorTyped&,const VectorTyped&);
+  friend constexpr T dotProduct<>(const VectorTyped&,const VectorTyped&);
   //this bad boy produces a warning (in fact becasue declrare the crossproduc as a friend for ALL thhe possible combinations of n and T)
 /// return v1 .vector. v2
 /// Only available for size 3
   template<typename U>
-  friend VectorTyped<U, 3> crossProduct(const VectorTyped<U, 3>&,const VectorTyped<U, 3>&);
+  friend constexpr VectorTyped<U, 3> crossProduct(const VectorTyped<U, 3>&,const VectorTyped<U, 3>&);
 /// compute the squared modulo
-  T modulo2()const;
+  constexpr T modulo2()const;
 /// Compute the modulo.
 /// Shortcut for sqrt(v.modulo2())
-  T modulo()const;
+  constexpr T modulo()const;
 /// friend version of modulo2 (to simplify some syntax)
   template<typename U, unsigned m>
-  friend U modulo2(const VectorTyped<U, m>&);
+  friend constexpr U modulo2(const VectorTyped<U, m>&);
 /// friend version of modulo (to simplify some syntax)
   template<typename U, unsigned m>
-  friend U modulo(const VectorTyped<U, m>&);
+  friend constexpr U modulo(const VectorTyped<U, m>&);
 /// << operator.
 /// Allows printing vector `v` with `std::cout<<v;`
   friend std::ostream & operator<< <>(std::ostream &os, const VectorTyped&);
 };
 
 template<typename T, unsigned n>
-void VectorTyped<T, n>::auxiliaryConstructor()
+constexpr void VectorTyped<T, n>::auxiliaryConstructor()
 {}
 
 template<typename T, unsigned n>
 template<typename... Args>
-void VectorTyped<T, n>::auxiliaryConstructor(T first,Args... arg) {
+constexpr void VectorTyped<T, n>::auxiliaryConstructor(T first,Args... arg) {
   d[n-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
 template<typename T, unsigned n>
 template<typename... Args>
-VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
+constexpr VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
   static_assert((sizeof...(Args))+1==n,"you are trying to initialize a Vector with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
@@ -195,114 +195,114 @@ constexpr const T* VectorTyped<T, n>::data() const noexcept {
 }
 
 template<typename T, unsigned n>
-void VectorTyped<T, n>::zero() {
+constexpr void VectorTyped<T, n>::zero() {
   LoopUnroller<n>::_zero(d.data());
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>::VectorTyped() {
+constexpr VectorTyped<T, n>::VectorTyped() {
   LoopUnroller<n>::_zero(d.data());
 }
 
 template<typename T, unsigned n>
-T & VectorTyped<T, n>::operator[](unsigned i) {
+constexpr T & VectorTyped<T, n>::operator[](unsigned i) {
   return d[i];
 }
 
 template<typename T, unsigned n>
-const T & VectorTyped<T, n>::operator[](unsigned i)const {
+constexpr const T & VectorTyped<T, n>::operator[](unsigned i)const {
   return d[i];
 }
 
 template<typename T, unsigned n>
-T & VectorTyped<T, n>::operator()(unsigned i) {
+constexpr T & VectorTyped<T, n>::operator()(unsigned i) {
   return d[i];
 }
 
 template<typename T, unsigned n>
-const T & VectorTyped<T, n>::operator()(unsigned i)const {
+constexpr const T & VectorTyped<T, n>::operator()(unsigned i)const {
   return d[i];
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>& VectorTyped<T, n>::operator +=(const VectorTyped<T, n>& b) {
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator +=(const VectorTyped<T, n>& b) {
   LoopUnroller<n>::_add(d.data(),b.d.data());
   return *this;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>& VectorTyped<T, n>::operator -=(const VectorTyped<T, n>& b) {
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator -=(const VectorTyped<T, n>& b) {
   LoopUnroller<n>::_sub(d.data(),b.d.data());
   return *this;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>& VectorTyped<T, n>::operator *=(T s) {
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator *=(T s) {
   LoopUnroller<n>::_mul(d.data(),s);
   return *this;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>& VectorTyped<T, n>::operator /=(T s) {
+constexpr VectorTyped<T, n>& VectorTyped<T, n>::operator /=(T s) {
   LoopUnroller<n>::_mul(d.data(),1.0/s);
   return *this;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n>  VectorTyped<T, n>::operator +()const {
+constexpr VectorTyped<T, n>  VectorTyped<T, n>::operator +()const {
   return *this;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n> VectorTyped<T, n>::operator -()const {
+constexpr VectorTyped<T, n> VectorTyped<T, n>::operator -()const {
   VectorTyped<T, n> r;
   LoopUnroller<n>::_neg(r.d.data(),d.data());
   return r;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n> operator+(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
+constexpr VectorTyped<T, n> operator+(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
   VectorTyped<T, n> v(v1);
   return v+=v2;
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n> operator-(VectorTyped<T, n>v1,const VectorTyped<T, n>&v2) {
+constexpr VectorTyped<T, n> operator-(VectorTyped<T, n>v1,const VectorTyped<T, n>&v2) {
   return v1-=v2;
 }
 
 template<typename T, typename J, unsigned n>
-VectorTyped<T, n> operator*(J s,VectorTyped<T, n>v) {
+constexpr VectorTyped<T, n> operator*(J s,VectorTyped<T, n>v) {
   return v*=s;
 }
 
 template<typename T, typename J, unsigned n>
-VectorTyped<T, n> operator*(VectorTyped<T, n> v,J s) {
+constexpr VectorTyped<T, n> operator*(VectorTyped<T, n> v,J s) {
   return v*=s;
 }
 
 template<typename T, typename J, unsigned n>
-VectorTyped<T, n> operator/(const VectorTyped<T, n>&v,J s) {
+constexpr VectorTyped<T, n> operator/(const VectorTyped<T, n>&v,J s) {
   return v*(T(1.0)/s);
 }
 
 template<typename T, unsigned n>
-VectorTyped<T, n> delta(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
+constexpr VectorTyped<T, n> delta(const VectorTyped<T, n>&v1,const VectorTyped<T, n>&v2) {
   return v2-v1;
 }
 
 template<typename T, unsigned n>
-T VectorTyped<T, n>::modulo2()const {
-  return LoopUnroller< n>::_sum2(d.data());
+constexpr T VectorTyped<T, n>::modulo2()const {
+  return LoopUnroller<n>::_sum2(d.data());
 }
 
 template<typename T, unsigned n>
-T dotProduct(const VectorTyped<T, n>& v1,const VectorTyped<T, n>& v2) {
+constexpr T dotProduct(const VectorTyped<T, n>& v1,const VectorTyped<T, n>& v2) {
   return LoopUnroller<n>::_dot(v1.d.data(),v2.d.data());
 }
 
 template<typename T>
-inline
+constexpr inline
 VectorTyped<T, 3> crossProduct(const VectorTyped<T, 3>& v1,const VectorTyped<T, 3>& v2) {
   return VectorTyped<T, 3>(
            v1[1]*v2[2]-v1[2]*v2[1],
@@ -311,17 +311,17 @@ VectorTyped<T, 3> crossProduct(const VectorTyped<T, 3>& v1,const VectorTyped<T, 
 }
 
 template<typename T, unsigned n>
-T VectorTyped<T, n>::modulo()const {
+constexpr T VectorTyped<T, n>::modulo()const {
   return sqrt(modulo2());
 }
 
 template<typename T, unsigned n>
-T modulo2(const VectorTyped<T, n>&v) {
+constexpr T modulo2(const VectorTyped<T, n>&v) {
   return v.modulo2();
 }
 
 template<typename T, unsigned n>
-T modulo(const VectorTyped<T, n>&v) {
+constexpr T modulo(const VectorTyped<T, n>&v) {
   return v.modulo();
 }
 

@@ -73,10 +73,10 @@ class MatrixSquareBracketsAccess {
     // the user should not manipulate it directly
     const MatrixSquareBracketsAccess& t;
     const I i;
-    Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
+    constexpr Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
     /// access element
-    const C & operator[] (J j)const;
+    constexpr const C & operator[] (J j)const;
   };
 /// Small utility class which just contains a pointer to the T and the row number
   class Row {
@@ -84,28 +84,28 @@ class MatrixSquareBracketsAccess {
     // the user should not manipulate it directly
     MatrixSquareBracketsAccess& t;
     const I i;
-    Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
+    constexpr Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
     /// access element
-    C & operator[] (J j);
+    constexpr C & operator[] (J j);
   };
 public:
 /// access element (with [][] syntax)
-  Row operator[] (I i);
+  constexpr Row operator[] (I i);
 /// access element (with [][] syntax)
-  Const_row operator[] (I i)const;
+  constexpr Const_row operator[] (I i)const;
 };
 
 template<class T,class C,class I,class J>
-MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
+constexpr MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
   t(t),i(i) {}
 
 template<class T,class C,class I,class J>
-MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
+constexpr MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
   t(t),i(i) {}
 
 template<class T,class C,class I,class J>
-const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const {
+constexpr const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const {
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
@@ -113,7 +113,7 @@ const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const 
 }
 
 template<class T,class C,class I,class J>
-C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
+constexpr C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
@@ -121,12 +121,12 @@ C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
 }
 
 template<class T,class C,class I,class J>
-typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i) {
+constexpr typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i) {
   return Row(*this,i);
 }
 
 template<class T,class C,class I,class J>
-typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const {
+constexpr typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const {
   return Const_row(*this,i);
 }
 
