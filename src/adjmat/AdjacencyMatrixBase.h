@@ -31,6 +31,8 @@
 namespace PLMD {
 namespace adjmat {
 
+struct ContactMatrix;
+
 template <class T>
 struct AdjacencyMatrixData {
   T matrixdata;
@@ -47,7 +49,7 @@ struct AdjacencyMatrixData {
     nlist=nlist_v.data();
     nlist_three=nlist_three_v.data();
   }
-#ifdef __PLUMED_USE_OPENACC
+#ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],usepbc,components,nlists, \
                               natoms_per_list,nlist[0:nlist_v.size()], \
@@ -62,7 +64,7 @@ struct AdjacencyMatrixData {
                              nlist[0:nlist_v.size()], natoms_per_list, \
                              nlists, components, usepbc, this[0:1])
   }
-#endif //__PLUMED_USE_OPENACC
+#endif //__PLUMED_HAS_OPENACC
 };
 
 struct AdjacencyMatrixInput {
@@ -94,11 +96,13 @@ struct MatrixOutput {
   }
 };
 
-template <class T>
+template <class CV, typename myPTM=defaultPTM>
 class AdjacencyMatrixBase : public ActionWithMatrix {
 public:
-  using input_type = AdjacencyMatrixData<T>;
-  using PTM = ParallelTaskManager<AdjacencyMatrixBase<T>>;
+  using input_type = AdjacencyMatrixData<CV>;
+  using PTM = ParallelTaskManager<AdjacencyMatrixBase<CV, myPTM>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
   bool nopbc, read_one_group;
@@ -116,30 +120,32 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getInputData( std::vector<double>& inputdata ) const override;
+  void getInputData( std::vector<float>& inputdata ) const override;
   std::string writeInGraph() const override {
-    if( getName()=="CONTACT_MATRIX_PROPER" ) {
+    if constexpr ( std::is_same_v<ContactMatrix,CV> ) {
+      //TODO:this will change to  std::is_same_v<ContactMatrix<precision>,CV> when adding the mixed precision to the contact matrix
       return "CONTACT_MATRIX";
     }
     return getName();
   }
   void setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut=-1.0 );
   static void performTask( std::size_t task_index,
-                           const AdjacencyMatrixData<T>& actiondata,
+                           const AdjacencyMatrixData<CV>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput output );
   static int getNumberOfValuesPerTask( std::size_t task_index,
-                                       const AdjacencyMatrixData<T>& actiondata );
+                                       const AdjacencyMatrixData<CV>& actiondata );
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
-                               const AdjacencyMatrixData<T>& actiondata,
+                               const AdjacencyMatrixData<CV>& actiondata,
                                const ParallelActionsInput& input,
                                ForceIndexHolder force_indices );
   void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 };
 
-template <class T>
-void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords( keys );
   keys.addInputKeyword("optional","MASK","vector","a vector that is used to used to determine which rows of the adjancency matrix to compute");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
@@ -151,7 +157,7 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
   keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
-  T::registerKeywords( keys );
+  CV::registerKeywords( keys );
   PTM::registerKeywords( keys );
   keys.addOutputComponent("w","COMPONENTS","matrix","a matrix containing the weights for the bonds between each pair of atoms");
   keys.addOutputComponent("x","COMPONENTS","matrix","the projection of the bond on the x axis");
@@ -161,8 +167,8 @@ void AdjacencyMatrixBase<T>::registerKeywords( Keywords& keys ) {
   keys.addDOI("10.1021/acs.jctc.6b01073");
 }
 
-template <class T>
-AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
+template <class CV, typename myPTM>
+AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
   ActionWithMatrix(ao),
   taskmanager(this),
@@ -297,7 +303,7 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
     componentIsNotPeriodic("z");
   }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
-  AdjacencyMatrixData<T> matdata;
+  AdjacencyMatrixData<CV> matdata;
   matdata.usepbc = !nopbc;
   matdata.components = components;
   matdata.nlists = getPntrToComponent(0)->getShape()[0];
@@ -305,13 +311,13 @@ AdjacencyMatrixBase<T>::AdjacencyMatrixBase(const ActionOptions& ao):
   taskmanager.setActionInput( matdata );
 }
 
-template <class T>
-unsigned AdjacencyMatrixBase<T>::getNumberOfDerivatives() {
+template <class CV, typename myPTM>
+unsigned AdjacencyMatrixBase<CV, myPTM>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms() + 9;
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::setupThirdAtomBlock( const std::vector<AtomNumber>& tc,
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::setupThirdAtomBlock( const std::vector<AtomNumber>& tc,
     std::vector<AtomNumber>& t ) {
   threeblocks.resize( tc.size() );
   unsigned base=t.size();
@@ -323,8 +329,8 @@ void AdjacencyMatrixBase<T>::setupThirdAtomBlock( const std::vector<AtomNumber>&
   log.printf("\n");
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::setLinkCellCutoff( const bool& symmetric,
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::setLinkCellCutoff( const bool& symmetric,
     const double& lcut,
     double tcut ) {
   if( read_one_group && symmetric ) {
@@ -348,8 +354,8 @@ void AdjacencyMatrixBase<T>::setLinkCellCutoff( const bool& symmetric,
   threecells.setCutoff( tcut );
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) const {
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::getInputData( std::vector<double>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -366,8 +372,26 @@ void AdjacencyMatrixBase<T>::getInputData( std::vector<double>& inputdata ) cons
   }
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::getInputData( std::vector<float>& inputdata ) const {
+  if( inputdata.size()!=3*getNumberOfAtoms() ) {
+    inputdata.resize( 3*getNumberOfAtoms() );
+  }
+
+  std::size_t k=0;
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    Vector mypos( ActionAtomistic::getPosition(i) );
+    inputdata[k] = mypos[0];
+    k++;
+    inputdata[k] = mypos[1];
+    k++;
+    inputdata[k] = mypos[2];
+    k++;
+  }
+}
+
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
   std::string num;
   for(unsigned i=0; i<getConstPntrToComponent(0)->getShape()[1]; ++i) {
     Tools::convert( i+1, num );
@@ -375,8 +399,8 @@ void AdjacencyMatrixBase<T>::getMatrixColumnTitles( std::vector<std::string>& ar
   }
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::calculate() {
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::calculate() {
   Value* myval = getPntrToComponent(0);
   // Retrieve the task list
   std::vector<unsigned> & pTaskList( getListOfActiveTasks(this) );
@@ -481,9 +505,9 @@ void AdjacencyMatrixBase<T>::calculate() {
   taskmanager.runAllTasks();
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
-    const AdjacencyMatrixData<T>& actiondata,
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
+    const AdjacencyMatrixData<CV>& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput output ) {
   const unsigned nneigh=actiondata.nlist[task_index];
@@ -545,7 +569,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     const std::size_t valpos = (i-1)*ncomponents;
     MatrixOutput adjout{View<double,1>{&output.values[ valpos]},
                         View{output.derivatives.data() + valpos*nderiv,nderiv}};
-    T::calculateWeight( actiondata.matrixdata, adjinp, adjout );
+    CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
     if( !actiondata.components ) {
       continue ;
     }
@@ -557,7 +581,7 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
     }
     //sugar for not having to repeat [valpos*nderiv+something]
     for(int ii=1; ii<4; ++ii) {
-      auto derivs  = output.derivatives.subview_n<5>(valpos*nderiv+ii*nderiv);
+      auto derivs  = output.derivatives.template subview_n<5>(valpos*nderiv+ii*nderiv);
       derivs[0] = -1.0;
       derivs[1] =  1.0;
       derivs[2] = -atoms[i][0];
@@ -568,22 +592,22 @@ void AdjacencyMatrixBase<T>::performTask( std::size_t task_index,
   }
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-int AdjacencyMatrixBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
-    const AdjacencyMatrixData<T>& actiondata ) {
+template <class CV, typename myPTM>
+int AdjacencyMatrixBase<CV, myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
+    const AdjacencyMatrixData<CV>& actiondata ) {
   return actiondata.nlist[task_index] - 1;
 }
 
-template <class T>
-void AdjacencyMatrixBase<T>::getForceIndices( const std::size_t task_index,
+template <class CV, typename myPTM>
+void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_index,
     const std::size_t colno,
     const std::size_t ntotal_force,
-    const AdjacencyMatrixData<T>& actiondata,
+    const AdjacencyMatrixData<CV>& actiondata,
     const ParallelActionsInput& /*input*/,
     ForceIndexHolder force_indices ) {
 

@@ -113,7 +113,7 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout );
+  static void calculateCV( const colvar::ColvarInput<double>& cvin, ColvarOutput<double>& cvout );
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;
@@ -178,8 +178,8 @@ void Quaternion::calculate() {
     makeWhole();
   }
 
-  ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
-  calculateCV( colvar::ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
+  auto cvout = ColvarOutput<double>::createColvarOutput(value,derivs,this);
+  calculateCV( colvar::ColvarInput<double>::createColvarInput( 0, getPositions(), this ), cvout );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) {
@@ -191,7 +191,7 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvout ) {
+void Quaternion::calculateCV( const colvar::ColvarInput<double>& cvin, ColvarOutput<double>& cvout ) {
   //declarations
   Vector vec1_comp = delta( cvin.pos[0], cvin.pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( cvin.pos[0], cvin.pos[2] ); //components between atom 1 and 3
@@ -448,7 +448,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput& cvin, ColvarOutput& cvo
       cvout.derivs[3][i] =0.25*dS[i];
     }
   }
-  colvar::ColvarInput::setBoxDerivativesNoPbc( cvin, cvout );
+  colvar::ColvarInput<double>::setBoxDerivativesNoPbc( cvin, cvout );
 
 }
 

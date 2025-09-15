@@ -1,0 +1,71 @@
+LOAD FILE=../../../../plumedOpenACC.so
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN USEGPU
+q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN USEGPU
+
+# Create a normalising matrix
+q6_uones: ONES SIZE=26
+q6_nmat: OUTER_PRODUCT ARG=q6_norm,q6_uones
+udata6: VSTACK ARG=q6_sp.* 
+data6: CUSTOM ARG=udata6,q6_nmat FUNC=x/y PERIODIC=NO
+data6T: TRANSPOSE ARG=data6 
+
+# Create a normalising matrix
+q4_uones: ONES SIZE=18
+q4_nmat: OUTER_PRODUCT ARG=q4_norm,q4_uones
+udata4: VSTACK ARG=q4_sp.* 
+data4: CUSTOM ARG=udata4,q4_nmat FUNC=x/y PERIODIC=NO
+data4T: TRANSPOSE ARG=data4
+
+con6: CONTACT_MATRIX GROUP=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+dot6: MATRIX_PRODUCT ARG=data6,data6T MASK=con6 USEGPU
+
+ww6: CUSTOM ARG=con6,dot6 FUNC=x*y PERIODIC=NO
+
+w6: SUM ARG=ww6 PERIODIC=NO
+
+
+dot4: MATRIX_PRODUCT ARG=data4,data4T MASK=con6 USEGPU
+  
+ww4: CUSTOM ARG=con6,dot4 FUNC=x*y PERIODIC=NO
+  
+w4: SUM ARG=ww4 PERIODIC=NO
+
+
+#CPU references
+q6c: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+q4c: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+
+# Create a normalising matrix
+q6c_uones: ONES SIZE=26
+q6c_nmat: OUTER_PRODUCT ARG=q6c_norm,q6c_uones
+udata6c: VSTACK ARG=q6c_sp.* 
+data6c: CUSTOM ARG=udata6c,q6c_nmat FUNC=x/y PERIODIC=NO
+data6Tc: TRANSPOSE ARG=data6c 
+
+# Create a normalising matrix
+q4c_uones: ONES SIZE=18
+q4c_nmat: OUTER_PRODUCT ARG=q4c_norm,q4c_uones
+udata4c: VSTACK ARG=q4c_sp.* 
+data4c: CUSTOM ARG=udata4c,q4c_nmat FUNC=x/y PERIODIC=NO
+data4Tc: TRANSPOSE ARG=data4c
+
+dot6c: MATRIX_PRODUCT ARG=data6c,data6Tc MASK=con6
+
+ww6c: CUSTOM ARG=con6,dot6c FUNC=x*y PERIODIC=NO
+
+w6c: SUM ARG=ww6c PERIODIC=NO
+
+dot4c: MATRIX_PRODUCT ARG=data4c,data4Tc MASK=con6 USEGPU
+  
+ww4c: CUSTOM ARG=con6,dot4c FUNC=x*y PERIODIC=NO
+  
+w4c: SUM ARG=ww4c PERIODIC=NO
+########
+
+w6d: CUSTOM ARG=w6,w6c FUNC=y-x PERIODIC=NO
+w4d: CUSTOM ARG=w4,w4c FUNC=y-x PERIODIC=NO
+
+PRINT ARG=w6d FILE=colv1 FMT=%8.4f 
+PRINT ARG=w4d FILE=colv2 FMT=%8.4f
+
+RESTRAINT ARG=w6d,w4d AT=30,66 KAPPA=1,1 

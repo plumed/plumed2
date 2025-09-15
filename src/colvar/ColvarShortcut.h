@@ -45,6 +45,10 @@ void ColvarShortcut<T>::registerKeywords(Keywords& keys ) {
   }
   keys.addActionNameSuffix("_SCALAR");
   keys.addActionNameSuffix("_VECTOR");
+  //GPU related settings
+  keys.addFlag("USEGPU",false,"run this calculation on the GPU");
+  keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addActionNameSuffix("_VECTORACC");
 }
 
 template <class T>
@@ -64,8 +68,12 @@ ColvarShortcut<T>::ColvarShortcut(const ActionOptions&ao):
     if( keywords.style( key, "atoms" ) ) {
       std::string inpt;
       parseNumbered( key, 1, inpt );
+      bool usegpuFLAG=false;
+      parseFlag("USEGPU",usegpuFLAG);
       if( inpt.length()>0 ) {
-        readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR " + key + "1=" + inpt + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": "
+                       + getName()  + "_VECTOR" + (usegpuFLAG ? "ACC ":" ")
+                       + key + "1=" + inpt + " " + convertInputLineToString() );
         scalar=false;
         break;
       }

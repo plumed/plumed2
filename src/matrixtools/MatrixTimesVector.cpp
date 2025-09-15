@@ -19,10 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifdef __PLUMED_HAS_OPENACC
-#define __PLUMED_USE_OPENACC 1
-#endif //__PLUMED_HAS_OPENACC
-
 #include "MatrixTimesVectorBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
@@ -86,7 +82,14 @@ void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   MatrixTimesVectorBase<Vector>::registerLocalKeywords( keys );
   keys.addActionNameSuffix("_ROWSUMS");
+  keys.addActionNameSuffix("_ROWSUMSACC");
   keys.addActionNameSuffix("_PROPER");
+  keys.addActionNameSuffix("_PROPERACC");
+
+  if(!keys.exists("USEGPU")) {
+    keys.addFlag("USEGPU",false,"run this calculation on the GPU");
+    keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  }
 }
 
 MatrixTimesVector::MatrixTimesVector( const ActionOptions& ao):
@@ -96,12 +99,12 @@ MatrixTimesVector::MatrixTimesVector( const ActionOptions& ao):
   parseVector("ARG",args);
   std::vector<Value*> myargs;
   ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, myargs );
-  std::string usegpustr="";
+  std::string usegpustr=" ";
   {
     bool usegpu;
     parseFlag("USEGPU",usegpu);
     if( usegpu ) {
-      usegpustr = " USEGPU";
+      usegpustr = "ACC ";
     }
   }
   unsigned nvectors=0, nmatrices=0;
@@ -160,11 +163,11 @@ MatrixTimesVector::MatrixTimesVector( const ActionOptions& ao):
       }
     }
     if( sumrows ) {
-      readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_ROWSUMS ARG="
-                     + argstr + " " + convertInputLineToString() + usegpustr );
+      readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_ROWSUMS"+usegpustr
+                     +"ARG="+ argstr + " " + convertInputLineToString() );
     } else {
-      readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_PROPER ARG="
-                     + argstr + " " + convertInputLineToString() + usegpustr  );
+      readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_PROPER"+usegpustr
+                     +"ARG="+ argstr + " " + convertInputLineToString() );
     }
   } else if( nmatrices==1 ) {
     if( myargs[0]->getRank()!=2 || myargs[0]->hasDerivatives() ) {
@@ -182,8 +185,8 @@ MatrixTimesVector::MatrixTimesVector( const ActionOptions& ao):
         error("number of columns in input matrix does not equal number of elements in vector");
       }
     }
-    readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_PROPER ARG="
-                   + argstr + " " + convertInputLineToString()  + usegpustr );
+    readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT_PROPER"+usegpustr
+                   +"ARG="+ argstr + " " + convertInputLineToString() );
   } else {
     error("You should either have one vector or one matrix in input");
   }

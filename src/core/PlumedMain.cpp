@@ -881,7 +881,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        val.set(int(actionRegister().check(dlloader.getHandles(), std::string(words[1])) ? 1:0));
+        val.set(int(checkAction(std::string(words[1])) ? 1:0));
         break;
       case cmd_setExtraCV: {
         CHECK_NOTNULL(val,word);
@@ -1752,6 +1752,9 @@ void PlumedMain::getKeywordsForAction( const std::string& action, Keywords& keys
   actionRegister().getKeywords( dlloader.getHandles(), action, keys );
 }
 
+bool PlumedMain::checkAction(const std::string& action) const {
+  return actionRegister().check(dlloader.getHandles(),action);
+}
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error
 #endif

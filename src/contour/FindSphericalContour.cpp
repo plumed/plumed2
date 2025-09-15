@@ -148,6 +148,8 @@ class FindSphericalContour : public gridtools::ActionWithGrid {
 public:
   using input_type = FindSphericalContourObject;
   using PTM = ParallelTaskManager<FindSphericalContour>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

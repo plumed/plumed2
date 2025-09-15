@@ -54,6 +54,7 @@ void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   keys.addDeprecatedFlag("MEAN","");
   keys.addOutputComponent("mean","MEAN","scalar","the average values of the colvar in the region of interest");
   keys.addActionNameSuffix("_CALC");
+  keys.addActionNameSuffix("_ACC");
   keys.needsAction("LESS_THAN");
   keys.needsAction("MORE_THAN");
   keys.needsAction("GROUP");
@@ -72,6 +73,14 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
   parse("DATA",mc_lab);
   bool dosum;
   parseFlag("SUM",dosum);
+  std::string shortcutType="_CALC ";
+  {
+    bool usegpu;
+    parseFlag("USEGPU",usegpu);
+    if (usegpu) {
+      shortcutType="_ACC ";
+    }
+  }
   if( mc_lab.length()>0 ) {
     Group* mygrp = plumed.getActionSet().template selectWithLabel<Group*>(mc_lab);
     Group* mygrp2 = plumed.getActionSet().template selectWithLabel<Group*>(mc_lab + "_grp");
@@ -90,7 +99,7 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       atomsd=mc_lab;
     }
     // Create the apprpriate volume object
-    readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() + " ATOMS=" + atomsd );
+    readInputLine( getShortcutLabel() + ": " + voltype + shortcutType + convertInputLineToString() + " ATOMS=" + atomsd );
     // Now create input for sums
     if( dosum || domean ) {
       readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + mc_lab + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
@@ -135,10 +144,10 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       readInputLine( getShortcutLabel() + "_between: SUM ARG=" + getShortcutLabel() + "_bt PERIODIC=NO");
     }
   } else if( dosum ) {
-    readInputLine( getShortcutLabel() + "_vols: " + voltype + "_CALC " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + "_vols: " + voltype + shortcutType + convertInputLineToString() );
     readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vols PERIODIC=NO");
   } else {
-    readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": " + voltype + shortcutType + convertInputLineToString() );
   }
 }
 
