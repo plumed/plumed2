@@ -149,11 +149,27 @@ void Plane::calculate() {
     makeWhole();
   }
   calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-  setValue( value[0] );
+  Value* valuex=getPntrToComponent("x");
+  Value* valuey=getPntrToComponent("y");
+  Value* valuez=getPntrToComponent("z");
+
   for(unsigned i=0; i<derivs[0].size(); ++i) {
-    setAtomsDerivatives( i, derivs[0][i] );
+    setAtomsDerivatives( valuex, i, derivs[0][i] );
   }
-  setBoxDerivatives( virial[0] );
+  setBoxDerivatives( valuex, virial[0] );
+  valuex->set( value[0] );
+
+  for(unsigned i=0; i<derivs[1].size(); ++i) {
+    setAtomsDerivatives( valuey, i, derivs[1][i] );
+  }
+  setBoxDerivatives( valuey, virial[1] );
+  valuey->set( value[1] );
+
+  for(unsigned i=0; i<derivs[2].size(); ++i) {
+    setAtomsDerivatives( valuez, i, derivs[2][i] );
+  }
+  setBoxDerivatives( valuez, virial[2] );
+  valuez->set( value[2] );
 }
 
 void Plane::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
