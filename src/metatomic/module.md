@@ -1,5 +1,3 @@
-\page METATOMICMOD Metatomic
-
 <!--
 description: Using arbitrary machine learning models as collective variables
 authors: Guillaume Fraux
@@ -21,7 +19,7 @@ This module requires two main dependencies: the C++ torch library (i.e.
 `libtorch`); and the C++ metatomic_torch library. There are multiple ways of
 installing both libraries, which are discussed below.
 
-## Getting the dependnecies
+## Getting the dependencies
 
 ### Using Python's package manager (`pip`)
 
@@ -30,7 +28,8 @@ pre-built Python wheels with `pip`. This is the same set of wheels you will need
 to define custom models.
 
 ```bash
-pip install "metatomic-torch ==0.1.0"  # change this version to get newer releases
+# change this version to get newer releases
+pip install "metatomic-torch ==0.1.2"
 
 # you can then get the compiler and linker flags using the script at
 # src/metatomic/flags-from-python.py
@@ -69,10 +68,10 @@ of the installation instructions.
 You can also compile all required libraries from source. To this end, please
 follow the corresponding instructions:
 
-- **torch**: https://pytorch.org/get-started/locally/, for the C++ language
-- **metatensor**: https://docs.metatensor.org/latest/installation.html#install-c
-- **metatensor-torch**: https://docs.metatensor.org/latest/installation.html#install-torch-cxx
-- **metatomic-torch**: https://docs.metatensor.org/metatomic/latest/installation.html#install-torch-cxx
+- **torch**: <https://pytorch.org/get-started/locally/>, for the C++ language
+- **metatensor**: <https://docs.metatensor.org/latest/installation.html#install-c>
+- **metatensor-torch**: <https://docs.metatensor.org/latest/installation.html#install-torch-cxx>
+- **metatomic-torch**: <https://docs.metatensor.org/metatomic/latest/installation.html#install-torch-cxx>
 
 Once everything is compiled and installed, you should set the corresponding
 preprocessor flags in `CPPFLAGS` and the corresponding linker flags in
@@ -84,24 +83,21 @@ Once you installed all dependencies with one of the methods above, you can now
 configure PLUMED:
 
 ```bash
-./configure --enable-libtorch --enable-libmetatomic --enable-modules=+metatomic LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
+./configure --enable-libtorch \
+            --enable-libmetatomic \
+            --enable-modules=+metatomic \
+            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
 ```
 
-> [!note]
->
-> Pay close attention to the output, it should contain **both** a line about
-> `checking libtorch` and a line about `checking libmetatomic`, both ending with
-> `...yes`. If this is not the case, you'll get a warning about `cannot enable
-> __PLUMED_HAS_LIBTORCH` or `cannot enable __PLUMED_HAS_LIBMETATOMIC`.
->
-> If you get any of these warnings, you should check `config.log` to know more
-> about what's going on and why these libraries can't be found.
+!!! note
 
-# Module Contents
+    Pay close attention to the output, it should contain **both** a line about
+    `checking libtorch` and a line about `checking libmetatomic`, both ending with
+    `...yes`. If this is not the case, you'll get a warning about `cannot enable
+    __PLUMED_HAS_LIBTORCH` or `cannot enable __PLUMED_HAS_LIBMETATOMIC`.
 
-This module defines the following actions:
-
-@METATOMICMOD_COLVAR@
+    If you get any of these warnings, you should check `config.log` to know more
+    about what's going on and why these libraries can't be found.
 
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html

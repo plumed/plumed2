@@ -30,9 +30,11 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 /*
 Use arbitrary machine learning models as collective variables.
 
-\note This action requires the metatomic-torch library. Check the instructions
-in [the module page](module_metatomic.md) which includes instructions on how to
-enable this module.
+!!! note
+
+    This action requires `libmetatomic` to be enabled and found. Check the
+    instructions in [the module page](module_metatomic.md) for more information
+    on how to enable this module.
 
 This action enables the use of fully custom machine learning models — based on
 the [metatomic] models interface — as collective variables in PLUMED. Such
@@ -89,24 +91,26 @@ Here is another example with all the possible keywords:
 
 ```plumed
 soap: METATOMIC ...
-    MODEL=soap.pt
-    EXTENSION_DIRECTORY=extensions
+    MODEL=path/to/model.pt
+    EXTENSIONS_DIRECTORY=path/to/extensions/
+    DEVICE=cuda
     CHECK_CONSISTENCY
 
     SPECIES1=1-10
     SPECIES2=11-20
     SPECIES_TO_TYPES=8,13
 
-    # only run the calculation for the Aluminium (type 13) atoms, but
-    # include the Oxygen (type 8) as potential neighbors.
+    # only run the calculation for the Aluminium (type 13) atoms,
+    # still including all other atoms as potential neighbors.
     SELECTED_ATOMS=11-20
 ...
 ```
 
-[TorchScript]: https://pytorch.org/docs/stable/jit.html
-[metatomic]: https://docs.metatensor.org/metatomic/
-[mta_tutorials]: https://docs.metatensor.org/metatomic/latest/examples/
-[features_output]: https://docs.metatensor.org/metatomic/latest/outputs/features.html
+[TorchScript]: https://pytorch.org/docs/stable/jit.html [metatomic]:
+https://docs.metatensor.org/metatomic/ [mta_tutorials]:
+https://docs.metatensor.org/metatomic/latest/examples/ [features_output]:
+https://docs.metatensor.org/metatomic/latest/outputs/features.html
+
 */
 //+ENDPLUMEDOC
 
@@ -758,13 +762,14 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
         torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU)
     );
 
-    auto pair_samples_values = torch::zeros({n_pairs, 5}, labels_options.device(torch::kCPU));
+    auto pair_samples_values = torch::empty({n_pairs, 5}, labels_options.device(torch::kCPU));
+    auto pair_samples_values_ptr = pair_samples_values.accessor<int32_t, 2>();
     for (unsigned i=0; i<n_pairs; i++) {
-        pair_samples_values[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
-        pair_samples_values[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
-        pair_samples_values[i][2] = vesin_neighbor_list->shifts[i][0];
-        pair_samples_values[i][3] = vesin_neighbor_list->shifts[i][1];
-        pair_samples_values[i][4] = vesin_neighbor_list->shifts[i][2];
+        pair_samples_values_ptr[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
+        pair_samples_values_ptr[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
+        pair_samples_values_ptr[i][2] = vesin_neighbor_list->shifts[i][0];
+        pair_samples_values_ptr[i][3] = vesin_neighbor_list->shifts[i][1];
+        pair_samples_values_ptr[i][4] = vesin_neighbor_list->shifts[i][2];
     }
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
@@ -1006,8 +1011,8 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatomic's atom types");
 
-    keys.addOutputComponent("outputs", "default", "scalar", "collective variable created by the metatomic model");
-    keys.setValueDescription("scalar/vector/matrix","collective variable created by the metatomic model");
+    keys.addOutputComponent("outputs", "default", "scalar/vector/matrix", "collective variable created by the metatomic model");
+    keys.setValueDescription("scalar/vector/matrix", "collective variable created by the metatomic model");
 }
 
 PLUMED_REGISTER_ACTION(MetatomicPlumedAction, "METATOMIC")
