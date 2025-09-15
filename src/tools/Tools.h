@@ -211,7 +211,8 @@ public:
 /// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
   static std::string extension(const std::string&);
 /// Fast int power
-  static double fastpow(double base,int exp);
+  template <typename T>
+  static T fastpow(T base,int exp);
 /// Fast int power for power known at compile time
   template <int exp, typename T=double>
   static inline /*consteval*/ T fastpow(T base);
@@ -565,8 +566,8 @@ bool Tools::convertNoexcept(T i,std::string & str) {
   return true;
 }
 
-inline
-double Tools::fastpow(double base, int exp) {
+template <typename T>
+inline T Tools::fastpow(T base, int exp) {
   if(exp<0) {
     exp=-exp;
     base=1.0/base;
