@@ -76,17 +76,17 @@
 "dens_dist.y" : { "type": "vector", "desciption": "" }
 "dens_dist.z" : { "type": "vector", "desciption": "" }
 }, 
-"dens_numer_sigma" : { 
+"dens_numer_bw1" : { 
 "action" : "CONSTANT", 
-"dens_numer_sigma" : { "type": "vector", "desciption": "" }
+"dens_numer_bw1" : { "type": "vector", "desciption": "" }
 }, 
-"dens_numer_cov" : { 
-"action" : "CUSTOM", 
-"dens_numer_cov" : { "type": "vector", "desciption": "" }
+"dens_numer_bw2" : { 
+"action" : "CONSTANT", 
+"dens_numer_bw2" : { "type": "vector", "desciption": "" }
 }, 
-"dens_numer_icov" : { 
-"action" : "CUSTOM", 
-"dens_numer_icov" : { "type": "vector", "desciption": "" }
+"dens_numer_bw3" : { 
+"action" : "CONSTANT", 
+"dens_numer_bw3" : { "type": "vector", "desciption": "" }
 }, 
 "dens_numer" : { 
 "action" : "KDE", 
@@ -100,17 +100,17 @@
 "action" : "ONES", 
 "ones" : { "type": "vector", "desciption": "" }
 }, 
-"dens_denom_sigma" : { 
+"dens_denom_bw1" : { 
 "action" : "CONSTANT", 
-"dens_denom_sigma" : { "type": "vector", "desciption": "" }
+"dens_denom_bw1" : { "type": "vector", "desciption": "" }
 }, 
-"dens_denom_cov" : { 
-"action" : "CUSTOM", 
-"dens_denom_cov" : { "type": "vector", "desciption": "" }
+"dens_denom_bw2" : { 
+"action" : "CONSTANT", 
+"dens_denom_bw2" : { "type": "vector", "desciption": "" }
 }, 
-"dens_denom_icov" : { 
-"action" : "CUSTOM", 
-"dens_denom_icov" : { "type": "vector", "desciption": "" }
+"dens_denom_bw3" : { 
+"action" : "CONSTANT", 
+"dens_denom_bw3" : { "type": "vector", "desciption": "" }
 }, 
 "dens_denom" : { 
 "action" : "KDE", 

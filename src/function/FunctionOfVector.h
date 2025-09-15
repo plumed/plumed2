@@ -59,10 +59,6 @@ public:
 /// Get the input data
   void getInputData( std::vector<double>& inputdata ) const override ;
 /// Calculate the function
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
-/// Calculate the function
   static void performTask( std::size_t task_index,
                            const FunctionData<T>& actiondata,
                            ParallelActionsInput& input,

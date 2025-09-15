@@ -22,33 +22,45 @@
 #ifndef __PLUMED_contour_FindContour_h
 #define __PLUMED_contour_FindContour_h
 
-#include "ContourFindingBase.h"
+#include "core/ActionWithVector.h"
+#include "ContourFindingObject.h"
+#include "gridtools/EvaluateGridFunction.h"
+#include "core/ParallelTaskManager.h"
 
 namespace PLMD {
 namespace contour {
 
-class FindContour : public ContourFindingBase {
+class FindContour : public ActionWithVector {
   friend class DumpContour;
+public:
+  using input_type = ContourFindingObject<gridtools::EvaluateGridFunction>;
+  using PTM = ParallelTaskManager<FindContour>;
 private:
+  bool firststep;
+/// The parallel task manager
+  PTM taskmanager;
   unsigned gbuffer;
   std::vector<unsigned> active_cells;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
-  void setupValuesOnFirstStep() override;
+  const gridtools::GridCoordinatesObject& getInputGridObject() const ;
   unsigned getNumberOfDerivatives() override ;
-  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override ;
-  std::vector<std::string> getGridCoordinateNames() const override {
-    plumed_error();
-  }
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override {
-    plumed_error();
-  }
-  void performTask( const unsigned& current, MultiValue& myvals ) const override;
+  void calculate() override;
+  void getInputData( std::vector<double>& inputdata ) const ;
+  static void performTask( std::size_t task_index,
+                           const ContourFindingObject<gridtools::EvaluateGridFunction>& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
 };
+
+inline
+const gridtools::GridCoordinatesObject& FindContour::getInputGridObject() const {
+  return taskmanager.getActionInput().function.getGridObject();
+}
 
 }
 }

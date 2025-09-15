@@ -34,8 +34,6 @@ void ActionWithVector::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithArguments::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
-  keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 
 ActionWithVector::ActionWithVector(const ActionOptions&ao):
@@ -43,19 +41,16 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  nmask(-1),
-  serial(false),
-  forwardPass(false) {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-    if( av && av->getNumberOfMasks()>=0 ) {
-      nmask=0;
+  nmask(-1) {
+  if( !keywords.exists("MASKED_INPUT_ALLOWED") ) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( av && av->getNumberOfMasks()>=0 ) {
+        nmask=0;
+      }
     }
   }
 
-  if( keywords.exists("SERIAL") ) {
-    parseFlag("SERIAL",serial);
-  }
   if( keywords.exists("MASK") ) {
     std::vector<Value*> mask;
     parseArgumentList("MASK",mask);
@@ -195,23 +190,6 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   return active_tasks;
 }
 
-bool ActionWithVector::doNotCalculateDerivatives() const {
-  if( forwardPass ) {
-    return true;
-  }
-  return ActionWithValue::doNotCalculateDerivatives();
-}
-
-void ActionWithVector::clearMatrixBookeeping() {
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval = getPntrToComponent(i);
-    if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
-      std::fill(myval->matrix_bookeeping.begin(), myval->matrix_bookeeping.end(), 0);
-    }
-    myval->set(0);
-  }
-}
-
 void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   unsigned nargs = getNumberOfArguments();
@@ -259,117 +237,6 @@ void ActionWithVector::transferForcesToStash( std::vector<double>& stash ) const
   }
 }
 
-void ActionWithVector::runAllTasks() {
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial) {
-    stride=1;
-    rank=0;
-  }
-
-  // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-  unsigned nactive_tasks=partialTaskList.size();
-
-  // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) {
-    nt=nactive_tasks/stride/10;
-  }
-  if( nt==0 ) {
-    nt=1;
-  }
-  if( myvals.size()!=nt ) {
-    myvals.resize(nt);
-  }
-
-  // Get the total number of streamed quantities that we need
-  // Get size for buffer
-  unsigned bufsize=0, nderivatives = 0;
-  bool gridsInStream=false;
-  forwardPass=true;
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    getPntrToComponent(i)->bufstart=bufsize;
-    if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) {
-      forwardPass=false;
-      bufsize += getPntrToComponent(i)->data.size();
-    }
-    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) {
-      nderivatives=getConstPntrToComponent(i)->getNumberOfGridDerivatives();
-      gridsInStream=true;
-    }
-  }
-  if( buffer.size()!=bufsize ) {
-    buffer.resize( bufsize );
-  }
-  // Clear buffer
-  buffer.assign( buffer.size(), 0.0 );
-
-  // Recover the number of derivatives we require
-  if( !doNotCalculateDerivatives() && !gridsInStream ) {
-    unsigned nargs = getNumberOfArguments();
-    int nmasks=getNumberOfMasks();
-    if( nargs>=nmasks && nmasks>0 ) {
-      nargs = nargs - nmasks;
-    }
-    if( getNumberOfAtoms()>0 ) {
-      nderivatives += 3*getNumberOfAtoms() + 9;
-    }
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      nderivatives += getPntrToArgument(i)->getNumberOfValues();
-    }
-  }
-
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<double> omp_buffer;
-    const unsigned t=OpenMP::getThreadNum();
-    if( nt>1 ) {
-      omp_buffer.resize( bufsize, 0.0 );
-    }
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
-      myvals[t].resize( getNumberOfComponents(), nderivatives, getNumberOfAtomsPerTask() );
-    }
-    myvals[t].clearAll();
-
-    #pragma omp for nowait
-    for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-      // Calculate the stuff in the loop for this action
-      runTask( partialTaskList[i], myvals[t] );
-
-      // Now transfer the data to the actions that accumulate values from the calculated quantities
-      if( nt>1 ) {
-        gatherAccumulators( partialTaskList[i], myvals[t], omp_buffer );
-      } else {
-        gatherAccumulators( partialTaskList[i], myvals[t], buffer );
-      }
-
-      // Clear the value
-      myvals[t].clearAll();
-    }
-    #pragma omp critical
-    if( nt>1 )
-      for(unsigned i=0; i<bufsize; ++i) {
-        buffer[i]+=omp_buffer[i];
-      }
-  }
-
-  // MPI Gather everything
-  if( !serial ) {
-    if( buffer.size()>0 ) {
-      comm.Sum( buffer );
-    }
-    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = getPntrToComponent(i);
-      if( !myval->hasDeriv ) {
-        comm.Sum( myval->data );
-      }
-    }
-  }
-  finishComputations( buffer );
-  forwardPass=false;
-}
-
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   if( ntasks==0 ) {
     if( getNumberOfArguments()==1 && getNumberOfComponents()==1 && getPntrToComponent(0)->getRank()==0 ) {
@@ -405,70 +272,8 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   }
 }
 
-void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
-  const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(this);
-  myvals.setTaskIndex(current);
-  performTask( current, myvals );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    const Value* myval = getConstPntrToComponent(i);
-    if( am || myval->hasDerivatives() ) {
-      continue;
-    }
-    Value* myv = const_cast<Value*>( myval );
-    if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) {
-      continue;
-    }
-    myv->set( current, myvals.get( i ) );
-  }
-}
-
-void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    unsigned bufstart = getConstPntrToComponent(i)->bufstart;
-    // This looks after storing of scalars that are summed from vectors/matrices
-    if( getConstPntrToComponent(i)->getRank()==0 ) {
-      plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-      buffer[bufstart] += myvals.get(i);
-      if( getConstPntrToComponent(i)->hasDerivatives() ) {
-        for(unsigned k=0; k<myvals.getNumberActive(i); ++k) {
-          unsigned kindex = myvals.getActiveIndex(i,k);
-          plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
-          buffer[bufstart + 1 + kindex] += myvals.getDerivative(i,kindex);
-        }
-      }
-      // This looks after storing of vectors
-    } else {
-      gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
-    }
-  }
-}
-
-void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    // This gathers vectors and grids at the end of the calculation
-    unsigned bufstart = getPntrToComponent(i)->bufstart;
-    if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) ) {
-      unsigned sz_v = getPntrToComponent(i)->data.size();
-      getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
-      for(unsigned j=0; j<sz_v; ++j) {
-        plumed_dbg_assert( bufstart+j<buf.size() );
-        getPntrToComponent(i)->add( j, buf[bufstart+j] );
-      }
-      // Make sure single values are set
-    } else if( getPntrToComponent(i)->getRank()==0 ) {
-      getPntrToComponent(i)->set( buf[bufstart] );
-    }
-    // This gathers derivatives of scalars
-    if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
-      for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) {
-        getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
-      }
-    }
-  }
-}
-
-void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const {
-  nforces=0;
+unsigned ActionWithVector::getNumberOfForceDerivatives() const {
+  unsigned nforces=0;
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
@@ -480,7 +285,7 @@ void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned&
   for(unsigned i=0; i<nargs; ++i) {
     nforces += getPntrToArgument(i)->getNumberOfStoredValues();
   }
-  nderiv = nforces;
+  return nforces;
 }
 
 bool ActionWithVector::checkForForces() {
@@ -503,111 +308,8 @@ bool ActionWithVector::checkForForces() {
   return true;
 }
 
-void ActionWithVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
-  // Setup MPI parallel loop
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial) {
-    stride=1;
-    rank=0;
-  }
-
-  // Get the number of tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-  unsigned nf_tasks = partialTaskList.size();
-
-  // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nf_tasks ) {
-    nt=nf_tasks/stride/10;
-  }
-  if( nt==0 ) {
-    nt=1;
-  }
-  if( myvals.size()!=nt ) {
-    myvals.resize(nt);
-  }
-  if( omp_forces.size()!=nt ) {
-    omp_forces.resize(nt);
-  }
-
-  // Clear force buffer
-  outforces.assign( outforces.size(), 0.0 );
-
-  #pragma omp parallel num_threads(nt)
-  {
-    const unsigned t=OpenMP::getThreadNum();
-    if( nt>1 ) {
-      if( omp_forces[t].size()!=outforces.size() ) {
-        omp_forces[t].resize( outforces.size(), 0.0 );
-      } else {
-        omp_forces[t].assign( outforces.size(), 0.0 );
-      }
-    }
-    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=outforces.size() || myvals[t].getAtomVector().size()!=getNumberOfAtomsPerTask() ) {
-      myvals[t].resize( getNumberOfComponents(), outforces.size(), getNumberOfAtomsPerTask() );
-    }
-    myvals[t].clearAll();
-
-    #pragma omp for nowait
-    for(unsigned i=rank; i<nf_tasks; i+=stride) {
-      runTask( partialTaskList[i], myvals[t] );
-
-      // Now get the forces
-      if( nt>1 ) {
-        gatherForces( partialTaskList[i], myvals[t], omp_forces[t] );
-      } else {
-        gatherForces( partialTaskList[i], myvals[t], outforces );
-      }
-
-      myvals[t].clearAll();
-    }
-    #pragma omp critical
-    if(nt>1)
-      for(unsigned i=0; i<outforces.size(); ++i) {
-        outforces[i]+=omp_forces[t][i];
-        omp_forces[t][i] = 0.0;
-      }
-  }
-  // MPI Gather on forces
-  if( !serial ) {
-    comm.Sum( outforces );
-  }
-}
-
-bool ActionWithVector::checkComponentsForForce() const {
-  for(unsigned i=0; i<values.size(); ++i) {
-    if( getConstPntrToComponent(i)->forcesWereAdded() ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void ActionWithVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  const Value* myval = getConstPntrToComponent(ival);
-  double fforce = myval->getForce(itask);
-  for(unsigned j=0; j<myvals.getNumberActive(ival); ++j) {
-    unsigned jder=myvals.getActiveIndex(ival, j);
-    plumed_dbg_assert( jder<forces.size() );
-    forces[jder] += fforce*myvals.getDerivative( ival, jder );
-  }
-}
-
-void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( checkComponentsForForce() ) {
-    for(unsigned k=0; k<getNumberOfComponents(); ++k) {
-      const Value* myval=getConstPntrToComponent(k);
-      if( myval->getRank()>0 && myval->forcesWereAdded() ) {
-        gatherForcesOnStoredValue( k, itask, myvals, forces );
-      }
-    }
-  }
-}
-
 void ActionWithVector::apply() {
-  unsigned nf, nder;
-  getNumberOfForceDerivatives( nf, nder );
+  unsigned nf =  getNumberOfForceDerivatives();
   if( forcesForApply.size()!=nf ) {
     forcesForApply.resize( nf, 0 );
   }

@@ -55,8 +55,6 @@ public:
   std::vector<std::size_t> getNbin() const ;
 /// Get the grid spacing
   const std::vector<double>& getGridSpacing() const ;
-/// This is used to apply forces in interpolate
-  void applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const ;
 /// This gets the grid object
   const GridCoordinatesObject & getGridObject() const ;
   EvaluateGridFunction& operator=( const EvaluateGridFunction& m ) {

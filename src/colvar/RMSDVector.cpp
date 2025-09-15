@@ -446,7 +446,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Get the MPI details
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if( runInSerial() ) {
+  if( taskmanager.runInSerial() ) {
     stride=1;
     rank=0;
   }
@@ -495,7 +495,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
     }
   }
   // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-  if( !runInSerial() ) {
+  if( !taskmanager.runInSerial() ) {
     comm.Sum( outforces );
   }
 }

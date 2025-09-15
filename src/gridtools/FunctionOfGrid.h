@@ -23,7 +23,9 @@
 #define __PLUMED_gridtools_FunctionOfGrid_h
 
 #include "ActionWithGrid.h"
+#include "core/ParallelTaskManager.h"
 #include "function/FunctionSetup.h"
+#include "function/FunctionOfVector.h"
 #include "function/Custom.h"
 #include "EvaluateGridFunction.h"
 
@@ -32,16 +34,21 @@ namespace gridtools {
 
 template <class T>
 class FunctionOfGrid : public ActionWithGrid {
+public:
+  using input_type = function::FunctionData<T>;
+  using PTM = ParallelTaskManager<FunctionOfGrid<T>>;
 private:
+/// The parallel task manager
+  PTM taskmanager;
+//// Ensures we setup on first step
+  bool firststep;
+/// The number of scalars that appear in the input for this calculation
+  unsigned nscalars;
 /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart;
-/// The function that is being computed
-  T myfunc;
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfGrid(const ActionOptions&);
-/// This does setup required on first step
-  void setupOnFirstStep( const bool incalc ) override ;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Get the label to write in the graph
@@ -50,13 +57,28 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
 /// Get the underlying grid coordinates object
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
-/// Calculate the function
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-///
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
+/// Get the input data for doing the parallel calculation
+  void getInputData( std::vector<double>& inputdata ) const override ;
+/// Do the calculation
+  void calculate() override ;
+// Calculate the value of the function at a grid point
+  static void performTask( std::size_t task_index,
+                           const function::FunctionData<T>& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
 /// Add the forces
-  void apply() override;
+//  void apply() override;
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// This just returns one
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const function::FunctionData<T>& actiondata );
+/// Get the indexes where the forces are added
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const function::FunctionData<T>& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -75,17 +97,21 @@ void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
     keys.setValueDescription("grid","the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
     keys.addInputKeyword("compulsory","ARG","scalar/grid","the labels of the scalars and functions on a grid that we are using to compute the required function");
   }
+  PTM::registerKeywords( keys );
 }
 
 template <class T>
 FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
+  taskmanager(this),
+  firststep(true),
+  nscalars(0),
   argstart(0) {
   if( getNumberOfArguments()==0 ) {
     error("found no arguments");
   }
-  if( typeid(myfunc)==typeid(EvaluateGridFunction) ) {
+  if( typeid(taskmanager.getActionInput().f)==typeid(EvaluateGridFunction) ) {
     argstart=1;
   }
   // This will require a fix
@@ -96,54 +122,32 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   std::vector<std::size_t> shape( getPntrToArgument(argstart)->getShape() );
   for(unsigned i=argstart+1; i<getNumberOfArguments(); ++i ) {
     if( getPntrToArgument(i)->getRank()==0 ) {
+      nscalars++;
       continue;
-    }
-    std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
-    if( s.size()!=shape.size() ) {
-      error("mismatch between dimensionalities of input grids");
+    } else if( getPntrToArgument(i)->hasDerivatives() ) {
+      std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
+      if( s.size()!=shape.size() ) {
+        error("mismatch between dimensionalities of input grids");
+      } else if( nscalars>0 ) {
+        error("scalars should be specified in argument list after all functions on grid");
+      }
+    } else {
+      error("input arguments should be functions on grid or scalars");
     }
   }
+  auto & myfunc = taskmanager.getActionInput();
+  myfunc.argstart = argstart;
+  myfunc.nscalars = nscalars;
   // Create the values for this grid
-  function::FunctionData<T>::setup( myfunc, keywords.getOutputComponents(), shape, true, this  );
-  // And setup on first step
-  setupOnFirstStep( false );
+  function::FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, true, this  );
+  // Setup the task manager
+  taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
 }
 
 template <class T>
 std::string FunctionOfGrid<T>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
   return getName().substr(0,und);
-}
-
-template <class T>
-void FunctionOfGrid<T>::setupOnFirstStep( const bool incalc ) {
-  const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
-  unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
-  if( mygrid.getGridType()=="flat" ) {
-    std::vector<std::size_t> shape( getGridCoordinatesObject().getNbin(true) );
-    for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
-      if( getPntrToArgument(i)->getRank()==0 ) {
-        continue;
-      }
-      std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
-      for(unsigned j=0; j<shape.size(); ++j) {
-        if( shape[j]!=s[j] ) {
-          error("mismatch between sizes of input grids");
-        }
-      }
-    }
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      if( getPntrToComponent(i)->getRank()>0 ) {
-        getPntrToComponent(i)->setShape(shape);
-      }
-    }
-  }
-  // This resizes the scalars
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->getRank()==0 ) {
-      getPntrToComponent(i)->resizeDerivatives( npoints );
-    }
-  }
 }
 
 template <class T>
@@ -162,101 +166,128 @@ std::vector<std::string> FunctionOfGrid<T>::getGridCoordinateNames() const {
 
 template <class T>
 unsigned FunctionOfGrid<T>::getNumberOfDerivatives() {
-  unsigned nder = getGridCoordinatesObject().getDimension();
-  return getGridCoordinatesObject().getDimension() + getNumberOfArguments() - argstart;
+  return getGridCoordinatesObject().getDimension();
 }
 
 template <class T>
-void FunctionOfGrid<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> args( getNumberOfArguments() - argstart );
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==0 ) {
-      args[i-argstart]=getPntrToArgument(i)->get();
+void FunctionOfGrid<T>::calculate() {
+  if( firststep ) {
+    const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
+    unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+    if( mygrid.getGridType()=="flat" ) {
+      std::vector<std::size_t> shape( mygrid.getNbin(true) );
+      for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
+        if( getPntrToArgument(i)->getRank()==0 ) {
+          continue;
+        }
+        std::vector<std::size_t> s( getPntrToArgument(i)->getShape() );
+        for(unsigned j=0; j<shape.size(); ++j) {
+          if( shape[j]!=s[j] ) {
+            error("mismatch between sizes of input grids");
+          }
+        }
+      }
+      for(int i=0; i<getNumberOfComponents(); ++i) {
+        if( getPntrToComponent(i)->getRank()>0 ) {
+          getPntrToComponent(i)->setShape(shape);
+        }
+      }
+    }
+    // This resizes the scalars
+    for(int i=0; i<getNumberOfComponents(); ++i) {
+      if( getPntrToComponent(i)->getRank()==0 ) {
+        getPntrToComponent(i)->resizeDerivatives( npoints );
+      }
+    }
+    taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
+    firststep=false;
+  }
+  taskmanager.runAllTasks();
+}
+
+template <class T>
+void FunctionOfGrid<T>::getInputData( std::vector<double>& inputdata ) const {
+  unsigned nargs = getNumberOfArguments();
+
+  std::size_t ntasks = 0, ngder = 0;
+  for(unsigned i=argstart; i<nargs; ++i) {
+    if( getPntrToArgument(i)->getRank()>0 ) {
+      ntasks = getPntrToArgument(i)->getNumberOfStoredValues();
+      ngder = getPntrToArgument(i)->getNumberOfDerivatives();
+      break;
+    }
+  }
+
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks*(1+ngder);
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
+  }
+
+  for(unsigned j=argstart; j<nargs; ++j) {
+    const Value* myarg =  getPntrToArgument(j);
+    if( myarg->getRank()==0 ) {
+      double val = myarg->get();
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*(1+ngder)*i + j-argstart] = val;
+      }
     } else {
-      args[i-argstart] = getPntrToArgument(i)->get(current);
-    }
-  }
-  // Calculate the function and its derivatives
-  std::vector<double> vals(getNumberOfComponents()), deriv( getNumberOfComponents()*args.size() );
-  auto funcout = function::FunctionOutput::create( getNumberOfComponents(),
-                 vals.data(),
-                 args.size(),
-                 deriv.data() );
-  T::calc( myfunc,
-           false,
-           View<const double>(args.data(), args.size()),
-           funcout );
-  unsigned np = myvals.getTaskIndex();
-  // And set the values and derivatives
-  myvals.addValue( 0, vals[0] );
-  // Add the derivatives for a grid
-  for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-    // We store all the derivatives of all the input values - i.e. the grid points these are used in apply
-    myvals.addDerivative( 0, getConstPntrToComponent(0)->getRank()+j-argstart, funcout.derivs[0][j-argstart] );
-    // And now we calculate the derivatives of the value that is stored on the grid correctly so that we can interpolate functions
-    for(unsigned k=0; k<getPntrToArgument(j)->getRank(); ++k) {
-      myvals.addDerivative( 0, k, funcout.derivs[0][j-argstart]*getPntrToArgument(j)->getGridDerivative( np, k ) );
-    }
-  }
-  unsigned nderivatives = getConstPntrToComponent(0)->getNumberOfGridDerivatives();
-  for(unsigned j=0; j<nderivatives; ++j) {
-    myvals.updateIndex( 0, j );
-  }
-}
-
-template <class T>
-void FunctionOfGrid<T>::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  if( getConstPntrToComponent(0)->getRank()>0 && getConstPntrToComponent(0)->hasDerivatives() ) {
-    plumed_dbg_assert( getNumberOfComponents()==1 && valindex==0 );
-    unsigned nder = getConstPntrToComponent(0)->getNumberOfGridDerivatives();
-    unsigned kp = bufstart + code*(1+nder);
-    buffer[kp] += myvals.get( 0 );
-    for(unsigned i=0; i<nder; ++i) {
-      buffer[kp + 1 + i] += myvals.getDerivative( 0, i );
-    }
-  } else {
-    ActionWithVector::gatherStoredValue( valindex, code, myvals, bufstart, buffer );
-  }
-}
-
-template <class T>
-void FunctionOfGrid<T>::apply() {
-  if( doNotCalculateDerivatives() || !getPntrToComponent(0)->forcesWereAdded() ) {
-    return;
-  }
-
-  // Work out how to deal with arguments
-  unsigned nscalars=0;
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==0 ) {
-      nscalars++;
-    }
-  }
-
-  std::vector<double> totv(nscalars,0);
-  Value* outval=getPntrToComponent(0);
-  for(unsigned i=0; i<outval->getNumberOfValues(); ++i) {
-    nscalars=0;
-    for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-      double fforce = outval->getForce(i);
-      if( getPntrToArgument(j)->getRank()==0 ) {
-        totv[nscalars] += fforce*outval->getGridDerivative( i, outval->getRank()+j );
-        nscalars++;
-      } else {
-        double vval = outval->getGridDerivative( i, outval->getRank()+j  );
-        getPntrToArgument(j)->addForce( i, fforce*vval );
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*(1+ngder)*i + j-argstart] = myarg->get(i);
+        for(unsigned k=0; k<ngder; ++k) {
+          inputdata[(nargs-argstart)*(1+ngder)*i + (nargs-argstart) + (j-argstart)*ngder + k] = myarg->getGridDerivative( i, k );
+        }
       }
     }
   }
-  nscalars=0;
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==0 ) {
-      getPntrToArgument(i)->addForce( 0, totv[nscalars] );
-      nscalars++;
+}
+
+template <class T>
+void FunctionOfGrid<T>::performTask( std::size_t task_index,
+                                     const function::FunctionData<T>& actiondata,
+                                     ParallelActionsInput& input,
+                                     ParallelActionsOutput& output ) {
+
+  std::size_t rank=input.ranks[actiondata.argstart];
+  std::size_t spacing = (input.nargs-actiondata.argstart)*(1+rank);
+  auto funcout = function::FunctionOutput::create( input.ncomponents,
+                 output.values.data(),
+                 input.nargs-actiondata.argstart,
+                 output.derivatives.data() );
+  T::calc( actiondata.f,
+           input.noderiv,
+           View<const double>( input.inputdata + task_index*spacing,
+                               input.nargs-actiondata.argstart ),
+           funcout );
+
+  for(unsigned j=actiondata.argstart; j<input.nargs; ++j) {
+    double df = output.derivatives[j-actiondata.argstart];
+    View<const double> inders( input.inputdata + task_index*spacing + (input.nargs-actiondata.argstart) + (j-actiondata.argstart)*rank, rank );
+    for(unsigned k=0; k<input.ranks[actiondata.argstart]; ++k) {
+      output.values[1+k] += df*inders[k];
     }
   }
+}
 
+template <class T>
+void FunctionOfGrid<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
+}
+
+template <class T>
+int FunctionOfGrid<T>::getNumberOfValuesPerTask( std::size_t task_index,
+    const function::FunctionData<T>& actiondata ) {
+  return 1;
+}
+
+template <class T>
+void FunctionOfGrid<T>::getForceIndices( std::size_t task_index,
+    std::size_t colno,
+    std::size_t ntotal_force,
+    const function::FunctionData<T>& actiondata,
+    const ParallelActionsInput& input,
+    ForceIndexHolder force_indices ) {
+  // The force indices are found in the same way as in FunctionOfVector so we reuse that function here
+  function::FunctionOfVector<T>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
 }
 
 }
