@@ -176,7 +176,7 @@ void viewVectorInteractions(tee& out) {
   out << "operator=(PLMD::VectorGeneric<N>) works on bigger view, by copying only the first N elements\n";
   out.dump(data) << "\n";
   auto v2 = v_all.subview_n<3>(6);
-  // operator= will refuse to compile if the fixed view
+  // operator= will refuse to compile if the fixed view has a smaller dimension that the vector
   // v2 = myv; //this do not compile, as expected
   // v2 += myv; //this do not compile, as expected
   // v2 -= myv; //this do not compile, as expected
@@ -205,5 +205,13 @@ void viewVectorInteractions(tee& out) {
   v_all.subview(21,3).zero();
   out.dump(data) << "\n";
   v_all.zero();
+  out.dump(data) << "\n";
+  //assignmets this should work also with constant vectors
+  auto constVec= PLMD::VectorTyped<const double,3> {11,22,33};
+  v4 = constVec;
+  out.dump(data) << "\n";
+  v_all.subview<2,3>() += constVec;
+  out.dump(data) << "\n";
+  v_all.subview<2,3>() -= constVec;
   out.dump(data) << "\n";
 }
