@@ -1,0 +1,4 @@
+name: pines
+authors: N. Herringer and S. Dasetty 
+description: permutationally invariant atomic-level featurization for neural net based CVs.
+doi: ["10.1021/acs.jctc.3c00923"]
