@@ -17,7 +17,7 @@ uninstall:
 	$(MAKE) -C lib uninstall
 
 # list of all the contained directories which can be cleaned
-SUBDIRS :=$(subst /Makefile,,$(wildcard */Makefile))
+SUBDIRS :=$(subst /Makefile,,$(wildcard */Makefile)) pines
 SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 .PHONY: $(SUBDIRS)
 
