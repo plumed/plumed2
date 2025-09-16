@@ -69,7 +69,6 @@
 !/metatensor
 !/metatomic
 !/sizeshape
-!/pines
 
 # And just ignore these files
 *.xxd
