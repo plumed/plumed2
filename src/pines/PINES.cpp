@@ -29,9 +29,11 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <vector>
 
+using namespace std;
+
 namespace PLMD {
 namespace pines {
-
+PLUMED_REGISTER_ACTION(PINES, "PINES")
 constexpr int CACHE_LINE_SIZE = 64;
 
 template<typename T>
@@ -59,7 +61,7 @@ void PINES::registerKeywords(Keywords &keys) {
   keys.add("optional", "EXCLUDE_PAIRS", "Excluded pairs");
   keys.addFlag("DRIVERMODE", false, "Use when post-processing a trajectory. This will force the pair list to be rebuilt at every step (i.e. no pair list)");
   keys.addFlag("FREEZE_SELECTION", false, "Freeze top-K membership during derivative checks");
-  componentsAreNotOptional(keys);
+  //componentsAreNotOptional(keys);
   keys.addOutputComponent("ELEMENT", "default", "Elements of the PINES block");
   keys.reset_style("SWITCH", "compulsory");
 }
@@ -384,7 +386,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   parse("REF_FILE", ref_file);
   FILE *fp = fopen(ref_file.c_str(), "r");
   if (fp != NULL) {
-    mypdb.readFromFilepointer(fp, plumed.getAtoms().usingNaturalUnits(), 0.1 / atoms.getUnits().getLength());
+    mypdb.readFromFilepointer(fp, plumed.getAtoms().usingNaturalUnits(), 0.1 / getUnits().getLength());
     fclose(fp);
   } else {
     error("Error in reference PDB file");
@@ -897,4 +899,3 @@ void PINES::calculate() {
 }
 }
 }
-PLUMED_REGISTER_ACTION(PINES, "PINES")

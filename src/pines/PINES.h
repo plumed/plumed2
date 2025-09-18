@@ -20,6 +20,26 @@ freely, subject to the following restrictions:
 #ifndef __PLUMED_pines_PINES_h
 #define __PLUMED_pines_PINES_h
 
+// Core PLUMED functionality
+#include "core/ActionWithVirtualAtom.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "tools/Stopwatch.h"
+#include "tools/PDB.h"
+#include "tools/Vector.h"
+#include "tools/AtomNumber.h"
+#include "tools/SwitchingFunction.h"
+#include "tools/Communicator.h"
+#include "tools/Units.h"
+
+// Colvar interface
+#include "colvar/Colvar.h"
+#include "core/ActionRegister.h"
+
+// STL
+#include <string>
+#include <vector>
+
 #include <unordered_map>
 #include <set>
 #include <fstream>
@@ -45,11 +65,8 @@ struct pair_hash {
 };
 
 
-using PLMD::Colvar;
 
-
-
-class PINES      : public Colvar {
+class PINES      : public PLMD::colvar::Colvar {
 private:
   PLMD::Stopwatch timer;
   int N_Blocks;
@@ -62,7 +79,7 @@ private:
   std::vector<int> nstride;
   std::string ref_file;
   std::vector<SwitchingFunction> sfs;
-  std::vector<string> sw;
+  std::vector<std::string> sw;
   std::vector<double> r00;
   std::vector<std:: vector<double> > PIV;
   std::vector<std:: vector<Vector> > ann_deriv;
@@ -75,7 +92,7 @@ private:
 
   std::vector<bool> stale_tolerance;
   PDB mypdb;
-  std::vector<string> block_params;
+  std::vector<std::string> block_params;
   std::vector<std::vector<std::vector<AtomNumber> > > block_groups_atom_list;
   std::vector<int> block_lengths;
   std::vector<int> Buffer_Pairs;
@@ -85,7 +102,7 @@ private:
   std::vector<double> r_tolerance;
   std::vector<std::vector<Vector> > PL_atoms_ref_coords;
   std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > > Exclude_Pairs;
-  std::vector<std::vector<std::vector<string> > > Name_list;
+  std::vector<std::vector<std::vector<std::string> > > Name_list;
   std::vector<std::vector<std::vector<AtomNumber> > > ID_list;
   std::vector<std::vector<std::vector<int> > > ResID_list;
   std::vector<char> all_g1g2_pairs;
