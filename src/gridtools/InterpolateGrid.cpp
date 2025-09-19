@@ -81,6 +81,8 @@ class InterpolateGrid : public ActionWithGrid {
 public:
   using input_type = EvaluateGridFunction;
   using PTM = ParallelTaskManager<InterpolateGrid>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
   bool midpoints;

@@ -1,0 +1,33 @@
+LOAD FILE=../../../../plumedOpenACC.so
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN USEGPU
+
+# Create a normalising matrix
+q6_uones: ONES SIZE=26
+q6_nmat: OUTER_PRODUCT ARG=q6_norm,q6_uones
+udata6: VSTACK ARG=q6_sp.*
+data6: CUSTOM ARG=udata6,q6_nmat FUNC=x/y PERIODIC=NO
+data6T: TRANSPOSE ARG=data6 
+
+con6: CONTACT_MATRIX GROUP=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5} USEGPU
+dot6: MATRIX_PRODUCT ARG=data6,data6T MASK=con6 USEGPU
+ww6: CUSTOM ARG=con6,dot6 FUNC=x*y PERIODIC=NO
+w6: SUM ARG=ww6 PERIODIC=NO
+#on the CPU:
+q6c: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+
+# Create a normalising matrix
+q6c_uones: ONES SIZE=26
+q6c_nmat: OUTER_PRODUCT ARG=q6c_norm,q6c_uones
+udata6c: VSTACK ARG=q6c_sp.*
+data6c: CUSTOM ARG=udata6c,q6c_nmat FUNC=x/y PERIODIC=NO
+data6Tc: TRANSPOSE ARG=data6 
+
+con6c: CONTACT_MATRIX GROUP=q6c SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+dot6c: MATRIX_PRODUCT ARG=data6c,data6Tc MASK=con6c
+ww6c: CUSTOM ARG=con6c,dot6c FUNC=x*y PERIODIC=NO
+w6c: SUM ARG=ww6c PERIODIC=NO
+
+diff: CUSTOM ARG=w6,w6c FUNC=y-x PERIODIC=NO
+PRINT ARG=diff FILE=colv1 FMT=%8.4f 
+
+RESTRAINT ARG=diff AT=30 KAPPA=1 
