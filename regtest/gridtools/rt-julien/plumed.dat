@@ -32,7 +32,7 @@ rdf: CUSTOM ARG=kde,norm,sumcoord FUNC=x/(4*pi*y*z) PERIODIC=NO
 # Now we start calculating the entropy
 conv: CUSTOM ARG=rdf,norm FUNC=x*y*log(x)+(1-x)*y PERIODIC=NO
 # Interpolate above function on to midpoints so we can integrate using trapezium rule
-midp: INTERPOLATE_GRID ARG=conv INTERPOLATION_TYPE=linear MIDPOINTS
+midp: INTERPOLATE_GRID ARG=conv INTERPOLATION_TYPE=linear GRID_BIN=19 GRID_MIN=0.2 GRID_MAX=7.8
 # This sums the values of the functions at the midpoints and multiplies by the grid spacing
 # essentially trapezium rule
 int: INTEGRATE_GRID ARG=midp PERIODIC=NO
