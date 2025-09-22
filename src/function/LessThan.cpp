@@ -221,7 +221,7 @@ s: LESS_THAN ARG=d D_0=0.1 R_0=0.2 NN=6 MM=12
 The newer syntax using the SWITCH keyword is better than this option as there is no way to set the D_MAX parameter this way and because if you use this syntax you are forced to
 use the RATIONAL switching function type.
 
-### Expoential switching function
+### Exponential switching function
 
 The way that the exponential switching function can be used is illustrated in the following example input:
 
@@ -352,7 +352,7 @@ s: LESS_THAN ARG=d SWITCH={CUBIC D_0=0.1 D_MAX=0.5}
 If this type of expression is used then the $s(r)$ is calculated as:
 
 $$
-s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{d_0 - d_{max}}{d_0-d_{max}}
+s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - d_0}{d_{max}-d_{0}}
 $$
 
 No stretching is required for this type of switching function as its functional form ensures that it is zero at $d_{max}$.
