@@ -144,7 +144,7 @@ public:
 
   /// return a subview of specific size consecutive elements
   template <size_t Count>
-  constexpr auto subview_n(size_t offset) const noexcept {
+  constexpr View<element_type, Count> subview_n(size_t offset) const noexcept {
     /// @TODO: enforce these or accept the risk of undefined behaviour in
     /// exchange for performance
     // assert(offset <= size(), "subview: offset out of range");
@@ -189,11 +189,21 @@ public:
     }
   }
 
-  /// assignment from a PLMD::VectorGeneric
+  /// assignment from a PLMD::VectorTyped of the same type
   template <size_t M = N, typename VT, unsigned VD,
             typename = std::enable_if_t<
               M >= VD && std::is_same_v<T, std::remove_const_t<VT>>>>
   auto &operator=(const VectorTyped<VT, VD> &v) noexcept {
+    // NOTE: if N==dynamic_extent and size_<VD, this is UB
+    PLMD::LoopUnroller<VD>::_copy(ptr_, v.data());
+    return *this;
+  }
+
+  /// assignment from a PLMD::VectorTyped explicitly request an eventual
+  /// conversion
+  template <size_t M = N, typename VT, unsigned VD,
+            typename = std::enable_if_t<M >= VD>>
+  auto &copyConv(const VectorTyped<VT, VD> &v) noexcept {
     // NOTE: if N==dynamic_extent and size_<VD, this is UB
     PLMD::LoopUnroller<VD>::_copy(ptr_, v.data());
     return *this;
