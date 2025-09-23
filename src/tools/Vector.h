@@ -23,8 +23,10 @@
 #define __PLUMED_tools_Vector_h
 
 #include <cmath>
+#include <initializer_list>
 #include <iosfwd>
 #include <array>
+#include <type_traits>
 #include "LoopUnroller.h"
 
 namespace PLMD {
@@ -88,16 +90,18 @@ template<typename T, unsigned n>
 class VectorTyped {
   std::array<T,n> d;
 /// Auxiliary private function for constructor
-  constexpr void auxiliaryConstructor();
+  void auxiliaryConstructor();
 /// Auxiliary private function for constructor
   template<typename... Args>
-  constexpr void auxiliaryConstructor(T first,Args... arg);
+  void auxiliaryConstructor(T first,Args... arg);
 public:
+  template<unsigned m=n,typename=std::enable_if_t<m==3,void>>
+  constexpr VectorTyped(T first, T second, T third):d{first,second,third} {}
 /// Constructor accepting n T parameters.
 /// Can be used as Vector<3>(1.0,2.0,3.0) or Vector<2>(2.0,3.0).
 /// In case a wrong number of parameters is given, a static assertion will fail.
-  template<typename... Args>
-  constexpr VectorTyped(T first,Args... arg);
+  template<typename... Args,unsigned m=n,typename=std::enable_if_t<m!=3,void>>
+  VectorTyped(T first,Args... arg);
 /// create it null
   constexpr VectorTyped();
 /// Returns a pointer to the underlying array serving as element storage.
@@ -167,19 +171,19 @@ public:
 };
 
 template<typename T, unsigned n>
-constexpr void VectorTyped<T, n>::auxiliaryConstructor()
+void VectorTyped<T, n>::auxiliaryConstructor()
 {}
 
 template<typename T, unsigned n>
 template<typename... Args>
-constexpr void VectorTyped<T, n>::auxiliaryConstructor(T first,Args... arg) {
+void VectorTyped<T, n>::auxiliaryConstructor(T first,Args... arg) {
   d[n-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
 template<typename T, unsigned n>
-template<typename... Args>
-constexpr VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
+template<typename... Args, unsigned,typename >
+VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
   static_assert((sizeof...(Args))+1==n,"you are trying to initialize a Vector with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
