@@ -25,14 +25,17 @@
 // cfloat for DLB_EPSILON and FLT_EPSILON
 #include <cfloat>
 
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <numeric>
 
 using std::cerr;
 
-// #define vdbg(...) std::cerr << __LINE__ << ":" << #__VA_ARGS__ << " " <<
-// (__VA_ARGS__) << '\n'
+
+#define hdbg(...) __LINE__ << ":" #__VA_ARGS__ " = " << (__VA_ARGS__) << '\n'
+// #define vdbg(...) std::cerr << __LINE__ << ":" << #__VA_ARGS__ << " " << (__VA_ARGS__) << '\n'
+//#define vdbg(...) std::cerr << hdbg(__VA_ARGS__)
 #define vdbg(...)
 
 namespace PLMD {
@@ -41,11 +44,13 @@ namespace GPU {
 // these constant will be used within the kernels
 template <typename calculateFloat> struct rationalSwitchParameters {
   calculateFloat dmaxSQ = std::numeric_limits<calculateFloat>::max();
-  calculateFloat invr0_2 = 1.0; // r0=1
+  calculateFloat invr0_2 = 1.0;
+  calculateFloat d0 = 0.0;
   calculateFloat stretch = 1.0;
   calculateFloat shift = 0.0;
   int nn = 6;
   int mm = 12;
+  bool calcSquared=false;
 };
 
 template <typename T> struct invData {
@@ -117,50 +122,69 @@ template <> constexpr __device__ double pcuda_eps<double>() {
   return DBL_EPSILON * 10.0;
 }
 
-template <typename calculateFloat>
-__device__ __forceinline__ calculateFloat
-pcuda_Rational (const calculateFloat rdist,
-                const int NN,
-                const int MM,
-                calculateFloat &dfunc) {
-  calculateFloat result;
-  if (2 * NN == MM) {
-    // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
-    calculateFloat rNdist = pcuda_fastpow (rdist, NN - 1);
-    result = 1.0 / (1 + rNdist * rdist);
-    dfunc = -NN * rNdist * result * result;
-  } else {
-    if (rdist > (1. - pcuda_eps<calculateFloat>()) &&
-        rdist < (1 + pcuda_eps<calculateFloat>())) {
-
-      result = NN / MM;
-      dfunc = 0.5 * NN * (NN - MM) / MM;
+struct Rational {
+  template <typename calculateFloat>
+  static __device__ __forceinline__ calculateFloat
+  pcuda_func (const calculateFloat rdist,
+              const rationalSwitchParameters<calculateFloat> pars,
+              calculateFloat &dfunc) {
+    calculateFloat result;
+    if (2 * pars.nn == pars.mm) {//simplified
+      // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
+      calculateFloat rNdist = pcuda_fastpow (rdist, pars.nn - 1);
+      result = 1.0 / (1 + rNdist * rdist);
+      dfunc = -pars.nn * rNdist * result * result;
     } else {
-      calculateFloat rNdist = pcuda_fastpow (rdist, NN - 1);
-      calculateFloat rMdist = pcuda_fastpow (rdist, MM - 1);
-      calculateFloat num = 1. - rNdist * rdist;
-      calculateFloat iden = 1.0 / (1.0 - rMdist * rdist);
-      result = num * iden;
-      dfunc = ((-NN * rNdist * iden) + (result * (iden * MM) * rMdist));
-    }
-  }
-  return result;
-}
+      if (rdist > (1. - pcuda_eps<calculateFloat>()) &&
+          rdist < (1 + pcuda_eps<calculateFloat>())) {
 
-template <typename calculateFloat>
-__global__ void getpcuda_Rational (const calculateFloat *rdists,
-                                   const int NN,
-                                   const int MM,
-                                   calculateFloat *dfunc,
-                                   calculateFloat *res) {
+        result = pars.nn / pars.mm;
+        dfunc = 0.5 * pars.nn * (pars.nn - pars.mm) / pars.mm;
+      } else {
+        calculateFloat rNdist = pcuda_fastpow (rdist, pars.nn - 1);
+        calculateFloat rMdist = pcuda_fastpow (rdist, pars.mm - 1);
+        calculateFloat num = 1. - rNdist * rdist;
+        calculateFloat iden = 1.0 / (1.0 - rMdist * rdist);
+        result = num * iden;
+        dfunc = ((-pars.nn * rNdist * iden) + (result * (iden * pars.mm) * rMdist));
+      }
+    }
+    return result;
+  }
+};
+
+template <typename mySwitch, typename calculateFloat>
+__global__ void getpcuda_func (const calculateFloat *rdists,
+                               const rationalSwitchParameters<calculateFloat> pars,
+                               calculateFloat *dfunc,
+                               calculateFloat *res) {
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   if (rdists[i] <= 0.) {
     res[i] = 1.;
     dfunc[i] = 0.0;
   } else {
-    res[i] = pcuda_Rational (rdists[i], NN, MM, dfunc[i]);
+    res[i] = mySwitch::pcuda_func (rdists[i], pars, dfunc[i]);
   }
   // printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
+}
+
+template <typename calculateFloat>
+__device__ __forceinline__ calculateFloat calculate (
+  calculateFloat distance,
+  const rationalSwitchParameters<calculateFloat> switchingParameters,
+  calculateFloat &dfunc) {
+  calculateFloat result = 0.0;
+  dfunc = 0.0;
+  //if (distance < switchingParameters.dmaxSQ) { already tested in caclulateSqr
+  const calculateFloat rdist_2 = (distance-switchingParameters.d0) * switchingParameters.invr0_2;
+  result = Rational::pcuda_func (
+             rdist_2, switchingParameters, dfunc);
+  // chain rule:
+  dfunc *=  switchingParameters.invr0_2;
+  // cu_stretch:
+  result = result * switchingParameters.stretch + switchingParameters.shift;
+  dfunc *= switchingParameters.stretch/distance;
+  return result;
 }
 
 template <typename calculateFloat>
@@ -171,14 +195,18 @@ __device__ __forceinline__ calculateFloat calculateSqr (
   calculateFloat result = 0.0;
   dfunc = 0.0;
   if (distancesq < switchingParameters.dmaxSQ) {
-    const calculateFloat rdist_2 = distancesq * switchingParameters.invr0_2;
-    result = pcuda_Rational (
-               rdist_2, switchingParameters.nn / 2, switchingParameters.mm / 2, dfunc);
-    // chain rule:
-    dfunc *= 2 * switchingParameters.invr0_2;
-    // cu_stretch:
-    result = result * switchingParameters.stretch + switchingParameters.shift;
-    dfunc *= switchingParameters.stretch;
+    if(switchingParameters.calcSquared)  {
+      const calculateFloat rdist_2 = distancesq * switchingParameters.invr0_2;
+      result = Rational::pcuda_func (
+                 rdist_2, switchingParameters, dfunc);
+      // chain rule:
+      dfunc *= 2 * switchingParameters.invr0_2;
+      // cu_stretch:
+      result = result * switchingParameters.stretch + switchingParameters.shift;
+      dfunc *= switchingParameters.stretch;
+    } else {
+      result = calculate(std::sqrt(distancesq),switchingParameters,dfunc);
+    }
   }
   return result;
 }
