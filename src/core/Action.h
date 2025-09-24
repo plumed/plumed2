@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_core_Action_h
 #define __PLUMED_core_Action_h
+#include <iomanip>
 #include <vector>
 #include <string>
 #include <set>
@@ -28,6 +29,7 @@
 #include "tools/Tools.h"
 #include "tools/Units.h"
 #include "tools/Log.h"
+#include "tools/TokenizedLine.h"
 
 namespace PLMD {
 
@@ -73,7 +75,7 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
   friend class ActionShortcut;
-
+  using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
   const std::string name;
 
@@ -83,8 +85,7 @@ class Action {
 /// Directive line.
 /// This line is progressively erased during Action construction
 /// so as to check if all the present keywords are correct.
-  std::vector<std::string> line;
-
+  KeyMap linemap;
 /// Update only after this time.
   double update_from;
 
@@ -392,15 +393,15 @@ void Action::parse(const std::string&key,T&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  std::string def;
-  bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parse(line,key,t,replica_index);
+  auto [present, found] = linemap.readAndRemove(key,t,replica_index);
+
   if(present && !found) {
     error("keyword " + key +" could not be read correctly");
   }
 
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
+    std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
         plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
@@ -423,7 +424,8 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t) {
   // Now try to read the keyword
   std::string num;
   Tools::convert(no,num);
-  return Tools::parse(line,key+num,t,replica_index);
+  auto [present, found] = linemap.readAndRemove(key+num,t,replica_index);
+  return found;
 }
 
 template<class T>
@@ -435,12 +437,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
   if(size==0) {
     skipcheck=true;
   }
-
   // Now try to read the keyword
-  std::string def;
-  T val;
-  bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parseVector(line,key,t,replica_index);
+  auto [present, found] = linemap.readAndRemoveVector(key,t,replica_index);
   if(present && !found) {
     error("keyword " + key +" could not be read correctly");
   }
@@ -456,6 +454,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
 
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
+    T val;
+    std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
@@ -482,21 +482,19 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
 }
 
 template<class T>
-bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t) {
+bool Action::parseNumberedVector(const std::string&key,
+                                 const int no,
+                                 std::vector<T>&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if( !keywords.numbered(key) ) {
     error("numbered keywords are not allowed for " + key );
   }
 
   unsigned size=t.size();
-  bool skipcheck=false;
-  if(size==0) {
-    skipcheck=true;
-  }
+  bool skipcheck=size==0;
   std::string num;
   Tools::convert(no,num);
-  bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parseVector(line,key+num,t,replica_index);
+  auto [present, found] = linemap.readAndRemoveVector(key+num,t,replica_index);
   if(present && !found) {
     error("keyword " + key +" could not be read correctly");
   }

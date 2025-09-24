@@ -112,6 +112,8 @@ struct ParallelActionsInput {
   std::size_t ncomponents{0};
   /// The number of scalars we are calculating for each task
   unsigned nscalars{0};
+  /// The number of force scalars for each task
+  unsigned nforcescalars{0};
   /// Number of derivatives for each scalar being calculated
   std::size_t nderivatives_per_scalar{0};
   /// The start of the thread unsafe forces
@@ -388,6 +390,8 @@ private:
   Communicator& comm;
 /// Is this an action with matrix
   bool ismatrix;
+/// True if not using MPI for parllisation
+  bool serial;
 /// Are we using acc for parallisation
   bool useacc;
 /// Number of derivatives calculated for each task
@@ -426,6 +430,10 @@ public:
 /// Get the action input so we can use it
   input_type& getActionInput();
   const input_type& getActionInput() const ;
+/// Is the calculation running in serial
+  bool runInSerial() const {
+    return serial;
+  }
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
@@ -444,8 +452,10 @@ public:
 
 template <class T>
 void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
+  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 
 template <class T>
@@ -472,13 +482,22 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
     action->error("cannot use USEGPU flag as PLUMED has not been compiled with openacc");
   }
 #endif
+  action->parseFlag("SERIAL",serial);
+  if( serial ) {
+    action->log.printf("  not using MPI to parallelise this action\n");
+  }
 }
 
 template <class T>
 std::size_t ParallelTaskManager<T>::getValueStashSize() const {
   std::size_t valuesize=0;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    valuesize += (action->getConstPntrToComponent(i))->getNumberOfStoredValues();
+    const Value* mycomp = action->getConstPntrToComponent(i);
+    if( mycomp->hasDerivatives() ) {
+      valuesize += mycomp->getNumberOfStoredValues()*(1+action->getNumberOfDerivatives());
+    } else {
+      valuesize += mycomp->getNumberOfStoredValues();
+    }
   }
   return valuesize;
 }
@@ -492,21 +511,28 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   unsigned ntasks=0;
   action->getNumberOfTasks( ntasks );
   myinput.nscalars = 0;
+  myinput.nforcescalars = 0;
   for(unsigned i=0; i<myinput.ncomponents; ++i) {
-    if( (action->copyOutput(i))->getRank()==1 ) {
+    if( (action->copyOutput(i))->hasDerivatives() ) {
+      myinput.nscalars += 1 + action->getNumberOfDerivatives();
+      myinput.nforcescalars += 1;
+    } else if( (action->copyOutput(i))->getRank()==1 ) {
       myinput.nscalars += 1;
+      myinput.nforcescalars += 1;
     } else if( (action->copyOutput(i))->getRank()==2 ) {
       if( ntasks==(action->copyOutput(i))->getShape()[0] ) {
         myinput.nscalars += (action->copyOutput(i))->getNumberOfColumns();
+        myinput.nforcescalars += (action->copyOutput(i))->getNumberOfColumns();
       } else {
         myinput.nscalars += 1;
+        myinput.nforcescalars += 1;
       }
     }
   }
   myinput.nderivatives_per_scalar = nder;
-  nderivatives_per_task = nder*myinput.nscalars;
+  nderivatives_per_task = nder*myinput.nforcescalars;
   value_stash.resize( getValueStashSize() );
-  myinput.threadunsafe_forces_start = action->getNumberOfDerivatives() - nforce_ts;
+  myinput.threadunsafe_forces_start = action->getNumberOfForceDerivatives() - nforce_ts;
   unsigned t=OpenMP::getNumThreads();
   if( useacc ) {
     t = 1;
@@ -610,6 +636,12 @@ void ParallelTaskManager<T>::runAllTasks() {
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+    if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
+      myinput.noderiv=false;
+      break;
+    }
+  }
   action->getInputData( input_buffer );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
@@ -643,7 +675,7 @@ void ParallelTaskManager<T>::runAllTasks() {
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) {
+    if(serial) {
       stride=1;
       rank=0;
     }
@@ -676,7 +708,7 @@ void ParallelTaskManager<T>::runAllTasks() {
       }
     }
     // MPI Gather everything
-    if( !action->runInSerial() ) {
+    if( !serial ) {
       comm.Sum( value_stash );
     }
   }
@@ -868,7 +900,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
     // Get the MPI details
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    if(action->runInSerial()) {
+    if(serial) {
       stride=1;
       rank=0;
     }
@@ -914,9 +946,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
                               myinput,
                               force_indices );
           // Create a force input object
-          auto finput=ForceInput::create( myinput.nscalars,
+          auto finput=ForceInput::create( myinput.nforcescalars,
                                           value_stash.data()
-                                          + myinput.nscalars*task_index
+                                          + myinput.nforcescalars*task_index
                                           + j*myinput.ncomponents,
                                           myinput.nderivatives_per_scalar,
                                           derivatives.data()
@@ -942,7 +974,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
       gatherThreads( ForceOutput::create(omp_forces[t], forcesForApply ) );
     }
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-    if( !action->runInSerial() ) {
+    if( !serial ) {
       comm.Sum( forcesForApply );
     }
   }

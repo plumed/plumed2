@@ -162,11 +162,27 @@ void Plane::calculate() {
   }
   ColvarOutput cvout = ColvarOutput::createColvarOutput(value,derivs,this);
   calculateCV( ColvarInput::createColvarInput( 0, getPositions(), this ), cvout );
-  setValue( value[0] );
+  Value* valuex=getPntrToComponent("x");
+  Value* valuey=getPntrToComponent("y");
+  Value* valuez=getPntrToComponent("z");
+
   for(unsigned i=0; i<getPositions().size(); ++i) {
-    setAtomsDerivatives( i, cvout.getAtomDerivatives(0,i) );
+    setAtomsDerivatives( valuex, i, cvout.getAtomDerivatives(0,i) );
   }
-  setBoxDerivatives( cvout.virial[0] );
+  setBoxDerivatives( valuex, cvout.virial[0] );
+  valuex->set( value[0] );
+
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( valuey, i, cvout.getAtomDerivatives(1,i) );
+  }
+  setBoxDerivatives( valuey, cvout.virial[1] );
+  valuey->set( value[1] );
+
+  for(unsigned i=0; i<getPositions().size(); ++i) {
+    setAtomsDerivatives( valuez, i, cvout.getAtomDerivatives(2,i) );
+  }
+  setBoxDerivatives( valuez, cvout.virial[2] );
+  valuez->set( value[2] );
 }
 
 void Plane::calculateCV( const ColvarInput& cvin, ColvarOutput& cvout ) {

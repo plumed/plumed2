@@ -71,9 +71,6 @@ public:
   void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned&, MultiValue& ) const override {
-    plumed_error();
-  }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index,

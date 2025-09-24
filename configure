@@ -754,6 +754,7 @@ enable_af_cuda
 enable_af_cpu
 enable_libtorch
 enable_libmetatomic
+enable_linuxperf
 enable_openacc
 enable_openmp
 '
@@ -1459,6 +1460,8 @@ Optional Features:
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
   --enable-libmetatomic   enable search for libmetatomic, default: no
+  --enable-linuxperf      enable activate the compile options for a more
+                          accurate report with perf on linux, default: no
   --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
                           PLUMED_ACC_GPU for controlling the settings),
                           default: no
@@ -3254,6 +3257,24 @@ fi
 
 
 
+linuxperf=
+# Check whether --enable-linuxperf was given.
+if test "${enable_linuxperf+set}" = set; then :
+  enableval=$enable_linuxperf; case "${enableval}" in
+             (yes) linuxperf=true ;;
+             (no)  linuxperf=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-linuxperf" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) linuxperf=true ;;
+             (no)  linuxperf=false ;;
+  esac
+
+fi
+
+
+
 openacc=
 # Check whether --enable-openacc was given.
 if test "${enable_openacc+set}" = set; then :
@@ -3287,7 +3308,6 @@ if test -z "$CXXFLAGS"
 then
   CXXFLAGS=-O3
 fi
-
 # this is a list of common compilers
 compilers="g++ c++ cxx icpc"
 c_compilers="gcc cc icc"
@@ -5172,6 +5192,103 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   CXXFLAGS="$CXXFLAGS -Wold-style-cast"
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wold-style-cast" >&5
 $as_echo_n "checking whether $CXX accepts -Wold-style-cast... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+# useful for having a clearer (and correct) flamegraph in linux
+if test $linuxperf = true
+then
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -fno-omit-frame-pointer"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -fno-omit-frame-pointer" >&5
+$as_echo_n "checking whether $CXX accepts -fno-omit-frame-pointer... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -gdwarf"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -gdwarf" >&5
+$as_echo_n "checking whether $CXX accepts -gdwarf... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 

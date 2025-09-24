@@ -160,56 +160,5 @@ void EvaluateGridFunction::calc( const EvaluateGridFunction& func, bool noderiv,
   }
 }
 
-void EvaluateGridFunction::applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const {
-  const GridCoordinatesObject & gridobject = getGridObject();
-  unsigned dimension = gridobject.getDimension();
-  if( interpolation_type==spline ) {
-    action->error("can't apply forces on values interpolated using splines");
-  } else if( interpolation_type==linear ) {
-    std::vector<double> xfloor(dimension);
-    std::vector<unsigned> indices(dimension), nindices(dimension), ind(dimension);
-    gridobject.getIndices( args, indices );
-    unsigned nn=gridobject.getIndex(args);
-    gridobject.getGridPointCoordinates( nn, nindices, xfloor );
-    for(unsigned i=0; i<args.size(); ++i) {
-      int x0=1;
-      if(nindices[i]==indices[i]) {
-        x0=0;
-      }
-      double ddx=gridobject.getGridSpacing()[i];
-      double X = fabs((args[i]-xfloor[i])/ddx-(double)x0);
-      for(unsigned j=0; j<args.size(); ++j) {
-        ind[j] = indices[j];
-      }
-      if( gridobject.isPeriodic(i) && (ind[i]+1)==gridobject.getNbin(false)[i] ) {
-        ind[i]=0;
-      } else {
-        ind[i] = ind[i] + 1;
-      }
-      forcesToApply[nn] += force*(1-X);
-      forcesToApply[gridobject.getIndex(ind)] += X*force;
-    }
-  } else if( interpolation_type==floor ) {
-    std::vector<unsigned> indices(dimension);
-    gridobject.getIndices( args, indices );
-    unsigned nn = gridobject.getIndex(indices);
-    forcesToApply[nn] += force;
-  } else if( interpolation_type==ceiling ) {
-    std::vector<unsigned> indices(dimension);
-    gridobject.getIndices( args, indices );
-    for(unsigned i=0; i<indices.size(); ++i) {
-      if( gridobject.isPeriodic(i) && (indices[i]+1)==gridobject.getNbin(false)[i] ) {
-        indices[i]=0;
-      } else {
-        indices[i] = indices[i] + 1;
-      }
-    }
-    unsigned nn = gridobject.getIndex(indices);
-    forcesToApply[nn] += force;
-  } else {
-    plumed_error();
-  }
-}
-
 }
 }

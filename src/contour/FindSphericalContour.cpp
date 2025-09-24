@@ -20,7 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ContourFindingBase.h"
+#include "ContourFindingObject.h"
+#include "gridtools/ActionWithGrid.h"
+#include "gridtools/EvaluateGridFunction.h"
+#include "core/ParallelTaskManager.h"
 #include "tools/Random.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_SPHERICAL_CONTOUR
@@ -127,38 +130,62 @@ DUMPGRID ARG=sc PRINT_XYZ FILE=mysurface.xyz STRIDE=1
 namespace PLMD {
 namespace contour {
 
-class FindSphericalContour : public ContourFindingBase {
+class FindSphericalContourObject {
+public:
+  unsigned nbins;
+  ContourFindingObject<gridtools::EvaluateGridFunction> cf;
+  static void registerKeywords( Keywords& keys ) {
+    ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys );
+    keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
+  }
+  static void read( FindSphericalContourObject& func, ActionWithArguments* action, function::FunctionOptions& options ) {
+    action->parse("NBINS",func.nbins);
+    ContourFindingObject<gridtools::EvaluateGridFunction>::read( func.cf, action, options );
+  }
+};
+
+class FindSphericalContour : public gridtools::ActionWithGrid {
+public:
+  using input_type = FindSphericalContourObject;
+  using PTM = ParallelTaskManager<FindSphericalContour>;
 private:
-  unsigned nbins, npoints;
+/// The parallel task manager
+  PTM taskmanager;
+  unsigned npoints;
   double min, max;
   gridtools::GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  void setupValuesOnFirstStep() override {}
   unsigned getNumberOfDerivatives() override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
+  void calculate() override ;
+  void getInputData( std::vector<double>& inputdata ) const ;
+  static void performTask( std::size_t task_index,
+                           const FindSphericalContourObject& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
 
 void FindSphericalContour::registerKeywords( Keywords& keys ) {
-  ContourFindingBase::registerKeywords( keys );
+  ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
   keys.add("compulsory","NPOINTS","the number of points for which we are looking for the contour");
   keys.add("compulsory","INNER_RADIUS","the minimum radius on which to look for the contour");
   keys.add("compulsory","OUTER_RADIUS","the outer radius on which to look for the contour");
-  keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
+  FindSphericalContourObject::registerKeywords( keys );
   keys.setValueDescription("grid","a grid on a Fibonacci sphere that describes the radial distance from the origin for the points on the Willard-Chandler surface");
   keys.addDOI("10.1063/1.5134461");
+  PTM::registerKeywords( keys );
 }
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao) {
+  ActionWithGrid(ao),
+  taskmanager(this) {
   if( getPntrToArgument(0)->getRank()!=3 ) {
     error("input grid must be three dimensional");
   }
@@ -167,9 +194,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   log.printf("  searching for %u points on dividing surface \n",npoints);
   parse("INNER_RADIUS",min);
   parse("OUTER_RADIUS",max);
-  parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
-  log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
   std::vector<bool> ipbc( 3, false );
   gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
@@ -179,6 +204,11 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   shape[1]=shape[2]=1;
   addValueWithDerivatives( shape );
   setNotPeriodic();
+  function::FunctionOptions options;
+  FindSphericalContourObject::read( taskmanager.getActionInput(), this, options );
+  log.printf("  looking for contour in windows of length %f \n", (max-min)/taskmanager.getActionInput().nbins);
+  log.printf("  calculating dividing surface along which function equals %f \n", taskmanager.getActionInput().cf.contour);
+  taskmanager.setupParallelTaskManager( 0, 0 );
 }
 
 unsigned FindSphericalContour::getNumberOfDerivatives() {
@@ -195,31 +225,52 @@ const gridtools::GridCoordinatesObject& FindSphericalContour::getGridCoordinates
   return gridcoords;
 }
 
-void FindSphericalContour::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // Generate contour point on inner sphere
-  std::vector<double> contour_point(3), direction(3), der(3), tmp(3);
-  // Retrieve this contour point from grid
-  gridcoords.getGridPointCoordinates( current, direction );
-  // Now setup contour point on inner sphere
-  for(unsigned j=0; j<3; ++j) {
-    contour_point[j] = min*direction[j];
-    direction[j] = (max-min)*direction[j] / static_cast<double>(nbins);
-  }
+void FindSphericalContour::calculate() {
+  taskmanager.runAllTasks();
+}
 
+void FindSphericalContour::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t ndata = gridcoords.getNumberOfPoints();
+  if( inputdata.size()!=6*ndata ) {
+    inputdata.resize( 6*ndata );
+  }
+  std::vector<double> direction(3);
+  for(unsigned i=0; i<ndata; ++i) {
+    gridcoords.getGridPointCoordinates( i, direction );
+    for(unsigned j=0; j<3; ++j) {
+      inputdata[6*i+j] = min*direction[j];
+      inputdata[6*i+3+j] = (max-min)*direction[j] / static_cast<double>(taskmanager.getActionInput().nbins);
+    }
+  }
+}
+
+void FindSphericalContour::performTask( std::size_t task_index,
+                                        const FindSphericalContourObject& actiondata,
+                                        ParallelActionsInput& input,
+                                        ParallelActionsOutput& output ) {
   bool found=false;
-  for(unsigned k=0; k<nbins; ++k) {
+  View<const double> cp( input.inputdata + 6*task_index, 3 );
+  std::vector<double> direction(3), contour_point(3), der(3), tmp(3);
+  contour_point[0] = cp[0];
+  contour_point[1] = cp[1];
+  contour_point[2] = cp[2];
+  View<const double> d( input.inputdata + 6*task_index+3, 3);
+  direction[0] = d[0];
+  direction[1] = d[1];
+  direction[2] = d[2];
+  for(unsigned k=0; k<actiondata.nbins; ++k) {
     for(unsigned j=0; j<3; ++j) {
       tmp[j] = contour_point[j] + direction[j];
     }
-    double val1 = getDifferenceFromContour( contour_point, der );
-    double val2 = getDifferenceFromContour( tmp, der );
+    double val1 = actiondata.cf.getDifferenceFromContour( contour_point, der );
+    double val2 = actiondata.cf.getDifferenceFromContour( tmp, der );
     if( val1*val2<0 ) {
-      findContour( direction, contour_point );
+      ContourFindingObject<gridtools::EvaluateGridFunction>::findContour( actiondata.cf, direction, contour_point );
       double norm=0;
       for(unsigned j=0; j<3; ++j) {
         norm += contour_point[j]*contour_point[j];
       }
-      myvals.setValue( 0, sqrt(norm) );
+      output.values[0] = sqrt(norm);
       found=true;
       break;
     }
@@ -228,15 +279,8 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
     }
   }
   if( !found ) {
-    error("range does not bracket the dividing surface");
+    plumed_merror("range does not bracket the dividing surface");
   }
-}
-
-void FindSphericalContour::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_assert( valindex==0 );
-  unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  buffer[istart] += myvals.get( 0 );
 }
 
 }

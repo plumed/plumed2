@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ParallelTaskManager.h"
 #include "EvaluateGridFunction.h"
 #include "ActionWithGrid.h"
 
@@ -77,23 +78,39 @@ namespace PLMD {
 namespace gridtools {
 
 class InterpolateGrid : public ActionWithGrid {
+public:
+  using input_type = EvaluateGridFunction;
+  using PTM = ParallelTaskManager<InterpolateGrid>;
 private:
+  bool firststep;
   bool midpoints;
+/// The parallel task manager
+  PTM taskmanager;
   std::vector<std::size_t> nbin;
   std::vector<double> gspacing;
-  EvaluateGridFunction input_grid;
   GridCoordinatesObject output_grid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void setupOnFirstStep( const bool incalc ) override ;
   unsigned getNumberOfDerivatives() override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void calculate() override ;
+  void getInputData( std::vector<double>& inputdata ) const override ;
+  // Calculate the value of the function at a grid point
+  static void performTask( std::size_t task_index,
+                           const EvaluateGridFunction& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+  void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const EvaluateGridFunction& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const EvaluateGridFunction& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -107,11 +124,14 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   EvaluateGridFunction::registerKeywords( keys );
   keys.remove("ZERO_OUTSIDE_GRID_RANGE");
   keys.setValueDescription("grid","the function evaluated onto the interpolated grid");
+  PTM::registerKeywords( keys );
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithGrid(ao) {
+  ActionWithGrid(ao),
+  firststep(true),
+  taskmanager(this) {
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument to this action");
   }
@@ -143,9 +163,9 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   }
   // Create the input grid
   function::FunctionOptions options;
-  EvaluateGridFunction::read( input_grid, this, options );
+  EvaluateGridFunction::read( taskmanager.getActionInput(), this, options );
   // Need this for creation of tasks
-  output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
+  output_grid.setup( "flat", taskmanager.getActionInput().getPbc(), 0, 0.0 );
 
   // Now add a value
   std::vector<std::size_t> shape( dimension, 0 );
@@ -158,46 +178,15 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   } else {
     setNotPeriodic();
   }
-  setupOnFirstStep( false );
-}
-
-void InterpolateGrid::setupOnFirstStep( const bool incalc ) {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag );
-  const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
-  if( midpoints ) {
-    double min, max;
-    nbin.resize( getPntrToComponent(0)->getRank() );
-    std::vector<std::string> str_min( input_grid.getMin() ), str_max(input_grid.getMax() );
-    for(unsigned i=0; i<nbin.size(); ++i) {
-      if( incalc ) {
-        Tools::convert( str_min[i], min );
-        Tools::convert( str_max[i], max );
-        min += 0.5*input_grid.getGridSpacing()[i];
-      }
-      if( input_grid.getPbc()[i] ) {
-        nbin[i] = input_grid.getNbin()[i];
-        if( incalc ) {
-          max += 0.5*input_grid.getGridSpacing()[i];
-        }
-      } else {
-        nbin[i] = input_grid.getNbin()[i] - 1;
-        if( incalc ) {
-          max -= 0.5*input_grid.getGridSpacing()[i];
-        }
-      }
-      if( incalc ) {
-        Tools::convert( min, str_min[i] );
-        Tools::convert( max, str_max[i] );
-      }
-    }
-    output_grid.setBounds( str_min, str_max, nbin,  gspacing );
+  // Setup the task manager
+  if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::spline ) {
+    taskmanager.setupParallelTaskManager( 0, 0 );
+  } else if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) {
+    taskmanager.setupParallelTaskManager( 1+dimension, getPntrToArgument(0)->getNumberOfStoredValues() );
+  } else if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::floor || taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::ceiling ) {
+    taskmanager.setupParallelTaskManager( 1, getPntrToArgument(0)->getNumberOfStoredValues() );
   } else {
-    output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
-  }
-  getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
-  if( !incalc ) {
-    gspacing.resize(0);
+    error("interpolation type not defined");
   }
 }
 
@@ -215,44 +204,155 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
   return ag->getGridCoordinateNames();
 }
 
-void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> pos( output_grid.getDimension() );
-  output_grid.getGridPointCoordinates( current, pos );
-  std::vector<double> val(1), der( output_grid.getDimension() );
+void InterpolateGrid::calculate() {
+  if( firststep ) {
+    ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+    plumed_assert( ag );
+    const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
+    if( midpoints ) {
+      double min, max;
+      nbin.resize( getPntrToComponent(0)->getRank() );
+      std::vector<std::string> str_min( taskmanager.getActionInput().getMin() ), str_max(taskmanager.getActionInput().getMax() );
+      for(unsigned i=0; i<nbin.size(); ++i) {
+        Tools::convert( str_min[i], min );
+        Tools::convert( str_max[i], max );
+        min += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+        if( taskmanager.getActionInput().getPbc()[i] ) {
+          nbin[i] = taskmanager.getActionInput().getNbin()[i];
+          max += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+        } else {
+          nbin[i] = taskmanager.getActionInput().getNbin()[i] - 1;
+          max -= 0.5*taskmanager.getActionInput().getGridSpacing()[i];
+        }
+        Tools::convert( min, str_min[i] );
+        Tools::convert( max, str_max[i] );
+      }
+      output_grid.setBounds( str_min, str_max, nbin,  gspacing );
+    } else {
+      output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
+    }
+    getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
+    if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) {
+      taskmanager.setupParallelTaskManager( 1+getPntrToComponent(0)->getRank(), getPntrToArgument(0)->getNumberOfStoredValues() );
+    } else if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::floor || taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::ceiling ) {
+      taskmanager.setupParallelTaskManager( 1, getPntrToArgument(0)->getNumberOfStoredValues() );
+    } else if( taskmanager.getActionInput().interpolation_type!=EvaluateGridFunction::spline ) {
+      error("interpolation type not defined");
+    }
+    firststep=false;
+  }
+  taskmanager.runAllTasks();
+}
+
+void InterpolateGrid::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t ndim = output_grid.getDimension();
+  std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  std::vector<double> pos( ndim );
+  if( inputdata.size()!=nstored*ndim ) {
+    inputdata.resize( ndim*nstored );
+  }
+
+  for(unsigned i=0; i<nstored; ++i) {
+    output_grid.getGridPointCoordinates( i, pos );
+    for(unsigned j=0; j<ndim; ++j) {
+      inputdata[ i*ndim + j ] = pos[j];
+    }
+  }
+}
+
+void InterpolateGrid::performTask( std::size_t task_index,
+                                   const EvaluateGridFunction& actiondata,
+                                   ParallelActionsInput& input,
+                                   ParallelActionsOutput& output ) {
   auto funcout = function::FunctionOutput::create( 1,
-                 val.data(),
-                 output_grid.getDimension(),
-                 der.data() );
-  EvaluateGridFunction::calc( input_grid,
+                 output.values.data(),
+                 input.ranks[0],
+                 output.values.data()+1 );
+  EvaluateGridFunction::calc( actiondata,
                               false,
-                              View<const double>(pos.data(),pos.size()),
+                              View<const double>(input.inputdata + task_index*input.ranks[0],input.ranks[0]),
                               funcout );
-  myvals.setValue( 0, val[0] );
-  for(unsigned i=0; i<output_grid.getDimension(); ++i) {
-    myvals.addDerivative( 0, i, der[i] );
-    myvals.updateIndex( 0, i );
+
+  if( actiondata.interpolation_type==EvaluateGridFunction::linear ) {
+    View<const double> args(input.inputdata + task_index*input.ranks[0],input.ranks[0]);
+    const GridCoordinatesObject & gridobject = actiondata.getGridObject();
+    unsigned dimension = gridobject.getDimension();
+    std::vector<double> xfloor(dimension);
+    std::vector<unsigned> indices(dimension), nindices(dimension), ind(dimension);
+    gridobject.getIndices( args, indices );
+    unsigned nn=gridobject.getIndex(indices);
+    gridobject.getGridPointCoordinates( nn, nindices, xfloor );
+    output.derivatives[0] = 0;
+    for(unsigned i=0; i<dimension; ++i) {
+      int x0=1;
+      if(nindices[i]==indices[i]) {
+        x0=0;
+      }
+      double ddx=gridobject.getGridSpacing()[i];
+      double X = fabs((args[i]-xfloor[i])/ddx-(double)x0);
+      output.derivatives[0] += (1-X);
+      output.derivatives[1+i] = X;
+    }
+  } else if( actiondata.interpolation_type==EvaluateGridFunction::floor ) {
+    output.derivatives[0] = 1;
+  } else if( actiondata.interpolation_type==EvaluateGridFunction::ceiling ) {
+    output.derivatives[0] = 1;
   }
 }
 
-void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_dbg_assert( valindex==0 );
-  unsigned istart = bufstart + (1+output_grid.getDimension())*code;
-  buffer[istart] += myvals.get( 0 );
-  for(unsigned i=0; i<output_grid.getDimension(); ++i) {
-    buffer[istart+1+i] += myvals.getDerivative( 0, i );
-  }
+void InterpolateGrid::applyNonZeroRankForces( std::vector<double>& outforces ) {
+  taskmanager.applyForces( outforces );
 }
 
-void InterpolateGrid::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( checkComponentsForForce() ) {
-    std::vector<double> pos(output_grid.getDimension());
-    double ff = getConstPntrToComponent(0)->getForce(itask);
-    output_grid.getGridPointCoordinates( itask, pos );
-    input_grid.applyForce( this, pos, ff, forces );
-  }
+int InterpolateGrid::getNumberOfValuesPerTask( std::size_t task_index,
+    const EvaluateGridFunction& actiondata ) {
+  return 1;
 }
 
+void InterpolateGrid::getForceIndices( std::size_t task_index,
+                                       std::size_t colno,
+                                       std::size_t ntotal_force,
+                                       const EvaluateGridFunction& actiondata,
+                                       const ParallelActionsInput& input,
+                                       ForceIndexHolder force_indices ) {
+
+  const GridCoordinatesObject & gridobject = actiondata.getGridObject();
+  unsigned dimension = gridobject.getDimension();
+  std::vector<unsigned> indices(dimension);
+  gridobject.getIndices( View<const double>(input.inputdata + task_index*input.ranks[0],input.ranks[0]), indices );
+  force_indices.threadsafe_derivatives_end[0] = 0;
+  if( actiondata.interpolation_type==EvaluateGridFunction::linear ) {
+    force_indices.tot_indices[0] = 1 + dimension;
+    force_indices.indices[0][0] = gridobject.getIndex(indices);
+    std::vector<unsigned> ind( dimension );
+    for(unsigned i=0; i<dimension; ++i) {
+      for(unsigned j=0; j<dimension; ++j) {
+        ind[j] = indices[j];
+      }
+      if( gridobject.isPeriodic(i) && (ind[i]+1)==gridobject.getNbin(false)[i] ) {
+        ind[i]=0;
+      } else {
+        ind[i] = ind[i] + 1;
+      }
+      force_indices.indices[0][1+i] = gridobject.getIndex(ind);
+    }
+  } else if( actiondata.interpolation_type==EvaluateGridFunction::floor ) {
+    force_indices.indices[0][0] = gridobject.getIndex(indices);
+    force_indices.tot_indices[0] = 1;
+  } else if( actiondata.interpolation_type==EvaluateGridFunction::ceiling ) {
+    for(unsigned i=0; i<dimension; ++i) {
+      if( gridobject.isPeriodic(i) && (indices[i]+1)==gridobject.getNbin(false)[i] ) {
+        indices[i]=0;
+      } else {
+        indices[i] = indices[i] + 1;
+      }
+    }
+    force_indices.indices[0][0] = gridobject.getIndex(indices);
+    force_indices.tot_indices[0] = 1;
+  } else {
+    plumed_merror("cannot calculate derivatives for this type of interpolation");
+  }
+}
 
 }
 }

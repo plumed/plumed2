@@ -26,6 +26,7 @@
 #include "Vector.h"
 #include "Tensor.h"
 #include "small_vector/small_vector.h"
+#include <string_view>
 #include <vector>
 #include <string>
 #include <cctype>
@@ -94,15 +95,24 @@ class Tools {
   template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
   static inline /*consteval*/ T fastpow_rec(T base, T result);
 public:
+  static constexpr std::string_view replicaToken="@replicas:";
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
-  static std::vector<std::string> getWords(std::string_view line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
+  static std::vector<std::string> getWords(std::string_view line,
+      const char* sep=NULL,
+      int* parlevel=NULL,
+      const char* parenthesis="{",
+      bool delete_parenthesis=true);
 /// Faster version
 /// This version does not parse parenthesis and operates on a preallocated small_vector of string_view's
-  static void getWordsSimple(gch::small_vector<std::string_view> & words,std::string_view line);
+  static void getWordsSimple(gch::small_vector<std::string_view> & words,
+                             std::string_view line);
+  static void getWordsSimple(gch::small_vector<std::string_view> & words,
+                             std::string_view line,
+                             std::string_view sep);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile
@@ -110,7 +120,7 @@ public:
 /// resulting line into an array of words
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line, const bool trimcomments=true);
 /// compare two string in a case insensitive manner
-  static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
+  static bool caseInSensStringCompare(std::string_view str1, std::string_view str2);
 /// Convert a string to a double, reading it
   static bool convertNoexcept(const std::string & str,double & t);
 /// Convert a string to a long double, reading it
@@ -151,17 +161,33 @@ public:
 /// line.push_back("aa=xx");
 /// getKey(line,"aa",s);
 /// will set s="xx"
-  static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep=-1);
-/// Find a keyword on the input line, eventually deleting it, and saving its value to val
+  static bool getKey(std::vector<std::string>& line,
+                     const std::string & key,
+                     std::string & s,
+                     int rep=-1);
+  static std::string_view unravelReplicas(std::string_view argument,
+                                          int rep=-1);
   template <typename T,typename U>
   static void convert(const T & t,U & u) {
     plumed_assert(convertNoexcept(t,u)) <<"Error converting  "<<t;
   }
+/// Find a keyword on the input line, eventually deleting it, and saving its value to val
   template <typename T>
-  static bool parse(std::vector<std::string>&line,const std::string&key,T&val,int rep=-1);
+  static bool parse(std::vector<std::string>&line,
+                    const std::string&key,
+                    T&val,
+                    int rep=-1);
+/// Parse the argument and eventually unrave the variant for the current replica
+  template <typename T>
+  static bool parse(std::string_view argument, T&val);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
   static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep=-1);
+  template <class T>
+  static bool parseVector(
+    const std::string_view argument,
+    std::vector<T>&val,
+    int rep=-1) ;
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
 /// Find a keyword on the input line, just reporting if it exists or not
@@ -192,8 +218,8 @@ public:
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
-/// Same as full.find(start)==0
-  static bool startWith(const std::string & full,const std::string &start);
+/// Same as full.find(start)==0, but faster
+  static bool startWith(std::string_view full, std::string_view start);
   /**
     Tool to create a vector of raw pointers from a vector of unique_pointers (const version).
   Returning a vector is fast in C++11. It can be used in order to feed a vector<unique_ptr<T>>
@@ -280,13 +306,17 @@ public:
   /// Deletion would be slower instead. It's not even implemented yet.
   template<class T>
   class FastStringUnorderedMap {
-    std::unordered_map<std::string_view,T> map;
-    std::vector<std::unique_ptr<const char[]>> keys;
-
+    using container=std::unordered_map<std::string_view,T>;
+    using keytype = std::unique_ptr<const char[]>;
+    using keyholder = std::vector<keytype>;
+    container map;
+    keyholder keys;
     // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
-    std::unique_ptr<const char[]> conv(std::string_view str) {
+    static keytype conv(std::string_view const str) {
       auto p=std::make_unique<char[]>(str.size()+1);
-      std::memcpy(p.get(), str.data(), str.size()+1);
+      std::memcpy(p.get(), str.data(), str.size());
+      //the string_view might be a view of a longer string, so the last char might not be null
+      p[str.size()]='\0';
       return p;
     }
 
@@ -308,16 +338,16 @@ public:
       return map[keys.back().get()];
     }
 
-    auto begin() {
+    auto begin() noexcept {
       return map.begin();
     }
-    auto end() {
+    auto end() noexcept {
       return map.end();
     }
-    auto begin() const {
+    auto begin() const noexcept {
       return map.begin();
     }
-    auto end() const {
+    auto end() const noexcept {
       return map.end();
     }
     auto find(const std::string_view & key) {
@@ -403,7 +433,10 @@ public:
 };
 
 template <class T>
-bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
+bool Tools::parse(std::vector<std::string>&line,
+                  const std::string&key,
+                  T&val,
+                  int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) {
     return false;
@@ -415,19 +448,27 @@ bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int 
 }
 
 template <class T>
+bool Tools::parse(std::string_view argument,
+                  T&val) {
+//NOTE: this expects the '@replica:' on the argument to be resolved by the caller
+  return argument.length()>0 && convertNoexcept(std::string(argument),val);
+}
+
+template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) {
     return false;
   }
   val.clear();
+  //needs to get the parenteses
   std::vector<std::string> words=getWords(s,"\t\n ,");
+  val.reserve(words.size());
   for(unsigned i=0; i<words.size(); ++i) {
     T v;
     std::string s=words[i];
-    const std::string multi("@replicas:");
-    if(rep>=0 && startWith(s,multi)) {
-      s=s.substr(multi.length(),s.length());
+    if(rep>=0 && startWith(s,replicaToken)) {
+      s=s.substr(replicaToken.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
@@ -440,6 +481,36 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
   return true;
 }
 
+template <class T>
+bool Tools::parseVector(
+  const std::string_view argument,
+  std::vector<T>&val,
+  int rep) {
+//NOTE: this expects the '@replica' on the argument of the whole vector to be resolved by the caller
+  val.clear();
+  gch::small_vector<std::string_view> words;
+  getWordsSimple(words,argument,"\t\n ,");
+  val.reserve(words.size());
+  for(unsigned i=0; i<words.size(); ++i) {
+    T v;
+    auto s=std::string(unravelReplicas(words[i],rep));
+    // The erase/remove is there, because @ndx:{file tag} was not passing in some tests
+    s.erase(std::remove_if(s.begin(),s.end(),
+    [](unsigned char x) {
+      switch (x) {
+      case '{':
+      case '}':
+        return true;
+      }
+      return false;
+    }),s.end());
+    if(!convertNoexcept(s,v)) {
+      return false;
+    }
+    val.push_back(v);
+  }
+  return true;
+}
 template<typename T>
 void Tools::removeDuplicates(std::vector<T>& vec) {
   std::sort(vec.begin(), vec.end());

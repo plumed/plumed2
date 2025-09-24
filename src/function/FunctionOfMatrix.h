@@ -25,6 +25,7 @@
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
 #include "FunctionSetup.h"
+#include "FunctionOfVector.h"
 #include "Custom.h"
 
 namespace PLMD {
@@ -42,7 +43,6 @@ private:
   unsigned argstart;
 /// Number of scalars that appear in the input
   std::size_t nscalars;
-/// The function that is being computed
 /// Used to hold the list of tasks we are running
   std::vector<unsigned> active_tasks;
 /// Get the number of arguments the function uses
@@ -60,9 +60,6 @@ public:
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   static void performTask( std::size_t task_index,
                            const FunctionData<T>& actiondata,
                            ParallelActionsInput& input,
@@ -150,7 +147,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
         error("scalars should be specified in argument list after all matrices");
       }
     } else {
-      error("input arguments should be matricesor scalars");
+      error("input arguments should be matrices or scalars");
     }
   }
   if( nmasks>0 ) {
@@ -247,6 +244,9 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
 #ifndef DNDEBUG
   for(unsigned k=argstart; k<getNumberOfArguments(); ++k) {
     if( getPntrToArgument(k)->getRank()!=2 ) {
+      continue ;
+    }
+    if( getNumberOfMasks()>0 && getPntrToArgument(k)->isConstant() ) {
       continue ;
     }
     for(unsigned i=0; i<nrows; ++i) {
@@ -354,17 +354,8 @@ void FunctionOfMatrix<T>::getForceIndices( std::size_t task_index,
     const FunctionData<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  unsigned matrix_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
-  for(unsigned j=0; j<input.ncomponents; ++j) {
-    for(unsigned k=actiondata.argstart; k<matrix_end; ++k) {
-      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k] + task_index;
-    }
-    for(unsigned k=matrix_end; k<matrix_end+actiondata.nscalars; ++k) {
-      force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k];
-    }
-    force_indices.threadsafe_derivatives_end[j] = input.nderivatives_per_scalar-actiondata.nscalars;
-    force_indices.tot_indices[j] = input.nderivatives_per_scalar;
-  }
+  // The force indices are found in the same way as in FunctionOfVector so we reuse that function here
+  FunctionOfVector<T>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
 }
 
 }
