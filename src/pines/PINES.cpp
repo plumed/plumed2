@@ -33,6 +33,9 @@ using namespace std;
 
 namespace PLMD {
 namespace pines {
+//+PLUMEDOC PINES
+//Documentation to be added.
+//+ENDPLUMEDOC PINES
 PLUMED_REGISTER_ACTION(PINES, "PINES")
 constexpr int CACHE_LINE_SIZE = 64;
 
