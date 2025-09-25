@@ -117,7 +117,7 @@ void diagMatSym(const TensorTyped<T,n,n>&,VectorTyped<T,m>&evals,TensorTyped<T,m
 /// - proceed iteratively
 /// The interface should then be likely the same as diagMatSym
 template<typename T, unsigned n>
-double lowestEigenpairSym(const TensorTyped<T,n, n>& K, VectorTyped<T,n>& eigenvector, unsigned niter=24);
+T lowestEigenpairSym(const TensorTyped<T,n, n>& K, VectorTyped<T,n>& eigenvector, unsigned niter=24);
 
 template<typename T, unsigned n, unsigned m>
 class TensorTyped:
@@ -667,16 +667,16 @@ void diagMatSym(const TensorTyped<precision,n,n>&mat,VectorTyped<precision,m>&ev
 }
 
 template<typename T, unsigned n>
-double lowestEigenpairSym(const TensorTyped<T,n,n>& K, VectorTyped<T,n>& eigenvector, const unsigned niter) {
+T lowestEigenpairSym(const TensorTyped<T,n,n>& K, VectorTyped<T,n>& eigenvector, const unsigned niter) {
   // Estimate upper bound for largest eigenvalue using Gershgorin disks
-  double upper_bound = std::numeric_limits<double>::lowest();
+  T upper_bound = std::numeric_limits<T>::lowest();
   for (unsigned i = 0; i < n; ++i) {
     auto row = K.getRow(i);
-    double center = row[i];
+    T center = row[i];
     row[i] = 0.0;  // zero out the diagonal entry
 
     // Compute sum of absolute values of the off-diagonal elements
-    double row_sum = 0.0;
+    T row_sum = 0.0;
     for (unsigned j = 0; j < n; ++j) {
       row_sum += std::fabs(row[j]);
     }
@@ -699,11 +699,11 @@ double lowestEigenpairSym(const TensorTyped<T,n,n>& K, VectorTyped<T,n>& eigenve
 
   // Extract dominant eigenvector from projector A
   VectorTyped<T,n> v;
-  double best_norm2 = 0.0;
+  T best_norm2 = 0.0;
   for (unsigned j = 0; j < n; ++j) {
     auto row = A.getRow(j);
-    double norm2 = modulo2(row);
-    double use = static_cast<double>(norm2 > best_norm2);
+    T norm2 = modulo2(row);
+    T use = static_cast<T>(norm2 > best_norm2);
     best_norm2 = use * norm2 + (1.0 - use) * best_norm2;
     v = use * row + (1.0 - use) * v;
   }
@@ -717,6 +717,7 @@ double lowestEigenpairSym(const TensorTyped<T,n,n>& K, VectorTyped<T,n>& eigenve
 
 
 static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
+static_assert(sizeof(TensorT<float>)==9*sizeof(float), "code cannot work if this is not satisfied");
 
 } //PLMD
 
