@@ -3,7 +3,7 @@
 #include "plumed/tools/Tensor.h"
 
 template <typename precision>
-void matrixTest (PLMD::OFile& out) {
+void matrixTest (PLMD::OFile& out, const std::string& fmt) {
 
   // Define symmetric matrix
   PLMD::Matrix<precision> mat1(3,3);
@@ -21,10 +21,12 @@ void matrixTest (PLMD::OFile& out) {
   std::vector<precision> eigval(3);
   PLMD::Matrix<precision> eigvec(3,3);
   diagMat( mat1, eigval, eigvec );
-  out<<"Eigenvalues "<<eigval[0]<<" "<<eigval[1]<<" "<<eigval[2]<<"\n";
+  out.printf(("Eigenvalues "+fmt+" "+fmt+" "+fmt+"\n").c_str(),
+             eigval[0],eigval[1],eigval[2]);
   out<<"Eigenvectors : \n";
   for(unsigned i=0; i<3; ++i) {
-    out<<eigvec(i,0)<<" "<<eigvec(i,1)<<" "<<eigvec(i,2)<<"\n";
+    out.printf((fmt+" "+fmt+" "+fmt+"\n").c_str(),
+               eigvec(i,0), eigvec(i,1), eigvec(i,2));
   }
 
   // Test inverse
@@ -33,7 +35,7 @@ void matrixTest (PLMD::OFile& out) {
   Invert( mat1, inverse );
   for(unsigned i=0; i<3; ++i) {
     for(unsigned j=0; j<3; ++j) {
-      out<<inverse(i,j)<<" ";
+      out.printf((" "+fmt).c_str(),inverse(i,j));
     }
     out<<"\n";
   }
@@ -51,7 +53,7 @@ void matrixTest (PLMD::OFile& out) {
   pseudoInvert( mat, pseu );
   for(unsigned i=0; i<pseu.nrows(); ++i) {
     for(unsigned j=0; j<pseu.ncols(); ++j) {
-      out<<" "<<pseu(i,j);
+      out.printf((" "+fmt).c_str(),pseu(i,j));
     }
     out<<"\n";
   }
@@ -79,8 +81,8 @@ void matrixTest (PLMD::OFile& out) {
 
     out<<"Test diagmat (identical eigenvalues)\n";
 /// Also eval_underlying[1] will be modified
-    out<<eval_underlying[0]<<" "<<eval_underlying[1];
-    out<<"\n";
+    out.printf((fmt+" "+fmt+"\n").c_str(),
+               eval_underlying[0], eval_underlying[1]);
   }
 
   {
@@ -97,8 +99,8 @@ void matrixTest (PLMD::OFile& out) {
     PLMD::diagMatSym(mat,*eval,evec);
 
     out<<"Test diagmat (different eigenvalues)\n";
-    out<<eval_underlying[0]<<" "<<eval_underlying[1];
-    out<<"\n";
+    out.printf((fmt+" "+fmt+"\n").c_str(),
+               eval_underlying[0], eval_underlying[1]);
   }
 
 /// The following is to test the fact that
@@ -120,7 +122,7 @@ void matrixTest (PLMD::OFile& out) {
     out<<"Before:\n";
     for(unsigned i=0; i<4; i++) {
       for(unsigned j=0; j<4; j++) {
-        out<<" "<<mat[i][j];
+        out.printf((" "+fmt).c_str(),mat[i][j]);
       }
       out<<"\n";
     }
@@ -130,7 +132,7 @@ void matrixTest (PLMD::OFile& out) {
     out<<"After:\n";
     for(unsigned i=0; i<4; i++) {
       for(unsigned j=0; j<4; j++) {
-        out<<" "<<mat[i][j];
+        out.printf((" "+fmt).c_str(),mat[i][j]);
       }
       out<<"\n";
     }
@@ -139,11 +141,11 @@ void matrixTest (PLMD::OFile& out) {
 int main () {
   PLMD::OFile out;
   out.open("output");
-  matrixTest<double>(out);
+  matrixTest<double>(out,"%8.6f");
   out.close();
   PLMD::OFile out_float;
   out_float.open("output_float");
-  matrixTest<float>(out_float);
+  matrixTest<float>(out_float,"%8.4f");
   out_float.close();
   return 0;
 }
