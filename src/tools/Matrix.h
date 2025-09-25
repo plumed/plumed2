@@ -325,7 +325,11 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
     }
 
   int n=A.cl;
-  int lwork=-1, liwork=-1, m, info, one=1;
+  int lwork=-1;
+  int liwork=-1;
+  int m;
+  int info=0;
+  int one=1;
   std::vector<T> work(A.cl);
   std::vector<int> iwork(A.cl);
   T vl, vu, abstol=0.0;
@@ -412,7 +416,8 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
       da[k++]=static_cast<T>( A(j,i) );
     }
 
-  int nsv, info;
+  int nsv;
+  int info=0;
   int nrows=A.rw, ncols=A.cl;
   if(A.rw>A.cl) {
     nsv=A.cl;
@@ -532,7 +537,8 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<T>& inverse ) {
     std::vector<T> da(A.sz);
     std::vector<int> ipiv(A.cl);
     unsigned k=0;
-    int n=A.rw, info;
+    int n=A.rw;
+    int info=0;
     for(unsigned i=0; i<A.cl; ++i)
       for(unsigned j=0; j<A.rw; ++j) {
         da[k++]=static_cast<T>( A(j,i) );
@@ -654,7 +660,11 @@ template <typename T> int logdet( const Matrix<T>& M, T& ldet ) {
     }
 
   int n=M.cl;
-  int lwork=-1, liwork=-1, info, m, one=1;
+  int lwork=-1;
+  int liwork=-1;
+  int info=0;
+  int m;
+  int one=1;
   std::vector<T> work(M.rw);
   std::vector<int> iwork(M.rw);
   T vl, vu, abstol=0.0;
