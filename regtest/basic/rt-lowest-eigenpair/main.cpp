@@ -16,8 +16,9 @@ using namespace PLMD;
 
 namespace {
 
-static Tensor4d makeMatrix(const Tensor & rr01) {
-  Tensor4d m;
+template<typename precision>
+static auto makeMatrix(const TensorT<precision> & rr01) {
+  TensorTyped<precision,4,4> m;
   m[0][0]= +rr01[0][0]+rr01[1][1]+rr01[2][2];
   m[1][1]= +rr01[0][0]-rr01[1][1]-rr01[2][2];
   m[2][2]= -rr01[0][0]+rr01[1][1]-rr01[2][2];
@@ -51,9 +52,9 @@ inline void DoNotOptimize(T& value) {
 }
 
 
-
-PLMD::Tensor randomRMSDmat(rng & gen, const double referencedistance=1.0) {
-  PLMD::Tensor toret;
+template <typename precision>
+auto randomRMSDmat(rng & gen, const double referencedistance=1.0) {
+  TensorT<precision> toret;
   constexpr size_t n=30;
 
   std::vector<double>  align(n);
@@ -86,16 +87,17 @@ PLMD::Tensor randomRMSDmat(rng & gen, const double referencedistance=1.0) {
 // second expensive loop: compute second moments wrt centers
   for(unsigned iat=0; iat<n; iat++) {
     double w=align[iat];
-    toret+=Tensor(positions[iat]-cpositions,reference[iat])*w;
+    PLMD::LoopUnroller<9>::_add(toret.data(),
+                                (Tensor(positions[iat]-cpositions,reference[iat])*w).data());
   }
   return toret;
 }
 
-
-int main() {
+template <typename T>
+void doTest(std::string suffix="") {
   std::cerr <<std::setprecision(9) << std::fixed;
 
-  std::vector<PLMD::Tensor> tests= {
+  std::vector<PLMD::TensorT<T>> tests= {
     // {1,1,1,1,1,1,1,1,1}, // 'wrong' eigenvector selected (due to the degeneracy)
     // {1,2,3,4,5,6,7,8,9}, // 'wrong' eigenvector selected (due to the degeneracy)
     {0,1,1,1,1,1,1,1,1},
@@ -125,14 +127,14 @@ int main() {
   gen.setSeed(123456789);
   double error=100.0;
   for(int i=0; i<400; i++) {
-    tests.push_back(randomRMSDmat(gen,error));
+    tests.push_back(randomRMSDmat<T>(gen,error));
     if(i%50) {
       error/=10.0;
     }
   }
-  std::ofstream matOut ("matrices");
-  std::ofstream out ("eigenValues");
-  std::ofstream outv ("eigenVectors");
+  std::ofstream matOut ("matrices"+suffix);
+  std::ofstream out ("eigenValues"+suffix);
+  std::ofstream outv ("eigenVectors"+suffix);
 // setting up an header for clarity
 
   matOut<<"# id:";
@@ -162,12 +164,12 @@ int main() {
     const auto& mat = tests[index];
     auto m=makeMatrix(mat);
 
-    Vector1d eigenval_ref;
-    TensorGeneric<1,4> eigenvec_ref;
+    VectorTyped<T,1> eigenval_ref;
+    TensorTyped<T,1,4> eigenvec_ref;
     diagMatSym(m, eigenval_ref, eigenvec_ref );
 
-    double eigenval;
-    Vector4d eigenvec;
+    T eigenval;
+    PLMD::VectorTyped<T,4> eigenvec;
     eigenval=lowestEigenpairSym(m,eigenvec);
 
     matOut <<std::setw(4)<<index <<":";
@@ -178,7 +180,12 @@ int main() {
     matOut<<"\n";
 
     out <<std::setw(4)<<index <<":";
-    out<<" "<<std::setw(10) <<eigenval_ref[0] - eigenval;
+    if constexpr (std::is_same_v<T,double>) {
+      out<<" "<<std::setw(10) <<eigenval_ref[0] - eigenval;
+    } else {
+      auto tmp = eigenval_ref[0] - eigenval;
+      out<<" "<<std::setw(10) <<((std::fabs(tmp) < 1e-4) ? T(0.0): tmp);
+    }
     out<<"\n";
 
     double modulo2_ref=0.0;
@@ -198,7 +205,7 @@ int main() {
 
   //Timings
   {
-    std::vector<PLMD::Tensor4d> matrices(tests.size());
+    std::vector<PLMD::TensorTyped<T,4,4>> matrices(tests.size());
     for(size_t i=0; i< tests.size(); ++i) {
       matrices[i] = makeMatrix(tests[i]);
     }
@@ -210,8 +217,8 @@ int main() {
         for (const auto & mat : matrices) {
           auto sww = sw.startStop("diagMatSym");
 
-          Vector1d eigenvals;
-          TensorGeneric<1,4> eigenvecs;
+          VectorTyped<T,1> eigenvals;
+          TensorTyped<T,1,4> eigenvecs;
 
           diagMatSym(mat, eigenvals, eigenvecs );
           DoNotOptimize(eigenvals);
@@ -224,10 +231,9 @@ int main() {
         for (const auto & mat : matrices) {
           auto sww = sw.startStop("compute_quaternion_from_K");
 
-          double eigenvals;
-          Vector4d eigenvecs;
+          VectorTyped<T,4> eigenvecs;
 
-          eigenvals=lowestEigenpairSym(mat, eigenvecs);
+          auto eigenvals=lowestEigenpairSym(mat, eigenvecs);
           DoNotOptimize(eigenvals);
           DoNotOptimize(eigenvecs);
         }
@@ -235,5 +241,11 @@ int main() {
     }
     std::cerr<<sw;
   }
+}
+int main () {
+  doTest<double>();
+  std::cerr << "\n\nFloating point\n\n";
+  doTest<float>("_float");
+
   return 0;
 }

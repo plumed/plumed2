@@ -28,6 +28,7 @@
 #include "Exception.h"
 
 #include <array>
+#include <type_traits>
 
 namespace PLMD {
 
@@ -36,10 +37,15 @@ namespace PLMD {
 /// Should not be used outside of the TensorGeneric class.
 struct TensorGenericAux {
 // local redefinition, just to avoid including lapack.h here
-  static void local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+  static void local_xsyevr(const char *jobz, const char *range, const char *uplo, int *n,
                            double *a, int *lda, double *vl, double *vu, int *
                            il, int *iu, double *abstol, int *m, double *w,
                            double *z__, int *ldz, int *isuppz, double *work,
+                           int *lwork, int *iwork, int *liwork, int *info);
+  static void local_xsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+                           float *a, int *lda, float *vl, float *vu, int *
+                           il, int *iu, float *abstol, int *m, float *w,
+                           float *z__, int *ldz, int *isuppz, float *work,
                            int *lwork, int *iwork, int *liwork, int *info);
 };
 
@@ -99,9 +105,8 @@ T frobeniusNorm(const TensorTyped<T,m,n>&t);
 /// If case lapack fails (info!=0) it throws an exception.
 /// Notice that tensor is assumed to be symmetric!!!
 
-//explicited as double because as now is explocitlty implemented ONLY with dsyevr
-template<unsigned n,unsigned m>
-void diagMatSym(const TensorTyped<double,n,n>&,VectorTyped<double,m>&evals,TensorTyped<double,m,n>&evec);
+template<typename T, unsigned n,unsigned m>
+void diagMatSym(const TensorTyped<T,n,n>&,VectorTyped<T,m>&evals,TensorTyped<T,m,n>&evec);
 /// Compute lowest eigenvalue and eigenvector, using a branchless iterative implementation.
 /// This function is amenable for running on openACC.
 /// The accuracy could be controlled increasing the number of iterations. The default value (24)
@@ -610,29 +615,29 @@ TensorTyped<T,3,3> deriNorm(const VectorTyped<T,3>&v1,const TensorTyped<T,3,3>&v
 /// only the first (smaller) m_ eigenvalues and eigenvectors are retrieved.
 /// If case lapack fails (info!=0) it throws an exception.
 /// Notice that tensor is assumed to be symmetric!!!
-template<unsigned n,unsigned m>
-void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneric<m,n>&evec) {
+template<typename precision, unsigned n, unsigned m>
+void diagMatSym(const TensorTyped<precision,n,n>&mat,VectorTyped<precision,m>&evals,TensorTyped<precision,m,n>&evec) {
   // some guess number to make sure work is large enough.
   // for correctness it should be >=20. However, it is recommended to be the block size.
   // I put some likely exaggerated number
   constexpr int bs=100;
   // temporary data, on stack so as to avoid allocations
   std::array<int,10*n> iwork;
-  std::array<double,(6+bs)*n> work;
+  std::array<precision,(6+bs)*n> work;
   std::array<int,2*m> isup;
   // documentation says that "matrix is destroyed" !!!
   auto mat_copy=mat;
   // documentation says this is size n (even if m<n)
-  std::array<double,n> evals_tmp;
+  std::array<precision,n> evals_tmp;
   int nn=n;              // dimension of matrix
-  double vl=0.0, vu=1.0; // ranges - not used
+  precision vl=0.0, vu=1.0; // ranges - not used
   int one=1,mm=m;        // minimum and maximum index
-  double abstol=0.0;     // tolerance
+  precision abstol=0.0;     // tolerance
   int mout=0;            // number of eigenvalues found (same as mm)
   int info=0;            // result
   int liwork=iwork.size();
   int lwork=work.size();
-  TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, mat_copy.data(), &nn, &vl, &vu, &one, &mm,
+  TensorGenericAux::local_xsyevr("V", (n==m?"A":"I"), "U", &nn, mat_copy.data(), &nn, &vl, &vu, &one, &mm,
                                  &abstol, &mout, evals_tmp.data(), evec.data(), &nn,
                                  isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if(info!=0)

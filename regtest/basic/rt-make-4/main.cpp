@@ -2,42 +2,58 @@
 #include "plumed/tools/Matrix.h"
 #include "plumed/tools/Tensor.h"
 
-int main () {
+template <typename precision>
+void matrixTest (PLMD::OFile& out) {
 
   // Define symmetric matrix
-  PLMD::Matrix<double> mat1(3,3); PLMD::OFile out; out.open("output");
-  mat1(0,0)=1.0; mat1(0,1)=0.2; mat1(0,2)=0.3;
-  mat1(1,0)=0.2; mat1(1,1)=0.2; mat1(1,2)=0.6;
-  mat1(2,0)=0.3; mat1(2,1)=0.6; mat1(2,2)=0.4;
+  PLMD::Matrix<precision> mat1(3,3);
+  mat1(0,0)=1.0;
+  mat1(0,1)=0.2;
+  mat1(0,2)=0.3;
+  mat1(1,0)=0.2;
+  mat1(1,1)=0.2;
+  mat1(1,2)=0.6;
+  mat1(2,0)=0.3;
+  mat1(2,1)=0.6;
+  mat1(2,2)=0.4;
 
   // Test diagonalize
-  std::vector<double> eigval(3); PLMD::Matrix<double> eigvec(3,3); 
-  diagMat( mat1, eigval, eigvec ); 
+  std::vector<precision> eigval(3);
+  PLMD::Matrix<precision> eigvec(3,3);
+  diagMat( mat1, eigval, eigvec );
   out<<"Eigenvalues "<<eigval[0]<<" "<<eigval[1]<<" "<<eigval[2]<<"\n";
   out<<"Eigenvectors : \n";
-  for(unsigned i=0;i<3;++i){
-      out<<eigvec(i,0)<<" "<<eigvec(i,1)<<" "<<eigvec(i,2)<<"\n";
+  for(unsigned i=0; i<3; ++i) {
+    out<<eigvec(i,0)<<" "<<eigvec(i,1)<<" "<<eigvec(i,2)<<"\n";
   }
 
   // Test inverse
   out<<"Inverse : \n";
-  PLMD::Matrix<double> inverse(3,3); Invert( mat1, inverse );
-  for(unsigned i=0;i<3;++i){ 
-      for(unsigned j=0;j<3;++j) out<<inverse(i,j)<<" ";
-      out<<"\n";
+  PLMD::Matrix<precision> inverse(3,3);
+  Invert( mat1, inverse );
+  for(unsigned i=0; i<3; ++i) {
+    for(unsigned j=0; j<3; ++j) {
+      out<<inverse(i,j)<<" ";
+    }
+    out<<"\n";
   }
 
-  // Test pseudoinverse 
+  // Test pseudoinverse
   out<<"Pseudoinverse : \n";
-  PLMD::Matrix<double> mat(3,2);
-  mat(0,0)=0.1; mat(0,1)=0.2; 
-  mat(1,0)=0.3; mat(1,1)=0.5;
-  mat(2,0)=0.4; mat(2,1)=0.6;
-  PLMD::Matrix<double> pseu(2,3);
+  PLMD::Matrix<precision> mat(3,2);
+  mat(0,0)=0.1;
+  mat(0,1)=0.2;
+  mat(1,0)=0.3;
+  mat(1,1)=0.5;
+  mat(2,0)=0.4;
+  mat(2,1)=0.6;
+  PLMD::Matrix<precision> pseu(2,3);
   pseudoInvert( mat, pseu );
-  for(unsigned i=0;i<pseu.nrows();++i){
-     for(unsigned j=0;j<pseu.ncols();++j) out<<" "<<pseu(i,j);
-     out<<"\n";
+  for(unsigned i=0; i<pseu.nrows(); ++i) {
+    for(unsigned j=0; j<pseu.ncols(); ++j) {
+      out<<" "<<pseu(i,j);
+    }
+    out<<"\n";
   }
 
 
@@ -47,13 +63,13 @@ int main () {
 /// This would trigger an error before fix
 /// f1da0a9b3a13f904bd97d6f92a2fb5e1b6479ac0
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<1,4> evec;
-    PLMD::VectorGeneric<4> eval_underlying;
-    
+    PLMD::TensorTyped<precision,4,4> mat;
+    PLMD::TensorTyped<precision,1,4> evec;
+    PLMD::VectorTyped<precision,4> eval_underlying;
+
     //The both of the two following lines are scary, but on my machine are equivalent
     //PLMD::Vector1d* eval=reinterpret_cast<PLMD::Vector1d*>(eval_underlying.data());
-    auto eval = new(&eval_underlying[0]) PLMD::VectorGeneric<1>;
+    auto eval = new(&eval_underlying[0]) PLMD::VectorTyped<precision,1>;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;
@@ -68,11 +84,11 @@ int main () {
   }
 
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<1,4> evec;
-    PLMD::VectorGeneric<4> eval_underlying;
+    PLMD::TensorTyped<precision,4,4> mat;
+    PLMD::TensorTyped<precision,1,4> evec;
+    PLMD::VectorTyped<precision,4> eval_underlying;
 
-    auto eval = new(&eval_underlying[0]) PLMD::VectorGeneric<1>;
+    auto eval = new(&eval_underlying[0]) PLMD::VectorTyped<precision,1>;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;
@@ -90,9 +106,9 @@ int main () {
 /// This would trigger an error before fix
 /// f1da0a9b3a13f904bd97d6f92a2fb5e1b6479ac0
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<4,4> evec;
-    PLMD::VectorGeneric<4> eval;
+    PLMD::TensorTyped<precision,4,4> mat;
+    PLMD::TensorTyped<precision,4,4> evec;
+    PLMD::VectorTyped<precision,4> eval;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;
@@ -102,19 +118,32 @@ int main () {
 
     out<<"Test diagmat (is matrix modified)\n";
     out<<"Before:\n";
-    for(unsigned i=0;i<4;i++) {
-      for(unsigned j=0;j<4;j++) out<<" "<<mat[i][j];
+    for(unsigned i=0; i<4; i++) {
+      for(unsigned j=0; j<4; j++) {
+        out<<" "<<mat[i][j];
+      }
       out<<"\n";
     }
 
     PLMD::diagMatSym(mat,eval,evec);
 
     out<<"After:\n";
-    for(unsigned i=0;i<4;i++) {
-      for(unsigned j=0;j<4;j++) out<<" "<<mat[i][j];
+    for(unsigned i=0; i<4; i++) {
+      for(unsigned j=0; j<4; j++) {
+        out<<" "<<mat[i][j];
+      }
       out<<"\n";
     }
   }
+}
+int main () {
+  PLMD::OFile out;
+  out.open("output");
+  matrixTest<double>(out);
   out.close();
+  PLMD::OFile out_float;
+  out_float.open("output_float");
+  matrixTest<float>(out_float);
+  out_float.close();
   return 0;
 }
