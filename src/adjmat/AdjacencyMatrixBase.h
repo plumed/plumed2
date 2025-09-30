@@ -473,11 +473,8 @@ void AdjacencyMatrixBase<T>::calculate() {
   }
   // We need to setup the task manager here because at this point we know the size of the sparse matrices
   unsigned nder = 6 + 3*matdata.natoms_per_three_list + virialSize;
-  if( matdata.components ) {
-    taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
-  } else {
-    taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
-  }
+  //there was an if on `matdata.components` but both branches were calling the next line
+  taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
   // Create the workspace that we use in performTask
   taskmanager.setWorkspaceSize(3*(maxcol + 2 + matdata.natoms_per_three_list) );
   // And run all the tasks
