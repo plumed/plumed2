@@ -129,6 +129,7 @@ void ShowGraph::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--plumed","plumed.dat","the plumed input that we are generating the graph for");
   keys.add("compulsory","--out","graph.md","the dot file containing the graph that has been generated");
+  keys.add("compulsory","--natoms","1000000;","the dot file containing the graph that has been generated");
   keys.addFlag("--force",false,"print a graph that shows how forces are passed through the actions");
 }
 
@@ -246,6 +247,8 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--out",outp);
   bool forces;
   parseFlag("--force",forces);
+  int natoms;
+  parse("--natoms",natoms);
 
   // Create a plumed main object and initilize
   PlumedMain p;
@@ -259,7 +262,6 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
   p.cmd("setMDMassUnits",&munit);
   p.cmd("setPlumedDat",inpt.c_str());
   p.cmd("setLog",out);
-  int natoms=1000000;
   p.cmd("setNatoms",&natoms);
   p.cmd("init");
 
