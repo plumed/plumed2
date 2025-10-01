@@ -50,7 +50,9 @@ int main () {
     PLMD::TensorGeneric<4,4> mat;
     PLMD::TensorGeneric<1,4> evec;
     PLMD::VectorGeneric<4> eval_underlying;
-
+    
+    //The both of the two following lines are scary, but on my machine are equivalent
+    //PLMD::Vector1d* eval=reinterpret_cast<PLMD::Vector1d*>(eval_underlying.data());
     auto eval = new(&eval_underlying[0]) PLMD::VectorGeneric<1>;
 
     mat[1][0]=mat[0][1]=3.0;

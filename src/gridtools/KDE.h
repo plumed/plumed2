@@ -265,6 +265,8 @@ class KDE : public ActionWithGrid {
 public:
   using input_type = KDEHelper<K, P, G>;
   using PTM = ParallelTaskManager<KDE<K,P,G>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
 /// The parallel task manager

@@ -131,6 +131,9 @@ namespace volumes {
 
 class VolumeCavity {
 public:
+  using precision=double;
+  typedef VolumeIn<precision> VolumeInput;
+  typedef VolumeOut<precision> VolumeOutput;
   double jacob_det;
   double len_bi, len_cross, len_perp, sigma;
   Vector bi, cross, perp;

@@ -111,7 +111,35 @@ void ActionWithMatrix::transferStashToValues( const std::vector<double>& stash )
   }
 }
 
+void ActionWithMatrix::transferStashToValues( const std::vector<float>& stash ) {
+  unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
+  unsigned m=0, n=0, nrows = getPntrToComponent(0)->getShape()[0];
+  for(unsigned i=0; i<nrows; ++i) {
+    for(unsigned j=0; j<ncols; ++j) {
+      for(unsigned k=0; k<getNumberOfComponents(); ++k) {
+        getPntrToComponent(k)->set( m, stash[n] );
+        n++;
+      }
+      m++;
+    }
+  }
+}
+
 void ActionWithMatrix::transferForcesToStash( std::vector<double>& stash ) const {
+  unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
+  unsigned m=0, n=0, nrows = getConstPntrToComponent(0)->getShape()[0];
+  for(unsigned i=0; i<nrows; ++i) {
+    for(unsigned j=0; j<ncols; ++j) {
+      for(unsigned k=0; k<getNumberOfComponents(); ++k) {
+        stash[n] = getConstPntrToComponent(k)->getForce( m );
+        n++;
+      }
+      m++;
+    }
+  }
+}
+
+void ActionWithMatrix::transferForcesToStash( std::vector<float>& stash ) const {
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
   unsigned m=0, n=0, nrows = getConstPntrToComponent(0)->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {

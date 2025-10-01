@@ -321,6 +321,7 @@ return std::make_unique<SwitchInterface<fixedRational<x>>>( \
       break;
     }
   }
+#undef FIXEDRATIONALENUM
   //continue with the 'at runtime implementation'
   auto data = rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
   if(2*N==M || M == 0) {
@@ -361,6 +362,7 @@ return std::pair <switchType,Data> {switchType::rationalfix##x,Data::init(D0,DMA
       break;
     }
   }
+#undef FIXEDRATIONALENUM
   //continue with the 'at runtime implementation'
   return rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
 }
