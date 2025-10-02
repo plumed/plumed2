@@ -36,9 +36,7 @@ std::ostream& calculateAndSubtract(const SW& sw,
                                    const double value,
                                    const double derivative,
                                    std::ostream& out) {
-  double mydev;
-  double myval;
-  std::tie(myval,mydev) = caller::call(sw,point);
+  auto [myval,mydev] = caller::call(sw,point);
   out << (myval -value)<< " " << (mydev - derivative)<<" " ;
   return out;
 }
@@ -66,13 +64,13 @@ void test(const std::string& name, std::string definition,std::string custom,boo
     std::cerr<<error<<"\n";
   }
   error.clear();
-/*
-  SwitchingFunctionAccelerable swa;
-  swa.set(definition,error);
-  if (!error.empty()) {
-    std::cerr<<error<<"\n";
-  }
-*/
+  /*
+    SwitchingFunctionAccelerable swa;
+    swa.set(definition,error);
+    if (!error.empty()) {
+      std::cerr<<error<<"\n";
+    }
+  */
   os << "point : value deriv vsq_delta dsq_delta "
      "vAcc_delta dAcc_delta "
      //"vAccsq_delta dAccsq_delta "
@@ -150,9 +148,7 @@ int main() {
   "cubic"
 }
     }) {
-    //auto [definition, custom, name] = x;
-    std::string definition, custom, name;
-    std::tie(definition, custom, name) = x;
+    auto [definition, custom, name] = x;
     test (name,definition,custom);
     test (name,definition,custom,false);
 
