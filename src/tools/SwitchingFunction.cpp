@@ -23,6 +23,7 @@
 #include "Tools.h"
 #include "Keywords.h"
 #include "OpenMP.h"
+#include <cmath>
 #include <vector>
 #include <limits>
 #include <algorithm>
@@ -488,14 +489,17 @@ protected:
   }
   inline double calculateSqr(double distance2,double&dfunc) const override {
     double result = 0.0;
-    if(distance2>dmax_2) {
-      dfunc=0.0;
-    } else  {
-      result = exp(-0.5*distance2);
-      dfunc = -result;
-      // stretch:
-      result=result*stretch+shift;
-      dfunc*=stretch;
+    dfunc = 0.0;
+    if (distance2 <dmax_2) {
+      result=1.0;
+
+      if(distance2>0.0) {
+        result = exp(-0.5*distance2);
+        dfunc = -result;
+        // stretch:
+        result=result*stretch+shift;
+        dfunc*=stretch;
+      }
     }
     return result;
   }
