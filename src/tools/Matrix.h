@@ -71,13 +71,13 @@ class Matrix:
   /// Output the Matrix in matrix form
   template <typename U> friend void matrixOut( Log&, const Matrix<U>& );
   /// Diagonalize a symmetric matrix - returns zero if diagonalization worked
-  template <typename U> friend int diagMat( const Matrix<U>&, std::vector<double>&, Matrix<double>& );
+  template <typename U> friend int diagMat( const Matrix<U>&, std::vector<U>&, Matrix<U>& );
   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
-  template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<double>& );
+  template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<U>& );
   /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
-  template <typename U> friend int logdet( const Matrix<U>&, double& );
+  template <typename U> friend int logdet( const Matrix<U>&, U& );
   /// Invert a matrix (works for both symmetric and asymmetric matrices) - returns zero if sucesfull
-  template <typename U> friend int Invert( const Matrix<U>&, Matrix<double>& );
+  template <typename U> friend int Invert( const Matrix<U>&, Matrix<U>& );
   /// Do a cholesky decomposition of a matrix
   template <typename U> friend void cholesky( const Matrix<U>&, Matrix<U>& );
   /// Solve a system of equations using the cholesky decomposition
@@ -310,31 +310,42 @@ template <typename T> void matrixOut( Log& ostr, const Matrix<T>& mat) {
   return;
 }
 
-template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eigenvals, Matrix<double>& eigenvecs ) {
+template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
 
   // Check matrix is square and symmetric
   plumed_assert( A.rw==A.cl );
   plumed_assert( A.isSymmetric()==1 );
-  std::vector<double> da(A.sz);
+  std::vector<T> da(A.sz);
   unsigned k=0;
-  std::vector<double> evals(A.cl);
+  std::vector<T> evals(A.cl);
   // Transfer the matrix to the local array
   for (unsigned i=0; i<A.cl; ++i)
     for (unsigned j=0; j<A.rw; ++j) {
-      da[k++]=static_cast<double>( A(j,i) );
+      da[k++]=static_cast<T>( A(j,i) );
     }
 
   int n=A.cl;
-  int lwork=-1, liwork=-1, m, info, one=1;
-  std::vector<double> work(A.cl);
+  int lwork=-1;
+  int liwork=-1;
+  int m;
+  int info=0;
+  int one=1;
+  std::vector<T> work(A.cl);
   std::vector<int> iwork(A.cl);
-  double vl, vu, abstol=0.0;
+  T vl, vu, abstol=0.0;
   std::vector<int> isup(2*A.cl);
-  std::vector<double> evecs(A.sz);
-
-  plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals.data(), evecs.data(), &n,
-                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  std::vector<T> evecs(A.sz);
+  if constexpr (std::is_same_v<T,double>) {
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "diagMat is only compatible with float and double");
+  }
   if (info!=0) {
     return info;
   }
@@ -345,9 +356,17 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
   lwork=static_cast<int>( work[0] );
   work.resize(lwork);
 
-  plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals.data(), evecs.data(), &n,
-                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  if constexpr (std::is_same_v<T,double>) {
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "diagMat is only compatible with float and double");
+  }
   if (info!=0) {
     return info;
   }
@@ -388,16 +407,18 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
   return 0;
 }
 
-template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseudoinverse ) {
-  std::vector<double> da(A.sz);
+template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinverse ) {
+  std::vector<T> da(A.sz);
   unsigned k=0;
   // Transfer the matrix to the local array
   for (unsigned i=0; i<A.cl; ++i)
     for (unsigned j=0; j<A.rw; ++j) {
-      da[k++]=static_cast<double>( A(j,i) );
+      da[k++]=static_cast<T>( A(j,i) );
     }
 
-  int nsv, info, nrows=A.rw, ncols=A.cl;
+  int nsv;
+  int info=0;
+  int nrows=A.rw, ncols=A.cl;
   if(A.rw>A.cl) {
     nsv=A.cl;
   } else {
@@ -405,15 +426,25 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   }
 
   // Create some containers for stuff from single value decomposition
-  std::vector<double> S(nsv);
-  std::vector<double> U(nrows*nrows);
-  std::vector<double> VT(ncols*ncols);
+  std::vector<T> S(nsv);
+  std::vector<T> U(nrows*nrows);
+  std::vector<T> VT(ncols*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
-  std::vector<double> work(1);
-  plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
+  std::vector<T> work(1);
+  if constexpr (std::is_same_v<T,double> ) {
+    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
+                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+                          &lwork, iwork.data(), &info );
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
+                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+                          &lwork, iwork.data(), &info );
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
+  }
   if(info!=0) {
     return info;
   }
@@ -423,13 +454,23 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   work.resize(lwork);
 
   // This does the singular value decomposition
-  plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
+  if constexpr (std::is_same_v<T,double> ) {
+    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
+                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+                          &lwork, iwork.data(), &info );
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
+                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+                          &lwork, iwork.data(), &info );
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
+  }
   if(info!=0) {
     return info;
   }
 
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
-  double tol;
+  T tol;
   tol=S[0];
   for(int i=1; i<nsv; ++i) {
     if( S[i]>tol ) {
@@ -439,7 +480,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   tol*=nsv*epsilon;
 
   // Get the inverses of the singlular values
-  Matrix<double> Si( ncols, nrows );
+  Matrix<T> Si( ncols, nrows );
   Si=0.0;
   for(int i=0; i<nsv; ++i) {
     if( S[i]>tol ) {
@@ -450,7 +491,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   }
 
   // Now extract matrices for pseudoinverse
-  Matrix<double> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows );
+  Matrix<T> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows );
   k=0;
   for(int i=0; i<nrows; ++i) {
     for(int j=0; j<nrows; ++j) {
@@ -474,14 +515,14 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   return 0;
 }
 
-template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ) {
+template <typename T> int Invert( const Matrix<T>& A, Matrix<T>& inverse ) {
 
   if( A.isSymmetric()==1 ) {
     // GAT -- I only ever use symmetric matrices so I can invert them like this.
     // I choose to do this as I have had problems with the more general way of doing this that
     // is implemented below.
-    std::vector<double> eval(A.rw);
-    Matrix<double> evec(A.rw,A.cl), tevec(A.rw,A.cl);
+    std::vector<T> eval(A.rw);
+    Matrix<T> evec(A.rw,A.cl), tevec(A.rw,A.cl);
     int err;
     err=diagMat( A, eval, evec );
     if(err!=0) {
@@ -493,30 +534,48 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ) 
       }
     mult(tevec,evec,inverse);
   } else {
-    std::vector<double> da(A.sz);
+    std::vector<T> da(A.sz);
     std::vector<int> ipiv(A.cl);
     unsigned k=0;
-    int n=A.rw, info;
+    int n=A.rw;
+    int info=0;
     for(unsigned i=0; i<A.cl; ++i)
       for(unsigned j=0; j<A.rw; ++j) {
-        da[k++]=static_cast<double>( A(j,i) );
+        da[k++]=static_cast<T>( A(j,i) );
       }
-
-    plumed_lapack_dgetrf(&n,&n,da.data(),&n,ipiv.data(),&info);
+    if constexpr (std::is_same_v<T,double> ) {
+      plumed_lapack_dgetrf(&n,&n,da.data(),&n,ipiv.data(),&info);
+    } else if constexpr (std::is_same_v<T,float>) {
+      plumed_lapack_sgetrf(&n,&n,da.data(),&n,ipiv.data(),&info);
+    } else {
+      static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "Invert works only for float and double");
+    }
     if(info!=0) {
       return info;
     }
 
     int lwork=-1;
-    std::vector<double> work(A.cl);
-    plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    std::vector<T> work(A.cl);
+    if constexpr (std::is_same_v<T,double> ) {
+      plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    } else if constexpr (std::is_same_v<T,float>) {
+      plumed_lapack_sgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    } else {
+      static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "Invert works only for float and double");
+    }
     if(info!=0) {
       return info;
     }
 
     lwork=static_cast<int>( work[0] );
     work.resize(lwork);
-    plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    if constexpr (std::is_same_v<T,double> ) {
+      plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    } else if constexpr (std::is_same_v<T,float>) {
+      plumed_lapack_sgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
+    } else {
+      static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "Invert works only for float and double");
+    }
     if(info!=0) {
       return info;
     }
@@ -587,29 +646,41 @@ template <typename T> void chol_elsolve( const Matrix<T>& M, const std::vector<T
   }
 }
 
-template <typename T> int logdet( const Matrix<T>& M, double& ldet ) {
+template <typename T> int logdet( const Matrix<T>& M, T& ldet ) {
   // Check matrix is square and symmetric
   plumed_assert( M.rw==M.cl || M.isSymmetric() );
 
-  std::vector<double> da(M.sz);
+  std::vector<T> da(M.sz);
   unsigned k=0;
-  std::vector<double> evals(M.cl);
+  std::vector<T> evals(M.cl);
   // Transfer the matrix to the local array
   for (unsigned i=0; i<M.rw; ++i)
     for (unsigned j=0; j<M.cl; ++j) {
-      da[k++]=static_cast<double>( M(j,i) );
+      da[k++]=static_cast<T>( M(j,i) );
     }
 
   int n=M.cl;
-  int lwork=-1, liwork=-1, info, m, one=1;
-  std::vector<double> work(M.rw);
+  int lwork=-1;
+  int liwork=-1;
+  int info=0;
+  int m;
+  int one=1;
+  std::vector<T> work(M.rw);
   std::vector<int> iwork(M.rw);
-  double vl, vu, abstol=0.0;
+  T vl, vu, abstol=0.0;
   std::vector<int> isup(2*M.rw);
-  std::vector<double> evecs(M.sz);
-  plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals.data(), evecs.data(), &n,
-                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  std::vector<T> evecs(M.sz);
+  if constexpr (std::is_same_v<T,double> ) {
+    plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_ssyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "logdet works only for float and double");
+  }
   if (info!=0) {
     return info;
   }
@@ -619,10 +690,17 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ) {
   work.resize(lwork);
   liwork=iwork[0];
   iwork.resize(liwork);
-
-  plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals.data(), evecs.data(), &n,
-                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  if constexpr (std::is_same_v<T,double> ) {
+    plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else if constexpr (std::is_same_v<T,float>) {
+    plumed_lapack_ssyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                         &abstol, &m, evals.data(), evecs.data(), &n,
+                         isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
+  } else {
+    static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "logdet works only for float and double");
+  }
   if (info!=0) {
     return info;
   }
