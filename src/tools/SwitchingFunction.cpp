@@ -23,6 +23,7 @@
 #include "Tools.h"
 #include "Keywords.h"
 #include "OpenMP.h"
+#include <cmath>
 #include <vector>
 #include <limits>
 #include <algorithm>
@@ -407,11 +408,18 @@ struct fastgaussianSwitch: public baseSwitch<fastgaussianSwitch> {
     double result = 0.0;
     double dfunc = 0.0;
     if(distance2<data.dmax_2) {
-      result = exp(-0.5*distance2);
-      dfunc = -result;
-      // stretch:
-      result=result*data.stretch+data.shift;
-      dfunc*=data.stretch;
+      result=1.0;
+      if(distance2 >0.0) {
+        result = exp(-0.5*distance2);
+        dfunc = -result;
+        //I have to multiply and then divide dfunc by sqrt(distance2)
+        //by omitting that I get a funny wrong value of the derivative in 0
+        //by not omitting that I get a funny nan becasue I divide by 0
+        //hence the extra if
+        // stretch:
+        result=result*data.stretch+data.shift;
+        dfunc*=data.stretch;
+      }
     }
     return {result,dfunc};
   }
