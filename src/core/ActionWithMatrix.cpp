@@ -103,9 +103,11 @@ void ActionWithMatrix::transferStashToValues( const std::vector<double>& stash )
   unsigned m=0, n=0, nrows = getPntrToComponent(0)->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
     unsigned ncr = getPntrToComponent(0)->getRowLength(i);
+#ifndef NDEBUG
     for(unsigned k=1; k<ncomp; ++k) {
       plumed_assert( ncr == getPntrToComponent(k)->getRowLength(i) );
     }
+#endif
     for(unsigned j=0; j<ncr; ++j) {
       for(unsigned k=0; k<ncomp; ++k) {
         getPntrToComponent(k)->set( m+j, stash[n+j*ncomp+k] );
@@ -122,9 +124,11 @@ void ActionWithMatrix::transferForcesToStash( std::vector<double>& stash ) const
   unsigned m=0, n=0, nrows = getConstPntrToComponent(0)->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
     unsigned ncr = getConstPntrToComponent(0)->getRowLength(i);
+#ifndef NDEBUG
     for(unsigned k=1; k<ncomp; ++k) {
       plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(i) );
     }
+#endif
     for(unsigned j=0; j<ncr; ++j) {
       for(unsigned k=0; k<ncomp; ++k) {
         stash[n+j*ncomp+k] = getConstPntrToComponent(k)->getForce( m+j );
