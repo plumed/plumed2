@@ -97,45 +97,41 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   }
 }
 
-void ActionWithMatrix::transferStashToValues( const std::vector<double>& stash ) {
+void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
-  unsigned m=0, n=0, nrows = getPntrToComponent(0)->getShape()[0];
+  unsigned nrows = partialTaskList.size();
   for(unsigned i=0; i<nrows; ++i) {
-    unsigned ncr = getPntrToComponent(0)->getRowLength(i);
+    unsigned ncr = getPntrToComponent(0)->getRowLength(partialTaskList[i]);
 #ifndef NDEBUG
     for(unsigned k=1; k<ncomp; ++k) {
-      plumed_assert( ncr == getPntrToComponent(k)->getRowLength(i) );
+      plumed_assert( ncr == getPntrToComponent(k)->getRowLength(partialTaskList[i]) );
     }
 #endif
     for(unsigned j=0; j<ncr; ++j) {
       for(unsigned k=0; k<ncomp; ++k) {
-        getPntrToComponent(k)->set( m+j, stash[n+j*ncomp+k] );
+        getPntrToComponent(k)->set( partialTaskList[i]*ncols+j, stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] );
       }
     }
-    n += ncols*ncomp;
-    m += ncols;
   }
 }
 
-void ActionWithMatrix::transferForcesToStash( std::vector<double>& stash ) const {
+void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
-  unsigned m=0, n=0, nrows = getConstPntrToComponent(0)->getShape()[0];
+  unsigned nrows = partialTaskList.size();
   for(unsigned i=0; i<nrows; ++i) {
-    unsigned ncr = getConstPntrToComponent(0)->getRowLength(i);
+    unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
 #ifndef NDEBUG
     for(unsigned k=1; k<ncomp; ++k) {
-      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(i) );
+      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
     }
 #endif
     for(unsigned j=0; j<ncr; ++j) {
       for(unsigned k=0; k<ncomp; ++k) {
-        stash[n+j*ncomp+k] = getConstPntrToComponent(k)->getForce( m+j );
+        stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
       }
     }
-    n += ncols*ncomp;
-    m += ncols;
   }
 }
 

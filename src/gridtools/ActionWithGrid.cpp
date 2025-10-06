@@ -44,7 +44,7 @@ ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
   ActionWithVector(ao) {
 }
 
-void ActionWithGrid::transferStashToValues( const std::vector<double>& stash ) {
+void ActionWithGrid::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);

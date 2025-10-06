@@ -217,22 +217,24 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   }
 }
 
-void ActionWithVector::transferStashToValues( const std::vector<double>& stash ) {
+void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
+  unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      myval->set( j, stash[j*ncomponents+i] );
+    for(unsigned j=0; j<ntask; ++j) {
+      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
     }
   }
 }
 
-void ActionWithVector::transferForcesToStash( std::vector<double>& stash ) const {
+void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
+  unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {
     auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      stash[j*ncomponents+i] = myval->getForce( j );
+    for(unsigned j=0; j<ntask; ++j) {
+      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
     }
   }
 }
