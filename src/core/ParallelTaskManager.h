@@ -53,7 +53,8 @@ void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
   ranks.resize( nargs );
   shapestarts.resize( nargs );
   argstarts.resize( nargs );
-  std::size_t s = 0, ts = 0;
+  std::size_t s = 0;
+  std::size_t ts = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = action->getPntrToArgument(i);
     shapestarts[i] = ts;
