@@ -120,7 +120,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
     for(unsigned j=nargs-nmask; j<nargs; ++j) {
       Value* myarg = getPntrToArgument(j);
       if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-        if( fabs(myarg->get(itask))>0 ) {
+        if( fabs(myarg->get(itask))>0.0 ) {
           return 1;
         }
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
@@ -141,14 +141,14 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
       if( myarg->getRank()==0 ) {
         return 1;
       } else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-        if( fabs(myarg->get(itask))>0 ) {
+        if( fabs(myarg->get(itask))>0.0 ) {
           return 1;
         }
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-        unsigned ncol = myarg->getRowLength(itask);
-        unsigned base = itask*myarg->getNumberOfColumns();
+        const unsigned ncol = myarg->getRowLength(itask);
+        const unsigned base = itask*myarg->getNumberOfColumns();
         for(unsigned k=0; k<ncol; ++k) {
-          if( fabs(myarg->get(base+k,false))>0 ) {
+          if( fabs(myarg->get(base+k,false))>0.0 ) {
             return 1;
           }
         }
@@ -169,22 +169,12 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   unsigned ntasks=0;
   getNumberOfTasks( ntasks );
 
-  std::vector<int> taskFlags( ntasks, -1 );
+  active_tasks.resize(0);
+  active_tasks.reserve(ntasks);
   for(unsigned i=0; i<ntasks; ++i) {
-    taskFlags[i] = checkTaskIsActive(i);
-  }
-  unsigned nt=0;
-  for(unsigned i=0; i<ntasks; ++i) {
-    if( taskFlags[i]>0 ) {
-      nt++;
-    }
-  }
-  active_tasks.resize(nt);
-  nt=0;
-  for(unsigned i=0; i<ntasks; ++i) {
-    if( taskFlags[i]>0 ) {
-      active_tasks[nt]=i;
-      nt++;
+    if( checkTaskIsActive(i)>0 ) {
+//no resize are triggered, since we have reserved the number of tasks
+      active_tasks.push_back(i);
     }
   }
   return active_tasks;
@@ -210,10 +200,7 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
-      inputdata[total_args] = myarg->get(j,false);
-      total_args++;
-    }
+    total_args+= myarg->assignValues(View{&inputdata[total_args],inputdata.size()-total_args});
   }
 }
 

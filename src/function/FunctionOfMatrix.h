@@ -232,8 +232,7 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
   }
   active_tasks.resize( atsize );
 
-  unsigned base=0, k=0;
-  for(unsigned i=0; i<nrows; ++i) {
+  for(unsigned i=0, base=0,k=0; i<nrows; ++i) {
     unsigned ncols = myarg->getRowLength(i);
     for(unsigned j=0; j<ncols; ++j) {
       active_tasks[k] = base+j;
