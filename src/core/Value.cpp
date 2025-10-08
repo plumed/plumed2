@@ -285,7 +285,7 @@ bool Value::checkValueIsActiveForMMul(const std::size_t task) const {
     }
     return false;
   }
-  return std::any_of(&data[base],&data[base+ncol],[](double x) {
+  return std::any_of(&data[base],&data[base]+ncol,[](double x) {
     return std::fabs(x)>0.0;
   });
 
