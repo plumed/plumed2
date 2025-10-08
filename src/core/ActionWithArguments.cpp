@@ -381,11 +381,7 @@ void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const 
     nargs=nargs-av->getNumberOfMasks();
   }
   for(unsigned i=0; i<nargs; ++i) {
-    unsigned nvals = arguments[i]->getNumberOfStoredValues();
-    for(unsigned j=0; j<nvals; ++j) {
-      arguments[i]->addForce( j, forces[ind], false );
-      ind++;
-    }
+    ind += arguments[i]->addForces(View(&forces[ind],forces.size()-ind));
   }
 }
 

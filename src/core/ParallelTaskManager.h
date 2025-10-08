@@ -53,7 +53,8 @@ void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
   ranks.resize( nargs );
   shapestarts.resize( nargs );
   argstarts.resize( nargs );
-  std::size_t s = 0, ts = 0;
+  std::size_t s = 0;
+  std::size_t ts = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = action->getPntrToArgument(i);
     shapestarts[i] = ts;
@@ -713,7 +714,7 @@ void ParallelTaskManager<T>::runAllTasks() {
     }
   }
 // And transfer the value to the output values
-  action->transferStashToValues( value_stash );
+  action->transferStashToValues( partialTaskList, value_stash );
 }
 
 #ifdef __PLUMED_USE_OPENACC
@@ -876,7 +877,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
-  action->transferForcesToStash( value_stash );
+  action->transferForcesToStash( partialTaskList, value_stash );
 
   if( useacc ) {
 #ifdef __PLUMED_USE_OPENACC

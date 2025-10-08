@@ -225,13 +225,18 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
   } else {
     myarg = getPntrToArgument(argstart);
   }
-
-  unsigned base=0;
+  unsigned atsize = 0;
   unsigned nrows = myarg->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
+    atsize += myarg->getRowLength(i);
+  }
+  active_tasks.resize( atsize );
+
+  for(unsigned i=0, base=0,k=0; i<nrows; ++i) {
     unsigned ncols = myarg->getRowLength(i);
     for(unsigned j=0; j<ncols; ++j) {
-      active_tasks.push_back(base+j);
+      active_tasks[k] = base+j;
+      ++k;
     }
     base += myarg->getNumberOfColumns();
   }

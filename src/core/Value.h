@@ -29,6 +29,7 @@
 #include "tools/Tools.h"
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
+#include "tools/View.h"
 
 namespace PLMD {
 
@@ -126,7 +127,11 @@ public:
 /// Get the location of this element of in the store
   std::size_t getIndexInStore( const std::size_t& ival ) const ;
 /// Get the value of the function
-  double get( const std::size_t& ival=0, const bool trueind=true ) const;
+  double get( const std::size_t ival=0, const bool trueind=true ) const;
+/// A variant of get() for checking that at least one of the values on the row is !=0
+  bool checkValueIsActiveForMMul(std::size_t task) const;
+/// A variant of get() for assigning data to an external view (assuems trueind=false), returns the number of arguments assigned
+  std::size_t assignValues(View<double> target);
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -165,6 +170,8 @@ public:
   void addForce(double f);
 /// Add some force on the ival th component of this value
   void addForce( const std::size_t& ival, double f, const bool trueind=true );
+  ///Add forces from a vector, imples trueInd=false and retunrs the number of forces assigned
+  std::size_t addForces(View<const double> f);
 /// Get the value of the force on this colvar
   double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
@@ -226,7 +233,7 @@ public:
 ///
   unsigned getRowLength( const std::size_t& irow ) const ;
 ///
-  unsigned getRowIndex( const std::size_t& irow, const std::size_t& jind ) const ;
+  unsigned getRowIndex( std::size_t irow, std::size_t jind ) const ;
 ///
   void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
 ///
@@ -482,7 +489,7 @@ unsigned Value::getRowLength( const std::size_t& irow ) const {
 }
 
 inline
-unsigned Value::getRowIndex( const std::size_t& irow, const std::size_t& jind ) const {
+unsigned Value::getRowIndex(const std::size_t irow, const std::size_t jind ) const {
   plumed_dbg_massert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow], "failing in value " + name );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
 }
