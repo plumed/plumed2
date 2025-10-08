@@ -231,12 +231,12 @@ std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( Action
     return active_tasks;
   }
 
-  unsigned atsize = 0;         
+  unsigned atsize = 0;
   Value* myarg = getPntrToArgument(0);
   unsigned nrows = myarg->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
     atsize += myarg->getRowLength(i);
-  }                            
+  }
   active_tasks.resize( atsize );
 
   unsigned base=0, k=0;
