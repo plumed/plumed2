@@ -237,7 +237,7 @@ jobs:
         make -C docker rocky8
 
   macports:
-    runs-on: macos-13
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
@@ -279,7 +279,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
     - name: Set paths
@@ -308,7 +308,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04 , macos-13, macos-14 ]
+        os: [ubuntu-22.04 , macos-15, macos-15-intel ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
