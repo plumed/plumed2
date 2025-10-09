@@ -159,8 +159,13 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
 class OutputProductMin {
 public:
   static void registerKeywords( Keywords& keys );
-  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action );
-  static void calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output );
+  void setup( const std::vector<std::size_t>& shape,
+              const std::string& func,
+              OuterProductBase<OutputProductMin>* action );
+  static void calculate( bool noderiv,
+                         const OutputProductMin& actdata,
+                         View<double> vals,
+                         MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMin> opmin;
@@ -170,12 +175,17 @@ void OutputProductMin::registerKeywords( Keywords& keys ) {
   OuterProduct::getKeywords( keys );
 }
 
-void OutputProductMin::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMin>* action ) {
+void OutputProductMin::setup( const std::vector<std::size_t>& shape,
+                              const std::string& func,
+                              OuterProductBase<OutputProductMin>* action ) {
   plumed_assert( func=="min" );
   action->log.printf("  taking minimum of two input vectors \n");
 }
 
-void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata, View<double> vals, MatrixElementOutput& output ) {
+void OutputProductMin::calculate( bool noderiv,
+                                  const OutputProductMin& actdata,
+                                  View<double> vals,
+                                  MatrixElementOutput& output ) {
   if( vals[0]<vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -190,8 +200,13 @@ void OutputProductMin::calculate( bool noderiv, const OutputProductMin& actdata,
 class OutputProductMax {
 public:
   static void registerKeywords( Keywords& keys );
-  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action );
-  static void calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output );
+  void setup( const std::vector<std::size_t>& shape,
+              const std::string& func,
+              OuterProductBase<OutputProductMax>* action );
+  static void calculate( bool noderiv,
+                         const OutputProductMax& actdata,
+                         View<const double> vals,
+                         MatrixElementOutput& output );
 };
 
 typedef OuterProductBase<OutputProductMax> opmax;
@@ -201,12 +216,17 @@ void OutputProductMax::registerKeywords( Keywords& keys ) {
   OuterProduct::getKeywords( keys );
 }
 
-void OutputProductMax::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductMax>* action ) {
+void OutputProductMax::setup( const std::vector<std::size_t>& shape,
+                              const std::string& func,
+                              OuterProductBase<OutputProductMax>* action ) {
   plumed_assert( func=="max" );
   action->log.printf("  taking maximum of two input vectors \n");
 }
 
-void OutputProductMax::calculate( bool noderiv, const OutputProductMax& actdata, View<double> vals, MatrixElementOutput& output ) {
+void OutputProductMax::calculate( bool noderiv,
+                                  const OutputProductMax& actdata,
+                                  View<const double> vals,
+                                  MatrixElementOutput& output ) {
   if( vals[0]>vals[1] ) {
     output.derivs[0][0] = 1;
     output.derivs[0][1] = 0;
@@ -223,8 +243,13 @@ public:
   std::string inputf;
   LeptonCall function;
   static void registerKeywords( Keywords& keys );
-  void setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action );
-  static void calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output );
+  void setup( const std::vector<std::size_t>& shape,
+              const std::string& func,
+              OuterProductBase<OutputProductFunc>* action );
+  static void calculate( bool noderiv,
+                         const OutputProductFunc& actdata,
+                         View<const double> vals,
+                         MatrixElementOutput& output );
   OutputProductFunc& operator=( const OutputProductFunc& m ) {
     inputf = m.inputf;
     std::vector<std::string> var(2);
@@ -242,7 +267,9 @@ void OutputProductFunc::registerKeywords( Keywords& keys ) {
   OuterProduct::getKeywords( keys );
 }
 
-void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std::string& func, OuterProductBase<OutputProductFunc>* action ) {
+void OutputProductFunc::setup( const std::vector<std::size_t>& shape,
+                               const std::string& func,
+                               OuterProductBase<OutputProductFunc>* action ) {
   action->log.printf("  with function : %s \n", func.c_str() );
   inputf = func;
   std::vector<std::string> var(2);
@@ -251,13 +278,13 @@ void OutputProductFunc::setup( const std::vector<std::size_t>& shape, const std:
   function.set( func, var, action );
 }
 
-void OutputProductFunc::calculate( bool noderiv, const OutputProductFunc& actdata, View<double> vals, MatrixElementOutput& output ) {
-  std::vector<double> vvv(2);
-  vvv[0]=vals[0];
-  vvv[1] = vals[1];
-  output.values[0] = actdata.function.evaluate( vvv );
-  output.derivs[0][0] = actdata.function.evaluateDeriv( 0, vvv );
-  output.derivs[0][1] = actdata.function.evaluateDeriv( 1, vvv );
+void OutputProductFunc::calculate( bool noderiv,
+                                   const OutputProductFunc& actdata,
+                                   View<const double> vals,
+                                   MatrixElementOutput& output ) {
+  output.values[0] = actdata.function.evaluate( vals );
+  output.derivs[0][0] = actdata.function.evaluateDeriv( 0, vals );
+  output.derivs[0][1] = actdata.function.evaluateDeriv( 1, vals );
 }
 
 }
