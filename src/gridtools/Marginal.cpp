@@ -32,10 +32,10 @@ The marginals of the function $f(x,y)$ are defined as:
 
 $$
 g(y) = \int f(x,y) \textrm{d}x \qquad \textrm{and} \qquad h(x) = \int f(x,y) \textrm{d}y
-$$ 
+$$
 
-This action takes a function of two or more coordinates that is stored on a grid in input.  The marginal 
-of the input function is then computed via numerical integration.  To see how this works in practice 
+This action takes a function of two or more coordinates that is stored on a grid in input.  The marginal
+of the input function is then computed via numerical integration.  To see how this works in practice
 consider the following input:
 
 ```plumed
@@ -47,11 +47,11 @@ m1: MARGINAL ARG=k DIR=1
 DUMPGRID ARG=m1 FILE=func_x.grid STRIDE=1
 m2: MARGINAL ARG=k DIR=2
 DUMPGRID ARG=m1 FILE=func_y.grid STRIDE=1
-``` 
+```
 
 This input uses the [KDE](KDE.md) action to compute a distribution from  the x and y components of the distances
-that were computed using the [DISTANCE](DISTANCE.md) command.  We then output this two dimensional histogram and 
-use the MARGINAL command to compute the distributions for the x and y components of the vector separately.  
+that were computed using the [DISTANCE](DISTANCE.md) command.  We then output this two dimensional histogram and
+use the MARGINAL command to compute the distributions for the x and y components of the vector separately.
 
 */
 //+ENDPLUMEDOC
@@ -70,6 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void read( MarginalInput& func, ActionWithArguments* action );
   MarginalInput& operator=( const MarginalInput& m ) {
+    dir = m.dir;
     function = m.function;
     gridact = m.gridact;
     return *this;
