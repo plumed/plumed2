@@ -92,7 +92,7 @@ Gradient::Gradient(const ActionOptions&ao):
     if( dir=="x" ) {
       thislab = getShortcutLabel();
     }
-    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_xhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
+    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_xhisto INTERPOLATION_TYPE=ceiling GRID_BIN=" + nbin_str );
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_xhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }
@@ -102,7 +102,7 @@ Gradient::Gradient(const ActionOptions&ao):
     if( dir=="y" ) {
       thislab = getShortcutLabel();
     }
-    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_yhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
+    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_yhisto INTERPOLATION_TYPE=ceiling GRID_BIN=" + nbin_str );
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_yhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }
@@ -112,7 +112,7 @@ Gradient::Gradient(const ActionOptions&ao):
     if( dir=="z" ) {
       thislab = getShortcutLabel();
     }
-    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_zhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
+    readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_zhisto INTERPOLATION_TYPE=ceiling GRID_BIN=" + nbin_str );
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_zhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM ARG=" + thislab + "_x2 PERIODIC=NO");
   }

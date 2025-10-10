@@ -129,7 +129,11 @@ double DiagonalKernelParams::evaluateR2( const RegularKernel<DiagonalKernelParam
   double r2 = 0;
   for(unsigned i=0; i<x.size(); ++i) {
     double tmp = RegularKernel<DiagonalKernelParams>::difference( p, i, x[i], kp.at[i] );
-    paramderivs[i] = tmp/(kp.sigma[i]*kp.sigma[i]);
+    if( fabs(tmp)<epsilon ) {
+      paramderivs[i]=0;
+    } else {
+      paramderivs[i] = tmp/(kp.sigma[i]*kp.sigma[i]);
+    }
     r2 += tmp*paramderivs[i];
   }
   return r2;

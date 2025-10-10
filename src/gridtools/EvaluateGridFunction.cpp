@@ -119,6 +119,9 @@ void EvaluateGridFunction::calc( const EvaluateGridFunction& func, bool noderiv,
       } else {
         ind[i] = ind[i] + 1;
       }
+      if( X<epsilon ) {
+        continue ;
+      }
       funcout.values[0] += ( func.function->get( gridobject.getIndex(ind) ) - y1 )*X;
       if( noderiv ) {
         continue ;

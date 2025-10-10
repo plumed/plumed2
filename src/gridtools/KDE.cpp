@@ -311,10 +311,15 @@ void KDEGridTools<K,P>::readBandwidth( std::size_t nargs, ActionWithArguments* a
       action->plumed.readInputWords( Tools::getWords( bw[i] + ": CUSTOM ARG=" + action->getLabel() + "_bwones," + action->getLabel() + "_scalar_bw" + str_i + " FUNC=x*y PERIODIC=NO"), false );
     }
   } else if( bw.size()==nargs ) {
+    double bwval;
     std::string str_i;
     for(unsigned i=0; i<nargs; ++i) {
       Tools::convert( i+1, str_i );
-      KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bw" + str_i, true );
+      if( Tools::convertNoexcept( bw[i], bwval ) && fabs(bwval)<epsilon ) {
+        KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bwz" + str_i, true );
+      } else {
+        KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bw" + str_i, true );
+      }
     }
   } else {
     action->error("wrong number of arguments specified in input to bandwidth parameter");
@@ -399,10 +404,19 @@ void KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>
 template <class K, class P>
 void KDEGridTools<K, P>::convertHeightsToVolumes( const std::size_t& nargs, const std::vector<std::string>& bw, const std::string& volstr, ActionWithArguments* action ) {
   if( bw.size()==nargs ) {
+    unsigned nonzeroargs=0;
+    for(unsigned i=0; i<nargs; ++i) {
+      if( bw[i].find("_bwz")==std::string::npos ) {
+        nonzeroargs++;
+      }
+    }
     std::string str_i, nargs_str;
-    Tools::convert( nargs, nargs_str );
+    Tools::convert( nonzeroargs, nargs_str );
     std::string varstr = "VAR=h", funcstr = "FUNC=h/(sqrt((2*pi)^" + nargs_str + ")", argstr = "ARG=" + volstr;
     for(unsigned i=0; i<nargs; ++i) {
+      if( bw[i].find("_bwz")!=std::string::npos ) {
+        continue;
+      }
       Tools::convert( i+1, str_i );
       varstr += ",b" + str_i;
       funcstr += "*b" + str_i;
