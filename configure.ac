@@ -398,6 +398,9 @@ if test $basic_warnings = true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
+  if ! test $openacc = true; then
+    PLUMED_CHECK_CXXFLAG([-Wno-unknown-pragmas])
+  fi
 fi
 
 if test -n "$cxx_level"
