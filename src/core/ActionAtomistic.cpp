@@ -124,7 +124,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   masses.resize(nat);
   charges.resize(nat);
   atom_value_ind.resize( a.size() );
-  int n=getTotAtoms();
+  unsigned n=getTotAtoms();
   if(clearDep) {
     clearDependencies();
   }
@@ -151,11 +151,11 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   atom_value_ind_grouped.clear();
 
   if(atom_value_ind.size()>0) {
-    auto nn = atom_value_ind[0].first;
-    auto kk = atom_value_ind[0].second;
-    atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
-    atom_value_ind_grouped.back().second.push_back(kk);
-    auto prev_nn=nn;
+    auto prev_nn=atom_value_ind[0].first;
+    atom_value_ind_grouped.push_back(
+      std::pair<std::size_t,std::vector<std::size_t>>(
+        prev_nn, {}));
+    atom_value_ind_grouped.back().second.push_back(atom_value_ind[0].second);
     for(unsigned i=1; i<atom_value_ind.size(); i++) {
       auto nn = atom_value_ind[i].first;
       auto kk = atom_value_ind[i].second;
@@ -208,13 +208,13 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   std::vector<Vector> savedPositions(natoms);
   const double delta=std::sqrt(epsilon);
 
-  for(int i=0; i<natoms; i++)
+  for(unsigned i=0; i<natoms; i++)
     for(int k=0; k<3; k++) {
       savedPositions[i][k]=positions[i][k];
       positions[i][k]=positions[i][k]+delta;
       a->calculate();
       positions[i][k]=savedPositions[i][k];
-      for(int j=0; j<nval; j++) {
+      for(unsigned j=0; j<nval; j++) {
         value[j*natoms+i][k]=a->getOutputQuantity(j);
       }
     }
@@ -222,32 +222,32 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   for(int i=0; i<3; i++)
     for(int k=0; k<3; k++) {
       double arg0=box(i,k);
-      for(int j=0; j<natoms; j++) {
+      for(unsigned j=0; j<natoms; j++) {
         positions[j]=pbc.realToScaled(positions[j]);
       }
       box(i,k)=box(i,k)+delta;
       pbc.setBox(box);
-      for(int j=0; j<natoms; j++) {
+      for(unsigned j=0; j<natoms; j++) {
         positions[j]=pbc.scaledToReal(positions[j]);
       }
       a->calculate();
       box(i,k)=arg0;
       pbc.setBox(box);
-      for(int j=0; j<natoms; j++) {
+      for(unsigned j=0; j<natoms; j++) {
         positions[j]=savedPositions[j];
       }
-      for(int j=0; j<nval; j++) {
+      for(unsigned j=0; j<nval; j++) {
         valuebox[j](i,k)=a->getOutputQuantity(j);
       }
     }
 
   a->calculate();
   a->clearDerivatives();
-  for(int j=0; j<nval; j++) {
+  for(unsigned j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()) {
-      for(int i=0; i<natoms; i++)
+      for(unsigned i=0; i<natoms; i++)
         for(int k=0; k<3; k++) {
           double d=(value[j*natoms+i][k]-ref)/delta;
           v->addDerivative(startnum+3*i+k,d);
@@ -315,20 +315,20 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
       std::string symbol=strings[i].substr(1);
       if(symbol=="allatoms") {
-        auto n=0;
-        for(unsigned i=0; i<xpos.size(); ++i) {
-          n += xpos[i]->getNumberOfValues();
+        unsigned n=0;
+        for(unsigned ii=0; ii<xpos.size(); ++ii) {
+          n += xpos[ii]->getNumberOfValues();
         }
         t.reserve(n);
-        for(unsigned i=0; i<n; i++) {
-          t.push_back(AtomNumber::index(i));
+        for(unsigned ii=0; ii<n; ii++) {
+          t.push_back(AtomNumber::index(ii));
         }
         ok=true;
       } else if(symbol=="mdatoms") {
         const auto n=xpos[0]->getNumberOfValues();
         t.reserve(t.size()+n);
-        for(unsigned i=0; i<n; i++) {
-          t.push_back(AtomNumber::index(i));
+        for(unsigned ii=0; ii<n; ii++) {
+          t.push_back(AtomNumber::index(ii));
         }
         ok=true;
       } else if(Tools::startWith(symbol,"ndx:")) {
@@ -357,19 +357,19 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
         bool firstgroup=true;
         bool groupfound=false;
         while(ifile.getline(line)) {
-          std::vector<std::string> words=Tools::getWords(line);
-          if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
+          std::vector<std::string> groupWords=Tools::getWords(line);
+          if(groupWords.size()>=3 && groupWords[0]=="[" && groupWords[2]=="]") {
             if(groupname.length()>0) {
               firstgroup=false;
             }
-            groupname=words[1];
+            groupname=groupWords[1];
             if(groupname==ndxgroup || ndxgroup.length()==0) {
               groupfound=true;
             }
           } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
-            for(unsigned i=0; i<words.size(); i++) {
+            for(unsigned ii=0; ii<groupWords.size(); ii++) {
               AtomNumber at;
-              Tools::convert(words[i],at);
+              Tools::convert(groupWords[ii],at);
               t.push_back(at);
             }
           }
