@@ -122,7 +122,7 @@ void FunctionData<T>::setup( T& myfunc,
     }
   }
   if( options.derivativeZeroIfValueIsZero ) {
-    for(int i=0; i<action->getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
       (action->copyOutput(i))->setDerivativeIsZeroWhenValueIsZero();
     }
   }

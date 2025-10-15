@@ -186,7 +186,7 @@ RDF::RDF(const ActionOptions&ao):
     std::string num, str_values;
     Tools::convert( 0, str_values );
     Tools::convert( shape_str[0], iatoms );
-    for(unsigned i=1; i<iatoms; ++i) {
+    for(int i=1; i<iatoms; ++i) {
       Tools::convert( i, num );
       str_values += "," + num;
     }

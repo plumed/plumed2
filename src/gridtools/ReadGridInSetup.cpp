@@ -193,9 +193,12 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     }
     log.printf(")\n");
 
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
-    log<<"  function as parsed by lepton: "<<pe<<"\n";
-    lepton::CompiledExpression expression=pe.createCompiledExpression();
+    lepton::CompiledExpression expression=[&](const lepton::ParsedExpression& pe) {
+      log<<"  function as parsed by lepton: "<<pe<<"\n";
+      return pe.createCompiledExpression();
+    }
+    (lepton::Parser::parse(func).optimize(leptonConstants));
+
     for(auto &p: expression.getVariables()) {
       if(std::find(dernames.begin(),dernames.end(),p)==dernames.end()) {
         error("variable " + p + " is not defined");

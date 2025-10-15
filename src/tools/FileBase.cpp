@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FileBase.h"
+#include "FileTools.h"
 #include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
@@ -30,7 +31,6 @@
 #include <cstring>
 #include <cstdlib>
 
-#include <iostream>
 #include <string>
 
 #ifdef __PLUMED_HAS_ZLIB
@@ -39,9 +39,9 @@
 
 namespace PLMD {
 
-FileBase& FileBase::link(FILE*fp) {
-  plumed_massert(!this->fp,"cannot link an already open file");
-  this->fp=fp;
+FileBase& FileBase::link(FILE*newfp) {
+  plumed_massert(!fp,"cannot link an already open file");
+  fp=newfp;
   cloned=true;
   return *this;
 }
@@ -53,44 +53,38 @@ FileBase& FileBase::flush() {
   return *this;
 }
 
-FileBase& FileBase::link(Communicator&comm) {
+FileBase& FileBase::link(Communicator&setcomm) {
   plumed_massert(!fp,"cannot link an already open file");
-  this->comm=&comm;
+  comm=&setcomm;
   return *this;
 }
 
-FileBase& FileBase::link(PlumedMain&plumed) {
+FileBase& FileBase::link(PlumedMain&plumedmain) {
   plumed_massert(!fp,"cannot link an already open file");
-  this->plumed=&plumed;
-  link(plumed.comm);
+  plumed=&plumedmain;
+  link(plumed->comm);
   return *this;
 }
 
-FileBase& FileBase::link(Action&action) {
+FileBase& FileBase::link(Action&actiontolink) {
   plumed_massert(!fp,"cannot link an already open file");
-  this->action=&action;
-  link(action.plumed);
+  action=&actiontolink;
+  link(action->plumed);
   return *this;
 }
 
-bool FileBase::FileExist(const std::string& path) {
+bool FileBase::FileExist(const std::string& setpath) {
   bool do_exist=false;
-  this->path=appendSuffix(path,getSuffix());
+  path=appendSuffix(setpath,getSuffix());
   mode="r";
   // first try with suffix
-  FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-// call fclose when ff goes out of scope
-  auto deleter=[](auto f) {
-    if(f) {
-      std::fclose(f);
-    }
-  };
-  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(ff,deleter);
+  FILE *ff=std::fopen(const_cast<char*>(path.c_str()),"r");
+  unique_FILE fp_deleter(ff);
 
   if(!ff) {
-    this->path=path;
+    path=setpath;
     // then try without suffic
-    ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    ff=std::fopen(const_cast<char*>(path.c_str()),"r");
     mode="r";
   }
   if(ff) {
@@ -110,7 +104,7 @@ bool FileBase::isOpen() {
   return isopen;
 }
 
-void        FileBase::close() {
+void FileBase::close() {
   plumed_assert(!cloned);
   eof=false;
   err=false;

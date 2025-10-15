@@ -99,7 +99,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
   void getInputData( std::vector<double>& inputdata ) const override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;

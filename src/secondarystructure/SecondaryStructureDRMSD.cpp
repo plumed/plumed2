@@ -224,7 +224,7 @@ public:
 };
 
 typedef SecondaryStructureBase<SecondaryStructureDRMSDInput> colv;
-PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_DRMSD");
+PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_DRMSD")
 
 void SecondaryStructureDRMSDInput::setReferenceStructure(
   std::string /*type*/,
@@ -262,12 +262,14 @@ void SecondaryStructureDRMSDInput::calculateDistance(
   const SecondaryStructureDRMSDInput& actiondata,
   const View<Vector> pos,
   ColvarOutput& output ) {
-  const auto targetList = actiondata.drmsd_atoms.get(n);
-  const auto targetAtoms=targetList.size();
-  if( !noderiv ) {
-    output.virial.set( n, Tensor(0,0,0,0,0,0,0,0,0) );
-    for(unsigned i=0; i<targetAtoms; ++i ) {
-      output.derivs[n][targetList[i]] =Vector(0.0,0.0,0.0);
+  {
+    const auto targetList = actiondata.drmsd_atoms.get(n);
+    const auto targetAtoms=targetList.size();
+    if( !noderiv ) {
+      output.virial.set( n, Tensor(0,0,0,0,0,0,0,0,0) );
+      for(unsigned i=0; i<targetAtoms; ++i ) {
+        output.derivs[n][targetList[i]] =Vector(0.0,0.0,0.0);
+      }
     }
   }
 
@@ -300,7 +302,6 @@ void SecondaryStructureDRMSDInput::calculateDistance(
 
     PLMD::LoopUnroller<9>::_mul(output.virial.getView(n).data(),scalef);
     const auto targetList = actiondata.drmsd_atoms.get(n);
-    const auto targetAtoms=targetList.size();
     for(unsigned i=0; i<actiondata.natoms; ++i ) {
       output.derivs[n][targetList[i]] *= scalef;
     }

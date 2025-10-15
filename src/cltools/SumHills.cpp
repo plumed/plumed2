@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <iostream>
 #include "tools/File.h"
 #include "core/Value.h"
 #include "tools/Matrix.h"
@@ -221,7 +220,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 std::string CLToolSumHills::description()const {
@@ -375,8 +374,8 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       std::string addme;
       if(comps.size()>0) {
         addme="COMPONENTS=";
-        for(unsigned i=0; i<comps.size()-1; i++) {
-          addme+=comps[i]+",";
+        for(unsigned ii=0; ii<comps.size()-1; ii++) {
+          addme+=comps[ii]+",";
         }
         addme+=comps.back();
         actioninput.push_back(addme);
@@ -606,7 +605,13 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
+bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename,
+                                        std::vector< std::vector<std::string>  > &cvs,
+                                        std::vector<std::string> &pmin,
+                                        std::vector<std::string> &pmax,
+                                        bool &multivariate,
+                                        std::string &lowI_,
+                                        std::string &uppI_) {
   IFile ifile;
   ifile.allowIgnoredFields();
   std::vector<std::string> fields;
@@ -642,9 +647,7 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vecto
           ss.push_back(name);
           cvs.push_back(ss);
         } else {
-          std::vector<std::string> ss;
-          ss.push_back(fields[i]);
-          cvs.push_back(ss);
+          cvs.emplace_back(std::vector<std::string> {fields[i]});
         }
         //std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
         //if((cvs.back()).size()!=1){

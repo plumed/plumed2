@@ -259,7 +259,7 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    const std::filesystem::path path;
+    const std::filesystem::path originalpath;
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
@@ -388,9 +388,9 @@ public:
     class Handler {
       CriticalSectionWithKey* section{nullptr};
       Key key;
-      Handler(CriticalSectionWithKey* section,const Key& key):
-        section(section),
-        key(key) {
+      Handler(CriticalSectionWithKey* mysection,const Key& mykey):
+        section(mysection),
+        key(mykey) {
         section->start(key);
       }
       friend class CriticalSectionWithKey;
@@ -432,7 +432,16 @@ public:
     }
 
   };
-
+///Correct the "escape sequences" from regexes to be compatible with the json format
+///
+///C++ wants a raw string (like `R"<<(content)<<"`) for the regexes
+///and the python package json (and the json format itself actually)
+/// wants the various '\' to be escaped with and '\' becasue the interpreter tries
+/// to read anything that begins with '\' as an escape sequence (it does not know that it is an input for a regex)
+///
+/// For example '\n' will not cause an error but it will be intepreted as and explicit newline, so we we want '\\n' in the json
+/// whereas '\.' will cause an erron when read by python
+  static std::string convertRegexForJson (const std::string& command);
 };
 
 template <class T>
@@ -459,17 +468,17 @@ bool Tools::parse(std::string_view argument,
 
 template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
-  std::string s;
-  if(!getKey(line,key+"=",s,rep)) {
+  std::string argument;
+  if(!getKey(line,key+"=",argument,rep)) {
     return false;
   }
   val.clear();
   //needs to get the parenteses
-  std::vector<std::string> words=getWords(s,"\t\n ,");
-  val.reserve(words.size());
-  for(unsigned i=0; i<words.size(); ++i) {
+  std::vector<std::string> argWords=getWords(argument,"\t\n ,");
+  val.reserve(argWords.size());
+  for(unsigned i=0; i<argWords.size(); ++i) {
     T v;
-    std::string s=words[i];
+    std::string s=argWords[i];
     if(rep>=0 && startWith(s,replicaToken)) {
       s=s.substr(replicaToken.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");

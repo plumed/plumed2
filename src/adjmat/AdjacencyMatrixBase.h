@@ -115,7 +115,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void getInputData( std::vector<double>& inputdata ) const ;
+  void getInputData( std::vector<double>& inputdata ) const override;
   std::string writeInGraph() const override {
     if( getName()=="CONTACT_MATRIX_PROPER" ) {
       return "CONTACT_MATRIX";
@@ -451,7 +451,7 @@ void AdjacencyMatrixBase<T>::calculate() {
 
   // Reshape the matrix store if the number of columns has changed
   if( maxcol!=myval->getNumberOfColumns() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maxcol );
     }
   }

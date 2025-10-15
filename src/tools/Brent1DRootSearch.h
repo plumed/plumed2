@@ -35,44 +35,38 @@ template <class FCLASS>
 class Brent1DRootSearch {
 private:
 /// Has the minimum been bracketed
-  bool bracketed;
+  bool bracketed=false;
 /// The tolerance for the line minimiser
   double tol;
 /// Maximum number of interactions in line minimiser
-  const unsigned ITMAX;
+  static constexpr unsigned ITMAX=100;
 /// A small number that protects against trying to achieve fractional
 /// accuracy for a minimum that happens to be exactly zero
-  const double EPS;
+  static constexpr double EPS=3.0e-8;
 /// The factor by which to expand the range when bracketing
-  const double EXPAND;
+  static constexpr double EXPAND=1.6;
 /// This is the type specifier for the function to minimise
   typedef double(FCLASS::*eng_pointer)( const double& val );
 /// Three points bracketting the minimum and the corresponding function values
-  double ax,bx,fa,fb;
+  double ax=0.0, bx=0.0, fa=0.0, fb=0.0;
 /// The class containing the function we are trying to minimise
   FCLASS myclass_func;
 public:
-  explicit Brent1DRootSearch( const FCLASS& pf,  const double& t=3.0E-8 );
+  explicit Brent1DRootSearch( const FCLASS& pf,  double t=3.0E-8 );
 /// Bracket the minium
-  void bracket( const double& ax, const double& xx, eng_pointer eng );
+  void bracket( double ax, double xx, eng_pointer eng );
 /// Find the minimum between two brackets
   double search( eng_pointer eng );
 };
 
 template <class FCLASS>
-Brent1DRootSearch<FCLASS>::Brent1DRootSearch( const FCLASS& pf, const double& t ):
-  bracketed(false),
+Brent1DRootSearch<FCLASS>::Brent1DRootSearch( const FCLASS& pf, const double t ):
   tol(t),
-  ITMAX(100),
-  EPS(3.0E-8),
-  EXPAND(1.6),
-  ax(0), bx(0),
-  fa(0), fb(0),
   myclass_func(pf) {
 }
 
 template <class FCLASS>
-void Brent1DRootSearch<FCLASS>::bracket( const double& a, const double& b, eng_pointer eng ) {
+void Brent1DRootSearch<FCLASS>::bracket( const double a, const double b,  eng_pointer eng ) {
   plumed_assert( a!=b );
   ax=a;
   bx=b;
@@ -87,8 +81,18 @@ void Brent1DRootSearch<FCLASS>::bracket( const double& a, const double& b, eng_p
 template <class FCLASS>
 double Brent1DRootSearch<FCLASS>::search( eng_pointer eng ) {
   plumed_dbg_assert( bracketed );
-
-  double cx=bx, d, e, min1, min2, fc=fb, p, q, r, s, tol1, xm;
+  // starting with these parameters:
+  // double cx=bx;
+  // double fc=fb;
+  //by definition this is true :
+  // if ( (fb>0.0 && fc>0.0) || (fb<0.0 && fc<0.0) ) {
+  // so we initialize the variable/registers
+  // with the body of the first if statement
+  double cx=ax;
+  double fc=fa;
+  double d = bx -ax;
+  double e=d;
+  double min1, min2, p, q, r, s, tol1, xm;
   for(unsigned iter=0; iter<ITMAX; iter++) {
     if ( (fb>0.0 && fc>0.0) || (fb<0.0 && fc<0.0) ) {
       cx=ax;

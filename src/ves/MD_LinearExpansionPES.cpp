@@ -42,7 +42,6 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
-#include <iostream>
 
 #ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
@@ -184,7 +183,7 @@ MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
   dim_string_prefix("dim") {
-  inputdata=ifile; //commandline;
+  inputdata=inputType::ifile; //inputType::commandline;
 }
 
 inline

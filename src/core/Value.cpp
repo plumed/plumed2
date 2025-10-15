@@ -31,63 +31,24 @@
 namespace PLMD {
 
 Value::Value():
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
+  data(1,0.0),
+  inputForce(1,0.0),
+  shape() {}
+
+Value::Value(const std::string& valname):
+  data(1,0.0),
+  inputForce(1,0.0),
+  name(valname),
+  shape() {
 }
 
-Value::Value(const std::string& name):
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
-  data[0]=inputForce[0]=0;
-}
-
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<std::size_t>&ss):
+Value::Value(ActionWithValue* av,
+             const std::string& valname,
+             const bool withderiv,
+             const std::vector<std::size_t>&ss):
   action(av),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  hasDeriv(withderiv),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
+  name(valname),
+  hasDeriv(withderiv) {
   if( action ) {
     if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) {
       valtype=average;
@@ -231,7 +192,7 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
-  plumed_assert( action!=NULL );
+  plumed_assert( action!=nullptr );
   return action;
 }
 
@@ -365,10 +326,10 @@ size_t Value::addForces(View<const double> const forces) {
   plumed_massert( inputForce.size()>=nvals, "can't add force to " + name );
   //I need at least nvals elements in forces
   plumed_massert( forces.size()>=nvals, "can't add force to " + name );
-  const auto end=inputForce.begin()+nvals;
   /*
     {//this gives a very little speedup (+1 step in the 60s dragrace)
       auto f = forces.begin();
+      const auto end=inputForce.begin()+nvals;
       for(auto iptf=inputForce.begin()  ; iptf<end; ++iptf, ++f) {
         *iptf+=*f;
       }
@@ -510,8 +471,8 @@ void Value::print( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       ofile.printField( fname, get(i) );
@@ -527,8 +488,8 @@ void Value::printForce( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       plumed_assert( i<inputForce.size() );

@@ -126,7 +126,7 @@ void DistanceFromSphericalContour::calculate() {
   double len=dirv.modulo();
   dirv /= len;
   // Now work out which atoms need to be considered explicitly
-  Vector myvec = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(0) );
+  pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(0) );
   nactive=1;
   active_list[0]=0;
   for(unsigned j=1; j<getNumberOfAtoms()-2; ++j) {

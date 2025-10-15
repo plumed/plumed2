@@ -187,14 +187,14 @@ void FunctionOfGrid<T>::calculate() {
           }
         }
       }
-      for(int i=0; i<getNumberOfComponents(); ++i) {
+      for(unsigned i=0; i<getNumberOfComponents(); ++i) {
         if( getPntrToComponent(i)->getRank()>0 ) {
           getPntrToComponent(i)->setShape(shape);
         }
       }
     }
     // This resizes the scalars
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       if( getPntrToComponent(i)->getRank()==0 ) {
         getPntrToComponent(i)->resizeDerivatives( npoints );
       }

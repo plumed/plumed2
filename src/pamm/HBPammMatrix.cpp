@@ -631,7 +631,7 @@ void HBPammMatrix::parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action
   IFile ifile;
   ifile.open(fname);
   ifile.allowIgnoredFields();
-  for(unsigned k=0;; ++k) {
+  while(true) {
     if( !ifile.scanField("height",ww) ) {
       break;
     }

@@ -38,14 +38,14 @@ This class provides features similar to those in the standard C "FILE*" type,
 but only for sequential input. See OFile for sequential output.
 
 */
+
+//TODO: the `fields` component may be made a map or a ordered/unordered set, since Field objects can be ordered (hence findable in Log(N)/log(1)!
 class IFile:
 /// Class identifying a single field for fielded output
   public virtual FileBase {
-  class Field:
+  struct Field:
     public FieldBase {
-  public:
-    bool read;
-    Field(): read(false) {}
+    bool read=false;
   };
 /// Low-level read.
 /// Note: in parallel, all processes read
@@ -68,7 +68,7 @@ public:
 /// Destructor
   ~IFile();
 /// Opens the file
-  IFile& open(const std::string&name) override;
+  IFile& open(const std::string&mypath) override;
 /// Gets the list of all fields
   IFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field

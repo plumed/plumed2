@@ -75,8 +75,8 @@ TokenizedLine::TokenizedLine(const_vectorIt begin,
                              const_vectorIt end):
   tokens(mapCreator(begin, end)) {}
 
-TokenizedLine::TokenizedLine(const std::vector<std::string>& line):
-  PLMD::TokenizedLine(line.begin(),line.end()) {}
+TokenizedLine::TokenizedLine(const std::vector<std::string>& dataline):
+  PLMD::TokenizedLine(dataline.begin(),dataline.end()) {}
 
 std::string TokenizedLine::convertToString(bool alsoClear) {
   std::string output;
@@ -140,7 +140,7 @@ std::string TokenizedLine::getValue(std::string_view key, int rep) const {
     if (keyArg->second.size() == 1) {
       return keyArg->second[0];
     } else {
-      if (rep < keyArg->second.size()-1) {
+      if (rep < static_cast<long long int>(keyArg->second.size())-1) {
         return keyArg->second[rep+1];
       }
     }

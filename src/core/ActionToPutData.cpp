@@ -192,13 +192,13 @@ std::string ActionToPutData::getUnitName() const {
   plumed_error();
 }
 
-void ActionToPutData::setStart( const std::string& name, const unsigned& sss) {
-  plumed_assert( name==getLabel() );
+void ActionToPutData::setStart( const std::string& actname, const unsigned& sss) {
+  plumed_assert( actname==getLabel() );
   mydata->setStart(sss);
 }
 
-void ActionToPutData::setStride( const std::string& name, const unsigned& sss ) {
-  plumed_assert( name==getLabel() );
+void ActionToPutData::setStride( const std::string& actname, const unsigned& sss ) {
+  plumed_assert( actname==getLabel() );
   mydata->setStride(sss);
 }
 
@@ -220,8 +220,8 @@ void ActionToPutData::updateUnits( DataPassingTools* passtools ) {
   }
 }
 
-bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePtr & val ) {
-  if( name!=getLabel() ) {
+bool ActionToPutData::setValuePointer( const std::string& actname, const TypesafePtr & val ) {
+  if( actname!=getLabel() ) {
     return false;
   }
   wasset=true;
@@ -241,8 +241,8 @@ bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePt
   return true;
 }
 
-bool ActionToPutData::setForcePointer( const std::string& name, const TypesafePtr & val ) {
-  if( name!=getLabel() ) {
+bool ActionToPutData::setForcePointer( const std::string& actname, const TypesafePtr & val ) {
+  if( actname!=getLabel() ) {
     return false;
   }
   plumed_massert( dataCanBeSet, "force on " + getLabel() + " cannot be set at this time");

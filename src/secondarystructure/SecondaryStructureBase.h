@@ -121,8 +121,8 @@ void SecondaryStructureBase<T>::registerKeywords( Keywords& keys ) {
     keys.add("compulsory","MM","12","The m parameter of the switching function");
   }
   keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
-  keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
-  keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
+  keys.addOutputComponent("struct","default","scalar","the vectors containing the rmsd distances between the residues and each of the reference structures");
+  keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD");
   keys.needsAction("SECONDARY_STRUCTURE_DRMSD");
   keys.needsAction("LESS_THAN");
@@ -205,8 +205,8 @@ SecondaryStructureBase<T>::SecondaryStructureBase(const ActionOptions&ao):
     }
     if( verbose_output ) {
       log.printf("  Secondary structure segment %u contains atoms : ", static_cast<unsigned>(colvar_atoms.size()+1));
-      for(unsigned i=0; i<newatoms.size(); ++i) {
-        log.printf("%d ",all_atoms[newatoms[i]].serial() );
+      for(unsigned ii=0; ii<newatoms.size(); ++ii) {
+        log.printf("%d ",all_atoms[newatoms[ii]].serial() );
       }
       log.printf("\n");
     }

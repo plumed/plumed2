@@ -93,7 +93,9 @@ private:
   std::vector<std::vector<unsigned> > nl;
   std::vector<std::vector<bool> > nlexpo;
   std::vector<std::vector<double> > parameter;
-  void setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr);
+  void setupConstants(const std::vector<AtomNumber> &atoms,
+                      std::vector<std::vector<double> > &parameter,
+                      bool tcorr);
   std::map<std::string, std::map<std::string, std::string> > setupTypeMap();
   std::map<std::string, std::vector<double> > setupValueMap();
   void update_neighb();
@@ -154,7 +156,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 }
 
 void EEFSolv::update_neighb() {
-  const double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
+  constexpr double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
   const unsigned size = getNumberOfAtoms();
 
   for (unsigned i=0; i<size; i++) {
@@ -308,10 +310,11 @@ void EEFSolv::calculate() {
       bias += 0.5*fedensity;
     }
     #pragma omp critical
-    if(nt>1)
+    if(nt>1) {
       for(unsigned i=0; i<size; i++) {
         deriv[i]+=deriv_omp[i];
       }
+    }
   }
 
   if(!serial) {
@@ -336,22 +339,22 @@ void EEFSolv::calculate() {
   }
 }
 
-void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr) {
+void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms,
+                             std::vector<std::vector<double> > &parameterlist,
+                             bool tcorr) {
   std::vector<std::vector<double> > parameter_temp;
   parameter_temp.resize(atoms.size(), std::vector<double>(7,0));
-  std::map<std::string, std::vector<double> > valuemap;
-  std::map<std::string, std::map<std::string, std::string> > typemap;
-  valuemap = setupValueMap();
-  typemap  = setupTypeMap();
-  auto * moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  std::map<std::string, std::vector<double> > valuemap = setupValueMap();
+  std::map<std::string, std::map<std::string, std::string> > typemap = setupTypeMap();
+  auto * infomoldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   bool cter=false;
-  if (moldat) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+  if (infomoldat) {
+    log<<"  MOLINFO DATA found with label " <<infomoldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
 
       // Get atom and residue names
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
+      std::string Aname = infomoldat->getAtomName(atoms[i]);
+      std::string Rname = infomoldat->getResidueName(atoms[i]);
       std::string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
@@ -360,7 +363,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 2);
-        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
+        if (infomoldat->checkForAtom(tmp_an) && infomoldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OB";
         } else {
@@ -373,7 +376,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
-        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
+        if (infomoldat->checkForAtom(tmp_an) && infomoldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OH1";
         } else {
@@ -407,7 +410,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
       }
 
       // Temperature correction
-      if (tcorr && parameter[i][1] > 0.0) {
+      if (tcorr && parameterlist[i][1] > 0.0) {
         const double t0 = 298.15;
         const double delta_g_ref_t0 = parameter_temp[i][1];
         const double delta_h_ref_t0 = parameter_temp[i][3];
@@ -417,10 +420,10 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
         parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) - delta_cp * t * std::log(t / t0) + delta_cp * (t - t0);
         parameter_temp[i][2] *= parameter_temp[i][1] / delta_g_ref_t0;
       }
-      parameter[i][0] = parameter_temp[i][0];
-      parameter[i][1] = parameter_temp[i][2];
-      parameter[i][2] = parameter_temp[i][5];
-      parameter[i][3] = parameter_temp[i][6];
+      parameterlist[i][0] = parameter_temp[i][0];
+      parameterlist[i][1] = parameter_temp[i][2];
+      parameterlist[i][2] = parameter_temp[i][5];
+      parameterlist[i][3] = parameter_temp[i][6];
     }
   } else {
     error("MOLINFO DATA not found\n");

@@ -22,7 +22,6 @@
 #include "Colvar.h"
 #include "tools/OpenMP.h"
 #include <vector>
-#include <string>
 
 namespace PLMD {
 
@@ -43,7 +42,7 @@ void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
   }
 }

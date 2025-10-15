@@ -110,7 +110,7 @@ public:
 
   explicit PesMD( const CLToolOptions& co ) :
     CLTool(co) {
-    inputdata=ifile;
+    inputdata=inputType::ifile;
   }
 
 private:
@@ -218,17 +218,20 @@ public:
     std::vector<double> masses( 1+nat, 1 );
     std::vector<Vector> velocities( nat ), positions( nat+1 ), forces( nat+1 );
     // Will set these properly eventually
-    int k=0;
-    positions[0].zero(); // Atom zero is fixed at origin
-    for(int i=0; i<nat; ++i)
+    // Atom zero is fixed at origin
+    positions[0].zero();
+    // the for loop initializes two variable:
+    // k is used only here, so its scope is limited
+    for(int i=0,k=0; i<nat; ++i) {
       for(unsigned j=0; j<3; ++j) {
         if( k<dim ) {
           positions[1+i][j]=ipos[k];
         } else {
           positions[1+i][j]=0;
         }
-        k++;
+        ++k;
       }
+    }
     // And initialize the velocities
     for(int i=0; i<nat; ++i)
       for(int j=0; j<3; ++j) {
@@ -246,13 +249,15 @@ public:
     }
 
     // Now call plumed to get initial forces
-    int istep=0;
-    double zero=0;
-    plumed->cmd("setStep",&istep);
-    plumed->cmd("setMasses",&masses[0]);
-    Tools::set_to_zero(forces);
-    plumed->cmd("setForces",&forces[0][0]);
-    plumed->cmd("setEnergy",&zero);
+    {
+      int istep=0;
+      double zero=0;
+      plumed->cmd("setStep",&istep);
+      plumed->cmd("setMasses",&masses[0]);
+      Tools::set_to_zero(forces);
+      plumed->cmd("setForces",&forces[0][0]);
+      plumed->cmd("setEnergy",&zero);
+    }
     if( lperiod ) {
       plumed->cmd("setBox",&box[0]);
     }

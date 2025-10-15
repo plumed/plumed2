@@ -191,9 +191,9 @@ Group::Group(const ActionOptions&ao):
     log<<"  atoms are sorted\n";
     sort(atoms.begin(),atoms.end());
   }
-  bool unique=false;
-  parseFlag("UNIQUE",unique);
-  if(unique) {
+  bool uniqueFlag=false;
+  parseFlag("UNIQUE",uniqueFlag);
+  if(uniqueFlag) {
     log<<"  sorting atoms and removing duplicates\n";
     Tools::removeDuplicates(atoms);
   }

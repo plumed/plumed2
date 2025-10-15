@@ -37,8 +37,8 @@ private:
   std::vector<double> target;
   Log &log;
 public:
-  explicit TargetDist(Log& log) : log(log) {}
-  void read( const PDB& pdb, const std::vector<Value*> & args );
+  explicit TargetDist(Log& mylog) : log(mylog) {}
+  void read( const PDB& pdb, const std::vector<Value*> & myargs );
   void read( const std::vector<double>& targ, const std::vector<Value*> & ar );
   double calculate( std::vector<double>& derivs );
 };

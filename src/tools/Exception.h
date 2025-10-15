@@ -177,10 +177,10 @@ public:
     const char*file;
     const unsigned line;
     const char* pretty;
-    explicit Location(const char*file,unsigned line,const char* pretty=nullptr):
-      file(file),
-      line(line),
-      pretty(pretty)
+    explicit Location(const char*fileName,unsigned lineN,const char* prettyName=nullptr):
+      file(fileName),
+      line(lineN),
+      pretty(prettyName)
     {}
   };
 
@@ -189,8 +189,8 @@ public:
   class Assertion {
   public:
     const char*assertion;
-    explicit Assertion(const char*assertion=nullptr):
-      assertion(assertion)
+    explicit Assertion(const char*assertionText=nullptr):
+      assertion(assertionText)
     {}
   };
 
@@ -218,9 +218,9 @@ public:
   Exception();
 
 /// Constructor compatible with PLUMED <=2.4.
-  explicit Exception(const std::string & msg):
+  explicit Exception(const std::string & message):
     Exception() {
-    *this << msg;
+    *this << message;
   }
 
 /// Copy constructor.

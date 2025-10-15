@@ -59,11 +59,11 @@ class ActionAtomistic :
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
   bool unique_local_needs_update;
   std::vector<AtomNumber>  unique_local;
-  std::vector<Vector>   positions;       // positions of the needed atoms
+  std::vector<Vector>   actionPositions;       // positions of the needed atoms
   double                energy;
   Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
-  Pbc&                  pbc=*pbc_fwd;
+  Pbc&                  actionPbc=*pbc_fwd;
   std::vector<double>   masses;
   std::vector<double>   charges;
 
@@ -78,7 +78,7 @@ class ActionAtomistic :
   bool                  donotforce;
 
   // EMST
-  GenericMolInfo* moldat{nullptr};
+  GenericMolInfo* actionMoldat{nullptr};
   std::unique_ptr<Tree> tree;
 
 /// Values that hold information about atom positions and charges
@@ -215,7 +215,7 @@ public:
 
 inline
 const Vector & ActionAtomistic::getPosition(int i)const {
-  return positions[i];
+  return actionPositions[i];
 }
 
 inline
@@ -246,7 +246,7 @@ AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const {
 
 inline
 const std::vector<Vector> & ActionAtomistic::getPositions()const {
-  return positions;
+  return actionPositions;
 }
 
 inline
@@ -269,7 +269,7 @@ const double & ActionAtomistic::getEnergy()const {
 
 inline
 const Tensor & ActionAtomistic::getBox()const {
-  return pbc.getBox();
+  return actionPbc.getBox();
 }
 
 inline
@@ -279,7 +279,7 @@ double & ActionAtomistic::modifyForceOnEnergy() {
 
 inline
 const Pbc & ActionAtomistic::getPbc() const {
-  return pbc;
+  return actionPbc;
 }
 
 inline
@@ -336,7 +336,7 @@ void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, co
 
 inline
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
-  return pbc.distance(v1,v2);
+  return actionPbc.distance(v1,v2);
 }
 
 }

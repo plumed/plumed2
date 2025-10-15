@@ -37,8 +37,21 @@
 #include <ctime>
 #include "tools/Random.h"
 
+//this avoids nasty warnings on which we have no control
+//Here I am using the pragma for gcc/clang, for visual studio you'll need something different
+//This should be the correct direction,
+//but the warning that it is blocking everithing is:
+//  error: ISO C++11 requires at least one argument for the "..." in a variadic macro [-Werror]
+//that is not named like [-Werror=shadow]
+//so , at time of writing this I did not found any solution but deactivating warning in the makefile
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+
 #include <torch/torch.h>
 #include <torch/script.h>
+
+#pragma GCC diagnostic push
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -1458,7 +1471,7 @@ void EMMIVOX::update_neighbor_list() {
 
 void EMMIVOX::update_gpu() {
   // dimension of neighbor list
-  long long nl_size = nl_.size();
+  unsigned nl_size = nl_.size();
   // create useful vectors
   std::vector<int> nl_id(nl_size), nl_im(nl_size);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
