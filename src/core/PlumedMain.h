@@ -576,8 +576,8 @@ bool PlumedMain::getExchangeStep()const {
 }
 
 inline
-void PlumedMain::resetActive(bool active) {
-  this->active=active;
+void PlumedMain::resetActive(bool setactive) {
+  active=setactive;
 }
 
 inline

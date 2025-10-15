@@ -35,14 +35,14 @@ class WithCmd {
   /// Small structure used to pass elements of a shape initializer_list
   struct SizeLike {
     std::size_t size;
-    SizeLike(short unsigned size): size(size) {}
-    SizeLike(unsigned size): size(size) {}
-    SizeLike(long unsigned size): size(size) {}
-    SizeLike(long long unsigned size): size(size) {}
-    SizeLike(short size): size(std::size_t(size)) {}
-    SizeLike(int size): size(std::size_t(size)) {}
-    SizeLike(long int size): size(std::size_t(size)) {}
-    SizeLike(long long int size): size(std::size_t(size)) {}
+    SizeLike(short unsigned dim): size(dim) {}
+    SizeLike(unsigned dim): size(dim) {}
+    SizeLike(long unsigned dim): size(dim) {}
+    SizeLike(long long unsigned dim): size(dim) {}
+    SizeLike(short dim): size(std::size_t(dim)) {}
+    SizeLike(int dim): size(std::size_t(dim)) {}
+    SizeLike(long int dim): size(std::size_t(dim)) {}
+    SizeLike(long long int dim): size(std::size_t(dim)) {}
   };
 public:
   /// This is the preferred method as it avoid allocations of temporaries.

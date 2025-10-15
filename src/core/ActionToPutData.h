@@ -73,7 +73,7 @@ public:
   virtual bool setValuePointer( const std::string& name, const TypesafePtr & val ) override ;
   bool setForcePointer( const std::string& name, const TypesafePtr & val ) override ;
 ///
-  void Set_comm(Communicator& comm) override {}
+  void Set_comm(Communicator& newcomm) override {}
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
 /// Share the data

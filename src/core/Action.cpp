@@ -47,10 +47,10 @@ ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
   keys(emptyKeys) {
 }
 
-ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
+ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&mykeys):
   plumed(ao.plumed),
   line(ao.line),
-  keys(keys) {
+  keys(mykeys) {
 }
 
 void Action::registerKeywords( Keywords& keys ) {

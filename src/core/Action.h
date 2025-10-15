@@ -65,8 +65,8 @@ public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
   ActionOptions(const ActionOptions&,const Keywords& keys);
-  void setFullPath(const std::string & fullPath) {
-    this->fullPath=fullPath;
+  void setFullPath(const std::string & newFullPath) {
+    fullPath=newFullPath;
   }
 };
 

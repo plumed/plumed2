@@ -114,10 +114,10 @@ public:
 /// Get the description of this component
   virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
 /// Get a const pointer to the ith component
-  const Value* getConstPntrToComponent(int i) const;
+  const Value* getConstPntrToComponent(unsigned i) const;
 protected:
 /// Return a pointer to the component by index
-  Value* getPntrToComponent(int i);
+  Value* getPntrToComponent(unsigned i);
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Accumulate the forces from the Values
@@ -199,13 +199,13 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 }
 
 inline
-double ActionWithValue::getOutputQuantity( const std::string& name ) const {
+double ActionWithValue::getOutputQuantity( const std::string& quantityName ) const {
   auto offset=getLabel().size();
   for(unsigned i=0; i<values.size(); ++i) {
     const std::string & valname=values[i]->name;
     if(valname.size()>offset+1 && valname[offset]=='.' ) {
       plumed_dbg_assert(Tools::startWith(valname,getLabel()));
-      if(!std::strcmp(valname.c_str()+offset+1,name.c_str())) {
+      if(!std::strcmp(valname.c_str()+offset+1,quantityName.c_str())) {
         return values[i]->get();
       }
     }
