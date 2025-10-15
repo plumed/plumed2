@@ -64,7 +64,7 @@ protected:
 /// Some actions have a flag that sets this to true.  The elements on the diagonal of the resulting matrix are then set to zero
   bool diagzero;
 /// Update all the arrays for doing bookeeping
-  void updateBookeepingArrays( RequiredMatrixElements& outmat );
+  void updateBookeepingArrays( RequiredMatrixElements& mat );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);

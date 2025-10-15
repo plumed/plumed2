@@ -40,8 +40,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao),
-  nmask(-1) {
+  ActionWithArguments(ao) {
   if( !keywords.exists("MASKED_INPUT_ALLOWED") ) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -183,8 +182,10 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
 void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   unsigned nargs = getNumberOfArguments();
-  int nmasks=getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) {
+  unsigned nmasks=getNumberOfMasks();
+  // getNumberOfMasks(); returns nmask, that it is an int
+  // nmasks cant be <0 (it is unsigned), so I check nmask for that
+  if( nargs>=nmasks && nmask>0 ) {
     nargs = nargs - nmasks;
   }
 
@@ -243,7 +244,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
       }
     }
   }
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->getRank()==0 ) {
       if( getNumberOfArguments()!=1 ) {
         error("mismatched numbers of tasks in streamed quantities");
@@ -264,7 +265,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
 unsigned ActionWithVector::getNumberOfForceDerivatives() const {
   unsigned nforces=0;
   unsigned nargs = getNumberOfArguments();
-  int nmasks = getNumberOfMasks();
+  unsigned  nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
     nargs = nargs - nmasks;
   }

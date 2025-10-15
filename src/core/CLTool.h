@@ -67,11 +67,11 @@ private:
   void setRemainingToDefault(FILE* out);
 public:
 /// Set the input data:
-  void setInputData(const std::map<std::string,std::string>&inputData) {
-    this->inputData=inputData;
+  void setInputData(const std::map<std::string,std::string>&newInputData) {
+    inputData=newInputData;
   }
   const std::map<std::string,std::string>&getInputData() {
-    return this->inputData;
+    return inputData;
   }
 protected:
 /// Get the value of one of the command line arguments

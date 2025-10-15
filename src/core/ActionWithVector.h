@@ -25,6 +25,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include <limits>
 #include <vector>
 
 namespace PLMD {
@@ -35,8 +36,9 @@ class ActionWithVector:
   public ActionWithArguments {
   friend class Value;
 private:
+  static constexpr int NoMasksUsed =-1;
 /// Check if there is a mask value
-  int nmask;
+  int nmask=NoMasksUsed;
 /// The list of active tasks
   std::vector<unsigned> active_tasks;
 protected:
@@ -84,7 +86,7 @@ int ActionWithVector::getNumberOfMasks() const {
 inline
 void ActionWithVector::ignoreMaskArguments() {
   plumed_assert( nmask<=0 );
-  nmask=-1;
+  nmask=NoMasksUsed;
 }
 
 }
