@@ -35,12 +35,6 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
   sigma(d),
   sigmamin(smin),
   sigmamax(smax) {
-  // initialize the averages and the variance matrices
-  if(type==diffusion) {
-    unsigned ncv=paction->getNumberOfArguments();
-    average.resize(ncv*(ncv+1)/2);
-    variance.resize(ncv*(ncv+1)/2);
-  }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   for(unsigned i=0; i<paction->getNumberOfArguments(); ++i) {
     paction->log<<"   CV  "<<paction->getPntrToArgument(i)->getName()<<":\n";
@@ -69,11 +63,6 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
 FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
                          double const &d, std::vector<double> &smin, const std::vector<double> &smax):
   type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax) {
-  // initialize the averages and the variance matrices
-  if(type==diffusion) {
-    average.resize(1);
-    variance.resize(1);
-  }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   paction->log<<"   CV  "<<paction->getPntrToArgument(iarg)->getName()<<":\n";
   if(sigmamin[0]>0.) {
