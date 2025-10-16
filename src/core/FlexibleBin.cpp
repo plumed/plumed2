@@ -22,7 +22,6 @@
 #include "FlexibleBin.h"
 #include "ActionWithArguments.h"
 #include <cmath>
-#include <iostream>
 #include <vector>
 #include "tools/Matrix.h"
 
@@ -35,12 +34,6 @@ FlexibleBin::FlexibleBin(int mytype, ActionWithArguments *awargs, double const &
   sigma(d),
   sigmamin(smin),
   sigmamax(smax) {
-  // initialize the averages and the variance matrices
-  if(type==diffusion) {
-    unsigned ncv=paction->getNumberOfArguments();
-    average.resize(ncv*(ncv+1)/2);
-    variance.resize(ncv*(ncv+1)/2);
-  }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   for(unsigned i=0; i<paction->getNumberOfArguments(); ++i) {
     paction->log<<"   CV  "<<paction->getPntrToArgument(i)->getName()<<":\n";
@@ -73,11 +66,6 @@ FlexibleBin::FlexibleBin(int mytype, ActionWithArguments *awargs, unsigned iarg,
   sigma(d),
   sigmamin(smin),
   sigmamax(smax) {
-  // initialize the averages and the variance matrices
-  if(type==diffusion) {
-    average.resize(1);
-    variance.resize(1);
-  }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   paction->log<<"   CV  "<<paction->getPntrToArgument(iarg)->getName()<<":\n";
   if(sigmamin[0]>0.) {
