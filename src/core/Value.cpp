@@ -30,13 +30,22 @@
 
 namespace PLMD {
 
-Value::Value()=default;
+Value::Value():
+  data(1,0.0),
+  inputForce(1,0.0),
+  shape() {}
 
 Value::Value(const std::string& valname):
-  name(valname) {
+  data(1,0.0),
+  inputForce(1,0.0),
+  name(valname),
+  shape() {
 }
 
-Value::Value(ActionWithValue* av, const std::string& valname, const bool withderiv, const std::vector<std::size_t>&ss):
+Value::Value(ActionWithValue* av,
+             const std::string& valname,
+             const bool withderiv,
+             const std::vector<std::size_t>&ss):
   action(av),
   name(valname),
   hasDeriv(withderiv) {
@@ -183,7 +192,7 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
-  plumed_assert( action!=NULL );
+  plumed_assert( action!=nullptr );
   return action;
 }
 

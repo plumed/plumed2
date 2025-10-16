@@ -60,21 +60,21 @@ class Value {
   friend class DataPassingObjectTyped;
 private:
 /// The action in which this quantity is calculated
-  ActionWithValue* action{nullptr};
+  ActionWithValue* action=nullptr;
 /// Had the value been set
-  bool value_set{false};
+  bool value_set=false;
 /// The value of the quantity
-  std::vector<double> data{0.0};
+  std::vector<double> data;
 /// The force acting on this quantity
-  std::vector<double> inputForce{0.0};
+  std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
-  bool hasForce{false};
+  bool hasForce=false;
 /// The way this value is used in the code
 /// normal = regular value that is determined during calculate
 /// constant = constnt value that is determined during startup and that doesn't change during simulation
 /// average = value that is averaged/collected over multiple steps of trajectory
 /// calcFromAverage = value that is calculated from an average value
-  enum {normal,constant,average,calcFromAverage} valtype{normal};
+  enum {normal,constant,average,calcFromAverage} valtype=normal;
 /// This is used by ActionWithValue to set the valtype
   void setValType( const std::string& vtype );
 /// This is used by ActionWithValue to determine if we need to calculate on update
@@ -84,27 +84,28 @@ private:
 /// The name of this quantiy
   std::string name;
 /// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
-  std::vector<std::size_t> shape{};
+  std::vector<std::size_t> shape;
 /// Does this quanity have derivatives
-  bool hasDeriv{true};
+  bool hasDeriv=true;
 /// Variables for storing data
-  unsigned bufstart{0};
-  unsigned ngrid_der{0};
-  std::size_t ncols{0};
+  unsigned bufstart=0;
+  unsigned ngrid_der=0;
+  std::size_t ncols=0;
 /// If we are storing a matrix is it symmetric?
-  bool symmetric{false};
+  bool symmetric=false;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
   std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
-  enum {unset,periodic,notperiodic} periodicity{unset};
+  enum {unset,periodic,notperiodic} periodicity=unset;
 /// Various quantities that describe the domain of this value
-  std::string str_min, str_max;
-  double min{0.0};
-  double max{0.0};
-  double max_minus_min{0.0};
-  double inv_max_minus_min{0.0};
+  std::string str_min;
+  std::string str_max;
+  double min=0.0;
+  double max=0.0;
+  double max_minus_min=0.0;
+  double inv_max_minus_min=0.0;
 /// Is the derivative of this quantity zero when the value is zero
-  bool derivativeIsZeroWhenValueIsZero{false};
+  bool derivativeIsZeroWhenValueIsZero=false;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
