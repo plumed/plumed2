@@ -67,9 +67,9 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   // check if whole
   parseFlag("WHOLE", iswhole_);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    log<<"  overriding last MOLINFO with label " << moldat->getLabel()<<"\n";
+  auto* latestmoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( latestmoldat ) {
+    log<<"  overriding last MOLINFO with label " << latestmoldat->getLabel()<<"\n";
   }
 
   std::vector<AtomNumber> backbone;

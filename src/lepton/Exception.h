@@ -76,7 +76,7 @@ namespace lepton {
 
 class Exception : public std::exception {
 public:
-    Exception(const std::string& message) : message(message) {
+    Exception(const std::string& msg) : message(msg) {
     }
     ~Exception() throw() {
     }

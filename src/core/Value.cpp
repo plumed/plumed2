@@ -30,64 +30,16 @@
 
 namespace PLMD {
 
-Value::Value():
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
+Value::Value()=default;
+
+Value::Value(const std::string& valname):
+  name(valname) {
 }
 
-Value::Value(const std::string& name):
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
-  data[0]=inputForce[0]=0;
-}
-
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<std::size_t>&ss):
+Value::Value(ActionWithValue* av, const std::string& valname, const bool withderiv, const std::vector<std::size_t>&ss):
   action(av),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  hasDeriv(withderiv),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
+  name(valname),
+  hasDeriv(withderiv) {
   if( action ) {
     if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) {
       valtype=average;
@@ -510,8 +462,8 @@ void Value::print( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       ofile.printField( fname, get(i) );
@@ -527,8 +479,8 @@ void Value::printForce( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       plumed_assert( i<inputForce.size() );

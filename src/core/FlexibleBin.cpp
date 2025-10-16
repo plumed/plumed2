@@ -29,17 +29,17 @@
 namespace PLMD {
 
 
-FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d, std::vector<double> &smin, const std::vector<double> &smax):
-  type(type),
-  paction(paction),
+FlexibleBin::FlexibleBin(int mytype, ActionWithArguments *awargs, double const &d, std::vector<double> &smin, const std::vector<double> &smax):
+  type(mytype),
+  paction(awargs),
   sigma(d),
   sigmamin(smin),
   sigmamax(smax) {
   // initialize the averages and the variance matrices
   if(type==diffusion) {
     unsigned ncv=paction->getNumberOfArguments();
-    std::vector<double> average(ncv*(ncv+1)/2);
-    std::vector<double> variance(ncv*(ncv+1)/2);
+    average.resize(ncv*(ncv+1)/2);
+    variance.resize(ncv*(ncv+1)/2);
   }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   for(unsigned i=0; i<paction->getNumberOfArguments(); ++i) {
@@ -66,13 +66,17 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
 }
 
 /// Constructure for 1D FB for PBMETAD
-FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
+FlexibleBin::FlexibleBin(int mytype, ActionWithArguments *awargs, unsigned iarg,
                          double const &d, std::vector<double> &smin, const std::vector<double> &smax):
-  type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax) {
+  type(mytype),
+  paction(awargs),
+  sigma(d),
+  sigmamin(smin),
+  sigmamax(smax) {
   // initialize the averages and the variance matrices
   if(type==diffusion) {
-    std::vector<double> average(1);
-    std::vector<double> variance(1);
+    average.resize(1);
+    variance.resize(1);
   }
   paction->log<<"  Limits for sigmas using adaptive hills:  \n";
   paction->log<<"   CV  "<<paction->getPntrToArgument(iarg)->getName()<<":\n";

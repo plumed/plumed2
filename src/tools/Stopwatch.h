@@ -188,7 +188,7 @@ public:
     /// This is kept private to avoid misuse. Handler objects should
     /// only be created using startPause() or startStop().
     /// stop is required to know if the destructor should stop or pause the watch.
-    Handler(Watch* watch,bool stop);
+    Handler(Watch* mywatch,bool dostop);
     /// Allows usage of private constructor
     friend class Stopwatch;
   public:
@@ -303,9 +303,9 @@ public:
 };
 
 inline
-Stopwatch::Handler::Handler(Watch* watch,bool stop) :
-  watch(watch),
-  stop(stop) {
+Stopwatch::Handler::Handler(Watch* mywatch,bool dostop) :
+  watch(mywatch),
+  stop(dostop) {
   watch->start();
 }
 
