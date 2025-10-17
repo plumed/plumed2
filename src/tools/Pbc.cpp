@@ -23,8 +23,6 @@
 #include "Tools.h"
 #include "Exception.h"
 #include "LatticeReduction.h"
-#include <iostream>
-#include "Random.h"
 #include <cmath>
 
 namespace PLMD {
@@ -58,14 +56,14 @@ void Pbc::removeFromACCDevice() const {
 //   invReduced(other.invReduced)
 // {}
 
-void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const {
+void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> newshifts[2][2][2])const {
   const double small=1e-28;
 
 // clear all shifts
   for(int i=0; i<2; i++)
     for(int j=0; j<2; j++)
       for(int k=0; k<2; k++) {
-        shifts[i][j][k].clear();
+        newshifts[i][j][k].clear();
       }
 
 // enumerate all possible shifts
@@ -131,7 +129,7 @@ void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])con
               }
 
 // if we arrive to this point, shift is eligible and is added to the list
-              shifts[i][j][k].push_back(matmul(transpose(reduced),dshift));
+              newshifts[i][j][k].push_back(matmul(transpose(reduced),dshift));
             }
       }
 }
@@ -167,24 +165,24 @@ void Pbc::fullSearch(Vector&d)const {
 void Pbc::setBox(const Tensor&b) {
   box=b;
 // detect type:
-  const double epsilon=1e-28;
+  constexpr double boxEpsilon=1e-28;
 
   type=unset;
   double det=box.determinant();
-  if(det*det<epsilon) {
+  if(det*det<boxEpsilon) {
     return;
   }
 
   bool cxy=false;
   bool cxz=false;
   bool cyz=false;
-  if(box(0,1)*box(0,1)<epsilon && box(1,0)*box(1,0)<epsilon) {
+  if(box(0,1)*box(0,1)<boxEpsilon && box(1,0)*box(1,0)<boxEpsilon) {
     cxy=true;
   }
-  if(box(0,2)*box(0,2)<epsilon && box(2,0)*box(2,0)<epsilon) {
+  if(box(0,2)*box(0,2)<boxEpsilon && box(2,0)*box(2,0)<boxEpsilon) {
     cxz=true;
   }
-  if(box(1,2)*box(1,2)<epsilon && box(2,1)*box(2,1)<epsilon) {
+  if(box(1,2)*box(1,2)<boxEpsilon && box(2,1)*box(2,1)<boxEpsilon) {
     cyz=true;
   }
 

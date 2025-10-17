@@ -25,9 +25,6 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
-#include <iostream>
-#include <map>
-#include <iomanip>
 #include <filesystem>
 #include <string_view>
 
@@ -681,7 +678,7 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
 }
 
 Tools::DirectoryChanger::DirectoryChanger(const char*path):
-  path(std::filesystem::current_path()) {
+  originalpath(std::filesystem::current_path()) {
   if(!path) {
     return;
   }
@@ -693,9 +690,9 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path):
 
 Tools::DirectoryChanger::~DirectoryChanger() {
   try {
-    std::filesystem::current_path(path);
+    std::filesystem::current_path(originalpath);
   } catch(std::filesystem::filesystem_error & e) {
-    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",path.c_str());
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",originalpath.c_str());
   }
 }
 
@@ -708,29 +705,29 @@ std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
 namespace {
 
 class process_one_exception {
-  std::string & msg;
+  std::string & message;
   bool first=true;
   void update() {
     if(!first) {
-      msg+="\n\nThe above exception was the direct cause of the following exception:\n";
+      message="\n\nThe above exception was the direct cause of the following exception:\n";
     }
     first=false;
   }
 public:
   process_one_exception(std::string & msg):
-    msg(msg)
+    message(msg)
   {}
   void operator()(const std::exception & e) {
     update();
-    msg+=e.what();
+    message+=e.what();
   }
   void operator()(const std::string & e) {
     update();
-    msg+=e;
+    message+=e;
   }
   void operator()(const char* e) {
     update();
-    msg+=e;
+    message+=e;
   }
 };
 

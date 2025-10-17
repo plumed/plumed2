@@ -43,8 +43,8 @@ class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
   const pid_t pid;
-  explicit SubprocessPid(pid_t pid):
-    pid(pid) {
+  explicit SubprocessPid(pid_t pid_):
+    pid(pid_) {
     plumed_assert(pid!=0 && pid!=-1);
   }
   void stop() noexcept {
@@ -92,8 +92,8 @@ Subprocess::Subprocess(const std::string & cmd) {
   if(pipe(cp)<0) {
     plumed_error()<<"error creating child to parent pipe";
   }
-  pid_t pid=fork();
-  switch(pid) {
+  pid_t forkedPid=fork();
+  switch(forkedPid) {
   case -1:
     plumed_error()<<"error forking";
     break;
@@ -122,7 +122,7 @@ Subprocess::Subprocess(const std::string & cmd) {
   }
 // PARENT::
   default:
-    this->pid=Tools::make_unique<SubprocessPid>(pid);
+    pid=Tools::make_unique<SubprocessPid>(forkedPid);
     if(close(pc[0])<0) {
       plumed_error()<<"error closing file";
     }
@@ -187,9 +187,9 @@ Subprocess & Subprocess::getline(std::string & line) {
   return (*this);
 }
 
-Subprocess::Handler::Handler(Subprocess *sp) noexcept:
-  sp(sp) {
-  sp->cont();
+Subprocess::Handler::Handler(Subprocess *subp) noexcept:
+  sp(subp) {
+  subp->cont();
 }
 
 Subprocess::Handler::~Handler() {

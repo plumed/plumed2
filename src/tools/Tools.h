@@ -259,7 +259,7 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    const std::filesystem::path path;
+    const std::filesystem::path originalpath;
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
