@@ -218,7 +218,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   }
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
-  for(unsigned i=0; i<tot_size/2; i++) {
+  for(int i=0; i<tot_size/2; i++) {
     unsigned j=2*i;
     neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
   }

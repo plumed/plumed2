@@ -24,7 +24,6 @@
 #include "core/Action.h"
 #include "core/PlumedMain.h"
 #include "core/Value.h"
-#include "Communicator.h"
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
@@ -118,18 +117,18 @@ IFile& IFile::advanceField() {
   return *this;
 }
 
-IFile& IFile::open(const std::string&path) {
-  plumed_massert(!cloned,"file "+path+" appears to be cloned");
+IFile& IFile::open(const std::string&mypath) {
+  plumed_massert(!cloned,"file "+mypath+" appears to be cloned");
   eof=false;
   err=false;
   fp=NULL;
   gzfp=NULL;
-  bool do_exist=FileExist(path);
-  plumed_massert(do_exist,"file " + path + " cannot be found");
-  fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-  if(Tools::extension(this->path)=="gz") {
+  bool do_exist=FileExist(mypath);
+  plumed_massert(do_exist,"file " + mypath + " cannot be found");
+  fp=std::fopen(const_cast<char*>(path.c_str()),"r");
+  if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
-    gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"r");
+    gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"r");
 #else
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif

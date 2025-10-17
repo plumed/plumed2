@@ -96,12 +96,12 @@ Exception::Exception() {
 #endif
 }
 
-Exception& Exception::operator<<(const std::string&msg) {
-  if(msg.length()>0) {
+Exception& Exception::operator<<(const std::string&addmsg) {
+  if(addmsg.length()>0) {
     if(note) {
-      this->msg +="\n";
+      msg +="\n";
     }
-    this->msg +=msg;
+    msg +=addmsg;
     note=false;
   }
   return *this;

@@ -1231,43 +1231,43 @@ double GridBase::findMaximalPathMinimum(const std::vector<double> &source, const
     // If the grid is periodic, also do the search that crosses
     // the grid boundary.
     if (pbc_[0]) {
-      double curr_min_bias = getValue(source_idx);
+      double c_min_bias = getValue(source_idx);
       // Either go from a high source to the upper boundary and
       // then from the bottom boundary to the sink
       if (source_idx > sink_idx) {
         for (index_t i = source_idx; i < maxsize_; i++) {
-          if (curr_min_bias == 0.0) {
+          if (c_min_bias == 0.0) {
             break;
           }
-          curr_min_bias = fmin(curr_min_bias, getValue(i));
+          c_min_bias = fmin(c_min_bias, getValue(i));
         }
         for (index_t i = 0; i <= sink_idx; i++) {
-          if (curr_min_bias == 0.0) {
+          if (c_min_bias == 0.0) {
             break;
           }
-          curr_min_bias = fmin(curr_min_bias, getValue(i));
+          c_min_bias = fmin(c_min_bias, getValue(i));
         }
         // Or go from a low source to the bottom boundary and
         // then from the high boundary to the sink
       } else if (source_idx < sink_idx) {
         for (index_t i = source_idx; i > 0; i--) {
-          if (curr_min_bias == 0.0) {
+          if (c_min_bias == 0.0) {
             break;
           }
-          curr_min_bias = fmin(curr_min_bias, getValue(i));
+          c_min_bias = fmin(c_min_bias, getValue(i));
         }
-        curr_min_bias = fmin(curr_min_bias, getValue(0));
+        c_min_bias = fmin(c_min_bias, getValue(0));
         for (index_t i = maxsize_ - 1; i <= sink_idx; i--) {
-          if (curr_min_bias == 0.0) {
+          if (c_min_bias == 0.0) {
             break;
           }
-          curr_min_bias = fmin(curr_min_bias, getValue(i));
+          c_min_bias = fmin(c_min_bias, getValue(i));
         }
       }
       // If the boundary crossing paths was more biased, it's
       // minimal bias replaces the non-boundary-crossing path's
       // minimum.
-      maximal_minimum = fmax(maximal_minimum, curr_min_bias);
+      maximal_minimum = fmax(maximal_minimum, c_min_bias);
     }
     // The one dimensional path search is complete.
     return maximal_minimum;
