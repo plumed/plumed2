@@ -278,7 +278,7 @@ bool Value::checkValueIsActiveForMMul(const std::size_t task) const {
   const auto ncol = getRowLength(task);
   const auto base = task * getNumberOfColumns();
   if (hasDeriv) {
-    for(unsigned k=base; k<base+ncol; ++k) {
+    for(std::size_t k=base; k<base+ncol; ++k) {
       if(std::fabs(data[k*(1+ngrid_der)])>0.0) {
         return true;
       }
@@ -332,7 +332,7 @@ double Value::get(const std::size_t ival, const bool trueind) const {
 size_t Value::assignValues(View<double> target) {
   const auto nvals=getNumberOfStoredValues ();
   if( hasDeriv ) {
-    for(unsigned j=0; j<nvals; ++j) {
+    for(std::size_t j=0; j<nvals; ++j) {
       target[j] = data[j*(1+ngrid_der)];
     }
   } else {
