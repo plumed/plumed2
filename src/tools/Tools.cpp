@@ -705,29 +705,31 @@ std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
 namespace {
 
 class process_one_exception {
-  std::string & message;
+  //To future me/you: thes needs to remain called "msg" because otherwise
+  //it will break the call message processing in `process_all_exceptions`
+  std::string & msg;
   bool first=true;
   void update() {
     if(!first) {
-      message="\n\nThe above exception was the direct cause of the following exception:\n";
+      msg+="\n\nThe above exception was the direct cause of the following exception:\n";
     }
     first=false;
   }
 public:
-  process_one_exception(std::string & msg):
-    message(msg)
+  process_one_exception(std::string & inmsg):
+    msg(inmsg)
   {}
   void operator()(const std::exception & e) {
     update();
-    message+=e.what();
+    msg+=e.what();
   }
   void operator()(const std::string & e) {
     update();
-    message+=e;
+    msg+=e;
   }
   void operator()(const char* e) {
     update();
-    message+=e;
+    msg+=e;
   }
 };
 
