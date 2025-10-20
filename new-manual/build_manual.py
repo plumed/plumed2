@@ -16,9 +16,13 @@ import networkx as nx
 from multiprocessing import Pool, cpu_count
 import functools
 
-
-
 PLUMED="plumed"
+
+MKDOCS_IGNORE_SEARCH="""---
+search:
+  exclude: true
+---
+"""
 
 @contextmanager
 def cd(newdir):
@@ -90,7 +94,8 @@ def generateGeneralPages(page:str,plumed,version):
    actions = set()
    shutil.copy( page, "docs/" + page ) 
    with cd("docs") : 
-      _, nf = processMarkdown( page, (plumed,), (version,), actions, ghmarkdown=False )
+      _, nf = processMarkdown( page, (plumed,), (version,), actions, ghmarkdown=False, 
+              test_plumed_kwargs={"header":MKDOCS_IGNORE_SEARCH} )
    if nf[0]>0 :
       broken_input=["<a href=\"../" + page.replace(".md","") + "\">" + page + "</a>", str(nf[0])]
    return broken_input
@@ -539,7 +544,8 @@ def createModulePage( version, modname, mod_dict, neggs, nlessons, plumed_syntax
          if os.path.exists("../../src/" + modname + "/module.md") :
             with open("../../src/" + modname + "/module.md") as iff : docs = iff.read()
             actions = set()
-            _, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False ) 
+            _, nf = processMarkdownString( docs, "module_" + modname + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False , 
+              test_plumed_kwargs={"header":MKDOCS_IGNORE_SEARCH})
             if nf[0]>0 : broken_inputs.append( ["<a href=\"../module_" + modname + "\">" + modname + "</a>", str(nf[0])] )
          foundaction=False
          for key, value in plumed_syntax.items() :
@@ -609,7 +615,8 @@ def createCLToolPage( version, tool, value, plumeddocs, broken_inputs, undocumen
          if tool in plumeddocs.keys() :
             if os.path.isfile("../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False )
+                ninp, nf = processMarkdownString( plumeddocs[tool], "docs/" + tool + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False , 
+              test_plumed_kwargs={"header":MKDOCS_IGNORE_SEARCH})
                 if nf[0]>0 : broken_inputs.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", str(nf[0])] )
                 if ninp==0 : noexamples.append( ["<a href=\"../" + tool + "\">" + tool + "</a>", value["module"]] )
             else :
@@ -697,7 +704,8 @@ def createActionPage( version, action, value, plumeddocs, neggs, nlessons) :
          if action in plumeddocs.keys() :
             if os.path.isfile("../../src/" + value["module"] + "/module.yml") :
                 actions = set()
-                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False, checkaction=action, checkactionkeywords=example_keywords )
+                _, nf = processMarkdownString( plumeddocs[action], action + ".md", (PLUMED,), (version,), actions, f, ghmarkdown=False, checkaction=action, checkactionkeywords=example_keywords , 
+              test_plumed_kwargs={"header":MKDOCS_IGNORE_SEARCH})
                 if not depracated and len(example_keywords)>0 :
                    unexempled_keywords = ["<a href=\"../" + action + "\">" + action + "</a>", value["module"]]  
                 if nf[0]>0 :
