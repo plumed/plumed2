@@ -134,7 +134,8 @@ public:
   void calculate() override;
 protected:
   bool trimer,useall;
-  int myrank, nranks;
+  unsigned myrank;
+  unsigned nranks;
   double qexp,temperature,beta,dsigma;
   std::vector<double> dsigmas;
 private:
@@ -209,7 +210,7 @@ Dimer::Dimer(const ActionOptions& ao):
     parseAtomList("ATOMS1",usedatoms1);
     parseAtomList("ATOMS2",usedatoms2);
 
-    int isz1 = usedatoms1.size();
+    unsigned int isz1 = usedatoms1.size();
 
     for(unsigned int i=0; i<isz1; i++) {
       AtomNumber ati;
@@ -217,7 +218,7 @@ Dimer::Dimer(const ActionOptions& ao):
       atoms.push_back(ati);
     }
 
-    int isz2 = usedatoms2.size();
+    unsigned int isz2 = usedatoms2.size();
     for(unsigned int i=0; i<isz2; i++) {
       AtomNumber atip2;
       atip2.setIndex(usedatoms2[i].index());
