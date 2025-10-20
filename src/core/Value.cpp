@@ -22,9 +22,6 @@
 #include "Value.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
-#include "ActionWithArguments.h"
-#include "ActionWithVector.h"
-#include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/OFile.h"
@@ -277,7 +274,24 @@ std::size_t Value::getIndexInStore( const std::size_t& ival ) const {
   return ival;
 }
 
-double Value::get(const std::size_t& ival, const bool trueind) const {
+bool Value::checkValueIsActiveForMMul(const std::size_t task) const {
+  const auto ncol = getRowLength(task);
+  const auto base = task * getNumberOfColumns();
+  if (hasDeriv) {
+    for(std::size_t k=base; k<base+ncol; ++k) {
+      if(std::fabs(data[k*(1+ngrid_der)])>0.0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return std::any_of(&data[base],&data[base]+ncol,[](double x) {
+    return std::fabs(x)>0.0;
+  });
+
+}
+
+double Value::get(const std::size_t ival, const bool trueind) const {
   if( hasDeriv ) {
     return data[ival*(1+ngrid_der)];
   }
@@ -287,15 +301,23 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   }
 #endif
   if( shape.size()==2 && trueind ) {
-    unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+    const unsigned irow = std::floor( ival / shape[1] );
+    const unsigned jcol = ival%shape[1];
     // This is a special treatment for the lower triangular matrices that are used when
     // we do ITRE with COLLECT_FRAMES
     if( ncols==0 ) {
       if( jcol<=irow ) {
         return data[0.5*irow*(irow+1) + jcol];
       }
-      return 0;
+      return 0.0;
     }
+    /* I have to work on this
+    auto begin = matrix_bookeeping.begin()+(1+ncols)*irow+1;
+    auto end = matrix_bookeeping.begin()+(1+ncols)*irow+1+getRowLength(irow);
+    auto i=std::find(begin,end,jcol);
+    if (i!=end){
+    	return data[irow*ncols+end-i];
+    }*/
     for(unsigned i=0; i<getRowLength(irow); ++i) {
       if( getRowIndex(irow,i)==jcol ) {
         return data[irow*ncols+i];
@@ -305,6 +327,19 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   }
   plumed_massert( ival<data.size(), "cannot get value from " + name );
   return data[ival];
+}
+
+size_t Value::assignValues(View<double> target) {
+  const auto nvals=getNumberOfStoredValues ();
+  if( hasDeriv ) {
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j*(1+ngrid_der)];
+    }
+  } else {
+    plumed_massert( data.size()>=nvals, "cannot get value from " + name );
+    std::memcpy(target.data(),data.data(),nvals*sizeof(double));
+  }
+  return nvals;
 }
 
 void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
@@ -324,6 +359,27 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
   inputForce[iforce]+=f;
 }
 
+size_t Value::addForces(View<const double> const forces) {
+  hasForce=true;
+  const auto nvals = getNumberOfStoredValues();
+  plumed_massert( inputForce.size()>=nvals, "can't add force to " + name );
+  //I need at least nvals elements in forces
+  plumed_massert( forces.size()>=nvals, "can't add force to " + name );
+  const auto end=inputForce.begin()+nvals;
+  /*
+    {//this gives a very little speedup (+1 step in the 60s dragrace)
+      auto f = forces.begin();
+      for(auto iptf=inputForce.begin()  ; iptf<end; ++iptf, ++f) {
+        *iptf+=*f;
+      }
+    }
+  */
+  //is this daxpy?
+  for(auto i=0u; i<nvals; ++i) {
+    inputForce[i]+=forces[i];
+  }
+  return nvals;
+}
 
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );

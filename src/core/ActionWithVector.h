@@ -63,9 +63,9 @@ public:
 /// This is so we can parallelize with GPU
   virtual void getInputData( std::vector<double>& inputdata ) const ;
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
-  virtual void transferStashToValues( const std::vector<double>& stash );
+  virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash );
 /// This is so we can transfer forces from the values to the parallel task manager
-  virtual void transferForcesToStash( std::vector<double>& stash ) const ;
+  virtual void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const ;
 /// Get the number of forces to use
   unsigned getNumberOfForceDerivatives() const ;
 /// Apply the forces on this data
