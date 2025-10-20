@@ -246,7 +246,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   }
   log.printf("\n");
 
-  std::vector<Vector> positions=pdb.getPositions();
+  std::vector<Vector> myPositions=pdb.getPositions();
   weights=pdb.getOccupancy();
   std::vector<AtomNumber> aligned=pdb.getAtomNumbers();
   p_aligned.resize( aligned.size() );
@@ -281,15 +281,15 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
   // subtract the center
   for(unsigned i=0; i<weights.size(); ++i) {
-    center+=positions[i]*weights[i];
+    center+=myPositions[i]*weights[i];
   }
   for(unsigned i=0; i<weights.size(); ++i) {
-    positions[i]-=center;
+    myPositions[i]-=center;
   }
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
     rmsd=Tools::make_unique<RMSD>();
-    rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
+    rmsd->set(weights,weights_measure,myPositions,type,false,false);// note: the reference is shifted now with center in the origin
     log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
   }
   if(nopbc) {
@@ -350,8 +350,7 @@ void FitToTemplate::calculate() {
       setGlobalPosition(a,matmul(rotation,ato-center_positions)+center);
     }
 // rotate box
-    Pbc& pbc(pbc_action->getPbc());
-    pbc.setBox(matmul(pbc_action->getPbc().getBox(),transpose(rotation)));
+    pbc_action->getPbc().setBox(matmul(pbc_action->getPbc().getBox(),transpose(rotation)));
   }
 }
 

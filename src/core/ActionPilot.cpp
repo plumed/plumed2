@@ -26,8 +26,7 @@ namespace PLMD {
 void ActionPilot::registerKeywords(Keywords& keys) {}
 
 ActionPilot::ActionPilot(const ActionOptions&ao):
-  Action(ao),
-  stride(1) {
+  Action(ao) {
   if( keywords.exists("STRIDE") ) {
     parse("STRIDE",stride);
     if( !keywords.style("STRIDE","hidden") ) {
@@ -45,11 +44,11 @@ bool ActionPilot::onStep()const {
   return false;
 }
 
-int ActionPilot::getStride()const {
+unsigned ActionPilot::getStride()const {
   return stride;
 }
 
-void ActionPilot::setStride(const int& n) {
+void ActionPilot::setStride(const unsigned n) {
   stride=n;
 }
 

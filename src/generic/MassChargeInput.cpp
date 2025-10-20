@@ -111,7 +111,7 @@ MassChargeInput::MassChargeInput(const ActionOptions& ao):
     double mass;
     double charge;
     while(ifile.scanField("index",index).scanField("mass",mass).scanField("charge",charge).scanField()) {
-      if( index>=natoms ) {
+      if( static_cast<unsigned>(index)>=natoms ) {
         error("indices of atoms in input file are too large");
       }
       masses[index]=mass;

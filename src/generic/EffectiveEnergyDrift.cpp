@@ -38,8 +38,6 @@
 #include "tools/File.h"
 #include "tools/Pbc.h"
 
-#include <algorithm>
-
 namespace PLMD {
 namespace generic {
 
@@ -85,8 +83,8 @@ class EffectiveEnergyDrift:
   std::vector<ActionWithValue*> biases;
 
   long long int pDdStep;
-  int nLocalAtoms;
-  int pNLocalAtoms;
+  unsigned nLocalAtoms;
+  unsigned pNLocalAtoms;
   std::vector<int> pGatindex;
   std::vector<double> xpositions;
   std::vector<double> ypositions;
@@ -298,7 +296,7 @@ void EffectiveEnergyDrift::update() {
     indexS.resize(pNLocalAtoms);
     dataS.resize(pNLocalAtoms*6);
 
-    for(int i=0; i<pNLocalAtoms; i++) {
+    for(unsigned i=0; i<pNLocalAtoms; i++) {
       indexS[i] = pGatindex[i];
       dataS[i*6] = pPositions[i][0];
       dataS[i*6+1] = pPositions[i][1];
@@ -335,7 +333,7 @@ void EffectiveEnergyDrift::update() {
     }
 
     //fill the vectors pGatindex, pPositions and pForces
-    for(int i=0; i<nLocalAtoms; i++) {
+    for(unsigned i=0; i<nLocalAtoms; i++) {
       int glb=backmap[gatindex[i]];
       pGatindex[i] = indexR[glb];
       pPositions[i][0] = dataR[glb*6];
@@ -351,7 +349,7 @@ void EffectiveEnergyDrift::update() {
 
   double eed_tmp=eed;
   #pragma omp parallel for reduction(+:eed_tmp)
-  for(int i=0; i<nLocalAtoms; i++) {
+  for(unsigned i=0; i<nLocalAtoms; i++) {
     Vector dst=delta(pPositions[i],positions[i]);
     if(pbc)
       for(unsigned k=0; k<3; k++) {
