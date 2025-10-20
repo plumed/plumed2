@@ -86,15 +86,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
-  void setupOnFirstStep( const bool incalc ) override {
-    plumed_error();
-  }
   unsigned getNumberOfDerivatives() override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_error();
-  }
   void calculate() override ;
 };
 

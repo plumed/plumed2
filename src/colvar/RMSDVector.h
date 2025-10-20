@@ -55,11 +55,8 @@ public:
   explicit RMSDVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   int checkTaskIsActive( const unsigned& itask ) const override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_merror("This shouldn't be needed anymore");
-  }
-  void transferStashToValues( const std::vector<double>& stash ) override ;
-  void transferForcesToStash( std::vector<double>& stash ) const override ;
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
+  void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const override ;
   static void performTask( std::size_t task_index,
                            const RMSDVectorData& actiondata,
                            ParallelActionsInput& input,

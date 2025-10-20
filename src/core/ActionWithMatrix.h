@@ -68,13 +68,10 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
-    plumed_error();
-  }
 /// Get the elements of the matrices into the output values
-  void transferStashToValues( const std::vector<double>& stash ) override ;
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
 /// Get the forces from the output values and transfer them to the stash
-  void transferForcesToStash( std::vector<double>& stash ) const override ;
+  void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const override ;
 };
 
 }

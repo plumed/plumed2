@@ -114,24 +114,27 @@ namespace contour {
 PLUMED_REGISTER_ACTION(FindContour,"FIND_CONTOUR")
 
 void FindContour::registerKeywords( Keywords& keys ) {
-  ContourFindingBase::registerKeywords( keys );
+  ActionWithVector::registerKeywords( keys );
   ActionWithValue::useCustomisableComponents(keys);
-// We want a better way of doing this bit
+  keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
+  ContourFindingObject<gridtools::EvaluateGridFunction>::registerKeywords( keys );
   keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
   keys.addDOI("10.1039/B805786A");
   keys.addDOI("10.1021/jp909219k");
   keys.addDOI("10.1088/1361-648X/aa893d");
   keys.addDOI("10.1063/1.5134461");
+  PTM::registerKeywords( keys );
 }
 
 FindContour::FindContour(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao) {
+  ActionWithVector(ao),
+  firststep(true),
+  taskmanager(this) {
   parse("BUFFER",gbuffer);
   if( gbuffer>0 ) {
     log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
   }
-  checkRead();
 
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
@@ -142,27 +145,31 @@ FindContour::FindContour(const ActionOptions&ao):
     addComponent( argn[i], shape );
     componentIsNotPeriodic( argn[i] );
   }
+  function::FunctionOptions options;
+  ContourFindingObject<gridtools::EvaluateGridFunction>::read( taskmanager.getActionInput(), this, options );
+  log.printf("  calculating dividing surface along which function equals %f \n", taskmanager.getActionInput().contour);
 }
 
 std::string FindContour::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
   return "a vector of coordinates for the contour along the " + cname + " direction";
 }
 
-void FindContour::setupValuesOnFirstStep() {
-  std::vector<std::size_t> shape(1);
-  shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    getPntrToComponent(i)->setShape( shape );
+void FindContour::calculate() {
+  if( firststep ) {
+    std::vector<std::size_t> shape(1);
+    shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      getPntrToComponent(i)->setShape( shape );
+    }
+    active_cells.resize( shape[0] );
+    taskmanager.setupParallelTaskManager( 0, 0 );
+    firststep = false;
   }
-  active_cells.resize( shape[0] );
+  taskmanager.runAllTasks();
 }
 
 unsigned FindContour::getNumberOfDerivatives() {
   return 0;
-}
-
-void FindContour::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
-  task_reducing_actions.push_back(this);
 }
 
 void FindContour::getNumberOfTasks( unsigned& ntasks ) {
@@ -182,7 +189,7 @@ void FindContour::getNumberOfTasks( unsigned& ntasks ) {
     getInputGridObject().getIndices( i, ind );
     getInputGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
     // Get the value of a point on the grid
-    double val1=gval->get( i ) - contour;
+    double val1=gval->get( i ) - taskmanager.getActionInput().contour;
     bool edge=false;
     for(unsigned j=0; j<gval->getRank(); ++j) {
       // Make sure we don't search at the edge of the grid
@@ -194,7 +201,7 @@ void FindContour::getNumberOfTasks( unsigned& ntasks ) {
       } else {
         ind[j]+=1;
       }
-      double val2=gval->get( getInputGridObject().getIndex(ind) ) - contour;
+      double val2=gval->get( getInputGridObject().getIndex(ind) ) - taskmanager.getActionInput().contour;
       if( val1*val2<0 ) {
         active_cells[gval->getRank()*i + j] = 1;
       }
@@ -215,22 +222,40 @@ int FindContour::checkTaskIsActive( const unsigned& taskno ) const {
   return -1;
 }
 
-void FindContour::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // Retrieve the initial grid point coordinates
-  unsigned gpoint = std::floor( current / getPntrToArgument(0)->getRank() );
+void FindContour::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t rank = getPntrToArgument(0)->getRank();
+  std::size_t ndata = getInputGridObject().getNumberOfPoints()*rank;
+  if( inputdata.size()!=2*rank*ndata ) {
+    inputdata.resize( 2*rank*ndata );
+  }
   std::vector<double> point( getPntrToArgument(0)->getRank() );
-  getInputGridObject().getGridPointCoordinates( gpoint, point );
+  for(unsigned i=0; i<getInputGridObject().getNumberOfPoints(); ++i) {
+    getInputGridObject().getGridPointCoordinates( i, point );
+    for(unsigned j=0; j<rank; ++j) {
+      for(unsigned k=0; k<rank; ++k) {
+        inputdata[i*rank*2*rank + j*2*rank + k] = point[k];
+        inputdata[i*rank*2*rank + j*2*rank + rank + k] = 0;
+      }
+      inputdata[i*rank*2*rank + j*2*rank + rank + j] = 0.999999999*getInputGridObject().getGridSpacing()[j];
+    }
+  }
+}
 
-  // Retrieve the direction we are searching for the contour
-  unsigned gdir = current%(getPntrToArgument(0)->getRank() );
-  std::vector<double> direction( getPntrToArgument(0)->getRank(), 0 );
-  direction[gdir] = 0.999999999*getInputGridObject().getGridSpacing()[gdir];
+void FindContour::performTask( std::size_t task_index,
+                               const ContourFindingObject<gridtools::EvaluateGridFunction>& actiondata,
+                               ParallelActionsInput& input,
+                               ParallelActionsOutput& output ) {
 
+  std::size_t rank = actiondata.function.getGridObject().getDimension();
+  std::vector<double> direction( rank ), point( rank );
+  for(unsigned i=0; i<rank; ++i) {
+    point[i] = input.inputdata[ 2*rank*task_index + i];
+    direction[i] = input.inputdata[ 2*rank*task_index + rank + i];
+  }
   // Now find the contour
-  findContour( direction, point );
-  // And transfer to the store data vessel
-  for(unsigned i=0; i<getPntrToArgument(0)->getRank(); ++i) {
-    myvals.setValue( i, point[i] );
+  ContourFindingObject<gridtools::EvaluateGridFunction>::findContour( actiondata, direction, point );
+  for(unsigned i=0; i<rank; ++i) {
+    output.values[i] = point[i];
   }
 }
 

@@ -173,9 +173,6 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   unsigned getNumberOfDerivatives() override;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override {
-    plumed_merror("shouldn't be here");
-  }
   static std::size_t getIndex( std::size_t irow, std::size_t jcol, const ArgumentBookeepingHolder& mat );
   static void performTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const ThreeBodyGFunctionsInput& actiondata );

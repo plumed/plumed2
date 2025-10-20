@@ -42,16 +42,6 @@
 #include <cfloat>
 
 #include <iostream>
-#include <limits>
-#include <numeric>
-
-using std::cerr;
-
-
-#define hdbg(...) __LINE__ << ":" #__VA_ARGS__ " = " << (__VA_ARGS__) << '\n'
-// #define vdbg(...) std::cerr << __LINE__ << ":" << #__VA_ARGS__ << " " << (__VA_ARGS__) << '\n'
-#define vdbg(...) std::cerr << hdbg(__VA_ARGS__)
-#define vdbg(...)
 
 namespace PLMD {
 namespace colvar {
@@ -169,6 +159,8 @@ void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
   keys.add ("compulsory", "R_0", "The r_0 parameter of the switching function");
   keys.add (
     "compulsory", "D_MAX", "0.0", "The cut off of the switching function");
+  keys.add (
+    "compulsory", "D_0", "0.0", "The value of d_0 in the switching function");
 }
 
 template <typename calculateFloat>
@@ -920,9 +912,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     if (mm_ == 0) {
       mm_ = 2 * nn_;
     }
-    if (mm_ % 2 != 0 || mm_ % 2 != 0) {
-      error (" this implementation only works with both MM and NN even");
-    }
 
     switchingParameters.nn = nn_;
     switchingParameters.mm = mm_;
@@ -941,9 +930,17 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
       // in plain plumed
     }
 
+    calculateFloat d0 = 0.0;
+    parse ("D_0", d0);
+    switchingParameters.calcSquared= (! d0 > calculateFloat(0.0) ) && (nn_%2 == 0 && mm_%2 == 0);
+    switchingParameters.d0=d0;
     switchingParameters.dmaxSQ = dmax * dmax;
     calculateFloat invr0 = 1.0 / r0_;
-    switchingParameters.invr0_2 = invr0 * invr0;
+    if (switchingParameters.calcSquared) {
+      switchingParameters.invr0_2 = invr0 * invr0;
+    } else {
+      switchingParameters.invr0_2 = invr0;
+    }
     constexpr bool dostretch = true;
     if (dostretch && mpiActive) {
       std::vector<calculateFloat> inputs = {0.0, dmax * invr0};
@@ -953,18 +950,22 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
       thrust::device_vector<calculateFloat> dummydfunc (2);
       thrust::device_vector<calculateFloat> resZeroMax (2);
 
-      PLMD::GPU::getpcuda_Rational<<<1, 2>>> (
+      PLMD::GPU::getpcuda_func<PLMD::GPU::Rational><<<1, 2>>> (
         thrust::raw_pointer_cast (inputZeroMax.data()),
-        nn_,
-        mm_,
+        switchingParameters,
         thrust::raw_pointer_cast (dummydfunc.data()),
         thrust::raw_pointer_cast (resZeroMax.data()));
 
       switchingParameters.stretch = 1.0 / (resZeroMax[0] - resZeroMax[1]);
       switchingParameters.shift = -resZeroMax[1] * switchingParameters.stretch;
     }
+    if (switchingParameters.calcSquared) {
+      switchingParameters.nn/=2;
+      switchingParameters.mm/=2;
+    }
     comm.Bcast (switchingParameters.dmaxSQ,0);
     comm.Bcast (switchingParameters.invr0_2,0);
+    comm.Bcast (switchingParameters.d0,0);
     comm.Bcast (switchingParameters.stretch,0);
     comm.Bcast (switchingParameters.shift,0);
     comm.Bcast (switchingParameters.nn,0);
@@ -1024,9 +1025,11 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
 
   log << "  contacts are counted with cutoff (dmax)="
       << sqrt (switchingParameters.dmaxSQ)
-      << ", with a rational switch with parameters: d0=0.0, r0="
-      << 1.0 / sqrt (switchingParameters.invr0_2)
-      << ", N=" << switchingParameters.nn << ", M=" << switchingParameters.mm
+      << ", with a rational switch with parameters: "
+      "d0="<< switchingParameters.d0
+      <<", r0="<< 1.0 / ((switchingParameters.calcSquared)?(sqrt (switchingParameters.invr0_2)):switchingParameters.invr0_2)
+      << ", N=" << switchingParameters.nn * ((switchingParameters.calcSquared)?2:1)
+      << ", M=" << switchingParameters.mm * ((switchingParameters.calcSquared)?2:1)
       << ".\n";
   log << "GPU info:\n"
       << "\t max threads per coordination" << maxNumThreads << "\n"

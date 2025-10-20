@@ -197,7 +197,7 @@ try
 
     if(replex_) {
         double bias=0.0;
-        cmd("getBias",&bias);
+        plumed_->cmd("getBias",&bias);
         if(bias!=0.0) {
             GMX_THROW(NotImplementedError("The PLUMED patch is still not compatible"
                 " with the replica exchange if PLUMED computes biases"));

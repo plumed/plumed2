@@ -34,8 +34,9 @@
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "ActionSet.h"
+#include <iomanip>
 #include <iostream>
-
+#include <algorithm>
 namespace PLMD {
 
 Keywords ActionOptions::emptyKeys;
@@ -62,7 +63,8 @@ void Action::registerKeywords( Keywords& keys ) {
 
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
-  line(ao.line),
+  //skipping the name with the +1
+  linemap(ao.line.begin()+1,ao.line.end()),
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
   timestep(0),
@@ -78,7 +80,8 @@ Action::Action(const ActionOptions&ao):
   // Retrieve the timestep and save it
   resetStoredTimestep();
 
-  line.erase(line.begin());
+  //line.erase(line.begin());
+  //making the line map
   if( !keywords.exists("NO_ACTION_LOG") ) {
     log.printf("Action %s\n",name.c_str());
     if(ao.fullPath.length()>0) {
@@ -180,11 +183,10 @@ std::string Action::getKeyword(const std::string& key) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
 
-  std::string outkey;
-  if( Tools::getKey(line,key,outkey ) ) {
-    return key + outkey;
+  std::string outkey=linemap.getKeyword(key);
+  if(!outkey.empty()) {
+    return outkey;
   }
-
   if( keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,outkey) ) {
       if( outkey.length()==0 ) {
@@ -205,7 +207,8 @@ void Action::parseFlag(const std::string&key,bool & t) {
   plumed_massert( keywords.style(key,"deprecated") || keywords.style(key,"flag") || keywords.style(key,"hidden"), "keyword " + key + " is not a flag");
 
   // Read in the flag otherwise get the default value from the keywords object
-  if(!Tools::parseFlag(line,key,t)) {
+  t = linemap.readAndRemoveFlag(key);
+  if(!t) {
     if( keywords.style(key,"nohtml") ) {
       t=false;
     } else if ( !keywords.getLogicalDefault(key,t) ) {
@@ -281,16 +284,12 @@ void Action::clearDependencies() {
 }
 
 void Action::checkRead() {
-  if(!line.empty()) {
+  if (!linemap.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
-    for(unsigned i=0; i<line.size(); i++) {
-      if(i>0) {
-        msg = msg + ", ";
-      }
-      msg = msg + line[i];
-    }
+    msg += linemap.keyList(", ");
     error(msg);
   }
+
   setupConstantValues(false);
 }
 

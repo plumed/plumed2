@@ -333,40 +333,34 @@ void RMSDVector::performTask( std::size_t task_index,
   }
 }
 
-void RMSDVector::transferStashToValues( const std::vector<double>& stash ) {
+void RMSDVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   if( getNumberOfComponents()==1 ) {
-    ActionWithVector::transferStashToValues( stash );
+    ActionWithVector::transferStashToValues( partialTaskList, stash );
     return;
   }
-  std::size_t k=0;
   Value* dist = getPntrToComponent(0);
   Value* disp = getPntrToComponent(1);
   std::size_t ss = disp->getShape()[1];
-  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
-    dist->set(i,stash[k]);
-    k++;
+  for(unsigned i=0; i<partialTaskList.size(); ++i) {
+    dist->set(i,stash[(1+ss)*partialTaskList[i]]);
     for(unsigned j=0; j<ss; ++j) {
-      disp->set( ss*i + j, stash[k] );
-      k++;
+      disp->set( ss*partialTaskList[i] + j, stash[(1+ss)*partialTaskList[i]+1+j] );
     }
   }
 }
 
-void RMSDVector::transferForcesToStash( std::vector<double>& stash ) const {
+void RMSDVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
   if( getNumberOfComponents()==1 ) {
-    ActionWithVector::transferForcesToStash( stash );
+    ActionWithVector::transferForcesToStash( partialTaskList, stash );
     return;
   }
-  std::size_t k=0;
   const Value* dist = getConstPntrToComponent(0);
   const Value* disp = getConstPntrToComponent(1);
   std::size_t ss = disp->getShape()[1];
-  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
-    stash[k] = dist->getForce(i);
-    k++;
+  for(unsigned i=0; i<partialTaskList.size(); ++i) {
+    stash[(1+ss)*partialTaskList[i]] = dist->getForce(i);
     for(unsigned j=0; j<ss; ++j) {
-      stash[k] = disp->getForce( ss*i + j );
-      k++;
+      stash[(1+ss)*partialTaskList[i]+1+j] = disp->getForce( ss*partialTaskList[i] + j );
     }
   }
 }
@@ -442,11 +436,11 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Make sure that forces are calculated
   input.noderiv = false;
   // Get the forces
-  transferForcesToStash( force_stash );
+  transferForcesToStash( partialTaskList, force_stash );
   // Get the MPI details
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if( runInSerial() ) {
+  if( taskmanager.runInSerial() ) {
     stride=1;
     rank=0;
   }
@@ -495,7 +489,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
     }
   }
   // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-  if( !runInSerial() ) {
+  if( !taskmanager.runInSerial() ) {
     comm.Sum( outforces );
   }
 }

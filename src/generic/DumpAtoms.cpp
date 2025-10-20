@@ -415,7 +415,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
 
     std::vector<std::string> argnames;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) {
+      if( getPntrToArgument(i)->getRank()!=1 ) {
         error("arguments for xyz output should be vectors");
       }
       if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) {

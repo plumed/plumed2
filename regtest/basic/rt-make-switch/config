@@ -1,1 +1,14 @@
 type=make
+
+function plumed_regtest_after() {
+  #zfix add a space when removing the minus sign, this should address that
+  for file in *.reference; do
+    new="${file%.reference}"
+    if test -f "$new"; then
+      tmp=$(mktemp "./${new}.XXX")
+      # sed -E "s/( 0\.0+\b)/ \1/g" "$new" > "${tmp}"
+      perl -pe "s/( 0\.0+\b)/ \1/g" "$new" > "${tmp}"
+      mv "$tmp" "$new"
+    fi
+  done
+}

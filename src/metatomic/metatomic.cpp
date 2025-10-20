@@ -30,9 +30,11 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 /*
 Use arbitrary machine learning models as collective variables.
 
-\note This action requires the metatomic-torch library. Check the instructions
-in [the module page](module_metatomic.md) which includes instructions on how to
-enable this module.
+!!! note
+
+    This action requires `libmetatomic` to be enabled and found. Check the
+    instructions in [the module page](module_metatomic.md) for more information
+    on how to enable this module.
 
 This action enables the use of fully custom machine learning models — based on
 the [metatomic] models interface — as collective variables in PLUMED. Such
@@ -89,24 +91,26 @@ Here is another example with all the possible keywords:
 
 ```plumed
 soap: METATOMIC ...
-    MODEL=soap.pt
-    EXTENSION_DIRECTORY=extensions
+    MODEL=path/to/model.pt
+    EXTENSIONS_DIRECTORY=path/to/extensions/
+    DEVICE=cuda
     CHECK_CONSISTENCY
 
     SPECIES1=1-10
     SPECIES2=11-20
     SPECIES_TO_TYPES=8,13
 
-    # only run the calculation for the Aluminium (type 13) atoms, but
-    # include the Oxygen (type 8) as potential neighbors.
+    # only run the calculation for the Aluminium (type 13) atoms,
+    # still including all other atoms as potential neighbors.
     SELECTED_ATOMS=11-20
 ...
 ```
 
-[TorchScript]: https://pytorch.org/docs/stable/jit.html
-[metatomic]: https://docs.metatensor.org/metatomic/
-[mta_tutorials]: https://docs.metatensor.org/metatomic/latest/examples/
-[features_output]: https://docs.metatensor.org/metatomic/latest/outputs/features.html
+[TorchScript]: https://pytorch.org/docs/stable/jit.html [metatomic]:
+https://docs.metatensor.org/metatomic/ [mta_tutorials]:
+https://docs.metatensor.org/metatomic/latest/examples/ [features_output]:
+https://docs.metatensor.org/metatomic/latest/outputs/features.html
+
 */
 //+ENDPLUMEDOC
 
@@ -1007,8 +1011,8 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatomic's atom types");
 
-    keys.addOutputComponent("outputs", "default", "scalar", "collective variable created by the metatomic model");
-    keys.setValueDescription("scalar/vector/matrix","collective variable created by the metatomic model");
+    keys.addOutputComponent("outputs", "default", "scalar/vector/matrix", "collective variable created by the metatomic model");
+    keys.setValueDescription("scalar/vector/matrix", "collective variable created by the metatomic model");
 }
 
 PLUMED_REGISTER_ACTION(MetatomicPlumedAction, "METATOMIC")

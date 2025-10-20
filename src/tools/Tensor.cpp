@@ -26,7 +26,7 @@
 
 namespace PLMD {
 
-void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+void TensorGenericAux::local_xsyevr(const char *jobz, const char *range, const char *uplo, int *n,
                                     double *a, int *lda, double *vl, double *vu, int *
                                     il, int *iu, double *abstol, int *m, double *w,
                                     double *z__, int *ldz, int *isuppz, double *work,
@@ -35,5 +35,12 @@ void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const c
 }
 
 
+void TensorGenericAux::local_xsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+                                    float *a, int *lda, float *vl, float *vu, int *
+                                    il, int *iu, float *abstol, int *m, float *w,
+                                    float *z__, int *ldz, int *isuppz, float *work,
+                                    int *lwork, int *iwork, int *liwork, int *info) {
+  plumed_lapack_ssyevr(jobz,range,uplo,n,a,lda,vl,vu,il,iu,abstol,m,w,z__,ldz,isuppz,work,lwork,iwork,liwork,info);
+}
 }
 

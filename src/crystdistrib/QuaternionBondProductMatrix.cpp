@@ -91,9 +91,6 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override {
-    plumed_merror("this doesn't do anything");
-  }
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
                            const ParallelActionsInput& input,
@@ -234,13 +231,20 @@ std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( Action
     return active_tasks;
   }
 
+  unsigned atsize = 0;
   Value* myarg = getPntrToArgument(0);
-  unsigned base=0;
   unsigned nrows = myarg->getShape()[0];
+  for(unsigned i=0; i<nrows; ++i) {
+    atsize += myarg->getRowLength(i);
+  }
+  active_tasks.resize( atsize );
+
+  unsigned base=0, k=0;
   for(unsigned i=0; i<nrows; ++i) {
     unsigned ncols = myarg->getRowLength(i);
     for(unsigned j=0; j<ncols; ++j) {
-      active_tasks.push_back(base+j);
+      active_tasks[k] = base+j;
+      ++k;
     }
     base += myarg->getNumberOfColumns();
   }
