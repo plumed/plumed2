@@ -190,8 +190,11 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
     for(unsigned j=0; j<input.ncomponents; ++j) {
       args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
     }
-    MatrixElementOutput matout( input.ncomponents, 2*input.ncomponents, output.values.data()+i*input.ncomponents, output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
-    T::calculate( input.noderiv, actiondata.funcinput, args, matout );
+    MatrixElementOutput matout( input.ncomponents,
+                                2*input.ncomponents,
+                                output.values.data()+i*input.ncomponents,
+                                output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
+    T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
   }
 }
 
