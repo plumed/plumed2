@@ -2418,7 +2418,7 @@ public:
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
-    ~ExceptionTddypeError() throw() {}
+    ~ExceptionTypeError() throw() {}
 #endif
   };
 #endif
