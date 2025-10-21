@@ -774,7 +774,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
 
 Benchmark::Benchmark(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 

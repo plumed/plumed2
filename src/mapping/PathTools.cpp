@@ -29,11 +29,9 @@
 #include "core/ActionSet.h"
 #include "core/Value.h"
 #include "core/PlumedMain.h"
-#include "Path.h"
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace PLMD {
 namespace mapping {
@@ -150,7 +148,7 @@ void PathTools::registerKeywords( Keywords& keys ) {
 
 PathTools::PathTools(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int PathTools::main(FILE* in, FILE*out,Communicator& pc) {

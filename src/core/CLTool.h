@@ -85,7 +85,7 @@ protected:
   bool parseVector(const std::string&key,std::vector<T>&t);
 public:
 /// How is the input specified on the command line or in an input file
-  enum {unset,commandline,ifile} inputdata;
+  enum class inputType {unset,commandline,ifile} inputdata;
 /// Create the help keywords
   static void registerKeywords( Keywords& keys );
   explicit CLTool(const CLToolOptions& co );

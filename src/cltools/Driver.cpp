@@ -233,7 +233,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
 template<typename real>
 Driver<real>::Driver(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 template<typename real>
 std::string Driver<real>::description()const {
@@ -774,17 +774,26 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>(pp.get());
           if( avv ||  pp.get()->getName()=="GROUP" || pp.get()->getName()=="DENSITY" ) {
-            Action* p(pp.get());
+            Action* actionBase=pp.get();
             if( firsta ) {
-              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() );
+              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"",
+                               actionBase->getLabel().c_str(),
+                               actionBase->getName().c_str() );
               firsta=false;
             } else {
-              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() );
+              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"",
+                               actionBase->getLabel().c_str(),
+                               actionBase->getName().c_str() );
             }
             if( avv ) {
-              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"virtual atom calculated by %s action\" }", avv->getLabel().c_str(), avv->getName().c_str() );
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\","
+                               " \"description\": \"virtual atom calculated by %s action\" }",
+                               avv->getLabel().c_str(),
+                               avv->getName().c_str() );
             } else {
-              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"indices of atoms specified in GROUP\" }", p->getLabel().c_str() );
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\","
+                               " \"description\": \"indices of atoms specified in GROUP\" }",
+                               actionBase->getLabel().c_str() );
             }
             valuefile.printf("\n  }");
             continue;
@@ -794,12 +803,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             Keywords keys;
             p.getKeywordsForAction( av->getName(), keys );
             if( firsta ) {
-              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
+              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"",
+                               av->getLabel().c_str(),
+                               keys.getDisplayName().c_str() );
               firsta=false;
             } else {
-              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
+              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"",
+                               av->getLabel().c_str(),
+                               keys.getDisplayName().c_str() );
             }
-            for(int i=0; i<av->getNumberOfComponents(); ++i) {
+            for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
               Value* myval = av->copyOutput(i);
               std::string compname = myval->getName(), description;
               if( av->getLabel()==compname ) {
@@ -842,15 +855,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                 if( compname==as->getShortcutLabel() ) {
                   description = keys.getOutputComponentDescription(".#!value");
                 } else {
-                  std::size_t pp=compname.find(as->getShortcutLabel());
-                  description = keys.getOutputComponentDescription( compname.substr(pp+as->getShortcutLabel().length()+1) );
+                  std::size_t shortcutPos=compname.find(as->getShortcutLabel());
+                  description = keys.getOutputComponentDescription(
+                                  compname.substr(shortcutPos+as->getShortcutLabel().length()+1) );
                 }
                 if( description.find("\\")!=std::string::npos ) {
                   error("found invalid backslash character in documentation for component " + compname + " in action " + as->getName() + " with label " + as->getLabel() );
                 }
-                valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+                valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }",
+                                 myval->getName().c_str(),
+                                 myval->getValueType().c_str(),
+                                 description.c_str() );
               } else {
-                for(int j=0; j<av2->getNumberOfComponents(); ++j) {
+                for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
                   Value* myval = av2->copyOutput(j);
                   std::string compname = myval->getName(), description;
                   if( av2->getLabel()==compname ) {

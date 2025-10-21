@@ -67,7 +67,7 @@ void kt::registerKeywords( Keywords& keys ) {
 
 kt::kt(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int kt::main(FILE* in, FILE*out,Communicator& pc) {
