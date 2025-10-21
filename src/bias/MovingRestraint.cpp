@@ -112,8 +112,8 @@ class MovingRestraint : public Bias {
   std::vector<double> oldf;
   std::vector<std::string> verse;
   std::vector<double> work;
+  //memeber used as temporary working objects
   std::vector<double> kk,aa,f,dpotdk;
-  double tot_work;
   std::vector<Value*> valueCntr;
   std::vector<Value*> valueWork;
   std::vector<Value*> valueKappa;
@@ -169,7 +169,6 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   parseVector("VERSE",verse);
   std::vector<long long int> ss(1);
   ss[0]=-1;
-  std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   for(int i=0;; i++) {
     // Read in step
     if( !parseNumberedVector("STEP",i,ss) ) {
@@ -235,7 +234,6 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   addComponent("work");
   componentIsNotPeriodic("work");
   valueTotWork=getPntrToComponent("work");
-  tot_work=0.0;
 
   log<<"  Bibliography ";
   log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
@@ -275,7 +273,7 @@ void MovingRestraint::calculate() {
       aa[j]=(c1*a1+c2*(a1+difference(j,a1,a2)));
     }
   }
-  tot_work=0.0;
+  double tot_work=0.0;
   for(unsigned i=0; i<narg; ++i) {
     const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
     valueCntr[i]->set(aa[i]);

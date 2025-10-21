@@ -130,10 +130,10 @@ void Restraint::calculate() {
     const double cv=difference(i,at[i],getArgument(i));
     const double k=kappa[i];
     const double m=slope[i];
-    const double f=-(k*cv+m);
+    const double force=-(k*cv+m);
     ene+=0.5*k*cv*cv+m*cv;
-    setOutputForce(i,f);
-    totf2+=f*f;
+    setOutputForce(i,force);
+    totf2+=force*force;
   }
   setBias(ene);
   valueForce2->set(totf2);

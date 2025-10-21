@@ -28,28 +28,28 @@ void ActionPilot::registerKeywords(Keywords& keys) {}
 ActionPilot::ActionPilot(const ActionOptions&ao):
   Action(ao) {
   if( keywords.exists("STRIDE") ) {
-    parse("STRIDE",stride);
+    parse("STRIDE",actionStride);
     if( !keywords.style("STRIDE","hidden") ) {
-      log.printf("  with stride %d\n",stride);
+      log.printf("  with stride %d\n",actionStride);
     }
   } else {
-    stride=0;
+    actionStride=0;
   }
 }
 
 bool ActionPilot::onStep()const {
-  if( stride>0 ) {
-    return getStep()%stride==0;
+  if( actionStride>0 ) {
+    return getStep()%actionStride==0;
   }
   return false;
 }
 
 unsigned ActionPilot::getStride()const {
-  return stride;
+  return actionStride;
 }
 
 void ActionPilot::setStride(const unsigned n) {
-  stride=n;
+  actionStride=n;
 }
 
 }

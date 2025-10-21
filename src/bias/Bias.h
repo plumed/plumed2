@@ -45,11 +45,11 @@ class Bias :
   std::vector<double> outputForces;
 /// the pointer to the bias component
   Value *valueBias;
-  std::vector<double> f;
+  std::vector<double> accumForces;
   std::vector<double> forces;
 protected:
 /// set the force from the bias on argument i, this automatically set the partial derivative of the bias with respect to i to -f
-  void setOutputForce(int i,double f);
+  void setOutputForce(int i,double force);
 /// set the value of the bias
   void setBias(double bias);
 public:
@@ -60,9 +60,9 @@ public:
 };
 
 inline
-void Bias::setOutputForce(int i,double f) {
-  outputForces[i]=f;
-  valueBias->addDerivative(i,-f);
+void Bias::setOutputForce(int i,double force) {
+  outputForces[i]=force;
+  valueBias->addDerivative(i,-force);
 }
 
 inline
