@@ -179,7 +179,7 @@ double Bessel::chbevl(const double x, const std::array<double,N>& array) {
   b1 = 0.0;
   b2 = b1 ;
 
-  for(int index = 1 ; index < N ; index++) {
+  for(unsigned index = 1 ; index < N ; index++) {
     b2 = b1;
     b1 = b0;
     b0 = x * b1 - b2 + array[index];

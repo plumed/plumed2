@@ -171,10 +171,12 @@ void Stats::calculate() {
   if(sqdonly) {
 
     double nsqd = 0.;
-    Value* val;
-    if(!components) {
-      val=getPntrToComponent("sqdevsum");
-    }
+//ternary to avoid a warning about initialization
+    Value* val=(components)?
+               nullptr
+               :
+               getPntrToComponent("sqdevsum");
+
     for(unsigned i=0; i<parameters.size(); ++i) {
       double dev = getArgument(i)-parameters[i];
       if(upperd&&dev<0) {

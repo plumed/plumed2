@@ -46,10 +46,10 @@ void Function::addValueWithDerivatives() {
   getPntrToValue()->resizeDerivatives(getNumberOfDerivatives());
 }
 
-void Function::addComponentWithDerivatives( const std::string& name ) {
+void Function::addComponentWithDerivatives( const std::string& compName ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
-  ActionWithValue::addComponentWithDerivatives(name);
-  getPntrToComponent(name)->resizeDerivatives(getNumberOfDerivatives());
+  ActionWithValue::addComponentWithDerivatives(compName);
+  getPntrToComponent(compName)->resizeDerivatives(getNumberOfDerivatives());
 }
 
 void Function::apply() {

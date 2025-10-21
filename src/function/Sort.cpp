@@ -166,7 +166,7 @@ void Sort::calc( const Sort& func, bool noderiv, const View<const double> args, 
   }
 // STL sort sorts based on first element (value) then second (index)
   std::sort(data.begin(),data.end());
-  for(int i=0; i<funcout.values.size(); ++i) {
+  for(unsigned i=0; i<funcout.values.size(); ++i) {
     funcout.values[i] = data[i].first;
     if( !noderiv ) {
       funcout.derivs[i][data[i].second] = 1;

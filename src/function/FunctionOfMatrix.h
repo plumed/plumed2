@@ -130,7 +130,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   // Get the number of arguments
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) {
+  if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
     nargs = nargs - nmasks;
   }
   // Get the shape of the output
