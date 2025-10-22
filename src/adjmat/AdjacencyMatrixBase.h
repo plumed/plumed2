@@ -451,7 +451,7 @@ void AdjacencyMatrixBase<T>::calculate() {
 
   // Reshape the matrix store if the number of columns has changed
   if( maxcol!=myval->getNumberOfColumns() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maxcol );
     }
   }

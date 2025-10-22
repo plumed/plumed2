@@ -306,14 +306,17 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data,
       continue;
     }
     // Calculate the excess swiching functions
-    double edf1, eval1 = data.low_sf.calculate( excess, edf1 );
-    double edf2, eval2 = data.low_sf.calculate( -proj_between, edf2 );
+    double edf1;
+    double eval1 = data.low_sf.calculate( excess, edf1 );
+    double edf2;
+    double eval2 = data.low_sf.calculate( -proj_between, edf2 );
     // Calculate the projection on the perpendicular distance from the center of the tube
     double cm = dstart.modulo2() - proj*proj;
 
     // Now calculate the density in the cylinder
     if( cm>0 && cm<data.cylinder_sw.get_dmax2() ) {
-      double dfuncr, val = data.cylinder_sw.calculateSqr( cm, dfuncr );
+      double dfuncr;
+      double val = data.cylinder_sw.calculateSqr( cm, dfuncr );
       Vector dc1, dc2, dc3, dd1, dd2, dd3, de1, de2, de3;
       if( !input.noderiv ) {
         Tensor d1_a1;
@@ -352,7 +355,8 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data,
             || proj>data.binw_mat*(bin+1)+bead.getCutoff() ) {
           continue;
         }
-        double der, contr=bead.calculateWithCutoff( proj, der ) / data.cell_volume;
+        double der;
+        double contr=bead.calculateWithCutoff( proj, der ) / data.cell_volume;
         der /= data.cell_volume;
         tvals[bin] += contr*val*eval1*eval2;
 
@@ -395,14 +399,13 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data,
     }
   }
   // Transform the density
-  double df, tsw = data.threshold_switch.calculate( max, df );
+  double df;
+  double tsw = data.threshold_switch.calculate( max, df );
   if( fabs(sw*tsw)<epsilon ) {
     return;
   }
 
   if( !input.noderiv ) {
-    Vector ader;
-    Tensor vir;
     Vector ddd = tsw*dfuncl*distance;
     output.deriv[0] = sw*df*max*tvals_derivs[vout][0] - ddd[0];
     output.deriv[1] = sw*df*max*tvals_derivs[vout][1] - ddd[1];
