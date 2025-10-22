@@ -232,9 +232,9 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
             error("backbone segment received does not contain a multiple of five residues");
           }
           for(unsigned jres=0; jres<jnres-2; ++jres) {
-            for(unsigned k=0; k<15; ++k) {
-              nlist[k]=iprev + ires*5+k;
-              nlist[k+15]=jprev + jres*5+k;
+            for(unsigned kk=0; kk<15; ++kk) {
+              nlist[kk]=iprev + ires*5+kk;
+              nlist[kk+15]=jprev + jres*5+kk;
             }
             std::string nlstr, num;
             Tools::convert( nlist[0], nlstr );
@@ -293,8 +293,8 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) {
-      Tools::convert( reference[i][k], ref0 );
+    for(unsigned kk=0; kk<3; ++kk) {
+      Tools::convert( reference[i][kk], ref0 );
       structure += "," + ref0;
     }
   }
