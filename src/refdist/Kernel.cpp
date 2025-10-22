@@ -182,7 +182,6 @@ Kernel::Kernel(const ActionOptions&ao):
     error("no arguments were specified");
   }
   // Now sort out the parameters
-  double weight;
   std::string fname;
   parse("REFERENCE",fname);
   bool usemahalanobis=false;
@@ -285,7 +284,8 @@ Kernel::Kernel(const ActionOptions&ao):
   }
 
   // Create the reference point and arguments
-  std::string refpoint, argstr;
+  std::string refpoint;
+  std::string argstr;
   for(unsigned i=0; i<argnames.size(); ++i) {
     if( i==0 ) {
       argstr = argnames[0];
@@ -297,7 +297,8 @@ Kernel::Kernel(const ActionOptions&ao):
   }
 
   // Get the information on the kernel type
-  std::string func_str, ktype;
+  std::string func_str;
+  std::string ktype;
   parse("TYPE",ktype);
   if( ktype=="gaussian" || ktype=="von-misses" ) {
     func_str = "exp(-x/2)";
@@ -336,12 +337,13 @@ Kernel::Kernel(const ActionOptions&ao):
     if( norm ) {
       if( ktype=="von-misses" ) {
         readInputLine( getShortcutLabel() + "_det: DIAGONALIZE ARG=" + getShortcutLabel() + "_cov VECTORS=all" );
-        std::string num, argnames= getShortcutLabel() + "_det.vals-1";
+        std::string num;
+        std::string thisargname= getShortcutLabel() + "_det.vals-1";
         for(unsigned i=1; i<nvals; ++i) {
           Tools::convert( i+1, num );
-          argnames += "," + getShortcutLabel() + "_det.vals-" + num;
+          thisargname += "," + getShortcutLabel() + "_det.vals-" + num;
         }
-        readInputLine( getShortcutLabel() + "_comp: CONCATENATE ARG=" + argnames );
+        readInputLine( getShortcutLabel() + "_comp: CONCATENATE ARG=" + thisargname );
         readInputLine( getShortcutLabel() + "_vec: CUSTOM ARG=" + getShortcutLabel() + "_comp FUNC=1/x PERIODIC=NO");
       } else {
         readInputLine( getShortcutLabel() + "_det: DETERMINANT ARG=" + getShortcutLabel() + "_cov");
@@ -358,7 +360,8 @@ Kernel::Kernel(const ActionOptions&ao):
       Tools::convert( sqrt(pow(2*pi,nvals)), pstr );
       readInputLine( getShortcutLabel() + "_vol: CUSTOM ARG=" + getShortcutLabel() + "_det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
     } else if( ktype=="von-misses" ) {
-      std::string wstr, min, max;
+      std::string min;
+      std::string max;
       ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_dist_2_diff" );
       plumed_assert( av );
       if( !av->copyOutput(0)->isPeriodic() ) {

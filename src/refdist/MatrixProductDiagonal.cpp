@@ -22,6 +22,7 @@
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
+#include <limits>
 
 //+PLUMEDOC FUNCTION MATRIX_PRODUCT_DIAGONAL
 /*
@@ -88,18 +89,24 @@ MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):
     error("should be two vectors or matrices in argument to this action");
   }
 
-  unsigned ncols;
-  if( getPntrToArgument(0)->getRank()==1 ) {
-    if( getPntrToArgument(0)->hasDerivatives() ) {
-      error("first argument to this action should be a vector or matrix");
+  const unsigned ncols = [&]()->unsigned{
+    if( getPntrToArgument(0)->getRank()==1 ) {
+      if( getPntrToArgument(0)->hasDerivatives() ) {
+        error("first argument to this action should be a vector or matrix");
+      }
+      return 1;
+    } else if( getPntrToArgument(0)->getRank()==2 ) {
+      if( getPntrToArgument(0)->hasDerivatives() ) {
+        error("first argument to this action should be a matrix");
+      }
+      return getPntrToArgument(0)->getShape()[1];
     }
-    ncols = 1;
-  } else if( getPntrToArgument(0)->getRank()==2 ) {
-    if( getPntrToArgument(0)->hasDerivatives() ) {
-      error("first argument to this action should be a matrix");
-    }
-    ncols = getPntrToArgument(0)->getShape()[1];
-  }
+    //you should not be here!
+    error("first argument to this action should be a vector or matrix");
+    //this is a dummy returns(in fact the code won't get here.
+    //this lambda is there due to a -Wmaybe-uninitialized
+    return std::numeric_limits<unsigned>::max();
+  }();
 
   if( getPntrToArgument(1)->getRank()==1 ) {
     if( getPntrToArgument(1)->hasDerivatives() ) {
