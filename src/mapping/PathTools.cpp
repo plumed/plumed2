@@ -373,7 +373,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     plmd.cmd("readInputLine", inpt );
     FILE* fp=fopen(istart.c_str(),"r");
     PDB mypdb;
-    bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
+    mypdb.readFromFilepointer(fp,false,0.1);
     indices.resize( mypdb.getAtomNumbers().size() );
     for(unsigned i=0; i<indices.size(); ++i) {
       indices[i] = mypdb.getAtomNumbers()[i];
@@ -503,7 +503,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   double delr = 1.0 / static_cast<double>( nbetween );
   std::vector<std::vector<double> > allframes;
   std::vector<double> frame( displacement.size() );
-  for(int i=0; i<nbefore; ++i) {
+  for(unsigned i=0; i<nbefore; ++i) {
     for(unsigned j=0; j<frame.size(); ++j) {
       frame[j] = start_pos[j] - i*delr*displacement[j];
     }
