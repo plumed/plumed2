@@ -118,7 +118,7 @@ private:
   bool active;
 
 /// Option that you might have enabled
-  std::set<std::string> options;
+  std::set<std::string> actionOptions;
 
   bool restart;
 
@@ -511,7 +511,7 @@ bool Action::parseNumberedVector(const std::string&key,
 
 inline
 void Action::deactivate() {
-  options.clear();
+  actionOptions.clear();
   active=false;
 }
 
@@ -522,7 +522,7 @@ bool Action::isActive()const {
 
 inline
 bool Action::isOptionOn(const std::string &s)const {
-  return options.count(s);
+  return actionOptions.count(s);
 }
 
 inline

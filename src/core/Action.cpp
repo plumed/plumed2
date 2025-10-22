@@ -267,7 +267,7 @@ void Action::activate() {
 
 void Action::setOption(const std::string &s) {
 // This overloads the action and activate some options
-  options.insert(s);
+  actionOptions.insert(s);
   for(const auto & p : after) {
     p->setOption(s);
   }
@@ -275,7 +275,7 @@ void Action::setOption(const std::string &s) {
 
 void Action::clearOptions() {
 // This overloads the action and activate some options
-  options.clear();
+  actionOptions.clear();
 }
 
 
