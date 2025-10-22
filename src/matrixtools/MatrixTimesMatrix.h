@@ -168,7 +168,6 @@ void MatrixTimesMatrix<T>::calculate() {
     }
   }
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
   taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues() );
   taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
   taskmanager.runAllTasks();
@@ -218,8 +217,8 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
       }
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
       T::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
-      for(unsigned i=vectors.nelem; i<nmult; ++i) {
-        elem.derivs[0][i] = 0;
+      for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
+        elem.derivs[0][ii] = 0;
       }
     }
   } else {

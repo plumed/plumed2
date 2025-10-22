@@ -168,7 +168,6 @@ int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
 template <class T>
 void OuterProductBase<T>::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  OuterProductInput<T>& myinp = taskmanager.getActionInput();
   taskmanager.setupParallelTaskManager( 2*getNumberOfComponents(), getNumberOfComponents()*getPntrToComponent(0)->getShape()[1] );
   taskmanager.setWorkspaceSize( 2*getNumberOfComponents() );
   taskmanager.runAllTasks();
