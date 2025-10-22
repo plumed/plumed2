@@ -77,7 +77,7 @@ class Action {
   friend class ActionShortcut;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
-  const std::string name;
+  const std::string actionName;
 
 /// Label of the Action, as set with LABEL= in the plumed.dat file.
   std::string label;
@@ -384,7 +384,7 @@ const std::string & Action::getLabel()const {
 
 inline
 const std::string & Action::getName()const {
-  return name;
+  return actionName;
 }
 
 template<class T>
@@ -404,7 +404,7 @@ void Action::parse(const std::string&key,T&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
-        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
       }
       defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
@@ -458,7 +458,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
-        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
       } else {
         if(t.size()>0) {
           for(unsigned i=0; i<t.size(); ++i) {

@@ -62,7 +62,7 @@ void Action::registerKeywords( Keywords& keys ) {
 }
 
 Action::Action(const ActionOptions&ao):
-  name(ao.line[0]),
+  actionName(ao.line[0]),
   //skipping the name with the +1
   linemap(ao.line.begin()+1,ao.line.end()),
   update_from(std::numeric_limits<double>::max()),
@@ -71,7 +71,7 @@ Action::Action(const ActionOptions&ao):
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
-  never_activate(name=="CONSTANT"),
+  never_activate(actionName=="CONSTANT"),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -83,7 +83,7 @@ Action::Action(const ActionOptions&ao):
   //line.erase(line.begin());
   //making the line map
   if( !keywords.exists("NO_ACTION_LOG") ) {
-    log.printf("Action %s\n",name.c_str());
+    log.printf("Action %s\n",actionName.c_str());
     if(ao.fullPath.length()>0) {
       log<<"  from library: "<<ao.fullPath<<"\n";
     }
@@ -212,7 +212,7 @@ void Action::parseFlag(const std::string&key,bool & t) {
     if( keywords.style(key,"nohtml") ) {
       t=false;
     } else if ( !keywords.getLogicalDefault(key,t) ) {
-      log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
+      log.printf("ERROR in action %s with label %s : flag %s has no default",actionName.c_str(),label.c_str(),key.c_str() );
       plumed_error();
     }
   }
@@ -368,12 +368,12 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
-  plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
+  log.printf("ERROR in input to action %s with label %s : %s \n \n", actionName.c_str(), label.c_str(), msg.c_str() );
+  plumed_merror("ERROR in input to action " + actionName + " with label " + label + " : " + msg );
 }
 
 void Action::warning( const std::string & msg ) {
-  log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() );
+  log.printf("WARNING for action %s with label %s : %s \n", actionName.c_str(), label.c_str(), msg.c_str() );
 }
 
 void Action::calculateFromPDB( const PDB& pdb ) {

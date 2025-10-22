@@ -103,12 +103,12 @@ bool GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc )
   if( using_fgrid ) {
     myfgrid.getGridPointCoordinates( 0, coords );
     pmin=0;
-    double emin = myinterp->splineInterpolation( coords, der );
+    double eminVal = myinterp->splineInterpolation( coords, der );
     for(unsigned i=1; i<myfgrid.getNumberOfPoints(); ++i) {
       myfgrid.getGridPointCoordinates( i, coords );
-      double eng = myinterp->splineInterpolation( coords, der );
-      if( eng<emin ) {
-        emin=eng;
+      const double eng = myinterp->splineInterpolation( coords, der );
+      if( eng<eminVal ) {
+        eminVal=eng;
         pmin=i;
       }
     }

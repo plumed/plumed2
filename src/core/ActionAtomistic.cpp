@@ -184,7 +184,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
 }
 
 void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const {
-  pbc.apply(dlist, max_index);
+  actionPbc.apply(dlist, max_index);
 }
 
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ) {
@@ -192,7 +192,7 @@ void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 void ActionAtomistic::changeBox( const Tensor& newbox ) {
-  pbc.setBox( newbox );
+  actionPbc.setBox( newbox );
 }
 
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ) {
@@ -218,21 +218,21 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
         value[j*natoms+i][k]=a->getOutputQuantity(j);
       }
     }
-  Tensor box(pbc.getBox());
+  Tensor box(actionPbc.getBox());
   for(int i=0; i<3; i++)
     for(int k=0; k<3; k++) {
       double arg0=box(i,k);
       for(unsigned j=0; j<natoms; j++) {
-        positions[j]=pbc.realToScaled(positions[j]);
+        positions[j]=actionPbc.realToScaled(positions[j]);
       }
       box(i,k)=box(i,k)+delta;
-      pbc.setBox(box);
+      actionPbc.setBox(box);
       for(unsigned j=0; j<natoms; j++) {
-        positions[j]=pbc.scaledToReal(positions[j]);
+        positions[j]=actionPbc.scaledToReal(positions[j]);
       }
       a->calculate();
       box(i,k)=arg0;
-      pbc.setBox(box);
+      actionPbc.setBox(box);
       for(unsigned j=0; j<natoms; j++) {
         positions[j]=savedPositions[j];
       }
@@ -447,7 +447,7 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     plumed_assert(ptr); // needed for following calls, see #1046
     PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca );
-    pbc=pbca->pbc;
+    actionPbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) {
     return;
