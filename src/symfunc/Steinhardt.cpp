@@ -695,7 +695,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
     auto makeString=[&](const std::string& numstr,
-			const char realImg)->std::string{
+    const char realImg)->std::string{
       //realImg is "r" or "i"
       return getShortcutLabel() + "_" +realImg + "mn-" + numstr + ": CUSTOM "
       "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + numstr + ","

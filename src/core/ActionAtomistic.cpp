@@ -119,7 +119,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   tree.reset();
   int nat=a.size();
   indexes=a;
-  positions.resize(nat);
+  actionPositions.resize(nat);
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
@@ -210,10 +210,10 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
 
   for(unsigned i=0; i<natoms; i++)
     for(int k=0; k<3; k++) {
-      savedPositions[i][k]=positions[i][k];
-      positions[i][k]=positions[i][k]+delta;
+      savedPositions[i][k]=actionPositions[i][k];
+      actionPositions[i][k]=actionPositions[i][k]+delta;
       a->calculate();
-      positions[i][k]=savedPositions[i][k];
+      actionPositions[i][k]=savedPositions[i][k];
       for(unsigned j=0; j<nval; j++) {
         value[j*natoms+i][k]=a->getOutputQuantity(j);
       }
@@ -223,18 +223,18 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     for(int k=0; k<3; k++) {
       double arg0=box(i,k);
       for(unsigned j=0; j<natoms; j++) {
-        positions[j]=actionPbc.realToScaled(positions[j]);
+        actionPositions[j]=actionPbc.realToScaled(actionPositions[j]);
       }
       box(i,k)=box(i,k)+delta;
       actionPbc.setBox(box);
       for(unsigned j=0; j<natoms; j++) {
-        positions[j]=actionPbc.scaledToReal(positions[j]);
+        actionPositions[j]=actionPbc.scaledToReal(actionPositions[j]);
       }
       a->calculate();
       box(i,k)=arg0;
       actionPbc.setBox(box);
       for(unsigned j=0; j<natoms; j++) {
-        positions[j]=savedPositions[j];
+        actionPositions[j]=savedPositions[j];
       }
       for(unsigned j=0; j<nval; j++) {
         valuebox[j](i,k)=a->getOutputQuantity(j);
@@ -472,9 +472,9 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
 
 // for(const auto & a : atom_value_ind) {
 //   std::size_t nn = a.first, kk = a.second;
-//   positions[j][0] = xpos[nn]->data[kk];
-//   positions[j][1] = ypos[nn]->data[kk];
-//   positions[j][2] = zpos[nn]->data[kk];
+//   actionPositions[j][0] = xpos[nn]->data[kk];
+//   actionPositions[j][1] = ypos[nn]->data[kk];
+//   actionPositions[j][2] = zpos[nn]->data[kk];
 //   charges[j] = chargev[nn]->data[kk];
 //   masses[j] = masv[nn]->data[kk];
 //   j++;
@@ -488,9 +488,9 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     auto & ch=chargev[nn]->data;
     auto & ma=masv[nn]->data;
     for(const auto & kk : a.second) {
-      positions[j][0] = xp[kk];
-      positions[j][1] = yp[kk];
-      positions[j][2] = zp[kk];
+      actionPositions[j][0] = xp[kk];
+      actionPositions[j][1] = yp[kk];
+      actionPositions[j][2] = zp[kk];
       charges[j] = ch[kk];
       masses[j] = ma[kk];
       j++;
@@ -566,7 +566,7 @@ void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
     if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) {
       error("there are atoms missing in the pdb file");
     }
-    positions[j]=pdb.getPositions()[indexes[j].index()];
+    actionPositions[j]=pdb.getPositions()[indexes[j].index()];
   }
   for(unsigned j=0; j<indexes.size(); j++) {
     charges[j]=pdb.getBeta()[indexes[j].index()];
@@ -593,14 +593,14 @@ void ActionAtomistic::makeWhole() {
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
     for(unsigned j=0; j<root_indexes.size(); j++) {
-      const Vector & first (positions[root_indexes[j]]);
-      Vector & second (positions[tree_indexes[j]]);
+      const Vector & first (actionPositions[root_indexes[j]]);
+      Vector & second (actionPositions[tree_indexes[j]]);
       second=first+pbcDistance(first,second);
     }
   } else {
-    for(unsigned j=0; j<positions.size()-1; ++j) {
-      const Vector & first (positions[j]);
-      Vector & second (positions[j+1]);
+    for(unsigned j=0; j<actionPositions.size()-1; ++j) {
+      const Vector & first (actionPositions[j]);
+      Vector & second (actionPositions[j+1]);
       second=first+pbcDistance(first,second);
     }
   }
