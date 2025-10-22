@@ -297,7 +297,7 @@ void EMMI::setDerivatives() {
   // Resize all derivative arrays
   forces.resize( nder );
   forcesToApply.resize( nder );
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->resizeDerivatives(nder);
   }
 }
@@ -334,18 +334,20 @@ void EMMI::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if(getPntrToComponent(j)->hasDerivatives()) {
           save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
         }
+      }
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if(getPntrToComponent(j)->hasDerivatives()) {
           getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
         }
+      }
     }
   }
 }
@@ -354,11 +356,11 @@ inline
 void EMMI::apply() {
   bool wasforced=false;
   forcesToApply.assign(forcesToApply.size(),0.0);
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) {
-        forcesToApply[i]+=forces[i];
+      for(unsigned ii=0; ii<forces.size(); ++ii) {
+        forcesToApply[ii]+=forces[ii];
       }
     }
   }
@@ -860,7 +862,7 @@ void EMMI::write_model_overlap(long long int step) {
   ovfile.setHeavyFlush();
   ovfile.fmtField("%10.7e ");
 // write overlaps
-  for(int i=0; i<ovmd_.size(); ++i) {
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
     ovfile.printField("Model", ovmd_[i]);
     ovfile.printField("ModelScaled", scale_ * ovmd_[i]);
     ovfile.printField("Data", ovdd_[i]);
@@ -1052,7 +1054,7 @@ std::vector<double> EMMI::read_exp_errors(const std::string & errfile) {
       // total experimental error
       double err_tot = 0.0;
       // cycle on number of experimental overlaps
-      for(unsigned i=0; i<nexp; ++i) {
+      for(int i=0; i<nexp; ++i) {
         std::string ss;
         Tools::convert(i,ss);
         ifile->scanField("Err"+ss, err);
@@ -1221,7 +1223,9 @@ void EMMI::get_GMM_d(const std::string & GMM_file) {
   GMM_d_grps_.resize(bu.size());
   // and fill it in
   for(unsigned i=0; i<GMM_d_beta_.size(); ++i) {
-    if(GMM_d_beta_[i]>=GMM_d_grps_.size()) {
+//I do not know if GMM_d_beta is always >0
+    if((GMM_d_beta_[i]>=0) &&
+        (static_cast<unsigned>(GMM_d_beta_[i])>=GMM_d_grps_.size())) {
       error("Check Beta values");
     }
     GMM_d_grps_[GMM_d_beta_[i]].push_back(i);

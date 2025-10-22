@@ -295,7 +295,7 @@ void Caliber::replica_averaging(const double fact, std::vector<double> &mean) {
 
 double Caliber::getSpline(const unsigned iarg) {
   const double deltat = time[1] - time[0];
-  const int tindex = static_cast<int>(getTime()/deltat);
+  const unsigned tindex = getTime()/deltat;
 
   unsigned start, end;
   start=tindex;

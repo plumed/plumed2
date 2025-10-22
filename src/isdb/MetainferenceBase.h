@@ -286,7 +286,7 @@ void MetainferenceBase::setDerivatives() {
   // Resize all derivative arrays
   forces.resize( nder );
   forcesToApply.resize( nder );
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->resizeDerivatives(nder);
   }
 }
@@ -323,18 +323,20 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a=NULL )
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if(getPntrToComponent(j)->hasDerivatives()) {
           save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
         }
+      }
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if(getPntrToComponent(j)->hasDerivatives()) {
           getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
         }
+      }
     }
   }
 }
@@ -343,11 +345,11 @@ inline
 void MetainferenceBase::apply() {
   bool wasforced=false;
   forcesToApply.assign(forcesToApply.size(),0.0);
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) {
-        forcesToApply[i]+=forces[i];
+      for(unsigned ii=0; ii<forces.size(); ++ii) {
+        forcesToApply[ii]+=forces[ii];
       }
     }
   }

@@ -78,7 +78,7 @@ class ActionAtomistic :
   bool                  donotforce;
 
   // EMST
-  GenericMolInfo* moldat{nullptr};
+  GenericMolInfo* actionMoldat{nullptr};
   std::unique_ptr<Tree> tree;
 
 /// Values that hold information about atom positions and charges

@@ -51,7 +51,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   massesWereSet(false),
   chargesWereSet(false) {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
-  moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  actionMoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( bv ) {
     boxValue=bv->copyOutput(0);
   }
@@ -585,10 +585,10 @@ unsigned ActionAtomistic::getTotAtoms()const {
 }
 
 void ActionAtomistic::makeWhole() {
-  if(moldat && moldat->isWhole()) {
+  if(actionMoldat && actionMoldat->isWhole()) {
     // make sure the tree has been constructed
     if(!tree) {
-      tree=std::make_unique<Tree>(moldat);
+      tree=std::make_unique<Tree>(actionMoldat);
     }
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();

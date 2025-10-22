@@ -80,7 +80,7 @@ class Action {
   const std::string actionName;
 
 /// Label of the Action, as set with LABEL= in the plumed.dat file.
-  std::string label;
+  std::string actionLabel;
 
 /// Directive line.
 /// This line is progressively erased during Action construction
@@ -379,7 +379,7 @@ public:
 
 inline
 const std::string & Action::getLabel()const {
-  return label;
+  return actionLabel;
 }
 
 inline
@@ -404,7 +404,7 @@ void Action::parse(const std::string&key,T&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
-        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
       }
       defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
@@ -458,7 +458,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
-        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
       } else {
         if(t.size()>0) {
           for(unsigned i=0; i<t.size(); ++i) {

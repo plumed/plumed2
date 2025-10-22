@@ -95,20 +95,20 @@ Action::Action(const ActionOptions&ao):
   comm.Bcast(replica_index,0);
 
   if ( keywords.exists("LABEL") ) {
-    parse("LABEL",label);
+    parse("LABEL",actionLabel);
   }
-  if(label.length()==0) {
+  if(actionLabel.length()==0) {
     std::string s;
     Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
-    label="@"+s;
-  } else if ( label.find(".")!=std::string::npos ) {
+    actionLabel="@"+s;
+  } else if ( actionLabel.find(".")!=std::string::npos ) {
     warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
   }
-  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) {
-    error("label " + label + " has been already used");
+  if( plumed.getActionSet().selectWithLabel<Action*>(actionLabel) ) {
+    error("label " + actionLabel + " has been already used");
   }
   if( !keywords.exists("NO_ACTION_LOG") ) {
-    log.printf("  with label %s\n",label.c_str());
+    log.printf("  with label %s\n",actionLabel.c_str());
   }
   if ( keywords.exists("UPDATE_FROM") ) {
     parse("UPDATE_FROM",update_from);
@@ -212,7 +212,7 @@ void Action::parseFlag(const std::string&key,bool & t) {
     if( keywords.style(key,"nohtml") ) {
       t=false;
     } else if ( !keywords.getLogicalDefault(key,t) ) {
-      log.printf("ERROR in action %s with label %s : flag %s has no default",actionName.c_str(),label.c_str(),key.c_str() );
+      log.printf("ERROR in action %s with label %s : flag %s has no default",actionName.c_str(),actionLabel.c_str(),key.c_str() );
       plumed_error();
     }
   }
@@ -368,12 +368,12 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  log.printf("ERROR in input to action %s with label %s : %s \n \n", actionName.c_str(), label.c_str(), msg.c_str() );
-  plumed_merror("ERROR in input to action " + actionName + " with label " + label + " : " + msg );
+  log.printf("ERROR in input to action %s with label %s : %s \n \n", actionName.c_str(), actionLabel.c_str(), msg.c_str() );
+  plumed_merror("ERROR in input to action " + actionName + " with label " + actionLabel + " : " + msg );
 }
 
 void Action::warning( const std::string & msg ) {
-  log.printf("WARNING for action %s with label %s : %s \n", actionName.c_str(), label.c_str(), msg.c_str() );
+  log.printf("WARNING for action %s with label %s : %s \n", actionName.c_str(), actionLabel.c_str(), msg.c_str() );
 }
 
 void Action::calculateFromPDB( const PDB& pdb ) {

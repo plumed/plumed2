@@ -529,11 +529,11 @@ class CS2Backbone : public MetainferenceBase {
   void compute_ring_parameters();
   void init_types(const PDB &pdb);
   void init_rings(const PDB &pdb);
-  aa_t frag2enum(const std::string &aa);
-  std::vector<std::string> side_chain_atoms(const std::string &s);
-  bool isSP2(const std::string & resType, const std::string & atomName);
-  bool is_chi1_cx(const std::string & frg, const std::string & atm);
-  void xdist_name_map(std::string & name);
+  static aa_t frag2enum(const std::string &aa);
+  static std::vector<std::string> side_chain_atoms(const std::string &s);
+  static bool isSP2(const std::string & resType, const std::string & atomName);
+  static bool is_chi1_cx(const std::string & frg, const std::string & atm);
+  static void xdist_name_map(std::string & name);
 
 public:
 

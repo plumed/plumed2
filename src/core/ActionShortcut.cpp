@@ -65,7 +65,7 @@ void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::s
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
   Action(ao),
-  shortcutlabel(label) {
+  shortcutlabel(actionLabel) {
   std::string s;
   Tools::convert(plumed.getActionSet().size(),s);
   if( shortcutlabel==("@" + s) ) {
@@ -73,7 +73,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
     Tools::convert(plumed.getActionSet().size(),t);
     shortcutlabel="@" + t;
   } else {
-    label = ("@s" + s);
+    actionLabel = ("@s" + s);
   }
 }
 
