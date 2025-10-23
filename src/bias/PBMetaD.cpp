@@ -251,7 +251,7 @@ private:
        sigma(setsigma),
        height(setheight),
        multivariate(setmultivariate),
-       invsigma(sigma) {
+       invsigma(setsigma) {
       // to avoid troubles from zero element in flexible hills
       for(unsigned i=0; i<invsigma.size(); ++i)
         if(std::abs(invsigma[i])>1.e-20) {

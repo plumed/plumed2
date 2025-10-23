@@ -40,7 +40,7 @@
 //this avoids nasty warnings on which we have no control
 //Here I am using the pragma for gcc/clang, for visual studio you'll need something different
 //This should be the correct direction,
-//but the warning that it is blocking everithing is 
+//but the warning that it is blocking everithing is:
 //  error: ISO C++11 requires at least one argument for the "..." in a variadic macro [-Werror]
 //that is not named like [-Werror=shadow]
 //so , at time of writing this I did not found any solution but deactivating warning in the makefile

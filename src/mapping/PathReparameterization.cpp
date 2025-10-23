@@ -179,7 +179,7 @@ double PathReparameterization::computeSpacing( const unsigned ifrom, const unsig
 }
 
 void PathReparameterization::calcCurrentPathSpacings( const int istart, const int iend ) {
-  plumed_dbg_assert( istart<len.size() && iend<len.size() );
+  plumed_dbg_assert( static_cast<unsigned>(istart)<len.size() && static_cast<unsigned>(iend)<len.size() );
   len[istart] = sumlen[istart]=0;
   //printf("HELLO PATH SPACINGS ARE CURRENTLY \n");
 
