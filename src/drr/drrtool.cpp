@@ -107,7 +107,7 @@ void drrtool::registerKeywords(Keywords &keys) {
 }
 
 drrtool::drrtool(const CLToolOptions &co) : CLTool(co) {
-  inputdata = commandline;
+  inputdata = inputType::commandline;
   verbosity = false;
 }
 

@@ -60,9 +60,9 @@ void CLTool::parseFlag( const std::string&key, bool&t ) {
 
 bool CLTool::readInput( int argc, char**argv, FILE* in, FILE*out ) {
   plumed_massert( inputdata!=inputType::unset,"You have not specified where your tool reads its input. "
-                  "If it is from the command line (like driver) add inputdata=commandline to the "
+                  "If it is from the command line (like driver) add inputdata=inputType::commandline to the "
                   "tools constructor. If it reads everything from an input file (like simplemd) "
-                  "add inputdata=ifile to the tools constructor");
+                  "add inputdata=inputType::ifile to the tools constructor");
   if(inputdata==inputType::commandline) {
     return readCommandLineArgs( argc, argv, out );
   }
