@@ -193,11 +193,11 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     }
     log.printf(")\n");
 
-    lepton::CompiledExpression expression=[&](lepton::ParsedExpression pe) {
+    lepton::CompiledExpression expression=[&](const lepton::ParsedExpression& pe) {
       log<<"  function as parsed by lepton: "<<pe<<"\n";
       return pe.createCompiledExpression();
-    }(
-      lepton::Parser::parse(func).optimize(leptonConstants));
+    }
+    (lepton::Parser::parse(func).optimize(leptonConstants));
 
     for(auto &p: expression.getVariables()) {
       if(std::find(dernames.begin(),dernames.end(),p)==dernames.end()) {

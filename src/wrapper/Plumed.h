@@ -2524,8 +2524,11 @@ private:
       buffer[0]='\0';
     }
 
-    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      safeptr=safe;
+    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,
+                                          __PLUMED_WRAPPER_STD size_t nelem=0,
+                                          const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT
+  :
+    safeptr(safe) {
       buffer[0]='\0';
       if(nelem>0) {
         safeptr.nelem=nelem;
