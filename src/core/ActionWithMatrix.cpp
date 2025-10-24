@@ -88,9 +88,9 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   }
   Value* mycomp = getPntrToComponent(0);
   outmat.ncols = mycomp->getNumberOfColumns();
-  outmat.bookeeping.resize( mycomp->matrix_bookeeping.size() );
-  for(unsigned i=0; i<outmat.bookeeping.size(); ++i) {
-    outmat.bookeeping[i] = mycomp->matrix_bookeeping[i];
+  outmat.resize( mycomp->matrix_bookeeping.size() );
+  for(unsigned i=0; i<outmat.size(); ++i) {
+    outmat[i] = mycomp->matrix_bookeeping[i];
   }
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
