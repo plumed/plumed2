@@ -180,6 +180,24 @@ or default to the unsuffixed one.
 */
 //+ENDPLUMEDOC
 //
+
+namespace {
+// This function is here because DETERMINANT has a regex with an exaped point in the shortcut ('\.')
+//C++ wants a raw string and the python package json (and the json format itself actually)
+// wants the '\' for escaping the '.' escaped for it to be read correcly
+// this becasue '\n' is a known escape sequence and '\.' is not
+// I have the suspect that this should be expanded to to other not 'escape' sequences
+std::string eliminateEscapedPoint (std::string command) {
+  //command is copy-constructed because I am changing it
+  auto escapedpoint= command.find(R"(\.)",0);
+  while( escapedpoint!=std::string::npos) {
+    command.replace(escapedpoint,2,R"(\\.)");
+    escapedpoint= command.find(R"(\.)",escapedpoint+3);
+  }
+  return command;
+}
+}
+
 template<typename real>
 class Driver : public CLTool {
 public:
@@ -751,9 +769,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
               }
             }
             if( x.second.size()>sstart ) {
-              long_file.printf("      \"expansion\" : \"%s", x.second[sstart].c_str() );
+              {
+                std::string cmnd=eliminateEscapedPoint(x.second[sstart]);
+                long_file.printf("      \"expansion\" : \"%s", cmnd.c_str() );
+              }
               for(unsigned j=sstart+1; j<x.second.size(); ++j) {
-                long_file.printf("\\n%s", x.second[j].c_str() );
+                //reinitializing it to RVO the string
+                std::string cmnd=eliminateEscapedPoint(x.second[j]);
+                long_file.printf("\\n%s", cmnd.c_str() );
               }
               long_file.printf("\"\n");
             }
