@@ -1420,7 +1420,10 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
     std::vector<Vector> old_deriv(deriv);
     memset(&deriv[0][0], 0.0, deriv.size() * sizeof deriv[0]);
 
-    unsigned nt=OpenMP::getNumThreads();
+#ifdef _OPENMP
+    //nt is unused if openmp is not declared
+    const unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
     for (unsigned i=rank; i<size; i+=stride) {
       std::vector<double> deriv_i_x(numq);
       std::vector<double> deriv_i_y(numq);

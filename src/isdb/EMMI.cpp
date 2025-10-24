@@ -1525,7 +1525,7 @@ void EMMI::calculate_overlap() {
 double EMMI::scaleEnergy(double s) {
   double ene = 0.0;
   for(unsigned i=0; i<ovdd_.size(); ++i) {
-    ene += std::log( abs ( s * ovmd_ave_[i] - ovdd_[i] ) );
+    ene += std::log( std::fabs ( s * ovmd_ave_[i] - ovdd_[i] ) );
   }
   return ene;
 }

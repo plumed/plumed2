@@ -40,6 +40,8 @@ namespace switchContainers {
 
 std::string description(switchType type, const Data& data);
 
+Switch::~Switch()=default;
+
 template <typename SF>
 class SwitchInterface :public Switch {
   switchType type;

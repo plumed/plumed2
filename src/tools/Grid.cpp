@@ -1294,7 +1294,6 @@ double GridBase::findMaximalPathMinimum(const std::vector<double> &source, const
     next_steps.push_back(std::pair<index_t, double>(source_idx, getValue(source_idx)));
     std::push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
     // At first no points have been examined and the optimal path has not been found.
-    index_t n_examined = 0;
     bool path_not_found = true;
     // Until a path is found,
     while (path_not_found) {
@@ -1304,7 +1303,6 @@ double GridBase::findMaximalPathMinimum(const std::vector<double> &source, const
       std::pop_heap(next_steps.begin(), next_steps.end(), indexed_lt);
       curr_indexed_val = next_steps.back();
       next_steps.pop_back();
-      n_examined++;
       // Check if this point is the sink point, and if so
       // finish the loop.
       if (curr_indexed_val.first == sink_idx) {

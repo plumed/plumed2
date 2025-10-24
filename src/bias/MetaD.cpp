@@ -1998,7 +1998,10 @@ double MetaD::getBias(const std::vector<double>& cv) {
   if(grid_) {
     bias = BiasGrid_->getValue(cv);
   } else {
-    unsigned nt=OpenMP::getNumThreads();
+#ifdef _OPENMP
+    //nt is unused if openmp is not declared
+    const unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
 

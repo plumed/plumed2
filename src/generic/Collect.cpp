@@ -143,7 +143,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   Collect( const ActionOptions& );
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
   bool calculateOnUpdate() override {
     return false;
   }

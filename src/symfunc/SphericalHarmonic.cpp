@@ -260,7 +260,7 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
 
   std::string num;
   for(int i=-func.tmom; i<=func.tmom; ++i) {
-    Tools::convert(fabs(i),num);
+    Tools::convert(std::abs(i),num);
     if( i<0 ) {
       options.multipleValuesForEachRegisteredComponent.push_back( "-n" + num );
     } else if( i>0 ) {

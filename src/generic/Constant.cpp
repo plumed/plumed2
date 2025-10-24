@@ -140,7 +140,7 @@ class Constant : public ActionWithValue {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Constant(const ActionOptions&ao);
-  void clearDerivatives( const bool& force=false ) {}
+  void clearDerivatives( const bool& =false ) override {}
   unsigned getNumberOfDerivatives() override {
     return 0;
   }

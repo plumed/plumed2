@@ -351,7 +351,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         return std::tolower(c);
       });
       ofile<<"<a href=\"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-      for(unsigned n=0;; ++n) {
+      while(true) {
         std::size_t und=action.find_first_of("_");
         if( und==std::string::npos ) {
           break;

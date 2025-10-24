@@ -253,7 +253,6 @@ public:
 
     unsigned c_kind = 0;
     unsigned c_atom = 0;
-    unsigned nline = 0;
 
     for(unsigned i=0; i<3; i++)
       for(unsigned j=0; j<6; j++) {
@@ -289,7 +288,6 @@ public:
     while(!in.eof()) {
       std::string line;
       getline(in,line);
-      ++nline;
       if(line.compare(0,1,"#")==0) {
         continue;
       }
@@ -1560,7 +1558,10 @@ void CS2Backbone::calculate() {
 
 void CS2Backbone::update_neighb() {
   // cycle over chemical shifts
+#ifdef _OPENMP
+  //nt is unused if openmp is not declared
   unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
   #pragma omp parallel for num_threads(nt)
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     const unsigned boxsize = getNumberOfAtoms();

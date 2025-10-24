@@ -1717,8 +1717,8 @@ double PlumedMain::DeprecatedAtoms::getKbT() const {
 }
 
 int PlumedMain::DeprecatedAtoms::getNatoms() const {
-  std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
-  for(const auto & pp : inputs ) {
+  std::vector<ActionToPutData*> atpd=plumed.getActionSet().select<ActionToPutData*>();
+  for(const auto & pp : atpd ) {
     if( pp->getRole()=="x" ) {
       return (pp->copyOutput(0))->getShape()[0];
     }

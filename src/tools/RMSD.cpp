@@ -1545,7 +1545,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDReferenceSOMA() {
   if(!distanceIsMSD) {
     prefactor*=0.5/dist;
   }
-  Vector csum,tmp1,tmp2;
+  Vector tmp1;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance) {

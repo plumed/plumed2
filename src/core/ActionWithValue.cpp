@@ -77,7 +77,10 @@ void ActionWithValue::clearInputForces( const bool& force ) {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
-  unsigned nt = OpenMP::getNumThreads();
+#ifdef _OPENMP
+  //nt is unused if openmp is not declared
+  const unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for

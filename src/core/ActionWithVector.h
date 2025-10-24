@@ -71,7 +71,7 @@ public:
 /// Get the number of forces to use
   unsigned getNumberOfForceDerivatives() const ;
 /// Apply the forces on this data
-  virtual void apply();
+  void apply() override;
 /// Apply the forces on non-zero rank objects
   virtual void applyNonZeroRankForces( std::vector<double>& outforces ) {
     plumed_error();

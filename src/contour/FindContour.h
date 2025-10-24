@@ -48,9 +48,9 @@ public:
   const gridtools::GridCoordinatesObject& getInputGridObject() const ;
   unsigned getNumberOfDerivatives() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  int checkTaskIsActive( const unsigned& taskno ) const override ;
+  int checkTaskIsActive( const unsigned& taskno ) const override;
   void calculate() override;
-  void getInputData( std::vector<double>& inputdata ) const ;
+  void getInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
                            const ContourFindingObject<gridtools::EvaluateGridFunction>& actiondata,
                            ParallelActionsInput& input,
