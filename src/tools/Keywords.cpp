@@ -262,7 +262,7 @@ bool Keywords::keyInfo::isArgument() const {
 
 Keywords::component::component():
 //the 0 ensures something that always fails unles explicitly set
-  type(static_cast<componentType>(0)) {};
+  type(static_cast<componentType>(0)) {}
 Keywords::component& Keywords::component::setKey(std::string_view k) {
   key=k;
   return *this;

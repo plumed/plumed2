@@ -146,7 +146,9 @@ Sprint::Sprint(const ActionOptions& ao):
   // Sort sprint coordinates for each group of atoms
   unsigned k=0, kk=0;
   for(unsigned j=0; j<nin_group.size(); ++j) {
-    std::string jnum, knum;
+    std::string jnum;
+    std::string knum;
+    std::string nnum;
     Tools::convert( j+1, jnum );
     Tools::convert(k+1, knum);
     k++;
@@ -159,7 +161,6 @@ Sprint::Sprint(const ActionOptions& ao):
     readInputLine( sort_act );
     readInputLine( getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_selection" + jnum );
     for(unsigned n=0; n<nin_group[j]; ++n) {
-      std::string knum, nnum;
       Tools::convert( kk, knum );
       Tools::convert( n+1, nnum );
       kk++;

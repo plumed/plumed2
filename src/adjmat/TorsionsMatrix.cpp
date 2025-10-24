@@ -266,7 +266,6 @@ void TorsionsMatrix::prepare() {
 
 void TorsionsMatrix::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
   taskmanager.setupParallelTaskManager( 21,
                                         getNumberOfDerivatives()
                                         - getPntrToArgument(0)->getNumberOfStoredValues() );

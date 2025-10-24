@@ -61,13 +61,13 @@ void MatrixOperationBase::retrieveFullMatrix( Matrix<double>& mymatrix ) {
     mymatrix.resize( getPntrToArgument(0)->getShape()[0], getPntrToArgument(0)->getShape()[1] );
   }
   unsigned nedge;
-  getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals  );
+  getPntrToArgument(0)->retrieveEdgeList( nedge, MOBpairs, MOBvals  );
   mymatrix=0;
   bool symmetric = getPntrToArgument(0)->isSymmetric();
   for(unsigned i=0; i<nedge; ++i ) {
-    mymatrix( pairs[i].first, pairs[i].second ) = vals[i];
+    mymatrix( MOBpairs[i].first, MOBpairs[i].second ) = MOBvals[i];
     if( symmetric ) {
-      mymatrix( pairs[i].second, pairs[i].first ) = vals[i];
+      mymatrix( MOBpairs[i].second, MOBpairs[i].first ) = MOBvals[i];
     }
   }
 }
@@ -79,7 +79,7 @@ void MatrixOperationBase::apply() {
   }
 
   bool forces=false;
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->forcesWereAdded() ) {
       forces=true;
       break;

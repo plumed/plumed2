@@ -694,11 +694,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   bool do_vsum;
   parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
-    auto makeString=[&](const std::string& snum,
+    auto makeString=[&](const std::string& numstr,
     const char realImg)->std::string{
       //realImg is "r" or "i"
-      return getShortcutLabel() + "_" +realImg + "mn-" + snum + ": CUSTOM "
-      "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + snum + ","
+      return getShortcutLabel() + "_" +realImg + "mn-" + numstr + ": CUSTOM "
+      "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + numstr + ","
       + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO";
     };
     // Divide all components by coordination numbers
@@ -712,11 +712,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   }
 
   if( do_vmean ) {
-    auto makeString=[&](const std::string& snum,
+    auto makeString=[&](const std::string& numstr,
     const char realImg)->std::string{
       //realImg is "r" or "i"
-      return getShortcutLabel() + "_" +realImg + "ms-" + snum + ": MEAN "
-      "ARG=" + getShortcutLabel() + "_" +realImg + "mn-" + snum
+      return getShortcutLabel() + "_" +realImg + "ms-" + numstr + ": MEAN "
+      "ARG=" + getShortcutLabel() + "_" +realImg + "mn-" + numstr
       + " PERIODIC=NO";
     };
     for(int i=-l; i<=l; ++i) {
@@ -735,10 +735,10 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            usegpu );
   }
   if( do_vsum ) {
-    auto makeString=[&](const std::string& snum,
+    auto makeString=[&](const std::string& numstr,
     const std::string& realImg)->std::string{
-      return getShortcutLabel() + "_" +realImg + "mz-" + snum + ": SUM "
-      "ARG=" + getShortcutLabel() + "_" + realImg + "mn-" + snum
+      return getShortcutLabel() + "_" +realImg + "mz-" + numstr + ": SUM "
+      "ARG=" + getShortcutLabel() + "_" + realImg + "mn-" + numstr
       + " PERIODIC=NO";
     };
     for(int i=-l; i<=l; ++i) {

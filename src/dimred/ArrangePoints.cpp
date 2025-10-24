@@ -528,7 +528,7 @@ double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SM
 
       for(unsigned k=0; k<nmatrices; ++k ) {
         // Don't need to do anything for distances we are matching
-        if( k==dist_target ) {
+        if( k==static_cast<unsigned>(dist_target) ) {
           continue;
         }
         // Now do transformations and calculate differences
@@ -604,8 +604,8 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
           mycgminimise.minimise( cgtol, mypos, &ArrangePoints::calculateFullStress );
         }
       }
-      for(unsigned i=0; i<mypos.size(); ++i) {
-        pos[i] = mypos[i];
+      for(unsigned ii=0; ii<mypos.size(); ++ii) {
+        pos[ii] = mypos[ii];
       }
     }
   } else if( mintype==smacof ) {

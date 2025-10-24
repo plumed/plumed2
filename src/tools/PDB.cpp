@@ -24,7 +24,6 @@
 #include "Log.h"
 #include "h36.h"
 #include <cstdio>
-#include <iostream>
 #include "core/GenericMolInfo.h"
 #include "Tensor.h"
 
@@ -239,8 +238,8 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       // double val; Tools::convert( sval, val );
       std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
       std::vector<double> val( words.size() );
-      for(unsigned i=0; i<val.size(); ++i) {
-        Tools::convert( words[i], val[i] );
+      for(unsigned ii=0; ii<val.size(); ++ii) {
+        Tools::convert( words[ii], val[ii] );
       }
       arg_data.insert( std::pair<std::string,std::vector<double> >( name, val ) );
     } else {

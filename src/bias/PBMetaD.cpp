@@ -32,7 +32,6 @@
 #include "tools/File.h"
 #include "tools/Communicator.h"
 #include <ctime>
-#include <numeric>
 
 namespace PLMD {
 namespace bias {
@@ -244,8 +243,15 @@ private:
     double height;
     bool   multivariate; // this is required to discriminate the one dimensional case
     std::vector<double> invsigma;
-    Gaussian(const std::vector<double> & center,const std::vector<double> & sigma, double height, bool multivariate):
-      center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
+    Gaussian(const std::vector<double> & setcenter,
+             const std::vector<double> & setsigma,
+             const double setheight,
+             const bool setmultivariate)
+      :center(setcenter),
+       sigma(setsigma),
+       height(setheight),
+       multivariate(setmultivariate),
+       invsigma(setsigma) {
       // to avoid troubles from zero element in flexible hills
       for(unsigned i=0; i<invsigma.size(); ++i)
         if(std::abs(invsigma[i])>1.e-20) {
@@ -525,8 +531,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("FILE",hillsfname_);
   if(hillsfname_.size()==0) {
     for(unsigned i=0; i< pf_n_; i++) {
-      std::string name = do_pf_ ? "HILLS.PF"+std::to_string(i) : "HILLS."+getPntrToArgument(i)->getName();
-      hillsfname_.push_back(name);
+      std::string hillName = do_pf_ ? "HILLS.PF"+std::to_string(i) : "HILLS."+getPntrToArgument(i)->getName();
+      hillsfname_.push_back(hillName);
     }
   }
   if( hillsfname_.size()!=pf_n_ ) {
@@ -586,8 +592,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   if(gridfilenames_.size()==0 && wgridstride_ > 0) {
     for(unsigned i=0; i<pf_n_; i++) {
-      std::string name = do_pf_ ? "GRID.PF"+std::to_string(i) : "GRID."+getPntrToArgument(i)->getName();
-      gridfilenames_.push_back(name);
+      std::string gridfname = do_pf_ ? "GRID.PF"+std::to_string(i) : "GRID."+getPntrToArgument(i)->getName();
+      gridfilenames_.push_back(gridfname);
     }
   }
   if(gridfilenames_.size() > 0 && hillsfname_.size() > 0 && gridfilenames_.size() != hillsfname_.size()) {
@@ -857,7 +863,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         } else {
           error("The GRID file you want to read: " + gridreadfilenames_[i] + ", cannot be found!");
         }
-        std::string funcl = getLabel() + ".bias";
         BiasGrid_=GridBase::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
@@ -1245,8 +1250,8 @@ void PBMetaD::calculate() {
 
   if(!do_select_ || select_value_==current_value_) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      const double f = - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
-      setOutputForce(i, f);
+      const double force = - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
+      setOutputForce(i, force);
     }
   }
 

@@ -2195,15 +2195,15 @@ private:
 
   /** Internal class to simplify plumed_error finalization */
   class finalize_plumed_error {
-    plumed_error&e;
+    plumed_error&error;
     finalize_plumed_error(const finalize_plumed_error&); //not implemented
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT finalize_plumed_error(plumed_error&e):
-      e(e)
+      error(e)
     {}
     ~finalize_plumed_error() {
-      plumed_error_finalize(e);
-      e.code=0; // make sure it's not finalized again
+      plumed_error_finalize(error);
+      error.code=0; // make sure it's not finalized again
     }
   };
 
@@ -2342,7 +2342,7 @@ public:
     public ::std::exception {
     ::std::string msg;
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* extMsg): msg(extMsg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
       return msg.c_str();
     }
@@ -2363,7 +2363,7 @@ public:
   class ExceptionError :
     public Exception {
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* extMsg): Exception(extMsg) {}
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2381,7 +2381,7 @@ public:
   class ExceptionDebug :
     public Exception {
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* extMsg): Exception(extMsg) {}
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2397,7 +2397,7 @@ public:
   class Invalid :
     public Exception {
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* extMsg): Exception(extMsg) {}
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2414,7 +2414,7 @@ public:
   class ExceptionTypeError:
     public Exception {
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionTypeError(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionTypeError(const char* extMsg): Exception(extMsg) {}
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2434,7 +2434,7 @@ public:
     public ::std::exception {
     ::std::string msg;
   public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* extMsg): msg(extMsg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
       return msg.c_str();
     }
@@ -2458,11 +2458,11 @@ private:
   template<typename T>
   class add_buffer_to:
     public T {
-    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
+    char message[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
     void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      this->msg[0]='\0';
-      __PLUMED_WRAPPER_STD strncpy(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
-      this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
+      message[0]='\0';
+      __PLUMED_WRAPPER_STD strncpy(message,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      message[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) {
         __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
       }
@@ -2477,17 +2477,17 @@ private:
     }
   add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT:
     T(other) {
-      init(other.msg);
+      init(other.message);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       if(this==&other) {
         return *this;
       }
-      init(other.msg);
+      init(other.message);
       return *this;
     }
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
-      return msg;
+      return message;
     }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
@@ -2504,7 +2504,7 @@ private:
     /// non assignable (assignment would require managing buffer, could be added in the future if needed)
     SafePtr& operator=(SafePtr const&);
   public:
-    plumed_safeptr safe;
+    plumed_safeptr safeptr;
     /// This buffer holds a copy of the data when they are passed by value.
     /// The size is sufficient to hold any primitive type.
     /// Notice that the buffer is required to enable conversions (e.g., passing a class that can be converted to int)
@@ -2516,33 +2516,36 @@ private:
     char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      safe.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
-      safe.nelem=0;
-      safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
-      safe.flags=0x10000*2;
-      safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
+      safeptr.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+      safeptr.nelem=0;
+      safeptr.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
+      safeptr.flags=0x10000*2;
+      safeptr.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
       buffer[0]='\0';
     }
 
-    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      this->safe=safe;
+    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,
+                                          __PLUMED_WRAPPER_STD size_t nelem=0,
+                                          const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT
+  :
+    safeptr(safe) {
       buffer[0]='\0';
       if(nelem>0) {
-        this->safe.nelem=nelem;
+        safeptr.nelem=nelem;
       }
       if(shape) {
-        this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
+        safeptr.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
       }
     }
 
 #if __cplusplus > 199711L
     /// Construct from null
     SafePtr(__PLUMED_WRAPPER_STD nullptr_t,__PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) noexcept {
-      safe.ptr=nullptr;
-      safe.nelem=0;
-      safe.shape=nullptr;
-      safe.flags=0x10000*2;
-      safe.opt=nullptr;
+      safeptr.ptr=nullptr;
+      safeptr.nelem=0;
+      safeptr.shape=nullptr;
+      safeptr.flags=0x10000*2;
+      safeptr.opt=nullptr;
       buffer[0]='\0';
       (void) nelem;
       (void) shape;
@@ -2552,11 +2555,11 @@ private:
 /// Macro that generate a constructor with given type and flags
 #define __PLUMED_WRAPPER_SAFEPTR_INNER(type_,flags_) \
   SafePtr(type_*ptr, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=nelem; \
-    safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
-    safe.flags=flags_; \
-    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    safeptr.ptr=ptr; \
+    safeptr.nelem=nelem; \
+    safeptr.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
+    safeptr.flags=flags_; \
+    safeptr.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
     buffer[0]='\0'; \
   }
 
@@ -2582,11 +2585,11 @@ private:
     assert(sizeof(type)<=32); \
     (void) nelem; \
     (void) shape; \
-    safe.ptr=buffer; \
-    safe.nelem=1; \
-    safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR; \
-    safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
-    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    safeptr.ptr=buffer; \
+    safeptr.nelem=1; \
+    safeptr.shape=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    safeptr.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    safeptr.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
     __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
   }
 
@@ -2617,7 +2620,7 @@ private:
 
     /// Return the contained plumed_safeptr
     plumed_safeptr get_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      return safe;
+      return safeptr;
     }
 
   };
@@ -2627,14 +2630,14 @@ private:
   /// We use simple conversions, without sign checks, which implicitly means that size=-1 is a very large size
   struct SizeLike {
     std::size_t size;
-    SizeLike(short unsigned size): size(size) {}
-    SizeLike(unsigned size): size(size) {}
-    SizeLike(long unsigned size): size(size) {}
-    SizeLike(long long unsigned size): size(size) {}
-    SizeLike(short size): size(std::size_t(size)) {}
-    SizeLike(int size): size(std::size_t(size)) {}
-    SizeLike(long int size): size(std::size_t(size)) {}
-    SizeLike(long long int size): size(std::size_t(size)) {}
+    SizeLike(short unsigned dim): size(dim) {}
+    SizeLike(unsigned dim): size(dim) {}
+    SizeLike(long unsigned dim): size(dim) {}
+    SizeLike(long long unsigned dim): size(dim) {}
+    SizeLike(short dim): size(std::size_t(dim)) {}
+    SizeLike(int dim): size(std::size_t(dim)) {}
+    SizeLike(long int dim): size(std::size_t(dim)) {}
+    SizeLike(long long int dim): size(std::size_t(dim)) {}
   };
 #endif
 
@@ -3131,7 +3134,7 @@ private:
     /// dynamic buffer (requires allocation)
     std::unique_ptr<char[]> dynamic_buffer;
     /// actual pointer
-    const char * str;
+    const char * data;
     /// Move constructor is deleted
     CString(CString&&) = delete;
     /// Move assignment operator is deleted
@@ -3139,13 +3142,13 @@ private:
   public:
     /// Initialize from a const char*, copying the address
     CString(const char* str) noexcept {
-      this->str=str;
-      this->static_buffer[0]='\0';
+      data=str;
+      static_buffer[0]='\0';
     }
     /// Initialize from a std:string, taking the address of the corresponding c_str
     CString(const std::string & str) noexcept {
-      this->str=str.c_str();
-      this->static_buffer[0]='\0';
+      data=str.c_str();
+      static_buffer[0]='\0';
     }
 #if __cplusplus >= 201703L
     /// Initialize from a std::string_view, only C++17
@@ -3165,12 +3168,12 @@ private:
       // at this point, buffer is guaranteed to have size >= len+1
       str.copy(buffer,len);
       buffer[len]='\0'; // ensure null termination
-      this->str=buffer;
-      this->static_buffer[0]='\0';
+      data=buffer;
+      static_buffer[0]='\0';
     }
 #endif
     operator const char* () const noexcept {
-      return str;
+      return data;
     }
   };
 
@@ -3288,7 +3291,7 @@ private:
   void cmd_helper_with_shape(Key && key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     SafePtr s(val,0,shape);
     if(nocopy) {
-      s.safe.flags |= 0x10000000;
+      s.safeptr.flags |= 0x10000000;
     }
     cmd_priv(main,CString(key),s);
   }

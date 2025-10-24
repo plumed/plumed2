@@ -77,7 +77,10 @@ void ActionWithValue::clearInputForces( const bool& force ) {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
-  unsigned nt = OpenMP::getNumThreads();
+#ifdef _OPENMP
+  //nt is unused if openmp is not declared
+  const unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
@@ -89,9 +92,9 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
 
 // -- These are the routine for copying the value pointers to other classes -- //
 
-bool ActionWithValue::exists( const std::string& name ) const {
+bool ActionWithValue::exists( const std::string& valname ) const {
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==name) {
+    if (values[i]->name==valname) {
       return true;
     }
   }
@@ -109,13 +112,13 @@ void ActionWithValue::getMatrixColumnTitles( std::vector<std::string>& argnames 
   }
 }
 
-Value* ActionWithValue::copyOutput( const std::string& name ) const {
+Value* ActionWithValue::copyOutput( const std::string& valname ) const {
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==name) {
+    if (values[i]->name==valname) {
       return values[i].get();
     }
   }
-  plumed_merror("there is no pointer with name " + name);
+  plumed_merror("there is no pointer with name " + valname);
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
@@ -161,36 +164,36 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
 
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
-void ActionWithValue::addComponent( const std::string& name, const std::vector<std::size_t>& shape ) {
-  if( !keywords.outputComponentExists(name) ) {
-    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+void ActionWithValue::addComponent( const std::string& valname, const std::vector<std::size_t>& shape ) {
+  if( !keywords.outputComponentExists(valname) ) {
+    plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
-  plumed_massert( keywords.componentHasCorrectType(name,shape.size(),false), "documentation for type of component " + name + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),false), "documentation for type of component " + valname + " is incorrect");
   std::string thename;
-  thename=getLabel() + "." + name;
+  thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
-    plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
+    plumed_massert(values[i]->name!=thename&&valname!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
   values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   log.printf("  added component to this action: %s \n", thename.c_str() );
 }
 
-void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
-  if( !keywords.outputComponentExists(name) ) {
-    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+void ActionWithValue::addComponentWithDerivatives( const std::string& valname, const std::vector<std::size_t>& shape ) {
+  if( !keywords.outputComponentExists(valname) ) {
+    plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
-  plumed_massert( keywords.componentHasCorrectType(name,shape.size(),true), "documentation for type of component " + name + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),true), "documentation for type of component " + valname + " is incorrect");
   std::string thename;
-  thename=getLabel() + "." + name;
+  thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
-    plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
+    plumed_massert(values[i]->name!=thename&&valname!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
   values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
@@ -213,16 +216,16 @@ std::string ActionWithValue::getOutputComponentDescription( const std::string& c
   return keys.getOutputComponentDescription( cname );
 }
 
-int ActionWithValue::getComponent( const std::string& name ) const {
+int ActionWithValue::getComponent( const std::string& valname ) const {
   plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   std::string thename;
-  thename=getLabel() + "." + name;
+  thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->name==thename) {
       return i;
     }
   }
-  plumed_merror("there is no component with name " + name);
+  plumed_merror("there is no component with name " + valname);
 }
 
 std::string ActionWithValue::getComponentsList( ) const {
@@ -241,15 +244,15 @@ std::vector<std::string> ActionWithValue::getComponentsVector( ) const {
   return complist;
 }
 
-void ActionWithValue::componentIsNotPeriodic( const std::string& name ) {
-  int kk=getComponent(name);
+void ActionWithValue::componentIsNotPeriodic( const std::string& valname ) {
+  int kk=getComponent(valname);
   values[kk]->min=0;
   values[kk]->max=0;
   values[kk]->setupPeriodicity();
 }
 
-void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ) {
-  int kk=getComponent(name);
+void ActionWithValue::componentIsPeriodic( const std::string& valname, const std::string& min, const std::string& max ) {
+  int kk=getComponent(valname);
   values[kk]->setDomain(min,max);
 }
 
@@ -292,17 +295,17 @@ void ActionWithValue::turnOnDerivatives() {
   }
 }
 
-Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
-  int kk=getComponent(name);
+Value* ActionWithValue::getPntrToComponent( const std::string& valname ) {
+  int kk=getComponent(valname);
   return values[kk].get();
 }
 
-const Value* ActionWithValue::getConstPntrToComponent(int n) const {
+const Value* ActionWithValue::getConstPntrToComponent(unsigned n) const {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
 }
 
-Value* ActionWithValue::getPntrToComponent( int n ) {
+Value* ActionWithValue::getPntrToComponent( unsigned n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
 }
@@ -358,7 +361,7 @@ bool ActionWithValue::checkForForces() {
 
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>4*comm.Get_size()) {
+  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
@@ -404,7 +407,7 @@ bool ActionWithValue::checkForForces() {
     }
   }
 
-  if(ncp>4*comm.Get_size()) {
+  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
     comm.Sum(&forcesForApply[0],nder);
   }
   return true;

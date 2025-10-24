@@ -207,16 +207,16 @@ Read::Read(const ActionOptions&ao):
 
   std::size_t dot=valread[0].find_first_of('.');
   if( valread[0].find(".")!=std::string::npos ) {
-    std::string label=valread[0].substr(0,dot);
-    std::string name=valread[0].substr(dot+1);
-    if( name=="*" ) {
+    std::string labelVal=valread[0].substr(0,dot);
+    std::string nameVal=valread[0].substr(dot+1);
+    if( nameVal=="*" ) {
       if( valread.size()>1 ) {
         error("all values must be from the same Action when using READ");
       }
       std::vector<std::string> fieldnames;
       ifile->scanFieldList( fieldnames );
       for(unsigned i=0; i<fieldnames.size(); ++i) {
-        if( fieldnames[i].substr(0,dot)==label ) {
+        if( fieldnames[i].substr(0,dot)==labelVal ) {
           readvals.emplace_back(Tools::make_unique<Value>(this, fieldnames[i], false) );
           addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
           if( ifile->FieldExist("min_" + fieldnames[i]) ) {
@@ -228,14 +228,14 @@ Read::Read(const ActionOptions&ao):
       }
     } else {
       readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) );
-      addComponentWithDerivatives( name );
+      addComponentWithDerivatives( nameVal );
       if( ifile->FieldExist("min_" + valread[0]) ) {
         componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
       } else {
         componentIsNotPeriodic( valread[0].substr(dot+1) );
       }
       for(unsigned i=1; i<valread.size(); ++i) {
-        if( valread[i].substr(0,dot)!=label ) {
+        if( valread[i].substr(0,dot)!=labelVal ) {
           error("all values must be from the same Action when using READ");
         };
         readvals.emplace_back(Tools::make_unique<Value>(this, valread[i], false) );

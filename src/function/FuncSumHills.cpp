@@ -54,20 +54,38 @@ class FilesHandler {
   Action *action;
   Log *log;
   bool parallelread;
-  unsigned beingread;
-  bool isopen;
+  unsigned beingread=0;
+  bool isopen=false;
 public:
-  FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread,  Action &myaction, Log &mylog);
-  bool readBunch(BiasRepresentation *br, int stride);
+  FilesHandler(const std::vector<std::string> &filenames,
+               bool parallelread,
+               Action &myaction,
+               Log &mylog);
+  bool readBunch(BiasRepresentation *br, int stride=-1);
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
-  void getMinMaxBin(const std::vector<Value*> & vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin);
-  void getMinMaxBin(const std::vector<Value*> & vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma);
+  void getMinMaxBin(const std::vector<Value*> & vals,
+                    Communicator &cc,
+                    std::vector<double> &vmin,
+                    std::vector<double> &vmax,
+                    std::vector<unsigned> &vbin);
+  void getMinMaxBin(const std::vector<Value*> & vals,
+                    Communicator &cc,
+                    std::vector<double> &vmin,
+                    std::vector<double> &vmax,
+                    std::vector<unsigned> &vbin,
+                    const std::vector<double> &histosigma);
 };
-FilesHandler::FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
-  this->action=&action;
+FilesHandler::FilesHandler(const std::vector<std::string> &fnames,
+                           const bool doparallelread,
+                           Action &act,
+                           Log &mylog )
+  :filenames(fnames),
+   log(&mylog),
+   parallelread(doparallelread) {
+  action=&act;
   for(unsigned i=0; i<filenames.size(); i++) {
     auto ifile=Tools::make_unique<IFile>();
-    ifile->link(action);
+    ifile->link(act);
     plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
     ifiles.emplace_back(std::move(ifile));
   }
@@ -76,9 +94,8 @@ FilesHandler::FilesHandler(const std::vector<std::string> &filenames, const bool
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation
 // no check are made at this level
-bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
-  bool morefiles;
-  morefiles=true;
+bool FilesHandler::readBunch(BiasRepresentation *br, int stride) {
+  bool morefiles=true;
   if(parallelread) {
     (*log)<<"  doing parallelread \n";
     plumed_merror("parallelread is not yet implemented !!!");
@@ -135,7 +152,11 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
   }
   return morefiles;
 }
-void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin) {
+void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals,
+                                Communicator &cc,
+                                std::vector<double> &vmin,
+                                std::vector<double> &vmax,
+                                std::vector<unsigned> &vbin) {
   // create the representation (no grid)
   BiasRepresentation br(vals,cc);
   // read all the kernels
@@ -143,7 +164,12 @@ void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals, Communicator &
   // loop over the kernels and get the support
   br.getMinMaxBin(vmin,vmax,vbin);
 }
-void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma) {
+void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals,
+                                Communicator &cc,
+                                std::vector<double> &vmin,
+                                std::vector<double> &vmax,
+                                std::vector<unsigned> &vbin,
+                                const std::vector<double> &histosigma) {
   BiasRepresentation br(vals,cc,histosigma);
   // read all the kernels
   readBunch(&br);
@@ -189,16 +215,21 @@ class FuncSumHills :
   public Function {
   std::vector<std::string> hillsFiles,histoFiles;
   std::vector<std::string> proj;
-  int initstride;
-  bool iscltool,integratehills,integratehisto,parallelread;
-  bool negativebias;
-  bool nohistory;
-  bool minTOzero;
-  bool doInt;
-  double lowI_;
-  double uppI_;
-  double beta;
-  std::string outhills,outhisto,fmt;
+  int initstride=-1;
+  bool iscltool=false;
+  bool integratehills=false;
+  bool integratehisto=false;
+  bool parallelread=false;
+  bool negativebias=false;
+  bool nohistory=false;
+  bool minTOzero=false;
+  bool doInt=false;
+  double lowI_=-1.0;
+  double uppI_=-1.0;
+  double beta=-1.0;
+  std::string outhills;
+  std::string outhisto;
+  std::string fmt="%14.9f";
   std::unique_ptr<BiasRepresentation> biasrep;
   std::unique_ptr<BiasRepresentation> historep;
 public:
@@ -237,21 +268,7 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
 
 FuncSumHills::FuncSumHills(const ActionOptions&ao):
   Action(ao),
-  Function(ao),
-  initstride(-1),
-  iscltool(false),
-  integratehills(false),
-  integratehisto(false),
-  parallelread(false),
-  negativebias(false),
-  nohistory(false),
-  minTOzero(false),
-  doInt(false),
-  lowI_(-1.),
-  uppI_(-1.),
-  beta(-1.),
-  fmt("%14.9f") {
-
+  Function(ao) {
   // format
   parse("FMT",fmt);
   log<<"  Output format is "<<fmt<<"\n";

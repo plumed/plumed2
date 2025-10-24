@@ -180,23 +180,23 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     decay_w_ = 1./static_cast<double> (averaging);
     optsigmamean_stride_ = averaging;
   }
-
-  std::string stringa_noise;
-  parse("NOISETYPE",stringa_noise);
-  if(stringa_noise=="GAUSS") {
-    noise_type_ = GAUSS;
-  } else if(stringa_noise=="MGAUSS") {
-    noise_type_ = MGAUSS;
-  } else if(stringa_noise=="OUTLIERS") {
-    noise_type_ = OUTLIERS;
-  } else if(stringa_noise=="MOUTLIERS") {
-    noise_type_ = MOUTLIERS;
-  } else if(stringa_noise=="GENERIC") {
-    noise_type_ = GENERIC;
-  } else {
-    error("Unknown noise type!");
+  {
+    std::string stringa_noise;
+    parse("NOISETYPE",stringa_noise);
+    if(stringa_noise=="GAUSS") {
+      noise_type_ = GAUSS;
+    } else if(stringa_noise=="MGAUSS") {
+      noise_type_ = MGAUSS;
+    } else if(stringa_noise=="OUTLIERS") {
+      noise_type_ = OUTLIERS;
+    } else if(stringa_noise=="MOUTLIERS") {
+      noise_type_ = MOUTLIERS;
+    } else if(stringa_noise=="GENERIC") {
+      noise_type_ = GENERIC;
+    } else {
+      error("Unknown noise type!");
+    }
   }
-
   if(noise_type_== GENERIC) {
     std::string stringa_like;
     parse("LIKELIHOOD",stringa_like);
@@ -1603,11 +1603,11 @@ void MetainferenceBase::get_sigma_mean(const double weight, const double norm, c
         // ready to set once and for all the value of sigma_max
         if(optimized_step_==N_optimized_step_) {
           sigmamax_opt_done_=true;
-          for(unsigned i=0; i<sigma_max_.size(); i++) {
-            sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
-            Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
-            if(sigma_[i]>sigma_max_[i]) {
-              sigma_[i]=sigma_max_[i];
+          for(unsigned ii=0; ii<sigma_max_.size(); ii++) {
+            sigma_max_[ii]=std::sqrt(sigma_max_est_[ii]*dnrep);
+            Dsigma_[ii] = 0.05*(sigma_max_[ii] - sigma_min_[ii]);
+            if(sigma_[ii]>sigma_max_[ii]) {
+              sigma_[ii]=sigma_max_[ii];
             }
           }
         }

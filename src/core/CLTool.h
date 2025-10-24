@@ -67,11 +67,11 @@ private:
   void setRemainingToDefault(FILE* out);
 public:
 /// Set the input data:
-  void setInputData(const std::map<std::string,std::string>&inputData) {
-    this->inputData=inputData;
+  void setInputData(const std::map<std::string,std::string>&newInputData) {
+    inputData=newInputData;
   }
   const std::map<std::string,std::string>&getInputData() {
-    return this->inputData;
+    return inputData;
   }
 protected:
 /// Get the value of one of the command line arguments
@@ -85,7 +85,7 @@ protected:
   bool parseVector(const std::string&key,std::vector<T>&t);
 public:
 /// How is the input specified on the command line or in an input file
-  enum {unset,commandline,ifile} inputdata;
+  enum class inputType {unset,commandline,ifile} inputdata;
 /// Create the help keywords
   static void registerKeywords( Keywords& keys );
   explicit CLTool(const CLToolOptions& co );

@@ -167,7 +167,7 @@ public:
 };
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
-PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD");
+PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   Vector center;

@@ -60,9 +60,9 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
 /// Set the start point for the memory if needed
-  void setStart( const std::string& name, const unsigned& sss) override;
+  void setStart( const std::string& actname, const unsigned& sss) override;
 /// This resets the stride in the collection object
-  void setStride( const std::string& name, const unsigned& sss ) override;
+  void setStride( const std::string& actname, const unsigned& sss ) override;
 /// Update the units on the input data
   void updateUnits( DataPassingTools* passtools );
 /// This is called at the start of the step
@@ -70,10 +70,10 @@ public:
     dataCanBeSet = true;
   }
 /// These are the actions that set the pointers to the approrpiate values
-  virtual bool setValuePointer( const std::string& name, const TypesafePtr & val ) override ;
-  bool setForcePointer( const std::string& name, const TypesafePtr & val ) override ;
+  virtual bool setValuePointer( const std::string& actname, const TypesafePtr & val ) override ;
+  bool setForcePointer( const std::string& actname, const TypesafePtr & val ) override ;
 ///
-  void Set_comm(Communicator& comm) override {}
+  void Set_comm(Communicator& newcomm) override {}
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
 /// Share the data

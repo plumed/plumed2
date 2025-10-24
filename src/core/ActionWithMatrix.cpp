@@ -45,7 +45,7 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
 class RequiredMatrixElementsUpdater {
   RequiredMatrixElements& outmat;
 public:
-  RequiredMatrixElementsUpdater( RequiredMatrixElements& outmat ) : outmat(outmat) {}
+  RequiredMatrixElementsUpdater( RequiredMatrixElements& mat ) : outmat(mat) {}
   ~RequiredMatrixElementsUpdater() {
     outmat.update();
   }
@@ -57,7 +57,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   unsigned lstart = myval->getShape()[0];
   if( getNumberOfMasks()>0 ) {
     Value* maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maskarg->getNumberOfColumns() );
     }
     for(unsigned i=0; i<lstart; ++i) {
@@ -68,7 +68,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       }
     }
   } else if ( diagzero ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1]-1 );
     }
     for(unsigned i=0; i<lstart; ++i) {
@@ -82,15 +82,15 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       }
     }
   } else {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1] );
     }
   }
   Value* mycomp = getPntrToComponent(0);
   outmat.ncols = mycomp->getNumberOfColumns();
-  outmat.bookeeping.resize( mycomp->matrix_bookeeping.size() );
-  for(unsigned i=0; i<outmat.bookeeping.size(); ++i) {
-    outmat.bookeeping[i] = mycomp->matrix_bookeeping[i];
+  outmat.resize( mycomp->matrix_bookeeping.size() );
+  for(unsigned i=0; i<outmat.size(); ++i) {
+    outmat[i] = mycomp->matrix_bookeeping[i];
   }
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );

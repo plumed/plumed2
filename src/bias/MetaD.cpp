@@ -488,8 +488,15 @@ private:
     std::vector<double> center;
     std::vector<double> sigma;
     std::vector<double> invsigma;
-    Gaussian(const bool m, const double h, const std::vector<double>& c, const std::vector<double>& s):
-      multivariate(m),height(h),center(c),sigma(s),invsigma(s) {
+    Gaussian(const bool m,
+             const double h,
+             const std::vector<double>& c,
+             const std::vector<double>& s):
+      multivariate(m),
+      height(h),
+      center(c),
+      sigma(s),
+      invsigma(s) {
       // to avoid troubles from zero element in flexible hills
       for(unsigned i=0; i<invsigma.size(); ++i) {
         if(std::abs(invsigma[i])>1.e-20) {
@@ -507,9 +514,7 @@ private:
     double biasf;
     double threshold;
     double alpha;
-    inline TemperingSpecs(bool is_active, const std::string &name_stem, const std::string &name, double biasf, double threshold, double alpha) :
-      is_active(is_active), name_stem(name_stem), name(name), biasf(biasf), threshold(threshold), alpha(alpha)
-    {}
+    //no need for a specialized ctor: data is assigned in order of delcaration (but needs an initializer list)
   };
   // general setup
   double kbt_;
@@ -740,7 +745,7 @@ MetaD::MetaD(const ActionOptions& ao):
   calc_max_bias_(false), max_bias_(0.0),
   calc_transition_bias_(false), transition_bias_(0.0),
   dampfactor_(0.0),
-  tt_specs_(false, "TT", "Transition Tempered", -1.0, 0.0, 1.0),
+  tt_specs_{false,"TT","Transition Tempered", -1.0, 0.0, 1.0},
   current_stride_(0),
   freq_adaptive_(false),
   fa_update_frequency_(0),
@@ -1530,7 +1535,7 @@ MetaD::MetaD(const ActionOptions& ao):
       multi_sim_comm.Allgather(int(restartedFromGrid), restarted);
     }
     comm.Bcast(restarted,0);
-    int result = std::accumulate(restarted.begin(),restarted.end(),0);
+    unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mpi_nw_) {
       error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
     }
@@ -1603,7 +1608,7 @@ MetaD::MetaD(const ActionOptions& ao):
       multi_sim_comm.Allgather(int(restartedFromHills), restarted);
     }
     comm.Bcast(restarted,0);
-    int result = std::accumulate(restarted.begin(),restarted.end(),0);
+    unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mpi_nw_) {
       error("in this WALKERS_MPI run some replica have restarted from FILE while other do not!");
     }
@@ -1993,7 +1998,10 @@ double MetaD::getBias(const std::vector<double>& cv) {
   if(grid_) {
     bias = BiasGrid_->getValue(cv);
   } else {
-    unsigned nt=OpenMP::getNumThreads();
+#ifdef _OPENMP
+    //nt is unused if openmp is not declared
+    const unsigned nt=OpenMP::getNumThreads();
+#endif //_OPENMP
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
 

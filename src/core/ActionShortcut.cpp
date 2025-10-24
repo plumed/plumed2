@@ -65,7 +65,7 @@ void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::s
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
   Action(ao),
-  shortcutlabel(label) {
+  shortcutlabel(actionLabel) {
   std::string s;
   Tools::convert(plumed.getActionSet().size(),s);
   if( shortcutlabel==("@" + s) ) {
@@ -73,7 +73,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
     Tools::convert(plumed.getActionSet().size(),t);
     shortcutlabel="@" + t;
   } else {
-    label = ("@s" + s);
+    actionLabel = ("@s" + s);
   }
 }
 
@@ -274,13 +274,13 @@ std::string ActionShortcut::convertInputLineToString() {
 void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& arg ) const {
   std::size_t dot=mystr.find_first_of('.');
   std::string a=mystr.substr(0,dot);
-  std::string name=mystr.substr(dot+1);
+  std::string dataName=mystr.substr(dot+1);
   // Retrieve the keywords for the shortcut
   Keywords skeys;
   actionRegister().getKeywords( getName(), skeys );
   std::vector<std::string> out_comps( skeys.getOutputComponents() );
   // Now get the output components
-  if( name=="*" ) {
+  if( dataName=="*" ) {
     for(unsigned k=0; k<out_comps.size(); ++k) {
       if( out_comps[k]=="" ) {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
@@ -321,10 +321,10 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
     }
     // Get components that are actually actions
     for(unsigned k=0; k<out_comps.size(); ++k) {
-      if(name.find_first_of(out_comps[k])!=std::string::npos ) {
-        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
+      if(dataName.find_first_of(out_comps[k])!=std::string::npos ) {
+        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + dataName );
         if( action ) {
-          arg.push_back(action->copyOutput(a+"_"+name));
+          arg.push_back(action->copyOutput(a+"_"+dataName));
         }
         break;
       }

@@ -8,3 +8,4 @@ Completion.o: completion.xxd
 completion.xxd: completion.sh ../../scripts/*.sh ../../patches/*.sh
 	{ ../maketools/make-scripts-options.sh ; cat completion.sh ; }| ../maketools/xxd  > completion.xxd
 
+CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror

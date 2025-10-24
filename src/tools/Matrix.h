@@ -506,7 +506,8 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
   }
 
   // And do matrix algebra to construct the pseudoinverse
-  if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) {
+  if( pseudoinverse.rw!=static_cast<unsigned>(ncols)
+      || pseudoinverse.cl!=static_cast<unsigned>(nrows) ) {
     pseudoinverse.resize( ncols, nrows );
   }
   mult( V, Si, tmp );

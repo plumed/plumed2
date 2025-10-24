@@ -267,7 +267,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ProjectPoints( const ActionOptions& );
-  unsigned getNumberOfDerivatives() {
+  unsigned getNumberOfDerivatives() override {
     return 0;
   }
   void prepare() override ;

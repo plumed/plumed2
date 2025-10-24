@@ -30,14 +30,13 @@
 #include "tools/File.h"
 #include "tools/OpenMP.h"
 #include <string>
-#include <iostream>
 #include <cmath>
 #include <map>
-#include <numeric>
 #include <ctime>
 #include "tools/Random.h"
 
 #ifndef M_PI
+//why do not use PLMD::pi?
 #define M_PI           3.14159265358979323846
 #endif
 
@@ -108,7 +107,7 @@ void BAIES::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PRIOR", "type of prior to use (NONE, JEFFREYS, CAUCHY");
   keys.add("optional","TEMP", "temperature in kBt units");
   keys.add("optional","SIGMA_MIN", "minimum value of sigma");
-  keys.addOutputComponent("ene","default","Bayesian bAIes energy");
+  keys.addOutputComponent("ene","default","scalar","Bayesian bAIes energy");
 }
 
 BAIES::BAIES(const ActionOptions&ao):
@@ -146,7 +145,8 @@ BAIES::BAIES(const ActionOptions&ao):
   pbc_=!nopbc;
 
   // set kbt
-  kbt_ = plumed.getAtoms().getKbT();
+  //kbt_ = plumed.getAtoms().getKbT();
+  kbt_ = getkBT();
   parse("TEMP", kbt_);
 
   // set sigma_min

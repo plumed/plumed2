@@ -225,9 +225,9 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
 
   std::vector<double> argval( args.size() );
   if( args[args.size()-1]->getRank()==2 ) {
-    unsigned nc = args[args.size()-1]->getShape()[1];
-    unsigned nrows = args[args.size()-1]->getShape()[0];
-    unsigned ncs = args[args.size()-1]->getNumberOfColumns();
+    const unsigned nc    = args[args.size()-1]->getShape()[1];
+    const unsigned nrows = args[args.size()-1]->getShape()[0];
+    const unsigned ncs   = args[args.size()-1]->getNumberOfColumns();
     for(unsigned i=0; i<nrows; ++i) {
       unsigned ncols = args[args.size()-1]->getRowLength(i);
       for(unsigned k=0; k<args.size(); ++k) {
@@ -327,8 +327,8 @@ KDE<K,P,G>::KDE(const ActionOptions&ao):
     }
   }
 
-  function::FunctionOptions options;
-  KDEHelper<K,P,G>::read( taskmanager.getActionInput(), this, getArguments(), gridobject, shape, options );
+  function::FunctionOptions foptions;
+  KDEHelper<K,P,G>::read( taskmanager.getActionInput(), this, getArguments(), gridobject, shape, foptions );
   addValueWithDerivatives( shape );
   setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();

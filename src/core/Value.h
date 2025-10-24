@@ -60,15 +60,15 @@ class Value {
   friend class DataPassingObjectTyped;
 private:
 /// The action in which this quantity is calculated
-  ActionWithValue* action;
+  ActionWithValue* action=nullptr;
 /// Had the value been set
-  bool value_set;
+  bool value_set=false;
 /// The value of the quantity
   std::vector<double> data;
 /// The force acting on this quantity
   std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
-  bool hasForce;
+  bool hasForce=false;
 /// The way this value is used in the code
 /// normal = regular value that is determined during calculate
 /// constant = constnt value that is determined during startup and that doesn't change during simulation
@@ -86,23 +86,26 @@ private:
 /// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
   std::vector<std::size_t> shape;
 /// Does this quanity have derivatives
-  bool hasDeriv;
+  bool hasDeriv=true;
 /// Variables for storing data
-  unsigned bufstart, ngrid_der;
-  std::size_t ncols;
+  unsigned bufstart=0;
+  unsigned ngrid_der=0;
+  std::size_t ncols=0;
 /// If we are storing a matrix is it symmetric?
-  bool symmetric;
+  bool symmetric=false;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
   std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
-  enum {unset,periodic,notperiodic} periodicity;
+  enum {unset,periodic,notperiodic} periodicity=unset;
 /// Various quantities that describe the domain of this value
-  std::string str_min, str_max;
-  double min,max;
-  double max_minus_min;
-  double inv_max_minus_min;
+  std::string str_min;
+  std::string str_max;
+  double min=0.0;
+  double max=0.0;
+  double max_minus_min=0.0;
+  double inv_max_minus_min=0.0;
 /// Is the derivative of this quantity zero when the value is zero
-  bool derivativeIsZeroWhenValueIsZero;
+  bool derivativeIsZeroWhenValueIsZero=false;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
@@ -111,9 +114,9 @@ public:
 /// A constructor that can be used to make Vectors of values
   Value();
 /// A constructor that can be used to make Vectors of named values
-  explicit Value(const std::string& name);
+  explicit Value(const std::string& valname);
 /// A constructor that is used throughout the code to setup the value poiters
-  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<std::size_t>&ss=std::vector<std::size_t>());
+  Value(ActionWithValue* av, const std::string& valname, const bool withderiv,const std::vector<std::size_t>&ss=std::vector<std::size_t>());
 /// Set the shape of the Value
   void setShape( const std::vector<std::size_t>&ss );
 /// Set the value of the function

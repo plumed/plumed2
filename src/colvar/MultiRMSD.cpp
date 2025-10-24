@@ -125,16 +125,15 @@ MultiRMSD::MultiRMSD(const ActionOptions& ao):
     }
     std::string valstr;
     Tools::convert( vals[0], valstr );
-    for(unsigned i=1; i<vals.size(); ++i) {
+    for(unsigned ii=1; ii<vals.size(); ++ii) {
       std::string rnum;
-      Tools::convert( vals[i], rnum );
+      Tools::convert( vals[ii], rnum );
       valstr += "," + rnum;
     }
     // Create the reference value
     readInputLine( getShortcutLabel() + "_ref" + bnum + ": CONSTANT VALUES=" + valstr );
     // Do whole molecules
     if( !nopbc ) {
-      std::string num;
       Tools::convert( pdb.getAtomNumbers()[blocks[i-1]].serial(), num );
       std::string wm_line = "WHOLEMOLECULES ENTITY0=" + num;
       for(unsigned j=blocks[i-1]+1; j<blocks[i]; ++j) {
@@ -144,7 +143,6 @@ MultiRMSD::MultiRMSD(const ActionOptions& ao):
       readInputLine( wm_line );
     }
     // Get the positions of the atoms in this block
-    std::string num;
     Tools::convert( pdb.getAtomNumbers()[blocks[i-1]].serial(), num );
     std::string pos_line = getShortcutLabel() + "_cpos" + bnum + ": POSITION NOPBC ATOMS=" + num;
     for(unsigned j=blocks[i-1]+1; j<blocks[i]; ++j) {

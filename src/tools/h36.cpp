@@ -135,9 +135,9 @@ static
 const char*
 decode_pure(
   const int* digits_values,
-  unsigned digits_size,
+  const unsigned digits_size,
   const char* s,
-  unsigned s_size,
+  const unsigned s_size,
   int* result) {
   int si, dv;
   int have_minus = 0;
@@ -166,7 +166,7 @@ decode_pure(
     } else {
       have_non_blank = 1;
       dv = digits_values[si];
-      if (dv < 0 || dv >= digits_size) {
+      if (dv < 0 || dv >= static_cast<int>(digits_size)) {
         *result = 0;
         return invalid_number_literal();
       }

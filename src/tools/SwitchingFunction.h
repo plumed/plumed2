@@ -100,6 +100,7 @@ struct Switch {
   virtual switchType getType() const = 0;
   virtual std::string description() const = 0;
   virtual void setupStretch() = 0;
+  virtual ~Switch();
 };
 } // namespace switchContainers
 

@@ -264,7 +264,7 @@ void PathDisplacements::update() {
   }
   int iclose3 = iclose1 + isign;
   unsigned ifrom=iclose1, ito=iclose3;
-  if( iclose3<0 || iclose3>=nrows ) {
+  if( iclose3<0 || static_cast<unsigned>(iclose3)>=nrows ) {
     ifrom=iclose2;
     ito=iclose1;
   }

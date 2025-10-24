@@ -1092,8 +1092,8 @@ void PlumedMain::readInputLines(const std::string & str) {
   plumed_assert(fp);
 
   // make sure file is closed (and thus deleted) also if an exception occurs
-  auto deleter=[](auto fp) {
-    std::fclose(fp);
+  auto deleter=[](auto FP) {
+    std::fclose(FP);
   };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
@@ -1302,7 +1302,7 @@ void PlumedMain::justCalculate() {
       if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-        Stopwatch::Handler sw;
+        Stopwatch::Handler swh;
         if(detailedTimers) {
           auto actionNumberLabel=std::to_string(iaction);
           const unsigned m=actionSet.size();
@@ -1313,7 +1313,7 @@ void PlumedMain::justCalculate() {
             k++;
           }
           auto spaces=std::string(k-actionNumberLabel.length(),' ');
-          sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
+          swh=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
         ActionAtomistic*aa=p->castToActionAtomistic();
@@ -1381,7 +1381,7 @@ void PlumedMain::backwardPropagate() {
 
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
+      Stopwatch::Handler swh;
       if(detailedTimers) {
         auto actionNumberLabel=std::to_string(iaction);
         const unsigned m=actionSet.size();
@@ -1392,7 +1392,7 @@ void PlumedMain::backwardPropagate() {
           k++;
         }
         auto spaces=std::string(k-actionNumberLabel.length(),' ');
-        sw=stopwatch.startStop("5A " + spaces + actionNumberLabel+" "+p->getLabel());
+        swh=stopwatch.startStop("5A " + spaces + actionNumberLabel+" "+p->getLabel());
       }
 
       p->apply();
@@ -1542,8 +1542,7 @@ double PlumedMain::getWork() const {
 FILE* PlumedMain::fopen(const char *path, const char *mode) {
   std::string mmode(mode);
   std::string ppath(path);
-  std::string suffix(getSuffix());
-  std::string ppathsuf=ppath+suffix;
+  std::string ppathsuf=ppath+getSuffix();
   FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
   if(!fp) {
     fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
@@ -1718,8 +1717,8 @@ double PlumedMain::DeprecatedAtoms::getKbT() const {
 }
 
 int PlumedMain::DeprecatedAtoms::getNatoms() const {
-  std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
-  for(const auto & pp : inputs ) {
+  std::vector<ActionToPutData*> atpd=plumed.getActionSet().select<ActionToPutData*>();
+  for(const auto & pp : atpd ) {
     if( pp->getRole()=="x" ) {
       return (pp->copyOutput(0))->getShape()[0];
     }

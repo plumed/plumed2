@@ -77,7 +77,7 @@ void GenJson::registerKeywords( Keywords& keys ) {
 GenJson::GenJson(const CLToolOptions& co ):
   CLTool(co),
   version("master") {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
   if( config::getVersionLong().find("dev")==std::string::npos ) {
     version="v"+config::getVersion();
   }
@@ -144,28 +144,22 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   // Get the names of all the actions
   std::vector<std::string> action_names( actionRegister().getActionNames() );
   std::vector<std::string> allmodules;
-  for(unsigned i=0; i<action_names.size(); ++i) {
-    std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl;
-    std::string action=action_names[i];
+  for(const auto & action : action_names) {
+    std::cout<<"  \""<<action<<'"'<<": {"<<std::endl;
     // Handle conversion of action names to links
     printHyperlink( action );
-    std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
+    std::cout<<"    \"description\" : \""<<action_map[action]<<"\",\n";
     bool found=false;
     plumed_massert( getModuleMap().find(action)!=getModuleMap().end(), "could not find action named " + action + " in module map");
-    std::string thismodule = getModuleMap().find(action_names[i])->second;
-    for(unsigned i=0; i<allmodules.size(); ++i) {
-      if( allmodules[i]==thismodule ) {
-        found=true;
-        break;
-      }
-    }
+    std::string thismodule = getModuleMap().find(action)->second;
+    found = std::find(allmodules.begin(),allmodules.end(),thismodule)!=allmodules.end();
     if( !found ) {
       allmodules.push_back( thismodule );
     }
     std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
     // Now output keyword information
     Keywords keys;
-    actionRegister().getKeywords( action_names[i], keys );
+    actionRegister().getKeywords( action, keys );
     std::cout<<"    \"displayname\" : \""<<keys.getDisplayName()<<"\",\n";
 // This is used for noting actions that have been deprecated
     std::string replacement = keys.getReplacementAction();
@@ -178,7 +172,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         }
       }
       if( !found_replacement ) {
-        error("could not find action named " + replacement + " that is supposed to be used to replace " + action_names[i] );
+        error("could not find action named " + replacement + " that is supposed to be used to replace " + action );
       }
       std::cout<<"    \"replacement\" : \""<<replacement<<"\",\n";
     }
@@ -224,7 +218,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::size_t dot=desc.find_first_of(".");
         std::string mydescrip = desc.substr(0,dot);
         if( mydescrip.find("\\")!=std::string::npos ) {
-          error("found invalid backslash character documentation for output component " + compname + " in action " + action_names[i] );
+          error("found invalid backslash character documentation for output component " + compname + " in action " + action );
         }
         std::cout<<"           \"description\": \""<<mydescrip<<"\""<<std::endl;
         if( k==components.size()-1 ) {
@@ -234,7 +228,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         }
       }
       if( hasvalue && components.size()==0 ) {
-        printf("WARNING: no components have been registered for action %s \n", action_names[i].c_str() );
+        printf("WARNING: no components have been registered for action %s \n", action.c_str() );
       }
       std::cout<<"       }"<<std::endl;
 
@@ -307,9 +301,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
     auto mytool = cltoolRegister().create( CLToolOptions(cltool) );
     std::cout<<"    \"description\" : \""<<mytool->description()<<"\",\n";
-    if( mytool->inputdata==commandline ) {
+    if( mytool->inputdata==inputType::commandline ) {
       std::cout<<"    \"inputtype\" : \"command line args\",\n";
-    } else if( mytool->inputdata==ifile ) {
+    } else if( mytool->inputdata==inputType::ifile ) {
       std::cout<<"    \"inputtype\" : \"file\",\n";
     } else {
       error("input type for cltool was not specified");

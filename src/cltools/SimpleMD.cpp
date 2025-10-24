@@ -120,7 +120,7 @@ public:
     write_statistics_first(true),
     write_statistics_last_time_reopened(0),
     write_statistics_fp(NULL) {
-    inputdata=ifile;
+    inputdata=inputType::ifile;
   }
 
 private:
@@ -310,7 +310,7 @@ private:
       std::vector<Vector> omp_forces(forces.size());
       #pragma omp for reduction(+:engconf_tmp) schedule(static,1) nowait
       for(int iatom=0; iatom<natoms-1; iatom++) {
-        for(int jlist=0; jlist<list[iatom].size(); jlist++) {
+        for(unsigned jlist=0; jlist<list[iatom].size(); jlist++) {
           const int jatom=list[iatom][jlist];
           auto distance=positions[iatom]-positions[jatom];
           Vector distance_pbc;    // minimum-image distance of the two atoms
@@ -562,12 +562,13 @@ private:
 
 // neighbour list are computed, and reference positions are saved
     compute_list(natoms,positions,cell,listcutoff,list);
-
-    int list_size=0;
-    for(int i=0; i<list.size(); i++) {
-      list_size+=list[i].size();
+    {
+      int list_size=0;
+      for(const auto &element: list) {
+        list_size+=element.size();
+      }
+      std::fprintf(out,"List size: %d\n",list_size);
     }
-    std::fprintf(out,"List size: %d\n",list_size);
     for(int iatom=0; iatom<natoms; ++iatom) {
       positions0[iatom]=positions[iatom];
     }
@@ -612,8 +613,8 @@ private:
           positions0[iatom]=positions[iatom];
         }
         int list_size=0;
-        for(int i=0; i<list.size(); i++) {
-          list_size+=list[i].size();
+        for(const auto &element: list) {
+          list_size+=element.size();
         }
         std::fprintf(out,"List size: %d\n",list_size);
       }

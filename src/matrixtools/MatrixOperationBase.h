@@ -34,8 +34,8 @@ class MatrixOperationBase :
   public ActionWithValue {
 private:
 /// These are used to hold the matrix
-  std::vector<double> vals;
-  std::vector<std::pair<unsigned,unsigned> > pairs;
+  std::vector<double> MOBvals;
+  std::vector<std::pair<unsigned,unsigned> > MOBpairs;
 protected:
 /// Retrieve a dense version of the ith matrix that is used by this action
   void retrieveFullMatrix( Matrix<double>& mymatrix );

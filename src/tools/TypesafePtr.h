@@ -71,34 +71,34 @@ class TypesafePtr {
   /// Small structure used to pass elements of a shape initializer_list
   struct SizeLike {
     std::size_t size;
-    SizeLike(short unsigned size): size(size) {}
-    SizeLike(unsigned size): size(size) {}
-    SizeLike(long unsigned size): size(size) {}
-    SizeLike(long long unsigned size): size(size) {}
-    SizeLike(short size): size(std::size_t(size)) {}
-    SizeLike(int size): size(std::size_t(size)) {}
-    SizeLike(long int size): size(std::size_t(size)) {}
-    SizeLike(long long int size): size(std::size_t(size)) {}
+    SizeLike(short unsigned dim): size(dim) {}
+    SizeLike(unsigned dim): size(dim) {}
+    SizeLike(long unsigned dim): size(dim) {}
+    SizeLike(long long unsigned dim): size(dim) {}
+    SizeLike(short dim): size(std::size_t(dim)) {}
+    SizeLike(int dim): size(std::size_t(dim)) {}
+    SizeLike(long int dim): size(std::size_t(dim)) {}
+    SizeLike(long long int dim): size(std::size_t(dim)) {}
   };
 
   inline void init_shape(const std::size_t* shape) {
-    this->shape[0]=0;
+    myshape[0]=0;
     if(shape && *shape>0) {
       std::size_t nelem_=1;
       unsigned i=0;
-      for(i=0; i<this->shape.size(); i++) {
-        this->shape[i]=*shape;
+      for(i=0; i<myshape.size(); i++) {
+        myshape[i]=*shape;
         if(*shape==0) {
           break;
         }
         nelem_*=*shape;
         shape++;
       }
-      plumed_assert(i<this->shape.size()); // check that last element is actually zero
-      if(nelem==0) {
-        nelem=nelem_;
+      plumed_assert(i<myshape.size()); // check that last element is actually zero
+      if(mynelem==0) {
+        mynelem=nelem_;
       }
-      plumed_assert(nelem==nelem_) << "Inconsistent shape/nelem";
+      plumed_assert(mynelem==nelem_) << "Inconsistent shape/nelem";
     }
   }
 
@@ -107,17 +107,17 @@ class TypesafePtr {
 public:
 
   TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, std::size_t flags):
-    ptr(ptr),
-    nelem(nelem),
-    flags(flags) {
+    myptr(ptr),
+    mynelem(nelem),
+    myflags(flags) {
     buffer[0]='\0';
     init_shape(shape);
   }
 
-  static const unsigned maxrank=4;
+  static constexpr unsigned maxrank=4;
   static TypesafePtr fromSafePtr(void* safe);
   static TypesafePtr setNelemAndShape(const TypesafePtr &other, std::size_t nelem, const std::size_t* shape) {
-    return TypesafePtr(other.ptr,nelem,shape,other.flags);
+    return TypesafePtr(other.myptr,nelem,shape,other.myflags);
   }
   static TypesafePtr unchecked(const void* ptr) {
     return TypesafePtr(const_cast<void*>(ptr),0,nullptr,0);
@@ -127,21 +127,21 @@ public:
   static constexpr unsigned short is_file=5;
 
   TypesafePtr() {
-    shape[0]=0;
+    myshape[0]=0;
     buffer[0]='\0';
   }
 
   TypesafePtr(std::nullptr_t) {
-    shape[0]=0;
+    myshape[0]=0;
     buffer[0]='\0';
   }
 
 /// Macro that generate a constructor with given type and flags
 #define __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type,type_,flags_) \
   TypesafePtr(type_*ptr, std::size_t nelem=0, const std::size_t* shape=nullptr) : \
-    ptr((void*)const_cast<type*>(ptr)), \
-    nelem(nelem), \
-    flags(flags_) \
+    myptr((void*)const_cast<type*>(ptr)), \
+    mynelem(nelem), \
+    myflags(flags_) \
   { \
     init_shape(shape); \
     buffer[0]='\0'; \
@@ -166,12 +166,12 @@ public:
 #define __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(type,code) \
   __PLUMED_WRAPPER_TYPESAFEPTR(type,code,sizeof(type)) \
   TypesafePtr(type val, std::size_t nelem=0, const std::size_t* shape=nullptr): \
-      nelem(1), \
-      flags(sizeof(type) | (0x10000*(code)) | (0x2000000*1)) \
+      mynelem(1), \
+      myflags(sizeof(type) | (0x10000*(code)) | (0x2000000*1)) \
     { \
     plumed_assert(sizeof(type)<=32); \
-    ptr=&buffer[0]; \
-    flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    myptr=&buffer[0]; \
+    myflags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
     std::memcpy(&buffer[0],&val,sizeof(type)); \
     init_shape(shape); \
   }
@@ -209,27 +209,27 @@ public:
 
   TypesafePtr(TypesafePtr&&other):
     buffer(other.buffer),
-    ptr(other.ptr==&other.buffer[0] ? &buffer[0] : other.ptr),
-    nelem(other.nelem),
-    shape(other.shape),
-    flags(other.flags) {
-    other.ptr=nullptr;
+    myptr(other.myptr==&other.buffer[0] ? &buffer[0] : other.myptr),
+    mynelem(other.mynelem),
+    myshape(other.myshape),
+    myflags(other.myflags) {
+    other.myptr=nullptr;
   }
 
   TypesafePtr copy() const;
 
   TypesafePtr & operator=(TypesafePtr && other) {
-    ptr=(other.ptr==&other.buffer[0] ? &buffer[0] : other.ptr);
-    flags=other.flags;
-    nelem=other.nelem;
-    shape=other.shape;
+    myptr=(other.myptr==&other.buffer[0] ? &buffer[0] : other.myptr);
+    myflags=other.myflags;
+    mynelem=other.mynelem;
+    myshape=other.myshape;
     buffer=other.buffer;
-    other.ptr=nullptr;
+    other.myptr=nullptr;
     return *this;
   }
 
   std::string type_str() const {
-    auto type=(flags>>16)&0xff;
+    auto type=(myflags>>16)&0xff;
     if(type==0) {
       return "wildcard";
     }
@@ -257,16 +257,16 @@ private:
   T* get_priv(std::size_t nelem, const std::size_t* shape, bool byvalue) const {
 
     if(typesafePtrSkipCheck()) {
-      return (T*) ptr;
+      return (T*) myptr;
     }
     typedef typename std::remove_pointer<T>::type T_noptr;
-    if(flags==0) {
-      return (T*) ptr;  // no check
+    if(myflags==0) {
+      return (T*) myptr;  // no check
     }
-    auto size=flags&0xffff;
-    auto type=(flags>>16)&0xff;
+    auto size=myflags&0xffff;
+    auto type=(myflags>>16)&0xff;
     // auto unsi=(flags>>24)&0x1; // ignored
-    auto cons=(flags>>25)&0x7;
+    auto cons=(myflags>>25)&0x7;
 
     // type=0: ignore check
     // type>5: undefined yet
@@ -337,28 +337,28 @@ private:
       }
     }
     // check full shape, if possible
-    if(shape && shape[0] && this->shape[0]) {
-      for(unsigned i=0; i<this->shape.size(); i++) {
-        if(shape[i]==0 && this->shape[i]!=0) {
+    if(shape && shape[0] && myshape[0]) {
+      for(unsigned i=0; i<myshape.size(); i++) {
+        if(shape[i]==0 && myshape[i]!=0) {
           throw ExceptionTypeError() << "Incorrect number of axis (passed greater than requested)"<<extra_msg();
         }
-        if(shape[i]!=0 && this->shape[i]==0) {
+        if(shape[i]!=0 && myshape[i]==0) {
           throw ExceptionTypeError() << "Incorrect number of axis (requested greater than passed)"<<extra_msg();
         }
         if(shape[i]==0) {
           break;
         }
-        if((shape[i]>this->shape[i])) {
-          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << this->shape[i] << " have been passed"<<extra_msg();
+        if((shape[i]>myshape[i])) {
+          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << myshape[i] << " have been passed"<<extra_msg();
         }
-        if(i>0 && (shape[i]<this->shape[i])) {
-          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << this->shape[i] << " have been passed"<<extra_msg();
+        if(i>0 && (shape[i]<myshape[i])) {
+          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << myshape[i] << " have been passed"<<extra_msg();
         }
       }
     }
     if(nelem==0 && shape && shape[0]>0) {
       nelem=1;
-      for(unsigned i=0; i<this->shape.size(); i++) {
+      for(unsigned i=0; i<myshape.size(); i++) {
         if(shape[i]==0) {
           break;
         }
@@ -366,11 +366,11 @@ private:
       }
     }
     // check number of elements
-    if(nelem>0 && this->nelem>0)
-      if(!(nelem<=this->nelem)) {
-        throw ExceptionTypeError() << "This command wants to access " << nelem << " from this pointer, but only " << this->nelem << " have been passed"<<extra_msg();
+    if(nelem>0 && mynelem>0)
+      if(!(nelem<=mynelem)) {
+        throw ExceptionTypeError() << "This command wants to access " << nelem << " from this pointer, but only " << mynelem << " have been passed"<<extra_msg();
       }
-    return (T*) ptr;
+    return (T*) myptr;
   }
 
 public:
@@ -394,13 +394,13 @@ public:
   // this will make sure that a null character is present
   const char* getCString() const {
     const char* ptr=get_priv<const char>(0,nullptr,false);
-    if(!typesafePtrSkipCheck() && this->nelem>0 && this->nelem<std::numeric_limits<std::size_t>::max()) {
+    if(!typesafePtrSkipCheck() && mynelem>0 && mynelem<std::numeric_limits<std::size_t>::max()) {
       std::size_t i=0;
-      for(; i<this->nelem; i++)
+      for(; i<mynelem; i++)
         if(ptr[i]==0) {
           break;
         }
-      if(i==this->nelem) {
+      if(i==mynelem) {
         throw ExceptionTypeError() << "PLUMED is expecting a null terminated string, but no null character was found";
       }
     }
@@ -430,31 +430,31 @@ public:
   }
 
   operator bool() const noexcept {
-    return ptr;
+    return myptr;
   }
 
   void* getRaw() const noexcept {
-    return ptr;
+    return myptr;
   }
 
   std::size_t getNelem() const noexcept {
-    return nelem;
+    return mynelem;
   }
 
   const std::size_t* getShape() const noexcept {
-    return shape.data();
+    return myshape.data();
   }
 
   std::size_t getFlags() const noexcept {
-    return flags;
+    return myflags;
   }
 
 private:
   std::array<char,32> buffer;
-  void* ptr=nullptr;
-  std::size_t nelem=0;
-  std::array<std::size_t,maxrank+1> shape; // make sure to initialize this!
-  std::size_t flags=0;
+  void* myptr=nullptr;
+  std::size_t mynelem=0;
+  std::array<std::size_t,maxrank+1> myshape; // make sure to initialize this!
+  std::size_t myflags=0;
 };
 
 }
