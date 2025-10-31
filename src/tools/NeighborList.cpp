@@ -187,10 +187,13 @@ std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
       AtomNumber index0=fullatomlist_[neighbors_[i].first];
       AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
-      auto p = std::find(requestlist_.begin(), requestlist_.end(), index0);
+// And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
+// so I can use lower_bond that uses binary seach instead of find
+      plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
+      auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
       plumed_dbg_assert(p!=requestlist_.end());
       newindex0=p-requestlist_.begin();
-      p = std::find(requestlist_.begin(), requestlist_.end(), index1);
+      p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
       plumed_dbg_assert(p!=requestlist_.end());
       newindex1=p-requestlist_.begin();
       neighbors_[i]=std::pair<unsigned,unsigned>(newindex0,newindex1);
