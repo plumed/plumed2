@@ -95,7 +95,7 @@ public:
 /// Do the calculation
   void calculate() override;
 ///
-  void apply();
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(Concatenate,"CONCATENATE")

@@ -119,7 +119,7 @@ public:
      * 
      * @param numArgs    the number of arguments the function expects
      */
-    PlaceholderFunction(int numArgs) : numArgs(numArgs) {
+    PlaceholderFunction(int numArguments) : numArgs(numArguments) {
     }
     int getNumArguments() const {
         return numArgs;

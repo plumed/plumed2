@@ -99,16 +99,16 @@ ActionToGetData::ActionToGetData(const ActionOptions&ao):
   std::string type;
   parse("TYPE",type);
   if( type=="value" ) {
-    gtype=val;
+    gtype=dataType::val;
   } else if( type=="derivatives" ) {
-    gtype=deriv;
+    gtype=dataType::deriv;
   } else if( type=="forces" ) {
-    gtype=force;
+    gtype=dataType::force;
   } else {
     plumed_merror("cannot get " + type + " for value TYPE should be value/derivative/force");
   }
 
-  if( gtype!=val ) {
+  if( gtype!=dataType::val ) {
     error("not implemented functionality to pass derviatives or forces to python.  Email gareth.tribello@gmail.com if you want this.");
   }
 
@@ -145,7 +145,7 @@ void ActionToGetData::set_memory( const TypesafePtr & val ) {
 }
 
 void ActionToGetData::calculate() {
-  plumed_assert( gtype==val );
+  plumed_assert( gtype==dataType::val );
   mydata->setData( getPntrToArgument(0) );
 }
 

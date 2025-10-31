@@ -73,7 +73,7 @@ void Manual::registerKeywords( Keywords& keys ) {
 
 Manual::Manual(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int Manual::main(FILE* in, FILE*out,Communicator& pc) {

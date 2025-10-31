@@ -117,8 +117,9 @@ class WholeMolecules:
   public ActionAtomistic {
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
-  std::vector<Vector> refs;
-  bool doemst, addref;
+  std::vector<Vector> refs= {};
+  bool doemst=false;
+  bool addref=false;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -151,8 +152,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao),
-  doemst(false), addref(false) {
+  ActionAtomistic(ao) {
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   // parse optional flags
@@ -163,7 +163,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
   parseFlag("ADDREFERENCE", addref);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  auto* infomoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   // create groups from ENTITY
   for(int i=0;; i++) {
@@ -189,11 +189,11 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     if(moltype.length()==0) {
       error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
     }
-    if( !moldat ) {
+    if( !infomoldat ) {
       error("MOLINFO is required to use RESIDUES");
     }
     std::vector< std::vector<AtomNumber> > backatoms;
-    moldat->getBackbone( resstrings, moltype, backatoms );
+    infomoldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
       groups.push_back( backatoms[i] );
     }
@@ -205,7 +205,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
-  if(moldat && moldat->isWhole()) {
+  if(infomoldat && infomoldat->isWhole()) {
     doemst=true;
   }
 
@@ -214,16 +214,16 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   if(doemst) {
-    if( !moldat ) {
+    if( !infomoldat ) {
       error("MOLINFO is required to use EMST");
     }
     // initialize tree
-    Tree tree = Tree(moldat);
+    Tree myTree = Tree(infomoldat);
     // cycle on groups and reorder atoms
     for(unsigned i=0; i<groups.size(); ++i) {
-      groups[i] = tree.getTree(groups[i]);
+      groups[i] = myTree.getTree(groups[i]);
       // store root atoms
-      roots.push_back(tree.getRoot());
+      roots.push_back(myTree.getRoot());
     }
   } else {
     // fill root vector with previous atom in groups
@@ -239,12 +239,12 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
   // adding reference if needed
   if(addref) {
-    if( !moldat ) {
+    if( !infomoldat ) {
       error("MOLINFO is required to use ADDREFERENCE");
     }
     for(unsigned i=0; i<groups.size(); ++i) {
       // add reference position of first atom in entity
-      refs.push_back(moldat->getPosition(groups[i][0]));
+      refs.push_back(infomoldat->getPosition(groups[i][0]));
     }
   }
 
@@ -283,7 +283,6 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     }
   }
 
-
   checkRead();
   Tools::removeDuplicates(merge);
   requestAtoms(merge);
@@ -306,10 +305,10 @@ void WholeMolecules::calculate() {
       }
     } else {
       for(unsigned j=1; j<p_groups[i].size(); ++j) {
-        Vector first=getGlobalPosition(p_roots[i][j-1]);
-        Vector second=getGlobalPosition(p_groups[i][j]);
-        second=first+pbcDistance(first,second);
-        setGlobalPosition(p_groups[i][j], second );
+        Vector firstPos=getGlobalPosition(p_roots[i][j-1]);
+        Vector secondPos=getGlobalPosition(p_groups[i][j]);
+        secondPos=firstPos+pbcDistance(firstPos,secondPos);
+        setGlobalPosition(p_groups[i][j], secondPos );
       }
     }
   }

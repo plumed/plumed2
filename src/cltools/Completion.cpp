@@ -27,7 +27,6 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace PLMD {
 namespace cltools {
@@ -69,7 +68,7 @@ void Completion::registerKeywords( Keywords& keys ) {
 
 Completion::Completion(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
@@ -100,35 +99,23 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
     }
   std::fprintf(out,"\"\n");
 
-  for(unsigned j=0; j<availableCxx.size(); j++) {
-    std::string s=availableCxx[j];
+  //here I am looping on the copies,
+  //since I want to preprocess the string before printing it
+  for(std::string cmd:availableCxx) {
+    std::vector<std::string> keys=cltoolRegister().getKeys(cmd);
 // handle - sign (convert to underscore)
-    for(;;) {
-      size_t n=s.find("-");
-      if(n==std::string::npos) {
-        break;
-      }
-      s[n]='_';
-    }
-    std::fprintf(out,"local cmd_keys_%s=\"",s.c_str());
-    std::vector<std::string> keys=cltoolRegister().getKeys(availableCxx[j]);
-    for(unsigned k=0; k<keys.size(); k++) {
+    std::replace(cmd.begin(),cmd.end(),'-','_');
+    std::fprintf(out,"local cmd_keys_%s=\"",cmd.c_str());
+    for(std::string key: keys) {
 // handle --help/-h
-      std::string s=keys[k];
-      for(;;) {
-        size_t n=s.find("/");
-        if(n==std::string::npos) {
-          break;
-        }
-        s[n]=' ';
-      }
-      std::fprintf(out," %s",s.c_str());
+      std::replace(key.begin(),key.end(),'/',' ');
+      std::fprintf(out," %s",key.c_str());
     }
     std::fprintf(out,"\"\n");
   }
 
   std::fprintf(out,"%s\n",completion);
-  std::string name=config::getPlumedProgramName();
+  std::string plumedName=config::getPlumedProgramName();
 
   std::fprintf(out,
                "############################################\n"
@@ -137,7 +124,10 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
                "# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
                "# complete -F _%s -o default %s\n"
                "############################################\n",
-               name.c_str(),name.c_str(),name.c_str(),name.c_str());
+               plumedName.c_str(),
+               plumedName.c_str(),
+               plumedName.c_str(),
+               plumedName.c_str());
 
   return 0;
 }

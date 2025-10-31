@@ -81,7 +81,7 @@ public:
   void prepare() override ;
   void calculate() override ;
   void apply() override {}
-  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const {
+  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override {
     plumed_merror("this should not be called");
   }
 };

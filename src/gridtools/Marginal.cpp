@@ -133,7 +133,7 @@ void MarginalInput::read( MarginalInput& func, ActionWithArguments* action ) {
   action->parse("DIR",func.dir);
   action->log.printf("  calculating marginal along %dth axis of input grid\n", func.dir );
   func.dir = func.dir - 1;
-  if( func.dir<0 || func.dir>=(action->getPntrToArgument(0))->getRank() ) {
+  if( func.dir<0 || static_cast<unsigned>(func.dir)>=(action->getPntrToArgument(0))->getRank() ) {
     action->error("not enough directions in input grid to compute desired marginal");
   }
 }
@@ -248,7 +248,7 @@ void Marginal::performTask( std::size_t task_index,
   std::vector<unsigned> indices( gridobject.getDimension() );
   double volelement = 1;
   for(unsigned i=0; i<indices.size(); ++i ) {
-    if( i==actiondata.dir ) {
+    if( static_cast<int>(i)==actiondata.dir ) {
       continue;
     }
     volelement *= gridobject.getGridSpacing()[i];

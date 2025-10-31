@@ -30,12 +30,16 @@ namespace PLMD {
 
 /// \ingroup TOOLBOX
 class Random {
-  static const int IA=16807,IM=2147483647,IQ=127773,IR=2836,NTAB=32;
-  static const int NDIV=(1+(IM-1)/NTAB);
-  static const double EPS;
-  static const double AM;
-  static const double RNMX;
-  static const double fact;
+  static constexpr int IA=16807;
+  static constexpr int IM=2147483647;
+  static constexpr int IQ=127773;
+  static constexpr int IR=2836;
+  static constexpr int NTAB=32;
+  static constexpr int NDIV=(1+(IM-1)/NTAB);
+  static constexpr double fact=5.9604644775390625e-8;     /* 1 / 2^24  */
+  static constexpr double EPS=3.0e-16;
+  static constexpr double AM=1.0/IM;
+  static constexpr double RNMX=1.0-EPS;
   static const std::string noname;
   bool incPrec;
   bool switchGaussian;
@@ -45,7 +49,7 @@ class Random {
   int idum;
   std::string name;
 public:
-  explicit Random(const std::string & name=noname);
+  explicit Random(const std::string & title=noname);
   void setSeed(int idum);
   double RandU01();
   double U01();

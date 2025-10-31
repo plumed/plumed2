@@ -46,7 +46,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OuterProductBase(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
   void prepare() override ;
   int checkTaskIsActive( const unsigned& itask ) const override ;
   void calculate() override ;
@@ -55,8 +55,14 @@ public:
                            const OuterProductInput<T>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
-  static int getNumberOfValuesPerTask( std::size_t task_index, const OuterProductInput<T>& actiondata );
-  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const OuterProductInput<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const OuterProductInput<T>& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const OuterProductInput<T>& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
 template <class T>
@@ -168,7 +174,6 @@ int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
 template <class T>
 void OuterProductBase<T>::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  OuterProductInput<T>& myinp = taskmanager.getActionInput();
   taskmanager.setupParallelTaskManager( 2*getNumberOfComponents(), getNumberOfComponents()*getPntrToComponent(0)->getShape()[1] );
   taskmanager.setWorkspaceSize( 2*getNumberOfComponents() );
   taskmanager.runAllTasks();

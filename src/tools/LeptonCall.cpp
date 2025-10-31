@@ -24,7 +24,11 @@
 
 namespace PLMD {
 
-void LeptonCall::set(const std::string & func, const std::vector<std::string>& var, Action* action, const bool& a ) {
+void LeptonCall::set(const std::string & func,
+                     const std::vector<std::string>& var,
+                     Action* action,
+                     const bool extraArgs ) {
+  allow_extra_args=extraArgs;
   unsigned nth=OpenMP::getNumThreads();
   expression.resize(nth);
   expression_deriv.resize(var.size());
@@ -32,7 +36,6 @@ void LeptonCall::set(const std::string & func, const std::vector<std::string>& v
   for(unsigned i=0; i<expression_deriv.size(); ++i) {
     expression_deriv[i].resize(OpenMP::getNumThreads());
   }
-  allow_extra_args=a;
   nargs=var.size();
 
   lepton_ref.resize(nth*nargs,nullptr);
@@ -67,13 +70,13 @@ void LeptonCall::set(const std::string & func, const std::vector<std::string>& v
   }
   lepton_ref_deriv.resize(nth*nargs*nargs,nullptr);
   for(unsigned i=0; i<var.size(); i++) {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
+    lepton::ParsedExpression pevar=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
     nt=0;
     if( action ) {
-      action->log<<"    "<<pe<<"\n";
+      action->log<<"    "<<pevar<<"\n";
     }
     for(auto & e : expression_deriv[i]) {
-      e=pe.createCompiledExpression();
+      e=pevar.createCompiledExpression();
       for(unsigned j=0; j<var.size(); ++j) {
         try {
           lepton_ref_deriv[i*OpenMP::getNumThreads()*var.size() + nt*var.size()+j]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[i][nt])->getVariableReference(var[j]);

@@ -71,8 +71,8 @@ class MatrixSquareBracketsAccess {
   class Const_row {
     friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
     // the user should not manipulate it directly
-    const MatrixSquareBracketsAccess& t;
-    const I i;
+    const MatrixSquareBracketsAccess& accessor;
+    const I row;
     constexpr Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
     /// access element
@@ -82,8 +82,8 @@ class MatrixSquareBracketsAccess {
   class Row {
     friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
     // the user should not manipulate it directly
-    MatrixSquareBracketsAccess& t;
-    const I i;
+    MatrixSquareBracketsAccess& accessor;
+    const I row;
     constexpr Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
     /// access element
@@ -98,18 +98,18 @@ public:
 
 template<class T,class C,class I,class J>
 constexpr MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
-  t(t),i(i) {}
+  accessor(t),row(i) {}
 
 template<class T,class C,class I,class J>
 constexpr MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
-  t(t),i(i) {}
+  accessor(t),row(i) {}
 
 template<class T,class C,class I,class J>
 constexpr const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const {
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
-  return (*static_cast<const T*>(&t))(i,j);
+  return (*static_cast<const T*>(&accessor))(row,j);
 }
 
 template<class T,class C,class I,class J>
@@ -117,7 +117,7 @@ constexpr C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
-  return (*static_cast<T*>(&t))(i,j);
+  return (*static_cast<T*>(&accessor))(row,j);
 }
 
 template<class T,class C,class I,class J>

@@ -242,7 +242,6 @@ void FourierTransform::calculate() {
 
   // Fill real input with the data on the grid
   Value* arg=getPntrToArgument(0);
-  unsigned nargs=arg->getNumberOfValues();
   std::vector<unsigned> ind( arg->getRank() );
   for (unsigned i=0; i<arg->getNumberOfValues(); ++i) {
     // Get point indices

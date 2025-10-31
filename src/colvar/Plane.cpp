@@ -150,7 +150,7 @@ Plane::Plane(const ActionOptions&ao):
     log.printf("  without periodic boundary conditions\n");
   }
 
-  unsigned mode = getModeAndSetupValues( this );
+  getModeAndSetupValues( this );
   requestAtoms(atoms);
   checkRead();
 }

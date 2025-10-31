@@ -193,10 +193,10 @@ void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<std::siz
 }
 
 template <class T>
-void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape ) {
+void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& compName, const std::vector<std::size_t>& shape ) {
   std::vector<std::size_t> s(1);
   s[0]=getNumberOfAtoms() / natoms_per_task;
-  addComponent( name, s );
+  addComponent( compName, s );
 }
 
 template <class T>

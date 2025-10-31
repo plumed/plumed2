@@ -3,6 +3,10 @@ USE=config tools lepton small_vector blas
 # generic makefile
 include ../maketools/make.module
 
+# -Wshadows helps to find slips in the code, 
+# -Werror makes fixing warnings mandatory
+CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror
+
 CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc
 
 PlumedMain.o: PlumedMainMap.inc PlumedMainEnum.inc

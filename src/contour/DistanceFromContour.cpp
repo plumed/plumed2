@@ -288,7 +288,7 @@ void DistanceFromContour::evaluateDerivatives( const Vector& root1, const double
   double sumd = 0;
   std::vector<double> pp(3), ddd(3,0);
   for(unsigned i=0; i<nactive; ++i) {
-    double newval = evaluateKernel( getPosition(active_list[i]), root1, ddd );
+    /* double newval = */evaluateKernel( getPosition(active_list[i]), root1, ddd );
     Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
 
     if( getNumberOfArguments()==1 ) {

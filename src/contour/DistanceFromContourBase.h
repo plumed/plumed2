@@ -55,13 +55,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContourBase( const ActionOptions& );
   unsigned getNumberOfDerivatives() override ;
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a ) {
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override {
     plumed_merror("numerical derivatives are not implemented for this action");
   }
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
-  void apply();
+  void apply() override;
 };
 
 inline

@@ -87,13 +87,13 @@ private:
 /// Used to store current spacing between frames in path
   std::vector<double> data, len, sumlen, sfrac;
 ///
-  bool loopEnd( const int& index, const int& end, const int& inc ) const ;
+  bool loopEnd( int index, int end, int inc ) const;
 ///
-  double computeSpacing( const unsigned& ifrom, const unsigned& ito );
+  double computeSpacing( unsigned ifrom, unsigned ito );
 ///
-  void calcCurrentPathSpacings( const int& istart, const int& iend );
+  void calcCurrentPathSpacings( int istart, int iend );
 ///
-  void reparameterizePart( const int& istart, const int& iend, const double& target );
+  void reparameterizePart( int istart, int iend, double target );
 public:
   static void registerKeywords( Keywords& keys );
   PathReparameterization(const ActionOptions&);
@@ -160,7 +160,7 @@ PathReparameterization::PathReparameterization(const ActionOptions&ao):
   }
 }
 
-bool PathReparameterization::loopEnd( const int& index, const int& end, const int& inc ) const {
+bool PathReparameterization::loopEnd( const int index, const int end, const int inc ) const {
   if( inc>0 && index<end ) {
     return false;
   } else if( inc<0 && index>end ) {
@@ -169,7 +169,7 @@ bool PathReparameterization::loopEnd( const int& index, const int& end, const in
   return true;
 }
 
-double PathReparameterization::computeSpacing( const unsigned& ifrom, const unsigned& ito ) {
+double PathReparameterization::computeSpacing( const unsigned ifrom, const unsigned ito ) {
   path_projector.getDisplaceVector( ifrom, ito, data );
   double length=0;
   for(unsigned i=0; i<data.size(); ++i) {
@@ -178,8 +178,8 @@ double PathReparameterization::computeSpacing( const unsigned& ifrom, const unsi
   return sqrt( length );
 }
 
-void PathReparameterization::calcCurrentPathSpacings( const int& istart, const int& iend ) {
-  plumed_dbg_assert( istart<len.size() && iend<len.size() );
+void PathReparameterization::calcCurrentPathSpacings( const int istart, const int iend ) {
+  plumed_dbg_assert( static_cast<unsigned>(istart)<len.size() && static_cast<unsigned>(iend)<len.size() );
   len[istart] = sumlen[istart]=0;
   //printf("HELLO PATH SPACINGS ARE CURRENTLY \n");
 
@@ -196,9 +196,9 @@ void PathReparameterization::calcCurrentPathSpacings( const int& istart, const i
   }
 }
 
-void PathReparameterization::reparameterizePart( const int& istart, const int& iend, const double& target ) {
+void PathReparameterization::reparameterizePart( const int istart, const int iend, const double target ) {
   calcCurrentPathSpacings( istart, iend );
-  unsigned cfin;
+  int cfin;
   // If a target separation is set we fix where we want the nodes
   int incr=1;
   if( istart>iend ) {
@@ -207,7 +207,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
   if( target>0 ) {
     if( iend>istart ) {
-      for(unsigned i=istart; i<iend+1; ++i) {
+      for(int i=istart; i<iend+1; ++i) {
         sfrac[i] = target*(i-istart);
       }
     } else {
@@ -231,7 +231,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
     if( target<0 ) {
       plumed_assert( istart<iend );
       double dr = sumlen[iend] / static_cast<double>( iend - istart );
-      for(unsigned i=istart; i<iend; ++i) {
+      for(int i=istart; i<iend; ++i) {
         sfrac[i] = dr*(i-istart);
       }
     }

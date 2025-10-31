@@ -32,8 +32,6 @@
 #include <dlfcn.h>
 #endif
 
-#include <iostream>
-
 namespace PLMD {
 namespace generic {
 
@@ -200,12 +198,12 @@ Plumed::Plumed(const ActionOptions&ao):
   ActionPilot(ao),
   root(comm.Get_rank()==0),
   directory([&]() {
-  std::string directory;
-  parse("CHDIR",directory);
-  if(directory.length()>0) {
-    log<<"  running on separate directory "<<directory<<"\n";
+  std::string dir;
+  parse("CHDIR",dir);
+  if(dir.length()>0) {
+    log<<"  running on separate directory "<<dir<<"\n";
   }
-  return directory;
+  return dir;
 }()),
 p([&]() {
   std::string kernel;
@@ -380,7 +378,7 @@ void Plumed::prepare() {
   if(root) {
     p.cmd("getFullList",&pointer);
   }
-  bool redo=(index.size()!=n);
+  bool redo=(index.size()!=static_cast<unsigned>(n));
   if(first) {
     redo=true;
   }
@@ -437,15 +435,13 @@ void Plumed::calculate() {
     p.cmd("setBox",&box[0][0], {3,3});
 
   virial.zero();
-  for(int i=0; i<forces.size(); i++) {
-    forces[i]=0.0;
-  }
-  for(int i=0; i<masses.size(); i++) {
-    masses[i]=getMass(i);
-  }
-  for(int i=0; i<charges.size(); i++) {
-    charges[i]=getCharge(i);
-  }
+  std::fill(forces.begin(),forces.end(),0.0);
+  std::copy(getMasses().begin(),
+            getMasses().begin()+masses.size(),
+            masses.begin());
+  std::copy(getCharges().begin(),
+            getCharges().begin()+charges.size(),
+            charges.begin());
 
   if(root)
     p.cmd("setMasses",masses.data(), {masses.size()});
@@ -457,7 +453,7 @@ void Plumed::calculate() {
     p.cmd("setForces",forces.data(),forces.size());
   }
   if(root)
-    p.cmd("setVirial",&virial[0][0], {3,3});
+    p.cmd("setVirial",virial.data(), {3,3});
 
 
   if(root)

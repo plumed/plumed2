@@ -1406,7 +1406,8 @@ Optional Features:
                           need this C++ level. Use --enable-cxx=none to remove
                           -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
-  --enable-fussy          enable fussy warnings, default: no
+  --enable-fussy          enable fussy warnings, ignored if basic-warnings is
+                          disabled, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
   --enable-dependency-tracking
@@ -2378,6 +2379,12 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
 # If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
+
+
+# PLUMED_OPENMP
+# redefinition of AC_OPENMP that proposes -qopenmp among the choices
+# -qopenmp is tested first because intel compiler have deprecated -fopenmp
+# the base is the AC_OPENMP defined in autoconf 2.69
 
 
 ##################################################################
@@ -4635,15 +4642,12 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-fi
-
-if test -n "$cxx_level"
-then
+  if ! test $openacc = true; then
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
+  CXXFLAGS="$CXXFLAGS -Wno-unknown-pragmas"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wno-unknown-pragmas" >&5
+$as_echo_n "checking whether $CXX accepts -Wno-unknown-pragmas... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4685,94 +4689,9 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-fi
-
-if test $debug = true
-then
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -g"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -g" >&5
-$as_echo_n "checking whether $CXX accepts -g... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-
-if test $gcov = true
-then
-  CXX="$CXX --coverage"
-  LDSHARED="$LDSHARED --coverage"
-  CFLAGS="$CFLAGS --coverage"
-
-  save_LDFLAGS="$LDFLAGS"
-  LDFLAGS="$LDFLAGS --coverage"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDFLAGS can contain --coverage" >&5
-$as_echo_n "checking whether LDFLAGS can contain --coverage... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; LDFLAGS="$save_LDFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-  STATIC_LIBS="$STATIC_LIBS --coverage"
-fi
-
-if test $fussy = true
-then
+  fi
+  if test $fussy = true
+  then
 
   save_CXXFLAGS="$CXXFLAGS"
   CXXFLAGS="$CXXFLAGS -Wextra"
@@ -5233,6 +5152,195 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+  fi
+else
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -w"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -w" >&5
+$as_echo_n "checking whether $CXX accepts -w... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: All warning disabled" >&5
+$as_echo "$as_me: All warning disabled" >&6;}
+  if test $fussy = true
+  then
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"fussy warnings\" won't be enabled without basic warnings" >&5
+$as_echo "$as_me: WARNING: \"fussy warnings\" won't be enabled without basic warnings" >&2;}
+  fi
+fi
+
+if test -n "$cxx_level"
+then
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+if test $debug = true
+then
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -g"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -g" >&5
+$as_echo_n "checking whether $CXX accepts -g... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+if test $gcov = true
+then
+  CXX="$CXX --coverage"
+  LDSHARED="$LDSHARED --coverage"
+  CFLAGS="$CFLAGS --coverage"
+
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS --coverage"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDFLAGS can contain --coverage" >&5
+$as_echo_n "checking whether LDFLAGS can contain --coverage... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; LDFLAGS="$save_LDFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
 # useful for having a clearer (and correct) flamegraph in linux
@@ -7252,7 +7360,7 @@ if ac_fn_cxx_try_link "$LINENO"; then :
   ac_cv_prog_cxx_openmp='none needed'
 else
   ac_cv_prog_cxx_openmp='unsupported'
-	  	  	  	  	  	  	                                	  	  	  	  	  	  for ac_option in -fopenmp -xopenmp -openmp -mp -omp -qsmp=omp -homp \
+	  	  	  	  	  	  	                                	  	  	  	  	  	  for ac_option in -qopenmp -fopenmp -xopenmp -openmp -mp -omp -qsmp=omp -homp \
                            -Popenmp --openmp; do
 	    ac_save_CXXFLAGS=$CXXFLAGS
 	    CXXFLAGS="$CXXFLAGS $ac_option"
@@ -11508,6 +11616,31 @@ ac_config_files="$ac_config_files Makefile.conf sourceme.sh"
 # This is to have the stamp-h file up to date
 # The date of this file keeps track of when Makefile.conf and sourceme.sh have been updated
 ac_config_files="$ac_config_files stamp-h"
+
+
+#small report for the final configuaration, useful to inspects flags in the CI
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Reporting the configuration:" >&5
+$as_echo "$as_me: Reporting the configuration:" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final CXX:         $CXX" >&5
+$as_echo "$as_me: Final CXX:         $CXX" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final CXXFLAGS:    $CXXFLAGS" >&5
+$as_echo "$as_me: Final CXXFLAGS:    $CXXFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final CPPFLAGS:    $CPPFLAGS" >&5
+$as_echo "$as_me: Final CPPFLAGS:    $CPPFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final CFLAGS:      $CFLAGS" >&5
+$as_echo "$as_me: Final CFLAGS:      $CFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final LDFLAGS:     $LDFLAGS" >&5
+$as_echo "$as_me: Final LDFLAGS:     $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final LIBS:        $LIBS" >&5
+$as_echo "$as_me: Final LIBS:        $LIBS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final STATIC_LIBS: $STATIC_LIBS" >&5
+$as_echo "$as_me: Final STATIC_LIBS: $STATIC_LIBS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final LD:          $LD" >&5
+$as_echo "$as_me: Final LD:          $LD" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final LDSHARED:    $LDSHARED" >&5
+$as_echo "$as_me: Final LDSHARED:    $LDSHARED" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Final SOEXT:       $SOEXT" >&5
+$as_echo "$as_me: Final SOEXT:       $SOEXT" >&6;}
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure

@@ -209,7 +209,7 @@ public:
 
 class LEPTON_EXPORT Operation::Constant : public Operation {
 public:
-    Constant(double value) : value(value) {
+    Constant(double setValue) : value(setValue) {
     }
     std::string getName() const {
         std::stringstream name;
@@ -242,7 +242,7 @@ private:
 
 class LEPTON_EXPORT Operation::Variable : public Operation {
 public:
-    Variable(const std::string& name) : name(name) {
+    Variable(const std::string& varname) : name(varname) {
     }
     std::string getName() const {
         return name;
@@ -273,9 +273,9 @@ private:
 
 class LEPTON_EXPORT Operation::Custom : public Operation {
 public:
-    Custom(const std::string& name, CustomFunction* function) : name(name), function(function), isDerivative(false), derivOrder(function->getNumArguments(), 0) {
+    Custom(const std::string& cname, CustomFunction* cfunction) : name(cname), function(cfunction), isDerivative(false), derivOrder(cfunction->getNumArguments(), 0) {
     }
-    Custom(const std::string& name, CustomFunction* function, const std::vector<int>& derivOrder) : name(name), function(function), isDerivative(false), derivOrder(derivOrder) {
+    Custom(const std::string& cname, CustomFunction* cfunction, const std::vector<int>& cderivOrder) : name(cname), function(cfunction), isDerivative(false), derivOrder(cderivOrder) {
         for (int order : derivOrder)
             if (order != 0)
                 isDerivative = true;
@@ -1000,7 +1000,7 @@ public:
 
 class LEPTON_EXPORT Operation::AddConstant : public Operation {
 public:
-    AddConstant(double value) : value(value) {
+    AddConstant(double cvalue) : value(cvalue) {
     }
     std::string getName() const {
         std::stringstream name;
@@ -1033,7 +1033,7 @@ private:
 
 class LEPTON_EXPORT Operation::MultiplyConstant : public Operation {
 public:
-    MultiplyConstant(double value) : value(value) {
+    MultiplyConstant(double cvalue) : value(cvalue) {
     }
     std::string getName() const {
         std::stringstream name;
@@ -1066,7 +1066,7 @@ private:
 
 class LEPTON_EXPORT Operation::PowerConstant : public Operation {
 public:
-    PowerConstant(double value) : value(value) {
+    PowerConstant(double cvalue) : value(cvalue) {
         intValue = (int) value;
         isIntPower = (intValue == value);
     }

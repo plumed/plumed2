@@ -29,12 +29,9 @@
 #include <cstdarg>
 #include <cstring>
 
-#include <iostream>
 #include <string>
 #include <cstdlib>
 #include <cerrno>
-
-#include <memory>
 #include <utility>
 
 #ifdef __PLUMED_HAS_ZLIB
@@ -123,10 +120,10 @@ int OFile::printf(const char*fmt,...) {
     }
     std::swap(buffer,newbuf);
     buflen=newlen;
-    va_list arg;
-    va_start(arg, fmt);
-    r=std::vsnprintf(&buffer[actual_buffer_length],buflen-actual_buffer_length,fmt,arg);
-    va_end(arg);
+    va_list args;
+    va_start(args, fmt);
+    r=std::vsnprintf(&buffer[actual_buffer_length],buflen-actual_buffer_length,fmt,args);
+    va_end(args);
   }
   plumed_massert(r>-1 && r<buflen-actual_buffer_length,"error using fmt string " + std::string(fmt));
 
@@ -361,34 +358,34 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
   }
 }
 
-OFile& OFile::open(const std::string&path) {
+OFile& OFile::open(const std::string&setpath) {
   plumed_assert(!cloned);
   eof=false;
   err=false;
   fp=NULL;
   gzfp=NULL;
-  this->path=path;
-  this->path=appendSuffix(path,getSuffix());
+  path=setpath;
+  path=appendSuffix(setpath,getSuffix());
   if(checkRestart()) {
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
+    fp=std::fopen(const_cast<char*>(path.c_str()),"a");
     mode="a";
-    if(Tools::extension(this->path)=="gz") {
+    if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
-      gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"a9");
+      gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"a9");
 #else
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
   } else {
-    backupFile( backstring, this->path );
+    backupFile( backstring, path );
     if(comm) {
       comm->Barrier();
     }
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
+    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
     mode="w";
-    if(Tools::extension(this->path)=="gz") {
+    if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
-      gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
+      gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"w9");
 #else
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif

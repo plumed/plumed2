@@ -149,14 +149,12 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  unsigned nt=OpenMP::getNumThreads();
-  if(serial_) {
-    stride=1;
-    rank=0;
-    nt=1;
-  }
+  const unsigned stride=(serial_)? 1 : comm.Get_size();
+  const unsigned rank  =(serial_)? 0 : comm.Get_rank();
+#ifdef _OPENMP
+  //nt is unused if openmp is not declared
+  const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
+#endif //_OPENMP
   std::vector<unsigned> local_flat_nl;
 
   #pragma omp parallel num_threads(nt)
@@ -218,7 +216,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   }
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
-  for(unsigned i=0; i<tot_size/2; i++) {
+  for(int i=0; i<tot_size/2; i++) {
     unsigned j=2*i;
     neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
   }

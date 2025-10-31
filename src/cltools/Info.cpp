@@ -71,7 +71,7 @@ void Info::registerKeywords( Keywords& keys ) {
 
 Info::Info(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int Info::main(FILE* in, FILE*out,Communicator& pc) {

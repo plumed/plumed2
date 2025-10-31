@@ -257,7 +257,8 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse BETWEEN
   if( keymap.count("BETWEEN") ) {
-    std::string sum_arg=labout + "_bt", bt_string = keymap.find("BETWEEN")->second;
+    std::string sum_arg=labout + "_bt";
+    std::string bt_string = keymap.find("BETWEEN")->second;
     action->readInputLine( labout + "_bt: BETWEEN ARG=" + argin + " SWITCH={" + bt_string + "}" );
     if( weights.length()>0 ) {
       sum_arg = labout + "_wbt";
@@ -265,7 +266,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
     }
     action->readInputLine( labout + "_between: SUM ARG=" + sum_arg + " PERIODIC=NO");
   }
-  std::string bt_string1;
+
   if( keymap.count("BETWEEN1") ) {
     for(unsigned i=1;; ++i) {
       std::string istr;
@@ -273,7 +274,8 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
       if( !keymap.count("BETWEEN" + istr) ) {
         break;
       }
-      std::string sum_arg=labout + "_bt" + istr, bt_string1 = keymap.find("BETWEEN" + istr)->second;
+      std::string sum_arg=labout + "_bt" + istr;
+      std::string bt_string1 = keymap.find("BETWEEN" + istr)->second;
       action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + bt_string1 + "}" );
       if( weights.length()>0 ) {
         sum_arg = labout + "_wbt" + istr;

@@ -96,7 +96,7 @@ GenExample::GenExample(const CLToolOptions& co ):
   multi(0),
   status("nobadge"),
   version("master") {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
@@ -351,7 +351,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         return std::tolower(c);
       });
       ofile<<"<a href=\"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-      for(unsigned n=0;; ++n) {
+      while(true) {
         std::size_t und=action.find_first_of("_");
         if( und==std::string::npos ) {
           break;
@@ -427,12 +427,12 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             } else {
               std::vector<std::string> args=Tools::getWords(rest,"\t\n ,");
               ofile<<"=";
-              for(unsigned i=0; i<args.size(); ++i) {
+              for(unsigned ii=0; ii<args.size(); ++ii) {
                 bool islabel=false;
                 std::string thislab;
                 for(unsigned j=0; j<labellist.size(); ++j) {
-                  std::size_t dot=args[i].find_first_of(".");
-                  std::string lll=args[i].substr(0,dot);
+                  std::size_t dot=args[ii].find_first_of(".");
+                  std::string lll=args[ii].substr(0,dot);
                   if( lll==labellist[j] ) {
                     islabel=true;
                     thislab=labellist[j];
@@ -440,11 +440,11 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
                   }
                 }
                 if( islabel ) {
-                  ofile<<"<b name=\""<<egname<<thislab<<"\">"<<args[i]<<"</b>";
+                  ofile<<"<b name=\""<<egname<<thislab<<"\">"<<args[ii]<<"</b>";
                 } else {
-                  ofile<<args[i];
+                  ofile<<args[ii];
                 }
-                if( i!=args.size()-1 ) {
+                if( ii!=args.size()-1 ) {
                   ofile<<",";
                 }
               }

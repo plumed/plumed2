@@ -44,13 +44,11 @@ class FileBase {
 protected:
 /// Internal tool.
 /// Base for IFile::Field and OFile::Field
-  class FieldBase {
+  struct FieldBase {
 // everything is public to simplify usage
-  public:
     std::string name;
     std::string value;
-    bool constant;
-    FieldBase(): constant(false) {}
+    bool constant=false;
   };
 
 /// file pointer
@@ -83,7 +81,8 @@ public:
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
 /// it conserves some suffix (e.g. gz/xtc/trr).
-  static std::string appendSuffix(const std::string&path,const std::string&suffix);
+  static std::string appendSuffix(const std::string&path,
+                                  const std::string&suffix);
 private:
 /// Enforced suffix:
   std::string enforcedSuffix;

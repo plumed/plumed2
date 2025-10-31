@@ -122,7 +122,7 @@ void SwitchingPlotter::registerKeywords( Keywords& keys ) {
 
 SwitchingPlotter::SwitchingPlotter(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   //collecting options:

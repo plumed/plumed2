@@ -164,8 +164,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
     log.printf("\n");
   }
   // Create the input grid
-  function::FunctionOptions options;
-  EvaluateGridFunction::read( taskmanager.getActionInput(), this, options );
+  function::FunctionOptions foptions;
+  EvaluateGridFunction::read( taskmanager.getActionInput(), this, foptions );
   // Need this for creation of tasks
   output_grid.setup( "flat", taskmanager.getActionInput().getPbc(), 0, 0.0 );
 

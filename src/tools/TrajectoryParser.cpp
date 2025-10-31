@@ -425,7 +425,6 @@ class groParser final:public fileParser {
   std::FILE* fp{nullptr};
   // owning pointer otherwise
   safeFile fp_owned{nullptr,{}};
-  int lvl{0};
   template <typename real>
   std::optional<std::string> readAtoms_t(int stride,
                                          bool dont_read_pbc,
