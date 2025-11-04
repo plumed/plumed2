@@ -162,16 +162,17 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   //nt is unused if openmp is not declared
   const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
 #endif //_OPENMP
+  const unsigned elementsPerRank = std::ceil(double(nallpairs_)/stride);
+  const unsigned int start= rank*elementsPerRank;
+  const unsigned int end = ((start + elementsPerRank)< nallpairs_)?(start + elementsPerRank): nallpairs_;
   std::vector<unsigned> local_flat_nl;
 
   #pragma omp parallel num_threads(nt)
   {
     std::vector<unsigned> private_flat_nl;
     #pragma omp for nowait
-    for(unsigned int i=rank; i<nallpairs_; i+=stride) {
-      pairIDs index=getIndexPair(i);
-      unsigned index0=index.first;
-      unsigned index1=index.second;
+    for(unsigned int i=start; i<end; ++i) {
+      auto [index0, index1 ] = getIndexPair(i);
       Vector distance;
       if(do_pbc_) {
         distance=pbc_->distance(positions[index0],positions[index1]);
