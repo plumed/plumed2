@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "NeighborList.h"
+#include "Exception.h"
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
@@ -30,6 +31,8 @@
 #include <algorithm>
 #include <numeric>
 
+#pragma GCC diagnostic error "-Wswitch"
+
 #ifdef __APPLE__
 //we are using getenv to give the user the opporunity of suppressing
 //the too many memory killswitch while compiling on mac
@@ -39,18 +42,16 @@ namespace PLMD {
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
                            const std::vector<AtomNumber>& list1,
-                           const bool& serial,
-                           const bool& do_pair,
-                           const bool& do_pbc,
+                           const bool serial,
+                           const bool do_pair,
+                           const bool do_pbc,
                            const Pbc& pbc,
                            Communicator& cm,
-                           const double& distance,
-                           const unsigned& stride)
-  : reduced(false),
-    serial_(serial),
-    do_pair_(do_pair),
+                           const double distance,
+                           const unsigned stride)
+  : serial_(serial),
     do_pbc_(do_pbc),
-    twolists_(true),
+    style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
     pbc_(&pbc),
     comm(cm),
     //copy-initialize fullatomlist_
@@ -61,7 +62,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
     stride_(stride) {
   // store the rest of the atoms into fullatomlist_
   fullatomlist_.insert(fullatomlist_.end(),list1.begin(),list1.end());
-  if(!do_pair) {
+  if(style_ != NNStyle::Pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
     plumed_assert(nlist0_==nlist1_)
@@ -74,15 +75,15 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
 }
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
-                           const bool& serial, const bool& do_pbc,
+                           const bool serial,
+                           const bool do_pbc,
                            const Pbc& pbc,
                            Communicator& cm,
-                           const double& distance,
-                           const unsigned& stride)
-  : reduced(false),
-    serial_(serial),
+                           const double distance,
+                           const unsigned stride)
+  : serial_(serial),
     do_pbc_(do_pbc),
-    twolists_(false),
+    style_(NNStyle::SingleList),
     pbc_(&pbc),
     comm(cm),
     //copy-initialize fullatomlist_
@@ -130,15 +131,21 @@ std::vector<AtomNumber>& NeighborList::getFullAtomList() {
 
 NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   pairIDs index;
-  if(twolists_ && do_pair_) {
+  switch (style_) {
+  case NNStyle::Pair : {
     index=pairIDs(ipair,ipair+nlist0_);
-  } else if (twolists_ && !do_pair_) {
+  }
+  break;
+  case NNStyle::TwoList : {
     index=pairIDs(ipair/nlist1_,ipair%nlist1_+nlist0_);
-  } else if (!twolists_) {
+  }
+  break;
+  case NNStyle::SingleList: {
     unsigned ii = nallpairs_-1-ipair;
     unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
     unsigned jj = ii-K*(K-1)/2;
     index=pairIDs(nlist0_-1-K,nlist0_-1-jj);
+  }
   }
   return index;
 }
