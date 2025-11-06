@@ -20,21 +20,19 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "NeighborList.h"
+#include "Exception.h"
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
 #include "Communicator.h"
 #include "OpenMP.h"
 #include "Tools.h"
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <numeric>
-
-#ifdef __APPLE__
-//we are using getenv to give the user the opporunity of suppressing
-//the too many memory killswitch while compiling on mac
 #include <cstdlib>
-#endif //__APPLE__
+
 namespace PLMD {
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
@@ -97,20 +95,21 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
 NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
-#ifdef __APPLE__
-  //this mac-only error is here because on my experience the mac tries to page
-  //the memory on the hdd instead of throwing a memory error
-  if(!std::getenv("PLUMED_IGNORE_NL_MEMORY_ERROR")) {
-    //blocking memory allocation on slightly more than 10 GB of memory
-    //that is about 1296000000 pairs (36000 atoms)
-    //36000 * 36000= 1296000000
+  constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
+  if(!std::getenv(envKey)) {
+    //blocking memory allocation on more than 10 GB of memory
+    //A single list of more than 50000 atoms
+    //two different lists of more than 35355 atoms each (lista*listb < max, see below)
+    //that is more than 1250000000 pairs
     //each pairIDs occupies 64 bit (where unsigned are 32bit integers)
     //4294967296 is max(uint32)+1 and is more than 34 GB (correspond to a system of 65536 atoms)
-    if(nallpairs_ > 1296000000 )
-      plumed_merror("An error happened while allocating the neighbor "
-                    "list, please decrease the number of atoms used");
+    if(nallpairs_ > 1250000000 ) {
+      const unsigned GB = sizeof(decltype(neighbors_)::value_type) * nallpairs_ / 1000000000;
+      plumed_error() << "A NeighborList is trying to allocate "
+                     + std::to_string( GB ) +" GB of data for the list of neighbors\n"
+                     "You can skip this error by exporting \""+envKey+"\"";
+    }
   }
-#endif // __APPLE__
   try {
     neighbors_.resize(nallpairs_);
   } catch (...) {
