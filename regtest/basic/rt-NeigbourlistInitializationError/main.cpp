@@ -18,6 +18,8 @@ using PLMD::Pbc;
 
 int main(int, char **) {
   std::ofstream report("unitTest");
+  //leaving here a small point because I forgot about it:
+  report << "To future you/me: this \"unitTest\" file will get preprocessed, see the \"configure\" file for this test\n";
   Pbc pbc{};
   pbc.setBox(PLMD::Tensor({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}));
   Communicator cm{};

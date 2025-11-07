@@ -5,6 +5,11 @@ plumed_regtest_after(){
   #"(tools/NeighborList.cpp:98) void PLMD::NeighborList::initialize()"
   # in this way if NeighborList.cpp is moved or modified this test won't 
   #trigger a (false) error
-  awk '/(Single|Double|neighbor) list/{print} 
-       /Exception text/{print}' ./unitTest > unitTest.proc
+
+  #I am using perl since it does not have the "GNU vs POSIX" problem
+  #I am avoiding the lines between the ***** STACK DUMP ***** to make this test work with and without the stack dump environment variable set up
+  perl -pe "s/cpp:[0-9]+/cpp:###/g;s/[0-9]+ GB/## GB/g" ./unitTest |
+    awk 'BEGIN{f=1} /.*STACK.*/{f=!f} NF&&f&&!/.*STACK.*/{print}' \
+   > unitTest.proc
 }
+

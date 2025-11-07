@@ -1,6 +1,11 @@
+To future you/me: this "unitTest" file will get preprocessed, see the "configure" file for this test
 Single list:
 [100000]Exception text: 
-An error happened while allocating the neighbor list, please decrease the number of atoms used
+(tools/NeighborList.cpp:###) void PLMD::NeighborList::initialize()
+A NeighborList is trying to allocate ## GB of data for the list of neighbors
+You can skip this error by exporting "PLUMED_IGNORE_NL_MEMORY_ERROR"
 Double list, no pairs:
 [100000, 90000]Exception text: 
-An error happened while allocating the neighbor list, please decrease the number of atoms used
+(tools/NeighborList.cpp:###) void PLMD::NeighborList::initialize()
+A NeighborList is trying to allocate ## GB of data for the list of neighbors
+You can skip this error by exporting "PLUMED_IGNORE_NL_MEMORY_ERROR"
