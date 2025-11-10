@@ -26,15 +26,10 @@
 namespace PLMD {
 
 LinkCells::LinkCells( Communicator& cc ) :
-  comm(cc),
-  cutoffwasset(false),
-  nopbc(false),
-  link_cutoff(0.0),
-  ncells(3),
-  nstride(3) {
+  comm(cc) {
 }
 
-void LinkCells::setCutoff( const double& lcut ) {
+void LinkCells::setCutoff( const double lcut ) {
   cutoffwasset=true;
   link_cutoff=lcut;
 }
@@ -44,12 +39,16 @@ double LinkCells::getCutoff() const {
   return link_cutoff;
 }
 
-void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ) {
+void LinkCells::buildCellLists( const std::vector<Vector>& pos,
+                                const std::vector<unsigned>& indices,
+                                const Pbc& pbc ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
   // Create an orthorhombic box around the atomic positions that encompasses every atomic position if there are no pbc
   auto box = pbc.getBox();
-  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
+  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 &&
+      box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 &&
+      box(2,0)==0.0 && box(2,1)==0.0 && box(2,2)==0.0) {
     Vector minp, maxp;
     minp = maxp = pos[0];
     for(unsigned k=0; k<3; ++k) {
@@ -148,7 +147,8 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
-void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn, unsigned& ncells_required,
+void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
+                                  unsigned& ncells_required,
                                   std::vector<unsigned>& cells_required ) const {
   unsigned nnew_cells=0;
   for(int nx=LINKC_MIN(ncells[0]); nx<LINKC_MAX(ncells[0]); ++nx) {
@@ -189,9 +189,10 @@ void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigne
   retrieveAtomsInCells( ncellt, cell_list, natomsper, atoms );
 }
 
-void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
+void LinkCells::retrieveAtomsInCells( const unsigned ncells_required,
                                       const std::vector<unsigned>& cells_required,
-                                      unsigned& natomsper, std::vector<unsigned>& atoms ) const {
+                                      unsigned& natomsper,
+                                      std::vector<unsigned>& atoms ) const {
   for(unsigned i=0; i<ncells_required; ++i) {
     unsigned mybox=cells_required[i];
     for(unsigned k=0; k<lcell_tots[mybox]; ++k) {
@@ -218,7 +219,9 @@ std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
   return celn;
 }
 
-unsigned LinkCells::convertIndicesToIndex( const unsigned& nx, const unsigned& ny, const unsigned& nz ) const {
+unsigned LinkCells::convertIndicesToIndex( const unsigned nx,
+    const unsigned ny,
+    const unsigned nz ) const {
   return nx*nstride[0] + ny*nstride[1] + nz*nstride[2];
 }
 
@@ -237,10 +240,15 @@ unsigned LinkCells::getMaxInCell() const {
   return maxn;
 }
 
-void LinkCells::createNeighborList( unsigned nat, const std::vector<Vector>& pos,
-                                    const std::vector<unsigned>& ind, const std::vector<unsigned>& tind,
-                                    const std::vector<Vector>& neigh_pos, const std::vector<unsigned>& neigh_ind, const Pbc& pbc,
-                                    unsigned& natoms_per_list, std::vector<std::size_t>& nlist ) {
+void LinkCells::createNeighborList( unsigned nat,
+                                    const std::vector<Vector>& pos,
+                                    const std::vector<unsigned>& ind,
+                                    const std::vector<unsigned>& tind,
+                                    const std::vector<Vector>& neigh_pos,
+                                    const std::vector<unsigned>& neigh_ind,
+                                    const Pbc& pbc,
+                                    unsigned& natoms_per_list,
+                                    std::vector<std::size_t>& nlist ) {
   buildCellLists( neigh_pos, neigh_ind, pbc );
   natoms_per_list = 27*getMaxInCell();
   if( natoms_per_list>allcells.size() ) {
