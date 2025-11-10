@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <array>
+#include "View.h"
 #include "Vector.h"
 #include "Pbc.h"
 
@@ -73,8 +74,8 @@ public:
 /// Get the nuumber of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
 /// Build the link cell lists
-  void buildCellLists( const std::vector<Vector>& pos,
-                       const std::vector<unsigned>& indices,
+  void buildCellLists( View<const Vector> pos,
+                       View<const unsigned> indices,
                        const Pbc& pbc );
 /// Take three indices and return the index of the corresponding cell
   unsigned convertIndicesToIndex( unsigned nx,
@@ -90,7 +91,7 @@ public:
                          std::vector<unsigned>& cells_required ) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( unsigned ncells_required,
-                             const std::vector<unsigned>& cells_required,
+                             View<const unsigned> cells_required,
                              unsigned& natomsper,
                              std::vector<unsigned>& atoms ) const ;
 /// Retrieve the atoms we need to consider
@@ -100,11 +101,11 @@ public:
                                  std::vector<unsigned>& atoms ) const ;
 /// Create a neighbour list for the specified input atoms
   void createNeighborList( unsigned nat,
-                           const std::vector<Vector>& pos,
-                           const std::vector<unsigned>& ind,
-                           const std::vector<unsigned>& tind,
-                           const std::vector<Vector>& neigh_pos,
-                           const std::vector<unsigned>& neigh_ind,
+                           View<const Vector> pos,
+                           View<const unsigned> ind,
+                           View<const unsigned> tind,
+                           View<const Vector> neigh_pos,
+                           View<const unsigned> neigh_ind,
                            const Pbc& pbc,
                            unsigned& natoms_per_list,
                            std::vector<std::size_t>& nlist ) ;

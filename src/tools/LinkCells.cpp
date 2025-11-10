@@ -22,6 +22,7 @@
 #include "LinkCells.h"
 #include "Communicator.h"
 #include "Tools.h"
+#include "View.h"
 
 namespace PLMD {
 
@@ -39,8 +40,8 @@ double LinkCells::getCutoff() const {
   return link_cutoff;
 }
 
-void LinkCells::buildCellLists( const std::vector<Vector>& pos,
-                                const std::vector<unsigned>& indices,
+void LinkCells::buildCellLists( View<const Vector> pos,
+                                View<const unsigned> indices,
                                 const Pbc& pbc ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
@@ -186,11 +187,11 @@ void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigne
   }
   unsigned ncellt=0;
   addRequiredCells( findMyCell( pos ), ncellt, cell_list );
-  retrieveAtomsInCells( ncellt, cell_list, natomsper, atoms );
+  retrieveAtomsInCells( ncellt, make_const_view(cell_list), natomsper, atoms );
 }
 
 void LinkCells::retrieveAtomsInCells( const unsigned ncells_required,
-                                      const std::vector<unsigned>& cells_required,
+                                      View<const unsigned> cells_required,
                                       unsigned& natomsper,
                                       std::vector<unsigned>& atoms ) const {
   for(unsigned i=0; i<ncells_required; ++i) {
@@ -241,11 +242,11 @@ unsigned LinkCells::getMaxInCell() const {
 }
 
 void LinkCells::createNeighborList( unsigned nat,
-                                    const std::vector<Vector>& pos,
-                                    const std::vector<unsigned>& ind,
-                                    const std::vector<unsigned>& tind,
-                                    const std::vector<Vector>& neigh_pos,
-                                    const std::vector<unsigned>& neigh_ind,
+                                    View<const Vector> pos,
+                                    View<const unsigned> ind,
+                                    View<const unsigned> tind,
+                                    View<const Vector> neigh_pos,
+                                    View<const unsigned> neigh_ind,
                                     const Pbc& pbc,
                                     unsigned& natoms_per_list,
                                     std::vector<std::size_t>& nlist ) {
@@ -257,13 +258,14 @@ void LinkCells::createNeighborList( unsigned nat,
 
   unsigned nlist_sz = nat*( 2 + natoms_per_list );
   nlist.resize( nlist_sz );
-  std::vector<unsigned> indices( 1+natoms_per_list ), cells_required( getNumberOfCells() );
+  std::vector<unsigned> indices( 1+natoms_per_list );
+  std::vector<unsigned> cells_required( getNumberOfCells() );
   for(unsigned i=0; i<pos.size(); ++i) {
     unsigned ncells_required=0;
     addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
     unsigned natoms=1;
     indices[0] = ind[i];
-    retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+    retrieveAtomsInCells( ncells_required, make_const_view(cells_required), natoms, indices );
     nlist[tind[i]] = 0;
     std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
     for(unsigned j=0; j<natoms; ++j) {
