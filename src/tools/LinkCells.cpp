@@ -193,12 +193,20 @@ void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigne
 void LinkCells::retrieveAtomsInCells( const unsigned ncells_required,
                                       View<const unsigned> cells_required,
                                       unsigned& natomsper,
-                                      std::vector<unsigned>& atoms ) const {
+                                      std::vector<unsigned>& atoms,
+                                      const unsigned avoidIndex) const {
   for(unsigned i=0; i<ncells_required; ++i) {
     unsigned mybox=cells_required[i];
-    for(unsigned k=0; k<lcell_tots[mybox]; ++k) {
-      unsigned myatom = lcell_lists[lcell_starts[mybox]+k];
-      if( myatom!=atoms[0] ) { // Ideally would provide an option to not do this
+    View<const unsigned> boxList{lcell_lists.data()+lcell_starts[mybox],lcell_tots[mybox]};
+    if (avoidIndex!=std::numeric_limits<unsigned>::max()) {
+      for(const unsigned myatom : boxList) {
+        if( myatom!=avoidIndex ) { // Ideally would provide an option to not do this
+          atoms[natomsper]=myatom;
+          natomsper++;
+        }
+      }
+    } else {
+      for(const unsigned myatom : boxList) {
         atoms[natomsper]=myatom;
         natomsper++;
       }
@@ -241,6 +249,16 @@ unsigned LinkCells::getMaxInCell() const {
   return maxn;
 }
 
+///
+/// @param nat
+/// @param pos
+/// @param ind
+/// @param tind
+/// @param neigh_pos
+/// @param neigh_ind
+/// @param pbc
+/// @param natoms_per_list
+/// @param nlist
 void LinkCells::createNeighborList( unsigned nat,
                                     View<const Vector> pos,
                                     View<const unsigned> ind,
@@ -256,7 +274,7 @@ void LinkCells::createNeighborList( unsigned nat,
     natoms_per_list = allcells.size();
   }
 
-  unsigned nlist_sz = nat*( 2 + natoms_per_list );
+  const unsigned nlist_sz = nat*( 2 + natoms_per_list );
   nlist.resize( nlist_sz );
   std::vector<unsigned> indices( 1+natoms_per_list );
   std::vector<unsigned> cells_required( getNumberOfCells() );
@@ -265,13 +283,16 @@ void LinkCells::createNeighborList( unsigned nat,
     addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
     unsigned natoms=1;
     indices[0] = ind[i];
-    retrieveAtomsInCells( ncells_required, make_const_view(cells_required), natoms, indices );
-    nlist[tind[i]] = 0;
-    std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
-    for(unsigned j=0; j<natoms; ++j) {
-      nlist[ lstart + nlist[tind[i]] ] = indices[j];
-      nlist[tind[i]]++;
-    }
+    retrieveAtomsInCells( ncells_required,
+                          make_const_view(cells_required),
+                          natoms,
+                          indices,
+                          ind[i]);
+    nlist[tind[i]] = natoms;
+    const std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
+    std::copy(indices.begin(),
+              indices.begin()+natoms,
+              nlist.begin()+lstart);
   }
 }
 

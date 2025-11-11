@@ -22,6 +22,7 @@
 #ifndef __PLUMED_tools_LinkCells_h
 #define __PLUMED_tools_LinkCells_h
 
+#include <limits>
 #include <vector>
 #include <array>
 #include "View.h"
@@ -93,7 +94,8 @@ public:
   void retrieveAtomsInCells( unsigned ncells_required,
                              View<const unsigned> cells_required,
                              unsigned& natomsper,
-                             std::vector<unsigned>& atoms ) const ;
+                             std::vector<unsigned>& atoms,
+                             unsigned avoidIndex=std::numeric_limits<unsigned>::max()) const ;
 /// Retrieve the atoms we need to consider
   void retrieveNeighboringAtoms( const Vector& pos,
                                  std::vector<unsigned>& cell_list,
