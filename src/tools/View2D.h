@@ -42,13 +42,13 @@ them as values
 template <typename T, std::size_t N= helpers::dynamic_extent, std::size_t M= helpers::dynamic_extent>
 class View2D {
 public:
-  using data_type       = T;
-  using element_type    = View<data_type,M>;
-  using pointer         = data_type*;
+  using value_type      = T;
+  using element_type    = View<value_type,M>;
+  using pointer         = value_type*;
   using iterator        = pointer;
   using const_iterator  = const pointer;
-  using reference       = data_type&;
-  using const_reference = const data_type&;
+  using reference       = value_type&;
+  using const_reference = const value_type&;
 private:
   pointer ptr_;
   std::size_t sizeN_{N};

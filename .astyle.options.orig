@@ -1,0 +1,13 @@
+# long options can be written without the preceding '--'
+suffix=none #equivalent to "-n"
+style=attach
+add-braces
+indent=spaces=2
+break-one-line-headers
+
+# old options
+#suffix=none
+#indent=spaces=2
+#keep-one-line-statements
+#keep-one-line-blocks
+# end old options
