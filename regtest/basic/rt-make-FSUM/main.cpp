@@ -1,22 +1,12 @@
 #include "plumed/tools/Tools.h"
+
+#include "testUtils.h"
+
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 #include <string>
 using namespace PLMD;
-
-class tee {
-//TODO:: put this tee into a common test utilities lib
-  std::ofstream ofs;
-public:
-  tee(std::string filename) : ofs(filename) {}
-  template<typename T>
-  tee& operator<<(const T& t) {
-    ofs<<t;
-    std::cout <<t;
-    return *this;
-  }
-};
 
 template<typename T>
 using FSUM=PLMD::Tools::FastStringUnorderedMap<T>;
