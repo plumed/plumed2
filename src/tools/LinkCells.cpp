@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <functional>
 #include <numeric>
+#include <vector>
 
 namespace PLMD {
 
@@ -104,20 +105,18 @@ void LinkCells::buildCellLists( View<const Vector> pos,
                                 View<const unsigned> indices,
                                 const Pbc& pbc ) {
   setupCells(pos,pbc);
-  resetCollection(innerCollection,pos, indices,pbc);
+  resetCollection(innerCollection,pos, indices);
 }
 
 LinkCells::CellCollection LinkCells::getCollection( View<const Vector> pos,
-    View<const unsigned> indices,
-    const Pbc& pbc ) {
+    View<const unsigned> indices) {
   CellCollection collection;
-  resetCollection(collection,pos, indices,pbc);
+  resetCollection(collection,pos, indices);
   return collection;
 }
 void LinkCells::resetCollection(LinkCells::CellCollection &collection,
                                 View<const Vector> pos,
-                                View<const unsigned> indices,
-                                const Pbc& pbc ) {
+                                View<const unsigned> indices) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
   const auto nat=pos.size();
   // Resize and resets the lists
@@ -249,15 +248,27 @@ std::array<unsigned,3> LinkCells::findMyCell( Vector mypos ) const {
   return celn;
 }
 
-unsigned LinkCells::convertIndicesToIndex( const unsigned nx,
-    const unsigned ny,
-    const unsigned nz ) const {
-  return nx*nstride[0] + ny*nstride[1] + nz*nstride[2];
+std::array<unsigned,3> LinkCells::findMyCell( unsigned cellIndex ) const {
+  std::array<unsigned,3> cell;
+//std::div returns quotient and remainder of an integer division
+  auto r=std::div(static_cast<int>(cellIndex),nstride[2]);
+  cell[2]=r.quot;
+  r=std::div(r.rem,nstride[1]);
+  cell[1]=r.quot;
+  //nstride[0] is hardcoded to be 1;
+  cell[0]=r.rem;
+  return cell;
+}
+
+unsigned LinkCells::convertIndicesToIndex( std::array<unsigned,3> cellCoord) const {
+  //nstride[0] is hardcoded to be 1;
+  return cellCoord[0]//*nstride[0]
+         + cellCoord[1]*nstride[1]
+         + cellCoord[2]*nstride[2];
 }
 
 unsigned LinkCells::findCell( const Vector& pos ) const {
-  std::array<unsigned,3> celn( findMyCell(pos ) );
-  return convertIndicesToIndex( celn[0], celn[1], celn[2] );
+  return convertIndicesToIndex(findMyCell(pos));
 }
 
 unsigned LinkCells::getMaxInCell() const {

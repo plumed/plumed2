@@ -84,6 +84,8 @@ public:
   double getCutoff() const ;
 /// Get the total number of link cells
   unsigned getNumberOfCells() const ;
+///Get the number of cells per dimension
+  std::array<unsigned,3> getCellLimits() const ;
 /// Get the nuumber of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
 ///setups the cells
@@ -99,20 +101,17 @@ public:
 // Reset the passed collection on the positions and the passed indexes, needs setupCells to be launched in advance
   void resetCollection( CellCollection& collection,
                         View<const Vector> pos,
-                        View<const unsigned> indices,
-                        const Pbc& pbc );
+                        View<const unsigned> indices );
 // Returns a collection on the positions and the passed indexes, needs setupCells to be launched in advance
   CellCollection getCollection(View<const Vector> pos,
-                               View<const unsigned> indices,
-                               const Pbc& pbc );
+                               View<const unsigned> indices );
 /// Take three indices and return the index of the corresponding cell
-  unsigned convertIndicesToIndex( unsigned nx,
-                                  unsigned ny,
-                                  unsigned nz ) const ;
+  unsigned convertIndicesToIndex( std::array<unsigned,3> cellCoord) const;
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
   std::array<unsigned,3> findMyCell( Vector pos ) const ;
+  std::array<unsigned,3> findMyCell( unsigned cellIndex ) const ;
 /// Get the list of cells we need to surround the a particular cell
   void addRequiredCells( const std::array<unsigned,3>& celn,
                          unsigned& ncells_required,
@@ -150,6 +149,10 @@ unsigned LinkCells::getNumberOfCells() const {
   return ncells[0]*ncells[1]*ncells[2];
 }
 
+inline
+std::array<unsigned,3> LinkCells::getCellLimits() const {
+  return ncells;
+}
 }
 
 #endif
