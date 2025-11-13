@@ -36,6 +36,22 @@ class Communicator;
 /// \ingroup TOOLBOX
 /// A class for doing link cells
 class LinkCells {
+public:
+  ///This struct contains the configuration of cells
+  struct CellCollection {
+/// The start of each block corresponding to each link cell
+    std::vector<unsigned> lcell_starts;
+/// The number of atoms in each link cell
+    std::vector<unsigned> lcell_tots;
+/// The atoms ordered by link cells
+    std::vector<unsigned> lcell_lists;
+    ///return the sum of the number of atoms in the n cells with most atoms
+    unsigned getMaximimumCombination(unsigned ncells=27) const;
+    ///returns a const view of the on indexes the given cell
+    inline View<const unsigned> getCellIndexes(const unsigned cellno) const {
+      return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
+    }
+  };
 private:
 /// Symbolic link to plumed communicator
   Communicator & comm;
@@ -53,18 +69,14 @@ private:
   std::array<unsigned,3> ncells{0,0,0};
 /// The number of cells to stride through to get the link cells
   std::array<unsigned,3> nstride{0,0,0};
-/// The list of cells each atom is inside
+/// Work vector with the list of cells each atom is inside
   std::vector<unsigned> allcells;
-/// The start of each block corresponding to each link cell
-  std::vector<unsigned> lcell_starts;
-/// The number of atoms in each link cell
-  std::vector<unsigned> lcell_tots;
-/// The atoms ordered by link cells
-  std::vector<unsigned> lcell_lists;
+///The collection of indexes per cell created by buildCellLists
+  CellCollection innerCollection;
 public:
 ///
   explicit LinkCells( Communicator& comm );
-/// Have the link cells been enabled
+/// Have the link cells been enabled sf
   bool enabled() const ;
 /// Set the value of the cutoff
   void setCutoff( double lcut );
@@ -74,6 +86,12 @@ public:
   unsigned getNumberOfCells() const ;
 /// Get the nuumber of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
+///setups the cells
+///
+/// Usually it only uses the pbcs
+/// if the pbc box is  null (three zero vectors) it builds an orthorombic box from the given positions
+  void setupCells( View<const Vector> pos,
+                   const Pbc& pbc );
 /// Build the link cell lists
   void buildCellLists( View<const Vector> pos,
                        View<const unsigned> indices,
@@ -85,7 +103,7 @@ public:
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
-  std::array<unsigned,3> findMyCell( const Vector& pos ) const ;
+  std::array<unsigned,3> findMyCell( Vector pos ) const ;
 /// Get the list of cells we need to surround the a particular cell
   void addRequiredCells( const std::array<unsigned,3>& celn,
                          unsigned& ncells_required,
