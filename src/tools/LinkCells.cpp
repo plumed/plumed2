@@ -103,17 +103,31 @@ void LinkCells::setupCells(View<const Vector> pos,
 void LinkCells::buildCellLists( View<const Vector> pos,
                                 View<const unsigned> indices,
                                 const Pbc& pbc ) {
-  plumed_assert( cutoffwasset && pos.size()==indices.size() );
   setupCells(pos,pbc);
+  resetCollection(innerCollection,pos, indices,pbc);
+}
+
+LinkCells::CellCollection LinkCells::getCollection( View<const Vector> pos,
+    View<const unsigned> indices,
+    const Pbc& pbc ) {
+  CellCollection collection;
+  resetCollection(collection,pos, indices,pbc);
+  return collection;
+}
+void LinkCells::resetCollection(LinkCells::CellCollection &collection,
+                                View<const Vector> pos,
+                                View<const unsigned> indices,
+                                const Pbc& pbc ) {
+  plumed_assert( cutoffwasset && pos.size()==indices.size() );
   const auto nat=pos.size();
   // Resize and resets the lists
   allcells.assign( nat, 0 );
-  innerCollection.lcell_lists.resize( nat );
+  collection.lcell_lists.resize( nat );
   // Setup the storage for link cells
   const unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
-  innerCollection.lcell_starts.resize( ncellstot );
+  collection.lcell_starts.resize( ncellstot );
   // Clear nlcells
-  innerCollection.lcell_tots.assign( ncellstot, 0 );
+  collection.lcell_tots.assign( ncellstot, 0 );
 
   // Find out what cell everyone is in
   const unsigned rank=comm.Get_rank();
@@ -123,26 +137,26 @@ void LinkCells::buildCellLists( View<const Vector> pos,
   const unsigned int end = ((start + elementsPerRank)< nat)?(start + elementsPerRank): nat;
   for(unsigned i=start; i<end; ++i) {
     allcells[i]=findCell( pos[i] );
-    innerCollection.lcell_tots[allcells[i]]++;
+    collection.lcell_tots[allcells[i]]++;
   }
   // And gather all this information on every node
   comm.Sum( allcells );
-  comm.Sum( innerCollection.lcell_tots );
+  comm.Sum( collection.lcell_tots );
 
   // Now prepare the link cell lists
   unsigned tot=0;
-  for(unsigned i=0; i<innerCollection.lcell_tots.size(); ++i) {
-    innerCollection.lcell_starts[i]=tot;
-    tot+=innerCollection.lcell_tots[i];
-    innerCollection.lcell_tots[i]=0;
+  for(unsigned i=0; i<collection.lcell_tots.size(); ++i) {
+    collection.lcell_starts[i]=tot;
+    tot+=collection.lcell_tots[i];
+    collection.lcell_tots[i]=0;
   }
   plumed_assert( tot==nat ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<nat;
 
   // And setup the link cells properly
   for(unsigned j=0; j<nat; ++j) {
-    unsigned myind = innerCollection.lcell_starts[ allcells[j] ] + innerCollection.lcell_tots[ allcells[j] ];
-    innerCollection.lcell_lists[ myind ] = indices[j];
-    innerCollection.lcell_tots[allcells[j]]++;
+    unsigned myind = collection.lcell_starts[ allcells[j] ] + collection.lcell_tots[ allcells[j] ];
+    collection.lcell_lists[ myind ] = indices[j];
+    collection.lcell_tots[allcells[j]]++;
   }
 }
 

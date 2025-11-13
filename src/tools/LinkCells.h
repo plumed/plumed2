@@ -96,6 +96,15 @@ public:
   void buildCellLists( View<const Vector> pos,
                        View<const unsigned> indices,
                        const Pbc& pbc );
+// Reset the passed collection on the positions and the passed indexes, needs setupCells to be launched in advance
+  void resetCollection( CellCollection& collection,
+                        View<const Vector> pos,
+                        View<const unsigned> indices,
+                        const Pbc& pbc );
+// Returns a collection on the positions and the passed indexes, needs setupCells to be launched in advance
+  CellCollection getCollection(View<const Vector> pos,
+                               View<const unsigned> indices,
+                               const Pbc& pbc );
 /// Take three indices and return the index of the corresponding cell
   unsigned convertIndicesToIndex( unsigned nx,
                                   unsigned ny,
