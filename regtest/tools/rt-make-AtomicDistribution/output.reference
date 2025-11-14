@@ -1,0 +1,126 @@
+[baseCheck -line-]:
+Atoms are within box dimensions:
+[baseCheck -line-]: all atoms in box along x : true
+[baseCheck -line-]: all atoms in box along y : true
+[baseCheck -line-]: all atoms in box along z : true
+
+[baseCheck -cube-]:
+Atoms are within box dimensions:
+[baseCheck -cube-]: all atoms in box along x : true
+[baseCheck -cube-]: all atoms in box along y : true
+[baseCheck -cube-]: all atoms in box along z : true
+
+[baseCheck -sphere-]:
+Atoms are within box dimensions:
+[baseCheck -sphere-]: all atoms in box along x : true
+[baseCheck -sphere-]: all atoms in box along y : true
+[baseCheck -sphere-]: all atoms in box along z : true
+
+[baseCheck -globs-]:
+Atoms are within box dimensions:
+[baseCheck -globs-]: all atoms in box along x : true
+[baseCheck -globs-]: all atoms in box along y : true
+[baseCheck -globs-]: all atoms in box along z : true
+
+[baseCheck -sc-]:
+Atoms are within box dimensions:
+[baseCheck -sc-]: all atoms in box along x : true
+[baseCheck -sc-]: all atoms in box along y : true
+[baseCheck -sc-]: all atoms in box along z : true
+
+[replyTrajCheck -sphere 1, 2, 3-]:
+[replyTrajCheck -sphere 1, 2, 3-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 1, 2, 3-]: new number of atoms: ( should be 1200) : 1200
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 1, 2, 3-]: all atoms in box along x : true
+[replyTrajCheck -sphere 1, 2, 3-]: all atoms in box along y : true
+[replyTrajCheck -sphere 1, 2, 3-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 1, 2, 3-]: correct box dimension x : true
+[replyTrajCheck -sphere 1, 2, 3-]: correct box dimension y : true
+[replyTrajCheck -sphere 1, 2, 3-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 2, 2, 2-]:
+[replyTrajCheck -sphere 2, 2, 2-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 2, 2, 2-]: new number of atoms: ( should be 1600) : 1600
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 2, 2, 2-]: all atoms in box along x : true
+[replyTrajCheck -sphere 2, 2, 2-]: all atoms in box along y : true
+[replyTrajCheck -sphere 2, 2, 2-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 2, 2, 2-]: correct box dimension x : true
+[replyTrajCheck -sphere 2, 2, 2-]: correct box dimension y : true
+[replyTrajCheck -sphere 2, 2, 2-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 1, 1, 1-]:
+[replyTrajCheck -sphere 1, 1, 1-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 1, 1, 1-]: new number of atoms: ( should be 200) : 200
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 1, 1, 1-]: all atoms in box along x : true
+[replyTrajCheck -sphere 1, 1, 1-]: all atoms in box along y : true
+[replyTrajCheck -sphere 1, 1, 1-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 1, 1, 1-]: correct box dimension x : true
+[replyTrajCheck -sphere 1, 1, 1-]: correct box dimension y : true
+[replyTrajCheck -sphere 1, 1, 1-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 3, 2, 1-]:
+[replyTrajCheck -sphere 3, 2, 1-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 3, 2, 1-]: new number of atoms: ( should be 1200) : 1200
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 3, 2, 1-]: all atoms in box along x : true
+[replyTrajCheck -sphere 3, 2, 1-]: all atoms in box along y : true
+[replyTrajCheck -sphere 3, 2, 1-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 3, 2, 1-]: correct box dimension x : true
+[replyTrajCheck -sphere 3, 2, 1-]: correct box dimension y : true
+[replyTrajCheck -sphere 3, 2, 1-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 3, 4, 7-]:
+[replyTrajCheck -sphere 3, 4, 7-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 3, 4, 7-]: new number of atoms: ( should be 16800) : 16800
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 3, 4, 7-]: all atoms in box along x : true
+[replyTrajCheck -sphere 3, 4, 7-]: all atoms in box along y : true
+[replyTrajCheck -sphere 3, 4, 7-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 3, 4, 7-]: correct box dimension x : true
+[replyTrajCheck -sphere 3, 4, 7-]: correct box dimension y : true
+[replyTrajCheck -sphere 3, 4, 7-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 5, 1, 1-]:
+[replyTrajCheck -sphere 5, 1, 1-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 5, 1, 1-]: new number of atoms: ( should be 1000) : 1000
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 5, 1, 1-]: all atoms in box along x : true
+[replyTrajCheck -sphere 5, 1, 1-]: all atoms in box along y : true
+[replyTrajCheck -sphere 5, 1, 1-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 5, 1, 1-]: correct box dimension x : true
+[replyTrajCheck -sphere 5, 1, 1-]: correct box dimension y : true
+[replyTrajCheck -sphere 5, 1, 1-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 1, 3, 1-]:
+[replyTrajCheck -sphere 1, 3, 1-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 1, 3, 1-]: new number of atoms: ( should be 600) : 600
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 1, 3, 1-]: all atoms in box along x : true
+[replyTrajCheck -sphere 1, 3, 1-]: all atoms in box along y : true
+[replyTrajCheck -sphere 1, 3, 1-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 1, 3, 1-]: correct box dimension x : true
+[replyTrajCheck -sphere 1, 3, 1-]: correct box dimension y : true
+[replyTrajCheck -sphere 1, 3, 1-]: correct box dimension z : true
+
+[replyTrajCheck -sphere 1, 1, 7-]:
+[replyTrajCheck -sphere 1, 1, 7-]: rep->overrideNat(nat)=true
+[replyTrajCheck -sphere 1, 1, 7-]: new number of atoms: ( should be 1400) : 1400
+Atoms are within box dimensions:
+[replyTrajCheck -sphere 1, 1, 7-]: all atoms in box along x : true
+[replyTrajCheck -sphere 1, 1, 7-]: all atoms in box along y : true
+[replyTrajCheck -sphere 1, 1, 7-]: all atoms in box along z : true
+New box has the correct dimensions:
+[replyTrajCheck -sphere 1, 1, 7-]: correct box dimension x : true
+[replyTrajCheck -sphere 1, 1, 7-]: correct box dimension y : true
+[replyTrajCheck -sphere 1, 1, 7-]: correct box dimension z : true
+
