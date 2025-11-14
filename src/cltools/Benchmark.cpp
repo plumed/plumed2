@@ -342,7 +342,7 @@ public:
     parse("--atom-distribution",atomicDistr);
     if(atomicDistr != "") {
       log << "Using --atom-distribution=" << atomicDistr << "\n";
-      return getAtomDistribution(atomicDistr);
+      return AtomDistribution::getAtomDistribution(atomicDistr);
     }
     return std::nullopt;
   }
