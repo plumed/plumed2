@@ -111,6 +111,7 @@ public:
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
   std::array<unsigned,3> findMyCell( Vector pos ) const ;
+/// Returns the "coordinate" of the cell index, assumes that cellIndex < getNumberOfCells()
   std::array<unsigned,3> findMyCell( unsigned cellIndex ) const ;
 /// Get the list of cells we need to surround the a particular cell
   void addRequiredCells( const std::array<unsigned,3>& celn,

@@ -102,7 +102,7 @@ public:
 /// Get the i-th pair of the neighbor list
   pairIDs getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
-  std::vector<unsigned> getNeighbors(unsigned i);
+  std::vector<unsigned> getNeighbors(unsigned i) const;
 /// Get the i-th pair of AtomNumbers from the neighbor list
   pairAtomNumbers getClosePairAtomNumber(unsigned i) const;
 };
