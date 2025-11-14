@@ -39,11 +39,11 @@ public:
   using pairIDs=std::pair<unsigned,unsigned>;
   using pairAtomNumbers=std::pair<PLMD::AtomNumber,PLMD::AtomNumber>;
 private:
+  enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
   bool serial_;
-  bool do_pair_;
   bool do_pbc_;
-  bool twolists_;
+  NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
@@ -65,20 +65,20 @@ private:
 public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
-               const bool& serial,
-               const bool& do_pair,
-               const bool& do_pbc,
+               bool serial,
+               bool do_pair,
+               bool do_pbc,
                const PLMD::Pbc& pbc,
                Communicator &cm,
-               const double& distance=1.0e+30,
-               const unsigned& stride=0);
+               double distance=1.0e+30,
+               unsigned stride=0);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
-               const bool& serial,
-               const bool& do_pbc,
+               bool serial,
+               bool do_pbc,
                const PLMD::Pbc& pbc,
                Communicator &cm,
-               const double& distance=1.0e+30,
-               const unsigned& stride=0);
+               double distance=1.0e+30,
+               unsigned stride=0);
   ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
   std::vector<PLMD::AtomNumber>& getFullAtomList();

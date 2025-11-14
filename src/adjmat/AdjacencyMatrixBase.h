@@ -410,11 +410,11 @@ void AdjacencyMatrixBase<T>::calculate() {
       ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
     }
     linkcells.createNeighborList( getConstPntrToComponent(0)->getShape()[0],
-                                  ltmp_pos2,
-                                  pTaskList,
-                                  pTaskList,
-                                  ltmp_pos,
-                                  ablocks,
+                                  make_const_view(ltmp_pos2),
+                                  make_const_view(pTaskList),
+                                  make_const_view(pTaskList),
+                                  make_const_view(ltmp_pos),
+                                  make_const_view(ablocks),
                                   getPbc(),
                                   matdata.natoms_per_list,
                                   matdata.nlist_v );
@@ -424,11 +424,11 @@ void AdjacencyMatrixBase<T>::calculate() {
         ltmp_pos3[i]=ActionAtomistic::getPosition( threeblocks[i] );
       }
       threecells.createNeighborList( getConstPntrToComponent(0)->getShape()[0],
-                                     ltmp_pos2,
-                                     pTaskList,
-                                     pTaskList,
-                                     ltmp_pos3,
-                                     threeblocks,
+                                     make_const_view(ltmp_pos2),
+                                     make_const_view(pTaskList),
+                                     make_const_view(pTaskList),
+                                     make_const_view(ltmp_pos3),
+                                     make_const_view(threeblocks),
                                      getPbc(),
                                      matdata.natoms_per_three_list,
                                      matdata.nlist_three_v);

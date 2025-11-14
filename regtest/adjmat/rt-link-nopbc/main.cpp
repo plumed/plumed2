@@ -31,7 +31,7 @@ int main(){
               myatoms.resize( 1 + nx*ny*nz*2 );
               buildCell( nx, ny, nz, fposA, fposB, Bindices, mypbc );
               // Check list is built correctly - with pbc
-              linkcells.buildCellLists( fposB, Bindices, mypbc );
+              linkcells.buildCellLists( PLMD::make_const_view(fposB), PLMD::make_const_view(Bindices), mypbc );
               for(unsigned i=0;i<fposA.size();++i){
                   myatoms[0]=0; natomsper=1;
                   linkcells.retrieveNeighboringAtoms( fposA[i], tmparray, natomsper, myatoms );

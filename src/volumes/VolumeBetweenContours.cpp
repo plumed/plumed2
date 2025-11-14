@@ -201,7 +201,15 @@ void VolumeInEnvelope::setupRegions( ActionVolume<VolumeInEnvelope>* action, con
     ind[i] = positions.size() + i;
     volpos[i] = action->getPosition(i);
   }
-  mylinks.createNeighborList( natoms_in_list, volpos, ind, tind, positions, ltmp_ind, pbc, natoms_per_list, nlist );
+  mylinks.createNeighborList( natoms_in_list,
+                              make_const_view(volpos),
+                              make_const_view(ind),
+                              make_const_view(tind),
+                              make_const_view(positions),
+                              make_const_view(ltmp_ind),
+                              pbc,
+                              natoms_per_list,
+                              nlist );
 }
 
 void VolumeInEnvelope::calculateNumberInside( const VolumeInput& input, const VolumeInEnvelope& actioninput, VolumeOutput& output ) {

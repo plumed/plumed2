@@ -23,6 +23,8 @@
 #define __PLUMED_tools_LinkCells_h
 
 #include <vector>
+#include <array>
+#include "View.h"
 #include "Vector.h"
 #include "Pbc.h"
 
@@ -37,19 +39,19 @@ private:
 /// Symbolic link to plumed communicator
   Communicator & comm;
 /// Check that the link cells were set up correctly
-  bool cutoffwasset;
+  bool cutoffwasset=false;
 /// Are there periodic boundary conditions setup
-  bool nopbc;
+  bool nopbc=false;
 /// The cutoff to use for the sizes of the cells
-  double link_cutoff;
+  double link_cutoff=0.0;
 /// The pbc we are using for link cells
   Pbc mypbc;
 /// The location of the origin if we are not using periodic boundary conditions
   Vector origin;
 /// The number of cells in each direction
-  std::vector<unsigned> ncells;
+  std::array<unsigned,3> ncells{0,0,0};
 /// The number of cells to stride through to get the link cells
-  std::vector<unsigned> nstride;
+  std::array<unsigned,3> nstride{0,0,0};
 /// The list of cells each atom is inside
   std::vector<unsigned> allcells;
 /// The start of each block corresponding to each link cell
@@ -64,7 +66,7 @@ public:
 /// Have the link cells been enabled
   bool enabled() const ;
 /// Set the value of the cutoff
-  void setCutoff( const double& lcut );
+  void setCutoff( double lcut );
 /// Get the value of the cutoff
   double getCutoff() const ;
 /// Get the total number of link cells
@@ -72,27 +74,41 @@ public:
 /// Get the nuumber of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
 /// Build the link cell lists
-  void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
+  void buildCellLists( View<const Vector> pos,
+                       View<const unsigned> indices,
+                       const Pbc& pbc );
 /// Take three indices and return the index of the corresponding cell
-  unsigned convertIndicesToIndex( const unsigned& nx, const unsigned& ny, const unsigned& nz ) const ;
+  unsigned convertIndicesToIndex( unsigned nx,
+                                  unsigned ny,
+                                  unsigned nz ) const ;
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
   std::array<unsigned,3> findMyCell( const Vector& pos ) const ;
 /// Get the list of cells we need to surround the a particular cell
-  void addRequiredCells( const std::array<unsigned,3>& celn, unsigned& ncells_required,
+  void addRequiredCells( const std::array<unsigned,3>& celn,
+                         unsigned& ncells_required,
                          std::vector<unsigned>& cells_required ) const ;
 /// Retrieve the atoms in a list of cells
-  void retrieveAtomsInCells( const unsigned& ncells_required,
-                             const std::vector<unsigned>& cells_required,
-                             unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
+  void retrieveAtomsInCells( unsigned ncells_required,
+                             View<const unsigned> cells_required,
+                             unsigned& natomsper,
+                             std::vector<unsigned>& atoms ) const ;
 /// Retrieve the atoms we need to consider
-  void retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
+  void retrieveNeighboringAtoms( const Vector& pos,
+                                 std::vector<unsigned>& cell_list,
+                                 unsigned& natomsper,
+                                 std::vector<unsigned>& atoms ) const ;
 /// Create a neighbour list for the specified input atoms
-  void createNeighborList( unsigned nat, const std::vector<Vector>& pos,
-                           const std::vector<unsigned>& ind, const std::vector<unsigned>& tind,
-                           const std::vector<Vector>& neigh_pos, const std::vector<unsigned>& neigh_ind, const Pbc& pbc,
-                           unsigned& natoms_per_list, std::vector<std::size_t>& nlist ) ;
+  void createNeighborList( unsigned nat,
+                           View<const Vector> pos,
+                           View<const unsigned> ind,
+                           View<const unsigned> tind,
+                           View<const Vector> neigh_pos,
+                           View<const unsigned> neigh_ind,
+                           const Pbc& pbc,
+                           unsigned& natoms_per_list,
+                           std::vector<std::size_t>& nlist ) ;
 };
 
 inline
