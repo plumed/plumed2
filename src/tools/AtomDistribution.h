@@ -42,6 +42,7 @@ struct AtomDistribution {
   virtual bool overrideNat(unsigned& ) {
     return false;
   }
+  static std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr);
 };
 
 ///A wiggly line of atoms
@@ -108,9 +109,6 @@ public:
            int command_line_natoms);
   bool overrideNat(unsigned& natoms) override;
 };
-
-std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr);
-
 
 ///a decorator for replicate the atomic distribution
 class repliedTrajectory: public AtomDistribution {
