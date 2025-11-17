@@ -272,5 +272,25 @@ VectorTyped<std::remove_const_t<T>, 3> delta(const View<T, 3> v1,
   };
 }
 
+///Returns a complete dynamic view of a container
+///
+///The container must have defined the methods `data()` and `size()`
+///Also the container must have defined a public type `value_type`
+///For example a std::vector is compatible
+///A const std::vector is not compatible with this signature, to avoid confusion
+template <typename CT>
+constexpr View<typename CT::value_type> make_view(CT& container) {
+  return {container.data(),container.size()};
+}
+
+///Returns a complete constant dynamic view of a container
+///
+///The container must have defined the methods `data()` and `size()`
+///Also the container must have defined a public type `value_type`
+///For example a std::vector is compatible
+template <typename CT>
+constexpr View<const typename CT::value_type> make_const_view(const CT& container) {
+  return {container.data(),container.size()};
+}
 } // namespace PLMD
 #endif // __PLUMED_tools_View_h
