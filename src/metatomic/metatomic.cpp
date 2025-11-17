@@ -203,9 +203,11 @@ private:
     // execute the model for the given system
     metatensor_torch::TensorBlock executeModel(metatomic_torch::System system);
 
-    torch::jit::Module model_;
+    metatensor_torch::Module model_;
 
     metatomic_torch::ModelCapabilities capabilities_;
+    // name of the output we request
+    std::string features_key;
 
     // neighbor lists requests made by the model
     std::vector<metatomic_torch::NeighborListOptions> nl_requests_;
@@ -233,6 +235,7 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
     ActionWithValue(options),
+    model_(torch::jit::Module()),
     device_(torch::kCPU)
 {
     if (metatomic_torch::version().find("0.1.") != 0) {
@@ -263,10 +266,38 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     // extract information from the model
     auto metadata = this->model_.run_method("metadata").toCustomClass<metatomic_torch::ModelMetadataHolder>();
     this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatomic_torch::ModelCapabilitiesHolder>();
-    auto requests_ivalue = this->model_.run_method("requested_neighbor_lists");
-    for (auto request_ivalue: requests_ivalue.toList()) {
-        auto request = request_ivalue.get().toCustomClass<metatomic_torch::NeighborListOptionsHolder>();
-        this->nl_requests_.push_back(request);
+    auto nl_requests_ivalue = this->model_.run_method("requested_neighbor_lists");
+    for (auto nl_request_ivalue: nl_requests_ivalue.toList()) {
+        auto nl_request = nl_request_ivalue.get().toCustomClass<metatomic_torch::NeighborListOptionsHolder>();
+        this->nl_requests_.push_back(nl_request);
+    }
+
+    auto extra_inputs = this->model_.run_method("requested_inputs").toGenericDict();
+    auto standard_inputs = std::vector<std::string>{};
+    auto custom_inputs = std::vector<std::string>{};
+    for (const auto& item: extra_inputs) {
+        auto key = item.key().toStringRef();
+        if (key.find("::") != std::string::npos) {
+            custom_inputs.push_back(key);
+        } else {
+            standard_inputs.push_back(key);
+        }
+    }
+
+    if (!standard_inputs.empty()) {
+        this->error(
+            "The model requested extra inputs that are not yet supported in PLUMED. "
+            "Please open an issue to request support for the following inputs: " +
+            torch::str(standard_inputs)
+        );
+    }
+
+    if (!custom_inputs.empty()) {
+        this->error(
+            "The model requested custom inputs (" + torch::str(custom_inputs) + ") "
+            "that can not be provided by PLUMED. Please change your model to use "
+            "standard inputs only."
+        );
     }
 
     log.printf("\n%s\n", metadata->print().c_str());
@@ -369,7 +400,7 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     }
     this->requestAtoms(all_atoms);
 
-    this->atomic_types_ = torch::tensor(std::move(atomic_types));
+    this->atomic_types_ = torch::tensor(atomic_types);
 
     this->check_consistency_ = false;
     this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);
@@ -383,89 +414,36 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     evaluations_options_->set_length_unit(getUnits().getLengthString());
 
     auto outputs = this->capabilities_->outputs();
-    if (!outputs.contains("features")) {
-        auto existing_outputs = std::vector<std::string>();
-        for (const auto& it: this->capabilities_->outputs()) {
-            existing_outputs.push_back(it.key());
-        }
 
-        this->error(
-            "expected a 'features' output in the capabilities of the model, "
-            "could not find it. the following outputs exist: " + torch::str(existing_outputs)
-        );
+    std::string requested_variant;
+    torch::optional<std::string> requested_variant_opt = torch::nullopt;
+    this->parse("VARIANT", requested_variant);
+    if (!requested_variant.empty()) {
+        requested_variant_opt = requested_variant;
     }
+
+    this->features_key = metatomic_torch::pick_output("features", outputs, requested_variant_opt);
 
     auto output = torch::make_intrusive<metatomic_torch::ModelOutputHolder>();
     // this output has no quantity or unit to set
 
-    output->per_atom = this->capabilities_->outputs().at("features")->per_atom;
+    output->per_atom = this->capabilities_->outputs().at(this->features_key)->per_atom;
     // we are using torch autograd system to compute gradients,
     // so we don't need any explicit gradients.
     output->explicit_gradients = {};
-    evaluations_options_->outputs.insert("features", output);
-
-    // Determine which device we should use based on user input, what the model
-    // supports and what's available
-    auto available_devices = std::vector<torch::Device>();
-    for (const auto& device: this->capabilities_->supported_devices) {
-        if (device == "cpu") {
-            available_devices.push_back(torch::kCPU);
-        } else if (device == "cuda") {
-            if (torch::cuda::is_available()) {
-                available_devices.push_back(torch::Device("cuda"));
-            }
-        } else if (device == "mps") {
-            #if TORCH_VERSION_MAJOR >= 2
-            if (torch::mps::is_available()) {
-                available_devices.push_back(torch::Device("mps"));
-            }
-            #endif
-        } else {
-            this->warning(
-                "the model declared support for unknown device '" + device +
-                "', it will be ignored"
-            );
-        }
-    }
-
-    if (available_devices.empty()) {
-        this->error(
-            "failed to find a valid device for the model at '" + model_path + "': "
-            "the model supports " + torch::str(this->capabilities_->supported_devices) +
-            ", none of these where available"
-        );
-    }
+    evaluations_options_->outputs.insert(this->features_key, output);
 
     std::string requested_device;
+    torch::optional<std::string> requested_device_opt = torch::nullopt;
     this->parse("DEVICE", requested_device);
-    if (requested_device.empty()) {
-        // no user request, pick the device the model prefers
-        this->device_ = available_devices[0];
-    } else {
-        bool found_requested_device = false;
-        for (const auto& device: available_devices) {
-            if (device.is_cpu() && requested_device == "cpu") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            } else if (device.is_cuda() && requested_device == "cuda") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            } else if (device.is_mps() && requested_device == "mps") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            }
-        }
-
-        if (!found_requested_device) {
-            this->error(
-                "failed to find requested device (" + requested_device + "): it is either "
-                "not supported by this model or not available on this machine"
-            );
-        }
+    if (!requested_device.empty()) {
+        requested_device_opt = requested_device;
     }
+
+    this->device_ = torch::Device(
+        metatomic_torch::pick_device(this->capabilities_->supported_devices, requested_device_opt),
+        /*index=*/ 0
+    );
 
     this->model_.to(this->device_);
     this->atomic_types_ = this->atomic_types_.to(this->device_);
@@ -773,7 +751,9 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
         std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
-        pair_samples_values.to(this->device_)
+        pair_samples_values.to(this->device_),
+        // vesin should create unique pairs
+        metatensor::assume_unique{}
     );
 
     auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
@@ -795,7 +775,7 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::executeModel(metatomic_torc
         });
 
         auto dict_output = ivalue_output.toGenericDict();
-        auto cv = dict_output.at("features");
+        auto cv = dict_output.at(this->features_key);
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
         plumed_merror("failed to evaluate the model: " + std::string(e.what()));
@@ -1009,6 +989,8 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
     keys.reset_style("SELECTED_ATOMS", "atoms");
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatomic's atom types");
+
+    keys.add("optional", "VARIANT", "which variant of the 'features' output to pick");
 
     keys.addOutputComponent("outputs", "default", "collective variable created by the metatomic model");
 

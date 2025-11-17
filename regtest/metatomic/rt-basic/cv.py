@@ -32,13 +32,14 @@ class TestCollectiveVariable(torch.nn.Module):
     CV^2 are returned.
     """
 
-    def __init__(self, cutoff, multiple_properties):
+    def __init__(self, cutoff, multiple_properties, features_key="features"):
         super().__init__()
 
         self._nl_request = NeighborListOptions(
             cutoff=cutoff, full_list=True, strict=True
         )
         self._multiple_properties = multiple_properties
+        self._features_key = features_key
 
     def forward(
         self,
@@ -46,14 +47,14 @@ class TestCollectiveVariable(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-        if "features" not in outputs:
+        if self._features_key not in outputs:
             return {}
 
         device = torch.device("cpu")
         if len(systems) > 0:
             device = systems[0].positions.device
 
-        output = outputs["features"]
+        output = outputs[self._features_key]
 
         if output.per_atom:
             samples_list: List[List[int]] = []
@@ -123,7 +124,7 @@ class TestCollectiveVariable(torch.nn.Module):
                     "selected atoms is only supported with per-atom output"
                 )
 
-        return {"features": cv}
+        return {self._features_key: cv}
 
     def requested_neighbor_lists(self) -> List[NeighborListOptions]:
         return [self._nl_request]
@@ -169,3 +170,12 @@ cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
 cv.eval()
 model = AtomisticModel(cv, ModelMetadata(), capabilities)
 model.save("vector-global.pt")
+
+
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF, multiple_properties=False, features_key="features/variant"
+)
+capabilities.outputs = {"features/variant": ModelOutput(per_atom=False)}
+cv.eval()
+model = AtomisticModel(cv, ModelMetadata(), capabilities)
+model.save("variant-global.pt")
