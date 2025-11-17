@@ -203,7 +203,7 @@ private:
     // execute the model for the given system
     metatensor_torch::TensorBlock executeModel(metatomic_torch::System system);
 
-    torch::jit::Module model_;
+    metatensor_torch::Module model_;
 
     metatomic_torch::ModelCapabilities capabilities_;
 
@@ -233,6 +233,7 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
     ActionWithValue(options),
+    model_(torch::jit::Module()),
     device_(torch::kCPU)
 {
     if (metatomic_torch::version().find("0.1.") != 0) {
@@ -773,7 +774,9 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
         std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
-        pair_samples_values.to(this->device_)
+        pair_samples_values.to(this->device_),
+        // vesin should create unique pairs
+        metatensor::assume_unique{}
     );
 
     auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
