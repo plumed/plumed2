@@ -24,4 +24,22 @@ public:
     return *this;
   }
 };
+
+class etee {
+  std::ofstream ofs;
+public:
+  etee(std::string filename) : ofs(filename) {}
+  template<typename T>
+  etee& operator<<(const T& t) {
+    ofs<<t;
+    std::cerr <<t;
+    return *this;
+  }
+  template<typename Iterable>
+  etee&  dump(const Iterable& v) {
+    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(ofs," "));
+    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(std::cerr," "));
+    return *this;
+  }
+};
 #endif //__PLUMED_TEST_MACROS

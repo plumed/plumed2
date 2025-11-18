@@ -16,6 +16,7 @@ using namespace PLMD;
 
 void test (PLMD::Communicator &comm);
 void testIndexes (PLMD::Communicator &comm);
+void testRequiredCells (PLMD::Communicator &comm);
 void bench (PLMD::Communicator &comm);
 
 int main(int argc,char**argv) {
@@ -25,8 +26,9 @@ int main(int argc,char**argv) {
     MPI_Comm_dup(MPI_COMM_WORLD,&c);
     PLMD::Communicator comm;
     comm.Set_comm(&c);
-    //test(comm);
+    test(comm);
     testIndexes(comm);
+    testRequiredCells(comm);
     //bench(comm);
   }
   MPI_Finalize();
@@ -82,15 +84,67 @@ void testIndexes (PLMD::Communicator &comm) {
 }
 
 
+void testRequiredCells (PLMD::Communicator &comm) {
+  Pbc pbc;
+  std::vector<Vector> atoms(1, {0,0,0});
+  etee ofs("outputRequiredCells");
+  LinkCells cells(comm);
+  pbc.setBox(
+  Tensor{
+    10.0,  0.0,  0.0,
+    0.0, 10.0,  0.0,
+    0.0,  0.0, 10.0
+  });
+  std::vector<unsigned> cells_required(27);
+  unsigned ncells_required=0;
+  for( const auto cutoff: {
+         10.0,5.0,3.0,2.0
+       }) {
+    ofs << "####cutoff (in cellssize): " << cutoff/pbc.getBox()[0][0] << "\n";
+    cells.setCutoff(cutoff);
+    cells.setupCells(atoms,pbc);
+    ofs << "NUMBER of cells: " <<  cells.getNumberOfCells() << "\n";
+    std::vector<std::array<unsigned,3>> celPos = {{0,0,0}};
+    if (cells.getNumberOfCells() > 8) {
+      //the opposite end
+      auto last_cell = cells.getCellLimits();
+      last_cell[0]--;
+      last_cell[1]--;
+      last_cell[2]--;
+      celPos.push_back(last_cell);
+//in the middle
+      last_cell = cells.getCellLimits();
+      last_cell[0]/=2;
+      last_cell[1]/=2;
+      last_cell[2]/=2;
+      celPos.push_back(last_cell);
+    }
+    for (const auto& cp: celPos) {
+      ncells_required=0;
+      ofs << "*For cell {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}\n";
+      cells.addRequiredCells(cp,ncells_required, cells_required);
+      ofs << "Cells Required:" << ncells_required << "\n";
+      //ordering for "test stability"
+      std::sort(cells_required.begin(),cells_required.begin()+ncells_required);
+      ofs << "Cells:";
+      for (unsigned i=0; i< ncells_required; ++i) {
+        ofs << " " << cells_required[i];
+      }
+      ofs << "\n";
+    }
+  }
+}
+
 void test (PLMD::Communicator &comm) {
   tee ofs ("output");
   Random rng;
-  const std::array<unsigned,3> replicas= {2,2,1};
-  std::vector<Vector> atoms(4*4*4);
+  const std::array<unsigned,3> replicas= {1,1,1};
+  //std::vector<Vector> atoms(4*4*4);
+  std::vector<Vector> atoms(5*5*5);
   std::vector<double> basebox(9);
   unsigned nat = atoms.size();
   auto rep= std::make_unique<repliedTrajectory>([&]() {
-    auto d = AtomDistribution::getAtomDistribution("sphere");
+    auto d = AtomDistribution::getAtomDistribution("sc");
 //getting some base informations
     d->frame(atoms,basebox,0,rng);
     return d;
@@ -165,9 +219,9 @@ void bench (PLMD::Communicator &comm) {
   replicas[1],
   replicas[2],
   nat);
-  const unsigned startingnat=nat;
+  //const unsigned startingnat=nat;
   rep->overrideNat(nat);
-  const unsigned nrep = nat/startingnat;
+  //const unsigned nrep = nat/startingnat;
   atoms.resize(nat);
 //for sphere the box dimension is slighly bigger than the sphere:
   double radius = basebox[0]/2;

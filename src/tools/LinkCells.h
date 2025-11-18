@@ -94,10 +94,21 @@ public:
 /// if the pbc box is  null (three zero vectors) it builds an orthorombic box from the given positions
   void setupCells( View<const Vector> pos,
                    const Pbc& pbc );
+  template <typename T>
+  inline void setupCells( const T& pos,
+                          const Pbc& pbc ) {
+    setupCells(make_const_view(pos),pbc);
+  }
 /// Build the link cell lists
   void buildCellLists( View<const Vector> pos,
                        View<const unsigned> indices,
                        const Pbc& pbc );
+  template <typename T,typename Y>
+  inline void buildCellLists( const T& pos,
+                              const Y& indices,
+                              const Pbc& pbc ) {
+    buildCellLists(make_const_view(pos), make_const_view(indices),pbc);
+  }
 // Reset the passed collection on the positions and the passed indexes, needs setupCells to be launched in advance
   void resetCollection( CellCollection& collection,
                         View<const Vector> pos,
