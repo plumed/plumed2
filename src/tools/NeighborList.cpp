@@ -34,9 +34,6 @@
 
 #pragma GCC diagnostic error "-Wswitch"
 
-#ifdef __APPLE__
-//we are using getenv to give the user the opporunity of suppressing
-//the too many memory killswitch while compiling on mac
 #include <cstdlib>
 
 namespace PLMD {
