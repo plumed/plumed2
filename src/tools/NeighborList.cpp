@@ -41,152 +41,152 @@
 namespace PLMD {
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
-			   const std::vector<AtomNumber>& list1,
-			   const bool serial,
-			   const bool do_pair,
-			   const bool do_pbc,
-			   const Pbc& pbc,
-			   Communicator& cm,
-			   const double distance,
-			   const unsigned stride)
-	: serial_(serial),
-	do_pbc_(do_pbc),
-	style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
-	pbc_(&pbc),
-	comm(cm),
-	//copy-initialize fullatomlist_
-	fullatomlist_(list0),
-	distance_(distance),
-	nlist0_(list0.size()),
-	nlist1_(list1.size()),
-	stride_(stride) {
-	// store the rest of the atoms into fullatomlist_
-	fullatomlist_.insert(fullatomlist_.end(),list1.begin(),list1.end());
-	if(style_ != NNStyle::Pair) {
-		nallpairs_=nlist0_*nlist1_;
-	} else {
-		plumed_assert(nlist0_==nlist1_)
-			<< "when using PAIR option, the two groups should have the same number"
-			" of elements\n" << "the groups you specified have size "
-			<<nlist0_<<" and "<<nlist1_;
-		nallpairs_=nlist0_;
-	}
-	initialize();
+                           const std::vector<AtomNumber>& list1,
+                           const bool serial,
+                           const bool do_pair,
+                           const bool do_pbc,
+                           const Pbc& pbc,
+                           Communicator& cm,
+                           const double distance,
+                           const unsigned stride)
+  : serial_(serial),
+    do_pbc_(do_pbc),
+    style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
+    pbc_(&pbc),
+    comm(cm),
+    //copy-initialize fullatomlist_
+    fullatomlist_(list0),
+    distance_(distance),
+    nlist0_(list0.size()),
+    nlist1_(list1.size()),
+    stride_(stride) {
+  // store the rest of the atoms into fullatomlist_
+  fullatomlist_.insert(fullatomlist_.end(),list1.begin(),list1.end());
+  if(style_ != NNStyle::Pair) {
+    nallpairs_=nlist0_*nlist1_;
+  } else {
+    plumed_assert(nlist0_==nlist1_)
+        << "when using PAIR option, the two groups should have the same number"
+        " of elements\n" << "the groups you specified have size "
+        <<nlist0_<<" and "<<nlist1_;
+    nallpairs_=nlist0_;
+  }
+  initialize();
 }
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
-			   const bool serial,
-			   const bool do_pbc,
-			   const Pbc& pbc,
-			   Communicator& cm,
-			   const double distance,
-			   const unsigned stride)
-	: serial_(serial),
-	do_pbc_(do_pbc),
-	style_(NNStyle::SingleList),
-	pbc_(&pbc),
-	comm(cm),
-	//copy-initialize fullatomlist_
-	fullatomlist_(list0),
-	distance_(distance),
-	nlist0_(list0.size()),
-	nallpairs_(nlist0_*(nlist0_-1)/2),
-	stride_(stride) {
-	initialize();
+                           const bool serial,
+                           const bool do_pbc,
+                           const Pbc& pbc,
+                           Communicator& cm,
+                           const double distance,
+                           const unsigned stride)
+  : serial_(serial),
+    do_pbc_(do_pbc),
+    style_(NNStyle::SingleList),
+    pbc_(&pbc),
+    comm(cm),
+    //copy-initialize fullatomlist_
+    fullatomlist_(list0),
+    distance_(distance),
+    nlist0_(list0.size()),
+    nallpairs_(nlist0_*(nlist0_-1)/2),
+    stride_(stride) {
+  initialize();
 }
 
 NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
-	constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
-	if(!std::getenv(envKey)) {
-		//blocking memory allocation on more than 10 GB of memory
-		//A single list of more than 50000 atoms
-		//two different lists of more than 35355 atoms each (lista*listb < max, see below)
-		//that is more than 1250000000 pairs
-		//each pairIDs occupies 64 bit (where unsigned are 32bit integers)
-		//4294967296 is max(uint32)+1 and is more than 34 GB (correspond to a system of 65536 atoms)
-		if(nallpairs_ > 1250000000 ) {
-			const unsigned GB = sizeof(decltype(neighbors_)::value_type) * nallpairs_ / 1000000000;
-			plumed_error() << "A NeighborList is trying to allocate "
-				+ std::to_string( GB ) +" GB of data for the list of neighbors\n"
-				"You can skip this error by exporting \""+envKey+"\"";
-		}
-	}
-	try {
-		neighbors_.resize(nallpairs_);
-	} catch (...) {
-		plumed_error_nested() << "An error happened while allocating the neighbor "
-			"list, please decrease the number of atoms used";
-	}
-	//TODO: test if this is feasible for accelerating the loop
-	//#pragma omp parallel for default(shared)
-	for(unsigned int i=0; i<nallpairs_; ++i) {
-		neighbors_[i]=getIndexPair(i);
-	}
+  constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
+  if(!std::getenv(envKey)) {
+    //blocking memory allocation on more than 10 GB of memory
+    //A single list of more than 50000 atoms
+    //two different lists of more than 35355 atoms each (lista*listb < max, see below)
+    //that is more than 1250000000 pairs
+    //each pairIDs occupies 64 bit (where unsigned are 32bit integers)
+    //4294967296 is max(uint32)+1 and is more than 34 GB (correspond to a system of 65536 atoms)
+    if(nallpairs_ > 1250000000 ) {
+      const unsigned GB = sizeof(decltype(neighbors_)::value_type) * nallpairs_ / 1000000000;
+      plumed_error() << "A NeighborList is trying to allocate "
+                     + std::to_string( GB ) +" GB of data for the list of neighbors\n"
+                     "You can skip this error by exporting \""+envKey+"\"";
+    }
+  }
+  try {
+    neighbors_.resize(nallpairs_);
+  } catch (...) {
+    plumed_error_nested() << "An error happened while allocating the neighbor "
+                          "list, please decrease the number of atoms used";
+  }
+  //TODO: test if this is feasible for accelerating the loop
+  //#pragma omp parallel for default(shared)
+  for(unsigned int i=0; i<nallpairs_; ++i) {
+    neighbors_[i]=getIndexPair(i);
+  }
 }
 
 std::vector<AtomNumber>& NeighborList::getFullAtomList() {
-	return fullatomlist_;
+  return fullatomlist_;
 }
 
 NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
-	pairIDs index;
-	switch (style_) {
-		case NNStyle::Pair : {
-			index=pairIDs(ipair,ipair+nlist0_);
-		}
-			break;
-		case NNStyle::TwoList : {
-			index=pairIDs(ipair/nlist1_,ipair%nlist1_+nlist0_);
-		}
-			break;
-		case NNStyle::SingleList: {
-			unsigned ii = nallpairs_-1-ipair;
-			unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
-			unsigned jj = ii-K*(K-1)/2;
-			index=pairIDs(nlist0_-1-K,nlist0_-1-jj);
-		}
-	}
-	return index;
+  pairIDs index;
+  switch (style_) {
+  case NNStyle::Pair : {
+    index=pairIDs(ipair,ipair+nlist0_);
+  }
+  break;
+  case NNStyle::TwoList : {
+    index=pairIDs(ipair/nlist1_,ipair%nlist1_+nlist0_);
+  }
+  break;
+  case NNStyle::SingleList: {
+    unsigned ii = nallpairs_-1-ipair;
+    unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
+    unsigned jj = ii-K*(K-1)/2;
+    index=pairIDs(nlist0_-1-K,nlist0_-1-jj);
+  }
+  }
+  return index;
 }
 
 void NeighborList::update(const std::vector<Vector>& positions) {
-	neighbors_.clear();
-	// check if positions array has the correct length
-	plumed_assert(positions.size()==fullatomlist_.size());
+  neighbors_.clear();
+  // check if positions array has the correct length
+  plumed_assert(positions.size()==fullatomlist_.size());
 
 #ifdef _OPENMP
-	//nt is unused if openmp is not declared
-	const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
+  //nt is unused if openmp is not declared
+  const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
 #endif //_OPENMP
-	switch (style_) {
-		//*
-		case NNStyle::TwoList: {
-			LinkCells cells(comm);
-			cells.setCutoff(distance_);
+  switch (style_) {
+  //*
+  case NNStyle::TwoList: {
+    LinkCells cells(comm);
+    cells.setCutoff(distance_);
 
-			std::vector<unsigned> indexesForCells(fullatomlist_.size());
-			std::iota(indexesForCells.begin(),indexesForCells.end(),0);
-			cells.setupCells(make_const_view(positions),*pbc_);
-			auto listA = cells.getCollection(View{positions.data(),nlist0_},
-				    View<const unsigned>{indexesForCells.data(),nlist0_});
-			auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-				    View<const unsigned>{indexesForCells.data()+nlist0_,nlist1_});
-			plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
-				<< listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
-			//#pragma omp parallel num_threads(nt)
-			std::vector<unsigned> cells_required(27);
-			for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-				auto atomsInC= listA.getCellIndexes(c);
-				if(atomsInC.size()>0) {
-					auto cell = cells.findMyCell(c);
-					unsigned ncells_required=0;
-					cells.addRequiredCells(cell,ncells_required, cells_required);
-					for (auto A : atomsInC) {
-						for (unsigned cb=0;cb <ncells_required ;++cb) {
-							for (auto B : listB.getCellIndexes(cells_required[cb])) {
-								neighbors_.push_back({A,B});
+    std::vector<unsigned> indexesForCells(fullatomlist_.size());
+    std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+    cells.setupCells(make_const_view(positions),*pbc_);
+    auto listA = cells.getCollection(View{positions.data(),nlist0_},
+                                     View<const unsigned> {indexesForCells.data(),nlist0_});
+    auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                     View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+    plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
+        << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
+    //#pragma omp parallel num_threads(nt)
+    std::vector<unsigned> cells_required(27);
+    for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
+      auto atomsInC= listA.getCellIndexes(c);
+      if(atomsInC.size()>0) {
+        auto cell = cells.findMyCell(c);
+        unsigned ncells_required=0;
+        cells.addRequiredCells(cell,ncells_required, cells_required);
+        for (auto A : atomsInC) {
+          for (unsigned cb=0; cb <ncells_required ; ++cb) {
+            for (auto B : listB.getCellIndexes(cells_required[cb])) {
+              neighbors_.push_back({A,B});
             }
           }
         }
@@ -334,7 +334,7 @@ NeighborList::getClosePairAtomNumber(const unsigned i) const {
   return Aneigh;
 }
 
-std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) const{
+std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) const {
   std::vector<unsigned> neighbors;
   for(unsigned int i=0; i<size(); ++i) {
     if(neighbors_[i].first==index) {
