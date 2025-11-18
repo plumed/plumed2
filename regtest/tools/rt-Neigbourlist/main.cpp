@@ -26,8 +26,13 @@ void testResult(std::string name,
   for( unsigned i=0; i < indexes.size() ; ++i) {
     auto mynl=nl.getNeighbors(i);
     ofs <<name<< indexes[i].index() << ":";
+//sorting for test stability:
+    std::transform(mynl.begin(),mynl.end(),mynl.begin(),[&](unsigned ii) {
+      return indexes[ii].index();
+    });
+    std::sort(mynl.begin(),mynl.end());
     for (auto j: mynl) {
-      ofs << " " <<indexes[j].index();
+      ofs << " " <<j;
     }
     ofs << std::endl;
   }
