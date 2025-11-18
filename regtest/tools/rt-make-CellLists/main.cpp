@@ -7,8 +7,13 @@
 #include "testUtils.h"
 #include "mpi.h"
 
+#include <array>
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <numeric>
+
 #include <vector>
 #include <numeric>
 
@@ -87,7 +92,7 @@ void testIndexes (PLMD::Communicator &comm) {
 void testRequiredCells (PLMD::Communicator &comm) {
   Pbc pbc;
   std::vector<Vector> atoms(1, {0,0,0});
-  etee ofs("outputRequiredCells");
+  tee ofs("outputRequiredCells");
   LinkCells cells(comm);
   pbc.setBox(
   Tensor{
@@ -100,33 +105,79 @@ void testRequiredCells (PLMD::Communicator &comm) {
   for( const auto cutoff: {
          10.0,5.0,3.0,2.0
        }) {
-    ofs << "####cutoff (in cellssize): " << cutoff/pbc.getBox()[0][0] << "\n";
+    ofs << "####cutoff (in cell-size): " << cutoff/pbc.getBox()[0][0] << "\n";
     cells.setCutoff(cutoff);
     cells.setupCells(atoms,pbc);
     ofs << "NUMBER of cells: " <<  cells.getNumberOfCells() << "\n";
-    std::vector<std::array<unsigned,3>> celPos = {{0,0,0}};
+    PLMDTests::testcases<std::array<unsigned,3>> celPos= {{"vertex",std::array<unsigned,3>{0,0,0}}};
     if (cells.getNumberOfCells() > 8) {
       //the opposite end
       auto last_cell = cells.getCellLimits();
       last_cell[0]--;
       last_cell[1]--;
       last_cell[2]--;
-      celPos.push_back(last_cell);
-//in the middle
+      celPos.push_back({"opposite vertex",last_cell});
+//in the middle of the cell
       last_cell = cells.getCellLimits();
       last_cell[0]/=2;
       last_cell[1]/=2;
       last_cell[2]/=2;
-      celPos.push_back(last_cell);
+      celPos.push_back({"middle",last_cell});
+//in the middle of an edge
+      last_cell = cells.getCellLimits();
+      last_cell[0]=0;
+      last_cell[1]/=2;
+      last_cell[2]=0;
+      celPos.push_back({"edge",last_cell});
+//in the middle of an edge
+      last_cell = cells.getCellLimits();
+      last_cell[0]/=2;
+      last_cell[1]=0;
+      last_cell[2]--;
+      celPos.push_back({"edge opposite",last_cell});
+// in the middle of a face
+      last_cell = cells.getCellLimits();
+      last_cell[0]/=2;
+      last_cell[1]=0;
+      last_cell[2]/=2;
+      celPos.push_back({"face",last_cell});
+// in the middle of a face
+      last_cell = cells.getCellLimits();
+      last_cell[0]--;
+      last_cell[1]/=2;
+      last_cell[2]/=2;
+      celPos.push_back({"face opposite",last_cell});
     }
-    for (const auto& cp: celPos) {
+    for (const auto& [name,cp]: celPos) {
       ncells_required=0;
-      ofs << "*For cell {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}\n";
+
+      auto ss= std::ostringstream() ;
+      ss << "[co=" << cutoff << " -"<<name<<"- {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}" << "] ";
+      //the "header" is useful in undersanding where is the test case that broke the test
+      auto head = ss.str();
       cells.addRequiredCells(cp,ncells_required, cells_required);
-      ofs << "Cells Required:" << ncells_required << "\n";
+      ofs <<head<< "Cells Required:" << ncells_required << "\n";
       //ordering for "test stability"
       std::sort(cells_required.begin(),cells_required.begin()+ncells_required);
-      ofs << "Cells:";
+      ofs <<head<< "Cells:";
+      for (unsigned i=0; i< ncells_required; ++i) {
+        ofs << " " << cells_required[i];
+      }
+      ofs << "\n";
+    }
+    //Now we redo the calculations, but this time with no PBCs
+    for (const auto& [name,cp]: celPos) {
+      ncells_required=0;
+
+      auto ss= std::ostringstream() ;
+      ss << "[co=" << cutoff << " -"<<name<<"- {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}" << " noPBC] ";
+      //the "header" is useful in undersanding where is the test case that broke the test
+      auto head = ss.str();
+      cells.addRequiredCells(cp,ncells_required, cells_required, false);
+      ofs <<head<< "Cells Required:" << ncells_required << "\n";
+      //ordering for "test stability"
+      std::sort(cells_required.begin(),cells_required.begin()+ncells_required);
+      ofs <<head<< "Cells:";
       for (unsigned i=0; i< ncells_required; ++i) {
         ofs << " " << cells_required[i];
       }

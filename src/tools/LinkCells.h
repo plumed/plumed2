@@ -46,7 +46,7 @@ public:
 /// The atoms ordered by link cells
     std::vector<unsigned> lcell_lists;
     ///return the sum of the number of atoms in the n cells with most atoms
-    unsigned getMaximimumCombination(unsigned ncells=27) const;
+    unsigned getMaximimumCombination(unsigned numCells=27) const;
     ///returns a const view of the on indexes the given cell
     inline View<const unsigned> getCellIndexes(const unsigned cellno) const {
       return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
@@ -86,7 +86,7 @@ public:
   unsigned getNumberOfCells() const ;
 ///Get the number of cells per dimension
   std::array<unsigned,3> getCellLimits() const ;
-/// Get the nuumber of atoms in the cell that contains the most atoms
+/// Get the number of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
 ///setups the cells
 ///
@@ -125,9 +125,12 @@ public:
 /// Returns the "coordinate" of the cell index, assumes that cellIndex < getNumberOfCells()
   std::array<unsigned,3> findMyCell( unsigned cellIndex ) const ;
 /// Get the list of cells we need to surround the a particular cell
+///
+/// usePbc toggles the use of pbcs for the input cell (celln)
   void addRequiredCells( const std::array<unsigned,3>& celn,
                          unsigned& ncells_required,
-                         std::vector<unsigned>& cells_required ) const ;
+                         std::vector<unsigned>& cells_required,
+                         bool usePbc=true) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( unsigned ncells_required,
                              View<const unsigned> cells_required,

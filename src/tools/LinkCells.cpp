@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LinkCells.h"
 #include "Communicator.h"
+#include "Exception.h"
 #include "Tools.h"
 #include "View.h"
 #include <algorithm>
@@ -159,23 +160,37 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   }
 }
 
-#define LINKC_MIN(n) ((n<2)? 0 : -1)
-#define LINKC_MAX(n) ((n<3)? 1 : 2)
-#define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
-
+constexpr inline int min_cell(int celn, const int ncells, const bool usePBC) {
+  celn+=(ncells<2)?0:-1;
+  return (usePBC) ? celn : std::max(celn,0);
+}
+constexpr inline int max_cell(int celn, const int ncells, const bool usePBC) {
+  celn+=(ncells<3)?1:2;
+  return (usePBC) ? celn : std::min(celn,ncells);
+}
 void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
                                   unsigned& ncells_required,
-                                  std::vector<unsigned>& cells_required ) const {
+                                  std::vector<unsigned>& cells_required,
+                                  const bool usePbc) const {
+#define LINKC_MIN(n) min_cell(celn[n],ncells[n],usePbc)
+#define LINKC_MAX(n) max_cell(celn[n],ncells[n],usePbc)
+#define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
   unsigned nnew_cells=0;
-  for(int nx=LINKC_MIN(ncells[0]); nx<LINKC_MAX(ncells[0]); ++nx) {
-    int xval = celn[0] + nx;
-    xval=LINKC_PBC(xval,ncells[0])*nstride[0];
-    for(int ny=LINKC_MIN(ncells[1]); ny<LINKC_MAX(ncells[1]); ++ny) {
-      int yval = celn[1] + ny;
-      yval=LINKC_PBC(yval,ncells[1])*nstride[1];
-      for(int nz=LINKC_MIN(ncells[2]); nz<LINKC_MAX(ncells[2]); ++nz) {
-        int zval = celn[2] + nz;
-        zval=LINKC_PBC(zval,ncells[2])*nstride[2];
+  plumed_dbg_assert((celn[0] < ncells[0]) && (celn[1] < ncells[1]) && (celn[2] < ncells[2]));
+
+  const int minX=LINKC_MIN(0);
+  const int maxX=LINKC_MAX(0);
+  const int minY=LINKC_MIN(1);
+  const int maxY=LINKC_MAX(1);
+  const int minZ=LINKC_MIN(2);
+  const int maxZ=LINKC_MAX(2);
+
+  for(int nx=minX; nx<maxX; ++nx) {
+    int xval=LINKC_PBC(nx,ncells[0])*nstride[0];
+    for(int ny=minY; ny<maxY; ++ny) {
+      int yval=LINKC_PBC(ny,ncells[1])*nstride[1];
+      for(int nz=minZ; nz<maxZ; ++nz) {
+        int zval=LINKC_PBC(nz,ncells[2])*nstride[2];
 
         unsigned mybox=xval+yval+zval;
         bool added=false;
@@ -193,6 +208,9 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
     }
   }
   ncells_required += nnew_cells;
+#undef LINKC_MIN
+#undef LINKC_MAX
+#undef LINKC_PBC
 }
 
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos,
@@ -329,15 +347,15 @@ void LinkCells::createNeighborList( unsigned nat,
   }
 }
 
-unsigned LinkCells::CellCollection::getMaximimumCombination(const unsigned ncells) const {
+unsigned LinkCells::CellCollection::getMaximimumCombination(const unsigned numCells) const {
   //this is not efficient (there is a copy), but in principle it should be called not much times:
   //nth_element order by partition until the array is partially sorted
   //(it stops when the pivot is at the asked point, so all the elements to the right of the nth element are higher/lower than it)
-  if (ncells >= lcell_tots.size()) {
+  if (numCells >= lcell_tots.size()) {
     return std::accumulate(lcell_tots.begin(),lcell_tots.end(),0);
   }
   auto tmpCopy=lcell_tots;
-  auto nth_place=tmpCopy.begin() + ncells-1;
+  auto nth_place=tmpCopy.begin() + numCells-1;
   std::nth_element(tmpCopy.begin(),nth_place,tmpCopy.end(),std::greater<>());
 
   return std::accumulate(tmpCopy.begin(),nth_place,0);
