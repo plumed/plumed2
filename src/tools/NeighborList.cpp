@@ -33,10 +33,9 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <cstdlib>
 
 #pragma GCC diagnostic error "-Wswitch"
-
-#include <cstdlib>
 
 namespace PLMD {
 
