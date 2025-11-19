@@ -128,8 +128,7 @@ ResetCell::ResetCell(const ActionOptions&ao):
 
 
 void ResetCell::calculate() {
-  Pbc & pbc(pbc_action->getPbc());
-  Tensor box=pbc.getBox();
+  Tensor box=pbc_action->getPbc().getBox();
 
 // moduli of lattice vectors
   double a=modulo(box.getRow(0));
@@ -158,12 +157,12 @@ void ResetCell::calculate() {
 // rotate all coordinates
   unsigned nat = getTotAtoms();
   for(unsigned i=0; i<nat; i++) {
-    std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-    Vector ato=matmul(rotation,getGlobalPosition(a));
-    setGlobalPosition(a,ato);
+    std::pair<std::size_t,std::size_t> valIndex = getValueIndices( AtomNumber::index(i));
+    Vector ato=matmul(rotation,getGlobalPosition(valIndex));
+    setGlobalPosition(valIndex,ato);
   }
 // rotate box
-  pbc.setBox(newbox);
+  pbc_action->getPbc().setBox(newbox);
 }
 
 void ResetCell::apply() {

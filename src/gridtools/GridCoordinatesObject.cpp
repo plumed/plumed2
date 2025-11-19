@@ -79,17 +79,12 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
       }
     }
     // And now take minimum of dot products
-    double min=mindists[0];
-    for(unsigned i=1; i<npoints; ++i) {
-      if( mindists[i]<min ) {
-        min=mindists[i];
-      }
-    }
+    const double minDist=*std::min_element(mindists.begin(),mindists.end());
     double final_cutoff;
     if( fib_cutoff<-1 ) {
       final_cutoff=-1;
     } else {
-      final_cutoff = cos( acos( fib_cutoff ) + acos( min ) );
+      final_cutoff = cos( acos( fib_cutoff ) + acos( minDist ) );
     }
 
     // And now construct the neighbor list
@@ -479,23 +474,36 @@ void GridCoordinatesObject::getNeighbors( const std::vector<unsigned>& indices, 
   }
 
   num_neighbors=0;
-  std::vector<unsigned> s_indices(dimension), t_indices(dimension);
+  std::vector<unsigned> s_indices(dimension);
+  std::vector<unsigned> t_indices(dimension);
   for(unsigned index=0; index<num_neigh; ++index) {
     bool found=true;
     convertIndexToIndices( index, small_bin, s_indices );
     for(unsigned i=0; i<dimension; ++i) {
       int i0=s_indices[i]-nneigh[i]+indices[i];
-      if(!pbc[i] && i0<0) {
-        found=false;
+      if (i0<0) {
+        if (!pbc[i]) {
+          found = false;
+        } else {
+          i0=nbin[i]-(-i0)%nbin[i];
+        }
+      } else if(static_cast<unsigned>(i0)>=nbin[i]) { // i0 is >=0
+        if (!pbc[i]) {
+          found = false;
+        } else {
+          i0%=nbin[i];
+        }
       }
-      if(!pbc[i] && i0>=nbin[i]) {
-        found=false;
-      }
-      if( pbc[i] && i0<0) {
-        i0=nbin[i]-(-i0)%nbin[i];
-      }
-      if( pbc[i] && i0>=nbin[i]) {
-        i0%=nbin[i];
+      if(!pbc[i]) {
+        if( i0<0 || static_cast<unsigned>(i0)>=nbin[i] ) { // i0 is >=0
+          found=false;
+        }
+      } else {
+        if(i0<0) {
+          i0=nbin[i]-(-i0)%nbin[i];
+        } else {
+          i0%=nbin[i];
+        }
       }
       t_indices[i]=static_cast<unsigned>(i0);
     }

@@ -206,12 +206,12 @@ DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
     parseNumbered("CONSTANT",i,constant);
     std::string period;
     parseNumbered("PERIODIC",i,period);
-    std::string role;
-    parseNumbered("ROLE",i,role);
+    std::string ddrole;
+    parseNumbered("ROLE",i,ddrole);
     if( constant=="True") {
-      plumed.readInputLine( valname + ": PUT FROM_DOMAINS CONSTANT SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role, !plumed.hasBeenInitialized() );
+      plumed.readInputLine( valname + ": PUT FROM_DOMAINS CONSTANT SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + ddrole, !plumed.hasBeenInitialized() );
     } else if( constant=="False") {
-      plumed.readInputLine( valname + ": PUT FROM_DOMAINS SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role, !plumed.hasBeenInitialized() );
+      plumed.readInputLine( valname + ": PUT FROM_DOMAINS SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + ddrole, !plumed.hasBeenInitialized() );
     } else {
       plumed_merror("missing information on whether value is constant");
     }
@@ -229,8 +229,8 @@ DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
   }
 }
 
-void DomainDecomposition::Set_comm(Communicator& comm) {
-  dd.enable(comm);
+void DomainDecomposition::Set_comm(Communicator& newcomm) {
+  dd.enable(newcomm);
   setAtomsNlocal(getNumberOfAtoms());
   setAtomsContiguous(0);
   if( dd.Get_rank()!=0 ) {
@@ -252,39 +252,39 @@ void DomainDecomposition::resetForStepStart() {
   }
 }
 
-void DomainDecomposition::setStart( const std::string& name, const unsigned& sss) {
+void DomainDecomposition::setStart( const std::string& argName, const unsigned& sss) {
   for(const auto & pp : inputs) {
-    if( pp->getLabel()==name ) {
-      pp->setStart(name, sss);
+    if( pp->getLabel()==argName ) {
+      pp->setStart(argName, sss);
       return;
     }
   }
   plumed_error();
 }
 
-void DomainDecomposition::setStride( const std::string& name, const unsigned& sss) {
+void DomainDecomposition::setStride( const std::string& argName, const unsigned& sss) {
   for(const auto & pp : inputs) {
-    if( pp->getLabel()==name ) {
-      pp->setStride(name, sss);
+    if( pp->getLabel()==argName ) {
+      pp->setStride(argName, sss);
       return;
     }
   }
   plumed_error();
 }
 
-bool DomainDecomposition::setValuePointer( const std::string& name, const TypesafePtr & val ) {
+bool DomainDecomposition::setValuePointer( const std::string& argName, const TypesafePtr & val ) {
   wasset=true;  // Once the domain decomposition stuff is transferred moved the setting of this to where the g2l vector is setup
   for(const auto & pp : inputs) {
-    if( pp->setValuePointer( name, val ) ) {
+    if( pp->setValuePointer( argName, val ) ) {
       return true;
     }
   }
   return false;
 }
 
-bool DomainDecomposition::setForcePointer( const std::string& name, const TypesafePtr & val ) {
+bool DomainDecomposition::setForcePointer( const std::string& argName, const TypesafePtr & val ) {
   for(const auto & pp : inputs) {
-    if( pp->setForcePointer( name, val ) ) {
+    if( pp->setForcePointer( argName, val ) ) {
       return true;
     }
   }
@@ -329,7 +329,7 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   if( gatindex.size()==getNumberOfAtoms() ) {
     shuffledAtoms=0;
     for(unsigned i=0; i<gatindex.size(); i++) {
-      if( gatindex[i]!=i ) {
+      if( gatindex[i]!=static_cast<int>(i) ) {
         shuffledAtoms=1;
         break;
       }
@@ -433,7 +433,7 @@ void DomainDecomposition::share() {
     plumed_error();
   }
 
-  if(unique_serial || !(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
+  if(unique_serial || !(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
     for(unsigned i=0; i<actions.size(); i++) {
       if( actions[i]->unique_local_needs_update ) {
         actions[i]->updateUniqueLocal( !(dd && shuffledAtoms>0), g2l );
@@ -482,30 +482,30 @@ void DomainDecomposition::share() {
   }
 }
 
-void DomainDecomposition::share(const std::vector<AtomNumber>& unique) {
+void DomainDecomposition::share(const std::vector<AtomNumber>& uniqueIdxIn) {
   // This retrieves what values we need to get
   int ndata=0;
   std::vector<Value*> values_to_get;
-  if(!(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
-    uniq_index.resize(unique.size());
-    for(unsigned i=0; i<unique.size(); i++) {
-      uniq_index[i]=g2l[unique[i].index()];
+  if(!(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
+    uniq_index.resize(uniqueIdxIn.size());
+    for(unsigned i=0; i<uniqueIdxIn.size(); i++) {
+      uniq_index[i]=g2l[uniqueIdxIn[i].index()];
     }
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( unique, uniq_index, ip->copyOutput(0) );
+        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
         values_to_get.push_back(ip->copyOutput(0));
         ndata++;
       }
     }
   } else if( unique_serial) {
-    uniq_index.resize(unique.size());
-    for(unsigned i=0; i<unique.size(); i++) {
-      uniq_index[i]=unique[i].index();
+    uniq_index.resize(uniqueIdxIn.size());
+    for(unsigned i=0; i<uniqueIdxIn.size(); i++) {
+      uniq_index[i]=uniqueIdxIn[i].index();
     }
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( unique, uniq_index, ip->copyOutput(0) );
+        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
         values_to_get.push_back(ip->copyOutput(0));
         ndata++;
       }
@@ -532,7 +532,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& unique) {
     }
 
     int count=0;
-    for(const auto & p : unique) {
+    for(const auto & p : uniqueIdxIn) {
       dd.indexToBeSent[count]=p.index();
       int dpoint=0;
       for(unsigned i=0; i<values_to_get.size(); ++i) {
@@ -606,7 +606,7 @@ void DomainDecomposition::wait() {
         dd.Recv(&dd.positionsToBeReceived[ndata*count],dd.positionsToBeReceived.size()-ndata*count,i,667);
         count+=c;
       }
-      for(int i=0; i<count; i++) {
+      for(unsigned i=0; i<count; i++) {
         int dpoint=0;
         for(unsigned j=0; j<values_to_set.size(); ++j) {
           values_to_set[j]->set(dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
@@ -624,7 +624,7 @@ unsigned DomainDecomposition::getNumberOfForcesToRescale() const {
 
 void DomainDecomposition::apply() {
   std::vector<unsigned> forced_uniq_index(forced_unique.size());
-  if(!(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
+  if(!(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
     for(unsigned i=0; i<forced_unique.size(); i++) {
       forced_uniq_index[i]=g2l[forced_unique[i].index()];
     }
@@ -636,7 +636,7 @@ void DomainDecomposition::apply() {
   for(const auto & ip : inputs) {
     if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
       continue;
-    } else if( ip->wasscaled || (!unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
+    } else if( ip->wasscaled || (!unique_serial && gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0) ) {
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
     } else {
       (ip->mydata)->add_force( forced_unique, forced_uniq_index, ip->getPntrToValue() );
@@ -645,7 +645,7 @@ void DomainDecomposition::apply() {
 }
 
 void DomainDecomposition::reset() {
-  if( !unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0 ) {
+  if( !unique_serial && gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0 ) {
     return;
   }
   // This is an optimisation to ensure that we don't call std::fill over the whole forces
@@ -708,9 +708,9 @@ void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
 void DomainDecomposition::createFullList(const TypesafePtr & n) {
   if( firststep ) {
     int natoms = getNumberOfAtoms();
-    n.set(int(natoms));
+    n.set(natoms);
     fullList.resize(natoms);
-    for(unsigned i=0; i<natoms; i++) {
+    for(int i=0; i<natoms; i++) {
       fullList[i]=i;
     }
   } else {

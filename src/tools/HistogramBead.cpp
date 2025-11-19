@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "HistogramBead.h"
 #include <vector>
-#include <limits>
 #include "Tools.h"
 #include "Keywords.h"
 
@@ -37,13 +36,19 @@ namespace PLMD {
 
 constexpr double DP2CUTOFF=6.25;
 //Non periodic constructor
-HistogramBead::HistogramBead(KernelType kt,const  double l, const double h, const double w):
+HistogramBead::HistogramBead(KernelType kt,const  double l,
+                             const double h,
+                             const double w):
   type(kt),
   periodicity(Periodicity::notperiodic) {
   set(l,h,w);
 }
 //periodic constructor
-HistogramBead::HistogramBead(KernelType kt, double mlow, double mhigh,const  double l, const double h, const double w):
+HistogramBead::HistogramBead(KernelType kt,
+                             double mlow,
+                             double mhigh,const  double l,
+                             const double h,
+                             const double w):
   type(kt) {
   isPeriodic(mlow,mhigh);
   set(l,h,w);
@@ -217,14 +222,18 @@ double HistogramBead::calculateWithCutoff( double x, double& df ) const {
   return calculateWithCutoff( x, lowb, highb, width, df );
 }
 
-double HistogramBead::calculateWithCutoff( double x, double l, double u, double s, double& df ) const {
-  double lowB, upperB, f;
-  lowB = difference( x, l ) / s;
-  upperB = difference( x, u ) / s;
+double HistogramBead::calculateWithCutoff(double x,
+    double l,
+    double u,
+    double s,
+    double& df ) const {
+  double lowB = difference( x, l ) / s;
+  double upperB = difference( x, u ) / s;
   if( upperB<=-cutoff || lowB>=cutoff ) {
     df=0.0;
     return 0.0;
   }
+  double f=0.0;
   switch (type) {
   case KernelType::gaussian : {
     lowB /= std::sqrt(2.0);

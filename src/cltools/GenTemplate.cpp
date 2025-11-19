@@ -67,7 +67,7 @@ void GenTemplate::registerKeywords( Keywords& keys ) {
 
 GenTemplate::GenTemplate(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int GenTemplate::main(FILE* in, FILE*out,Communicator& pc) {

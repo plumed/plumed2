@@ -364,11 +364,11 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   }
 }
 ////MEMBER FUNCTIONS
-void MaxEnt::ReadLagrangians(IFile &ifile) {
+void MaxEnt::ReadLagrangians(IFile &inputFile) {
   double dummy;
-  while(ifile.scanField("time",dummy)) {
+  while(inputFile.scanField("time",dummy)) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-      ifile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
+      inputFile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
       if(dummy>=tstart && dummy <=tend) {
         avglambda[j]+=lambda[j];
       }
@@ -380,7 +380,7 @@ void MaxEnt::ReadLagrangians(IFile &ifile) {
     if(dummy>=tstart && dummy <=tend) {
       avg_counter++;
     }
-    ifile.scanField();
+    inputFile.scanField();
   }
 }
 void MaxEnt::WriteLagrangians(std::vector<double> &lagmult,OFile &file) {
@@ -415,19 +415,19 @@ double MaxEnt::compute_error(const std::string &err_type,double l) {
   }
   return return_error;
 }
-double MaxEnt::convert_lambda(const std::string &type,double lold) {
+double MaxEnt::convert_lambda(const std::string &typeName,const double lold) {
   double return_lambda=0;
-  if(type=="EQUAL") {
+  if(typeName=="EQUAL") {
     return_lambda=lold;
   } else {
-    if(type=="INEQUAL>") {
+    if(typeName=="INEQUAL>") {
       if(lold>0.0) {
         return_lambda=0.0;
       } else {
         return_lambda=lold;
       }
     } else {
-      if(type=="INEQUAL<") {
+      if(typeName=="INEQUAL<") {
         if(lold<0.0) {
           return_lambda=0.0;
         } else {

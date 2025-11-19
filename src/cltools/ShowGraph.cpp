@@ -34,7 +34,6 @@
 #include "core/ActionWithArguments.h"
 #include <cstdio>
 #include <string>
-#include <iostream>
 
 namespace PLMD {
 namespace cltools {
@@ -129,12 +128,13 @@ void ShowGraph::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--plumed","plumed.dat","the plumed input that we are generating the graph for");
   keys.add("compulsory","--out","graph.md","the dot file containing the graph that has been generated");
+  keys.add("compulsory","--natoms","1000000;","the dot file containing the graph that has been generated");
   keys.addFlag("--force",false,"print a graph that shows how forces are passed through the actions");
 }
 
 ShowGraph::ShowGraph(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 std::string ShowGraph::getLabel(const Action* a, const bool& amp) {
@@ -246,6 +246,8 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--out",outp);
   bool forces;
   parseFlag("--force",forces);
+  int natoms;
+  parse("--natoms",natoms);
 
   // Create a plumed main object and initilize
   PlumedMain p;
@@ -259,7 +261,6 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
   p.cmd("setMDMassUnits",&munit);
   p.cmd("setPlumedDat",inpt.c_str());
   p.cmd("setLog",out);
-  int natoms=1000000;
   p.cmd("setNatoms",&natoms);
   p.cmd("init");
 
@@ -310,7 +311,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
           a->apply();
         }
         bool hasforce=false;
-        for(int i=0; i<av->getNumberOfComponents(); ++i) {
+        for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
           if( (av->copyOutput(i))->forcesWereAdded() ) {
             hasforce=true;
             break;
@@ -337,7 +338,6 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     std::vector<ActionAtomistic*> all_atoms = p.getActionSet().select<ActionAtomistic*>();
     for(const auto & at : all_atoms ) {
       ActionWithValue* av=dynamic_cast<ActionWithValue*>(at);
-      bool hasforce=false;
       if( av ) {
         for(unsigned i=0; i<av->getNumberOfComponents(); ++i ) {
           if( av->copyOutput(i)->forcesWereAdded() ) {

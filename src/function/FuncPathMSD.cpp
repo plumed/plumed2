@@ -341,7 +341,7 @@ void FuncPathMSD::prepare() {
   requestArguments(argstocall);
 //now resize the derivatives as well
 //for each value in this action
-  for(int i=0; i< getNumberOfComponents(); i++) {
+  for(unsigned i=0; i< getNumberOfComponents(); i++) {
     //resize the derivative to the number   the
     getPntrToComponent(i)->clearDerivatives();
     getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());

@@ -23,6 +23,7 @@
 #include "Tools.h"
 #include "Keywords.h"
 #include "OpenMP.h"
+#include <cmath>
 #include <vector>
 #include <limits>
 #include <algorithm>
@@ -38,6 +39,8 @@ namespace PLMD {
 namespace switchContainers {
 
 std::string description(switchType type, const Data& data);
+
+Switch::~Switch()=default;
 
 template <typename SF>
 class SwitchInterface :public Switch {
@@ -320,6 +323,7 @@ return std::make_unique<SwitchInterface<fixedRational<x>>>( \
     default:
       break;
     }
+#undef FIXEDRATIONALENUM
   }
   //continue with the 'at runtime implementation'
   auto data = rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
@@ -360,6 +364,7 @@ return std::pair <switchType,Data> {switchType::rationalfix##x,Data::init(D0,DMA
     default:
       break;
     }
+#undef FIXEDRATIONALENUM
   }
   //continue with the 'at runtime implementation'
   return rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
@@ -407,11 +412,18 @@ struct fastgaussianSwitch: public baseSwitch<fastgaussianSwitch> {
     double result = 0.0;
     double dfunc = 0.0;
     if(distance2<data.dmax_2) {
-      result = exp(-0.5*distance2);
-      dfunc = -result;
-      // stretch:
-      result=result*data.stretch+data.shift;
-      dfunc*=data.stretch;
+      result=1.0;
+      if(distance2 >0.0) {
+        result = exp(-0.5*distance2);
+        dfunc = -result;
+        //I have to multiply and then divide dfunc by sqrt(distance2)
+        //by omitting that I get a funny wrong value of the derivative in 0
+        //by not omitting that I get a funny nan becasue I divide by 0
+        //hence the extra if
+        // stretch:
+        result=result*data.stretch+data.shift;
+        dfunc*=data.stretch;
+      }
     }
     return {result,dfunc};
   }
@@ -676,18 +688,18 @@ class leptonSwitch {
   Data data;
 public:
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
-    :data(Data::init(D0,DMAX,R0)),
-     lepton_func(func),
-     expressions(OpenMP::getNumThreads(), lepton_func) {
+    :lepton_func(func),
+     expressions(OpenMP::getNumThreads(), lepton_func),
+     data(Data::init(D0,DMAX,R0)) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
 
   leptonSwitch(const leptonSwitch& other)
-    :data(other.data),
-     lepton_func(other.lepton_func),
-     expressions(OpenMP::getNumThreads(), lepton_func) {
+    :lepton_func(other.lepton_func),
+     expressions(OpenMP::getNumThreads(), lepton_func),
+     data(other.data) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();

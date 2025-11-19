@@ -40,8 +40,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao),
-  nmask(-1) {
+  ActionWithArguments(ao) {
   if( !keywords.exists("MASKED_INPUT_ALLOWED") ) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -120,7 +119,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
     for(unsigned j=nargs-nmask; j<nargs; ++j) {
       Value* myarg = getPntrToArgument(j);
       if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-        if( fabs(myarg->get(itask))>0 ) {
+        if( fabs(myarg->get(itask))>0.0 ) {
           return 1;
         }
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
@@ -141,14 +140,14 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
       if( myarg->getRank()==0 ) {
         return 1;
       } else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-        if( fabs(myarg->get(itask))>0 ) {
+        if( fabs(myarg->get(itask))>0.0 ) {
           return 1;
         }
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-        unsigned ncol = myarg->getRowLength(itask);
-        unsigned base = itask*myarg->getNumberOfColumns();
+        const unsigned ncol = myarg->getRowLength(itask);
+        const unsigned base = itask*myarg->getNumberOfColumns();
         for(unsigned k=0; k<ncol; ++k) {
-          if( fabs(myarg->get(base+k,false))>0 ) {
+          if( fabs(myarg->get(base+k,false))>0.0 ) {
             return 1;
           }
         }
@@ -169,22 +168,12 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   unsigned ntasks=0;
   getNumberOfTasks( ntasks );
 
-  std::vector<int> taskFlags( ntasks, -1 );
+  active_tasks.resize(0);
+  active_tasks.reserve(ntasks);
   for(unsigned i=0; i<ntasks; ++i) {
-    taskFlags[i] = checkTaskIsActive(i);
-  }
-  unsigned nt=0;
-  for(unsigned i=0; i<ntasks; ++i) {
-    if( taskFlags[i]>0 ) {
-      nt++;
-    }
-  }
-  active_tasks.resize(nt);
-  nt=0;
-  for(unsigned i=0; i<ntasks; ++i) {
-    if( taskFlags[i]>0 ) {
-      active_tasks[nt]=i;
-      nt++;
+    if( checkTaskIsActive(i)>0 ) {
+//no resize are triggered, since we have reserved the number of tasks
+      active_tasks.push_back(i);
     }
   }
   return active_tasks;
@@ -193,8 +182,10 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
 void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   unsigned nargs = getNumberOfArguments();
-  int nmasks=getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) {
+  unsigned nmasks=getNumberOfMasks();
+  // getNumberOfMasks(); returns nmask, that it is an int
+  // nmasks cant be <0 (it is unsigned), so I check nmask for that
+  if( nargs>=nmasks && nmask>0 ) {
     nargs = nargs - nmasks;
   }
 
@@ -210,29 +201,28 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
-      inputdata[total_args] = myarg->get(j,false);
-      total_args++;
-    }
+    total_args+= myarg->assignValues(View{&inputdata[total_args],inputdata.size()-total_args});
   }
 }
 
-void ActionWithVector::transferStashToValues( const std::vector<double>& stash ) {
+void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
+  unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      myval->set( j, stash[j*ncomponents+i] );
+    for(unsigned j=0; j<ntask; ++j) {
+      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
     }
   }
 }
 
-void ActionWithVector::transferForcesToStash( std::vector<double>& stash ) const {
+void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
+  unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {
     auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
-      stash[j*ncomponents+i] = myval->getForce( j );
+    for(unsigned j=0; j<ntask; ++j) {
+      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
     }
   }
 }
@@ -254,7 +244,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
       }
     }
   }
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->getRank()==0 ) {
       if( getNumberOfArguments()!=1 ) {
         error("mismatched numbers of tasks in streamed quantities");
@@ -275,7 +265,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
 unsigned ActionWithVector::getNumberOfForceDerivatives() const {
   unsigned nforces=0;
   unsigned nargs = getNumberOfArguments();
-  int nmasks = getNumberOfMasks();
+  unsigned  nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
     nargs = nargs - nmasks;
   }

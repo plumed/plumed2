@@ -132,7 +132,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             if( ap ) {
               continue;
             }
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+            for(unsigned k=0; k<all[j]->getNumberOfComponents(); ++k) {
               arg.push_back(all[j]->copyOutput(k));
             }
           }
@@ -154,7 +154,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             if( action->getNumberOfComponents()==0 ) {
               readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
             }
-            for(int k=0; k<action->getNumberOfComponents(); ++k) {
+            for(unsigned k=0; k<action->getNumberOfComponents(); ++k) {
               arg.push_back(action->copyOutput(k));
             }
           }
@@ -220,7 +220,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             if( ap && all[j]->getName()!="ENERGY" ) {
               continue;
             }
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+            for(unsigned k=0; k<all[j]->getNumberOfComponents(); ++k) {
               arg.push_back(all[j]->copyOutput(k));
             }
           }
@@ -273,17 +273,17 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
   arguments=arg;
   clearDependencies();
   std::string fullname;
-  std::string name;
+  std::string argName;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
     if(fullname.find(".")!=std::string::npos) {
       std::size_t dot=fullname.find_first_of('.');
-      name=fullname.substr(0,dot);
+      argName=fullname.substr(0,dot);
     } else {
-      name=fullname;
+      argName=fullname;
     }
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
-    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(argName);
+    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + argName);
     addDependency(action);
   }
   ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
@@ -295,17 +295,17 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
 void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &extra) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   std::string fullname;
-  std::string name;
+  std::string argName;
   for(unsigned i=0; i<extra.size(); i++) {
     fullname=extra[i]->getName();
     if(fullname.find(".")!=std::string::npos) {
       std::size_t dot=fullname.find_first_of('.');
-      name=fullname.substr(0,dot);
+      argName=fullname.substr(0,dot);
     } else {
-      name=fullname;
+      argName=fullname;
     }
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
-    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(argName);
+    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + argName);
     addDependency(action);
   }
 }
@@ -346,21 +346,21 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   const size_t nval=a->getNumberOfComponents();
   const size_t npar=arguments.size();
   std::vector<double> value (nval*npar);
-  for(int i=0; i<npar; i++) {
+  for(unsigned i=0; i<npar; i++) {
     double arg0=arguments[i]->get();
     arguments[i]->set(arg0+std::sqrt(epsilon));
     a->calculate();
     arguments[i]->set(arg0);
-    for(int j=0; j<nval; j++) {
+    for(unsigned j=0; j<nval; j++) {
       value[i*nval+j]=a->getOutputQuantity(j);
     }
   }
   a->calculate();
   a->clearDerivatives();
-  for(int j=0; j<nval; j++) {
+  for(unsigned j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
     if( v->hasDerivatives() )
-      for(int i=0; i<npar; i++) {
+      for(unsigned i=0; i<npar; i++) {
         v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
       }
   }
@@ -381,11 +381,7 @@ void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const 
     nargs=nargs-av->getNumberOfMasks();
   }
   for(unsigned i=0; i<nargs; ++i) {
-    unsigned nvals = arguments[i]->getNumberOfStoredValues();
-    for(unsigned j=0; j<nvals; ++j) {
-      arguments[i]->addForce( j, forces[ind], false );
-      ind++;
-    }
+    ind += arguments[i]->addForces(View(&forces[ind],forces.size()-ind));
   }
 }
 
@@ -423,8 +419,8 @@ void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
 }
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
-  ActionWithValue* av = castToActionWithValue();
-  if( !av || arguments.size()==0 ) {
+  ActionWithValue* awval = castToActionWithValue();
+  if( !awval || arguments.size()==0 ) {
     return false;
   }
   bool constant = true, atoms=false;
@@ -433,8 +429,8 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
     plumed_assert(ptr); // needed for following calls, see #1046
     ActionAtomistic* aa=ptr->castToActionAtomistic();
     if( aa ) {
-      ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
-      if( !av || aa->getNumberOfAtoms()>0 ) {
+      ActionWithVector* awvec=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
+      if( !awvec || aa->getNumberOfAtoms()>0 ) {
         atoms=true;
       }
     }
@@ -445,8 +441,8 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   }
   if( constant ) {
     // Set everything constant first as we need to set the shape
-    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-      (av->copyOutput(i))->setConstant();
+    for(unsigned i=0; i<awval->getNumberOfComponents(); ++i) {
+      (awval->copyOutput(i))->setConstant();
     }
     if( !haveatoms ) {
       log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
@@ -461,11 +457,11 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
     activate();
     calculate();
     deactivate();
-    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-      unsigned nv = av->copyOutput(i)->getNumberOfValues();
-      log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
+    for(unsigned i=0; i<awval->getNumberOfComponents(); ++i) {
+      unsigned nv = awval->copyOutput(i)->getNumberOfValues();
+      log.printf("  %d values stored in component labelled %s are : ", nv, (awval->copyOutput(i))->getName().c_str() );
       for(unsigned j=0; j<nv; ++j) {
-        log.printf(" %f", (av->copyOutput(i))->get(j) );
+        log.printf(" %f", (awval->copyOutput(i))->get(j) );
       }
       log.printf("\n");
     }

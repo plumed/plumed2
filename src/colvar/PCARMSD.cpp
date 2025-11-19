@@ -195,11 +195,10 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   for(unsigned i=0; i<neigenvects; i++) {
     std::string num;
     Tools::convert( i, num );
-    std::string name;
-    name=std::string("eig-")+num;
-    pca_names.push_back(name);
-    addComponentWithDerivatives(name);
-    componentIsNotPeriodic(name);
+    std::string compName=std::string("eig-")+num;
+    pca_names.push_back(compName);
+    addComponentWithDerivatives(compName);
+    componentIsNotPeriodic(compName);
   }
   turnOnDerivatives();
 
@@ -261,7 +260,7 @@ void PCARMSD::calculate() {
     }
   }
 
-  for(int i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     setBoxDerivativesNoPbc( getPntrToComponent(i) );
   }
 

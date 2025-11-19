@@ -225,16 +225,16 @@ void RMSDVector::calculate() {
 
   if( getPntrToComponent(0)->getRank()==0 ) {
     std::vector<double> buffer;
-    std::vector<double> values( input.nscalars );
+    std::vector<double> vals( input.nscalars );
     std::vector<double> deriv( input_buffer.size(), 0 );
-    auto output = ParallelActionsOutput::create( input.nscalars, values.data(), input_buffer.size(), deriv.data(), 0, buffer.data() );
+    auto output = ParallelActionsOutput::create( input.nscalars, vals.data(), input_buffer.size(), deriv.data(), 0, buffer.data() );
     performTask( 0, taskmanager.getActionInput(), input, output );
 
-    getPntrToComponent(0)->set( values[0] );
+    getPntrToComponent(0)->set( vals[0] );
     if( getNumberOfComponents()==2 ) {
       Value* mydisp = getPntrToComponent(1);
       for(unsigned i=0; i<mydisp->getNumberOfStoredValues(); i++) {
-        mydisp->set( i, values[i+1] );
+        mydisp->set( i, vals[i+1] );
       }
     }
     if( doNotCalculateDerivatives() ) {
@@ -269,11 +269,11 @@ void RMSDVector::apply() {
       f[i+1] = disp->getForce( i );
     }
 
-    std::vector<double> forces( getNumberOfDerivatives(), 0 );
-    gatherForces( 0, taskmanager.getActionInput(), input, View<const double>( f.data(), input.nscalars ), deriv, forces );
+    std::vector<double> newForces( getNumberOfDerivatives(), 0 );
+    gatherForces( 0, taskmanager.getActionInput(), input, View<const double>( f.data(), input.nscalars ), deriv, newForces );
 
     unsigned ss=0;
-    addForcesOnArguments( 0, forces, ss  );
+    addForcesOnArguments( 0, newForces, ss  );
   } else {
     ActionWithVector::apply();
   }
@@ -333,40 +333,34 @@ void RMSDVector::performTask( std::size_t task_index,
   }
 }
 
-void RMSDVector::transferStashToValues( const std::vector<double>& stash ) {
+void RMSDVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   if( getNumberOfComponents()==1 ) {
-    ActionWithVector::transferStashToValues( stash );
+    ActionWithVector::transferStashToValues( partialTaskList, stash );
     return;
   }
-  std::size_t k=0;
   Value* dist = getPntrToComponent(0);
   Value* disp = getPntrToComponent(1);
   std::size_t ss = disp->getShape()[1];
-  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
-    dist->set(i,stash[k]);
-    k++;
+  for(unsigned i=0; i<partialTaskList.size(); ++i) {
+    dist->set(i,stash[(1+ss)*partialTaskList[i]]);
     for(unsigned j=0; j<ss; ++j) {
-      disp->set( ss*i + j, stash[k] );
-      k++;
+      disp->set( ss*partialTaskList[i] + j, stash[(1+ss)*partialTaskList[i]+1+j] );
     }
   }
 }
 
-void RMSDVector::transferForcesToStash( std::vector<double>& stash ) const {
+void RMSDVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
   if( getNumberOfComponents()==1 ) {
-    ActionWithVector::transferForcesToStash( stash );
+    ActionWithVector::transferForcesToStash( partialTaskList, stash );
     return;
   }
-  std::size_t k=0;
   const Value* dist = getConstPntrToComponent(0);
   const Value* disp = getConstPntrToComponent(1);
   std::size_t ss = disp->getShape()[1];
-  for(unsigned i=0; i<dist->getNumberOfStoredValues(); ++i) {
-    stash[k] = dist->getForce(i);
-    k++;
+  for(unsigned i=0; i<partialTaskList.size(); ++i) {
+    stash[(1+ss)*partialTaskList[i]] = dist->getForce(i);
     for(unsigned j=0; j<ss; ++j) {
-      stash[k] = disp->getForce( ss*i + j );
-      k++;
+      stash[(1+ss)*partialTaskList[i]+1+j] = disp->getForce( ss*partialTaskList[i] + j );
     }
   }
 }
@@ -398,7 +392,14 @@ void RMSDVector::gatherForces( std::size_t task_index,
     std::vector<Vector> direction( natoms );
     Matrix<std::vector<Vector> > DRotDPos(3,3);
     std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
-    double rmsd = actiondata.myrmsd[task_index].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, actiondata.squared );
+    /*double rmsd = */ actiondata.myrmsd[task_index].calc_PCAelements( pos,
+        der,
+        rot,
+        DRotDPos,
+        direction,
+        centeredpos,
+        centeredreference,
+        actiondata.squared );
     Tensor trot=rot.transpose();
     double prefactor = 1 / static_cast<double>( natoms );
     Vector v1;
@@ -442,7 +443,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Make sure that forces are calculated
   input.noderiv = false;
   // Get the forces
-  transferForcesToStash( force_stash );
+  transferForcesToStash( partialTaskList, force_stash );
   // Get the MPI details
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -462,7 +463,6 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
 
   #pragma omp parallel num_threads(nt)
   {
-    const unsigned t=OpenMP::getThreadNum();
     unsigned nderivatives_per_component = getNumberOfDerivatives();
     std::vector<double> omp_forces( nderivatives_per_component, 0.0 );
     std::vector<double> buffer( 0 );

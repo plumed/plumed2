@@ -32,19 +32,19 @@ TypesafePtr TypesafePtr::fromSafePtr(void* safe) {
 }
 
 TypesafePtr TypesafePtr::copy() const {
-  auto passbyvalue=((flags>>25)&0x7)==1;
+  auto passbyvalue=((myflags>>25)&0x7)==1;
   if(passbyvalue) {
     throw ExceptionTypeError()<<"PLUMED is trying to copy the pointer of an object passed by value";
   }
-  auto forbidstore=flags&0x10000000;
+  auto forbidstore=myflags&0x10000000;
   if(forbidstore) {
     throw ExceptionTypeError()<<"PLUMED is trying to copy the pointer of an object for which this was forbidden";
   }
   TypesafePtr ret;
-  ret.ptr=ptr;
-  ret.flags=flags;
-  ret.nelem=nelem;
-  ret.shape=shape;
+  ret.myptr=myptr;
+  ret.myflags=myflags;
+  ret.mynelem=mynelem;
+  ret.myshape=myshape;
   return ret;
 }
 

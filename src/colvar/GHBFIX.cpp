@@ -25,8 +25,6 @@
 #include "core/PlumedMain.h"
 #include "tools/IFile.h"
 
-#include <iostream>
-
 #include <string>
 
 namespace PLMD {
@@ -168,7 +166,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   if(energy_units!="plumed") {
     Units units;
     units.setEnergy(energy_units);
-    for(auto i=0; i<etas.size(); i++) {
+    for(unsigned i=0; i<etas.size(); i++) {
       etas[i]*=units.getEnergy()/getUnits().getEnergy();
     }
   }

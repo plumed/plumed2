@@ -40,16 +40,18 @@ Function::Function(const ActionOptions&ao):
   ActionWithArguments(ao) {
 }
 
-void Function::addValueWithDerivatives() {
+void Function::addValueWithDerivatives(const std::vector<std::size_t>& /* shape */) {
+//the shape argument is ignoded (shall I put here a warning?)
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
   ActionWithValue::addValueWithDerivatives();
   getPntrToValue()->resizeDerivatives(getNumberOfDerivatives());
 }
 
-void Function::addComponentWithDerivatives( const std::string& name ) {
+void Function::addComponentWithDerivatives( const std::string& compName, const std::vector<std::size_t>& /* shape */) {
+//the shape argument is ignoded (shall I put here a warning?)
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
-  ActionWithValue::addComponentWithDerivatives(name);
-  getPntrToComponent(name)->resizeDerivatives(getNumberOfDerivatives());
+  ActionWithValue::addComponentWithDerivatives(compName);
+  getPntrToComponent(compName)->resizeDerivatives(getNumberOfDerivatives());
 }
 
 void Function::apply() {

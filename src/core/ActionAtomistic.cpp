@@ -51,7 +51,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   massesWereSet(false),
   chargesWereSet(false) {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
-  moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  actionMoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( bv ) {
     boxValue=bv->copyOutput(0);
   }
@@ -119,12 +119,12 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   tree.reset();
   int nat=a.size();
   indexes=a;
-  positions.resize(nat);
+  actionPositions.resize(nat);
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
   atom_value_ind.resize( a.size() );
-  int n=getTotAtoms();
+  unsigned n=getTotAtoms();
   if(clearDep) {
     clearDependencies();
   }
@@ -151,11 +151,11 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   atom_value_ind_grouped.clear();
 
   if(atom_value_ind.size()>0) {
-    auto nn = atom_value_ind[0].first;
-    auto kk = atom_value_ind[0].second;
-    atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
-    atom_value_ind_grouped.back().second.push_back(kk);
-    auto prev_nn=nn;
+    auto prev_nn=atom_value_ind[0].first;
+    atom_value_ind_grouped.push_back(
+      std::pair<std::size_t,std::vector<std::size_t>>(
+        prev_nn, {}));
+    atom_value_ind_grouped.back().second.push_back(atom_value_ind[0].second);
     for(unsigned i=1; i<atom_value_ind.size(); i++) {
       auto nn = atom_value_ind[i].first;
       auto kk = atom_value_ind[i].second;
@@ -184,7 +184,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
 }
 
 void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const {
-  pbc.apply(dlist, max_index);
+  actionPbc.apply(dlist, max_index);
 }
 
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ) {
@@ -192,7 +192,7 @@ void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 void ActionAtomistic::changeBox( const Tensor& newbox ) {
-  pbc.setBox( newbox );
+  actionPbc.setBox( newbox );
 }
 
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ) {
@@ -208,46 +208,46 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   std::vector<Vector> savedPositions(natoms);
   const double delta=std::sqrt(epsilon);
 
-  for(int i=0; i<natoms; i++)
+  for(unsigned i=0; i<natoms; i++)
     for(int k=0; k<3; k++) {
-      savedPositions[i][k]=positions[i][k];
-      positions[i][k]=positions[i][k]+delta;
+      savedPositions[i][k]=actionPositions[i][k];
+      actionPositions[i][k]=actionPositions[i][k]+delta;
       a->calculate();
-      positions[i][k]=savedPositions[i][k];
-      for(int j=0; j<nval; j++) {
+      actionPositions[i][k]=savedPositions[i][k];
+      for(unsigned j=0; j<nval; j++) {
         value[j*natoms+i][k]=a->getOutputQuantity(j);
       }
     }
-  Tensor box(pbc.getBox());
+  Tensor box(actionPbc.getBox());
   for(int i=0; i<3; i++)
     for(int k=0; k<3; k++) {
       double arg0=box(i,k);
-      for(int j=0; j<natoms; j++) {
-        positions[j]=pbc.realToScaled(positions[j]);
+      for(unsigned j=0; j<natoms; j++) {
+        actionPositions[j]=actionPbc.realToScaled(actionPositions[j]);
       }
       box(i,k)=box(i,k)+delta;
-      pbc.setBox(box);
-      for(int j=0; j<natoms; j++) {
-        positions[j]=pbc.scaledToReal(positions[j]);
+      actionPbc.setBox(box);
+      for(unsigned j=0; j<natoms; j++) {
+        actionPositions[j]=actionPbc.scaledToReal(actionPositions[j]);
       }
       a->calculate();
       box(i,k)=arg0;
-      pbc.setBox(box);
-      for(int j=0; j<natoms; j++) {
-        positions[j]=savedPositions[j];
+      actionPbc.setBox(box);
+      for(unsigned j=0; j<natoms; j++) {
+        actionPositions[j]=savedPositions[j];
       }
-      for(int j=0; j<nval; j++) {
+      for(unsigned j=0; j<nval; j++) {
         valuebox[j](i,k)=a->getOutputQuantity(j);
       }
     }
 
   a->calculate();
   a->clearDerivatives();
-  for(int j=0; j<nval; j++) {
+  for(unsigned j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()) {
-      for(int i=0; i<natoms; i++)
+      for(unsigned i=0; i<natoms; i++)
         for(int k=0; k<3; k++) {
           double d=(value[j*natoms+i][k]-ref)/delta;
           v->addDerivative(startnum+3*i+k,d);
@@ -315,20 +315,20 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
       std::string symbol=strings[i].substr(1);
       if(symbol=="allatoms") {
-        auto n=0;
-        for(unsigned i=0; i<xpos.size(); ++i) {
-          n += xpos[i]->getNumberOfValues();
+        unsigned n=0;
+        for(unsigned ii=0; ii<xpos.size(); ++ii) {
+          n += xpos[ii]->getNumberOfValues();
         }
         t.reserve(n);
-        for(unsigned i=0; i<n; i++) {
-          t.push_back(AtomNumber::index(i));
+        for(unsigned ii=0; ii<n; ii++) {
+          t.push_back(AtomNumber::index(ii));
         }
         ok=true;
       } else if(symbol=="mdatoms") {
         const auto n=xpos[0]->getNumberOfValues();
         t.reserve(t.size()+n);
-        for(unsigned i=0; i<n; i++) {
-          t.push_back(AtomNumber::index(i));
+        for(unsigned ii=0; ii<n; ii++) {
+          t.push_back(AtomNumber::index(ii));
         }
         ok=true;
       } else if(Tools::startWith(symbol,"ndx:")) {
@@ -357,19 +357,19 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
         bool firstgroup=true;
         bool groupfound=false;
         while(ifile.getline(line)) {
-          std::vector<std::string> words=Tools::getWords(line);
-          if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
+          std::vector<std::string> groupWords=Tools::getWords(line);
+          if(groupWords.size()>=3 && groupWords[0]=="[" && groupWords[2]=="]") {
             if(groupname.length()>0) {
               firstgroup=false;
             }
-            groupname=words[1];
+            groupname=groupWords[1];
             if(groupname==ndxgroup || ndxgroup.length()==0) {
               groupfound=true;
             }
           } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
-            for(unsigned i=0; i<words.size(); i++) {
+            for(unsigned ii=0; ii<groupWords.size(); ii++) {
               AtomNumber at;
-              Tools::convert(words[i],at);
+              Tools::convert(groupWords[ii],at);
               t.push_back(at);
             }
           }
@@ -447,7 +447,7 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     plumed_assert(ptr); // needed for following calls, see #1046
     PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca );
-    pbc=pbca->pbc;
+    actionPbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) {
     return;
@@ -472,9 +472,9 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
 
 // for(const auto & a : atom_value_ind) {
 //   std::size_t nn = a.first, kk = a.second;
-//   positions[j][0] = xpos[nn]->data[kk];
-//   positions[j][1] = ypos[nn]->data[kk];
-//   positions[j][2] = zpos[nn]->data[kk];
+//   actionPositions[j][0] = xpos[nn]->data[kk];
+//   actionPositions[j][1] = ypos[nn]->data[kk];
+//   actionPositions[j][2] = zpos[nn]->data[kk];
 //   charges[j] = chargev[nn]->data[kk];
 //   masses[j] = masv[nn]->data[kk];
 //   j++;
@@ -488,9 +488,9 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     auto & ch=chargev[nn]->data;
     auto & ma=masv[nn]->data;
     for(const auto & kk : a.second) {
-      positions[j][0] = xp[kk];
-      positions[j][1] = yp[kk];
-      positions[j][2] = zp[kk];
+      actionPositions[j][0] = xp[kk];
+      actionPositions[j][1] = yp[kk];
+      actionPositions[j][2] = zp[kk];
       charges[j] = ch[kk];
       masses[j] = ma[kk];
       j++;
@@ -566,7 +566,7 @@ void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
     if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) {
       error("there are atoms missing in the pdb file");
     }
-    positions[j]=pdb.getPositions()[indexes[j].index()];
+    actionPositions[j]=pdb.getPositions()[indexes[j].index()];
   }
   for(unsigned j=0; j<indexes.size(); j++) {
     charges[j]=pdb.getBeta()[indexes[j].index()];
@@ -585,22 +585,22 @@ unsigned ActionAtomistic::getTotAtoms()const {
 }
 
 void ActionAtomistic::makeWhole() {
-  if(moldat && moldat->isWhole()) {
+  if(actionMoldat && actionMoldat->isWhole()) {
     // make sure the tree has been constructed
     if(!tree) {
-      tree=std::make_unique<Tree>(moldat);
+      tree=std::make_unique<Tree>(actionMoldat);
     }
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
     for(unsigned j=0; j<root_indexes.size(); j++) {
-      const Vector & first (positions[root_indexes[j]]);
-      Vector & second (positions[tree_indexes[j]]);
+      const Vector & first (actionPositions[root_indexes[j]]);
+      Vector & second (actionPositions[tree_indexes[j]]);
       second=first+pbcDistance(first,second);
     }
   } else {
-    for(unsigned j=0; j<positions.size()-1; ++j) {
-      const Vector & first (positions[j]);
-      Vector & second (positions[j+1]);
+    for(unsigned j=0; j<actionPositions.size()-1; ++j) {
+      const Vector & first (actionPositions[j]);
+      Vector & second (actionPositions[j+1]);
       second=first+pbcDistance(first,second);
     }
   }

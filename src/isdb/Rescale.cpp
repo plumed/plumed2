@@ -453,7 +453,7 @@ void Rescale::print_bias(long long int step) {
 
 void Rescale::calculate() {
   // get the current value of the selector
-  unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
+  const unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // collect data from other replicas
   std::vector<double> all_args(getNumberOfArguments(), 0.0);
@@ -531,10 +531,10 @@ void Rescale::calculate() {
   // add well-tempered like bias
   if(step%Biaspace_==0) {
     // get updated igamma
-    unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
+    const unsigned newigamma = static_cast<unsigned>(plumed.passMap[selector_]);
     // add "Gaussian"
     double kbDT = kbt_ * ( biasf_ - 1.0 );
-    bias_[igamma] += w0_ * std::exp(-bias_[igamma] / kbDT);
+    bias_[newigamma] += w0_ * std::exp(-bias_[newigamma] / kbDT);
   }
 
   // print bias

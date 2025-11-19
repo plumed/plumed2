@@ -23,16 +23,16 @@
 #define __PLUMED_core_ActionWithMatrix_h
 
 #include "ActionWithVector.h"
+#include <cstddef>
 
 namespace PLMD {
 
-class ActionWithMatrix;
+//this class serves as a workaround for moving data with openacc without specifying --memory=managed
 class RequiredMatrixElements {
-  std::vector<std::size_t> bookeeping;
-  std::size_t const* bookeeping_data;
+  std::vector<std::size_t> bookeeping{};
+  std::size_t* bookeeping_data=nullptr;
 public:
-  friend class ActionWithMatrix;
-  std::size_t ncols;
+  std::size_t ncols=0;
   void update() {
     bookeeping_data = bookeeping.data();
   }
@@ -43,10 +43,19 @@ public:
   void removeFromACCDevice() const {
 #pragma acc exit data delete(bookeeping_data[0:bookeeping.size()],this[0:1])
   }
+  std::size_t& operator[]( std::size_t i ) {
+    return bookeeping_data[i];
+  }
   std::size_t operator[]( std::size_t i ) const {
     return bookeeping_data[i];
   }
-
+  std::size_t size() const {
+    return bookeeping.size();
+  }
+  void resize(std::size_t newSize) {
+    bookeeping.resize(newSize);
+    update();
+  }
 };
 
 class MatrixElementOutput {
@@ -64,14 +73,14 @@ protected:
 /// Some actions have a flag that sets this to true.  The elements on the diagonal of the resulting matrix are then set to zero
   bool diagzero;
 /// Update all the arrays for doing bookeeping
-  void updateBookeepingArrays( RequiredMatrixElements& outmat );
+  void updateBookeepingArrays( RequiredMatrixElements& mat );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
 /// Get the elements of the matrices into the output values
-  void transferStashToValues( const std::vector<double>& stash ) override ;
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
 /// Get the forces from the output values and transfer them to the stash
-  void transferForcesToStash( std::vector<double>& stash ) const override ;
+  void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const override ;
 };
 
 }

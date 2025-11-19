@@ -127,7 +127,7 @@ void PdbRenumber::registerKeywords( Keywords& keys ) {
 
 PdbRenumber::PdbRenumber(const CLToolOptions& co ):
   CLTool(co) {
-  inputdata=commandline;
+  inputdata=inputType::commandline;
 }
 
 int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {

@@ -25,10 +25,9 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
-#include <iostream>
-#include <map>
-#include <iomanip>
 #include <filesystem>
+#include <iomanip>
+#include <sstream>
 #include <string_view>
 
 namespace PLMD {
@@ -681,7 +680,7 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
 }
 
 Tools::DirectoryChanger::DirectoryChanger(const char*path):
-  path(std::filesystem::current_path()) {
+  originalpath(std::filesystem::current_path()) {
   if(!path) {
     return;
   }
@@ -693,9 +692,9 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path):
 
 Tools::DirectoryChanger::~DirectoryChanger() {
   try {
-    std::filesystem::current_path(path);
+    std::filesystem::current_path(originalpath);
   } catch(std::filesystem::filesystem_error & e) {
-    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",path.c_str());
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",originalpath.c_str());
   }
 }
 
@@ -708,6 +707,8 @@ std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
 namespace {
 
 class process_one_exception {
+  //To future me/you: this needs to remain called "msg" because otherwise
+  //it will break the call message processing in `process_all_exceptions`
   std::string & msg;
   bool first=true;
   void update() {
@@ -717,8 +718,8 @@ class process_one_exception {
     first=false;
   }
 public:
-  process_one_exception(std::string & msg):
-    msg(msg)
+  process_one_exception(std::string & inmsg):
+    msg(inmsg)
   {}
   void operator()(const std::exception & e) {
     update();
@@ -773,4 +774,11 @@ std::string Tools::concatenateExceptionMessages() {
   return msg;
 }
 
+std::string Tools::convertRegexForJson (const std::string& command) {
+  std::stringstream ss;
+  ss << std::quoted(command);
+  std::string modifiedCommand=ss.str();
+  //std::quoted quotes, and I do not want the extra delimiters
+  return modifiedCommand.substr(1,modifiedCommand.length()-2);
+}
 }

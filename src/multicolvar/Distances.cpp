@@ -383,8 +383,9 @@ Distances::Distances(const ActionOptions& ao):
     dline += " COMPONENTS";
   }
   // Parse origin
-  std::string num, ostr;
+  std::string ostr;
   parse("ORIGIN",ostr);
+  std::string num;
   if( ostr.length()>0 ) {
     // Parse atoms
     std::vector<std::string> afstr;
@@ -405,7 +406,6 @@ Distances::Distances(const ActionOptions& ao):
       unsigned n=0;
       for(unsigned i=1; i<grp.size(); ++i) {
         for(unsigned j=0; j<i; ++j) {
-          std::string num;
           Tools::convert( n+1, num );
           n++;
           dline += " ATOMS" + num + "=" + grp[i] + "," + grp[j];
@@ -417,7 +417,6 @@ Distances::Distances(const ActionOptions& ao):
       if( grpb.size()==0 ) {
         error("found GROUPA but no corresponding GROUPB");
       }
-      bool printcomment=false;
       for(unsigned i=0; i<grpa.size(); ++i) {
         for(unsigned j=0; j<grpb.size(); ++j) {
           Tools::convert( i*grpb.size() + j + 1, num );
@@ -435,7 +434,6 @@ Distances::Distances(const ActionOptions& ao):
         std::string locstr;
         parseNumbered("LOCATION",i,locstr);
         if( locstr.length()==0 ) {
-          std::string num;
           Tools::convert( i, num );
           readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
           if( i==1 ) {
@@ -450,7 +448,6 @@ Distances::Distances(const ActionOptions& ao):
             grpstr += "," + locstr;
           }
         }
-        std::string num;
         Tools::convert( i, num );
         dline += " ATOMS" + num + "=" + atstring;
       }

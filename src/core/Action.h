@@ -65,8 +65,8 @@ public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
   ActionOptions(const ActionOptions&,const Keywords& keys);
-  void setFullPath(const std::string & fullPath) {
-    this->fullPath=fullPath;
+  void setFullPath(const std::string & newFullPath) {
+    fullPath=newFullPath;
   }
 };
 
@@ -77,10 +77,10 @@ class Action {
   friend class ActionShortcut;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
-  const std::string name;
+  const std::string actionName;
 
 /// Label of the Action, as set with LABEL= in the plumed.dat file.
-  std::string label;
+  std::string actionLabel;
 
 /// Directive line.
 /// This line is progressively erased during Action construction
@@ -118,7 +118,7 @@ private:
   bool active;
 
 /// Option that you might have enabled
-  std::set<std::string> options;
+  std::set<std::string> actionOptions;
 
   bool restart;
 
@@ -379,12 +379,12 @@ public:
 
 inline
 const std::string & Action::getLabel()const {
-  return label;
+  return actionLabel;
 }
 
 inline
 const std::string & Action::getName()const {
-  return name;
+  return actionName;
 }
 
 template<class T>
@@ -404,7 +404,7 @@ void Action::parse(const std::string&key,T&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
-        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
       }
       defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
@@ -458,7 +458,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
     std::string def;
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
-        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
+        plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
       } else {
         if(t.size()>0) {
           for(unsigned i=0; i<t.size(); ++i) {
@@ -511,7 +511,7 @@ bool Action::parseNumberedVector(const std::string&key,
 
 inline
 void Action::deactivate() {
-  options.clear();
+  actionOptions.clear();
   active=false;
 }
 
@@ -522,7 +522,7 @@ bool Action::isActive()const {
 
 inline
 bool Action::isOptionOn(const std::string &s)const {
-  return options.count(s);
+  return actionOptions.count(s);
 }
 
 inline

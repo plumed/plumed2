@@ -64,11 +64,11 @@ Alternatively, you can use linear interpolation as has been done in the followin
 ```plumed
 x: DISTANCE ATOMS=1,2
 hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
-ii: INTERPOLATE_GRID ARG=hA1 MIDPOINTS INTERPOLATION_TYPE=linear
+ii: INTERPOLATE_GRID ARG=hA1 GRID_MIN=0.015 GRID_MAX=2.985 GRID_BIN=99 INTERPOLATION_TYPE=linear
 DUMPGRID ARG=ii FILE=histo.dat
 ```
 
-In this input the `MIDPOINTS` flag is used in place of GRID_BIN/GRID_SPACING. The interpolated grid is thus evaluated
+Notice that the way we have specified `GRID_MIN`, `GRID_MAX` and `GRID_BIN` in the above input ensures that function is evaluated
 at the $n-1$ mid points that lie between the points on the input grid.
 
 */
@@ -83,10 +83,10 @@ public:
   using PTM = ParallelTaskManager<InterpolateGrid>;
 private:
   bool firststep;
-  bool midpoints;
 /// The parallel task manager
   PTM taskmanager;
   std::vector<std::size_t> nbin;
+  std::vector<std::string> gmin, gmax;
   std::vector<double> gspacing;
   GridCoordinatesObject output_grid;
 public:
@@ -120,7 +120,8 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.addInputKeyword("compulsory","ARG","grid","the label for function on the grid that you would like to interpolate");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
+  keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid. By default this action uses the lower bound for the input grid");
+  keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid. By default this action uses the upper bound for the input grid");
   EvaluateGridFunction::registerKeywords( keys );
   keys.remove("ZERO_OUTSIDE_GRID_RANGE");
   keys.setValueDescription("grid","the function evaluated onto the interpolated grid");
@@ -139,16 +140,17 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
     error("input to this action should be a grid");
   }
 
-  parseFlag("MIDPOINTS",midpoints);
   parseVector("GRID_BIN",nbin);
   parseVector("GRID_SPACING",gspacing);
   unsigned dimension = getPntrToArgument(0)->getRank();
-  if( !midpoints && nbin.size()!=dimension && gspacing.size()!=dimension ) {
+  gmin.resize( dimension );
+  gmax.resize( dimension );
+  parseVector("GRID_MIN",gmin);
+  parseVector("GRID_MAX",gmax);
+  if( nbin.size()!=dimension && gspacing.size()!=dimension ) {
     error("MIDPOINTS, GRID_BIN or GRID_SPACING must be set");
   }
-  if( midpoints ) {
-    log.printf("  evaluating function at midpoints of cells in input grid\n");
-  } else if( nbin.size()==dimension ) {
+  if( nbin.size()==dimension ) {
     log.printf("  number of bins in grid %ld", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) {
       log.printf(", %ld", nbin[i]);
@@ -162,13 +164,13 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
     log.printf("\n");
   }
   // Create the input grid
-  function::FunctionOptions options;
-  EvaluateGridFunction::read( taskmanager.getActionInput(), this, options );
+  function::FunctionOptions foptions;
+  EvaluateGridFunction::read( taskmanager.getActionInput(), this, foptions );
   // Need this for creation of tasks
   output_grid.setup( "flat", taskmanager.getActionInput().getPbc(), 0, 0.0 );
 
   // Now add a value
-  std::vector<std::size_t> shape( dimension, 0 );
+  std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValueWithDerivatives( shape );
 
   if( getPntrToArgument(0)->isPeriodic() ) {
@@ -209,28 +211,15 @@ void InterpolateGrid::calculate() {
     ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
     plumed_assert( ag );
     const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
-    if( midpoints ) {
-      double min, max;
-      nbin.resize( getPntrToComponent(0)->getRank() );
-      std::vector<std::string> str_min( taskmanager.getActionInput().getMin() ), str_max(taskmanager.getActionInput().getMax() );
-      for(unsigned i=0; i<nbin.size(); ++i) {
-        Tools::convert( str_min[i], min );
-        Tools::convert( str_max[i], max );
-        min += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-        if( taskmanager.getActionInput().getPbc()[i] ) {
-          nbin[i] = taskmanager.getActionInput().getNbin()[i];
-          max += 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-        } else {
-          nbin[i] = taskmanager.getActionInput().getNbin()[i] - 1;
-          max -= 0.5*taskmanager.getActionInput().getGridSpacing()[i];
-        }
-        Tools::convert( min, str_min[i] );
-        Tools::convert( max, str_max[i] );
+    for(unsigned i=0; i<gmin.size(); ++i) {
+      if( gmin[i]=="auto" ) {
+        gmin[i] = mygrid.getMin()[i];
       }
-      output_grid.setBounds( str_min, str_max, nbin,  gspacing );
-    } else {
-      output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
+      if( gmax[i]=="auto" ) {
+        gmax[i] = mygrid.getMax()[i];
+      }
     }
+    output_grid.setBounds( gmin, gmax, nbin, gspacing );
     getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
     if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) {
       taskmanager.setupParallelTaskManager( 1+getPntrToComponent(0)->getRank(), getPntrToArgument(0)->getNumberOfStoredValues() );

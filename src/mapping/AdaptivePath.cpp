@@ -23,6 +23,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"
+#include "tools/FileTools.h"
 #include "Path.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
@@ -142,40 +143,43 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   parse("TYPE", mtype);
   std::string reference;
   parse("REFERENCE",reference);
-  FILE* fp=std::fopen(reference.c_str(),"r");
-  PDB mypdb;
-  if(!fp) {
-    error("could not open reference file " + reference );
-  }
-  bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
-  if( !do_read ) {
-    error("missing file " + reference );
-  }
-  // Create list of reference configurations that PLUMED will use
-  Path::readInputFrames( reference, mtype, argnames, true, this, reference_data );
-  // Now get coordinates on spath
-  std::vector<std::string> pnames;
-  parseVector("PROPERTY",pnames);
-  Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
-  // Create action that computes the geometric path variablesa
-  std::string propstr = getShortcutLabel() + "_ind";
-  if( pnames.size()>0 ) {
-    propstr = pnames[0] + "_ref";
-  }
-  if( argnames.size()>0 ) {
-    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
-  } else {
-    std::string num, align_str, displace_str;
-    Tools::convert( mypdb.getOccupancy()[0], align_str );
-    Tools::convert( mypdb.getBeta()[0], displace_str );
-    for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
-      Tools::convert( mypdb.getOccupancy()[j], num );
-      align_str += "," + num;
-      Tools::convert( mypdb.getBeta()[0], num );
-      displace_str += "," + num;
+  {
+    //extra scope for fp and mypdb
+    unique_FILE fp{std::fopen(reference.c_str(),"r")};
+    PDB mypdb;
+    if(!fp.get()) {
+      error("could not open reference file " + reference );
     }
-    metric = "RMSD DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
-    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
+    bool do_read=mypdb.readFromFilepointer(fp.get(),false,0.1);
+    if( !do_read ) {
+      error("missing file " + reference );
+    }
+    // Create list of reference configurations that PLUMED will use
+    Path::readInputFrames( reference, mtype, argnames, true, this, reference_data );
+    // Now get coordinates on spath
+    std::vector<std::string> pnames;
+    parseVector("PROPERTY",pnames);
+    Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
+    // Create action that computes the geometric path variablesa
+    std::string propstr = getShortcutLabel() + "_ind";
+    if( pnames.size()>0 ) {
+      propstr = pnames[0] + "_ref";
+    }
+    if( argnames.size()>0 ) {
+      readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
+    } else {
+      std::string num, align_str, displace_str;
+      Tools::convert( mypdb.getOccupancy()[0], align_str );
+      Tools::convert( mypdb.getBeta()[0], displace_str );
+      for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
+        Tools::convert( mypdb.getOccupancy()[j], num );
+        align_str += "," + num;
+        Tools::convert( mypdb.getBeta()[0], num );
+        displace_str += "," + num;
+      }
+      metric = "RMSD DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
+      readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
+    }
   }
   // Create the object to accumulate the average path displacements
   std::string update, halflife;
@@ -205,10 +209,13 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
     // This just gets the atom numbers for output
     std::string atomstr;
     if( argnames.size()==0 ) {
-      FILE* fp=std::fopen(reference.c_str(),"r");
+      unique_FILE fp{std::fopen(reference.c_str(),"r")};
       double fake_unit=0.1;
       PDB mypdb;
-      bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+      bool do_read=mypdb.readFromFilepointer(fp.get(),false,fake_unit);
+      if( !do_read ) {
+        error("missing file " + reference );
+      }
       std::string num;
       Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
       for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {

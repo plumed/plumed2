@@ -232,7 +232,7 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
   }
   // This sets up an array in the parallel task manager to hold all the indices
   // Sets up the index list in the task manager
-  std::size_t nvectors, nder = getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
+  std::size_t nder = getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
   MatrixTimesVectorData input;
   input.pairs.resize( getNumberOfArguments()-1, 2 );
   if( getPntrToArgument(1)->getRank()==2 ) {
@@ -240,14 +240,12 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
       input.pairs[i-1][0] = i-1;
       input.pairs[i-1][1] = getNumberOfArguments()-1;
     }
-    nvectors=1;
     input.fshift=0;
   } else {
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
       input.pairs[i-1][0] = 0;
       input.pairs[i-1][1] = i;
     }
-    nvectors = getNumberOfArguments()-1;
     input.fshift=nder;
   }
   taskmanager.setActionInput( input );
@@ -297,12 +295,8 @@ int MatrixTimesVectorBase<T>::checkTaskIsActive( const unsigned& itask ) const {
     if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
       return 0;
     } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-      unsigned ncol = myarg->getRowLength(itask);
-      unsigned base = itask*myarg->getNumberOfColumns();
-      for(unsigned k=0; k<ncol; ++k) {
-        if( fabs(myarg->get(base+k,false))>0 ) {
-          return 1;
-        }
+      if (myarg->checkValueIsActiveForMMul(itask)) {
+        return 1;
       }
     } else {
       plumed_merror("should not be in action " + getName() );

@@ -93,7 +93,7 @@ class Tools {
   static bool convertToInt(const std::string & str,T &t);
 /// @brief the  recursive part of the template fastpow implementation
   template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
-  static inline /*consteval*/ T fastpow_rec(T base, T result);
+  static constexpr inline T fastpow_rec(T base, T result);
 public:
   static constexpr std::string_view replicaToken="@replicas:";
 /// Split the line in words using separators.
@@ -211,10 +211,11 @@ public:
 /// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
   static std::string extension(const std::string&);
 /// Fast int power
-  static double fastpow(double base,int exp);
+  template <typename T>
+  static constexpr inline T fastpow(T base,int exp);
 /// Fast int power for power known at compile time
   template <int exp, typename T=double>
-  static inline /*consteval*/ T fastpow(T base);
+  static constexpr inline T fastpow(T base);
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
@@ -258,7 +259,7 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    const std::filesystem::path path;
+    const std::filesystem::path originalpath;
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
@@ -269,28 +270,30 @@ public:
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
-  static void set_to_zero(double*ptr,unsigned n) {
-    for(unsigned i=0; i<n; i++) {
-      ptr[i]=0.0;
+  template <typename T>
+  static void set_to_zero(T*ptr, const unsigned n) {
+    const auto end=ptr+n;
+    for(; ptr < end; ++ptr) {
+      *ptr=T(0.0);
     }
   }
 
-  template<unsigned n>
-  static void set_to_zero(std::vector<VectorGeneric<n>> & vec) {
+  template<typename T, unsigned n>
+  static void set_to_zero(std::vector<VectorTyped<T,n>> & vec) {
     unsigned s=vec.size();
     if(s==0) {
       return;
     }
-    set_to_zero(&vec[0][0],s*n);
+    set_to_zero(vec[0].data(),s*n);
   }
 
-  template<unsigned n,unsigned m>
-  static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
+  template<typename T, unsigned n,unsigned m>
+  static void set_to_zero(std::vector<TensorTyped<T,n,m>> & vec) {
     unsigned s=vec.size();
     if(s==0) {
       return;
     }
-    set_to_zero(&vec[0](0,0),s*n*m);
+    set_to_zero(vec[0].data(),s*n*m);
   }
 
   static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
@@ -385,9 +388,9 @@ public:
     class Handler {
       CriticalSectionWithKey* section{nullptr};
       Key key;
-      Handler(CriticalSectionWithKey* section,const Key& key):
-        section(section),
-        key(key) {
+      Handler(CriticalSectionWithKey* mysection,const Key& mykey):
+        section(mysection),
+        key(mykey) {
         section->start(key);
       }
       friend class CriticalSectionWithKey;
@@ -429,7 +432,16 @@ public:
     }
 
   };
-
+///Correct the "escape sequences" from regexes to be compatible with the json format
+///
+///C++ wants a raw string (like `R"<<(content)<<"`) for the regexes
+///and the python package json (and the json format itself actually)
+/// wants the various '\' to be escaped with and '\' becasue the interpreter tries
+/// to read anything that begins with '\' as an escape sequence (it does not know that it is an input for a regex)
+///
+/// For example '\n' will not cause an error but it will be intepreted as and explicit newline, so we we want '\\n' in the json
+/// whereas '\.' will cause an erron when read by python
+  static std::string convertRegexForJson (const std::string& command);
 };
 
 template <class T>
@@ -456,17 +468,17 @@ bool Tools::parse(std::string_view argument,
 
 template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
-  std::string s;
-  if(!getKey(line,key+"=",s,rep)) {
+  std::string argument;
+  if(!getKey(line,key+"=",argument,rep)) {
     return false;
   }
   val.clear();
   //needs to get the parenteses
-  std::vector<std::string> words=getWords(s,"\t\n ,");
-  val.reserve(words.size());
-  for(unsigned i=0; i<words.size(); ++i) {
+  std::vector<std::string> argWords=getWords(argument,"\t\n ,");
+  val.reserve(argWords.size());
+  for(unsigned i=0; i<argWords.size(); ++i) {
     T v;
-    std::string s=words[i];
+    std::string s=argWords[i];
     if(rep>=0 && startWith(s,replicaToken)) {
       s=s.substr(replicaToken.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");
@@ -565,8 +577,8 @@ bool Tools::convertNoexcept(T i,std::string & str) {
   return true;
 }
 
-inline
-double Tools::fastpow(double base, int exp) {
+template <typename T>
+constexpr inline T Tools::fastpow(T base, int exp) {
   if(exp<0) {
     exp=-exp;
     base=1.0/base;
@@ -584,7 +596,7 @@ double Tools::fastpow(double base, int exp) {
 }
 
 template <int exp, typename T, std::enable_if_t< (exp >=0), bool>>
-inline T Tools::fastpow_rec(T const base, T result) {
+constexpr inline T Tools::fastpow_rec(T const base, T result) {
   if constexpr (exp == 0) {
     return result;
   }
@@ -595,7 +607,7 @@ inline T Tools::fastpow_rec(T const base, T result) {
 }
 
 template <int exp, typename T>
-inline T Tools::fastpow(T const base) {
+constexpr inline T Tools::fastpow(T const base) {
   if constexpr (exp<0) {
     return  fastpow_rec<-exp,T>(1.0/base,1.0);
   } else {

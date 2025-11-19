@@ -38,7 +38,7 @@ it in order to run.  This class is used in PLMD::Bias
 */
 class ActionPilot:
   public virtual Action {
-  int stride; // multiple time step
+  unsigned actionStride=1; // multiple time step
 public:
   explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot
@@ -46,9 +46,9 @@ public:
 /// Check if the action is active on this step
   virtual bool onStep()const;
 /// Set the value of the stride
-  void setStride( const int& n );
+  void setStride(unsigned n);
 /// Get the stride
-  int getStride()const;
+  unsigned getStride()const;
 };
 
 }

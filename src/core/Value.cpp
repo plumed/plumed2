@@ -22,9 +22,6 @@
 #include "Value.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
-#include "ActionWithArguments.h"
-#include "ActionWithVector.h"
-#include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/OFile.h"
@@ -34,63 +31,24 @@
 namespace PLMD {
 
 Value::Value():
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
+  data(1,0.0),
+  inputForce(1,0.0),
+  shape() {}
+
+Value::Value(const std::string& valname):
+  data(1,0.0),
+  inputForce(1,0.0),
+  name(valname),
+  shape() {
 }
 
-Value::Value(const std::string& name):
-  action(NULL),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  shape(std::vector<std::size_t>()),
-  hasDeriv(true),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
-  data.resize(1);
-  inputForce.resize(1);
-  data[0]=inputForce[0]=0;
-}
-
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<std::size_t>&ss):
+Value::Value(ActionWithValue* av,
+             const std::string& valname,
+             const bool withderiv,
+             const std::vector<std::size_t>&ss):
   action(av),
-  value_set(false),
-  hasForce(false),
-  name(name),
-  hasDeriv(withderiv),
-  bufstart(0),
-  ngrid_der(0),
-  ncols(0),
-  symmetric(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0),
-  max_minus_min(0.0),
-  inv_max_minus_min(0.0),
-  derivativeIsZeroWhenValueIsZero(false) {
+  name(valname),
+  hasDeriv(withderiv) {
   if( action ) {
     if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) {
       valtype=average;
@@ -234,7 +192,7 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
-  plumed_assert( action!=NULL );
+  plumed_assert( action!=nullptr );
   return action;
 }
 
@@ -277,7 +235,24 @@ std::size_t Value::getIndexInStore( const std::size_t& ival ) const {
   return ival;
 }
 
-double Value::get(const std::size_t& ival, const bool trueind) const {
+bool Value::checkValueIsActiveForMMul(const std::size_t task) const {
+  const auto ncol = getRowLength(task);
+  const auto base = task * getNumberOfColumns();
+  if (hasDeriv) {
+    for(std::size_t k=base; k<base+ncol; ++k) {
+      if(std::fabs(data[k*(1+ngrid_der)])>0.0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return std::any_of(&data[base],&data[base]+ncol,[](double x) {
+    return std::fabs(x)>0.0;
+  });
+
+}
+
+double Value::get(const std::size_t ival, const bool trueind) const {
   if( hasDeriv ) {
     return data[ival*(1+ngrid_der)];
   }
@@ -287,15 +262,23 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   }
 #endif
   if( shape.size()==2 && trueind ) {
-    unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+    const unsigned irow = std::floor( ival / shape[1] );
+    const unsigned jcol = ival%shape[1];
     // This is a special treatment for the lower triangular matrices that are used when
     // we do ITRE with COLLECT_FRAMES
     if( ncols==0 ) {
       if( jcol<=irow ) {
         return data[0.5*irow*(irow+1) + jcol];
       }
-      return 0;
+      return 0.0;
     }
+    /* I have to work on this
+    auto begin = matrix_bookeeping.begin()+(1+ncols)*irow+1;
+    auto end = matrix_bookeeping.begin()+(1+ncols)*irow+1+getRowLength(irow);
+    auto i=std::find(begin,end,jcol);
+    if (i!=end){
+    	return data[irow*ncols+end-i];
+    }*/
     for(unsigned i=0; i<getRowLength(irow); ++i) {
       if( getRowIndex(irow,i)==jcol ) {
         return data[irow*ncols+i];
@@ -305,6 +288,19 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   }
   plumed_massert( ival<data.size(), "cannot get value from " + name );
   return data[ival];
+}
+
+size_t Value::assignValues(View<double> target) {
+  const auto nvals=getNumberOfStoredValues ();
+  if( hasDeriv ) {
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j*(1+ngrid_der)];
+    }
+  } else {
+    plumed_massert( data.size()>=nvals, "cannot get value from " + name );
+    std::memcpy(target.data(),data.data(),nvals*sizeof(double));
+  }
+  return nvals;
 }
 
 void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
@@ -324,6 +320,27 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
   inputForce[iforce]+=f;
 }
 
+size_t Value::addForces(View<const double> const forces) {
+  hasForce=true;
+  const auto nvals = getNumberOfStoredValues();
+  plumed_massert( inputForce.size()>=nvals, "can't add force to " + name );
+  //I need at least nvals elements in forces
+  plumed_massert( forces.size()>=nvals, "can't add force to " + name );
+  /*
+    {//this gives a very little speedup (+1 step in the 60s dragrace)
+      auto f = forces.begin();
+      const auto end=inputForce.begin()+nvals;
+      for(auto iptf=inputForce.begin()  ; iptf<end; ++iptf, ++f) {
+        *iptf+=*f;
+      }
+    }
+  */
+  //is this daxpy?
+  for(auto i=0u; i<nvals; ++i) {
+    inputForce[i]+=forces[i];
+  }
+  return nvals;
+}
 
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
@@ -454,8 +471,8 @@ void Value::print( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       ofile.printField( fname, get(i) );
@@ -471,8 +488,8 @@ void Value::printForce( OFile& ofile ) const {
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices );
       std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) {
-        Tools::convert( indices[i]+1, num );
+      for(unsigned ii=0; ii<shape.size(); ++ii) {
+        Tools::convert( indices[ii]+1, num );
         fname += "." + num;
       }
       plumed_assert( i<inputForce.size() );

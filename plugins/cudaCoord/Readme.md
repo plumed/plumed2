@@ -49,7 +49,6 @@ near the bottom of the script
 
  - work only with orthogonal pbcs or no pbcs at all
  - do not support the SWITCH keyword
-   - and use the rational switch only with __even__ `NN` and `MM`
  - new `THREADS` keyword to control the maximum number of threads that can be used by the kernels
 
 ## Current TODO

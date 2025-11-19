@@ -29,6 +29,7 @@
 #include "tools/Tools.h"
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
+#include "tools/View.h"
 
 namespace PLMD {
 
@@ -59,15 +60,15 @@ class Value {
   friend class DataPassingObjectTyped;
 private:
 /// The action in which this quantity is calculated
-  ActionWithValue* action;
+  ActionWithValue* action=nullptr;
 /// Had the value been set
-  bool value_set;
+  bool value_set=false;
 /// The value of the quantity
   std::vector<double> data;
 /// The force acting on this quantity
   std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
-  bool hasForce;
+  bool hasForce=false;
 /// The way this value is used in the code
 /// normal = regular value that is determined during calculate
 /// constant = constnt value that is determined during startup and that doesn't change during simulation
@@ -85,23 +86,26 @@ private:
 /// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
   std::vector<std::size_t> shape;
 /// Does this quanity have derivatives
-  bool hasDeriv;
+  bool hasDeriv=true;
 /// Variables for storing data
-  unsigned bufstart, ngrid_der;
-  std::size_t ncols;
+  unsigned bufstart=0;
+  unsigned ngrid_der=0;
+  std::size_t ncols=0;
 /// If we are storing a matrix is it symmetric?
-  bool symmetric;
+  bool symmetric=false;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
   std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
-  enum {unset,periodic,notperiodic} periodicity;
+  enum {unset,periodic,notperiodic} periodicity=unset;
 /// Various quantities that describe the domain of this value
-  std::string str_min, str_max;
-  double min,max;
-  double max_minus_min;
-  double inv_max_minus_min;
+  std::string str_min;
+  std::string str_max;
+  double min=0.0;
+  double max=0.0;
+  double max_minus_min=0.0;
+  double inv_max_minus_min=0.0;
 /// Is the derivative of this quantity zero when the value is zero
-  bool derivativeIsZeroWhenValueIsZero;
+  bool derivativeIsZeroWhenValueIsZero=false;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
@@ -110,9 +114,9 @@ public:
 /// A constructor that can be used to make Vectors of values
   Value();
 /// A constructor that can be used to make Vectors of named values
-  explicit Value(const std::string& name);
+  explicit Value(const std::string& valname);
 /// A constructor that is used throughout the code to setup the value poiters
-  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<std::size_t>&ss=std::vector<std::size_t>());
+  Value(ActionWithValue* av, const std::string& valname, const bool withderiv,const std::vector<std::size_t>&ss=std::vector<std::size_t>());
 /// Set the shape of the Value
   void setShape( const std::vector<std::size_t>&ss );
 /// Set the value of the function
@@ -126,7 +130,11 @@ public:
 /// Get the location of this element of in the store
   std::size_t getIndexInStore( const std::size_t& ival ) const ;
 /// Get the value of the function
-  double get( const std::size_t& ival=0, const bool trueind=true ) const;
+  double get( const std::size_t ival=0, const bool trueind=true ) const;
+/// A variant of get() for checking that at least one of the values on the row is !=0
+  bool checkValueIsActiveForMMul(std::size_t task) const;
+/// A variant of get() for assigning data to an external view (assuems trueind=false), returns the number of arguments assigned
+  std::size_t assignValues(View<double> target);
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -165,6 +173,8 @@ public:
   void addForce(double f);
 /// Add some force on the ival th component of this value
   void addForce( const std::size_t& ival, double f, const bool trueind=true );
+  ///Add forces from a vector, imples trueInd=false and retunrs the number of forces assigned
+  std::size_t addForces(View<const double> f);
 /// Get the value of the force on this colvar
   double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
@@ -226,7 +236,7 @@ public:
 ///
   unsigned getRowLength( const std::size_t& irow ) const ;
 ///
-  unsigned getRowIndex( const std::size_t& irow, const std::size_t& jind ) const ;
+  unsigned getRowIndex( std::size_t irow, std::size_t jind ) const ;
 ///
   void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
 ///
@@ -482,7 +492,7 @@ unsigned Value::getRowLength( const std::size_t& irow ) const {
 }
 
 inline
-unsigned Value::getRowIndex( const std::size_t& irow, const std::size_t& jind ) const {
+unsigned Value::getRowIndex(const std::size_t irow, const std::size_t jind ) const {
   plumed_dbg_massert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow], "failing in value " + name );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
 }

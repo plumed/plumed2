@@ -25,6 +25,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include <limits>
 #include <vector>
 
 namespace PLMD {
@@ -35,8 +36,9 @@ class ActionWithVector:
   public ActionWithArguments {
   friend class Value;
 private:
+  static constexpr int NoMasksUsed =-1;
 /// Check if there is a mask value
-  int nmask;
+  int nmask=NoMasksUsed;
 /// The list of active tasks
   std::vector<unsigned> active_tasks;
 protected:
@@ -63,13 +65,13 @@ public:
 /// This is so we can parallelize with GPU
   virtual void getInputData( std::vector<double>& inputdata ) const ;
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
-  virtual void transferStashToValues( const std::vector<double>& stash );
+  virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash );
 /// This is so we can transfer forces from the values to the parallel task manager
-  virtual void transferForcesToStash( std::vector<double>& stash ) const ;
+  virtual void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const ;
 /// Get the number of forces to use
   unsigned getNumberOfForceDerivatives() const ;
 /// Apply the forces on this data
-  virtual void apply();
+  void apply() override;
 /// Apply the forces on non-zero rank objects
   virtual void applyNonZeroRankForces( std::vector<double>& outforces ) {
     plumed_error();
@@ -84,7 +86,7 @@ int ActionWithVector::getNumberOfMasks() const {
 inline
 void ActionWithVector::ignoreMaskArguments() {
   plumed_assert( nmask<=0 );
-  nmask=-1;
+  nmask=NoMasksUsed;
 }
 
 }

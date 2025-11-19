@@ -67,7 +67,7 @@ void Bias::apply() {
     }
   }
 
-  f.assign(noa,0.0);
+  accumForces.assign(noa,0.0);
   forces.resize(noa);
 
   bool at_least_one_forced=false;
@@ -75,8 +75,20 @@ void Bias::apply() {
     if(getPntrToComponent(i)->applyForce(forces)) {
       at_least_one_forced=true;
       for(unsigned j=0; j<noa; j++) {
-        f[j]+=forces[j];
+        accumForces[j]+=forces[j];
       }
+      //it may be faster like this(needs some measurements):
+      //(it produces ~20 less asm instructions)
+      /*
+      auto aF = accumForces.begin();
+      auto f = forces.begin();
+      //accumForces and forces have the same size:
+      while (aF!=accumForces.end()) {
+        *aF+=*f;
+        ++aF;
+        ++f;
+      }
+      */
     }
   }
 
@@ -86,7 +98,7 @@ void Bias::apply() {
 
   if(at_least_one_forced)
     for(unsigned i=0; i<noa; ++i) {
-      getPntrToArgument(i)->addForce(f[i]);
+      getPntrToArgument(i)->addForce(accumForces[i]);
     }
 
 }

@@ -28,8 +28,6 @@
 #include "core/PlumedMain.h"
 #include "tools/Units.h"
 #include "tools/CheckInRange.h"
-#include <cstdio>
-#include <memory>
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include "xdrfile/xdrfile_xtc.h"
@@ -415,7 +413,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
 
     std::vector<std::string> argnames;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) {
+      if( getPntrToArgument(i)->getRank()!=1 ) {
         error("arguments for xyz output should be vectors");
       }
       if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) {
@@ -436,23 +434,23 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   }
 
   requestAtoms(atoms, false);
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+  auto* infomoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( infomoldat ) {
+    log<<"  MOLINFO DATA found with label " <<infomoldat->getLabel()<<", using proper atom names\n";
     names.resize(atoms.size());
     for(unsigned i=0; i<atoms.size(); i++)
-      if(atoms[i].index()<moldat->getPDBsize()) {
-        names[i]=moldat->getAtomName(atoms[i]);
+      if(atoms[i].index()<infomoldat->getPDBsize()) {
+        names[i]=infomoldat->getAtomName(atoms[i]);
       }
     residueNumbers.resize(atoms.size());
     for(unsigned i=0; i<residueNumbers.size(); ++i)
-      if(atoms[i].index()<moldat->getPDBsize()) {
-        residueNumbers[i]=moldat->getResidueNumber(atoms[i]);
+      if(atoms[i].index()<infomoldat->getPDBsize()) {
+        residueNumbers[i]=infomoldat->getResidueNumber(atoms[i]);
       }
     residueNames.resize(atoms.size());
     for(unsigned i=0; i<residueNames.size(); ++i)
-      if(atoms[i].index()<moldat->getPDBsize()) {
-        residueNames[i]=moldat->getResidueName(atoms[i]);
+      if(atoms[i].index()<infomoldat->getPDBsize()) {
+        residueNames[i]=infomoldat->getResidueName(atoms[i]);
       }
   }
 }
@@ -494,6 +492,8 @@ void DumpAtoms::update() {
                 lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
                );
     }
+    const std::string posFormatString="%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz;
+    const std::string extraFormatString=" "+fmt_xyz;
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       for(unsigned j=0; j<getNumberOfArguments(); ++j) {
         args[j] = getPntrToArgument(j)->get(i);
@@ -502,28 +502,35 @@ void DumpAtoms::update() {
         continue;
       }
       const char* defname="X";
-      const char* name=defname;
-      if(names.size()>0)
+      const char* atomName=defname;
+      if(names.size()>0) {
         if(names[i].length()>0) {
-          name=names[i].c_str();
+          atomName=names[i].c_str();
         }
-      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      }
+      of.printf(posFormatString.c_str(),
+                atomName,
+                lenunit*getPosition(i)(0),
+                lenunit*getPosition(i)(1),
+                lenunit*getPosition(i)(2));
       for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-        of.printf((" "+fmt_xyz).c_str(), getPntrToArgument(j)->get(i) );
+        of.printf(extraFormatString.c_str(), getPntrToArgument(j)->get(i) );
       }
       of.printf("\n");
     }
   } else if(type=="gro") {
+    const std::string posFormatString="%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n";
+    std::string extraFormatString=" "+fmt_xyz;
     const Tensor & t(getPbc().getBox());
     of.printf("Made with PLUMED t=%f\n",getTime()/getUnits().getTime());
     of.printf("%d\n",getNumberOfAtoms());
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
-      const char* name=defname;
+      const char* atomName=defname;
       unsigned residueNumber=0;
       if(names.size()>0)
         if(names[i].length()>0) {
-          name=names[i].c_str();
+          atomName=names[i].c_str();
         }
       if(residueNumbers.size()>0) {
         residueNumber=residueNumbers[i];
@@ -532,8 +539,8 @@ void DumpAtoms::update() {
       if(residueNames.size()>0) {
         resname=residueNames[i];
       }
-      of.printf(("%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n").c_str(),
-                residueNumber%100000,resname.c_str(),name,getAbsoluteIndex(i).serial()%100000,
+      of.printf(posFormatString.c_str(),
+                residueNumber%100000,resname.c_str(),atomName,getAbsoluteIndex(i).serial()%100000,
                 lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
     of.printf((fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+"\n").c_str(),

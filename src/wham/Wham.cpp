@@ -110,7 +110,7 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit Wham(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() {
+  unsigned getNumberOfDerivatives() override {
     return 0;
   }
   void prepare() override ;

@@ -126,7 +126,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   // Get the number of arguments
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) {
+  if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
     nargs = nargs - nmasks;
   }
 
@@ -206,7 +206,7 @@ template <class T>
 void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) {
+  if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
     nargs = nargs - nmasks;
   }
 

@@ -270,7 +270,7 @@ public:
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() override;
   void turnOnDerivatives() override ;
-  void transferStashToValues( const std::vector<double>& stash ) override ;
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
   void prepare() override ;
   void calculate() override ;
   static void performTask( std::size_t task_index,
@@ -369,7 +369,7 @@ void Neighbors<T>::performTask( std::size_t task_index,
 }
 
 template <class T>
-void Neighbors<T>::transferStashToValues( const std::vector<double>& stash ) {
+void Neighbors<T>::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   Value* myval = getPntrToComponent(0);
   // All values are set equal to one
   for(unsigned i=0; i<myval->getNumberOfStoredValues(); ++i) {

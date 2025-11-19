@@ -45,7 +45,7 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
 class RequiredMatrixElementsUpdater {
   RequiredMatrixElements& outmat;
 public:
-  RequiredMatrixElementsUpdater( RequiredMatrixElements& outmat ) : outmat(outmat) {}
+  RequiredMatrixElementsUpdater( RequiredMatrixElements& mat ) : outmat(mat) {}
   ~RequiredMatrixElementsUpdater() {
     outmat.update();
   }
@@ -57,7 +57,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   unsigned lstart = myval->getShape()[0];
   if( getNumberOfMasks()>0 ) {
     Value* maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( maskarg->getNumberOfColumns() );
     }
     for(unsigned i=0; i<lstart; ++i) {
@@ -68,7 +68,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       }
     }
   } else if ( diagzero ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1]-1 );
     }
     for(unsigned i=0; i<lstart; ++i) {
@@ -82,45 +82,55 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       }
     }
   } else {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1] );
     }
   }
   Value* mycomp = getPntrToComponent(0);
   outmat.ncols = mycomp->getNumberOfColumns();
-  outmat.bookeeping.resize( mycomp->matrix_bookeeping.size() );
-  for(unsigned i=0; i<outmat.bookeeping.size(); ++i) {
-    outmat.bookeeping[i] = mycomp->matrix_bookeeping[i];
+  outmat.resize( mycomp->matrix_bookeeping.size() );
+  for(unsigned i=0; i<outmat.size(); ++i) {
+    outmat[i] = mycomp->matrix_bookeeping[i];
   }
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
   }
 }
 
-void ActionWithMatrix::transferStashToValues( const std::vector<double>& stash ) {
+void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
+  unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
-  unsigned m=0, n=0, nrows = getPntrToComponent(0)->getShape()[0];
+  unsigned nrows = partialTaskList.size();
   for(unsigned i=0; i<nrows; ++i) {
-    for(unsigned j=0; j<ncols; ++j) {
-      for(unsigned k=0; k<getNumberOfComponents(); ++k) {
-        getPntrToComponent(k)->set( m, stash[n] );
-        n++;
+    unsigned ncr = getPntrToComponent(0)->getRowLength(partialTaskList[i]);
+#ifndef NDEBUG
+    for(unsigned k=1; k<ncomp; ++k) {
+      plumed_assert( ncr == getPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+    }
+#endif
+    for(unsigned j=0; j<ncr; ++j) {
+      for(unsigned k=0; k<ncomp; ++k) {
+        getPntrToComponent(k)->set( partialTaskList[i]*ncols+j, stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] );
       }
-      m++;
     }
   }
 }
 
-void ActionWithMatrix::transferForcesToStash( std::vector<double>& stash ) const {
+void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
+  unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
-  unsigned m=0, n=0, nrows = getConstPntrToComponent(0)->getShape()[0];
+  unsigned nrows = partialTaskList.size();
   for(unsigned i=0; i<nrows; ++i) {
-    for(unsigned j=0; j<ncols; ++j) {
-      for(unsigned k=0; k<getNumberOfComponents(); ++k) {
-        stash[n] = getConstPntrToComponent(k)->getForce( m );
-        n++;
+    unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
+#ifndef NDEBUG
+    for(unsigned k=1; k<ncomp; ++k) {
+      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+    }
+#endif
+    for(unsigned j=0; j<ncr; ++j) {
+      for(unsigned k=0; k<ncomp; ++k) {
+        stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
       }
-      m++;
     }
   }
 }

@@ -201,7 +201,7 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
   func.coeff_poly_v.resize( func.tmom+1 );
   func.update();
 
-  for(unsigned i=0; i<=func.tmom; ++i) {
+  for(int i=0; i<=func.tmom; ++i) {
     func.normaliz[i] = ( i%2==0 ? 1.0 : -1.0 )
                        * sqrt( (2*func.tmom+1)
                                * factorial(func.tmom-i)
@@ -260,7 +260,7 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
 
   std::string num;
   for(int i=-func.tmom; i<=func.tmom; ++i) {
-    Tools::convert(fabs(i),num);
+    Tools::convert(std::abs(i),num);
     if( i<0 ) {
       options.multipleValuesForEachRegisteredComponent.push_back( "-n" + num );
     } else if( i>0 ) {
@@ -337,7 +337,7 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
   // Do stuff for all other m values
   const unsigned imbase = 3*func.tmom+1;
   double pref = -1.0;
-  for(unsigned m=1; m<=func.tmom; ++m) {
+  for(int m=1; m<=func.tmom; ++m) {
     // Calculate Legendre Polynomial
     poly_ass=func.deriv_poly( m, args[2]*dleninv, dpoly_ass );
     // Real and imaginary parts of z
@@ -409,7 +409,7 @@ double SphericalHarmonic::deriv_poly( const unsigned m,
   df=0.0;
   for(int i=m+1; i<=tmom; ++i) {
     fact = 1.0;
-    for(unsigned j=i-m+1; j<=i; ++j) {
+    for(int j=i-m+1; j<=i; ++j) {
       fact *= j;
     }
     res += coeff_poly[i]*fact*xi;

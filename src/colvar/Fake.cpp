@@ -83,7 +83,7 @@ ColvarFake::ColvarFake(const ActionOptions&ao):
   if(period.size()!=0) {
     plumed_massert(static_cast<unsigned>(getNumberOfComponents()*2)==period.size(),"the periodicty should coincide with the number of components");
     if(comps.size()!=0) {
-      for(int i=0; i<getNumberOfComponents(); i++) {
+      for(unsigned i=0; i<getNumberOfComponents(); i++) {
         std::string pp=comps[i];
         if(period[i*2]!="none" && period[i*2+1]!="none" ) {
           componentIsPeriodic(pp,period[i*2],period[i*2+1]);
@@ -100,7 +100,7 @@ ColvarFake::ColvarFake(const ActionOptions&ao):
     }
   } else {
     if(comps.size()!=0) {
-      for(int i=0; i<getNumberOfComponents(); i++) {
+      for(unsigned i=0; i<getNumberOfComponents(); i++) {
         componentIsNotPeriodic(getPntrToComponent(i)->getName());
       }
     } else {
