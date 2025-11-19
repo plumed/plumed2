@@ -115,6 +115,7 @@ LinkCells::CellCollection LinkCells::getCollection( View<const Vector> pos,
   resetCollection(collection,pos, indices);
   return collection;
 }
+
 void LinkCells::resetCollection(LinkCells::CellCollection &collection,
                                 View<const Vector> pos,
                                 View<const unsigned> indices) {
@@ -193,6 +194,7 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
         int zval=LINKC_PBC(nz,ncells[2])*nstride[2];
 
         unsigned mybox=xval+yval+zval;
+        plumed_assert(mybox < getNumberOfCells());
         bool added=false;
         for(unsigned k=0; k<ncells_required; ++k) {
           if( mybox==cells_required[k] ) {

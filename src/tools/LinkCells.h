@@ -50,7 +50,14 @@ public:
     unsigned getMaximimumCombination(unsigned numCells=27) const;
     ///returns a const view of the on indexes the given cell
     inline View<const unsigned> getCellIndexes(const unsigned cellno) const {
-      return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
+      return {lcell_lists.data()+lcell_starts[cellno],lcell_tots[cellno]};
+      // this will make the debug test fail in the case of
+      // a series of empty cells in the end of the array,
+      // because lcell_starts[cellno] will be==cell_lists.size()
+      // the option abuve have the same problem, but it is masked
+      // with pointer arithmetic
+      // and should be ignored by the size passed being 0
+      //return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
     }
   };
 private:
