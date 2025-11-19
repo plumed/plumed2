@@ -160,43 +160,77 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   //nt is unused if openmp is not declared
   const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
 #endif //_OPENMP
-  switch (style_) {
-  //*
-  case NNStyle::TwoList: {
-    LinkCells cells(comm);
-    cells.setCutoff(distance_);
+  if(useCellList_) {
+    switch (style_) {
+    case NNStyle::TwoList: {
+      LinkCells cells(comm);
+      cells.setCutoff(distance_);
 
-    std::vector<unsigned> indexesForCells(fullatomlist_.size());
-    std::iota(indexesForCells.begin(),indexesForCells.end(),0);
-    cells.setupCells(make_const_view(positions),*pbc_);
-    auto listA = cells.getCollection(View{positions.data(),nlist0_},
-                                     View<const unsigned> {indexesForCells.data(),nlist0_});
-    auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-                                     View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
-    plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
-        << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
-    //#pragma omp parallel num_threads(nt)
-    std::vector<unsigned> cells_required(27);
-    for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-      auto atomsInC= listA.getCellIndexes(c);
-      if(atomsInC.size()>0) {
-        auto cell = cells.findMyCell(c);
-        unsigned ncells_required=0;
-        cells.addRequiredCells(cell,ncells_required, cells_required);
-        for (auto A : atomsInC) {
-          for (unsigned cb=0; cb <ncells_required ; ++cb) {
-            for (auto B : listB.getCellIndexes(cells_required[cb])) {
-              neighbors_.push_back({A,B});
+      std::vector<unsigned> indexesForCells(fullatomlist_.size());
+      std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+      cells.setupCells(make_const_view(positions),*pbc_);
+      auto listA = cells.getCollection(View{positions.data(),nlist0_},
+                                       View<const unsigned> {indexesForCells.data(),nlist0_});
+      auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                       View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+      plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
+          << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
+      //#pragma omp parallel num_threads(nt)
+      std::vector<unsigned> cells_required(27);
+      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
+        auto atomsInC= listA.getCellIndexes(c);
+        if(atomsInC.size()>0) {
+          auto cell = cells.findMyCell(c);
+          unsigned ncells_required=0;
+          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+          for (auto A : atomsInC) {
+            for (unsigned cb=0; cb <ncells_required ; ++cb) {
+              for (auto B : listB.getCellIndexes(cells_required[cb])) {
+                neighbors_.push_back({A,B});
+              }
             }
           }
         }
+
+
       }
-
-
     }
-  }
-  break;//*/
-  default: {
+    break;//*/
+    case NNStyle::SingleList: {
+      LinkCells cells(comm);
+      cells.setCutoff(distance_);
+
+      std::vector<unsigned> indexesForCells(fullatomlist_.size());
+      std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+      cells.setupCells(make_const_view(positions),*pbc_);
+      auto listA = cells.getCollection(positions,indexesForCells);
+      //#pragma omp parallel num_threads(nt)
+      std::vector<unsigned> cells_required(27);
+      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
+        auto atomsInC= listA.getCellIndexes(c);
+        if(atomsInC.size()>0) {
+          auto cell = cells.findMyCell(c);
+          unsigned ncells_required=0;
+          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+          for (auto A : atomsInC) {
+            for (unsigned cb=0; cb <ncells_required ; ++cb) {
+              for (auto B : listA.getCellIndexes(cells_required[cb])) {
+                if (B>A) {
+                  neighbors_.push_back({A,B});
+                }
+              }
+            }
+          }
+        }
+
+
+      }
+    }
+    break;
+    case NNStyle::Pair:
+      plumed_error() << "Cell list should not be active with a Pair NL";
+    }
+  } else {
     const double d2=distance_*distance_;
     // check if positions array has the correct length
     plumed_assert(positions.size()==fullatomlist_.size());
@@ -239,38 +273,36 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       comm.Sum(&local_nl_size[0], stride);
     }
     int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
-    if(tot_size==0) {
-      setRequestList();
-      return;
-    }
-    // merge
-    std::vector<unsigned> merge_nl(tot_size, 0);
-    // calculate vector of displacement
-    std::vector<int> disp(stride);
-    disp[0] = 0;
-    int rank_size = 0;
-    for(unsigned i=0; i<stride-1; ++i) {
-      rank_size += local_nl_size[i];
-      disp[i+1] = rank_size;
-    }
-    // Allgather neighbor list
-    if(comm.initialized()&&!serial_) {
-      comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL),
-                      local_nl_size[rank],
-                      &merge_nl[0],
-                      &local_nl_size[0],
-                      &disp[0]);
-    } else {
-      merge_nl = local_flat_nl;
-    }
-    // resize neighbor stuff
-    neighbors_.resize(tot_size/2);
-    for(int i=0; i<tot_size/2; i++) {
-      unsigned j=2*i;
-      neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+    if(tot_size!=0) {
+      // merge
+      std::vector<unsigned> merge_nl(tot_size, 0);
+      // calculate vector of displacement
+      std::vector<int> disp(stride);
+      disp[0] = 0;
+      int rank_size = 0;
+      for(unsigned i=0; i<stride-1; ++i) {
+        rank_size += local_nl_size[i];
+        disp[i+1] = rank_size;
+      }
+      // Allgather neighbor list
+      if(comm.initialized()&&!serial_) {
+        comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL),
+                        local_nl_size[rank],
+                        &merge_nl[0],
+                        &local_nl_size[0],
+                        &disp[0]);
+      } else {
+        merge_nl = local_flat_nl;
+      }
+      // resize neighbor stuff
+      neighbors_.resize(tot_size/2);
+      for(int i=0; i<tot_size/2; i++) {
+        unsigned j=2*i;
+        neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+      }
     }
   }
-  }
+
   setRequestList();
 }
 

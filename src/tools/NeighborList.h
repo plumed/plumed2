@@ -43,6 +43,7 @@ private:
   bool reduced=false;
   bool serial_;
   bool do_pbc_;
+  bool useCellList_=false;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;

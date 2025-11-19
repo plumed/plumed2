@@ -23,6 +23,7 @@
 #define __PLUMED_tools_LinkCells_h
 
 #include <limits>
+#include <memory>
 #include <vector>
 #include <array>
 #include "View.h"
@@ -116,6 +117,12 @@ public:
 // Returns a collection on the positions and the passed indexes, needs setupCells to be launched in advance
   CellCollection getCollection(View<const Vector> pos,
                                View<const unsigned> indices );
+  template <typename T,typename Y>
+  inline CellCollection getCollection(const T& pos,
+                                      const Y& indices) {
+    return getCollection(make_const_view(pos),
+                         make_const_view(indices));
+  }
 /// Take three indices and return the index of the corresponding cell
   unsigned convertIndicesToIndex( std::array<unsigned,3> cellCoord) const;
 /// Find the cell index in which this position is contained
