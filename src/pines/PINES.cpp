@@ -54,6 +54,11 @@ struct AtomNumberLess {
   }
 };
 
+struct AtomPair {
+  AtomNumber alpha_group;
+  AtomNumber beta_group;
+};
+
 class PINES      : public PLMD::colvar::Colvar {
 private:
   PLMD::Stopwatch timer;
@@ -81,27 +86,27 @@ private:
   std::vector<bool> stale_tolerance;
   PDB mypdb;
   std::vector<std::string> block_params;
-  std::vector<std::vector<std::vector<AtomNumber> > > block_groups_atom_list;
+  std::vector<std::array<std::vector<AtomNumber>,2> > block_groups_atom_list;
   std::vector<int> block_lengths;
   std::vector<int> Buffer_Pairs;
   std::vector<int> tot_num_pairs;
-  std::vector<std::vector<std::vector<bool> > > input_filters;
+  std::vector<std::array<std::array<bool,3>,2> > input_filters;
   std::vector<double> delta_pd;
   std::vector<double> r_tolerance;
   std::vector<std::vector<Vector> > PL_atoms_ref_coords;
-  std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > > Exclude_Pairs;
-  std::vector<std::vector<std::vector<std::string> > > Name_list;
-  std::vector<std::vector<std::vector<AtomNumber> > > ID_list;
-  std::vector<std::vector<std::vector<int> > > ResID_list;
+  std::vector<std::vector<AtomPair > > Exclude_Pairs;
+  std::vector<std::array<std::vector<std::string> >,2> Name_list;
+  std::vector<std::array<std::vector<AtomNumber> >,2> ID_list;
+  std::vector<std::array<std::vector<int> >,2> ResID_list;
   std::vector<char> all_g1g2_pairs;
-  std::vector<std::vector<std::pair<double, std::pair<AtomNumber,AtomNumber> > > > vecMaxHeapVecs;
-  std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > > latched_pairs;
-  std::vector<char> preupdated_block;
+  std::vector<std::vector<std::pair<double, AtomPair > > > vecMaxHeapVecs;
+  std::vector<std::vector<AtomPair > > latched_pairs;
+  std::vector<int> preupdated_block;
   std::vector<bool> isFirstBuild;
 
   bool atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const std::string& atom_name);
-  void buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap);
-  void updateBlockPairList(int n, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap);
+  void buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, AtomPair>>& heap);
+  void updateBlockPairList(int n, std::vector<std::pair<double, AtomPair>>& heap);
   double calculateDistance(int n, const AtomNumber& ind0, const AtomNumber& ind1, const PDB& mypdb);
   std::ofstream log;
   bool ensureBlockUpdated(int n);
@@ -116,12 +121,12 @@ public:
   //~PINES();
   // active methods:
   struct MinCompareDist {
-    bool operator()(const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p1, const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p2) {
+    bool operator()(const std::pair<double, AtomPair>& p1, const std::pair<double, AtomPair>& p2) {
       return p1.first < p2.first; // Min heap
     }
   };
   struct MaxCompareDist {
-    bool operator()(const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p1, const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p2) {
+    bool operator()(const std::pair<double, AtomPair>& p1, const std::pair<double, AtomPair>& p2) {
       return p1.first > p2.first; // Max heap
     }
   };
@@ -199,11 +204,11 @@ bool PINES::atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const st
   return id_check && res_check && name_check;
 }
 
-void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap) {
+void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, AtomPair>>& heap) {
   //logMsg("Building Pair List for block: " + std::to_string(n), "buildMaxHeapVecBlock");
 
   int nthreads = omp_get_max_threads();
-  std::vector<std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>> thread_heaps(nthreads);
+  std::vector<std::vector<std::pair<double, AtomPair>>> thread_heaps(nthreads);
 
   //logMsg("isFirstBuild[n]? " + std::to_string(isFirstBuild[n]), "buildMaxHeapVecBlock");
 
@@ -221,7 +226,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
     Vector Pos0 = isFirstBuild[n] ? mypdb.getPosition(ind0) : getPosition(atom_ind_hashmap[ind0.index()]);
     int tid = omp_get_thread_num();
     auto& local_heap = thread_heaps[tid];
-    std::unordered_set<std::pair<AtomNumber, AtomNumber>, pair_hash> local_unique_pairs;
+    std::unordered_set<AtomPair, pair_hash> local_unique_pairs;
     // logMsg("ind0: " + std::to_string(ind0.index()), "buildMaxHeapVecBlock");
     // logMsg("Num pairs in heap: " + std::to_string(block_groups_atom_list[n][0].size()), "buildMaxHeapVecBlock");
     // logMsg(Pos0, "buildMaxHeapVecBlock");
@@ -255,7 +260,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
   }
 
   // Flatten all thread-local heaps into one vector
-  std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>> all_pairs;
+  std::vector<std::pair<double, AtomPair>> all_pairs;
   for (auto& th : thread_heaps) {
     all_pairs.insert(all_pairs.end(), th.begin(), th.end());
   }
@@ -276,8 +281,8 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
   listreduced[n].clear();
   std::set<AtomNumber, AtomNumberLess> uniqueAtoms;
   for (const auto& pair : heap) {
-    uniqueAtoms.insert(pair.second.first);  // Atom1
-    uniqueAtoms.insert(pair.second.second); // Atom2
+    uniqueAtoms.insert(pair.second.alpha_group);  // Atom1
+    uniqueAtoms.insert(pair.second.beta_group); // Atom2
   }
   for (const auto& atom : uniqueAtoms) {
     listreduced[n].push_back(atom);
@@ -299,7 +304,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
 
 }
 
-void PINES::updateBlockPairList(int n, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap) {
+void PINES::updateBlockPairList(int n, std::vector<std::pair<double, AtomPair>>& heap) {
   // This is separate from staleness, which triggers a refresh instead of an update.
   // This is simply to update the pair distances in the MaxHeap/Pairlist with the new atom positions
   // and rearrange the ordering in the MaxHeap/Pairlisat
@@ -309,8 +314,8 @@ void PINES::updateBlockPairList(int n, std::vector<std::pair<double, std::pair<A
 
   #pragma omp parallel for
   for (int i = 0; i < tot_num_pairs[n]; i++) {
-    AtomNumber ind0 = heap[i].second.first;
-    AtomNumber ind1 = heap[i].second.second;
+    AtomNumber ind0 = heap[i].second.alpha_group;
+    AtomNumber ind1 = heap[i].second.beta_group;
     auto it0 = atom_ind_hashmap.find(ind0.index());
     auto it1 = atom_ind_hashmap.find(ind1.index());
     plumed_massert(it0 != atom_ind_hashmap.end() && it1 != atom_ind_hashmap.end(),"updateBlockPairList: atom index not requested");
@@ -335,38 +340,33 @@ void PINES::resizeAllContainers(int N) {
   nstride.assign(N,1);
   steps_since_update.assign(N, 0);
   block_params.resize(N);
-  block_groups_atom_list.resize(N);
-  block_lengths.resize(N);
-  Buffer_Pairs.resize(N);
-  tot_num_pairs.resize(N);
+  block_groups_atom_list.assign(N, { {}, {} });
+  block_lengths.assign(N, 0);
+  Buffer_Pairs.assign(N, 0);
+  tot_num_pairs.assign(N, 0);
   Exclude_Pairs.resize(N);
-  all_g1g2_pairs.resize(N);
+  all_g1g2_pairs.assign(N,false);
   vecMaxHeapVecs.resize(N);
-  PIV.resize(N);
+  PIV.assign(N, 0.0);
   listall.resize(N);
   listreduced.resize(N);
-  stale_tolerance.resize(N);
-  r00.resize(N);
+  stale_tolerance.assign(N,false);
+  r00.assign(N, 0.0);
   sw.resize(N);
   sfs.resize(N);
   delta_pd.assign(N, 0.0);
   r_tolerance.assign(N, 0.0);
   PL_atoms_ref_coords.resize(N);
-  input_filters.resize(N);
-  ID_list.resize(N);
-  ResID_list.resize(N);
-  Name_list.resize(N);
+  input_filters.assign(N, { {}, {} });
+  ID_list.assign(N, { {}, {} });
+  ResID_list.assign(N, { {}, {} });
+  Name_list.assign(N, { {}, {} });
   atom_ind_hashmap.clear();
   latched_pairs.resize(N);
   isFirstBuild.assign(N,true);
 
   // Per-block inner structures
   for (int n = 0; n < N; n++) {
-    block_groups_atom_list[n].resize(2);
-    ID_list[n].resize(2);
-    ResID_list[n].resize(2);
-    Name_list[n].resize(2);
-    input_filters[n].resize(2);
     PL_atoms_ref_coords[n].resize(0);  // will be filled per atom if needed
   }
 
@@ -431,53 +431,45 @@ void PINES::logMsg(const Vector& vec, const std::string& section) {
 }
 
 PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
-  N_Blocks(1),
-  total_PIV_length(1),
-  driver_mode(false),
-  freeze_selection(false),
-  last_step_latched(-1),
+  N_Blocks(),
+  total_PIV_length(),
+  driver_mode(),
+  freeze_selection(),
+  last_step_latched(),
   inited_step(-1),
-  steps_since_update(std::vector<int>(1)),
-  nstride(std::vector<int>(1,10)),
-  ref_file(std::string()),
+  steps_since_update(),
+  nstride(),
+  ref_file(),
   sfs(),
-  sw(std::vector<string>(1)),
-  r00(std::vector<double>(1)),
-  PIV(std::vector<std::vector<double>>(1)),
-  ann_deriv(std::vector<std::vector<Vector> >(1)),
-  listall(std::vector<std::vector<AtomNumber> >()),
-  listreduced(std::vector<std::vector<AtomNumber> >()),
-  listreducedall(std::set<AtomNumber, AtomNumberLess>()),
-  listreducedall_vec(std::vector<AtomNumber>()),
+  sw(),
+  r00(),
+  PIV(),
+  ann_deriv(),
+  listall(),
+  listreduced(),
+  listreducedall(),
+  listreducedall_vec(),
   atom_ind_hashmap(),
-  stale_tolerance(std::vector<bool>(1,false)),
+  stale_tolerance(),
   mypdb(),
-  block_params(std::vector<string>(1)),
-  block_groups_atom_list(std::vector<std::vector<std::vector<AtomNumber> > >()),
-  block_lengths(std::vector<int>(1,1)),
-  Buffer_Pairs(std::vector<int>(1,0)),
-  tot_num_pairs(std::vector<int>(1,1)),
-  input_filters(
-    std::vector<std::vector<std::vector<bool> > >(
-      1,  // outermost dimension
-      std::vector<std::vector<bool>>(
-        1,  // middle dimension
-        std::vector<bool>(1, false)  // innermost dimension with value `false`
-      )
-    )
-  ),
-  delta_pd(std::vector<double>()),
-  r_tolerance(std::vector<double>()),
+  block_params(),
+  block_groups_atom_list(),
+  block_lengths(),
+  Buffer_Pairs(),
+  tot_num_pairs(),
+  input_filters(),
+  delta_pd(),
+  r_tolerance(),
   PL_atoms_ref_coords(),
-  Exclude_Pairs(std::vector<std::vector<std::pair<AtomNumber, AtomNumber> > >()),
-  Name_list(std::vector<std::vector<std::vector<string> > >()),
-  ID_list(std::vector<std::vector<std::vector<AtomNumber> > >()),
-  ResID_list(std::vector<std::vector<std::vector<int> > >()),
-  all_g1g2_pairs(std::vector<char>()),
+  Exclude_Pairs(),
+  Name_list(),
+  ID_list(),
+  ResID_list(),
+  all_g1g2_pairs(),
   vecMaxHeapVecs(),
-  latched_pairs(std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > >()),
-  preupdated_block(std::vector<char>()),
-  isFirstBuild(std::vector<bool>()) {
+  latched_pairs(),
+  preupdated_block(),
+  isFirstBuild() {
   log.open("pines_debug.log", std::ios::out);
   if (!log.is_open()) {
     error("Failed to open debug log file.");
@@ -572,7 +564,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
         AtomNumber atom2;
         atom2.setIndex(std::stoi(ex_pairs_n[i+1]));
 
-        std::pair<AtomNumber, AtomNumber> excluded_pair;
+        AtomPair excluded_pair;
         excluded_pair = {atom1, atom2};
         Exclude_Pairs[n].push_back(excluded_pair);
       }
@@ -653,10 +645,6 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       all_g1g2_pairs[n] = 0;
     }
   }
-
-  r00.resize(N_Blocks);
-  sw.resize(N_Blocks);
-  sfs.resize(N_Blocks);
 
   for (unsigned n = 0; n < N_Blocks; n++)
     if (!parseNumbered("SWITCH", n + 1, sw[n])) {
@@ -811,8 +799,8 @@ void PINES::calculate() {
       logMsg("***************N: "+std::to_string(n)+"***************\n","bigCalc");
       for (int i = 0; i < block_lengths[n]; ++i) {
         const auto& pr = latched_pairs[n][i];
-        int a0 = atom_ind_hashmap[pr.first.index()];
-        int a1 = atom_ind_hashmap[pr.second.index()];
+        int a0 = atom_ind_hashmap[pr.alpha_group.index()];
+        int a1 = atom_ind_hashmap[pr.beta_group.index()];
         Vector r0 = getPosition(a0);
         Vector r1 = getPosition(a1);
         double mod_dist = pbcDistance(r0, r1).modulo();
@@ -852,8 +840,8 @@ void PINES::calculate() {
         //timer.stop("sfs");
         //logMsg("PIV Values: PIV[" + std::to_string(n) + "][" + std::to_string(i) + "]= " + std::to_string(PIV[n][i]), "Calculate");
         //timer.start("distCalc");
-        local_aid0 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.first.index()];
-        local_aid1 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.second.index()];
+        local_aid0 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.alpha_group.index()];
+        local_aid1 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.beta_group.index()];
         Vector Pos0 = getPosition(local_aid0);
         Vector Pos1 = getPosition(local_aid1);
         Vector dr_dcoord = pbcDistance(Pos0, Pos1) / vecMaxHeapVecs[n][piv_ind].first;
