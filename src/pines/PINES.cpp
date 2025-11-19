@@ -14,11 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PINES.h"
-
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <cstdio>
 #include <unordered_map>
 #include <set>
@@ -29,10 +28,109 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <vector>
 
+#include "core/ActionWithVirtualAtom.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "tools/Stopwatch.h"
+#include "tools/PDB.h"
+#include "tools/Vector.h"
+#include "tools/AtomNumber.h"
+#include "tools/SwitchingFunction.h"
+#include "tools/Communicator.h"
+#include "tools/Units.h"
+
+#include "colvar/Colvar.h"
+#include "core/ActionRegister.h"
+
+
 using namespace std;
 
 namespace PLMD {
 namespace pines {
+
+struct AtomNumberLess {
+  bool operator()(const AtomNumber& a, const AtomNumber& b) const {
+    return a.index() < b.index();
+  }
+};
+
+class PINES      : public PLMD::colvar::Colvar {
+private:
+  PLMD::Stopwatch timer;
+  int N_Blocks;
+  int total_PIV_length;
+  int inited_step;
+  int last_step_latched;
+  bool driver_mode;
+  bool freeze_selection;
+  std::vector<int> steps_since_update;
+  std::vector<int> nstride;
+  std::string ref_file;
+  std::vector<SwitchingFunction> sfs;
+  std::vector<std::string> sw;
+  std::vector<double> r00;
+  std::vector<std:: vector<double> > PIV;
+  std::vector<std:: vector<Vector> > ann_deriv;
+
+  std::vector<std:: vector<AtomNumber> > listall;
+  std::vector<std:: vector<AtomNumber> > listreduced;
+  std::set<AtomNumber, AtomNumberLess> listreducedall;
+  std::vector<AtomNumber> listreducedall_vec;
+  std::unordered_map<int,int> atom_ind_hashmap;
+
+  std::vector<bool> stale_tolerance;
+  PDB mypdb;
+  std::vector<std::string> block_params;
+  std::vector<std::vector<std::vector<AtomNumber> > > block_groups_atom_list;
+  std::vector<int> block_lengths;
+  std::vector<int> Buffer_Pairs;
+  std::vector<int> tot_num_pairs;
+  std::vector<std::vector<std::vector<bool> > > input_filters;
+  std::vector<double> delta_pd;
+  std::vector<double> r_tolerance;
+  std::vector<std::vector<Vector> > PL_atoms_ref_coords;
+  std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > > Exclude_Pairs;
+  std::vector<std::vector<std::vector<std::string> > > Name_list;
+  std::vector<std::vector<std::vector<AtomNumber> > > ID_list;
+  std::vector<std::vector<std::vector<int> > > ResID_list;
+  std::vector<char> all_g1g2_pairs;
+  std::vector<std::vector<std::pair<double, std::pair<AtomNumber,AtomNumber> > > > vecMaxHeapVecs;
+  std::vector<std::vector<std::pair<AtomNumber,AtomNumber> > > latched_pairs;
+  std::vector<char> preupdated_block;
+  std::vector<bool> isFirstBuild;
+
+  bool atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const std::string& atom_name);
+  void buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap);
+  void updateBlockPairList(int n, std::vector<std::pair<double, std::pair<AtomNumber, AtomNumber>>>& heap);
+  double calculateDistance(int n, const AtomNumber& ind0, const AtomNumber& ind1, const PDB& mypdb);
+  std::ofstream log;
+  bool ensureBlockUpdated(int n);
+  void latchFromCurrentHeaps();
+  void logMsg(const std::string& msg, const std::string& section);
+  void logMsg(const Vector& vec, const std::string& section);
+  void resizeAllContainers(int N);
+
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit PINES(const ActionOptions&);
+  //~PINES();
+  // active methods:
+  struct MinCompareDist {
+    bool operator()(const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p1, const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p2) {
+      return p1.first < p2.first; // Min heap
+    }
+  };
+  struct MaxCompareDist {
+    bool operator()(const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p1, const std::pair<double, std::pair<AtomNumber, AtomNumber>>& p2) {
+      return p1.first > p2.first; // Max heap
+    }
+  };
+
+  virtual void calculate();
+  void checkFieldsAllowed() {}
+  // -- SD prepare to requestAtoms during simulation
+  void prepare() override;
+};
 //+PLUMEDOC PINES
 //Documentation to be added.
 //+ENDPLUMEDOC PINES
@@ -234,8 +332,8 @@ double PINES::calculateDistance(int n, const AtomNumber& ind0, const AtomNumber&
 
 void PINES::resizeAllContainers(int N) {
   // Outer containers
-  nstride.resize(N,1);
-  steps_since_update.resize(N, 0);
+  nstride.assign(N,1);
+  steps_since_update.assign(N, 0);
   block_params.resize(N);
   block_groups_atom_list.resize(N);
   block_lengths.resize(N);
@@ -251,8 +349,8 @@ void PINES::resizeAllContainers(int N) {
   r00.resize(N);
   sw.resize(N);
   sfs.resize(N);
-  delta_pd.resize(N, 0.0);
-  r_tolerance.resize(N, 0.0);
+  delta_pd.assign(N, 0.0);
+  r_tolerance.assign(N, 0.0);
   PL_atoms_ref_coords.resize(N);
   input_filters.resize(N);
   ID_list.resize(N);
@@ -260,7 +358,7 @@ void PINES::resizeAllContainers(int N) {
   Name_list.resize(N);
   atom_ind_hashmap.clear();
   latched_pairs.resize(N);
-  isFirstBuild.resize(N,true);
+  isFirstBuild.assign(N,true);
 
   // Per-block inner structures
   for (int n = 0; n < N; n++) {
@@ -275,7 +373,7 @@ void PINES::resizeAllContainers(int N) {
   // Final 3D input_filters init
   for (int n = 0; n < N; n++) {
     for (int g = 0; g < 2; g++) {
-      input_filters[n][g].resize(3, false);  // [ID, ResID, Name]
+      input_filters[n][g].assign(3, false);  // [ID, ResID, Name]
     }
   }
 }

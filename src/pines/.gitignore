@@ -3,7 +3,6 @@
 !/.gitignore
 !/*.c
 !/*.cpp
-!/*.h
 !/Makefile
 !/README
 !/COPYRIGHT
