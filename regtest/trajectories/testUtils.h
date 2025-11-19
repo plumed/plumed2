@@ -4,6 +4,8 @@
 #include <fstream>
 #include <algorithm>
 #include <iterator>
+#include <vector>
+#include <string>
 
 ///A very barebone tee implementation
 ///Useful for runnig make test on the fly with
@@ -42,4 +44,17 @@ public:
     return *this;
   }
 };
+
+namespace PLMDTests {
+
+template <typename T>
+struct namedVal {
+  std::string name;
+  T val;
+};
+
+template <typename T>
+using testcases=std::vector<namedVal<T>>;
+
+}
 #endif //__PLUMED_TEST_MACROS
