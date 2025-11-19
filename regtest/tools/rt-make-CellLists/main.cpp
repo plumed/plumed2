@@ -5,7 +5,9 @@
 #include "plumed/tools/AtomDistribution.h"
 
 #include "testUtils.h"
+#ifdef USE_MPI
 #include "mpi.h"
+#endif //USE_MPI
 
 #include <array>
 #include <fstream>
@@ -25,18 +27,22 @@ void testRequiredCells (PLMD::Communicator &comm);
 void bench (PLMD::Communicator &comm);
 
 int main(int argc,char**argv) {
+  PLMD::Communicator comm;
+#ifdef USEMPI
   MPI_Init(&argc,&argv);
   {
     MPI_Comm c;
     MPI_Comm_dup(MPI_COMM_WORLD,&c);
-    PLMD::Communicator comm;
     comm.Set_comm(&c);
+#endif //USEMPI
     test(comm);
     testIndexes(comm);
     testRequiredCells(comm);
     //bench(comm);
+#ifdef USEMPI
   }
   MPI_Finalize();
+#endif //USEMPI
 }
 
 void testIndexes (PLMD::Communicator &comm) {
