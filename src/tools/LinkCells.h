@@ -76,7 +76,7 @@ private:
 public:
 ///
   explicit LinkCells( Communicator& comm );
-/// Have the link cells been enabled sf
+/// Have the link cells been enabled
   bool enabled() const ;
 /// Set the value of the cutoff
   void setCutoff( double lcut );
@@ -85,7 +85,7 @@ public:
 /// Get the total number of link cells
   unsigned getNumberOfCells() const ;
 ///Get the number of cells per dimension
-  std::array<unsigned,3> getCellLimits() const ;
+  const std::array<unsigned,3>& getCellLimits() const ;
 /// Get the number of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
 ///setups the cells
@@ -165,7 +165,7 @@ unsigned LinkCells::getNumberOfCells() const {
 }
 
 inline
-std::array<unsigned,3> LinkCells::getCellLimits() const {
+const std::array<unsigned,3>& LinkCells::getCellLimits() const {
   return ncells;
 }
 }
