@@ -24,6 +24,7 @@ using namespace PLMD;
 void test (PLMD::Communicator &comm);
 void testIndexes (PLMD::Communicator &comm);
 void testRequiredCells (PLMD::Communicator &comm);
+void testWithEmptyCells (PLMD::Communicator &comm);
 void bench (PLMD::Communicator &comm);
 
 int main(int argc,char**argv) {
@@ -37,6 +38,7 @@ int main(int argc,char**argv) {
 #endif //USEMPI
     test(comm);
     testIndexes(comm);
+    testWithEmptyCells(comm);
     testRequiredCells(comm);
     //bench(comm);
 #ifdef USEMPI
@@ -188,6 +190,41 @@ void testRequiredCells (PLMD::Communicator &comm) {
         ofs << " " << cells_required[i];
       }
       ofs << "\n";
+    }
+  }
+}
+
+void testWithEmptyCells (PLMD::Communicator &comm) {
+  tee ofs ("EmptyCells");
+  std::vector<Vector> atoms(1, {1,1,1});
+  std::vector<unsigned> indices(1,0);
+  Pbc pbc;
+  pbc.setBox(
+  Tensor{
+    10.0,  0.0,  0.0,
+    0.0, 10.0,  0.0,
+    0.0,  0.0, 10.0
+  });
+  LinkCells cells(comm);
+  //setting the cutoff as the original cell for sake of simplicity
+  cells.setCutoff(1.0);
+  cells.setupCells(atoms,pbc);
+  //ofs <<"Ncells: "<< cells.getNumberOfCells()<<"\n";
+  //ofs << atoms[0] << "\n";
+  //ofs <<"atomGroup: cells\n";
+  auto collection = cells.getCollection(atoms,indices);
+//ofs << "cells: " ;
+//ofs.dump(cells.getCellLimits()) << "\n";
+//ofs << "mycell: ";
+//ofs.dump(cells.findMyCell(atoms[0])) << "\n";
+//ofs << "mycell: " <<cells.findCell(atoms[0]) << "\n";
+  for(unsigned i=0; i< cells.getNumberOfCells(); ++i) {
+//this small test actually checks that there is not out of bond error
+    //in getCellIndexes, when creating the view
+    auto c = collection.getCellIndexes(i);
+    if (c.size() > 0) {
+      ofs << "there should be a single atom in cell ";
+      ofs << i << " (size=" << c.size() << "): " << c[0] << "\n";
     }
   }
 }
