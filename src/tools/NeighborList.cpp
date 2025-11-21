@@ -47,9 +47,11 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
                            const Pbc& pbc,
                            Communicator& cm,
                            const double distance,
-                           const unsigned stride)
+                           const unsigned stride,
+                           const bool doCells)
   : serial_(serial),
     do_pbc_(do_pbc),
+    useCellList_(doCells),
     style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
     pbc_(&pbc),
     comm(cm),
@@ -64,6 +66,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
   if(style_ != NNStyle::Pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
+    plumed_assert(!useCellList_ ) << "You can't use the cell implementation in Pair mode";
     plumed_assert(nlist0_==nlist1_)
         << "when using PAIR option, the two groups should have the same number"
         " of elements\n" << "the groups you specified have size "
@@ -79,9 +82,11 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
                            const Pbc& pbc,
                            Communicator& cm,
                            const double distance,
-                           const unsigned stride)
+                           const unsigned stride,
+                           const bool doCells)
   : serial_(serial),
     do_pbc_(do_pbc),
+    useCellList_(doCells),
     style_(NNStyle::SingleList),
     pbc_(&pbc),
     comm(cm),

@@ -72,14 +72,16 @@ public:
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                bool serial,
                bool do_pbc,
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
   std::vector<PLMD::AtomNumber>& getFullAtomList();

@@ -32,6 +32,7 @@ void CoordinationBase::registerKeywords( Keywords& keys ) {
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
   keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.addFlag("NLISTCELLS",false,"Use a neighbor list to speed up the calculation - use the cell list implementation instead of the classical one");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
   keys.add("atoms","GROUPA","First list of atoms");
@@ -60,10 +61,16 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
   parseFlag("PAIR",dopair);
 
 // neighbor list stuff
-  bool doneigh=false;
+  bool doneigh_classic=false;
   double nl_cut=0.0;
   int nl_st=0;
-  parseFlag("NLIST",doneigh);
+  parseFlag("NLIST",doneigh_classic);
+  bool doneighcells=false;
+  parseFlag("NLISTCELLS",doneighcells);
+  //temporary message
+  plumed_assert(!(doneighcells && doneigh_classic)) << "Please activate only one of the two version of the NL";
+  plumed_assert(!(doneighcells && dopair)) << "Pair is not compatible with the CELLS implementation of the NL";
+  bool doneigh=doneighcells||doneigh_classic;
   if(doneigh) {
     parse("NL_CUTOFF",nl_cut);
     if(nl_cut<=0.0) {
@@ -79,13 +86,13 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
   setNotPeriodic();
   if(gb_lista.size()>0) {
     if(doneigh) {
-      nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);
+      nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st,doneighcells);
     } else {
       nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);
     }
   } else {
     if(doneigh) {
-      nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st);
+      nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st,doneighcells);
     } else {
       nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);
     }
