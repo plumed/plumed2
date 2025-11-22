@@ -1,5 +1,5 @@
 This directory contains many subdirectories
- 
+
 lib/ after compilation contains all plumed files which should be in the path
 maketools/ contains some tool necessary for compilation
 

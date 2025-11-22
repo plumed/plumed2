@@ -17,12 +17,12 @@ requirements:
     - {{ compiler('c') }}
     - make
   host:
-    - python >=3.7,<3.11
+    - python
     - pip
     - cython
   run:
     - plumed
-    - python >=3.7,<3.11
+    - python
 
 test:
   imports:
