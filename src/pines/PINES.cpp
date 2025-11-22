@@ -45,7 +45,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/ActionRegister.h"
 
 
-using namespace std;
 
 namespace PLMD {
 namespace pines {
