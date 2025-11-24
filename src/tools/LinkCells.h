@@ -75,11 +75,12 @@ private:
 /// The number of cells in each direction
   std::array<unsigned,3> ncells{0,0,0};
 /// The number of cells to stride through to get the link cells
-  std::array<unsigned,3> nstride{0,0,0};
+  std::array<unsigned,3> nstride{1,0,0};
 /// Work vector with the list of cells each atom is inside
   std::vector<unsigned> allcells;
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
+  void createCells(const PLMD::Tensor&);
 public:
 ///
   explicit LinkCells( Communicator& comm );
@@ -95,6 +96,16 @@ public:
   const std::array<unsigned,3>& getCellLimits() const ;
 /// Get the number of atoms in the cell that contains the most atoms
   unsigned getMaxInCell() const ;
+/// Sets up the cells ignoring the pbcs
+///
+/// This creates an orthogonal box that encloses all the atoms
+  void setupCells( View<const Vector> pos);
+  template <typename T>
+  inline void setupCells( const T& pos ) {
+    setupCells(make_const_view(pos));
+  }
+/// Sets up the cells using the box stored in the Pbc object
+  void setupCells( const Pbc& pbc );
 ///setups the cells
 ///
 /// Usually it only uses the pbcs

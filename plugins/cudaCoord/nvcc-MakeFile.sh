@@ -20,12 +20,13 @@ fi
 #pendantic adds a unuseful FOR EACH line with
 #"" warning: style of line directive is a GCC extension"
 {
-  grep CXXFLAGS Make.tmp |
-    sed -e 's/-f/-Xcompiler -f/g' \
+  grep CXXFLAGS Make.tmp \
+    | sed -E -e 's/-f([a-zA-Z-]*)\>/-Xcompiler -f\1/g' \
+      -e 's/-gdwarf/-Xcompiler -gdwarf/g' \
       -e 's/-pedantic//g' \
       -e 's/-W/-Xcompiler -W/g'
-  grep -eDYNAMIC_LIBS -eLDFLAGS Make.tmp |
-    sed -e 's/-rdynamic/-Xcompiler -rdynamic/g' \
+  grep -eDYNAMIC_LIBS -eLDFLAGS Make.tmp \
+    | sed -e 's/-rdynamic/-Xcompiler -rdynamic/g' \
       -e 's/-Wl,/-Xlinker /g' \
       -e 's/-f/-Xcompiler -f/g'
   #prints the rest of the file

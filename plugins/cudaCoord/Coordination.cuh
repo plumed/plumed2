@@ -29,14 +29,18 @@
 #include <iostream>
 #include <limits>
 #include <numeric>
+#include <ostream>
+#include <random>
 
 using std::cerr;
 
 
 #define hdbg(...) __LINE__ << ":" #__VA_ARGS__ " = " << (__VA_ARGS__) << '\n'
-// #define vdbg(...) std::cerr << __LINE__ << ":" << #__VA_ARGS__ << " " << (__VA_ARGS__) << '\n'
 //#define vdbg(...) std::cerr << hdbg(__VA_ARGS__)
 #define vdbg(...)
+
+//#define dprintf(...) printf(__VA_ARGS__)
+#define dprintf(...)
 
 namespace PLMD {
 namespace GPU {
@@ -52,6 +56,18 @@ template <typename calculateFloat> struct rationalSwitchParameters {
   int mm = 12;
   bool calcSquared=false;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const rationalSwitchParameters<T>& rsp) {
+  os << "dmaxSQ: "      << rsp.dmaxSQ << "\n";
+  os << "invr0_2: "     << rsp.invr0_2 << "\n";
+  os << "d0: "          << rsp.d0 << "\n";
+  os << "stretch: "     << rsp.stretch << "\n";
+  os << "nn: "          << rsp.nn << "\n";
+  os << "mm: "          << rsp.mm << "\n";
+  os << "calcSquared: " << ((rsp.calcSquared)?"true":"false") << "\n";
+  return os;
+}
 
 template <typename T> struct invData {
   T val = 1.0;
@@ -70,6 +86,14 @@ template <typename calculateFloat> struct ortoPBCs {
   invData<calculateFloat> Y{1.0};
   invData<calculateFloat> Z{1.0};
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const ortoPBCs<T>& opc) {
+  os << "X: " << opc.X.val << " " << opc.X.inv << "\n";
+  os << "Y: " << opc.Y.val << " " << opc.Y.inv << "\n";
+  os << "Z: " << opc.Z.val << " " << opc.Z.inv << "\n";
+  return os;
+}
 
 template <typename calculateFloat>
 __device__ calculateFloat pbcClamp (calculateFloat x) {
@@ -194,6 +218,7 @@ __device__ __forceinline__ calculateFloat calculateSqr (
   calculateFloat &dfunc) {
   calculateFloat result = 0.0;
   dfunc = 0.0;
+  dprintf("distancesqr %f\n",distancesq);
   if (distancesq < switchingParameters.dmaxSQ) {
     if(switchingParameters.calcSquared)  {
       const calculateFloat rdist_2 = distancesq * switchingParameters.invr0_2;

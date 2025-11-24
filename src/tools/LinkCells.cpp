@@ -22,6 +22,7 @@
 #include "LinkCells.h"
 #include "Communicator.h"
 #include "Exception.h"
+#include "Tensor.h"
 #include "Tools.h"
 #include "View.h"
 #include <algorithm>
@@ -45,6 +46,42 @@ double LinkCells::getCutoff() const {
   return link_cutoff;
 }
 
+void LinkCells::setupCells(View<const Vector> pos) {
+
+  nopbc=true;
+  Tensor box;
+  box.zero();
+  Vector minp, maxp;
+  minp = maxp = pos[0];
+  for(unsigned k=0; k<3; ++k) {
+    for(unsigned i=1; i<pos.size(); ++i) {
+      if( pos[i][k]>maxp[k] ) {
+        maxp[k] = pos[i][k];
+      }
+      if( pos[i][k]<minp[k] ) {
+        minp[k] = pos[i][k];
+      }
+    }
+    if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) {
+      box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+    } else {
+      box[k][k] = maxp[k] - minp[k] + 1;
+    }
+    origin[k] = ( minp[k] + maxp[k] ) / 2;
+  }
+  createCells(box);
+}
+
+void LinkCells::setupCells(const Pbc& pbc ) {
+
+  nopbc=false;
+
+  auto box = pbc.getBox();
+  auto determinant = box.determinant();
+  plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+  createCells(box);
+}
+
 void LinkCells::setupCells(View<const Vector> pos,
                            const Pbc& pbc ) {
   auto box = pbc.getBox();
@@ -52,50 +89,32 @@ void LinkCells::setupCells(View<const Vector> pos,
       box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 &&
       box(2,0)==0.0 && box(2,1)==0.0 && box(2,2)==0.0) {
     // Create an orthorhombic box around the atomic positions that encompasses every atomic position if there are no pbc
-    Vector minp, maxp;
-    minp = maxp = pos[0];
-    for(unsigned k=0; k<3; ++k) {
-      for(unsigned i=1; i<pos.size(); ++i) {
-        if( pos[i][k]>maxp[k] ) {
-          maxp[k] = pos[i][k];
-        }
-        if( pos[i][k]<minp[k] ) {
-          minp[k] = pos[i][k];
-        }
-      }
-      if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) {
-        box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
-      } else {
-        box[k][k] = maxp[k] - minp[k] + 1;
-      }
-      origin[k] = ( minp[k] + maxp[k] ) / 2;
-    }
-    nopbc=true;
-    // Setup the pbc object by copying it from action if the Pbc were set
+    setupCells(pos);
   } else {
-    auto determinant = box.determinant();
-    nopbc=false;
-    plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+    // Setup the pbc object by copying it from action if the Pbc were set
+    setupCells(pbc);
   }
+}
+
+void LinkCells::createCells(const PLMD::Tensor& box) {
   mypbc.setBox( box );
-  {
 // This is the reciprocal lattice
 // notice that reciprocal.getRow(0) is a vector that is orthogonal to b and c
 // This allows to use linked cells in non orthorhomic boxes
-    Tensor reciprocal(transpose(mypbc.getInvBox()));
-    ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
-    if( ncells[0]==0 ) {
-      ncells[0]=1;
-    }
-    ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
-    if( ncells[1]==0 ) {
-      ncells[1]=1;
-    }
-    ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
-    if( ncells[2]==0 ) {
-      ncells[2]=1;
-    }
+  const auto reciprocal = transpose(mypbc.getInvBox());
+  ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
+  if( ncells[0]==0 ) {
+    ncells[0]=1;
   }
+  ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
+  if( ncells[1]==0 ) {
+    ncells[1]=1;
+  }
+  ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
+  if( ncells[2]==0 ) {
+    ncells[2]=1;
+  }
+
   // Setup the strides
   nstride[0]=1;
   nstride[1]=ncells[0];

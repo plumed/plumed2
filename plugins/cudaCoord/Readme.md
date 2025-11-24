@@ -7,6 +7,13 @@ This is the optimized version of the lesson that I presented in the [plumed-scho
 The files `cudaHelpers.cuh` and `cudaHelpers.cu` contains a few support functions for helping in interfacing `PLMD::Vector` and `PLMD::Tensor` with Cuda's thrust,
 along with the reduction functions baked with Cuda's cub building blocks and their drivers.
 
+>[!WARNING]
+>If the number of atoms is too big to be stored in the shared memory for the calculations, plumed will stop the calculation with an errori
+>the error looks like  `the shared memory asked exceed the limit for this GPU:`
+>We are currently working on a solution for this
+>
+> A workaround is reducing the size of the cutoff of the neigbor list
+
 ### Compile
 
 
