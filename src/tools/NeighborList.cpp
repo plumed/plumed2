@@ -165,14 +165,14 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
 #endif //_OPENMP
   if(useCellList_) {
+    std::vector<unsigned> indexesForCells(fullatomlist_.size());
+    std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+    LinkCells cells(comm);
+    cells.setCutoff(distance_);
+    cells.setupCells(make_const_view(positions),*pbc_);
+
     switch (style_) {
     case NNStyle::TwoList: {
-      LinkCells cells(comm);
-      cells.setCutoff(distance_);
-
-      std::vector<unsigned> indexesForCells(fullatomlist_.size());
-      std::iota(indexesForCells.begin(),indexesForCells.end(),0);
-      cells.setupCells(make_const_view(positions),*pbc_);
       auto listA = cells.getCollection(View{positions.data(),nlist0_},
                                        View<const unsigned> {indexesForCells.data(),nlist0_});
       auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
@@ -195,18 +195,10 @@ void NeighborList::update(const std::vector<Vector>& positions) {
             }
           }
         }
-
-
       }
     }
     break;//*/
     case NNStyle::SingleList: {
-      LinkCells cells(comm);
-      cells.setCutoff(distance_);
-
-      std::vector<unsigned> indexesForCells(fullatomlist_.size());
-      std::iota(indexesForCells.begin(),indexesForCells.end(),0);
-      cells.setupCells(make_const_view(positions),*pbc_);
       auto listA = cells.getCollection(positions,indexesForCells);
       //#pragma omp parallel num_threads(nt)
       std::vector<unsigned> cells_required(27);
@@ -226,8 +218,6 @@ void NeighborList::update(const std::vector<Vector>& positions) {
             }
           }
         }
-
-
       }
     }
     break;
