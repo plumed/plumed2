@@ -86,8 +86,8 @@ jobs:
               mdtraj \
               MDAnalysis \
               "torch>=2.7" \
-              "metatomic-torch>=0.1.3,<0.2" \
-              "featomic-torch==0.7.0"
+              "metatomic-torch>=0.1.6,<0.2" \
+              "featomic-torch>=0.7.0,<0.8"
 
         # torch 2.7 above is the first one to use cxx11 ABI for the PyPI wheels
 

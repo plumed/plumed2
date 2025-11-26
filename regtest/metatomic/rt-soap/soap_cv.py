@@ -44,10 +44,14 @@ class SOAP_CV(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-        if "features" not in outputs:
+        if "features/missing" in outputs:
+            # only there for testing purposes
+            raise ValueError("This output is not supported")
+
+        if "features/soap" not in outputs:
             return {}
 
-        if not outputs["features"].per_atom:
+        if not outputs["features/soap"].per_atom:
             raise ValueError("per_atom=False is not supported")
 
         if len(systems[0]) == 0:
@@ -75,7 +79,7 @@ class SOAP_CV(torch.nn.Module):
             blocks=[block],
         )
 
-        return {"features": cv}
+        return {"features/soap": cv}
 
 
 cv = SOAP_CV(species=[1, 6, 7, 8])
@@ -83,7 +87,10 @@ cv.eval()
 
 
 capabilities = ModelCapabilities(
-    outputs={"features": ModelOutput(per_atom=True)},
+    outputs={
+        "features/soap": ModelOutput(per_atom=True, description="SOAP PCA features"),
+        "features/missing": ModelOutput(per_atom=True, description="Test features"),
+    },
     interaction_range=4.0,
     supported_devices=["cpu"],
     length_unit="nm",

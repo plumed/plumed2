@@ -1,6 +1,7 @@
 soap: METATOMIC ...
       MODEL=soap_cv.pt
       EXTENSIONS_DIRECTORY=extensions
+      VARIANT=soap
 
       SPECIES1=1-26
       SPECIES2=27-62
@@ -11,6 +12,7 @@ soap: METATOMIC ...
 soap_selected: METATOMIC ...
       MODEL=soap_cv.pt
       EXTENSIONS_DIRECTORY=extensions
+      VARIANT=soap
 
       SPECIES1=1-26
       SPECIES2=27-62

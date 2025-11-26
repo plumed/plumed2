@@ -989,8 +989,8 @@ if test $libmetatomic = true ; then
     #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
     #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
-    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 6
+    #error "this code is only compatible with metatomic-torch >=0.1.6,<0.2"
     #endif
     int main() {
       metatomic_torch::version();
