@@ -158,7 +158,7 @@ void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
             "The m parameter of the switching function; 0 implies 2*NN");
   keys.add ("compulsory", "R_0", "The r_0 parameter of the switching function");
   keys.add (
-    "compulsory", "D_MAX", "0.0", "The cut off of the switching function");
+    "compulsory", "D_MAX", "-1.0", "The cut off of the switching function");
   keys.add (
     "compulsory", "D_0", "0.0", "The value of d_0 in the switching function");
 }
@@ -918,11 +918,13 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     switchingParameters.stretch = 1.0;
     switchingParameters.shift = 0.0;
 
-    calculateFloat dmax = 0.0;
+    calculateFloat dmax = -1.0;
     parse ("D_MAX", dmax);
-    if (dmax == 0.0) { // TODO:check for a "non present flag"
+    calculateFloat d0 = 0.0;
+    parse ("D_0", d0);
+    if (dmax <= 0.0) { // TODO:check for a "non present flag"
       // set dmax to where the switch is ~0.00001
-      dmax = r0_ * std::pow (0.00001, 1.0 / (nn_ - mm_));
+      dmax = d0 + r0_ * std::pow (0.00001, 1.0 / (nn_ - mm_));
       // ^This line is equivalent to:
       // SwitchingFunction tsw;
       // tsw.set(nn_,mm_,r0_,0.0);
@@ -930,8 +932,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
       // in plain plumed
     }
 
-    calculateFloat d0 = 0.0;
-    parse ("D_0", d0);
     switchingParameters.calcSquared= (! d0 > calculateFloat(0.0) ) && (nn_%2 == 0 && mm_%2 == 0);
     switchingParameters.d0=d0;
     switchingParameters.dmaxSQ = dmax * dmax;
@@ -943,10 +943,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     }
     constexpr bool dostretch = true;
     if (dostretch && mpiActive) {
-      std::vector<calculateFloat> inputs = {0.0, dmax * invr0};
+      std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
 
-      thrust::device_vector<calculateFloat> inputZeroMax (2);
-      inputZeroMax = inputs;
+      thrust::device_vector<calculateFloat> inputZeroMax = inputs;
       thrust::device_vector<calculateFloat> dummydfunc (2);
       thrust::device_vector<calculateFloat> resZeroMax (2);
 
