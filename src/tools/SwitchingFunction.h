@@ -152,6 +152,8 @@ public:
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;
+/// Return the settings of the switching function
+  const switchContainers::Data& get_data() const;
 };
 
 /// \ingroup TOOLBOX
@@ -198,6 +200,8 @@ public:
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;
+/// Return the settings of the switching function
+  const switchContainers::Data& get_data() const;
   void toACCDevice() const;
   void removeFromACCDevice() const;
 };
