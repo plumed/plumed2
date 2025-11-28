@@ -165,10 +165,14 @@ constexpr inline int min_cell(int celn, const int ncells, const bool usePBC) {
   celn+=(ncells<2)?0:-1;
   return (usePBC) ? celn : std::max(celn,0);
 }
+
 constexpr inline int max_cell(int celn, const int ncells, const bool usePBC) {
-  celn+=(ncells<3)?1:2;
+  //if we are not using pbcs the minimum is 0 and not -1 (if there are only 2 cells)
+  //so the maximum should be 2, so that cell 0 can check cell 1
+  celn+=(ncells<3 && usePBC)?1:2;
   return (usePBC) ? celn : std::min(celn,ncells);
 }
+
 void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
                                   unsigned& ncells_required,
                                   std::vector<unsigned>& cells_required,

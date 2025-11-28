@@ -24,6 +24,7 @@ using namespace PLMD;
 void test (PLMD::Communicator &comm);
 void testIndexes (PLMD::Communicator &comm);
 void testRequiredCells (PLMD::Communicator &comm);
+void testRequiredCellsNotOrtho(PLMD::Communicator &comm);
 void testWithEmptyCells (PLMD::Communicator &comm);
 void bench (PLMD::Communicator &comm);
 
@@ -40,6 +41,7 @@ int main(int argc,char**argv) {
     testIndexes(comm);
     testWithEmptyCells(comm);
     testRequiredCells(comm);
+    testRequiredCellsNotOrtho(comm);
     //bench(comm);
 #ifdef USEMPI
   }
@@ -96,6 +98,51 @@ void testIndexes (PLMD::Communicator &comm) {
   }
 }
 
+PLMDTests::testcases<std::array<unsigned,3>> createCellTestCases(const LinkCells& cells) {
+  PLMDTests::testcases<std::array<unsigned,3>> celPos= {{"vertex",std::array<unsigned,3>{0,0,0}}};
+  auto last_cell = cells.getCellLimits();
+  if (cells.getNumberOfCells() > 1) {
+    //the opposite end
+    last_cell = cells.getCellLimits();
+    last_cell[0]--;
+    last_cell[1]--;
+    last_cell[2]--;
+    celPos.push_back({"opposite vertex",last_cell});
+  }
+  if (cells.getNumberOfCells() > 8) {
+//in the middle of the cell
+    last_cell = cells.getCellLimits();
+    last_cell[0]/=2;
+    last_cell[1]/=2;
+    last_cell[2]/=2;
+    celPos.push_back({"middle",last_cell});
+//in the middle of an edge
+    last_cell = cells.getCellLimits();
+    last_cell[0]=0;
+    last_cell[1]/=2;
+    last_cell[2]=0;
+    celPos.push_back({"edge",last_cell});
+//in the middle of an edge
+    last_cell = cells.getCellLimits();
+    last_cell[0]/=2;
+    last_cell[1]=0;
+    last_cell[2]--;
+    celPos.push_back({"edge opposite",last_cell});
+// in the middle of a face
+    last_cell = cells.getCellLimits();
+    last_cell[0]/=2;
+    last_cell[1]=0;
+    last_cell[2]/=2;
+    celPos.push_back({"face",last_cell});
+// in the middle of a face
+    last_cell = cells.getCellLimits();
+    last_cell[0]--;
+    last_cell[1]/=2;
+    last_cell[2]/=2;
+    celPos.push_back({"face opposite",last_cell});
+  }
+  return celPos;
+}
 
 void testRequiredCells (PLMD::Communicator &comm) {
   Pbc pbc;
@@ -116,46 +163,12 @@ void testRequiredCells (PLMD::Communicator &comm) {
     ofs << "####cutoff (in cell-size): " << cutoff/pbc.getBox()[0][0] << "\n";
     cells.setCutoff(cutoff);
     cells.setupCells(atoms,pbc);
-    ofs << "NUMBER of cells: " <<  cells.getNumberOfCells() << "\n";
-    PLMDTests::testcases<std::array<unsigned,3>> celPos= {{"vertex",std::array<unsigned,3>{0,0,0}}};
-    if (cells.getNumberOfCells() > 8) {
-      //the opposite end
-      auto last_cell = cells.getCellLimits();
-      last_cell[0]--;
-      last_cell[1]--;
-      last_cell[2]--;
-      celPos.push_back({"opposite vertex",last_cell});
-//in the middle of the cell
-      last_cell = cells.getCellLimits();
-      last_cell[0]/=2;
-      last_cell[1]/=2;
-      last_cell[2]/=2;
-      celPos.push_back({"middle",last_cell});
-//in the middle of an edge
-      last_cell = cells.getCellLimits();
-      last_cell[0]=0;
-      last_cell[1]/=2;
-      last_cell[2]=0;
-      celPos.push_back({"edge",last_cell});
-//in the middle of an edge
-      last_cell = cells.getCellLimits();
-      last_cell[0]/=2;
-      last_cell[1]=0;
-      last_cell[2]--;
-      celPos.push_back({"edge opposite",last_cell});
-// in the middle of a face
-      last_cell = cells.getCellLimits();
-      last_cell[0]/=2;
-      last_cell[1]=0;
-      last_cell[2]/=2;
-      celPos.push_back({"face",last_cell});
-// in the middle of a face
-      last_cell = cells.getCellLimits();
-      last_cell[0]--;
-      last_cell[1]/=2;
-      last_cell[2]/=2;
-      celPos.push_back({"face opposite",last_cell});
-    }
+    ofs << "NUMBER of cells: " <<  cells.getNumberOfCells()
+        << " (" << cells.getCellLimits()[0]
+        << " " << cells.getCellLimits()[1]
+        << " " << cells.getCellLimits()[2]
+        << ")\n";
+    auto celPos = createCellTestCases(cells);
     for (const auto& [name,cp]: celPos) {
       ncells_required=0;
 
@@ -190,6 +203,96 @@ void testRequiredCells (PLMD::Communicator &comm) {
         ofs << " " << cells_required[i];
       }
       ofs << "\n";
+    }
+  }
+}
+
+void testRequiredCellsNotOrtho (PLMD::Communicator &comm) {
+  Pbc pbc;
+  std::vector<Vector> atoms(1, {0,0,0});
+  tee ofs("outputRequiredCellsNotOrtho");
+  LinkCells cells(comm);
+  PLMDTests::testcases<Tensor> boxes{
+    {
+      "2x6x6",Tensor{
+        2.0, 0.0, 0.0,
+        0.0, 6.0, 0.0,
+        0.0, 0.0, 6.0
+      }
+    },
+    {
+      "6x2x6",Tensor{
+        6.0, 0.0, 0.0,
+        0.0, 2.0, 0.0,
+        0.0, 0.0, 6.0
+      }
+    },
+    {
+      "6x6x2",Tensor{
+        6.0, 0.0, 0.0,
+        0.0, 6.0, 0.0,
+        0.0, 0.0, 2.0
+      }
+    },
+    {
+      "Skwbx",Tensor{
+        6.0, -6.0,  0.0,
+        0.0,  6.0, -6.0,
+        -6.0,  6.0,  6.0
+      }
+    }};
+  for(const auto&[title,box]:boxes) {
+    pbc.setBox(box);
+    std::vector<unsigned> cells_required(27);
+    unsigned ncells_required=0;
+    for( const auto cutoff: {
+           1.616,
+           3.0
+         }) {
+      cells.setCutoff(cutoff);
+      cells.setupCells(atoms,pbc);
+      ofs << "NUMBER of cells: " <<  cells.getNumberOfCells()
+          << " (" << cells.getCellLimits()[0]
+          << " " << cells.getCellLimits()[1]
+          << " " << cells.getCellLimits()[2]
+          << ")\n";
+      ofs << title << ": " << pbc.getBox() << "\n";
+      auto celPos = createCellTestCases(cells);
+      for (const auto& [name,cp]: celPos) {
+        ncells_required=0;
+
+        auto ss= std::ostringstream() ;
+        ss << "[\""<<title<<"\" co=" << cutoff << " -"<<name<<"- {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}" << "] ";
+        //the "header" is useful in undersanding where is the test case that broke the test
+        auto head = ss.str();
+        cells.addRequiredCells(cp,ncells_required, cells_required);
+        ofs <<head<< "Cells Required:" << ncells_required << "\n";
+        //ordering for "test stability"
+        std::sort(cells_required.begin(),cells_required.begin()+ncells_required);
+        ofs <<head<< "Cells:";
+        for (unsigned i=0; i< ncells_required; ++i) {
+          ofs << " " << cells_required[i];
+        }
+        ofs << "\n";
+      }
+      //Now we redo the calculations, but this time with no PBCs
+      for (const auto& [name,cp]: celPos) {
+        ncells_required=0;
+
+        auto ss= std::ostringstream() ;
+        ss << "[\""<<title<<"\" co=" << cutoff << " -"<<name<<"- {"<< cp[0] << ", "<<cp[1] <<", " <<cp[2]<< "}" << " noPBC] ";
+        //the "header" is useful in undersanding where is the test case that broke the test
+        auto head = ss.str();
+        cells.addRequiredCells(cp,ncells_required, cells_required, false);
+        ofs <<head<< "Cells Required:" << ncells_required << "\n";
+        //ordering for "test stability"
+        std::sort(cells_required.begin(),cells_required.begin()+ncells_required);
+        ofs <<head<< "Cells:";
+        for (unsigned i=0; i< ncells_required; ++i) {
+          ofs << " " << cells_required[i];
+        }
+        ofs << "\n";
+      }
     }
   }
 }

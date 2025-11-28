@@ -1,17 +1,21 @@
 ####cutoff (in cell-size): 1
-NUMBER of cells: 1
+NUMBER of cells: 1 (1 1 1)
 [co=10 -vertex- {0, 0, 0}] Cells Required:1
 [co=10 -vertex- {0, 0, 0}] Cells: 0
 [co=10 -vertex- {0, 0, 0} noPBC] Cells Required:1
 [co=10 -vertex- {0, 0, 0} noPBC] Cells: 0
 ####cutoff (in cell-size): 0.5
-NUMBER of cells: 8
+NUMBER of cells: 8 (2 2 2)
 [co=5 -vertex- {0, 0, 0}] Cells Required:8
 [co=5 -vertex- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7
-[co=5 -vertex- {0, 0, 0} noPBC] Cells Required:1
-[co=5 -vertex- {0, 0, 0} noPBC] Cells: 0
+[co=5 -opposite vertex- {1, 1, 1}] Cells Required:8
+[co=5 -opposite vertex- {1, 1, 1}] Cells: 0 1 2 3 4 5 6 7
+[co=5 -vertex- {0, 0, 0} noPBC] Cells Required:8
+[co=5 -vertex- {0, 0, 0} noPBC] Cells: 0 1 2 3 4 5 6 7
+[co=5 -opposite vertex- {1, 1, 1} noPBC] Cells Required:8
+[co=5 -opposite vertex- {1, 1, 1} noPBC] Cells: 0 1 2 3 4 5 6 7
 ####cutoff (in cell-size): 0.3
-NUMBER of cells: 27
+NUMBER of cells: 27 (3 3 3)
 [co=3 -vertex- {0, 0, 0}] Cells Required:27
 [co=3 -vertex- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 [co=3 -opposite vertex- {2, 2, 2}] Cells Required:27
@@ -41,7 +45,7 @@ NUMBER of cells: 27
 [co=3 -face opposite- {2, 1, 1} noPBC] Cells Required:18
 [co=3 -face opposite- {2, 1, 1} noPBC] Cells: 1 2 4 5 7 8 10 11 13 14 16 17 19 20 22 23 25 26
 ####cutoff (in cell-size): 0.2
-NUMBER of cells: 125
+NUMBER of cells: 125 (5 5 5)
 [co=2 -vertex- {0, 0, 0}] Cells Required:27
 [co=2 -vertex- {0, 0, 0}] Cells: 0 1 4 5 6 9 20 21 24 25 26 29 30 31 34 45 46 49 100 101 104 105 106 109 120 121 124
 [co=2 -opposite vertex- {4, 4, 4}] Cells Required:27
