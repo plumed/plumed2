@@ -1197,6 +1197,10 @@ double SwitchingFunction::get_dmax2() const {
   return function->getData().dmax_2;
 }
 
+const switchContainers::Data& SwitchingFunction::get_data() const {
+  return function->getData();
+}
+
 void SwitchingFunctionAccelerable::registerKeywords( Keywords& keys ) {
   SwitchingFunction::registerKeywords(keys);
 }
@@ -1343,6 +1347,9 @@ double SwitchingFunctionAccelerable::get_dmax2() const {
   return switchData.dmax_2;
 }
 
+const switchContainers::Data& SwitchingFunctionAccelerable::get_data() const {
+  return switchData;
+}
 void SwitchingFunctionAccelerable::toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],type)
   switchData.toACCDevice();

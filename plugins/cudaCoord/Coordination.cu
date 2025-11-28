@@ -42,8 +42,35 @@
 #include <cfloat>
 
 #include <iostream>
+#include <utility>
 
 namespace PLMD {
+
+//this trio of things is used to keep the backward compatibility of this:
+//get_data can be used to drop all the weight of setting up the parameter to SwitchingFunction in future iterations
+template<typename, typename = void>
+constexpr bool has_get_data = false;
+
+template<typename T>
+constexpr bool has_get_data <T, std::void_t<decltype(std::declval<T>().get_data())> > = true;
+
+template <typename T>
+std::pair<int,int> getNNandMM(T sf, std::string_view NNs, std::string_view MMs) {
+  int nn_ = 6;
+  int mm_ = 0;
+  if constexpr (has_get_data<T>) {
+    nn_=sf.get_data().nn;
+    mm_=sf.get_data().mm;
+  } else {
+    Tools::parse(NNs,nn_);
+    Tools::parse(MMs,mm_);
+    if (mm_ == 0) {
+      mm_ = 2 * nn_;
+    }
+  }
+  return {nn_,mm_};
+}
+
 namespace colvar {
 //+PLUMEDOC COLVAR CUDACOORDINATION
 /*
@@ -137,7 +164,10 @@ void CudaCoordination<calculateFloat>::setUpPermanentGPUMemory() {
   }
   cudaTrueIndexes = trueIndexes;
 }
-
+constexpr auto NNdefault="6";
+constexpr auto MMdefault="0";
+constexpr auto D_0default="0.0";
+constexpr auto D_MAXdefault="-1.0";
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
   Colvar::registerKeywords (keys);
@@ -151,16 +181,16 @@ void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
                 "the second, etc");
 
   keys.add (
-    "compulsory", "NN", "6", "The n parameter of the switching function ");
+    "compulsory", "NN", NNdefault, "The n parameter of the switching function ");
   keys.add ("compulsory",
             "MM",
-            "0",
+            MMdefault,
             "The m parameter of the switching function; 0 implies 2*NN");
   keys.add ("compulsory", "R_0", "The r_0 parameter of the switching function");
   keys.add (
-    "compulsory", "D_MAX", "0.0", "The cut off of the switching function");
+    "compulsory", "D_MAX", D_MAXdefault, "The cut off of the switching function");
   keys.add (
-    "compulsory", "D_0", "0.0", "The value of d_0 in the switching function");
+    "compulsory", "D_0", D_0default, "The value of d_0 in the switching function");
 }
 
 template <typename calculateFloat>
@@ -897,44 +927,63 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   std::string sw, errors;
 
   {
-    // loading data to the GPU
+    PLMD::SwitchingFunction sf;
+
     int nn_ = 6;
     int mm_ = 0;
-
+    calculateFloat dmax;
+    calculateFloat d0 = 0.0;
     calculateFloat r0_ = 0.0;
-    parse ("R_0", r0_);
-    if (r0_ <= 0.0) {
-      error ("R_0 should be explicitly specified and positive");
-    }
+    std::string dmaxs = "-1.0";
+    parse ("D_MAX", dmaxs);
+    if (dmaxs==D_MAXdefault) {
 
-    parse ("NN", nn_);
-    parse ("MM", mm_);
-    if (mm_ == 0) {
-      mm_ = 2 * nn_;
-    }
+      parse ("R_0", r0_);
+      if (r0_ <= 0.0) {
+        error ("R_0 should be explicitly specified and positive");
+      }
 
+      parse ("NN", nn_);
+      parse ("MM", mm_);
+      if (mm_ == 0) {
+        mm_ = 2 * nn_;
+      }
+      parse ("D_0", d0);
+      sf.set(nn_,mm_,r0_,d0);
+    } else {
+      std::string R_0s="";
+      parse ("R_0", R_0s);
+      if (R_0s=="") {
+        error ("R_0 should be explicitly specified and positive");
+      }
+      std::string switchs="RATIONAL R_0="+R_0s+" D_MAX="+dmaxs;
+#define defParse(pn) std::string pn ## s=pn ## default;\
+      parse(#pn,pn ## s); \
+      if (pn ## s!=pn ## default) {\
+        switchs+=" " #pn "="+pn ## s;\
+      }
+      defParse(NN);
+      defParse(MM);
+      defParse(D_0);
+      std::string errmsg;
+      sf.set(switchs,errmsg);
+      if (errmsg!="") {
+        error(errmsg);
+      }
+      r0_ = sf.get_r0();
+      d0=sf.get_d0();
+      std::tie (nn_,mm_) = getNNandMM(sf,NNs,MMs);
+    }
+    dmax = sf.get_dmax();
+
+    plumed_assert (!(d0<0.0)) << "d0 should be >=0, d0="<<d0;
     switchingParameters.nn = nn_;
     switchingParameters.mm = mm_;
     switchingParameters.stretch = 1.0;
     switchingParameters.shift = 0.0;
-
-    calculateFloat dmax = 0.0;
-    parse ("D_MAX", dmax);
-    if (dmax == 0.0) { // TODO:check for a "non present flag"
-      // set dmax to where the switch is ~0.00001
-      dmax = r0_ * std::pow (0.00001, 1.0 / (nn_ - mm_));
-      // ^This line is equivalent to:
-      // SwitchingFunction tsw;
-      // tsw.set(nn_,mm_,r0_,0.0);
-      // dmax=tsw.get_dmax();
-      // in plain plumed
-    }
-
-    calculateFloat d0 = 0.0;
-    parse ("D_0", d0);
     switchingParameters.calcSquared= (! d0 > calculateFloat(0.0) ) && (nn_%2 == 0 && mm_%2 == 0);
     switchingParameters.d0=d0;
-    switchingParameters.dmaxSQ = dmax * dmax;
+    switchingParameters.dmaxSQ=sf.get_dmax2();
     calculateFloat invr0 = 1.0 / r0_;
     if (switchingParameters.calcSquared) {
       switchingParameters.invr0_2 = invr0 * invr0;
@@ -943,10 +992,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     }
     constexpr bool dostretch = true;
     if (dostretch && mpiActive) {
-      std::vector<calculateFloat> inputs = {0.0, dmax * invr0};
+      std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
 
-      thrust::device_vector<calculateFloat> inputZeroMax (2);
-      inputZeroMax = inputs;
+      thrust::device_vector<calculateFloat> inputZeroMax = inputs;
       thrust::device_vector<calculateFloat> dummydfunc (2);
       thrust::device_vector<calculateFloat> resZeroMax (2);
 
