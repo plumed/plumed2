@@ -27,8 +27,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <utility>
 #include <functional>
 #include <vector>
-#include <tuple>     
-#include <cstddef>  
+#include <tuple>
+#include <cstddef>
 
 #include "core/ActionWithVirtualAtom.h"
 #include "core/ActionWithValue.h"
@@ -54,27 +54,35 @@ struct AtomNumberLess {
     return a.index() < b.index();
   }
 };
- 
+
 struct AtomPair {
-    AtomNumber alpha_group;
-    AtomNumber beta_group;
+  AtomNumber alpha_group;
+  AtomNumber beta_group;
 
-    // equality
-    bool operator==(const AtomPair& o) const noexcept {
-        return alpha_group == o.alpha_group && beta_group == o.beta_group;
-    }
+  // equality
+  bool operator==(const AtomPair& o) const noexcept {
+    return alpha_group == o.alpha_group && beta_group == o.beta_group;
+  }
 
-    // lexicographic ordering for std::set/std::map and sorting
-    bool operator<(const AtomPair& o) const noexcept {
-        return std::tie(alpha_group, beta_group) < std::tie(o.alpha_group, o.beta_group);
-    }
+  // lexicographic ordering for std::set/std::map and sorting
+  bool operator<(const AtomPair& o) const noexcept {
+    return std::tie(alpha_group, beta_group) < std::tie(o.alpha_group, o.beta_group);
+  }
 };
 
 // non-member convenience operators
-inline bool operator!=(const AtomPair& a, const AtomPair& b) noexcept { return !(a == b); }
-inline bool operator>(const AtomPair& a, const AtomPair& b) noexcept  { return b < a; }
-inline bool operator<=(const AtomPair& a, const AtomPair& b) noexcept { return !(b < a); }
-inline bool operator>=(const AtomPair& a, const AtomPair& b) noexcept { return !(a < b); }
+inline bool operator!=(const AtomPair& a, const AtomPair& b) noexcept {
+  return !(a == b);
+}
+inline bool operator>(const AtomPair& a, const AtomPair& b) noexcept  {
+  return b < a;
+}
+inline bool operator<=(const AtomPair& a, const AtomPair& b) noexcept {
+  return !(b < a);
+}
+inline bool operator>=(const AtomPair& a, const AtomPair& b) noexcept {
+  return !(a < b);
+}
 
 
 class PINES      : public PLMD::colvar::Colvar {
