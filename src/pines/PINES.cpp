@@ -368,14 +368,14 @@ void PINES::resizeAllContainers(int N) {
   nstride.assign(N,1);
   steps_since_update.assign(N, 0);
   block_params.resize(N);
-  block_groups_atom_list.assign(N, { {}, {} });
+  block_groups_atom_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ {}, {} });
   block_lengths.assign(N, 0);
   Buffer_Pairs.assign(N, 0);
   tot_num_pairs.assign(N, 0);
   Exclude_Pairs.resize(N);
   all_g1g2_pairs.assign(N,false);
   vecMaxHeapVecs.resize(N);
-  PIV.assign(N, 0.0);
+  PIV.assign(N, std::vector<double>{});
   listall.resize(N);
   listreduced.resize(N);
   stale_tolerance.assign(N,false);
@@ -385,10 +385,10 @@ void PINES::resizeAllContainers(int N) {
   delta_pd.assign(N, 0.0);
   r_tolerance.assign(N, 0.0);
   PL_atoms_ref_coords.resize(N);
-  input_filters.assign(N, { {}, {} });
-  ID_list.assign(N, { {}, {} });
-  ResID_list.assign(N, { {}, {} });
-  Name_list.assign(N, { {}, {} });
+  input_filters.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ {}, {} });
+  ID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ {}, {} });
+  ResID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ {}, {} });
+  Name_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ {}, {} });
   atom_ind_hashmap.clear();
   latched_pairs.resize(N);
   isFirstBuild.assign(N,true);
@@ -401,7 +401,7 @@ void PINES::resizeAllContainers(int N) {
   // Final 3D input_filters init
   for (int n = 0; n < N; n++) {
     for (int g = 0; g < 2; g++) {
-      input_filters[n][g].assign(3, false);  // [ID, ResID, Name]
+      input_filters[n][g].fill(false);  // [ID, ResID, Name]
     }
   }
 }
@@ -542,12 +542,12 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
     std::vector<std::string> block_data = Tools::getWords(block_params[n]);
 
     std::vector<std::string> G1_data;
-    Tools::parseVector(block_data, "G1", G1_data);
+    Tools::parseVector(block_data, "G1", G1_data, -1);
 
-    std::vector<string> G2_data;
-    Tools::parseVector(block_data, "G2", G2_data);
+    std::vector<std::string> G2_data;
+    Tools::parseVector(block_data, "G2", G2_data, -1);
 
-    Tools::parseVector(G1_data, "ATOMID", g1_ids);
+    Tools::parseVector(G1_data, "ATOMID", g1_ids, -1);
 
     for (int i = 0; i < g1_ids.size(); i++) {
       AtomNumber g1i;
@@ -555,7 +555,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       ID_list[n][0].push_back(g1i);
     }
 
-    Tools::parseVector(G2_data, "ATOMID", g2_ids);
+    Tools::parseVector(G2_data, "ATOMID", g2_ids, -1);
 
     for (int i = 0; i < g2_ids.size(); i++) {
       AtomNumber g2i;
@@ -563,19 +563,19 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       ID_list[n][1].push_back(g2i);
     }
 
-    Tools::parseVector(G1_data, "RESID", g1_resids);
+    Tools::parseVector(G1_data, "RESID", g1_resids, -1);
     for (int i = 0; i < g1_resids.size(); i++) {
       ResID_list[n][0].push_back(std::stoi(g1_resids[i]));
     }
-    Tools::parseVector(G2_data, "RESID", g2_resids);
+    Tools::parseVector(G2_data, "RESID", g2_resids, -1);
     for (int i = 0; i < g2_resids.size(); i++) {
       ResID_list[n][1].push_back(std::stoi(g2_resids[i]));
     }
-    Tools::parseVector(G1_data, "NAME", g1_names);
+    Tools::parseVector(G1_data, "NAME", g1_names, -1);
     for (int i = 0; i < g1_names.size(); i++) {
       Name_list[n][0].push_back(g1_names[i]);
     }
-    Tools::parseVector(G2_data, "NAME", g2_names);
+    Tools::parseVector(G2_data, "NAME", g2_names, -1);
     for (int i = 0; i < g2_names.size(); i++) {
       Name_list[n][1].push_back(g2_names[i]);
     }
@@ -583,7 +583,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
     Tools::parse(block_data, "SIZE", block_length);
     block_lengths[n] = std::stoi(block_length);
 
-    Tools::parseVector(block_data, "EXCLUDE_PAIRS", ex_pairs_n);
+    Tools::parseVector(block_data, "EXCLUDE_PAIRS", ex_pairs_n, -1);
     if (!ex_pairs_n.empty()) {
       for (int i = 0; i < ex_pairs_n.size() - 1; i+=2) {
         AtomNumber atom1;
@@ -694,7 +694,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   int total_count = 0;
   for (int n = 0; n < N_Blocks; n++) {
     for (int i = 0; i < block_lengths[n]; i++) {
-      std::string comp = "ELEMENT-" + to_string(total_count);
+      std::string comp = "ELEMENT-" + std::to_string(total_count);
       addComponentWithDerivatives(comp);
       componentIsNotPeriodic(comp);
       total_count += 1;
@@ -950,7 +950,7 @@ void PINES::calculate() {
   unsigned total_count = 0;
   for (unsigned j = 0; j < N_Blocks; j++) {
     for (unsigned i = 0; i < block_lengths[j]; i++) {
-      std::string comp = "ELEMENT-" + to_string(total_count);
+      std::string comp = "ELEMENT-" + std::to_string(total_count);
       Value *valueNew = getPntrToComponent(comp);
       valueNew->set(PIV[j][i]);
       for (unsigned k = 0; k < ann_deriv.size(); k++) {
