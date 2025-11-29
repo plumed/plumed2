@@ -385,10 +385,10 @@ void PINES::resizeAllContainers(int N) {
   delta_pd.assign(N, 0.0);
   r_tolerance.assign(N, 0.0);
   PL_atoms_ref_coords.resize(N);
-  input_filters.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
+  input_filters.assign(N, std::array<std::array<bool,3>, 2>{ { {false,false,false}, {false,false,false} } });
   ID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
-  ResID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
-  Name_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
+  ResID_list.assign(N, std::array<std::vector<int>, 2>{ { {}, {} } });
+  Name_list.assign(N, std::array<std::vector<std::string>, 2>{ { {}, {} } });
   atom_ind_hashmap.clear();
   latched_pairs.resize(N);
   isFirstBuild.assign(N,true);
