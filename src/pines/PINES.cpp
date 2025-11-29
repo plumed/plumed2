@@ -252,7 +252,9 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
     Vector Pos0 = isFirstBuild[n] ? mypdb.getPosition(ind0) : getPosition(atom_ind_hashmap[ind0.index()]);
     int tid = omp_get_thread_num();
     auto& local_heap = thread_heaps[tid];
-    std::unordered_set<AtomPair, pair_hash> local_unique_pairs;
+    std::set<AtomPair> local_unique_pairs;
+
+    
     // logMsg("ind0: " + std::to_string(ind0.index()), "buildMaxHeapVecBlock");
     // logMsg("Num pairs in heap: " + std::to_string(block_groups_atom_list[n][0].size()), "buildMaxHeapVecBlock");
     // logMsg(Pos0, "buildMaxHeapVecBlock");
@@ -264,8 +266,8 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
         continue;
       }
 
-      auto test_pair = std::make_pair(ind0, ind1);
-      auto reverse_pair = std::make_pair(ind1, ind0);
+      AtomPair test_pair{ind0, ind1};
+      AtomPair reverse_pair{ind1, ind0};
 
       if (std::find(Exclude_Pairs[n].begin(), Exclude_Pairs[n].end(), test_pair) != Exclude_Pairs[n].end() ||
           std::find(Exclude_Pairs[n].begin(), Exclude_Pairs[n].end(), reverse_pair) != Exclude_Pairs[n].end()) {
