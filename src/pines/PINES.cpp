@@ -121,9 +121,9 @@ private:
   std::vector<double> r_tolerance;
   std::vector<std::vector<Vector> > PL_atoms_ref_coords;
   std::vector<std::vector<AtomPair > > Exclude_Pairs;
-  std::vector<std::array<std::vector<std::string> >,2> Name_list;
-  std::vector<std::array<std::vector<AtomNumber> >,2> ID_list;
-  std::vector<std::array<std::vector<int> >,2> ResID_list;
+  std::vector<std::array<std::vector<std::string>, 2>> Name_list;
+  std::vector<std::array<std::vector<AtomNumber>, 2>> ID_list;
+  std::vector<std::array<std::vector<int>, 2>> ResID_list;
   std::vector<char> all_g1g2_pairs;
   std::vector<std::vector<std::pair<double, AtomPair > > > vecMaxHeapVecs;
   std::vector<std::vector<AtomPair > > latched_pairs;
