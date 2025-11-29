@@ -254,7 +254,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
     auto& local_heap = thread_heaps[tid];
     std::set<AtomPair> local_unique_pairs;
 
-    
+
     // logMsg("ind0: " + std::to_string(ind0.index()), "buildMaxHeapVecBlock");
     // logMsg("Num pairs in heap: " + std::to_string(block_groups_atom_list[n][0].size()), "buildMaxHeapVecBlock");
     // logMsg(Pos0, "buildMaxHeapVecBlock");
@@ -368,14 +368,14 @@ void PINES::resizeAllContainers(int N) {
   nstride.assign(N,1);
   steps_since_update.assign(N, 0);
   block_params.resize(N);
-  block_groups_atom_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
+  block_groups_atom_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2> { { {}, {} } });
   block_lengths.assign(N, 0);
   Buffer_Pairs.assign(N, 0);
   tot_num_pairs.assign(N, 0);
   Exclude_Pairs.resize(N);
   all_g1g2_pairs.assign(N,false);
   vecMaxHeapVecs.resize(N);
-  PIV.assign(N, std::vector<double>{});
+  PIV.assign(N, std::vector<double> {});
   listall.resize(N);
   listreduced.resize(N);
   stale_tolerance.assign(N,false);
@@ -385,10 +385,10 @@ void PINES::resizeAllContainers(int N) {
   delta_pd.assign(N, 0.0);
   r_tolerance.assign(N, 0.0);
   PL_atoms_ref_coords.resize(N);
-  input_filters.assign(N, std::array<std::array<bool,3>, 2>{ { {false,false,false}, {false,false,false} } });
-  ID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2>{ { {}, {} } });
-  ResID_list.assign(N, std::array<std::vector<int>, 2>{ { {}, {} } });
-  Name_list.assign(N, std::array<std::vector<std::string>, 2>{ { {}, {} } });
+  input_filters.assign(N, std::array<std::array<bool,3>, 2> { { {false,false,false}, {false,false,false} } });
+  ID_list.assign(N, std::array<std::vector<PLMD::AtomNumber>, 2> { { {}, {} } });
+  ResID_list.assign(N, std::array<std::vector<int>, 2> { { {}, {} } });
+  Name_list.assign(N, std::array<std::vector<std::string>, 2> { { {}, {} } });
   atom_ind_hashmap.clear();
   latched_pairs.resize(N);
   isFirstBuild.assign(N,true);
