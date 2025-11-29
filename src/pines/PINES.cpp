@@ -283,7 +283,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
       //logMsg(Pos1, "buildMaxHeapVecBlock");
       double mag = pbcDistance(Pos0, Pos1).modulo();
       //logMsg("pairdist: " + std::to_string(mag), "buildMaxHeapVecBlock");
-      local_heap.emplace_back(mag, std::make_pair(ind0, ind1));
+      local_heap.emplace_back(mag, test_pair);
     }
   }
 
@@ -530,19 +530,18 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 
   // Parse blocks for keywords
   for (int n = 0; n < N_Blocks; n++) {
-    string block_length;
-    std::vector<string> ex_pairs_n;
-    std::vector<string> g1_ids;
-    std::vector<string> g2_ids;
-    std::vector<string> g1_resids;
-    std::vector<string> g2_resids;
-    std::vector<string> g1_names;
-    std::vector<string> g2_names;
+    std::string block_length;
+    std::vector<std::string> ex_pairs_n;
+    std::vector<std::string> g1_ids;
+    std::vector<std::string> g2_ids;
+    std::vector<std::string> g1_resids;
+    std::vector<std::string> g2_resids;
+    std::vector<std::string> g1_names;
+    std::vector<std::string> g2_names;
 
-    std::vector<string> block_data = Tools::getWords(block_params[n]);
+    std::vector<std::string> block_data = Tools::getWords(block_params[n]);
 
-
-    std::vector<string> G1_data;
+    std::vector<std::string> G1_data;
     Tools::parseVector(block_data, "G1", G1_data);
 
     std::vector<string> G2_data;
@@ -597,8 +596,8 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
         Exclude_Pairs[n].push_back(excluded_pair);
       }
     }
-    string buffer_pairs;
-    string pl_refresh;
+    std::string buffer_pairs;
+    std::string pl_refresh;
     Tools::parse(block_data, "BUFFER", buffer_pairs);
     Tools::parse(block_data, "PL_REFRESH", pl_refresh);
 
@@ -648,7 +647,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   for (int i=0; i < mypdb.getAtomNumbers().size(); i++) {
     AtomNumber ind = mypdb.getAtomNumbers()[i];
     int resid = mypdb.getResidueNumber(ind);
-    string atom_name = mypdb.getAtomName(ind);
+    std::string atom_name = mypdb.getAtomName(ind);
     for (int n = 0; n < N_Blocks; n++) {
       bool atom_added = false;
       for (int g = 0; g < 2; g++) {
@@ -695,7 +694,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   int total_count = 0;
   for (int n = 0; n < N_Blocks; n++) {
     for (int i = 0; i < block_lengths[n]; i++) {
-      string comp = "ELEMENT-" + to_string(total_count);
+      std::string comp = "ELEMENT-" + to_string(total_count);
       addComponentWithDerivatives(comp);
       componentIsNotPeriodic(comp);
       total_count += 1;
@@ -951,7 +950,7 @@ void PINES::calculate() {
   unsigned total_count = 0;
   for (unsigned j = 0; j < N_Blocks; j++) {
     for (unsigned i = 0; i < block_lengths[j]; i++) {
-      string comp = "ELEMENT-" + to_string(total_count);
+      std::string comp = "ELEMENT-" + to_string(total_count);
       Value *valueNew = getPntrToComponent(comp);
       valueNew->set(PIV[j][i]);
       for (unsigned k = 0; k < ann_deriv.size(); k++) {
