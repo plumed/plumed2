@@ -138,6 +138,8 @@ class TorsionsMatrix : public ActionWithMatrix {
 public:
   using input_type = TorsionsMatrixInput;
   using PTM = ParallelTaskManager<TorsionsMatrix>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
 public:
@@ -148,6 +150,7 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const TorsionsMatrixInput& actiondata,
                            ParallelActionsInput& input,
@@ -273,6 +276,36 @@ void TorsionsMatrix::calculate() {
 }
 
 void TorsionsMatrix::getInputData( std::vector<double>& inputdata ) const {
+  std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues()
+                           + getPntrToArgument(1)->getNumberOfStoredValues()
+                           + 3*getNumberOfAtoms();
+
+  if( inputdata.size()!=total_data ) {
+    inputdata.resize( total_data );
+  }
+
+  total_data = 0;
+  Value* myarg = getPntrToArgument(0);
+  for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+    inputdata[total_data] = myarg->get(j,false);
+    total_data++;
+  }
+  myarg = getPntrToArgument(1);
+  for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+    inputdata[total_data] = myarg->get(j,false);
+    total_data++;
+  }
+  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+    Vector pos( getPosition(j) );
+    inputdata[total_data+0] = pos[0];
+    inputdata[total_data+1] = pos[1];
+    inputdata[total_data+2] = pos[2];
+    total_data += 3;
+  }
+
+}
+
+void TorsionsMatrix::getInputData( std::vector<float>& inputdata ) const {
   std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues()
                            + getPntrToArgument(1)->getNumberOfStoredValues()
                            + 3*getNumberOfAtoms();

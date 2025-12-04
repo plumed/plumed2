@@ -116,6 +116,25 @@ void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& parti
   }
 }
 
+void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) {
+  unsigned ncomp = getNumberOfComponents();
+  unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
+  unsigned nrows = partialTaskList.size();
+  for(unsigned i=0; i<nrows; ++i) {
+    unsigned ncr = getPntrToComponent(0)->getRowLength(partialTaskList[i]);
+#ifndef NDEBUG
+    for(unsigned k=1; k<ncomp; ++k) {
+      plumed_assert( ncr == getPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+    }
+#endif
+    for(unsigned j=0; j<ncr; ++j) {
+      for(unsigned k=0; k<ncomp; ++k) {
+        getPntrToComponent(k)->set( partialTaskList[i]*ncols+j, stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] );
+      }
+    }
+  }
+}
+
 void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
@@ -135,4 +154,23 @@ void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& parti
   }
 }
 
+void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const {
+  unsigned ncomp = getNumberOfComponents();
+  unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
+  unsigned nrows = partialTaskList.size();
+  for(unsigned i=0; i<nrows; ++i) {
+    unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
+#ifndef NDEBUG
+    for(unsigned k=1; k<ncomp; ++k) {
+      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+    }
+#endif
+    for(unsigned j=0; j<ncr; ++j) {
+      for(unsigned k=0; k<ncomp; ++k) {
+        stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
+      }
+    }
+  }
 }
+
+} //namespace PLMD

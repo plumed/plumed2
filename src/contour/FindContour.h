@@ -35,6 +35,8 @@ class FindContour : public ActionWithVector {
 public:
   using input_type = ContourFindingObject<gridtools::EvaluateGridFunction>;
   using PTM = ParallelTaskManager<FindContour>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
 /// The parallel task manager

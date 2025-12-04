@@ -19,9 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-// #ifdef __PLUMED_HAS_OPENACC
-// #define __PLUMED_USE_OPENACC 1
-// #endif //__PLUMED_HAS_OPENACC
 #include "SecondaryStructureBase.h"
 #include "core/ActionRegister.h"
 #include "tools/RMSD.h"
@@ -128,6 +125,7 @@ class SecondaryStructureRMSDInput {
 /// The list of reference configurations
   std::vector<RMSD> myrmsd;
 public:
+  static constexpr bool needsType=true;
 /// The number of atoms
   std::size_t natoms;
 /// The number of structures
@@ -149,7 +147,7 @@ public:
 // #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
 
 //   }
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput& output );
+  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     natoms = m.natoms;
@@ -168,6 +166,9 @@ public:
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
+//_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
+//typedef AccelerableShortcut<colv> shortcut;
+//_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   Vector center;
@@ -190,7 +191,7 @@ void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
     bool noderiv,
     const SecondaryStructureRMSDInput& actiondata,
     const View<Vector> pos,
-    ColvarOutput& output ) {
+    ColvarOutput<double>& output ) {
   std::vector<Vector> myderivs( actiondata.natoms );
   output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 

@@ -59,6 +59,8 @@ class MatrixProductDiagonal : public ActionWithVector {
 public:
   using input_type = MatrixProductDiagonalInput;
   using PTM = ParallelTaskManager<MatrixProductDiagonal>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
 public:
