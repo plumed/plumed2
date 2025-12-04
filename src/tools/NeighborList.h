@@ -43,6 +43,7 @@ private:
   bool reduced=false;
   bool serial_;
   bool do_pbc_;
+  bool useCellList_=false;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
@@ -71,14 +72,16 @@ public:
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                bool serial,
                bool do_pbc,
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
   std::vector<PLMD::AtomNumber>& getFullAtomList();
@@ -102,7 +105,7 @@ public:
 /// Get the i-th pair of the neighbor list
   pairIDs getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
-  std::vector<unsigned> getNeighbors(unsigned i);
+  std::vector<unsigned> getNeighbors(unsigned i) const;
 /// Get the i-th pair of AtomNumbers from the neighbor list
   pairAtomNumbers getClosePairAtomNumber(unsigned i) const;
 };

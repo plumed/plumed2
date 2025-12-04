@@ -28,13 +28,14 @@
 #include "OpenMP.h"
 #include "Tools.h"
 #include <string>
+#include "LinkCells.h"
+#include "View.h"
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <cstdlib>
 
 #pragma GCC diagnostic error "-Wswitch"
-
-#include <cstdlib>
 
 namespace PLMD {
 
@@ -46,9 +47,11 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
                            const Pbc& pbc,
                            Communicator& cm,
                            const double distance,
-                           const unsigned stride)
+                           const unsigned stride,
+                           const bool doCells)
   : serial_(serial),
     do_pbc_(do_pbc),
+    useCellList_(doCells),
     style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
     pbc_(&pbc),
     comm(cm),
@@ -63,6 +66,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
   if(style_ != NNStyle::Pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
+    plumed_assert(!useCellList_ ) << "You can't use the cell implementation in Pair mode";
     plumed_assert(nlist0_==nlist1_)
         << "when using PAIR option, the two groups should have the same number"
         " of elements\n" << "the groups you specified have size "
@@ -78,9 +82,11 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
                            const Pbc& pbc,
                            Communicator& cm,
                            const double distance,
-                           const unsigned stride)
+                           const unsigned stride,
+                           const bool doCells)
   : serial_(serial),
     do_pbc_(do_pbc),
+    useCellList_(doCells),
     style_(NNStyle::SingleList),
     pbc_(&pbc),
     comm(cm),
@@ -151,81 +157,144 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
 
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
-  const double d2=distance_*distance_;
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-  const unsigned stride=(serial_)? 1 : comm.Get_size();
-  const unsigned rank  =(serial_)? 0 : comm.Get_rank();
 #ifdef _OPENMP
   //nt is unused if openmp is not declared
   const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
 #endif //_OPENMP
-  const unsigned elementsPerRank = std::ceil(double(nallpairs_)/stride);
-  const unsigned int start= rank*elementsPerRank;
-  const unsigned int end = ((start + elementsPerRank)< nallpairs_)?(start + elementsPerRank): nallpairs_;
-  std::vector<unsigned> local_flat_nl;
+  if(useCellList_) {
+    std::vector<unsigned> indexesForCells(fullatomlist_.size());
+    std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+    LinkCells cells(comm);
+    cells.setCutoff(distance_);
+    cells.setupCells(make_const_view(positions),*pbc_);
 
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<unsigned> private_flat_nl;
-    #pragma omp for nowait
-    for(unsigned int i=start; i<end; ++i) {
-      auto [index0, index1 ] = getIndexPair(i);
-      Vector distance;
-      if(do_pbc_) {
-        distance=pbc_->distance(positions[index0],positions[index1]);
-      } else {
-        distance=delta(positions[index0],positions[index1]);
-      }
-      double value=modulo2(distance);
-      if(value<=d2) {
-        private_flat_nl.push_back(index0);
-        private_flat_nl.push_back(index1);
+    switch (style_) {
+    case NNStyle::TwoList: {
+      auto listA = cells.getCollection(View{positions.data(),nlist0_},
+                                       View<const unsigned> {indexesForCells.data(),nlist0_});
+      auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                       View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+      plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
+          << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
+      //#pragma omp parallel num_threads(nt)
+      std::vector<unsigned> cells_required(27);
+      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
+        auto atomsInC= listA.getCellIndexes(c);
+        if(atomsInC.size()>0) {
+          auto cell = cells.findMyCell(c);
+          unsigned ncells_required=0;
+          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+          for (auto A : atomsInC) {
+            for (unsigned cb=0; cb <ncells_required ; ++cb) {
+              for (auto B : listB.getCellIndexes(cells_required[cb])) {
+                neighbors_.push_back({A,B});
+              }
+            }
+          }
+        }
       }
     }
-    #pragma omp critical
-    local_flat_nl.insert(local_flat_nl.end(),
-                         private_flat_nl.begin(),
-                         private_flat_nl.end());
-  }
-
-  // find total dimension of neighborlist
-  std::vector <int> local_nl_size(stride, 0);
-  local_nl_size[rank] = local_flat_nl.size();
-  if(!serial_) {
-    comm.Sum(&local_nl_size[0], stride);
-  }
-  int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
-  if(tot_size==0) {
-    setRequestList();
-    return;
-  }
-  // merge
-  std::vector<unsigned> merge_nl(tot_size, 0);
-  // calculate vector of displacement
-  std::vector<int> disp(stride);
-  disp[0] = 0;
-  int rank_size = 0;
-  for(unsigned i=0; i<stride-1; ++i) {
-    rank_size += local_nl_size[i];
-    disp[i+1] = rank_size;
-  }
-  // Allgather neighbor list
-  if(comm.initialized()&&!serial_) {
-    comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL),
-                    local_nl_size[rank],
-                    &merge_nl[0],
-                    &local_nl_size[0],
-                    &disp[0]);
+    break;//*/
+    case NNStyle::SingleList: {
+      auto listA = cells.getCollection(positions,indexesForCells);
+      //#pragma omp parallel num_threads(nt)
+      std::vector<unsigned> cells_required(27);
+      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
+        auto atomsInC= listA.getCellIndexes(c);
+        if(atomsInC.size()>0) {
+          auto cell = cells.findMyCell(c);
+          unsigned ncells_required=0;
+          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+          for (auto A : atomsInC) {
+            for (unsigned cb=0; cb <ncells_required ; ++cb) {
+              for (auto B : listA.getCellIndexes(cells_required[cb])) {
+                if (B>A) {
+                  neighbors_.push_back({A,B});
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    break;
+    case NNStyle::Pair:
+      plumed_error() << "Cell list should not be active with a Pair NL";
+    }
   } else {
-    merge_nl = local_flat_nl;
-  }
-  // resize neighbor stuff
-  neighbors_.resize(tot_size/2);
-  for(int i=0; i<tot_size/2; i++) {
-    unsigned j=2*i;
-    neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+    const double d2=distance_*distance_;
+    // check if positions array has the correct length
+    plumed_assert(positions.size()==fullatomlist_.size());
+
+    const unsigned stride=(serial_)? 1 : comm.Get_size();
+    const unsigned rank  =(serial_)? 0 : comm.Get_rank();
+    const unsigned elementsPerRank = std::ceil(double(nallpairs_)/stride);
+    const unsigned int start= rank*elementsPerRank;
+    const unsigned int end = ((start + elementsPerRank)< nallpairs_)?(start + elementsPerRank): nallpairs_;
+    std::vector<unsigned> local_flat_nl;
+
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<unsigned> private_flat_nl;
+      #pragma omp for nowait
+      for(unsigned int i=start; i<end; ++i) {
+        auto [index0, index1 ] = getIndexPair(i);
+        Vector distance;
+        if(do_pbc_) {
+          distance=pbc_->distance(positions[index0],positions[index1]);
+        } else {
+          distance=delta(positions[index0],positions[index1]);
+        }
+        double value=modulo2(distance);
+        if(value<=d2) {
+          private_flat_nl.push_back(index0);
+          private_flat_nl.push_back(index1);
+        }
+      }
+      #pragma omp critical
+      local_flat_nl.insert(local_flat_nl.end(),
+                           private_flat_nl.begin(),
+                           private_flat_nl.end());
+    }
+
+    // find total dimension of neighborlist
+    std::vector <int> local_nl_size(stride, 0);
+    local_nl_size[rank] = local_flat_nl.size();
+    if(!serial_) {
+      comm.Sum(&local_nl_size[0], stride);
+    }
+    int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+    if(tot_size!=0) {
+      // merge
+      std::vector<unsigned> merge_nl(tot_size, 0);
+      // calculate vector of displacement
+      std::vector<int> disp(stride);
+      disp[0] = 0;
+      int rank_size = 0;
+      for(unsigned i=0; i<stride-1; ++i) {
+        rank_size += local_nl_size[i];
+        disp[i+1] = rank_size;
+      }
+      // Allgather neighbor list
+      if(comm.initialized()&&!serial_) {
+        comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL),
+                        local_nl_size[rank],
+                        &merge_nl[0],
+                        &local_nl_size[0],
+                        &disp[0]);
+      } else {
+        merge_nl = local_flat_nl;
+      }
+      // resize neighbor stuff
+      neighbors_.resize(tot_size/2);
+      for(int i=0; i<tot_size/2; i++) {
+        unsigned j=2*i;
+        neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+      }
+    }
   }
 
   setRequestList();
@@ -291,7 +360,7 @@ NeighborList::getClosePairAtomNumber(const unsigned i) const {
   return Aneigh;
 }
 
-std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) {
+std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) const {
   std::vector<unsigned> neighbors;
   for(unsigned int i=0; i<size(); ++i) {
     if(neighbors_[i].first==index) {

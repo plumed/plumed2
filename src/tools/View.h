@@ -67,12 +67,12 @@ implementatio
 */
 template <typename T, std::size_t N = helpers::dynamic_extent> class View {
 public:
-  using element_type = T;
-  using pointer = element_type *;
+  using value_type = T;
+  using pointer = value_type *;
   using iterator = pointer;
   using const_iterator = const pointer;
-  using reference = element_type &;
-  using const_reference = const element_type &;
+  using reference = value_type &;
+  using const_reference = const value_type &;
 
 private:
   pointer ptr_;
@@ -110,7 +110,7 @@ public:
   }
 
   /// return a subview on consecutive elements
-  constexpr View<element_type, helpers::dynamic_extent>
+  constexpr View<value_type, helpers::dynamic_extent>
   subview(size_t offset,
           size_t count = helpers::dynamic_extent) const noexcept {
     /// @TODO: enforce these or accept the risk of undefined behaviour in
@@ -144,7 +144,7 @@ public:
 
   /// return a subview of specific size consecutive elements
   template <size_t Count>
-  constexpr View<element_type, Count> subview_n(size_t offset) const noexcept {
+  constexpr View<value_type, Count> subview_n(size_t offset) const noexcept {
     /// @TODO: enforce these or accept the risk of undefined behaviour in
     /// exchange for performance
     // assert(offset <= size(), "subview: offset out of range");
@@ -152,7 +152,7 @@ public:
     //   assert(count <= (size()-offset), "subview: count out of range");
     // }
     static_assert(Count <= N, "subview: count out of range");
-    return View<element_type, Count> {data() + offset};
+    return View<value_type, Count> {data() + offset};
   }
 
   constexpr iterator begin() noexcept {

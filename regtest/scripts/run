@@ -202,6 +202,7 @@ case "$type" in
  ;;
 (make)
   $plumed_nompi --is-installed || ln -s "$root/src" plumed
+  cp ../../../trajectories/testUtils.h .
   rm Makefile
   if test -n "$plumed_src" ; then
     echo "CXX_SRC=$plumed_src" > Makefile

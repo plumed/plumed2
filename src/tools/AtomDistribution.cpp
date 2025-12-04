@@ -23,7 +23,7 @@
 
 namespace PLMD {
 
-std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr) {
+std::unique_ptr<AtomDistribution> AtomDistribution::getAtomDistribution(std::string_view atomicDistr) {
   std::unique_ptr<AtomDistribution> distribution;
   if(atomicDistr == "line") {
     distribution = std::make_unique<theLine>();

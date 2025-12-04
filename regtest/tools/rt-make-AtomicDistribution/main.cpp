@@ -38,7 +38,7 @@ void atomsInBoxCheck(
 void basecheck(std::string_view kind, std::ostream & ofs) {
   std::string header= "[baseCheck -"+ std::string(kind) + "-]:";
   ofs << header << "\n";
-  auto d = getAtomDistribution(kind);
+  auto d = AtomDistribution::getAtomDistribution(kind);
   //reinitialized each time for stability
   Random rng;
   std::vector<Vector> atoms(200);
@@ -62,7 +62,7 @@ void replyTrajCheck(std::string_view kind,
   unsigned nat = atoms.size();
   const auto oldNat=nat;
   auto rep= std::make_unique<repliedTrajectory>([&]() {
-    auto d = getAtomDistribution(kind);
+    auto d = AtomDistribution::getAtomDistribution(kind);
     d->frame(atoms,basebox,0,rng);
     return d;
   }

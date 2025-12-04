@@ -1,0 +1,136 @@
+NUMBER of cells: 9 (1 3 3)
+2x6x6: 2 0 0 0 6 0 0 0 6
+["2x6x6" co=1.616 -vertex- {0, 0, 0}] Cells Required:9
+["2x6x6" co=1.616 -vertex- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -opposite vertex- {0, 2, 2}] Cells Required:9
+["2x6x6" co=1.616 -opposite vertex- {0, 2, 2}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -middle- {0, 1, 1}] Cells Required:9
+["2x6x6" co=1.616 -middle- {0, 1, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -edge- {0, 1, 0}] Cells Required:9
+["2x6x6" co=1.616 -edge- {0, 1, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -edge opposite- {0, 0, 2}] Cells Required:9
+["2x6x6" co=1.616 -edge opposite- {0, 0, 2}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -face- {0, 0, 1}] Cells Required:9
+["2x6x6" co=1.616 -face- {0, 0, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -face opposite- {0, 1, 1}] Cells Required:9
+["2x6x6" co=1.616 -face opposite- {0, 1, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["2x6x6" co=1.616 -vertex- {0, 0, 0} noPBC] Cells: 0 1 3 4
+["2x6x6" co=1.616 -opposite vertex- {0, 2, 2} noPBC] Cells Required:4
+["2x6x6" co=1.616 -opposite vertex- {0, 2, 2} noPBC] Cells: 4 5 7 8
+["2x6x6" co=1.616 -middle- {0, 1, 1} noPBC] Cells Required:9
+["2x6x6" co=1.616 -middle- {0, 1, 1} noPBC] Cells: 0 1 2 3 4 5 6 7 8
+["2x6x6" co=1.616 -edge- {0, 1, 0} noPBC] Cells Required:6
+["2x6x6" co=1.616 -edge- {0, 1, 0} noPBC] Cells: 0 1 2 3 4 5
+["2x6x6" co=1.616 -edge opposite- {0, 0, 2} noPBC] Cells Required:4
+["2x6x6" co=1.616 -edge opposite- {0, 0, 2} noPBC] Cells: 3 4 6 7
+["2x6x6" co=1.616 -face- {0, 0, 1} noPBC] Cells Required:6
+["2x6x6" co=1.616 -face- {0, 0, 1} noPBC] Cells: 0 1 3 4 6 7
+["2x6x6" co=1.616 -face opposite- {0, 1, 1} noPBC] Cells Required:9
+["2x6x6" co=1.616 -face opposite- {0, 1, 1} noPBC] Cells: 0 1 2 3 4 5 6 7 8
+NUMBER of cells: 4 (1 2 2)
+2x6x6: 2 0 0 0 6 0 0 0 6
+["2x6x6" co=3 -vertex- {0, 0, 0}] Cells Required:4
+["2x6x6" co=3 -vertex- {0, 0, 0}] Cells: 0 1 2 3
+["2x6x6" co=3 -opposite vertex- {0, 1, 1}] Cells Required:4
+["2x6x6" co=3 -opposite vertex- {0, 1, 1}] Cells: 0 1 2 3
+["2x6x6" co=3 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["2x6x6" co=3 -vertex- {0, 0, 0} noPBC] Cells: 0 1 2 3
+["2x6x6" co=3 -opposite vertex- {0, 1, 1} noPBC] Cells Required:4
+["2x6x6" co=3 -opposite vertex- {0, 1, 1} noPBC] Cells: 0 1 2 3
+NUMBER of cells: 9 (3 1 3)
+6x2x6: 6 0 0 0 2 0 0 0 6
+["6x2x6" co=1.616 -vertex- {0, 0, 0}] Cells Required:9
+["6x2x6" co=1.616 -vertex- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -opposite vertex- {2, 0, 2}] Cells Required:9
+["6x2x6" co=1.616 -opposite vertex- {2, 0, 2}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -middle- {1, 0, 1}] Cells Required:9
+["6x2x6" co=1.616 -middle- {1, 0, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -edge- {0, 0, 0}] Cells Required:9
+["6x2x6" co=1.616 -edge- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -edge opposite- {1, 0, 2}] Cells Required:9
+["6x2x6" co=1.616 -edge opposite- {1, 0, 2}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -face- {1, 0, 1}] Cells Required:9
+["6x2x6" co=1.616 -face- {1, 0, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -face opposite- {2, 0, 1}] Cells Required:9
+["6x2x6" co=1.616 -face opposite- {2, 0, 1}] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["6x2x6" co=1.616 -vertex- {0, 0, 0} noPBC] Cells: 0 1 3 4
+["6x2x6" co=1.616 -opposite vertex- {2, 0, 2} noPBC] Cells Required:4
+["6x2x6" co=1.616 -opposite vertex- {2, 0, 2} noPBC] Cells: 4 5 7 8
+["6x2x6" co=1.616 -middle- {1, 0, 1} noPBC] Cells Required:9
+["6x2x6" co=1.616 -middle- {1, 0, 1} noPBC] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -edge- {0, 0, 0} noPBC] Cells Required:4
+["6x2x6" co=1.616 -edge- {0, 0, 0} noPBC] Cells: 0 1 3 4
+["6x2x6" co=1.616 -edge opposite- {1, 0, 2} noPBC] Cells Required:6
+["6x2x6" co=1.616 -edge opposite- {1, 0, 2} noPBC] Cells: 3 4 5 6 7 8
+["6x2x6" co=1.616 -face- {1, 0, 1} noPBC] Cells Required:9
+["6x2x6" co=1.616 -face- {1, 0, 1} noPBC] Cells: 0 1 2 3 4 5 6 7 8
+["6x2x6" co=1.616 -face opposite- {2, 0, 1} noPBC] Cells Required:6
+["6x2x6" co=1.616 -face opposite- {2, 0, 1} noPBC] Cells: 1 2 4 5 7 8
+NUMBER of cells: 4 (2 1 2)
+6x2x6: 6 0 0 0 2 0 0 0 6
+["6x2x6" co=3 -vertex- {0, 0, 0}] Cells Required:4
+["6x2x6" co=3 -vertex- {0, 0, 0}] Cells: 0 1 2 3
+["6x2x6" co=3 -opposite vertex- {1, 0, 1}] Cells Required:4
+["6x2x6" co=3 -opposite vertex- {1, 0, 1}] Cells: 0 1 2 3
+["6x2x6" co=3 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["6x2x6" co=3 -vertex- {0, 0, 0} noPBC] Cells: 0 1 2 3
+["6x2x6" co=3 -opposite vertex- {1, 0, 1} noPBC] Cells Required:4
+["6x2x6" co=3 -opposite vertex- {1, 0, 1} noPBC] Cells: 0 1 2 3
+NUMBER of cells: 9 (3 3 1)
+6x6x2: 6 0 0 0 6 0 0 0 2
+["6x6x2" co=1.616 -vertex- {0, 0, 0}] Cells Required:9
+["6x6x2" co=1.616 -vertex- {0, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -opposite vertex- {2, 2, 0}] Cells Required:9
+["6x6x2" co=1.616 -opposite vertex- {2, 2, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -middle- {1, 1, 0}] Cells Required:9
+["6x6x2" co=1.616 -middle- {1, 1, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -edge- {0, 1, 0}] Cells Required:9
+["6x6x2" co=1.616 -edge- {0, 1, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -edge opposite- {1, 0, 0}] Cells Required:9
+["6x6x2" co=1.616 -edge opposite- {1, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -face- {1, 0, 0}] Cells Required:9
+["6x6x2" co=1.616 -face- {1, 0, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -face opposite- {2, 1, 0}] Cells Required:9
+["6x6x2" co=1.616 -face opposite- {2, 1, 0}] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["6x6x2" co=1.616 -vertex- {0, 0, 0} noPBC] Cells: 0 1 3 4
+["6x6x2" co=1.616 -opposite vertex- {2, 2, 0} noPBC] Cells Required:4
+["6x6x2" co=1.616 -opposite vertex- {2, 2, 0} noPBC] Cells: 4 5 7 8
+["6x6x2" co=1.616 -middle- {1, 1, 0} noPBC] Cells Required:9
+["6x6x2" co=1.616 -middle- {1, 1, 0} noPBC] Cells: 0 1 2 3 4 5 6 7 8
+["6x6x2" co=1.616 -edge- {0, 1, 0} noPBC] Cells Required:6
+["6x6x2" co=1.616 -edge- {0, 1, 0} noPBC] Cells: 0 1 3 4 6 7
+["6x6x2" co=1.616 -edge opposite- {1, 0, 0} noPBC] Cells Required:6
+["6x6x2" co=1.616 -edge opposite- {1, 0, 0} noPBC] Cells: 0 1 2 3 4 5
+["6x6x2" co=1.616 -face- {1, 0, 0} noPBC] Cells Required:6
+["6x6x2" co=1.616 -face- {1, 0, 0} noPBC] Cells: 0 1 2 3 4 5
+["6x6x2" co=1.616 -face opposite- {2, 1, 0} noPBC] Cells Required:6
+["6x6x2" co=1.616 -face opposite- {2, 1, 0} noPBC] Cells: 1 2 4 5 7 8
+NUMBER of cells: 4 (2 2 1)
+6x6x2: 6 0 0 0 6 0 0 0 2
+["6x6x2" co=3 -vertex- {0, 0, 0}] Cells Required:4
+["6x6x2" co=3 -vertex- {0, 0, 0}] Cells: 0 1 2 3
+["6x6x2" co=3 -opposite vertex- {1, 1, 0}] Cells Required:4
+["6x6x2" co=3 -opposite vertex- {1, 1, 0}] Cells: 0 1 2 3
+["6x6x2" co=3 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["6x6x2" co=3 -vertex- {0, 0, 0} noPBC] Cells: 0 1 2 3
+["6x6x2" co=3 -opposite vertex- {1, 1, 0} noPBC] Cells Required:4
+["6x6x2" co=3 -opposite vertex- {1, 1, 0} noPBC] Cells: 0 1 2 3
+NUMBER of cells: 4 (1 2 2)
+Skwbx: 6 -6 0 0 6 -6 -6 6 6
+["Skwbx" co=1.616 -vertex- {0, 0, 0}] Cells Required:4
+["Skwbx" co=1.616 -vertex- {0, 0, 0}] Cells: 0 1 2 3
+["Skwbx" co=1.616 -opposite vertex- {0, 1, 1}] Cells Required:4
+["Skwbx" co=1.616 -opposite vertex- {0, 1, 1}] Cells: 0 1 2 3
+["Skwbx" co=1.616 -vertex- {0, 0, 0} noPBC] Cells Required:4
+["Skwbx" co=1.616 -vertex- {0, 0, 0} noPBC] Cells: 0 1 2 3
+["Skwbx" co=1.616 -opposite vertex- {0, 1, 1} noPBC] Cells Required:4
+["Skwbx" co=1.616 -opposite vertex- {0, 1, 1} noPBC] Cells: 0 1 2 3
+NUMBER of cells: 1 (1 1 1)
+Skwbx: 6 -6 0 0 6 -6 -6 6 6
+["Skwbx" co=3 -vertex- {0, 0, 0}] Cells Required:1
+["Skwbx" co=3 -vertex- {0, 0, 0}] Cells: 0
+["Skwbx" co=3 -vertex- {0, 0, 0} noPBC] Cells Required:1
+["Skwbx" co=3 -vertex- {0, 0, 0} noPBC] Cells: 0

@@ -1,22 +1,10 @@
 #include "plumed/tools/Tools.h"
+#include "testUtils.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
 using namespace PLMD;
-
-class tee {
-//TODO:: put this tee into a common test utilities lib
-  std::ofstream ofs;
-public:
-  tee(std::string filename) : ofs(filename) {}
-  template<typename T>
-  tee& operator<<(const T& t) {
-    ofs<<t;
-    std::cout <<t;
-    return *this;
-  }
-};
 
 int main() {
   try {
