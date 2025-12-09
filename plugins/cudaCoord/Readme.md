@@ -8,11 +8,11 @@ The files `cudaHelpers.cuh` and `cudaHelpers.cu` contains a few support function
 along with the reduction functions baked with Cuda's cub building blocks and their drivers.
 
 >[!WARNING]
->If the number of atoms is too big to be stored in the shared memory for the calculations, plumed will stop the calculation with an errori
->the error looks like  `the shared memory asked exceed the limit for this GPU:`
+>Plumed may refuse to to the calculations if the GPU does not allow for the calculations to be done.
 >We are currently working on a solution for this
 >
-> A workaround is reducing the size of the cutoff of the neigbor list
+>A workaround is reducing the size of the cutoff of the neigbor list or to increase the number of threads with THREADS
+>Plumed will present the user wiht an error message with the suggestion.
 
 ### Compile
 

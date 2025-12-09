@@ -29,8 +29,6 @@
 #include <iostream>
 #include <limits>
 #include <numeric>
-#include <ostream>
-#include <random>
 
 using std::cerr;
 
@@ -46,7 +44,8 @@ namespace PLMD {
 namespace GPU {
 
 // these constant will be used within the kernels
-template <typename calculateFloat> struct rationalSwitchParameters {
+template <typename calculateFloat>
+struct rationalSwitchParameters {
   calculateFloat dmaxSQ = std::numeric_limits<calculateFloat>::max();
   calculateFloat invr0_2 = 1.0;
   calculateFloat d0 = 0.0;
@@ -69,7 +68,8 @@ std::ostream& operator<<(std::ostream& os, const rationalSwitchParameters<T>& rs
   return os;
 }
 
-template <typename T> struct invData {
+template <typename T>
+struct invData {
   T val = 1.0;
   T inv = 1.0;
   // this makes the `X = x;` work like "X.val=x;X.inv=1/x;"
@@ -81,7 +81,9 @@ template <typename T> struct invData {
     return *this;
   }
 };
-template <typename calculateFloat> struct ortoPBCs {
+
+template <typename calculateFloat>
+struct ortoPBCs {
   invData<calculateFloat> X{1.0};
   invData<calculateFloat> Y{1.0};
   invData<calculateFloat> Z{1.0};
@@ -100,7 +102,8 @@ __device__ calculateFloat pbcClamp (calculateFloat x) {
   return 0.0;
 }
 
-template <> __device__ __forceinline__ double pbcClamp<double> (double x) {
+template <>
+__device__ __forceinline__ double pbcClamp<double> (double x) {
   // convert a double to a signed int in round-to-nearest-even mode.
   // return __double2int_rn (x) - x;
   // return x - floor (x + 0.5);
@@ -110,7 +113,8 @@ template <> __device__ __forceinline__ double pbcClamp<double> (double x) {
   return x - nearbyint (x);
 }
 
-template <> __device__ __forceinline__ float pbcClamp<float> (float x) {
+template <>
+__device__ __forceinline__ float pbcClamp<float> (float x) {
   // convert a double to a signed int in round-to-nearest-even mode.
   // return __float2int_rn (x) - x;
   // return x - floorf (x + 0.5f);
@@ -135,17 +139,22 @@ __device__ __forceinline__ calculateFloat pcuda_fastpow (calculateFloat base,
   return result;
 }
 
-template <typename calculateFloat> __device__ calculateFloat pcuda_eps() {
+template <typename calculateFloat>
+__device__ calculateFloat pcuda_eps() {
   return 0;
 }
 
-template <> constexpr __device__ float pcuda_eps<float>() {
+template <>
+constexpr __device__ float pcuda_eps<float>() {
   return FLT_EPSILON * 10.0f;
 }
-template <> constexpr __device__ double pcuda_eps<double>() {
+
+template <>
+constexpr __device__ double pcuda_eps<double>() {
   return DBL_EPSILON * 10.0;
 }
 
+//Use this as a base to implement different new switching functions, inclued this in the make_worker function
 struct Rational {
   template <typename calculateFloat>
   static __device__ __forceinline__ calculateFloat
@@ -192,7 +201,7 @@ __global__ void getpcuda_func (const calculateFloat *rdists,
   // printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
 }
 
-template <typename calculateFloat>
+template <typename mySwitch, typename calculateFloat>
 __device__ __forceinline__ calculateFloat calculate (
   calculateFloat distance,
   const rationalSwitchParameters<calculateFloat> switchingParameters,
@@ -201,7 +210,7 @@ __device__ __forceinline__ calculateFloat calculate (
   dfunc = 0.0;
   //if (distance < switchingParameters.dmaxSQ) { already tested in caclulateSqr
   const calculateFloat rdist_2 = (distance-switchingParameters.d0) * switchingParameters.invr0_2;
-  result = Rational::pcuda_func (
+  result = mySwitch::pcuda_func (
              rdist_2, switchingParameters, dfunc);
   // chain rule:
   dfunc *=  switchingParameters.invr0_2;
@@ -211,7 +220,7 @@ __device__ __forceinline__ calculateFloat calculate (
   return result;
 }
 
-template <typename calculateFloat>
+template <typename mySwitch, typename calculateFloat>
 __device__ __forceinline__ calculateFloat calculateSqr (
   const calculateFloat distancesq,
   const rationalSwitchParameters<calculateFloat> switchingParameters,
@@ -222,7 +231,7 @@ __device__ __forceinline__ calculateFloat calculateSqr (
   if (distancesq < switchingParameters.dmaxSQ) {
     if(switchingParameters.calcSquared)  {
       const calculateFloat rdist_2 = distancesq * switchingParameters.invr0_2;
-      result = Rational::pcuda_func (
+      result = mySwitch::pcuda_func (
                  rdist_2, switchingParameters, dfunc);
       // chain rule:
       dfunc *= 2 * switchingParameters.invr0_2;
@@ -230,7 +239,7 @@ __device__ __forceinline__ calculateFloat calculateSqr (
       result = result * switchingParameters.stretch + switchingParameters.shift;
       dfunc *= switchingParameters.stretch;
     } else {
-      result = calculate(std::sqrt(distancesq),switchingParameters,dfunc);
+      result = calculate<mySwitch>(std::sqrt(distancesq),switchingParameters,dfunc);
     }
   }
   return result;
