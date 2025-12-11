@@ -384,25 +384,6 @@ void CudaCoordination<calculateFloat>::calculate() {
       cells.resetCollection(cs.listA,
                             make_const_view(getPositions()),
                             make_const_view(indexesForCells));
-
-      const auto maxExpected = cs.listA.getMaximimumCombination(27);
-      const auto memSize = maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
-      const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-      //plumed_assert(maxExpected <= maxNumberOfAtomsPerCell) << "The number of atoms exceed the current compute capability, try by reducing the cell dimensions";
-      cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell,nat,maxExpected,nat);
-
-      updateCellists(cells,
-                     cs.listA,
-                     cs.listA,
-                     nat,
-                     maxExpected,
-                     biggestCell,
-                     pbc,
-                     cellConfiguration_coord.get_atomsInCells(),
-                     cellConfiguration_coord.get_otherAtoms(),
-                     cellConfiguration_coord.get_nat_InCells(),
-                     cellConfiguration_coord.get_nat_otherAtoms());
-
     }
     break;
     case calculationMode::dual: {
@@ -412,44 +393,74 @@ void CudaCoordination<calculateFloat>::calculate() {
       cells.resetCollection(cs.listB,
                             View{getPositions().data() + atomsInA, atomsInB},
                             View<const unsigned> {indexesForCells.data() + atomsInA, atomsInB});
-      const auto maxExpected_dev=cs.listA.getMaximimumCombination(27);
-      const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-      //shared memory needed in the derivative loop
-      const auto memSize_dev = maxExpected_dev * (3*sizeof(calculateFloat) + sizeof(unsigned));
-      const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
-      const auto biggestCell_dev = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
-      //shared memory needed in the coord loop
-      const auto memSize_coord = maxExpected_coord * (3*sizeof(calculateFloat) + sizeof(unsigned));
-
-      cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell_coord,atomsInA,maxExpected_coord,nat);
-      cellConfiguration_dev.reset(cells.getNumberOfCells(),biggestCell_dev,nat,maxExpected_dev,atomsInA);
-      updateCellists(cells,
-                     cs.listA,
-                     cs.listB,
-                     nat,
-                     maxExpected_coord,
-                     biggestCell_coord,
-                     pbc,
-                     cellConfiguration_coord.get_atomsInCells(),
-                     cellConfiguration_coord.get_otherAtoms(),
-                     cellConfiguration_coord.get_nat_InCells(),
-                     cellConfiguration_coord.get_nat_otherAtoms());
-
-      updateCellists(cells,
-                     cs.listB,
-                     cs.listA,
-                     atomsInA,//the higher index +1 of the first list
-                     maxExpected_dev,
-                     biggestCell_dev,
-                     pbc,
-                     cellConfiguration_dev.get_atomsInCells(),
-                     cellConfiguration_dev.get_otherAtoms(),
-                     cellConfiguration_dev.get_nat_InCells(),
-                     cellConfiguration_dev.get_nat_otherAtoms());
     }
     break;
     default:
     {}
+    }
+    if(mpiActive) {
+      switch (mode) {
+      case calculationMode::self: {
+        const auto maxExpected = cs.listA.getMaximimumCombination(27);
+        const auto memSize = maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
+        const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
+        //plumed_assert(maxExpected <= maxNumberOfAtomsPerCell) << "The number of atoms exceed the current compute capability, try by reducing the cell dimensions";
+        cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell,nat,maxExpected,nat);
+
+        updateCellists(cells,
+                       cs.listA,
+                       cs.listA,
+                       nat,
+                       maxExpected,
+                       biggestCell,
+                       pbc,
+                       cellConfiguration_coord.get_atomsInCells(),
+                       cellConfiguration_coord.get_otherAtoms(),
+                       cellConfiguration_coord.get_nat_InCells(),
+                       cellConfiguration_coord.get_nat_otherAtoms());
+
+      }
+      break;
+      case calculationMode::dual: {
+        const auto maxExpected_dev=cs.listA.getMaximimumCombination(27);
+        const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
+        //shared memory needed in the derivative loop
+        const auto memSize_dev = maxExpected_dev * (3*sizeof(calculateFloat) + sizeof(unsigned));
+        const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
+        const auto biggestCell_dev = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
+        //shared memory needed in the coord loop
+        const auto memSize_coord = maxExpected_coord * (3*sizeof(calculateFloat) + sizeof(unsigned));
+
+        cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell_coord,atomsInA,maxExpected_coord,nat);
+        cellConfiguration_dev.reset(cells.getNumberOfCells(),biggestCell_dev,nat,maxExpected_dev,atomsInA);
+        updateCellists(cells,
+                       cs.listA,
+                       cs.listB,
+                       nat,
+                       maxExpected_coord,
+                       biggestCell_coord,
+                       pbc,
+                       cellConfiguration_coord.get_atomsInCells(),
+                       cellConfiguration_coord.get_otherAtoms(),
+                       cellConfiguration_coord.get_nat_InCells(),
+                       cellConfiguration_coord.get_nat_otherAtoms());
+
+        updateCellists(cells,
+                       cs.listB,
+                       cs.listA,
+                       atomsInA,//the higher index +1 of the first list
+                       maxExpected_dev,
+                       biggestCell_dev,
+                       pbc,
+                       cellConfiguration_dev.get_atomsInCells(),
+                       cellConfiguration_dev.get_otherAtoms(),
+                       cellConfiguration_dev.get_nat_InCells(),
+                       cellConfiguration_dev.get_nat_otherAtoms());
+      }
+      break;
+      default:
+      {}
+      }
     }
   }
 
