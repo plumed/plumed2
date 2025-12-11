@@ -111,8 +111,108 @@ CUDACOORDINATION GROUPA=group R_0=0.3
 */
 //+ENDPLUMEDOC
 
-// does not inherit from coordination base because nl is private
-template <typename calculateFloat> class CudaCoordination : public Colvar {
+//A way of moving all the informations about the cell setup in the least possible numbers of data movements
+class cellSetup {
+  struct lims {
+    unsigned start;
+    unsigned size;
+  };
+  lims atomsInCells;
+  lims otherAtoms;
+  lims nat_InCells;
+  lims nat_otherAtoms;
+public:
+  std::vector<unsigned> data{};
+  unsigned maxExpected=0;
+  unsigned biggestCell=0;
+  void reset(
+    const unsigned ncells,
+    const unsigned biggest_cell, //the number of atoms in the biggest cell
+    const unsigned cellUpper,// the error value for the cell
+    const unsigned max_expected,// the maximum number of atoms in the neibourhood
+    const unsigned otherUpper//the error value for the neighbourood
+  ) {
+    maxExpected=max_expected;
+    biggestCell=biggest_cell;
+    data.assign((biggestCell+maxExpected+1+1)*ncells,0);
+    atomsInCells= {0,ncells*biggestCell};
+    otherAtoms= {ncells*biggestCell,maxExpected*ncells};
+    nat_InCells= {(biggestCell+maxExpected)*ncells,ncells};
+    nat_otherAtoms= {(biggestCell+maxExpected+1)*ncells,ncells};
+    //we test in production
+    plumed_assert(data.size() ==
+                  get_atomsInCells().size()
+                  +get_otherAtoms().size()
+                  +get_nat_InCells().size()
+                  +get_nat_otherAtoms().size()) << "the view in cellSetup are not built correcly";
+
+    auto tmp_nat_otherAtoms = get_nat_otherAtoms();
+    plumed_assert(&data[data.size()-1] == &tmp_nat_otherAtoms[tmp_nat_otherAtoms.size()-1])
+        << "the view may not be correctly set up";
+    auto aic=get_atomsInCells();
+    std::fill(aic.begin(),aic.end(),cellUpper);
+    auto oa=get_otherAtoms();
+    std::fill(oa.begin(),oa.end(),maxExpected);
+  }
+#define getter(tp) PLMD::View<unsigned> get_##tp(){return {data.data()+tp.start,tp.size};}
+  getter(atomsInCells)
+  getter(otherAtoms)
+  getter(nat_InCells)
+  getter(nat_otherAtoms)
+#undef getter
+#define deviceMap(tp) unsigned* deviceMap_##tp(thrust::device_vector<unsigned> &deviceData){ \
+    return thrust::raw_pointer_cast (deviceData.data()) + tp.start; }
+  deviceMap(atomsInCells)
+  deviceMap(otherAtoms)
+  deviceMap(nat_InCells)
+  deviceMap(nat_otherAtoms)
+#undef deviceMap
+};
+
+// companion function for cellSetup
+void updateCellists(
+  const PLMD::LinkCells& cells,
+  const PLMD::LinkCells::CellCollection& listCell,
+  const PLMD::LinkCells::CellCollection& listNeigh,
+  const unsigned nat,// for checking
+  const unsigned maxExpected,
+  const unsigned biggestCell,
+  const bool pbc,
+  PLMD::View<unsigned> atomsIncells,
+  PLMD::View<unsigned> otherAtoms,
+  PLMD::View<unsigned> nat_InCells,
+  PLMD::View<unsigned> nat_otherAtoms
+) {
+  std::vector<unsigned> cells_required(27);
+  for(unsigned c =0; c < cells.getNumberOfCells() ; ++c) {
+    auto atomsInC= listCell.getCellIndexes(c);
+    if(atomsInC.size()>0) {
+      nat_InCells[c]=atomsInC.size();
+      //todo: setup a check to see if the cell needs pbcs (inner)
+      auto cell = cells.findMyCell(c);
+      unsigned ncells_required=0;
+      cells.addRequiredCells(cell,ncells_required, cells_required,pbc);
+      std::copy(atomsInC.begin(),atomsInC.end(),atomsIncells.begin()+biggestCell*c);
+      unsigned otherAtomsId=c*maxExpected;
+      for (unsigned cb=0; cb <ncells_required ; ++cb) {
+        for (auto B : listNeigh.getCellIndexes(cells_required[cb])) {
+          otherAtoms[otherAtomsId]=B;
+          ++otherAtomsId;
+        }
+      }
+      nat_otherAtoms[c]=otherAtomsId - c*maxExpected;
+      if(nat_otherAtoms[c]>0) {
+        //no sense in risking to check the address before the start of otherAtoms or to check if no atoms have been added
+        plumed_assert(otherAtoms[otherAtomsId-1]<nat) << "otherAtoms["<<otherAtomsId-1<<"]"<<"("<<otherAtoms[otherAtomsId-1]<<")"<<"<"<<nat;
+      }
+      plumed_assert(nat_otherAtoms[c] <= maxExpected);
+      plumed_assert(nat_InCells[c] <= biggestCell);
+    }
+  }
+}
+
+template <typename calculateFloat>
+class CudaCoordination : public Colvar {
   /// the pointer to the coordinates on the GPU
   thrust::device_vector<calculateFloat> cudaPositions;
   /// the pointer to the nn list on the GPU
@@ -153,6 +253,10 @@ template <typename calculateFloat> class CudaCoordination : public Colvar {
 
   enum class calculationMode { self, dual, pair, none };
   calculationMode mode = calculationMode::none;
+  //used in self and dual mode
+  cellSetup cellConfiguration_coord;
+  //used in dual mode for the derivatives of group b
+  cellSetup cellConfiguration_dev;
   size_t doSelf();
   void runSelf(
     unsigned ngroups,
@@ -274,11 +378,31 @@ void CudaCoordination<calculateFloat>::calculate() {
     //cells.setupCells(getPositions(),getPbc());
     std::vector<unsigned> indexesForCells(getPositions().size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+    const size_t nat = cudaPositions.size() / 3;
     switch (mode) {
     case calculationMode::self: {
       cells.resetCollection(cs.listA,
                             make_const_view(getPositions()),
                             make_const_view(indexesForCells));
+
+      const auto maxExpected = cs.listA.getMaximimumCombination(27);
+      const auto memSize = maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
+      const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
+      //plumed_assert(maxExpected <= maxNumberOfAtomsPerCell) << "The number of atoms exceed the current compute capability, try by reducing the cell dimensions";
+      cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell,nat,maxExpected,nat);
+
+      updateCellists(cells,
+                     cs.listA,
+                     cs.listA,
+                     nat,
+                     maxExpected,
+                     biggestCell,
+                     pbc,
+                     cellConfiguration_coord.get_atomsInCells(),
+                     cellConfiguration_coord.get_otherAtoms(),
+                     cellConfiguration_coord.get_nat_InCells(),
+                     cellConfiguration_coord.get_nat_otherAtoms());
+
     }
     break;
     case calculationMode::dual: {
@@ -288,6 +412,40 @@ void CudaCoordination<calculateFloat>::calculate() {
       cells.resetCollection(cs.listB,
                             View{getPositions().data() + atomsInA, atomsInB},
                             View<const unsigned> {indexesForCells.data() + atomsInA, atomsInB});
+      const auto maxExpected_dev=cs.listA.getMaximimumCombination(27);
+      const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
+      //shared memory needed in the derivative loop
+      const auto memSize_dev = maxExpected_dev * (3*sizeof(calculateFloat) + sizeof(unsigned));
+      const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
+      const auto biggestCell_dev = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
+      //shared memory needed in the coord loop
+      const auto memSize_coord = maxExpected_coord * (3*sizeof(calculateFloat) + sizeof(unsigned));
+
+      cellConfiguration_coord.reset(cells.getNumberOfCells(),biggestCell_coord,atomsInA,maxExpected_coord,nat);
+      cellConfiguration_dev.reset(cells.getNumberOfCells(),biggestCell_dev,nat,maxExpected_dev,atomsInA);
+      updateCellists(cells,
+                     cs.listA,
+                     cs.listB,
+                     nat,
+                     maxExpected_coord,
+                     biggestCell_coord,
+                     pbc,
+                     cellConfiguration_coord.get_atomsInCells(),
+                     cellConfiguration_coord.get_otherAtoms(),
+                     cellConfiguration_coord.get_nat_InCells(),
+                     cellConfiguration_coord.get_nat_otherAtoms());
+
+      updateCellists(cells,
+                     cs.listB,
+                     cs.listA,
+                     atomsInA,//the higher index +1 of the first list
+                     maxExpected_dev,
+                     biggestCell_dev,
+                     pbc,
+                     cellConfiguration_dev.get_atomsInCells(),
+                     cellConfiguration_dev.get_otherAtoms(),
+                     cellConfiguration_dev.get_nat_InCells(),
+                     cellConfiguration_dev.get_nat_otherAtoms());
     }
     break;
     default:
@@ -605,101 +763,6 @@ void CudaCoordination<calculateFloat>::runSelf(
   }
 }
 
-void updateCellists(
-  const PLMD::LinkCells& cells,
-  const PLMD::LinkCells::CellCollection& listCell,
-  const PLMD::LinkCells::CellCollection& listNeigh,
-  const unsigned nat,// for checking
-  const unsigned maxExpected,
-  const unsigned biggestCell,
-  const bool pbc,
-  PLMD::View<unsigned> atomsIncells,
-  PLMD::View<unsigned> otherAtoms,
-  PLMD::View<unsigned> nat_InCells,
-  PLMD::View<unsigned> nat_otherAtoms
-) {
-  std::vector<unsigned> cells_required(27);
-  for(unsigned c =0; c < cells.getNumberOfCells() ; ++c) {
-    auto atomsInC= listCell.getCellIndexes(c);
-    if(atomsInC.size()>0) {
-      nat_InCells[c]=atomsInC.size();
-      //todo: setup a check to see if the cell needs pbcs (inner)
-      auto cell = cells.findMyCell(c);
-      unsigned ncells_required=0;
-      cells.addRequiredCells(cell,ncells_required, cells_required,pbc);
-      std::copy(atomsInC.begin(),atomsInC.end(),atomsIncells.begin()+biggestCell*c);
-      unsigned otherAtomsId=c*maxExpected;
-      for (unsigned cb=0; cb <ncells_required ; ++cb) {
-        for (auto B : listNeigh.getCellIndexes(cells_required[cb])) {
-          otherAtoms[otherAtomsId]=B;
-          ++otherAtomsId;
-        }
-      }
-      nat_otherAtoms[c]=otherAtomsId - c*maxExpected;
-      if(nat_otherAtoms[c]>0) {
-        //no sense in risking to check the address before the start of otherAtoms or to check if no atoms have been added
-        plumed_assert(otherAtoms[otherAtomsId-1]<nat) << "otherAtoms["<<otherAtomsId-1<<"]"<<"("<<otherAtoms[otherAtomsId-1]<<")"<<"<"<<nat;
-      }
-      plumed_assert(nat_otherAtoms[c] <= maxExpected);
-      plumed_assert(nat_InCells[c] <= biggestCell);
-    }
-  }
-}
-
-class cellSetup {
-  struct lims {
-    unsigned start;
-    unsigned size;
-  };
-  lims atomsInCells;
-  lims otherAtoms;
-  lims nat_InCells;
-  lims nat_otherAtoms;
-public:
-  std::vector<unsigned> data;
-  cellSetup(
-    const unsigned ncells,
-    const unsigned biggestCell, //the number of atoms in the biggest cell
-    const unsigned cellUpper,// the error value for the cell
-    const unsigned maxExpected,// the maximum number of atoms in the neibourhood
-    const unsigned otherUpper//the error value for the neighbourood
-  ):data((biggestCell+maxExpected+1+1)*ncells,0),
-    atomsInCells{0,ncells*biggestCell},
-    otherAtoms{ncells*biggestCell,maxExpected*ncells},
-    nat_InCells{(biggestCell+maxExpected)*ncells,ncells},
-    nat_otherAtoms{(biggestCell+maxExpected+1)*ncells,ncells} {
-    //we test in production
-    plumed_assert(data.size() ==
-                  get_atomsInCells().size()
-                  +get_otherAtoms().size()
-                  +get_nat_InCells().size()
-                  +get_nat_otherAtoms().size()) << "the view in cellSetup are not built correcly";
-
-    auto tmp_nat_otherAtoms = get_nat_otherAtoms();
-    plumed_assert(&data[data.size()-1] == &tmp_nat_otherAtoms[tmp_nat_otherAtoms.size()-1])
-        << "the view may not be correctly set up";
-    auto aic=get_atomsInCells();
-    std::fill(aic.begin(),aic.end(),cellUpper);
-    auto oa=get_otherAtoms();
-    std::fill(oa.begin(),oa.end(),maxExpected);
-  }
-#define getter(tp) PLMD::View<unsigned> get_##tp(){return {data.data()+tp.start,tp.size};}
-  getter(atomsInCells)
-  getter(otherAtoms)
-  getter(nat_InCells)
-  getter(nat_otherAtoms)
-#undef getter
-#define deviceMap(tp) unsigned* deviceMap_##tp(thrust::device_vector<unsigned> &deviceData){ \
-    return thrust::raw_pointer_cast (deviceData.data()) + tp.start; }
-  deviceMap(atomsInCells)
-  deviceMap(otherAtoms)
-  deviceMap(nat_InCells)
-  deviceMap(nat_otherAtoms)
-#undef deviceMap
-};
-
-
-
 template <typename calculateFloat>
 size_t CudaCoordination<calculateFloat>::doSelf() {
   const size_t nat = cudaPositions.size() / 3;
@@ -713,36 +776,18 @@ size_t CudaCoordination<calculateFloat>::doSelf() {
   // virial for the accumulation
 
   //Here I am assuming that cs.listA has been updated by cells, if that contract is broke this cannot work
-  std::vector<unsigned> cells_required(27);
-  const auto maxExpected = cs.listA.getMaximimumCombination(27);
-  const auto memSize = maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
-  const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-
-  cellSetup cellConfiguration(cells.getNumberOfCells(),biggestCell,nat,maxExpected,nat);
-
-  updateCellists(cells,
-                 cs.listA,
-                 cs.listA,
-                 nat,
-                 maxExpected,
-                 biggestCell,
-                 pbc,
-                 cellConfiguration.get_atomsInCells(),
-                 cellConfiguration.get_otherAtoms(),
-                 cellConfiguration.get_nat_InCells(),
-                 cellConfiguration.get_nat_otherAtoms());
+  const auto memSize = cellConfiguration_coord.maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
 
   thrust::device_vector<unsigned> deviceData;
   CUDAHELPERS::plmdDataToGPU(deviceData,
-                             make_view(cellConfiguration.data),
+                             make_view(cellConfiguration_coord.data),
                              streamCoordination);
-
   const unsigned ngroups = cells.getNumberOfCells();
   //this should make the loading of the shared memory a little more efficient
 //TODO: measure if using the number of atoms in the inner cell is faster
-  const unsigned threads = std::min(maxNumThreads,maxExpected);
+  const unsigned threads = std::min(maxNumThreads,cellConfiguration_coord.maxExpected);
   //const unsigned threads = std::min(maxNumThreads,biggestCell);
-  plumed_assert(biggestCell <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
+  plumed_assert(cellConfiguration_coord.biggestCell <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
   plumed_assert(memSize <= maxDynamiSharedMemory) << "the shared memory asked exceed the limit for this GPU:"
       << memSize << " > " << maxDynamiSharedMemory;
   runSelf(
@@ -751,12 +796,12 @@ size_t CudaCoordination<calculateFloat>::doSelf() {
     nat,
     memSize,
     streamCoordination,
-    biggestCell,
-    cellConfiguration.deviceMap_nat_InCells(deviceData),
-    cellConfiguration.deviceMap_atomsInCells(deviceData),
-    maxExpected,
-    cellConfiguration.deviceMap_nat_otherAtoms(deviceData),
-    cellConfiguration.deviceMap_otherAtoms(deviceData)
+    cellConfiguration_coord.biggestCell,
+    cellConfiguration_coord.deviceMap_nat_InCells(deviceData),
+    cellConfiguration_coord.deviceMap_atomsInCells(deviceData),
+    cellConfiguration_coord.maxExpected,
+    cellConfiguration_coord.deviceMap_nat_otherAtoms(deviceData),
+    cellConfiguration_coord.deviceMap_otherAtoms(deviceData)
   );
   return nat;
 }
@@ -1078,57 +1123,32 @@ template <typename calculateFloat>
 size_t CudaCoordination<calculateFloat>::doDual() {
   const size_t nat = cudaPositions.size() / 3;
 
-  std::vector<unsigned> cells_required(27);
-  const auto maxExpected_dev=cs.listA.getMaximimumCombination(27);
-  const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
   //shared memory needed in the derivative loop
-  const auto memSize_dev = maxExpected_dev * (3*sizeof(calculateFloat) + sizeof(unsigned));
-  const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
-  const auto biggestCell_dev = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
+  const auto memSize_dev = cellConfiguration_dev.maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
   //shared memory needed in the coord loop
-  const auto memSize_coord = maxExpected_coord * (3*sizeof(calculateFloat) + sizeof(unsigned));
+  const auto memSize_coord = cellConfiguration_coord.maxExpected * (3*sizeof(calculateFloat) + sizeof(unsigned));
   /**********************allocating the memory on the GPU**********************/
   cudaCoordination.resize (atomsInA);
   cudaVirial.resize (atomsInA * 9);
   /**************************starting the calculations*************************/
 //allocating all the memory
-  cellSetup cellConfiguration_coord(cells.getNumberOfCells(),biggestCell_coord,atomsInA,maxExpected_coord,nat);
+//  cellSetup cellConfiguration_coord(cells.getNumberOfCells(),biggestCell_coord,atomsInA,maxExpected_coord,nat);
 
-  cellSetup cellConfiguration_dev(cells.getNumberOfCells(),biggestCell_dev,nat,maxExpected_dev,atomsInA);
+  //cellSetup cellConfiguration_dev(cells.getNumberOfCells(),biggestCell_dev,nat,maxExpected_dev,atomsInA);
   thrust::device_vector<unsigned> deviceData_coord;
   thrust::device_vector<unsigned> deviceData_dev;
-  plumed_assert(biggestCell_dev <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
-  plumed_assert(biggestCell_coord <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
-  plumed_assert(memSize_coord <= maxDynamiSharedMemory) << "the shared memory asked exceed the limit for this GPU:"
-      << memSize_coord << " > " << maxDynamiSharedMemory;
-  plumed_assert(memSize_dev <= maxDynamiSharedMemory) << "the shared memory asked exceed the limit for this GPU:"
-      << memSize_dev << " > " << maxDynamiSharedMemory;
+  /*  plumed_assert(biggestCell_dev <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
+    plumed_assert(biggestCell_coord <= maxNumThreads) << "the number of atoms in a single cell exceds the maximum number of threads avaiable";
+    plumed_assert(memSize_coord <= maxDynamiSharedMemory) << "the shared memory asked exceed the limit for this GPU:"
+        << memSize_coord << " > " << maxDynamiSharedMemory;
+    plumed_assert(memSize_dev <= maxDynamiSharedMemory) << "the shared memory asked exceed the limit for this GPU:"
+        << memSize_dev << " > " << maxDynamiSharedMemory;*/
   const unsigned ngroups = cells.getNumberOfCells();
-  const unsigned threads_coord = std::min(maxNumThreads,maxExpected_coord);
-  const unsigned threads_dev = std::min(maxNumThreads,maxExpected_dev);
-  updateCellists(cells,
-                 cs.listA,
-                 cs.listB,
-                 nat,
-                 maxExpected_coord,
-                 biggestCell_coord,
-                 pbc,
-                 cellConfiguration_coord.get_atomsInCells(),
-                 cellConfiguration_coord.get_otherAtoms(),
-                 cellConfiguration_coord.get_nat_InCells(),
-                 cellConfiguration_coord.get_nat_otherAtoms());
+  const unsigned threads_coord = std::min(maxNumThreads,cellConfiguration_coord.maxExpected);
+  const unsigned threads_dev = std::min(maxNumThreads,cellConfiguration_dev.maxExpected);
 
-  updateCellists(cells,
-                 cs.listB,
-                 cs.listA,
-                 atomsInA,//the higher index +1 of the first list
-                 maxExpected_dev,
-                 biggestCell_dev,
-                 pbc,
-                 cellConfiguration_dev.get_atomsInCells(),
-                 cellConfiguration_dev.get_otherAtoms(),
-                 cellConfiguration_dev.get_nat_InCells(),
-                 cellConfiguration_dev.get_nat_otherAtoms());
+  //the order here can affect the performance
+  //by running kernels concurrently on the gpu
   CUDAHELPERS::plmdDataToGPU(deviceData_coord,
                              make_view(cellConfiguration_coord.data),
                              streamCoordination);
@@ -1143,10 +1163,10 @@ size_t CudaCoordination<calculateFloat>::doDual() {
     atomsInA,
     memSize_coord,
     streamCoordination,
-    biggestCell_coord,
+    cellConfiguration_coord.biggestCell,
     cellConfiguration_coord.deviceMap_nat_InCells(deviceData_coord),
     cellConfiguration_coord.deviceMap_atomsInCells(deviceData_coord),
-    maxExpected_coord,
+    cellConfiguration_coord.maxExpected,
     cellConfiguration_coord.deviceMap_nat_otherAtoms(deviceData_coord),
     cellConfiguration_coord.deviceMap_otherAtoms(deviceData_coord)
   );
@@ -1158,10 +1178,10 @@ size_t CudaCoordination<calculateFloat>::doDual() {
     atomsInB,//not used actually
     memSize_dev,
     streamDerivatives,
-    biggestCell_dev,
+    cellConfiguration_dev.biggestCell,
     cellConfiguration_dev.deviceMap_nat_InCells(deviceData_dev),
     cellConfiguration_dev.deviceMap_atomsInCells(deviceData_dev),
-    maxExpected_dev,
+    cellConfiguration_dev.maxExpected,
     cellConfiguration_dev.deviceMap_nat_otherAtoms(deviceData_dev),
     cellConfiguration_dev.deviceMap_otherAtoms(deviceData_dev)
   );
