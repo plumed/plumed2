@@ -373,7 +373,8 @@ unsigned LinkCells::CellCollection::getMaximimumCombination(const unsigned numCe
   auto nth_place=tmpCopy.begin() + numCells-1;
   std::nth_element(tmpCopy.begin(),nth_place,tmpCopy.end(),std::greater<>());
 
-  return std::accumulate(tmpCopy.begin(),nth_place,0);
+  //the upper limit is not included, hence the +1
+  return std::accumulate(tmpCopy.begin(),nth_place+1,0);
 }
 
 } //namespace PLMD
