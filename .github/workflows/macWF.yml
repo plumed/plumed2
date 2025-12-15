@@ -20,11 +20,10 @@ jobs:
       # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
       matrix:
         variant: [ "" , "+allmodules" ]
-        # this is to test both intel and arm64 macs
-        # note: macos-14 has a problem in fetching the git repository of plumed, namely a
-        # "fatal: detected dubious ownership in repository" error
-        # I didn't find any solution, so for the moment I keep macos-14 off
-        os: [ macos-13 ]
+        # macos-15 (arm runner) fails with "Failed to open statefile for plumed:
+        # Could not open file: .../plumed2/plumed2/macports/science/plumed/Portfile"
+        # so we only run on intel macs for now
+        os: [macos-15-intel]
         exclude:
         # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
         # once fixed we could introduce this back:
@@ -51,6 +50,8 @@ jobs:
         source ./macports-ci localports macports
     - name: Build PLUMED
       run: |
+        # make sure git clone works without a "dubious ownership" error
+        sudo git config --global --add safe.directory /Users/runner/work/plumed2/plumed2/
         sudo port -N -k install plumed ${{ matrix.variant }}
         plumed config show
         for p in $PYVERS ; do
@@ -71,7 +72,7 @@ jobs:
       fail-fast: false
       matrix:
         # this is to test both intel and arm64 macs
-        os: [ macos-13 , macos-14 ]
+        os: [macos-15-intel, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
