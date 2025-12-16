@@ -50,14 +50,18 @@ jobs:
         source ./macports-ci localports macports
     - name: Build PLUMED
       run: |
-        # make sure git clone works without a "dubious ownership" error
-        sudo git config --global --add safe.directory /Users/runner/work/plumed2/plumed2/
         sudo port -N -k install plumed ${{ matrix.variant }}
         plumed config show
         for p in $PYVERS ; do
           sudo port -N install $p-plumed
         done
         source ./macports-ci ccache --save
+    - name: show logs
+      if: always()
+      run: |
+        cat /opt/local/var/macports/logs/_Users_runner_work_plumed2_plumed2_macports_science_plumed/plumed/main.log
+        cat /opt/local/var/macports/logs/_Users_runner_work_plumed2_plumed2_macports_python_py-plumed/py39-plumed/main.log
+
     - name: Run tests
       run: |
         sudo port -N -d test plumed ${{ matrix.variant }}
