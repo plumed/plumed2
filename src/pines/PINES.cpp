@@ -234,11 +234,11 @@ bool PINES::atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const st
 
 void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<double, AtomPair>>& heap) {
   //logMsg("Building Pair List for block: " + std::to_string(n), "buildMaxHeapVecBlock");
-  #ifdef _OPENMP
+#ifdef _OPENMP
   int nthreads = omp_get_max_threads();
-  #else
+#else
   int nthreads = 1;
-  #endif
+#endif
   std::vector<std::vector<std::pair<double, AtomPair>>> thread_heaps(nthreads);
 
   //logMsg("isFirstBuild[n]? " + std::to_string(isFirstBuild[n]), "buildMaxHeapVecBlock");
@@ -251,17 +251,17 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& mypdb, std::vector<std::pair<
   }
 
   heap.clear();
-  #ifdef _OPENMP
+#ifdef _OPENMP
   #pragma omp parallel for schedule(dynamic)
-  #endif
+#endif
   for (int i = 0; i < block_groups_atom_list[n][0].size(); i++) {
     AtomNumber ind0 = block_groups_atom_list[n][0][i];
     Vector Pos0 = isFirstBuild[n] ? mypdb.getPosition(ind0) : getPosition(atom_ind_hashmap[ind0.index()]);
-    #ifdef _OPENMP
+#ifdef _OPENMP
     int tid = omp_get_thread_num();
-    #else
+#else
     int tid = 0;
-    #endif
+#endif
     auto& local_heap = thread_heaps[tid];
     std::set<AtomPair> local_unique_pairs;
 
@@ -351,9 +351,9 @@ void PINES::updateBlockPairList(int n, std::vector<std::pair<double, AtomPair>>&
   plumed_massert((int)heap.size() >= tot_num_pairs[n], "heap too small");
   plumed_massert(!listreducedall_vec.empty(), "positions requested before requestAtoms");
 
-  #ifdef _OPENMP
+#ifdef _OPENMP
   #pragma omp parallel for
-  #endif
+#endif
   for (int i = 0; i < tot_num_pairs[n]; i++) {
     AtomNumber ind0 = heap[i].second.alpha_group;
     AtomNumber ind1 = heap[i].second.beta_group;
@@ -811,18 +811,18 @@ void PINES::calculate() {
   //timer.stop("toleranceCheck");
   const Vector zeroVec(0., 0., 0.);
   //timer.start("setToZero");
-  #ifdef _OPENMP
+#ifdef _OPENMP
   #pragma omp parallel for schedule(static)
-  #endif
+#endif
   for (unsigned j = 0; j < ann_deriv.size(); j++) {
     for (unsigned i = 0; i < ann_deriv[j].size(); i++) {
       ann_deriv[j][i] = zeroVec;
     }
   }
 
-  #ifdef _OPENMP
+#ifdef _OPENMP
   #pragma omp parallel for schedule(static)
-  #endif
+#endif
   for (unsigned n = 0; n < N_Blocks; n++) {
     PIV[n].resize(block_lengths[n]);
     for (unsigned i = 0; i < block_lengths[n]; i++) {
