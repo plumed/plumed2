@@ -3,6 +3,8 @@
 # This script generates a Portfile in science/plumed
 # Currently the portfile is aimed at testing the currect git hash
 
+alias awk=gawk
+
 prefix=
 if git describe --exact-match --tags HEAD 2>/dev/null 1>/dev/null
 then
@@ -17,11 +19,26 @@ else
 fi
 
 if test -n "$plumed_repository" ; then
-# get this from environment
-  repository="$plumed_repository"
+  fetch="fetch.type          git\n"
+  # get this from environment
+  fetch+="git.url             $plumed_repository\n"
+  # notice that if instead of hashtag we want to put a version, then it should be
+  # git.branch          v${version}
+  fetch+="git.branch          $prefix$version\n"
 else
-# parent directory:
+  # parent directory:
   repository="${PWD%/*}"
+
+  # use a pre-fetch step to copy the sources
+  fetch="fetch.type          none\n\n"
+  fetch+="pre-fetch {\n"
+  fetch+="    ui_msg \"Using local source tree\"\n"
+  fetch+="    set local_repo \"$repository\"\n"
+  fetch+="    system \"rm -rf \${workpath}/localsrc\"\n"
+  fetch+="    system \"cp -a \${local_repo} \${workpath}/localsrc\"\n"
+  fetch+="    return 0\n"
+  fetch+="}\n\n"
+  fetch+="worksrcdir \"\${workpath}/localsrc\"\n"
 fi
 
 mkdir -p science/plumed
@@ -36,15 +53,8 @@ cat Portfile.in |
 sed "
   s/@_VERSION_@/$version/
   s/@_REVISION_@/0/
-" | awk '{
-  if($1=="@_FETCH_@"){
-    print "fetch.type          git"
-    print "git.url             '$repository'"
-# notice that if instead of hashtag we want to put a version, then it should be
-# git.branch          v${version}
-    print "git.branch          '$prefix'${version}"
-  } else print
-}' | awk -v modules="$modules" '{
+  s|@_FETCH_@|$fetch|
+" | awk -v modules="$modules" '{
   if($1=="@_MODULES_@"){
     var=$2
     split(modules,list);
@@ -91,17 +101,5 @@ cat PortfilePython.in |
 sed "
   s/@_VERSION_@/$version/
   s/@_REVISION_@/0/
-" | awk '{
-  if($1=="@_FETCH_@"){
-    print "fetch.type          git"
-    print "git.url             '$repository'"
-# notice that if instead of hashtag we want to put a version, then it should be
-# git.branch          v${version}
-    print "git.branch          '$prefix'${version}"
-  } else print
-}' > python/py-plumed/Portfile
-
-
-
-
-
+  s|@_FETCH_@|$fetch|
+" > python/py-plumed/Portfile
