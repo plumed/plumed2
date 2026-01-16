@@ -263,6 +263,8 @@ jobs:
         source ./macports-ci localports macports
     - name: Build PLUMED
       run: |
+        pwd
+        ls -R /Users/runner/work/plumed2/plumed2/macports/science/plumed
         sudo port -N -k install plumed ${{ matrix.variant }}
         plumed config show
         for p in $PYVERS ; do
