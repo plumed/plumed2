@@ -203,7 +203,7 @@ private:
     // execute the model for the given system
     metatensor_torch::TensorBlock executeModel(metatomic_torch::System system);
 
-    torch::jit::Module model_;
+    metatensor_torch::Module model_;
 
     metatomic_torch::ModelCapabilities capabilities_;
 
@@ -233,6 +233,7 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
     ActionWithValue(options),
+    model_(torch::jit::Module()),
     device_(torch::kCPU)
 {
     if (metatomic_torch::version().find("0.1.") != 0) {
@@ -526,8 +527,8 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
 
     // parse and handle atom sub-selection. This is done AFTER determining the
     // output size, since the selection might not be valid for the dummy system
-    std::vector<int32_t> selected_atoms;
-    this->parseVector("SELECTED_ATOMS", selected_atoms);
+    std::vector<AtomNumber> selected_atoms;
+    this->parseAtomList("SELECTED_ATOMS", selected_atoms);
     if (!selected_atoms.empty()) {
         auto selection_value = torch::zeros(
             {static_cast<int64_t>(selected_atoms.size()), 2},
@@ -535,15 +536,14 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
         );
 
         for (unsigned i=0; i<selected_atoms.size(); i++) {
-            auto n_atoms = static_cast<int32_t>(this->atomic_types_.size(0));
-            if (selected_atoms[i] <= 0 || selected_atoms[i] > n_atoms) {
+            auto n_atoms = this->atomic_types_.size(0);
+            if (selected_atoms[i].index() > n_atoms) {
                 this->error(
                     "Values in metatomic's SELECTED_ATOMS should be between 1 "
                     "and the number of atoms (" + std::to_string(n_atoms) + "), "
-                    "got " + std::to_string(selected_atoms[i]));
+                    "got " + std::to_string(selected_atoms[i].serial()));
             }
-            // PLUMED input uses 1-based indexes, but metatomic wants 0-based
-            selection_value[i][1] = selected_atoms[i] - 1;
+            selection_value[i][1] = static_cast<int32_t>(selected_atoms[i].index());
         }
 
         evaluations_options_->set_selected_atoms(
@@ -774,7 +774,9 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
         std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
-        pair_samples_values.to(this->device_)
+        pair_samples_values.to(this->device_),
+        // vesin should create unique pairs
+        metatensor::assume_unique{}
     );
 
     auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
