@@ -641,7 +641,7 @@ PYTHON_CFLAGS
 PYTHON_LDFLAGS
 PYBIND11_CFLAGS
 PLUMED_CAN_PYCV
-CYTHON_FOUND
+PYTHON_BUILD_FOUND
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -9092,10 +9092,10 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
-# python executable: if any of CYTHON_FOUND or PLUMED_CAN_PYCV is on will store
+# python executable: if any of PYTHON_BUILD_FOUND or PLUMED_CAN_PYCV is on will store
 # the python executable
 
-# set if PYTHON_BIN has Cython in its environment
+# set if PYTHON_BIN has build in its environment
 
 # definitions and variables related to pycv and in general embedding python
 
@@ -9193,12 +9193,12 @@ $as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
   fi
 
   if test $python = true  ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking python wrapper: support for required python modules (python3, setuptools, cython)" >&5
-$as_echo_n "checking python wrapper: support for required python modules (python3, setuptools, cython)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking python wrapper: support for required python modules (python3, setuptools, build)" >&5
+$as_echo_n "checking python wrapper: support for required python modules (python3, setuptools, build)... " >&6; }
     testimport="
 from setuptools import setup
 from setuptools import Extension
-from Cython.Build import cythonize
+import build
 import sys
 if sys.version_info < (3,):
     raise ImportError('PLUMED>= 2.6 only supports Python 3')
@@ -9208,7 +9208,7 @@ if sys.version_info < (3,):
 $as_echo "yes" >&6; }
        $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
 
-       CYTHON_FOUND=yes
+       PYTHON_BUILD_FOUND=yes
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -9221,7 +9221,7 @@ $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
 fi
 
-if test "${PLUMED_CAN_PYCV}" != yes &&  test "${CYTHON_FOUND}" != yes; then
+if test "${PLUMED_CAN_PYCV}" != yes &&  test "${PYTHON_BUILD_FOUND}" != yes; then
   #this deactivate python bin if no package was found
   PYTHON_BIN=
 fi

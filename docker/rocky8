@@ -27,7 +27,7 @@ RUN PYVERSION="3.9.16" \
 RUN . ./.bashrc \                
  && pip3 install --user -U pip \
  && pip3 install --user pillow \
- && pip3 install --user Cython \
+ && pip3 install --user build \
  && pip3 install --user pandas \
  && pip3 install --user mdtraj     \
  && pip3 install --user MDAnalysis

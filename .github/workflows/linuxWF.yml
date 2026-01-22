@@ -78,7 +78,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --user --extra-index-url=https://download.pytorch.org/whl/cpu \
-              Cython \
+              build \
               numpy \
               pytest \
               six \

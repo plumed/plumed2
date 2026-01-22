@@ -24,7 +24,7 @@
 # The main purpose of this is to convert the python types to C types that PLUMED understands
 #
 
-# cython: binding=True
+# cython: binding=True, language_level=3
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
