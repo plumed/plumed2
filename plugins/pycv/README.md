@@ -30,6 +30,8 @@ As usual if you are not working in a virtual environment you are doing this at y
 >We have some problem with the macs:
 you may need to explicitly declare and export some environmental variables like the `PYTHON_PATH` to make pycv work when plumed is called
 
+>[!NOTE]
+>Virtual environment created with [pyenv](https://github.com/pyenv/pyenv) won't expose the `PYTHONPATH` and the python shared object, it may be necessary to export them or to create a "standard" virtual environment with `python -m venv`
 
 ## Documentation
 
@@ -101,7 +103,7 @@ On some platforms, *embedded* Python interpreters  (such as the one used in PYCV
 differently than the plain ones, raising surprising errors.  For example:
 
 >[!NOTE]
->Some Python configurations (e.g. Conda under Linux) require the
+>Some Python configurations (e.g. Conda or pyenv under Linux) require the
  Python shared library to be found in the LD_LIBRARY_PATH, 
  ignoring the activated environment.  This manifests itself with an
  error like:

@@ -49,7 +49,7 @@ class PythonCVInterface : public Colvar, public ActionWithPython {
   void calculateMultiComponent(pybind11::object &);
   void readReturn(const pybind11::object &, Value* );
 public:
-  ::pybind11::dict dataContainer {};
+  ::pybind11::dict dataContainer;
   explicit PythonCVInterface(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
 // active methods:
