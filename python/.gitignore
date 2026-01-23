@@ -3,4 +3,5 @@ pypi/
 *.so
 dist/
 plumed.egg-info/
+PLUMED_VERSION
 
