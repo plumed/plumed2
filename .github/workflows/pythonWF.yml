@@ -22,45 +22,11 @@ jobs:
         path: ~/.ccache
         key: ccache-python-linux-${{ github.sha }}
         restore-keys: ccache-python-linux-
-    - name: Removed unused stuff
-      run: |
-        df -h
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        df -h
-    - name: Set paths
-      run: |
-        echo "$HOME/opt/bin" >> $GITHUB_PATH
-        # path required for pytest:
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
-        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
-        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "CCACHE_DIR=$HOME/.ccache/" >> $GITHUB_ENV
-    - name: Install generic packages
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y libatlas-base-dev
-        sudo apt-get install -y libfftw3-dev
-        sudo apt-get install -y gsl-bin
-        sudo apt-get install -y libgsl0-dev
-        sudo apt-get install -y ccache
-        sudo apt-get install -y libboost-serialization-dev
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
 
-    #- name: Install MPI
-    #  # install MPI at last since it modifies CC and CXX
-    #  run: |
-    #    sudo apt-get install -y libopenmpi-dev openmpi-bin
-    #    echo "CC=mpicc" >> $GITHUB_ENV
-    #    echo "CXX=mpic++" >> $GITHUB_ENV
-    #    echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
-    #    echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
-    #    echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
-    #    echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
-    #    echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
@@ -99,22 +65,10 @@ jobs:
         python-version: ${{ matrix.pyversion }}
         pip-install: pytest -r ./python/requirements_run.txt
 
-    - name: Removed unused stuff
-      run: |
-        df -h
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        df -h
-
-    - name: Install generic packages
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y libatlas-base-dev
-        sudo apt-get install -y libfftw3-dev
-        sudo apt-get install -y gsl-bin
-        sudo apt-get install -y libgsl0-dev
-        sudo apt-get install -y libboost-serialization-dev
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        export-kernel: true
 
     - name: Download artifacts
       uses: actions/download-artifact@v7
@@ -126,15 +80,6 @@ jobs:
       run: |
           cd $HOME
           tar xf ~/plumed.tar
-    - name: Setting up the environment
-      run: |
-        echo "$HOME/opt/bin" >> $GITHUB_PATH
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
-        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "PLUMED_KERNEL=$HOME/opt/lib/libplumedKernel.so" >> $GITHUB_ENV
 
     - name: Install the python pacakge
       working-directory: ./python
