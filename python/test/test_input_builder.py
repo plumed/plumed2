@@ -3,7 +3,7 @@ import unittest
 import plumed
 
 #loading plumed here is temporary, prevents a segmentationfault in the tests
-p=plumed.Plumed()
+#p=plumed.Plumed()
 ib=plumed.InputBuilder()
 
 try:
