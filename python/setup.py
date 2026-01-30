@@ -104,11 +104,10 @@ if not USE_CYTHON:
     if not os.path.isfile("plumed.c"):
         print('plumed.c not found, cython is needed')
         USE_CYTHON = True
-extension="pyx"
+
 # try to import cython
 if not USE_CYTHON:
     print('using available plumed.c file')
-    extension="c"
 
 ext_modules=[Extension(
      name=plumedname,
@@ -137,7 +136,7 @@ setup(
   author_email='plumed-users@googlegroups.com',
   url='http://www.plumed.org',
   ext_modules = ext_modules,
-  setup_requires=["cython"] if USE_CYTHON else None,
+  setup_requires=["Cython==3.2.4"] if USE_CYTHON else None,
   zip_safe=False,
   #this will be deprecated shortly
   #test_suite='nose.collector',
