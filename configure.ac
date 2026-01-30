@@ -906,11 +906,11 @@ if test $fftw = true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
 
-# python executable: if any of CYTHON_FOUND or PLUMED_CAN_PYCV is on will store
+# python executable: if any of PYTHON_BUILD_FOUND or PLUMED_CAN_PYCV is on will store
 # the python executable
 AC_SUBST(PYTHON_BIN)
-# set if PYTHON_BIN has Cython in its environment
-AC_SUBST(CYTHON_FOUND)
+# set if PYTHON_BIN has build in its environment
+AC_SUBST(PYTHON_BUILD_FOUND)
 # definitions and variables related to pycv and in general embedding python
 AC_SUBST(PLUMED_CAN_PYCV)
 AC_SUBST(PYBIND11_CFLAGS)
@@ -957,11 +957,11 @@ import pybind11
   fi
 
   if test $python = true  ; then
-    AC_MSG_CHECKING([python wrapper: support for required python modules (python3, setuptools, cython)])
+    AC_MSG_CHECKING([python wrapper: support for required python modules (python3, setuptools, build)])
     testimport="
 from setuptools import setup
 from setuptools import Extension
-from Cython.Build import cythonize
+import build
 import sys
 if sys.version_info < (3,):
     raise ImportError('PLUMED>= 2.6 only supports Python 3')
@@ -969,7 +969,7 @@ if sys.version_info < (3,):
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
        AC_DEFINE([__PLUMED_HAS_PYTHON])
-       CYTHON_FOUND=yes
+       PYTHON_BUILD_FOUND=yes
     else
        AC_MSG_RESULT([no])
        AC_MSG_WARN([cannot enable python interface])
@@ -979,7 +979,7 @@ if sys.version_info < (3,):
   fi
 fi
 
-if test "${PLUMED_CAN_PYCV}" != yes &&  test "${CYTHON_FOUND}" != yes; then
+if test "${PLUMED_CAN_PYCV}" != yes &&  test "${PYTHON_BUILD_FOUND}" != yes; then
   #this deactivate python bin if no package was found
   PYTHON_BIN=
 fi

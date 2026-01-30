@@ -312,15 +312,13 @@ endif
 	if test -f ../../json/syntax.json ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/json" && cp ../../json/syntax.json  "$(DESTDIR)$(libdir)/$(program_name)/json/" ; fi
 # python installation (rebuild prior to installation so as to discover plumed in path)
 ifdef python_bin
-	cp -pr ../../python install 
-	cd install/python && rm -fr *.so plumed.cpp build && \
+	cp -pr ../../python install
+	rm -f ./install/python/include/Plumed.h
+	cd ./install/python/include/ && cp -s ../../../../wrapper/Plumed.h .
+	cd install/python && rm -fr *.so plumed.cpp build dist && \
           unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
-          plumed_program_name=plumed \
-          plumed_force_cython=yes \
-          plumed_version=$(VERSION) \
-          plumed_include_dir=../../../wrapper \
-          plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
-          $(python_bin) setup.py build_ext -i
+          ./onlyBuild.sh -v $(VERSION) -p $(python_bin) \
+          -k "$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
 	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
 endif

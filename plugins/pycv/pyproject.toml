@@ -9,7 +9,7 @@ dependencies = [
   "numpy",
   "pybind11>=2.10.3,<=2.11.1"
 ]
-version = "0.0.1"
+version = "0.0.2"
 description="PyCV support module for plumed"
 readme = "README.md"
 authors = [

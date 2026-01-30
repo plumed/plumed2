@@ -1,7 +1,4 @@
-Cython
 numpy
-pytest
-six
 pandas
 mdtraj
 MDAnalysis
