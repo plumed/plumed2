@@ -24,7 +24,7 @@
 # The main purpose of this is to convert the python types to C types that PLUMED understands
 #
 
-# cython: binding=True
+# cython: binding=True, language_level=3
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
@@ -68,7 +68,7 @@ class LeptonError(RuntimeError):
 
 cdef class Plumed:
      cdef cplumed.plumed c_plumed
-     cdef int initialized
+     #cdef int initialized #not used
      def __cinit__(self):
          # this is guaranteed to be called once
          # we use it to make sure c_plumed is initialized correctly
