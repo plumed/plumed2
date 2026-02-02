@@ -68,6 +68,31 @@ fi
       --astyle="${basedir}/astyle/astyle" \
       --astyle-options="${basedir}/.astyle.options" \
       "${extra[@]}" $files
+    (
+    # Addig an extra format check for python files.
+    # The settings are in the ruff.toml in the home directory
+    # ruff format outputs a list of "would reformat file" followed by a recap
+    # "head" discards the recap and awk reformat the error message
+      cd "${basedir}"
+      if which ruff &> /dev/null; then
+        python -m ruff format --check \
+          | grep 'Would reformat' \
+          | awk '{ printf "[%s:0] (error) :ruff_format: python ruff formatting non satisfied\n", $3 }' \
+            >&2
+        python -m ruff check --output-format concise \
+          | head -n -2 \
+          | awk '{ printf "[%s] (error) :ruff_check: %s", substr($1,1,length($1)-1), $2;
+                   $1=$2="";
+                   print $0 }' \
+            >&2
+      else
+        #local error message
+        echo "      codecheck did not found ruff:"
+        echo '      if you want to check python code, please install "ruff" in a virtual environment'
+        echo '      suggestion: python -m venv plumedenv; source ./plumedenv/bin/activate; pip install "ruff==0.14.14"'
+      fi
+
+    )
   fi
 
   if [ $do_cppcheck == true ]; then
@@ -179,6 +204,14 @@ echo "      excluding (style) and (information)"
 echo
 cat "${FATAL_FILE}"
 echo
+if grep -q 'ruff_' "${FATAL_FILE}"; then
+  # info message that can be useful for user that has simply seen the error message in the CI
+  echo "      codecheck found errors in the python code:"
+  echo '      if you want to check python code, please install "ruff" in a virtual environment'
+  echo '      suggestion: python -m venv plumedenv; source ./plumedenv/bin/activate; pip install "ruff==0.14.14"'
+  echo '                  python -m ruff format; python -m ruff check'
+  echo
+fi
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
 

@@ -1,1 +1,4 @@
+#for checking that the python interface has been correctly pushed
 Cython==3.2.4
+#for checking the formattation of the active python objects
+ruff==0.14.14
