@@ -114,7 +114,6 @@ struct worker {
     unsigned ngroups,
     unsigned threads,
     unsigned nat,
-    unsigned memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -134,7 +133,6 @@ struct worker {
     unsigned ngroups,
     unsigned threads,
     unsigned nat,
-    unsigned memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -154,7 +152,6 @@ struct worker {
     unsigned  ngroups,
     unsigned  threads,
     unsigned  nat,
-    unsigned  memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -209,6 +206,7 @@ template <typename calcType,typename calculateFloat>
 __global__ void getCoord (const unsigned nat,
                           const unsigned max_inCell,
                           const unsigned max_neigh,
+                          const unsigned tile_size,
                           const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
                           const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
                           unsigned const * n_inCell,
@@ -220,33 +218,23 @@ __global__ void getCoord (const unsigned nat,
                           calculateFloat* ncoordOut,
                           calculateFloat* devOut,
                           calculateFloat* virialOut) {
-  unsigned cellId=blockIdx.x;
+  const unsigned cellId=blockIdx.x;
   CUDAHELPERS::sharedArena arena;
-  auto sPos = arena.get_shared_memory<calculateFloat>(3 * n_neigh[cellId]);
-  auto realIndexes = arena.get_shared_memory<unsigned>(n_neigh[cellId]);
-  // loading shared memory
-  //mocking a View
-  auto nnI=neighIndexes+cellId*max_neigh;
-  for (auto k = threadIdx.x; k < n_neigh[cellId]; k += blockDim.x) {
-    sPos[X (k)] = coordinates[X (nnI[k])];
-    sPos[Y (k)] = coordinates[Y (nnI[k])];
-    sPos[Z (k)] = coordinates[Z (nnI[k])];
-    realIndexes[k] = trueIndexes[nnI[k]];
-  }
+  auto sPos = arena.get_shared_memory<calculateFloat>(3*tile_size);
+  auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
 
-  __syncthreads();
-
-  if (threadIdx.x >= n_inCell[cellId]) { // blocks are initializated with 'ceil (nat/threads)'
-    return;
-  }
-  const unsigned i = cellIndexes[threadIdx.x + cellId * max_inCell];
+  // active if does the calculations, incactive if only loads the memory
+  const bool activeThread = threadIdx.x < n_inCell[cellId];
+  // the number of threads is equal to the number of atoms in the biggest cell
+  const unsigned i = (activeThread) ?
+                     cellIndexes[threadIdx.x + cellId * max_inCell] : 0;
   // we try working with less global memory possible, so we set up a bunch of
   // temporary variables
   const unsigned idx = trueIndexes[i];
   // local results
-  calculateFloat mydev[3]  = {0.0,0.0,0.0};
+  calculateFloat mydev[3]  = {0.0, 0.0, 0.0};
   calculateFloat mycoord = 0.0;
-//static array became regsters with the compiler (cuda 12)
+//static array became registers with the compiler (cuda 12)
   calculateFloat myVirial[9] = {0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0
@@ -256,36 +244,54 @@ __global__ void getCoord (const unsigned nat,
                                  coordinates[Y (i)],
                                  coordinates[Z (i)]
                                 };
-  for (unsigned j = 0; j < n_neigh[cellId]; ++j) {
-    // Safeguard
-    if (idx == realIndexes[j] ) {
-      continue;
+  for(unsigned tile=0; tile < n_neigh[cellId]; tile+=tile_size) {
+    // loading shared memory
+    const auto activeCandidates=min(tile_size,n_neigh[cellId]-tile);
+    const auto nnI=neighIndexes+cellId*max_neigh+tile;
+    for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
+      sPos[X (k)] = coordinates[X (nnI[k])];
+      sPos[Y (k)] = coordinates[Y (nnI[k])];
+      sPos[Z (k)] = coordinates[Z (nnI[k])];
+      realIndexes[k] = trueIndexes[nnI[k]];
     }
-    mycoord+=calcType:: coordLoop(j,
-                                  i,
-                                  nnI,
-                                  xyz,
-                                  sPos,
-                                  myVirial,
-                                  mydev,
-                                  myPBC,
-                                  switchingParameters);
 
+    __syncthreads();
+
+    if (activeThread) {
+      for (unsigned j = 0; j < activeCandidates; ++j) {
+        // Safeguard
+        if (idx != realIndexes[j] ) {
+          mycoord+=calcType:: coordLoop(j,
+                                        i,
+                                        nnI,
+                                        xyz,
+                                        sPos,
+                                        myVirial,
+                                        mydev,
+                                        myPBC,
+                                        switchingParameters);
+        }
+
+      }
+    }
+    __syncthreads();
   }
-  // working in global memory ONLY at the end
-  devOut[X (i)] = mydev[0];
-  devOut[Y (i)] = mydev[1];
-  devOut[Z (i)] = mydev[2];
-  ncoordOut[i] = mycoord;
-  virialOut[nat * 0 + i] = myVirial[0];
-  virialOut[nat * 1 + i] = myVirial[1];
-  virialOut[nat * 2 + i] = myVirial[2];
-  virialOut[nat * 3 + i] = myVirial[3];
-  virialOut[nat * 4 + i] = myVirial[4];
-  virialOut[nat * 5 + i] = myVirial[5];
-  virialOut[nat * 6 + i] = myVirial[6];
-  virialOut[nat * 7 + i] = myVirial[7];
-  virialOut[nat * 8 + i] = myVirial[8];
+  if (activeThread) {
+    // working in global memory ONLY at the end
+    devOut[X (i)] = mydev[0];
+    devOut[Y (i)] = mydev[1];
+    devOut[Z (i)] = mydev[2];
+    ncoordOut[i] = mycoord;
+    virialOut[nat * 0 + i] = myVirial[0];
+    virialOut[nat * 1 + i] = myVirial[1];
+    virialOut[nat * 2 + i] = myVirial[2];
+    virialOut[nat * 3 + i] = myVirial[3];
+    virialOut[nat * 4 + i] = myVirial[4];
+    virialOut[nat * 5 + i] = myVirial[5];
+    virialOut[nat * 6 + i] = myVirial[6];
+    virialOut[nat * 7 + i] = myVirial[7];
+    virialOut[nat * 8 + i] = myVirial[8];
+  }
 }
 
 template <bool usePBC, typename mySwitch, typename calculateFloat>
@@ -293,6 +299,7 @@ __global__ void
 getDualDev (
   const unsigned max_inCell,
   const unsigned max_neigh,
+  const unsigned tile_size,
   const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
   const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
   unsigned const * n_inCell,
@@ -303,26 +310,15 @@ getDualDev (
   unsigned const* trueIndexes,
   calculateFloat* devOut
 ) {
-  unsigned cellId=blockIdx.x;
+  const unsigned cellId=blockIdx.x;
   CUDAHELPERS::sharedArena arena;
-  auto sPos = arena.get_shared_memory<calculateFloat>(3 * n_neigh[cellId]);
-  auto realIndexes = arena.get_shared_memory<unsigned>(n_neigh[cellId]);
-  // loading shared memory
-  //mocking a View
-  auto nnI=neighIndexes+cellId*max_neigh;
-  for (auto k = threadIdx.x; k < n_neigh[cellId]; k += blockDim.x) {
-    sPos[X (k)] = coordinates[X (nnI[k])];
-    sPos[Y (k)] = coordinates[Y (nnI[k])];
-    sPos[Z (k)] = coordinates[Z (nnI[k])];
-    realIndexes[k] = trueIndexes[nnI[k]];
-  }
-
-  __syncthreads();
-
-  if (threadIdx.x >= n_inCell[cellId]) { // blocks are initializated with 'ceil (nat/threads)'
-    return;
-  }
-  const unsigned i = cellIndexes[threadIdx.x + cellId * max_inCell];
+  auto sPos = arena.get_shared_memory<calculateFloat>(3 * tile_size);
+  auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
+  // active if does the calculations, incactive if only loads the memory
+  const bool activeThread = threadIdx.x < n_inCell[cellId];
+  // the number of threads is equal to the number of atoms in the biggest cell
+  const unsigned i = (activeThread) ?
+                     cellIndexes[threadIdx.x + cellId * max_inCell] : 0;
   // we try working with less global memory possible, so we set up a bunch of
   // temporary variables
   const unsigned idx = trueIndexes[i];
@@ -335,34 +331,54 @@ getDualDev (
   const calculateFloat x = coordinates[X (i)];
   const calculateFloat y = coordinates[Y (i)];
   const calculateFloat z = coordinates[Z (i)];
-  calculateFloat d[3];
-  calculateFloat t;
-  calculateFloat dfunc;
 
-  for (unsigned j = 0; j < n_neigh[cellId]; ++j) {
-    // Safeguard
-    if (idx == realIndexes[j] ) {
-      continue;
+  for(auto tile=0; tile < n_neigh[cellId]; tile+=tile_size) {
+    // loading shared memory
+    const auto activeCandidates=min(tile_size,n_neigh[cellId]-tile);
+    const auto nnI=neighIndexes+cellId*max_neigh+tile;
+    for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
+      sPos[X (k)] = coordinates[X (nnI[k])];
+      sPos[Y (k)] = coordinates[Y (nnI[k])];
+      sPos[Z (k)] = coordinates[Z (nnI[k])];
+      realIndexes[k] = trueIndexes[nnI[k]];
     }
 
-    d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
-    d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
-    d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+    __syncthreads();
 
-    dfunc = 0.;
-    t = GPU::calculateSqr<mySwitch> (
-          d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
-          switchingParameters,
-          dfunc);
+    if (activeThread) {
+      calculateFloat d[3];
+      calculateFloat t;
+      calculateFloat dfunc;
 
-    mydevX -= dfunc * d[0];
-    mydevY -= dfunc * d[1];
-    mydevZ -= dfunc * d[2];
+      for (unsigned j = 0; j < activeCandidates; ++j) {
+        // Safeguard
+        if (idx != realIndexes[j] ) {
+
+          d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
+          d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
+          d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+
+          dfunc = 0.;
+          t = GPU::calculateSqr<mySwitch> (
+                d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
+                switchingParameters,
+                dfunc);
+
+          mydevX -= dfunc * d[0];
+          mydevY -= dfunc * d[1];
+          mydevZ -= dfunc * d[2];
+        }
+      }
+    }
+    __syncthreads();
   }
-  // working in global memory ONLY at the end
-  devOut[X (i)] = mydevX;
-  devOut[Y (i)] = mydevY;
-  devOut[Z (i)] = mydevZ;
+
+  if (activeThread) {
+    // working in global memory ONLY at the end
+    devOut[X (i)] = mydevX;
+    devOut[Y (i)] = mydevY;
+    devOut[Z (i)] = mydevZ;
+  }
 }
 
 constexpr unsigned couplesPerThreads = 8;
@@ -549,15 +565,40 @@ struct dualCalc {
 };
 
 template <bool pbc, typename function, typename precision>
-struct runFunction:
+class runFunction:
   public worker<precision> {
+// these are called "maxXperCell" but are used for the tiling settings
+  const unsigned maxAtomsPerCell;
+  const unsigned maxAtomsPerCell_dual;
+  const unsigned maxAtomsPerCell_dualdv;
+public:
   using self = selfCalc<pbc,function,precision>;
   using dual = dualCalc<pbc,function,precision>;
+  runFunction(): worker<precision>(),
+    //getting the tiling informations
+    maxAtomsPerCell{[this]{
+      cudaFuncAttributes attr;
+      getSelfAttr(attr);
+      auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
+      return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
+    }()},
+  maxAtomsPerCell_dual{[this]{
+      cudaFuncAttributes attr;
+      getDualAttr(attr);
+      auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
+      return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
+    }()},
+  maxAtomsPerCell_dualdv {[this]{
+      cudaFuncAttributes attr;
+      getDualDevAttr(attr);
+      auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
+      return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
+    }()}
+  {}
   void runSelf(
     unsigned const ngroups,
     unsigned const threads,
     unsigned const nat,
-    unsigned const memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -572,6 +613,11 @@ struct runFunction:
     precision* ncoordOut,
     precision* devOut,
     precision* virialOut) override {
+    //how many atoms accumulate in hsared memory,
+    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
+    const auto tile_size= std::min(maxAtomsPerCell, maxOtherAtoms);
+    const auto memSize=tile_size
+                       * (3*sizeof(precision) + sizeof(unsigned));
     getCoord<self,precision>
     <<<ngroups,threads,
     memSize,
@@ -579,6 +625,7 @@ struct runFunction:
     >>> (nat,
          maxAtomsInCells,
          maxOtherAtoms,
+         tile_size,
          switchingParameters,
          myPBC,
          nat_InCells,
@@ -597,7 +644,6 @@ struct runFunction:
     unsigned const ngroups,
     unsigned const threads,
     unsigned const nat,
-    unsigned const memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -612,6 +658,12 @@ struct runFunction:
     precision* ncoordOut,
     precision* devOut,
     precision* virialOut) override {
+
+    //how many atoms accumulate in hsared memory,
+    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
+    const auto tile_size= std::min(maxAtomsPerCell_dual, maxOtherAtoms);
+    const auto memSize=tile_size
+                       * (3*sizeof(precision) + sizeof(unsigned));
     getCoord<dual,precision>
     <<<ngroups,threads,
     memSize,
@@ -619,6 +671,7 @@ struct runFunction:
     >>> (nat,
          maxAtomsInCells,
          maxOtherAtoms,
+         tile_size,
          switchingParameters,
          myPBC,
          nat_InCells,
@@ -637,7 +690,6 @@ struct runFunction:
     unsigned const ngroups,
     unsigned const threads,
     unsigned const /*nat*/,
-    unsigned const memSize,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -650,6 +702,11 @@ struct runFunction:
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut) override {
+    //how many atoms accumulate in hsared memory,
+    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
+    const auto tile_size= std::min(maxAtomsPerCell_dualdv, maxOtherAtoms);
+    const auto memSize=tile_size
+                       * (3*sizeof(precision) + sizeof(unsigned));
     getDualDev<pbc,function,precision>
     <<<ngroups,threads,
     memSize,
@@ -657,6 +714,7 @@ struct runFunction:
     >>> (
       maxAtomsInCells,
       maxOtherAtoms,
+      tile_size,
       switchingParameters,
       myPBC,
       nat_InCells,
@@ -986,12 +1044,15 @@ void CudaCoordination<calculateFloat>::calculate() {
       if (mpiActive) {
         const auto maxExpected = cs.listA.getMaximimumCombination(27);
         const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-
-        plumed_assert(maxExpected <= maxNumberOfNeighborsPerCell)
-            << "The number of neighbors ("<< maxExpected<<") exceed the current compute capability("
-            <<maxNumberOfNeighborsPerCell<<"), try by reducing the cell dimensions";
+        /*
+                plumed_assert(maxExpected <= maxNumberOfNeighborsPerCell)
+                    << "The number of neighbors ("<< maxExpected<<") exceed the current compute capability("
+                    <<maxNumberOfNeighborsPerCell<<"), try by reducing the cell dimensions";
+        */
         plumed_assert(biggestCell <= maxNumThreads)
-            << "the number of atoms in a single cell exceds the maximum number of threads avaiable, try by reducing the cell dimensions or by increase the THREADS asked";
+            << "the number of atoms in a single cell("<<biggestCell
+            <<") exceds the maximum number of threads avaiable("<<maxNumThreads
+            <<"), try by reducing the cell dimensions or by increase the THREADS asked";
 
         cellConfiguration_coord.reset(cells.getNumberOfCells(),
                                       biggestCell,
@@ -1026,20 +1087,28 @@ void CudaCoordination<calculateFloat>::calculate() {
         //the largest cell combination in listA
         const auto maxExpected_dv=cs.listA.getMaximimumCombination(27);
         const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-        plumed_assert(maxExpected_dv <= maxNumberOfNeighborsPerCell_dv)
-            << "The number of neighbors ("<< maxExpected_dv<<") exceed the current compute capability("
-            << maxNumberOfNeighborsPerCell_dv <<"), try by reducing the cell dimensions";
+        /*
+                plumed_assert(maxExpected_dv <= maxNumberOfNeighborsPerCell_dv)
+                    << "The number of neighbors ("<< maxExpected_dv<<") exceed the current compute capability("
+                    << maxNumberOfNeighborsPerCell_dv <<"), try by reducing the cell dimensions";
+        */
         plumed_assert(biggestCell_coord <= maxNumThreads)
-            << "the number of atoms in a single cell exceds the maximum number of threads avaiable, try by reducing the cell dimensions or by increase the THREADS asked";
+            << "the number of atoms in a single cell("<<biggestCell_coord
+            <<") exceds the maximum number of threads avaiable("<<maxNumThreads
+            <<"), try by reducing the cell dimensions or by increase the THREADS asked";
 
         //the largest cell combination in listA
         const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
         const auto biggestCell_dv = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
-        plumed_assert(maxExpected_coord <= maxNumberOfNeighborsPerCell)
-            << "The number of neighbors ("<< maxExpected_coord<<") exceed the current compute capability("
-            << maxNumberOfNeighborsPerCell <<"), try by reducing the cell dimensions";
+        /*
+                plumed_assert(maxExpected_coord <= maxNumberOfNeighborsPerCell)
+                    << "The number of neighbors ("<< maxExpected_coord<<") exceed the current compute capability("
+                    << maxNumberOfNeighborsPerCell <<"), try by reducing the cell dimensions";
+        */
         plumed_assert(biggestCell_dv <= maxNumThreads_dv)
-            << "the number of atoms in a single cell exceds the maximum number of threads avaiable, try by reducing the cell dimensions or by increase the THREADS asked";
+            << "the number of atoms in a single cell("<<biggestCell_dv
+            <<") exceds the maximum number of threads avaiable("<<maxNumThreads_dv
+            <<"), try by reducing the cell dimensions or by increase the THREADS asked";
 
         cellConfiguration_coord.reset(cells.getNumberOfCells(),
                                       biggestCell_coord,
@@ -1205,7 +1274,6 @@ size_t CudaCoordination<calculateFloat>::doSelf() {
   // virial for the accumulation
 
   //Here I am assuming that cs.listA has been updated by cells, if that contract is broke this cannot work
-  const auto memSize = cellConfiguration_coord.maxExpected() * (3*sizeof(calculateFloat) + sizeof(unsigned));
   thrust::device_vector<unsigned> deviceData;
   CUDAHELPERS::plmdDataToGPU(deviceData,
                              cellConfiguration_coord.dataView(),
@@ -1220,7 +1288,6 @@ size_t CudaCoordination<calculateFloat>::doSelf() {
     ngroups,
     threads,
     nat,
-    memSize,
     streamCoordination,
     switchingParameters,
     myPBC,
@@ -1243,10 +1310,6 @@ template <typename calculateFloat>
 size_t CudaCoordination<calculateFloat>::doDual() {
   const size_t nat = cudaPositions.size() / 3;
 
-  //shared memory needed in the derivative loop
-  const auto memSize_dv = cellConfiguration_dv.maxExpected() * (3*sizeof(calculateFloat) + sizeof(unsigned));
-  //shared memory needed in the coord loop
-  const auto memSize_coord = cellConfiguration_coord.maxExpected() * (3*sizeof(calculateFloat) + sizeof(unsigned));
   /**********************allocating the memory on the GPU**********************/
   cudaCoordination.resize (atomsInA);
   cudaVirial.resize (atomsInA * 9);
@@ -1274,7 +1337,6 @@ size_t CudaCoordination<calculateFloat>::doDual() {
     ngroups,
     threads_coord,
     atomsInA,
-    memSize_coord,
     streamCoordination,
     switchingParameters,
     myPBC,
@@ -1295,7 +1357,6 @@ size_t CudaCoordination<calculateFloat>::doDual() {
     ngroups,
     threads_dv,
     atomsInB,//not used
-    memSize_dv,
     streamDerivatives,
     switchingParameters,
     myPBC,
