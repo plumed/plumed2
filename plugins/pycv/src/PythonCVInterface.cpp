@@ -404,7 +404,7 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
   //python components
   keys.add("hidden","COMPONENTS","if provided, the function will return multiple components, with the names given");
-  keys.addOutputComponent(PYCV_COMPONENTPREFIX.data(),"COMPONENTS","Each of the components output py the Python code, prefixed by py-");
+  keys.addOutputComponent(PYCV_COMPONENTPREFIX.data(),"COMPONENTS","scalar","Each of the components output py the Python code, prefixed by py-");
   //python calling
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call as calculate method of a CV");
@@ -418,186 +418,190 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
 
 //TODO: add callable checks!!!
 
-PythonCVInterface::PythonCVInterface(const ActionOptions&ao) ://the catch only applies to pybind11 things
+PythonCVInterface::PythonCVInterface(const ActionOptions&ao) try ://the catch only applies to pybind11 things
   PLUMED_COLVAR_INIT(ao),
-  ActionWithPython(ao) {
-  try {
-    py::gil_scoped_acquire gil;
-    //Loading the python module
-    std::string import;
-    parse("IMPORT",import);
-    //setting up the calculate function
-    std::string calculateFunName;
-    parse("CALCULATE",calculateFunName);
-    log.printf("  will import %s and call function %s\n", import.c_str(),
-               calculateFunName.c_str());
-    // Initialize the module and function pointers
-    pyModule = py::module::import(import.c_str());
-    if (!py::hasattr(pyModule,calculateFunName.c_str())) {
-      error("the function " + calculateFunName + " is not present in "+ import);
-    }
-
-    pyCalculate = pyModule.attr(calculateFunName.c_str());
-    std::string initFunName;
-    parse("INIT",initFunName);
-    py::dict initDict;
-    if(py::hasattr(pyModule,initFunName.c_str())) {
-      log.printf("  will use %s during the initialization\n", initFunName.c_str());
-      auto initFcn = pyModule.attr(initFunName.c_str());
-      if (py::isinstance<py::dict>(initFcn)) {
-        initDict = initFcn;
-      } else {
-        initDict = initFcn(this);
-      }
-    } else if(initFunName!=PYCV_DEFAULTINIT) {
-      //If the default INIT is not preset, is not a problem
-      error("the function "+ initFunName + " is not present in "+ import);
-    }
-
-    std::string prepareFunName;
-    parse("PREPARE",prepareFunName);
-    if (prepareFunName!=PYCV_NOTIMPLEMENTED) {
-      if (!py::hasattr(pyModule,prepareFunName.c_str())) {
-        error("the function " + prepareFunName + " is not present in "+ import);
-      }
-      hasPrepare=true;
-      pyPrepare=pyModule.attr(prepareFunName.c_str());
-      log.printf("  will use %s while calling prepare() before calculate()\n", prepareFunName.c_str());
-    }
-
-    std::string updateFunName;
-    parse("UPDATE",updateFunName);
-    if (updateFunName!=PYCV_NOTIMPLEMENTED) {
-      if (!py::hasattr(pyModule,updateFunName.c_str())) {
-        error("the function " + updateFunName + " is not present in " + import);
-      }
-      pyUpdate=pyModule.attr(updateFunName.c_str());
-      hasUpdate=true;
-      log.printf("  will use %s while calling update() after calculate()\n", updateFunName.c_str());
-    }
-
-    {
-      std::vector<std::string> components;
-      parseVector("COMPONENTS", components);
-      if (components.size()>1) {
-        error("Please define multiple COMPONENTS from INIT in python.");
-      }
-    }
-
-    if(initDict.contains("COMPONENTS")) {
-      if(initDict.contains("Value")) {
-        error("The initialize dict cannot contain both \"Value\" and \"COMPONENTS\"");
-      }
-      if(!py::isinstance<py::dict>(initDict["COMPONENTS"])) {
-        error("COMPONENTS must be a dictionary using with the name of the components as keys");
-      }
-      py::dict components=initDict["COMPONENTS"];
-      for(auto comp: components) {
-        auto settings = py::cast<py::dict>(comp.second);
-        if(components.size()==1) { //a single component
-          initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
-          valueSettings(settings,getPntrToValue());
-        } else {
-          auto name=std::string(PYCV_COMPONENTPREFIX)
-                    +"-"+py::cast<std::string>(comp.first);
-          initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
-                              name,
-                              settings);
-          valueSettings(settings,getPntrToComponent(name));
-        }
-      }
-
-    } else if(initDict.contains("Value")) {
-      py::dict settingsDict=initDict["Value"];
-      initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
-      valueSettings(settingsDict,getPntrToValue());
-    } else {
-      warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
-      //this will crash with an error, beacuse periodicity is not explicitly set
-      addValue();
-    }
-
-    std::vector<AtomNumber> atoms;
-    pyParseAtomList("ATOMS",initDict,atoms);
-    std::vector<AtomNumber> groupA;
-    pyParseAtomList("GROUPA",initDict,groupA);
-    std::vector<AtomNumber> groupB;
-    pyParseAtomList("GROUPB",initDict,groupB);
-
-    if(atoms.size() !=0 && groupA.size()!=0) {
-      error("you can choose only between using the neigbourlist OR the atoms");
-    }
-
-    if(atoms.size()==0&& groupA.size()==0 && groupB.size()==0) {
-      error("At least one atom is required");
-    }
-
-    if (atoms.size() != 0 && groupA.size() != 0) {
-      error("you can choose only between using the neigbourlist OR the atoms");
-    }
-
-    if (atoms.size() == 0 && groupA.size() == 0 && groupB.size() == 0) {
-      error("At least one atom is required");
-    }
-
-    bool nopbc;
-    pyParseFlag("NOPBC",initDict, nopbc);
-    pbc = !nopbc;
-
-    if (groupA.size() > 0) {
-      // parse the NL things only in the NL case
-      bool dopair;
-      pyParseFlag("PAIR",initDict, dopair);
-      // this is a WIP
-      bool serial = false;
-      bool doneigh;
-      pyParseFlag("NLIST",initDict,doneigh);
-      double nl_cut = 0.0;
-      int nl_st = 0;
-      if (doneigh) {
-        pyParse("NL_CUTOFF", initDict, nl_cut);
-        if (nl_cut <= 0.0) {
-          error("NL_CUTOFF should be explicitly specified and positive");
-        }
-        pyParse("NL_STRIDE",initDict, nl_st);
-        if (nl_st <= 0) {
-          error("NL_STRIDE should be explicitly specified and positive");
-        }
-      }
-      // endof WIP
-      if (groupB.size() > 0) {
-        if (doneigh)
-          nl = Tools::make_unique<NeighborList>(
-                 groupA, groupB, serial, dopair, pbc, getPbc(), comm, nl_cut, nl_st);
-        else
-          nl = Tools::make_unique<NeighborList>(groupA, groupB, serial, dopair,
-                                                pbc, getPbc(), comm);
-      } else {
-        if (doneigh)
-          nl = Tools::make_unique<NeighborList>(groupA, serial, pbc, getPbc(),
-                                                comm, nl_cut, nl_st);
-        else
-          nl = Tools::make_unique<NeighborList>(groupA, serial, pbc, getPbc(),
-                                                comm);
-      }
-      requestAtoms(nl->getFullAtomList());
-    } else {
-      requestAtoms(atoms);
-    }
-
-    if (getNumberOfComponents()>1) {
-      log.printf("  it is expected to return dictionaries with %d components\n",
-                 getNumberOfComponents());
-    }
-
-    log << "  Bibliography " << plumed.cite(PYTHONCV_CITATION) << "\n";
-    // NB: the NL kewywords will be counted as error when using ATOMS
-    checkRead();
-  } catch (const py::error_already_set &e) {
-    error(e.what());
-    //vdbg(e.what());
+                     ActionWithPython(ao),
+  dataContainer([] {
+  //We need the gil to initialize python objects
+  py::gil_scoped_acquire gil;
+  return py::dict();
+}())  {
+  py::gil_scoped_acquire gil;
+  //Loading the python module
+  std::string import;
+  parse("IMPORT",import);
+  //setting up the calculate function
+  std::string calculateFunName;
+  parse("CALCULATE",calculateFunName);
+  log.printf("  will import %s and call function %s\n", import.c_str(),
+             calculateFunName.c_str());
+  // Initialize the module and function pointers
+  pyModule = py::module::import(import.c_str());
+  if (!py::hasattr(pyModule,calculateFunName.c_str())) {
+    error("the function " + calculateFunName + " is not present in "+ import);
   }
+
+  pyCalculate = pyModule.attr(calculateFunName.c_str());
+  std::string initFunName;
+  parse("INIT",initFunName);
+  py::dict initDict;
+  if(py::hasattr(pyModule,initFunName.c_str())) {
+    log.printf("  will use %s during the initialization\n", initFunName.c_str());
+    auto initFcn = pyModule.attr(initFunName.c_str());
+    if (py::isinstance<py::dict>(initFcn)) {
+      initDict = initFcn;
+    } else {
+      initDict = initFcn(this);
+    }
+  } else if(initFunName!=PYCV_DEFAULTINIT) {
+    //If the default INIT is not preset, is not a problem
+    error("the function "+ initFunName + " is not present in "+ import);
+  }
+
+  std::string prepareFunName;
+  parse("PREPARE",prepareFunName);
+  if (prepareFunName!=PYCV_NOTIMPLEMENTED) {
+    if (!py::hasattr(pyModule,prepareFunName.c_str())) {
+      error("the function " + prepareFunName + " is not present in "+ import);
+    }
+    hasPrepare=true;
+    pyPrepare=pyModule.attr(prepareFunName.c_str());
+    log.printf("  will use %s while calling prepare() before calculate()\n", prepareFunName.c_str());
+  }
+
+  std::string updateFunName;
+  parse("UPDATE",updateFunName);
+  if (updateFunName!=PYCV_NOTIMPLEMENTED) {
+    if (!py::hasattr(pyModule,updateFunName.c_str())) {
+      error("the function " + updateFunName + " is not present in " + import);
+    }
+    pyUpdate=pyModule.attr(updateFunName.c_str());
+    hasUpdate=true;
+    log.printf("  will use %s while calling update() after calculate()\n", updateFunName.c_str());
+  }
+
+  {
+    std::vector<std::string> components;
+    parseVector("COMPONENTS", components);
+    if (components.size()>1) {
+      error("Please define multiple COMPONENTS from INIT in python.");
+    }
+  }
+
+  if(initDict.contains("COMPONENTS")) {
+    if(initDict.contains("Value")) {
+      error("The initialize dict cannot contain both \"Value\" and \"COMPONENTS\"");
+    }
+    if(!py::isinstance<py::dict>(initDict["COMPONENTS"])) {
+      error("COMPONENTS must be a dictionary using with the name of the components as keys");
+    }
+    py::dict components=initDict["COMPONENTS"];
+    for(auto comp: components) {
+      auto settings = py::cast<py::dict>(comp.second);
+      if(components.size()==1) { //a single component
+        initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
+        valueSettings(settings,getPntrToValue());
+      } else {
+        auto name=std::string(PYCV_COMPONENTPREFIX)
+                  +"-"+py::cast<std::string>(comp.first);
+        initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
+                            name,
+                            settings);
+        valueSettings(settings,getPntrToComponent(name));
+      }
+    }
+
+  } else if(initDict.contains("Value")) {
+    py::dict settingsDict=initDict["Value"];
+    initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
+    valueSettings(settingsDict,getPntrToValue());
+  } else {
+    warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
+    //this will crash with an error, beacuse periodicity is not explicitly set
+    addValue();
+  }
+
+  std::vector<AtomNumber> atoms;
+  pyParseAtomList("ATOMS",initDict,atoms);
+  std::vector<AtomNumber> groupA;
+  pyParseAtomList("GROUPA",initDict,groupA);
+  std::vector<AtomNumber> groupB;
+  pyParseAtomList("GROUPB",initDict,groupB);
+
+  if(atoms.size() !=0 && groupA.size()!=0) {
+    error("you can choose only between using the neigbourlist OR the atoms");
+  }
+
+  if(atoms.size()==0&& groupA.size()==0 && groupB.size()==0) {
+    error("At least one atom is required");
+  }
+
+  if (atoms.size() != 0 && groupA.size() != 0) {
+    error("you can choose only between using the neigbourlist OR the atoms");
+  }
+
+  if (atoms.size() == 0 && groupA.size() == 0 && groupB.size() == 0) {
+    error("At least one atom is required");
+  }
+
+  bool nopbc;
+  pyParseFlag("NOPBC",initDict, nopbc);
+  pbc = !nopbc;
+
+  if (groupA.size() > 0) {
+    // parse the NL things only in the NL case
+    bool dopair;
+    pyParseFlag("PAIR",initDict, dopair);
+    // this is a WIP
+    bool serial = false;
+    bool doneigh;
+    pyParseFlag("NLIST",initDict,doneigh);
+    double nl_cut = 0.0;
+    int nl_st = 0;
+    if (doneigh) {
+      pyParse("NL_CUTOFF", initDict, nl_cut);
+      if (nl_cut <= 0.0) {
+        error("NL_CUTOFF should be explicitly specified and positive");
+      }
+      pyParse("NL_STRIDE",initDict, nl_st);
+      if (nl_st <= 0) {
+        error("NL_STRIDE should be explicitly specified and positive");
+      }
+    }
+    // endof WIP
+    if (groupB.size() > 0) {
+      if (doneigh)
+        nl = Tools::make_unique<NeighborList>(
+               groupA, groupB, serial, dopair, pbc, getPbc(), comm, nl_cut, nl_st);
+      else
+        nl = Tools::make_unique<NeighborList>(groupA, groupB, serial, dopair,
+                                              pbc, getPbc(), comm);
+    } else {
+      if (doneigh)
+        nl = Tools::make_unique<NeighborList>(groupA, serial, pbc, getPbc(),
+                                              comm, nl_cut, nl_st);
+      else
+        nl = Tools::make_unique<NeighborList>(groupA, serial, pbc, getPbc(),
+                                              comm);
+    }
+    requestAtoms(nl->getFullAtomList());
+  } else {
+    requestAtoms(atoms);
+  }
+
+  if (getNumberOfComponents()>1) {
+    log.printf("  it is expected to return dictionaries with %d components\n",
+               getNumberOfComponents());
+  }
+
+  log << "  Bibliography " << plumed.cite(PYTHONCV_CITATION) << "\n";
+  // NB: the NL kewywords will be counted as error when using ATOMS
+  checkRead();
+} catch (const py::error_already_set &e) {
+  error(e.what());
+  //vdbg(e.what());
 }
+
 
 void PythonCVInterface::prepare() {
   try {

@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 
-from utilities_for_test import *
-
+from utilities_for_test import setUpTraj, preparePlumed, cd, create_plumed_var
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

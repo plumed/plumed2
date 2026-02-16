@@ -110,7 +110,7 @@ void PythonFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call");
   keys.add("compulsory","INIT",PYCV_DEFAULTINIT,"the function to call during the construction method of the function");
   keys.add("hidden","COMPONENTS","if provided, the function will return multiple components, with the names given");
-  keys.addOutputComponent(PYCV_COMPONENTPREFIX.data(),"COMPONENTS","Each of the components output py the Python code, prefixed by py-");
+  keys.addOutputComponent(PYCV_COMPONENTPREFIX.data(),"COMPONENTS","scalar","Each of the components output py the Python code, prefixed by py-");
   // Why is NOPBC not listed here?
 }
 
