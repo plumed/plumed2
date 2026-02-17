@@ -32,7 +32,7 @@ all_plus_docs:
 lib:
 	$(MAKE)	-C src
 
-install:
+install: all
 	$(MAKE) -C src install
 
 uninstall:
