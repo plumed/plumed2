@@ -387,28 +387,7 @@ Vector Optimizer::center_of_mass() const {
 }
 
 void Optimizer::prepare() {
-  if (neighbor_list_->getStride() > 0) {
-    if (first_time_ || (getStep() % neighbor_list_->getStride() == 0)) {
-      requestAtoms(neighbor_list_->getFullAtomList());
-
-      validate_list_ = true;
-      first_time_ = false;
-    } else {
-      requestAtoms(neighbor_list_->getReducedAtomList());
-
-      validate_list_ = false;
-
-      if (getExchangeStep()) {
-        plumed_merror(
-          "maze> Neighbor lists should be updated on exchange steps -- choose "
-          "an NL_STRIDE which divides the exchange stride.\n");
-      }
-    }
-
-    if (getExchangeStep()) {
-      first_time_ = true;
-    }
-  }
+  std::tie(first_time_,validate_list_) = neighbor_list_->prepare(this,first_time_, validate_list_).get();
 }
 
 double Optimizer::score() {

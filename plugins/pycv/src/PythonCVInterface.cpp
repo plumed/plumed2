@@ -606,22 +606,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao) try ://the catch on
 void PythonCVInterface::prepare() {
   try {
     if (nl) {
-      if (nl->getStride() > 0) {
-        if (firsttime || (getStep() % nl->getStride() == 0)) {
-          requestAtoms(nl->getFullAtomList());
-          invalidateList = true;
-          firsttime = false;
-        } else {
-          requestAtoms(nl->getReducedAtomList());
-          invalidateList = false;
-          if (getExchangeStep())
-            error("Neighbor lists should be updated on exchange steps - choose a "
-                  "NL_STRIDE which divides the exchange stride!");
-        }
-        if (getExchangeStep()) {
-          firsttime = true;
-        }
-      }
+      std::tie(firsttime,invalidateList) = nl->prepare(this,firsttime, invalidateList).get();
     }
     if (hasPrepare) {
       py::gil_scoped_acquire gil;
