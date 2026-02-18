@@ -23,6 +23,7 @@
 
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Vector.h"
+#include "plumed/tools/View.h"
 #include <thrust/device_vector.h>
 #include <vector>
 namespace CUDAHELPERS {
@@ -105,6 +106,30 @@ inline void plmdDataToGPU (thrust::device_vector<double> &dvmem,
                    data.size * sizeof (double),
                    cudaMemcpyHostToDevice,
                    stream);
+}
+
+/// @brief the specialized asyncronous function for tranferring the data in a view to the GPUtemplate <typename T>
+template <typename T>
+inline void plmdDataToGPU (thrust::device_vector<std::remove_const_t<T>> &dvmem,
+                           PLMD::View<T> data,
+                           cudaStream_t stream) {
+  dvmem.resize (data.size());
+  cudaMemcpyAsync (thrust::raw_pointer_cast (dvmem.data()),
+                   data.data(),
+                   data.size() * sizeof (T),
+                   cudaMemcpyHostToDevice,
+                   stream);
+}
+
+/// @brief the specialized function for tranferring the data in a view to the GPUtemplate <typename T>
+template <typename T>
+inline void plmdDataToGPU (thrust::device_vector<std::remove_const_t<T>> &dvmem,
+                           PLMD::View<T> data) {
+  dvmem.resize (data.size());
+  cudaMemcpyAsync (thrust::raw_pointer_cast (dvmem.data()),
+                   data.data(),
+                   data.size() * sizeof (T),
+                   cudaMemcpyHostToDevice);
 }
 
 /// @brief the specialized function for getting single precision data from the
@@ -405,5 +430,25 @@ void doReductionND (T *inputArray,
   doReductionND_t<DATAPERTHREAD> (
     inputArray, outputArray, len, blocks, nthreads, stream);
 }
+
+///A simple struct to use the allocated shared memory in multiple ways
+///
+///Usage: declare this at the begininnig of your kernel (a single instance per kernel)
+///and then "allocate" memory by calling the `get_shared_memory method`
+class sharedArena {
+  //TODO: this costs a register, it may be a better idea to use an external register and then override it for another usage
+  unsigned allocated=0;
+public:
+  template <typename T>
+  __device__ T *get_shared_memory(unsigned const size) {
+    // do we need an __align__() here?
+    extern __shared__ unsigned char memory[];
+    auto ptr = reinterpret_cast<T *> (&memory[allocated]);
+    allocated+=size * sizeof(T);
+    return ptr;
+
+  }
+};
+
 } // namespace CUDAHELPERS
 #endif //__PLUMED_cuda_helpers_cuh

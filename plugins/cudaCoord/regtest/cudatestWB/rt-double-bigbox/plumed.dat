@@ -1,0 +1,18 @@
+#this test is needed to test if the inner loop runs correcly with bigger cells
+LOAD FILE=../../../../CudaCoordination.so
+ga: GROUP ATOMS=1-40000:2
+gb: GROUP ATOMS=2-40000:2
+gpu:    CUDACOORDINATION GROUPA=ga GROUPB=gb R_0=1.1 D_MAX=8.5 NOPBC THREADS=1024
+cpu:        COORDINATION GROUPA=ga GROUPB=gb ...
+                     SWITCH={RATIONAL R_0=1.1 D_MAX=8.5} NOPBC
+...
+
+#print ARG=* FILE=dump STRIDE=1
+
+diff: CUSTOM ARG=gpu,cpu FUNC=y-x PERIODIC=NO
+
+#PRINT ARG=* FILE=colvars FMT=%8.4f STRIDE=1
+PRINT ARG=diff FILE=colvar FMT=%8.4f STRIDE=1
+
+DUMPDERIVATIVES ARG=cpu,gpu FILE=deriv FMT=%8.4f
+FLUSH STRIDE=1
