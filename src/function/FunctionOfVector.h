@@ -31,11 +31,14 @@
 namespace PLMD {
 namespace function {
 
-template <class T>
+template <class CV, typename myPTM=defaultPTM>
 class FunctionOfVector : public ActionWithVector {
 public:
-  using input_type = FunctionData<T>;
-  using PTM = ParallelTaskManager<FunctionOfVector<T>>;
+  using input_type = FunctionData<CV>;
+  using mytype= FunctionOfVector<CV,myPTM>;
+  using PTM = typename myPTM::template PTM<mytype>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -45,7 +48,8 @@ public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfVector(const ActionOptions&);
   ~FunctionOfVector() {}
-  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
+  std::string getOutputComponentDescription( const std::string& cname,
+      const Keywords& keys ) const override ;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Resize vectors that are the wrong size
@@ -58,23 +62,24 @@ public:
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
 /// Get the input data
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
 /// Calculate the function
   static void performTask( std::size_t task_index,
-                           const FunctionData<T>& actiondata,
+                           const FunctionData<CV>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
 /// Get the indices of the forces
-  static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata );
+  static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<CV>& actiondata );
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
-                               const FunctionData<T>& actiondata,
+                               const FunctionData<CV>& actiondata,
                                const ParallelActionsInput& input,
                                ForceIndexHolder force_indices );
 };
 
-template <class T>
-void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::registerKeywords(Keywords& keys ) {
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -84,7 +89,7 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalar and vector that on which the function is being calculated elementwise");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  T::registerKeywords( keys );
+  CV::registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
     keys.setValueDescription("scalar","the sum of all the elements in the input vector");
   } else if( keys.getDisplayName()=="MEAN" ) {
@@ -105,8 +110,8 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   PTM::registerKeywords( keys );
 }
 
-template <class T>
-FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
+template <class CV, typename myPTM>
+FunctionOfVector<CV, myPTM>::FunctionOfVector(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this),
@@ -156,27 +161,29 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   auto & myfunc = taskmanager.getActionInput();
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
-  FunctionData<T>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
+  FunctionData<CV>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
   // Setup the parallel task manager
   taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
 }
 
-template <class T>
-std::string FunctionOfVector<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+template <class CV, typename myPTM>
+std::string FunctionOfVector<CV,
+    myPTM>::getOutputComponentDescription( const std::string& cname,
+const Keywords& keys ) const {
   if( getName().find("SORT")==std::string::npos ) {
     return ActionWithValue::getOutputComponentDescription( cname, keys );
   }
   return "the " + cname + "th largest element in the input vectors";
 }
 
-template <class T>
-std::string FunctionOfVector<T>::writeInGraph() const {
+template <class CV, typename myPTM>
+std::string FunctionOfVector<CV, myPTM>::writeInGraph() const {
   std::size_t und = getName().find_last_of("_");
   return getName().substr(0,und);
 }
 
-template <class T>
-unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
+template <class CV, typename myPTM>
+unsigned FunctionOfVector<CV, myPTM>::getNumberOfDerivatives() {
   unsigned nder = 0;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     nder += getPntrToArgument(i)->getNumberOfStoredValues();
@@ -184,8 +191,8 @@ unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
   return nder;
 }
 
-template <class T>
-void FunctionOfVector<T>::prepare() {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::prepare() {
   std::vector<std::size_t> shape(1);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
@@ -202,8 +209,8 @@ void FunctionOfVector<T>::prepare() {
   ActionWithVector::prepare();
 }
 
-template <class T>
-void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::getInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
@@ -238,43 +245,81 @@ void FunctionOfVector<T>::getInputData( std::vector<double>& inputdata ) const {
   }
 }
 
-template <class T>
-void FunctionOfVector<T>::calculate() {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::getInputData( std::vector<float>& inputdata ) const {
+  unsigned nargs = getNumberOfArguments();
+  int nmasks = getNumberOfMasks();
+  if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+
+  std::size_t ntasks = 0;
+  for(unsigned i=argstart; i<nargs; ++i) {
+    if( getPntrToArgument(i)->getRank()==1 ) {
+      ntasks = getPntrToArgument(i)->getShape()[0];
+      break;
+    }
+  }
+
+  std::size_t ndata = static_cast<std::size_t>(nargs-argstart)*ntasks;
+  if( inputdata.size()!=ndata ) {
+    inputdata.resize( ndata );
+  }
+
+  for(unsigned j=argstart; j<nargs; ++j) {
+    const Value* myarg =  getPntrToArgument(j);
+    if( myarg->getRank()==0 ) {
+      double val = myarg->get();
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = val;
+      }
+    } else {
+      for(unsigned i=0; i<ntasks; ++i) {
+        inputdata[(nargs-argstart)*i + j-argstart] = myarg->get(i);
+      }
+    }
+  }
+}
+
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::calculate() {
   // This is done if we are calculating a function of multiple cvs
   taskmanager.runAllTasks();
 }
 
-template <class T>
-void FunctionOfVector<T>::performTask( std::size_t task_index,
-                                       const FunctionData<T>& actiondata,
-                                       ParallelActionsInput& input,
-                                       ParallelActionsOutput& output ) {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::performTask( std::size_t task_index,
+    const FunctionData<CV>& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
   auto funcout = FunctionOutput::create( input.ncomponents,
                                          output.values.data(),
                                          input.nderivatives_per_scalar,
                                          output.derivatives.data() );
-  T::calc( actiondata.f,
-           input.noderiv,
-           View<const double>( input.inputdata + task_index*input.nderivatives_per_scalar,
-                               input.nderivatives_per_scalar ),
-           funcout );
+  CV::calc( actiondata.f,
+            input.noderiv,
+            View<const double>( input.inputdata + task_index*input.nderivatives_per_scalar,
+                                input.nderivatives_per_scalar ),
+            funcout );
 }
 
-template <class T>
-void FunctionOfVector<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-int FunctionOfVector<T>::getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<T>& actiondata ) {
+template <class CV, typename myPTM>
+int FunctionOfVector<CV,
+    myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
+const FunctionData<CV>& actiondata ) {
   return 1;
 }
 
-template <class T>
-void FunctionOfVector<T>::getForceIndices( std::size_t task_index,
+template <class CV, typename myPTM>
+void FunctionOfVector<CV, myPTM>::getForceIndices( std::size_t task_index,
     std::size_t colno,
     std::size_t ntotal_force,
-    const FunctionData<T>& actiondata,
+    const FunctionData<CV>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
 

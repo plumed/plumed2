@@ -116,7 +116,7 @@ public:
 PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureBase<Vector>::registerKeywords( keys );
+  SecondaryStructureInput::registerKeywords( keys );
   keys.remove("ATOMS");
   keys.remove("SEGMENT");
   keys.remove("STRUCTURE");
@@ -140,11 +140,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureBase<Vector>::readShortcutWords( ltmap, this );
+  bool uselessthan=SecondaryStructureInput::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
   std::vector<std::string> all_atoms;
-  SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
+  SecondaryStructureInput::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   bool intra_chain(false), inter_chain(false);
   std::string style;

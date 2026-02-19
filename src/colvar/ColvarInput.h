@@ -36,17 +36,19 @@ namespace PLMD {
 class Colvar;
 
 namespace colvar {
+
+template <typename T=double>
 struct ColvarInput {
   unsigned mode;
   const Pbc& pbc;
-  View2D<const double,helpers::dynamic_extent,3> pos;
-  View<const double> mass;
-  View<const double> charges;
+  View2D<const T,helpers::dynamic_extent,3> pos;
+  View<const T> mass;
+  View<const T> charges;
   ColvarInput( unsigned m,
                unsigned natoms,
-               const double* p,
-               const double* w,
-               const double* q,
+               const T* p,
+               const T* w,
+               const T* q,
                const Pbc& box ) :
     mode(m),
     pbc(box),
@@ -54,15 +56,64 @@ struct ColvarInput {
     mass(w,natoms),
     charges(q,natoms) {
   }
-
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
-#pragma acc routine seq
-  static void setBoxDerivativesNoPbc( const ColvarInput& inpt, ColvarOutput& out );
+  static void setBoxDerivativesNoPbc( const ColvarInput<T>& inpt, ColvarOutput<T>& out );
   /// same as setBoxDerivativesNoPbc but with no extra memory allocations
-#pragma acc routine seq
-  static void setBoxDerivativesNoPbc_inplace( const ColvarInput& inpt, ColvarOutput& out );
+  static void setBoxDerivativesNoPbc_inplace( const ColvarInput<T>& inpt, ColvarOutput<T>& out );
 };
 
+template <typename T>
+ColvarInput<T>  ColvarInput<T>::createColvarInput( unsigned m,
+    const std::vector<Vector>& p,
+    const Colvar* colv ) {
+  //this won't work with floating point
+  return ColvarInput( m,
+                      p.size(),
+                      &p[0][0],
+                      colv->getMasses().data(),
+                      colv->getCharges(true).data(),
+                      colv->getPbc() );
+}
+
+template <typename T>
+void  ColvarInput<T>::setBoxDerivativesNoPbc( const ColvarInput<T>& inpt, ColvarOutput<T>& out ) {
+  //Both version passes the tests, we should discuss wicht onw might be better
+
+  unsigned nat=inpt.pos.size();
+  for(unsigned i=0; i<out.ncomponents; ++i) {
+    Tensor v;
+    v.zero();
+    for(unsigned j=0; j<nat; j++) {
+      v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
+                out.derivs.getAtomDerivatives(i,j));
+    }
+    out.virial.set( i, v );
+  }
+}
+
+template <typename T>
+void  ColvarInput<T>::setBoxDerivativesNoPbc_inplace( const ColvarInput<T>& inpt, ColvarOutput<T>& out ) {
+  //now with no extra allocated memory:
+  unsigned nat=inpt.pos.size();
+  for(unsigned i=0; i<out.ncomponents; ++i) {
+    auto v = out.virial.getView(i);
+    LoopUnroller<9>::_zero(v.data());
+    for(unsigned j=0; j<nat; j++) {
+      const auto deriv =  out.derivs.getView(i,j);
+      v[0] -= inpt.pos[j][0]*deriv[0];
+      v[1] -= inpt.pos[j][0]*deriv[1];
+      v[2] -= inpt.pos[j][0]*deriv[2];
+
+      v[3] -= inpt.pos[j][1]*deriv[0];
+      v[4] -= inpt.pos[j][1]*deriv[1];
+      v[5] -= inpt.pos[j][1]*deriv[2];
+
+      v[6] -= inpt.pos[j][2]*deriv[0];
+      v[7] -= inpt.pos[j][2]*deriv[1];
+      v[8] -= inpt.pos[j][2]*deriv[2];
+    }
+  }
+}
 } // namespace colvar
 } //namespace PLMD
 #endif // __PLUMED_colvar_ColvarInput_h

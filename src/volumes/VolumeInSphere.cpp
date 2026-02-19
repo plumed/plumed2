@@ -19,13 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifdef __PLUMED_HAS_OPENACC
-#define __PLUMED_USE_OPENACC 1
-#endif //__PLUMED_HAS_OPENACC
+#include "VolumeInSphere.h"
 #include "core/ActionRegister.h"
-#include "tools/Pbc.h"
-#include "tools/SwitchingFunction.h"
-#include "ActionVolume.h"
 #include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES INSPHERE
@@ -86,85 +81,10 @@ PRINT ARG=s FILE=colvar
 namespace PLMD {
 namespace volumes {
 
-struct VolumeInSphere {
-#ifdef __PLUMED_USE_OPENACC
-  SwitchingFunctionAccelerable switchingFunction;
-#else
-  SwitchingFunction switchingFunction;
-#endif //__PLUMED_USE_OPENACC
-  static void registerKeywords( Keywords& keys );
-  void parseInput( ActionVolume<VolumeInSphere>* action );
-  void setupRegions( ActionVolume<VolumeInSphere>* action, const Pbc& pbc, const std::vector<Vector>& positions ) {}
-  static void parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom );
-  static void calculateNumberInside( const VolumeInput& input, const VolumeInSphere& actioninput, VolumeOutput& output );
-#ifdef __PLUMED_USE_OPENACC
-  void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1])
-    switchingFunction.toACCDevice();
-  }
-  void removeFromACCDevice() const {
-    switchingFunction.removeFromACCDevice();
-#pragma acc exit data delete(this[0:1])
-  }
-#endif //__PLUMED_USE_OPENACC
-};
-
 typedef ActionVolume<VolumeInSphere> Vols;
 PLUMED_REGISTER_ACTION(Vols,"INSPHERE_CALC")
 char glob_sphere[] = "INSPHERE";
 typedef VolumeShortcut<glob_sphere> VolumeInSphereShortcut;
 PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
-
-void VolumeInSphere::registerKeywords( Keywords& keys ) {
-  keys.setDisplayName("INSPHERE");
-  keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
-  keys.addDeprecatedKeyword("ATOM","CENTER");
-  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
-  keys.linkActionInDocs("RADIUS","LESS_THAN");
-}
-
-void VolumeInSphere::parseInput( ActionVolume<VolumeInSphere>* action ) {
-  std::string errors;
-  std::string swinput;
-  action->parse("RADIUS",swinput);
-  if(swinput.length()==0) {
-    action->error("missing RADIUS keyword");
-  }
-
-  switchingFunction.set(swinput,errors);
-  if( errors.length()!=0 ) {
-    action->error("problem reading RADIUS keyword : " + errors );
-  }
-
-  action->log.printf("  radius of sphere is given by %s \n",
-                     switchingFunction.description().c_str() );
-}
-
-void VolumeInSphere::parseAtoms( ActionVolume<VolumeInSphere>* action, std::vector<AtomNumber>& atom ) {
-  action->parseAtomList("CENTER",atom);
-  if( atom.size()==0 ) {
-    action->parseAtomList("ATOM",atom);
-  }
-  if( atom.size()!=1 ) {
-    action->error("should only be one atom specified");
-  }
-  action->log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
-}
-
-void VolumeInSphere::calculateNumberInside( const VolumeInput& input,
-    const VolumeInSphere& actioninput,
-    VolumeOutput& output ) {
-  // Calculate position of atom wrt to origin
-  Vector fpos=input.pbc.distance( Vector(input.refpos[0][0],input.refpos[0][1],input.refpos[0][2]), Vector(input.cpos[0],input.cpos[1],input.cpos[2]) );
-  double dfunc;
-  output.values[0] = actioninput.switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
-  output.derivatives = dfunc*fpos;
-  output.refders[0][0] = -output.derivatives[0];
-  output.refders[0][1] = -output.derivatives[1];
-  output.refders[0][2] = -output.derivatives[2];
-  // Add a virial contribution
-  output.virial.set( 0, -Tensor(fpos,Vector(output.derivatives[0], output.derivatives[1], output.derivatives[2])) );
-}
-
-}
-}
+} // namespace PLMD
+} // namespace volumes

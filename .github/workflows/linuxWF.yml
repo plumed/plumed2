@@ -146,18 +146,6 @@ jobs:
         echo "CXX=icpx" >> $GITHUB_ENV
         echo "CC=icx" >> $GITHUB_ENV
         echo "FC=ifx" >> $GITHUB_ENV
-    - name: Install NVHPC compiler
-      if: contains( matrix.variant, '-nvhpc-' )
-      # use this if it does not work
-      # wget https://developer.download.nvidia.com/hpc-sdk/24.3/nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # tar xpzf nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # nvhpc_2024_243_Linux_x86_64_cuda_12.3/install
-      run: |
-        curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
-        sudo apt-get update -y
-        sudo apt-get install -y nvhpc-24-3
-      # nvhpcinstalls his own mpi compilers
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
@@ -172,18 +160,65 @@ jobs:
         echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
         pip install --user mpi4py
         python -c "import mpi4py"
+    - name: Configure PLUMED
+      id: config
+      run: |
+        ccache -s -M 100M
+        #removed LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG  --prefix="$HOME/opt"
+        ccache -s -M 100M
+    - name: Config Log
+      if: failure() && steps.config.outcome == 'failure'
+      run: cat config.log
+
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=$HOME/opt
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
         ccache -s -M 100M
 
+    - name: Install NVHPC compiler
+      if: contains( matrix.variant, '-nvhpc-' )
+      # use this if it does not work
+      # wget https://developer.download.nvidia.com/hpc-sdk/24.3/nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
+      # tar xpzf nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
+      # nvhpc_2024_243_Linux_x86_64_cuda_12.3/install
+      run: |
+        curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
+        echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
+        sudo apt-get update -y
+        sudo apt-get install -y nvhpc-24-3
+        NVHOME=/opt/nvidia/hpc_sdk
+        NVARCH=`uname -s`_`uname -m`
+        # echo "NVHPC=$NVHOME" >> $GITHUB_ENV
+        # echo "NVHPC_ROOT=$NVHOME/$NVARCH/24.3" >> $GITHUB_ENV
+        nvcudadir=$NVHOME/$NVARCH/24.3/cuda
+        nvcompdir=$NVHOME/$NVARCH/24.3/compilers
+        nvmathdir=$NVHOME/$NVARCH/24.3/math_libs
+        nvcommdir=$NVHOME/$NVARCH/24.3/comm_libs
+
+        echo "PATH=$nvcudadir/bin:$nvcompdir/bin:$nvcommdir/mpi/bin:$nvcompdir/extras/qd/bin:$PATH" >> $GITHUB_ENV
+        # echo "LD_LIBRARY_PATH=$nvcudadir/lib64:$nvcudadir/12.3/targets/x86_64-linux/lib/stubs/:$nvcudadir/extras/CUPTI/lib64:$nvcompdir/extras/qd/lib:$nvcompdir/lib:$nvmathdir/lib64:$nvcommdir/nccl/lib:$nvcommdir/nvshmem/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        # echo "CPATH=$nvmathdir/include:$nvcommdir/nccl/include:$nvcommdir/nvshmem/include:$nvcompdir/extras/qd/include/qd:$CPATH" >> $GITHUB_ENV
+        # echo "NVHPC_CUDA_HOME=$nvcudadir/12.3" >> $GITHUB_ENV
+
+        $nvcompdir/bin/nvc++ -help -gpu
+        echo "NVCXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
+        echo "NVCC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
+        echo "NVFC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
+    - name: check if the openacc module can be compiled
+      if: contains( matrix.variant, '-nvhpc-' )
+      run: |
+          source sourceme.sh
+          cd plugins/openaccPTM/
+          ./configure.sh
+          NVCXX=$NVCXX make
+
     - name: Run tests
-      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
+      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
