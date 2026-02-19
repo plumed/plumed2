@@ -248,22 +248,7 @@ S2ContactModel::~S2ContactModel() {
 }
 
 void S2ContactModel::prepare() {
-  if(nl->getStride()>0) {
-    if(firsttime || (getStep()%nl->getStride()==0)) {
-      requestAtoms(nl->getFullAtomList());
-      invalidateList=true;
-      firsttime=false;
-    } else {
-      requestAtoms(nl->getReducedAtomList());
-      invalidateList=false;
-      if(getExchangeStep()) {
-        error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
-      }
-    }
-    if(getExchangeStep()) {
-      firsttime=true;
-    }
-  }
+  std::tie(firsttime,invalidateList) = nl->prepare(this,firsttime,invalidateList).get();
 }
 
 // calculator

@@ -27,6 +27,7 @@
 #include "Communicator.h"
 #include "OpenMP.h"
 #include "Tools.h"
+#include "core/Colvar.h"
 #include <string>
 #include "LinkCells.h"
 #include "View.h"
@@ -296,11 +297,17 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       }
     }
   }
-
-  setRequestList();
+  if (stride_ >1) {
+    setRequestList();
+  } else {
+    reduced=true;
+  }
 }
 
 void NeighborList::setRequestList() {
+  // at time of adding the `if (stride_>1)` in `update()`
+  // this function is called only from `update()` and it is private
+  // so as now it is not necessary to add extra logic in this function
   requestlist_.clear();
   for(unsigned int i=0; i<size(); ++i) {
     requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
@@ -311,25 +318,30 @@ void NeighborList::setRequestList() {
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
-  if(!reduced) {
-    for(unsigned int i=0; i<size(); ++i) {
-      AtomNumber index0=fullatomlist_[neighbors_[i].first];
-      AtomNumber index1=fullatomlist_[neighbors_[i].second];
+  if(stride_>1) {
+    if(!reduced) {
+      for(unsigned int i=0; i<size(); ++i) {
+        AtomNumber index0=fullatomlist_[neighbors_[i].first];
+        AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
 // And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
 // so I can use lower_bond that uses binary seach instead of find
-      plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
-      auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
-      plumed_dbg_assert(p!=requestlist_.end());
-      unsigned newindex0=p-requestlist_.begin();
-      p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
-      plumed_dbg_assert(p!=requestlist_.end());
-      unsigned newindex1=p-requestlist_.begin();
-      neighbors_[i]=pairIDs(newindex0,newindex1);
+        plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
+        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
+        plumed_dbg_assert(p!=requestlist_.end());
+        unsigned newindex0=p-requestlist_.begin();
+        p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
+        plumed_dbg_assert(p!=requestlist_.end());
+        unsigned newindex1=p-requestlist_.begin();
+        neighbors_[i]=pairIDs(newindex0,newindex1);
+      }
     }
+    reduced=true;
+    return requestlist_;
+  } else {
+    //safeguard in case the stride is set to 0 or 1
+    return getFullAtomList();
   }
-  reduced=true;
-  return requestlist_;
 }
 
 unsigned NeighborList::getStride() const {
@@ -373,4 +385,28 @@ std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) const {
   return neighbors;
 }
 
+NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
+    bool firsttime,
+    bool invalidateList) {
+  if(stride_>0) {
+    if(stride_==1) {
+      invalidateList=true;
+      firsttime=false;
+    } else if(firsttime || (aa->getStep()%stride_==0 )) {
+      aa->requestAtoms(getFullAtomList());
+      invalidateList=true;
+      firsttime=false;
+    } else {
+      aa->requestAtoms(getReducedAtomList());
+      invalidateList=false;
+      if(aa->getExchangeStep()) {
+        aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
+      }
+    }
+    if(aa->getExchangeStep()) {
+      firsttime=true;
+    }
+  }
+  return {firsttime,invalidateList};
+}
 } // namespace PLMD
