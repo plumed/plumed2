@@ -164,6 +164,8 @@ class ThreeBodyGFunctions : public ActionWithVector {
 public:
   using input_type = ThreeBodyGFunctionsInput;
   using PTM = ParallelTaskManager<ThreeBodyGFunctions>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
 public:

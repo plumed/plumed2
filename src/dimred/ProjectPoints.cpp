@@ -258,6 +258,8 @@ class ProjectPoints : public ActionWithVector {
 public:
   using input_type = ProjectPointsInput;
   using PTM = ParallelTaskManager<ProjectPoints>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   unsigned dimout;
   mutable std::vector<unsigned> rowstart;

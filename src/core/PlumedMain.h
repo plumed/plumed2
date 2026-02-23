@@ -535,6 +535,8 @@ public:
   void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
 /// Check if the input has been initialized
   bool hasBeenInitialized() const ;
+/// Check if an action with the given name has been registered by default or LOADed
+  bool checkAction(const std::string& action) const;
 };
 
 /////

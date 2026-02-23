@@ -137,6 +137,9 @@ namespace volumes {
 
 class VolumeTetrapore {
 public:
+  using precision=double;
+  typedef VolumeIn<precision> VolumeInput;
+  typedef VolumeOut<precision> VolumeOutput;
   double jacob_det{0.0};
   double len_bi{0.0}, len_cross{0.0}, len_perp{0.0}, sigma{0.0};
   Vector bi, cross, perp;

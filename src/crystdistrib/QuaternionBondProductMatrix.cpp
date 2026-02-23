@@ -27,9 +27,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
-
-#include <iostream>
-
 namespace PLMD {
 namespace crystdistrib {
 
@@ -78,6 +75,8 @@ class QuaternionBondProductMatrix : public ActionWithVector {
 public:
   using input_type = QuatBondProdMatInput;
   using PTM = ParallelTaskManager<QuaternionBondProductMatrix>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
   std::vector<unsigned> active_tasks;

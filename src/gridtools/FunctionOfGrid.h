@@ -37,6 +37,8 @@ class FunctionOfGrid : public ActionWithGrid {
 public:
   using input_type = function::FunctionData<T>;
   using PTM = ParallelTaskManager<FunctionOfGrid<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;

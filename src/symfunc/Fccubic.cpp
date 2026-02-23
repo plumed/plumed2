@@ -19,13 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Fccubic.h"
 #include "function/FunctionSetup.h"
 #include "function/FunctionShortcut.h"
 #include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
-#include <string>
-#include <cmath>
 
 namespace PLMD {
 namespace symfunc {
@@ -174,72 +173,11 @@ By using the MASK keyword in the input to FCCUBIC_FUNC we ensure that the [FCCUB
 */
 //+ENDPLUMEDOC
 
-class Fccubic {
-public:
-  double alpha, a1, b1;
-  static void registerKeywords( Keywords& keys );
-  static void read( Fccubic& func, ActionWithArguments* action, function::FunctionOptions& funcout );
-  static void calc( const Fccubic& func, bool noderiv, View<const double> args, function::FunctionOutput& funcout );
-  Fccubic& operator=(const Fccubic& m) {
-    alpha = m.alpha;
-    a1 = m.a1;
-    b1 = m.b1;
-    return *this;
-  }
-};
 
-typedef function::FunctionShortcut<Fccubic> FccubicShortcut;
+typedef function::FunctionShortcut<Fccubic<double>> FccubicShortcut;
 PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCUBIC_FUNC")
-typedef function::FunctionOfMatrix<Fccubic> MatrixFccubic;
+typedef function::FunctionOfMatrix<Fccubic<double>> MatrixFccubic;
 PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCUBIC_FUNC_MATRIX")
-
-void Fccubic::registerKeywords( Keywords& keys ) {
-  keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
-  keys.setValueDescription("matrix","a function that measures the similarity with an fcc environment");
-}
-
-void Fccubic::read( Fccubic& func, ActionWithArguments* action, function::FunctionOptions& funcout ) {
-  // Scaling factors such that '1' corresponds to fcc lattice
-  // and '0' corresponds to isotropic (liquid)
-  action->parse("ALPHA",func.alpha);
-  func.a1 = 80080. / (2717. + 16*func.alpha);
-  func.b1 = 16.*(func.alpha-143)/(2717+16*func.alpha);
-  action->log.printf("  setting alpha paramter equal to %f \n",func.alpha);
-}
-
-void Fccubic::calc( const Fccubic& func, bool noderiv, const View<const double> args, function::FunctionOutput& funcout ) {
-  double x2 = args[0]*args[0];
-  double x4 = x2*x2;
-
-  double y2 = args[1]*args[1];
-  double y4 = y2*y2;
-
-  double z2 = args[2]*args[2];
-  double z4 = z2*z2;
-
-  double d2 = x2 + y2 + z2;
-  if( d2 < epsilon ) {
-    d2 = 1;
-  }
-  double r8 = pow( d2, 4 );
-  double r12 = pow( d2, 6 );
-
-  double tmp = ((x4*y4)+(x4*z4)+(y4*z4))/r8-func.alpha*x4*y4*z4/r12;
-
-  double t0 = (x2*y4+x2*z4)/r8-func.alpha*x2*y4*z4/r12;
-  double t1 = (y2*x4+y2*z4)/r8-func.alpha*y2*x4*z4/r12;
-  double t2 = (z2*x4+z2*y4)/r8-func.alpha*z2*x4*y4/r12;
-  double t3 = (2*tmp-func.alpha*x4*y4*z4/r12)/d2;
-
-  if( !noderiv ) {
-    funcout.derivs[0][0]=4*func.a1*args[0]*(t0-t3);
-    funcout.derivs[0][1]=4*func.a1*args[1]*(t1-t3);
-    funcout.derivs[0][2]=4*func.a1*args[2]*(t2-t3);
-  }
-
-  // Set the value and the derivatives
-  funcout.values[0] = (func.a1*tmp+func.b1);
-}
 
 }
 }

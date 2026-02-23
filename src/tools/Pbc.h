@@ -93,6 +93,8 @@ public:
 /// if specified, also returns the number of attempted shifts
 #pragma acc routine seq
   Vector distance(const Vector&, const Vector&)const;
+#pragma acc routine seq
+  Vector3f distance(const Vector3f&, const Vector3f&)const;
 /// Computes v2-v1, using minimal image convention
 /// if specified, also returns the number of attempted shifts
   Vector distance(const Vector&, const Vector&,int*nshifts)const;
@@ -115,10 +117,14 @@ public:
 /// Thus:pbc.realToScaled(v) == matmul(transpose(inverse(pbc.getBox(),v)));
 #pragma acc routine seq
   Vector realToScaled(const Vector&)const;
+#pragma acc routine seq
+  Vector3f realToScaled(const Vector3f&)const;
 /// Transform a vector in scaled coordinates to a vector in real space.
 /// Thus:pbc.scaledToRead(v) == matmul(transpose(pbc.getBox()),v);
 #pragma acc routine seq
   Vector scaledToReal(const Vector&)const;
+#pragma acc routine seq
+  Vector3f scaledToReal(const Vector3f&)const;
 /// Returns true if the box vectors are orthogonal
 #pragma acc routine seq
   bool isOrthorombic()const;
