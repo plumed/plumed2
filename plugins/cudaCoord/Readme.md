@@ -7,6 +7,13 @@ This is the optimized version of the lesson that I presented in the [plumed-scho
 The files `cudaHelpers.cuh` and `cudaHelpers.cu` contains a few support functions for helping in interfacing `PLMD::Vector` and `PLMD::Tensor` with Cuda's thrust,
 along with the reduction functions baked with Cuda's cub building blocks and their drivers.
 
+>[!WARNING]
+>Plumed may refuse to to the calculations if the GPU does not allow for the calculations to be done.
+>We are currently working on a solution for this
+>
+>A workaround is reducing the size of the cutoff of the neigbor list or to increase the number of threads with THREADS
+>Plumed will present the user wiht an error message with the suggestion.
+
 ### Compile
 
 
