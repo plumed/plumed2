@@ -724,21 +724,21 @@ def _guessplumedroot(kernel=None):
        dir from there.
     """
     try:
-        import tempfile
-        log=tempfile.mkstemp()[1]
-        with Plumed(kernel) as p:
-            p.cmd("setLogFile",log)
-            p.cmd("init")
-        i=0
-        root=""
-        with open(log) as fin:
-            for line in fin:
-                i=i+1
-                if re.match("PLUMED: Root: ",line):
-                    root=re.sub("PLUMED: Root: ","",line).rstrip("\n")
-                    break
-        if len(root)>0:
-            return root
+        from tempfile import NamedTemporaryFile
+        #mkstemp does not delete the created file, so we improvise:
+        with NamedTemporaryFile() as tmpfile:
+             log=tmpfile.name
+             with Plumed(kernel) as p:
+                 p.cmd("setLogFile",log)
+                 p.cmd("init")
+             root=None
+             with open(log) as fin:
+                 for line in fin:
+                     if re.match("PLUMED: Root: ",line):
+                         root=re.sub("PLUMED: Root: ","",line).rstrip("\n")
+                         break
+             if root and len(root)>0:
+                 return root
     except:
         pass
     # alternative solution, search for a plumed executable in the path
