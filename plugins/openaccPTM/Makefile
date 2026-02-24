@@ -1,4 +1,12 @@
-include ./Makefile.conf
+# I want to include the configuration only if the target is not only astyle or clean or a combination of astyle and clean
+# And I want an error if the configuration does not exists
+#no targets
+ifeq ($(MAKECMDGOALS),)
+  include ./Makefile.conf
+# otherwise include if the user asked (also) for something other than clean and astyle
+else ifneq ($(MAKECMDGOALS),$(filter clean astyle,$(MAKECMDGOALS)))
+  include ./Makefile.conf
+endif
 
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
 #this assumes gcc
@@ -60,3 +68,7 @@ clean:
 check: all
 	$(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
+
+astyle:
+	@./astyle.sh
+

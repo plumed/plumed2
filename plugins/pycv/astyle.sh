@@ -16,6 +16,7 @@ for file in *.c *.cpp *.h *.inc.in; do
     else
       cp "${file}.tmp" "$file"
       echo " +++ PATCHED"
+      git add "$file"
     fi
   }
 

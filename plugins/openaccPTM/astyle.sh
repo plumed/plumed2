@@ -2,7 +2,7 @@
 
 astyle=$(which astyle || ../../astyle/astyle)
 
-for file in *.c *.cpp *.h *.inc.in *.cu *.cuh; do
+for file in *.c *.cpp *.h *.inc.in; do
 
   test -f "$file" || continue
 
