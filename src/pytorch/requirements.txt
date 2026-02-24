@@ -1,0 +1,4 @@
+# torch 2.7 is the first one to use cxx11 ABI for the PyPI wheels
+#--extra-index-url=https://download.pytorch.org/whl/cpu
+# the extra url should be specified by the user, to select a a more specific cpu build or a gpu one
+torch>=2.7
