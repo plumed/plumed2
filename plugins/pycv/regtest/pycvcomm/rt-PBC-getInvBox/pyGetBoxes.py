@@ -29,7 +29,7 @@ plumedInit = dict(
 )
 
 
-def pyInvBox(action: plumedCommunications.PythonCVInterface):    
+def pyInvBox(action: plumedCommunications.PythonCVInterface):
     invBox = action.getPbc().getInvBox()
     print(f"{invBox=}", file=log)
     ret = {}

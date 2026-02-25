@@ -8,12 +8,14 @@
 import plumedCommunications
 import pydoc
 
+
 def plumedInit(_):
-    #rather than the other doc example this creates a very ugly html manua;
+    # rather than the other doc example this creates a very ugly html manua;
     pydoc.writedoc(plumedCommunications)
     pydoc.writedoc(plumedCommunications.defaults)
     pydoc.writedoc(plumedCommunications.PythonCVInterface)
-    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV, "ATOMS":"1"}
+    return {"Value": plumedCommunications.defaults.COMPONENT_NODEV, "ATOMS": "1"}
+
 
 def plumedCalculate(_):
     return 0
