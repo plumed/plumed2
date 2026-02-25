@@ -1,0 +1,97 @@
+name: python tests
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# these are used to build required packages
+  CC: gcc
+  CXX: g++
+
+jobs:
+  linux-build-plumed:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ccache-python-linux-${{ github.sha }}
+        restore-keys: ccache-python-linux-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+
+    - name: Build PLUMED
+      run: |
+        ccache -s -M 100M
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG --prefix=$HOME/opt
+        make -j 4
+        make install
+        # check for global symbols, see https://github.com/plumed/plumed2/issues/549
+        make nmcheck
+        ccache -s -M 100M
+    - name: prepare the plumedArtifact
+      run: |
+        cd $HOME
+        tar cf plumed.tar opt/
+
+    - name: Upload the Plumed artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: plumed-python-linux
+        path: ~/plumed.tar
+        retention-days: 1
+
+  linux-test-python:
+    needs:
+    - linux-build-plumed
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        pyversion: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
+    steps:
+      #still checking out to install the plumed package and pycv
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.pyversion }}
+        pip-install: pytest -r ./python/requirements_run.txt
+
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        export-kernel: true
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v7
+      with:
+        path: ~/
+        name: plumed-python-linux
+
+    - name: Install plumed
+      run: |
+          cd $HOME
+          tar xf ~/plumed.tar
+
+    - name: Install the python pacakge
+      working-directory: ./python
+      run: |
+         make PLUMED_VERSION
+         pip install .
+    - name: Run python tests
+      working-directory: ./python
+      run: |
+         pytest -v
+    - name: Compile and test pycv
+      working-directory: ./plugins/pycv/
+      run: |
+            ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
+            make check

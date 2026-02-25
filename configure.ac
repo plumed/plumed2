@@ -369,7 +369,6 @@ PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
-PLUMED_CONFIG_ENABLE([pycv],[set up the pycv plugin],[yes])
 PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
@@ -906,16 +905,10 @@ if test $fftw = true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
 
-# python executable: if any of CYTHON_FOUND or PLUMED_CAN_PYCV is on will store
-# the python executable
+# python executable: if PYTHON_BUILD_FOUND is on will store the python executable
 AC_SUBST(PYTHON_BIN)
-# set if PYTHON_BIN has Cython in its environment
-AC_SUBST(CYTHON_FOUND)
-# definitions and variables related to pycv and in general embedding python
-AC_SUBST(PLUMED_CAN_PYCV)
-AC_SUBST(PYBIND11_CFLAGS)
-AC_SUBST(PYTHON_LDFLAGS)
-AC_SUBST(PYTHON_CFLAGS)
+# set if PYTHON_BIN has build in its environment
+AC_SUBST(PYTHON_BUILD_FOUND)
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
 # Otherwise, search from a list of names:
@@ -924,44 +917,12 @@ if test -z "$PYTHON_BIN" ; then
 fi
 if test -n "$PYTHON_BIN" ; then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-  if test $pycv = true  ; then
-    AC_MSG_CHECKING([pycv: support for required python modules (python3, pybind11, numpy)])
-  testimport="
-import numpy
-import pybind11
-#no need to check for python3, if you have python2, you don't have pybind11 (and vice-versa)
-"
-    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
-
-       pyver=$($PYTHON_BIN -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))")
-       python_config=python${pyver}-config
-
-       if ${python_config} --ldflags --embed 1>/dev/null 2>/dev/null ;then
-          AC_MSG_RESULT([yes])
-          PYBIND11_CFLAGS="$($PYTHON_BIN -m pybind11 --includes) -fvisibility=hidden"
-          PYTHON_CFLAGS=$(${python_config} --cflags --embed)
-          PYTHON_LDFLAGS=$(${python_config} --ldflags --embed)
-          #TODO: conda_fixup
-          PLUMED_CAN_PYCV=yes
-        else
-          AC_MSG_RESULT([no])
-          AC_MSG_WARN([cannot enable pycv])
-          AC_MSG_WARN(["PyCV needs python to be embeddable, please rebuild python"])
-       fi
-    else
-       AC_MSG_RESULT([no])
-       AC_MSG_WARN([cannot enable pycv])
-    fi
-  else
-    AC_MSG_WARN([cannot enable pycv])
-  fi
-
   if test $python = true  ; then
-    AC_MSG_CHECKING([python wrapper: support for required python modules (python3, setuptools, cython)])
+    AC_MSG_CHECKING([python wrapper: support for required python modules (python3, setuptools, build)])
     testimport="
 from setuptools import setup
 from setuptools import Extension
-from Cython.Build import cythonize
+import build
 import sys
 if sys.version_info < (3,):
     raise ImportError('PLUMED>= 2.6 only supports Python 3')
@@ -969,7 +930,7 @@ if sys.version_info < (3,):
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
        AC_DEFINE([__PLUMED_HAS_PYTHON])
-       CYTHON_FOUND=yes
+       PYTHON_BUILD_FOUND=yes
     else
        AC_MSG_RESULT([no])
        AC_MSG_WARN([cannot enable python interface])
@@ -979,7 +940,7 @@ if sys.version_info < (3,):
   fi
 fi
 
-if test "${PLUMED_CAN_PYCV}" != yes &&  test "${CYTHON_FOUND}" != yes; then
+if test "${PYTHON_BUILD_FOUND}" != yes; then
   #this deactivate python bin if no package was found
   PYTHON_BIN=
 fi
