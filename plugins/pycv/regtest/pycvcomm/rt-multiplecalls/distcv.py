@@ -1,4 +1,3 @@
-import numpy as np
 import plumedCommunications
 
 # In reality one should not log stuff here...

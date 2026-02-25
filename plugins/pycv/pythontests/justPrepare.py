@@ -7,7 +7,7 @@ plumedInit = {
 
 
 def plumedPrepare(_: plumedCommunications.PythonCVInterface):
-    toret = {"setAtomRequest": f"1"}
+    toret = {"setAtomRequest": "1"}
     return toret
 
 

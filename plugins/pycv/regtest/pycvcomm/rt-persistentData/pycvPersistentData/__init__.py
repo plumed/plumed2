@@ -5,7 +5,6 @@
 # And, of course, one should not call slow functions (such as print)
 # in the CV calculation.
 
-import numpy as np
 import plumedCommunications
 from plumedCommunications.defaults import COMPONENT_NODEV
 from sys import stderr as log

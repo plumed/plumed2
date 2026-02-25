@@ -7,9 +7,9 @@
 
 import numpy as np
 import plumedCommunications
+from sys import stderr as log
 
-# import plumedUtilities
-log = open("pydist.log", "w")
+# log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 

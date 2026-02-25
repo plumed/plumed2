@@ -17,7 +17,7 @@ plumedInit = {
 
 
 def changeAtom(plmdAction: plumedCommunications.PythonCVInterface):
-    print(f"pyCVCALLED")
+    print("pyCVCALLED")
     toret = {"setAtomRequest": f"1, {int(plmdAction.getStep()) + 2}"}
     # this is just for "fun"
     if plmdAction.getStep() == 3:

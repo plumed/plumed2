@@ -2,6 +2,10 @@ import subprocess
 import json
 
 
+class InvalidJSONError(Exception):
+    pass
+
+
 def get_dois_from_syntax():
     with open("syntax.json") as f:
         try:

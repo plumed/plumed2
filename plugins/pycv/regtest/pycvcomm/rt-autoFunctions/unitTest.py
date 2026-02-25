@@ -1,5 +1,4 @@
 import plumedCommunications as PLMD
-import numpy
 from sys import stderr as log
 # log = open("pydist.log", "w")
 

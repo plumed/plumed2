@@ -72,7 +72,7 @@ def getActionDocumentation(actionFile: str, syntax: dict) -> tuple[dict, dict]:
                         taglist = key + " "
                 if actioname in syntax.keys():
                     tags[actioname] = taglist
-            elif indocs and not "/*" in line and not "*/" in line:
+            elif indocs and "/*" not in line and "*/" not in line:
                 founddocs += line + "\n"
     return docs, tags
 
@@ -321,7 +321,7 @@ The documentation in this manual was built on [{date.today().strftime("%B %d, %Y
 def printChangeLog(clf):
     from packaging.version import Version
 
-    content = f"""
+    content = """
 Change Log
 ----------
 
@@ -385,7 +385,7 @@ The [actions](actions.md) that can be used within a PLUMED input file are listed
         ["Name", "Description", "Tags"],
         tabledata,
         tagdictionary,
-        extraAttributes={"Name": {"class": f"actionHeader"}},
+        extraAttributes={"Name": {"class": "actionHeader"}},
     )
 
 
@@ -901,7 +901,7 @@ def createCLToolPage(
             f.write("| " + key + " | " + docs["description"] + " |\n")
         if undoc > 0:
             undocumented_keywords.append(
-                ['<a href="../' + action + '">' + action + "</a>", value["module"]]
+                ['<a href="../' + tool + '">' + tool + "</a>", value["module"]]
             )
         if "dois" in value and len(value["dois"]) > 0:
             f.write("\n## References \n")
@@ -1372,7 +1372,7 @@ if (
     __name__ == "__main__"
 ):  # Get the version of plumed that we are building the manual for
     version = (
-        subprocess.check_output(f"../src/lib/plumed info --version", shell=True)
+        subprocess.check_output("../src/lib/plumed info --version", shell=True)
         .decode("utf-8")
         .strip()
     )

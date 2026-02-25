@@ -56,7 +56,7 @@ def cd(newdir):
 def read_xyz(filename):
     xyz = open(filename)
     n_atoms = int(xyz.readline())
-    title, trajectory = xyz.readline(), []
+    _, trajectory = xyz.readline(), []
     while True:
         atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms, 3])
         for i in range(0, n_atoms):
@@ -71,7 +71,7 @@ def read_xyz(filename):
         c_atoms = int(nextline)
         if c_atoms != n_atoms:
             break
-        title = xyz.readline()
+        _ = xyz.readline()
     xyz.close()
     return trajectory
 

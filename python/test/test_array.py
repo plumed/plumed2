@@ -1,6 +1,5 @@
 # simple test using raw arrays instead of numpy
 import plumed
-import os
 import array
 import unittest
 

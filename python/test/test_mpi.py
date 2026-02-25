@@ -1,6 +1,5 @@
 # simple test to check setMPIComm and mpi4py
 import plumed
-import os
 import unittest
 
 try:
