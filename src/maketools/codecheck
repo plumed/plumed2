@@ -54,6 +54,7 @@ fi
 
     if [[ $do_modified = false ]]; then
       extra[${#extra[@]}]="${basedir}/configure.ac"
+      extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
     fi
     if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
       extra[${#extra[@]}]=--global-check

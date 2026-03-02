@@ -1,0 +1,5 @@
+# The extra url makes pip grap the torch fersion we want to use in the regtests
+--extra-index-url=https://download.pytorch.org/whl/cpu
+torch>=2.7
+metatomic-torch>=0.1.3,<0.2
+featomic-torch==0.7.0

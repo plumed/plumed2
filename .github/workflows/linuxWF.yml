@@ -37,59 +37,25 @@ jobs:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
-    - name: Removed unused stuff
-      run: |
-        df -h
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        df -h
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+        pytest-make: true
+        boost-debug: ${{ contains( matrix.variant, '-debug-' ) }}
+        mpi: ${{ contains( matrix.variant, '-mpi-' ) }}
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
-    - name: Set paths
-      run: |
-        echo "$HOME/opt/bin" >> $GITHUB_PATH
-        # path required for pytest:
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
-        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
-        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-    - name: Install generic packages
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y libatlas-base-dev
-        sudo apt-get install -y libfftw3-dev
-        sudo apt-get install -y gsl-bin
-        sudo apt-get install -y libgsl0-dev
-        sudo apt-get install -y ccache
-    - name: Install system boost
-      if: ${{ ! contains( matrix.variant, '-debug-' ) }}
-      run: |
-        sudo apt-get install -y libboost-serialization-dev
-    - name: Install boost with debug flags
-      if: contains( matrix.variant, '-debug-' )
-      run: |
-        .ci/install.boost
+        # testing the oldest supported python version, see the "python" workflow for newer version
+        python-version: "3.10"
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
-        pip install --user --extra-index-url=https://download.pytorch.org/whl/cpu \
-              Cython \
-              numpy \
-              pytest \
-              six \
-              pandas \
-              mdtraj \
-              MDAnalysis \
-              "torch>=2.7" \
-              "metatomic-torch>=0.1.3,<0.2" \
-              "featomic-torch==0.7.0"
-
-        # torch 2.7 above is the first one to use cxx11 ABI for the PyPI wheels
+        pip install --user -r ./python/requirements_build.txt
+        pip install --user -r ./python/requirements_run.txt
+        pip install --user -r ./.ci/pytorch/requirements.txt
 
     - name: Configure libmetatomic & libtorch
       if: ${{ ! contains( matrix.variant, '-debug-' ) }} # the libraries on PyPI are not compiled with GLIBCXX_DEBUG
@@ -102,14 +68,11 @@ jobs:
 
         # the flags above enable the use of both libmetatomic and libtorch
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
-    - name: Install Doxygen
+    - name: Install tools for setting up the manuals
       if: contains( matrix.variant, '-doc-' )
       run: |
-        pip install requests
-        pip install PlumedToHTML
-        pip install networkx
-        pip install mkdocs-material
-        pip install python-markdown-math
+        python -m pip install --upgrade pip
+        pip install --user -r ./new-manual/requirements.txt
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         .ci/install.doxygen Release_1_13_2
@@ -150,14 +113,6 @@ jobs:
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
       run: |
-        sudo apt-get install -y libopenmpi-dev openmpi-bin
-        echo "CC=mpicc" >> $GITHUB_ENV
-        echo "CXX=mpic++" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
-        echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
-        echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
         pip install --user mpi4py
         python -c "import mpi4py"
     - name: Configure PLUMED
@@ -230,6 +185,7 @@ jobs:
     - name: Run python tests
       run: |
          cd python
+         pip install --user pytest
          pytest -v
     - name: Build doc
       env:

@@ -26,7 +26,11 @@ jobs:
   mac:
     uses: ./.github/workflows/macWF.yml
     secrets: inherit
-        
+
+  python:
+    uses: ./.github/workflows/pythonWF.yml
+    secrets: inherit
+
   docker:
     uses: ./.github/workflows/dockerWF.yml
     secrets: inherit
