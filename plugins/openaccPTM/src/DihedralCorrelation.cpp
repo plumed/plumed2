@@ -21,10 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "plumed/core/ActionRegister.h"
 #include "plumed/colvar/MultiColvarTemplate.h"
-#include "plumed/colvar/Dipole.h"
+#include "plumed/colvar/DihedralCorrelation.h"
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Dipole<double>,PLMD::ACCPTM> DipoleMultiAcc;
+namespace PLMD {
+namespace colvar {
+typedef MultiColvarTemplate<DihedralCorrelation<double>,PLMD::ACCPTM> DihedralCorrelationMultiAcc;
 
-PLUMED_REGISTER_ACTION(DipoleMultiAcc,"DIPOLE_VECTORACC")
+PLUMED_REGISTER_ACTION(DihedralCorrelationMultiAcc,"DIHEDRALCORRELATION_VECTORACC")
+} // namespace colvar
+} // namespace PLMD

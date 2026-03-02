@@ -25,6 +25,10 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Torsion<float>,PLMD::ACCPTM> TorsionMultiAcc;
+namespace PLMD {
+namespace colvar {
+typedef MultiColvarTemplate<Torsion<float>,PLMD::ACCPTM> TorsionMultiAcc;
 
 PLUMED_REGISTER_ACTION(TorsionMultiAcc,"TORSION_VECTORACC")
+} // namespace colvar
+} // namespace PLMD

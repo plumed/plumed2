@@ -29,6 +29,9 @@ else
   SONAME_OPTION:=-Xlinker -soname
 endif
 
+#this makes make search for files in src
+VPATH = src
+
 .PHONY: clean check all astyle
 
 all: CudaCoordination.$(SOEXT)
@@ -48,8 +51,9 @@ CudaCoordination.$(SOEXT): $(OBJS)
 	@echo Linking $@
 	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(LDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
+#clean should work even if Makefile.conf is not here
 clean:
-	@rm -fv $(OBJS) CudaCoordination.$(SOEXT)
+	@rm -fv $(OBJS) CudaCoordination.so CudaCoordination.dylib
 	@rm -rf .deps
 
 check: all
@@ -57,5 +61,5 @@ check: all
 	$(MAKE) -C regtest checkfail
 
 astyle:
-	@./astyle.sh
+	@../astyle.sh
 

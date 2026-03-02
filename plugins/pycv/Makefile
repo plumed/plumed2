@@ -28,5 +28,5 @@ check_python: pycv_here
 check: check_standalone check_python
 
 astyle:
-	@./astyle.sh
+	@../astyle.sh
 
