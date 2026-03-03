@@ -1,0 +1,8 @@
+DEBUG DETAILED_TIMERS
+
+#the second 1 will trigger an error in the **number** of the derivatives if the duplicates are not removed when updating the request list in the NL
+#the number of the derivatives is 18 at NL steps an 15 at non NL steps
+c: COORDINATION GROUPA=1,2,1 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLIST      NL_STRIDE=4 NL_CUTOFF=2.0
+PRINT ARG=c FILE=colvar FMT=%8.4f STRIDE=1
+
+DUMPDERIVATIVES ARG=c FILE=deriv FMT=%6.3f
