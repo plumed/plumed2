@@ -129,6 +129,7 @@ void NeighborList::initialize() {
   for(unsigned int i=0; i<nallpairs_; ++i) {
     neighbors_[i]=getIndexPair(i);
   }
+  requestIndexes_.assign(fullatomlist_.size(),true);
 }
 
 std::vector<AtomNumber>& NeighborList::getFullAtomList() {
@@ -309,12 +310,19 @@ void NeighborList::setRequestList() {
   // this function is called only from `update()` and it is private
   // so as now it is not necessary to add extra logic in this function
   requestlist_.clear();
-  for(unsigned int i=0; i<size(); ++i) {
-    requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
-    requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
-  }
-  Tools::removeDuplicates(requestlist_);
   reduced=false;
+  requestIndexes_.assign(fullatomlist_.size(),false);
+  for(unsigned int i=0; i<size(); ++i) {
+    requestIndexes_[neighbors_[i].first]=true;
+    requestIndexes_[neighbors_[i].second]=true;
+  }
+  requestlist_.reserve(requestIndexes_.size());
+  for (unsigned i=0 ; i < requestIndexes_.size(); ++i) {
+    if(requestIndexes_[i]) {
+      requestlist_.push_back(fullatomlist_[i]);
+    }
+  }
+   Tools::removeDuplicates(requestlist_);
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
@@ -393,11 +401,11 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
       invalidateList=true;
       firsttime=false;
     } else if(firsttime || (aa->getStep()%stride_==0 )) {
-      aa->requestAtoms(getFullAtomList());
+      aa->Colvar::requestAtoms(getFullAtomList());
       invalidateList=true;
       firsttime=false;
     } else {
-      aa->requestAtoms(getReducedAtomList());
+      aa->Colvar::requestAtoms(getReducedAtomList());
       invalidateList=false;
       if(aa->getExchangeStep()) {
         aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
