@@ -104,7 +104,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   }
   readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
   if( minzero ) {
-    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz" );
+    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz NOINTERPOL" );
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_unz," + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
   }
 }
