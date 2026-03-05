@@ -36,6 +36,8 @@
 #include <numeric>
 #include <cstdlib>
 
+#include <iostream>
+
 #pragma GCC diagnostic error "-Wswitch"
 
 namespace PLMD {
@@ -56,7 +58,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
     style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
     pbc_(&pbc),
     comm(cm),
-    //copy-initialize fullatomlist_
+//copy-initialize fullatomlist_
     fullatomlist_(list0),
     distance_(distance),
     nlist0_(list0.size()),
@@ -298,7 +300,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       }
     }
   }
-  if (stride_ >1) {
+  if (stride_ >1 && style_ != NNStyle::SingleList) {
     setRequestList();
   } else {
     reduced=true;
@@ -306,9 +308,10 @@ void NeighborList::update(const std::vector<Vector>& positions) {
 }
 
 void NeighborList::setRequestList() {
+  std::cerr <<"reqlist\n";
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
-  // so as now it is not necessary to add extra logic in this function
+  // so as now it is not necessary to add extra logic in this function
   requestlist_.clear();
   reduced=false;
   requestIndexes_.assign(fullatomlist_.size(),false);
@@ -322,11 +325,11 @@ void NeighborList::setRequestList() {
       requestlist_.push_back(fullatomlist_[i]);
     }
   }
-   Tools::removeDuplicates(requestlist_);
+  Tools::removeDuplicates(requestlist_);
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
-  if(stride_>1) {
+  if (stride_ >1 && style_ != NNStyle::SingleList) {
     if(!reduced) {
       for(unsigned int i=0; i<size(); ++i) {
         AtomNumber index0=fullatomlist_[neighbors_[i].first];
@@ -401,11 +404,15 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
       invalidateList=true;
       firsttime=false;
     } else if(firsttime || (aa->getStep()%stride_==0 )) {
-      aa->Colvar::requestAtoms(getFullAtomList());
+      if (style_ != NNStyle::SingleList) {
+        aa->Colvar::requestAtoms(getFullAtomList());
+      }
       invalidateList=true;
       firsttime=false;
     } else {
-      aa->Colvar::requestAtoms(getReducedAtomList());
+      if (style_ != NNStyle::SingleList) {
+        aa->Colvar::requestAtoms(getReducedAtomList());
+      }
       invalidateList=false;
       if(aa->getExchangeStep()) {
         aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
@@ -416,5 +423,56 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
     }
   }
   return {firsttime,invalidateList};
+}
+void NeighborList::registerKeywords( Keywords& keys ) {
+  keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
+  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.addFlag("NLISTCELLS",false,"Use a neighbor list to speed up the calculation - use the cell list implementation instead of the classical one");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
+}
+
+std::unique_ptr<NeighborList> NeighborList::create( Colvar* cv,
+    std::vector<AtomNumber> ga_lista,
+    std::vector<AtomNumber> gb_lista,
+    bool pbc,
+    bool serial) {
+
+  bool dopair=false;
+  cv->parseFlag("PAIR",dopair);
+  bool doneigh_classic=false;
+  double nl_cut=0.0;
+  int nl_st=0;
+  cv->parseFlag("NLIST",doneigh_classic);
+  bool doneighcells=false;
+  cv->parseFlag("NLISTCELLS",doneighcells);
+  //temporary message
+  plumed_assert(!(doneighcells && doneigh_classic)) << "Please activate only one of the two version of the NL";
+  plumed_assert(!(doneighcells && dopair)) << "Pair is not compatible with the CELLS implementation of the NL";
+  bool doneigh=doneighcells||doneigh_classic;
+  if(doneigh) {
+    cv->parse("NL_CUTOFF",nl_cut);
+    if(nl_cut<=0.0) {
+      cv->error("NL_CUTOFF should be explicitly specified and positive");
+    }
+    cv->parse("NL_STRIDE",nl_st);
+    if(nl_st<=0) {
+      cv->error("NL_STRIDE should be explicitly specified and positive");
+    }
+  }
+
+  if(gb_lista.size()>0) {
+    if(doneigh) {
+      return Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,cv->getPbc(),cv->comm,nl_cut,nl_st,doneighcells);
+    } else {
+      return Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,cv->getPbc(),cv->comm);
+    }
+  } else {
+    if(doneigh) {
+      return Tools::make_unique<NeighborList>(ga_lista,serial,pbc,cv->getPbc(),cv->comm,nl_cut,nl_st,doneighcells);
+    } else {
+      return Tools::make_unique<NeighborList>(ga_lista,serial,pbc,cv->getPbc(),cv->comm);
+    }
+  }
 }
 } // namespace PLMD

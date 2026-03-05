@@ -27,12 +27,14 @@
 
 #include <vector>
 #include <tuple>
+#include <memory>
 
 namespace PLMD {
 
 class Pbc;
 class Communicator;
 class Colvar;
+class Keywords;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
@@ -127,6 +129,14 @@ public:
   };
 /// Returns if the neighborlist is invalidated for this step
   preparestatus prepare(Colvar*,bool firsttime, bool invalidateList);
+  static void registerKeywords( Keywords& keys );
+///Parses the options from the input string
+  ///this fucntion consuumes PAIR NLIST NLISTCELLS NL_CUTOFF and NL_STRIDE
+  static std::unique_ptr<NeighborList> create( Colvar*,
+      std::vector<AtomNumber> ga_lista,
+      std::vector<AtomNumber> gb_lista,
+      bool pbc,
+      bool serial=false);
 };
 
 } // namespace PLMD

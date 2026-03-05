@@ -29,12 +29,8 @@ namespace colvar {
 
 void CoordinationBase::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
+  NeighborList::registerKeywords(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
-  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
-  keys.addFlag("NLISTCELLS",false,"Use a neighbor list to speed up the calculation - use the cell list implementation instead of the classical one");
-  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
-  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
   keys.add("atoms","GROUPA","First list of atoms");
   keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
 }
@@ -56,47 +52,10 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-// pair stuff
-  bool dopair=false;
-  parseFlag("PAIR",dopair);
-
-// neighbor list stuff
-  bool doneigh_classic=false;
-  double nl_cut=0.0;
-  int nl_st=0;
-  parseFlag("NLIST",doneigh_classic);
-  bool doneighcells=false;
-  parseFlag("NLISTCELLS",doneighcells);
-  //temporary message
-  plumed_assert(!(doneighcells && doneigh_classic)) << "Please activate only one of the two version of the NL";
-  plumed_assert(!(doneighcells && dopair)) << "Pair is not compatible with the CELLS implementation of the NL";
-  bool doneigh=doneighcells||doneigh_classic;
-  if(doneigh) {
-    parse("NL_CUTOFF",nl_cut);
-    if(nl_cut<=0.0) {
-      error("NL_CUTOFF should be explicitly specified and positive");
-    }
-    parse("NL_STRIDE",nl_st);
-    if(nl_st<=0) {
-      error("NL_STRIDE should be explicitly specified and positive");
-    }
-  }
+  nl = NeighborList::create(this,ga_lista,gb_lista,pbc,serial);
 
   addValueWithDerivatives();
   setNotPeriodic();
-  if(gb_lista.size()>0) {
-    if(doneigh) {
-      nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st,doneighcells);
-    } else {
-      nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);
-    }
-  } else {
-    if(doneigh) {
-      nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st,doneighcells);
-    } else {
-      nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);
-    }
-  }
 
   requestAtoms(nl->getFullAtomList());
 
@@ -121,6 +80,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
   } else {
     log.printf("  without periodic boundary conditions\n");
   }
+  /*
   if(dopair) {
     log.printf("  with PAIR option\n");
   }
@@ -128,6 +88,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
     log.printf("  using neighbor lists with\n");
     log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
   }
+  */
 }
 
 CoordinationBase::~CoordinationBase() {
