@@ -80,15 +80,13 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
   } else {
     log.printf("  without periodic boundary conditions\n");
   }
-  /*
-  if(dopair) {
+  if(nl->dopair()) {
     log.printf("  with PAIR option\n");
   }
-  if(doneigh) {
+  if(nl->active()) {
     log.printf("  using neighbor lists with\n");
-    log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
+    log.printf("  update every %d steps and cutoff %f\n",nl->getStride(),nl->distance());
   }
-  */
 }
 
 CoordinationBase::~CoordinationBase() {

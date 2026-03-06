@@ -375,6 +375,18 @@ unsigned NeighborList::size() const {
   return neighbors_.size();
 }
 
+double NeighborList::distance() const {
+  return distance_;
+}
+
+bool NeighborList::active() const {
+  return stride_ >0;
+}
+
+bool NeighborList::dopair() const {
+  return style_ == NNStyle::Pair;
+}
+
 NeighborList::pairIDs NeighborList::getClosePair(const unsigned i) const {
   return neighbors_[i];
 }

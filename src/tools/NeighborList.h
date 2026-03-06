@@ -110,6 +110,10 @@ public:
   void setLastUpdate(unsigned step);
 /// Get the size of the neighbor list
   unsigned size() const;
+/// Tells if the NL is active
+  bool active() const;
+/// Tells if the neigborlist is setup in "PAIR" mode
+  bool dopair() const;
 /// Get the distance used to create the neighbor list
   double distance() const;
 /// Get the i-th pair of the neighbor list
