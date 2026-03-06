@@ -131,6 +131,8 @@ void NeighborList::initialize() {
     neighbors_[i]=getIndexPair(i);
   }
   requestIndexes_.assign(fullatomlist_.size(),true);
+  indexesRemap_.resize(fullatomlist_.size());
+  std::iota(indexesRemap_.begin(),indexesRemap_.end(),0);
 }
 
 std::vector<AtomNumber>& NeighborList::getFullAtomList() {
@@ -324,25 +326,29 @@ void NeighborList::setRequestList() {
     }
   }
   Tools::removeDuplicates(requestlist_);
+//avoid bisecting the list again and again:
+// I exploit the fact that requestlist_ is an ordered vector
+// And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
+// so I can use lower_bond that uses binary seach instead of find
+
+  for (unsigned i=0 ; i < fullatomlist_.size(); ++i) {
+    const auto id=fullatomlist_[i];
+    auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), id);
+    if (*p == id) {
+      indexesRemap_[i]=p-requestlist_.begin();
+    } else {
+      //this atom is not used
+      indexesRemap_[i]=fullatomlist_.size();
+    }
+  }
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
   if (stride_ >1 && style_ != NNStyle::SingleList) {
     if(!reduced) {
       for(unsigned int i=0; i<size(); ++i) {
-        AtomNumber index0=fullatomlist_[neighbors_[i].first];
-        AtomNumber index1=fullatomlist_[neighbors_[i].second];
-// I exploit the fact that requestlist_ is an ordered vector
-// And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
-// so I can use lower_bond that uses binary seach instead of find
-        plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
-        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex0=p-requestlist_.begin();
-        p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex1=p-requestlist_.begin();
-        neighbors_[i]=pairIDs(newindex0,newindex1);
+        neighbors_[i]=pairIDs(indexesRemap_[neighbors_[i].first],
+                              indexesRemap_[neighbors_[i].second]);
       }
     }
     reduced=true;

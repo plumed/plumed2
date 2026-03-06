@@ -53,6 +53,7 @@ private:
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector <bool> requestIndexes_{};
+  std::vector<unsigned> indexesRemap_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
   std::vector<pairIDs > neighbors_{};
   double distance_;
