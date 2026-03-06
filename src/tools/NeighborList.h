@@ -133,8 +133,8 @@ public:
 ///Parses the options from the input string
   ///this fucntion consuumes PAIR NLIST NLISTCELLS NL_CUTOFF and NL_STRIDE
   static std::unique_ptr<NeighborList> create( Colvar*,
-      std::vector<AtomNumber> ga_lista,
-      std::vector<AtomNumber> gb_lista,
+      const std::vector<AtomNumber>& listA,
+      const std::vector<AtomNumber>& listB,
       bool pbc,
       bool serial=false);
 };

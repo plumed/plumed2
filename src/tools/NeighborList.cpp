@@ -36,7 +36,6 @@
 #include <numeric>
 #include <cstdlib>
 
-#include <iostream>
 
 #pragma GCC diagnostic error "-Wswitch"
 
@@ -308,7 +307,6 @@ void NeighborList::update(const std::vector<Vector>& positions) {
 }
 
 void NeighborList::setRequestList() {
-  std::cerr <<"reqlist\n";
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
   // so as now it is not necessary to add extra logic in this function
@@ -433,16 +431,16 @@ void NeighborList::registerKeywords( Keywords& keys ) {
 }
 
 std::unique_ptr<NeighborList> NeighborList::create( Colvar* cv,
-    std::vector<AtomNumber> ga_lista,
-    std::vector<AtomNumber> gb_lista,
+    const std::vector<AtomNumber>& listA,
+    const std::vector<AtomNumber>& listB,
     bool pbc,
     bool serial) {
 
   bool dopair=false;
   cv->parseFlag("PAIR",dopair);
   bool doneigh_classic=false;
-  double nl_cut=0.0;
-  int nl_st=0;
+  double cutoff=-1.0;
+  int stride=0;
   cv->parseFlag("NLIST",doneigh_classic);
   bool doneighcells=false;
   cv->parseFlag("NLISTCELLS",doneighcells);
@@ -451,28 +449,21 @@ std::unique_ptr<NeighborList> NeighborList::create( Colvar* cv,
   plumed_assert(!(doneighcells && dopair)) << "Pair is not compatible with the CELLS implementation of the NL";
   bool doneigh=doneighcells||doneigh_classic;
   if(doneigh) {
-    cv->parse("NL_CUTOFF",nl_cut);
-    if(nl_cut<=0.0) {
+    cv->parse("NL_CUTOFF",cutoff);
+    if(!(cutoff>0.0)) {
       cv->error("NL_CUTOFF should be explicitly specified and positive");
     }
-    cv->parse("NL_STRIDE",nl_st);
-    if(nl_st<=0) {
+    cv->parse("NL_STRIDE",stride);
+    if(stride<=0) {
       cv->error("NL_STRIDE should be explicitly specified and positive");
     }
   }
-
-  if(gb_lista.size()>0) {
-    if(doneigh) {
-      return Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,cv->getPbc(),cv->comm,nl_cut,nl_st,doneighcells);
-    } else {
-      return Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,cv->getPbc(),cv->comm);
-    }
+// this assertion should always pass, ensures that the stride is set to 0 if the cutoff is not specified
+  plumed_assert( (cutoff>0.0 && stride >1) || (cutoff < 0.0 && stride == 0)) << "Something went wrong while parsing the input for the Neigbor list";
+  if(listB.size()>0) {
+    return Tools::make_unique<NeighborList>(listA,listB,serial,dopair,pbc,cv->getPbc(),cv->comm,cutoff,stride,doneighcells);
   } else {
-    if(doneigh) {
-      return Tools::make_unique<NeighborList>(ga_lista,serial,pbc,cv->getPbc(),cv->comm,nl_cut,nl_st,doneighcells);
-    } else {
-      return Tools::make_unique<NeighborList>(ga_lista,serial,pbc,cv->getPbc(),cv->comm);
-    }
+    return Tools::make_unique<NeighborList>(listA,serial,pbc,cv->getPbc(),cv->comm,cutoff,stride,doneighcells);
   }
 }
 } // namespace PLMD
