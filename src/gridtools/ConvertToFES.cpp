@@ -71,7 +71,8 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID","the histogram that you would like to convert into a free energy surface (old syntax)");
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
+  keys.addFlag("MINTOZERO",false,"set lowest value of the free energy on the grid to be equal to zero");
+  keys.addFlag("FINDMINTOZERO",false,"use the conjugate gradient algorithm and interpolation to find the minimum in the free energy and set the value found to be the zero of energy");
   keys.setValueDescription("the free energy surface");
   keys.needsAction("FIND_GRID_MINIMUM");
   keys.needsAction("CUSTOM");
@@ -80,8 +81,12 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
-  bool minzero=false;
+  bool minzero=false, findminzero=false;
   parseFlag("MINTOZERO",minzero);
+  parseFlag("FINDMINTOZERO",findminzero);
+  if( minzero && findminzero ) {
+    error("cannot use MINTOZERO and FINDMINTOZERO flags simultaneously");
+  }
   double simtemp=getkBT();
   if( simtemp==0 ) {
     error("TEMP not set - use keyword TEMP");
@@ -99,12 +104,16 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   std::string str_temp;
   Tools::convert( simtemp, str_temp );
   std::string flab="";
-  if( minzero ) {
+  if( minzero || findminzero ) {
     flab="_unz";
   }
   readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
-  if( minzero ) {
-    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz NOINTERPOL" );
+  if( minzero || findminzero ) {
+    std::string interpolstr = "";
+    if( minzero ) {
+      interpolstr = "NOINTERPOL";
+    }
+    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz " + interpolstr );
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_unz," + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
   }
 }

@@ -193,7 +193,11 @@ void FindGridOptimum::calculate() {
     getPntrToComponent(j)->set( optargs[j] );
   }
   std::vector<double> optder( gval->getRank() );
-  getPntrToComponent(optargs.size())->set( function->splineInterpolation( optargs, optder ) );
+  if( function ) {
+    getPntrToComponent(optargs.size())->set( function->splineInterpolation( optargs, optder ) );
+  } else {
+    getPntrToComponent(optargs.size())->set( optval );
+  }
 }
 
 }
