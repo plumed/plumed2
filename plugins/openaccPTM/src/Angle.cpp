@@ -21,10 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "plumed/core/ActionRegister.h"
 #include "plumed/colvar/MultiColvarTemplate.h"
-#include "plumed/colvar/Distance.h"
+#include "plumed/colvar/Angle.h"
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Distance<float>,PLMD::ACCPTM> DistanceMultiAcc;
+namespace PLMD {
+namespace colvar {
+typedef MultiColvarTemplate<Angle<double>,PLMD::ACCPTM> AngleMultiAcc;
 
-PLUMED_REGISTER_ACTION(DistanceMultiAcc,"DISTANCE_VECTORACC")
+PLUMED_REGISTER_ACTION(AngleMultiAcc,"ANGLE_VECTORACC")
+} // namespace colvar
+} // namespace PLMD

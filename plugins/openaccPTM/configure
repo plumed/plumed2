@@ -11,6 +11,11 @@ fi
   echo "PLUMED_KERNEL=-L${PLUMED_KERNEL}"
 } >Make.tmp
 
+if plumed config has mpi -q; then
+  echo plumed has mpi, configuring NVCXX as mpic++
+  echo NVCXX=mpic++ >>Make.tmp
+fi
+
 #pendantic adds a unuseful FOR EACH line with
 #"" warning: style of line directive is a GCC extension"
 {

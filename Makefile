@@ -140,6 +140,7 @@ config.status: configure
 astyle:
 	$(MAKE) -C astyle
 	$(MAKE) -C src astyle
+	$(MAKE) -C plugins astyle
 
 ifeq ($(use_debug_glibcxx),yes)
 nmcheck:

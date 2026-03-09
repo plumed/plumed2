@@ -21,10 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "plumed/core/ActionRegister.h"
 #include "plumed/colvar/MultiColvarTemplate.h"
-#include "plumed/colvar/Plane.h"
+#include "plumed/colvar/Distance.h"
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Plane<double>,PLMD::ACCPTM> PlaneMultiAcc;
+namespace PLMD {
+namespace colvar {
+typedef MultiColvarTemplate<Distance<float>,PLMD::ACCPTM> DistanceMultiAcc;
 
-PLUMED_REGISTER_ACTION(PlaneMultiAcc,"PLANE_VECTORACC")
+PLUMED_REGISTER_ACTION(DistanceMultiAcc,"DISTANCE_VECTORACC")
+} // namespace colvar
+} // namespace PLMD

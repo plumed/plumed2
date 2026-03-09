@@ -176,6 +176,9 @@ BEGINFILE{
   if(match(FILENAME,".*\\.ac")) filetype="autoconf"
   if(match(FILENAME,".*\\.pyx")) filetype="cython"
 
+  isplugin=0
+  if(match(FILENAME,"/plugins/")) isplugin=1
+
 # guess module name from directory
 # only works when path is specified
   filename=FILENAME
@@ -186,7 +189,7 @@ BEGINFILE{
   filepath=filename
   module=""
   nf=split(filename,ff,"/");
-  if(nf>1){
+  if(nf>1 && !isplugin){
     module=ff[nf-1];
     if(!(module in module_type)){
       path=filepath
@@ -391,7 +394,7 @@ BEGINFILE{
 # DOC: This makes sure that we do not include system files that by chance are named as PLUMED modules.
 # DOC: Indeed, when including `"file"` if the file is not found in the current path it is searched in
 # DOC: system directories.
-        if(!isarray(used_modules[module]) || (h in used_modules[module])==0)
+        if(!isplugin && (!isarray(used_modules[module]) || (h in used_modules[module])==0))
             error("include_non_used_module","including file in form " h "/file where " h " is not a used module");
       }
     }

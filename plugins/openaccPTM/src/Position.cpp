@@ -25,6 +25,10 @@
 
 #include "ACCParallelTaskManager.h"
 
-typedef PLMD::colvar::MultiColvarTemplate<PLMD::colvar::Position<double>,PLMD::ACCPTM> PositionMultiAcc;
+namespace PLMD {
+namespace colvar {
+typedef MultiColvarTemplate<Position<double>,PLMD::ACCPTM> PositionMultiAcc;
 
 PLUMED_REGISTER_ACTION(PositionMultiAcc,"POSITION_VECTORACC")
+} // namespace colvar
+} // namespace PLMD

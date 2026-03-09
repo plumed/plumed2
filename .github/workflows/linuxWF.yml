@@ -169,7 +169,7 @@ jobs:
       run: |
           source sourceme.sh
           cd plugins/openaccPTM/
-          ./configure.sh
+          ./configure
           NVCXX=$NVCXX make
 
     - name: Run tests

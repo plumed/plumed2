@@ -1,4 +1,12 @@
-include ./Makefile.conf
+# I want to include the configuration only if the target is not only astyle or clean or a combination of astyle and clean
+# And I want an error if the configuration does not exists
+#no targets
+ifeq ($(MAKECMDGOALS),)
+  include ./Makefile.conf
+# otherwise include if the user asked (also) for something other than clean and astyle
+else ifneq ($(MAKECMDGOALS),$(filter clean astyle,$(MAKECMDGOALS)))
+  include ./Makefile.conf
+endif
 
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
 #this assumes gcc
@@ -21,6 +29,11 @@ else
   SONAME_OPTION:=-Xlinker -soname
 endif
 
+#this makes make search for files in src
+VPATH = src
+
+.PHONY: clean check all astyle
+
 all: CudaCoordination.$(SOEXT)
 
 
@@ -38,10 +51,15 @@ CudaCoordination.$(SOEXT): $(OBJS)
 	@echo Linking $@
 	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(LDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
+#clean should work even if Makefile.conf is not here
 clean:
-	@rm -fv $(OBJS) CudaCoordination.$(SOEXT)
+	@rm -fv $(OBJS) CudaCoordination.so CudaCoordination.dylib
 	@rm -rf .deps
 
 check: all
 	$(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
+
+astyle:
+	@../astyle.sh
+

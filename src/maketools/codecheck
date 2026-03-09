@@ -42,9 +42,13 @@ if [[ $do_modified = true ]]; then
            /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
   )
 elif [ $do_local == true ]; then
-  files="$(ls ./*.{h,cpp})"
+  # sadly *.{cpp,h,cu,cuh} brings errors if any combination is not present
+  files="$(find . -maxdepth 1 \( -name '*.h' -o -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' \))"
 else
-  files="$(ls ./*/*.{h,cpp})"
+  files="$(
+   ls ./*/*.{h,cpp}
+   ls ../plugins/*/src/*.{h,cpp,cu,cuh}
+  )"
 fi
 
 {
@@ -69,16 +73,30 @@ fi
   if [ $do_cppcheck == true ]; then
     # we discard configurations introduced in small_vector because they are many and
     # get included in many files
-    # shellcheck disable=SC2086
-    cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
-      -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
-      -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
-      -U__PLUMED_HAS_ASMJIT \
-      -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-      --config-exclude=small_vector/ \
-      --template='[{file}:{line}] ({severity}) :{id}: {message}' \
-      --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
-      $files
+    function docheck(){
+      # setting up a function to not repeat the arguments
+      # shellcheck disable=SC2086
+      cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
+        -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
+        -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
+        -U__PLUMED_HAS_ASMJIT \
+        -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
+        --config-exclude=small_vector/ \
+        --template='[{file}:{line}] ({severity}) :{id}: {message}' \
+        --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
+	"$@"
+    }
+    srcfiles=$(grep -E -v -s '/plugins/'  <<< "$files" || true)
+    if [[ -n $srcfiles ]];then
+     # shellcheck disable=SC2086
+      docheck $srcfiles
+    fi
+    pluginfiles=$(grep -E  '/plugins/'  <<< "$files" || true)
+    if [[ -n $pluginfiles ]];then
+      # this will work only if plumed is configured
+      # shellcheck disable=SC2086
+      docheck  -I "${basedir}/src/include/" $pluginfiles
+    fi
     #You coud add -I ${basedir}/src/ but that will not check if the correct
     # requisite modules are set in the module configuration file
   fi

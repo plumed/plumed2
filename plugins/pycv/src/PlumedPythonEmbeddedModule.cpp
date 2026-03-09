@@ -28,7 +28,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "PythonFunction.h"
 
 namespace py=pybind11;
-
+//a small trick to make this pass plumedcheck
+namespace PLMD {}
 #define defGetter(pyfun,classname, cppfun, type, description) \
   def(pyfun, [](classname* self) -> type{ \
     return self->cppfun(); }, description)

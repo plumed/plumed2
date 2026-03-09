@@ -15,16 +15,10 @@ along with the reduction functions baked with Cuda's cub building blocks and the
 >Plumed will present the user wiht an error message with the suggestion.
 
 ### Compile
-
-
-
-##### as developer
   
-With a ready to run plumed:
-  - `nvcc-MakeFile.sh`
+With a ready to run plumed in your path:
+  - `./configure`
   - `make`
-
-In this way you do not need to recompile everithing if you change part of the sources
 
 you may need to specify the SM of your GPU by modifying the `Makefile`, for example with:
 
@@ -34,19 +28,10 @@ NVCCLDFLAGS = -shared -dlto --gpu-architecture=sm_75
 ```
 If you are using a T1000
 
-#### as a user
-
-Running `nvcc-mklib.sh` should be enought to get the `CudaCoordination.so`.
-
-you may need to uncomment and modifly the lines
-```bash
-#compile="$compile --gpu-architecture=sm_75 "
-#link_command="$link_command -shared -dlto --gpu-architecture=sm_75"
-```
-near the bottom of the script
 
 ### How to tests
 
+Assuming you are using this plugin from the plugin directory of a plumed source directory:
  - `cd regtest; ln -s ../../../regtest/scripts .`
  - `make check`
 

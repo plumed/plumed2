@@ -3,7 +3,7 @@ PYTHON=python
 #optional, just in case you want to override python with ./configurePyCV.sh
 -include Makefile.conf
 #this makefiles assume that pip and pytest are installed
-.PHONY: clean check check_standalone check_python all
+.PHONY: clean check check_standalone check_python all astyle
 
 all: pycv_here
 
@@ -26,3 +26,7 @@ check_python: pycv_here
 	@$(PYTHON) -m pytest -v
 
 check: check_standalone check_python
+
+astyle:
+	@../astyle.sh
+

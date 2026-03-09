@@ -26,14 +26,13 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 
 
-using namespace std;
 namespace py = pybind11;
 
 
 namespace PLMD {
 namespace pycv {
 
-//+PLUMEDOC FUNCTION PYTHONFUNCTION
+//+PLUMEDOC FUNCTION PYFUNCTION
 /*
 Define collective variables in the Python language.
 
