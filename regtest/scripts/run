@@ -57,6 +57,9 @@ for tool in $tools; do
     "frameGenerator")
       extra_files="$extra_files ../../test_tools/frameGenerator.cpp ../../test_tools/frameGenerator.h"
       ;;
+    "nlTools")
+      extra_files="$extra_files ../../test_tools/nlTools.cpp ../../test_tools/nlTools.h"
+      ;;
   esac
 done
 
