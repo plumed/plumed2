@@ -183,10 +183,20 @@ void FindGridOptimum::calculate() {
   if( std::isnan(optval) ) {
     error("all values on grid are nans");
   }
+  // Set the value of the arguments at the optimum before we optimise just in case the optimisation fails
+  for(unsigned j=0; j<optargs.size(); ++j) {
+    getPntrToComponent(j)->set( optargs[j] );
+  }
+
   // And do conjugate gradient optimisation (because we can!!)
   if( cgtol>0 ) {
     ConjugateGradient<FindGridOptimum> myminimiser( this );
-    myminimiser.minimise( cgtol, optargs, &FindGridOptimum::calculateValueAndDerivatives );
+    int code = myminimiser.minimise( cgtol, optargs, &FindGridOptimum::calculateValueAndDerivatives );
+    if( code>0 ) {
+        warning("could not find optimum for function on input grid. Am thus just returning point in grid where value of function is lowest");
+        getPntrToComponent(optargs.size())->set( optval );
+        return;
+    }
   }
   // And set the final value
   for(unsigned j=0; j<optargs.size(); ++j) {

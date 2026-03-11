@@ -336,7 +336,10 @@ double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SM
 void ArrangePoints::optimize( std::vector<double>& pos ) {
   ConjugateGradient<ArrangePoints> mycgminimise( this );
   if( mintype==conjgrad ) {
-    mycgminimise.minimise( cgtol, pos, &ArrangePoints::calculateFullStress );
+    int code = mycgminimise.minimise( cgtol, pos, &ArrangePoints::calculateFullStress );
+    if( code>0 ) {
+        error("failure in conjugate gradient minimisation"); 
+    }
   } else if( mintype==pointwise ) {
     unsigned nvals=getPntrToArgument( dimout )->getShape()[0];
     std::vector<double> gmin( dimout ), gmax( dimout ), mypoint( dimout );

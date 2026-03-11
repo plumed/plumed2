@@ -236,7 +236,10 @@ void ProjectPoints::getProjection( const unsigned& current, std::vector<double>&
   if( targ->getRank()==2 ) {
     rowstart[OpenMP::getThreadNum()] = current*targ->getShape()[1];
   }
-  myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
+  int code = myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
+  if( code>0 ) {
+      error("failure in conjugate gradient minimisation");
+  }
 }
 
 void ProjectPoints::performTask( const unsigned& current, MultiValue& myvals ) const {
