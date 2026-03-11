@@ -145,6 +145,52 @@ void Communicator::Bcast(Data data,int root) {
 #endif
 }
 
+void Communicator::Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+  void*s=const_cast<void*>((const void*)sendbuf.pointer);
+#if defined(__PLUMED_HAS_MPI)
+  if(initialized()) {
+    MPI_Scatter(s,sendcount,sendbuf.type,recvbuf.pointer,recvcount,recvbuf.type,root,communicator);
+  } else {
+    // Non-MPI case: just copy from sendbuf to recvbuf
+    plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
+    plumed_assert(sendcount==recvcount);
+    if(s) {
+      std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
+    }
+  }
+#else
+  plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
+  plumed_assert(sendcount==recvcount);
+  if(s) {
+    std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
+  }
+  (void) root;
+#endif
+}
+
+void Communicator::Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+  void*s=const_cast<void*>((const void*)sendbuf.pointer);
+#if defined(__PLUMED_HAS_MPI)
+  if(initialized()) {
+    MPI_Gather(s,sendcount,sendbuf.type,recvbuf.pointer,recvcount,recvbuf.type,root,communicator);
+  } else {
+    // Non-MPI case: just copy from sendbuf to recvbuf
+    plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
+    plumed_assert(sendcount==recvcount);
+    if(s) {
+      std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
+    }
+  }
+#else
+  plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
+  plumed_assert(sendcount==recvcount);
+  if(s) {
+    std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
+  }
+  (void) root;
+#endif
+}
+
 void Communicator::Sum(Data data) {
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {

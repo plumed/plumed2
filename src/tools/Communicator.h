@@ -263,6 +263,28 @@ public:
     Bcast(Data(buf),root);
   }
 
+/// Wrapper for MPI_Scatter (data struct)
+  void Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root);
+/// Wrapper for MPI_Scatter (pointer)
+  template <class T,class S> void Scatter(const T*sendbuf,int sendcount,S*recvbuf,int recvcount,int root) {
+    Scatter(ConstData(sendbuf,sendcount*Get_size()),sendcount,Data(recvbuf,recvcount),recvcount,root);
+  }
+/// Wrapper for MPI_Scatter (reference)
+  template <class T,class S> void Scatter(const T&sendbuf,int sendcount,S&recvbuf,int recvcount,int root) {
+    Scatter(ConstData(sendbuf),sendcount,Data(recvbuf),recvcount,root);
+  }
+
+/// Wrapper for MPI_Gather (data struct)
+  void Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root);
+/// Wrapper for MPI_Gather (pointer)
+  template <class T,class S> void Gather(const T*sendbuf,int sendcount,S*recvbuf,int recvcount,int root) {
+    Gather(ConstData(sendbuf,sendcount),sendcount,Data(recvbuf,recvcount*Get_size()),recvcount,root);
+  }
+/// Wrapper for MPI_Gather (reference)
+  template <class T,class S> void Gather(const T&sendbuf,int sendcount,S&recvbuf,int recvcount,int root) {
+    Gather(ConstData(sendbuf),sendcount,Data(recvbuf),recvcount,root);
+  }
+
 /// Wrapper for MPI_Isend (data struct)
   Request Isend(ConstData,int,int);
 /// Wrapper for MPI_Isend (pointer)
