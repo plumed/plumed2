@@ -45,8 +45,20 @@ plumed_needs=
 plumed_modules=
 
 plumed_language=c++
+#empty declaration to make shellcheck happy
+tools=
+extra_files=
 
 source ./config
+
+#a shortcut to append a collection of files with less writing
+for tool in $tools; do
+  case "$tool" in
+    "frameGenerator")
+      extra_files="$extra_files ../../test_tools/frameGenerator.cpp ../../test_tools/frameGenerator.h"
+      ;;
+  esac
+done
 
 for file in $extra_files
 do
@@ -202,7 +214,9 @@ case "$type" in
  ;;
 (make)
   $plumed_nompi --is-installed || ln -s "$root/src" plumed
-  cp ../../../trajectories/testUtils.h .
+  #testUtils.h can be assumed to be present in most of the cpp tests
+  #in any case is header-only so it won't impact the compilation unless included
+  cp ../../../test_tools/testUtils.h .
   rm Makefile
   if test -n "$plumed_src" ; then
     echo "CXX_SRC=$plumed_src" > Makefile
