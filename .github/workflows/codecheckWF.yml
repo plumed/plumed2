@@ -16,6 +16,9 @@ env:
 jobs:
 
   codecheck:
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v6
@@ -38,6 +41,7 @@ jobs:
       run: |
         make -j 4 -C astyle
     - name: Checking code
+      id: codecheck
       run: |
         # this is required so as to have all the include files in place
         # notice that this is done automatically in build
@@ -46,3 +50,9 @@ jobs:
         # then generate the links
         make -C src/lib/ dirslinks
         make codecheck
+    - name: Upload codecheck report to gh
+      if: failure() && steps.codecheck.outcome == 'failure'
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: src/codecheck.sarif
+        category: plumedcheck
