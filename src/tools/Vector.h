@@ -28,7 +28,7 @@
 #include <array>
 #include <type_traits>
 #include "LoopUnroller.h"
-
+using namespace std;
 namespace PLMD {
 
 /**

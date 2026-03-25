@@ -14,30 +14,9 @@ env:
   CXX: g++
 
 jobs:
-
-  linux:
-    uses: ./.github/workflows/linuxWF.yml
-    secrets: inherit
-
   codecheck:
     uses: ./.github/workflows/codecheckWF.yml
     secrets: inherit
     permissions:
       contents: read
       security-events: write
-
-  mac:
-    uses: ./.github/workflows/macWF.yml
-    secrets: inherit
-
-  python:
-    uses: ./.github/workflows/pythonWF.yml
-    secrets: inherit
-
-  docker:
-    uses: ./.github/workflows/dockerWF.yml
-    secrets: inherit
-
-  conda:
-    uses: ./.github/workflows/condaWF.yml
-    secrets: inherit

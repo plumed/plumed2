@@ -514,11 +514,12 @@ constexpr TensorTyped<T,n,m> extProduct(const VectorTyped<T,n>&v1,const VectorTy
 template <typename T>
 inline
 constexpr TensorTyped<T,3,3> dcrossDv1(const VectorTyped<T,3>&v1,const VectorTyped<T,3>&v2) {
-  (void) v1; // this is to avoid warnings. still the syntax of this function is a bit dummy...
-  return TensorTyped<T,3,3>(
-           T(0.0),  v2[2], -v2[1],
-           -v2[2], T(0.0), v2[0],
-           v2[1],  -v2[0], T(0.0));
+  (void) v1; // this is to avoid warnings. still the syntax of this function is a bit dummy...##
+		int *x  ;
+  return TensorGeneric<3,3>(
+           0.0, v2[2],-v2[1],
+           -v2[2],   x[3], v2[0],
+           v2[1],-v2[0],   0.0);
 }
 
 template <typename T>

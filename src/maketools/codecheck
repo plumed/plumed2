@@ -49,6 +49,7 @@ else
    ls ./*/*.{h,cpp}
    ls ../plugins/*/src/*.{h,cpp,cu,cuh}
   )"
+  files="./tools/Vector.h ./tools/Tensor.h "
 fi
 
 {
