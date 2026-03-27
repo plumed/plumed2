@@ -1,0 +1,10 @@
+#the second 1 will trigger an error in the **number** of the derivatives if the duplicates are not removed when updating the request list in the NL
+#the number of the derivatives is 18 at NL steps an 15 at non NL steps
+#this tests tests is needed to check that the current behaviour in updating the request list is not changed
+#At time of writing this, the behaviour has slightly changed for the "self calculations"
+cab: COORDINATION GROUPA=1,2 GROUPB=1 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLIST NL_STRIDE=4 NL_CUTOFF=2.0
+ca: COORDINATION GROUPA=1,2,1 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLIST NL_STRIDE=4 NL_CUTOFF=2.0
+PRINT ARG=* FILE=colvar FMT=%8.4f STRIDE=1
+
+DUMPDERIVATIVES ARG=cab FILE=derivAB FMT=%6.3f
+DUMPDERIVATIVES ARG=ca FILE=derivA FMT=%6.3f

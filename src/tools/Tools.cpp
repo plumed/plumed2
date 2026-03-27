@@ -590,7 +590,7 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
         news.push_back(ss);
       }
     } else {
-      plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be positive");
+      plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be negative");
       for(int i=first; i>=second; i+=stride) {
         std::string ss;
         convert(i,ss);

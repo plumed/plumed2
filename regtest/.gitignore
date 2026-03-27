@@ -45,6 +45,7 @@
 !/wham
 !/metatomic
 !/sizeshape
+!/test_tools
 
 # These files we just want to ignore completely
 tmp

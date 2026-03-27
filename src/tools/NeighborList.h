@@ -27,12 +27,14 @@
 
 #include <vector>
 #include <tuple>
+#include <memory>
 
 namespace PLMD {
 
 class Pbc;
 class Communicator;
 class Colvar;
+class Keywords;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
@@ -50,6 +52,8 @@ private:
   const PLMD::Pbc* pbc_;
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
+  std::vector <bool> requestIndexes_{};
+  std::vector<unsigned> indexesRemap_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
   std::vector<pairIDs > neighbors_{};
   double distance_;
@@ -106,6 +110,10 @@ public:
   void setLastUpdate(unsigned step);
 /// Get the size of the neighbor list
   unsigned size() const;
+/// Tells if the NL is active
+  bool active() const;
+/// Tells if the neigborlist is setup in "PAIR" mode
+  bool dopair() const;
 /// Get the distance used to create the neighbor list
   double distance() const;
 /// Get the i-th pair of the neighbor list
@@ -126,6 +134,14 @@ public:
   };
 /// Returns if the neighborlist is invalidated for this step
   preparestatus prepare(Colvar*,bool firsttime, bool invalidateList);
+  static void registerKeywords( Keywords& keys );
+///Parses the options from the input string
+  ///this fucntion consuumes PAIR NLIST NLISTCELLS NL_CUTOFF and NL_STRIDE
+  static std::unique_ptr<NeighborList> create( Colvar*,
+      const std::vector<AtomNumber>& listA,
+      const std::vector<AtomNumber>& listB,
+      bool pbc,
+      bool serial=false);
 };
 
 } // namespace PLMD

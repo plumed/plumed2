@@ -36,6 +36,7 @@
 #include <numeric>
 #include <cstdlib>
 
+
 #pragma GCC diagnostic error "-Wswitch"
 
 namespace PLMD {
@@ -56,7 +57,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
     style_(do_pair ? NNStyle::Pair : NNStyle::TwoList),
     pbc_(&pbc),
     comm(cm),
-    //copy-initialize fullatomlist_
+//copy-initialize fullatomlist_
     fullatomlist_(list0),
     distance_(distance),
     nlist0_(list0.size()),
@@ -129,6 +130,9 @@ void NeighborList::initialize() {
   for(unsigned int i=0; i<nallpairs_; ++i) {
     neighbors_[i]=getIndexPair(i);
   }
+  requestIndexes_.assign(fullatomlist_.size(),true);
+  indexesRemap_.resize(fullatomlist_.size());
+  std::iota(indexesRemap_.begin(),indexesRemap_.end(),0);
 }
 
 std::vector<AtomNumber>& NeighborList::getFullAtomList() {
@@ -297,7 +301,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       }
     }
   }
-  if (stride_ >1) {
+  if (stride_ >1 && style_ != NNStyle::SingleList) {
     setRequestList();
   } else {
     reduced=true;
@@ -307,33 +311,44 @@ void NeighborList::update(const std::vector<Vector>& positions) {
 void NeighborList::setRequestList() {
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
-  // so as now it is not necessary to add extra logic in this function
+  // so as now it is not necessary to add extra logic in this function
   requestlist_.clear();
+  reduced=false;
+  requestIndexes_.assign(fullatomlist_.size(),false);
   for(unsigned int i=0; i<size(); ++i) {
-    requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
-    requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
+    requestIndexes_[neighbors_[i].first]=true;
+    requestIndexes_[neighbors_[i].second]=true;
+  }
+  requestlist_.reserve(requestIndexes_.size());
+  for (unsigned i=0 ; i < requestIndexes_.size(); ++i) {
+    if(requestIndexes_[i]) {
+      requestlist_.push_back(fullatomlist_[i]);
+    }
   }
   Tools::removeDuplicates(requestlist_);
-  reduced=false;
-}
-
-std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
-  if(stride_>1) {
-    if(!reduced) {
-      for(unsigned int i=0; i<size(); ++i) {
-        AtomNumber index0=fullatomlist_[neighbors_[i].first];
-        AtomNumber index1=fullatomlist_[neighbors_[i].second];
+//avoid bisecting the list again and again:
 // I exploit the fact that requestlist_ is an ordered vector
 // And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
 // so I can use lower_bond that uses binary seach instead of find
-        plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
-        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex0=p-requestlist_.begin();
-        p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex1=p-requestlist_.begin();
-        neighbors_[i]=pairIDs(newindex0,newindex1);
+
+  for (unsigned i=0 ; i < fullatomlist_.size(); ++i) {
+    const auto id=fullatomlist_[i];
+    auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), id);
+    if (*p == id) {
+      indexesRemap_[i]=p-requestlist_.begin();
+    } else {
+      //this atom is not used
+      indexesRemap_[i]=fullatomlist_.size();
+    }
+  }
+}
+
+std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
+  if (stride_ >1 && style_ != NNStyle::SingleList) {
+    if(!reduced) {
+      for(unsigned int i=0; i<size(); ++i) {
+        neighbors_[i]=pairIDs(indexesRemap_[neighbors_[i].first],
+                              indexesRemap_[neighbors_[i].second]);
       }
     }
     reduced=true;
@@ -358,6 +373,18 @@ void NeighborList::setLastUpdate(const unsigned step) {
 
 unsigned NeighborList::size() const {
   return neighbors_.size();
+}
+
+double NeighborList::distance() const {
+  return distance_;
+}
+
+bool NeighborList::active() const {
+  return stride_ >0;
+}
+
+bool NeighborList::dopair() const {
+  return style_ == NNStyle::Pair;
 }
 
 NeighborList::pairIDs NeighborList::getClosePair(const unsigned i) const {
@@ -393,11 +420,15 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
       invalidateList=true;
       firsttime=false;
     } else if(firsttime || (aa->getStep()%stride_==0 )) {
-      aa->requestAtoms(getFullAtomList());
+      if (style_ != NNStyle::SingleList) {
+        aa->Colvar::requestAtoms(getFullAtomList());
+      }
       invalidateList=true;
       firsttime=false;
     } else {
-      aa->requestAtoms(getReducedAtomList());
+      if (style_ != NNStyle::SingleList) {
+        aa->Colvar::requestAtoms(getReducedAtomList());
+      }
       invalidateList=false;
       if(aa->getExchangeStep()) {
         aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
@@ -408,5 +439,49 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
     }
   }
   return {firsttime,invalidateList};
+}
+void NeighborList::registerKeywords( Keywords& keys ) {
+  keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
+  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.addFlag("NLISTCELLS",false,"Use a neighbor list to speed up the calculation - use the cell list implementation instead of the classical one");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
+}
+
+std::unique_ptr<NeighborList> NeighborList::create( Colvar* cv,
+    const std::vector<AtomNumber>& listA,
+    const std::vector<AtomNumber>& listB,
+    bool pbc,
+    bool serial) {
+
+  bool dopair=false;
+  cv->parseFlag("PAIR",dopair);
+  bool doneigh_classic=false;
+  double cutoff=-1.0;
+  int stride=0;
+  cv->parseFlag("NLIST",doneigh_classic);
+  bool doneighcells=false;
+  cv->parseFlag("NLISTCELLS",doneighcells);
+  //temporary message
+  plumed_assert(!(doneighcells && doneigh_classic)) << "Please activate only one of the two version of the NL";
+  plumed_assert(!(doneighcells && dopair)) << "Pair is not compatible with the CELLS implementation of the NL";
+  bool doneigh=doneighcells||doneigh_classic;
+  if(doneigh) {
+    cv->parse("NL_CUTOFF",cutoff);
+    if(!(cutoff>0.0)) {
+      cv->error("NL_CUTOFF should be explicitly specified and positive");
+    }
+    cv->parse("NL_STRIDE",stride);
+    if(stride<=0) {
+      cv->error("NL_STRIDE should be explicitly specified and positive");
+    }
+  }
+// this assertion should always pass, ensures that the stride is set to 0 if the cutoff is not specified
+  plumed_assert( (cutoff>0.0 && stride >1) || (cutoff < 0.0 && stride == 0)) << "Something went wrong while parsing the input for the Neigbor list";
+  if(listB.size()>0) {
+    return Tools::make_unique<NeighborList>(listA,listB,serial,dopair,pbc,cv->getPbc(),cv->comm,cutoff,stride,doneighcells);
+  } else {
+    return Tools::make_unique<NeighborList>(listA,serial,pbc,cv->getPbc(),cv->comm,cutoff,stride,doneighcells);
+  }
 }
 } // namespace PLMD
