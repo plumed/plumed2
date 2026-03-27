@@ -138,6 +138,28 @@ void run(Communicator& comm){
   }
   req.wait();
   ofs<<stringsend<<" "<<stringrecv<<"\n";
+
+  // Test Scatter
+  reset(comm,a);
+  std::vector<int> scatter_send(4*comm.Get_size(),0);
+  std::vector<int> scatter_recv(4);
+  if(comm.Get_rank()==0) {
+    for(unsigned i=0;i<scatter_send.size();i++) {
+      scatter_send[i]= 1 + i + 100 * (comm.Get_rank() + 1);
+    }
+  }
+  comm.Scatter(&scatter_send[0],4,&scatter_recv[0],4,0);
+  dump(comm,ofs,scatter_recv);
+
+  // Test Gather
+  reset(comm,a);
+  std::vector<int> gather_send(4);
+  std::vector<int> gather_recv(4*comm.Get_size(),0);
+  for(unsigned i=0;i<gather_send.size();i++) {
+    gather_send[i]= 1 + i + 100 * (comm.Get_rank() + 1);
+  }
+  comm.Gather(&gather_send[0],4,&gather_recv[0],4,0);
+  if(comm.Get_rank()==0) dump(comm,ofs,gather_recv);
 }
 
 int main(int argc,char**argv){

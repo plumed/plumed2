@@ -27,7 +27,7 @@ void small_test_mpi() {
   Communicator comm;
   Vector x0(1,2,3),x=x0;
   Vector y0(4,5,6),y=y0;
-  
+
   plumed_assert(x[0]==x0[0] && x[1]==x0[1] && x[2]==x0[2]);
   plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
   comm.Sum(x);
@@ -43,6 +43,18 @@ void small_test_mpi() {
   comm.Allgatherv(y,x,count.data(),displ.data());
   plumed_assert(x[0]==y0[0] && x[1]==y0[1] && x[2]==y0[2]);
   plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
+
+  // Test Scatter (non-MPI should just copy data)
+  std::vector<int> scatter_send{10,20,30,40};
+  std::vector<int> scatter_recv(4);
+  comm.Scatter(&scatter_send[0],4,&scatter_recv[0],4,0);
+  plumed_assert(scatter_recv[0]==10 && scatter_recv[1]==20 && scatter_recv[2]==30 && scatter_recv[3]==40);
+
+  // Test Gather (non-MPI should just copy data)
+  std::vector<int> gather_send{1,2,3,4};
+  std::vector<int> gather_recv(4);
+  comm.Gather(&gather_send[0],4,&gather_recv[0],4,0);
+  plumed_assert(gather_recv[0]==1 && gather_recv[1]==2 && gather_recv[2]==3 && gather_recv[3]==4);
 }
 
 template<typename T>
