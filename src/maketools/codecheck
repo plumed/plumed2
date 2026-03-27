@@ -75,6 +75,7 @@ fi
       -U__PLUMED_HAS_ASMJIT \
       -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
       --config-exclude=small_vector/ \
+      -i vesin.cpp \
       --template='[{file}:{line}] ({severity}) :{id}: {message}' \
       --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
       $files
