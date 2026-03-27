@@ -141,6 +141,7 @@ astyle:
 	$(MAKE) -C astyle
 	$(MAKE) -C src astyle
 	$(MAKE) -C plugins astyle
+	@which ruff &> /dev/null && ./pythonformatter.sh || echo "ruff not found, cannot format python files"
 
 ifeq ($(use_debug_glibcxx),yes)
 nmcheck:

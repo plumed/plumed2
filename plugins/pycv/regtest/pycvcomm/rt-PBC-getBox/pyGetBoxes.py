@@ -32,7 +32,6 @@ def pyBox(action: plumedCommunications.PythonCVInterface):
     d = action.getPbc().getBox()
     print(f"{d=}", file=log)
     ret = {}
-    grad = {}
     for i, name in enumerate(["a", "b", "c"]):
         for j, coord in enumerate(["x", "y", "z"]):
             ret[f"{name}{coord}"] = (d[i, j], np.zeros((1, 3)))
