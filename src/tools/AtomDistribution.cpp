@@ -180,7 +180,16 @@ void tiledSimpleCubic::frame(std::vector<Vector>& posToUpdate,
   //Tiling the space in this way will not tests 100% the pbc, but
   //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
   //could be a good idea, in this case
-  const unsigned rmax = std::ceil(std::cbrt(static_cast<double>(posToUpdate.size())));
+
+  // the lambda is here because in some case a perfect cube is not well represented
+  // by double and will get uncorrectly ceiled up (for example 24389 will result in a 30 and not in 29)
+  const unsigned rmax = [&] {
+    const size_t x = std::ceil(std::cbrt(static_cast<double>(posToUpdate.size())))-1;
+    if ( x*x*x >= posToUpdate.size()) {
+      return x;
+    }
+    return x+1;
+  }();
 
   auto s=posToUpdate.begin();
   auto e=posToUpdate.end();
