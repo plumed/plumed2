@@ -71,7 +71,8 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID","the histogram that you would like to convert into a free energy surface (old syntax)");
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
+  keys.addFlag("MINTOZERO",false,"use the conjugate gradient algorithm and interpolation to find the minimum in the free energy and set the value found to be the zero of energy. "
+               "If a minimum in the free energy cannot be found use the lowest value of the free energy of the grid as the zero of energy instead");
   keys.setValueDescription("the free energy surface");
   keys.needsAction("FIND_GRID_MINIMUM");
   keys.needsAction("CUSTOM");
@@ -104,7 +105,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   }
   readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
   if( minzero ) {
-    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz" );
+    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz ");
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_unz," + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
   }
 }
