@@ -21,6 +21,7 @@
 #include <numeric>
 
 using namespace PLMD;
+using atomDst = std::unique_ptr<PLMD::AtomDistribution>;
 
 void test (PLMD::Communicator &comm);
 void testIndexes (PLMD::Communicator &comm);
@@ -363,7 +364,7 @@ void test (PLMD::Communicator &comm) {
   std::vector<Vector> atoms(5*5*5);
   std::vector<double> basebox(9);
   unsigned nat = atoms.size();
-  auto rep= std::make_unique<repliedTrajectory>([&]() {
+  atomDst rep= std::make_unique<repliedTrajectory>([&]() {
     auto d = AtomDistribution::getAtomDistribution("sc");
 //getting some base informations
     d->frame(atoms,basebox,0,rng);
@@ -433,7 +434,7 @@ void bench (PLMD::Communicator &comm) {
   std::vector<Vector> atoms(50000);
   std::vector<double> basebox(9);
   unsigned nat = atoms.size();
-  auto rep= std::make_unique<repliedTrajectory>([&]() {
+  atomDst rep= std::make_unique<repliedTrajectory>([&]() {
     auto d = AtomDistribution::getAtomDistribution("cube");
 //getting some base informations
     d->frame(atoms,basebox,0,rng);
