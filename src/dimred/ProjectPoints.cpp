@@ -238,7 +238,7 @@ void ProjectPoints::getProjection( const unsigned& current, std::vector<double>&
   }
   int code = myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
   if( code>0 ) {
-      error("failure in conjugate gradient minimisation");
+    error("failure in conjugate gradient minimisation");
   }
 }
 

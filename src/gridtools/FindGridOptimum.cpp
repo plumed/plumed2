@@ -193,9 +193,9 @@ void FindGridOptimum::calculate() {
     ConjugateGradient<FindGridOptimum> myminimiser( this );
     int code = myminimiser.minimise( cgtol, optargs, &FindGridOptimum::calculateValueAndDerivatives );
     if( code>0 ) {
-        warning("could not find optimum for function on input grid. Am thus just returning point in grid where value of function is lowest");
-        getPntrToComponent(optargs.size())->set( optval );
-        return;
+      warning("could not find optimum for function on input grid. Am thus just returning point in grid where value of function is lowest");
+      getPntrToComponent(optargs.size())->set( optval );
+      return;
     }
   }
   // And set the final value

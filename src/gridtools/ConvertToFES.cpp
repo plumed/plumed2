@@ -72,7 +72,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"use the conjugate gradient algorithm and interpolation to find the minimum in the free energy and set the value found to be the zero of energy. "
-                                 "If a minimum in the free energy cannot be found use the lowest value of the free energy of the grid as the zero of energy instead");
+               "If a minimum in the free energy cannot be found use the lowest value of the free energy of the grid as the zero of energy instead");
   keys.setValueDescription("the free energy surface");
   keys.needsAction("FIND_GRID_MINIMUM");
   keys.needsAction("CUSTOM");

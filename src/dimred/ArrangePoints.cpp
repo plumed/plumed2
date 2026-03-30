@@ -338,7 +338,7 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
   if( mintype==conjgrad ) {
     int code = mycgminimise.minimise( cgtol, pos, &ArrangePoints::calculateFullStress );
     if( code>0 ) {
-        error("failure in conjugate gradient minimisation"); 
+      error("failure in conjugate gradient minimisation");
     }
   } else if( mintype==pointwise ) {
     unsigned nvals=getPntrToArgument( dimout )->getShape()[0];
