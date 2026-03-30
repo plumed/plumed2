@@ -380,6 +380,7 @@ void repliedTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
 }
 
 bool repliedTrajectory::overrideNat(unsigned& natoms) {
+  distribution->overrideNat(natoms);
   natoms *= (rX*rY*rZ);
   return true;
 }
@@ -390,6 +391,9 @@ scaledTrajectory::scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
   multiplier(mult)
 {}
 
+bool scaledTrajectory::overrideNat(unsigned& natoms) {
+  return distribution->overrideNat(natoms);
+}
 void scaledTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
                              unsigned step,
                              Random& rng) {

@@ -45,6 +45,16 @@ struct AtomDistribution {
                      Random& rng)=0;
   virtual ~AtomDistribution() noexcept {}
   ///If necessary changes the number of atoms, returns true if that number has been changed
+  ///
+  ///This is used principally in the benchmark.
+  ///All the atoms distributions usually acts all the atoms passed by the vector of positions, so this does not change the input
+  ///
+  ///But the "reading file" ones will only work if the number of atoms is the same of the one in the file, so this set the input to that number
+  ///
+  ///And in case of the ones that replicate the trajectory this multiplies the input by the number of replicated "systems" this
+  ///this is needed to inform benchmark that if you asked for replicating `N` atoms `X*Y*Z` times it will need an array of `N*X*Y*Z` atoms
+  ///Outside of the specific usecase of the benchmark this is less important, because replicate will generate the inner trjectory on a limited
+  ///number of atoms and the it will replicate it
   virtual bool overrideNat(unsigned& ) {
     return false;
   }
@@ -129,12 +139,12 @@ public:
                     const unsigned repeatZ,
                     // not used, here for legacy purpose
                     const unsigned=1 /*nat*/);
-
+///Generates the inner trajectory of `(nat)/(rX*rY*rZ)`, where `nat` is the dimension of the vector view, then it replicate the atoms in the various directions
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
              Random& rng) override;
-
+///See the documentation the AtomDistribution
   bool overrideNat(unsigned& natoms) override;
 };
 
@@ -148,6 +158,7 @@ public:
              View<double,9> box,
              unsigned step,
              Random& rng) override;
+  bool overrideNat(unsigned& natoms) override;
 };
 } //namespace PLMD
 #endif // __PLUMED_tools_AtomDistribution_h
