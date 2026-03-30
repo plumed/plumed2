@@ -364,4 +364,25 @@ bool repliedTrajectory::overrideNat(unsigned& natoms) {
   natoms = (rX*rY*rZ)*coordinates.size();
   return true;
 }
+
+scaledTrajectory::scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                                   const double mult):
+  distribution(std::move(d)),
+  multiplier(mult)
+{}
+
+void scaledTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+                             unsigned step,
+                             Random& rng) {
+  distribution->frame(posToUpdate,box,step,rng);
+
+  for (auto& p:posToUpdate) {
+    p*=multiplier;
+  }
+
+  for (auto& b:box) {
+
+    b*=multiplier;
+  }
+}
 } //namespace PLMD

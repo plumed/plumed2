@@ -31,6 +31,7 @@ Atoms are within box dimensions:
 [replyTrajCheck -sphere 1, 2, 3-]:
 [replyTrajCheck -sphere 1, 2, 3-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 1, 2, 3-]: new number of atoms: ( should be 1200) : 1200
+[replyTrajCheck -sphere 1, 2, 3-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 1, 2, 3-]: all atoms in box along x : true
 [replyTrajCheck -sphere 1, 2, 3-]: all atoms in box along y : true
@@ -43,6 +44,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 2, 2, 2-]:
 [replyTrajCheck -sphere 2, 2, 2-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 2, 2, 2-]: new number of atoms: ( should be 1600) : 1600
+[replyTrajCheck -sphere 2, 2, 2-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 2, 2, 2-]: all atoms in box along x : true
 [replyTrajCheck -sphere 2, 2, 2-]: all atoms in box along y : true
@@ -55,6 +57,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 1, 1, 1-]:
 [replyTrajCheck -sphere 1, 1, 1-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 1, 1, 1-]: new number of atoms: ( should be 200) : 200
+[replyTrajCheck -sphere 1, 1, 1-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 1, 1, 1-]: all atoms in box along x : true
 [replyTrajCheck -sphere 1, 1, 1-]: all atoms in box along y : true
@@ -67,6 +70,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 3, 2, 1-]:
 [replyTrajCheck -sphere 3, 2, 1-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 3, 2, 1-]: new number of atoms: ( should be 1200) : 1200
+[replyTrajCheck -sphere 3, 2, 1-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 3, 2, 1-]: all atoms in box along x : true
 [replyTrajCheck -sphere 3, 2, 1-]: all atoms in box along y : true
@@ -79,6 +83,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 3, 4, 7-]:
 [replyTrajCheck -sphere 3, 4, 7-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 3, 4, 7-]: new number of atoms: ( should be 16800) : 16800
+[replyTrajCheck -sphere 3, 4, 7-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 3, 4, 7-]: all atoms in box along x : true
 [replyTrajCheck -sphere 3, 4, 7-]: all atoms in box along y : true
@@ -91,6 +96,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 5, 1, 1-]:
 [replyTrajCheck -sphere 5, 1, 1-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 5, 1, 1-]: new number of atoms: ( should be 1000) : 1000
+[replyTrajCheck -sphere 5, 1, 1-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 5, 1, 1-]: all atoms in box along x : true
 [replyTrajCheck -sphere 5, 1, 1-]: all atoms in box along y : true
@@ -103,6 +109,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 1, 3, 1-]:
 [replyTrajCheck -sphere 1, 3, 1-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 1, 3, 1-]: new number of atoms: ( should be 600) : 600
+[replyTrajCheck -sphere 1, 3, 1-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 1, 3, 1-]: all atoms in box along x : true
 [replyTrajCheck -sphere 1, 3, 1-]: all atoms in box along y : true
@@ -115,6 +122,7 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 1, 1, 7-]:
 [replyTrajCheck -sphere 1, 1, 7-]: rep->overrideNat(nat)=true
 [replyTrajCheck -sphere 1, 1, 7-]: new number of atoms: ( should be 1400) : 1400
+[replyTrajCheck -sphere 1, 1, 7-]:The atoms are replicated correctly:	true
 Atoms are within box dimensions:
 [replyTrajCheck -sphere 1, 1, 7-]: all atoms in box along x : true
 [replyTrajCheck -sphere 1, 1, 7-]: all atoms in box along y : true
@@ -123,4 +131,127 @@ New box has the correct dimensions:
 [replyTrajCheck -sphere 1, 1, 7-]: correct box dimension x : true
 [replyTrajCheck -sphere 1, 1, 7-]: correct box dimension y : true
 [replyTrajCheck -sphere 1, 1, 7-]: correct box dimension z : true
+
+[scaleTrajCheck -sphere*0.5-]:
+[scaleTrajCheck -sphere*0.5-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere*0.5-]: all atoms in box along x : true
+[scaleTrajCheck -sphere*0.5-]: all atoms in box along y : true
+[scaleTrajCheck -sphere*0.5-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere*0.5-]: correct box dimension x : true
+[scaleTrajCheck -sphere*0.5-]: correct box dimension y : true
+[scaleTrajCheck -sphere*0.5-]: correct box dimension z : true
+[scaleTrajCheck -sc*0.5-]:
+[scaleTrajCheck -sc*0.5-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sc*0.5-]: all atoms in box along x : true
+[scaleTrajCheck -sc*0.5-]: all atoms in box along y : true
+[scaleTrajCheck -sc*0.5-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sc*0.5-]: correct box dimension x : true
+[scaleTrajCheck -sc*0.5-]: correct box dimension y : true
+[scaleTrajCheck -sc*0.5-]: correct box dimension z : true
+[scaleTrajCheck -globs*0.5-]:
+[scaleTrajCheck -globs*0.5-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -globs*0.5-]: all atoms in box along x : true
+[scaleTrajCheck -globs*0.5-]: all atoms in box along y : true
+[scaleTrajCheck -globs*0.5-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -globs*0.5-]: correct box dimension x : true
+[scaleTrajCheck -globs*0.5-]: correct box dimension y : true
+[scaleTrajCheck -globs*0.5-]: correct box dimension z : true
+[scaleTrajCheck -sphere-reply212*0.5-]:
+[scaleTrajCheck -sphere-reply212*0.5-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere-reply212*0.5-]: all atoms in box along x : true
+[scaleTrajCheck -sphere-reply212*0.5-]: all atoms in box along y : true
+[scaleTrajCheck -sphere-reply212*0.5-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere-reply212*0.5-]: correct box dimension x : true
+[scaleTrajCheck -sphere-reply212*0.5-]: correct box dimension y : true
+[scaleTrajCheck -sphere-reply212*0.5-]: correct box dimension z : true
+
+[scaleTrajCheck -sphere*3-]:
+[scaleTrajCheck -sphere*3-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere*3-]: all atoms in box along x : true
+[scaleTrajCheck -sphere*3-]: all atoms in box along y : true
+[scaleTrajCheck -sphere*3-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere*3-]: correct box dimension x : true
+[scaleTrajCheck -sphere*3-]: correct box dimension y : true
+[scaleTrajCheck -sphere*3-]: correct box dimension z : true
+[scaleTrajCheck -sc*3-]:
+[scaleTrajCheck -sc*3-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sc*3-]: all atoms in box along x : true
+[scaleTrajCheck -sc*3-]: all atoms in box along y : true
+[scaleTrajCheck -sc*3-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sc*3-]: correct box dimension x : true
+[scaleTrajCheck -sc*3-]: correct box dimension y : true
+[scaleTrajCheck -sc*3-]: correct box dimension z : true
+[scaleTrajCheck -globs*3-]:
+[scaleTrajCheck -globs*3-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -globs*3-]: all atoms in box along x : true
+[scaleTrajCheck -globs*3-]: all atoms in box along y : true
+[scaleTrajCheck -globs*3-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -globs*3-]: correct box dimension x : true
+[scaleTrajCheck -globs*3-]: correct box dimension y : true
+[scaleTrajCheck -globs*3-]: correct box dimension z : true
+[scaleTrajCheck -sphere-reply212*3-]:
+[scaleTrajCheck -sphere-reply212*3-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere-reply212*3-]: all atoms in box along x : true
+[scaleTrajCheck -sphere-reply212*3-]: all atoms in box along y : true
+[scaleTrajCheck -sphere-reply212*3-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere-reply212*3-]: correct box dimension x : true
+[scaleTrajCheck -sphere-reply212*3-]: correct box dimension y : true
+[scaleTrajCheck -sphere-reply212*3-]: correct box dimension z : true
+
+[scaleTrajCheck -sphere*10-]:
+[scaleTrajCheck -sphere*10-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere*10-]: all atoms in box along x : true
+[scaleTrajCheck -sphere*10-]: all atoms in box along y : true
+[scaleTrajCheck -sphere*10-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere*10-]: correct box dimension x : true
+[scaleTrajCheck -sphere*10-]: correct box dimension y : true
+[scaleTrajCheck -sphere*10-]: correct box dimension z : true
+[scaleTrajCheck -sc*10-]:
+[scaleTrajCheck -sc*10-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sc*10-]: all atoms in box along x : true
+[scaleTrajCheck -sc*10-]: all atoms in box along y : true
+[scaleTrajCheck -sc*10-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sc*10-]: correct box dimension x : true
+[scaleTrajCheck -sc*10-]: correct box dimension y : true
+[scaleTrajCheck -sc*10-]: correct box dimension z : true
+[scaleTrajCheck -globs*10-]:
+[scaleTrajCheck -globs*10-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -globs*10-]: all atoms in box along x : true
+[scaleTrajCheck -globs*10-]: all atoms in box along y : true
+[scaleTrajCheck -globs*10-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -globs*10-]: correct box dimension x : true
+[scaleTrajCheck -globs*10-]: correct box dimension y : true
+[scaleTrajCheck -globs*10-]: correct box dimension z : true
+[scaleTrajCheck -sphere-reply212*10-]:
+[scaleTrajCheck -sphere-reply212*10-]:The atoms are scaled correctly:	true
+Atoms are within box dimensions:
+[scaleTrajCheck -sphere-reply212*10-]: all atoms in box along x : true
+[scaleTrajCheck -sphere-reply212*10-]: all atoms in box along y : true
+[scaleTrajCheck -sphere-reply212*10-]: all atoms in box along z : true
+New box has the correct dimensions:
+[scaleTrajCheck -sphere-reply212*10-]: correct box dimension x : true
+[scaleTrajCheck -sphere-reply212*10-]: correct box dimension y : true
+[scaleTrajCheck -sphere-reply212*10-]: correct box dimension z : true
 

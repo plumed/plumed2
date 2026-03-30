@@ -132,5 +132,17 @@ public:
 
   bool overrideNat(unsigned& natoms) override;
 };
+
+///a decorator for scaling the atomic positions
+class scaledTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  double multiplier;
+public:
+  scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult);
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned step,
+             Random& rng) override;
+};
 } //namespace PLMD
 #endif // __PLUMED_tools_AtomDistribution_h
