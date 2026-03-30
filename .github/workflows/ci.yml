@@ -29,8 +29,8 @@ jobs:
 # see https://github.com/plumed/plumed2/issues/976
 #        - -intel-
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - uses: actions/checkout@v6
+    - uses: actions/cache@v5
       with:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
@@ -196,7 +196,7 @@ jobs:
   codecheck:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set path
       run: |
          echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -222,7 +222,7 @@ jobs:
   fedora37:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Build and run tests
       run: |
         make -C docker fedora37
@@ -231,7 +231,7 @@ jobs:
   rocky8:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Build and run tests
       run: |
         make -C docker rocky8
@@ -246,8 +246,8 @@ jobs:
     env:
       PYVERS: "py39 py310"
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - uses: actions/checkout@v6
+    - uses: actions/cache@v5
       with:
         path: ~/.macports-ci-ccache
         key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
@@ -281,7 +281,7 @@ jobs:
   macsimple:
     runs-on: macos-14
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -311,7 +311,7 @@ jobs:
         os: [ubuntu-22.04, macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Install conda
       run: |
         curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
