@@ -23,6 +23,7 @@
 #define __PLUMED_tools_AtomDistribution_h
 
 #include "Vector.h"
+#include "View.h"
 #include "Tools.h"
 #include "Random.h"
 #include "TrajectoryParser.h"
@@ -33,10 +34,15 @@ namespace PLMD {
 ///Acts as a template for any distribution
 struct AtomDistribution {
   ///Update the input vectors with the position and the box of the frame
-  virtual void frame(std::vector<Vector>& posToUpdate,
-                     std::vector<double>& box,
-                     unsigned /*step*/,
-                     Random& /*rng*/)=0;
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned step,
+             Random& rng);
+  ///Update the input vectors with the position and the box of the frame
+  virtual void frame(View<Vector> posToUpdate,
+                     View<double,9> box,
+                     unsigned step,
+                     Random& rng)=0;
   virtual ~AtomDistribution() noexcept {}
   ///If necessary changes the number of atoms, returns true if that number has been changed
   virtual bool overrideNat(unsigned& ) {
@@ -47,38 +53,38 @@ struct AtomDistribution {
 
 ///A wiggly line of atoms
 struct theLine:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned step,
              Random& rng) override;
 };
 
 ///Atom randomly distribuited in a sphere
 struct uniformSphere:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
 
 ///Atom randomly distribuited between two not overlapping a spheres
 struct twoGlobs: public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random&rng) override;
 };
 
 struct uniformCube:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
@@ -98,8 +104,8 @@ class fileTraj:public AtomDistribution {
   //read the next step
   void step(bool doRewind=true);
 public:
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& /*rng*/) override;
 
@@ -116,17 +122,16 @@ class repliedTrajectory: public AtomDistribution {
   unsigned rX=1;
   unsigned rY=1;
   unsigned rZ=1;
-  std::vector<Vector> coordinates;
 public:
   repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
                     const unsigned repeatX,
                     const unsigned repeatY,
                     const unsigned repeatZ,
-                    // I think 4294967295 maximum atoms before the multiplication is more than enough
-                    const unsigned nat);
+                    // not used, here for legacy purpose
+                    const unsigned=1 /*nat*/);
 
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned step,
              Random& rng) override;
 
@@ -139,8 +144,8 @@ class scaledTrajectory: public AtomDistribution {
   double multiplier;
 public:
   scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult);
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned step,
              Random& rng) override;
 };

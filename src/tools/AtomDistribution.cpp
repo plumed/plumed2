@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AtomDistribution.h"
+#include "View.h"
+#include <cassert>
 
 namespace PLMD {
 
@@ -42,6 +44,19 @@ std::unique_ptr<AtomDistribution> AtomDistribution::getAtomDistribution(std::str
   return distribution;
 }
 
+
+void AtomDistribution::frame(std::vector<Vector>& posToUpdate,
+                             std::vector<double>& box,
+                             unsigned step,
+                             Random& rng) {
+  assert(box.size()>=9);
+  //call the specialized frame
+  frame(make_view(posToUpdate),
+        View<double,9>(box.data()),
+        step,
+        rng);
+}
+
 class UniformSphericalVector {
   //double rminCub;
   double rCub;
@@ -61,8 +76,8 @@ public:
   }
 };
 
-void theLine::frame(std::vector<Vector>& posToUpdate,
-                    std::vector<double>& box,
+void theLine::frame(View<Vector> posToUpdate,
+                    View<double,9> box,
                     unsigned step,
                     Random& rng) {
   auto nat = posToUpdate.size();
@@ -82,8 +97,8 @@ void theLine::frame(std::vector<Vector>& posToUpdate,
   box[8]=1.75;
 }
 
-void uniformSphere::frame(std::vector<Vector>& posToUpdate,
-                          std::vector<double>& box,
+void uniformSphere::frame(View<Vector> posToUpdate,
+                          View<double,9> box,
                           unsigned /*step*/,
                           Random& rng) {
 
@@ -111,8 +126,8 @@ void uniformSphere::frame(std::vector<Vector>& posToUpdate,
 
 }
 
-void twoGlobs::frame(std::vector<Vector>& posToUpdate,
-                     std::vector<double>& box,
+void twoGlobs::frame(View<Vector> posToUpdate,
+                     View<double,9> box,
                      unsigned /*step*/,
                      Random&rng) {
   //I am using two unigform spheres and 2V=n
@@ -141,8 +156,8 @@ void twoGlobs::frame(std::vector<Vector>& posToUpdate,
   box[8]=4.0 *rmax;
 }
 
-void uniformCube::frame(std::vector<Vector>& posToUpdate,
-                        std::vector<double>& box,
+void uniformCube::frame(View<Vector> posToUpdate,
+                        View<double,9> box,
                         unsigned /*step*/,
                         Random& rng) {
   //giving more or less a cubic udm of volume for each atom: V = nat
@@ -173,8 +188,8 @@ void uniformCube::frame(std::vector<Vector>& posToUpdate,
 
 }
 
-void tiledSimpleCubic::frame(std::vector<Vector>& posToUpdate,
-                             std::vector<double>& box,
+void tiledSimpleCubic::frame(View<Vector> posToUpdate,
+                             View<double,9> box,
                              unsigned /*step*/,
                              Random& rng) {
   //Tiling the space in this way will not tests 100% the pbc, but
@@ -280,8 +295,8 @@ void fileTraj::step(bool doRewind) {
   }
 }
 
-void fileTraj::frame(std::vector<Vector>& posToUpdate,
-                     std::vector<double>& box,
+void fileTraj::frame(View<Vector> posToUpdate,
+                     View<double,9> box,
                      unsigned /*step*/,
                      Random& /*rng*/) {
   if (read) {
@@ -316,18 +331,19 @@ repliedTrajectory::repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
   distribution(std::move(d)),
   rX(repeatX),
   rY(repeatY),
-  rZ(repeatZ),
-  coordinates(nat,Vector{})
+  rZ(repeatZ)
 {}
 
-void repliedTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+void repliedTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
                               unsigned step,
                               Random& rng) {
+  plumed_assert((posToUpdate.size() % (rX*rY*rZ)==0));
+  const auto nat = posToUpdate.size()/(rX*rY*rZ);
+  auto coordinates=posToUpdate.subview(0,nat);
   distribution->frame(coordinates,box,step,rng);
 
   // repetitions
-  auto p = posToUpdate.begin();
-  const auto nat = coordinates.size();
+  auto p = posToUpdate.begin()+nat;
 
   assert((rX*rY*rZ)*nat == posToUpdate.size());
 
@@ -337,6 +353,9 @@ void repliedTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<doub
   for (unsigned x=0; x<rX; ++x) {
     for (unsigned y=0; y<rY; ++y) {
       for (unsigned z=0; z<rZ; ++z) {
+        if(x==0&&y==0&&z==0) {
+          continue;
+        }
         for (unsigned i=0; i<nat; ++i) {
           *p=coordinates[i]
              + x * boxX
@@ -361,7 +380,7 @@ void repliedTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<doub
 }
 
 bool repliedTrajectory::overrideNat(unsigned& natoms) {
-  natoms = (rX*rY*rZ)*coordinates.size();
+  natoms *= (rX*rY*rZ);
   return true;
 }
 
@@ -371,7 +390,7 @@ scaledTrajectory::scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
   multiplier(mult)
 {}
 
-void scaledTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<double>& box,
+void scaledTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
                              unsigned step,
                              Random& rng) {
   distribution->frame(posToUpdate,box,step,rng);
@@ -381,7 +400,6 @@ void scaledTrajectory::frame(std::vector<Vector>& posToUpdate, std::vector<doubl
   }
 
   for (auto& b:box) {
-
     b*=multiplier;
   }
 }
