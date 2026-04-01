@@ -6,6 +6,6 @@
 !/*.h
 !/Makefile
 !/README
-!/module.type
+!/module.*
 !/COPYRIGHT
 !/options.mk
