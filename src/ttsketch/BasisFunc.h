@@ -30,6 +30,9 @@ private:
   int nbasis_;                    // number of basis functions n (including constant phi_1)
   double L_;                      // domain half-length: L = (b-a)/2
   double shift_;                  // domain midpoint: shift = (a+b)/2
+  double inv_L_;                  // 1/L, precomputed to avoid repeated division in Fourier evaluations
+  double sqrt_inv_L_;             // 1/sqrt(L), precomputed to avoid repeated pow() in Fourier evaluations
+  double inv_sqrt_2L_;            // 1/sqrt(2L), the value of phi_1(x) for the Fourier basis
   double w_;                      // smoothing width for conv mode (Fourier: sigma in x-units; kernel: Gaussian hill width)
   bool kernel_;                   // true = kernel basis, false = Fourier basis
   double dx_;                     // kernel basis function width (std dev of each periodized Gaussian)
