@@ -1,41 +1,40 @@
 #include "TTHelper.h"
 
-using namespace std;
 using namespace itensor;
 
 namespace PLMD {
 namespace ttsketch {
 
-void ttWrite(const string& filename, const MPS& tt, unsigned count) {
+void ttWrite(const std::string& filename, const MPS& tt, unsigned count) {
   // count starts at 2 on the first sketch call; open for writing on first call, append thereafter
   auto f = count == 2 ? h5_open(filename, 'w') : h5_open(filename, 'a');
-  h5_write(f, "tt_" + to_string(count - 1), tt);
+  h5_write(f, "tt_" + std::to_string(count - 1), tt);
 }
 
-MPS ttRead(const string& filename, unsigned count) {
+MPS ttRead(const std::string& filename, unsigned count) {
   auto f = h5_open(filename, 'r');
-  auto tt = h5_read<MPS>(f, "tt_" + to_string(count - 1));
+  auto tt = h5_read<MPS>(f, "tt_" + std::to_string(count - 1));
   return tt;
 }
 
-void ttSumWrite(const string& filename, const MPS& tt, unsigned count) {
+void ttSumWrite(const std::string& filename, const MPS& tt, unsigned count) {
   auto f = h5_open(filename, 'a');
-  h5_write(f, "vb_" + to_string(count - 1), tt);
+  h5_write(f, "vb_" + std::to_string(count - 1), tt);
 }
 
-MPS ttSumRead(const string& filename, unsigned count) {
+MPS ttSumRead(const std::string& filename, unsigned count) {
   auto f = h5_open(filename, 'r');
-  auto tt = h5_read<MPS>(f, "vb_" + to_string(count - 1));
+  auto tt = h5_read<MPS>(f, "vb_" + std::to_string(count - 1));
   return tt;
 }
 
 // Evaluate TT by contracting each core with its 1D basis vector phi(x_i):
 //   result = sum_{i_1,...,i_d} G_1[i_1] * ... * G_d[i_d] * phi_1(x_1,i_1) * ... * phi_d(x_d,i_d)
 // The contraction is performed left-to-right so intermediate results stay rank-1 scalars.
-double ttEval(const MPS& tt, const vector<BasisFunc>& basis, const vector<double>& elements, bool conv) {
+double ttEval(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
   int d = length(tt);
   auto s = siteInds(tt);
-  vector<ITensor> basis_evals(d);
+  std::vector<ITensor> basis_evals(d);
   for(int i = 1; i <= d; ++i) {
     basis_evals[i - 1] = ITensor(s(i));
     for(int j = 1; j <= dim(s(i)); ++j) {
@@ -52,11 +51,11 @@ double ttEval(const MPS& tt, const vector<BasisFunc>& basis, const vector<double
 // Gradient of ttEval w.r.t. elements. For each dimension k, one TT contraction is performed
 // with the k-th basis vector replaced by its derivative d phi_k/dx_k (chain rule).
 // All basis evaluations are precomputed to avoid redundant work across the d contractions.
-vector<double> ttGrad(const MPS& tt, const vector<BasisFunc>& basis, const vector<double>& elements, bool conv) {
+std::vector<double> ttGrad(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
   int d = length(tt);
   auto s = siteInds(tt);
-  vector<double> grad(d, 0.0);
-  vector<ITensor> basis_evals(d), basisd_evals(d);
+  std::vector<double> grad(d, 0.0);
+  std::vector<ITensor> basis_evals(d), basisd_evals(d);
   for(int i = 1; i <= d; ++i) {
     basis_evals[i - 1] = basisd_evals[i - 1] = ITensor(s(i));
     for(int j = 1; j <= dim(s(i)); ++j) {
@@ -78,11 +77,11 @@ vector<double> ttGrad(const MPS& tt, const vector<BasisFunc>& basis, const vecto
 // Compute covariance matrix, marginal means, and partition function of the TT distribution.
 // Precomputes ITensors for the three moment integrals int0/int1/int2 per dimension,
 // then evaluates expectations as TT contractions with these integral vectors.
-tuple<Matrix<double>, vector<double>, double> covMat(const MPS& tt, const vector<BasisFunc>& basis) {
+std::tuple<Matrix<double>, std::vector<double>, double> covMat(const MPS& tt, const std::vector<BasisFunc>& basis) {
   int d = length(tt);
   auto s = siteInds(tt);
   // integral vectors: int0[i][j] = int phi_j(x_i) dx_i, etc.
-  vector<ITensor> basis_int0(d), basis_int1(d), basis_int2(d);
+  std::vector<ITensor> basis_int0(d), basis_int1(d), basis_int2(d);
   for(int i = 1; i <= d; ++i) {
     basis_int0[i - 1] = basis_int1[i - 1] = basis_int2[i - 1] = ITensor(s(i));
     for(int j = 1; j <= dim(s(i)); ++j) {
@@ -99,8 +98,8 @@ tuple<Matrix<double>, vector<double>, double> covMat(const MPS& tt, const vector
   auto rho = tt;
   rho /= elt(Z);
   // ei[k]  = E[x_k],  eii[k] = E[x_k^2],  eij[k][l] = E[x_k * x_l] for k < l
-  vector<double> ei(d), eii(d);
-  vector<vector<double>> eij(d, vector<double>(d));
+  std::vector<double> ei(d), eii(d);
+  std::vector<std::vector<double>> eij(d, std::vector<double>(d));
   for(int k = 1; k <= d; ++k) {
     // replace dimension k's integral vector with int1 (resp. int2) to get E[x_k] (resp. E[x_k^2])
     auto eival = rho(1) * (k == 1 ? basis_int1[0] : basis_int0[0]);
@@ -127,17 +126,17 @@ tuple<Matrix<double>, vector<double>, double> covMat(const MPS& tt, const vector
       sigma(k - 1, l - 1) = sigma(l - 1, k - 1) = k == l ? eii[k - 1] - pow(ei[k - 1], 2) : eij[k - 1][l - 1] - ei[k - 1] * ei[l - 1];
     }
   }
-  return make_tuple(sigma, ei, elt(Z));
+  return std::make_tuple(sigma, ei, elt(Z));
 }
 
 // Compute the 2D marginal density of the normalized TT distribution for dimensions
 // pos1 and pos2 on a (bins x bins) grid. All other dimensions are integrated out
 // analytically using int0, which collapses those TT cores to scalar factors.
-void marginal2d(const MPS& tt, const vector<BasisFunc>& basis, int pos1, int pos2, vector<vector<double>>& grid, bool conv) {
+void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, std::vector<std::vector<double>>& grid, bool conv) {
   int bins = grid.size();
   int d = length(tt);
   auto s = siteInds(tt);
-  vector<ITensor> basis_int0(d);
+  std::vector<ITensor> basis_int0(d);
   for(int i = 1; i <= d; ++i) {
     basis_int0[i - 1] = ITensor(s(i));
     for(int j = 1; j <= dim(s(i)); ++j) {

@@ -1,14 +1,12 @@
 #include "BasisFunc.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace ttsketch {
 
 BasisFunc::BasisFunc()
-  : dom_(make_pair(0.0, 0.0)), nbasis_(0), L_(0.0), shift_(0.0), inv_L_(0.0), sqrt_inv_L_(0.0), inv_sqrt_2L_(0.0), w_(0.0), kernel_(false), dx_(0.0) {}
+  : dom_(std::make_pair(0.0, 0.0)), nbasis_(0), L_(0.0), shift_(0.0), inv_L_(0.0), sqrt_inv_L_(0.0), inv_sqrt_2L_(0.0), w_(0.0), kernel_(false), dx_(0.0) {}
 
-BasisFunc::BasisFunc(pair<double, double> dom, int nbasis, double w, bool kernel, double dx)
+BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool kernel, double dx)
   : dom_(dom), nbasis_(nbasis), L_((dom.second - dom.first) * 0.5), shift_((dom.second + dom.first) * 0.5),
     inv_L_(2.0 / (dom.second - dom.first)), sqrt_inv_L_(sqrt(2.0 / (dom.second - dom.first))),
     inv_sqrt_2L_(sqrt(1.0 / (dom.second - dom.first))),
@@ -21,7 +19,7 @@ BasisFunc::BasisFunc(pair<double, double> dom, int nbasis, double w, bool kernel
       this->dx_ = spacing;
     }
     // nbasis-1 kernel centers, uniformly spaced starting at dom.first
-    this->centers_ = vector<double>(nbasis - 1);
+    this->centers_ = std::vector<double>(nbasis - 1);
     for(int i = 0; i < nbasis - 1; ++i) {
       this->centers_[i] = dom.first + i * spacing;
     }
