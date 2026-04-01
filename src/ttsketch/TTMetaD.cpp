@@ -334,6 +334,10 @@ void TTMetaD::readGaussians(IFile *ifile) {
   }
   log << "  restarting from step " << this->sketch_count_ << "\n";
   log << "  " << nhills << " hills retrieved\n";
+
+  log << "  Bibliography " << plumed.cite("Strand, Yang, Khoo, and Dinner, https://arxiv.org/abs/2603.13549 (2026)");
+  log << plumed.cite("Fishman, White, and Stoudenmire, https://arxiv.org/abs/2007.14822 (2020)");
+  log << "\n";
 }
 
 bool TTMetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height) {
