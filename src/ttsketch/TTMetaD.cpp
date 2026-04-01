@@ -2,10 +2,7 @@
  *
  * Tensor train (TT)-metadynamics.
  * https://arxiv.org/abs/2603.13549
- * Before compiling, install the ITensor library (https://github.com/ITensor/ITensor) and ensure that HDF5 support is available.
- * Copy the options.mk to the location of the ITensor installation and edit if needed.
- * Run the following command from the PLUMED source directory (edit libraries if needed to match your options.mk):
- * ./configure --enable-modules=ttsketch LDFLAGS=-L/path/to/ITensor/lib CPPFLAGS="-I/path/to/ITensor -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h" LIBS="-litensor -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lhdf5 -lhdf5_hl" CXXFLAGS="-O3 -fconcepts"
+ * See module.md for installation instructions.
  */
 
 #include "TTHelper.h"
