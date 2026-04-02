@@ -353,6 +353,13 @@ public:
     if (!toret.has_value()) {
       return std::nullopt;
     }
+    double scale = -1;
+    parse("--scale",scale);
+    if (scale>0) {
+      std::unique_ptr<AtomDistribution> tmp = std::move(*toret);
+      toret = std::make_unique<scaledTrajectory>(std::move(tmp),
+              scale);
+    }
     ///@todo: add a the possibility to add the pcbbox via CLI
     /// this is necessary for some molfile plugins
     int repeatX=0;
@@ -369,14 +376,10 @@ public:
       return std::nullopt;
     }
     if (repeatX*repeatY*repeatZ >1) {
-      //In case it is needed
-      (*toret)->overrideNat(nat);
       return std::make_unique<repliedTrajectory>(std::move(*toret),
              repeatX,
              repeatY,
-             repeatZ,
-             nat
-                                                );
+             repeatZ);
     }
     return toret;
   }
@@ -405,6 +408,8 @@ void Benchmark::registerKeywords( Keywords& keys ) {
            " ingnored with a atomic distribution");
   keys.add("compulsory","--repeatZ","1","number of time to align the read trajectory along the third box component,"
            " ingnored with a atomic distribution");
+  //defaults to negative because we are parsing doubles
+  keys.add("compulsory","--scale","-1","multiplies atom positions and box dimensions by the specified positive number");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):

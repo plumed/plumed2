@@ -23,6 +23,7 @@
 #define __PLUMED_tools_AtomDistribution_h
 
 #include "Vector.h"
+#include "View.h"
 #include "Tools.h"
 #include "Random.h"
 #include "TrajectoryParser.h"
@@ -33,12 +34,27 @@ namespace PLMD {
 ///Acts as a template for any distribution
 struct AtomDistribution {
   ///Update the input vectors with the position and the box of the frame
-  virtual void frame(std::vector<Vector>& posToUpdate,
-                     std::vector<double>& box,
-                     unsigned /*step*/,
-                     Random& /*rng*/)=0;
+  void frame(std::vector<Vector>& posToUpdate,
+             std::vector<double>& box,
+             unsigned step,
+             Random& rng);
+  ///Update the input vectors with the position and the box of the frame
+  virtual void frame(View<Vector> posToUpdate,
+                     View<double,9> box,
+                     unsigned step,
+                     Random& rng)=0;
   virtual ~AtomDistribution() noexcept {}
   ///If necessary changes the number of atoms, returns true if that number has been changed
+  ///
+  ///This is used principally in the benchmark.
+  ///All the atoms distributions usually acts all the atoms passed by the vector of positions, so this does not change the input
+  ///
+  ///But the "reading file" ones will only work if the number of atoms is the same of the one in the file, so this set the input to that number
+  ///
+  ///And in case of the ones that replicate the trajectory this multiplies the input by the number of replicated "systems" this
+  ///this is needed to inform benchmark that if you asked for replicating `N` atoms `X*Y*Z` times it will need an array of `N*X*Y*Z` atoms
+  ///Outside of the specific usecase of the benchmark this is less important, because replicate will generate the inner trjectory on a limited
+  ///number of atoms and the it will replicate it
   virtual bool overrideNat(unsigned& ) {
     return false;
   }
@@ -47,38 +63,38 @@ struct AtomDistribution {
 
 ///A wiggly line of atoms
 struct theLine:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned step,
              Random& rng) override;
 };
 
 ///Atom randomly distribuited in a sphere
 struct uniformSphere:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
 
 ///Atom randomly distribuited between two not overlapping a spheres
 struct twoGlobs: public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random&rng) override;
 };
 
 struct uniformCube:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& rng) override;
 };
@@ -98,8 +114,8 @@ class fileTraj:public AtomDistribution {
   //read the next step
   void step(bool doRewind=true);
 public:
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned /*step*/,
              Random& /*rng*/) override;
 
@@ -116,20 +132,32 @@ class repliedTrajectory: public AtomDistribution {
   unsigned rX=1;
   unsigned rY=1;
   unsigned rZ=1;
-  std::vector<Vector> coordinates;
 public:
   repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
                     const unsigned repeatX,
                     const unsigned repeatY,
                     const unsigned repeatZ,
-                    // I think 4294967295 maximum atoms before the multiplication is more than enough
-                    const unsigned nat);
-
-  void frame(std::vector<Vector>& posToUpdate,
-             std::vector<double>& box,
+                    // not used, here for legacy purpose
+                    const unsigned=1 /*nat*/);
+///Generates the inner trajectory of `(nat)/(rX*rY*rZ)`, where `nat` is the dimension of the vector view, then it replicate the atoms in the various directions
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
              unsigned step,
              Random& rng) override;
+///See the documentation the AtomDistribution
+  bool overrideNat(unsigned& natoms) override;
+};
 
+///a decorator for scaling the atomic positions
+class scaledTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  double multiplier;
+public:
+  scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult);
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned step,
+             Random& rng) override;
   bool overrideNat(unsigned& natoms) override;
 };
 } //namespace PLMD
