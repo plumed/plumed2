@@ -58,9 +58,12 @@ fi
 
     if [[ $do_modified = false ]]; then
       extra[${#extra[@]}]="${basedir}/configure.ac"
-      extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
     fi
     if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+      #plumedcheck will call "cython" this check may give some problems if you use pyenv
+      if which cython &> /dev/null; then
+         extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
+      fi
       extra[${#extra[@]}]=--global-check
     fi
     # shellcheck disable=SC2086
@@ -68,18 +71,20 @@ fi
       --astyle="${basedir}/astyle/astyle" \
       --astyle-options="${basedir}/.astyle.options" \
       "${extra[@]}" $files
+    if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
     (
     # Addig an extra format check for python files.
     # The settings are in the ruff.toml in the home directory
     # ruff format outputs a list of "would reformat file" followed by a recap
     # "head" discards the recap and awk reformat the error message
       cd "${basedir}"
+      #this uses the same check in the base Makefile
       if which ruff &> /dev/null; then
-        python -m ruff format --check \
+        ruff format --check \
           | grep 'Would reformat' \
           | awk '{ printf "[%s:0] (error) :ruff_format: python ruff formatting non satisfied\n", $3 }' \
             >&2
-        python -m ruff check --output-format concise \
+        ruff check --output-format concise \
           | head -n -2 \
           | awk '{ printf "[%s] (error) :ruff_check: %s", substr($1,1,length($1)-1), $2;
                    $1=$2="";
@@ -93,6 +98,7 @@ fi
       fi
 
     )
+    fi
   fi
 
   if [ $do_cppcheck == true ]; then
