@@ -56,9 +56,15 @@ public:
   double operator()(double x, int pos, bool conv) const;
   // Derivative of operator()(x, pos, conv) w.r.t. x.
   double grad(double x, int pos, bool conv) const;
-  int nbasis() const { return this->nbasis_; }
-  const std::pair<double, double>& dom() const { return this->dom_; }
-  double w() const { return this->w_; }
+  int nbasis() const {
+    return this->nbasis_;
+  }
+  const std::pair<double, double>& dom() const {
+    return this->dom_;
+  }
+  double w() const {
+    return this->w_;
+  }
   // Integral of phi_pos over the domain: int_a^b phi_pos(x) dx.
   // Used to compute the partition function Z in covMat().
   double int0(int pos) const;
@@ -68,11 +74,21 @@ public:
   // Integral of x^2*phi_pos over the domain: int_a^b x^2*phi_pos(x) dx.
   // Used to compute E[x^2] for the marginal variance in covMat().
   double int2(int pos) const;
-  bool kernel() const { return this->kernel_; }
-  const Matrix<double>& ginv() const { return this->ginv_; }
-  const Matrix<double>& gram() const { return this->gram_; }
-  double center(int pos) const { return this->kernel_ ? this->centers_[pos - 1] : 0.0; }
-  double dx() const { return this->dx_; }
+  bool kernel() const {
+    return this->kernel_;
+  }
+  const Matrix<double>& ginv() const {
+    return this->ginv_;
+  }
+  const Matrix<double>& gram() const {
+    return this->gram_;
+  }
+  double center(int pos) const {
+    return this->kernel_ ? this->centers_[pos - 1] : 0.0;
+  }
+  double dx() const {
+    return this->dx_;
+  }
 };
 
 }

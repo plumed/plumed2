@@ -71,7 +71,7 @@ private:
   bool frozen_;              // true once the bias has been frozen (after sketch_until_)
   bool sketch_conv_;         // true if Gaussian smoothing (conv mode) is active for basis evaluation
   bool nonintrusive_;        // if true, uses the intrusive-free variant: accumulates Bemp directly
-                             // instead of re-projecting the previous vb_ through the Gram matrix
+  // instead of re-projecting the previous vb_ through the Gram matrix
   bool deterministic_;       // if true, use a fixed RNG seed (42) in createTTCoeff() for reproducibility
   MPS B_prev_;               // accumulated tensor moment from all previous sketches (nonintrusive only)
   std::vector<ITensor> A_prev_;   // accumulated cross-gram matrices per bond (nonintrusive only)
@@ -147,8 +147,7 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   frozen_(false),
   sketch_conv_(false),
   nonintrusive_(false),
-  deterministic_(false)
-{
+  deterministic_(false) {
   bool kernel;
   parseFlag("KERNEL_BASIS", kernel);
   this->d_ = getNumberOfArguments();
@@ -806,7 +805,7 @@ void TTMetaD::paraSketch() {
     V[core_id - 1] = ITensor(links(core_id - 1));
     if(this->sketch_r_ > 0) {
       svd(A, U[core_id - 1], S[core_id - 1], V[core_id - 1],
-          {"Cutoff=", this->sketch_cutoff_, "RightTags=", original_link_tags, "MaxDim=", this->sketch_r_});
+      {"Cutoff=", this->sketch_cutoff_, "RightTags=", original_link_tags, "MaxDim=", this->sketch_r_});
     } else {
       svd(A, U[core_id - 1], S[core_id - 1], V[core_id - 1], {"Cutoff=", this->sketch_cutoff_, "RightTags=", original_link_tags});
     }

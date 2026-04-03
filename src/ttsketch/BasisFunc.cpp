@@ -10,8 +10,7 @@ BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool k
   : dom_(dom), nbasis_(nbasis), L_((dom.second - dom.first) * 0.5), shift_((dom.second + dom.first) * 0.5),
     inv_L_(2.0 / (dom.second - dom.first)), sqrt_inv_L_(sqrt(2.0 / (dom.second - dom.first))),
     inv_sqrt_2L_(sqrt(1.0 / (dom.second - dom.first))),
-    w_(w), kernel_(kernel), dx_(dx)
-{
+    w_(w), kernel_(kernel), dx_(dx) {
   if(kernel) {
     double spacing = (dom.second - dom.first) / (nbasis - 1);
     if(dx == 0) {
@@ -34,12 +33,12 @@ BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool k
     for(int i = 1; i < nbasis; ++i) {
       // G(0,i) = G(i,0) = int phi_{i+1}(x) dx (integral of a periodized Gaussian)
       this->gram_(i, 0) = this->gram_(0, i) = this->dx_ * sqrt(M_PI * 0.5) *
-                                (erf((this->dom_.second -
-                                2 * this->dom_.first + this->centers_[i - 1]) /
-                                (sqrt(2) * this->dx_)) -
-                                erf((this->dom_.first - 2 * this->dom_.second +
-                                this->centers_[i - 1]) /
-                                (sqrt(2) * this->dx_)));
+                                              (erf((this->dom_.second -
+                                                  2 * this->dom_.first + this->centers_[i - 1]) /
+                                                  (sqrt(2) * this->dx_)) -
+                                                  erf((this->dom_.first - 2 * this->dom_.second +
+                                                      this->centers_[i - 1]) /
+                                                      (sqrt(2) * this->dx_)));
       // G(i,j) = int phi_{i+1}(x)*phi_{j+1}(x) dx; the double sum over k,l
       // accounts for cross-terms between periodic images of each kernel.
       for(int j = i; j < nbasis; ++j) {
@@ -47,14 +46,14 @@ BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool k
         for(int k = -1; k <= 1; ++k) {
           for(int l = -1; l <= 1; ++l) {
             result += this->dx_ * 0.5 * exp(-pow((this->dom_.first -
-                      this->dom_.second) * (k - l) + this->centers_[i - 1] -
-                      this->centers_[j - 1], 2) / (4 * pow(this->dx_, 2))) *
+                                                  this->dom_.second) * (k - l) + this->centers_[i - 1] -
+                                                 this->centers_[j - 1], 2) / (4 * pow(this->dx_, 2))) *
                       sqrt(M_PI) * (erf((this->dom_.first * (k + l - 2) -
-                      this->dom_.second * (k + l) + this->centers_[i - 1] +
-                      this->centers_[j - 1]) / (2 * this->dx_)) -
-                      erf((this->dom_.first * (k + l) - this->dom_.second *
-                      (k + l + 2) + this->centers_[i - 1] +
-                      this->centers_[j - 1]) / (2 * this->dx_)));
+                                         this->dom_.second * (k + l) + this->centers_[i - 1] +
+                                         this->centers_[j - 1]) / (2 * this->dx_)) -
+                                    erf((this->dom_.first * (k + l) - this->dom_.second *
+                                         (k + l + 2) + this->centers_[i - 1] +
+                                         this->centers_[j - 1]) / (2 * this->dx_)));
           }
         }
         this->gram_(i, j) = this->gram_(j, i) = result;
@@ -123,7 +122,7 @@ double BasisFunc::gaussiand(double x, int pos) const {
     for(int k = -1; k <= 1; ++k) {
       result += (this->centers_[pos - 2] - x - 2 * k * this->L_) /
                 pow(this->dx_, 2) * exp(-pow(x - this->centers_[pos - 2] +
-                2 * k * this->L_, 2) / (2 * pow(this->dx_, 2)));
+                                             2 * k * this->L_, 2) / (2 * pow(this->dx_, 2)));
     }
     return result;
   }
@@ -145,9 +144,9 @@ double BasisFunc::operator()(double x, int pos, bool conv) const {
         double result = 0.0;
         for(int k = -1; k <= 1; ++k) {
           result += exp(-pow(x - this->centers_[pos - 2] +
-                    2 * k * this->L_, 2) / (2 * (pow(this->dx_, 2) +
-                    pow(this->w_, 2)))) / (sqrt(1 / pow(this->dx_, 2) + 1 /
-                    pow(this->w_, 2)) * this->w_);
+                             2 * k * this->L_, 2) / (2 * (pow(this->dx_, 2) +
+                                 pow(this->w_, 2)))) / (sqrt(1 / pow(this->dx_, 2) + 1 /
+                                     pow(this->w_, 2)) * this->w_);
         }
         return result;
       }
@@ -179,11 +178,11 @@ double BasisFunc::grad(double x, int pos, bool conv) const {
         double result = 0.0;
         for(int k = -1; k <= 1; ++k) {
           result += pow(this->dx_, 2) * exp(-pow(x - this->centers_[pos - 2] +
-                    2 * k * this->L_, 2) / (2 * (pow(this->dx_, 2) +
-                    pow(this->w_, 2)))) * (this->centers_[pos - 2] -
-                    2 * k * this->L_ - x) * sqrt(1 / pow(this->dx_, 2) +
-                    1 / pow(this->w_, 2)) * this->w_ / pow(pow(this->dx_, 2) +
-                    pow(this->w_, 2), 2);
+                                                 2 * k * this->L_, 2) / (2 * (pow(this->dx_, 2) +
+                                                     pow(this->w_, 2)))) * (this->centers_[pos - 2] -
+                                                         2 * k * this->L_ - x) * sqrt(1 / pow(this->dx_, 2) +
+                                                             1 / pow(this->w_, 2)) * this->w_ / pow(pow(this->dx_, 2) +
+                                                                 pow(this->w_, 2), 2);
         }
         return result;
       }
@@ -212,10 +211,10 @@ double BasisFunc::int0(int pos) const {
       return this->dom_.second - this->dom_.first;
     } else {
       return -this->dx_ * sqrt(M_PI * 0.5) * (erf((2 * this->dom_.first -
-             this->dom_.second - this->centers_[pos - 2]) /
-             (sqrt(2) * this->dx_)) + erf((this->dom_.first -
-             2 * this->dom_.second + this->centers_[pos - 2]) /
-             (sqrt(2) * this->dx_)));
+                                              this->dom_.second - this->centers_[pos - 2]) /
+                                              (sqrt(2) * this->dx_)) + erf((this->dom_.first -
+                                                  2 * this->dom_.second + this->centers_[pos - 2]) /
+                                                  (sqrt(2) * this->dx_)));
     }
   } else {
     if(pos == 1) {
@@ -242,12 +241,12 @@ double BasisFunc::int1(int pos) const {
       double dx_sq = pow(this->dx_, 2);
       double sqrt2pi = sqrt(2 * M_PI);
       double term1 = exp(-pow(b - 2 * a + c, 2) / (2 * dx_sq)) -
-                    exp(-pow(a - 2 * b + c, 2) / (2 * dx_sq));
+                     exp(-pow(a - 2 * b + c, 2) / (2 * dx_sq));
       double term2 = (b - a + c) * sqrt2pi * erf((a - c) / (sqrt(2) * this->dx_));
       double term3 = (a - b - c) * sqrt2pi * erf((2 * a - b - c) / (sqrt(2) * this->dx_));
       double term4 = sqrt2pi * (c * erf((-a + c) / (sqrt(2) * this->dx_)) -
-                      (a - b + c) * erf((a - 2 * b + c) / (sqrt(2) * this->dx_)) +
-                      (a - b) * erf((-b + c) / (sqrt(2) * this->dx_)));
+                                (a - b + c) * erf((a - 2 * b + c) / (sqrt(2) * this->dx_)) +
+                                (a - b) * erf((-b + c) / (sqrt(2) * this->dx_)));
       return this->dx_ * 0.5 * (2 * this->dx_ * term1 + term2 + term3 + term4);
     }
   } else {
@@ -281,10 +280,10 @@ double BasisFunc::int2(int pos) const {
       double exp3 = exp(-pow(a - 2 * b + c, 2) / (2 * dx_sq));
       double exp4 = exp(-pow(b - 2 * a + c, 2) / (2 * dx_sq));
       double term1 = 2 * this->dx_ * (
-          a * (2 * exp1 + 2 * exp2 - exp3) +
-          b * (exp4 - 2 * exp1 - 2 * exp2) +
-          c * (exp4 - exp3)
-      );
+                       a * (2 * exp1 + 2 * exp2 - exp3) +
+                       b * (exp4 - 2 * exp1 - 2 * exp2) +
+                       c * (exp4 - exp3)
+                     );
       double diff1_sq = pow(b - a + c, 2) + dx_sq;
       double diff2_sq = pow(a - b + c, 2) + dx_sq;
       double c_sq = pow(c, 2) + dx_sq;
@@ -295,9 +294,9 @@ double BasisFunc::int2(int pos) const {
       double erf5 = erf((c - b) / sqrt2_dx);
       double term2 = diff1_sq * sqrt2pi * erf1 - diff1_sq * sqrt2pi * erf2;
       double term3 = sqrt2pi * (
-          c_sq * erf3 - diff2_sq * erf4 +
-          (a - b) * (a - b + 2 * c) * erf5
-      );
+                       c_sq * erf3 - diff2_sq * erf4 +
+                       (a - b) * (a - b + 2 * c) * erf5
+                     );
       return this->dx_ * 0.5 * (term1 + term2 + term3);
     }
   } else {
@@ -306,9 +305,9 @@ double BasisFunc::int2(int pos) const {
     } else if(pos % 2 == 0) {
       double k = floor(0.5 * pos);
       return 2 * sqrt(this->L_) / pow(M_PI * k, 3) *
-            (2 * pow(this->L_, 2) * M_PI * k * cos(M_PI * k) +
-            (pow(M_PI * k, 2) * (pow(this->shift_, 2) +
-            pow(this->L_, 2)) - 2 * pow(this->L_, 2)) * sin(M_PI * k));
+             (2 * pow(this->L_, 2) * M_PI * k * cos(M_PI * k) +
+              (pow(M_PI * k, 2) * (pow(this->shift_, 2) +
+                                   pow(this->L_, 2)) - 2 * pow(this->L_, 2)) * sin(M_PI * k));
     } else {
       double k = floor(0.5 * pos);
       return 4 * this->shift_ * pow(this->L_, 1.5) / pow(M_PI * k, 2) * (sin(M_PI * k) - M_PI * k * cos(M_PI * k));
