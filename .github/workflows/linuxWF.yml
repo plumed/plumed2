@@ -68,6 +68,21 @@ jobs:
 
         # the flags above enable the use of both libmetatomic and libtorch
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
+    - name: Install ITensor
+      if: ${{ contains( matrix.variant, '-mpi-' ) }}
+      run: |
+        .ci/install.itensor
+    - name: Configure ITensor
+      if: ${{ contains( matrix.variant, '-mpi-' ) }}
+      run: |
+        ITENSOR_DIR="$HOME/opt/itensor"
+        echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
+        # temporary until configure.ac is updated to detect ITensor
+        echo "CXXFLAGS=-O3 -fconcepts" >> $GITHUB_ENV
+        echo "LIBS=-litensor -lopenblas -lhdf5 -lhdf5_hl" >> $GITHUB_ENV
+        # this will be uncommented after the configure.ac modifications
+        #echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
     - name: Install tools for setting up the manuals
       if: contains( matrix.variant, '-doc-' )
       run: |
