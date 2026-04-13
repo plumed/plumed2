@@ -123,10 +123,10 @@ position_linear_proj::position_linear_proj(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   serial(false),
-  proj(0),
   prec_f_name(""),
   ref_f_name(""),
-  coeffs_f_name("") { // Note! no comma here in the last line.
+  coeffs_f_name(""),
+  proj(0) { 
   parseFlag("SERIAL",serial);
   parseAtomList("GROUP",atom_list);
   parse("REFERENCE", ref_f_name);

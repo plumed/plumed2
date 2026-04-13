@@ -107,9 +107,9 @@ position_maha_dist::position_maha_dist(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   squared(false),
-  dist(0),
   prec_f_name(""),
-  ref_f_name("") {  // Note! no comma here in the last line.
+  ref_f_name(""),
+  dist(0){
   parseAtomList("GROUP",atom_list);
   parse("REFERENCE", ref_f_name);
   parse("PRECISION", prec_f_name);
