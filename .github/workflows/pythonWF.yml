@@ -16,8 +16,8 @@ jobs:
   linux-build-plumed:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - uses: actions/checkout@v6
+    - uses: actions/cache@v5
       with:
         path: ~/.ccache
         key: ccache-python-linux-${{ github.sha }}
@@ -58,7 +58,7 @@ jobs:
         pyversion: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
     steps:
       #still checking out to install the plumed package and pycv
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
