@@ -149,7 +149,6 @@ Quaternion::Quaternion(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  unsigned mode = getModeAndSetupValues( this );
   requestAtoms(atoms);
 }
 
@@ -267,7 +266,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput<double>& cvin, ColvarOut
   dy[2](2,2) = 1 - fac_derivs[2][2]*vec1_comp[2];
   //now normalize, and we have our y vector
   double magy = yt.modulo();
-  double imagy = 1/magy, magy3 = magy*magy*magy;
+  double magy3 = magy*magy*magy;
   Tensor abc;
   for(unsigned i=0; i<3; ++i) {
     abc.setRow(i, yt);

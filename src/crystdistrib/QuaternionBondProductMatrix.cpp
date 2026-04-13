@@ -84,7 +84,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit QuaternionBondProductMatrix(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override ;
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
@@ -318,12 +318,11 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
 //I hold off on normalizing because this can be done at the very end, and it
 // makes the derivatives with respect to 'bond' more simple
 
-  double wf=0,xf=0,yf=0,zf=0;
+  double xf=0,yf=0,zf=0;
 
   for(unsigned i=0; i<4; ++i) {
     //real part of q1*q2
     output.values[0] += normFac*conj[i]*quatTemp[i]*quat[i];
-    wf+=normFac*conj[i]*quatTemp[i]*quat[i];
     //i component
     output.values[1] += normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];
     xf+=normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];
