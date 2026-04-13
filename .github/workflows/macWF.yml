@@ -14,57 +14,58 @@ env:
 
 jobs:
 
-  macports:
-    strategy:
-      fail-fast: false
-      # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
-      matrix:
-        variant: [ "" , "+allmodules" ]
-        # this is to test both intel and arm64 macs
-        # note: macos-14 has a problem in fetching the git repository of plumed, namely a
-        # "fatal: detected dubious ownership in repository" error
-        # I didn't find any solution, so for the moment I keep macos-14 off
-        os: [ macos-13 ]
-        exclude:
-        # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
-        # once fixed we could introduce this back:
-        - os: macos-14
-          variant: "+allmodules"
-    runs-on: ${{ matrix.os }}
-    env:
-      PYVERS: "py39 py310"
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
-      with:
-        path: ~/.macports-ci-ccache
-        key: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-${{ github.sha }}
-        restore-keys: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-
-    - name: Install MacPorts
-      run: |
-        wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
-        source ./macports-ci install
-        source ./macports-ci ccache
-    - name: Build local Portfile
-      run: |
-        make macports
-        source ./macports-ci localports macports
-    - name: Build PLUMED
-      run: |
-        sudo port -N -k install plumed ${{ matrix.variant }}
-        plumed config show
-        for p in $PYVERS ; do
-          sudo port -N install $p-plumed
-        done
-        source ./macports-ci ccache --save
-    - name: Run tests
-      run: |
-        sudo port -N -d test plumed ${{ matrix.variant }}
-    - name: Run python tests
-      run: |
-        for p in $PYVERS ; do
-          sudo port test $p-plumed
-        done
+# commented out, see #1388
+# macports:
+#   strategy:
+#     fail-fast: false
+#     # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
+#     matrix:
+#       variant: [ "" , "+allmodules" ]
+#       # this is to test both intel and arm64 macs
+#       # note: macos-14 has a problem in fetching the git repository of plumed, namely a
+#       # "fatal: detected dubious ownership in repository" error
+#       # I didn't find any solution, so for the moment I keep macos-14 off
+#       os: [ macos-13 ]
+#       exclude:
+#       # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
+#       # once fixed we could introduce this back:
+#       - os: macos-14
+#         variant: "+allmodules"
+#   runs-on: ${{ matrix.os }}
+#   env:
+#     PYVERS: "py39 py310"
+#   steps:
+#   - uses: actions/checkout@v6
+#   - uses: actions/cache@v5
+#     with:
+#       path: ~/.macports-ci-ccache
+#       key: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-${{ github.sha }}
+#       restore-keys: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-
+#   - name: Install MacPorts
+#     run: |
+#       wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
+#       source ./macports-ci install
+#       source ./macports-ci ccache
+#   - name: Build local Portfile
+#     run: |
+#       make macports
+#       source ./macports-ci localports macports
+#   - name: Build PLUMED
+#     run: |
+#       sudo port -N -k install plumed ${{ matrix.variant }}
+#       plumed config show
+#       for p in $PYVERS ; do
+#         sudo port -N install $p-plumed
+#       done
+#       source ./macports-ci ccache --save
+#   - name: Run tests
+#     run: |
+#       sudo port -N -d test plumed ${{ matrix.variant }}
+#   - name: Run python tests
+#     run: |
+#       for p in $PYVERS ; do
+#         sudo port test $p-plumed
+#       done
 
   macsimple:
     strategy:
@@ -74,7 +75,7 @@ jobs:
         os: [ macos-13 , macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
