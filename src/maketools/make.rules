@@ -35,7 +35,7 @@ endif
 	@echo "compiling " $*.c
 	@-test -d deps || mkdir deps
 ifneq ($(disable_dependency_tracking),yes)
-	$(AT)$(CXXDEP) -MMD -MP -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
+	$(AT)$(CCDEP) -MMD -MP -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
 	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CFLAGS) \
 	-c $*.c -o $*.o
 	@cp -f $*.d $*.d.tmp
@@ -44,7 +44,7 @@ ifneq ($(disable_dependency_tracking),yes)
 	@mv $*.d deps/$*.d
 	@rm -f $*.d.tmp
 else
-	$(AT)$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) \
+	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) \
 	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $*.c -o $*.o
 endif
 ifndef XLF
