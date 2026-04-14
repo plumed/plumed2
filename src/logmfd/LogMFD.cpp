@@ -572,11 +572,11 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   xeta(0.0),
   veta(0.0),
   meta(0.0),
-  flog(0.0),
-  hlog(0.0),
   phivs(0.0),
   work(0.0),
   weight(0.0),
+  flog(0.0),
+  hlog(0.0),
   ffict(getNumberOfArguments(),0.0),
   fict_ave(getNumberOfArguments(),0.0),
   fictValue(getNumberOfArguments(),NULL),
@@ -905,7 +905,6 @@ void LogMFD::calculate() {
   setBias(ene);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     // correct fict so that it is inside [min:max].
-    double tmp = fict[i];
     fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
     fictValue[i]->set(fict[i]);
     vfictValue[i]->set(vfict[i]);
