@@ -149,6 +149,7 @@ Quaternion::Quaternion(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
+  getModeAndSetupValues( this );
   requestAtoms(atoms);
 }
 
