@@ -4,7 +4,6 @@ ifndef CXXDEP
 CXXDEP=$(CXX)
 CCDEP=$(CC)
 endif
-CXXFLAGS += -pipe
 
 ifndef VERBOSE
 AT=@
