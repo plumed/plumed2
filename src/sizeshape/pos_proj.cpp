@@ -126,7 +126,7 @@ position_linear_proj::position_linear_proj(const ActionOptions&ao):
   prec_f_name(""),
   ref_f_name(""),
   coeffs_f_name(""),
-  proj(0) { 
+  proj(0) {
   parseFlag("SERIAL",serial);
   parseAtomList("GROUP",atom_list);
   parse("REFERENCE", ref_f_name);

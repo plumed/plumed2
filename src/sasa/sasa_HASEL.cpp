@@ -187,7 +187,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   stride(10),
   nl_update(0),
   firstStepFlag(0),
-  Ti(0){
+  Ti(0) {
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);

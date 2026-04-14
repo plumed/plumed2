@@ -109,7 +109,7 @@ position_maha_dist::position_maha_dist(const ActionOptions&ao):
   squared(false),
   prec_f_name(""),
   ref_f_name(""),
-  dist(0){
+  dist(0) {
   parseAtomList("GROUP",atom_list);
   parse("REFERENCE", ref_f_name);
   parse("PRECISION", prec_f_name);
