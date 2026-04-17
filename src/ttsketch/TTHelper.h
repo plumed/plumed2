@@ -2,7 +2,7 @@
 #define __PLUMED_ttsketch_TTHelper_h
 #include "BasisFunc.h"
 #include "tools/Matrix.h"
-#include "itensor/all.h"
+#include <itensor/all.h>
 
 namespace PLMD {
 namespace ttsketch {

@@ -1,3 +1,8 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2026 Nils E. Strand, Siyao Yang, Yuehaw Khoo, Aaron R. Dinner
+
+   See the COPYRIGHT file distributed with this software for license details.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TTHelper.h"
 
 using namespace itensor;
