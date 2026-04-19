@@ -1,0 +1,9 @@
+xs: XSPRINT ...
+   GROUP=1-14
+   SWITCH={RATIONAL R_0=2.0 NN=6 MM=12}
+   R0=2.0
+   NSHELLS=3
+...
+
+PRINT ARG=xs_coord-0,xs_coord-1,xs_coord-2,xs_coord-3,xs_coord-4,xs_coord-5,xs_coord-6,xs_coord-7,xs_coord-8,xs_coord-9,xs_coord-10,xs_coord-11,xs_coord-12,xs_coord-13 FILE=colvar FMT=%8.4f
+BIASVALUE ARG=xs_coord-0

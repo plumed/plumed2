@@ -69,6 +69,7 @@
 !/metatensor
 !/metatomic
 !/sizeshape
+!/xsprint
 
 # And just ignore these files
 *.xxd
