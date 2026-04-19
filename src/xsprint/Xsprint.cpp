@@ -99,8 +99,10 @@ static std::string replaceR0(const std::string& input, double newval) {
   while((pos = result.find(needle, pos)) != std::string::npos) {
     size_t valstart = pos + needle.length();
     size_t valend = result.find_first_of(" \t},", valstart);
-    if(valend == std::string::npos) valend = result.length();
-    result = result.substr(0, valstart) + newvalstr + result.substr(valend);
+    if(valend == std::string::npos) {
+      valend = result.length();
+    }
+    result.replace(valstart, valend - valstart, newvalstr);
     pos = valstart + newvalstr.length();
   }
   return result;
@@ -155,10 +157,12 @@ Xsprint::Xsprint(const ActionOptions& ao):
       std::string inum;
       Tools::convert( i, inum );
       ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>(
-        label + "_sprint_coord-" + inum );
-      if( !av ) break;
+                              label + "_sprint_coord-" + inum );
+      if( !av ) {
+        break;
+      }
       readInputLine( label + "_coord-" + inum + ": COMBINE ARG=" +
-        label + "_sprint_coord-" + inum + " PERIODIC=NO" );
+                     label + "_sprint_coord-" + inum + " PERIODIC=NO" );
     }
     return;
   }
@@ -178,7 +182,9 @@ Xsprint::Xsprint(const ActionOptions& ao):
     std::string inum;
     Tools::convert( i, inum );
     ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( mat1 + inum + inum );
-    if( !av ) break;
+    if( !av ) {
+      break;
+    }
     nin_group.push_back( (av->copyOutput(0))->getShape()[0] );
   }
   if( nin_group.empty() ) {
@@ -186,7 +192,7 @@ Xsprint::Xsprint(const ActionOptions& ao):
     nin_group.push_back( (av->copyOutput(0))->getShape()[0] );
   }
 
-  // For shells 2..N: create CONTACT_MATRIX with R_0=s*r0, 
+  // For shells 2..N: create CONTACT_MATRIX with R_0=s*r0,
   // subtract inner shell, compute SPRINT, respectively
   for(unsigned s = 2; s <= nshells; ++s) {
     std::string snum, sprev;
