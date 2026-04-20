@@ -23,6 +23,7 @@
 #include "Exception.h"
 #include <cstdio>
 #include <cmath>
+#include <iomanip>
 
 namespace PLMD {
 
@@ -34,14 +35,26 @@ void LatticeReduction::sort(Vector v[3]) {
   m[0]=modulo2(v[0]);
   m[1]=modulo2(v[1]);
   m[2]=modulo2(v[2]);
-  for(int i=0; i<3; i++)
-    for(int j=i+1; j<3; j++)
+  for(int i=0; i<3; i++) {
+    for(int j=i+1; j<3; j++) {
       if(m[i]>m[j]) {
         std::swap(v[i],v[j]);
         std::swap(m[i],m[j]);
       }
-  plumed_assert(m[0]<=m[1]*onePlusEpsilon);
-  plumed_assert(m[1]<=m[2]*onePlusEpsilon);
+    }
+  }
+  if(m[0]>m[1]*onePlusEpsilon) {
+    plumed_error() << std::scientific << std::setprecision(17)
+                   << "v[0] " << v[0] << " " << "m[0] " << m[0] <<"\n"
+                   << "v[1] " << v[1] << " " << "m[1] " << m[1] <<"\n"
+                   << "v[2] " << v[2] << " " << "m[2] " << m[2] <<"\n";
+  }
+  if(m[1]>m[2]*onePlusEpsilon) {
+    plumed_error() << std::scientific << std::setprecision(17)
+                   << "v[0] " << v[0] << " " << "m[0] " << m[0] <<"\n"
+                   << "v[1] " << v[1] << " " << "m[1] " << m[1] <<"\n"
+                   << "v[2] " << v[2] << " " << "m[2] " << m[2] <<"\n";
+  }
 }
 
 void LatticeReduction::reduce(Vector&a,Vector&b) {
