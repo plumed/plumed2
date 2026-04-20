@@ -156,6 +156,97 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   return index;
 }
 
+template<bool do_pbc_, typename T>
+void updateWithLC(const LinkCells& cells,
+                  const LinkCells::CellCollection& listA,
+                  const LinkCells::CellCollection& listB,
+                  const Pbc* pbc,
+                  const unsigned start,
+                  const unsigned end,
+                  T worker) {
+  //worker array
+  std::vector<unsigned> cells_required(27);
+  for(unsigned c =start; c < end; ++c) {
+    auto atomsInC= listA.getCellIndexes(c);
+    if(atomsInC.size()>0) {
+      auto cell = cells.findMyCell(c);
+      unsigned ncells_required=0;
+      cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+      for (auto A : atomsInC) {
+        for (unsigned cb=0; cb <ncells_required ; ++cb) {
+          for (auto B : listB.getCellIndexes(cells_required[cb])) {
+            worker.template work<do_pbc_>(pbc,A,B);
+          }
+        }
+      }
+    }
+  }
+}
+
+template<bool isSingle=false>
+class updaterLC {
+  using pairs=NeighborList::pairIDs;
+  View<const Vector> positions;
+  std::vector<pairs>& nl;
+public:
+  updaterLC(const std::vector<Vector>& positions_,
+            std::vector<pairs>& nl_)
+    : positions(make_const_view(positions_)),
+      nl(nl_)
+  {}
+
+  template <bool do_pbc_>
+  void work(const Pbc* pbc, const unsigned A, const unsigned B) {
+    if constexpr (isSingle) {
+      if (A>=B) {
+        return;
+      }
+    }
+    nl.push_back({A,B});
+  }
+};
+
+using updaterLCsingle=updaterLC<true>;
+
+template<bool isSingle=false>
+class updaterNL {
+  const double d2;
+  View<const Vector> positions;
+  std::vector<unsigned>& flat_nl;
+public:
+  updaterNL(const double d2_,
+            const std::vector<Vector>& positions_,
+            std::vector<unsigned>& flat_nl_)
+    :d2(d2_),
+     positions(make_const_view(positions_)),
+     flat_nl(flat_nl_)
+  {}
+
+  template <bool do_pbc_>
+  void work(const Pbc* pbc, const unsigned A, const unsigned B) {
+    if constexpr (isSingle) {
+      if (A>=B) {
+        return;
+      }
+    }
+    Vector distance;
+    if constexpr (do_pbc_) {
+      distance=pbc->distance(positions[A],positions[B]);
+    } else {
+      distance=delta(positions[A],positions[B]);
+    }
+    double value=modulo2(distance);
+    if(value<=d2) {
+      //neighbors_.push_back({A,B});
+      flat_nl.push_back(A);
+      flat_nl.push_back(B);
+
+    }
+  }
+};
+
+using updaterNLsingle=updaterNL<true>;
+
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   // check if positions array has the correct length
@@ -181,44 +272,19 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
       //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listB.getCellIndexes(cells_required[cb])) {
-                neighbors_.push_back({A,B});
-              }
-            }
-          }
-        }
+      if (do_pbc_) {
+        updateWithLC<true>(cells,listA,listB,pbc_,0,cells.getNumberOfCells(),updaterLC(positions,neighbors_));
+      } else {
+        updateWithLC<false>(cells,listA,listB,pbc_,0,cells.getNumberOfCells(),updaterLC(positions,neighbors_));
       }
     }
-    break;//*/
+    break;
     case NNStyle::SingleList: {
       auto listA = cells.getCollection(positions,indexesForCells);
-      //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listA.getCellIndexes(cells_required[cb])) {
-                if (B>A) {
-                  neighbors_.push_back({A,B});
-                }
-              }
-            }
-          }
-        }
+      if (do_pbc_) {
+        updateWithLC<true>(cells,listA,listA,pbc_,0,cells.getNumberOfCells(),updaterLCsingle(positions,neighbors_));
+      } else {
+        updateWithLC<false>(cells,listA,listA,pbc_,0,cells.getNumberOfCells(),updaterLCsingle(positions,neighbors_));
       }
     }
     break;
@@ -322,66 +388,20 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
       //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =start; c < end; ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listB.getCellIndexes(cells_required[cb])) {
-                Vector distance;
-                if(do_pbc_) {
-                  distance=pbc_->distance(positions[A],positions[B]);
-                } else {
-                  distance=delta(positions[A],positions[B]);
-                }
-                double value=modulo2(distance);
-                if(value<=d2) {
-                  //neighbors_.push_back({A,B});
-                  local_flat_nl.push_back(A);
-                  local_flat_nl.push_back(B);
-                }
-              }
-            }
-          }
-        }
+      if (do_pbc_) {
+        updateWithLC<true>(cells,listA,listB,pbc_,start,end,updaterNL(d2,positions,local_flat_nl));
+      } else {
+        updateWithLC<false>(cells,listA,listB,pbc_,start,end,updaterNL(d2,positions,local_flat_nl));
       }
     }
-    break;//*/
+    break;
     case NNStyle::SingleList: {
       auto listA = cells.getCollection(positions,indexesForCells);
       //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =start; c < end; ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listA.getCellIndexes(cells_required[cb])) {
-                if (B>A) {
-                  Vector distance;
-                  if(do_pbc_) {
-                    distance=pbc_->distance(positions[A],positions[B]);
-                  } else {
-                    distance=delta(positions[A],positions[B]);
-                  }
-                  double value=modulo2(distance);
-                  if(value<=d2) {
-//                    neighbors_.push_back({A,B});
-                    local_flat_nl.push_back(A);
-                    local_flat_nl.push_back(B);
-                  }
-                }
-              }
-            }
-          }
-        }
+      if (do_pbc_) {
+        updateWithLC<true>(cells,listA,listA,pbc_,start,end,updaterNLsingle(d2,positions,local_flat_nl));
+      } else {
+        updateWithLC<false>(cells,listA,listA,pbc_,start,end,updaterNLsingle(d2,positions,local_flat_nl));
       }
     }
     break;
