@@ -292,34 +292,72 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     cells.setCutoff(distance_);
     cells.setupCells(make_const_view(positions),*pbc_);
 
+    //now cells are setup along all MPI ranks
+    //const unsigned stride=(serial_)? 1 : comm.Get_size();
+    //const unsigned rank  =(serial_)? 0 : comm.Get_rank();
+    const auto nc= cells.getNumberOfCells();
+    //const unsigned elementsPerRank = std::ceil(double(nc)/stride);
+    const unsigned int start=0;// rank*elementsPerRank;
+    const unsigned int end = nc;//((start + elementsPerRank)< nc)?(start + elementsPerRank): nc;
+    //Initialization of List A and B is here beausue the access to them is threadsafe (at the moment of writing this)
+    LinkCells::CellCollection listA;
+    LinkCells::CellCollection listB;
     switch (style_) {
     case NNStyle::TwoList: {
-      auto listA = cells.getCollection(View{positions.data(),nlist0_},
-                                       View<const unsigned> {indexesForCells.data(),nlist0_});
-      auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-                                       View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+      listA = cells.getCollection(View{positions.data(),nlist0_},
+                                  View<const unsigned> {indexesForCells.data(),nlist0_});
+      listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
-      //#pragma omp parallel num_threads(nt)
-      if (do_pbc_) {
-        updateWithLC(cells,listA,listB,0,cells.getNumberOfCells(),updaterLCmulti<true>(neighbors_));
-      } else {
-        updateWithLC(cells,listA,listB,0,cells.getNumberOfCells(),updaterLCmulti<false>(neighbors_));
-      }
     }
     break;
     case NNStyle::SingleList: {
-      auto listA = cells.getCollection(positions,indexesForCells);
-      if (do_pbc_) {
-        updateWithLC(cells,listA,listA,0,cells.getNumberOfCells(),updaterLCsingle<true>(neighbors_));
-      } else {
-        updateWithLC(cells,listA,listA,0,cells.getNumberOfCells(),updaterLCsingle<false>(neighbors_));
-      }
+      listA = cells.getCollection(positions,indexesForCells);
     }
     break;
     case NNStyle::Pair:
+      //in any case if you are here the previous `if` badly broken
       plumed_error() << "Cell list should not be active with a Pair NL";
     }
+
+    std::vector<unsigned> local_flat_nl;
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<NeighborList::pairIDs> private_nl;
+
+      const auto threadNum=PLMD::OpenMP::getThreadNum();
+
+      const unsigned cellsPerThread = std::ceil(double(end-start)/nt);
+      const unsigned int ompstart= start + threadNum*cellsPerThread;
+      const unsigned int ompend = ((ompstart + cellsPerThread)< end)?(ompstart + cellsPerThread): end;
+      switch (style_) {
+      case NNStyle::TwoList: {
+        if (do_pbc_) {
+          updateWithLC(cells,listA,listB,ompstart,ompend,updaterLCmulti<true>(private_nl));
+        } else {
+          updateWithLC(cells,listA,listB,ompstart,ompend,updaterLCmulti<false>(private_nl));
+        }
+      }
+      break;
+      case NNStyle::SingleList: {
+        if (do_pbc_) {
+          updateWithLC(cells,listA,listA,ompstart,ompend,updaterLCsingle<true>(private_nl));
+        } else {
+          updateWithLC(cells,listA,listA,ompstart,ompend,updaterLCsingle<false>(private_nl));
+        }
+      }
+      break;
+      case NNStyle::Pair:
+        plumed_error() << "Cell list should not be active with a Pair NL";
+      }
+
+      #pragma omp critical
+      neighbors_.insert(neighbors_.end(),
+                        private_nl.begin(),
+                        private_nl.end());
+    }
+
     //the number 1 here is temporary, for testing purpose
   } else if (style_ == NNStyle::Pair || fullatomlist_.size() < 1) {
     const double d2=distance_*distance_;
