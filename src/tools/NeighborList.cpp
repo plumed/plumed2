@@ -156,11 +156,35 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   return index;
 }
 
-template<bool do_pbc_, typename T>
+/** @briefApply the T operation on all the couples in the given collections
+
+The T worker should have a work method that accepts two unsigned integers and expose a public `static constexpr bool dopbc` value.
+The T worker should be copy constructable, and ideally contains only references to the array that should be modfied or a minimum amount of data.
+
+A very simplified example, this worker does not use the pbcs and pushes only couples if the first index is smaller than the second:
+@code{.cpp}
+class myworker {
+  std::vector<std::pair<unsigned, unsigned>>& nl;
+public:
+  static constexpr bool dopbc = false;
+  myworker(std::vector<std::pair<unsigned, unsigned>& nl_)
+    :nl(nl_)
+  {}
+
+  void work(const unsigned A, const unsigned B) {
+    if (A<B) {
+      nl.push_back({A,B});
+    }
+  }
+};
+@endcode
+In the worker construction you can pass the positions and store a view to them and also a pointer/reference to a PBC object to calculate
+distances. In that case you can store the maximum distance, see the PLMD::NeighborList
+*/
+template<typename T>
 void updateWithLC(const LinkCells& cells,
                   const LinkCells::CellCollection& listA,
                   const LinkCells::CellCollection& listB,
-                  const Pbc* pbc,
                   const unsigned start,
                   const unsigned end,
                   T worker) {
@@ -171,11 +195,13 @@ void updateWithLC(const LinkCells& cells,
     if(atomsInC.size()>0) {
       auto cell = cells.findMyCell(c);
       unsigned ncells_required=0;
-      cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
+      //the T::dopbc makes this more clunky to setup (you can't use a lambda)
+      //but ensures that the use of the pbc is coherent with the worker
+      cells.addRequiredCells(cell,ncells_required, cells_required,T::dopbc);
       for (auto A : atomsInC) {
         for (unsigned cb=0; cb <ncells_required ; ++cb) {
           for (auto B : listB.getCellIndexes(cells_required[cb])) {
-            worker.template work<do_pbc_>(pbc,A,B);
+            worker.work(A,B);
           }
         }
       }
@@ -183,20 +209,17 @@ void updateWithLC(const LinkCells& cells,
   }
 }
 
-template<bool isSingle=false>
+template<bool isSingle=false,bool do_pbc_=false>
 class updaterLC {
   using pairs=NeighborList::pairIDs;
-  View<const Vector> positions;
   std::vector<pairs>& nl;
 public:
-  updaterLC(const std::vector<Vector>& positions_,
-            std::vector<pairs>& nl_)
-    : positions(make_const_view(positions_)),
-      nl(nl_)
+  static constexpr bool dopbc = do_pbc_;
+  updaterLC(std::vector<pairs>& nl_)
+    :nl(nl_)
   {}
 
-  template <bool do_pbc_>
-  void work(const Pbc* pbc, const unsigned A, const unsigned B) {
+  void work(const unsigned A, const unsigned B) {
     if constexpr (isSingle) {
       if (A>=B) {
         return;
@@ -206,24 +229,30 @@ public:
   }
 };
 
-using updaterLCsingle=updaterLC<true>;
+template<bool do_pbc>
+using updaterLCmulti=updaterLC<true,do_pbc>;
+template<bool do_pbc>
+using updaterLCsingle=updaterLC<true, do_pbc>;
 
-template<bool isSingle=false>
+template<bool isSingle=false,bool do_pbc_=false>
 class updaterNL {
   const double d2;
   View<const Vector> positions;
   std::vector<unsigned>& flat_nl;
+  const Pbc* pbc;
 public:
+  static constexpr bool dopbc = do_pbc_;
   updaterNL(const double d2_,
             const std::vector<Vector>& positions_,
-            std::vector<unsigned>& flat_nl_)
+            std::vector<unsigned>& flat_nl_,
+            const Pbc* pbc_)
     :d2(d2_),
      positions(make_const_view(positions_)),
-     flat_nl(flat_nl_)
+     flat_nl(flat_nl_),
+     pbc(pbc_)
   {}
 
-  template <bool do_pbc_>
-  void work(const Pbc* pbc, const unsigned A, const unsigned B) {
+  void work(const unsigned A, const unsigned B) {
     if constexpr (isSingle) {
       if (A>=B) {
         return;
@@ -244,8 +273,10 @@ public:
     }
   }
 };
-
-using updaterNLsingle=updaterNL<true>;
+template<bool do_pbc>
+using updaterNLmulti=updaterNL<true,do_pbc>;
+template<bool do_pbc>
+using updaterNLsingle=updaterNL<true,do_pbc>;
 
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
@@ -273,18 +304,18 @@ void NeighborList::update(const std::vector<Vector>& positions) {
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
       //#pragma omp parallel num_threads(nt)
       if (do_pbc_) {
-        updateWithLC<true>(cells,listA,listB,pbc_,0,cells.getNumberOfCells(),updaterLC(positions,neighbors_));
+        updateWithLC(cells,listA,listB,0,cells.getNumberOfCells(),updaterLCmulti<true>(neighbors_));
       } else {
-        updateWithLC<false>(cells,listA,listB,pbc_,0,cells.getNumberOfCells(),updaterLC(positions,neighbors_));
+        updateWithLC(cells,listA,listB,0,cells.getNumberOfCells(),updaterLCmulti<false>(neighbors_));
       }
     }
     break;
     case NNStyle::SingleList: {
       auto listA = cells.getCollection(positions,indexesForCells);
       if (do_pbc_) {
-        updateWithLC<true>(cells,listA,listA,pbc_,0,cells.getNumberOfCells(),updaterLCsingle(positions,neighbors_));
+        updateWithLC(cells,listA,listA,0,cells.getNumberOfCells(),updaterLCsingle<true>(neighbors_));
       } else {
-        updateWithLC<false>(cells,listA,listA,pbc_,0,cells.getNumberOfCells(),updaterLCsingle(positions,neighbors_));
+        updateWithLC(cells,listA,listA,0,cells.getNumberOfCells(),updaterLCsingle<false>(neighbors_));
       }
     }
     break;
@@ -371,7 +402,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     LinkCells cells(comm);
     cells.setCutoff(distance_);
     cells.setupCells(make_const_view(positions),*pbc_);
-//now cells are setup along all MPI ranks
+    //now cells are setup along all MPI ranks
     const unsigned stride=(serial_)? 1 : comm.Get_size();
     const unsigned rank  =(serial_)? 0 : comm.Get_rank();
     const auto nc= cells.getNumberOfCells();
@@ -389,9 +420,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
       //#pragma omp parallel num_threads(nt)
       if (do_pbc_) {
-        updateWithLC<true>(cells,listA,listB,pbc_,start,end,updaterNL(d2,positions,local_flat_nl));
+        updateWithLC(cells,listA,listB,start,end,updaterNLmulti<true>(d2,positions,local_flat_nl,pbc_));
       } else {
-        updateWithLC<false>(cells,listA,listB,pbc_,start,end,updaterNL(d2,positions,local_flat_nl));
+        updateWithLC(cells,listA,listB,start,end,updaterNLmulti<false>(d2,positions,local_flat_nl,pbc_));
       }
     }
     break;
@@ -399,9 +430,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       auto listA = cells.getCollection(positions,indexesForCells);
       //#pragma omp parallel num_threads(nt)
       if (do_pbc_) {
-        updateWithLC<true>(cells,listA,listA,pbc_,start,end,updaterNLsingle(d2,positions,local_flat_nl));
+        updateWithLC(cells,listA,listA,start,end,updaterNLsingle<true>(d2,positions,local_flat_nl,pbc_));
       } else {
-        updateWithLC<false>(cells,listA,listA,pbc_,start,end,updaterNLsingle(d2,positions,local_flat_nl));
+        updateWithLC(cells,listA,listA,start,end,updaterNLsingle<false>(d2,positions,local_flat_nl,pbc_));
       }
     }
     break;
