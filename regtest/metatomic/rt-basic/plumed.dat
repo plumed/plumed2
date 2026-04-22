@@ -55,15 +55,28 @@ vector_per_atom: METATOMIC ...
 
 PRINT ARG=vector_per_atom FILE=vector_per_atom FMT=%8.2f
 
+variant: METATOMIC ...
+      MODEL=variant-global.pt
+      VARIANT=variant
+      DEVICE=cpu
+
+      SPECIES1=1,4,7
+      SPECIES2=2,3,5,6,8,9
+      SPECIES_TO_TYPES=6,8
+...
+
+PRINT ARG=variant FILE=variant FMT=%8.2f
+
 
 scalar_per_atom_sum: SUM ARG=scalar_per_atom PERIODIC=NO
 vector_global_sum: SUM ARG=vector_global PERIODIC=NO
 vector_per_atom_sum: SUM ARG=vector_per_atom PERIODIC=NO
+variant_sum: SUM ARG=variant PERIODIC=NO
 
 summed: CUSTOM ...
-      ARG=scalar_global,scalar_per_atom_sum,vector_global_sum,vector_per_atom_sum
-      VAR=x,y,z,t
-      FUNC=x+y+z+t
+      ARG=scalar_global,scalar_per_atom_sum,vector_global_sum,vector_per_atom_sum,variant_sum
+      VAR=a,b,c,d,e
+      FUNC=a+b+c+d+e
       PERIODIC=NO
 ...
 

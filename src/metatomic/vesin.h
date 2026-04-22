@@ -28,6 +28,7 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 #include <cstddef>
 #include <cstdint>
 
+// clang-format off
 #if defined(VESIN_SHARED)
     #if defined(VESIN_EXPORTS)
         #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
@@ -49,6 +50,7 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 #else
     #define VESIN_API
 #endif
+// clang-format on
 
 #ifdef __cplusplus
 namespace PLMD {
@@ -56,6 +58,19 @@ namespace metatomic {
 namespace vesin {
 extern "C" {
 #endif
+
+/// Algorithm to use for neighbor list construction
+enum VesinAlgorithm {
+    /// Automatically select algorithm based on system characteristics (number
+    /// of points, size of the box, …), this is the default and recommended
+    /// option.
+    VesinAutoAlgorithm = 0,
+    /// Brute-force O(n^2) algorithm, this requires minimum image convention in
+    /// CUDA, and is not available on CPU.
+    VesinBruteForce = 1,
+    /// Cell list algorithm with O(n) scaling
+    VesinCellList = 2,
+};
 
 /// Options for a neighbor list calculation
 struct VesinOptions {
@@ -67,6 +82,8 @@ struct VesinOptions {
     /// Should the neighbor list be sorted? If yes, the returned pairs will be
     /// sorted using lexicographic order.
     bool sorted;
+    /// Which algorithm to use for the calculation
+    VesinAlgorithm algorithm;
 
     /// Should the returned `VesinNeighborList` contain `shifts`?
     bool return_shifts;
@@ -77,14 +94,34 @@ struct VesinOptions {
 };
 
 /// Device on which the data can be
-enum VesinDevice {
+enum VesinDeviceKind {
     /// Unknown device, used for default initialization and to indicate no
     /// allocated data.
     VesinUnknownDevice = 0,
     /// CPU device
     VesinCPU = 1,
+    // CUDA device
+    VesinCUDA = 2,
 };
 
+/// Represents a device on which data can be allocated.
+///
+/// This structure combines the device type (CPU or CUDA) with an optional
+/// device index. For CPU allocations, `device_id` is always 0. For CUDA
+/// allocations, `device_id` specifies which GPU to use (e.g., 0, 1, 2).
+///
+/// Example usage:
+/// ```c
+/// VesinDevice cpu { VesinCPU, 0 };
+/// VesinDevice gpu0 { VesinCUDA, 0 };
+/// VesinDevice gpu1 { VesinCUDA, 1 };
+/// ```
+struct VesinDevice {
+    /// Type of the device
+    VesinDeviceKind type;
+    /// Device index (0 for CPU, GPU index for CUDA)
+    int device_id = 0;
+};
 
 /// The actual neighbor list
 ///
@@ -109,12 +146,11 @@ struct VESIN_API VesinNeighborList {
 #ifdef __cplusplus
     VesinNeighborList():
         length(0),
-        device(VesinUnknownDevice),
+        device({VesinUnknownDevice, 0}),
         pairs(nullptr),
         shifts(nullptr),
         distances(nullptr),
-        vectors(nullptr)
-    {}
+        vectors(nullptr) {}
 #endif
 
     /// Number of pairs in this neighbor list
@@ -130,11 +166,14 @@ struct VESIN_API VesinNeighborList {
     /// Array of pair distance (i.e. distance between the two points), one for
     /// each pair. This is only set if `options.return_distances` was `true`
     /// during the calculation.
-    double *distances;
+    double* distances;
     /// Array of pair vector (i.e. vector between the two points), one for
     /// each pair. This is only set if `options.return_vector` was `true`
     /// during the calculation.
     double (*vectors)[3];
+
+    /// Private pointer used to hold additional internal data
+    void* opaque = nullptr;
 
     // TODO: custom memory allocators?
 };
@@ -156,7 +195,8 @@ void VESIN_API vesin_free(struct VesinNeighborList* neighbors);
 /// @param box bounding box for the system. If the system is non-periodic,
 ///     this is ignored. This should contain the three vectors of the bounding
 ///     box, one vector per row of the matrix.
-/// @param periodic is the system using periodic boundary conditions?
+/// @param periodic is the system using periodic boundary conditions? This
+//      should be an array of three booleans, one for each dimension.
 /// @param device device where the `points` and `box` data is allocated.
 /// @param options options for the calculation
 /// @param neighbors non-NULL pointer to `VesinNeighborList` that will be used
@@ -168,13 +208,12 @@ int VESIN_API vesin_neighbors(
     const double (*points)[3],
     size_t n_points,
     const double box[3][3],
-    bool periodic,
+    const bool periodic[3],
     VesinDevice device,
     struct VesinOptions options,
     struct VesinNeighborList* neighbors,
     const char** error_message
 );
-
 
 #ifdef __cplusplus
 

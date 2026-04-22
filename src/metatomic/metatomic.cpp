@@ -180,6 +180,153 @@ static_assert(std::is_standard_layout<PLMD::Tensor>::value);
 static_assert(sizeof(PLMD::Tensor) == sizeof(std::array<std::array<double, 3>, 3>));
 static_assert(alignof(PLMD::Tensor) == alignof(std::array<std::array<double, 3>, 3>));
 
+/// Small helper class to compute one neighbor list requested by the metatomc
+/// model using vesin
+class NeighborListCalculator {
+public:
+    NeighborListCalculator(
+        metatomic_torch::NeighborListOptions options,
+        const std::string& engine_length_unit
+    );
+    ~NeighborListCalculator();
+
+    NeighborListCalculator(const NeighborListCalculator& other) = delete;
+    NeighborListCalculator& operator=(const NeighborListCalculator& other) = delete;
+
+    NeighborListCalculator(NeighborListCalculator&& other) noexcept;
+    NeighborListCalculator& operator=(NeighborListCalculator&& other) noexcept;
+
+    // compute the neighbor list following metatomic format, using data from PLUMED
+    metatensor_torch::TensorBlock compute(
+        const std::vector<PLMD::Vector>& positions,
+        const PLMD::Tensor& cell,
+        std::array<bool, 3> periodic,
+        torch::ScalarType dtype,
+        torch::Device device
+    );
+
+    metatomic_torch::NeighborListOptions options;
+private:
+    double engine_cutoff_;
+    vesin::VesinNeighborList neighbors_;
+};
+
+NeighborListCalculator::NeighborListCalculator(
+    metatomic_torch::NeighborListOptions options_,
+    const std::string& engine_length_unit
+):
+    options(options_),
+    engine_cutoff_(options_->engine_cutoff(engine_length_unit))
+{
+    memset(&this->neighbors_, 0, sizeof(vesin::VesinNeighborList));
+}
+
+NeighborListCalculator::NeighborListCalculator(NeighborListCalculator&& other) noexcept {
+    this->options = other.options;
+    this->engine_cutoff_ = other.engine_cutoff_;
+    this->neighbors_ = other.neighbors_;
+
+    memset(&other.neighbors_, 0, sizeof(vesin::VesinNeighborList));
+}
+
+NeighborListCalculator& NeighborListCalculator::operator=(NeighborListCalculator&& other) noexcept {
+    if (this != &other) {
+        vesin::vesin_free(&this->neighbors_);
+
+        this->options = other.options;
+        this->engine_cutoff_ = other.engine_cutoff_;
+        this->neighbors_ = other.neighbors_;
+
+        memset(&other.neighbors_, 0, sizeof(vesin::VesinNeighborList));
+    }
+    return *this;
+}
+
+NeighborListCalculator::~NeighborListCalculator() {
+    vesin::vesin_free(&this->neighbors_);
+}
+
+metatensor_torch::TensorBlock NeighborListCalculator::compute(
+    const std::vector<PLMD::Vector>& positions,
+    const PLMD::Tensor& cell,
+    std::array<bool, 3> periodic,
+    torch::ScalarType dtype,
+    torch::Device device
+) {
+    auto labels_options = torch::TensorOptions().dtype(torch::kInt32).device(device);
+    auto neighbor_component = torch::make_intrusive<metatensor_torch::LabelsHolder>(
+        "xyz",
+        torch::tensor({0, 1, 2}, labels_options).reshape({3, 1})
+    );
+    auto neighbor_properties = torch::make_intrusive<metatensor_torch::LabelsHolder>(
+        "distance", torch::zeros({1, 1}, labels_options)
+    );
+
+    // use https://github.com/Luthaf/vesin to compute the requested neighbor
+    // lists since we can not get these from PLUMED
+    vesin::VesinOptions vesin_options;
+    vesin_options.cutoff = this->engine_cutoff_;
+    vesin_options.full = this->options->full_list();
+    vesin_options.return_shifts = true;
+    vesin_options.return_distances = false;
+    vesin_options.return_vectors = true;
+    vesin_options.algorithm = vesin::VesinAutoAlgorithm;
+
+    const char* error_message = nullptr;
+    int status = vesin_neighbors(
+        reinterpret_cast<const double (*)[3]>(positions.data()),
+        positions.size(),
+        reinterpret_cast<const double (*)[3]>(&cell(0, 0)),
+        periodic.data(),
+        {vesin::VesinCPU, 0},
+        vesin_options,
+        &this->neighbors_,
+        &error_message
+    );
+
+    if (status != EXIT_SUCCESS) {
+        plumed_merror(
+            "failed to compute neighbor list (cutoff=" + std::to_string(this->engine_cutoff_) +
+            ", full=" + (this->options->full_list() ? "true" : "false") + "): " + error_message
+        );
+    }
+
+    // transform from vesin to metatomic format
+    auto n_pairs = static_cast<int64_t>(this->neighbors_.length);
+
+    auto pair_vectors = torch::from_blob(
+        this->neighbors_.vectors,
+        {n_pairs, 3, 1},
+        torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU)
+    );
+
+    auto pair_samples_values = torch::empty({n_pairs, 5}, labels_options.device(torch::kCPU));
+    auto pair_samples_values_ptr = pair_samples_values.accessor<int32_t, 2>();
+    for (unsigned i=0; i<n_pairs; i++) {
+        pair_samples_values_ptr[i][0] = static_cast<int32_t>(this->neighbors_.pairs[i][0]);
+        pair_samples_values_ptr[i][1] = static_cast<int32_t>(this->neighbors_.pairs[i][1]);
+        pair_samples_values_ptr[i][2] = this->neighbors_.shifts[i][0];
+        pair_samples_values_ptr[i][3] = this->neighbors_.shifts[i][1];
+        pair_samples_values_ptr[i][4] = this->neighbors_.shifts[i][2];
+    }
+
+    auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
+        std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
+        pair_samples_values.to(device),
+        // vesin should create unique pairs
+        metatensor::assume_unique{}
+    );
+
+    auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
+        pair_vectors.to(dtype).to(device),
+        neighbor_samples,
+        std::vector<metatensor_torch::Labels>{neighbor_component},
+        neighbor_properties
+    );
+
+    return neighbors;
+}
+
 class MetatomicPlumedAction: public ActionAtomistic, public ActionWithValue {
 public:
     static void registerKeywords(Keywords& keys);
@@ -192,23 +339,19 @@ public:
 private:
     // fill this->system_ according to the current PLUMED data
     void createSystem();
-    // compute a neighbor list following metatomic format, using data from PLUMED
-    metatensor_torch::TensorBlock computeNeighbors(
-        metatomic_torch::NeighborListOptions request,
-        const std::vector<PLMD::Vector>& positions,
-        const PLMD::Tensor& cell,
-        bool periodic
-    );
+
 
     // execute the model for the given system
     metatensor_torch::TensorBlock executeModel(metatomic_torch::System system);
 
-    torch::jit::Module model_;
+    metatensor_torch::Module model_;
 
     metatomic_torch::ModelCapabilities capabilities_;
+    // name of the output we request
+    std::string features_key;
 
-    // neighbor lists requests made by the model
-    std::vector<metatomic_torch::NeighborListOptions> nl_requests_;
+    // neighbor lists requests made by the model and the corresponding data
+    std::vector<NeighborListCalculator> neighbor_lists_;
 
     // dtype/device to use to execute the model
     torch::ScalarType dtype_;
@@ -228,11 +371,11 @@ private:
     unsigned n_properties_;
 };
 
-
 MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
     ActionWithValue(options),
+    model_(torch::jit::Module()),
     device_(torch::kCPU)
 {
     if (metatomic_torch::version().find("0.1.") != 0) {
@@ -263,10 +406,38 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     // extract information from the model
     auto metadata = this->model_.run_method("metadata").toCustomClass<metatomic_torch::ModelMetadataHolder>();
     this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatomic_torch::ModelCapabilitiesHolder>();
-    auto requests_ivalue = this->model_.run_method("requested_neighbor_lists");
-    for (auto request_ivalue: requests_ivalue.toList()) {
-        auto request = request_ivalue.get().toCustomClass<metatomic_torch::NeighborListOptionsHolder>();
-        this->nl_requests_.push_back(request);
+    auto nl_requests_ivalue = this->model_.run_method("requested_neighbor_lists");
+    for (auto nl_request_ivalue: nl_requests_ivalue.toList()) {
+        auto nl_request = nl_request_ivalue.get().toCustomClass<metatomic_torch::NeighborListOptionsHolder>();
+        this->neighbor_lists_.emplace_back(nl_request, this->getUnits().getLengthString());
+    }
+
+    auto extra_inputs = this->model_.run_method("requested_inputs").toGenericDict();
+    auto standard_inputs = std::vector<std::string>{};
+    auto custom_inputs = std::vector<std::string>{};
+    for (const auto& item: extra_inputs) {
+        auto key = item.key().toStringRef();
+        if (key.find("::") != std::string::npos) {
+            custom_inputs.push_back(key);
+        } else {
+            standard_inputs.push_back(key);
+        }
+    }
+
+    if (!standard_inputs.empty()) {
+        this->error(
+            "The model requested extra inputs that are not yet supported in PLUMED. "
+            "Please open an issue to request support for the following inputs: " +
+            torch::str(standard_inputs)
+        );
+    }
+
+    if (!custom_inputs.empty()) {
+        this->error(
+            "The model requested custom inputs (" + torch::str(custom_inputs) + ") "
+            "that can not be provided by PLUMED. Please change your model to use "
+            "standard inputs only."
+        );
     }
 
     log.printf("\n%s\n", metadata->print().c_str());
@@ -369,7 +540,7 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     }
     this->requestAtoms(all_atoms);
 
-    this->atomic_types_ = torch::tensor(std::move(atomic_types));
+    this->atomic_types_ = torch::tensor(atomic_types);
 
     this->check_consistency_ = false;
     this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);
@@ -383,89 +554,36 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     evaluations_options_->set_length_unit(getUnits().getLengthString());
 
     auto outputs = this->capabilities_->outputs();
-    if (!outputs.contains("features")) {
-        auto existing_outputs = std::vector<std::string>();
-        for (const auto& it: this->capabilities_->outputs()) {
-            existing_outputs.push_back(it.key());
-        }
 
-        this->error(
-            "expected a 'features' output in the capabilities of the model, "
-            "could not find it. the following outputs exist: " + torch::str(existing_outputs)
-        );
+    std::string requested_variant;
+    torch::optional<std::string> requested_variant_opt = torch::nullopt;
+    this->parse("VARIANT", requested_variant);
+    if (!requested_variant.empty()) {
+        requested_variant_opt = requested_variant;
     }
+
+    this->features_key = metatomic_torch::pick_output("features", outputs, requested_variant_opt);
 
     auto output = torch::make_intrusive<metatomic_torch::ModelOutputHolder>();
     // this output has no quantity or unit to set
 
-    output->per_atom = this->capabilities_->outputs().at("features")->per_atom;
+    output->per_atom = this->capabilities_->outputs().at(this->features_key)->per_atom;
     // we are using torch autograd system to compute gradients,
     // so we don't need any explicit gradients.
     output->explicit_gradients = {};
-    evaluations_options_->outputs.insert("features", output);
-
-    // Determine which device we should use based on user input, what the model
-    // supports and what's available
-    auto available_devices = std::vector<torch::Device>();
-    for (const auto& device: this->capabilities_->supported_devices) {
-        if (device == "cpu") {
-            available_devices.push_back(torch::kCPU);
-        } else if (device == "cuda") {
-            if (torch::cuda::is_available()) {
-                available_devices.push_back(torch::Device("cuda"));
-            }
-        } else if (device == "mps") {
-            #if TORCH_VERSION_MAJOR >= 2
-            if (torch::mps::is_available()) {
-                available_devices.push_back(torch::Device("mps"));
-            }
-            #endif
-        } else {
-            this->warning(
-                "the model declared support for unknown device '" + device +
-                "', it will be ignored"
-            );
-        }
-    }
-
-    if (available_devices.empty()) {
-        this->error(
-            "failed to find a valid device for the model at '" + model_path + "': "
-            "the model supports " + torch::str(this->capabilities_->supported_devices) +
-            ", none of these where available"
-        );
-    }
+    evaluations_options_->outputs.insert(this->features_key, output);
 
     std::string requested_device;
+    torch::optional<std::string> requested_device_opt = torch::nullopt;
     this->parse("DEVICE", requested_device);
-    if (requested_device.empty()) {
-        // no user request, pick the device the model prefers
-        this->device_ = available_devices[0];
-    } else {
-        bool found_requested_device = false;
-        for (const auto& device: available_devices) {
-            if (device.is_cpu() && requested_device == "cpu") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            } else if (device.is_cuda() && requested_device == "cuda") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            } else if (device.is_mps() && requested_device == "mps") {
-                this->device_ = device;
-                found_requested_device = true;
-                break;
-            }
-        }
-
-        if (!found_requested_device) {
-            this->error(
-                "failed to find requested device (" + requested_device + "): it is either "
-                "not supported by this model or not available on this machine"
-            );
-        }
+    if (!requested_device.empty()) {
+        requested_device_opt = requested_device;
     }
+
+    this->device_ = torch::Device(
+        metatomic_torch::pick_device(this->capabilities_->supported_devices, requested_device_opt),
+        /*index=*/ 0
+    );
 
     this->model_.to(this->device_);
     this->atomic_types_ = this->atomic_types_.to(this->device_);
@@ -501,23 +619,24 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
     log.printf("  the following neighbor lists have been requested:\n");
     auto length_unit = this->getUnits().getLengthString();
     auto model_length_unit = this->capabilities_->length_unit();
-    for (auto request: this->nl_requests_) {
+    for (auto& nl: this->neighbor_lists_) {
         log.printf("    - %s list, %g %s cutoff (requested %g %s)\n",
-            request->full_list() ? "full" : "half",
-            request->engine_cutoff(length_unit),
+            nl.options->full_list() ? "full" : "half",
+            nl.options->engine_cutoff(length_unit),
             length_unit.c_str(),
-            request->cutoff(),
+            nl.options->cutoff(),
             model_length_unit.c_str()
         );
 
-        auto neighbors = this->computeNeighbors(
-            request,
+        auto neighbors = nl.compute(
             {PLMD::Vector(0, 0, 0)},
             PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0),
-            false
+            {false, false, false},
+            this->dtype_,
+            this->device_
         );
         metatomic_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
-        dummy_system->add_neighbor_list(request, neighbors);
+        dummy_system->add_neighbor_list(nl.options, neighbors);
     }
 
     this->n_properties_ = static_cast<unsigned>(
@@ -526,8 +645,8 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
 
     // parse and handle atom sub-selection. This is done AFTER determining the
     // output size, since the selection might not be valid for the dummy system
-    std::vector<int32_t> selected_atoms;
-    this->parseVector("SELECTED_ATOMS", selected_atoms);
+    std::vector<AtomNumber> selected_atoms;
+    this->parseAtomList("SELECTED_ATOMS", selected_atoms);
     if (!selected_atoms.empty()) {
         auto selection_value = torch::zeros(
             {static_cast<int64_t>(selected_atoms.size()), 2},
@@ -535,15 +654,14 @@ MetatomicPlumedAction::MetatomicPlumedAction(const ActionOptions& options):
         );
 
         for (unsigned i=0; i<selected_atoms.size(); i++) {
-            auto n_atoms = static_cast<int32_t>(this->atomic_types_.size(0));
-            if (selected_atoms[i] <= 0 || selected_atoms[i] > n_atoms) {
+            auto n_atoms = this->atomic_types_.size(0);
+            if (selected_atoms[i].index() > n_atoms) {
                 this->error(
                     "Values in metatomic's SELECTED_ATOMS should be between 1 "
                     "and the number of atoms (" + std::to_string(n_atoms) + "), "
-                    "got " + std::to_string(selected_atoms[i]));
+                    "got " + std::to_string(selected_atoms[i].serial()));
             }
-            // PLUMED input uses 1-based indexes, but metatomic wants 0-based
-            selection_value[i][1] = selected_atoms[i] - 1;
+            selection_value[i][1] = static_cast<int32_t>(selected_atoms[i].index());
         }
 
         evaluations_options_->set_selected_atoms(
@@ -626,10 +744,53 @@ void MetatomicPlumedAction::createSystem() {
 
     using torch::indexing::Slice;
 
-    auto pbc_a = torch_cell.index({0, Slice()}).norm().abs().item<double>() > 1e-9;
-    auto pbc_b = torch_cell.index({1, Slice()}).norm().abs().item<double>() > 1e-9;
-    auto pbc_c = torch_cell.index({2, Slice()}).norm().abs().item<double>() > 1e-9;
-    auto torch_pbc = torch::tensor({pbc_a, pbc_b, pbc_c});
+    auto norm_a = torch_cell.index({0, Slice()}).norm().abs().item<double>();
+    auto norm_b = torch_cell.index({1, Slice()}).norm().abs().item<double>();
+    auto norm_c = torch_cell.index({2, Slice()}).norm().abs().item<double>();
+
+    auto periodic = std::array<bool, 3>{true, true, true};
+
+    // make sure the cell and pbc argument agree with each other
+    if (norm_a < 1e-9) {
+        if (norm_a > 1e-30) {
+            this->warning(
+                "the cell vector A has a very small norm (" + std::to_string(norm_a) + "), "
+                "this direction will be treated as non periodic. If this is intentional, ensure "
+                "the vector is exactly zero to silence this warning"
+            );
+        }
+        torch_cell.index({0, Slice()}).fill_(0);
+        periodic[0] = false;
+    }
+
+    if (norm_b < 1e-9) {
+        if (norm_b > 1e-30) {
+            this->warning(
+                "the cell vector B has a very small norm (" + std::to_string(norm_b) + "), "
+                "this direction will be treated as non periodic. If this is intentional, ensure "
+                "the vector is exactly zero to silence this warning"
+            );
+        }
+        torch_cell.index({1, Slice()}).fill_(0);
+        periodic[1] = false;
+    }
+
+    if (norm_c < 1e-9) {
+        if (norm_c > 1e-30) {
+            this->warning(
+                "the cell vector C has a very small norm (" + std::to_string(norm_c) + "), "
+                "this direction will be treated as non periodic. If this is intentional, ensure "
+                "the vector is exactly zero to silence this warning"
+            );
+        }
+        torch_cell.index({2, Slice()}).fill_(0);
+        periodic[2] = false;
+    }
+
+    auto torch_pbc = torch::zeros({3}, torch::TensorOptions().dtype(torch::kBool).device(torch::kCPU));
+    for (unsigned i=0; i<3; i++) {
+        torch_pbc[i] = periodic[i];
+    }
 
     const auto& positions = this->getPositions();
 
@@ -662,130 +823,15 @@ void MetatomicPlumedAction::createSystem() {
         torch_pbc
     );
 
-    auto periodic = torch::all(torch_pbc).item<bool>();
-    if (!periodic && torch::any(torch_pbc).item<bool>()) {
-        std::string periodic_directions;
-        std::string non_periodic_directions;
-        if (pbc_a) {
-            periodic_directions += "A";
-        } else {
-            non_periodic_directions += "A";
-        }
-
-        if (pbc_b) {
-            periodic_directions += "B";
-        } else {
-            non_periodic_directions += "B";
-        }
-
-        if (pbc_c) {
-            periodic_directions += "C";
-        } else {
-            non_periodic_directions += "C";
-        }
-
-        plumed_merror(
-            "mixed periodic boundary conditions are not supported, this system "
-            "is periodic along the " + periodic_directions + " cell vector(s), "
-            "but not along the " + non_periodic_directions + " cell vector(s)."
-        );
-    }
-
     // compute the neighbors list requested by the model, and register them with
     // the system
-    for (auto request: this->nl_requests_) {
-        auto neighbors = this->computeNeighbors(request, positions, cell, periodic);
+    for (auto& nl: this->neighbor_lists_) {
+        auto neighbors = nl.compute(positions, cell, periodic, this->dtype_, this->device_);
         metatomic_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
-        this->system_->add_neighbor_list(request, neighbors);
+        this->system_->add_neighbor_list(nl.options, neighbors);
     }
 }
 
-
-metatensor_torch::TensorBlock MetatomicPlumedAction::computeNeighbors(
-    metatomic_torch::NeighborListOptions request,
-    const std::vector<PLMD::Vector>& positions,
-    const PLMD::Tensor& cell,
-    bool periodic
-) {
-    auto labels_options = torch::TensorOptions().dtype(torch::kInt32).device(this->device_);
-    auto neighbor_component = torch::make_intrusive<metatensor_torch::LabelsHolder>(
-        "xyz",
-        torch::tensor({0, 1, 2}, labels_options).reshape({3, 1})
-    );
-    auto neighbor_properties = torch::make_intrusive<metatensor_torch::LabelsHolder>(
-        "distance", torch::zeros({1, 1}, labels_options)
-    );
-
-    auto cutoff = request->engine_cutoff(this->getUnits().getLengthString());
-
-    // use https://github.com/Luthaf/vesin to compute the requested neighbor
-    // lists since we can not get these from PLUMED
-    vesin::VesinOptions options;
-    options.cutoff = cutoff;
-    options.full = request->full_list();
-    options.return_shifts = true;
-    options.return_distances = false;
-    options.return_vectors = true;
-
-    vesin::VesinNeighborList* vesin_neighbor_list = new vesin::VesinNeighborList();
-    memset(vesin_neighbor_list, 0, sizeof(vesin::VesinNeighborList));
-
-    const char* error_message = NULL;
-    int status = vesin_neighbors(
-        reinterpret_cast<const double (*)[3]>(positions.data()),
-        positions.size(),
-        reinterpret_cast<const double (*)[3]>(&cell(0, 0)),
-        periodic,
-        vesin::VesinCPU,
-        options,
-        vesin_neighbor_list,
-        &error_message
-    );
-
-    if (status != EXIT_SUCCESS) {
-        plumed_merror(
-            "failed to compute neighbor list (cutoff=" + std::to_string(cutoff) +
-            ", full=" + (request->full_list() ? "true" : "false") + "): " + error_message
-        );
-    }
-
-    // transform from vesin to metatomic format
-    auto n_pairs = static_cast<int64_t>(vesin_neighbor_list->length);
-
-    auto pair_vectors = torch::from_blob(
-        vesin_neighbor_list->vectors,
-        {n_pairs, 3, 1},
-        /*deleter*/ [=](void*) {
-            vesin_free(vesin_neighbor_list);
-            delete vesin_neighbor_list;
-        },
-        torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU)
-    );
-
-    auto pair_samples_values = torch::empty({n_pairs, 5}, labels_options.device(torch::kCPU));
-    auto pair_samples_values_ptr = pair_samples_values.accessor<int32_t, 2>();
-    for (unsigned i=0; i<n_pairs; i++) {
-        pair_samples_values_ptr[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
-        pair_samples_values_ptr[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
-        pair_samples_values_ptr[i][2] = vesin_neighbor_list->shifts[i][0];
-        pair_samples_values_ptr[i][3] = vesin_neighbor_list->shifts[i][1];
-        pair_samples_values_ptr[i][4] = vesin_neighbor_list->shifts[i][2];
-    }
-
-    auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
-        std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
-        pair_samples_values.to(this->device_)
-    );
-
-    auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
-        pair_vectors.to(this->dtype_).to(this->device_),
-        neighbor_samples,
-        std::vector<metatensor_torch::Labels>{neighbor_component},
-        neighbor_properties
-    );
-
-    return neighbors;
-}
 
 metatensor_torch::TensorBlock MetatomicPlumedAction::executeModel(metatomic_torch::System system) {
     try {
@@ -796,7 +842,7 @@ metatensor_torch::TensorBlock MetatomicPlumedAction::executeModel(metatomic_torc
         });
 
         auto dict_output = ivalue_output.toGenericDict();
-        auto cv = dict_output.at("features");
+        auto cv = dict_output.at(this->features_key);
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
         plumed_merror("failed to evaluate the model: " + std::string(e.what()));
@@ -1010,6 +1056,8 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
     keys.reset_style("SELECTED_ATOMS", "atoms");
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatomic's atom types");
+
+    keys.add("optional", "VARIANT", "which variant of the 'features' output to pick");
 
     keys.addOutputComponent("outputs", "default", "collective variable created by the metatomic model");
 

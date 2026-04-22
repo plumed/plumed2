@@ -182,7 +182,8 @@ jobs:
               df -h
               sleep 15
               done) &
-         make --no-print-directory -C regtest testclean
+         python -c "import featomic.torch; print(featomic.torch.__version__)"
+         METATOMIC_DEBUG_EXTENSIONS_LOADING=1 make --no-print-directory -C regtest/metatomic testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
