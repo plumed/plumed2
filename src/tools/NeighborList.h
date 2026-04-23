@@ -41,6 +41,7 @@ public:
   using pairIDs=std::pair<unsigned,unsigned>;
   using pairAtomNumbers=std::pair<PLMD::AtomNumber,PLMD::AtomNumber>;
 private:
+  using couple=std::array<unsigned,2>;
   enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
   bool serial_;
@@ -51,7 +52,7 @@ private:
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
-  std::vector<pairIDs > neighbors_{};
+  std::vector<couple> neighbors_{};
   double distance_;
   size_t nlist0_=0;
   size_t nlist1_=0;
@@ -62,7 +63,7 @@ private:
   void initialize();
 /// Return the pair of indexes in the positions array
 /// of the two atoms forming the i-th pair among all possible pairs
-  pairIDs getIndexPair(unsigned i);
+  couple getIndexPair(unsigned i);
 /// Extract the list of atoms from the current list of close pairs
   void setRequestList();
 public:

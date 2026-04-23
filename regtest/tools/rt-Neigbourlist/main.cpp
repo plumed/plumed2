@@ -9,13 +9,17 @@
 #include <ostream>
 #include <vector>
 
+//#define USE_MPI
+#ifdef USE_MPI
+#include "mpi.h"
+#endif //USE_MPI
 
 #define check(arg) (((arg)) ? "pass\n" : "not pass\n")
 
-constexpr bool serial = true;
-void testSingleList(bool do_pbc, std::ostream& ofs);
-void testDoubleList(bool do_pbc, std::ostream& ofs);
-void testPairList(bool do_pbc, std::ostream& ofs);
+constexpr bool serial = false;
+void testSingleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
+void testDoubleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
+void testPairList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
 
 void testResult(std::string name,
                 const std::vector<PLMD::AtomNumber> &indexes,
@@ -38,21 +42,39 @@ void testResult(std::string name,
   }
 }
 
-int main(int, char **) {
-  std::ofstream ofs("unitTest");
-  testSingleList(false,ofs);
-  testSingleList(true,ofs);
-  testDoubleList(false,ofs);
-  testDoubleList(true,ofs);
-  testPairList(false,ofs);
-  testPairList(true,ofs);
+int main(int argc, char **argv) {
+
+#ifdef USE_MPI
+  MPI_Init(&argc,&argv);
+#endif //USE_MPI
+  {
+    PLMD::Communicator comm;
+#ifdef USE_MPI
+    MPI_Comm c;
+    MPI_Comm_dup(MPI_COMM_WORLD,&c);
+    comm.Set_comm(&c);
+#endif //USE_MPI
+    std::string rank="";
+    if(auto myrank = comm.Get_rank(); myrank!=0) {
+      rank=std::to_string(myrank);
+    }
+    std::ofstream ofs("unitTest"+rank);
+    testSingleList(false,ofs,comm);
+    testSingleList(true,ofs,comm);
+    testDoubleList(false,ofs,comm);
+    testDoubleList(true,ofs,comm);
+    testPairList(false,ofs,comm);
+    testPairList(true,ofs,comm);
+  }
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif //USE_MPI
 }
 
-void testSingleList(const bool do_pbc, std::ostream& ofs) {
+void testSingleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
-  Communicator cm{};
   std::vector<double> box(9);
   std::vector<Vector> atoms(5*5*5);
   auto d = AtomDistribution::getAtomDistribution("sc");
@@ -75,11 +97,10 @@ void testSingleList(const bool do_pbc, std::ostream& ofs) {
   testResult("Single list",indexes,do_pbc,nl,ofs);
 }
 
-void testDoubleList(const bool do_pbc, std::ostream& ofs) {
+void testDoubleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
-  Communicator cm{};
   std::vector<double> box(9);
   std::vector<Vector> atoms(5*5*5-1);
   auto d = AtomDistribution::getAtomDistribution("sc");
@@ -119,11 +140,10 @@ void testDoubleList(const bool do_pbc, std::ostream& ofs) {
   indexes.insert(indexes.end(),indexesB.begin(),indexesB.end());
   testResult("Two lists",indexes,do_pbc,nl,ofs);
 }
-void testPairList(const bool do_pbc, std::ostream& ofs) {
+void testPairList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
-  Communicator cm{};
   std::vector<double> box(9);
   std::vector<Vector> atoms(5*5*5-1);
   auto d = AtomDistribution::getAtomDistribution("sc");

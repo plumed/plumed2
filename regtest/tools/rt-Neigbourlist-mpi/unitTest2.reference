@@ -1,0 +1,746 @@
+[Single list, pbc off] atom 0: 1 5 6 25 26 30 31
+[Single list, pbc off] atom 1: 0 2 5 6 7 25 26 27 30 31 32
+[Single list, pbc off] atom 2: 1 3 6 7 8 26 27 28 31 32 33
+[Single list, pbc off] atom 3: 2 4 7 8 9 27 28 29 32 33 34
+[Single list, pbc off] atom 4: 3 8 9 28 29 33 34
+[Single list, pbc off] atom 5: 0 1 6 10 11 25 26 30 31 35 36
+[Single list, pbc off] atom 6: 0 1 2 5 7 10 11 12 25 26 27 30 31 32 35 36 37
+[Single list, pbc off] atom 7: 1 2 3 6 8 11 12 13 26 27 28 31 32 33 36 37 38
+[Single list, pbc off] atom 8: 2 3 4 7 9 12 13 14 27 28 29 32 33 34 37 38 39
+[Single list, pbc off] atom 9: 3 4 8 13 14 28 29 33 34 38 39
+[Single list, pbc off] atom 10: 5 6 11 15 16 30 31 35 36 40 41
+[Single list, pbc off] atom 11: 5 6 7 10 12 15 16 17 30 31 32 35 36 37 40 41 42
+[Single list, pbc off] atom 12: 6 7 8 11 13 16 17 18 31 32 33 36 37 38 41 42 43
+[Single list, pbc off] atom 13: 7 8 9 12 14 17 18 19 32 33 34 37 38 39 42 43 44
+[Single list, pbc off] atom 14: 8 9 13 18 19 33 34 38 39 43 44
+[Single list, pbc off] atom 15: 10 11 16 20 21 35 36 40 41 45 46
+[Single list, pbc off] atom 16: 10 11 12 15 17 20 21 22 35 36 37 40 41 42 45 46 47
+[Single list, pbc off] atom 17: 11 12 13 16 18 21 22 23 36 37 38 41 42 43 46 47 48
+[Single list, pbc off] atom 18: 12 13 14 17 19 22 23 24 37 38 39 42 43 44 47 48 49
+[Single list, pbc off] atom 19: 13 14 18 23 24 38 39 43 44 48 49
+[Single list, pbc off] atom 20: 15 16 21 40 41 45 46
+[Single list, pbc off] atom 21: 15 16 17 20 22 40 41 42 45 46 47
+[Single list, pbc off] atom 22: 16 17 18 21 23 41 42 43 46 47 48
+[Single list, pbc off] atom 23: 17 18 19 22 24 42 43 44 47 48 49
+[Single list, pbc off] atom 24: 18 19 23 43 44 48 49
+[Single list, pbc off] atom 25: 0 1 5 6 26 30 31 50 51 55 56
+[Single list, pbc off] atom 26: 0 1 2 5 6 7 25 27 30 31 32 50 51 52 55 56 57
+[Single list, pbc off] atom 27: 1 2 3 6 7 8 26 28 31 32 33 51 52 53 56 57 58
+[Single list, pbc off] atom 28: 2 3 4 7 8 9 27 29 32 33 34 52 53 54 57 58 59
+[Single list, pbc off] atom 29: 3 4 8 9 28 33 34 53 54 58 59
+[Single list, pbc off] atom 30: 0 1 5 6 10 11 25 26 31 35 36 50 51 55 56 60 61
+[Single list, pbc off] atom 31: 0 1 2 5 6 7 10 11 12 25 26 27 30 32 35 36 37 50 51 52 55 56 57 60 61 62
+[Single list, pbc off] atom 32: 1 2 3 6 7 8 11 12 13 26 27 28 31 33 36 37 38 51 52 53 56 57 58 61 62 63
+[Single list, pbc off] atom 33: 2 3 4 7 8 9 12 13 14 27 28 29 32 34 37 38 39 52 53 54 57 58 59 62 63 64
+[Single list, pbc off] atom 34: 3 4 8 9 13 14 28 29 33 38 39 53 54 58 59 63 64
+[Single list, pbc off] atom 35: 5 6 10 11 15 16 30 31 36 40 41 55 56 60 61 65 66
+[Single list, pbc off] atom 36: 5 6 7 10 11 12 15 16 17 30 31 32 35 37 40 41 42 55 56 57 60 61 62 65 66 67
+[Single list, pbc off] atom 37: 6 7 8 11 12 13 16 17 18 31 32 33 36 38 41 42 43 56 57 58 61 62 63 66 67 68
+[Single list, pbc off] atom 38: 7 8 9 12 13 14 17 18 19 32 33 34 37 39 42 43 44 57 58 59 62 63 64 67 68 69
+[Single list, pbc off] atom 39: 8 9 13 14 18 19 33 34 38 43 44 58 59 63 64 68 69
+[Single list, pbc off] atom 40: 10 11 15 16 20 21 35 36 41 45 46 60 61 65 66 70 71
+[Single list, pbc off] atom 41: 10 11 12 15 16 17 20 21 22 35 36 37 40 42 45 46 47 60 61 62 65 66 67 70 71 72
+[Single list, pbc off] atom 42: 11 12 13 16 17 18 21 22 23 36 37 38 41 43 46 47 48 61 62 63 66 67 68 71 72 73
+[Single list, pbc off] atom 43: 12 13 14 17 18 19 22 23 24 37 38 39 42 44 47 48 49 62 63 64 67 68 69 72 73 74
+[Single list, pbc off] atom 44: 13 14 18 19 23 24 38 39 43 48 49 63 64 68 69 73 74
+[Single list, pbc off] atom 45: 15 16 20 21 40 41 46 65 66 70 71
+[Single list, pbc off] atom 46: 15 16 17 20 21 22 40 41 42 45 47 65 66 67 70 71 72
+[Single list, pbc off] atom 47: 16 17 18 21 22 23 41 42 43 46 48 66 67 68 71 72 73
+[Single list, pbc off] atom 48: 17 18 19 22 23 24 42 43 44 47 49 67 68 69 72 73 74
+[Single list, pbc off] atom 49: 18 19 23 24 43 44 48 68 69 73 74
+[Single list, pbc off] atom 50: 25 26 30 31 51 55 56 75 76 80 81
+[Single list, pbc off] atom 51: 25 26 27 30 31 32 50 52 55 56 57 75 76 77 80 81 82
+[Single list, pbc off] atom 52: 26 27 28 31 32 33 51 53 56 57 58 76 77 78 81 82 83
+[Single list, pbc off] atom 53: 27 28 29 32 33 34 52 54 57 58 59 77 78 79 82 83 84
+[Single list, pbc off] atom 54: 28 29 33 34 53 58 59 78 79 83 84
+[Single list, pbc off] atom 55: 25 26 30 31 35 36 50 51 56 60 61 75 76 80 81 85 86
+[Single list, pbc off] atom 56: 25 26 27 30 31 32 35 36 37 50 51 52 55 57 60 61 62 75 76 77 80 81 82 85 86 87
+[Single list, pbc off] atom 57: 26 27 28 31 32 33 36 37 38 51 52 53 56 58 61 62 63 76 77 78 81 82 83 86 87 88
+[Single list, pbc off] atom 58: 27 28 29 32 33 34 37 38 39 52 53 54 57 59 62 63 64 77 78 79 82 83 84 87 88 89
+[Single list, pbc off] atom 59: 28 29 33 34 38 39 53 54 58 63 64 78 79 83 84 88 89
+[Single list, pbc off] atom 60: 30 31 35 36 40 41 55 56 61 65 66 80 81 85 86 90 91
+[Single list, pbc off] atom 61: 30 31 32 35 36 37 40 41 42 55 56 57 60 62 65 66 67 80 81 82 85 86 87 90 91 92
+[Single list, pbc off] atom 62: 31 32 33 36 37 38 41 42 43 56 57 58 61 63 66 67 68 81 82 83 86 87 88 91 92 93
+[Single list, pbc off] atom 63: 32 33 34 37 38 39 42 43 44 57 58 59 62 64 67 68 69 82 83 84 87 88 89 92 93 94
+[Single list, pbc off] atom 64: 33 34 38 39 43 44 58 59 63 68 69 83 84 88 89 93 94
+[Single list, pbc off] atom 65: 35 36 40 41 45 46 60 61 66 70 71 85 86 90 91 95 96
+[Single list, pbc off] atom 66: 35 36 37 40 41 42 45 46 47 60 61 62 65 67 70 71 72 85 86 87 90 91 92 95 96 97
+[Single list, pbc off] atom 67: 36 37 38 41 42 43 46 47 48 61 62 63 66 68 71 72 73 86 87 88 91 92 93 96 97 98
+[Single list, pbc off] atom 68: 37 38 39 42 43 44 47 48 49 62 63 64 67 69 72 73 74 87 88 89 92 93 94 97 98 99
+[Single list, pbc off] atom 69: 38 39 43 44 48 49 63 64 68 73 74 88 89 93 94 98 99
+[Single list, pbc off] atom 70: 40 41 45 46 65 66 71 90 91 95 96
+[Single list, pbc off] atom 71: 40 41 42 45 46 47 65 66 67 70 72 90 91 92 95 96 97
+[Single list, pbc off] atom 72: 41 42 43 46 47 48 66 67 68 71 73 91 92 93 96 97 98
+[Single list, pbc off] atom 73: 42 43 44 47 48 49 67 68 69 72 74 92 93 94 97 98 99
+[Single list, pbc off] atom 74: 43 44 48 49 68 69 73 93 94 98 99
+[Single list, pbc off] atom 75: 50 51 55 56 76 80 81 100 101 105 106
+[Single list, pbc off] atom 76: 50 51 52 55 56 57 75 77 80 81 82 100 101 102 105 106 107
+[Single list, pbc off] atom 77: 51 52 53 56 57 58 76 78 81 82 83 101 102 103 106 107 108
+[Single list, pbc off] atom 78: 52 53 54 57 58 59 77 79 82 83 84 102 103 104 107 108 109
+[Single list, pbc off] atom 79: 53 54 58 59 78 83 84 103 104 108 109
+[Single list, pbc off] atom 80: 50 51 55 56 60 61 75 76 81 85 86 100 101 105 106 110 111
+[Single list, pbc off] atom 81: 50 51 52 55 56 57 60 61 62 75 76 77 80 82 85 86 87 100 101 102 105 106 107 110 111 112
+[Single list, pbc off] atom 82: 51 52 53 56 57 58 61 62 63 76 77 78 81 83 86 87 88 101 102 103 106 107 108 111 112 113
+[Single list, pbc off] atom 83: 52 53 54 57 58 59 62 63 64 77 78 79 82 84 87 88 89 102 103 104 107 108 109 112 113 114
+[Single list, pbc off] atom 84: 53 54 58 59 63 64 78 79 83 88 89 103 104 108 109 113 114
+[Single list, pbc off] atom 85: 55 56 60 61 65 66 80 81 86 90 91 105 106 110 111 115 116
+[Single list, pbc off] atom 86: 55 56 57 60 61 62 65 66 67 80 81 82 85 87 90 91 92 105 106 107 110 111 112 115 116 117
+[Single list, pbc off] atom 87: 56 57 58 61 62 63 66 67 68 81 82 83 86 88 91 92 93 106 107 108 111 112 113 116 117 118
+[Single list, pbc off] atom 88: 57 58 59 62 63 64 67 68 69 82 83 84 87 89 92 93 94 107 108 109 112 113 114 117 118 119
+[Single list, pbc off] atom 89: 58 59 63 64 68 69 83 84 88 93 94 108 109 113 114 118 119
+[Single list, pbc off] atom 90: 60 61 65 66 70 71 85 86 91 95 96 110 111 115 116 120 121
+[Single list, pbc off] atom 91: 60 61 62 65 66 67 70 71 72 85 86 87 90 92 95 96 97 110 111 112 115 116 117 120 121 122
+[Single list, pbc off] atom 92: 61 62 63 66 67 68 71 72 73 86 87 88 91 93 96 97 98 111 112 113 116 117 118 121 122 123
+[Single list, pbc off] atom 93: 62 63 64 67 68 69 72 73 74 87 88 89 92 94 97 98 99 112 113 114 117 118 119 122 123 124
+[Single list, pbc off] atom 94: 63 64 68 69 73 74 88 89 93 98 99 113 114 118 119 123 124
+[Single list, pbc off] atom 95: 65 66 70 71 90 91 96 115 116 120 121
+[Single list, pbc off] atom 96: 65 66 67 70 71 72 90 91 92 95 97 115 116 117 120 121 122
+[Single list, pbc off] atom 97: 66 67 68 71 72 73 91 92 93 96 98 116 117 118 121 122 123
+[Single list, pbc off] atom 98: 67 68 69 72 73 74 92 93 94 97 99 117 118 119 122 123 124
+[Single list, pbc off] atom 99: 68 69 73 74 93 94 98 118 119 123 124
+[Single list, pbc off] atom 100: 75 76 80 81 101 105 106
+[Single list, pbc off] atom 101: 75 76 77 80 81 82 100 102 105 106 107
+[Single list, pbc off] atom 102: 76 77 78 81 82 83 101 103 106 107 108
+[Single list, pbc off] atom 103: 77 78 79 82 83 84 102 104 107 108 109
+[Single list, pbc off] atom 104: 78 79 83 84 103 108 109
+[Single list, pbc off] atom 105: 75 76 80 81 85 86 100 101 106 110 111
+[Single list, pbc off] atom 106: 75 76 77 80 81 82 85 86 87 100 101 102 105 107 110 111 112
+[Single list, pbc off] atom 107: 76 77 78 81 82 83 86 87 88 101 102 103 106 108 111 112 113
+[Single list, pbc off] atom 108: 77 78 79 82 83 84 87 88 89 102 103 104 107 109 112 113 114
+[Single list, pbc off] atom 109: 78 79 83 84 88 89 103 104 108 113 114
+[Single list, pbc off] atom 110: 80 81 85 86 90 91 105 106 111 115 116
+[Single list, pbc off] atom 111: 80 81 82 85 86 87 90 91 92 105 106 107 110 112 115 116 117
+[Single list, pbc off] atom 112: 81 82 83 86 87 88 91 92 93 106 107 108 111 113 116 117 118
+[Single list, pbc off] atom 113: 82 83 84 87 88 89 92 93 94 107 108 109 112 114 117 118 119
+[Single list, pbc off] atom 114: 83 84 88 89 93 94 108 109 113 118 119
+[Single list, pbc off] atom 115: 85 86 90 91 95 96 110 111 116 120 121
+[Single list, pbc off] atom 116: 85 86 87 90 91 92 95 96 97 110 111 112 115 117 120 121 122
+[Single list, pbc off] atom 117: 86 87 88 91 92 93 96 97 98 111 112 113 116 118 121 122 123
+[Single list, pbc off] atom 118: 87 88 89 92 93 94 97 98 99 112 113 114 117 119 122 123 124
+[Single list, pbc off] atom 119: 88 89 93 94 98 99 113 114 118 123 124
+[Single list, pbc off] atom 120: 90 91 95 96 115 116 121
+[Single list, pbc off] atom 121: 90 91 92 95 96 97 115 116 117 120 122
+[Single list, pbc off] atom 122: 91 92 93 96 97 98 116 117 118 121 123
+[Single list, pbc off] atom 123: 92 93 94 97 98 99 117 118 119 122 124
+[Single list, pbc off] atom 124: 93 94 98 99 118 119 123
+[Single list, pbc on] atom 0: 1 4 5 6 9 20 21 24 25 26 29 30 31 34 45 46 49 100 101 104 105 106 109 120 121 124
+[Single list, pbc on] atom 1: 0 2 5 6 7 20 21 22 25 26 27 30 31 32 45 46 47 100 101 102 105 106 107 120 121 122
+[Single list, pbc on] atom 2: 1 3 6 7 8 21 22 23 26 27 28 31 32 33 46 47 48 101 102 103 106 107 108 121 122 123
+[Single list, pbc on] atom 3: 2 4 7 8 9 22 23 24 27 28 29 32 33 34 47 48 49 102 103 104 107 108 109 122 123 124
+[Single list, pbc on] atom 4: 0 3 5 8 9 20 23 24 25 28 29 30 33 34 45 48 49 100 103 104 105 108 109 120 123 124
+[Single list, pbc on] atom 5: 0 1 4 6 9 10 11 14 25 26 29 30 31 34 35 36 39 100 101 104 105 106 109 110 111 114
+[Single list, pbc on] atom 6: 0 1 2 5 7 10 11 12 25 26 27 30 31 32 35 36 37 100 101 102 105 106 107 110 111 112
+[Single list, pbc on] atom 7: 1 2 3 6 8 11 12 13 26 27 28 31 32 33 36 37 38 101 102 103 106 107 108 111 112 113
+[Single list, pbc on] atom 8: 2 3 4 7 9 12 13 14 27 28 29 32 33 34 37 38 39 102 103 104 107 108 109 112 113 114
+[Single list, pbc on] atom 9: 0 3 4 5 8 10 13 14 25 28 29 30 33 34 35 38 39 100 103 104 105 108 109 110 113 114
+[Single list, pbc on] atom 10: 5 6 9 11 14 15 16 19 30 31 34 35 36 39 40 41 44 105 106 109 110 111 114 115 116 119
+[Single list, pbc on] atom 11: 5 6 7 10 12 15 16 17 30 31 32 35 36 37 40 41 42 105 106 107 110 111 112 115 116 117
+[Single list, pbc on] atom 12: 6 7 8 11 13 16 17 18 31 32 33 36 37 38 41 42 43 106 107 108 111 112 113 116 117 118
+[Single list, pbc on] atom 13: 7 8 9 12 14 17 18 19 32 33 34 37 38 39 42 43 44 107 108 109 112 113 114 117 118 119
+[Single list, pbc on] atom 14: 5 8 9 10 13 15 18 19 30 33 34 35 38 39 40 43 44 105 108 109 110 113 114 115 118 119
+[Single list, pbc on] atom 15: 10 11 14 16 19 20 21 24 35 36 39 40 41 44 45 46 49 110 111 114 115 116 119 120 121 124
+[Single list, pbc on] atom 16: 10 11 12 15 17 20 21 22 35 36 37 40 41 42 45 46 47 110 111 112 115 116 117 120 121 122
+[Single list, pbc on] atom 17: 11 12 13 16 18 21 22 23 36 37 38 41 42 43 46 47 48 111 112 113 116 117 118 121 122 123
+[Single list, pbc on] atom 18: 12 13 14 17 19 22 23 24 37 38 39 42 43 44 47 48 49 112 113 114 117 118 119 122 123 124
+[Single list, pbc on] atom 19: 10 13 14 15 18 20 23 24 35 38 39 40 43 44 45 48 49 110 113 114 115 118 119 120 123 124
+[Single list, pbc on] atom 20: 0 1 4 15 16 19 21 24 25 26 29 40 41 44 45 46 49 100 101 104 115 116 119 120 121 124
+[Single list, pbc on] atom 21: 0 1 2 15 16 17 20 22 25 26 27 40 41 42 45 46 47 100 101 102 115 116 117 120 121 122
+[Single list, pbc on] atom 22: 1 2 3 16 17 18 21 23 26 27 28 41 42 43 46 47 48 101 102 103 116 117 118 121 122 123
+[Single list, pbc on] atom 23: 2 3 4 17 18 19 22 24 27 28 29 42 43 44 47 48 49 102 103 104 117 118 119 122 123 124
+[Single list, pbc on] atom 24: 0 3 4 15 18 19 20 23 25 28 29 40 43 44 45 48 49 100 103 104 115 118 119 120 123 124
+[Single list, pbc on] atom 25: 0 1 4 5 6 9 20 21 24 26 29 30 31 34 45 46 49 50 51 54 55 56 59 70 71 74
+[Single list, pbc on] atom 26: 0 1 2 5 6 7 20 21 22 25 27 30 31 32 45 46 47 50 51 52 55 56 57 70 71 72
+[Single list, pbc on] atom 27: 1 2 3 6 7 8 21 22 23 26 28 31 32 33 46 47 48 51 52 53 56 57 58 71 72 73
+[Single list, pbc on] atom 28: 2 3 4 7 8 9 22 23 24 27 29 32 33 34 47 48 49 52 53 54 57 58 59 72 73 74
+[Single list, pbc on] atom 29: 0 3 4 5 8 9 20 23 24 25 28 30 33 34 45 48 49 50 53 54 55 58 59 70 73 74
+[Single list, pbc on] atom 30: 0 1 4 5 6 9 10 11 14 25 26 29 31 34 35 36 39 50 51 54 55 56 59 60 61 64
+[Single list, pbc on] atom 31: 0 1 2 5 6 7 10 11 12 25 26 27 30 32 35 36 37 50 51 52 55 56 57 60 61 62
+[Single list, pbc on] atom 32: 1 2 3 6 7 8 11 12 13 26 27 28 31 33 36 37 38 51 52 53 56 57 58 61 62 63
+[Single list, pbc on] atom 33: 2 3 4 7 8 9 12 13 14 27 28 29 32 34 37 38 39 52 53 54 57 58 59 62 63 64
+[Single list, pbc on] atom 34: 0 3 4 5 8 9 10 13 14 25 28 29 30 33 35 38 39 50 53 54 55 58 59 60 63 64
+[Single list, pbc on] atom 35: 5 6 9 10 11 14 15 16 19 30 31 34 36 39 40 41 44 55 56 59 60 61 64 65 66 69
+[Single list, pbc on] atom 36: 5 6 7 10 11 12 15 16 17 30 31 32 35 37 40 41 42 55 56 57 60 61 62 65 66 67
+[Single list, pbc on] atom 37: 6 7 8 11 12 13 16 17 18 31 32 33 36 38 41 42 43 56 57 58 61 62 63 66 67 68
+[Single list, pbc on] atom 38: 7 8 9 12 13 14 17 18 19 32 33 34 37 39 42 43 44 57 58 59 62 63 64 67 68 69
+[Single list, pbc on] atom 39: 5 8 9 10 13 14 15 18 19 30 33 34 35 38 40 43 44 55 58 59 60 63 64 65 68 69
+[Single list, pbc on] atom 40: 10 11 14 15 16 19 20 21 24 35 36 39 41 44 45 46 49 60 61 64 65 66 69 70 71 74
+[Single list, pbc on] atom 41: 10 11 12 15 16 17 20 21 22 35 36 37 40 42 45 46 47 60 61 62 65 66 67 70 71 72
+[Single list, pbc on] atom 42: 11 12 13 16 17 18 21 22 23 36 37 38 41 43 46 47 48 61 62 63 66 67 68 71 72 73
+[Single list, pbc on] atom 43: 12 13 14 17 18 19 22 23 24 37 38 39 42 44 47 48 49 62 63 64 67 68 69 72 73 74
+[Single list, pbc on] atom 44: 10 13 14 15 18 19 20 23 24 35 38 39 40 43 45 48 49 60 63 64 65 68 69 70 73 74
+[Single list, pbc on] atom 45: 0 1 4 15 16 19 20 21 24 25 26 29 40 41 44 46 49 50 51 54 65 66 69 70 71 74
+[Single list, pbc on] atom 46: 0 1 2 15 16 17 20 21 22 25 26 27 40 41 42 45 47 50 51 52 65 66 67 70 71 72
+[Single list, pbc on] atom 47: 1 2 3 16 17 18 21 22 23 26 27 28 41 42 43 46 48 51 52 53 66 67 68 71 72 73
+[Single list, pbc on] atom 48: 2 3 4 17 18 19 22 23 24 27 28 29 42 43 44 47 49 52 53 54 67 68 69 72 73 74
+[Single list, pbc on] atom 49: 0 3 4 15 18 19 20 23 24 25 28 29 40 43 44 45 48 50 53 54 65 68 69 70 73 74
+[Single list, pbc on] atom 50: 25 26 29 30 31 34 45 46 49 51 54 55 56 59 70 71 74 75 76 79 80 81 84 95 96 99
+[Single list, pbc on] atom 51: 25 26 27 30 31 32 45 46 47 50 52 55 56 57 70 71 72 75 76 77 80 81 82 95 96 97
+[Single list, pbc on] atom 52: 26 27 28 31 32 33 46 47 48 51 53 56 57 58 71 72 73 76 77 78 81 82 83 96 97 98
+[Single list, pbc on] atom 53: 27 28 29 32 33 34 47 48 49 52 54 57 58 59 72 73 74 77 78 79 82 83 84 97 98 99
+[Single list, pbc on] atom 54: 25 28 29 30 33 34 45 48 49 50 53 55 58 59 70 73 74 75 78 79 80 83 84 95 98 99
+[Single list, pbc on] atom 55: 25 26 29 30 31 34 35 36 39 50 51 54 56 59 60 61 64 75 76 79 80 81 84 85 86 89
+[Single list, pbc on] atom 56: 25 26 27 30 31 32 35 36 37 50 51 52 55 57 60 61 62 75 76 77 80 81 82 85 86 87
+[Single list, pbc on] atom 57: 26 27 28 31 32 33 36 37 38 51 52 53 56 58 61 62 63 76 77 78 81 82 83 86 87 88
+[Single list, pbc on] atom 58: 27 28 29 32 33 34 37 38 39 52 53 54 57 59 62 63 64 77 78 79 82 83 84 87 88 89
+[Single list, pbc on] atom 59: 25 28 29 30 33 34 35 38 39 50 53 54 55 58 60 63 64 75 78 79 80 83 84 85 88 89
+[Single list, pbc on] atom 60: 30 31 34 35 36 39 40 41 44 55 56 59 61 64 65 66 69 80 81 84 85 86 89 90 91 94
+[Single list, pbc on] atom 61: 30 31 32 35 36 37 40 41 42 55 56 57 60 62 65 66 67 80 81 82 85 86 87 90 91 92
+[Single list, pbc on] atom 62: 31 32 33 36 37 38 41 42 43 56 57 58 61 63 66 67 68 81 82 83 86 87 88 91 92 93
+[Single list, pbc on] atom 63: 32 33 34 37 38 39 42 43 44 57 58 59 62 64 67 68 69 82 83 84 87 88 89 92 93 94
+[Single list, pbc on] atom 64: 30 33 34 35 38 39 40 43 44 55 58 59 60 63 65 68 69 80 83 84 85 88 89 90 93 94
+[Single list, pbc on] atom 65: 35 36 39 40 41 44 45 46 49 60 61 64 66 69 70 71 74 85 86 89 90 91 94 95 96 99
+[Single list, pbc on] atom 66: 35 36 37 40 41 42 45 46 47 60 61 62 65 67 70 71 72 85 86 87 90 91 92 95 96 97
+[Single list, pbc on] atom 67: 36 37 38 41 42 43 46 47 48 61 62 63 66 68 71 72 73 86 87 88 91 92 93 96 97 98
+[Single list, pbc on] atom 68: 37 38 39 42 43 44 47 48 49 62 63 64 67 69 72 73 74 87 88 89 92 93 94 97 98 99
+[Single list, pbc on] atom 69: 35 38 39 40 43 44 45 48 49 60 63 64 65 68 70 73 74 85 88 89 90 93 94 95 98 99
+[Single list, pbc on] atom 70: 25 26 29 40 41 44 45 46 49 50 51 54 65 66 69 71 74 75 76 79 90 91 94 95 96 99
+[Single list, pbc on] atom 71: 25 26 27 40 41 42 45 46 47 50 51 52 65 66 67 70 72 75 76 77 90 91 92 95 96 97
+[Single list, pbc on] atom 72: 26 27 28 41 42 43 46 47 48 51 52 53 66 67 68 71 73 76 77 78 91 92 93 96 97 98
+[Single list, pbc on] atom 73: 27 28 29 42 43 44 47 48 49 52 53 54 67 68 69 72 74 77 78 79 92 93 94 97 98 99
+[Single list, pbc on] atom 74: 25 28 29 40 43 44 45 48 49 50 53 54 65 68 69 70 73 75 78 79 90 93 94 95 98 99
+[Single list, pbc on] atom 75: 50 51 54 55 56 59 70 71 74 76 79 80 81 84 95 96 99 100 101 104 105 106 109 120 121 124
+[Single list, pbc on] atom 76: 50 51 52 55 56 57 70 71 72 75 77 80 81 82 95 96 97 100 101 102 105 106 107 120 121 122
+[Single list, pbc on] atom 77: 51 52 53 56 57 58 71 72 73 76 78 81 82 83 96 97 98 101 102 103 106 107 108 121 122 123
+[Single list, pbc on] atom 78: 52 53 54 57 58 59 72 73 74 77 79 82 83 84 97 98 99 102 103 104 107 108 109 122 123 124
+[Single list, pbc on] atom 79: 50 53 54 55 58 59 70 73 74 75 78 80 83 84 95 98 99 100 103 104 105 108 109 120 123 124
+[Single list, pbc on] atom 80: 50 51 54 55 56 59 60 61 64 75 76 79 81 84 85 86 89 100 101 104 105 106 109 110 111 114
+[Single list, pbc on] atom 81: 50 51 52 55 56 57 60 61 62 75 76 77 80 82 85 86 87 100 101 102 105 106 107 110 111 112
+[Single list, pbc on] atom 82: 51 52 53 56 57 58 61 62 63 76 77 78 81 83 86 87 88 101 102 103 106 107 108 111 112 113
+[Single list, pbc on] atom 83: 52 53 54 57 58 59 62 63 64 77 78 79 82 84 87 88 89 102 103 104 107 108 109 112 113 114
+[Single list, pbc on] atom 84: 50 53 54 55 58 59 60 63 64 75 78 79 80 83 85 88 89 100 103 104 105 108 109 110 113 114
+[Single list, pbc on] atom 85: 55 56 59 60 61 64 65 66 69 80 81 84 86 89 90 91 94 105 106 109 110 111 114 115 116 119
+[Single list, pbc on] atom 86: 55 56 57 60 61 62 65 66 67 80 81 82 85 87 90 91 92 105 106 107 110 111 112 115 116 117
+[Single list, pbc on] atom 87: 56 57 58 61 62 63 66 67 68 81 82 83 86 88 91 92 93 106 107 108 111 112 113 116 117 118
+[Single list, pbc on] atom 88: 57 58 59 62 63 64 67 68 69 82 83 84 87 89 92 93 94 107 108 109 112 113 114 117 118 119
+[Single list, pbc on] atom 89: 55 58 59 60 63 64 65 68 69 80 83 84 85 88 90 93 94 105 108 109 110 113 114 115 118 119
+[Single list, pbc on] atom 90: 60 61 64 65 66 69 70 71 74 85 86 89 91 94 95 96 99 110 111 114 115 116 119 120 121 124
+[Single list, pbc on] atom 91: 60 61 62 65 66 67 70 71 72 85 86 87 90 92 95 96 97 110 111 112 115 116 117 120 121 122
+[Single list, pbc on] atom 92: 61 62 63 66 67 68 71 72 73 86 87 88 91 93 96 97 98 111 112 113 116 117 118 121 122 123
+[Single list, pbc on] atom 93: 62 63 64 67 68 69 72 73 74 87 88 89 92 94 97 98 99 112 113 114 117 118 119 122 123 124
+[Single list, pbc on] atom 94: 60 63 64 65 68 69 70 73 74 85 88 89 90 93 95 98 99 110 113 114 115 118 119 120 123 124
+[Single list, pbc on] atom 95: 50 51 54 65 66 69 70 71 74 75 76 79 90 91 94 96 99 100 101 104 115 116 119 120 121 124
+[Single list, pbc on] atom 96: 50 51 52 65 66 67 70 71 72 75 76 77 90 91 92 95 97 100 101 102 115 116 117 120 121 122
+[Single list, pbc on] atom 97: 51 52 53 66 67 68 71 72 73 76 77 78 91 92 93 96 98 101 102 103 116 117 118 121 122 123
+[Single list, pbc on] atom 98: 52 53 54 67 68 69 72 73 74 77 78 79 92 93 94 97 99 102 103 104 117 118 119 122 123 124
+[Single list, pbc on] atom 99: 50 53 54 65 68 69 70 73 74 75 78 79 90 93 94 95 98 100 103 104 115 118 119 120 123 124
+[Single list, pbc on] atom 100: 0 1 4 5 6 9 20 21 24 75 76 79 80 81 84 95 96 99 101 104 105 106 109 120 121 124
+[Single list, pbc on] atom 101: 0 1 2 5 6 7 20 21 22 75 76 77 80 81 82 95 96 97 100 102 105 106 107 120 121 122
+[Single list, pbc on] atom 102: 1 2 3 6 7 8 21 22 23 76 77 78 81 82 83 96 97 98 101 103 106 107 108 121 122 123
+[Single list, pbc on] atom 103: 2 3 4 7 8 9 22 23 24 77 78 79 82 83 84 97 98 99 102 104 107 108 109 122 123 124
+[Single list, pbc on] atom 104: 0 3 4 5 8 9 20 23 24 75 78 79 80 83 84 95 98 99 100 103 105 108 109 120 123 124
+[Single list, pbc on] atom 105: 0 1 4 5 6 9 10 11 14 75 76 79 80 81 84 85 86 89 100 101 104 106 109 110 111 114
+[Single list, pbc on] atom 106: 0 1 2 5 6 7 10 11 12 75 76 77 80 81 82 85 86 87 100 101 102 105 107 110 111 112
+[Single list, pbc on] atom 107: 1 2 3 6 7 8 11 12 13 76 77 78 81 82 83 86 87 88 101 102 103 106 108 111 112 113
+[Single list, pbc on] atom 108: 2 3 4 7 8 9 12 13 14 77 78 79 82 83 84 87 88 89 102 103 104 107 109 112 113 114
+[Single list, pbc on] atom 109: 0 3 4 5 8 9 10 13 14 75 78 79 80 83 84 85 88 89 100 103 104 105 108 110 113 114
+[Single list, pbc on] atom 110: 5 6 9 10 11 14 15 16 19 80 81 84 85 86 89 90 91 94 105 106 109 111 114 115 116 119
+[Single list, pbc on] atom 111: 5 6 7 10 11 12 15 16 17 80 81 82 85 86 87 90 91 92 105 106 107 110 112 115 116 117
+[Single list, pbc on] atom 112: 6 7 8 11 12 13 16 17 18 81 82 83 86 87 88 91 92 93 106 107 108 111 113 116 117 118
+[Single list, pbc on] atom 113: 7 8 9 12 13 14 17 18 19 82 83 84 87 88 89 92 93 94 107 108 109 112 114 117 118 119
+[Single list, pbc on] atom 114: 5 8 9 10 13 14 15 18 19 80 83 84 85 88 89 90 93 94 105 108 109 110 113 115 118 119
+[Single list, pbc on] atom 115: 10 11 14 15 16 19 20 21 24 85 86 89 90 91 94 95 96 99 110 111 114 116 119 120 121 124
+[Single list, pbc on] atom 116: 10 11 12 15 16 17 20 21 22 85 86 87 90 91 92 95 96 97 110 111 112 115 117 120 121 122
+[Single list, pbc on] atom 117: 11 12 13 16 17 18 21 22 23 86 87 88 91 92 93 96 97 98 111 112 113 116 118 121 122 123
+[Single list, pbc on] atom 118: 12 13 14 17 18 19 22 23 24 87 88 89 92 93 94 97 98 99 112 113 114 117 119 122 123 124
+[Single list, pbc on] atom 119: 10 13 14 15 18 19 20 23 24 85 88 89 90 93 94 95 98 99 110 113 114 115 118 120 123 124
+[Single list, pbc on] atom 120: 0 1 4 15 16 19 20 21 24 75 76 79 90 91 94 95 96 99 100 101 104 115 116 119 121 124
+[Single list, pbc on] atom 121: 0 1 2 15 16 17 20 21 22 75 76 77 90 91 92 95 96 97 100 101 102 115 116 117 120 122
+[Single list, pbc on] atom 122: 1 2 3 16 17 18 21 22 23 76 77 78 91 92 93 96 97 98 101 102 103 116 117 118 121 123
+[Single list, pbc on] atom 123: 2 3 4 17 18 19 22 23 24 77 78 79 92 93 94 97 98 99 102 103 104 117 118 119 122 124
+[Single list, pbc on] atom 124: 0 3 4 15 18 19 20 23 24 75 78 79 90 93 94 95 98 99 100 103 104 115 118 119 120 123
+[Two lists, pbc off] atom 0: 1 5 25 31
+[Two lists, pbc off] atom 2: 1 3 7 27 31 33
+[Two lists, pbc off] atom 4: 3 9 29 33
+[Two lists, pbc off] atom 6: 1 5 7 11 25 27 31 35 37
+[Two lists, pbc off] atom 8: 3 7 9 13 27 29 33 37 39
+[Two lists, pbc off] atom 10: 5 11 15 31 35 41
+[Two lists, pbc off] atom 12: 7 11 13 17 31 33 37 41 43
+[Two lists, pbc off] atom 14: 9 13 19 33 39 43
+[Two lists, pbc off] atom 16: 11 15 17 21 35 37 41 45 47
+[Two lists, pbc off] atom 18: 13 17 19 23 37 39 43 47 49
+[Two lists, pbc off] atom 20: 15 21 41 45
+[Two lists, pbc off] atom 22: 17 21 23 41 43 47
+[Two lists, pbc off] atom 24: 19 23 43 49
+[Two lists, pbc off] atom 26: 1 5 7 25 27 31 51 55 57
+[Two lists, pbc off] atom 28: 3 7 9 27 29 33 53 57 59
+[Two lists, pbc off] atom 30: 1 5 11 25 31 35 51 55 61
+[Two lists, pbc off] atom 32: 1 3 7 11 13 27 31 33 37 51 53 57 61 63
+[Two lists, pbc off] atom 34: 3 9 13 29 33 39 53 59 63
+[Two lists, pbc off] atom 36: 5 7 11 15 17 31 35 37 41 55 57 61 65 67
+[Two lists, pbc off] atom 38: 7 9 13 17 19 33 37 39 43 57 59 63 67 69
+[Two lists, pbc off] atom 40: 11 15 21 35 41 45 61 65 71
+[Two lists, pbc off] atom 42: 11 13 17 21 23 37 41 43 47 61 63 67 71 73
+[Two lists, pbc off] atom 44: 13 19 23 39 43 49 63 69 73
+[Two lists, pbc off] atom 46: 15 17 21 41 45 47 65 67 71
+[Two lists, pbc off] atom 48: 17 19 23 43 47 49 67 69 73
+[Two lists, pbc off] atom 50: 25 31 51 55 75 81
+[Two lists, pbc off] atom 52: 27 31 33 51 53 57 77 81 83
+[Two lists, pbc off] atom 54: 29 33 53 59 79 83
+[Two lists, pbc off] atom 56: 25 27 31 35 37 51 55 57 61 75 77 81 85 87
+[Two lists, pbc off] atom 58: 27 29 33 37 39 53 57 59 63 77 79 83 87 89
+[Two lists, pbc off] atom 60: 31 35 41 55 61 65 81 85 91
+[Two lists, pbc off] atom 62: 31 33 37 41 43 57 61 63 67 81 83 87 91 93
+[Two lists, pbc off] atom 64: 33 39 43 59 63 69 83 89 93
+[Two lists, pbc off] atom 66: 35 37 41 45 47 61 65 67 71 85 87 91 95 97
+[Two lists, pbc off] atom 68: 37 39 43 47 49 63 67 69 73 87 89 93 97 99
+[Two lists, pbc off] atom 70: 41 45 65 71 91 95
+[Two lists, pbc off] atom 72: 41 43 47 67 71 73 91 93 97
+[Two lists, pbc off] atom 74: 43 49 69 73 93 99
+[Two lists, pbc off] atom 76: 51 55 57 75 77 81 101 105 107
+[Two lists, pbc off] atom 78: 53 57 59 77 79 83 103 107 109
+[Two lists, pbc off] atom 80: 51 55 61 75 81 85 101 105 111
+[Two lists, pbc off] atom 82: 51 53 57 61 63 77 81 83 87 101 103 107 111 113
+[Two lists, pbc off] atom 84: 53 59 63 79 83 89 103 109 113
+[Two lists, pbc off] atom 86: 55 57 61 65 67 81 85 87 91 105 107 111 115 117
+[Two lists, pbc off] atom 88: 57 59 63 67 69 83 87 89 93 107 109 113 117 119
+[Two lists, pbc off] atom 90: 61 65 71 85 91 95 111 115 121
+[Two lists, pbc off] atom 92: 61 63 67 71 73 87 91 93 97 111 113 117 121 123
+[Two lists, pbc off] atom 94: 63 69 73 89 93 99 113 119 123
+[Two lists, pbc off] atom 96: 65 67 71 91 95 97 115 117 121
+[Two lists, pbc off] atom 98: 67 69 73 93 97 99 117 119 123
+[Two lists, pbc off] atom 100: 75 81 101 105
+[Two lists, pbc off] atom 102: 77 81 83 101 103 107
+[Two lists, pbc off] atom 104: 79 83 103 109
+[Two lists, pbc off] atom 106: 75 77 81 85 87 101 105 107 111
+[Two lists, pbc off] atom 108: 77 79 83 87 89 103 107 109 113
+[Two lists, pbc off] atom 110: 81 85 91 105 111 115
+[Two lists, pbc off] atom 112: 81 83 87 91 93 107 111 113 117
+[Two lists, pbc off] atom 114: 83 89 93 109 113 119
+[Two lists, pbc off] atom 116: 85 87 91 95 97 111 115 117 121
+[Two lists, pbc off] atom 118: 87 89 93 97 99 113 117 119 123
+[Two lists, pbc off] atom 120: 91 95 115 121
+[Two lists, pbc off] atom 122: 91 93 97 117 121 123
+[Two lists, pbc off] atom 1: 0 2 6 26 30 32
+[Two lists, pbc off] atom 3: 2 4 8 28 32 34
+[Two lists, pbc off] atom 5: 0 6 10 26 30 36
+[Two lists, pbc off] atom 7: 2 6 8 12 26 28 32 36 38
+[Two lists, pbc off] atom 9: 4 8 14 28 34 38
+[Two lists, pbc off] atom 11: 6 10 12 16 30 32 36 40 42
+[Two lists, pbc off] atom 13: 8 12 14 18 32 34 38 42 44
+[Two lists, pbc off] atom 15: 10 16 20 36 40 46
+[Two lists, pbc off] atom 17: 12 16 18 22 36 38 42 46 48
+[Two lists, pbc off] atom 19: 14 18 24 38 44 48
+[Two lists, pbc off] atom 21: 16 20 22 40 42 46
+[Two lists, pbc off] atom 23: 18 22 24 42 44 48
+[Two lists, pbc off] atom 25: 0 6 26 30 50 56
+[Two lists, pbc off] atom 27: 2 6 8 26 28 32 52 56 58
+[Two lists, pbc off] atom 29: 4 8 28 34 54 58
+[Two lists, pbc off] atom 31: 0 2 6 10 12 26 30 32 36 50 52 56 60 62
+[Two lists, pbc off] atom 33: 2 4 8 12 14 28 32 34 38 52 54 58 62 64
+[Two lists, pbc off] atom 35: 6 10 16 30 36 40 56 60 66
+[Two lists, pbc off] atom 37: 6 8 12 16 18 32 36 38 42 56 58 62 66 68
+[Two lists, pbc off] atom 39: 8 14 18 34 38 44 58 64 68
+[Two lists, pbc off] atom 41: 10 12 16 20 22 36 40 42 46 60 62 66 70 72
+[Two lists, pbc off] atom 43: 12 14 18 22 24 38 42 44 48 62 64 68 72 74
+[Two lists, pbc off] atom 45: 16 20 40 46 66 70
+[Two lists, pbc off] atom 47: 16 18 22 42 46 48 66 68 72
+[Two lists, pbc off] atom 49: 18 24 44 48 68 74
+[Two lists, pbc off] atom 51: 26 30 32 50 52 56 76 80 82
+[Two lists, pbc off] atom 53: 28 32 34 52 54 58 78 82 84
+[Two lists, pbc off] atom 55: 26 30 36 50 56 60 76 80 86
+[Two lists, pbc off] atom 57: 26 28 32 36 38 52 56 58 62 76 78 82 86 88
+[Two lists, pbc off] atom 59: 28 34 38 54 58 64 78 84 88
+[Two lists, pbc off] atom 61: 30 32 36 40 42 56 60 62 66 80 82 86 90 92
+[Two lists, pbc off] atom 63: 32 34 38 42 44 58 62 64 68 82 84 88 92 94
+[Two lists, pbc off] atom 65: 36 40 46 60 66 70 86 90 96
+[Two lists, pbc off] atom 67: 36 38 42 46 48 62 66 68 72 86 88 92 96 98
+[Two lists, pbc off] atom 69: 38 44 48 64 68 74 88 94 98
+[Two lists, pbc off] atom 71: 40 42 46 66 70 72 90 92 96
+[Two lists, pbc off] atom 73: 42 44 48 68 72 74 92 94 98
+[Two lists, pbc off] atom 75: 50 56 76 80 100 106
+[Two lists, pbc off] atom 77: 52 56 58 76 78 82 102 106 108
+[Two lists, pbc off] atom 79: 54 58 78 84 104 108
+[Two lists, pbc off] atom 81: 50 52 56 60 62 76 80 82 86 100 102 106 110 112
+[Two lists, pbc off] atom 83: 52 54 58 62 64 78 82 84 88 102 104 108 112 114
+[Two lists, pbc off] atom 85: 56 60 66 80 86 90 106 110 116
+[Two lists, pbc off] atom 87: 56 58 62 66 68 82 86 88 92 106 108 112 116 118
+[Two lists, pbc off] atom 89: 58 64 68 84 88 94 108 114 118
+[Two lists, pbc off] atom 91: 60 62 66 70 72 86 90 92 96 110 112 116 120 122
+[Two lists, pbc off] atom 93: 62 64 68 72 74 88 92 94 98 112 114 118 122
+[Two lists, pbc off] atom 95: 66 70 90 96 116 120
+[Two lists, pbc off] atom 97: 66 68 72 92 96 98 116 118 122
+[Two lists, pbc off] atom 99: 68 74 94 98 118
+[Two lists, pbc off] atom 101: 76 80 82 100 102 106
+[Two lists, pbc off] atom 103: 78 82 84 102 104 108
+[Two lists, pbc off] atom 105: 76 80 86 100 106 110
+[Two lists, pbc off] atom 107: 76 78 82 86 88 102 106 108 112
+[Two lists, pbc off] atom 109: 78 84 88 104 108 114
+[Two lists, pbc off] atom 111: 80 82 86 90 92 106 110 112 116
+[Two lists, pbc off] atom 113: 82 84 88 92 94 108 112 114 118
+[Two lists, pbc off] atom 115: 86 90 96 110 116 120
+[Two lists, pbc off] atom 117: 86 88 92 96 98 112 116 118 122
+[Two lists, pbc off] atom 119: 88 94 98 114 118
+[Two lists, pbc off] atom 121: 90 92 96 116 120 122
+[Two lists, pbc off] atom 123: 92 94 98 118 122
+[Two lists, pbc on] atom 0: 1 5 9 21 25 29 31 45 49 101 105 109 121
+[Two lists, pbc on] atom 2: 1 3 7 21 23 27 31 33 47 101 103 107 121 123
+[Two lists, pbc on] atom 4: 3 5 9 23 25 29 33 45 49 103 105 109 123
+[Two lists, pbc on] atom 6: 1 5 7 11 25 27 31 35 37 101 105 107 111
+[Two lists, pbc on] atom 8: 3 7 9 13 27 29 33 37 39 103 107 109 113
+[Two lists, pbc on] atom 10: 5 9 11 15 19 31 35 39 41 105 109 111 115 119
+[Two lists, pbc on] atom 12: 7 11 13 17 31 33 37 41 43 107 111 113 117
+[Two lists, pbc on] atom 14: 5 9 13 15 19 33 35 39 43 105 109 113 115 119
+[Two lists, pbc on] atom 16: 11 15 17 21 35 37 41 45 47 111 115 117 121
+[Two lists, pbc on] atom 18: 13 17 19 23 37 39 43 47 49 113 117 119 123
+[Two lists, pbc on] atom 20: 1 15 19 21 25 29 41 45 49 101 115 119 121
+[Two lists, pbc on] atom 22: 1 3 17 21 23 27 41 43 47 101 103 117 121 123
+[Two lists, pbc on] atom 24: 3 15 19 23 25 29 43 45 49 103 115 119 123
+[Two lists, pbc on] atom 26: 1 5 7 21 25 27 31 45 47 51 55 57 71
+[Two lists, pbc on] atom 28: 3 7 9 23 27 29 33 47 49 53 57 59 73
+[Two lists, pbc on] atom 30: 1 5 9 11 25 29 31 35 39 51 55 59 61
+[Two lists, pbc on] atom 32: 1 3 7 11 13 27 31 33 37 51 53 57 61 63
+[Two lists, pbc on] atom 34: 3 5 9 13 25 29 33 35 39 53 55 59 63
+[Two lists, pbc on] atom 36: 5 7 11 15 17 31 35 37 41 55 57 61 65 67
+[Two lists, pbc on] atom 38: 7 9 13 17 19 33 37 39 43 57 59 63 67 69
+[Two lists, pbc on] atom 40: 11 15 19 21 35 39 41 45 49 61 65 69 71
+[Two lists, pbc on] atom 42: 11 13 17 21 23 37 41 43 47 61 63 67 71 73
+[Two lists, pbc on] atom 44: 13 15 19 23 35 39 43 45 49 63 65 69 73
+[Two lists, pbc on] atom 46: 1 15 17 21 25 27 41 45 47 51 65 67 71
+[Two lists, pbc on] atom 48: 3 17 19 23 27 29 43 47 49 53 67 69 73
+[Two lists, pbc on] atom 50: 25 29 31 45 49 51 55 59 71 75 79 81 95 99
+[Two lists, pbc on] atom 52: 27 31 33 47 51 53 57 71 73 77 81 83 97
+[Two lists, pbc on] atom 54: 25 29 33 45 49 53 55 59 73 75 79 83 95 99
+[Two lists, pbc on] atom 56: 25 27 31 35 37 51 55 57 61 75 77 81 85 87
+[Two lists, pbc on] atom 58: 27 29 33 37 39 53 57 59 63 77 79 83 87 89
+[Two lists, pbc on] atom 60: 31 35 39 41 55 59 61 65 69 81 85 89 91
+[Two lists, pbc on] atom 62: 31 33 37 41 43 57 61 63 67 81 83 87 91 93
+[Two lists, pbc on] atom 64: 33 35 39 43 55 59 63 65 69 83 85 89 93
+[Two lists, pbc on] atom 66: 35 37 41 45 47 61 65 67 71 85 87 91 95 97
+[Two lists, pbc on] atom 68: 37 39 43 47 49 63 67 69 73 87 89 93 97 99
+[Two lists, pbc on] atom 70: 25 29 41 45 49 51 65 69 71 75 79 91 95 99
+[Two lists, pbc on] atom 72: 27 41 43 47 51 53 67 71 73 77 91 93 97
+[Two lists, pbc on] atom 74: 25 29 43 45 49 53 65 69 73 75 79 93 95 99
+[Two lists, pbc on] atom 76: 51 55 57 71 75 77 81 95 97 101 105 107 121
+[Two lists, pbc on] atom 78: 53 57 59 73 77 79 83 97 99 103 107 109 123
+[Two lists, pbc on] atom 80: 51 55 59 61 75 79 81 85 89 101 105 109 111
+[Two lists, pbc on] atom 82: 51 53 57 61 63 77 81 83 87 101 103 107 111 113
+[Two lists, pbc on] atom 84: 53 55 59 63 75 79 83 85 89 103 105 109 113
+[Two lists, pbc on] atom 86: 55 57 61 65 67 81 85 87 91 105 107 111 115 117
+[Two lists, pbc on] atom 88: 57 59 63 67 69 83 87 89 93 107 109 113 117 119
+[Two lists, pbc on] atom 90: 61 65 69 71 85 89 91 95 99 111 115 119 121
+[Two lists, pbc on] atom 92: 61 63 67 71 73 87 91 93 97 111 113 117 121 123
+[Two lists, pbc on] atom 94: 63 65 69 73 85 89 93 95 99 113 115 119 123
+[Two lists, pbc on] atom 96: 51 65 67 71 75 77 91 95 97 101 115 117 121
+[Two lists, pbc on] atom 98: 53 67 69 73 77 79 93 97 99 103 117 119 123
+[Two lists, pbc on] atom 100: 1 5 9 21 75 79 81 95 99 101 105 109 121
+[Two lists, pbc on] atom 102: 1 3 7 21 23 77 81 83 97 101 103 107 121 123
+[Two lists, pbc on] atom 104: 3 5 9 23 75 79 83 95 99 103 105 109 123
+[Two lists, pbc on] atom 106: 1 5 7 11 75 77 81 85 87 101 105 107 111
+[Two lists, pbc on] atom 108: 3 7 9 13 77 79 83 87 89 103 107 109 113
+[Two lists, pbc on] atom 110: 5 9 11 15 19 81 85 89 91 105 109 111 115 119
+[Two lists, pbc on] atom 112: 7 11 13 17 81 83 87 91 93 107 111 113 117
+[Two lists, pbc on] atom 114: 5 9 13 15 19 83 85 89 93 105 109 113 115 119
+[Two lists, pbc on] atom 116: 11 15 17 21 85 87 91 95 97 111 115 117 121
+[Two lists, pbc on] atom 118: 13 17 19 23 87 89 93 97 99 113 117 119 123
+[Two lists, pbc on] atom 120: 1 15 19 21 75 79 91 95 99 101 115 119 121
+[Two lists, pbc on] atom 122: 1 3 17 21 23 77 91 93 97 101 103 117 121 123
+[Two lists, pbc on] atom 1: 0 2 6 20 22 26 30 32 46 100 102 106 120 122
+[Two lists, pbc on] atom 3: 2 4 8 22 24 28 32 34 48 102 104 108 122
+[Two lists, pbc on] atom 5: 0 4 6 10 14 26 30 34 36 100 104 106 110 114
+[Two lists, pbc on] atom 7: 2 6 8 12 26 28 32 36 38 102 106 108 112
+[Two lists, pbc on] atom 9: 0 4 8 10 14 28 30 34 38 100 104 108 110 114
+[Two lists, pbc on] atom 11: 6 10 12 16 30 32 36 40 42 106 110 112 116
+[Two lists, pbc on] atom 13: 8 12 14 18 32 34 38 42 44 108 112 114 118
+[Two lists, pbc on] atom 15: 10 14 16 20 24 36 40 44 46 110 114 116 120
+[Two lists, pbc on] atom 17: 12 16 18 22 36 38 42 46 48 112 116 118 122
+[Two lists, pbc on] atom 19: 10 14 18 20 24 38 40 44 48 110 114 118 120
+[Two lists, pbc on] atom 21: 0 2 16 20 22 26 40 42 46 100 102 116 120 122
+[Two lists, pbc on] atom 23: 2 4 18 22 24 28 42 44 48 102 104 118 122
+[Two lists, pbc on] atom 25: 0 4 6 20 24 26 30 34 46 50 54 56 70 74
+[Two lists, pbc on] atom 27: 2 6 8 22 26 28 32 46 48 52 56 58 72
+[Two lists, pbc on] atom 29: 0 4 8 20 24 28 30 34 48 50 54 58 70 74
+[Two lists, pbc on] atom 31: 0 2 6 10 12 26 30 32 36 50 52 56 60 62
+[Two lists, pbc on] atom 33: 2 4 8 12 14 28 32 34 38 52 54 58 62 64
+[Two lists, pbc on] atom 35: 6 10 14 16 30 34 36 40 44 56 60 64 66
+[Two lists, pbc on] atom 37: 6 8 12 16 18 32 36 38 42 56 58 62 66 68
+[Two lists, pbc on] atom 39: 8 10 14 18 30 34 38 40 44 58 60 64 68
+[Two lists, pbc on] atom 41: 10 12 16 20 22 36 40 42 46 60 62 66 70 72
+[Two lists, pbc on] atom 43: 12 14 18 22 24 38 42 44 48 62 64 68 72 74
+[Two lists, pbc on] atom 45: 0 4 16 20 24 26 40 44 46 50 54 66 70 74
+[Two lists, pbc on] atom 47: 2 16 18 22 26 28 42 46 48 52 66 68 72
+[Two lists, pbc on] atom 49: 0 4 18 20 24 28 40 44 48 50 54 68 70 74
+[Two lists, pbc on] atom 51: 26 30 32 46 50 52 56 70 72 76 80 82 96
+[Two lists, pbc on] atom 53: 28 32 34 48 52 54 58 72 74 78 82 84 98
+[Two lists, pbc on] atom 55: 26 30 34 36 50 54 56 60 64 76 80 84 86
+[Two lists, pbc on] atom 57: 26 28 32 36 38 52 56 58 62 76 78 82 86 88
+[Two lists, pbc on] atom 59: 28 30 34 38 50 54 58 60 64 78 80 84 88
+[Two lists, pbc on] atom 61: 30 32 36 40 42 56 60 62 66 80 82 86 90 92
+[Two lists, pbc on] atom 63: 32 34 38 42 44 58 62 64 68 82 84 88 92 94
+[Two lists, pbc on] atom 65: 36 40 44 46 60 64 66 70 74 86 90 94 96
+[Two lists, pbc on] atom 67: 36 38 42 46 48 62 66 68 72 86 88 92 96 98
+[Two lists, pbc on] atom 69: 38 40 44 48 60 64 68 70 74 88 90 94 98
+[Two lists, pbc on] atom 71: 26 40 42 46 50 52 66 70 72 76 90 92 96
+[Two lists, pbc on] atom 73: 28 42 44 48 52 54 68 72 74 78 92 94 98
+[Two lists, pbc on] atom 75: 50 54 56 70 74 76 80 84 96 100 104 106 120
+[Two lists, pbc on] atom 77: 52 56 58 72 76 78 82 96 98 102 106 108 122
+[Two lists, pbc on] atom 79: 50 54 58 70 74 78 80 84 98 100 104 108 120
+[Two lists, pbc on] atom 81: 50 52 56 60 62 76 80 82 86 100 102 106 110 112
+[Two lists, pbc on] atom 83: 52 54 58 62 64 78 82 84 88 102 104 108 112 114
+[Two lists, pbc on] atom 85: 56 60 64 66 80 84 86 90 94 106 110 114 116
+[Two lists, pbc on] atom 87: 56 58 62 66 68 82 86 88 92 106 108 112 116 118
+[Two lists, pbc on] atom 89: 58 60 64 68 80 84 88 90 94 108 110 114 118
+[Two lists, pbc on] atom 91: 60 62 66 70 72 86 90 92 96 110 112 116 120 122
+[Two lists, pbc on] atom 93: 62 64 68 72 74 88 92 94 98 112 114 118 122
+[Two lists, pbc on] atom 95: 50 54 66 70 74 76 90 94 96 100 104 116 120
+[Two lists, pbc on] atom 97: 52 66 68 72 76 78 92 96 98 102 116 118 122
+[Two lists, pbc on] atom 99: 50 54 68 70 74 78 90 94 98 100 104 118 120
+[Two lists, pbc on] atom 101: 0 2 6 20 22 76 80 82 96 100 102 106 120 122
+[Two lists, pbc on] atom 103: 2 4 8 22 24 78 82 84 98 102 104 108 122
+[Two lists, pbc on] atom 105: 0 4 6 10 14 76 80 84 86 100 104 106 110 114
+[Two lists, pbc on] atom 107: 2 6 8 12 76 78 82 86 88 102 106 108 112
+[Two lists, pbc on] atom 109: 0 4 8 10 14 78 80 84 88 100 104 108 110 114
+[Two lists, pbc on] atom 111: 6 10 12 16 80 82 86 90 92 106 110 112 116
+[Two lists, pbc on] atom 113: 8 12 14 18 82 84 88 92 94 108 112 114 118
+[Two lists, pbc on] atom 115: 10 14 16 20 24 86 90 94 96 110 114 116 120
+[Two lists, pbc on] atom 117: 12 16 18 22 86 88 92 96 98 112 116 118 122
+[Two lists, pbc on] atom 119: 10 14 18 20 24 88 90 94 98 110 114 118 120
+[Two lists, pbc on] atom 121: 0 2 16 20 22 76 90 92 96 100 102 116 120 122
+[Two lists, pbc on] atom 123: 2 4 18 22 24 78 92 94 98 102 104 118 122
+[List of pairs, pbc off] atom 0: 1
+[List of pairs, pbc off] atom 2: 3
+[List of pairs, pbc off] atom 4:
+[List of pairs, pbc off] atom 6: 7
+[List of pairs, pbc off] atom 8: 9
+[List of pairs, pbc off] atom 10: 11
+[List of pairs, pbc off] atom 12: 13
+[List of pairs, pbc off] atom 14:
+[List of pairs, pbc off] atom 16: 17
+[List of pairs, pbc off] atom 18: 19
+[List of pairs, pbc off] atom 20: 21
+[List of pairs, pbc off] atom 22: 23
+[List of pairs, pbc off] atom 24:
+[List of pairs, pbc off] atom 26: 27
+[List of pairs, pbc off] atom 28: 29
+[List of pairs, pbc off] atom 30: 31
+[List of pairs, pbc off] atom 32: 33
+[List of pairs, pbc off] atom 34:
+[List of pairs, pbc off] atom 36: 37
+[List of pairs, pbc off] atom 38: 39
+[List of pairs, pbc off] atom 40: 41
+[List of pairs, pbc off] atom 42: 43
+[List of pairs, pbc off] atom 44:
+[List of pairs, pbc off] atom 46: 47
+[List of pairs, pbc off] atom 48: 49
+[List of pairs, pbc off] atom 50: 51
+[List of pairs, pbc off] atom 52: 53
+[List of pairs, pbc off] atom 54:
+[List of pairs, pbc off] atom 56: 57
+[List of pairs, pbc off] atom 58: 59
+[List of pairs, pbc off] atom 60: 61
+[List of pairs, pbc off] atom 62: 63
+[List of pairs, pbc off] atom 64:
+[List of pairs, pbc off] atom 66: 67
+[List of pairs, pbc off] atom 68: 69
+[List of pairs, pbc off] atom 70: 71
+[List of pairs, pbc off] atom 72: 73
+[List of pairs, pbc off] atom 74:
+[List of pairs, pbc off] atom 76: 77
+[List of pairs, pbc off] atom 78: 79
+[List of pairs, pbc off] atom 80: 81
+[List of pairs, pbc off] atom 82: 83
+[List of pairs, pbc off] atom 84:
+[List of pairs, pbc off] atom 86: 87
+[List of pairs, pbc off] atom 88: 89
+[List of pairs, pbc off] atom 90: 91
+[List of pairs, pbc off] atom 92: 93
+[List of pairs, pbc off] atom 94:
+[List of pairs, pbc off] atom 96: 97
+[List of pairs, pbc off] atom 98: 99
+[List of pairs, pbc off] atom 100: 101
+[List of pairs, pbc off] atom 102: 103
+[List of pairs, pbc off] atom 104:
+[List of pairs, pbc off] atom 106: 107
+[List of pairs, pbc off] atom 108: 109
+[List of pairs, pbc off] atom 110: 111
+[List of pairs, pbc off] atom 112: 113
+[List of pairs, pbc off] atom 114:
+[List of pairs, pbc off] atom 116: 117
+[List of pairs, pbc off] atom 118: 119
+[List of pairs, pbc off] atom 120: 121
+[List of pairs, pbc off] atom 122: 123
+[List of pairs, pbc off] atom 1: 0
+[List of pairs, pbc off] atom 3: 2
+[List of pairs, pbc off] atom 5:
+[List of pairs, pbc off] atom 7: 6
+[List of pairs, pbc off] atom 9: 8
+[List of pairs, pbc off] atom 11: 10
+[List of pairs, pbc off] atom 13: 12
+[List of pairs, pbc off] atom 15:
+[List of pairs, pbc off] atom 17: 16
+[List of pairs, pbc off] atom 19: 18
+[List of pairs, pbc off] atom 21: 20
+[List of pairs, pbc off] atom 23: 22
+[List of pairs, pbc off] atom 25:
+[List of pairs, pbc off] atom 27: 26
+[List of pairs, pbc off] atom 29: 28
+[List of pairs, pbc off] atom 31: 30
+[List of pairs, pbc off] atom 33: 32
+[List of pairs, pbc off] atom 35:
+[List of pairs, pbc off] atom 37: 36
+[List of pairs, pbc off] atom 39: 38
+[List of pairs, pbc off] atom 41: 40
+[List of pairs, pbc off] atom 43: 42
+[List of pairs, pbc off] atom 45:
+[List of pairs, pbc off] atom 47: 46
+[List of pairs, pbc off] atom 49: 48
+[List of pairs, pbc off] atom 51: 50
+[List of pairs, pbc off] atom 53: 52
+[List of pairs, pbc off] atom 55:
+[List of pairs, pbc off] atom 57: 56
+[List of pairs, pbc off] atom 59: 58
+[List of pairs, pbc off] atom 61: 60
+[List of pairs, pbc off] atom 63: 62
+[List of pairs, pbc off] atom 65:
+[List of pairs, pbc off] atom 67: 66
+[List of pairs, pbc off] atom 69: 68
+[List of pairs, pbc off] atom 71: 70
+[List of pairs, pbc off] atom 73: 72
+[List of pairs, pbc off] atom 75:
+[List of pairs, pbc off] atom 77: 76
+[List of pairs, pbc off] atom 79: 78
+[List of pairs, pbc off] atom 81: 80
+[List of pairs, pbc off] atom 83: 82
+[List of pairs, pbc off] atom 85:
+[List of pairs, pbc off] atom 87: 86
+[List of pairs, pbc off] atom 89: 88
+[List of pairs, pbc off] atom 91: 90
+[List of pairs, pbc off] atom 93: 92
+[List of pairs, pbc off] atom 95:
+[List of pairs, pbc off] atom 97: 96
+[List of pairs, pbc off] atom 99: 98
+[List of pairs, pbc off] atom 101: 100
+[List of pairs, pbc off] atom 103: 102
+[List of pairs, pbc off] atom 105:
+[List of pairs, pbc off] atom 107: 106
+[List of pairs, pbc off] atom 109: 108
+[List of pairs, pbc off] atom 111: 110
+[List of pairs, pbc off] atom 113: 112
+[List of pairs, pbc off] atom 115:
+[List of pairs, pbc off] atom 117: 116
+[List of pairs, pbc off] atom 119: 118
+[List of pairs, pbc off] atom 121: 120
+[List of pairs, pbc off] atom 123: 122
+[List of pairs, pbc on] atom 0: 1
+[List of pairs, pbc on] atom 2: 3
+[List of pairs, pbc on] atom 4: 5
+[List of pairs, pbc on] atom 6: 7
+[List of pairs, pbc on] atom 8: 9
+[List of pairs, pbc on] atom 10: 11
+[List of pairs, pbc on] atom 12: 13
+[List of pairs, pbc on] atom 14: 15
+[List of pairs, pbc on] atom 16: 17
+[List of pairs, pbc on] atom 18: 19
+[List of pairs, pbc on] atom 20: 21
+[List of pairs, pbc on] atom 22: 23
+[List of pairs, pbc on] atom 24: 25
+[List of pairs, pbc on] atom 26: 27
+[List of pairs, pbc on] atom 28: 29
+[List of pairs, pbc on] atom 30: 31
+[List of pairs, pbc on] atom 32: 33
+[List of pairs, pbc on] atom 34: 35
+[List of pairs, pbc on] atom 36: 37
+[List of pairs, pbc on] atom 38: 39
+[List of pairs, pbc on] atom 40: 41
+[List of pairs, pbc on] atom 42: 43
+[List of pairs, pbc on] atom 44: 45
+[List of pairs, pbc on] atom 46: 47
+[List of pairs, pbc on] atom 48: 49
+[List of pairs, pbc on] atom 50: 51
+[List of pairs, pbc on] atom 52: 53
+[List of pairs, pbc on] atom 54: 55
+[List of pairs, pbc on] atom 56: 57
+[List of pairs, pbc on] atom 58: 59
+[List of pairs, pbc on] atom 60: 61
+[List of pairs, pbc on] atom 62: 63
+[List of pairs, pbc on] atom 64: 65
+[List of pairs, pbc on] atom 66: 67
+[List of pairs, pbc on] atom 68: 69
+[List of pairs, pbc on] atom 70: 71
+[List of pairs, pbc on] atom 72: 73
+[List of pairs, pbc on] atom 74: 75
+[List of pairs, pbc on] atom 76: 77
+[List of pairs, pbc on] atom 78: 79
+[List of pairs, pbc on] atom 80: 81
+[List of pairs, pbc on] atom 82: 83
+[List of pairs, pbc on] atom 84: 85
+[List of pairs, pbc on] atom 86: 87
+[List of pairs, pbc on] atom 88: 89
+[List of pairs, pbc on] atom 90: 91
+[List of pairs, pbc on] atom 92: 93
+[List of pairs, pbc on] atom 94: 95
+[List of pairs, pbc on] atom 96: 97
+[List of pairs, pbc on] atom 98: 99
+[List of pairs, pbc on] atom 100: 101
+[List of pairs, pbc on] atom 102: 103
+[List of pairs, pbc on] atom 104: 105
+[List of pairs, pbc on] atom 106: 107
+[List of pairs, pbc on] atom 108: 109
+[List of pairs, pbc on] atom 110: 111
+[List of pairs, pbc on] atom 112: 113
+[List of pairs, pbc on] atom 114: 115
+[List of pairs, pbc on] atom 116: 117
+[List of pairs, pbc on] atom 118: 119
+[List of pairs, pbc on] atom 120: 121
+[List of pairs, pbc on] atom 122: 123
+[List of pairs, pbc on] atom 1: 0
+[List of pairs, pbc on] atom 3: 2
+[List of pairs, pbc on] atom 5: 4
+[List of pairs, pbc on] atom 7: 6
+[List of pairs, pbc on] atom 9: 8
+[List of pairs, pbc on] atom 11: 10
+[List of pairs, pbc on] atom 13: 12
+[List of pairs, pbc on] atom 15: 14
+[List of pairs, pbc on] atom 17: 16
+[List of pairs, pbc on] atom 19: 18
+[List of pairs, pbc on] atom 21: 20
+[List of pairs, pbc on] atom 23: 22
+[List of pairs, pbc on] atom 25: 24
+[List of pairs, pbc on] atom 27: 26
+[List of pairs, pbc on] atom 29: 28
+[List of pairs, pbc on] atom 31: 30
+[List of pairs, pbc on] atom 33: 32
+[List of pairs, pbc on] atom 35: 34
+[List of pairs, pbc on] atom 37: 36
+[List of pairs, pbc on] atom 39: 38
+[List of pairs, pbc on] atom 41: 40
+[List of pairs, pbc on] atom 43: 42
+[List of pairs, pbc on] atom 45: 44
+[List of pairs, pbc on] atom 47: 46
+[List of pairs, pbc on] atom 49: 48
+[List of pairs, pbc on] atom 51: 50
+[List of pairs, pbc on] atom 53: 52
+[List of pairs, pbc on] atom 55: 54
+[List of pairs, pbc on] atom 57: 56
+[List of pairs, pbc on] atom 59: 58
+[List of pairs, pbc on] atom 61: 60
+[List of pairs, pbc on] atom 63: 62
+[List of pairs, pbc on] atom 65: 64
+[List of pairs, pbc on] atom 67: 66
+[List of pairs, pbc on] atom 69: 68
+[List of pairs, pbc on] atom 71: 70
+[List of pairs, pbc on] atom 73: 72
+[List of pairs, pbc on] atom 75: 74
+[List of pairs, pbc on] atom 77: 76
+[List of pairs, pbc on] atom 79: 78
+[List of pairs, pbc on] atom 81: 80
+[List of pairs, pbc on] atom 83: 82
+[List of pairs, pbc on] atom 85: 84
+[List of pairs, pbc on] atom 87: 86
+[List of pairs, pbc on] atom 89: 88
+[List of pairs, pbc on] atom 91: 90
+[List of pairs, pbc on] atom 93: 92
+[List of pairs, pbc on] atom 95: 94
+[List of pairs, pbc on] atom 97: 96
+[List of pairs, pbc on] atom 99: 98
+[List of pairs, pbc on] atom 101: 100
+[List of pairs, pbc on] atom 103: 102
+[List of pairs, pbc on] atom 105: 104
+[List of pairs, pbc on] atom 107: 106
+[List of pairs, pbc on] atom 109: 108
+[List of pairs, pbc on] atom 111: 110
+[List of pairs, pbc on] atom 113: 112
+[List of pairs, pbc on] atom 115: 114
+[List of pairs, pbc on] atom 117: 116
+[List of pairs, pbc on] atom 119: 118
+[List of pairs, pbc on] atom 121: 120
+[List of pairs, pbc on] atom 123: 122
