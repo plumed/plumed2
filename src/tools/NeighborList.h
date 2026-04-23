@@ -43,6 +43,7 @@ public:
 private:
   enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
+  bool listBuilded=false;
   bool serial_;
   bool do_pbc_;
   bool useCellList_=false;
@@ -51,6 +52,8 @@ private:
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
+  //The size of this vectior is nallpairs_ if stride==0 (aka the NL is deactivated) or if the size is relatively small
+  //In case neighbors_.size() != nallpairs_,
   std::vector<pairIDs > neighbors_{};
   double distance_;
   size_t nlist0_=0;
@@ -62,7 +65,7 @@ private:
   void initialize();
 /// Return the pair of indexes in the positions array
 /// of the two atoms forming the i-th pair among all possible pairs
-  pairIDs getIndexPair(unsigned i);
+  pairIDs getIndexPair(unsigned i) const;
 /// Extract the list of atoms from the current list of close pairs
   void setRequestList();
 public:
@@ -110,6 +113,10 @@ public:
   double distance() const;
 /// Get the i-th pair of the neighbor list
   pairIDs getClosePair(unsigned i) const;
+/// Get the i-th pair of the neighbor list **THIS ASSUMES THAT THE NL HAS BEEN BUILT** otherwise is UB
+  pairIDs getUpdatedPair(unsigned i) const;
+/// Returns true if it is safe to use getUpdatedPair
+  bool ready() const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i) const;
 /// Get the i-th pair of AtomNumbers from the neighbor list
