@@ -20,6 +20,7 @@ constexpr bool serial = false;
 void testSingleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
 void testDoubleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
 void testPairList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
+void testNoNL(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
 
 void testResult(std::string name,
                 const std::vector<PLMD::AtomNumber> &indexes,
@@ -65,6 +66,10 @@ int main(int argc, char **argv) {
     testDoubleList(true,ofs,comm);
     testPairList(false,ofs,comm);
     testPairList(true,ofs,comm);
+    // an extra test to check for the NL with no NL
+    std::ofstream ofsnl("testNoNL"+rank);
+    testNoNL(false,ofsnl,comm);
+    testNoNL(true,ofsnl,comm);
   }
 #ifdef USE_MPI
   MPI_Finalize();
@@ -180,4 +185,33 @@ void testPairList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) 
   auto indexes=indexesA;
   indexes.insert(indexes.end(),indexesB.begin(),indexesB.end());
   testResult("List of pairs",indexes,do_pbc,nl,ofs);
+}
+
+void testNoNL(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
+  using namespace PLMD;
+  Pbc pbc{};
+  Random rng;
+  std::vector<double> box(9);
+  // a smaller system for sanity
+  std::vector<Vector> atoms(3*3*3);
+  auto d = AtomDistribution::getAtomDistribution("sc");
+//getting some base informations
+  d->frame(atoms,box,0,rng);
+  Tensor mybox{box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]};
+  pbc.setBox(mybox);
+  std::vector<AtomNumber> indexes(atoms.size());
+  std::generate(indexes.begin(),indexes.end(),
+                [i=0]() mutable {return AtomNumber().setIndex(i++);});
+  auto nl=  NeighborList(indexes,
+                         serial,
+                         do_pbc,
+                         pbc,
+                         cm);
+
+  if(nl.getStride()>0) {
+    //you should not be here
+    plumed_assert(false)<<"getstride returned > 0!!!";
+    nl.update(atoms);
+  }
+  testResult("NoNL",indexes,do_pbc,nl,ofs);
 }
