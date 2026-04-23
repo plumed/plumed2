@@ -156,10 +156,10 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   return index;
 }
 
-/** @briefApply the T operation on all the couples in the given collections
+/** @brief Apply the T operation on all the couples in the given collections
 
 The T worker should have a work method that accepts two unsigned integers and expose a public `static constexpr bool dopbc` value.
-The T worker should be copy constructable, and ideally contains only references to the array that should be modfied or a minimum amount of data.
+The T worker should be copy constructable, and ideally contain only references to the array that should be modified and eventually a minimum amount of data.
 
 A very simplified example, this worker does not use the pbcs and pushes only couples if the first index is smaller than the second:
 @code{.cpp}
@@ -209,7 +209,7 @@ void updateWithLC(const LinkCells& cells,
   }
 }
 
-template<bool isSingle=false,bool do_pbc_=false>
+template<bool isSingle=false, bool do_pbc_=false>
 class updaterLC {
   using pairs=NeighborList::pairIDs;
   std::vector<pairs>& nl;
@@ -230,11 +230,11 @@ public:
 };
 
 template<bool do_pbc>
-using updaterLCmulti=updaterLC<true,do_pbc>;
+using updaterLCmulti=updaterLC<true, do_pbc>;
 template<bool do_pbc>
 using updaterLCsingle=updaterLC<true, do_pbc>;
 
-template<bool isSingle=false,bool do_pbc_=false>
+template<bool isSingle=false, bool do_pbc_=false>
 class updaterNL {
   const double d2;
   View<const Vector> positions;
@@ -274,17 +274,16 @@ public:
   }
 };
 template<bool do_pbc>
-using updaterNLmulti=updaterNL<true,do_pbc>;
+using updaterNLmulti=updaterNL<true, do_pbc>;
 template<bool do_pbc>
-using updaterNLsingle=updaterNL<true,do_pbc>;
+using updaterNLsingle=updaterNL<true, do_pbc>;
 
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-  //nt is unused if openmp is not declared
-  const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
+  const unsigned nt=(serial_) ? 1 : OpenMP::getNumThreads();
   if(useCellList_) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
@@ -317,7 +316,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     }
     break;
     case NNStyle::Pair:
-      //in any case if you are here the previous `if` badly broken
+      //in any case if you are here the previous `if` is badly broken
       plumed_error() << "Cell list should not be active with a Pair NL";
     }
 
@@ -464,7 +463,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     }
     break;
     case NNStyle::Pair:
-      //in any case if you are here the previous `if` badly broken
+      //in any case if you are here the previous `if` is badly broken
       plumed_error() << "Cell list should not be active with a Pair NL";
     }
     std::vector<unsigned> local_flat_nl;
@@ -495,7 +494,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       }
       break;
       case NNStyle::Pair:
-        //in any case if you are here the previous `if` badly broken
+        //in any case if you are here the previous `if` is badly broken
         plumed_error() << "Cell list should not be active with a Pair NL";
       }
       #pragma omp critical
