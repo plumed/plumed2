@@ -156,15 +156,134 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   return index;
 }
 
+/** @brief Apply the T operation on all the couples in the given collections
+
+The T worker should have a work method that accepts two unsigned integers and expose a public `static constexpr bool dopbc` value.
+The T worker should be copy constructable, and ideally contain only references to the array that should be modified and eventually a minimum amount of data.
+
+A very simplified example, this worker does not use the pbcs and pushes only couples if the first index is smaller than the second:
+@code{.cpp}
+class myworker {
+  std::vector<std::pair<unsigned, unsigned>>& nl;
+public:
+  static constexpr bool dopbc = false;
+  myworker(std::vector<std::pair<unsigned, unsigned>& nl_)
+    :nl(nl_)
+  {}
+
+  void work(const unsigned A, const unsigned B) {
+    if (A<B) {
+      nl.push_back({A,B});
+    }
+  }
+};
+@endcode
+In the worker construction you can pass the positions and store a view to them and also a pointer/reference to a PBC object to calculate
+distances. In that case you can store the maximum distance, see the PLMD::NeighborList
+*/
+template<typename T>
+void updateWithLC(const LinkCells& cells,
+                  const LinkCells::CellCollection& listA,
+                  const LinkCells::CellCollection& listB,
+                  const unsigned start,
+                  const unsigned end,
+                  T worker) {
+  //worker array
+  std::vector<unsigned> cells_required(27);
+  for(unsigned c = start; c < end; ++c) {
+    auto atomsInC= listA.getCellIndexes(c);
+    if(atomsInC.size()>0) {
+      auto cell = cells.findMyCell(c);
+      unsigned ncells_required=0;
+      //the T::dopbc makes this more clunky to setup (you can't use a lambda)
+      //but ensures that the use of the pbc is coherent with the worker
+      cells.addRequiredCells(cell,ncells_required, cells_required,T::dopbc);
+      for (auto A : atomsInC) {
+        for (unsigned cb=0; cb <ncells_required ; ++cb) {
+          for (auto B : listB.getCellIndexes(cells_required[cb])) {
+            worker.work(A,B);
+          }
+        }
+      }
+    }
+  }
+}
+
+template<bool isSingle=false, bool do_pbc_=false>
+class updaterLC {
+  using pairs=NeighborList::pairIDs;
+  std::vector<pairs>& nl;
+public:
+  static constexpr bool dopbc = do_pbc_;
+  updaterLC(std::vector<pairs>& nl_)
+    :nl(nl_)
+  {}
+
+  void work(const unsigned A, const unsigned B) {
+    if constexpr (isSingle) {
+      if (A>=B) {
+        return;
+      }
+    }
+    nl.push_back({A,B});
+  }
+};
+
+template<bool do_pbc>
+using updaterLCmulti=updaterLC<true, do_pbc>;
+template<bool do_pbc>
+using updaterLCsingle=updaterLC<true, do_pbc>;
+
+template<bool isSingle=false, bool do_pbc_=false>
+class updaterNL {
+  const double d2;
+  View<const Vector> positions;
+  std::vector<unsigned>& flat_nl;
+  const Pbc* pbc;
+public:
+  static constexpr bool dopbc = do_pbc_;
+  updaterNL(const double d2_,
+            const std::vector<Vector>& positions_,
+            std::vector<unsigned>& flat_nl_,
+            const Pbc* pbc_)
+    :d2(d2_),
+     positions(make_const_view(positions_)),
+     flat_nl(flat_nl_),
+     pbc(pbc_)
+  {}
+
+  void work(const unsigned A, const unsigned B) {
+    if constexpr (isSingle) {
+      if (A>=B) {
+        return;
+      }
+    }
+    Vector distance;
+    if constexpr (do_pbc_) {
+      distance=pbc->distance(positions[A],positions[B]);
+    } else {
+      distance=delta(positions[A],positions[B]);
+    }
+    double value=modulo2(distance);
+    if(value<=d2) {
+      //neighbors_.push_back({A,B});
+      flat_nl.push_back(A);
+      flat_nl.push_back(B);
+
+    }
+  }
+};
+template<bool do_pbc>
+using updaterNLmulti=updaterNL<true, do_pbc>;
+template<bool do_pbc>
+using updaterNLsingle=updaterNL<true, do_pbc>;
+
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-#ifdef _OPENMP
-  //nt is unused if openmp is not declared
-  const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
-#endif //_OPENMP
+  const unsigned nt=(serial_) ? 1 : OpenMP::getNumThreads();
   if(useCellList_) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
@@ -172,60 +291,59 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     cells.setCutoff(distance_);
     cells.setupCells(make_const_view(positions),*pbc_);
 
+    //now cells are setup along all MPI ranks
+    //const unsigned stride=(serial_)? 1 : comm.Get_size();
+    //const unsigned rank  =(serial_)? 0 : comm.Get_rank();
+    const auto nc= cells.getNumberOfCells();
+    //const unsigned elementsPerRank = std::ceil(double(nc)/stride);
+    const unsigned int start=0;// rank*elementsPerRank;
+    const unsigned int end = nc;//((start + elementsPerRank)< nc)?(start + elementsPerRank): nc;
+    //Initialization of List A and B is here beausue the access to them is threadsafe (at the moment of writing this)
+    LinkCells::CellCollection listA;
+    LinkCells::CellCollection listB;
     switch (style_) {
     case NNStyle::TwoList: {
-      auto listA = cells.getCollection(View{positions.data(),nlist0_},
-                                       View<const unsigned> {indexesForCells.data(),nlist0_});
-      auto listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-                                       View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+      listA = cells.getCollection(View{positions.data(),nlist0_},
+                                  View<const unsigned> {indexesForCells.data(),nlist0_});
+      listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
-      //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listB.getCellIndexes(cells_required[cb])) {
-                neighbors_.push_back({A,B});
-              }
-            }
-          }
-        }
+    }
+    break;
+    case NNStyle::SingleList: {
+      listA = cells.getCollection(positions,indexesForCells);
+    }
+    break;
+    case NNStyle::Pair:
+      //in any case if you are here the previous `if` is badly broken
+      plumed_error() << "Cell list should not be active with a Pair NL";
+    }
+
+    std::vector<NeighborList::pairIDs> private_nl;
+    switch (style_) {
+    case NNStyle::TwoList: {
+      if (do_pbc_) {
+        updateWithLC(cells,listA,listB,start,end,updaterLCmulti<true>(neighbors_));
+      } else {
+        updateWithLC(cells,listA,listB,start,end,updaterLCmulti<false>(neighbors_));
       }
     }
-    break;//*/
+    break;
     case NNStyle::SingleList: {
-      auto listA = cells.getCollection(positions,indexesForCells);
-      //#pragma omp parallel num_threads(nt)
-      std::vector<unsigned> cells_required(27);
-      for(unsigned c =0; c < cells.getNumberOfCells(); ++c) {
-        auto atomsInC= listA.getCellIndexes(c);
-        if(atomsInC.size()>0) {
-          auto cell = cells.findMyCell(c);
-          unsigned ncells_required=0;
-          cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
-          for (auto A : atomsInC) {
-            for (unsigned cb=0; cb <ncells_required ; ++cb) {
-              for (auto B : listA.getCellIndexes(cells_required[cb])) {
-                if (B>A) {
-                  neighbors_.push_back({A,B});
-                }
-              }
-            }
-          }
-        }
+      if (do_pbc_) {
+        updateWithLC(cells,listA,listA,start,end,updaterLCsingle<true>(neighbors_));
+      } else {
+        updateWithLC(cells,listA,listA,start,end,updaterLCsingle<false>(neighbors_));
       }
     }
     break;
     case NNStyle::Pair:
       plumed_error() << "Cell list should not be active with a Pair NL";
     }
-  } else {
+
+    //the number 1 here is temporary, for testing purpose
+  } else if (style_ == NNStyle::Pair || fullatomlist_.size() < 1) {
     const double d2=distance_*distance_;
     // check if positions array has the correct length
     plumed_assert(positions.size()==fullatomlist_.size());
@@ -262,6 +380,113 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     }
 
     // find total dimension of neighborlist
+    std::vector <int> local_nl_size(stride, 0);
+    local_nl_size[rank] = local_flat_nl.size();
+    if(!serial_) {
+      comm.Sum(&local_nl_size[0], stride);
+    }
+    int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+    if(tot_size!=0) {
+      // merge
+      std::vector<unsigned> merge_nl(tot_size, 0);
+      // calculate vector of displacement
+      std::vector<int> disp(stride);
+      disp[0] = 0;
+      int rank_size = 0;
+      for(unsigned i=0; i<stride-1; ++i) {
+        rank_size += local_nl_size[i];
+        disp[i+1] = rank_size;
+      }
+      // Allgather neighbor list
+      if(comm.initialized()&&!serial_) {
+        comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL),
+                        local_nl_size[rank],
+                        &merge_nl[0],
+                        &local_nl_size[0],
+                        &disp[0]);
+      } else {
+        merge_nl = local_flat_nl;
+      }
+      // resize neighbor stuff
+      neighbors_.resize(tot_size/2);
+      for(int i=0; i<tot_size/2; i++) {
+        unsigned j=2*i;
+        neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+      }
+    }
+  } else {
+
+    const double d2=distance_*distance_;
+    std::vector<unsigned> indexesForCells(fullatomlist_.size());
+    std::iota(indexesForCells.begin(),indexesForCells.end(),0);
+    LinkCells cells(comm);
+    cells.setCutoff(distance_);
+    cells.setupCells(make_const_view(positions),*pbc_);
+    //now cells are setup along all MPI ranks
+    const unsigned stride=(serial_)? 1 : comm.Get_size();
+    const unsigned rank  =(serial_)? 0 : comm.Get_rank();
+    const auto nc= cells.getNumberOfCells();
+    const unsigned elementsPerRank = std::ceil(double(nc)/stride);
+    const unsigned int start= rank*elementsPerRank;
+    const unsigned int end = ((start + elementsPerRank)< nc)?(start + elementsPerRank): nc;
+    //Initialization of List A and B is here beausue the access to them is threadsafe (at the moment of writing this)
+    LinkCells::CellCollection listA;
+    LinkCells::CellCollection listB;
+
+    switch (style_) {
+    case NNStyle::TwoList: {
+      listA = cells.getCollection(View{positions.data(),nlist0_},
+                                  View<const unsigned> {indexesForCells.data(),nlist0_});
+      listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
+                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+      plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
+          << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
+    }
+    break;
+    case NNStyle::SingleList: {
+      listA = cells.getCollection(positions,indexesForCells);
+    }
+    break;
+    case NNStyle::Pair:
+      //in any case if you are here the previous `if` is badly broken
+      plumed_error() << "Cell list should not be active with a Pair NL";
+    }
+    std::vector<unsigned> local_flat_nl;
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<unsigned> private_flat_nl;
+
+      const auto threadNum=PLMD::OpenMP::getThreadNum();
+
+      const unsigned cellsPerThread = std::ceil(double(end-start)/nt);
+      const unsigned int ompstart= start + threadNum*cellsPerThread;
+      const unsigned int ompend = ((ompstart + cellsPerThread)< end)?(ompstart + cellsPerThread): end;
+      switch (style_) {
+      case NNStyle::TwoList: {
+        if (do_pbc_) {
+          updateWithLC(cells,listA,listB,ompstart,ompend,updaterNLmulti<true>(d2,positions,private_flat_nl,pbc_));
+        } else {
+          updateWithLC(cells,listA,listB,ompstart,ompend,updaterNLmulti<false>(d2,positions,private_flat_nl,pbc_));
+        }
+      }
+      break;
+      case NNStyle::SingleList: {
+        if (do_pbc_) {
+          updateWithLC(cells,listA,listA,ompstart,ompend,updaterNLsingle<true>(d2,positions,private_flat_nl,pbc_));
+        } else {
+          updateWithLC(cells,listA,listA,ompstart,ompend,updaterNLsingle<false>(d2,positions,private_flat_nl,pbc_));
+        }
+      }
+      break;
+      case NNStyle::Pair:
+        //in any case if you are here the previous `if` is badly broken
+        plumed_error() << "Cell list should not be active with a Pair NL";
+      }
+      #pragma omp critical
+      local_flat_nl.insert(local_flat_nl.end(),
+                           private_flat_nl.begin(),
+                           private_flat_nl.end());
+    }
     std::vector <int> local_nl_size(stride, 0);
     local_nl_size[rank] = local_flat_nl.size();
     if(!serial_) {
