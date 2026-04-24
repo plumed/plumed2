@@ -320,41 +320,26 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       plumed_error() << "Cell list should not be active with a Pair NL";
     }
 
-    std::vector<unsigned> local_flat_nl;
-    #pragma omp parallel num_threads(nt)
-    {
-      std::vector<NeighborList::pairIDs> private_nl;
-
-      const auto threadNum=PLMD::OpenMP::getThreadNum();
-
-      const unsigned cellsPerThread = std::ceil(double(end-start)/nt);
-      const unsigned int ompstart= start + threadNum*cellsPerThread;
-      const unsigned int ompend = ((ompstart + cellsPerThread)< end)?(ompstart + cellsPerThread): end;
-      switch (style_) {
-      case NNStyle::TwoList: {
-        if (do_pbc_) {
-          updateWithLC(cells,listA,listB,ompstart,ompend,updaterLCmulti<true>(private_nl));
-        } else {
-          updateWithLC(cells,listA,listB,ompstart,ompend,updaterLCmulti<false>(private_nl));
-        }
+    std::vector<NeighborList::pairIDs> private_nl;
+    switch (style_) {
+    case NNStyle::TwoList: {
+      if (do_pbc_) {
+        updateWithLC(cells,listA,listB,start,end,updaterLCmulti<true>(neighbors_));
+      } else {
+        updateWithLC(cells,listA,listB,start,end,updaterLCmulti<false>(neighbors_));
       }
-      break;
-      case NNStyle::SingleList: {
-        if (do_pbc_) {
-          updateWithLC(cells,listA,listA,ompstart,ompend,updaterLCsingle<true>(private_nl));
-        } else {
-          updateWithLC(cells,listA,listA,ompstart,ompend,updaterLCsingle<false>(private_nl));
-        }
+    }
+    break;
+    case NNStyle::SingleList: {
+      if (do_pbc_) {
+        updateWithLC(cells,listA,listA,start,end,updaterLCsingle<true>(neighbors_));
+      } else {
+        updateWithLC(cells,listA,listA,start,end,updaterLCsingle<false>(neighbors_));
       }
-      break;
-      case NNStyle::Pair:
-        plumed_error() << "Cell list should not be active with a Pair NL";
-      }
-
-      #pragma omp critical
-      neighbors_.insert(neighbors_.end(),
-                        private_nl.begin(),
-                        private_nl.end());
+    }
+    break;
+    case NNStyle::Pair:
+      plumed_error() << "Cell list should not be active with a Pair NL";
     }
 
     //the number 1 here is temporary, for testing purpose
