@@ -9,8 +9,9 @@ CCCOM=g++ -m64 -std=c++17 -fconcepts -fPIC
 PLATFORM=lapack
 BLAS_LAPACK_LIBFLAGS=-lpthread -lopenblas
 
-## HDF5: use system installation (apt install libhdf5-dev)
-HDF5_PREFIX=/usr
+## HDF5
+HDF5_CFLAGS  := $(shell pkg-config --cflags hdf5-serial 2>/dev/null || pkg-config --cflags hdf5 2>/dev/null)
+HDF5_LDFLAGS := $(shell pkg-config --libs-only-L hdf5-serial 2>/dev/null || pkg-config --libs-only-L hdf5 2>/dev/null)
 
 ## OpenMP multithreading
 ITENSOR_USE_OMP=1
@@ -43,13 +44,13 @@ ITENSOR_GLIBS=$(patsubst %,$(ITENSOR_LIBDIR)/lib%-g.a, $(ITENSOR_LIBNAMES))
 
 ITENSOR_INCLUDEFLAGS=-I'$(ITENSOR_INCLUDEDIR)' $(BLAS_LAPACK_INCLUDEFLAGS)
 
-ifdef HDF5_PREFIX
+ifneq ($(strip $(HDF5_CFLAGS)),)
 ITENSOR_USE_HDF5 = 1
 # -DH5_USE_110_API: use HDF5 1.10-compatible API on HDF5 >= 1.12, which changed
 # H5Oget_info_by_name to a 5-argument form incompatible with ITensor's h5 utility code.
-ITENSOR_INCLUDEFLAGS += -I$(HDF5_PREFIX)/include -DITENSOR_USE_HDF5 -DH5_USE_110_API
-ITENSOR_LIBFLAGS += -L$(HDF5_PREFIX)/lib -lhdf5 -lhdf5_hl
-ITENSOR_LIBGFLAGS += -L$(HDF5_PREFIX)/lib -lhdf5 -lhdf5_hl
+ITENSOR_INCLUDEFLAGS += $(HDF5_CFLAGS) -DITENSOR_USE_HDF5 -DH5_USE_110_API
+ITENSOR_LIBFLAGS += $(HDF5_LDFLAGS) -lhdf5 -lhdf5_hl
+ITENSOR_LIBGFLAGS += $(HDF5_LDFLAGS) -lhdf5 -lhdf5_hl
 endif
 
 ifndef CCCOM
