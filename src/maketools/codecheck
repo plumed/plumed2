@@ -58,9 +58,12 @@ fi
 
     if [[ $do_modified = false ]]; then
       extra[${#extra[@]}]="${basedir}/configure.ac"
-      extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
     fi
     if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+      #plumedcheck will call "cython" this check may give some problems if you use pyenv
+      if which cython &> /dev/null; then
+         extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
+      fi
       extra[${#extra[@]}]=--global-check
     fi
     # shellcheck disable=SC2086
@@ -68,23 +71,29 @@ fi
       --astyle="${basedir}/astyle/astyle" \
       --astyle-options="${basedir}/.astyle.options" \
       "${extra[@]}" $files
+    if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
     (
     # Addig an extra format check for python files.
     # The settings are in the ruff.toml in the home directory
     # ruff format outputs a list of "would reformat file" followed by a recap
     # "head" discards the recap and awk reformat the error message
       cd "${basedir}"
-      if which ruff &> /dev/null; then
-        python -m ruff format --check \
+      #this uses the same check in the base Makefile
+      if which ruff &>/dev/null; then
+        ruff format --check \
           | grep 'Would reformat' \
           | awk '{ printf "[%s:0] (error) :ruff_format: python ruff formatting non satisfied\n", $3 }' \
             >&2
-        python -m ruff check --output-format concise \
+        #human readable
+        ruff check --output-format concise \
           | head -n -2 \
           | awk '{ printf "[%s] (error) :ruff_check: %s", substr($1,1,length($1)-1), $2;
                    $1=$2="";
                    print $0 }' \
             >&2
+        #machine readable
+        #ruff is "blazingly fast" and we have a few python files:
+        ruff check --output-format sarif -o src/ruff.sarif >&2 || true
       else
         #local error message
         echo "      codecheck did not found ruff:"
@@ -93,12 +102,14 @@ fi
       fi
 
     )
+    fi
   fi
 
   if [ $do_cppcheck == true ]; then
     # we discard configurations introduced in small_vector because they are many and
     # get included in many files
     function docheck(){
+      # With cppcheck 2.16.1 and later you can get a report already in sarif format and put it on the CI alongside the old style of output
       # setting up a function to not repeat the arguments
       # shellcheck disable=SC2086
       cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
@@ -214,5 +225,21 @@ if grep -q 'ruff_' "${FATAL_FILE}"; then
 fi
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
+
+#just a small check to see if python is there
+if [[ $do_local == false ]] && python --version &>/dev/null; then
+# --------------------------------------------------------------------
+#   This converst $FATAL_FILE to the sarif format,
+#   so that it can be integrated with the codeQL stuff in the CI
+#   SARIF is a fancy json with some specific fields
+#
+#   As now this converts only things in this form:
+#   [{file}:{line}] ({severity}) :{id}: {message}
+#   As now the errors in the format:
+#   [global_check] ({severity}) :{id}: {message}
+#   are ignored
+
+  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
+fi
 
 exit 1

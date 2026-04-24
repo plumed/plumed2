@@ -122,7 +122,6 @@ private:
   OFile out_observable_;
   IFile in_restart_;
   bool b_freeze_;
-  bool b_adaptive_;
   bool b_restart_;
   bool b_write_restart_;
   bool b_write_observable_;
@@ -138,7 +137,6 @@ private:
   double max_force_;
   double min_force_;
   double initial_weight_rate_;
-  double threshold_;
   Random rand_;
 
 
@@ -201,28 +199,28 @@ void FISST::registerKeywords(Keywords& keys) {
 FISST::FISST(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   ncvs_(getNumberOfArguments()),
-  current_avg_force_(ncvs_,0.0),
   center_(ncvs_,0.0),
-  //change min_force and max_force to vectors if going to do more than one cv
-  min_force_(0.0),
-  max_force_(0.0),
+  current_avg_force_(ncvs_,0.0),
   in_restart_name_(""),
   out_restart_name_(""),
   out_observable_name_(""),
   fmt_("%e"),
+  initial_weight_dist_("UNIFORM"),
   b_freeze_(false),
   b_restart_(false),
   b_write_restart_(false),
   b_write_observable_(false),
   b_first_restart_sample_(true),
-  n_interpolation_(0),
-  n_samples_(0),
-  initial_weight_rate_(0),
-  initial_weight_dist_("UNIFORM"),
   period_(0),
   reset_period_(0),
   observable_freq_(0),
+  n_interpolation_(0),
+  n_samples_(0),
   kbt_(0.0),
+  //change min_force and max_force to vectors if going to do more than one cv
+  max_force_(0.0),
+  min_force_(0.0),
+  initial_weight_rate_(0),
   value_force2_(NULL) {
   if(ncvs_==0) {
     error("Must specify at least one CV with ARG");
@@ -272,7 +270,7 @@ FISST::FISST(const ActionOptions&ao):
     readInRestart();
   } else {
 
-    if(! kbt_ > 0.0) {
+    if(! (kbt_ > 0.0)) {
       kbt_=getkBT();
     }
 
@@ -412,7 +410,6 @@ void FISST::readInRestart() {
   }
   log.printf("  with forces from min_force=%e to max_force=%e over %i bins\n",min_force_,max_force_,n_interpolation_);
 
-  unsigned int N = 0;
   std::string cv_name;
   double tmp, time;
 
@@ -435,7 +432,6 @@ void FISST::readInRestart() {
         in_restart_.scanField(cv_name + "_z"+std::to_string(j),partition_estimate_[j]);
       }
     }
-    N++;
 
     in_restart_.scanField();
   }
@@ -561,7 +557,7 @@ void FISST::calculate() {
 
 void FISST::apply_bias() {
   //Compute linear force as in "restraint"
-  double ene = 0, totf2 = 0, cv, m, f;
+  double ene = 0, totf2 = 0, cv;
 
   for(unsigned int i = 0; i < ncvs_; ++i) {
     cv = difference(i, center_[i], getArgument(i));

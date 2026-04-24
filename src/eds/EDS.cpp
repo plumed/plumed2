@@ -220,7 +220,6 @@ private:
   bool b_write_restart_;
   bool b_lm_;
   bool b_virial_;
-  bool b_update_virial_;
   bool b_weights_;
   int seed_;
   int update_period_;
@@ -346,7 +345,6 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
   max_logweight_(0.0),
   wsum_(0.0),
   value_force2_(NULL) {
-  double temp = -1.0;
   bool b_mean = false;
   std::vector<Value *> wvalues;
 
