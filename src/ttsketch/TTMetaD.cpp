@@ -25,7 +25,6 @@ class TTMetaD : public Bias {
 
 private:
   struct Gaussian {
-    bool multivariate;
     double height;
     std::vector<double> center;
     std::vector<double> sigma;
