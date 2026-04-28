@@ -77,8 +77,8 @@ jobs:
       run: |
         ITENSOR_DIR="$HOME/opt/itensor"
         HDF5_CFLAGS=$(pkg-config --cflags hdf5-serial 2>/dev/null || pkg-config --cflags hdf5 2>/dev/null || echo "-I/usr/include/hdf5/serial")
-        HDF5_LIBDIR=$(pkg-config --variable=libdir hdf5-serial 2>/dev/null || pkg-config --variable=libdir hdf5 2>/dev/null || echo "/usr/lib/x86_64-linux-gnu/hdf5/serial")
-        echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib -L${HDF5_LIBDIR}" >> $GITHUB_ENV
+        HDF5_LIBDIR=$(pkg-config hdf5-serial --libs-only-L 2>/dev/null || pkg-config hdf5 --libs-only-L 2>/dev/null || echo "-L/usr/lib/x86_64-linux-gnu/hdf5/serial")
+        echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
         # temporary until configure.ac is updated to detect ITensor
         echo "CXXFLAGS=-O3 -fconcepts" >> $GITHUB_ENV
