@@ -17,10 +17,10 @@
 #define check(arg) (((arg)) ? "pass\n" : "not pass\n")
 
 constexpr bool serial = false;
-void testSingleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
-void testDoubleList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
-void testPairList(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
-void testNoNL(bool do_pbc, std::ostream& ofs, PLMD::Communicator& comm);
+void testSingleList(bool do_pbc, std::ostream& ofs, std::ostream& initFile, PLMD::Communicator& comm);
+void testDoubleList(bool do_pbc, std::ostream& ofs, std::ostream& initFile, PLMD::Communicator& comm);
+void testPairList(bool do_pbc,   std::ostream& ofs, std::ostream& initFile, PLMD::Communicator& comm);
+void testNoNL(bool do_pbc,       std::ostream& ofs, std::ostream& initFile, PLMD::Communicator& comm);
 
 void testResult(std::string name,
                 const std::vector<PLMD::AtomNumber> &indexes,
@@ -60,23 +60,24 @@ int main(int argc, char **argv) {
       rank=std::to_string(myrank);
     }
     std::ofstream ofs("unitTest"+rank);
-    testSingleList(false,ofs,comm);
-    testSingleList(true,ofs,comm);
-    testDoubleList(false,ofs,comm);
-    testDoubleList(true,ofs,comm);
-    testPairList(false,ofs,comm);
-    testPairList(true,ofs,comm);
+    std::ofstream initfile("initCheck"+rank);
+    testSingleList(false,ofs,initfile,comm);
+    testSingleList(true, ofs,initfile,comm);
+    testDoubleList(false,ofs,initfile,comm);
+    testDoubleList(true, ofs,initfile,comm);
+    testPairList(false,ofs,initfile,comm);
+    testPairList(true, ofs,initfile,comm);
     // an extra test to check for the NL with no NL
     std::ofstream ofsnl("testNoNL"+rank);
-    testNoNL(false,ofsnl,comm);
-    testNoNL(true,ofsnl,comm);
+    testNoNL(false,ofsnl,initfile,comm);
+    testNoNL(true, ofsnl,initfile,comm);
   }
 #ifdef USE_MPI
   MPI_Finalize();
 #endif //USE_MPI
 }
 
-void testSingleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
+void testSingleList(const bool do_pbc, std::ostream& ofs, std::ostream& initfile, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
@@ -98,11 +99,15 @@ void testSingleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm
                          cm,
                          cutoff,
                          1);
+  initfile << "Single list: ready() before update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   nl.update(atoms);
+  initfile << "Single list: ready() after update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   testResult("Single list",indexes,do_pbc,nl,ofs);
 }
 
-void testDoubleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
+void testDoubleList(const bool do_pbc, std::ostream& ofs, std::ostream& initfile, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
@@ -140,12 +145,16 @@ void testDoubleList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm
     atoms_indexed[i] = atoms[indexesA[i].index()];
     atoms_indexed[i+indexesA.size()] = atoms[indexesB[i].index()];
   }
+  initfile << "Two lists: ready() before update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   nl.update(atoms_indexed);
+  initfile << "Two lists: ready() after update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   auto indexes=indexesA;
   indexes.insert(indexes.end(),indexesB.begin(),indexesB.end());
   testResult("Two lists",indexes,do_pbc,nl,ofs);
 }
-void testPairList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
+void testPairList(const bool do_pbc, std::ostream& ofs, std::ostream& initfile, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
@@ -181,13 +190,17 @@ void testPairList(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) 
     atoms_indexed[i] = atoms[indexesA[i].index()];
     atoms_indexed[i+indexesA.size()] = atoms[indexesB[i].index()];
   }
+  initfile << "List of pairs: ready() before update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   nl.update(atoms_indexed);
+  initfile << "List of pairs: ready() after update returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   auto indexes=indexesA;
   indexes.insert(indexes.end(),indexesB.begin(),indexesB.end());
   testResult("List of pairs",indexes,do_pbc,nl,ofs);
 }
 
-void testNoNL(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
+void testNoNL(const bool do_pbc, std::ostream& ofs, std::ostream& initfile, PLMD::Communicator& cm) {
   using namespace PLMD;
   Pbc pbc{};
   Random rng;
@@ -208,6 +221,8 @@ void testNoNL(const bool do_pbc, std::ostream& ofs, PLMD::Communicator& cm) {
                          pbc,
                          cm);
 
+  initfile << "NoNL: ready() (always) returns \""
+           << (nl.ready() ? "true" : "false")  << "\"\n";
   if(nl.getStride()>0) {
     //you should not be here
     plumed_assert(false)<<"getstride returned > 0!!!";
