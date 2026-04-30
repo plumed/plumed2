@@ -44,9 +44,10 @@ private:
                          GYRATION_3_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_3, GYRATION_2_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_2, GYRATION_1_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_1
                         } rg_type{RADIUS};
   bool nopbc;
-  std::vector<double> value;
-  std::vector<double> derivs;
+  std::vector<precision> value;
+  std::vector<precision> derivs;
 public:
+  //move this on top of the class so that the two vectors above will know what precision is
   using precision = T;
   static void registerKeywords(Keywords& keys);
   explicit Gyration(const ActionOptions&);
