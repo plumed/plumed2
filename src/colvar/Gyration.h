@@ -26,17 +26,16 @@
 #include "MultiColvarTemplate.h"
 #include "core/PlumedMain.h"
 
-// The number of types of gyration are defined here
-// The enum then contains double the number of types defined here as you can do every one of them with
-// masses as weights or with unit weights
-#define NUMBER_OF_GYRATION_TYPES 11
-
 namespace PLMD {
 namespace colvar {
 
 template <typename T=double>
 class Gyration : public Colvar {
 private:
+// The number of types of gyration are defined here
+// The enum then contains double the number of types defined here as you can do every one of them with
+// masses as weights or with unit weights
+static constexpr unsigned NUMBER_OF_GYRATION_TYPES = 11;
   enum class CV_TYPE:unsigned {RADIUS=0, TRACE=1, GTPC_1=2, GTPC_2=3, GTPC_3=4, ASPHERICITY=5, ACYLINDRICITY=6, KAPPA2=7, GYRATION_3=8, GYRATION_2=9, GYRATION_1=10,
                          RADIUS_MASS=NUMBER_OF_GYRATION_TYPES+RADIUS,TRACE_MASS=NUMBER_OF_GYRATION_TYPES+TRACE,
                          GTPC_1_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_1, GTPC_2_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_2, GTPC_3_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_3,
