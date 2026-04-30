@@ -36,15 +36,15 @@ private:
 // The enum then contains double the number of types defined here as you can do every one of them with
 // masses as weights or with unit weights
 static constexpr unsigned NUMBER_OF_GYRATION_TYPES = 11;
-  enum class CV_TYPE:unsigned {RADIUS=0, TRACE=1, GTPC_1=2, GTPC_2=3, GTPC_3=4, ASPHERICITY=5, ACYLINDRICITY=6, KAPPA2=7, GYRATION_3=8, GYRATION_2=9, GYRATION_1=10,
+  enum CV_TYPE:unsigned {RADIUS=0, TRACE=1, GTPC_1=2, GTPC_2=3, GTPC_3=4, ASPHERICITY=5, ACYLINDRICITY=6, KAPPA2=7, GYRATION_3=8, GYRATION_2=9, GYRATION_1=10,
                          RADIUS_MASS=NUMBER_OF_GYRATION_TYPES+RADIUS,TRACE_MASS=NUMBER_OF_GYRATION_TYPES+TRACE,
                          GTPC_1_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_1, GTPC_2_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_2, GTPC_3_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_3,
                          ASPHERICITY_MASS=NUMBER_OF_GYRATION_TYPES+ASPHERICITY, ACYLINDRICITY_MASS=NUMBER_OF_GYRATION_TYPES+ACYLINDRICITY, KAPPA2_MASS=NUMBER_OF_GYRATION_TYPES+KAPPA2,
                          GYRATION_3_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_3, GYRATION_2_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_2, GYRATION_1_MASS=NUMBER_OF_GYRATION_TYPES+GYRATION_1
                         } rg_type{RADIUS};
   bool nopbc;
-  std::vector<precision> value;
-  std::vector<precision> derivs;
+  std::vector<T> value;
+  std::vector<T> derivs;
 public:
   //move this on top of the class so that the two vectors above will know what precision is
   using precision = T;
@@ -220,21 +220,21 @@ template <typename T>
 void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
 
   Vector com;
-  double totmass = 0.;
+  T totmass = 0.;
   if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       totmass+=cvin.mass[i];
       com+=cvin.mass[i]*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
     }
   } else {
-    totmass = static_cast<double>(cvin.pos.size());
+    totmass = static_cast<T>(cvin.pos.size());
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       com+=Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
     }
   }
   com /= totmass;
 
-  double rgyr=0.;
+  T rgyr=0.;
 
   if(cvin.mode==CV_TYPE::RADIUS||cvin.mode==CV_TYPE::TRACE||cvin.mode==CV_TYPE::RADIUS_MASS||cvin.mode==CV_TYPE::TRACE_MASS) {
     if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
@@ -250,7 +250,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
         cvout.derivs[0][i] = diff;
       }
     }
-    double fact;
+    T fact;
     if(cvin.mode==CV_TYPE::RADIUS||cvin.mode==CV_TYPE::RADIUS_MASS) {
       rgyr = std::sqrt(rgyr/totmass);
       fact = 1./(rgyr*totmass);
@@ -304,7 +304,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   transf=transpose(ttransf);
   //sort eigenvalues and eigenvectors
   if (princ_comp[0]<princ_comp[1]) {
-    double tmp=princ_comp[0];
+    T tmp=princ_comp[0];
     princ_comp[0]=princ_comp[1];
     princ_comp[1]=tmp;
     for (unsigned i=0; i<3; i++) {
@@ -314,7 +314,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   }
   if (princ_comp[1]<princ_comp[2]) {
-    double tmp=princ_comp[1];
+    T tmp=princ_comp[1];
     princ_comp[1]=princ_comp[2];
     princ_comp[2]=tmp;
     for (unsigned i=0; i<3; i++) {
@@ -324,7 +324,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   }
   if (princ_comp[0]<princ_comp[1]) {
-    double tmp=princ_comp[0];
+    T tmp=princ_comp[0];
     princ_comp[0]=princ_comp[1];
     princ_comp[1]=tmp;
     for (unsigned i=0; i<3; i++) {
@@ -334,7 +334,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   }
   //calculate determinant of transformation matrix
-  double det = determinant(transf);
+  T det = determinant(transf);
   // transformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
   if(det<0) {
     for(unsigned j=0; j<3; j++) {
@@ -363,7 +363,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
       pc_index = pc_index - NUMBER_OF_GYRATION_TYPES;
     }
     rgyr=std::sqrt(princ_comp[pc_index]/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if(rm>1e-6) {
       prefactor[pc_index]=1.0/rm;  //some parts of derivate
     }
@@ -372,7 +372,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case GYRATION_3:
   case GYRATION_3_MASS: {      //the smallest principal radius of gyration
     rgyr=std::sqrt((princ_comp[1]+princ_comp[2])/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[1]=1.0/rm;
       prefactor[2]=1.0/rm;
@@ -382,7 +382,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case GYRATION_2:
   case GYRATION_2_MASS: {     //the midle principal radius of gyration
     rgyr=std::sqrt((princ_comp[0]+princ_comp[2])/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]=1.0/rm;
       prefactor[2]=1.0/rm;
@@ -392,7 +392,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case GYRATION_1:
   case GYRATION_1_MASS: {    //the largest principal radius of gyration
     rgyr=std::sqrt((princ_comp[0]+princ_comp[1])/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]=1.0/rm;
       prefactor[1]=1.0/rm;
@@ -402,7 +402,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case ASPHERICITY:
   case ASPHERICITY_MASS: {
     rgyr=std::sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]= 1.0/rm;
       prefactor[1]=-0.5/rm;
@@ -413,7 +413,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case ACYLINDRICITY:
   case ACYLINDRICITY_MASS: {
     rgyr=std::sqrt((princ_comp[1]-princ_comp[2])/totmass);
-    double rm = rgyr*totmass;
+    T rm = rgyr*totmass;
     if (rm>1e-6) {  //avoid division by zero
       prefactor[1]= 1.0/rm;
       prefactor[2]=-1.0/rm;
@@ -422,8 +422,8 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   }
   case KAPPA2:
   case KAPPA2_MASS: { // relative shape anisotropy
-    double trace = princ_comp[0]+princ_comp[1]+princ_comp[2];
-    double tmp=princ_comp[0]*princ_comp[1]+ princ_comp[1]*princ_comp[2]+ princ_comp[0]*princ_comp[2];
+    T trace = princ_comp[0]+princ_comp[1]+princ_comp[2];
+    T tmp=princ_comp[0]*princ_comp[1]+ princ_comp[1]*princ_comp[2]+ princ_comp[0]*princ_comp[2];
     rgyr=1.0-3*(tmp/(trace*trace));
     if (rgyr>1e-6) {
       prefactor[0]= -3*((princ_comp[1]+princ_comp[2])-2*tmp/trace)/(trace*trace) *2;
