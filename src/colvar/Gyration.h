@@ -35,7 +35,7 @@ private:
 // The number of types of gyration are defined here
 // The enum then contains double the number of types defined here as you can do every one of them with
 // masses as weights or with unit weights
-static constexpr unsigned NUMBER_OF_GYRATION_TYPES = 11;
+  static constexpr unsigned NUMBER_OF_GYRATION_TYPES = 11;
   enum CV_TYPE:unsigned {RADIUS=0, TRACE=1, GTPC_1=2, GTPC_2=3, GTPC_3=4, ASPHERICITY=5, ACYLINDRICITY=6, KAPPA2=7, GYRATION_3=8, GYRATION_2=9, GYRATION_1=10,
                          RADIUS_MASS=NUMBER_OF_GYRATION_TYPES+RADIUS,TRACE_MASS=NUMBER_OF_GYRATION_TYPES+TRACE,
                          GTPC_1_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_1, GTPC_2_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_2, GTPC_3_MASS=NUMBER_OF_GYRATION_TYPES+GTPC_3,
@@ -219,17 +219,17 @@ void Gyration<T>::calculate() {
 template <typename T>
 void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout ) {
 
-  Vector com;
+  VectorTyped<T,3> com;
   T totmass = 0.;
   if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       totmass+=cvin.mass[i];
-      com+=cvin.mass[i]*Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
+      com+=cvin.mass[i]*VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
     }
   } else {
     totmass = static_cast<T>(cvin.pos.size());
     for(unsigned i=0; i<cvin.pos.size(); i++) {
-      com+=Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
+      com+=VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]);
     }
   }
   com /= totmass;
@@ -239,13 +239,13 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   if(cvin.mode==CV_TYPE::RADIUS||cvin.mode==CV_TYPE::TRACE||cvin.mode==CV_TYPE::RADIUS_MASS||cvin.mode==CV_TYPE::TRACE_MASS) {
     if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
       for(unsigned i=0; i<cvin.pos.size(); i++) {
-        auto diff = delta( com, Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+        auto diff = delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
         rgyr          += cvin.mass[i]*diff.modulo2();
         cvout.derivs[0][i] = cvin.mass[i]*diff;
       }
     } else {
       for(unsigned i=0; i<cvin.pos.size(); i++) {
-        const Vector diff = delta( com, Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+        const VectorTyped<T,3> diff = delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
         rgyr          += diff.modulo2();
         cvout.derivs[0][i] = diff;
       }
@@ -269,11 +269,11 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   }
 
 
-  Tensor3d gyr_tens;
+  TensorTyped<T,3,3> gyr_tens;
   //calculate gyration tensor
   if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
-      const Vector diff=delta( com, Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+      const VectorTyped<T,3> diff=delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
       gyr_tens[0][0]+=cvin.mass[i]*diff[0]*diff[0];
       gyr_tens[1][1]+=cvin.mass[i]*diff[1]*diff[1];
       gyr_tens[2][2]+=cvin.mass[i]*diff[2]*diff[2];
@@ -283,7 +283,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   } else {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
-      const Vector diff=delta( com, Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+      const VectorTyped<T,3> diff=delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
       gyr_tens[0][0]+=diff[0]*diff[0];
       gyr_tens[1][1]+=diff[1]*diff[1];
       gyr_tens[2][2]+=diff[2]*diff[2];
@@ -297,8 +297,8 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   gyr_tens[1][0] = gyr_tens[0][1];
   gyr_tens[2][0] = gyr_tens[0][2];
   gyr_tens[2][1] = gyr_tens[1][2];
-  Tensor3d ttransf,transf;
-  Vector princ_comp,prefactor;
+  TensorTyped<T,3,3> ttransf,transf;
+  VectorTyped<T,3> princ_comp,prefactor;
   //diagonalize gyration tensor
   diagMatSym(gyr_tens, princ_comp, ttransf);
   transf=transpose(ttransf);
@@ -358,7 +358,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
   case GTPC_1_MASS:
   case GTPC_2_MASS:
   case GTPC_3_MASS: {
-    int pc_index = cvin.mode-2; //index of principal component
+    unsigned pc_index = cvin.mode-2; //index of principal component
     if( pc_index>=NUMBER_OF_GYRATION_TYPES ) {
       pc_index = pc_index - NUMBER_OF_GYRATION_TYPES;
     }
@@ -436,8 +436,8 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
 
   if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
-      Vector tX;
-      const Vector diff=delta( com,Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+      VectorTyped<T,3> tX;
+      const VectorTyped<T,3> diff=delta( com,VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
       //project atomic postional vectors to diagonalized frame
       for(unsigned j=0; j<3; j++) {
         tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
@@ -449,8 +449,8 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   } else {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
-      Vector tX;
-      const Vector diff=delta( com, Vector(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
+      VectorTyped<T,3> tX;
+      const VectorTyped<T,3> diff=delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
       //project atomic postional vectors to diagonalized frame
       for(unsigned j=0; j<3; j++) {
         tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
