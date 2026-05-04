@@ -104,6 +104,7 @@ NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
   constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
+  //this checks the upper limit of the memory
   if(!std::getenv(envKey)) {
     //blocking memory allocation on more than 10 GB of memory
     //A single list of more than 50000 atoms
@@ -119,15 +120,23 @@ void NeighborList::initialize() {
     }
   }
   try {
-    neighbors_.resize(nallpairs_);
+    //preallocating some memory now to not spend too much time in the first update
+    // If the memory is underestimated it should be less than doubled if needed, the factor should depend on the implementation
+    //Asserting 20 maximun neigbors to occupy less memory
+    neighbors_.resize((stride_==0 || style_ == NNStyle::Pair) ?
+                      nallpairs_
+                      : (std::min((nlist0_*((useCellList_)?100:30)),nallpairs_)));
   } catch (...) {
     plumed_error_nested() << "An error happened while allocating the neighbor "
                           "list, please decrease the number of atoms used";
   }
-  //TODO: test if this is feasible for accelerating the loop
-  //#pragma omp parallel for default(shared)
-  for(unsigned int i=0; i<nallpairs_; ++i) {
-    neighbors_[i]=getIndexPair(i);
+  if (nallpairs_ == neighbors_.size()) {
+    //TODO: test if this is feasible for accelerating the loop
+    //#pragma omp parallel for default(shared)
+    for(unsigned int i=0; i<nallpairs_; ++i) {
+      neighbors_[i]=getIndexPair(i);
+    }
+    listBuilded=true;
   }
 }
 
@@ -135,7 +144,7 @@ std::vector<AtomNumber>& NeighborList::getFullAtomList() {
   return fullatomlist_;
 }
 
-NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
+NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) const {
   pairIDs index;
   switch (style_) {
   case NNStyle::Pair : {
@@ -297,6 +306,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
       }
     }
   }
+  listBuilded=true;
   if (stride_ >1) {
     setRequestList();
   } else {
@@ -357,29 +367,64 @@ void NeighborList::setLastUpdate(const unsigned step) {
 }
 
 unsigned NeighborList::size() const {
+  if(!listBuilded) {
+    return nallpairs_;
+  }
   return neighbors_.size();
+
 }
 
 NeighborList::pairIDs NeighborList::getClosePair(const unsigned i) const {
+  if(listBuilded) {
+    return neighbors_[i];
+  } else {
+    return getIndexPair(i);
+  }
+}
+
+NeighborList::pairIDs NeighborList::getUpdatedPair(const unsigned i) const {
+  plumed_dbg_assert(listBuilded) << "NeighborList::getUpdatedPair should be called after update()";
   return neighbors_[i];
+}
+
+bool NeighborList::ready() const {
+  return listBuilded || neighbors_.size()==nallpairs_;
 }
 
 NeighborList::pairAtomNumbers
 NeighborList::getClosePairAtomNumber(const unsigned i) const {
-  pairAtomNumbers Aneigh=pairAtomNumbers(
-                           fullatomlist_[neighbors_[i].first],
-                           fullatomlist_[neighbors_[i].second]);
-  return Aneigh;
+  if(listBuilded)
+    return pairAtomNumbers{
+    fullatomlist_[neighbors_[i].first],
+    fullatomlist_[neighbors_[i].second]};
+  else {
+    auto p = getIndexPair(i);
+    return pairAtomNumbers{
+      fullatomlist_[p.first],
+      fullatomlist_[p.second]};
+  }
 }
 
 std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) const {
   std::vector<unsigned> neighbors;
-  for(unsigned int i=0; i<size(); ++i) {
-    if(neighbors_[i].first==index) {
-      neighbors.push_back(neighbors_[i].second);
+  if (listBuilded) {
+    for(unsigned int i=0; i<size(); ++i) {
+      if(neighbors_[i].first==index) {
+        neighbors.push_back(neighbors_[i].second);
+      }
+      if(neighbors_[i].second==index) {
+        neighbors.push_back(neighbors_[i].first);
+      }
     }
-    if(neighbors_[i].second==index) {
-      neighbors.push_back(neighbors_[i].first);
+  } else {
+    for(unsigned int i=0; i<size(); ++i) {
+      auto neigh = getClosePair(i);
+      if(neigh.first==index) {
+        neighbors.push_back(neigh.second);
+      }
+      if(neigh.second==index) {
+        neighbors.push_back(neigh.first);
+      }
     }
   }
   return neighbors;
