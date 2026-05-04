@@ -133,7 +133,7 @@ jobs:
         echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
         sudo apt-get update
         #sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
-        sudo apt-get install intel-basekit intel-hpckit
+        sudo apt-get install intel-basekit intel-hpckit intel-oneapi-compiler-fortran
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CXX=icpx" >> $GITHUB_ENV
