@@ -99,6 +99,43 @@ struct tiledSimpleCubic:public AtomDistribution {
              Random& rng) override;
 };
 
+/// This FCC is contained in a orthogonal cubic box
+///
+/// Fun facts: full cubes at 4, 32, 108, 256, 500 atoms and so on.
+///
+/// At certain sizes above the ones above (36, 504), you get
+/// good (100) slabs quite separated on th z axis
+struct inscribedFaceCenteredCubic:public AtomDistribution {
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned /*step*/,
+             Random& rng) override;
+};
+
+/// This FCC is contained in a "standard" FCC box
+struct tiledFaceCenteredCubic:public AtomDistribution {
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned /*step*/,
+             Random& rng) override;
+};
+
+/// This BCC is contained in a orthogonal cubic box
+struct inscribedBodyCenteredCubic:public AtomDistribution {
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned /*step*/,
+             Random& rng) override;
+};
+
+/// This BCC is contained in a "standard" FCC box
+struct tiledBodyCenteredCubic:public AtomDistribution {
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned /*step*/,
+             Random& rng) override;
+};
+
 /// atomic distribution from a trajectory file
 class fileTraj:public AtomDistribution {
   TrajectoryParser parser;

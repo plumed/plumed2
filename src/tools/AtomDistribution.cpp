@@ -37,8 +37,16 @@ std::unique_ptr<AtomDistribution> AtomDistribution::getAtomDistribution(std::str
     distribution = std::make_unique<twoGlobs>();
   } else if (atomicDistr == "sc") {
     distribution = std::make_unique<tiledSimpleCubic>();
+  } else if (atomicDistr == "ibcc") {
+    distribution = std::make_unique<inscribedBodyCenteredCubic>();
+  } else if (atomicDistr == "bcc") {
+    distribution = std::make_unique<tiledBodyCenteredCubic>();
+  } else if (atomicDistr == "ifcc") {
+    distribution = std::make_unique<inscribedFaceCenteredCubic>();
+  } else if (atomicDistr == "fcc") {
+    distribution = std::make_unique<tiledFaceCenteredCubic>();
   } else {
-    plumed_error() << R"(The atomic distribution can be only "line", "cube", "sphere", "globs" and "sc", the input was ")"
+    plumed_error() << R"(The atomic distribution can be only "line", "cube", "sphere", "globs", "sc", "ibcc", "bcc", "ifcc",and "fcc", the input was ")"
                    << atomicDistr <<'"';
   }
   return distribution;
@@ -188,6 +196,19 @@ void uniformCube::frame(View<Vector> posToUpdate,
 
 }
 
+/// A simple correction to getting (in ceil mode) the correct nearest perfect cube
+unsigned ceiledPerfectCube(const unsigned N) {
+  // In some case a perfect cube is not well represented by double
+  // and will get uncorrectly ceiled up (for example 24389 will result in a 30 and not in 29)
+
+  // This assumes that N!=0
+  const size_t x = std::ceil(std::cbrt(static_cast<double>(N)))-1;
+  if ( x*x*x >= N) {
+    return x;
+  }
+  return x+1;
+}
+
 void tiledSimpleCubic::frame(View<Vector> posToUpdate,
                              View<double,9> box,
                              unsigned /*step*/,
@@ -196,15 +217,7 @@ void tiledSimpleCubic::frame(View<Vector> posToUpdate,
   //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
   //could be a good idea, in this case
 
-  // the lambda is here because in some case a perfect cube is not well represented
-  // by double and will get uncorrectly ceiled up (for example 24389 will result in a 30 and not in 29)
-  const unsigned rmax = [&] {
-    const size_t x = std::ceil(std::cbrt(static_cast<double>(posToUpdate.size())))-1;
-    if ( x*x*x >= posToUpdate.size()) {
-      return x;
-    }
-    return x+1;
-  }();
+  const unsigned rmax =ceiledPerfectCube(posToUpdate.size());
 
   auto s=posToUpdate.begin();
   auto e=posToUpdate.end();
@@ -227,6 +240,170 @@ void tiledSimpleCubic::frame(View<Vector> posToUpdate,
   box[6]=0.0;
   box[7]=0.0;
   box[8]=rmax;
+
+}
+
+void inscribedFaceCenteredCubic::frame(View<Vector> posToUpdate,
+                                       View<double,9> box,
+                                       unsigned /*step*/,
+                                       Random& rng) {
+  //Here we are exploiting a litte trick:
+  // if you remove the even or odd atoms from a simple cubic built with our algorithm,
+  //you get an fcc boxed in a cube
+  const unsigned rmax = [&] {
+    auto x = ceiledPerfectCube(2*posToUpdate.size());
+    //rmax needs to be even for this trick to work
+    if ( x%2==0) {
+      return x;
+    } else {
+      return x+1;
+    }
+
+  }();
+
+  auto s=posToUpdate.begin();
+  auto e=posToUpdate.end();
+  //I am using the iterators:this is slightly faster,
+  // enough to overcome the cost of the vtable that I added
+  for (unsigned k=0; k<rmax&&s!=e; ++k) {
+    for (unsigned j=0; j<rmax&&s!=e; ++j) {
+      //we choose to show only the atoms with even index: (i+j+k)%2
+      //Like this we skip steps and lots of divisions
+      for (unsigned i=(j+k)%2; i<rmax&&s!=e; i+=2) {
+        *s = 0.5*Vector (i,j,k);
+        ++s;
+      }
+    }
+  }
+  box[0]=0.5*rmax;
+  box[1]=0.0;
+  box[2]=0.0;
+  box[3]=0.0;
+  box[4]=0.5*rmax;
+  box[5]=0.0;
+  box[6]=0.0;
+  box[7]=0.0;
+  box[8]=0.5*rmax;
+
+}
+
+void tiledFaceCenteredCubic::frame(View<Vector> posToUpdate,
+                                   View<double,9> box,
+                                   unsigned /*step*/,
+                                   Random& rng) {
+
+  const unsigned rmax =ceiledPerfectCube(posToUpdate.size());
+
+  auto s=posToUpdate.begin();
+  auto e=posToUpdate.end();
+#define X PLMD::Versors::xp<double>
+#define Y PLMD::Versors::yp<double>
+#define Z PLMD::Versors::zp<double>
+  const auto a=sqrt(2)*0.5*(X+Y);
+  const auto b=sqrt(2)*0.5*(X+Z);
+  const auto c=sqrt(2)*0.5*(Y+Z);
+#undef X
+#undef Y
+#undef Z
+  //I am using the iterators:this is slightly faster,
+  // enough to overcome the cost of the vtable that I added
+  for (unsigned k=0; k<rmax&&s!=e; ++k) {
+    for (unsigned j=0; j<rmax&&s!=e; ++j) {
+      for (unsigned i=0; i<rmax&&s!=e; ++i) {
+        *s = i*a
+             +j*b
+             +k*c;
+        ++s;
+      }
+    }
+  }
+
+  box.subview<0,3>() = a*rmax;
+  box.subview<3,3>() = b*rmax;
+  box.subview<6,3>() = c*rmax;
+
+}
+
+void tiledBodyCenteredCubic::frame(View<Vector> posToUpdate,
+                                   View<double,9> box,
+                                   unsigned /*step*/,
+                                   Random& rng) {
+  //For the base functionality of this see the comment in the tiledSimpleCubic
+
+  const unsigned rmax =ceiledPerfectCube(posToUpdate.size());
+
+  auto s=posToUpdate.begin();
+  auto e=posToUpdate.end();
+#define X PLMD::Versors::xp<double>
+#define Y PLMD::Versors::yp<double>
+#define Z PLMD::Versors::zp<double>
+  const auto a=0.5*(-X+Y+Z);
+  const auto b=0.5*( X-Y+Z);
+  const auto c=0.5*( X+Y-Z);
+#undef X
+#undef Y
+#undef Z
+  //I am using the iterators:this is slightly faster,
+  // enough to overcome the cost of the vtable that I added
+  for (unsigned k=0; k<rmax&&s!=e; ++k) {
+    for (unsigned j=0; j<rmax&&s!=e; ++j) {
+      for (unsigned i=0; i<rmax&&s!=e; ++i) {
+        *s = i*a
+             +j*b
+             +k*c;
+        ++s;
+      }
+    }
+  }
+
+  box.subview<0,3>() = a*rmax;
+  box.subview<3,3>() = b*rmax;
+  box.subview<6,3>() = c*rmax;
+
+}
+
+void inscribedBodyCenteredCubic::frame(View<Vector> posToUpdate,
+                                       View<double,9> box,
+                                       unsigned /*step*/,
+                                       Random& rng) {
+  //Here we are exploiting a litte trick:
+  // if you remove the even or odd atoms from a simple cubic built with our algorithm,
+  //you get an bcc boxed in a cube
+  const unsigned rmax = [&] {
+    //we take one atoms every 4
+    auto x = ceiledPerfectCube(4*posToUpdate.size());
+    //rmax needs to be even for this trick to work
+    if ( x%2==0) {
+      return x;
+    } else {
+      return x+1;
+    }
+
+  }();
+
+  auto s=posToUpdate.begin();
+  auto e=posToUpdate.end();
+  //I am using the iterators:this is slightly faster,
+  // enough to overcome the cost of the vtable that I added
+  for (unsigned k=0; k<rmax&&s!=e; ++k) {
+    //we alternate on the z axis the choice between atoms with both i and j even or odd
+    //The +=2 skips an extra check in the inner body
+    for (unsigned j=k%2; j<rmax&&s!=e; j+=2) {
+      for (unsigned i=k%2; i<rmax&&s!=e; i+=2) {
+        *s = 0.5*Vector (i,j,k);
+        ++s;
+      }
+    }
+  }
+  box[0]=0.5*rmax;
+  box[1]=0.0;
+  box[2]=0.0;
+  box[3]=0.0;
+  box[4]=0.5*rmax;
+  box[5]=0.0;
+  box[6]=0.0;
+  box[7]=0.0;
+  box[8]=0.5*rmax;
 
 }
 
