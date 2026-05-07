@@ -240,6 +240,9 @@ Histogram::Histogram( const ActionOptions& ao ):
     readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
   } else {
+    if( lw.length()>0 ) {
+      error("set NORMALIZATION=true/false when using LOGWEIGHTS as otherwise the weights are ignored. Alternatively, learn to use the new syntax for histograms with KDE/ACCUMULATE to have more control over what PLUMED is calculating");
+    }
     readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
   }
 
