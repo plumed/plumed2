@@ -584,4 +584,24 @@ void scaledTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
     b*=multiplier;
   }
 }
+
+wiggleTrajectory::wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                                   const double amount):
+  distribution(std::move(d)),
+  radius(amount)
+{}
+
+bool wiggleTrajectory::overrideNat(unsigned& natoms) {
+  return distribution->overrideNat(natoms);
+}
+void wiggleTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
+                             unsigned step,
+                             Random& rng) {
+  distribution->frame(posToUpdate,box,step,rng);
+
+  UniformSphericalVector usv(radius);
+  for (auto& v: posToUpdate) {
+    v+= usv(rng);
+  }
+}
 } //namespace PLMD

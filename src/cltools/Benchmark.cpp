@@ -353,6 +353,14 @@ public:
     if (!toret.has_value()) {
       return std::nullopt;
     }
+
+    bool doWiggle=false;
+    parseFlag("--wiggle",doWiggle);
+    if (doWiggle) {
+      std::unique_ptr<AtomDistribution> tmp = std::move(*toret);
+      toret = std::make_unique<wiggleTrajectory>(std::move(tmp),0.1);
+    }
+
     double scale = -1;
     parse("--scale",scale);
     if (scale>0) {
@@ -410,6 +418,8 @@ void Benchmark::registerKeywords( Keywords& keys ) {
            " ingnored with a atomic distribution");
   //defaults to negative because we are parsing doubles
   keys.add("compulsory","--scale","-1","multiplies atom positions and box dimensions by the specified positive number");
+  keys.addFlag("--wiggle",false, "Displaces each atom of the trajectory at each steps");
+
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):

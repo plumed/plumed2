@@ -197,5 +197,18 @@ public:
              Random& rng) override;
   bool overrideNat(unsigned& natoms) override;
 };
+
+/// A decorator for displacing the atoms from the generated underline distribution
+class wiggleTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  double radius;
+public:
+  wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,  double amount=0.5);
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned step,
+             Random& rng) override;
+  bool overrideNat(unsigned& natoms) override;
+};
 } //namespace PLMD
 #endif // __PLUMED_tools_AtomDistribution_h
