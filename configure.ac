@@ -1050,9 +1050,10 @@ if test $libhdf5 = true ; then
 fi
 
 if test $libitensor = true ; then
-  # ITensor headers require C++20 concepts; add -std=c++20 for the detection check only
+  # ITensor headers require C++20 concepts; libitensor.a has OpenMP-outlined functions
+  # that need -fopenmp at link time. Add both flags for the detection check only.
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++20"
+  CXXFLAGS="$CXXFLAGS -std=c++20 -fopenmp"
   PLUMED_CHECK_CXX_PACKAGE([libitensor],[
     #include <itensor/all.h>
     int main() {
