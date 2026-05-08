@@ -20,38 +20,124 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AtomDistribution.h"
+#include "Exception.h"
 #include "View.h"
 #include <cassert>
+#include <memory>
+#include <variant>
+#include <optional>
+#include <functional>
 
 namespace PLMD {
 
+using unpackedLine=gch::small_vector<std::string_view>;
+
+namespace ADHelpers {
+//add a new base distribution here, and the compiler will automagically
+//set up the parser for you
+using baseDistributions = std::variant<
+                          theLine,
+                          uniformCube,
+                          uniformSphere,
+                          twoGlobs,
+                          tiledSimpleCubic,
+                          tiledBodyCenteredCubic,
+                          tiledFaceCenteredCubic,
+                          inscribedBodyCenteredCubic,
+                          inscribedFaceCenteredCubic>;
+//add new decorators here:
+using decoratorDistribuitions = std::variant<
+                                repliedTrajectory,
+                                scaledTrajectory,
+                                wiggleTrajectory>;
+
+template <size_t I=0>
+std::optional<std::unique_ptr<AtomDistribution>> getAD(std::string_view atomicDistr) {
+  if constexpr ( I < std::variant_size_v<baseDistributions>) {
+    using myAD=typename std::variant_alternative_t<I,baseDistributions>;
+    if (atomicDistr==myAD::id) {
+      return std::make_unique<myAD>();
+    }
+    return getAD<I+1>(atomicDistr);
+  }
+  return std::nullopt;
+}
+
+template <size_t I=0>
+std::string getBaseList(std::string init="") {
+  if constexpr ( I < std::variant_size_v<baseDistributions>) {
+    using myAD=typename std::variant_alternative_t<I,baseDistributions>;
+    return init + "\"" + myAD::id + "\""+ getBaseList<I+1>(", ");
+  }
+  return "";
+}
+
+template <size_t I=0>
+std::string getDecoratorList(std::string init="") {
+  if constexpr ( I < std::variant_size_v<decoratorDistribuitions>) {
+    using myAD=typename std::variant_alternative_t<I,decoratorDistribuitions>;
+    return init + "\"" + myAD::id + "\""+ getDecoratorList<I+1>(", ");
+  }
+  return "";
+}
+
+using parser=std::function<std::unique_ptr<AtomDistribution>(std::unique_ptr<AtomDistribution>&& d,
+             std::string_view cmd)>;
+
+template <size_t I=0>
+std::optional<parser> getDecorator( std::string_view decoratorDistr) {
+  if constexpr ( I < std::variant_size_v<decoratorDistribuitions>) {
+    auto name=decoratorDistr.substr(0,decoratorDistr.find(' '));
+    using myAD=typename std::variant_alternative_t<I,decoratorDistribuitions>;
+    if (name==myAD::id) {
+      return myAD::decorate;
+    }
+    return getDecorator<I+1>(decoratorDistr);
+  }
+  return std::nullopt;
+}
+} // namespace ADHelpers
+
 std::unique_ptr<AtomDistribution> AtomDistribution::getAtomDistribution(std::string_view atomicDistr) {
+  auto pipePos = atomicDistr.find("|");
+  auto base=atomicDistr.substr(0,pipePos);
   std::unique_ptr<AtomDistribution> distribution;
-  if(atomicDistr == "line") {
-    distribution = std::make_unique<theLine>();
-  } else if (atomicDistr == "cube") {
-    distribution = std::make_unique<uniformCube>();
-  } else if (atomicDistr == "sphere") {
-    distribution = std::make_unique<uniformSphere>();
-  } else if (atomicDistr == "globs") {
-    distribution = std::make_unique<twoGlobs>();
-  } else if (atomicDistr == "sc") {
-    distribution = std::make_unique<tiledSimpleCubic>();
-  } else if (atomicDistr == "ibcc") {
-    distribution = std::make_unique<inscribedBodyCenteredCubic>();
-  } else if (atomicDistr == "bcc") {
-    distribution = std::make_unique<tiledBodyCenteredCubic>();
-  } else if (atomicDistr == "ifcc") {
-    distribution = std::make_unique<inscribedFaceCenteredCubic>();
-  } else if (atomicDistr == "fcc") {
-    distribution = std::make_unique<tiledFaceCenteredCubic>();
+  if(auto d = ADHelpers::getAD(base); d) {
+    distribution = std::move(*d);
   } else {
-    plumed_error() << R"(The atomic distribution can be only "line", "cube", "sphere", "globs", "sc", "ibcc", "bcc", "ifcc",and "fcc", the input was ")"
-                   << atomicDistr <<'"';
+    plumed_error() << "The atomic distribution can be only "<<ADHelpers::getBaseList()
+                   << ", but the input was \""
+                   << base <<'"';
+  }
+  if (pipePos != std::string_view::npos) {
+    return decorateAtomDistribution(std::move(distribution),
+                                    atomicDistr.substr(pipePos+1));
   }
   return distribution;
 }
 
+
+std::unique_ptr<AtomDistribution> AtomDistribution::decorateAtomDistribution(
+  std::unique_ptr<AtomDistribution> && ad,
+  std::string_view decoratorDistr) {
+  unpackedLine lines;
+  Tools::getWordsSimple(lines,decoratorDistr,"|");
+  std::unique_ptr<AtomDistribution> distribution=std::move(ad);
+  for(auto i=0u; i < lines.size(); ++i) {
+    auto decorator=ADHelpers::getDecorator(lines[i]);
+    if (decorator) {
+      auto tmp=std::move(distribution);
+      distribution = (*decorator)(std::move(tmp),lines[i]);
+    } else {
+
+      plumed_error() << "The atomic distribution decorators be only "<<ADHelpers::getDecoratorList()
+                     << ", but the input was \""
+                     << lines[i] <<'"';
+    }
+
+  }
+  return distribution;
+}
 
 void AtomDistribution::frame(std::vector<Vector>& posToUpdate,
                              std::vector<double>& box,
@@ -562,6 +648,24 @@ bool repliedTrajectory::overrideNat(unsigned& natoms) {
   return true;
 }
 
+std::unique_ptr<AtomDistribution> repliedTrajectory::decorate(std::unique_ptr<AtomDistribution>&& d,
+    std::string_view cmd) {
+  unpackedLine lines;
+  Tools::getWordsSimple(lines,cmd);
+  unsigned repeatX;
+  unsigned repeatY;
+  unsigned repeatZ;
+  plumed_assert(lines.size() ==4) << id << " supports exacly three inputs: x y z";
+
+  Tools::convert(std::string(lines[1]),repeatX);
+  Tools::convert(std::string(lines[2]),repeatY);
+  Tools::convert(std::string(lines[3]),repeatZ);
+  return std::make_unique<repliedTrajectory>(std::move(d),
+         repeatX,
+         repeatY,
+         repeatZ);
+}
+
 scaledTrajectory::scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
                                    const double mult):
   distribution(std::move(d)),
@@ -585,6 +689,20 @@ void scaledTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
   }
 }
 
+std::unique_ptr<AtomDistribution> scaledTrajectory::decorate(std::unique_ptr<AtomDistribution>&& d,
+    std::string_view cmd) {
+  unpackedLine lines;
+  Tools::getWordsSimple(lines,cmd);
+  plumed_assert(lines.size() <=2) << id << " supports maximum one input";
+  if (lines.size()==2) {
+    double mult=2.0;
+    Tools::convert(std::string(lines[1]), mult);
+    return std::make_unique<scaledTrajectory>(std::move(d),mult);
+  }
+  //the default value is specified in the header
+  return std::make_unique<scaledTrajectory>(std::move(d));
+}
+
 wiggleTrajectory::wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,
                                    const double amount):
   distribution(std::move(d)),
@@ -603,5 +721,19 @@ void wiggleTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
   for (auto& v: posToUpdate) {
     v+= usv(rng);
   }
+}
+
+std::unique_ptr<AtomDistribution> wiggleTrajectory::decorate(std::unique_ptr<AtomDistribution>&& d,
+    std::string_view cmd) {
+  unpackedLine lines;
+  Tools::getWordsSimple(lines,cmd);
+  plumed_assert(lines.size() <=2) << id << " supports maximum one input";
+  if (lines.size()==2) {
+    double displacement=0.1;
+    Tools::convert(std::string(lines[1]), displacement);
+    return std::make_unique<wiggleTrajectory>(std::move(d),displacement);
+  }
+  //the default value is specified in the header
+  return std::make_unique<wiggleTrajectory>(std::move(d));
 }
 } //namespace PLMD

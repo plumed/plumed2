@@ -28,6 +28,7 @@
 #include "Random.h"
 #include "TrajectoryParser.h"
 
+#include <memory>
 #include <vector>
 namespace PLMD {
 ///tested in regtest/tools/rt-make-AtomicDistribution
@@ -59,10 +60,14 @@ struct AtomDistribution {
     return false;
   }
   static std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr);
+  static std::unique_ptr<AtomDistribution> decorateAtomDistribution(
+    std::unique_ptr<AtomDistribution> && ad,
+    std::string_view decoratorsDistr);
 };
 
 ///A wiggly line of atoms
 struct theLine:public AtomDistribution {
+  static constexpr auto id="line";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
@@ -71,6 +76,7 @@ struct theLine:public AtomDistribution {
 
 ///Atom randomly distribuited in a sphere
 struct uniformSphere:public AtomDistribution {
+  static constexpr auto id="sphere";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -79,6 +85,7 @@ struct uniformSphere:public AtomDistribution {
 
 ///Atom randomly distribuited between two not overlapping a spheres
 struct twoGlobs: public AtomDistribution {
+  static constexpr auto id="globs";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -86,6 +93,7 @@ struct twoGlobs: public AtomDistribution {
 };
 
 struct uniformCube:public AtomDistribution {
+  static constexpr auto id="cube";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -93,6 +101,7 @@ struct uniformCube:public AtomDistribution {
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
+  static constexpr auto id="sc";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -106,6 +115,7 @@ struct tiledSimpleCubic:public AtomDistribution {
 /// At certain sizes above the ones above (36, 504), you get
 /// good (100) slabs quite separated on th z axis
 struct inscribedFaceCenteredCubic:public AtomDistribution {
+  static constexpr auto id="ifcc";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -114,6 +124,7 @@ struct inscribedFaceCenteredCubic:public AtomDistribution {
 
 /// This FCC is contained in a "standard" FCC box
 struct tiledFaceCenteredCubic:public AtomDistribution {
+  static constexpr auto id="fcc";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -122,6 +133,7 @@ struct tiledFaceCenteredCubic:public AtomDistribution {
 
 /// This BCC is contained in a orthogonal cubic box
 struct inscribedBodyCenteredCubic:public AtomDistribution {
+  static constexpr auto id="ibcc";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -130,6 +142,7 @@ struct inscribedBodyCenteredCubic:public AtomDistribution {
 
 /// This BCC is contained in a "standard" FCC box
 struct tiledBodyCenteredCubic:public AtomDistribution {
+  static constexpr auto id="bcc";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -151,6 +164,7 @@ class fileTraj:public AtomDistribution {
   //read the next step
   void step(bool doRewind=true);
 public:
+  static constexpr auto id="file";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -170,6 +184,9 @@ class repliedTrajectory: public AtomDistribution {
   unsigned rY=1;
   unsigned rZ=1;
 public:
+  static constexpr auto id="reply";
+  static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
+      std::string_view cmd);
   repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
                     const unsigned repeatX,
                     const unsigned repeatY,
@@ -190,7 +207,10 @@ class scaledTrajectory: public AtomDistribution {
   std::unique_ptr<AtomDistribution> distribution;
   double multiplier;
 public:
-  scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult);
+  static constexpr auto id="scale";
+  static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
+      std::string_view cmd);
+  scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult=2.0);
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
@@ -203,7 +223,10 @@ class wiggleTrajectory: public AtomDistribution {
   std::unique_ptr<AtomDistribution> distribution;
   double radius;
 public:
-  wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,  double amount=0.5);
+  static constexpr auto id="wiggle";
+  static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
+      std::string_view cmd);
+  wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,  double amount=0.1);
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
