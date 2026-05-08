@@ -233,5 +233,22 @@ public:
              Random& rng) override;
   bool overrideNat(unsigned& natoms) override;
 };
+
+/// A decorator for forcing a box in the trajectory
+class forceBoxTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  std::array<double,9> fixedbox;
+public:
+  static constexpr auto id="box";
+  static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
+      std::string_view cmd);
+  forceBoxTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                     std::array<double,9> mybox);
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned step,
+             Random& rng) override;
+  bool overrideNat(unsigned& natoms) override;
+};
 } //namespace PLMD
 #endif // __PLUMED_tools_AtomDistribution_h

@@ -49,7 +49,8 @@ using baseDistributions = std::variant<
 using decoratorDistribuitions = std::variant<
                                 repliedTrajectory,
                                 scaledTrajectory,
-                                wiggleTrajectory>;
+                                wiggleTrajectory,
+                                forceBoxTrajectory>;
 
 template <size_t I=0>
 std::optional<std::unique_ptr<AtomDistribution>> getAD(std::string_view atomicDistr) {
@@ -586,6 +587,7 @@ bool fileTraj::overrideNat(unsigned& natoms) {
   return true;
 }
 
+//Replicate
 repliedTrajectory::repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
                                      const unsigned repeatX,
                                      const unsigned repeatY,
@@ -666,6 +668,7 @@ std::unique_ptr<AtomDistribution> repliedTrajectory::decorate(std::unique_ptr<At
          repeatZ);
 }
 
+//Scale
 scaledTrajectory::scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
                                    const double mult):
   distribution(std::move(d)),
@@ -703,6 +706,7 @@ std::unique_ptr<AtomDistribution> scaledTrajectory::decorate(std::unique_ptr<Ato
   return std::make_unique<scaledTrajectory>(std::move(d));
 }
 
+//Wiggle
 wiggleTrajectory::wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,
                                    const double amount):
   distribution(std::move(d)),
@@ -735,5 +739,58 @@ std::unique_ptr<AtomDistribution> wiggleTrajectory::decorate(std::unique_ptr<Ato
   }
   //the default value is specified in the header
   return std::make_unique<wiggleTrajectory>(std::move(d));
+}
+
+//ForceBox
+forceBoxTrajectory::forceBoxTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                                       std::array<double,9> mybox):
+  distribution(std::move(d)),
+  fixedbox(mybox)
+{}
+
+bool forceBoxTrajectory::overrideNat(unsigned& natoms) {
+  return distribution->overrideNat(natoms);
+}
+void forceBoxTrajectory::frame(View<Vector> posToUpdate, View<double,9> box,
+                               unsigned step,
+                               Random& rng) {
+  distribution->frame(posToUpdate,box,step,rng);
+  box[0] = fixedbox[0];
+  box[1] = fixedbox[1];
+  box[2] = fixedbox[2];
+  box[3] = fixedbox[3];
+  box[4] = fixedbox[4];
+  box[5] = fixedbox[5];
+  box[6] = fixedbox[6];
+  box[7] = fixedbox[7];
+  box[8] = fixedbox[8];
+}
+
+std::unique_ptr<AtomDistribution> forceBoxTrajectory::decorate(std::unique_ptr<AtomDistribution>&& d,
+    std::string_view cmd) {
+  unpackedLine lines;
+  Tools::getWordsSimple(lines,cmd);
+  plumed_assert(lines.size() == 4 || lines.size() == 10) << id << " supports either 3 or 9 numbers as input";
+  std::array<double,9> newBox= {0.0,0.0,0.0,
+                                0.0,0.0,0.0,
+                                0.0,0.0,0.0
+                               };
+  if (lines.size()==4) {
+    Tools::convert(std::string(lines[1]), newBox[0]);
+    Tools::convert(std::string(lines[2]), newBox[4]);
+    Tools::convert(std::string(lines[3]), newBox[8]);
+  } else {// we now is 9
+    Tools::convert(std::string(lines[1]), newBox[0]);
+    Tools::convert(std::string(lines[2]), newBox[1]);
+    Tools::convert(std::string(lines[3]), newBox[2]);
+    Tools::convert(std::string(lines[4]), newBox[3]);
+    Tools::convert(std::string(lines[5]), newBox[4]);
+    Tools::convert(std::string(lines[6]), newBox[5]);
+    Tools::convert(std::string(lines[7]), newBox[6]);
+    Tools::convert(std::string(lines[8]), newBox[7]);
+    Tools::convert(std::string(lines[9]), newBox[8]);
+  }
+  //the default value is specified in the header
+  return std::make_unique<forceBoxTrajectory>(std::move(d),newBox);
 }
 } //namespace PLMD
