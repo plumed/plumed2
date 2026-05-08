@@ -104,7 +104,7 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const MPS& tt, co
   rho /= elt(Z);
   // ei[k]  = E[x_k],  eii[k] = E[x_k^2],  eij[k][l] = E[x_k * x_l] for k < l
   std::vector<double> ei(d), eii(d);
-  std::vector<std::vector<double>> eij(d, std::vector<double>(d));
+  Matrix<double> eij(d, d);
   for(int k = 1; k <= d; ++k) {
     // replace dimension k's integral vector with int1 (resp. int2) to get E[x_k] (resp. E[x_k^2])
     auto eival = rho(1) * (k == 1 ? basis_int1[0] : basis_int0[0]);
@@ -121,14 +121,14 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const MPS& tt, co
       for(int i = 2; i <= d; ++i) {
         eijval *= rho(i) * (k == i || l == i ? basis_int1[i - 1] : basis_int0[i - 1]);
       }
-      eij[k - 1][l - 1] = elt(eijval);
+      eij(k - 1, l - 1) = elt(eijval);
     }
   }
   // sigma(k,l) = Cov(x_k, x_l) = E[x_k*x_l] - E[x_k]*E[x_l]
   Matrix<double> sigma(d, d);
   for(int k = 1; k <= d; ++k) {
     for(int l = k; l <= d; ++l) {
-      sigma(k - 1, l - 1) = sigma(l - 1, k - 1) = k == l ? eii[k - 1] - pow(ei[k - 1], 2) : eij[k - 1][l - 1] - ei[k - 1] * ei[l - 1];
+      sigma(k - 1, l - 1) = sigma(l - 1, k - 1) = k == l ? eii[k - 1] - pow(ei[k - 1], 2) : eij(k - 1, l - 1) - ei[k - 1] * ei[l - 1];
     }
   }
   return std::make_tuple(sigma, ei, elt(Z));
@@ -137,8 +137,8 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const MPS& tt, co
 // Compute the 2D marginal density of the normalized TT distribution for dimensions
 // pos1 and pos2 on a (bins x bins) grid. All other dimensions are integrated out
 // analytically using int0, which collapses those TT cores to scalar factors.
-void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, std::vector<std::vector<double>>& grid, bool conv) {
-  int bins = grid.size();
+void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, Matrix<double>& grid, bool conv) {
+  int bins = nrows(grid);
   int d = length(tt);
   auto s = siteInds(tt);
   std::vector<ITensor> basis_int0(d);
@@ -174,7 +174,7 @@ void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, in
           val *= rho(k) * basis_int0[k - 1];
         }
       }
-      grid[i][j] = elt(val);
+      grid(i, j) = elt(val);
     }
   }
 }

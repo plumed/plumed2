@@ -31,7 +31,7 @@ std::vector<double> ttGrad(const itensor::MPS& tt, const std::vector<BasisFunc>&
 std::tuple<Matrix<double>, std::vector<double>, double> covMat(const itensor::MPS& tt, const std::vector<BasisFunc>& basis);
 // Fill `grid` (bins x bins) with the 2D marginal density of `tt` for dimensions
 // pos1 and pos2, obtained by integrating out all other dimensions analytically.
-void marginal2d(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, std::vector<std::vector<double>>& grid, bool conv);
+void marginal2d(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, Matrix<double>& grid, bool conv);
 
 }
 }

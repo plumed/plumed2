@@ -457,10 +457,10 @@ void TTMetaD::update() {
 
       // record current bias at hill centers before update, for computing relative error after
       std::vector<double> A0(N);
-      std::vector<std::vector<double>> x(N);
+      Matrix<double> x(N, this->d_);
       for(unsigned i = 0; i < N; ++i) {
-        x[i] = this->hills_[i].center;
-        A0[i] = getBias(x[i]);
+        for(unsigned j = 0; j < this->d_; ++j) x(i, j) = this->hills_[i].center[j];
+        A0[i] = getBias(this->hills_[i].center);
       }
 
       log << "\nStarting TT-sketch...\n";
@@ -473,7 +473,9 @@ void TTMetaD::update() {
       // compute relative L2 approximation error at hill centers: ||V_new - V_old|| / ||V_old||
       std::vector<double> diff(N);
       for(unsigned i = 0; i < N; ++i) {
-        diff[i] = getBias(x[i]);
+        std::vector<double> xi(this->d_);
+        for(unsigned j = 0; j < this->d_; ++j) xi[j] = x(i, j);
+        diff[i] = getBias(xi);
       }
       std::transform(diff.begin(), diff.end(), A0.begin(), diff.begin(), std::minus<double>());
       log << "Relative l2 error = " << sqrt(norm(diff) / norm(A0)) << "\n\n";
