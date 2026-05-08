@@ -665,7 +665,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         ofile << natoms << "\n"
               << cell[0] << " " << cell[1] << " " << cell[2] << " "
               << cell[3] << " " << cell[4] << " " << cell[5] << " "
-              << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
+              << cell[6] << " " << cell[7] << " " << cell[8]
+              << "\n";
         for(unsigned i=0; i<natoms; ++i) {
           ofile << "X\t" << pos[i]<< "\n";
         }
