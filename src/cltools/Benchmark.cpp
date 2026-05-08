@@ -354,41 +354,14 @@ public:
       return std::nullopt;
     }
 
-    bool doWiggle=false;
-    parseFlag("--wiggle",doWiggle);
-    if (doWiggle) {
+    if(std::string trajectoryModifications="";
+        parse("--modify-trajectory",trajectoryModifications)) {
+
+      log << "Using --modify-trajectory=" << trajectoryModifications << "\n";
       std::unique_ptr<AtomDistribution> tmp = std::move(*toret);
-      toret = std::make_unique<wiggleTrajectory>(std::move(tmp),0.1);
+      toret = AtomDistribution::decorateAtomDistribution(std::move(tmp),trajectoryModifications);
     }
 
-    double scale = -1;
-    parse("--scale",scale);
-    if (scale>0) {
-      std::unique_ptr<AtomDistribution> tmp = std::move(*toret);
-      toret = std::make_unique<scaledTrajectory>(std::move(tmp),
-              scale);
-    }
-    ///@todo: add a the possibility to add the pcbbox via CLI
-    /// this is necessary for some molfile plugins
-    int repeatX=0;
-    int repeatY=0;
-    int repeatZ=0;
-    parse("--repeatX",repeatX);
-    log << "Using --repeatX=" << repeatX << "\n";
-    parse("--repeatY",repeatY);
-    log << "Using --repeatY=" << repeatY << "\n";
-    parse("--repeatZ",repeatZ);
-    log << "Using --repeatZ=" << repeatZ << "\n";
-    if (repeatX<1 || repeatY<1 || repeatZ<1) {
-      log << "ERROR: repetitions of the trajectory must be >=1\n";
-      return std::nullopt;
-    }
-    if (repeatX*repeatY*repeatZ >1) {
-      return std::make_unique<repliedTrajectory>(std::move(*toret),
-             repeatX,
-             repeatY,
-             repeatZ);
-    }
     return toret;
   }
 };
@@ -410,16 +383,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
   TrajectoryParser::registerKeywords(keys);
-  keys.add("compulsory","--repeatX","1","number of time to align the read trajectory along the fist box component,"
-           " ingnored with a atomic distribution");
-  keys.add("compulsory","--repeatY","1","number of time to align the read trajectory along the second box component,"
-           " ingnored with a atomic distribution");
-  keys.add("compulsory","--repeatZ","1","number of time to align the read trajectory along the third box component,"
-           " ingnored with a atomic distribution");
-  //defaults to negative because we are parsing doubles
-  keys.add("compulsory","--scale","-1","multiplies atom positions and box dimensions by the specified positive number");
-  keys.addFlag("--wiggle",false, "Displaces each atom of the trajectory at each steps");
-
+  keys.add("optional","--modify-trajectory","apply some modifications to the trajectory used in the benchmark, can modify a parsed file");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
