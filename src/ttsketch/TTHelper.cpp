@@ -138,7 +138,7 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const MPS& tt, co
 // pos1 and pos2 on a (bins x bins) grid. All other dimensions are integrated out
 // analytically using int0, which collapses those TT cores to scalar factors.
 void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, Matrix<double>& grid, bool conv) {
-  int bins = nrows(grid);
+  int bins = grid.nrows();
   int d = length(tt);
   auto s = siteInds(tt);
   std::vector<ITensor> basis_int0(d);
