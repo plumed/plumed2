@@ -2,6 +2,7 @@
 #define __PLUMED_ttsketch_TTHelper_h
 #include "BasisFunc.h"
 #include "tools/Matrix.h"
+#ifdef __PLUMED_HAS_LIBITENSOR
 #include <itensor/all.h>
 
 namespace PLMD {
@@ -35,5 +36,5 @@ void marginal2d(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, int
 
 }
 }
-
+#endif // __PLUMED_HAS_LIBITENSOR
 #endif

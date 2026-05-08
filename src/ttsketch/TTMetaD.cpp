@@ -6,6 +6,7 @@
  */
 
 #include "TTHelper.h"
+#ifdef __PLUMED_HAS_LIBITENSOR
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
@@ -1085,3 +1086,4 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
 
 }
 }
+#endif // __PLUMED_HAS_LIBITENSOR

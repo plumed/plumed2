@@ -374,6 +374,8 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
+PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
+PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 
@@ -1029,6 +1031,38 @@ if test $libmetatomic = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic_torch metatensor_torch metatensor], [true])
+fi
+
+# libitensor requires libhdf5
+if test $libitensor = true ; then
+  libhdf5=true;
+fi
+
+if test $libhdf5 = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libhdf5],[
+    #include <hdf5.h>
+    int main() {
+      unsigned majnum, minnum, relnum;
+      H5get_libversion(&majnum, &minnum, &relnum);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBHDF5], [ hdf5_hl hdf5 ], [true])
+fi
+
+if test $libitensor = true ; then
+  # ITensor headers require C++20 concepts; add -std=c++20 for the detection check only
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -std=c++20"
+  PLUMED_CHECK_CXX_PACKAGE([libitensor],[
+    #include <itensor/all.h>
+    int main() {
+      auto i = itensor::Index(2,"i");
+      auto j = itensor::Index(2,"j");
+      auto T = itensor::ITensor(i,j);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBITENSOR], [ itensor openblas ], [true])
+  CXXFLAGS="$save_CXXFLAGS"
 fi
 
 acc_found=ko

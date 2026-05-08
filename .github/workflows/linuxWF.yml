@@ -73,18 +73,18 @@ jobs:
       run: |
         .ci/install.itensor
     - name: Configure ITensor
-      if: ${{ contains( matrix.variant, '-mpi-' ) }}
+      # exclude debug builds: _GLIBCXX_DEBUG changes the STL ABI and is incompatible
+      # with libitensor.a (built without that flag), causing compilation errors in
+      # ITensor headers and runtime corruption. The #ifdef __PLUMED_HAS_LIBITENSOR
+      # guards in ttsketch ensure safe compilation when ITensor is not configured.
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
       run: |
         ITENSOR_DIR="$HOME/opt/itensor"
         HDF5_CFLAGS=$(pkg-config --cflags hdf5-serial 2>/dev/null || pkg-config --cflags hdf5 2>/dev/null || echo "-I/usr/include/hdf5/serial")
         HDF5_LIBDIR=$(pkg-config hdf5-serial --libs-only-L 2>/dev/null || pkg-config hdf5 --libs-only-L 2>/dev/null || echo "-L/usr/lib/x86_64-linux-gnu/hdf5/serial")
         echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
-        # temporary until configure.ac is updated to detect ITensor
-        echo "CXXFLAGS=-O3 -fconcepts" >> $GITHUB_ENV
-        echo "LIBS=-litensor -lopenblas -lhdf5 -lhdf5_hl" >> $GITHUB_ENV
-        # this will be uncommented after the configure.ac modifications
-        #echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
     - name: Install tools for setting up the manuals
       if: contains( matrix.variant, '-doc-' )
       run: |
