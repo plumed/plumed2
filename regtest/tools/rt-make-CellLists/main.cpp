@@ -21,7 +21,6 @@
 #include <numeric>
 
 using namespace PLMD;
-using atomDst = std::unique_ptr<PLMD::AtomDistribution>;
 
 void test (PLMD::Communicator &comm);
 void testIndexes (PLMD::Communicator &comm);
@@ -364,17 +363,16 @@ void test (PLMD::Communicator &comm) {
   std::vector<Vector> atoms(5*5*5);
   std::vector<double> basebox(9);
   unsigned nat = atoms.size();
-  atomDst rep= std::make_unique<repliedTrajectory>([&]() {
+  auto rep= [&]() {
     auto d = AtomDistribution::getAtomDistribution("sc");
 //getting some base informations
     d->frame(atoms,basebox,0,rng);
-    return d;
+    auto mod="reply "+ std::to_string(replicas[0]) + " "
+             + std::to_string(replicas[1]) + " "
+             + std::to_string(replicas[2]);
+    return AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  replicas[0],
-  replicas[1],
-  replicas[2],
-  nat);
+  ();
   const unsigned startingnat=nat;
   rep->overrideNat(nat);
   const unsigned nrep = nat/startingnat;
@@ -434,17 +432,16 @@ void bench (PLMD::Communicator &comm) {
   std::vector<Vector> atoms(50000);
   std::vector<double> basebox(9);
   unsigned nat = atoms.size();
-  atomDst rep= std::make_unique<repliedTrajectory>([&]() {
+  auto rep= [&]() {
     auto d = AtomDistribution::getAtomDistribution("cube");
 //getting some base informations
     d->frame(atoms,basebox,0,rng);
-    return d;
+    auto mod="reply "+ std::to_string(replicas[0]) + " "
+             + std::to_string(replicas[1]) + " "
+             + std::to_string(replicas[2]);
+    return AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  replicas[0],
-  replicas[1],
-  replicas[2],
-  nat);
+  ();
   //const unsigned startingnat=nat;
   rep->overrideNat(nat);
   //const unsigned nrep = nat/startingnat;

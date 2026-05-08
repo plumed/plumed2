@@ -31,6 +31,7 @@
 #include "tools/Random.h"
 #include "tools/TrajectoryParser.h"
 #include "tools/AtomDistribution.h"
+#include "tools/AtomDistributionFiles.h"
 
 #include <cstdio>
 #include <string>

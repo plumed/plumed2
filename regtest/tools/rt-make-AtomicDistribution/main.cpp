@@ -63,14 +63,15 @@ void replyTrajCheck(std::string_view kind,
   unsigned nat = atoms.size();
   const auto oldNat=nat;
 
-  std::unique_ptr<PLMD::AtomDistribution> rep= std::make_unique<repliedTrajectory>([&]() {
+  auto rep= [&]() {
     auto d = AtomDistribution::getAtomDistribution(kind);
     d->frame(atoms,basebox,0,rng);
-    return d;
+    auto mod="reply "+ std::to_string(num[0]) + " "
+             + std::to_string(num[1]) + " "
+             + std::to_string(num[2]);
+    return AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  num[0], num[1], num[2],
-  nat);
+  ();
 
   //this must return true
   ofs <<header<< " rep->overrideNat(nat)=" <<
@@ -125,20 +126,20 @@ void scaleTrajCheck(std::string_view kind,
   rng.setSeed(12345);
   std::vector<Vector> baseatoms(200);
   std::vector<double> basebox(9);
-  std::unique_ptr<PLMD::AtomDistribution> scaled= std::make_unique<scaledTrajectory>([&]() {
+  auto scaled= [&]() {
     std::unique_ptr<PLMD::AtomDistribution> d;
     if (kind == "sphere-reply212") {
-      d = std::make_unique<repliedTrajectory>(
-            AtomDistribution::getAtomDistribution("sphere"),
-            2,1,2,baseatoms.size()/(2*1*2));
+      d = AtomDistribution::getAtomDistribution("sphere|reply 2 1 2");
     } else {
       d = AtomDistribution::getAtomDistribution(kind);
     }
     d->frame(baseatoms,basebox,0,rng);
-    return d;
+
+    auto mod="scale "+ std::to_string(scale) + " ";
+    return
+      AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  scale);
+  ();
 
   std::vector<Vector> atoms(200);
   std::vector<double> box(9);
@@ -151,7 +152,8 @@ void scaleTrajCheck(std::string_view kind,
   ofs << header << "The atoms are scaled correctly:\t";
   bool correct = true;
   for(unsigned i =0; i< atoms.size() && correct; ++i) {
-    correct = (abs(scale*baseatoms[i][0] - atoms[i][0]) < 1000*PLMD::epsilon)&&
+    correct = (abs(scale*baseatoms[i][0] - atoms[i][0]) < 1000*PLMD::epsilon)
+              &&
               (abs(scale*baseatoms[i][1] - atoms[i][1]) < 1000*PLMD::epsilon)&&
               (abs(scale*baseatoms[i][2] - atoms[i][2]) < 1000*PLMD::epsilon);
 
@@ -161,7 +163,8 @@ void scaleTrajCheck(std::string_view kind,
   atomsInBoxCheck(atoms,box,header,ofs);
   ofs << "New box has the correct dimensions:\n";
   for (unsigned j=0; j<3; ++j) {
-    ofs <<header <<" correct box dimension " <<xyz[j]<<" : "
+    ofs <<header <<" correct box dimension " <<xyz[j]
+        <<" : "
         << ((scale*basebox[j*3+j] - box[j*3+j]) < 1000*PLMD::epsilon) << "\n";
   }
 }
