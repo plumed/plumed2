@@ -381,6 +381,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--atom-distribution","line|wiggle 0.5","the kind of possible atomic displacement at each step");
   // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
+  keys.addFlag("--ad-help",false,"print a small help text for the atom distributions");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
   TrajectoryParser::registerKeywords(keys);
@@ -414,6 +415,41 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   } else {
     log.link(log_dev_null.get());
   }
+
+  bool printADHelp=false;
+  parseFlag("--ad-help",printADHelp);
+  if (printADHelp) {
+    log << "Documentation for the atomic distributions:\n";
+    log << "\nThese are the basic atomic distributions:\n";
+    auto distrs = AtomDistribution::getDistributionDocumentation();
+    for(const auto& d:distrs) {
+      log.printf("%8s - %s\n\n",d.id.c_str(),d.doc.c_str());
+    }
+    auto modifiers = AtomDistribution::getDecoratorsDocumentation();
+
+    log << "\nThese are the modifiers that can be applied to any atomic distributions:\n";
+    for(const auto& d:modifiers) {
+      log.printf("%8s - %s\n\n",d.id.c_str(),d.doc.c_str());
+    }
+    log << R"==(
+To use these distributions in the benchmark you can simple the cli option --atom-distribution
+like:
+  --atom-distribution="sc", with no extra modifiers
+  --atom-distribution="line|wiggle 0.5", use the pipe for modify the base distribution
+  --atom-distribution="ifcc|scale 2.3|reply 2 1 1", do not add spaces before or after the pipes
+
+As an extra tool you can append more modificators with --modify-trajectory,
+it is not necessary since you can use --atom-distribution, but can be applied
+to a trajectory read from a file, for example "box" can be used for adding
+the pbcs to certain file parsers.
+Remember that --modify-trajectory accepts only  modifiers, with the
+same syntax of --atom-distribution
+  --modify-trajectory="box 5 5 5"
+  --modify-trajectory="box 0 1 1 1 1 0 1 0 1|reply 4 2 6"
+)==";
+    return 0;
+  }
+
   log.setLinePrefix("BENCH:  ");
   log <<"Welcome to PLUMED benchmark\n";
   std::vector<Kernel> kernels;

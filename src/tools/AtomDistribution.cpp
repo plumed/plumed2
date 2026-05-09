@@ -434,91 +434,90 @@ class repliedTrajectory: public AtomDistribution {
 public:
   static constexpr auto id="reply";
   static constexpr auto doc=R"=(replicate the box by the given in all the directions:
-usage (must be used with 3 paramenters):
- reply x y z
-)=";
+usage:
+  reply x y z)=";
 
   static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
-    std::string_view cmd) {
-  unpackedLine lines;
-  Tools::getWordsSimple(lines,cmd);
-  unsigned repeatX;
-  unsigned repeatY;
-  unsigned repeatZ;
-  plumed_assert(lines.size() ==4) << id << " supports exacly three inputs: x y z";
+      std::string_view cmd) {
+    unpackedLine lines;
+    Tools::getWordsSimple(lines,cmd);
+    unsigned repeatX;
+    unsigned repeatY;
+    unsigned repeatZ;
+    plumed_assert(lines.size() ==4) << id << " supports exacly three inputs: x y z";
 
-  Tools::convert(std::string(lines[1]),repeatX);
-  Tools::convert(std::string(lines[2]),repeatY);
-  Tools::convert(std::string(lines[3]),repeatZ);
-  return std::make_unique<repliedTrajectory>(std::move(d),
-         repeatX,
-         repeatY,
-         repeatZ);
-}
+    Tools::convert(std::string(lines[1]),repeatX);
+    Tools::convert(std::string(lines[2]),repeatY);
+    Tools::convert(std::string(lines[3]),repeatZ);
+    return std::make_unique<repliedTrajectory>(std::move(d),
+           repeatX,
+           repeatY,
+           repeatZ);
+  }
 
   repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
                     const unsigned repeatX,
                     const unsigned repeatY,
                     const unsigned repeatZ) :
-  distribution(std::move(d)),
-  rX(repeatX),
-  rY(repeatY),
-  rZ(repeatZ)
-{}
+    distribution(std::move(d)),
+    rX(repeatX),
+    rY(repeatY),
+    rZ(repeatZ)
+  {}
 
 ///Generates the inner trajectory of `(nat)/(rX*rY*rZ)`, where `nat` is the dimension of the vector view, then it replicate the atoms in the various directions
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
              Random& rng) override {
-  plumed_assert((posToUpdate.size() % (rX*rY*rZ)==0));
-  const auto nat = posToUpdate.size()/(rX*rY*rZ);
-  auto coordinates=posToUpdate.subview(0,nat);
-  distribution->frame(coordinates,box,step,rng);
+    plumed_assert((posToUpdate.size() % (rX*rY*rZ)==0));
+    const auto nat = posToUpdate.size()/(rX*rY*rZ);
+    auto coordinates=posToUpdate.subview(0,nat);
+    distribution->frame(coordinates,box,step,rng);
 
-  // repetitions
-  auto p = posToUpdate.begin()+nat;
+    // repetitions
+    auto p = posToUpdate.begin()+nat;
 
-  assert((rX*rY*rZ)*nat == posToUpdate.size());
+    assert((rX*rY*rZ)*nat == posToUpdate.size());
 
-  Vector boxX(box[0],box[1],box[2]);
-  Vector boxY(box[3],box[4],box[5]);
-  Vector boxZ(box[6],box[7],box[8]);
-  for (unsigned x=0; x<rX; ++x) {
-    for (unsigned y=0; y<rY; ++y) {
-      for (unsigned z=0; z<rZ; ++z) {
-        if(x==0&&y==0&&z==0) {
-          continue;
-        }
-        for (unsigned i=0; i<nat; ++i) {
-          *p=coordinates[i]
-             + x * boxX
-             + y * boxY
-             + z * boxZ;
-          ++p;
+    Vector boxX(box[0],box[1],box[2]);
+    Vector boxY(box[3],box[4],box[5]);
+    Vector boxZ(box[6],box[7],box[8]);
+    for (unsigned x=0; x<rX; ++x) {
+      for (unsigned y=0; y<rY; ++y) {
+        for (unsigned z=0; z<rZ; ++z) {
+          if(x==0&&y==0&&z==0) {
+            continue;
+          }
+          for (unsigned i=0; i<nat; ++i) {
+            *p=coordinates[i]
+               + x * boxX
+               + y * boxY
+               + z * boxZ;
+            ++p;
+          }
         }
       }
     }
+    box[0]*=rX;
+    box[1]*=rX;
+    box[2]*=rX;
+
+    box[3]*=rY;
+    box[4]*=rY;
+    box[5]*=rY;
+
+    box[6]*=rZ;
+    box[7]*=rZ;
+    box[8]*=rZ;
   }
-  box[0]*=rX;
-  box[1]*=rX;
-  box[2]*=rX;
-
-  box[3]*=rY;
-  box[4]*=rY;
-  box[5]*=rY;
-
-  box[6]*=rZ;
-  box[7]*=rZ;
-  box[8]*=rZ;
-}
 
 ///See the documentation the AtomDistribution
   bool overrideNat(unsigned& natoms) override {
-  distribution->overrideNat(natoms);
-  natoms *= (rX*rY*rZ);
-  return true;
-}
+    distribution->overrideNat(natoms);
+    natoms *= (rX*rY*rZ);
+    return true;
+  }
 };
 
 ///a decorator for scaling the atomic positions
@@ -529,48 +528,47 @@ public:
   static constexpr auto id="scale";
   static constexpr auto doc=R"=(scales the atoms by a certain amount
 usage:
- scale (optional: mults=2.0)
-)=";
+  scale (optional: mults=2.0))=";
 
   static std::unique_ptr<AtomDistribution> decorate(std::unique_ptr<AtomDistribution>&& d,
-    std::string_view cmd) {
-  unpackedLine lines;
-  Tools::getWordsSimple(lines,cmd);
-  plumed_assert(lines.size() <=2) << id << " supports maximum one input";
-  if (lines.size()==2) {
-    double mult=2.0;
-    Tools::convert(std::string(lines[1]), mult);
-    return std::make_unique<scaledTrajectory>(std::move(d),mult);
+      std::string_view cmd) {
+    unpackedLine lines;
+    Tools::getWordsSimple(lines,cmd);
+    plumed_assert(lines.size() <=2) << id << " supports maximum one input";
+    if (lines.size()==2) {
+      double mult=2.0;
+      Tools::convert(std::string(lines[1]), mult);
+      return std::make_unique<scaledTrajectory>(std::move(d),mult);
+    }
+
+    //the default value is specified in the header
+    return std::make_unique<scaledTrajectory>(std::move(d));
   }
 
-  //the default value is specified in the header
-  return std::make_unique<scaledTrajectory>(std::move(d));
-}
-
   scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,
-		   double mult=2.0):
-  distribution(std::move(d)),
-  multiplier(mult)
-{}
+                   double mult=2.0):
+    distribution(std::move(d)),
+    multiplier(mult)
+  {}
 
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
              Random& rng) override {
-  distribution->frame(posToUpdate,box,step,rng);
+    distribution->frame(posToUpdate,box,step,rng);
 
-  for (auto& p:posToUpdate) {
-    p*=multiplier;
+    for (auto& p:posToUpdate) {
+      p*=multiplier;
+    }
+
+    for (auto& b:box) {
+      b*=multiplier;
+    }
   }
 
-  for (auto& b:box) {
-    b*=multiplier;
+  bool overrideNat(unsigned& natoms) override {
+    return distribution->overrideNat(natoms);
   }
-}
-
-	bool overrideNat(unsigned& natoms) override {
-  return distribution->overrideNat(natoms);
-}
 };
 
 
@@ -581,45 +579,44 @@ class wiggleTrajectory: public AtomDistribution {
   double radius;
 public:
   static constexpr auto id="wiggle";
-  static constexpr auto doc=R"=(displaces all the atoms by a certain amunt
+  static constexpr auto doc=R"=(displaces all the atoms by a certain amount
 usage:
- wiggle (optional: sphere radius=0.1)
-)=";
+  wiggle (optional: sphere radius=0.1))=";
   static std::unique_ptr<AtomDistribution> decorate(
-		std::unique_ptr<AtomDistribution>&& d,
+    std::unique_ptr<AtomDistribution>&& d,
     std::string_view cmd) {
-  unpackedLine lines;
-  Tools::getWordsSimple(lines,cmd);
-  plumed_assert(lines.size() <=2) << id << " supports maximum one input";
-  if (lines.size()==2) {
-    double displacement=0.1;
-    Tools::convert(std::string(lines[1]), displacement);
-    return std::make_unique<wiggleTrajectory>(std::move(d),displacement);
+    unpackedLine lines;
+    Tools::getWordsSimple(lines,cmd);
+    plumed_assert(lines.size() <=2) << id << " supports maximum one input";
+    if (lines.size()==2) {
+      double displacement=0.1;
+      Tools::convert(std::string(lines[1]), displacement);
+      return std::make_unique<wiggleTrajectory>(std::move(d),displacement);
+    }
+    //the default value is specified in the header
+    return std::make_unique<wiggleTrajectory>(std::move(d));
   }
-  //the default value is specified in the header
-  return std::make_unique<wiggleTrajectory>(std::move(d));
-}
 
   wiggleTrajectory(std::unique_ptr<AtomDistribution>&& d,
-		   double amount=0.1) :
-  distribution(std::move(d)),
-  radius(amount)
-{}
+                   double amount=0.1) :
+    distribution(std::move(d)),
+    radius(amount)
+  {}
 
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned step,
              Random& rng) override {
-  distribution->frame(posToUpdate,box,step,rng);
+    distribution->frame(posToUpdate,box,step,rng);
 
-  UniformSphericalVector usv(radius);
-  for (auto& v: posToUpdate) {
-    v+= usv(rng);
+    UniformSphericalVector usv(radius);
+    for (auto& v: posToUpdate) {
+      v+= usv(rng);
+    }
   }
-}
   bool overrideNat(unsigned& natoms) override {
-  return distribution->overrideNat(natoms);
-}
+    return distribution->overrideNat(natoms);
+  }
 };
 
 
@@ -632,9 +629,9 @@ public:
   static constexpr auto id="box";
   static constexpr auto doc=R"=(Forces a box on the atom distribution
 usage:
- "box xx yy zz"
-or
- "box xx xy xy yx yy yz zx zy zz")=";
+  box xx yy zz
+ or
+  box xx xy xy yx yy yz zx zy zz)=";
 
   static std::unique_ptr<AtomDistribution> decorate(
     std::unique_ptr<AtomDistribution>&& d,
@@ -705,7 +702,7 @@ public:
   static constexpr auto id="fix";
   static constexpr auto doc=R"=(Fixes the trajectory for stride steps, or forever if stride is 0
 usage:
- "fix stride(optional)")=";
+  fix (optional stride=0))=";
 
   static std::unique_ptr<AtomDistribution> decorate(
     std::unique_ptr<AtomDistribution>&& d,
