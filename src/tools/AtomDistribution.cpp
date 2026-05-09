@@ -70,13 +70,12 @@ struct theLine:public AtomDistribution {
   static constexpr auto doc="A line of atoms, that wiggles randomly at each step";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
-             unsigned step,
-             Random& rng) override {
+             unsigned /*step*/,
+             Random& /*rng*/) override {
     auto nat = posToUpdate.size();
-    UniformSphericalVector usv(0.5);
 
     for (unsigned i=0; i<nat; ++i) {
-      posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
+      posToUpdate[i] = Vector(i, 0, 0);
     }
     box[0]=nat;
     box[1]=0.0;

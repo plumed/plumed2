@@ -378,7 +378,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
-  keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  keys.add("compulsory","--atom-distribution","line|wiggle 0.5","the kind of possible atomic displacement at each step");
   // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
