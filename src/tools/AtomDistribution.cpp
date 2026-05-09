@@ -691,6 +691,75 @@ or
   }
 };
 
+/// A decorator for fixing the state of the trajectory
+class fixedTrajectory: public AtomDistribution {
+  std::unique_ptr<AtomDistribution> distribution;
+  std::array<double,9> fixedBox= {0.0,0.0,0.0,
+                                  0.0,0.0,0.0,
+                                  0.0,0.0,0.0
+                                 };
+  std::vector<Vector> positions= {};
+  unsigned stride=0;
+  bool generate=true;
+public:
+  static constexpr auto id="fix";
+  static constexpr auto doc=R"=(Fixes the trajectory for stride steps, or forever if stride is 0
+usage:
+ "fix stride(optional)")=";
+
+  static std::unique_ptr<AtomDistribution> decorate(
+    std::unique_ptr<AtomDistribution>&& d,
+    std::string_view cmd) {
+    unpackedLine lines;
+    Tools::getWordsSimple(lines,cmd);
+    plumed_assert(lines.size() <= 2) << id << " supports only one optional parameter for the stride";
+
+    if (lines.size()==2) {
+      unsigned newStride=0;
+      Tools::convert(std::string(lines[1]), newStride);
+      return std::make_unique<fixedTrajectory>(std::move(d),newStride);
+    }
+    //the default value is specified in the header
+    return std::make_unique<fixedTrajectory>(std::move(d));
+  }
+  fixedTrajectory(std::unique_ptr<AtomDistribution>&& d,
+                  unsigned newStride=0):
+    distribution(std::move(d)),
+    stride(newStride)
+  {}
+
+  void frame(View<Vector> posToUpdate,
+             View<double,9> box,
+             unsigned step,
+             Random& rng) override {
+    generate = (!generate && stride>0) ?
+               step%stride==0
+               : generate;
+    if (generate) {
+      positions.resize(posToUpdate.size());
+      distribution->frame(
+        make_view(positions),
+        View<double,9>(fixedBox.data()),
+        step,rng);
+      generate=false;
+    }
+    plumed_assert(positions.size() == posToUpdate.size()) << "fixed atom distributions: the expected number of atoms  changed";
+    std::copy(positions.begin(),positions.end(),posToUpdate.begin());
+    box[0] = fixedBox[0];
+    box[1] = fixedBox[1];
+    box[2] = fixedBox[2];
+    box[3] = fixedBox[3];
+    box[4] = fixedBox[4];
+    box[5] = fixedBox[5];
+    box[6] = fixedBox[6];
+    box[7] = fixedBox[7];
+    box[8] = fixedBox[8];
+  }
+
+  bool overrideNat(unsigned& natoms) override {
+    return distribution->overrideNat(natoms);
+  }
+};
 //****************************Helpers and managements***************************
 
 
@@ -753,7 +822,8 @@ using decoratorDistribuitions = std::variant<
                                 repliedTrajectory,
                                 scaledTrajectory,
                                 wiggleTrajectory,
-                                forceBoxTrajectory>;
+                                forceBoxTrajectory,
+                                fixedTrajectory>;
 
 template <size_t I=0>
 std::optional<std::unique_ptr<AtomDistribution>> getAD(std::string_view atomicDistr) {
