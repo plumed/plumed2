@@ -1,4 +1,3 @@
-mpiprocs=3
 type=make
 extra_files="../rt-Neigbourlist/main.cpp"
 
