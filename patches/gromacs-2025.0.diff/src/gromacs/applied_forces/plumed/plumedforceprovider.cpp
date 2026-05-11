@@ -130,7 +130,10 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
 
     plumed_->cmd("setNatoms", options.natoms_);
     plumed_->cmd("setMDEngine", "gromacs");
-    plumed_->cmd("setLogFile", "PLUMED.OUT");
+    if (const char* logFile = getenv("PLUMED_LOG_FILE"))
+        plumed_->cmd("setLogFile", logFile);
+    else
+        plumed_->cmd("setLogFile", "PLUMED.OUT");
 
     plumed_->cmd("setTimestep", &options.simulationTimeStep_);
     plumed_->cmd("init", nullptr);
