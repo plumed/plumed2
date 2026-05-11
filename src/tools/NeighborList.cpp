@@ -102,7 +102,17 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
 
 NeighborList::~NeighborList()=default;
 
+void NeighborList::forceNLLC(bool useNLLC) {
+  use_NL_LC_=useNLLC;
+}
+
 void NeighborList::initialize() {
+  constexpr const char* envLNLCKey="PLUMED_FORCE_NL_LC";
+  if(!std::getenv(envLNLCKey)) {
+    //should we log it?
+    forceNLLC(true);
+  }
+
   constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
   //this checks the upper limit of the memory
   if(!std::getenv(envKey)) {
@@ -299,12 +309,10 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned stride=(serial_)? 1 : comm.Get_size();
     const unsigned rank  =(serial_)? 0 : comm.Get_rank();
 
-      const double d2=distance_*distance_;
+    const double d2=distance_*distance_;
     std::vector<unsigned> local_flat_nl;
 
-    //the number 1 here is temporary, for testing purpose
-    if (style_ == NNStyle::Pair || fullatomlist_.size() < 1) {
-
+    if (style_ == NNStyle::Pair || !use_NL_LC_) {
 
       const unsigned elementsPerRank = std::ceil(double(nallpairs_)/stride);
       const unsigned int start= rank*elementsPerRank;
