@@ -1055,7 +1055,7 @@ if test $libitensor = true ; then
   # everywhere, this PLUMED_CHECK_CXXFLAG call can be removed.
   PLUMED_CHECK_CXXFLAG([-fconcepts])
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -fopenmp"
+  CXXFLAGS="$CXXFLAGS -fconcepts -fopenmp"
   PLUMED_CHECK_CXX_PACKAGE([libitensor],[
     #include <itensor/all.h>
     int main() {
@@ -1066,6 +1066,9 @@ if test $libitensor = true ; then
     }
   ], [__PLUMED_HAS_LIBITENSOR], [ itensor openblas ], [true])
   CXXFLAGS="$save_CXXFLAGS"
+  if test "$__PLUMED_HAS_LIBITENSOR" = yes ; then
+    PLUMED_CHECK_CXXFLAG([-fconcepts])
+  fi
 fi
 
 acc_found=ko

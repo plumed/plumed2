@@ -4,7 +4,8 @@
    See the COPYRIGHT file distributed with this software for license details.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TTHelper.h"
-#if defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)
+#ifdef __PLUMED_HAS_LIBITENSOR
+#ifdef __PLUMED_HAS_LIBHDF5
 
 using namespace itensor;
 
@@ -182,4 +183,5 @@ void marginal2d(const MPS& tt, const std::vector<BasisFunc>& basis, int pos1, in
 
 }
 }
-#endif // defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)
+#endif // __PLUMED_HAS_LIBHDF5
+#endif // __PLUMED_HAS_LIBITENSOR

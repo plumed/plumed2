@@ -6,7 +6,8 @@
  */
 
 #include "TTHelper.h"
-#if defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)
+#ifdef __PLUMED_HAS_LIBITENSOR
+#ifdef __PLUMED_HAS_LIBHDF5
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
@@ -21,6 +22,43 @@ using namespace PLMD::bias;
 
 namespace PLMD {
 namespace ttsketch {
+
+//+PLUMEDOC BIAS TTMETAD
+/*
+Performs metadynamics with a tensor-train representation of the bias potential.
+
+This action runs metadynamics while periodically compressing the accumulated
+Gaussian hills into a low-rank tensor train (TT) using the TT-Sketch algorithm.
+The TT representation keeps memory and evaluation cost bounded throughout long
+simulations, in contrast to standard metadynamics where cost grows linearly with
+the number of deposited hills.
+
+## Examples
+
+The following input runs TT-MetaD on two distances. Hills are deposited every
+500 steps and compressed into a TT every 1e6 steps with target rank 10.
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+TTMETAD ...
+  ARG=d1,d2
+  SIGMA=0.1,0.1
+  HEIGHT=1.0
+  PACE=500
+  SKETCH_PACE=1000000
+  SKETCH_RANK=10
+  SKETCH_INITRANK=50
+  INTERVAL_MIN=0.0,0.0
+  INTERVAL_MAX=3.0,3.0
+  FILE=HILLS
+  LABEL=tt
+... TTMETAD
+PRINT ARG=tt.bias FILE=COLVAR STRIDE=100
+```
+
+*/
+//+ENDPLUMEDOC
 
 class TTMetaD : public Bias {
 
@@ -1090,4 +1128,5 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
 
 }
 }
-#endif // defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)
+#endif // __PLUMED_HAS_LIBHDF5
+#endif // __PLUMED_HAS_LIBITENSOR
