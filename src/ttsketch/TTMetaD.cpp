@@ -6,7 +6,7 @@
  */
 
 #include "TTHelper.h"
-#ifdef __PLUMED_HAS_LIBITENSOR
+#if defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
@@ -460,7 +460,9 @@ void TTMetaD::update() {
       std::vector<double> A0(N);
       Matrix<double> x(N, this->d_);
       for(unsigned i = 0; i < N; ++i) {
-        for(unsigned j = 0; j < this->d_; ++j) x(i, j) = this->hills_[i].center[j];
+        for(unsigned j = 0; j < this->d_; ++j) {
+          x(i, j) = this->hills_[i].center[j];
+        }
         A0[i] = getBias(this->hills_[i].center);
       }
 
@@ -475,7 +477,9 @@ void TTMetaD::update() {
       std::vector<double> diff(N);
       for(unsigned i = 0; i < N; ++i) {
         std::vector<double> xi(this->d_);
-        for(unsigned j = 0; j < this->d_; ++j) xi[j] = x(i, j);
+        for(unsigned j = 0; j < this->d_; ++j) {
+          xi[j] = x(i, j);
+        }
         diff[i] = getBias(xi);
       }
       std::transform(diff.begin(), diff.end(), A0.begin(), diff.begin(), std::minus<double>());
@@ -1086,4 +1090,4 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
 
 }
 }
-#endif // __PLUMED_HAS_LIBITENSOR
+#endif // defined(__PLUMED_HAS_LIBITENSOR) && defined(__PLUMED_HAS_LIBHDF5)

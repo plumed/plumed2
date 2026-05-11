@@ -39,7 +39,7 @@ Once ITensor is built, configure PLUMED from its source directory. Adjust
 library paths and flags to match your `options.mk`:
 
 ```bash
-./configure --enable-modules=ttsketch \
+./configure --enable-modules=ttsketch --enable-libitensor \
     LDFLAGS="-L/path/to/ITensor/lib" \
     CPPFLAGS="-I/path/to/ITensor -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h" \
     LIBS="-litensor -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lhdf5 -lhdf5_hl" \
