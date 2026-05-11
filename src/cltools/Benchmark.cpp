@@ -31,6 +31,7 @@
 #include "tools/Random.h"
 #include "tools/TrajectoryParser.h"
 #include "tools/AtomDistribution.h"
+#include "tools/AtomDistributionFiles.h"
 
 #include <cstdio>
 #include <string>
@@ -353,34 +354,15 @@ public:
     if (!toret.has_value()) {
       return std::nullopt;
     }
-    double scale = -1;
-    parse("--scale",scale);
-    if (scale>0) {
+
+    if(std::string trajectoryModifications="";
+        parse("--modify-trajectory",trajectoryModifications)) {
+
+      log << "Using --modify-trajectory=" << trajectoryModifications << "\n";
       std::unique_ptr<AtomDistribution> tmp = std::move(*toret);
-      toret = std::make_unique<scaledTrajectory>(std::move(tmp),
-              scale);
+      toret = AtomDistribution::decorateAtomDistribution(std::move(tmp),trajectoryModifications);
     }
-    ///@todo: add a the possibility to add the pcbbox via CLI
-    /// this is necessary for some molfile plugins
-    int repeatX=0;
-    int repeatY=0;
-    int repeatZ=0;
-    parse("--repeatX",repeatX);
-    log << "Using --repeatX=" << repeatX << "\n";
-    parse("--repeatY",repeatY);
-    log << "Using --repeatY=" << repeatY << "\n";
-    parse("--repeatZ",repeatZ);
-    log << "Using --repeatZ=" << repeatZ << "\n";
-    if (repeatX<1 || repeatY<1 || repeatZ<1) {
-      log << "ERROR: repetitions of the trajectory must be >=1\n";
-      return std::nullopt;
-    }
-    if (repeatX*repeatY*repeatZ >1) {
-      return std::make_unique<repliedTrajectory>(std::move(*toret),
-             repeatX,
-             repeatY,
-             repeatZ);
-    }
+
     return toret;
   }
 };
@@ -396,20 +378,14 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
-  keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  keys.add("compulsory","--atom-distribution","line|wiggle 0.5","the kind of possible atomic displacement at each step");
   // Maybe "--atom-distribution" can be more clear when calling --help if we use reset_style to "atoms"
   keys.add("optional","--dump-trajectory","dump the trajectory to this file");
+  keys.addFlag("--ad-help",false,"print a small help text for the atom distributions");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
   TrajectoryParser::registerKeywords(keys);
-  keys.add("compulsory","--repeatX","1","number of time to align the read trajectory along the fist box component,"
-           " ingnored with a atomic distribution");
-  keys.add("compulsory","--repeatY","1","number of time to align the read trajectory along the second box component,"
-           " ingnored with a atomic distribution");
-  keys.add("compulsory","--repeatZ","1","number of time to align the read trajectory along the third box component,"
-           " ingnored with a atomic distribution");
-  //defaults to negative because we are parsing doubles
-  keys.add("compulsory","--scale","-1","multiplies atom positions and box dimensions by the specified positive number");
+  keys.add("optional","--modify-trajectory","apply some modifications to the trajectory used in the benchmark, can modify a parsed file");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -439,6 +415,41 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   } else {
     log.link(log_dev_null.get());
   }
+
+  bool printADHelp=false;
+  parseFlag("--ad-help",printADHelp);
+  if (printADHelp) {
+    log << "Documentation for the atomic distributions:\n";
+    log << "\nThese are the basic atomic distributions:\n";
+    auto distrs = AtomDistribution::getDistributionDocumentation();
+    for(const auto& d:distrs) {
+      log.printf("%8s - %s\n\n",d.id.c_str(),d.doc.c_str());
+    }
+    auto modifiers = AtomDistribution::getDecoratorsDocumentation();
+
+    log << "\nThese are the modifiers that can be applied to any atomic distributions:\n";
+    for(const auto& d:modifiers) {
+      log.printf("%8s - %s\n\n",d.id.c_str(),d.doc.c_str());
+    }
+    log << R"==(
+To use these distributions in the benchmark you can simple the cli option --atom-distribution
+like:
+  --atom-distribution="sc", with no extra modifiers
+  --atom-distribution="line|wiggle 0.5", use the pipe for modify the base distribution
+  --atom-distribution="ifcc|scale 2.3|reply 2 1 1", do not add spaces before or after the pipes
+
+As an extra tool you can append more modificators with --modify-trajectory,
+it is not necessary since you can use --atom-distribution, but can be applied
+to a trajectory read from a file, for example "box" can be used for adding
+the pbcs to certain file parsers.
+Remember that --modify-trajectory accepts only  modifiers, with the
+same syntax of --atom-distribution
+  --modify-trajectory="box 5 5 5"
+  --modify-trajectory="box 0 1 1 1 1 0 1 0 1|reply 4 2 6"
+)==";
+    return 0;
+  }
+
   log.setLinePrefix("BENCH:  ");
   log <<"Welcome to PLUMED benchmark\n";
   std::vector<Kernel> kernels;
@@ -665,7 +676,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         ofile << natoms << "\n"
               << cell[0] << " " << cell[1] << " " << cell[2] << " "
               << cell[3] << " " << cell[4] << " " << cell[5] << " "
-              << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
+              << cell[6] << " " << cell[7] << " " << cell[8]
+              << "\n";
         for(unsigned i=0; i<natoms; ++i) {
           ofile << "X\t" << pos[i]<< "\n";
         }

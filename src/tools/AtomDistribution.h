@@ -24,11 +24,13 @@
 
 #include "Vector.h"
 #include "View.h"
-#include "Tools.h"
 #include "Random.h"
-#include "TrajectoryParser.h"
 
+#include <string_view>
+#include <memory>
 #include <vector>
+#include <tuple>
+
 namespace PLMD {
 ///tested in regtest/tools/rt-make-AtomicDistribution
 ///Acts as a template for any distribution
@@ -58,144 +60,20 @@ struct AtomDistribution {
   virtual bool overrideNat(unsigned& ) {
     return false;
   }
+
+  struct documentation {
+    std::string id;
+    std::string doc;
+  };
   static std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr);
+  static std::unique_ptr<AtomDistribution> decorateAtomDistribution(
+    std::unique_ptr<AtomDistribution> && ad,
+    std::string_view decoratorsDistr);
+  static std::vector<std::string> getDistributionList();
+  static std::vector<documentation> getDistributionDocumentation();
+  static std::vector<std::string> getDecoratorsList();
+  static std::vector<documentation> getDecoratorsDocumentation();
 };
 
-///A wiggly line of atoms
-struct theLine:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned step,
-             Random& rng) override;
-};
-
-///Atom randomly distribuited in a sphere
-struct uniformSphere:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-///Atom randomly distribuited between two not overlapping a spheres
-struct twoGlobs: public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random&rng) override;
-};
-
-struct uniformCube:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-struct tiledSimpleCubic:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-/// This FCC is contained in a orthogonal cubic box
-///
-/// Fun facts: full cubes at 4, 32, 108, 256, 500 atoms and so on.
-///
-/// At certain sizes above the ones above (36, 504), you get
-/// good (100) slabs quite separated on th z axis
-struct inscribedFaceCenteredCubic:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-/// This FCC is contained in a "standard" FCC box
-struct tiledFaceCenteredCubic:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-/// This BCC is contained in a orthogonal cubic box
-struct inscribedBodyCenteredCubic:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-/// This BCC is contained in a "standard" FCC box
-struct tiledBodyCenteredCubic:public AtomDistribution {
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& rng) override;
-};
-
-/// atomic distribution from a trajectory file
-class fileTraj:public AtomDistribution {
-  TrajectoryParser parser;
-  std::vector<double> masses{};
-  std::vector<double> charges{};
-  std::vector<Vector> coordinates{};
-  std::vector<double> cell{0.0,0.0,0.0,
-        0.0,0.0,0.0,
-        0.0,0.0,0.0};
-  bool read=false;
-  bool dont_read_pbc=false;
-  void rewind();
-  //read the next step
-  void step(bool doRewind=true);
-public:
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned /*step*/,
-             Random& /*rng*/) override;
-
-  fileTraj(std::string_view fmt,
-           std::string_view fname,
-           bool useMolfile,
-           int command_line_natoms);
-  bool overrideNat(unsigned& natoms) override;
-};
-
-///a decorator for replicate the atomic distribution
-class repliedTrajectory: public AtomDistribution {
-  std::unique_ptr<AtomDistribution> distribution;
-  unsigned rX=1;
-  unsigned rY=1;
-  unsigned rZ=1;
-public:
-  repliedTrajectory(std::unique_ptr<AtomDistribution>&& d,
-                    const unsigned repeatX,
-                    const unsigned repeatY,
-                    const unsigned repeatZ,
-                    // not used, here for legacy purpose
-                    const unsigned=1 /*nat*/);
-///Generates the inner trajectory of `(nat)/(rX*rY*rZ)`, where `nat` is the dimension of the vector view, then it replicate the atoms in the various directions
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned step,
-             Random& rng) override;
-///See the documentation the AtomDistribution
-  bool overrideNat(unsigned& natoms) override;
-};
-
-///a decorator for scaling the atomic positions
-class scaledTrajectory: public AtomDistribution {
-  std::unique_ptr<AtomDistribution> distribution;
-  double multiplier;
-public:
-  scaledTrajectory(std::unique_ptr<AtomDistribution>&& d,  double mult);
-  void frame(View<Vector> posToUpdate,
-             View<double,9> box,
-             unsigned step,
-             Random& rng) override;
-  bool overrideNat(unsigned& natoms) override;
-};
 } //namespace PLMD
 #endif // __PLUMED_tools_AtomDistribution_h

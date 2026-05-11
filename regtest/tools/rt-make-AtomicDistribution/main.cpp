@@ -1,6 +1,8 @@
 #include "plumed/tools/AtomDistribution.h"
 #include "plumed/tools/Random.h"
 #include "plumed/tools/Vector.h"
+#include "plumed/tools/Tools.h"
+#include "plumed/tools/Pbc.h"
 #include <array>
 #include <fstream>
 #include <memory>
@@ -15,24 +17,49 @@ void atomsInBoxCheck(
   const std::vector<double> &box,
   const std::string_view header,
   std::ostream & ofs) {
-  Vector lowbound = atoms[0];
-  Vector upbound= atoms[0];
-  for (unsigned i =1; i < atoms.size(); ++i) {
-    for (unsigned j=0; j<3; ++j) {
-      if (atoms[i][j] < lowbound[j]) {
-        lowbound[j] = atoms[i][j];
-      }
-      if (atoms[i][j] > upbound[j]) {
-        upbound[j] = atoms[i][j];
+  Pbc mybox;
+  mybox.setBox(Tensor{
+    box[0],
+    box[1],
+    box[2],
+    box[3],
+    box[4],
+    box[5],
+    box[6],
+    box[7],
+    box[8]});
+  ofs << "Atoms are within box dimensions:\n";
+  if (!mybox.isOrthorombic()) {
+    bool inbox = true;
+    for (const auto& atom : atoms) {
+      auto scaled = mybox.realToScaled(atom);
+      inbox &= scaled[0]<1.0;
+      inbox &= scaled[1]<1.0;
+      inbox &= scaled[2]<1.0;
+      if (!inbox) {
+        break;
       }
     }
-  }
-  // box is orhtorombic an starts in 0,0,0:
-  //shifting lowbound and upbound to chek the box:
-  upbound-=lowbound;
-  ofs << "Atoms are within box dimensions:\n";
-  for (unsigned j=0; j<3; ++j) {
-    ofs <<header <<" all atoms in box along " <<xyz[j]<<" : "<< (upbound[j]<box[j*3+j]) << "\n";
+    ofs <<header <<" all atoms within the non orthorombic box: "<< inbox << "\n";
+  } else {
+    Vector lowbound = atoms[0];
+    Vector upbound= atoms[0];
+    for (unsigned i =1; i < atoms.size(); ++i) {
+      for (unsigned j=0; j<3; ++j) {
+        if (atoms[i][j] < lowbound[j]) {
+          lowbound[j] = atoms[i][j];
+        }
+        if (atoms[i][j] > upbound[j]) {
+          upbound[j] = atoms[i][j];
+        }
+      }
+    }
+    // box is orhtorombic an starts in 0,0,0:
+    //shifting lowbound and upbound to chek the box:
+    upbound-=lowbound;
+    for (unsigned j=0; j<3; ++j) {
+      ofs <<header <<" all atoms in box along " <<xyz[j]<<" : "<< (upbound[j]<box[j*3+j]) << "\n";
+    }
   }
 }
 
@@ -63,14 +90,15 @@ void replyTrajCheck(std::string_view kind,
   unsigned nat = atoms.size();
   const auto oldNat=nat;
 
-  std::unique_ptr<PLMD::AtomDistribution> rep= std::make_unique<repliedTrajectory>([&]() {
+  auto rep= [&]() {
     auto d = AtomDistribution::getAtomDistribution(kind);
     d->frame(atoms,basebox,0,rng);
-    return d;
+    auto mod="reply "+ std::to_string(num[0]) + " "
+             + std::to_string(num[1]) + " "
+             + std::to_string(num[2]);
+    return AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  num[0], num[1], num[2],
-  nat);
+  ();
 
   //this must return true
   ofs <<header<< " rep->overrideNat(nat)=" <<
@@ -125,20 +153,16 @@ void scaleTrajCheck(std::string_view kind,
   rng.setSeed(12345);
   std::vector<Vector> baseatoms(200);
   std::vector<double> basebox(9);
-  std::unique_ptr<PLMD::AtomDistribution> scaled= std::make_unique<scaledTrajectory>([&]() {
+  auto scaled= [&]() {
     std::unique_ptr<PLMD::AtomDistribution> d;
-    if (kind == "sphere-reply212") {
-      d = std::make_unique<repliedTrajectory>(
-            AtomDistribution::getAtomDistribution("sphere"),
-            2,1,2,baseatoms.size()/(2*1*2));
-    } else {
       d = AtomDistribution::getAtomDistribution(kind);
-    }
     d->frame(baseatoms,basebox,0,rng);
-    return d;
+
+    auto mod="scale "+ std::to_string(scale) + " ";
+    return
+      AtomDistribution::decorateAtomDistribution(std::move(d),mod);
   }
-  (),
-  scale);
+  ();
 
   std::vector<Vector> atoms(200);
   std::vector<double> box(9);
@@ -151,7 +175,8 @@ void scaleTrajCheck(std::string_view kind,
   ofs << header << "The atoms are scaled correctly:\t";
   bool correct = true;
   for(unsigned i =0; i< atoms.size() && correct; ++i) {
-    correct = (abs(scale*baseatoms[i][0] - atoms[i][0]) < 1000*PLMD::epsilon)&&
+    correct = (abs(scale*baseatoms[i][0] - atoms[i][0]) < 1000*PLMD::epsilon)
+              &&
               (abs(scale*baseatoms[i][1] - atoms[i][1]) < 1000*PLMD::epsilon)&&
               (abs(scale*baseatoms[i][2] - atoms[i][2]) < 1000*PLMD::epsilon);
 
@@ -161,11 +186,87 @@ void scaleTrajCheck(std::string_view kind,
   atomsInBoxCheck(atoms,box,header,ofs);
   ofs << "New box has the correct dimensions:\n";
   for (unsigned j=0; j<3; ++j) {
-    ofs <<header <<" correct box dimension " <<xyz[j]<<" : "
+    ofs <<header <<" correct box dimension " <<xyz[j]
+        <<" : "
         << ((scale*basebox[j*3+j] - box[j*3+j]) < 1000*PLMD::epsilon) << "\n";
   }
 }
 
+void fixTrajCheck(std::string_view kind,
+                  std::ostream & ofs) {
+  std::stringstream ss;
+  ss << "[fixTrajCheck -" << kind << "-]:";
+  auto header = ss.str();
+  ofs << header << "\n";
+  //reinitialized each time for stability
+  Random rng;
+  rng.setSeed(12345);
+  std::vector<Vector> baseatoms(200);
+  std::vector<double> basebox(9);
+  // sphere generates a new configuration at each step
+  auto d = AtomDistribution::getAtomDistribution(std::string(kind)+"|fix");
+  d->frame(baseatoms,basebox,0,rng);
+  std::vector<Vector> atoms(200);
+  std::vector<double> box(9);
+  //generating the next frame
+  d->frame(atoms,box,0,rng);
+
+  ofs << header << "The atoms are fixed correctly:\t";
+  bool correct = true;
+  for(unsigned i =0; i< atoms.size() && correct; ++i) {
+    correct = (abs(baseatoms[i][0] - atoms[i][0]) < 1000*PLMD::epsilon)
+              &&
+              (abs(baseatoms[i][1] - atoms[i][1]) < 1000*PLMD::epsilon)&&
+              (abs(baseatoms[i][2] - atoms[i][2]) < 1000*PLMD::epsilon);
+
+  }
+  ofs << correct << "\n";
+}
+
+void forceBoxCheck(std::string_view kind, std::ostream & ofs) {
+  std::string header= "[forceBoxCheck -"+ std::string(kind) + "-]:";
+  ofs << header << "\n";
+  {
+    auto d = AtomDistribution::getAtomDistribution(std::string(kind)+"|box 1 2 3" );
+    //reinitialized each time for stability
+    Random rng;
+    std::vector<Vector> atoms(200);
+    std::vector<double> box(9);
+    d->frame(atoms,box,0,rng);
+    ofs << header << "The box is changed as asked (ortho): ";
+
+    bool success = (box[0] - 1.0)< 1000 * PLMD::epsilon &&
+                   box[1] <  1000 * PLMD::epsilon &&
+                   box[2] <  1000 * PLMD::epsilon &&
+                   box[3] <  1000 * PLMD::epsilon &&
+                   (box[4] - 2.0) <  1000 * PLMD::epsilon &&
+                   box[5] <  1000 * PLMD::epsilon &&
+                   box[6] <  1000 * PLMD::epsilon &&
+                   box[7] <  1000 * PLMD::epsilon &&
+                   (box[8] - 3.0) <  1000 * PLMD::epsilon;
+    ofs << success << "\n";
+  }
+  {
+    auto d = AtomDistribution::getAtomDistribution(std::string(kind)+"|box 1 2 3 4 5 6 7 8 9" );
+    //reinitialized each time for stability
+    Random rng;
+    std::vector<Vector> atoms(200);
+    std::vector<double> box(9);
+    d->frame(atoms,box,0,rng);
+    ofs << header << "The box is changed as asked (9 elements): ";
+
+    bool success = (box[0] - 1.0)< 1000 * PLMD::epsilon &&
+                   (box[1] - 2.0) <  1000 * PLMD::epsilon &&
+                   (box[2] - 3.0) <  1000 * PLMD::epsilon &&
+                   (box[3] - 4.0) <  1000 * PLMD::epsilon &&
+                   (box[4] - 5.0) <  1000 * PLMD::epsilon &&
+                   (box[5] - 6.0) <  1000 * PLMD::epsilon &&
+                   (box[6] - 7.0) <  1000 * PLMD::epsilon &&
+                   (box[7] - 8.0) <  1000 * PLMD::epsilon &&
+                   (box[8] - 9.0) <  1000 * PLMD::epsilon;
+    ofs << success << "\n";
+  }
+}
 int main() {
   std::ofstream ofs("output");
   ofs << std::boolalpha;
@@ -174,7 +275,11 @@ int main() {
          "cube",
          "sphere",
          "globs",
-         "sc"
+         "sc",
+         "fcc",
+         "bcc",
+         "ifcc",
+         "ibcc"
        }) {
     basecheck(kind,ofs);
     ofs << "\n";
@@ -193,8 +298,17 @@ int main() {
     scaleTrajCheck("sphere",num,ofs);
     scaleTrajCheck("sc",num,ofs);
     scaleTrajCheck("globs",num,ofs);
-    scaleTrajCheck("sphere-reply212",num,ofs);
+    scaleTrajCheck("sphere|reply 2 1 2",num,ofs);
     ofs << "\n";
   }
+  forceBoxCheck("sc",ofs);
+  forceBoxCheck("fcc",ofs);
+  //I actually do not know how to test wiggle in a sensible way
+  // cube, globs and sphere are generate a randm configuration at each step
+  fixTrajCheck("cube",ofs);
+  fixTrajCheck("globs",ofs);
+  fixTrajCheck("sphere",ofs);
+  fixTrajCheck("sphere|reply 1 1 2",ofs);
+  fixTrajCheck("ifcc|wiggle 0.5",ofs);
   return 0;
 }
