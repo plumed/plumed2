@@ -77,7 +77,7 @@ jobs:
       # with libitensor.a (built without that flag), causing compilation errors in
       # ITensor headers and runtime corruption. The #ifdef __PLUMED_HAS_LIBITENSOR
       # guards in ttsketch ensure safe compilation when ITensor is not configured.
-      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
         ITENSOR_DIR="$HOME/opt/itensor"
         HDF5_CFLAGS=$(pkg-config --cflags hdf5-serial 2>/dev/null || pkg-config --cflags hdf5 2>/dev/null || echo "-I/usr/include/hdf5/serial")
