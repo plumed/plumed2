@@ -55,6 +55,8 @@ PRINT ARG=tt.bias FILE=COLVAR STRIDE=100
 */
 //+ENDPLUMEDOC
 
+using namespace PLMD::bias;
+
 #if !defined(__PLUMED_HAS_LIBITENSOR) || !defined(__PLUMED_HAS_LIBHDF5)
 
 class TTMetaD : public Bias {
@@ -71,7 +73,6 @@ public:
 #else
 
 using namespace itensor;
-using namespace PLMD::bias;
 
 class TTMetaD : public Bias {
 
