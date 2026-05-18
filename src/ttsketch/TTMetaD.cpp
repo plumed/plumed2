@@ -6,8 +6,6 @@
  */
 
 #include "TTHelper.h"
-#ifdef __PLUMED_HAS_LIBITENSOR
-#ifdef __PLUMED_HAS_LIBHDF5
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
@@ -16,9 +14,6 @@
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
-
-using namespace itensor;
-using namespace PLMD::bias;
 
 namespace PLMD {
 namespace ttsketch {
@@ -59,6 +54,24 @@ PRINT ARG=tt.bias FILE=COLVAR STRIDE=100
 
 */
 //+ENDPLUMEDOC
+
+#if !defined(__PLUMED_HAS_LIBITENSOR) || !defined(__PLUMED_HAS_LIBHDF5)
+
+class TTMetaD : public Bias {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit TTMetaD(const ActionOptions& ao) : Action(ao), Bias(ao) {
+    error("TTMETAD requires libitensor and libhdf5. "
+          "Reconfigure with --enable-libitensor.");
+  }
+  void calculate() override {}
+  void update() override {}
+};
+
+#else
+
+using namespace itensor;
+using namespace PLMD::bias;
 
 class TTMetaD : public Bias {
 
@@ -134,36 +147,6 @@ public:
   void update() override;
   static void registerKeywords(Keywords& keys);
 };
-
-PLUMED_REGISTER_ACTION(TTMetaD, "TTMETAD")
-
-void TTMetaD::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
-  keys.addFlag("KERNEL_BASIS", false, "Specifies that local kernel basis should be used instead of Fourier basis");
-  keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
-  keys.add("compulsory", "PACE", "the frequency for hill addition");
-  keys.add("compulsory", "FILE", "HILLS", "a file in which the list of added hills is stored");
-  keys.add("compulsory", "HEIGHT", "the heights of the Gaussian hills");
-  keys.add("optional", "FMT", "specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional", "BIASFACTOR", "use well tempered metadynamics and use this bias factor. Please note you must also specify temp");
-  keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.addFlag("WALKERS_MPI", false, "To be used when gromacs + multiple walkers are used");
-  keys.add("optional", "WALKERS_DIR", "shared directory with the hills files from all the walkers");
-  keys.use("RESTART");
-  keys.add("optional", "SKETCH_RANK", "Target rank for TTSketch algorithm - compulsory if SKETCH_CUTOFF is not specified");
-  keys.add("optional", "SKETCH_CUTOFF", "Truncation error cutoff for singular value decomposition - compulsory if SKETCH_RANK is not specified");
-  keys.add("compulsory", "SKETCH_INITRANK", "Initial rank for TTSketch algorithm");
-  keys.add("compulsory", "SKETCH_PACE", "1e6", "The frequency for TT Vbias updates");
-  keys.add("compulsory", "INTERVAL_MIN", "Lower limits, outside the limits the system will not feel the biasing force");
-  keys.add("compulsory", "INTERVAL_MAX", "Upper limits, outside the limits the system will not feel the biasing force");
-  keys.add("compulsory", "SKETCH_NBASIS", "20", "Number of basis functions per dimension");
-  keys.add("compulsory", "SKETCH_ALPHA", "0.05", "Weight coefficient for random tensor train construction");
-  keys.add("optional", "SKETCH_UNTIL", "After this time, the bias potential freezes");
-  keys.add("optional", "SKETCH_WIDTH", "Width of Gaussian kernels for smoothing");
-  keys.add("optional", "KERNEL_DX", "Width of basis function kernels");
-  keys.addFlag("NONINTRUSIVE", false, "Sketching uses previous exact sum of Gaussians instead of TT approximation");
-  keys.addFlag("DETERMINISTIC", false, "Use a fixed random seed for TT sketch construction, ensuring reproducible results. Intended for regression testing.");
-}
 
 TTMetaD::TTMetaD(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao),
@@ -1126,7 +1109,37 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
   return std::make_tuple(B, envi_L, envi_R);
 }
 
+#endif // !defined(__PLUMED_HAS_LIBITENSOR) || !defined(__PLUMED_HAS_LIBHDF5)
+
+void TTMetaD::registerKeywords(Keywords& keys) {
+  Bias::registerKeywords(keys);
+  keys.addFlag("KERNEL_BASIS", false, "Specifies that local kernel basis should be used instead of Fourier basis");
+  keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
+  keys.add("compulsory", "PACE", "the frequency for hill addition");
+  keys.add("compulsory", "FILE", "HILLS", "a file in which the list of added hills is stored");
+  keys.add("compulsory", "HEIGHT", "the heights of the Gaussian hills");
+  keys.add("optional", "FMT", "specify format for HILLS files (useful for decrease the number of digits in regtests)");
+  keys.add("optional", "BIASFACTOR", "use well tempered metadynamics and use this bias factor. Please note you must also specify temp");
+  keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.addFlag("WALKERS_MPI", false, "To be used when gromacs + multiple walkers are used");
+  keys.add("optional", "WALKERS_DIR", "shared directory with the hills files from all the walkers");
+  keys.use("RESTART");
+  keys.add("optional", "SKETCH_RANK", "Target rank for TTSketch algorithm - compulsory if SKETCH_CUTOFF is not specified");
+  keys.add("optional", "SKETCH_CUTOFF", "Truncation error cutoff for singular value decomposition - compulsory if SKETCH_RANK is not specified");
+  keys.add("compulsory", "SKETCH_INITRANK", "Initial rank for TTSketch algorithm");
+  keys.add("compulsory", "SKETCH_PACE", "1e6", "The frequency for TT Vbias updates");
+  keys.add("compulsory", "INTERVAL_MIN", "Lower limits, outside the limits the system will not feel the biasing force");
+  keys.add("compulsory", "INTERVAL_MAX", "Upper limits, outside the limits the system will not feel the biasing force");
+  keys.add("compulsory", "SKETCH_NBASIS", "20", "Number of basis functions per dimension");
+  keys.add("compulsory", "SKETCH_ALPHA", "0.05", "Weight coefficient for random tensor train construction");
+  keys.add("optional", "SKETCH_UNTIL", "After this time, the bias potential freezes");
+  keys.add("optional", "SKETCH_WIDTH", "Width of Gaussian kernels for smoothing");
+  keys.add("optional", "KERNEL_DX", "Width of basis function kernels");
+  keys.addFlag("NONINTRUSIVE", false, "Sketching uses previous exact sum of Gaussians instead of TT approximation");
+  keys.addFlag("DETERMINISTIC", false, "Use a fixed random seed for TT sketch construction, ensuring reproducible results. Intended for regression testing.");
 }
-}
-#endif // __PLUMED_HAS_LIBHDF5
-#endif // __PLUMED_HAS_LIBITENSOR
+
+PLUMED_REGISTER_ACTION(TTMetaD, "TTMETAD")
+
+} // namespace ttsketch
+} // namespace PLMD
