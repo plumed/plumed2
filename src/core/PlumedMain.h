@@ -231,6 +231,8 @@ private:
 /// Flag for parse only mode -- basically just forces restart to turn off
   bool doParseOnly=false;
 
+/// Timestep saved as double
+  double timestep=0.0;
 private:
 /// Forward declaration.
   ForwardDecl<TypesafePtr> stopFlag_fwd;
@@ -533,6 +535,8 @@ public:
   double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
 /// Get the keywords for a particular action
   void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
+/// Return timestep
+  double getTimestep() const ;
 };
 
 /////
@@ -618,6 +622,10 @@ bool PlumedMain::callErrorHandler(int code,const char* msg)const {
   }
 }
 
+inline
+double PlumedMain::getTimestep() const {
+  return timestep;
+}
 
 }
 

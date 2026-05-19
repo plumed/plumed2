@@ -137,10 +137,7 @@ Action::Action(const ActionOptions&ao):
 }
 
 void Action::resetStoredTimestep() {
-  ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
-  if( ts ) {
-    timestep = (ts->copyOutput(0))->get();
-  }
+  timestep = plumed.getTimestep();
 }
 
 Action::~Action() {
