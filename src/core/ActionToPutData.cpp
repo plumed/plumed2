@@ -164,7 +164,13 @@ void ActionToPutData::updateUnits( DataPassingTools* passtools ) {
   double vunits=passtools->getUnitConversion( getUnitName() );
   mydata->setUnit(vunits);
   if( fixed && wasset ) {
-    mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
+    // We don't use share_data here because the timestep has been adjusted when
+    // it is passed to deal with rounding if we pass a float instead of a double.
+    // We thus take the values that have been passed and multiply them by the unit conversion
+    Value* myval = getPntrToValue();
+    for(unsigned i=0; i<myval->getNumberOfValues(); ++i) {
+      myval->set( i, vunits*myval->get(i) );
+    }
   }
   if( funit==eng ) {
     mydata->setForceUnit( 1/passtools->getUnitConversion("energy"));
