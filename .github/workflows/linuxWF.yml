@@ -69,7 +69,7 @@ jobs:
         # the flags above enable the use of both libmetatomic and libtorch
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
     - name: Install ITensor
-      if: ${{ contains( matrix.variant, '-mpi-' ) }}
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
       run: |
         .ci/install.itensor
     - name: Configure ITensor
