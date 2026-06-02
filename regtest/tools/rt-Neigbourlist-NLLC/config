@@ -1,0 +1,8 @@
+mpiprocs=3
+type=make
+extra_files="../rt-Neigbourlist/main.cpp"
+
+export PLUMED_NUM_THREADS=3
+
+#to test that the new algorithm does not impact the calculations
+export PLUMED_FORCE_NL_LC=yes
