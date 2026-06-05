@@ -1,0 +1,79 @@
+### CI-specific options.mk for ITensor v3
+### Uses OpenBLAS and system HDF5 (installed via apt on ubuntu-22.04).
+### Copy this file to the ITensor source directory as options.mk before building.
+
+## Compiler
+CCCOM=g++ -m64 -std=c++17 -fconcepts -fPIC
+
+## BLAS/LAPACK: use OpenBLAS (apt install libopenblas-dev)
+PLATFORM=lapack
+BLAS_LAPACK_LIBFLAGS=-lpthread -lopenblas
+
+## HDF5
+HDF5_CFLAGS  := $(shell pkg-config --cflags hdf5-serial 2>/dev/null || pkg-config --cflags hdf5 2>/dev/null)
+HDF5_LDFLAGS := $(shell pkg-config --libs-only-L hdf5-serial 2>/dev/null || pkg-config --libs-only-L hdf5 2>/dev/null)
+
+## OpenMP multithreading
+ITENSOR_USE_OMP=1
+
+## Optimization flags
+OPTIMIZATIONS=-O2 -DNDEBUG -Wall -Wno-unknown-pragmas
+
+## Debug flags
+DEBUGFLAGS=-DDEBUG -g -Wall -Wno-unknown-pragmas -pedantic
+
+## Do not build dynamic libraries (static linking is simpler in CI)
+ITENSOR_MAKE_DYLIB=0
+
+###
+### Remaining variables are derived; no need to modify below.
+###
+
+PREFIX=$(THIS_DIR)
+
+ITENSOR_LIBDIR=$(PREFIX)/lib
+ITENSOR_INCLUDEDIR=$(PREFIX)
+
+ITENSOR_LIBNAMES=itensor
+ITENSOR_LIBFLAGS=$(patsubst %,-l%, $(ITENSOR_LIBNAMES))
+ITENSOR_LIBFLAGS+= $(BLAS_LAPACK_LIBFLAGS)
+ITENSOR_LIBGFLAGS=$(patsubst %,-l%-g, $(ITENSOR_LIBNAMES))
+ITENSOR_LIBGFLAGS+= $(BLAS_LAPACK_LIBFLAGS)
+ITENSOR_LIBS=$(patsubst %,$(ITENSOR_LIBDIR)/lib%.a, $(ITENSOR_LIBNAMES))
+ITENSOR_GLIBS=$(patsubst %,$(ITENSOR_LIBDIR)/lib%-g.a, $(ITENSOR_LIBNAMES))
+
+ITENSOR_INCLUDEFLAGS=-I'$(ITENSOR_INCLUDEDIR)' $(BLAS_LAPACK_INCLUDEFLAGS)
+
+ifneq ($(strip $(HDF5_CFLAGS)),)
+ITENSOR_USE_HDF5 = 1
+# -DH5_USE_110_API: use HDF5 1.10-compatible API on HDF5 >= 1.12, which changed
+# H5Oget_info_by_name to a 5-argument form incompatible with ITensor's h5 utility code.
+ITENSOR_INCLUDEFLAGS += $(HDF5_CFLAGS) -DITENSOR_USE_HDF5 -DH5_USE_110_API
+ITENSOR_LIBFLAGS += $(HDF5_LDFLAGS) -lhdf5 -lhdf5_hl
+ITENSOR_LIBGFLAGS += $(HDF5_LDFLAGS) -lhdf5 -lhdf5_hl
+endif
+
+ifndef CCCOM
+$(error Makefile variable CCCOM not defined in options.mk; please define it.)
+endif
+
+ifdef ITENSOR_USE_OMP
+ITENSOR_INCLUDEFLAGS += -DITENSOR_USE_OMP -fopenmp
+ITENSOR_LIBFLAGS += -fopenmp
+ITENSOR_LIBGFLAGS += -fopenmp
+endif
+
+CCFLAGS=-I. $(ITENSOR_INCLUDEFLAGS) $(OPTIMIZATIONS) -Wno-unused-variable
+CCGFLAGS=-I. $(ITENSOR_INCLUDEFLAGS) $(DEBUGFLAGS)
+LIBFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBFLAGS)
+LIBGFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBGFLAGS)
+
+## Determine shared library extension
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  DYLIB_EXT ?= dylib
+  DYLIB_FLAGS ?= -dynamiclib
+else
+  DYLIB_EXT ?= so
+  DYLIB_FLAGS ?= -shared
+endif
