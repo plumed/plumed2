@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 
-path=$1
+version=$1
 
 if (($# != 1)) ; then
-echo "usage: $0 /path/to/vesin"
-echo
-echo "All the commands to run:"
-echo "    cd /some/dir/"
-echo "    git clone https://github.com/luthaf/vesin"
-echo "    cd /your/plumed2/src/metatomic"
-echo "    ./import.sh /some/dir/vesin"
-exit 0
+echo "usage: $0 <vesin-version>"
+exit 1
 fi
 
-bash -c "$path/create-single-cpp.py > /dev/null"
+rm -f vesin-single-build-v*.tar.gz
+wget https://github.com/Luthaf/vesin/releases/download/v$version/vesin-single-build-v$version.tar.gz
 
-cp $path/vesin/include/vesin.h vesin.h
-mv vesin-single-build.cpp vesin.cpp
+tar xf vesin-single-build-v$version.tar.gz
+
+mv vesin-single-build-nocuda.cpp vesin.cpp
+rm -f vesin-single-build.cpp
 
 # Patch files to follow PLUMED linter
 sed 's|#define VESIN_H|#define VESIN_H\n/*INDENT-OFF*/\n|

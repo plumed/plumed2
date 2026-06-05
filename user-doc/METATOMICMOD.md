@@ -30,7 +30,7 @@ pre-built Python wheels with `pip`. This is the same set of wheels you will need
 to define custom models.
 
 ```bash
-pip install "metatomic-torch ==0.1.0"  # change this version to get newer releases
+pip install "metatomic-torch ==0.1.13"  # change this version to get newer releases
 
 # you can then get the compiler and linker flags using the script at
 # src/metatomic/flags-from-python.py
