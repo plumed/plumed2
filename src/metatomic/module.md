@@ -29,7 +29,7 @@ to define custom models.
 
 ```bash
 # change this version to get newer releases
-pip install "metatomic-torch ==0.1.2"
+pip install "metatomic-torch ==0.1.13"  # change this version to get newer releases
 
 # you can then get the compiler and linker flags using the script at
 # src/metatomic/flags-from-python.py
