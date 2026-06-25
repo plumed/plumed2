@@ -22,9 +22,6 @@ itensor::MPS ttSumRead(const std::string& filename, unsigned count);
 // Evaluate the TT bias at point `elements` by contracting each core with its
 // 1D basis vector. If conv=true, basis functions are evaluated in convolution mode.
 double ttEval(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv);
-// Gradient of ttEval w.r.t. `elements`. Computed by replacing the k-th dimension's
-// basis vector with its derivative while keeping all others unchanged (chain rule).
-std::vector<double> ttGrad(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv);
 // Compute the covariance matrix, mean vector, and partition function of the TT distribution.
 // Normalizes tt by Z = int tt(x) dx, then returns:
 //   sigma(k,l) = E[x_k * x_l] - E[x_k]*E[x_l]  (covariance matrix)

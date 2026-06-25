@@ -4,6 +4,7 @@
    See the COPYRIGHT file distributed with this software for license details.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TTHelper.h"
+#include "tools/OpenMP.h"
 #ifdef __PLUMED_HAS_LIBITENSOR
 #ifdef __PLUMED_HAS_LIBHDF5
 
@@ -35,53 +36,6 @@ MPS ttSumRead(const std::string& filename, unsigned count) {
   return tt;
 }
 
-// Precomputed basis evaluations, reusable across ttEval and ttGrad
-struct BasisCache {
-  std::vector<ITensor> phi;   // regular basis vectors
-  std::vector<ITensor> dphi;  // derivative basis vectors (empty if not needed)
-};
-
-BasisCache buildBasisCache(const MPS& tt,
-                           const std::vector<BasisFunc>& basis,
-                           const std::vector<double>& elements,
-                           bool conv,
-                           bool with_grad = false) {
-  int d = length(tt);
-  auto s = siteInds(tt);
-  BasisCache cache;
-  cache.phi.resize(d);
-  if (with_grad) {
-    cache.dphi.resize(d);
-  }
-
-  // This loop is embarrassingly parallel and cheap; OMP overhead likely not worth it
-  // unless d is large (d > ~32). Profile before adding #pragma omp parallel for here.
-  for (int i = 0; i < d; ++i) {
-    cache.phi[i] = ITensor(s(i + 1));
-    if (with_grad) {
-      cache.dphi[i] = ITensor(s(i + 1));
-    }
-    for (int j = 1; j <= dim(s(i + 1)); ++j) {
-      cache.phi[i].set(s(i + 1) = j, basis[i](elements[i], j, conv));
-      if (with_grad) {
-        cache.dphi[i].set(s(i + 1) = j, basis[i].grad(elements[i], j, conv));
-      }
-    }
-  }
-  return cache;
-}
-
-// Evaluate TT using a prebuilt BasisCache (avoids recomputing phi when called
-// immediately before ttGrad).
-double ttEvalCached(const MPS& tt, const BasisCache& cache) {
-  int d = length(tt);
-  auto result = tt(1) * cache.phi[0];
-  for (int i = 2; i <= d; ++i) {
-    result *= tt(i) * cache.phi[i - 1];
-  }
-  return elt(result);
-}
-
 // Original ttEval kept for standalone use (no redundant work when called alone)
 double ttEval(const MPS& tt,
               const std::vector<BasisFunc>& basis,
@@ -99,37 +53,6 @@ double ttEval(const MPS& tt,
 //
 // Then grad[k] = L[k-1] * (G_k * dphi_k) * R[k+1]
 //
-// We precompute all L[] (left-to-right pass) and all R[] (right-to-left pass),
-// then combine them with a single derivative insertion per dimension.
-std::vector<double> ttGradCached(const MPS& tt, const BasisCache& cache) {
-  int d = length(tt);
-  std::vector<double> grad(d, 0.0);
-
-  // --- Left prefix products: L[i] = contraction of sites 1..i with phi ---
-  // L[0] is a scalar 1 (identity for the left boundary)
-  // L[i] has the bond index between site i and i+1 dangling (or is scalar for i==d)
-  std::vector<ITensor> L(d + 1), R(d + 2);
-
-  L[0] = ITensor(1.0);  // scalar identity
-  for (int i = 1; i <= d; ++i) {
-    L[i] = L[i - 1] * (tt(i) * cache.phi[i - 1]);
-  }
-
-  // --- Right suffix products: R[i] = contraction of sites i..d with phi ---
-  R[d + 1] = ITensor(1.0);
-  for (int i = d; i >= 1; --i) {
-    R[i] = (tt(i) * cache.phi[i - 1]) * R[i + 1];
-  }
-
-  // --- Combine: grad[k] = L[k-1] * (G_k * dphi_k) * R[k+1] ---
-  // Each combination is O(r^2 * n) instead of the full O(d * r^2 * n)
-  for (int k = 1; k <= d; ++k) {
-    grad[k - 1] = elt(L[k - 1] * (tt(k) * cache.dphi[k - 1]) * R[k + 1]);
-  }
-
-  return grad;
-}
-
 std::pair<double, std::vector<double>>
                                     ttEvalAndGrad(const itensor::MPS& tt,
                                         const std::vector<BasisFunc>& basis,
@@ -137,6 +60,7 @@ std::pair<double, std::vector<double>>
 bool conv) {
   int d = length(tt);
   auto s = siteInds(tt);
+  const unsigned nt = OpenMP::getNumThreads();
 
   // Cache cores once — tt(i) does index lookup every call
   std::vector<ITensor> cores(d);
@@ -146,6 +70,7 @@ bool conv) {
 
   // Build phi and dphi
   std::vector<ITensor> phi(d), dphi(d);
+  #pragma omp parallel for num_threads(nt) schedule(static)
   for (int i = 0; i < d; ++i) {
     phi[i] = dphi[i] = ITensor(s(i + 1));
     for (int j = 1; j <= dim(s(i + 1)); ++j) {
@@ -173,15 +98,6 @@ bool conv) {
   }
 
   return {val, grad};
-}
-
-// Standalone gradient (for places that don't need the value)
-std::vector<double> ttGrad(const MPS& tt,
-                           const std::vector<BasisFunc>& basis,
-                           const std::vector<double>& elements,
-                           bool conv) {
-  auto cache = buildBasisCache(tt, basis, elements, conv, /*with_grad=*/true);
-  return ttGradCached(tt, cache);
 }
 
 // Compute covariance matrix, marginal means, and partition function of the TT distribution.
