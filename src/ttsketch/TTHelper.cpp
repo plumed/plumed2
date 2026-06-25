@@ -41,8 +41,27 @@ double ttEval(const MPS& tt,
               const std::vector<BasisFunc>& basis,
               const std::vector<double>& elements,
               bool conv) {
-  auto cache = buildBasisCache(tt, basis, elements, conv, /*with_grad=*/false);
-  return ttEvalCached(tt, cache);
+  const int d = length(tt);
+  auto s = siteInds(tt);
+
+  std::vector<ITensor> cores(d), phi(d);
+
+  for (int i = 0; i < d; ++i) {
+    cores[i] = tt(i + 1);
+
+    phi[i] = ITensor(s(i + 1));
+    for (int j = 1; j <= dim(s(i + 1)); ++j) {
+      phi[i].set(s(i + 1) = j,
+                 basis[i](elements[i], j, conv));
+    }
+  }
+
+  auto result = cores[0] * phi[0];
+  for (int i = 1; i < d; ++i) {
+    result *= cores[i] * phi[i];
+  }
+
+  return elt(result);
 }
 
 // Gradient using prefix-suffix sweep: O(d) contractions instead of O(d^2).
