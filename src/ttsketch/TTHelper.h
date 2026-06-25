@@ -5,6 +5,7 @@
 #ifdef __PLUMED_HAS_LIBITENSOR
 #ifdef __PLUMED_HAS_LIBHDF5
 #include <itensor/all.h>
+#include <utility>
 
 namespace PLMD {
 namespace ttsketch {
@@ -34,7 +35,11 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const itensor::MP
 // Fill `grid` (bins x bins) with the 2D marginal density of `tt` for dimensions
 // pos1 and pos2, obtained by integrating out all other dimensions analytically.
 void marginal2d(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, Matrix<double>& grid, bool conv);
-
+std::pair<double, std::vector<double>>
+                                    ttEvalAndGrad(const itensor::MPS& tt,
+                                        const std::vector<BasisFunc>& basis,
+                                        const std::vector<double>& elements,
+                                        bool conv);
 }
 }
 #endif // __PLUMED_HAS_LIBHDF5

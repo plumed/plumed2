@@ -618,9 +618,13 @@ double TTMetaD::getBias(const std::vector<double>& cv) {
 }
 
 double TTMetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<double>& der) {
-  double bias = length(this->vb_) == 0 ? 0.0 : ttEval(this->vb_, this->sketch_basis_, cv, this->sketch_conv_);
-  if(length(this->vb_) != 0) {
-    der = ttGrad(this->vb_, this->sketch_basis_, cv, this->sketch_conv_);
+  double bias = 0.0;
+  if (length(this->vb_) != 0) {
+    auto [tt_bias, tt_grad] = ttEvalAndGrad(this->vb_, this->sketch_basis_, cv, this->sketch_conv_);
+    bias = tt_bias;
+    der = std::move(tt_grad);
+  } else {
+    der.assign(this->d_, 0.0);
   }
   unsigned nt = OpenMP::getNumThreads();
   if(this->hills_.size() < 2 * nt || nt == 1) {

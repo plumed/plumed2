@@ -35,50 +35,153 @@ MPS ttSumRead(const std::string& filename, unsigned count) {
   return tt;
 }
 
-// Evaluate TT by contracting each core with its 1D basis vector phi(x_i):
-//   result = sum_{i_1,...,i_d} G_1[i_1] * ... * G_d[i_d] * phi_1(x_1,i_1) * ... * phi_d(x_d,i_d)
-// The contraction is performed left-to-right so intermediate results stay rank-1 scalars.
-double ttEval(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
+// Precomputed basis evaluations, reusable across ttEval and ttGrad
+struct BasisCache {
+  std::vector<ITensor> phi;   // regular basis vectors
+  std::vector<ITensor> dphi;  // derivative basis vectors (empty if not needed)
+};
+
+BasisCache buildBasisCache(const MPS& tt,
+                           const std::vector<BasisFunc>& basis,
+                           const std::vector<double>& elements,
+                           bool conv,
+                           bool with_grad = false) {
   int d = length(tt);
   auto s = siteInds(tt);
-  std::vector<ITensor> basis_evals(d);
-  for(int i = 1; i <= d; ++i) {
-    basis_evals[i - 1] = ITensor(s(i));
-    for(int j = 1; j <= dim(s(i)); ++j) {
-      basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j, conv));
+  BasisCache cache;
+  cache.phi.resize(d);
+  if (with_grad) {
+    cache.dphi.resize(d);
+  }
+
+  // This loop is embarrassingly parallel and cheap; OMP overhead likely not worth it
+  // unless d is large (d > ~32). Profile before adding #pragma omp parallel for here.
+  for (int i = 0; i < d; ++i) {
+    cache.phi[i] = ITensor(s(i + 1));
+    if (with_grad) {
+      cache.dphi[i] = ITensor(s(i + 1));
+    }
+    for (int j = 1; j <= dim(s(i + 1)); ++j) {
+      cache.phi[i].set(s(i + 1) = j, basis[i](elements[i], j, conv));
+      if (with_grad) {
+        cache.dphi[i].set(s(i + 1) = j, basis[i].grad(elements[i], j, conv));
+      }
     }
   }
-  auto result = tt(1) * basis_evals[0];
-  for(int i = 2; i <= d; ++i) {
-    result *= tt(i) * basis_evals[i - 1];
+  return cache;
+}
+
+// Evaluate TT using a prebuilt BasisCache (avoids recomputing phi when called
+// immediately before ttGrad).
+double ttEvalCached(const MPS& tt, const BasisCache& cache) {
+  int d = length(tt);
+  auto result = tt(1) * cache.phi[0];
+  for (int i = 2; i <= d; ++i) {
+    result *= tt(i) * cache.phi[i - 1];
   }
   return elt(result);
 }
 
-// Gradient of ttEval w.r.t. elements. For each dimension k, one TT contraction is performed
-// with the k-th basis vector replaced by its derivative d phi_k/dx_k (chain rule).
-// All basis evaluations are precomputed to avoid redundant work across the d contractions.
-std::vector<double> ttGrad(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
+// Original ttEval kept for standalone use (no redundant work when called alone)
+double ttEval(const MPS& tt,
+              const std::vector<BasisFunc>& basis,
+              const std::vector<double>& elements,
+              bool conv) {
+  auto cache = buildBasisCache(tt, basis, elements, conv, /*with_grad=*/false);
+  return ttEvalCached(tt, cache);
+}
+
+// Gradient using prefix-suffix sweep: O(d) contractions instead of O(d^2).
+//
+// For a TT of length d, define:
+//   L[k] = (G_1 * phi_1) * ... * (G_k * phi_k)   [left partial product up to k]
+//   R[k] = (G_k * phi_k) * ... * (G_d * phi_d)   [right partial product from k]
+//
+// Then grad[k] = L[k-1] * (G_k * dphi_k) * R[k+1]
+//
+// We precompute all L[] (left-to-right pass) and all R[] (right-to-left pass),
+// then combine them with a single derivative insertion per dimension.
+std::vector<double> ttGradCached(const MPS& tt, const BasisCache& cache) {
+  int d = length(tt);
+  std::vector<double> grad(d, 0.0);
+
+  // --- Left prefix products: L[i] = contraction of sites 1..i with phi ---
+  // L[0] is a scalar 1 (identity for the left boundary)
+  // L[i] has the bond index between site i and i+1 dangling (or is scalar for i==d)
+  std::vector<ITensor> L(d + 1), R(d + 2);
+
+  L[0] = ITensor(1.0);  // scalar identity
+  for (int i = 1; i <= d; ++i) {
+    L[i] = L[i - 1] * (tt(i) * cache.phi[i - 1]);
+  }
+
+  // --- Right suffix products: R[i] = contraction of sites i..d with phi ---
+  R[d + 1] = ITensor(1.0);
+  for (int i = d; i >= 1; --i) {
+    R[i] = (tt(i) * cache.phi[i - 1]) * R[i + 1];
+  }
+
+  // --- Combine: grad[k] = L[k-1] * (G_k * dphi_k) * R[k+1] ---
+  // Each combination is O(r^2 * n) instead of the full O(d * r^2 * n)
+  for (int k = 1; k <= d; ++k) {
+    grad[k - 1] = elt(L[k - 1] * (tt(k) * cache.dphi[k - 1]) * R[k + 1]);
+  }
+
+  return grad;
+}
+
+std::pair<double, std::vector<double>>
+                                    ttEvalAndGrad(const itensor::MPS& tt,
+                                        const std::vector<BasisFunc>& basis,
+                                        const std::vector<double>& elements,
+bool conv) {
   int d = length(tt);
   auto s = siteInds(tt);
-  std::vector<double> grad(d, 0.0);
-  std::vector<ITensor> basis_evals(d), basisd_evals(d);
-  for(int i = 1; i <= d; ++i) {
-    basis_evals[i - 1] = basisd_evals[i - 1] = ITensor(s(i));
-    for(int j = 1; j <= dim(s(i)); ++j) {
-      basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j, conv));
-      basisd_evals[i - 1].set(s(i) = j, basis[i - 1].grad(elements[i - 1], j, conv));
+
+  // Cache cores once — tt(i) does index lookup every call
+  std::vector<ITensor> cores(d);
+  for (int i = 0; i < d; ++i) {
+    cores[i] = tt(i + 1);
+  }
+
+  // Build phi and dphi
+  std::vector<ITensor> phi(d), dphi(d);
+  for (int i = 0; i < d; ++i) {
+    phi[i] = dphi[i] = ITensor(s(i + 1));
+    for (int j = 1; j <= dim(s(i + 1)); ++j) {
+      phi[i].set(s(i + 1) = j,  basis[i](elements[i], j, conv));
+      dphi[i].set(s(i + 1) = j, basis[i].grad(elements[i], j, conv));
     }
   }
-  for(int k = 1; k <= d; ++k) {
-    // replace dimension k's basis vector with its derivative, keep all others unchanged
-    auto result = tt(1) * (k == 1 ? basisd_evals[0] : basis_evals[0]);
-    for(int i = 2; i <= d; ++i) {
-      result *= tt(i) * (k == i ? basisd_evals[i - 1] : basis_evals[i - 1]);
-    }
-    grad[k - 1] = elt(result);
+
+  // Prefix-suffix sweep
+  std::vector<ITensor> L(d + 1), R(d + 1);
+  L[0] = ITensor(1.0);
+  for (int i = 0; i < d; ++i) {
+    L[i + 1] = L[i] * (cores[i] * phi[i]);
   }
-  return grad;
+  R[d] = ITensor(1.0);
+  for (int i = d - 1; i >= 0; --i) {
+    R[i] = (cores[i] * phi[i]) * R[i + 1];
+  }
+
+  double val = elt(L[d]);
+
+  std::vector<double> grad(d);
+  for (int k = 0; k < d; ++k) {
+    grad[k] = elt(L[k] * (cores[k] * dphi[k]) * R[k + 1]);
+  }
+
+  return {val, grad};
+}
+
+// Standalone gradient (for places that don't need the value)
+std::vector<double> ttGrad(const MPS& tt,
+                           const std::vector<BasisFunc>& basis,
+                           const std::vector<double>& elements,
+                           bool conv) {
+  auto cache = buildBasisCache(tt, basis, elements, conv, /*with_grad=*/true);
+  return ttGradCached(tt, cache);
 }
 
 // Compute covariance matrix, marginal means, and partition function of the TT distribution.
