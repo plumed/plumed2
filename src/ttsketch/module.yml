@@ -1,0 +1,4 @@
+name: ttsketch
+authors: Nils E. Strand, Siyao Yang, Yuehaw Khoo, and Aaron R. Dinner
+description: TT-Metadynamics, a variant of metadynamics where the bias potential is periodically compressed into a tensor train (TT); useful for high-dimensional bias potentials (many CVs)
+dois: []

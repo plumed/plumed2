@@ -30,6 +30,13 @@
 /*
 Accumulate the average probability density along a few CVs from a trajectory.
 
+!!! caution ""
+
+    We recommend not using this shortcut action and instead using a combination of [KDE](KDE.md) and
+    [ACCUMULATE](ACCUMULATE.md) actions. This newer syntax will give you much more control over the
+    calculation. HISTOGRAM works by calling these two underlying actions as you can see if you expand the shortcuts
+    in the documentation that follows.
+
 When using this shortcut it is supposed that you have some collective variable $\zeta$ that
 gives a reasonable description of some physical or chemical phenomenon.  As an example of what we
 mean by this suppose you wish to examine the following SN2 reaction:
@@ -54,6 +61,9 @@ of the histogram to the free energy can be achieved by using the method [CONVERT
 
 We calculate histograms within PLUMED using a method known as [kernel density estimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 This shortcut action thus uses the [KDE](KDE.md) and [ACCUMULATE](ACCUMULATE.md) actions to build up the time average of the histogram.
+__You will have much more control over what PLUMED is computing if you take some time to learn to use the new syntax with [KDE](KDE.md) and
+[ACCUMULATE](ACCUMULATE.md) and if you stop using the HISTOGRAM shortcut action.__
+
 
 In PLUMED the value of $\zeta$ at each discrete instant in time in the trajectory is accumulated.  A kernel, $K(\zeta-\zeta(t'),\sigma)$,
 centered at the current value, $\zeta(t)$, of this quantity is generated with a bandwidth $\sigma$, which
@@ -258,6 +268,9 @@ Histogram::Histogram( const ActionOptions& ao ):
     readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
   } else {
+    if( lw.length()>0 ) {
+      error("set NORMALIZATION=true/false when using LOGWEIGHTS as otherwise the weights are ignored. Alternatively, learn to use the new syntax for histograms with KDE/ACCUMULATE to have more control over what PLUMED is calculating");
+    }
     readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
   }
 

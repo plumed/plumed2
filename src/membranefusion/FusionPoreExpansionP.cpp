@@ -436,23 +436,24 @@ void fusionPoreExpansionP::calculate() {
 
   ZMemRMAX = ZMems;
 
-  // The curvature of large membranes (1024 lipids) makes the Z-center of the membranes not to be representative
-  // in some sectors, particularly in the region of ​​the defect.
-  //
-  // To solve this, the center Z of the membranes in the defect sector is calculated and used to calculate
-  // the number of polar atoms within the horizontal layer AND in the radious of the defect.
-  //
-  // ________       | |       ________
-  // ________ \_____| |______/ _______<-- Top membrane.
-  //         \______|P|_______/
-  //                |O|
-  //                | |               <-- Z-center of the membranes in the region of the defect.
-  //          ______|R|_______        <-- Z-center of the membranes
-  //         / _____|E|______ \ 
-  //        / /     | |      \ \ 
-  // ______/ /      | |       \ \______
-  // _______/                  \_______<-- Bottom membrane.
+  /*
+    The curvature of large membranes (1024 lipids) makes the Z-center of the membranes not to be representative
+    in some sectors, particularly in the region of ​​the defect.
 
+    To solve this, the center Z of the membranes in the defect sector is calculated and used to calculate
+    the number of polar atoms within the horizontal layer AND in the radious of the defect.
+
+    ________       | |       ________
+    ________ \_____| |______/ _______<-- Top membrane.
+            \______|P|_______/
+                   |O|
+                   | |               <-- Z-center of the membranes in the region of the defect.
+             ______|R|_______        <-- Z-center of the membranes
+            / _____|E|______ \
+           / /     | |      \ \
+    ______/ /      | |       \ \______
+    _______/                  \_______<-- Bottom membrane.
+  */
   // Center of mass for systems with PBC: https://en.wikipedia.org/wiki/Center_of_mass#Systems_with_periodic_boundary_conditions
   Vector MemCylDistances, distCylinder;
   double angle, ri;

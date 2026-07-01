@@ -374,6 +374,8 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
+PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
+PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 
@@ -1019,8 +1021,8 @@ if test $libmetatomic = true ; then
     #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
     #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
-    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
+    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
     #endif
     int main() {
       metatomic_torch::version();
@@ -1029,6 +1031,45 @@ if test $libmetatomic = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic_torch metatensor_torch metatensor], [true])
+fi
+
+# libitensor requires libhdf5
+if test $libitensor = true ; then
+  libhdf5=true;
+fi
+
+if test $libhdf5 = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libhdf5],[
+    #include <hdf5.h>
+    int main() {
+      unsigned majnum, minnum, relnum;
+      H5get_libversion(&majnum, &minnum, &relnum);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBHDF5], [ hdf5_hl hdf5 ], [true])
+fi
+
+if test $libitensor = true ; then
+  # NOTE: ITensor headers use C++20 'requires' expressions. -fconcepts enables them on
+  # GCC without forcing -std=c++20 globally. When PLUMED upgrades to -std=c++20
+  # everywhere, this PLUMED_CHECK_CXXFLAG call can be removed.
+  # PLUMED_CHECK_CXXFLAG([-fconcepts])
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -fconcepts $OPENMP_CXXFLAGS"
+  PLUMED_CHECK_CXX_PACKAGE([libitensor],[
+    #include <itensor/all.h>
+    int main() {
+      auto i = itensor::Index(2,"i");
+      auto j = itensor::Index(2,"j");
+      auto T = itensor::ITensor(i,j);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBITENSOR], [ itensor openblas ], [true])
+  CXXFLAGS="$save_CXXFLAGS"
+  if test "$__PLUMED_HAS_LIBITENSOR" = yes ; then
+    PLUMED_CHECK_CXXFLAG([-fconcepts])
+  fi
 fi
 
 acc_found=ko

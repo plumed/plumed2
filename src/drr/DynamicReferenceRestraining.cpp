@@ -316,24 +316,24 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
                "This option is effective only when textOutput is on.");
   keys.add("optional","FMT","specify format for outfiles files (useful for decrease the number of digits in regtests)");
   keys.addOutputComponent(
-    "_fict", "default",
+    "_fict", "default", "scalar",
     "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is possible to add forces on these "
     "variable.");
   keys.addOutputComponent(
-    "_vfict", "default",
+    "_vfict", "default", "scalar",
     "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is NOT possible to add forces on these "
     "variable.");
   keys.addOutputComponent(
-    "_biasforce", "default",
+    "_biasforce", "default", "scalar",
     "The bias force from eABF/DRR of the fictitious particle.");
-  keys.addOutputComponent("_springforce", "default", "Spring force between real CVs and extended CVs");
-  keys.addOutputComponent("_fictNoPBC", "default",
+  keys.addOutputComponent("_springforce", "default", "scalar", "Spring force between real CVs and extended CVs");
+  keys.addOutputComponent("_fictNoPBC", "default", "scalar",
                           "the positions of fictitious particles (without PBC).");
   keys.addDOI("10.1063/1.2711185");
   keys.addDOI("10.1021/ct200726v");

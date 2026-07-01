@@ -45,7 +45,7 @@ class BaTiO3_CV(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-        if "features" not in outputs:
+        if "feature" not in outputs:
             return {}
 
         spherical_expansion = self.calculator(
@@ -71,14 +71,14 @@ class BaTiO3_CV(torch.nn.Module):
             blocks=[block],
         )
 
-        return {"features": cv}
+        return {"feature": cv}
 
 
 cv = BaTiO3_CV()
 cv.eval()
 
 capabilities = ModelCapabilities(
-    outputs={"features": ModelOutput(per_atom=False)},
+    outputs={"feature": ModelOutput(sample_kind="system")},
     interaction_range=3.0,
     supported_devices=["cpu"],
     length_unit="A",

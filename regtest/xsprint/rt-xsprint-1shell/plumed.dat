@@ -1,0 +1,10 @@
+xs: XSPRINT ...
+   GROUP1=1-7 GROUP2=8-14
+   SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
+   SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
+   SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
+   NSHELLS=1
+...
+
+PRINT ARG=xs_coord-0,xs_coord-1,xs_coord-2,xs_coord-3,xs_coord-4,xs_coord-5,xs_coord-6,xs_coord-7,xs_coord-8,xs_coord-9,xs_coord-10,xs_coord-11,xs_coord-12,xs_coord-13 FILE=colvar FMT=%8.4f
+BIASVALUE ARG=xs_coord-0

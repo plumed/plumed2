@@ -1,0 +1,29 @@
+#! /usr/bin/env bash
+
+set -e
+set -x
+
+# Directory containing this script (i.e. .ci/)
+CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Install ITensor v3 dependencies
+sudo apt-get install -y libopenblas-dev libhdf5-dev
+
+ITENSOR_VERSION=3.2.0
+ITENSOR_INSTALL_DIR="$HOME/opt/itensor"
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+wget https://github.com/ITensor/ITensor/archive/refs/tags/v${ITENSOR_VERSION}.tar.gz
+tar xzf v${ITENSOR_VERSION}.tar.gz
+cd ITensor-${ITENSOR_VERSION}
+
+# Use the CI-specific options.mk (OpenBLAS + system HDF5)
+cp "$CI_DIR/options.mk.itensor" options.mk
+
+make
+
+# Copy the built library and headers to the install directory
+mkdir -p "$ITENSOR_INSTALL_DIR"
+cp -r lib "$ITENSOR_INSTALL_DIR/"
+cp -r itensor "$ITENSOR_INSTALL_DIR/"

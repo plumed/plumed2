@@ -5,19 +5,25 @@ set -x
 
 cd "$(mktemp -dt plumed.XXXXXX)"
 
-git clone https://github.com/linux-test-project/lcov.git
+repo=https://github.com/linux-test-project/lcov.git
 
-cd lcov
-
-if [ -n "$1" ] ; then
-  echo "installing lcov $version"
+if [ -n "$1" ]; then
   version=$1
+  echo "installing lcov $version"
 else
-  echo "installing latest lcov"
-  version=$(git tag | tail -n 1)
+  # getting the latest version without downloading the repo
+  version=$(
+    git -c 'versionsort.suffix=-' \
+      ls-remote --exit-code --refs --sort='version:refname' --tags "$repo" 'v*.*.*' \
+      | tail --lines=1 \
+      | cut --delimiter='/' --fields=3
+  )
+  echo "installing latest cppcheck ($version)"
+  echo "installing latest lcov ($version)"
 fi
 
-git checkout $version
+#cloning ONLY the code we need
+git clone "$repo" --branch "$version" --depth 1
+cd lcov
 
 make install PREFIX="$HOME/opt"
-

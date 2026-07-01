@@ -183,11 +183,11 @@ void SASA_HASEL::registerKeywords(Keywords& keys) {
 SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   nopbc(false),
+  DeltaGValues("absent"),
   stride(10),
   nl_update(0),
-  DeltaGValues("absent"),
-  Ti(0),
-  firstStepFlag(0) {
+  firstStepFlag(0),
+  Ti(0) {
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);

@@ -178,8 +178,7 @@ void CoordinationBase::calculate() {
     for(unsigned int i=start; i<end; ++i) {
 
       Vector distance;
-      const unsigned i0=nl->getClosePair(i).first;
-      const unsigned i1=nl->getClosePair(i).second;
+      const auto [i0, i1] = nl->getUpdatedPair(i);
 
       if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) {
         continue;
