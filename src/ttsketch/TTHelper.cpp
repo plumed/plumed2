@@ -94,6 +94,7 @@ double ttEval(const MPS& tt,
               const std::vector<double>& elements,
               bool conv) {
   return ttEvalAndGrad(tt, basis, elements, conv).first;
+}
 
 // Compute covariance matrix, marginal means, and partition function of the TT distribution.
 // Precomputes ITensors for the three moment integrals int0/int1/int2 per dimension,
