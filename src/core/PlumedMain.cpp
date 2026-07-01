@@ -1447,6 +1447,9 @@ void PlumedMain::update() {
       p->fflush();
     }
   }
+// invalidate the checkpoint status
+// this fix issues like #1428
+  doCheckPoint = false;
 }
 
 void PlumedMain::load(const std::string& fileName) {
