@@ -64,9 +64,20 @@ public:
      */
     PlumedForceProvider(const PlumedOptions& options);
     ~PlumedForceProvider();
+    /*! \brief Set whether PLUMED is updating a checkpointing step.
+     *
+     * Receiving this notification also disables the later checkpoint-writing
+     * fallback used by the modular simulator.
+     *
+     * \param[in] isCheckpointingStep Whether GROMACS will write a checkpoint
+     *                                for the current step.
+     */
+    void setCheckpointingThisStep(bool isCheckpointingStep);
     /*! \brief Tells PLUMED to output the checkpoint data
      *
-     * If the PLUMED API version is not greater than 3 it will do nothing.
+     * This is a fallback for simulation paths that do not provide an early
+     * checkpoint-step notification. If the PLUMED API version is not greater
+     * than 3 it will do nothing.
      */
     void writeCheckpointData();
     /*! \brief Calculate the forces with PLUMED
@@ -77,9 +88,16 @@ public:
                          ForceProviderOutput*      forceProviderOutput) override;
 
 private:
+    /*! \brief Pass checkpoint status to PLUMED.
+     *
+     * \param[in] isCheckpointingStep Whether the current step writes a checkpoint.
+     */
+    void setPlumedCheckpointing(bool isCheckpointingStep);
+
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool replex_;
+    bool hasCheckpointingStepNotifications_ = false;
 };
 
 } // namespace gmx
