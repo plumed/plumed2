@@ -141,13 +141,33 @@ catch (const std::exception& ex)
             std::string("An error occurred while initializing the PLUMED force provider:\n") + ex.what()));
 }
 
-void PlumedForceProvider::writeCheckpointData()
-try
+void PlumedForceProvider::setPlumedCheckpointing(bool isCheckpointingStep)
 {
     if (plumedAPIversion_ > 3)
     {
-        int checkp = 1;
-        plumed_->cmd("doCheckPoint", &checkp);
+        int checkpointing = isCheckpointingStep ? 1 : 0;
+        plumed_->cmd("doCheckPoint", &checkpointing);
+    }
+}
+
+void PlumedForceProvider::setCheckpointingThisStep(bool isCheckpointingStep)
+try
+{
+    hasCheckpointingStepNotifications_ = true;
+    setPlumedCheckpointing(isCheckpointingStep);
+}
+catch (const std::exception& ex)
+{
+    GMX_THROW(InternalError(
+            std::string("An error occurred while PLUMED was setting checkpoint status:\n") + ex.what()));
+}
+
+void PlumedForceProvider::writeCheckpointData()
+try
+{
+    if (!hasCheckpointingStepNotifications_)
+    {
+        setPlumedCheckpointing(true);
     }
 }
 catch (const std::exception& ex)

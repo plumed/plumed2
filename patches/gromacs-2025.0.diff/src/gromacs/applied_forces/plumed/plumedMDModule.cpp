@@ -117,6 +117,16 @@ public:
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const StartingBehavior& startingBehavior)
                 { this->options_.setStartingBehavior(startingBehavior); });
+        // Set checkpoint status before PLUMED updates the current step.
+        notifier->checkpointingNotifier_.subscribe(
+                [this](const MDModulesCheckpointingSignal& checkpointingSignal)
+                {
+                    if (options_.active())
+                    {
+                        plumedForceProvider_->setCheckpointingThisStep(
+                                checkpointingSignal.isCheckpointingStep_);
+                    }
+                });
         //  writing checkpoint data
         notifier->checkpointingNotifier_.subscribe(
                 [this](MDModulesWriteCheckpointData /*checkpointData*/)

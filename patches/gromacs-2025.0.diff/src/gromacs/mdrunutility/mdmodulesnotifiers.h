@@ -78,6 +78,14 @@ struct MDModulesCheckpointReadingBroadcast;
 struct MDModulesWriteCheckpointData;
 enum class StartingBehavior;
 
+/*! \libinternal \brief Notifies modules whether the current step writes a checkpoint.
+ */
+struct MDModulesCheckpointingSignal
+{
+    //! Whether GROMACS will write a checkpoint for the current step
+    bool isCheckpointingStep_;
+};
+
 /*! \libinternal \brief Notification that atoms may have been redistributed
  *
  * This notification is emitted at the end of the DD (re)partitioning
@@ -359,8 +367,14 @@ struct MDModulesNotifiers
      *                              Provides the modules with a key-value-tree
      *                              builder to store their checkpoint data and
      *                              the checkpoint file version
+     * \tparam MDModulesCheckpointingSignal
+     *                              Indicates before force calculation whether
+     *                              the current step writes a checkpoint
      */
-    BuildMDModulesNotifier<MDModulesCheckpointReadingDataOnMain, MDModulesCheckpointReadingBroadcast, MDModulesWriteCheckpointData>::type
+    BuildMDModulesNotifier<MDModulesCheckpointReadingDataOnMain,
+                           MDModulesCheckpointReadingBroadcast,
+                           MDModulesWriteCheckpointData,
+                           const MDModulesCheckpointingSignal&>::type
             checkpointingNotifier_;
 
     /*! \brief Handles subscribing and calling callbacks during simulation setup.
