@@ -382,8 +382,12 @@ void KDE<K,P,G>::prepare() {
 template <class K, class P, class G>
 void KDE<K,P,G>::calculate() {
   if( firststep ) {
+    Tensor box;
     PbcAction* bv = plumed.getActionSet().template selectWithLabel<PbcAction*>("Box");
-    KDEHelper<K,P,G>::setupGridBounds( taskmanager.getActionInput(), bv->getPbc().getBox(), gridobject, getArguments(), getPntrToComponent(0) );
+    if( bv ) {
+      box = bv->getPbc().getBox();
+    }
+    KDEHelper<K,P,G>::setupGridBounds( taskmanager.getActionInput(), box, gridobject, getArguments(), getPntrToComponent(0) );
     firststep=false;
   }
   KDEHelper<K,P,G>::transferKernels( taskmanager.getActionInput(), getArguments(), gridobject );
