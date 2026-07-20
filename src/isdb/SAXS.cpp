@@ -3288,9 +3288,11 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
 
 
 void SAXS::getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter) {
-  // Martini 3 protein form factors (Lund). Each bead is a degree-6 polynomial in q
-  // with 7 coefficients, evaluated identically to getMartiniFFparam (MARTINI_FF=2).
-
+  // Kept separate from the Martini 2.2 table in getMartiniFFparam because the coefficients
+  // differ and the Martini 3 protein topology adds beads absent in 2.2 (ALA_SC1, TRP_SC5,
+  // TYR_SC4). The 7-coefficient / degree-6-in-q form is deliberately unchanged so the same
+  // downstream polynomial evaluator serves both MARTINI_FF versions. See the Martini 3
+  // form-factor paper in the bibliography for how the coefficients were derived.
   parameter[ALA_BB] = {10.643806846255465, 0.0, 2.0616371683115733, 0.7872168906775016, -5.080460379455372, 3.222662883174488, -0.5960016057238122};
   parameter[ALA_SC1] = {-1.7010874177132265, 0.0, 7.118764019567526, 1.1145464157804394, -5.950013175357564, 2.8714126567294755, -0.42838104934301313};
 
@@ -3363,6 +3365,10 @@ void SAXS::getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vecto
   parameter[VAL_BB] = {10.643806849587198, 0.0, 2.061631159601996, 0.7872024303709435, -5.080444479262741, 3.2226600061868638, -0.5960019731764394};
   parameter[VAL_SC1] = {-3.650489697568667, 0.0, 20.152880104569256, -1.3077717593059774, -16.48666338249699, 9.710777748612122, -1.654724631578258};
 
+  // Resolve beads by (residue, bead) name rather than by input order so the coefficients
+  // stay correct regardless of how the user ordered ATOMS. An unrecognised name means the
+  // topology is not Martini 3, so we error out early instead of silently applying the wrong
+  // form factor and producing a plausible-looking but incorrect intensity.
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     for(unsigned i=0; i<atoms.size(); ++i) {
