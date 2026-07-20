@@ -79,7 +79,8 @@ Whether for PARAMETERS, ATOMISTIC, and ONEBEAD the user must provide an all-atom
 SAXS instruction. MARTINI requires a mapping scheme consisting of a PDB file that contains both the all-atom
 and MARTINI representations, and a bead position file (e.g., bead1: CENTER ATOMS=1,5,7,11,12 WEIGHTS=14,12,12,
 12,16). The MARTINI_FF keyword selects the form-factor generation: MARTINI_FF=2 (default) uses the Martini 2.2
-form factors for proteins and nucleic acids, while MARTINI_FF=3 uses Martini 3 form factors for proteins.
+form factors for proteins and nucleic acids, while MARTINI_FF=3 uses Martini 3 form factors for proteins. The
+Martini 3 protein form factors are described in the corresponding paper in the bibliography below.
 
 ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
 the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
@@ -1140,6 +1141,9 @@ SAXS::SAXS(const ActionOptions&ao):
   if(martini) {
     log<<plumed.cite("Niebling, Björling, Westenhoff, J. Appl. Crystallogr., 47, 1190–1198 (2014)");
     log<<plumed.cite("Paissoni, Jussupow, Camilloni, J. Appl. Crystallogr., 52, 394-402 (2019)");
+    if(martini_ff==3) {
+      log<<plumed.cite("Vinterbladh, Vuillemot, Grudinin, Lund, ChemRxiv, doi:10.26434/chemrxiv.15006205/v1 (2026)");
+    }
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978)");
