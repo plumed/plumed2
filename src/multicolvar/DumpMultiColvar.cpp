@@ -53,6 +53,7 @@ void DumpMultiColvar::registerKeywords(Keywords& keys) {
   keys.setDeprecated("DUMPATOMS");
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","FILE","the file that you would like to output the data to");
+  keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the multicolvar data");
   keys.remove("HAS_VALUES");
   keys.needsAction("DUMPATOMS");
 }
