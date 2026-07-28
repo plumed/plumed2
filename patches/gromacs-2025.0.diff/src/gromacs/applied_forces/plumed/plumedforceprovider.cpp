@@ -44,6 +44,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/units.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -113,6 +114,15 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
             int res = 1;
             plumed_->cmd("setRestart", &res);
         }
+    }
+
+    if (plumedAPIversion_ > 5)
+    {
+        /* tell PLUMED how many OpenMP threads GROMACS is using, so that it can
+           parallelise its own work; without this PLMD::OpenMP::getNumThreads()
+           always reports 1 unless PLUMED_NUM_THREADS is set by hand */
+        int numOmpThreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+        plumed_->cmd("setNumOMPthreads", &numOmpThreads);
     }
 
     if (isMultiSim(options.ms_))
