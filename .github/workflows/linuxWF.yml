@@ -37,6 +37,12 @@ jobs:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
+    # kenref_core is built from a pinned tag, so it only needs rebuilding when that tag moves.
+    # .ci/install.kenref exits early when the cache restored a usable prefix.
+    - uses: actions/cache@v5
+      with:
+        path: ~/opt/kenref
+        key: kenref-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:
@@ -132,6 +138,28 @@ jobs:
       run: |
         pip install --user mpi4py
         python -c "import mpi4py"
+    - name: Install KEnRef
+      # Kept AFTER the compiler steps above, because .ci/install.kenref builds libkenref_core with $CXX
+      # and that library is loaded into the same process as PLUMED. Built earlier it would pick up the
+      # default g++ even in the -intel- job, and the two OpenMP runtimes that results in make the
+      # threaded regtests disagree in their last digits. Anything that rewrites CC/CXX must stay above.
+      #
+      # excluded for the same reasons as ITensor: _GLIBCXX_DEBUG changes the STL ABI, and KEnRef stores
+      # Eigen objects in its own containers, so a debug build of PLUMED and a non-debug libkenref_core
+      # disagree about their layout. The #ifdef __PLUMED_HAS_KENREF guards keep the module compiling
+      # when it is not configured.
+      if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
+      run: |
+        .ci/install.kenref
+    - name: Configure KEnRef
+      if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
+      run: |
+        # Putting the prefix on PKG_CONFIG_PATH means configure FINDS kenref_core rather than cloning
+        # and building it itself, so CI never depends on a network fetch during ./configure. The .pc
+        # also carries the -march the library was built with, which the module must match.
+        echo "PKG_CONFIG_PATH=$HOME/opt/kenref/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$HOME/opt/kenref/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-kenref" >> $GITHUB_ENV
     - name: Configure PLUMED
       id: config
       run: |

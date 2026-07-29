@@ -24,7 +24,7 @@ restriction on this module or on PLUMED; see LICENSE_CORE.txt in the KEnRef
 distribution for its text.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
- * KEnRefBiasSetup.cpp — frozen frame forwarder.
+ * KEnRefBiasSetup.cpp -- frozen frame forwarder.
  *
  * The KEnRefBias constructor (one-time model + sub-indexing + driver setup) is hosted in the KEnRef
  * repository (src/plumedinterface/KEnRefBias_setup.cpp) so it can evolve with the KEnRef model
@@ -32,16 +32,20 @@ distribution for its text.
  * include path is supplied by `pkg-config --cflags kenref_plumed` (see this module's Makefile).
  *
  * NB: this file is deliberately NOT named KEnRefBias_setup.cpp. A quoted include searches the including
- * file's own directory first, so a same-named forwarder would include ITSELF rather than the KEnRef copy.
+ * file's own directory first, so a same-named forwarder would include ITSELF, not the KEnRef copy.
  *
- * The namespace block below is intentionally empty. The included file opens `namespace PLMD { namespace
- * kenref {` itself, and it cannot simply be wrapped here because it also pulls in system and PLUMED
- * headers, which must stay at global scope. Declaring the namespace up front states, for readers and
- * for plumedcheck alike, that everything this translation unit defines lands in PLMD::kenref.
+ * The namespace block below is intentionally empty. The included file opens PLMD::kenref itself, and it
+ * cannot simply be wrapped here because it also pulls in system and PLUMED headers, which must stay at
+ * global scope. Declaring the namespace up front states, for readers and for plumedcheck alike, that
+ * everything this translation unit defines lands in PLMD::kenref.
  */
+
+// Optional module: without the KEnRef library configure leaves this undefined and the file is empty.
+#ifdef __PLUMED_HAS_KENREF
+
 namespace PLMD {
 namespace kenref {
-class KEnRefBias;   // defined in the header; its constructor is defined by the file included below
+class KEnRefBias;   // declared in the header; its constructor comes from the file included below
 } // namespace kenref
 } // namespace PLMD
 
@@ -49,3 +53,5 @@ class KEnRefBias;   // defined in the header; its constructor is defined by the 
 // source directly on the include path, and a "plumedinterface/..." form reads to plumedcheck as a
 // cross-module include.
 #include "KEnRefBias_setup.cpp"
+
+#endif // __PLUMED_HAS_KENREF

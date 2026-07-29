@@ -1,0 +1,50 @@
+#! /usr/bin/env bash
+
+set -e
+set -x
+
+# Build and install the KEnRef core library, which the (default-off) kenref module links against.
+#
+# The version is PINNED. configure can fetch KEnRef itself, but CI must not depend on whatever happens
+# to be on a branch today, and a pinned tag also lets the install directory be cached.
+KENREF_VERSION=v2.0.0
+KENREF_INSTALL_DIR="$HOME/opt/kenref"
+
+# Nothing to do if a cache restored it.
+if test -f "$KENREF_INSTALL_DIR/lib/pkgconfig/kenref_core.pc" ; then
+  echo "kenref already present in $KENREF_INSTALL_DIR"
+  exit 0
+fi
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+git clone --depth 1 --branch "$KENREF_VERSION" https://github.com/Smith-Group/KEnRef.git
+cd KEnRef
+
+# ACCEL is set explicitly rather than left to KEnRef's per-machine auto-detection. KEnRef stores Eigen
+# objects inside its own containers, so the SIMD width fixes EIGEN_MAX_ALIGN_BYTES and therefore its
+# ABI; pinning the tier keeps the build reproducible across whatever runner GitHub allocates. AVX2_256
+# is KEnRef's portable default.
+#
+# KENREF_EXPORT_PLUMEDINTERFACE=ON installs the headers and the source that the kenref module compiles
+# in-tree, plus kenref_plumed.pc.
+#
+# The compiler is passed through explicitly rather than left to cmake's own search. libkenref_core and
+# PLUMED end up in ONE process, so if they are built by different toolchains they bring in two different
+# OpenMP runtimes (libgomp beside libiomp5). Both are then loaded at once, which is unsupported: thread
+# counts and the order of threaded reductions stop being well defined, and PLUMED's regtests fail in the
+# last digits right across the threaded modules. Building KEnRef with whatever CXX the job has already
+# selected keeps it on the same runtime as PLUMED.
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  ${CC:+-DCMAKE_C_COMPILER="$CC"} \
+  ${CXX:+-DCMAKE_CXX_COMPILER="$CXX"} \
+  -DBUILD_KENREF_CORE=ON \
+  -DBUILD_KENREF_GMX=OFF \
+  -DKENREF_EXPORT_PLUMEDINTERFACE=ON \
+  -DACCEL=AVX2_256 \
+  -DKENREF_EIGEN_GIT_TAG=5.0.1 \
+  -DCMAKE_INSTALL_PREFIX="$KENREF_INSTALL_DIR"
+
+cmake --build build -j "$(nproc)"
+cmake --install build

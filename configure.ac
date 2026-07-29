@@ -987,6 +987,12 @@ fi
 #   kenref_and_eigen3                     (self-contained; Eigen headers embedded)
 # ==============================================================================
 AC_DEFUN([KENREF_CHECK_LIBS], [
+  # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
+  # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
+  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
+  # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
+  # shell. Forcing the flag through keeps the captured value self-contained.
   have_kenref=no
   HAVE_KENREF=no
   KENREF_LIBS=""
@@ -999,7 +1005,7 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
     # kenref_core.pc already `Requires: eigen3`, so --cflags carries the eigen3 -I exactly once.
     # Do NOT append eigen3's own --cflags as well, or the include lands twice.
     KENREF_INCLUDE=`pkg-config --cflags kenref_core`
-    KENREF_LIBS=`pkg-config --libs kenref_core`
+    KENREF_LIBS=`PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 pkg-config --libs kenref_core`
     have_kenref=yes
     kenref_flavor="kenref_core + external eigen3"
     AC_MSG_RESULT([yes])
@@ -1008,7 +1014,7 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
     AC_MSG_CHECKING([for self-contained kenref_and_eigen3 >= $KENREF_MIN_VERSION])
     if pkg-config --exists "kenref_and_eigen3 >= $KENREF_MIN_VERSION" 2>/dev/null ; then
       KENREF_INCLUDE=`pkg-config --cflags kenref_and_eigen3`
-      KENREF_LIBS=`pkg-config --libs kenref_and_eigen3`
+      KENREF_LIBS=`PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 pkg-config --libs kenref_and_eigen3`
       have_kenref=yes
       kenref_flavor="kenref_and_eigen3 (self-contained)"
       AC_MSG_RESULT([yes])
@@ -1048,6 +1054,19 @@ AC_SUBST([KENREF_PLUMED_INCLUDE], [""])
 kenref_module_on=no
 test -f src/kenref.on && kenref_module_on=yes
 
+# Is the LIBRARY required, or merely welcome?
+#
+#   --enable-kenref              the user asked for KEnRef by name -> not finding it is an ERROR, and
+#                                configure may fetch and build it.
+#   --enable-modules=all (or +kenref) alone
+#                                the user asked to build every module they can. KEnRef is an external
+#                                dependency they never mentioned, so a missing library must NOT fail the
+#                                build and must NEVER trigger a download: skip the module and carry on.
+#                                This is what lets `--enable-modules=all` keep working on a machine that
+#                                has never heard of KEnRef -- which is exactly what PLUMED's own CI does.
+kenref_required=no
+test "$kenref" = true && kenref_required=yes
+
 # "KEnRef wanted" iff EITHER switch is set (the library flag OR the module flag).
 if test "$kenref" = true || test "$kenref_module_on" = yes ; then
   # (0) rpath ON by default for KEnRef builds. A KEnRef build links libkenref_core from a non-system prefix
@@ -1079,6 +1098,13 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
   if pkg-config --exists "kenref_core >= $KENREF_MIN_VERSION" 2>/dev/null \
      || pkg-config --exists "kenref_and_eigen3 >= $KENREF_MIN_VERSION" 2>/dev/null ; then
     AC_MSG_NOTICE([KEnRef: found an installed kenref_core >= $KENREF_MIN_VERSION via pkg-config])
+  elif test "$kenref_required" = no ; then
+    # Enabled only by --enable-modules=all/+kenref, and no library present. Do not download anything and
+    # do not fail: switch the module back off and continue, as an unavailable optional dependency should.
+    AC_MSG_NOTICE([KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module])
+    rm -f src/kenref.on
+    touch src/kenref.off
+    kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
     test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
@@ -1121,12 +1147,31 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
     AC_MSG_NOTICE([KEnRef: kenref_core built; PKG_CONFIG_PATH updated for the checks below])
   fi
 
+fi
+
+# Everything below wires the library in. It is skipped when the module was switched off just above
+# because it was only implied by --enable-modules and no library is present.
+if test "$kenref_skipped" != yes && ( test "$kenref" = true || test "$kenref_module_on" = yes ) ; then
+
   # authoritative check (finds it whether pre-installed or just built) + CFLAGS/LIBS wiring:
   KENREF_CHECK_LIBS
   if test "$HAVE_KENREF" != yes ; then
-    AC_MSG_ERROR([KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
+    if test "$kenref_required" = no ; then
+      AC_MSG_NOTICE([KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module])
+      rm -f src/kenref.on
+      touch src/kenref.off
+      kenref_skipped=yes
+    else
+      AC_MSG_ERROR([KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
   fetch+build. See the build log above, or pass --with-kenref-src=DIR / set KENREF_GIT_URL.])
+    fi
   fi
+fi
+
+if test "$kenref_skipped" != yes && test "$HAVE_KENREF" = yes ; then
+  # The module's sources are guarded by this, so that a tree configured with --enable-modules=all but
+  # without the library still compiles (the guarded translation units simply produce nothing).
+  AC_DEFINE([__PLUMED_HAS_KENREF],[1],[Define to 1 if you have the KEnRef library])
 
   # Resolve the module's COMPILE includes ONCE, here, while PKG_CONFIG_PATH is set, and bake them into
   # Makefile.conf (KENREF_PLUMED_INCLUDE -> src/kenref/Makefile's KENREF_PLUMED_CPPFLAGS). This mirrors how the
@@ -1163,8 +1208,13 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
   AC_SUBST([KENREF_PLUMED_INCLUDE])
   AC_MSG_NOTICE([KEnRef: module compile includes from $kenref_plumed_pc baked into Makefile.conf: $KENREF_PLUMED_INCLUDE])
 else
-  # Neither switch: do not search, do not depend, do not build the module.
-  AC_MSG_NOTICE([KEnRef: disabled (neither --enable-kenref nor --enable-modules=+kenref) -> module not built.])
+  # Either neither switch was given, or the module was implied by --enable-modules and the library turned
+  # out to be absent. In both cases: no dependency, no module.
+  if test "$kenref_skipped" = yes ; then
+    AC_MSG_NOTICE([KEnRef: module skipped (library not available and not explicitly requested).])
+  else
+    AC_MSG_NOTICE([KEnRef: disabled (neither --enable-kenref nor --enable-modules=+kenref) -> module not built.])
+  fi
   AC_SUBST([HAVE_KENREF],[no])
   have_kenref=no
 fi

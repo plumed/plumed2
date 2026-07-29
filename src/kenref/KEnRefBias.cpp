@@ -38,6 +38,11 @@ distribution for its text.
  * model abstraction, so it is hosted in the KEnRef repository and compiled in via KEnRefBias_setup.cpp.
  */
 
+// The whole module is optional: PLUMED can be configured with --enable-modules=all on a machine that
+// has no KEnRef installed, in which case configure leaves __PLUMED_HAS_KENREF undefined and this
+// translation unit compiles to nothing. Same pattern as src/pytorch and the ttsketch/ITensor module.
+#ifdef __PLUMED_HAS_KENREF
+
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
@@ -330,3 +335,5 @@ void KEnRefBias::calculateNumericalDerivatives(ActionWithValue *a) {
 
 } // namespace kenref
 } // namespace PLMD
+
+#endif // __PLUMED_HAS_KENREF
