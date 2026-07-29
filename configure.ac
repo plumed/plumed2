@@ -386,7 +386,10 @@ AC_ARG_WITH([kenref-src],
   [with_kenref_src="$withval"],[with_kenref_src=""])
 AC_ARG_VAR([KENREF_GIT_URL],[KEnRef git URL to clone when --enable-kenref and kenref_core is not installed (default: https://github.com/Smith-Group/KEnRef.git)])
 AC_ARG_VAR([KENREF_GIT_TAG],[KEnRef git branch/tag to clone (default: master, KEnRef's development trunk)])
-AC_ARG_VAR([KENREF_ACCEL],[ACCEL/SIMD width to build the fetched kenref_core with (default: AVX2_256, runs everywhere)])
+dnl NB: -DACCEL is passed to KEnRef's CMake only when this variable is SET (see below), so leaving it
+dnl empty does not select a fixed tier -- it lets KEnRef auto-detect this machine's SIMD, as it does for
+dnl its own builds. Set it explicitly for a portable binary (e.g. KENREF_ACCEL=AVX2_256).
+AC_ARG_VAR([KENREF_ACCEL],[ACCEL/SIMD width to build the fetched kenref_core with (default: auto-detect this machine's SIMD)])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])

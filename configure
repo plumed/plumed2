@@ -1497,7 +1497,7 @@ Some influential environment variables:
               development trunk)
   KENREF_ACCEL
               ACCEL/SIMD width to build the fetched kenref_core with (default:
-              AVX2_256, runs everywhere)
+              auto-detect this machine's SIMD)
   SOEXT       extension of dynamic libraries (so/dylib)
   STATIC_LIBS variables that should be linked statically directly to MD code -
               configure will add here -ldl if necessary

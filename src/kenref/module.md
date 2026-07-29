@@ -63,16 +63,16 @@ An ensemble refinement of GB3 against cross-relaxation rates. `EXP_DATA_FOLDER` 
 data and the atom-pair definitions; `REF` is the reference structure used for the Kabsch fit.
 
 ```plumed
-#SETTINGS MOLFILE=regtest/kenref/rt-kenref-parse/gb3.pdb
+#SETTINGS MOLFILE=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb
 kenref: KENREF ...
   MODEL=SIGMA
   K=1.0
   N=0.25
   PROTON_MHZ=700.0
-  EXP_DATA_FOLDER=./exp_data/
-  REF=./gb3.pdb
-  ATOMNAME_MAPPING=./gb3.pdb
-  GUIDE_ATOMS=39,60,82,101,117,234,241,256,270,284
+  EXP_DATA_FOLDER=regtest/kenref/rt-kenref-sigma/
+  REF=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb
+  ATOMNAME_MAPPING=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb
+  GUIDE_ATOMS=1,5,18,20,22,35,37,39,56,58,60,78,80,82,97
   MAX_FORCE=999
   FIT_TO_REFERENCE
   SATURATE_FORCES

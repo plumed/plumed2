@@ -40,13 +40,28 @@ Toolchain from the environment (`CXX=mpicxx CXXFLAGS="-stdlib=libc++" …`); `--
 repo and **delegates the build to KEnRef's CMake**, then links it.
 
 ```bash
-autoreconf --force
-./configure --enable-kenref CXXFLAGS="-stdlib=libc++ -O3 -std=c++17 -march=skylake-avx512"
+./configure --enable-kenref CXXFLAGS="-stdlib=libc++ -O3 -std=c++17"
 make -j && make install
 ```
 
+**Do not pass `-march` yourself.** The installed `kenref_core.pc` already carries the `-march` that
+matches the SIMD tier `libkenref_core` was built with, so `pkg-config` hands it to the module
+automatically. Passing your own risks *disagreeing* with the library: KEnRef stores Eigen objects inside
+its own containers, so `EIGEN_MAX_ALIGN_BYTES` is part of its ABI, and a mismatch is rejected by a
+`static_assert` in `core/EigenAbiCheck.h`. To see what a given install was built with:
+
+```bash
+pkg-config --variable=accel kenref_core       # e.g. AVX_512
+pkg-config --variable=simdflags kenref_core   # e.g. -march=skylake-avx512
+```
+
+`autoreconf` is **not** needed — `configure` is committed. If you do regenerate it, use **autoconf 2.69**,
+the version PLUMED's committed `configure` is generated with; a newer autoconf rewrites the whole script
+and buries your change in thousands of unrelated lines.
+
 Controls (only if you don't want the default clone): `--with-kenref-src=DIR`, `KENREF_GIT_URL`/`KENREF_GIT_TAG`,
-`KENREF_ACCEL`. Already have `kenref_core` installed? Put it on `PKG_CONFIG_PATH` and `configure` reuses it.
+`KENREF_ACCEL` (the SIMD tier to build a fetched core with; default: KEnRef's own per-machine
+auto-detection, *not* a fixed tier). Already have `kenref_core` installed? Put it on `PKG_CONFIG_PATH` and `configure` reuses it.
 `--enable-kenref` and `--enable-modules=+kenref` converge (either enables the whole pathway); a
 `kenref_core >= <min>` floor rejects a stale core at configure time.
 
@@ -94,8 +109,7 @@ rpath records **`LIBRARY_PATH`**, so put your non-system runtime library dirs on
 ```bash
 export LIBRARY_PATH="/usr/local/kenref/lib:$LIBRARY_PATH"                 # libkenref_core
 export LIBRARY_PATH="$LLVM/lib/x86_64-unknown-linux-gnu:$LIBRARY_PATH"    # only if building with libc++
-autoreconf --force
-./configure --enable-kenref --with-kenref-src=~/KEnRef CXXFLAGS="-O3 -std=c++17 -march=native"
+./configure --enable-kenref --with-kenref-src=~/KEnRef CXXFLAGS="-O3 -std=c++17"
 make -j && sudo make install
 plumed --version        # runs with no module / no LD_LIBRARY_PATH
 ```
