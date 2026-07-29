@@ -47,12 +47,19 @@ distribution for its text.
 
 #include "core/ModelRegistry.h"   // registerKeywords iterates the model registry's schemas
 
-#include "plumedinterface/KEnRefBias.h"
+// Unprefixed: kenref_plumed.pc puts the directory holding this header directly on the include path.
+// A "plumedinterface/..." form would look to plumedcheck like a cross-module include, and
+// plumedinterface is a KEnRef directory, not a PLUMED module.
+#include "KEnRefBias.h"
 
 #include <chrono>
 #include <set>
 
-namespace PLMD::kenref {
+// Written as two nested namespaces rather than `namespace PLMD::kenref` because plumedcheck matches
+// each of them line-by-line ("^ *namespace *PLMD" and "^ *namespace *kenref"); the C++17 nested form
+// satisfies only the first. This is also the form every other module uses.
+namespace PLMD {
+namespace kenref {
 
 //+PLUMEDOC BIAS KENREF
 /*
@@ -321,4 +328,5 @@ void KEnRefBias::calculateNumericalDerivatives(ActionWithValue *a) {
   ActionAtomistic::calculateNumericalDerivatives(a);
 }
 
-} // namespace PLMD::kenref
+} // namespace kenref
+} // namespace PLMD

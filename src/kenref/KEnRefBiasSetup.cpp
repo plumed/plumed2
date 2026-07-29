@@ -24,11 +24,28 @@ restriction on this module or on PLUMED; see LICENSE_CORE.txt in the KEnRef
 distribution for its text.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
- * KEnRefBias_setup.cpp — frozen frame forwarder.
+ * KEnRefBiasSetup.cpp — frozen frame forwarder.
  *
  * The KEnRefBias constructor (one-time model + sub-indexing + driver setup) is hosted in the KEnRef
  * repository (src/plumedinterface/KEnRefBias_setup.cpp) so it can evolve with the KEnRef model
  * abstraction WITHOUT re-pushing this fork. It is compiled here, within PLUMED's build. The repo's
  * include path is supplied by `pkg-config --cflags kenref_plumed` (see this module's Makefile).
+ *
+ * NB: this file is deliberately NOT named KEnRefBias_setup.cpp. A quoted include searches the including
+ * file's own directory first, so a same-named forwarder would include ITSELF rather than the KEnRef copy.
+ *
+ * The namespace block below is intentionally empty. The included file opens `namespace PLMD { namespace
+ * kenref {` itself, and it cannot simply be wrapped here because it also pulls in system and PLUMED
+ * headers, which must stay at global scope. Declaring the namespace up front states, for readers and
+ * for plumedcheck alike, that everything this translation unit defines lands in PLMD::kenref.
  */
-#include "plumedinterface/KEnRefBias_setup.cpp"
+namespace PLMD {
+namespace kenref {
+class KEnRefBias;   // defined in the header; its constructor is defined by the file included below
+} // namespace kenref
+} // namespace PLMD
+
+// Unprefixed for the same reason as in KEnRefBias.cpp: kenref_plumed.pc puts the directory holding this
+// source directly on the include path, and a "plumedinterface/..." form reads to plumedcheck as a
+// cross-module include.
+#include "KEnRefBias_setup.cpp"
