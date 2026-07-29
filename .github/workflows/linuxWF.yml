@@ -37,12 +37,28 @@ jobs:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
-    # kenref_core is built from a pinned tag, so it only needs rebuilding when that tag moves.
+    # kenref_core is built from a pinned ref, so it only needs rebuilding when that ref moves.
     # .ci/install.kenref exits early when the cache restored a usable prefix.
+    #
+    # The cache key has to name the COMMIT, not just the ref: a tag can be re-pointed while
+    # .ci/install.kenref stays byte-identical, and keying on the file alone would then restore a prefix
+    # built from the old commit and silently skip the rebuild. Resolve the ref here so the key follows it.
+    - name: Resolve the pinned KEnRef commit
+      id: kenref_commit
+      run: |
+        ver="$(sed -n 's/^KENREF_VERSION=//p' .ci/install.kenref)"
+        url="$(sed -n 's/^KENREF_URL=//p' .ci/install.kenref)"
+        # An annotated tag needs the ^{} peel to reach the commit; ls-remote sorts its output, so asking
+        # for several patterns at once and taking the first line would return the tag OBJECT instead.
+        # Ask for the peeled ref on its own, then fall back for lightweight tags and branches.
+        sha="$(git ls-remote "$url" "refs/tags/$ver^{}" | cut -f1)"
+        test -n "$sha" || sha="$(git ls-remote "$url" "refs/tags/$ver" "refs/heads/$ver" | head -n1 | cut -f1)"
+        test -n "$sha" || { echo "cannot resolve KEnRef ref '$ver' at $url" >&2 ; exit 1 ; }
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@v5
       with:
         path: ~/opt/kenref
-        key: kenref-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
+        key: kenref-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:

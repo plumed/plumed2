@@ -7,18 +7,41 @@ set -x
 #
 # The version is PINNED. configure can fetch KEnRef itself, but CI must not depend on whatever happens
 # to be on a branch today, and a pinned tag also lets the install directory be cached.
+# KENREF_VERSION and KENREF_URL are parsed out of this file by the workflow (to resolve the ref to a
+# commit for the cache key), so keep them as plain, unquoted assignments at the start of a line.
 KENREF_VERSION=v2.0.0
+KENREF_URL=https://github.com/Smith-Group/KEnRef.git
 KENREF_INSTALL_DIR="$HOME/opt/kenref"
 
-# Nothing to do if a cache restored it.
+# The module needs the plumedinterface include paths, which come from kenref_plumed.pc. That file
+# `Requires: eigen3`, and a bare CI runner has no eigen3.pc -- so on such a machine only the
+# self-contained kenref_plumed_and_eigen3.pc (Eigen embedded, no Requires:) can resolve. A KENREF_VERSION
+# predating that file therefore installs a prefix that looks complete but cannot configure the module.
+#
+# Checked on the cache-restore path as well as after a fresh build: a cache saved by an older revision of
+# this script can outlive the assumptions it was built under.
+check_prefix() {
+  for pc in kenref_core.pc kenref_plumed.pc kenref_plumed_and_eigen3.pc ; do
+    test -f "$KENREF_INSTALL_DIR/lib/pkgconfig/$pc" || {
+      echo "ERROR: $pc missing from the KEnRef install in $KENREF_INSTALL_DIR." >&2
+      echo "       KENREF_VERSION=$KENREF_VERSION is too old, or a stale cache was restored: this" >&2
+      echo "       prefix predates the self-contained plumedinterface pkg-config file, without which" >&2
+      echo "       the module cannot be configured on a machine that has no eigen3.pc." >&2
+      return 1
+    }
+  done
+}
+
+# Nothing to do if a cache restored a usable prefix.
 if test -f "$KENREF_INSTALL_DIR/lib/pkgconfig/kenref_core.pc" ; then
   echo "kenref already present in $KENREF_INSTALL_DIR"
-  exit 0
+  check_prefix
+  exit $?
 fi
 
 cd "$(mktemp -dt plumed.XXXXXX)"
 
-git clone --depth 1 --branch "$KENREF_VERSION" https://github.com/Smith-Group/KEnRef.git
+git clone --depth 1 --branch "$KENREF_VERSION" "$KENREF_URL"
 cd KEnRef
 
 # ACCEL is set explicitly rather than left to KEnRef's per-machine auto-detection. KEnRef stores Eigen
@@ -50,17 +73,4 @@ cmake --build build -j "$(nproc)"
 cmake --install build
 
 # Fail here, with a clear reason, rather than deep inside PLUMED's configure.
-#
-# The module needs the plumedinterface include paths, which come from kenref_plumed.pc. That file
-# `Requires: eigen3`, and a bare CI runner has no eigen3.pc -- so on such a machine only the
-# self-contained kenref_plumed_and_eigen3.pc (Eigen embedded, no Requires:) can resolve. A KENREF_VERSION
-# predating that file therefore installs a prefix that looks complete but cannot configure the module.
-for pc in kenref_plumed.pc kenref_plumed_and_eigen3.pc ; do
-  test -f "$KENREF_INSTALL_DIR/lib/pkgconfig/$pc" || {
-    echo "ERROR: $pc missing from the KEnRef install." >&2
-    echo "       KENREF_VERSION=$KENREF_VERSION is too old: it predates the self-contained" >&2
-    echo "       plumedinterface pkg-config file, without which this module cannot be configured" >&2
-    echo "       on a machine that has no eigen3.pc. Pin a newer KEnRef." >&2
-    exit 1
-  }
-done
+check_prefix
