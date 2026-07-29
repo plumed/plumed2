@@ -48,3 +48,19 @@ cmake -S . -B build \
 
 cmake --build build -j "$(nproc)"
 cmake --install build
+
+# Fail here, with a clear reason, rather than deep inside PLUMED's configure.
+#
+# The module needs the plumedinterface include paths, which come from kenref_plumed.pc. That file
+# `Requires: eigen3`, and a bare CI runner has no eigen3.pc -- so on such a machine only the
+# self-contained kenref_plumed_and_eigen3.pc (Eigen embedded, no Requires:) can resolve. A KENREF_VERSION
+# predating that file therefore installs a prefix that looks complete but cannot configure the module.
+for pc in kenref_plumed.pc kenref_plumed_and_eigen3.pc ; do
+  test -f "$KENREF_INSTALL_DIR/lib/pkgconfig/$pc" || {
+    echo "ERROR: $pc missing from the KEnRef install." >&2
+    echo "       KENREF_VERSION=$KENREF_VERSION is too old: it predates the self-contained" >&2
+    echo "       plumedinterface pkg-config file, without which this module cannot be configured" >&2
+    echo "       on a machine that has no eigen3.pc. Pin a newer KEnRef." >&2
+    exit 1
+  }
+done
