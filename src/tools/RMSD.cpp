@@ -1371,13 +1371,16 @@ double RMSDCoreData::getDistance( const bool squared) {
   } else {
     localDist=eigenvals[0]+rr00+rr11;
   }
-  #pragma omp simd reduction(+:localDist)
-  for(unsigned iat=0; iat<n; iat++) {
-    if(alEqDis) {
-      if(safe) {
+  if(alEqDis) {
+    if(safe) {
+      #pragma omp simd reduction(+:localDist)
+      for(unsigned iat=0; iat<n; iat++) {
         localDist+=align[iat]*modulo2(d[iat]);
       }
-    } else {
+    }
+  } else {
+    #pragma omp simd reduction(+:localDist)
+    for(unsigned iat=0; iat<n; iat++) {
       localDist+=displace[iat]*modulo2(d[iat]);
     }
   }
