@@ -1475,11 +1475,16 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
     }
   }
 
-  if(!alEqDis)
+  if(!alEqDis) {
+    const Vector shift=ddist_dcpositions-csum;
     #pragma omp simd
     for(unsigned iat=0; iat<n; iat++) {
-      derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcpositions-csum)*align[iat]);
+      const double a=align[iat];
+      derivatives[iat][0]=prefactor*(derivatives[iat][0]+shift[0]*a);
+      derivatives[iat][1]=prefactor*(derivatives[iat][1]+shift[1]*a);
+      derivatives[iat][2]=prefactor*(derivatives[iat][2]+shift[2]*a);
     }
+  }
 
   return derivatives;
 }
@@ -1526,11 +1531,16 @@ std::vector<Vector> RMSDCoreData::getDDistanceDReference() {
     }
   }
 
-  if(!alEqDis)
+  if(!alEqDis) {
+    const Vector shift=ddist_dcreference-csum;
     #pragma omp simd
     for(unsigned iat=0; iat<n; iat++) {
-      derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcreference-csum)*align[iat]);
+      const double a=align[iat];
+      derivatives[iat][0]=prefactor*(derivatives[iat][0]+shift[0]*a);
+      derivatives[iat][1]=prefactor*(derivatives[iat][1]+shift[1]*a);
+      derivatives[iat][2]=prefactor*(derivatives[iat][2]+shift[2]*a);
     }
+  }
 
   return derivatives;
 }
