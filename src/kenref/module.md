@@ -82,3 +82,15 @@ PRINT ARG=kenref.bias,kenref.energy,kenref.rmsd FILE=kenref.out STRIDE=1
 ```
 
 Note that there is no `ARG` keyword: KENREF biases coordinates, not collective variables.
+
+## Citing KEnRef
+
+The method this module applies, and the KEnRef implementation it calls into, are described in:
+
+- A. Alhossary and C. A. Smith, *Restraining Interproton Angular and Distance Dynamics with KEnRef*,
+  J. Phys. Chem. B **130**, 3076-3087 (2026), [doi:10.1021/acs.jpcb.5c08554](https://doi.org/10.1021/acs.jpcb.5c08554).
+  This paper introduces KEnRef and corresponds to its version 1.0.0.
+- C. A. Smith, A. Mazur, A. K. Rout, S. Becker, D. Lee, B. L. de Groot,
+  *Enhancing NMR derived ensembles with kinetics on multiple timescales*,
+  J. Biomol. NMR **74**, 27-43 (2019), [doi:10.1007/s10858-019-00288-8](https://doi.org/10.1007/s10858-019-00288-8).
+  This is the kinetic ensemble refinement method that KEnRef implements.
