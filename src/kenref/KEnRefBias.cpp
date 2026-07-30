@@ -124,12 +124,16 @@ PRINT ARG=kenref.bias,kenref.energy,kenref.rmsd FILE=colvar
 //+ENDPLUMEDOC
 
 // cppcheck-suppress unknownMacro
-// Unlike most modules, this file does not DECLARE its action class: KEnRefBias lives in
-// KEnRefBias.h in the KEnRef repository (see the file header -- the class is deliberately kept
-// there so updating KEnRef does not require a push to PLUMED). codecheck runs cppcheck without
-// the include paths that resolve that header, so cppcheck sees an undeclared identifier here and
-// cannot parse the registration line, reporting it as an unknown macro. Modules whose class is
-// declared in the same file, such as annfunc/ANN.cpp, do not hit this.
+// cppcheck cannot expand PLUMED_REGISTER_ACTION when checking this module, so it cannot parse the
+// line below. The reason is specific to a default-off module: `make links` only creates a module's
+// core/ and tools/ header symlinks when the module is ENABLED, and in the codecheck job kenref is
+// off (its optional dependency is absent), so "core/ActionRegister.h" does not resolve -- cppcheck
+// reports that missing include too, as (information). Since the macro is undefined, the
+// registration is an unparseable construct and cppcheck flags it.
+//
+// A forward declaration of the class does NOT help, and was tested: the unknown entity is the
+// MACRO, not the class name. Verified with cppcheck 2.17.1 by supplying a stub header that defines
+// PLUMED_REGISTER_ACTION, whereupon the diagnostic disappears with no other change.
 PLUMED_REGISTER_ACTION(KEnRefBias, "KENREF")
 
 // ============================================================
