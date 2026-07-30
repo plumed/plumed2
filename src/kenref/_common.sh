@@ -36,12 +36,13 @@ KENREF_GIT_TAG="${KENREF_GIT_TAG:-master}"
 # install). BUILD and FETCH dirs stay in the source trees — they are artefacts, not installs.
 KENREF_PREFIX=""               # kenref_core install prefix (default: /usr/local/kenref)
 PLUMED_PREFIX="/usr/local"
-# GROMACS (batch script): a PROVIDED 2025.x source. KEnRef is fetched when absent (it is our own, small,
-# and the module cannot be built without it); GROMACS deliberately is NOT — a multi-GB clone of somebody
-# else's tree is not something a `./configure` should start behind the user's back, and `plumed patch`
-# rewrites that tree in place.
+# GROMACS (batch script): use a provided source, else fetch one to a PLUMED-related dir (separate tree).
+# NB: this auto-fetch is exactly what makes this the "downloads" branch; kenref-plumed-master omits it.
 GROMACS_SRC=""
 GROMACS_PREFIX="/usr/local/gromacs"
+GROMACS_GIT_URL="${GROMACS_GIT_URL:-https://gitlab.com/gromacs/gromacs.git}"
+GROMACS_GIT_TAG="${GROMACS_GIT_TAG:-latest-2025}"   # 'latest-2025' => newest v2025.x
+GROMACS_FETCH_DIR="${PLUMED_ROOT}/build/gromacs-src"   # plumed-related; persisted+reused
 PATCH_ENGINE=""                # empty => auto (newest gromacs-2025.x shipped with this PLUMED)
 
 say()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -105,7 +106,7 @@ Usage: src/kenref/${KN_SCRIPT:-build}.sh [options]   (no options => interactive)
   --accel A              AVX_512 | AVX_256 | AVX2_256        (default: auto-detect)
   --jobs N               parallel build jobs                (default: ${JOBS})
 $( [ "${KN_BATCHES:-0}" = 1 ] && cat <<G
-  --gromacs-src DIR      GROMACS 2025.x source (REQUIRED — GROMACS is never auto-downloaded)
+  --gromacs-src DIR      GROMACS 2025.x source (omit to auto-fetch ${GROMACS_GIT_TAG})
   --gromacs-prefix DIR   GROMACS install prefix      (default: ${GROMACS_PREFIX})
   --patch-engine E       plumed patch -e engine      (default: auto)
 G
@@ -241,13 +242,26 @@ build_plumed() {
 
 # ---- STEP 3: GROMACS 2025.x, batched with THIS PLUMED's `plumed patch` -------
 build_gromacs() {
-    # A PROVIDED GROMACS 2025.x source is required: `plumed patch` REWRITES the tree in place, so it must
-    # be a checkout the user has consciously dedicated to the plumed path (not, say, the one kenref-gmx
-    # builds against). We never pick one for them, and we never download one.
-    [ -n "$GROMACS_SRC" ] || ask_val GROMACS_SRC "GROMACS 2025.x source (required)"
-    [ -n "$GROMACS_SRC" ] || die "no GROMACS source provided. Pass --gromacs-src DIR (a GROMACS 2025.x
-  checkout, preferably 2025.4). GROMACS is never auto-downloaded: 'plumed patch' rewrites the tree in
-  place, so it must be one you have dedicated to this purpose."
+    # Provided source, else FETCH one to a plumed-related dir (separate from any kenref-gmx gromacs).
+    # `plumed patch` REWRITES the tree in place, which is why a fetched copy lives under the build dir.
+    if [ -z "$GROMACS_SRC" ] && interactive; then
+        ask_val GROMACS_SRC "GROMACS 2025.x source (blank = fetch ${GROMACS_GIT_TAG})"
+    fi
+    if [ -z "$GROMACS_SRC" ]; then
+        GROMACS_SRC="$GROMACS_FETCH_DIR"
+        if [ ! -f "${GROMACS_SRC}/CMakeLists.txt" ]; then
+            local tag="$GROMACS_GIT_TAG"
+            if [ "$tag" = "latest-2025" ]; then
+                tag="$(git ls-remote --tags --refs "$GROMACS_GIT_URL" 2>/dev/null | grep -oE 'v2025\.[0-9]+' | sort -V | tail -1)"
+                [ -z "$tag" ] && tag="v2025.4"
+            fi
+            say "fetching GROMACS ${tag} -> ${GROMACS_SRC} (plumed-related)"
+            git clone --depth 1 --branch "$tag" "$GROMACS_GIT_URL" "$GROMACS_SRC" \
+                || die "GROMACS clone failed; provide one with --gromacs-src DIR."
+        else
+            say "reusing fetched GROMACS at ${GROMACS_SRC}"
+        fi
+    fi
     [ -f "${GROMACS_SRC}/CMakeLists.txt" ] || die "--gromacs-src '${GROMACS_SRC}' is not a GROMACS source tree."
 
     local ver
