@@ -13,3 +13,19 @@ module.
 
 Please be aware that many other modules contain implementations other collective variables.  In other words, the colvar module does not 
 contain implementations of all the collectivar variables that are available in PLUMED. 
+
+## Reactive soft-Voronoi collective variables
+
+Proton-transfer and acid-base reactions can change molecular identities, so a
+fixed list of bonds or permanent ions is often not a suitable reaction
+coordinate.  [VORONOI_COORDINATION](VORONOI_COORDINATION.md) assigns
+transferable atoms smoothly to user-selected centers and measures their
+coordination defects.  [VORONOI_DISTANCE](VORONOI_DISTANCE.md) converts these
+defects into a defect-pair separation, while
+[VORONOI_POSITION](VORONOI_POSITION.md) resolves them along a Cartesian
+direction relative to a fixed origin.
+
+These Actions are part of the default `colvar` module.  Their Manual
+pages explain the mathematical definition, keyword mapping, neighbor-list
+approximation, limitations, and worked examples for water autoionization,
+solvated glycine, interfaces, and catalytic proton transfer.
