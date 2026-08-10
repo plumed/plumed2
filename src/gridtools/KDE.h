@@ -196,6 +196,7 @@ void KDEHelper<K,P,G>::transferParamsToKernel( const std::vector<double>& argval
 
   // And transfer the neighbor information to the holders
   for(unsigned j=0; j<num_neigh; ++j) {
+    plumed_assert( neighbors[j]*nkernels + func.nkernels_per_point[neighbors[j]] < func.kernels_for_gridpoint.size() );
     func.kernels_for_gridpoint[ neighbors[j]*nkernels + func.nkernels_per_point[neighbors[j]] ] = kval;
     func.nkernels_per_point[ neighbors[j] ]++;
   }
@@ -206,16 +207,16 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
   // Resize the kernel sum if we need to
   // Number of kernels is determined based on sparsity pattern of matrix input as matrix of heights
   std::size_t nkernels = args[args.size()-1]->getNumberOfStoredValues();
-  if( func.kernelsum.kernelParams.size()!=nkernels ) {
-    func.kernelsum.kernelParams.resize( nkernels );
-  }
   // And resize the grid counters if we need to
   std::size_t ngp = gridobject.getNumberOfPoints();
   if( func.nkernels_per_point.size()!=ngp ) {
     func.nkernels_per_point.resize( ngp );
-    func.kernels_for_gridpoint.resize( ngp*nkernels );
   }
   std::fill( func.nkernels_per_point.begin(), func.nkernels_per_point.end(), 0 );
+  if( func.kernelsum.kernelParams.size()!=nkernels ) {
+    func.kernelsum.kernelParams.resize( nkernels );
+    func.kernels_for_gridpoint.resize( ngp*nkernels );
+  }
 
   bool updateNeighborsOnEachKernel = !func.fixed_width;
   if( !func.fixed_width && K::bandwidthsAllSame( gridobject.getDimension(), args ) ) {

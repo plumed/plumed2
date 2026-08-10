@@ -1,0 +1,15 @@
+cmap: CONTACT_MATRIX GROUP=1-800 COMPONENTS SWITCH={RATIONAL D_0=0.4 R_0=0.15 NN=6 MM=10 D_MAX=0.75}
+dmap: CUSTOM ARG=cmap.x,cmap.y,cmap.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+ux: CUSTOM ARG=cmap.x,dmap FUNC=x/y PERIODIC=NO
+uy: CUSTOM ARG=cmap.y,dmap FUNC=x/y PERIODIC=NO
+uz: CUSTOM ARG=cmap.z,dmap FUNC=x/y PERIODIC=NO
+skde: SPHERICAL_KDE ARG=ux,uy,uz CONCENTRATION=10 HEIGHTS=cmap.w GRID_BIN=144
+nbonds: SUM ARG=cmap.w PERIODIC=NO
+nskde: CUSTOM ARG=skde,nbonds FUNC=x/y PERIODIC=NO
+
+oneb: ONES SIZE=1
+nframes: ACCUMULATE ARG=oneb STRIDE=1
+akde: ACCUMULATE ARG=nskde STRIDE=1
+avkde: CUSTOM ARG=akde,nframes FUNC=x/y PERIODIC=NO
+DUMPGRID ARG=avkde FILE=grid.grid STRIDE=5 FMT=%8.4f 
+
