@@ -75,8 +75,8 @@ protected:
 
   static void registerCommonKeywords(Keywords&);
   static void setScalarDescription(Keywords&, const std::string&);
-  static void broadcastOrCheck(std::vector<double>&, unsigned, const std::string&);
-  static std::string normalizedSign(std::string);
+  void broadcastOrCheck(std::vector<double>&, unsigned, const std::string&) const;
+  std::string normalizedSign(std::string) const;
   std::vector<unsigned> mapSelection(const std::vector<AtomNumber>&,
                                      const std::string&, bool) const;
   Assignment calculateAssignment();
@@ -115,31 +115,31 @@ void SoftVoronoiBase::setScalarDescription(
 #endif
 }
 
-void SoftVoronoiBase::broadcastOrCheck(std::vector<double>& values,
+void SoftVoronoiBase::broadcastOrCheck(std::vector<double>& keywordValues,
                                        const unsigned size,
-                                       const std::string& keyword) {
-  if(values.size()==1 && size>1) {
-    values.assign(size,values[0]);
+                                       const std::string& keyword) const {
+  if(keywordValues.size()==1 && size>1) {
+    keywordValues.assign(size,keywordValues[0]);
   }
-  if(values.size()!=size) {
-    plumed_error() << keyword << " must contain one value or exactly "
-                   << size << " values";
+  if(keywordValues.size()!=size) {
+    error(keyword+" must contain one value or exactly "+
+          std::to_string(size)+" values");
   }
-  for(unsigned i=0; i<values.size(); ++i) {
-    if(!std::isfinite(values[i])) {
-      plumed_error() << keyword << " contains a non-finite value at position "
-                     << i+1;
+  for(unsigned i=0; i<keywordValues.size(); ++i) {
+    if(!std::isfinite(keywordValues[i])) {
+      error(keyword+" contains a non-finite value at position "+
+            std::to_string(i+1));
     }
   }
 }
 
-std::string SoftVoronoiBase::normalizedSign(std::string sign) {
+std::string SoftVoronoiBase::normalizedSign(std::string sign) const {
   std::transform(sign.begin(),sign.end(),sign.begin(),
   [](const char value) {
     return static_cast<char>(std::toupper(static_cast<unsigned char>(value)));
   });
   if(sign!="ALL" && sign!="POSITIVE" && sign!="NEGATIVE") {
-    plumed_error() << "SIGN must be ALL, POSITIVE, or NEGATIVE";
+    error("SIGN must be ALL, POSITIVE, or NEGATIVE");
   }
   return sign;
 }
@@ -523,12 +523,21 @@ void SoftVoronoiBase::finalize(const double value,
 /*
 Calculate a scalar reduction of smooth Voronoi coordination defects.
 
-Reactive processes such as proton transfer are difficult to describe using a
+Reactive processes such as proton transfer are difficult to describe with a
 fixed molecular identity because the atom that carries the proton can change.
-This Action instead assigns every atom in ASSIGNED continuously to the atoms
-in CENTERS.  This construction follows the descriptors introduced for
-acid-base equilibria \cite Grifoni2019AcidBase and condensed-phase tautomerism
-\cite Grifoni2020Tautomeric.
+This Action assigns every atom in ASSIGNED continuously to the atoms in
+CENTERS and reduces the resulting coordination defects to one scalar.  The
+same assignment is shared by [VORONOI_DISTANCE](VORONOI_DISTANCE.md) and
+[VORONOI_POSITION](VORONOI_POSITION.md).  Together the three Actions describe
+the amount, separation, and location of coordination defects without
+hard-coding water, glycine, a catalyst, or an atom-list position.
+
+The construction follows the descriptors introduced for acid-base equilibria
+\cite Grifoni2019AcidBase and condensed-phase tautomerism
+\cite Grifoni2020Tautomeric.  Applications to solvated glycine, interfacial
+water ions, electric-field effects, and electrocatalytic nitrogen reduction
+are discussed in \cite Zhang2024Glycine, \cite Zhang2025Interfaces,
+\cite Zhang2025ElectricField, and \cite Zhang2026NRR.
 
 ## Soft assignment and coordination defects
 
@@ -543,7 +552,9 @@ minimum-image distance.  The assignment weight is
 The denominator contains all CENTERS for the same assigned atom, so
 \f$\sum_i w_{ij}=1\f$.  KAPPA is positive and has inverse units of the current
 PLUMED length unit.  Increasing KAPPA sharpens the assignment toward the
-nearest center; reducing it spreads an assigned atom over more centers.
+nearest center; reducing it spreads an assigned atom over more centers.  The
+implementation uses a shifted softmax, which improves numerical stability
+without changing the mathematical value.
 
 The smooth occupancy and coordination defect of center \f$i\f$ are
 
@@ -553,8 +564,16 @@ The smooth occupancy and coordination defect of center \f$i\f$ are
 
 REFERENCE supplies \f$\nu_i\f$.  A single value is broadcast to all CENTERS;
 otherwise provide exactly one value per center in the same order as CENTERS.
-The Action does not infer elements, molecules, water, or a special reactive
-site from atom order.  CENTERS and ASSIGNED must be disjoint.
+The identities
+
+\f[
+ \sum_i n_i=N_{\mathrm{assigned}}, \qquad
+ \sum_i q_i=N_{\mathrm{assigned}}-\sum_i\nu_i
+\f]
+
+provide useful checks on a new chemical mapping.  The Action does not infer
+elements, molecules, water, or a special reactive site from atom order.
+CENTERS and ASSIGNED must be nonempty, internally unique, and disjoint.
 
 VORONOI_COORDINATION returns
 
@@ -563,24 +582,125 @@ VORONOI_COORDINATION returns
 \f]
 
 where SELECT defines \f$S\f$ and COEFFICIENTS supplies \f$a_i\f$.  SELECT
-defaults to all CENTERS and COEFFICIENTS defaults to one.  POWER=2 is useful
-for measuring the total amount of coordination-defect activity without
-canceling positive and negative defects.  POWER=1 preserves the sign and can
-be restricted with SIGN=POSITIVE or SIGN=NEGATIVE.  Sign filtering is not
-differentiable exactly at \f$q_i=0\f$.
+defaults to all CENTERS and COEFFICIENTS defaults to one.  SIGN restricts the
+sum to \f$q_i>0\f$ or \f$q_i<0\f$ when POSITIVE or NEGATIVE is selected.
+
+- POWER=1 preserves the signed defect.  With sign filtering it is
+  non-differentiable exactly at \f$q_i=0\f$.
+- POWER=2 measures defect activity without cancellation.  With sign
+  filtering its value and first derivative are continuous at \f$q_i=0\f$,
+  but its second derivative has a cusp there.
+- COEFFICIENTS can distinguish chemically different selected centers or
+  reproduce a published scalar.  Coefficients do not change the assignment.
+
+Analytical coordinate and box derivatives are provided.  The derivative with
+respect to a defect is \f$a_i\f$ for POWER=1 and \f$2a_iq_i\f$ for POWER=2
+inside the selected sign branch, and zero outside it.  These derivatives are
+propagated through every assignment weight.  A CV intended for biasing should
+avoid a POWER=1 sign boundary, a neighbor-list membership change, or another
+non-smooth surface discussed below.
 
 The geometric defects are not formal electronic charges.  Their physical
 meaning comes from the chosen atom sets and reference occupancies and should
 always be checked for the system of interest.
 
-## Installation and optional OPES use
+## Translating chemistry into keywords
+
+Build the input from chemistry rather than from atom-list positions:
+
+1. Put atoms that can receive an assigned atom in CENTERS.  For proton
+   transfer these are commonly O and N atoms.
+2. Put only the transferable atoms in ASSIGNED.  Hydrogen atoms that cannot
+   participate in the process need not be included.
+3. Give every center its neutral or intended occupancy in REFERENCE.  Typical
+   examples are 2 for a water O and a model-dependent value for a reactive O
+   or N.
+4. Start with the exact full-pair calculation.  Inspect representative
+   neutral, product, transition, and multi-defect configurations before
+   choosing SELECT, POWER, SIGN, or COEFFICIENTS.
+5. Add [VORONOI_DISTANCE](VORONOI_DISTANCE.md) only when separation is needed,
+   and [VORONOI_POSITION](VORONOI_POSITION.md) only when a fixed spatial frame
+   is physically meaningful.
+
+REFERENCE follows CENTERS order.  COEFFICIENTS follows SELECT order.  If the
+centers are reordered, reorder the corresponding numeric vector as well.
+Atom-valued SELECT, GROUP1, and GROUP2 lists use absolute atom numbers and do
+not rely on a center being last, first, or one of a fixed number of species.
+
+## Installation
 
 VORONOI_COORDINATION, [VORONOI_DISTANCE](VORONOI_DISTANCE.md), and
-[VORONOI_POSITION](VORONOI_POSITION.md) belong to PLUMED's `colvar`
-module, which is built by default.  No additional configure flag or external
-library is required.  Examples that use [OPES_METAD](OPES_METAD.md) also
-require the optional `opes` module, enabled at configure time with
-`--enable-modules=opes`.
+[VORONOI_POSITION](VORONOI_POSITION.md) belong to PLUMED's `colvar` module.
+This module is built by default and the implementation has no external
+library dependency, so the three Actions do not need an opt-in module.
+
+For a normal in-tree installation, place `ReactiveVoronoi.cpp` in
+`src/colvar` before configuring PLUMED, then build and source the installation
+in the usual way:
+
+```bash
+./configure --prefix=/path/to/plumed-install
+make -j4
+make install
+source /path/to/plumed-install/lib/plumed/sourceme.sh
+```
+
+Use a separate build and install prefix when testing a new PLUMED version; do
+not overwrite a working molecular-dynamics environment.
+
+### Immediate runtime compilation during development
+
+PLUMED can compile this single source file as a runtime plugin.  This is the
+fast edit-compile-test loop: it recompiles `ReactiveVoronoi.cpp`, not the full
+PLUMED, DeePMD, or molecular-dynamics program.
+
+```bash
+plumed mklib ReactiveVoronoi.cpp
+```
+
+The command creates `ReactiveVoronoi.so` on Linux or the platform-equivalent
+shared library.  Load it before the first new Action in every input that uses
+it:
+
+```text
+LOAD FILE=./ReactiveVoronoi.so
+
+WaterO: GROUP ATOMS=1-4
+WaterH: GROUP ATOMS=5-12
+ionization: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+PRINT ARG=ionization FILE=COLVAR
+```
+
+Compile with the same `plumed` executable and compiler/ABI used by the target
+simulation.  Rebuild the shared library after changing the C++ file, PLUMED
+version, compiler, or relevant build environment; a plugin compiled against
+one PLUMED installation should not be assumed binary-compatible with another.
+For a one-off test, [LOAD](LOAD.md) can also compile a `.cpp` file directly,
+but an explicit `mklib` step gives a reusable library and clearer logs.
+
+When a molecular-dynamics executable is already dynamically integrated with
+the same PLUMED kernel, the runtime plugin normally requires no LAMMPS,
+DeePMD, or engine rebuild: place the LOAD line in the PLUMED input and use an
+absolute path or a path relative to the simulation working directory.  First
+run `plumed driver` with that exact library and input, then run a short engine
+smoke test.  If the engine uses a different or statically embedded PLUMED,
+follow that engine's PLUMED linking procedure instead of assuming the plugin
+ABI will match.
+
+### Optional OPES module
+
+The CVs themselves are independent of OPES.  Only an input using
+[OPES_METAD](OPES_METAD.md) or another OPES Action needs the optional `opes`
+module.  When building PLUMED from source, enable it with:
+
+```bash
+./configure --enable-modules=opes --prefix=/path/to/plumed-install
+make -j4
+make install
+```
+
+If PLUMED reports that `OPES_METAD` is unknown, rebuild PLUMED with this
+module; recompiling `ReactiveVoronoi.cpp` alone cannot add OPES.
 
 ## Exact and neighbor-list calculations
 
@@ -599,40 +719,116 @@ Before using NLIST in production:
 3. choose NL_STRIDE so that no relevant pair can enter the cutoff between
    updates.
 
-A cutoff copied from another system is not a convergence test.
+A cutoff copied from another system is not a convergence test.  Pair-list
+changes can introduce small discontinuities because the retained weights are
+renormalized.  Prefer exact mode for derivative validation and for small or
+moderate systems.  Use NLIST only after a value-and-force convergence scan
+demonstrates a useful speed/accuracy tradeoff for the target system.
 
-## Example: water autoionization
+## Worked example 1: water autoionization
 
 For water, oxygen atoms can be used as CENTERS, hydrogen atoms as ASSIGNED,
 and the neutral reference occupancy is two.  In a configuration containing
 one hydronium and one hydroxide, the corresponding defects approach +1 and
--1.  Consequently, `ionization` approaches two, while
-`positive` and `negative` approach +1 and -1.
+-1.
 
 ```plumed
+UNITS LENGTH=A
 WaterO: GROUP ATOMS=1-4
 WaterH: GROUP ATOMS=5-12
 
-ionization: VORONOI_COORDINATION ...
-  CENTERS=WaterO
-  ASSIGNED=WaterH
-  KAPPA=5
-  REFERENCE=2
-  POWER=2
-... VORONOI_COORDINATION
+ionization: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+positive_amount: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 SIGN=POSITIVE
+negative_amount: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 SIGN=NEGATIVE
+positive_signed: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=1 SIGN=POSITIVE
+negative_signed: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=1 SIGN=NEGATIVE
 
-positive: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH \
-  KAPPA=5 REFERENCE=2 POWER=1 SIGN=POSITIVE
-negative: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH \
-  KAPPA=5 REFERENCE=2 POWER=1 SIGN=NEGATIVE
-
-PRINT ARG=ionization,positive,negative FILE=COLVAR
+PRINT ARG=ionization,positive_amount,negative_amount,positive_signed,negative_signed FILE=COLVAR
 ```
 
-Applications to glycine tautomerism are discussed in
-\cite Zhang2024Glycine and \cite Zhang2025ElectricField.  Water self-ions at
-air-water and oil-water interfaces are discussed in
-\cite Zhang2025Interfaces.
+For an isolated ion pair, `ionization` approaches 2, the two squared branches
+approach 1, and the signed branches approach +1 and -1.  In a neutral frame
+all five values approach zero.  Soft values between these limits are expected
+during proton transfer.
+
+## Worked example 2: exact-to-NLIST convergence
+
+The cutoff below is only an input example, not a transferable recommendation.
+Run both Actions over representative frames and compare values and forces
+while increasing NL_CUTOFF and varying NL_STRIDE.
+
+```plumed
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-4
+WaterH: GROUP ATOMS=5-12
+
+exact: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+trial: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 NLIST NL_CUTOFF=8.0 NL_STRIDE=1
+PRINT ARG=exact,trial FILE=COLVAR
+```
+
+## Worked example 3: applying a bias
+
+First monitor the unbiased CV and check its scale.  The following compact
+input then biases the total ionization activity with OPES.  PACE, BARRIER,
+TEMP, and all production settings are system-dependent and must be justified
+for the simulation being run.
+
+```plumed
+UNITS LENGTH=A ENERGY=kj/mol
+WaterO: GROUP ATOMS=1-4
+WaterH: GROUP ATOMS=5-12
+ionization: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+opes: OPES_METAD ARG=ionization PACE=500 BARRIER=40 TEMP=300
+PRINT ARG=ionization,opes.bias FILE=COLVAR STRIDE=10
+```
+
+Passing a one-frame `plumed driver` test only establishes parsing and local
+evaluation.  Before production biasing, verify analytical derivatives,
+energy/force units, restart behavior, the unbiased CV distribution, and a
+short molecular-dynamics force-path run.
+
+## Validation checklist
+
+For every new chemical system:
+
+1. Check CENTERS, ASSIGNED, REFERENCE, SELECT, and COEFFICIENTS against a
+   labeled structure rather than a topology-order assumption.
+2. Confirm the occupancy and defect conservation identities on neutral and
+   reactive frames.
+3. Compare analytical and numerical derivatives away from sign cusps,
+   zero-distance configurations, and periodic branch cuts.
+4. Translate the whole system by a lattice vector and verify the same value.
+5. Reorder CENTERS and ASSIGNED, reorder numeric vectors consistently, and
+   verify the same value and forces.
+6. If NLIST is requested, converge both values and forces against exact mode.
+7. Compare serial and intended MPI/OpenMP execution on the same frames.
+8. Run a short, fixed-seed molecular-dynamics smoke test before enhanced
+   sampling, then inspect finite COLVAR, bias, force, and restart output.
+
+## Troubleshooting and production cautions
+
+- `Action VORONOI_COORDINATION is not known`: load the runtime library before
+  the Action or use an in-tree build that contains this source.
+- A shared library fails to load: rebuild it with the exact PLUMED executable
+  and ABI used at runtime; inspect the full loader error before changing the
+  simulation environment.
+- `REFERENCE must contain ... values`: provide one value for broadcast or one
+  value per CENTER, in CENTERS order.
+- `every atom in SELECT must also be present in CENTERS`: SELECT is a subset,
+  not an independent chemical group.
+- `an ASSIGNED atom has no CENTER inside the candidate list`: NL_CUTOFF is too
+  small for that configuration or the atom sets are wrong.  The calculation
+  intentionally stops instead of returning a biased normalization.
+- Large changes after enabling NLIST indicate an unconverged truncation, not a
+  harmless implementation detail.
+- Very large KAPPA makes the assignment nearly discrete and can produce sharp
+  force changes near equidistant centers.  Choose it from physical and
+  numerical validation, not only from endpoint values.
+- POWER=1 sign filtering, ABSOLUTE positions, periodic position branch cuts,
+  and neighbor-list membership changes are not globally smooth bias
+  coordinates.  Choose a smooth path or constrain the sampled region when
+  these features are unavoidable.
 */
 //+ENDPLUMEDOC
 
@@ -656,7 +852,7 @@ void VoronoiCoordination::registerKeywords(Keywords& keys) {
   keys.add("atoms","SELECT","Subset of CENTERS included in the scalar reduction; the default is all centers");
   keys.add("optional","COEFFICIENTS","One coefficient, or one value per atom in SELECT");
   keys.add("compulsory","POWER","1","Power of the selected occupancy defects; supported values are 1 and 2");
-  keys.add("compulsory","SIGN","ALL","Use ALL, POSITIVE, or NEGATIVE defects; sign filtering requires POWER=1");
+  keys.add("compulsory","SIGN","ALL","Use ALL, POSITIVE, or NEGATIVE defects");
   setScalarDescription(keys,"the selected reduction of the smooth occupancy defects");
 }
 
@@ -682,9 +878,6 @@ VoronoiCoordination::VoronoiCoordination(const ActionOptions& ao):
   }
   parse("SIGN",sign_);
   sign_=normalizedSign(sign_);
-  if(power_!=1 && sign_!="ALL") {
-    error("SIGN filtering is supported only with POWER=1");
-  }
 
   finishSetup("VORONOI_COORDINATION");
   log.printf("  reducing %u selected centers with POWER=%d SIGN=%s\n",
@@ -699,12 +892,17 @@ void VoronoiCoordination::calculate() {
   for(unsigned s=0; s<selected_.size(); ++s) {
     const unsigned i=selected_[s];
     const double coefficient=coefficients_[s];
+    const bool included=
+      sign_=="ALL" ||
+      (sign_=="POSITIVE" && defect[i]>0.0) ||
+      (sign_=="NEGATIVE" && defect[i]<0.0);
+    if(!included) {
+      continue;
+    }
     if(power_==2) {
       value+=coefficient*defect[i]*defect[i];
       derivativeByDefect[i]+=2.0*coefficient*defect[i];
-    } else if(sign_=="ALL" ||
-              (sign_=="POSITIVE" && defect[i]>0.0) ||
-              (sign_=="NEGATIVE" && defect[i]<0.0)) {
+    } else {
       value+=coefficient*defect[i];
       derivativeByDefect[i]+=coefficient;
     }
@@ -721,86 +919,188 @@ void VoronoiCoordination::calculate() {
 /*
 Calculate a distance-weighted product of smooth coordination defects.
 
-GROUP1 and GROUP2 are explicit subsets of CENTERS.  With both groups, the
-Action returns \f$-\sum_{i\in G_1,k\in G_2}d_{ik}q_iq_k\f$.  Without GROUP2,
-it uses the unique pairs \f$i<k\f$ within GROUP1.  GROUP1 and GROUP2 must be
-disjoint when both are supplied.
+This Action combines the continuously changing identities defined by
+[VORONOI_COORDINATION](VORONOI_COORDINATION.md) with physical center-center
+distances.  It is useful when the progress of a reactive event depends not
+only on whether defects exist, but also on how far apart the corresponding
+sites are.
 
-The \f$q_i\f$ values are the smooth coordination defects defined by
-[VORONOI_COORDINATION](VORONOI_COORDINATION.md).  CENTERS, ASSIGNED, KAPPA,
-REFERENCE, PBC, and NLIST therefore have exactly the same meaning in both
-Actions.  The center-center distance \f$d_{ik}\f$ uses the minimum image unless
-NOPBC is specified.
+## Definition and group semantics
 
-The product \f$q_iq_k\f$ selects pairs of centers carrying complementary or
-correlated defects without assigning a permanent ion identity.  For a single
-hydronium-hydroxide pair, for example, the leading term is their separation.
-The overall minus sign makes a positive-defect/negative-defect pair contribute
-positively.
+Let \f$q_i\f$ be the smooth coordination defect of center \f$i\f$.  When both
+GROUP1 and GROUP2 are supplied, the Action returns
 
-## Example: glycine proton transfer
+\f[
+ D(G_1,G_2)=-\sum_{i\in G_1}\sum_{k\in G_2}d_{ik}q_iq_k .
+\f]
 
-The following compact system illustrates the mapping used for solvated
-glycine.  The center lists are explicit, so the reactive nitrogen and oxygen
-atoms do not need to be the last atoms in CENTERS.  The first distance term
-couples water to glycine; the second adds the internal nitrogen-oxygen term.
-The two terms can be combined with [COMBINE](COMBINE.md).
+GROUP1 and GROUP2 are explicit, nonempty, disjoint subsets of CENTERS.  When
+GROUP2 is omitted, unique pairs within GROUP1 are used:
+
+\f[
+ D(G_1)=-\sum_{\substack{i,k\in G_1\\i<k}}d_{ik}q_iq_k .
+\f]
+
+The center-center distance \f$d_{ik}\f$ uses the minimum image unless NOPBC
+is specified.  CENTERS, ASSIGNED, KAPPA, REFERENCE, PBC, and NLIST have the
+same meaning as on the VORONOI_COORDINATION page.
+
+The product \f$q_iq_k\f$ emphasizes pairs of centers carrying correlated or
+complementary defects without assigning a permanent ion identity.  For one
+positive and one negative defect, the overall minus sign makes the leading
+term positive and approximately equal to their separation when the defects
+approach +1 and -1.  Multiple defects generate a sum over all requested
+pairs; the output should not then be interpreted automatically as one unique
+ion-ion distance.
+
+## Derivatives, periodicity, and bias suitability
+
+Both contributions to the derivative are included: the direct derivative of
+\f$d_{ik}\f$ and the chain-rule derivative of every \f$q_i\f$ through the
+soft assignment.  Analytical box derivatives are also provided using the
+same minimum-image vectors.  The Action stops if a requested center-center
+distance is zero or non-finite because its radial derivative is then
+undefined.
+
+The exact full-pair assignment is smooth away from coincident atoms and the
+usual minimum-image branch surfaces.  NLIST uses the approximate truncated
+normalization described on the VORONOI_COORDINATION page and may add
+membership discontinuities.  Validate the exact Action with numerical
+derivatives before biasing it, and converge values and forces separately if
+NLIST is required.
+
+VORONOI_DISTANCE is not normalized by the amount of defect.  It naturally
+approaches zero in a neutral configuration, but its magnitude also changes as
+defects form or disappear.  This coupling is often desired in a reaction
+coordinate; if a pure conditional distance is intended, its low-defect limit
+must be defined explicitly rather than obtained by dividing by a nearly zero
+weight.
+
+## Choosing GROUP1 and GROUP2
+
+- Use GROUP1 without GROUP2 for separation among possible sites in one pool,
+  such as water O atoms that can host a hydronium or hydroxide defect.
+- Use both groups for cross separation between two chemical pools, such as
+  water O atoms and one reactive N or O site.
+- Combine multiple VORONOI_DISTANCE Actions with
+  [COMBINE](COMBINE.md) when a published CV contains several physically
+  distinct pair sets.  Keeping the pair sets explicit avoids hidden
+  chemistry and atom-order rules.
+
+## Worked example 1: water self-ion separation
+
+For one hydronium-hydroxide pair distributed over water oxygen atoms, unique
+pairs within WaterO describe the solution ion-ion separation.
 
 ```plumed
-WaterO: GROUP ATOMS=1,2
-GlyN:   GROUP ATOMS=3
-GlyO1:  GROUP ATOMS=4
-GlyO2:  GROUP ATOMS=5
-AllH:   GROUP ATOMS=6-12
-Centers: GROUP ATOMS=WaterO,GlyN,GlyO1,GlyO2
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-4
+WaterH: GROUP ATOMS=5-12
 
-# Reference occupancies follow Centers: O(water), N(glycine), O, O.
-d_cross: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 \
-  REFERENCE=2,2,2,0.5,0.5 GROUP1=WaterO GROUP2=GlyN,GlyO1,GlyO2
-d_internal: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 \
-  REFERENCE=2,2,2,0.5,0.5 GROUP1=GlyN GROUP2=GlyO1,GlyO2
-d_gly: COMBINE ARG=d_cross,d_internal COEFFICIENTS=1,1 PERIODIC=NO
-
-# A weighted signed reduction describes the glycine solvation state.
-s_gly: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=AllH KAPPA=5 \
-  REFERENCE=2,2,1,1,1 POWER=1 COEFFICIENTS=1,1,2,2,2
-
-PRINT ARG=s_gly,d_gly FILE=COLVAR
+ionization: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+solution_distance: VORONOI_DISTANCE CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 GROUP1=WaterO
+PRINT ARG=ionization,solution_distance FILE=COLVAR
 ```
 
-The atom layout above is illustrative.  A complete 54-water application is
-available in the
-[GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling)
-and is described in \cite Zhang2024Glycine.  Replace its legacy positional
-`NRX` convention by explicit GROUP1, GROUP2, SELECT, REFERENCE, and
-COEFFICIENTS lists as shown above.
+Check the CV on neutral water, a separated ion pair, and intermediate proton
+transfer frames.  A near-zero value in neutral water is expected and does not
+mean the distance calculation failed.
 
-## Example: proton transfer in a catalytic environment
+## Worked example 2: one reactive O and one reactive N
 
-The same primitives can be used when the reactive center is a nitrogen atom
-rather than a glycine group.  Here the water oxygens and the reactive nitrogen
-are all CENTERS, while transferable hydrogens are ASSIGNED.
+The following example shows that reactive sites are selected by atom number,
+not by being the last atoms in CENTERS.  The reference values are illustrative
+and must be replaced by the chemically intended occupancies.
 
 ```plumed
-WaterO: GROUP ATOMS=1,2,3
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-3
+ReactiveO: GROUP ATOMS=4
+ReactiveN: GROUP ATOMS=5
+TransferableH: GROUP ATOMS=6-13
+Centers: GROUP ATOMS=ReactiveN,WaterO,ReactiveO
+
+activity: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=1,2,2,2,1 POWER=2
+water_to_O: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=1,2,2,2,1 GROUP1=WaterO GROUP2=ReactiveO
+water_to_N: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=1,2,2,2,1 GROUP1=WaterO GROUP2=ReactiveN
+PRINT ARG=activity,water_to_O,water_to_N FILE=COLVAR
+```
+
+If only one site is present, remove the other site from CENTERS and remove its
+matching REFERENCE entry.  No C++ change is required.
+
+## Worked example 3: solvated glycine
+
+The glycine distance used in \cite Zhang2024Glycine contains a water-glycine
+cross term and an internal N-O term.  Writing them separately removes the
+legacy `NRX` and last-three-atoms convention.  The reference vector below is
+paper-consistent and follows Centers exactly: two water O atoms, glycine N,
+and two equivalent glycine O atoms.
+
+```plumed
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1,2
+GlyN: GROUP ATOMS=3
+GlyO1: GROUP ATOMS=4
+GlyO2: GROUP ATOMS=5
+AllH: GROUP ATOMS=6-12
+Centers: GROUP ATOMS=WaterO,GlyN,GlyO1,GlyO2
+
+d_cross: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=WaterO GROUP2=GlyN,GlyO1,GlyO2
+d_internal: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=GlyN GROUP2=GlyO1,GlyO2
+d_gly: COMBINE ARG=d_cross,d_internal COEFFICIENTS=1,1 PERIODIC=NO
+
+s_gly: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 POWER=1 COEFFICIENTS=1,1,2,2,2
+PRINT ARG=s_gly,d_cross,d_internal,d_gly FILE=COLVAR
+```
+
+An alternative reference partition can accidentally give the same linear
+`s_gly` scalar when coefficients and total references cancel.  That does not
+make it equivalent for VORONOI_DISTANCE, POWER=2, or sign filtering.  Use one
+physically declared reference vector consistently across the coupled Actions.
+The complete application is available in the
+[GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling).
+
+## Worked example 4: nitrogen-reduction proton transfer
+
+The published Ru single-atom nitrogen-reduction input in
+\cite Zhang2026NRR uses water oxygen atoms and one reactive nitrogen as the
+active Voronoi centers.  Catalyst and other adsorbate groups may appear in the
+full simulation input, but they are not automatically active in these Actions.
+
+```plumed
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-3
 ReactiveN: GROUP ATOMS=4
 TransferableH: GROUP ATOMS=5-11
 Centers: GROUP ATOMS=WaterO,ReactiveN
 
-solvation: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=TransferableH \
-  KAPPA=5 REFERENCE=2,2,2,1 POWER=1 COEFFICIENTS=1,1,1,2
-proton_distance: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=TransferableH \
-  KAPPA=5 REFERENCE=2,2,2,1 GROUP1=WaterO GROUP2=ReactiveN
-
-PRINT ARG=solvation,proton_distance FILE=COLVAR
+solvation: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=2,2,2,1 POWER=1 COEFFICIENTS=1,1,1,2
+solution_ion_distance: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=2,2,2,1 GROUP1=WaterO
+site_ion_distance: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=TransferableH KAPPA=5 REFERENCE=2,2,2,1 GROUP1=WaterO GROUP2=ReactiveN
+PRINT ARG=solvation,solution_ion_distance,site_ion_distance FILE=COLVAR
 ```
 
-The corresponding Ru single-atom nitrogen-reduction example is available in
-the
-[OPES-DPMD-NRR repository](https://github.com/Zhang-pchao/research/tree/main/OPES-DPMD-NRR)
-and is described in \cite Zhang2026NRR.  The published input uses OPES, whose
-module must be enabled separately as explained on the
+The corresponding files are available in the
+[OPES-DPMD-NRR repository](https://github.com/Zhang-pchao/research/tree/main/OPES-DPMD-NRR).
+If the full input uses OPES, enable the optional module as described on the
 [VORONOI_COORDINATION](VORONOI_COORDINATION.md) page.
+
+## Troubleshooting
+
+- `GROUP1 must contain at least two atoms when GROUP2 is omitted`: a
+  within-group distance requires at least one unique pair.  For a single
+  reactive site, use a nonempty disjoint GROUP2.
+- `GROUP1 and GROUP2 must be disjoint`: a self-pair has no valid radial
+  derivative and is intentionally rejected.
+- A distance is unexpectedly negative: same-sign defect pairs contribute
+  negatively because of the leading minus sign.  Inspect the individual
+  defects and pair-set definition before changing the sign convention.
+- A value grows with the number of defects: the Action is a pair sum, not a
+  normalized nearest-pair distance.  Reduce the groups or define a different
+  mathematical observable if that behavior is not intended.
+- A periodic trajectory jumps: inspect minimum-image branch crossings and
+  whether an unwrapped or externally referenced coordinate is actually needed.
 */
 //+ENDPLUMEDOC
 
@@ -909,65 +1209,188 @@ void VoronoiDistance::calculate() {
 /*
 Calculate a defect-weighted Cartesian position relative to a fixed origin.
 
-The smooth coordination defects \f$q_i\f$ are defined by
-[VORONOI_COORDINATION](VORONOI_COORDINATION.md).  For a selected Cartesian
-axis \f$\alpha\f$ and origin \f$x_0\f$, this Action computes
+Molecular identity alone does not say where a hydronium, hydroxide, or another
+coordination defect is located.  This Action weights the coordinates of the
+possible host centers by the smooth defects defined in
+[VORONOI_COORDINATION](VORONOI_COORDINATION.md).  It replaces atom-list-index
+moments with a physical Cartesian coordinate and provides analytical
+coordinate and box derivatives.
+
+Legacy index-weighted observables such as \f$\sum_i i q_i^2\f$ depend on the
+order in which centers are listed: reordering chemically identical input can
+change the value even when the configuration is unchanged.  Such an index is
+useful at most as an internal diagnostic and is a poor general bias coordinate.
+It is intentionally not reproduced here.  Use SELECT and a physical
+VORONOI_POSITION coordinate when the spatial location of a defect is needed.
+
+## Definition
+
+For selected centers \f$S\f$, Cartesian axis \f$\alpha\f$, and fixed origin
+\f$x_0\f$, define the displacement
 
 \f[
- P=\sum_{i\in S} q_i^2 f(x_{i,\alpha}-x_0).
+ u_i=\operatorname{minimage}(x_{i,\alpha}-x_0)
 \f]
 
-The function \f$f\f$ is the signed minimum-image displacement by default and
-its absolute value when ABSOLUTE is present.  SIGN can retain only centers
-with positive or negative defects.  SELECT defaults to all CENTERS.
+when periodic boundaries are active.  NOPBC replaces it by the direct
+Cartesian difference.  The unnormalized Action is
 
-NORMALIZE divides \f$P\f$ by \f$\sum_i q_i^2\f$ and therefore returns a
-defect-weighted mean position.  It is useful when a defect is guaranteed to be
-present.  If the total weight is no larger than TOLERANCE, the normalized
-coordinate is undefined and the Action stops instead of returning a NaN.
-Without NORMALIZE, a neutral state naturally returns zero.
+\f[
+ P=\sum_{i\in S}g(q_i)f(u_i),
+\f]
 
-ABSOLUTE is non-differentiable when a selected center lies exactly at ORIGIN.
-The sign-gated squared weight has a continuous first derivative but not a
-continuous second derivative when a defect changes sign.
+where \f$g(q_i)=q_i^2\f$ for defects retained by SIGN and zero for excluded
+defects.  The spatial function is \f$f(u)=u\f$ by default and
+\f$f(u)=|u|\f$ with ABSOLUTE.  SELECT defaults to all CENTERS.
+
+With NORMALIZE, the returned value is
+
+\f[
+ \bar P=\frac{\sum_i g(q_i)f(u_i)}{\sum_i g(q_i)}.
+\f]
+
+The unnormalized form naturally approaches zero in a neutral configuration
+and measures position multiplied by defect activity.  The normalized form is
+a defect-weighted mean position, but is defined only when a selected defect is
+present.  If its denominator is no larger than TOLERANCE, the Action stops
+instead of returning a NaN or an arbitrarily amplified coordinate.
+
+## Selecting the observable
+
+- SIGN=POSITIVE tracks over-coordinated centers; SIGN=NEGATIVE tracks
+  under-coordinated centers; SIGN=ALL includes both.
+- ABSOLUTE measures distance from the fixed origin.  Without ABSOLUTE, the
+  sign of the selected Cartesian side is retained.
+- NORMALIZE removes the magnitude of the total squared defect.  Use it only
+  when the relevant defect is guaranteed to exist throughout the sampled
+  region.
+- SELECT restricts possible hosts, for example to water O atoms while leaving
+  a reactive molecular site in CENTERS for the shared assignment.
+
+The sign-gated squared weight has a continuous first derivative at
+\f$q_i=0\f$ but a discontinuous second derivative.  ABSOLUTE is
+non-differentiable at \f$u_i=0\f$.  Without ABSOLUTE, the direct Cartesian
+derivative is smooth away from the periodic branch cut.
+
+## Derivatives and bias suitability
+
+The implementation differentiates both the defect weight and the selected
+center coordinate.  With NORMALIZE, the quotient rule is evaluated
+analytically.  Box derivatives use the same periodic images as the value.
+This makes the Action usable as a bias coordinate within its declared smooth
+region, but the following surfaces require special care:
+
+1. the minimum-image branch at half the periodic cell length;
+2. the ABSOLUTE cusp at ORIGIN;
+3. the second-derivative cusp where a sign-selected defect changes sign;
+4. an NLIST membership change;
+5. the low-weight boundary of NORMALIZE.
+
+A numerical derivative check must use a frame away from these surfaces.  A
+successful check at one frame does not remove a branch cut elsewhere in the
+sampled domain.
 
 ## Periodic boundaries and reference frames
 
-With periodic boundaries, the displacement is minimum-image and therefore has
-a branch cut at the cell boundary.  ORIGIN is a fixed Cartesian coordinate,
-not an atom or a moving interface.  Use this Action only when the cell and
-origin define a physically meaningful frame.  For a drifting slab or moving
-object, construct and validate a consistent external reference before using
-this CV.  NOPBC uses the direct Cartesian displacement.
+ORIGIN is a fixed Cartesian coordinate, not an atom, a center of mass, or an
+automatically detected interface.  With periodic boundaries, the displacement
+is minimum-image and therefore has a branch cut.  This is appropriate only
+when the cell and origin define a reproducible frame.
 
-NLIST has the same approximate normalization and convergence requirements
-described for [VORONOI_COORDINATION](VORONOI_COORDINATION.md).
+For a drifting slab, moving droplet, flexible pore, or fluctuating interface,
+first construct a physically justified external reference and keep all
+coordinates in one consistent image convention.  VORONOI_POSITION does not
+unwrap trajectories or locate an instantaneous interface.  NOPBC removes the
+minimum-image mapping but does not by itself make wrapped molecular-dynamics
+coordinates continuous.
 
-## Example: water self-ions at an interface
+NLIST has the same approximate normalization and convergence requirements as
+[VORONOI_COORDINATION](VORONOI_COORDINATION.md).  Position values can magnify
+small assignment errors through the distance from ORIGIN, so converge both
+the CV and its derivatives against full-pair mode.
+
+## Worked example 1: water self-ions at an interface
 
 For a slab normal to \f$z\f$, positive and negative defects can be monitored
-relative to a fixed reference plane.  The unnormalized form remains defined
-in neutral configurations; add NORMALIZE only when the selected ion is known
-to be present.
+relative to a fixed reference plane.  The unnormalized form below remains
+defined in neutral configurations.
 
 ```plumed
 UNITS LENGTH=A
 WaterO: GROUP ATOMS=1-4
 WaterH: GROUP ATOMS=5-12
 
-h3o_z: VORONOI_POSITION CENTERS=WaterO ASSIGNED=WaterH \
-  KAPPA=5 REFERENCE=2 AXIS=Z ORIGIN=53 SIGN=POSITIVE ABSOLUTE
-oh_z: VORONOI_POSITION CENTERS=WaterO ASSIGNED=WaterH \
-  KAPPA=5 REFERENCE=2 AXIS=Z ORIGIN=53 SIGN=NEGATIVE ABSOLUTE
-
+h3o_z: VORONOI_POSITION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 AXIS=Z ORIGIN=5 SIGN=POSITIVE ABSOLUTE
+oh_z: VORONOI_POSITION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 AXIS=Z ORIGIN=5 SIGN=NEGATIVE ABSOLUTE
 PRINT ARG=h3o_z,oh_z FILE=COLVAR
 ```
 
-The full air-water and oil-water applications are available in the
+The two values combine defect amount and distance from the plane.  They are
+well suited to monitoring neutral frames because both become zero as their
+selected defect disappears.
+
+## Worked example 2: normalized ion location
+
+When a positive defect is known to remain present, NORMALIZE returns its
+defect-weighted mean signed location.  This input intentionally omits ABSOLUTE
+so the two sides of the reference plane remain distinguishable.
+
+```plumed
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-4
+WaterH: GROUP ATOMS=5-12
+
+h3o_signed_z: VORONOI_POSITION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 AXIS=Z ORIGIN=5 SIGN=POSITIVE NORMALIZE TOLERANCE=1e-10
+PRINT ARG=h3o_signed_z FILE=COLVAR
+```
+
+Do not use this normalized form in a trajectory that can become neutral.  In
+that case the fail-closed TOLERANCE error is expected; use the unnormalized
+form or a separately justified state-dependent workflow.
+
+## Worked example 3: restrict hosts while retaining a reactive site
+
+All centers participate in assigning the transferable hydrogens, while SELECT
+restricts the reported location to water oxygen atoms.  This is useful when a
+reactive molecular or catalytic site must compete for protons but should not
+be interpreted as an interfacial water ion.
+
+```plumed
+UNITS LENGTH=A
+WaterO: GROUP ATOMS=1-3
+ReactiveN: GROUP ATOMS=4
+TransferableH: GROUP ATOMS=5-11
+Centers: GROUP ATOMS=WaterO,ReactiveN
+
+water_positive_z: VORONOI_POSITION CENTERS=Centers ASSIGNED=TransferableH SELECT=WaterO KAPPA=5 REFERENCE=2,2,2,1 AXIS=Z ORIGIN=5 SIGN=POSITIVE ABSOLUTE
+PRINT ARG=water_positive_z FILE=COLVAR
+```
+
+The air-water and oil-water applications are available in the
 [OilWaterInterface repository](https://github.com/Zhang-pchao/OilWaterInterface/tree/main)
-and are described in \cite Zhang2025Interfaces.  NL_CUTOFF and NL_STRIDE from
-a historical input should not be copied without a new full-pair convergence
-test for the chosen system.
+and are described in \cite Zhang2025Interfaces.  Historical NL_CUTOFF,
+NL_STRIDE, and ORIGIN values are system-specific and should not be copied
+without new full-pair and reference-frame validation.
+
+## Validation checklist and troubleshooting
+
+- Visualize the selected centers and ORIGIN in representative periodic frames.
+- Translate the system by a lattice vector and verify the same minimum-image
+  value.
+- Place a test center on both sides of a boundary and map the expected branch
+  explicitly.
+- Compare analytical and numerical coordinate and box derivatives away from
+  the branch cut, ABSOLUTE cusp, and sign boundary.
+- Confirm that NORMALIZE remains safely above TOLERANCE over the intended
+  trajectory.
+- If the sign is reversed, inspect AXIS, ORIGIN, image convention, and whether
+  ABSOLUTE was intended.
+- If the value jumps by about a box length, the trajectory crossed the
+  minimum-image branch; this is a coordinate-design problem, not a force
+  precision problem.
+- If a drifting interface is the true reference, define and validate that
+  moving reference before applying a bias.  Changing ORIGIN to a guessed
+  constant only hides the drift.
 */
 //+ENDPLUMEDOC
 
