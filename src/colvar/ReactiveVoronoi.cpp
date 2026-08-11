@@ -292,14 +292,14 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(
-    static_cast<PairData*>(nullptr),localPairCount);
+                    static_cast<PairData*>(nullptr),localPairCount);
 #endif
   std::vector<double> maximumScore(
     numberOfThreads*assigned_.size(),negativeInfinity);
   std::vector<unsigned> threadErrors(numberOfThreads,0);
 
   const auto evaluatePair=[&](const unsigned pairIndex,
-                              const unsigned thread, PairData& pair) {
+  const unsigned thread, PairData& pair) {
     const std::pair<unsigned,unsigned> pairIndexes=
       neighborList_->getClosePair(pairIndex);
     if(pairIndexes.first>=centers_.size() ||
@@ -509,7 +509,7 @@ void SoftVoronoiBase::addAssignmentDerivatives(
     }
   } else {
     std::vector<std::vector<Vector>> threadDerivatives(
-      numberOfThreads,std::vector<Vector>(derivatives.size()));
+                                    numberOfThreads,std::vector<Vector>(derivatives.size()));
     std::vector<Tensor> threadVirials(numberOfThreads);
     #pragma omp parallel for num_threads(numberOfThreads)
     for(unsigned p=0; p<assignment.pairs.size(); ++p) {
