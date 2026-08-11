@@ -19,16 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#if __has_include("Colvar.h")
 #include "Colvar.h"
-#else
-#include "colvar/Colvar.h"
-#endif
-#if __has_include("config/version.h")
 #include "config/version.h"
-#else
-#include "../config/version.h"
-#endif
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/NeighborList.h"
@@ -67,11 +59,18 @@ protected:
   bool serial_;
   bool invalidateList_;
   bool firstTime_;
+  bool filterCandidatePairs_;
+  bool useCellList_;
+  bool haveNeighborReference_;
   double kappa_;
+  double neighborCutoff_;
+  double neighborSkin_;
   std::unique_ptr<NeighborList> neighborList_;
   std::vector<AtomNumber> centers_;
   std::vector<AtomNumber> assigned_;
   std::vector<double> reference_;
+  std::vector<Vector> neighborReferencePositions_;
+  Tensor neighborReferenceBox_;
 
   static void registerCommonKeywords(Keywords&);
   static void setScalarDescription(Keywords&, const std::string&);
@@ -79,6 +78,8 @@ protected:
   std::string normalizedSign(std::string) const;
   std::vector<unsigned> mapSelection(const std::vector<AtomNumber>&,
                                      const std::string&, bool) const;
+  bool neighborListNeedsUpdate();
+  void saveNeighborListReference();
   Assignment calculateAssignment();
   std::vector<double> defects(const Assignment&) const;
   void addAssignmentDerivatives(const Assignment&, const std::vector<double>&,
@@ -102,6 +103,7 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
   keys.addFlag("NLIST",false,"Use an approximate neighbor-list truncation of the assignment candidates");
   keys.add("optional","NL_CUTOFF","Candidate cutoff in PLUMED length units; every ASSIGNED atom must retain at least one CENTER");
   keys.add("optional","NL_STRIDE","Number of steps between neighbor-list updates");
+  keys.add("optional","NL_SKIN","Nonnegative Verlet buffer in PLUMED length units; requires NL_STRIDE greater than one");
 }
 
 void SoftVoronoiBase::setScalarDescription(
@@ -151,7 +153,12 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   serial_(false),
   invalidateList_(true),
   firstTime_(true),
-  kappa_(0.0) {
+  filterCandidatePairs_(false),
+  useCellList_(false),
+  haveNeighborReference_(false),
+  kappa_(0.0),
+  neighborCutoff_(0.0),
+  neighborSkin_(0.0) {
 
   parseAtomList("CENTERS",centers_);
   parseAtomList("ASSIGNED",assigned_);
@@ -192,23 +199,51 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
 
   bool useNeighborList=false;
   double neighborCutoff=0.0;
+  double neighborSkin=0.0;
   int neighborStride=0;
   parseFlag("NLIST",useNeighborList);
   if(useNeighborList) {
     parse("NL_CUTOFF",neighborCutoff);
     parse("NL_STRIDE",neighborStride);
+    parse("NL_SKIN",neighborSkin);
     if(!std::isfinite(neighborCutoff) || neighborCutoff<=0.0) {
       error("NL_CUTOFF must be finite and positive");
     }
     if(neighborStride<=0) {
       error("NL_STRIDE must be positive");
     }
+    if(!std::isfinite(neighborSkin) || neighborSkin<0.0) {
+      error("NL_SKIN must be finite and nonnegative");
+    }
+    if(neighborSkin>0.0 && neighborStride==1) {
+      error("NL_SKIN requires NL_STRIDE greater than one");
+    }
   }
 
   if(useNeighborList) {
+    neighborCutoff_=neighborCutoff;
+    neighborSkin_=neighborSkin;
+    filterCandidatePairs_=neighborSkin_>0.0 || neighborStride>1;
+    const double candidateCutoff=neighborCutoff_+neighborSkin_;
+    if(!std::isfinite(candidateCutoff)) {
+      error("NL_CUTOFF plus NL_SKIN must be finite");
+    }
+#if PLUMED_VERSION_MAJOR>2 || PLUMED_VERSION_MINOR>=11
+    const unsigned neighborThreads=serial_ ? 1 :
+                                   std::max(1U,OpenMP::getNumThreads());
+    const unsigned long long fullPairCount=
+      static_cast<unsigned long long>(centers_.size())*assigned_.size();
+    useCellList_=pbc_ &&
+                 fullPairCount>=32768ULL*neighborThreads;
+    filterCandidatePairs_=filterCandidatePairs_ || useCellList_;
     neighborList_=Tools::make_unique<NeighborList>(
                     centers_,assigned_,serial_,false,pbc_,getPbc(),comm,
-                    neighborCutoff,neighborStride);
+                    candidateCutoff,neighborStride,useCellList_);
+#else
+    neighborList_=Tools::make_unique<NeighborList>(
+                    centers_,assigned_,serial_,false,pbc_,getPbc(),comm,
+                    candidateCutoff,neighborStride);
+#endif
   } else {
     neighborList_=Tools::make_unique<NeighborList>(
                     centers_,assigned_,serial_,false,pbc_,getPbc(),comm);
@@ -254,6 +289,11 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
   log.printf("  %s assigns %u atoms over %u centers with kappa %g\n",
              displayName.c_str(),static_cast<unsigned>(assigned_.size()),
              static_cast<unsigned>(centers_.size()),kappa_);
+  if(neighborList_->getStride()>0) {
+    log.printf("  neighbor cutoff %g skin %g stride %u using %s\n",
+               neighborCutoff_,neighborSkin_,neighborList_->getStride(),
+               useCellList_ ? "link cells" : "a pair scan");
+  }
 }
 
 void SoftVoronoiBase::prepare() {
@@ -275,9 +315,56 @@ void SoftVoronoiBase::prepare() {
   }
 }
 
+bool SoftVoronoiBase::neighborListNeedsUpdate() {
+  if(neighborSkin_<=0.0 || !haveNeighborReference_) {
+    return false;
+  }
+  const std::vector<Vector>& positions=getPositions();
+  if(positions.size()!=neighborReferencePositions_.size()) {
+    return true;
+  }
+  if(pbc_) {
+    const Tensor box=getPbc().getBox();
+    for(unsigned i=0; i<3; ++i) {
+      for(unsigned j=0; j<3; ++j) {
+        if(box(i,j)!=neighborReferenceBox_(i,j)) {
+          return true;
+        }
+      }
+    }
+  }
+  const double thresholdSquared=0.25*neighborSkin_*neighborSkin_;
+  for(unsigned i=0; i<positions.size(); ++i) {
+    const Vector displacement=pbc_ ?
+                              pbcDistance(neighborReferencePositions_[i],
+                                          positions[i]) :
+                              delta(neighborReferencePositions_[i],
+                                    positions[i]);
+    if(displacement.modulo2()>thresholdSquared) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void SoftVoronoiBase::saveNeighborListReference() {
+  if(neighborSkin_<=0.0) {
+    return;
+  }
+  neighborReferencePositions_=getPositions();
+  if(pbc_) {
+    neighborReferenceBox_=getPbc().getBox();
+  }
+  haveNeighborReference_=true;
+}
+
 SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
-  if(neighborList_->getStride()>0 && invalidateList_) {
-    neighborList_->update(getPositions());
+  if(neighborList_->getStride()>0) {
+    const bool updateList=invalidateList_ || neighborListNeedsUpdate();
+    if(updateList) {
+      neighborList_->update(getPositions());
+      saveNeighborListReference();
+    }
   }
 
   const unsigned numberOfPairs=neighborList_->size();
@@ -325,6 +412,10 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       threadErrors[thread]|=2;
       return;
     }
+    if(filterCandidatePairs_ && pair.length>neighborCutoff_) {
+      pair.length=-1.0;
+      return;
+    }
     pair.score=-kappa_*pair.length;
     if(!std::isfinite(pair.score)) {
       threadErrors[thread]|=4;
@@ -370,6 +461,13 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   }
   if(pairErrors&4) {
     error("KAPPA times a CENTER-ASSIGNED distance is too large");
+  }
+  if(filterCandidatePairs_) {
+    result.pairs.erase(
+      std::remove_if(result.pairs.begin(),result.pairs.end(),
+    [](const PairData& pair) {
+      return pair.length<0.0;
+    }),result.pairs.end());
   }
 
   if(!serial_ && comm.Get_size()>1) {
@@ -724,7 +822,9 @@ fast edit-compile-test loop: it recompiles `ReactiveVoronoi.cpp`, not the full
 PLUMED, DeePMD, or molecular-dynamics program.
 
 ```bash
-plumed mklib ReactiveVoronoi.cpp
+include_dir=$(plumed info --include-dir)
+CPLUS_INCLUDE_PATH="${include_dir}/plumed/colvar${CPLUS_INCLUDE_PATH:+:${CPLUS_INCLUDE_PATH}}" \
+  plumed mklib ReactiveVoronoi.cpp
 ```
 
 The command creates `ReactiveVoronoi.so` on Linux or the platform-equivalent
@@ -800,8 +900,20 @@ Before using NLIST in production:
 1. evaluate representative configurations with the exact full-pair form;
 2. increase NL_CUTOFF until values and forces agree within the required
    tolerance;
-3. choose NL_STRIDE so that no relevant pair can enter the cutoff between
-   updates.
+3. start with NL_STRIDE=1, then increase it only after checking consecutive
+   MD steps.  With NL_STRIDE greater than one, NL_SKIN can add a Verlet buffer.
+   The list is rebuilt early if any requested atom moves by more than half the
+   skin or if the periodic box changes, while the evaluated pairs are still
+   filtered at the true NL_CUTOFF on every step.
+
+For a fixed box, the half-skin displacement check ensures that a pair cannot
+cross NL_CUTOFF before it was present in the buffered candidate list.  A
+larger skin reduces rebuilds but retains more candidate pairs, so both the
+skin and stride should be benchmarked.  On PLUMED 2.11 and later, sufficiently
+large periodic candidate lists use the built-in link-cell broad phase;
+smaller lists retain the threaded pair scan because it is faster there.
+Runtime plugins built against older PLUMED versions keep the compatible pair
+scan, but can still amortize its rebuild cost with NL_SKIN.
 
 A cutoff copied from another system is not a convergence test.  Pair-list
 changes can introduce small discontinuities because the retained weights are
