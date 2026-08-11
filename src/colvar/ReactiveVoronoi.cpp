@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "config/version.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/NeighborList.h"
@@ -33,11 +32,79 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace PLMD {
 namespace colvar {
+
+namespace {
+
+template<typename KeywordsType>
+auto setScalarDescriptionImpl(KeywordsType& keys,
+                              const std::string& description, int)
+-> decltype(std::declval<KeywordsType&>().setValueDescription(
+              std::declval<const std::string&>(),
+              std::declval<const std::string&>())) {
+  keys.setValueDescription("scalar",description);
+}
+
+template<typename KeywordsType>
+auto setScalarDescriptionImpl(KeywordsType& keys,
+                              const std::string& description, long)
+-> decltype(std::declval<KeywordsType&>().setValueDescription(
+              std::declval<const std::string&>())) {
+  keys.setValueDescription(description);
+}
+
+inline void setScalarDescriptionImpl(...) {}
+
+template<typename NeighborListType>
+std::unique_ptr<NeighborListType> makeCandidateNeighborListImpl(
+  const std::vector<AtomNumber>& centers,
+  const std::vector<AtomNumber>& assigned,
+  const bool serial, const bool pbc, const Pbc& pbcObject,
+  Communicator& communicator, const double cutoff, const unsigned stride,
+  const bool requestCellList, bool& usingCellList, std::true_type) {
+  usingCellList=requestCellList;
+  return Tools::make_unique<NeighborListType>(
+           centers,assigned,serial,false,pbc,pbcObject,communicator,
+           cutoff,stride,requestCellList);
+}
+
+template<typename NeighborListType>
+std::unique_ptr<NeighborListType> makeCandidateNeighborListImpl(
+  const std::vector<AtomNumber>& centers,
+  const std::vector<AtomNumber>& assigned,
+  const bool serial, const bool pbc, const Pbc& pbcObject,
+  Communicator& communicator, const double cutoff, const unsigned stride,
+  const bool requestCellList, bool& usingCellList, std::false_type) {
+  (void) requestCellList;
+  usingCellList=false;
+  return Tools::make_unique<NeighborListType>(
+           centers,assigned,serial,false,pbc,pbcObject,communicator,
+           cutoff,stride);
+}
+
+template<typename NeighborListType>
+std::unique_ptr<NeighborListType> makeCandidateNeighborList(
+  const std::vector<AtomNumber>& centers,
+  const std::vector<AtomNumber>& assigned,
+  const bool serial, const bool pbc, const Pbc& pbcObject,
+  Communicator& communicator, const double cutoff, const unsigned stride,
+  const bool requestCellList, bool& usingCellList) {
+  typedef typename std::is_constructible<
+  NeighborListType,
+  const std::vector<AtomNumber>&, const std::vector<AtomNumber>&,
+  bool, bool, bool, const Pbc&, Communicator&, double, unsigned, bool
+  >::type CellListConstructor;
+  return makeCandidateNeighborListImpl<NeighborListType>(
+           centers,assigned,serial,pbc,pbcObject,communicator,cutoff,stride,
+           requestCellList,usingCellList,CellListConstructor());
+}
+
+}
 
 class SoftVoronoiBase : public Colvar {
 protected:
@@ -108,21 +175,15 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
 
 void SoftVoronoiBase::setScalarDescription(
   Keywords& keys, const std::string& description) {
-#if PLUMED_VERSION_MAJOR>2 || PLUMED_VERSION_MINOR>=11
-  keys.setValueDescription("scalar",description);
-#elif PLUMED_VERSION_MINOR>=10
-  keys.setValueDescription(description);
-#else
-  (void) keys;
-  (void) description;
-#endif
+  setScalarDescriptionImpl(keys,description,0);
 }
 
 void SoftVoronoiBase::broadcastOrCheck(std::vector<double>& keywordValues,
                                        const unsigned size,
                                        const std::string& keyword) const {
   if(keywordValues.size()==1 && size>1) {
-    keywordValues.assign(size,keywordValues[0]);
+    const double value=keywordValues[0];
+    keywordValues.assign(size,value);
   }
   if(keywordValues.size()!=size) {
     error(keyword+" must contain one value or exactly "+
@@ -228,22 +289,17 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
     if(!std::isfinite(candidateCutoff)) {
       error("NL_CUTOFF plus NL_SKIN must be finite");
     }
-#if PLUMED_VERSION_MAJOR>2 || PLUMED_VERSION_MINOR>=11
     const unsigned neighborThreads=serial_ ? 1 :
                                    std::max(1U,OpenMP::getNumThreads());
     const unsigned long long fullPairCount=
       static_cast<unsigned long long>(centers_.size())*assigned_.size();
-    useCellList_=pbc_ &&
-                 fullPairCount>=32768ULL*neighborThreads;
+    const bool requestCellList=pbc_ &&
+                               fullPairCount>=32768ULL*neighborThreads;
+    neighborList_=makeCandidateNeighborList<NeighborList>(
+                    centers_,assigned_,serial_,pbc_,getPbc(),comm,
+                    candidateCutoff,neighborStride,requestCellList,
+                    useCellList_);
     filterCandidatePairs_=filterCandidatePairs_ || useCellList_;
-    neighborList_=Tools::make_unique<NeighborList>(
-                    centers_,assigned_,serial_,false,pbc_,getPbc(),comm,
-                    candidateCutoff,neighborStride,useCellList_);
-#else
-    neighborList_=Tools::make_unique<NeighborList>(
-                    centers_,assigned_,serial_,false,pbc_,getPbc(),comm,
-                    candidateCutoff,neighborStride);
-#endif
   } else {
     neighborList_=Tools::make_unique<NeighborList>(
                     centers_,assigned_,serial_,false,pbc_,getPbc(),comm);
@@ -359,6 +415,7 @@ void SoftVoronoiBase::saveNeighborListReference() {
 }
 
 SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
+  // Refresh the buffered candidate list on schedule or after a safe-skin exit.
   if(neighborList_->getStride()>0) {
     const bool updateList=invalidateList_ || neighborListNeedsUpdate();
     if(updateList) {
@@ -367,6 +424,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
   }
 
+  // Split candidate pairs into contiguous MPI-owned ranges.
   const unsigned numberOfPairs=neighborList_->size();
   const unsigned stride=serial_ ? 1 : comm.Get_size();
   const unsigned rank=serial_ ? 0 : comm.Get_rank();
@@ -386,6 +444,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     numberOfThreads*assigned_.size(),negativeInfinity);
   std::vector<unsigned> threadErrors(numberOfThreads,0);
 
+  // Evaluate retained pairs and collect per-thread shifted-softmax maxima.
   const auto evaluatePair=[&](const unsigned pairIndex,
   const unsigned thread, PairData& pair) {
     const std::pair<unsigned,unsigned> pairIndexes=
@@ -443,6 +502,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
   }
 
+  // Reduce thread-local errors and maxima before the MPI maximum reduction.
   unsigned pairErrors=0;
   for(unsigned thread=0; thread<numberOfThreads; ++thread) {
     pairErrors|=threadErrors[thread];
@@ -479,6 +539,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
   }
 
+  // Form stable exponential weights and normalize each assigned atom.
   std::vector<double> normalization(assigned_.size(),0.0);
   if(numberOfThreads==1) {
     for(unsigned p=0; p<result.pairs.size(); ++p) {
@@ -513,6 +574,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
   }
 
+  // Reduce normalized weights into center occupancies.
   result.occupancy.assign(centers_.size(),0.0);
   if(numberOfThreads==1) {
     for(unsigned p=0; p<result.pairs.size(); ++p) {
