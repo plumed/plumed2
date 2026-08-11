@@ -58,7 +58,8 @@ auto setScalarDescriptionImpl(KeywordsType& keys,
   keys.setValueDescription(description);
 }
 
-inline void setScalarDescriptionImpl(...) {}
+template<typename KeywordsType>
+void setScalarDescriptionImpl(KeywordsType&, const std::string&, ...) {}
 
 template<typename NeighborListType>
 std::unique_ptr<NeighborListType> makeCandidateNeighborListImpl(
