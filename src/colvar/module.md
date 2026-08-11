@@ -37,7 +37,8 @@ that use OPES require the separately enabled `opes` module.
 
 Start with the VORONOI_COORDINATION page.  It contains the common mathematics,
 installation instructions, chemistry-to-keyword workflow, exact versus NLIST
-guidance, derivative and biasing cautions, validation checklist, and
-troubleshooting.  The distance and position pages add detailed worked inputs
-for water autoionization, single reactive O/N sites, solvated glycine,
-nitrogen reduction, and air/oil-water interfaces.
+guidance, OpenMP/MPI scaling and GPU-host CPU allocation guidance, derivative
+and biasing cautions, validation checklist, and troubleshooting.  The distance
+and position pages add detailed worked inputs for water autoionization, single
+reactive O/N sites, solvated glycine, nitrogen reduction, and air/oil-water
+interfaces.

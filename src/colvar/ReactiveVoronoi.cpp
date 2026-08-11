@@ -381,10 +381,29 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   }
 
   std::vector<double> normalization(assigned_.size(),0.0);
-  for(unsigned p=0; p<result.pairs.size(); ++p) {
-    PairData& pair=result.pairs[p];
-    pair.weight=std::exp(pair.score-maximumScore[pair.assigned]);
-    normalization[pair.assigned]+=pair.weight;
+  if(numberOfThreads==1) {
+    for(unsigned p=0; p<result.pairs.size(); ++p) {
+      PairData& pair=result.pairs[p];
+      pair.weight=std::exp(pair.score-maximumScore[pair.assigned]);
+      normalization[pair.assigned]+=pair.weight;
+    }
+  } else {
+    std::vector<double> threadNormalization(
+      numberOfThreads*assigned_.size(),0.0);
+    #pragma omp parallel for num_threads(numberOfThreads)
+    for(unsigned p=0; p<result.pairs.size(); ++p) {
+      const unsigned thread=OpenMP::getThreadNum();
+      PairData& pair=result.pairs[p];
+      pair.weight=std::exp(pair.score-maximumScore[pair.assigned]);
+      threadNormalization[thread*assigned_.size()+pair.assigned]+=
+        pair.weight;
+    }
+    for(unsigned thread=0; thread<numberOfThreads; ++thread) {
+      for(unsigned j=0; j<assigned_.size(); ++j) {
+        normalization[j]+=
+          threadNormalization[thread*assigned_.size()+j];
+      }
+    }
   }
   if(!serial_ && comm.Get_size()>1) {
     comm.Sum(&normalization[0],static_cast<int>(normalization.size()));
@@ -396,10 +415,29 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   }
 
   result.occupancy.assign(centers_.size(),0.0);
-  for(unsigned p=0; p<result.pairs.size(); ++p) {
-    PairData& pair=result.pairs[p];
-    pair.weight/=normalization[pair.assigned];
-    result.occupancy[pair.center]+=pair.weight;
+  if(numberOfThreads==1) {
+    for(unsigned p=0; p<result.pairs.size(); ++p) {
+      PairData& pair=result.pairs[p];
+      pair.weight/=normalization[pair.assigned];
+      result.occupancy[pair.center]+=pair.weight;
+    }
+  } else {
+    std::vector<double> threadOccupancy(
+      numberOfThreads*centers_.size(),0.0);
+    #pragma omp parallel for num_threads(numberOfThreads)
+    for(unsigned p=0; p<result.pairs.size(); ++p) {
+      const unsigned thread=OpenMP::getThreadNum();
+      PairData& pair=result.pairs[p];
+      pair.weight/=normalization[pair.assigned];
+      threadOccupancy[thread*centers_.size()+pair.center]+=
+        pair.weight;
+    }
+    for(unsigned thread=0; thread<numberOfThreads; ++thread) {
+      for(unsigned i=0; i<centers_.size(); ++i) {
+        result.occupancy[i]+=
+          threadOccupancy[thread*centers_.size()+i];
+      }
+    }
   }
   if(!serial_ && comm.Get_size()>1) {
     comm.Sum(&result.occupancy[0],
@@ -425,20 +463,37 @@ void SoftVoronoiBase::addAssignmentDerivatives(
     error("internal defect derivative has the wrong size");
   }
 
-  std::vector<double> meanDerivative(assigned_.size(),0.0);
-  for(unsigned p=0; p<assignment.pairs.size(); ++p) {
-    const PairData& pair=assignment.pairs[p];
-    meanDerivative[pair.assigned]+=
-      derivativeByDefect[pair.center]*pair.weight;
-  }
-  if(!serial_ && comm.Get_size()>1) {
-    comm.Sum(&meanDerivative[0],static_cast<int>(meanDerivative.size()));
-  }
-
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(assignment.pairs);
 #endif
+  std::vector<double> meanDerivative(assigned_.size(),0.0);
+  if(numberOfThreads==1) {
+    for(unsigned p=0; p<assignment.pairs.size(); ++p) {
+      const PairData& pair=assignment.pairs[p];
+      meanDerivative[pair.assigned]+=
+        derivativeByDefect[pair.center]*pair.weight;
+    }
+  } else {
+    std::vector<double> threadMeanDerivative(
+      numberOfThreads*assigned_.size(),0.0);
+    #pragma omp parallel for num_threads(numberOfThreads)
+    for(unsigned p=0; p<assignment.pairs.size(); ++p) {
+      const unsigned thread=OpenMP::getThreadNum();
+      const PairData& pair=assignment.pairs[p];
+      threadMeanDerivative[thread*assigned_.size()+pair.assigned]+=
+        derivativeByDefect[pair.center]*pair.weight;
+    }
+    for(unsigned thread=0; thread<numberOfThreads; ++thread) {
+      for(unsigned j=0; j<assigned_.size(); ++j) {
+        meanDerivative[j]+=
+          threadMeanDerivative[thread*assigned_.size()+j];
+      }
+    }
+  }
+  if(!serial_ && comm.Get_size()>1) {
+    comm.Sum(&meanDerivative[0],static_cast<int>(meanDerivative.size()));
+  }
   if(numberOfThreads==1) {
     for(unsigned p=0; p<assignment.pairs.size(); ++p) {
       const PairData& pair=assignment.pairs[p];
@@ -725,6 +780,40 @@ renormalized.  Prefer exact mode for derivative validation and for small or
 moderate systems.  Use NLIST only after a value-and-force convergence scan
 demonstrates a useful speed/accuracy tradeoff for the target system.
 
+## CPU parallelism and practical scaling
+
+The exact calculation evaluates \f$N_{\mathrm{centers}}
+N_{\mathrm{assigned}}\f$ pairs per step.  For water with every O in CENTERS
+and every H in ASSIGNED, this is \f$2N_{\mathrm{water}}^2\f$.  Exact mode
+therefore remains quadratic even when it is parallel: additional CPU workers
+reduce elapsed time but do not change the asymptotic cost.
+
+The pair, normalization, occupancy, and derivative loops use OpenMP when it is
+available.  Set the PLUMED and OpenMP thread counts to the CPU cores allocated
+to each molecular-dynamics rank, for example:
+
+```bash
+export PLUMED_NUM_THREADS=4
+export OMP_NUM_THREADS=4
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz --box 3.0,3.0,3.0
+```
+
+Benchmark 1, 2, 4, and 8 threads on the same frames because small candidate
+lists can spend more time entering parallel regions than doing pair work, and
+large lists can become limited by memory bandwidth.  Avoid CPU
+oversubscription.  In a GPU molecular-dynamics run these Actions still execute
+on CPUs, so a GPU allocation alone does not accelerate them.  MPI also
+partitions pairs unless SERIAL is present; SERIAL is a debugging mode that
+repeats the work on every rank, not a performance option.
+
+For large systems, a converged NLIST is the only option here that reduces the
+number of retained assignment pairs.  NL_CUTOFF controls truncation accuracy,
+whereas NL_STRIDE controls how often membership is rebuilt.  Start with
+NL_STRIDE=1, converge NL_CUTOFF against exact values and derivatives, and only
+then test a larger stride against the maximum atomic displacement between
+updates.  Report CV time per call as well as whole-simulation throughput so
+that GPU force-model time and output time are not mistaken for CV cost.
+
 ## Worked example 1: water autoionization
 
 For water, oxygen atoms can be used as CENTERS, hydrogen atoms as ASSIGNED,
@@ -765,6 +854,7 @@ WaterH: GROUP ATOMS=5-12
 exact: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
 trial: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 NLIST NL_CUTOFF=8.0 NL_STRIDE=1
 PRINT ARG=exact,trial FILE=COLVAR
+DUMPDERIVATIVES ARG=exact,trial FILE=DERIVATIVES STRIDE=1
 ```
 
 ## Worked example 3: applying a bias
