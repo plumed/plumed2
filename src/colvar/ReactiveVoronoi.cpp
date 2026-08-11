@@ -96,7 +96,8 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
   keys.add("atoms","CENTERS","Atoms that receive the smooth assignment");
   keys.add("atoms","ASSIGNED","Atoms that are distributed over CENTERS");
   keys.add("compulsory","KAPPA","Positive soft-assignment sharpness in inverse PLUMED length units");
-  keys.add("compulsory","REFERENCE","One reference occupancy, or one value per atom in CENTERS");
+  keys.add("compulsory","REFERENCE",
+           "One intended occupancy broadcast to all CENTERS, or one value per CENTER in CENTERS order");
   keys.addFlag("SERIAL",false,"Perform the calculation redundantly on each rank for debugging");
   keys.addFlag("NLIST",false,"Use an approximate neighbor-list truncation of the assignment candidates");
   keys.add("optional","NL_CUTOFF","Candidate cutoff in PLUMED length units; every ASSIGNED atom must retain at least one CENTER");
@@ -611,6 +612,15 @@ nearest center; reducing it spreads an assigned atom over more centers.  The
 implementation uses a shifted softmax, which improves numerical stability
 without changing the mathematical value.
 
+For monitoring or structural diagnosis, a larger KAPPA can provide sharper
+state labels once the relevant basins are already known.  For biased sampling,
+a smaller KAPPA usually gives smoother assignment and force changes when an
+assigned atom switches between nearby centers, although a value that is too
+small can blur distinct chemical basins.  Scan KAPPA on representative
+reactant, transition, product, and host-switching frames before applying a
+bias.  Values such as 5 for smoother sampling or 100 for sharper diagnosis are
+application examples, not transferable defaults.
+
 The smooth occupancy and coordination defect of center \f$i\f$ are
 
 \f[
@@ -619,6 +629,10 @@ The smooth occupancy and coordination defect of center \f$i\f$ are
 
 REFERENCE supplies \f$\nu_i\f$.  A single value is broadcast to all CENTERS;
 otherwise provide exactly one value per center in the same order as CENTERS.
+For example, `REFERENCE=2` with two water O centers is the vector `(2,2)`, not
+a one-center calculation.  Fractional entries are valid when the model
+deliberately shares one reference occupancy over symmetry-related centers;
+they should not be introduced by averaging chemically nonequivalent sites.
 The identities
 
 \f[
@@ -765,6 +779,21 @@ renormalizes the weights over the retained candidates, so it is an
 approximation rather than an algebraically exact acceleration.  Every
 ASSIGNED atom must retain at least one CENTER or the calculation stops with an
 error.
+
+Omitting NLIST therefore has no hidden cutoff.  When NLIST is enabled,
+NL_CUTOFF is an absolute CENTER-ASSIGNED distance in the active PLUMED length
+units, not a bond cutoff or a water-specific constant.  If \f$d_{\min}\f$ is
+the nearest-center distance and \f$R\f$ is a trial cutoff, the screening
+relation
+
+\f[
+ \exp[-\kappa(R-d_{\min})] \le \epsilon
+\f]
+
+can provide an initial estimate for making a single omitted score small.
+Smaller KAPPA generally requires a larger cutoff.  This estimate does not
+replace convergence because omitted scores, normalization errors, and force
+derivatives can accumulate over many centers.
 
 Before using NLIST in production:
 
@@ -1123,31 +1152,46 @@ matching REFERENCE entry.  No C++ change is required.
 
 The glycine distance used in \cite Zhang2024Glycine contains a water-glycine
 cross term and an internal N-O term.  Writing them separately removes the
-legacy `NRX` and last-three-atoms convention.  The reference vector below is
-paper-consistent and follows Centers exactly: two water O atoms, glycine N,
-and two equivalent glycine O atoms.
+legacy `NRX` and last-three-atoms convention.  The numbered fixture below
+contains zwitterionic [Z] glycine, one complete water near its ammonium group,
+and one complete water near its carboxylate group.  Glycine C atoms and C-H
+atoms remain in the coordinate file to make the topology readable, but the
+non-transferable C-H atoms are excluded from ASSIGNED.
 
 ```plumed
 UNITS LENGTH=A
-WaterO: GROUP ATOMS=1,2
-GlyN: GROUP ATOMS=3
-GlyO1: GROUP ATOMS=4
-GlyO2: GROUP ATOMS=5
-AllH: GROUP ATOMS=6-12
+WaterO: GROUP ATOMS=1,4
+WaterH: GROUP ATOMS=2,3,5,6
+GlyN: GROUP ATOMS=7
+GlyH: GROUP ATOMS=8,9,10
+GlyO1: GROUP ATOMS=15
+GlyO2: GROUP ATOMS=16
+AllH: GROUP ATOMS=WaterH,GlyH
 Centers: GROUP ATOMS=WaterO,GlyN,GlyO1,GlyO2
 
-d_cross: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=WaterO GROUP2=GlyN,GlyO1,GlyO2
-d_internal: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=GlyN GROUP2=GlyO1,GlyO2
-d_gly: COMBINE ARG=d_cross,d_internal COEFFICIENTS=1,1 PERIODIC=NO
+sp: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 POWER=1 COEFFICIENTS=1,1,2,2,2
+sd_water: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=WaterO GROUP2=GlyN,GlyO1,GlyO2
+sd_internal: VORONOI_DISTANCE CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 GROUP1=GlyN GROUP2=GlyO1,GlyO2
+sd: COMBINE ARG=sd_water,sd_internal COEFFICIENTS=1,1 PERIODIC=NO
 
-s_gly: VORONOI_COORDINATION CENTERS=Centers ASSIGNED=AllH KAPPA=5 REFERENCE=2,2,2,0.5,0.5 POWER=1 COEFFICIENTS=1,1,2,2,2
-PRINT ARG=s_gly,d_cross,d_internal,d_gly FILE=COLVAR
+PRINT ARG=sp,sd_water,sd_internal,sd FILE=COLVAR
 ```
 
+CENTERS expands to atoms `(1,4,7,15,16)`, so the five REFERENCE entries map to
+two water O atoms, glycine N, and two symmetry-related glycine O atoms.  The
+vector `(2,2,2,0.5,0.5)` declares the neutral [N] chemical origin even though
+the fixture is [Z].  An ideal [Z] frame therefore has defects near
+`(0,0,+1,-0.5,-0.5)`, and the seven references sum to the seven atoms in AllH.
+The complete full-pair fixture gives `sp=0.0073`, `sd_water=0.0354`
+\f$\mathrm{\AA}\f$, `sd_internal=2.9789` \f$\mathrm{\AA}\f$, and
+`sd=3.0143` \f$\mathrm{\AA}\f$.
+
 An alternative reference partition can accidentally give the same linear
-`s_gly` scalar when coefficients and total references cancel.  That does not
+`sp` scalar when coefficients and total references cancel.  That does not
 make it equivalent for VORONOI_DISTANCE, POWER=2, or sign filtering.  Use one
 physically declared reference vector consistently across the coupled Actions.
+The coordinate files, runnable inputs, commands, and expected outputs are in
+`user-doc/tutorials/others/reactive-voronoi`.
 The complete application is available in the
 [GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling).
 

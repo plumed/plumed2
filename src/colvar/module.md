@@ -42,3 +42,10 @@ and biasing cautions, validation checklist, and troubleshooting.  The distance
 and position pages add detailed worked inputs for water autoionization, single
 reactive O/N sites, solvated glycine, nitrogen reduction, and air/oil-water
 interfaces.
+
+A minimal runnable bundle is stored in
+`user-doc/tutorials/others/reactive-voronoi`.  It contains numbered two-water
+and zwitterionic-glycine XYZ fixtures, matching PLUMED inputs, `plumed driver`
+commands, REFERENCE mappings, and expected full-pair outputs.  These small
+fixtures teach atom selection and verify the Actions; they are not production
+models for condensed-phase thermodynamics.
