@@ -39,10 +39,13 @@ it is available, and when also replica exchange is available,
 metadynamics applied to ENERGY can be used to decrease the
 number of required replicas.
 
-\bug This \ref ENERGY does not include long tail corrections.
-Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
-the potential energy from \ref ENERGY will be slightly different form the one of the MD code.
-You should still be able to use \ref ENERGY and then reweight your simulation with the correct MD energy value.
+\warning Whether long tail corrections are included in \ref ENERGY depends on the MD code.
+With GROMACS they are: \ref ENERGY receives the same potential energy that GROMACS reports as
+`Potential` in its energy file, and that already contains the `DispCorr` term, so
+`"DispCorr Ener"` and `"DispCorr EnerPres"` are accounted for.
+With other codes, such as LAMMPS with `"pair_modify tail yes"`, you should check that \ref ENERGY
+matches the potential energy reported by the MD engine before biasing it. If it does not, you can
+still use \ref ENERGY and then reweight your simulation with the correct MD energy value.
 
 \bug Acceptance for replica exchange when \ref ENERGY is biased
 is computed correctly only if all the replicas have the same
