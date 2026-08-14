@@ -278,9 +278,11 @@ try
     if (!energyWasComputed || potentialEnergy == nullptr)
     {
         GMX_THROW(NotImplementedError(
-                "The PLUMED input needs the potential energy, but this run is using a part of "
-                "GROMACS that cannot request it (energy minimization, shell relaxation or "
-                "mdrun -rerun). Energy-dependent PLUMED input is only supported in plain MD."));
+                "The PLUMED input needs the potential energy, but this run uses the GROMACS "
+                "modular simulator, which cannot be asked for it before the step is scheduled. "
+                "The modular simulator is the default for the md-vv integrator. Set the "
+                "environment variable GMX_DISABLE_MODULAR_SIMULATOR=1 to use the legacy "
+                "simulator, which supports energy-dependent PLUMED input."));
     }
 
     plumed_->cmd("setEnergy", potentialEnergy);
