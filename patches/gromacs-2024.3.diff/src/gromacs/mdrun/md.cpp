@@ -1326,6 +1326,14 @@ void gmx::LegacySimulator::do_md()
         force_flags = (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
                        | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                        | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
+        /* PLUMED */
+        if (plumedswitch && plumedNeedsEnergy)
+        {
+            /* GROMACS >= 2024 snapshots force_flags into stepWork below.
+               Keep computing energy/virial if PLUMED needed them last step. */
+            force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
+        }
+        /* END PLUMED */
         if (simulationWork.useMts && !do_per_step(step, ir->nstfout))
         {
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
@@ -1372,7 +1380,7 @@ void gmx::LegacySimulator::do_md()
         {
             // Reset graph on search step (due to changing neighbour list etc)
             // or virial step (due to changing shifts and box).
-            if (bNS || bCalcVir)
+            if (bNS || bCalcVir || plumedNeedsEnergy)
             {
                 fr_->mdGraph[MdGraphEvenOrOddStep::EvenStep]->reset();
                 fr_->mdGraph[MdGraphEvenOrOddStep::OddStep]->reset();
@@ -1381,7 +1389,7 @@ void gmx::LegacySimulator::do_md()
             {
                 mdGraph->setUsedGraphLastStep(usedMdGpuGraphLastStep);
                 bool canUseMdGpuGraphThisStep =
-                        !bNS && !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
+                        !bNS && !bCalcVir && !plumedNeedsEnergy && !doTemperatureScaling && !doParrinelloRahman && !bGStat
                         && !needHalfStepKineticEnergy && !do_per_step(step, ir->nstxout)
                         && !do_per_step(step, ir->nstxout_compressed)
                         && !do_per_step(step, ir->nstvout) && !do_per_step(step, ir->nstfout)
@@ -1471,7 +1479,21 @@ void gmx::LegacySimulator::do_md()
                   if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
                   plumed_cmd(plumedmain,"setForces",&f.view().force()[0][0]);
                   plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-                  if(plumedNeedsEnergy) force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
+                  if(plumedNeedsEnergy) {
+                    /* GROMACS >= 2024 ignores force_flags at the do_force call:
+                       stepWork was already built above, so rebuild it here. */
+                    force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
+                    runScheduleWork_->stepWork = setupStepWorkload(
+                            legacyForceFlags | GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL,
+                            ir->mtsLevels,
+                            step,
+                            runScheduleWork_->domainWork,
+                            simulationWork);
+                    if(!runScheduleWork_->stepWork.computeEnergy)
+                    {
+                      gmx_fatal(FARGS, "PLUMED needs the potential energy but GROMACS is not computing it this step");
+                    }
+                  }
                   clear_mat(plumed_vir);
                   plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
                 }
