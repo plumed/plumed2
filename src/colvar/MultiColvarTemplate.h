@@ -192,9 +192,15 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     mass.resize(ablocks.size());
     charge.resize(ablocks.size());
   }
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    mass[i]=getMass( ablocks[i][task_index] );
-    charge[i]=getCharge( ablocks[i][task_index] );
+  if( chargesWereSet ) {
+    for(unsigned i=0; i<ablocks.size(); ++i) {
+      mass[i]=getMass( ablocks[i][task_index] );
+      charge[i]=getCharge( ablocks[i][task_index] );
+    }
+  } else {
+    for(unsigned i=0; i<ablocks.size(); ++i) {
+      mass[i]=getMass( ablocks[i][task_index] );
+    }
   }
   // Make some space to store various things
   std::vector<double> values( getNumberOfComponents() );
