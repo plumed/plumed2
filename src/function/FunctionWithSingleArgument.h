@@ -122,7 +122,9 @@ void FunctionWithSingleArgument<T>::calculate() {
     if( doNotCalculateDerivatives() ) {
       continue ;
     }
-
+    if( ismatrix ) {
+      myval->resizeDerivatives( args.size() );
+    }
     for(unsigned j=0; j<args.size(); ++j) {
       myval->setDerivative( j, funcout.derivs[i][j] );
     }
