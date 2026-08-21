@@ -61,6 +61,7 @@ void Dipole<T>::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("y","COMPONENTS","scalar/vector","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","scalar/vector","the z-component of the dipole");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.add("hidden","NEEDS_CHARGES","Inform the parallel task manager that we need the charges to compute this CV");
   keys.setValueDescription("scalar/vector","the DIPOLE for these atoms");
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }

@@ -66,6 +66,11 @@ private:
   bool usepbc;
 /// Do we reassemble the molecule
   bool wholemolecules;
+/// Variable that is turned true if charges are needed to compute the underlying CVs
+/// Add the command:
+/// keys.add("hidden","NEEDS_CHARGES","Inform the parallel task manager that we need the charges to compute this CV");
+/// in the registerKeywords method for your colvar to turn this to true
+  bool needs_charges;
 /// The number of atoms per task
   unsigned natoms_per_task;
 public:
@@ -114,7 +119,8 @@ MultiColvarTemplate<CV,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   taskmanager(this),
   mode(0),
   usepbc(true),
-  wholemolecules(false) {
+  wholemolecules(false),
+  needs_charges(keywords.exists("NEEDS_CHARGES")) {
   std::vector<AtomNumber> all_atoms;
   if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) {
     parseAtomList( "ATOMS", all_atoms );
@@ -226,7 +232,7 @@ void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata
       inputdata[k] = getMass( natoms_per_task*i + j );
       k++;
     }
-    if( !chargesWereSet ) {
+    if( !chargesWereSet && !needs_charges ) {
       k += natoms_per_task;
       continue ;
     }
