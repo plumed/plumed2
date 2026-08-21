@@ -226,6 +226,10 @@ void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata
       inputdata[k] = getMass( natoms_per_task*i + j );
       k++;
     }
+    if( !chargesWereSet ) {
+      k += natoms_per_task;
+      continue ;
+    }
     for(unsigned j=0; j<natoms_per_task; ++j) {
       inputdata[k] = getCharge( natoms_per_task*i + j );
       k++;
