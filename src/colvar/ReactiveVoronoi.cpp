@@ -756,6 +756,13 @@ water ions, electric-field effects, and electrocatalytic nitrogen reduction
 are discussed in \cite Zhang2024Glycine, \cite Zhang2025Interfaces,
 \cite Zhang2025ElectricField, and \cite Zhang2026NRR.
 
+VORONOI_COORDINATION, [VORONOI_DISTANCE](VORONOI_DISTANCE.md), and
+[VORONOI_POSITION](VORONOI_POSITION.md) are part of PLUMED's default `colvar`
+module and have no external library dependency.  In a PLUMED installation that
+contains these Actions, use them directly in the input; no [LOAD](LOAD.md)
+line or optional module is required.  Bias examples using
+[OPES_METAD](OPES_METAD.md) additionally require the `opes` module.
+
 ## Soft assignment and coordination defects
 
 For a center \f$i\f$ and an assigned atom \f$j\f$, let \f$d_{ij}\f$ be their
@@ -856,83 +863,6 @@ REFERENCE follows CENTERS order.  COEFFICIENTS follows SELECT order.  If the
 centers are reordered, reorder the corresponding numeric vector as well.
 Atom-valued SELECT, GROUP1, and GROUP2 lists use absolute atom numbers and do
 not rely on a center being last, first, or one of a fixed number of species.
-
-## Installation
-
-VORONOI_COORDINATION, [VORONOI_DISTANCE](VORONOI_DISTANCE.md), and
-[VORONOI_POSITION](VORONOI_POSITION.md) belong to PLUMED's `colvar` module.
-This module is built by default and the implementation has no external
-library dependency, so the three Actions do not need an opt-in module.
-
-For a normal in-tree installation, place `ReactiveVoronoi.cpp` in
-`src/colvar` before configuring PLUMED, then build and source the installation
-in the usual way:
-
-```bash
-./configure --prefix=/path/to/plumed-install
-make -j4
-make install
-source /path/to/plumed-install/lib/plumed/sourceme.sh
-```
-
-Use a separate build and install prefix when testing a new PLUMED version; do
-not overwrite a working molecular-dynamics environment.
-
-### Immediate runtime compilation during development
-
-PLUMED can compile this single source file as a runtime plugin.  This is the
-fast edit-compile-test loop: it recompiles `ReactiveVoronoi.cpp`, not the full
-PLUMED, DeePMD, or molecular-dynamics program.
-
-```bash
-include_dir=$(plumed info --include-dir)
-CPLUS_INCLUDE_PATH="${include_dir}/plumed/colvar${CPLUS_INCLUDE_PATH:+:${CPLUS_INCLUDE_PATH}}" \
-  plumed mklib ReactiveVoronoi.cpp
-```
-
-The command creates `ReactiveVoronoi.so` on Linux or the platform-equivalent
-shared library.  Load it before the first new Action in every input that uses
-it:
-
-```text
-LOAD FILE=./ReactiveVoronoi.so
-
-WaterO: GROUP ATOMS=1-4
-WaterH: GROUP ATOMS=5-12
-ionization: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
-PRINT ARG=ionization FILE=COLVAR
-```
-
-Compile with the same `plumed` executable and compiler/ABI used by the target
-simulation.  Rebuild the shared library after changing the C++ file, PLUMED
-version, compiler, or relevant build environment; a plugin compiled against
-one PLUMED installation should not be assumed binary-compatible with another.
-For a one-off test, [LOAD](LOAD.md) can also compile a `.cpp` file directly,
-but an explicit `mklib` step gives a reusable library and clearer logs.
-
-When a molecular-dynamics executable is already dynamically integrated with
-the same PLUMED kernel, the runtime plugin normally requires no LAMMPS,
-DeePMD, or engine rebuild: place the LOAD line in the PLUMED input and use an
-absolute path or a path relative to the simulation working directory.  First
-run `plumed driver` with that exact library and input, then run a short engine
-smoke test.  If the engine uses a different or statically embedded PLUMED,
-follow that engine's PLUMED linking procedure instead of assuming the plugin
-ABI will match.
-
-### Optional OPES module
-
-The CVs themselves are independent of OPES.  Only an input using
-[OPES_METAD](OPES_METAD.md) or another OPES Action needs the optional `opes`
-module.  When building PLUMED from source, enable it with:
-
-```bash
-./configure --enable-modules=opes --prefix=/path/to/plumed-install
-make -j4
-make install
-```
-
-If PLUMED reports that `OPES_METAD` is unknown, rebuild PLUMED with this
-module; recompiling `ReactiveVoronoi.cpp` alone cannot add OPES.
 
 ## Exact and neighbor-list calculations
 
@@ -1102,11 +1032,9 @@ For every new chemical system:
 
 ## Troubleshooting and production cautions
 
-- `Action VORONOI_COORDINATION is not known`: load the runtime library before
-  the Action or use an in-tree build that contains this source.
-- A shared library fails to load: rebuild it with the exact PLUMED executable
-  and ABI used at runtime; inspect the full loader error before changing the
-  simulation environment.
+- `Action VORONOI_COORDINATION is not known`: use a PLUMED installation that
+  contains these Actions and verify that the simulation is loading the same
+  PLUMED kernel as `plumed driver`.
 - `REFERENCE must contain ... values`: provide one value for broadcast or one
   value per CENTER, in CENTERS order.
 - `every atom in SELECT must also be present in CENTERS`: SELECT is a subset,

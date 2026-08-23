@@ -14,22 +14,20 @@ and implementation checks, not condensed-phase production models.
 | `glycine-two-water.xyz` | Zwitterionic glycine with one complete water near N and one near a carboxyl O. |
 | `glycine.plumed` | Evaluate the paper-consistent glycine protonation and defect-separation coordinates. |
 
-## Build the runtime plugin
+## Prerequisite
 
-From this directory, copy the source beside the inputs, then compile it with
-the same PLUMED executable and compiler/ABI that will run the examples:
+Use a PLUMED build that contains `VORONOI_COORDINATION`, `VORONOI_DISTANCE`,
+and `VORONOI_POSITION`. These Actions belong to the default `colvar` module,
+so the supplied inputs use them directly and contain no `LOAD` line. Ensure
+that `plumed driver` resolves to the installation being tested before running
+the examples.
 
-```bash
-cp ../../../../src/colvar/ReactiveVoronoi.cpp .
-plumed mklib ReactiveVoronoi.cpp
-```
-
-This creates `ReactiveVoronoi.so` in the current directory. Rebuild it whenever
-the source, PLUMED installation, or compiler changes. The copied source and
-shared library are local test artifacts and should not be committed. If
-`plumed mklib` reports that its configured C++ compiler is unavailable,
-activate or install the matching toolchain instead of silently mixing PLUMED
-with an unrelated compiler or ABI.
+When reviewing the source before it is available in an installed PLUMED
+version, an out-of-tree runtime plugin can still be used as a development
+fallback. Build it with the same PLUMED executable and compiler/ABI used by the
+target program and add the corresponding `LOAD` line only to the local test
+input. Do not commit copied source files, shared libraries, or local `LOAD`
+paths to this directory.
 
 ## Example 1: two neutral waters
 

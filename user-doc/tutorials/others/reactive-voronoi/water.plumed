@@ -1,5 +1,3 @@
-LOAD FILE=./ReactiveVoronoi.so
-
 UNITS LENGTH=A
 WaterO: GROUP ATOMS=1,4
 WaterH: GROUP ATOMS=2,3,5,6

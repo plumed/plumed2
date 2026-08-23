@@ -13,39 +13,3 @@ module.
 
 Please be aware that many other modules contain implementations other collective variables.  In other words, the colvar module does not 
 contain implementations of all the collectivar variables that are available in PLUMED. 
-
-## Reactive soft-Voronoi collective variables
-
-Proton-transfer and acid-base reactions can change molecular identities, so a
-fixed list of bonds or permanent ions is often not a suitable reaction
-coordinate.  The reactive soft-Voronoi family separates one shared smooth
-assignment from three distinct physical reductions:
-
-- [VORONOI_COORDINATION](VORONOI_COORDINATION.md) measures signed or squared
-  coordination-defect activity with explicit references, selections, and
-  coefficients;
-- [VORONOI_DISTANCE](VORONOI_DISTANCE.md) combines defects with explicit
-  within-group or cross-group center distances;
-- [VORONOI_POSITION](VORONOI_POSITION.md) resolves selected defects along a
-  Cartesian direction relative to a declared fixed origin.
-
-The Actions are part of the default `colvar` module and require no external
-library.  For development they can also be compiled as one runtime plugin with
-`plumed mklib ReactiveVoronoi.cpp` and loaded with
-`LOAD FILE=./ReactiveVoronoi.so`, avoiding a full PLUMED rebuild.  Only examples
-that use OPES require the separately enabled `opes` module.
-
-Start with the VORONOI_COORDINATION page.  It contains the common mathematics,
-installation instructions, chemistry-to-keyword workflow, exact versus NLIST
-guidance, OpenMP/MPI scaling and GPU-host CPU allocation guidance, derivative
-and biasing cautions, validation checklist, and troubleshooting.  The distance
-and position pages add detailed worked inputs for water autoionization, single
-reactive O/N sites, solvated glycine, nitrogen reduction, and air/oil-water
-interfaces.
-
-A minimal runnable bundle is stored in
-`user-doc/tutorials/others/reactive-voronoi`.  It contains numbered two-water
-and zwitterionic-glycine XYZ fixtures, matching PLUMED inputs, `plumed driver`
-commands, REFERENCE mappings, and expected full-pair outputs.  These small
-fixtures teach atom selection and verify the Actions; they are not production
-models for condensed-phase thermodynamics.
