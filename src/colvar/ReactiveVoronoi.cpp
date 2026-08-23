@@ -773,6 +773,10 @@ minimum-image distance.  The assignment weight is
  {\sum_k\exp(-\kappa d_{kj})}.
 \f]
 
+By default, \f$d_{ij}\f$ is evaluated with the minimum-image convention.
+NOPBC instead uses the direct coordinate difference, so the input coordinates
+must already follow a consistent unwrapped image convention.
+
 The denominator contains all CENTERS for the same assigned atom, so
 \f$\sum_i w_{ij}=1\f$.  KAPPA is positive and has inverse units of the current
 PLUMED length unit.  Increasing KAPPA sharpens the assignment toward the
@@ -888,6 +892,10 @@ Smaller KAPPA generally requires a larger cutoff.  This estimate does not
 replace convergence because omitted scores, normalization errors, and force
 derivatives can accumulate over many centers.
 
+NL_CUTOFF and NL_STRIDE are required whenever NLIST is present.  NL_SKIN is
+optional, defaults to zero, and can be used only when NL_STRIDE is greater
+than one.
+
 Before using NLIST in production:
 
 1. evaluate representative configurations with the exact full-pair form;
@@ -898,6 +906,10 @@ Before using NLIST in production:
    The list is rebuilt early if any requested atom moves by more than half the
    skin or if the periodic box changes, while the evaluated pairs are still
    filtered at the true NL_CUTOFF on every step.
+
+For replica exchange, every exchange step must also be a neighbor-list update
+step.  Choose the update schedule accordingly; normally NL_STRIDE should
+divide the exchange stride.
 
 For a fixed box, the half-skin displacement check ensures that a pair cannot
 cross NL_CUTOFF before it was present in the buffered candidate list.  A
@@ -974,21 +986,30 @@ approach 1, and the signed branches approach +1 and -1.  In a neutral frame
 all five values approach zero.  Soft values between these limits are expected
 during proton transfer.
 
-## Worked example 2: exact-to-NLIST convergence
+## Worked example 2: exact-to-NLIST acceleration
 
-The cutoff below is only an input example, not a transferable recommendation.
-Run both Actions over representative frames and compare values and forces
-while increasing NL_CUTOFF and varying NL_STRIDE.
+The numeric cutoff, skin, and stride below are only input examples, not
+transferable recommendations.  Use the three stages in order: establish an
+exact reference, converge NL_CUTOFF while rebuilding every step, and only
+then test whether a displacement-safe skin and a longer stride improve
+performance without changing values or forces.
 
 ```plumed
 UNITS LENGTH=A
 WaterO: GROUP ATOMS=1-4
 WaterH: GROUP ATOMS=5-12
 
+# 1. Exact full-pair reference
 exact: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2
+
+# 2. Converge NL_CUTOFF with a rebuild every step
 trial: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 NLIST NL_CUTOFF=8.0 NL_STRIDE=1
-PRINT ARG=exact,trial FILE=COLVAR
-DUMPDERIVATIVES ARG=exact,trial FILE=DERIVATIVES STRIDE=1
+
+# 3. Only after stage 2, amortize rebuilds with a tested skin and stride
+fast: VORONOI_COORDINATION CENTERS=WaterO ASSIGNED=WaterH KAPPA=5 REFERENCE=2 POWER=2 NLIST NL_CUTOFF=8.0 NL_SKIN=1.0 NL_STRIDE=10
+
+PRINT ARG=exact,trial,fast FILE=COLVAR
+DUMPDERIVATIVES ARG=exact,trial,fast FILE=DERIVATIVES STRIDE=1
 ```
 
 ## Worked example 3: applying a bias
@@ -1164,8 +1185,10 @@ GROUP2 is omitted, unique pairs within GROUP1 are used:
 \f]
 
 The center-center distance \f$d_{ik}\f$ uses the minimum image unless NOPBC
-is specified.  CENTERS, ASSIGNED, KAPPA, REFERENCE, PBC, and NLIST have the
-same meaning as on the VORONOI_COORDINATION page.
+is specified.  CENTERS, ASSIGNED, KAPPA, REFERENCE, NOPBC, and NLIST have the
+same meaning as on the VORONOI_COORDINATION page.  NLIST truncates only the
+CENTER-ASSIGNED candidates used to construct the defects; it never removes
+GROUP1/GROUP2 center-center reduction pairs.
 
 The product \f$q_iq_k\f$ emphasizes pairs of centers carrying correlated or
 complementary defects without assigning a permanent ion identity.  For one
