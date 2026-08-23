@@ -756,6 +756,11 @@ water ions, electric-field effects, and electrocatalytic nitrogen reduction
 are discussed in \cite Zhang2024Glycine, \cite Zhang2025Interfaces,
 \cite Zhang2025ElectricField, and \cite Zhang2026NRR.
 
+An illustrated bilingual guide with downloadable teaching structures,
+application examples, performance data, and additional references is
+available on the
+[Reactive Soft-Voronoi CV project page](https://zhang-pchao.github.io/code/reactive-voronoi/).
+
 VORONOI_COORDINATION, [VORONOI_DISTANCE](VORONOI_DISTANCE.md), and
 [VORONOI_POSITION](VORONOI_POSITION.md) are part of PLUMED's default `colvar`
 module and have no external library dependency.  In a PLUMED installation that
