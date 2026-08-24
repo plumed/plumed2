@@ -134,7 +134,7 @@ void KDEHelper<K,P,G>::readKernelParameters( std::string& value, ActionWithArgum
     for(unsigned i=1; i<(action->getPntrToArgument(0))->getNumberOfValues(); ++i) {
       vals += "," + value;
     }
-    action->plumed.readInputWords( Tools::getWords(action->getLabel() + outlab + ": CONSTANT " + vals + matstr ), false );
+    action->plumed.readInputWords( Tools::getWords(action->getLabel() + outlab + ": CONSTANT NOLOG " + vals + matstr ), false );
     value = action->getLabel() + outlab;
   } else {
     Value* myval;
