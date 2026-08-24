@@ -36,6 +36,11 @@ private:
   bool usepbc;
 /// Do we reassemble the molecule
   bool wholemolecules;
+/// Variable that is turned true if charges are needed to compute the underlying CVs
+/// Add the command:
+/// keys.add("hidden","NEEDS_CHARGES","Inform the parallel task manager that we need the charges to compute this CV");
+/// in the registerKeywords method for your colvar to turn this to true
+  bool needs_charges;
 /// Blocks of atom numbers
   std::vector< std::vector<unsigned> > ablocks;
 public:
@@ -69,7 +74,8 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   ActionWithVector(ao),
   mode(0),
   usepbc(true),
-  wholemolecules(false) {
+  wholemolecules(false),
+  needs_charges(keywords.exists("NEEDS_CHARGES")) {
   std::vector<AtomNumber> all_atoms;
   if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) {
     parseAtomList( "ATOMS", all_atoms );
@@ -192,7 +198,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     mass.resize(ablocks.size());
     charge.resize(ablocks.size());
   }
-  if( chargesWereSet ) {
+  if( chargesWereSet || needs_charges ) {
     for(unsigned i=0; i<ablocks.size(); ++i) {
       mass[i]=getMass( ablocks[i][task_index] );
       charge[i]=getCharge( ablocks[i][task_index] );
@@ -200,6 +206,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   } else {
     for(unsigned i=0; i<ablocks.size(); ++i) {
       mass[i]=getMass( ablocks[i][task_index] );
+      charge[i]=0;
     }
   }
   // Make some space to store various things
