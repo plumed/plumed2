@@ -284,6 +284,10 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
   if( inputdata.size()!=ndata ) {
     inputdata.resize( ndata );
   }
+  const Value* maskarg=NULL;
+  if( getNumberOfMasks()>0 ) {
+    maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
+  }
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
@@ -295,7 +299,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
-    } else if( nmasks>0 ) {
+    } else if( nmasks>0 && jarg!=maskarg ) {
       for(unsigned i=0; i<myval->getShape()[0]; ++i) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();
@@ -325,6 +329,10 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) c
   if( inputdata.size()!=ndata ) {
     inputdata.resize( ndata );
   }
+  const Value* maskarg=NULL;
+  if( getNumberOfMasks()>0 ) {
+    maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
+  }
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
@@ -336,7 +344,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) c
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
-    } else if( nmasks>0 ) {
+    } else if( nmasks>0 && jarg!=maskarg ) {
       for(unsigned i=0; i<myval->getShape()[0]; ++i) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();

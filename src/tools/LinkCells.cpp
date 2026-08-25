@@ -356,9 +356,16 @@ void LinkCells::createNeighborList( unsigned nat,
                           ind[i]);
     nlist[tind[i]] = natoms;
     const std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
-    std::copy(indices.begin(),
-              indices.begin()+natoms,
-              nlist.begin()+lstart);
+    if( natoms>neigh_ind.size() ) {
+      nlist[lstart] = ind[i];
+      std::copy( neigh_ind.begin(),
+                 neigh_ind.end(),
+                 nlist.begin()+lstart+1 );
+    } else {
+      std::copy(indices.begin(),
+                indices.begin()+natoms,
+                nlist.begin()+lstart);
+    }
   }
 }
 
