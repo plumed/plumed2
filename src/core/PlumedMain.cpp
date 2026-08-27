@@ -731,7 +731,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         if( !ts ) {
-          readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT", true);
+          readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT ROUND_TO_BASE_TEN", true);
           ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         }
         if( !ts->setValuePointer("timestep", val ) ) {

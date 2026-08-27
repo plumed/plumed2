@@ -94,6 +94,8 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
   keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
+  keys.addFlag("ROUND_TO_BASE_TEN",false,"is this quantity written by the user in base ten, as the timestep is.  If the MD code "
+               "passes floats, the extra digits that appear when converting them to double are removed");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.setValueDescription("scalar/vector/matrix/grid","the data that was passed from the MD code");
 }
@@ -144,6 +146,9 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
     }
     parseFlag("FROM_DOMAINS",from_domains);
     parseFlag("MUTABLE",resetable);
+    bool round_to_base_ten=false;
+    parseFlag("ROUND_TO_BASE_TEN",round_to_base_ten);
+    mydata->setRoundToBaseTen( round_to_base_ten );
   }
 }
 

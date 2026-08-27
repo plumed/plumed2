@@ -82,13 +82,35 @@ public:
      */
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
+    /*! \brief Whether the PLUMED input needs the potential energy on \p step
+     * \param[in] step  the step that is about to be computed
+     */
+    bool requestsPotentialEnergy(int64_t step) override;
+    /*! \brief Passes the potential energy to PLUMED and applies energy biases
+     * \param[in]     energyWasComputed  whether the potential energy is valid this step
+     * \param[in,out] potentialEnergy    the MD potential energy
+     * \param[in,out] force              the complete force array
+     * \param[in,out] virial             the force virial
+     */
+    void applyAfterPotentialEnergy(bool           energyWasComputed,
+                                   real*          potentialEnergy,
+                                   ArrayRef<RVec> force,
+                                   tensor         virial) override;
 
 private:
+    //! Throws if PLUMED computed a bias while replica exchange is active
+    void checkReplicaExchangeBias();
+
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
 
     std::optional<ArrayRef<const int>> globalAtomIndices_;
+    int                                plumedNeedsEnergy_ = 0;
+    int                                plumedWantsToStop_ = 0;
+    matrix                             plumedVir_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    //! Step for which requestsPotentialEnergy() already prepared the dependencies, if any
+    std::optional<int64_t> preparedStep_;
 };
 
 } // namespace gmx
