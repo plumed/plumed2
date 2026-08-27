@@ -276,12 +276,17 @@ void ActionToPutData::apply() {
 }
 
 unsigned ActionToPutData::getNumberOfForcesToRescale() const {
-  if( getName()!="ENERGY" || getDependencies().size()>0 ) {
+  // Values that are passed through the domain decomposition only store the atoms
+  // that are local to this rank, so the number of forces held in the buffer of the
+  // MD code is the number of local atoms and not the number of values
+  if( !from_domains || getDependencies().size()!=1 ) {
     return copyOutput(0)->getNumberOfValues();
   }
-  plumed_assert( getDependencies().size()==1 );
   plumed_assert(getDependencies()[0]); // needed for following calls, see #1046
   ActionForInterface* ai = getDependencies()[0]->castToActionForInterface();
+  if( !ai ) {
+    return copyOutput(0)->getNumberOfValues();
+  }
   return ai->getNumberOfForcesToRescale();
 }
 
