@@ -42,6 +42,7 @@
 #define GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 
 #include <memory>
+#include <optional>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -75,11 +76,23 @@ public:
      */
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
+    bool requestsPotentialEnergy(int64_t step) override;
+    void applyAfterPotentialEnergy(bool energyWasComputed,
+                                   real* potentialEnergy,
+                                   ArrayRef<RVec> force,
+                                   tensor virial) override;
 
 private:
+    void checkReplicaExchangeBias();
+
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
-    bool replex_;
+    bool                          replex_;
+    int                           plumedNeedsEnergy_ = 0;
+    int                           plumedWantsToStop_ = 0;
+    matrix                        plumedVir_         = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    //! Step for which requestsPotentialEnergy() already prepared the dependencies, if any.
+    std::optional<int64_t> preparedStep_;
 };
 
 } // namespace gmx
