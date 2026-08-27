@@ -114,6 +114,7 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.add("hidden","NEEDS_CHARGES","Inform the parallel task manager that we need the charges to compute this CV");
   keys.setValueDescription("the DIPOLE for these atoms");
 }
 
