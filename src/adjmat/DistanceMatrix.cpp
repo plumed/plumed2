@@ -64,7 +64,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 CUTOFF=1.0
 
 Using a CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
 Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
-atoms that are more than the cutoff apart. The derivatives for such pairs are not evaluated but __the distances__ are stored.
+atoms that are more than the cutoff apart. The derivatives for such pairs are not evaluated but __the distances are stored__.
 
 You can see how to work around this strange implementation detail in the following example input.  Lets suppose that we want to calculate the average distances
 between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
@@ -73,13 +73,13 @@ between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this w
 d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 CUTOFF=1.0
 # Apply a switching function to determine the elements in the matrix d5
 # where the distance is less than the cutoff
-cut: CUSTOM ARG=d5 FUNC=switch(1-x) PERIODIC=NO
+cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO
 # Taking the element-wise product in the next command gives us a matrix
 # where every element that is greater than the cutoff is zero.
 d5cut: CUSTOM ARG=d5,cut FUNC=x*y PERIODIC=NO
 # We can now calculate the average distances by multiplying these matrices by
 # a vector of ones and thus summing the rows.
-ones: ONES SIZE=10
+ones: ONES SIZE=250
 totdist: MATRIX_VECTOR_PRODUCT ARG=d5cut,ones
 ndist: MATRIX_VECTOR_PRODUCT ARG=cut,ones
 average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
@@ -95,11 +95,11 @@ cmap: CONTACT_MATRIX GROUPA=1-10 GROUPB=1-250 SWITCH={RATIONAL R_0=0.5 D_MAX=1.0
 # Evaluate the distances for all pairs of atoms that are within D_MAX of each other
 dmat: CUSTOM ARG=cmap.x,cmap.y,cmap.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
 cdist: CUSTOM ARG=cmap.w,dmat FUNC=x*y PERIODIC=NO
-ones: ONES SIZE=10
+ones: ONES SIZE=250
 totdist: MATRIX_VECTOR_PRODUCT ARG=cdist,ones
 ndist: MATRIX_VECTOR_PRODUCT ARG=cmap.w,ones
 average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
-DUMPATOMS ATOMGS=1-10 ARG=average FILE=avdist.xyz
+DUMPATOMS ATOMS=1-10 ARG=average FILE=avdist.xyz
 ``
 
 The advantage when using this input is the the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
