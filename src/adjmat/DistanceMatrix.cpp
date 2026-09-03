@@ -62,9 +62,48 @@ If for some reaon, you only want to calculate the distances if they are less tha
 d3: DISTANCE_MATRIX GROUP=1-7 CUTOFF=1.0
 ```
 
-This command will only store those distances that are less than 1 nm.  Notice, however, that the cutoff implemented here is __not__ a continuous function.
-You should thus be careful when commands such as this one above to ensure that any quantities that are forced have continuous derivatives.  If you use
-the CUTOFF keyword, however, many of the features that are used to optimise [CONTACT_MATRIX](CONTACT_MATRIX.md) are used for this action.
+Using a CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
+Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
+atoms that are more than the cutoff apart. The derivatives for such pairs are not evaluated but __the distances__ are stored.
+
+You can see how to work around this strange implementation detail in the following example input.  Lets suppose that we want to calculate the average distances
+between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
+
+```plumed
+d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 CUTOFF=1.0
+# Apply a switching function to determine the elements in the matrix d5
+# where the distance is less than the cutoff
+cut: CUSTOM ARG=d5 FUNC=switch(1-x) PERIODIC=NO
+# Taking the element-wise product in the next command gives us a matrix
+# where every element that is greater than the cutoff is zero.
+d5cut: CUSTOM ARG=d5,cut FUNC=x*y PERIODIC=NO
+# We can now calculate the average distances by multiplying these matrices by
+# a vector of ones and thus summing the rows.
+ones: ONES SIZE=10
+totdist: MATRIX_VECTOR_PRODUCT ARG=d5cut,ones
+ndist: MATRIX_VECTOR_PRODUCT ARG=cut,ones
+average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
+DUMPATOMS ATOMS=1-10 ARG=average FILE=avdist.xyz
+```
+
+__In short, if you use DISTANCE_MATRIX and CUTOFF and what to ignore distances that are larger than the CUTOFF you need to use an additional [CUSTOM](CUSTOM.md) command later in the input.__
+You should thus only use this combination of action and keyword it you are certain it is necessary. Normally, you are far better using the [CONTACT_MATRIX](CONTACT_MATRIX.md) command in place
+of the DISTANCE_MATRIX command. To obtain a result similar to the one above using this command you would use the following input:
+
+```plumed
+cmap: CONTACT_MATRIX GROUPA=1-10 GROUPB=1-250 SWITCH={RATIONAL R_0=0.5 D_MAX=1.0 NN=6 MM=12} COMPONENTS
+# Evaluate the distances for all pairs of atoms that are within D_MAX of each other
+dmat: CUSTOM ARG=cmap.x,cmap.y,cmap.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cdist: CUSTOM ARG=cmap.w,dmat FUNC=x*y PERIODIC=NO
+ones: ONES SIZE=10
+totdist: MATRIX_VECTOR_PRODUCT ARG=cdist,ones
+ndist: MATRIX_VECTOR_PRODUCT ARG=cmap.w,ones
+average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
+DUMPATOMS ATOMGS=1-10 ARG=average FILE=avdist.xyz
+``
+
+The advantage when using this input is the the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
+method.
 
 Also notice that you can use MASK to calculate a subset of the rows in the DISTANCE matrix as is done in the following example:
 
@@ -129,7 +168,8 @@ void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {
   if( cutoff<0 ) {
     action->setLinkCellCutoff( true, std::numeric_limits<double>::max() );
   } else {
-    action->log.printf("  ignoring distances that are larger than %f \n", cutoff);
+    action->log.printf("  using link cells with cutoff %f to optimise calculation \n", cutoff);
+    action->warning("some distances that are greater than the cutoff will still be evaluated. If you want to ignore them you will need to use a further CUSTOM action in your PLUMED input as detailed in the manual");
     action->setLinkCellCutoff( true, cutoff );
   }
 }
