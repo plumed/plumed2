@@ -125,7 +125,7 @@ double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, c
     return 0.0;  // Atoms can't be bonded to themselves
   }
   double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc );
-  if( val<epsilon ) {
+  if( fabs(val)<epsilon ) {
     return 0.0;
   }
   if( doNotCalculateDerivatives() ) {
