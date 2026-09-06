@@ -112,6 +112,22 @@ unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
 
 void MatrixTimesMatrix::prepare() {
   Value* myval = getPntrToComponent(0);
+  if( !getPntrToComponent(0)->isDerivativeZeroWhenValueIsZero() ) {
+    if( getPntrToArgument(0)->getNumberOfColumns()>0 && getPntrToArgument(0)->getNumberOfColumns()<getPntrToArgument(0)->getShape()[1] ) {
+      if( !doNotCalculateDerivatives() ) {
+        error("cannot calculate derivatives for this action with sparse matrices");
+      } else if( getName()=="DISSIMILARITIES" ) {
+        error("cannot calculate dissimilarities for sparse matrices");
+      }
+    }
+    if(getPntrToArgument(1)->getNumberOfColumns()>0 && getPntrToArgument(1)->getNumberOfColumns()<getPntrToArgument(1)->getShape()[1] ) {
+      if( !doNotCalculateDerivatives() ) {
+        error("cannot calculate derivatives for this action with sparse matrices");
+      } else if( getName()=="DISSIMILARITIES" ) {
+        error("cannot calculate dissimilarities for sparse matrices");
+      }
+    }
+  }
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[1] ) {
     return;
   }
