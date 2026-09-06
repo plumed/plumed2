@@ -64,7 +64,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 CUTOFF=1.0
 
 Using a CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
 Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
-atoms that are more than the cutoff apart. The derivatives for such pairs are not evaluated but __the distances are stored__.
+atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are are calculated and stored__.
 
 You can see how to work around this strange implementation detail in the following example input.  Lets suppose that we want to calculate the average distances
 between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
@@ -178,19 +178,16 @@ void DistanceMatrix::calculateWeight( const DistanceMatrix& data,
                                       const AdjacencyMatrixInput& input,
                                       MatrixOutput output ) {
   output.val[0] = input.pos.modulo();
-  if( data.cutoff<0 || output.val[0]<data.cutoff ) {
-    double invd = 1.0/output.val[0];
-    Vector v = (-invd)*input.pos;
-    output.deriv[0] = v[0];
-    output.deriv[1] = v[1];
-    output.deriv[2] = v[2];
-    output.deriv[3] = -v[0];
-    output.deriv[4] = -v[1];
-    output.deriv[5] = -v[2];
+  double invd = 1.0/output.val[0];
+  Vector v = (-invd)*input.pos;
+  output.deriv[0] = v[0];
+  output.deriv[1] = v[1];
+  output.deriv[2] = v[2];
+  output.deriv[3] = -v[0];
+  output.deriv[4] = -v[1];
+  output.deriv[5] = -v[2];
 
-    output.assignOuterProduct(6,v,input.pos);
-
-  }
+  output.assignOuterProduct(6,v,input.pos);
 }
 
 }
