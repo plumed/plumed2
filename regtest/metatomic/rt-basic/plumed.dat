@@ -75,8 +75,8 @@ variant_sum: SUM ARG=variant PERIODIC=NO
 
 summed: CUSTOM ...
       ARG=scalar_global,scalar_per_atom_sum,vector_global_sum,vector_per_atom_sum,variant_sum
-      VAR=a,b,c,d,e
-      FUNC=a+b+c+d+e
+      VAR=a,b,c,d,f
+      FUNC=a+b+c+d+f
       PERIODIC=NO
 ...
 
