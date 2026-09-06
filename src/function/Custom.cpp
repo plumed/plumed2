@@ -350,6 +350,9 @@ void Custom::read( ActionWithArguments* action ) {
   action->log.printf("  with variables :");
   for(unsigned i=0; i<var.size(); i++) {
     action->log.printf(" %s",var[i].c_str());
+    for(std::map<std::string,double>::const_iterator iter=lepton::Constants().begin(); iter!=lepton::Constants().end(); ++iter ) {
+        if( var[i]==iter->first ) action->error("variable " + var[i] + " clashes with lepton constant " + iter->first );
+    }
   }
   action->log.printf("\n");
   function.set( func, var, action );
