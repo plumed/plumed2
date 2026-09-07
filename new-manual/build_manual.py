@@ -460,7 +460,7 @@ LOAD FILE=/path/to/myplugin.so
 
 Once the library is loaded you can then use the functionality that is contained within it in your PLUMED input.
 
-Typically, functionality is included in a plugin rather than a library special compilation options are required to build the associated functionality. For example,
+Typically, functionality is included in a plugin rather than a module when special compilation options are required to build the associated functionality. For example,
 much of the code that allows you to run PLUMED on GPUs is provided through plugins because additional compilation options are required. The code in these plugins is 
 also more experimental than the code in the modules. This sadly often means that it is tested less frequently.  Consequently, if you do try to use these plugins for production calulculations,
  you are strongly recommended __to run the test suite after compilation__.  To run these test suits you change to the `regtest` directory that will be contained in the plugin directory.  Once in that 
