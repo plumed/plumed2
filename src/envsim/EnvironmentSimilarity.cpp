@@ -445,7 +445,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   parse("SPECIESA",specA);
   parse("SPECIESB",specB);
   if( sp_str.length()>0 ) {
-    readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + str_cutoff );
+    readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " LINKCELL_CUTOFF=" + str_cutoff );
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
   } else {
     if( specA.length()==0 ) {
@@ -454,7 +454,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
     if( specB.length()==0 ) {
       error("no atoms were specified for SPECIESB");
     }
-    readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + str_cutoff );
+    readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " LINKCELL_CUTOFF=" + str_cutoff );
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + specA );
   }
 

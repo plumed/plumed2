@@ -12,7 +12,7 @@ mtc: MORE_THAN ARG=coord SWITCH={RATIONAL R_0=1}
 sumcoord: SUM ARG=mtc PERIODIC=NO
 
 # Calculate the distances between all the atoms that are or interest
-dmat: DISTANCE_MATRIX GROUP=1-512 CUTOFF=8 
+dmat: DISTANCE_MATRIX GROUP=1-512 LINKCELL_CUTOFF=8 
 # Create a matrix that identifies pairs of atoms that both have a coordination 
 # number that is greater than one
 dweights: OUTER_PRODUCT ARG=mtc,mtc MASK=dmat

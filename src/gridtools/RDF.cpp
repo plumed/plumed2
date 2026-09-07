@@ -174,7 +174,7 @@ RDF::RDF(const ActionOptions&ao):
   }
 
   // Calculate all the distances
-  readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX CUTOFF=" + cutoff + " " + atom_str);
+  readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX LINKCELL_CUTOFF=" + cutoff + " " + atom_str);
   // Get the shape of the matrix
   std::vector<std::string> shape_str(2);
   getDistanceMatrixShape( getShortcutLabel() + "_mat", this, shape_str );

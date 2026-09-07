@@ -48,7 +48,7 @@ In this example, 3 quaternion frames are calculated, and multiplied element-wise
 #calculate the quaternion frames for 3 molecules
 quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
 #also find the distance between the 3 origins of the molecule frames
-c1: DISTANCE_MATRIX GROUP=1,4,7 CUTOFF=100.0 COMPONENTS
+c1: DISTANCE_MATRIX GROUP=1,4,7 LINKCELL_CUTOFF=100.0 COMPONENTS
 qp: QUATERNION_BOND_PRODUCT_MATRIX ARG=quat.*,c1.*
 #this is now a matrix showing how each molecule is oriented in 3D space
 #relative to eachother's origins

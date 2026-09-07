@@ -101,7 +101,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data,
   }
   double dfunc;
   output.val[0] = data.switchingFunction.calculateSqr( mod2, dfunc );
-  if( output.val[0]<epsilon ) {
+  if( fabs(output.val[0])<epsilon ) {
     output.val[0] = 0.0;
     return;
   }
