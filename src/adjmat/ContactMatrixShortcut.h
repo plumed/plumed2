@@ -50,7 +50,7 @@ void ContactMatrixShortcut<CM>::registerKeywords(Keywords& keys) {
   keys.addActionNameSuffix("_PROPERACC");
   if(!keys.exists("USEGPU")) {
     keys.addFlag("USEGPU",false,"run this calculation on the GPU");
-    keys.addLinkInDocForFlag("USEGPU","gpu.md");
+    keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   }
   keys.needsAction("TRANSPOSE");
   keys.needsAction("CONCATENATE");

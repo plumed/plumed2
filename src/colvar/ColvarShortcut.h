@@ -47,7 +47,7 @@ void ColvarShortcut<T>::registerKeywords(Keywords& keys ) {
   keys.addActionNameSuffix("_VECTOR");
   //GPU related settings
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
-  keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   keys.addActionNameSuffix("_VECTORACC");
 }
 
