@@ -53,7 +53,7 @@ PLUMED_REGISTER_ACTION(DistanceMatrix,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
+  keys.add("compulsory","CUTOFF","-1","use a link cells algorithm with this cutoff to optimise the calculation - distances (but not derivatives) for atoms that are further apart than this cutoff and that in the same link cells will still be computed");
 }
 
 DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
@@ -65,7 +65,8 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
   if( cutoff<0 ) {
     setLinkCellCutoff( true, std::numeric_limits<double>::max() );
   } else {
-    log.printf("  ignoring distances that are larger than %f \n", cutoff);
+    log.printf("  using link cells with cutoff %f to optimise calculation \n", cutoff);
+    warning("some distances that are greater than the cutoff will still be evaluated. If you want to ignore them you will need to use a further CUSTOM action in your PLUMED input as detailed in the manual for version 2.11 or higher");
     setLinkCellCutoff( true, cutoff );
   }
 }
@@ -73,12 +74,10 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
 double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   Vector distance = pos2;
   double mod = distance.modulo();
-  if( cutoff<0 || mod<cutoff ) {
-    double invd = 1.0/mod;
-    addAtomDerivatives( 0, (-invd)*distance, myvals );
-    addAtomDerivatives( 1, (+invd)*distance, myvals );
-    addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
-  }
+  double invd = 1.0/mod;
+  addAtomDerivatives( 0, (-invd)*distance, myvals );
+  addAtomDerivatives( 1, (+invd)*distance, myvals );
+  addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
   return mod;
 }
 

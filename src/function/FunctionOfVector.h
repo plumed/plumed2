@@ -200,6 +200,30 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
       }
     }
   }
+  unsigned ignore, atstart = argstart;
+  ActionAtomistic* firstat = NULL;
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+    ActionWithVector* myvec = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+    if( !myvec ) {
+      continue;
+    }
+    firstat = dynamic_cast<ActionAtomistic*>( myvec->getFirstActionInChain() );
+    if( firstat && myvec->isInSubChain(ignore) ) {
+      break;
+    }
+    atstart = i;
+  }
+  for(unsigned i=atstart; i<getNumberOfArguments(); ++i) {
+    ActionWithVector* myvec = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+    if( !myvec ) {
+      continue;
+    }
+    ActionAtomistic* secondat = dynamic_cast<ActionAtomistic*>( myvec->getFirstActionInChain() );
+    if( secondat!=firstat && myvec->isInSubChain(ignore) ) {
+      done_in_chain = false;
+      break;
+    }
+  }
   // Don't need to do the calculation in a chain if the input is constant
   bool allconstant=true;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {

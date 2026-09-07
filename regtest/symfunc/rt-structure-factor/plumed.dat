@@ -2,7 +2,7 @@ UNITS LENGTH=A
 
 cmat: CONTACT_MATRIX ...
     GROUP=1-250
-    SWITCH={CUSTOM FUNC=sin(pi*x)/(pi*x) R_0=10.5 D_0=0.0}
+    SWITCH={CUSTOM FUNC=sin(pi*x)/(pi*x) R_0=10.5 D_0=0.0 D_MAX=10.5}
     COMPONENTS
 ...
 PRINT ARG=cmat.w FILE=cmat FMT=%8.4f

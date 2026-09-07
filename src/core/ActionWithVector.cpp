@@ -51,6 +51,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   if( keywords.exists("SERIAL") ) {
     parseFlag("SERIAL",serial);
   }
+  warning("you will likely obtain superior performance for this action if you update to version 2.11 or higher");
 }
 
 ActionWithVector::~ActionWithVector() {
