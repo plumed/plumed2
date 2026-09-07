@@ -1,0 +1,4 @@
+name: openaccPTM
+authors: Daniele Rapetti and Gareth Tribello
+description: versions of CVs in PLUMED that can run on the GPU using OpenACC parallelism
+dois: []

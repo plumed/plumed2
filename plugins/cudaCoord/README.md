@@ -1,4 +1,4 @@
-# Coordination in Cuda
+# The cudaCoord plugin for PLUMED 2
 
 This is the optimized version of the lesson that I presented in the [plumed-school](https://plumed-school.github.io/lessons/23/004/data/NAVIGATION.html) with a step-by-step approach.
 

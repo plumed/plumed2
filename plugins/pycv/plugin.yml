@@ -1,0 +1,4 @@
+name: pycv
+authors: Daniele Rapetti and Toni Giorgino
+description: functionality for calling python from PLUMED to calculate CVs and functions
+dois: []

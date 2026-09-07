@@ -445,6 +445,28 @@ view of this information is available [here](modulegraph.md).
     mf.write(content)
     printDataTable(mf, ["Name", "Description", "Authors", "Type"], tabledata)
 
+def printPluginListPage(mf, version, tabledata): 
+    content = f"""
+Plugins that you can use with PLUMED Version {version}
+------------------------------------------------------
+
+Further functionality for PLUMED is provided in a series of plugins. These plugins are compiled as dynamic libraries that are separate to the main PLUMED
+dynamic library. You can use the [LOAD](LOAD.md) action to load the contents of one of these plugins at runtime using an input similar to the one shown below:
+
+````
+LOAD FILE=/path/to/myplugin.so
+````
+
+Once the library is loaded you can then use the functionality that is contained within it in your PLUMED input.
+
+Typically, functionality is included in a plugin rather than a library special compilation options are required to build the associated functionality. For example,
+much of the code that allows you to run PLUMED on GPUs is provided through plugins because additional compilation options are required. 
+
+The plugins that you can use with PLUMED are listed below: 
+"""
+    mf.write(content)
+    printDataTable(mf, ["Name", "Description", "Authors"], tabledata )
+
 
 def addSpecialGroupsToPage(file, groups):
     with open(file, "r") as f:
@@ -637,6 +659,17 @@ def getModuleDictionary(modname):
         "dois": [],
     }
 
+def getPluginDictionary(plugname):
+    if os.path.exists("../../plugins/" + plugname + "/plugin.yml"):
+        with open("../../plugins/" + plugname + "/plugin.yml") as f:
+            plugdict = yaml.load(f, Loader=yaml.BaseLoader)
+        return plugdict
+    return {        
+        "name": plugname,
+        "authors": "authors",
+        "description": "Information about the plugin",
+        "dois": [],
+    }  
 
 def createModulePage(
     version,
@@ -813,6 +846,83 @@ def createModulePage(
                 ref, ref_url = get_reference(doi)
                 f.write("- [" + ref + "](" + ref_url + ")\n")
 
+def createPluginPage(
+    version,
+    plugname,
+    plug_dict,
+    neggs,
+    nlessons,   
+    plumed_syntax,
+    plumedtags,
+    tagdictionary,
+    broken_inputs,
+):      
+    with open("plugin_" + plugname + ".md", "w") as f:        
+        f.write("# [Plugin](modules.md): " + plugname + "\n\n")
+        f.write("| Description    | Usage |\n")
+        f.write("|:--------|:--------:|\n")
+        f.write(
+            "| "
+            + plug_dict["description"]
+            + "\n __Authors:__ "
+            + plug_dict["authors"]
+            + " | "
+        )
+        if nlessons > 0:
+            f.write(
+                "[![used in "
+                + str(nlessons)
+                + " tutorials](https://img.shields.io/badge/tutorials-"
+                + str(nlessons)
+                + "-green.svg)](https://www.plumed-tutorials.org/browse.html?module="
+                + modname
+                + ")"
+            )
+        else:
+            f.write(
+                "![used in "
+                + str(nlessons)
+                + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)"
+            )
+        if neggs > 0:
+            f.write(
+                "[![used in "
+                + str(neggs)
+                + " eggs](https://img.shields.io/badge/nest-"
+                + str(neggs)
+                + "-green.svg)](https://www.plumed-nest.org/browse.html?module="
+                + modname
+                + ")"
+            )
+        else:
+            f.write(
+                "![used in "
+                + str(neggs)
+                + " eggs](https://img.shields.io/badge/nest-0-red.svg)"
+            )
+        f.write("|\n\n")
+        f.write("## Details \n")
+        if os.path.exists("../../plugins/" + plugname + "/README.md"):
+            with open("../../plugins/" + plugname + "/README.md") as iff:
+                docs = iff.read()
+            actions = set()
+            _, nf = processMarkdownString(
+                docs,
+                "plugins_" + plugname + ".md",
+                (PLUMED,),
+                (version,),
+                actions,
+                f,
+                ghmarkdown=False,
+                test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
+            )
+            if nf[0] > 0:
+                broken_inputs.append(
+                    [
+                        '<a href="../plugins_' + plugname + '">' + plugname + "</a>",
+                        str(nf[0]),
+                    ]
+                )
 
 def getKeywordDescription(docs):
     desc = docs["description"]
@@ -1576,9 +1686,47 @@ if (
             nodocs.append(
                 ['<a href="../module_' + module + '">' + module + "</a>", "module"]
             )
+
+    # And create a page for each plugin
+    plugintabledata = []
+    for plugin in os.listdir("../plugins/") :
+        if not os.path.isdir("../plugins/" + plugin ) :
+           continue
+        plink = '<a href="../plugin_' + plugin + '">' + plugin + "</a>"
+        print( "Building plugin page", plugin )
+        with cd("docs"):
+            plug_dict = getPluginDictionary( plugin )
+    
+            plugintabledata.append(
+                [   
+                    plink,
+                    plug_dict["description"],
+                    plug_dict["authors"]
+                ]
+            )
+            createPluginPage(
+                version,
+                plugin,
+                plug_dict,
+                0,
+                0,
+                plumed_syntax,
+                plumedtags,
+                tagdictionary,
+                broken_inputs,
+            )
+        if not os.path.exists("../plugins/" + plugin + "/README.md") or not os.path.exists(
+                "../plugins/" + plugin + "/plugin.yml"
+            ):
+                nodocs.append(
+                    ['<a href="../plugin_' + plugin + '">' + plugin + "</a>", "plugin"]
+                )
+
+
     # And the page with the list of modules
     with open("docs/modules.md", "w+") as module_file:
         printModuleListPage(module_file, version, moduletabledata)
+        printPluginListPage(module_file, version, plugintabledata)
     # Create the graph that shows all the modules
     createModuleGraph(version, plumed_syntax)
 
