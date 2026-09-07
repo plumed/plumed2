@@ -56,13 +56,13 @@ d1: DISTANCE_MATRIX GROUP=1-7 COMPONENTS
 
 ## Optimisation details
 
-If for some reaon, you only want to calculate the distances if they are less than a certain CUTOFF you can add the cutoff keyword as follows:
+If for some reaon, you only want to calculate the distances if they are less than a certain cutoff can add the LINKCELL_CUTOFF keyword as follows:
 
 ```plumed
-d3: DISTANCE_MATRIX GROUP=1-7 CUTOFF=1.0
+d3: DISTANCE_MATRIX GROUP=1-7 LINKCELL_CUTOFF=1.0
 ```
 
-Using a CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
+Using a LINKCELL_CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
 Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
 atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are are calculated and stored__.
 
@@ -70,7 +70,7 @@ You can see how to work around this strange implementation detail in the followi
 between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
 
 ```plumed
-d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 CUTOFF=1.0
+d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 LINKCELL_CUTOFF=1.0
 # Apply a switching function to determine the elements in the matrix d5
 # where the distance is less than the cutoff
 cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO
@@ -86,7 +86,7 @@ average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
 DUMPATOMS ATOMS=1-10 ARG=average FILE=avdist.xyz
 ```
 
-__In short, if you use DISTANCE_MATRIX and CUTOFF and what to ignore distances that are larger than the CUTOFF you need to use an additional [CUSTOM](CUSTOM.md) command later in the input.__
+__In short, if you use DISTANCE_MATRIX and LINKCELL_CUTOFF and what to ignore distances that are larger than the cutoff you need to use an additional [CUSTOM](CUSTOM.md) command later in the input.__
 You should thus only use this combination of action and keyword it you are certain it is necessary. Normally, you are far better using the [CONTACT_MATRIX](CONTACT_MATRIX.md) command in place
 of the DISTANCE_MATRIX command. To obtain a result similar to the one above using this command you would use the following input:
 
@@ -115,7 +115,7 @@ center: FIXEDATOM AT=2.5,2.5,2.5
 # Vector in which element i is one if atom i is in sphere of interest and zero otherwise
 sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
 # The distance matrix
-dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow CUTOFF=1.0 MASK=sphere
+dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow LINKCELL_CUTOFF=1.0 MASK=sphere
 # Find the four nearest neighbors
 acv_neigh: NEIGHBORS ARG=dmap.w NLOWEST=4 MASK=sphere
 # Compute a function for the atoms that are in the first coordination sphere
@@ -158,13 +158,13 @@ typedef AdjacencyMatrixBase<DistanceMatrix> dmap;
 PLUMED_REGISTER_ACTION(dmap,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
-  keys.add("compulsory","CUTOFF","-1","use a link cells algorithm with this cutoff to optimise the calculation - distances (but not derivatives) for atoms that are further apart than this cutoff and that in the same link cells will still be computed");
+  keys.add("compulsory","LINKCELL_CUTOFF","-1","use a link cells algorithm with this cutoff to optimise the calculation - distances (but not derivatives) for atoms that are further apart than this cutoff and that in the same link cells will still be computed");
 }
 
 void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {
   // And set the link cell cutoff
   action->log.printf("  weight is distance between atoms \n");
-  action->parse("CUTOFF",cutoff);
+  action->parse("LINKCELL_CUTOFF",cutoff);
   if( cutoff<0 ) {
     action->setLinkCellCutoff( true, std::numeric_limits<double>::max() );
   } else {

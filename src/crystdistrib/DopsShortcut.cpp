@@ -138,7 +138,7 @@ DopsShortcut::DopsShortcut(const ActionOptions&ao):
   std::string cutstr;
   Tools::convert( cutoff, cutstr );
   // Setup the contact matrix
-  readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr);
+  readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " LINKCELL_CUTOFF=" + cutstr);
   // And the kernels
   readInputLine( getShortcutLabel() + "_kval: CUSTOM ARG=" + getShortcutLabel() + "_cmat PERIODIC=NO FUNC=" + kfunc );
   // Find the number of ones we need to multiply by

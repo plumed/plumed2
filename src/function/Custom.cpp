@@ -443,7 +443,7 @@ are matrices:
 
 ```plumed
 # Calculate the distances between atoms
-d_mat: DISTANCE_MATRIX GROUP=1-64 CUTOFF=4.5 COMPONENTS
+d_mat: DISTANCE_MATRIX GROUP=1-64 LINKCELL_CUTOFF=4.5 COMPONENTS
 # Find the six nearest atom to each of the coordinates
 nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
 # Evalulate the lengths of the bonds connecting each atom to its nearest neighbors

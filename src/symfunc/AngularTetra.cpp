@@ -123,7 +123,7 @@ AngularTetra::AngularTetra( const ActionOptions& ao):
   parse("SPECIES",sp_str);
   parse("CUTOFF",rcut);
   if( sp_str.length()>0 ) {
-    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr );
+    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " LINKCELL_CUTOFF=" + rcut + pbcstr );
   } else {
     std::string specA, specB;
     parse("SPECIESA",specA);
@@ -134,7 +134,7 @@ AngularTetra::AngularTetra( const ActionOptions& ao):
     if( specB.length()==0 ) {
       error("missing SPECIESB keyword");
     }
-    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr );
+    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " LINKCELL_CUTOFF=" + rcut + pbcstr );
   }
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat.w NLOWEST=4");

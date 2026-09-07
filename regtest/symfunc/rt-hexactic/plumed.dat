@@ -3,7 +3,7 @@ bb: BIASVALUE ARG=hex.mean
 PRINT ARG=hex.mean,bb.* FILE=colvar FMT=%8.4f 
 
 # This checks against what is done in LAMMPS
-dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=3.0 COMPONENTS
+dmat: DISTANCE_MATRIX GROUP=1-400 LINKCELL_CUTOFF=3.0 COMPONENTS
 neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
 harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
 rprod: CUSTOM ARG=neigh,harm.rm MASK=neigh FUNC=x*y PERIODIC=NO

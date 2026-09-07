@@ -100,7 +100,7 @@ center: FIXEDATOM AT=2.5,2.5,2.5
 # Vector in which element i is one if atom i is in sphere of interest and zero otherwise
 sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
 # The distance matrix
-dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow CUTOFF=1.0 MASK=sphere
+dmap: DISTANCE_MATRIX COMPONENTS GROUP=ow LINKCELL_CUTOFF=1.0 MASK=sphere
 # Find the four nearest neighbors
 acv_neigh: NEIGHBORS ARG=dmap.w NLOWEST=4 MASK=sphere
 # Compute a function for the atoms that are in the first coordination sphere
