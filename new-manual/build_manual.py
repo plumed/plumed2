@@ -303,6 +303,8 @@ Each module contains implementations of a number of [actions](actions.md), [shor
 You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](module_cltools.md).
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
+There are also some features that are released within PLUMED as plugins. You can read about these plugins by scrolling to the bottom of [this page](modules.md). The code within these 
+plugins is compiled separately to PLUMED. The dynamic library that results compilatiing a plugin can then be loaded at runtime using the [LOAD](LOAD.md) command.   
 
 You can find instructions for installing PLUMED [here](https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html).
 
