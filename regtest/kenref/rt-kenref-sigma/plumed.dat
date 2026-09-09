@@ -1,0 +1,25 @@
+# Minimal integration smoke test for the KENREF bias.
+#
+# This checks that the action parses, builds its model indexing from the experimental data, runs a step
+# and produces its declared components. It is NOT a numerical validation of the energy model: those live
+# in KEnRef's own test suite, where they are checked against the reference R implementation. Keeping the
+# numerics out of PLUMED is deliberate -- it means adding an energy model to KEnRef does not require a
+# change here.
+#
+# Note there is no ARG: KENREF biases coordinates, not collective variables.
+
+kenref: KENREF ...
+  MODEL=SIGMA
+  K=1.0
+  N=0.25
+  PROTON_MHZ=700.0
+  EXP_DATA_FOLDER=./
+  REF=./gb3_frag.pdb
+  ATOMNAME_MAPPING=./gb3_frag.pdb
+  GUIDE_ATOMS=1,5,18,20,22,35,37,39,56,58,60,78,80,82,97
+  MAX_FORCE=999
+  FIT_TO_REFERENCE
+  SATURATE_FORCES
+...
+
+PRINT ARG=kenref.bias,kenref.energy,kenref.rmsd FILE=colvar FMT=%8.4f

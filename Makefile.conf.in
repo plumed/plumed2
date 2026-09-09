@@ -45,3 +45,9 @@ use_absolute_soname=@use_absolute_soname@
 use_loader_path=@use_loader_path@
 use_debug_glibcxx=@use_debug_glibcxx@
 BASH_COMPLETION_DIR=@BASH_COMPLETION_DIR@
+HAVE_KENREF=@HAVE_KENREF@
+KENREF_INCLUDE=@KENREF_INCLUDE@
+KENREF_LIBS=@KENREF_LIBS@
+# kenref module COMPILE includes, resolved at configure time (pkg-config --cflags kenref_plumed) so the
+# module Makefile does not re-run pkg-config at parse time. Read by src/kenref/Makefile.
+KENREF_PLUMED_CPPFLAGS=@KENREF_PLUMED_INCLUDE@
