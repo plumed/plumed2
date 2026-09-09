@@ -303,6 +303,8 @@ Each module contains implementations of a number of [actions](actions.md), [shor
 You can find a list of all the commands that you can use in a PLUMED input file [here](actionlist.md) and descriptions of some of the tools you can use these commands with [here](module_cltools.md).
 
 Please also note that some developers prefer not to include their codes in PLUMED.  To use functionality that has been written by these developed you can use the [LOAD](LOAD.md) command.
+There are also some features that are released within PLUMED as plugins. You can read about these plugins by scrolling to the bottom of [this page](modules.md). The code within these 
+plugins is compiled separately to PLUMED. The dynamic library that results compilatiing a plugin can then be loaded at runtime using the [LOAD](LOAD.md) command.   
 
 You can find instructions for installing PLUMED [here](https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html).
 
@@ -444,6 +446,38 @@ view of this information is available [here](modulegraph.md).
 """
     mf.write(content)
     printDataTable(mf, ["Name", "Description", "Authors", "Type"], tabledata)
+
+
+def printPluginListPage(mf, version, tabledata):
+    content = f"""
+Plugins that you can use with PLUMED Version {version}
+------------------------------------------------------
+
+Further functionality for PLUMED is provided in a series of plugins. These plugins are compiled as dynamic libraries that are separate to the main PLUMED
+dynamic library. You can use the [LOAD](LOAD.md) action to load the contents of one of these plugins at runtime using an input similar to the one shown below:
+
+````
+LOAD FILE=/path/to/myplugin.so
+````
+
+Once the library is loaded you can then use the functionality that is contained within it in your PLUMED input.
+
+Typically, functionality is included in a plugin rather than a module when special compilation options are required to build the associated functionality. For example,
+much of the code that allows you to run PLUMED on GPUs is provided through plugins because additional compilation options are required. The code in these plugins is 
+also more experimental than the code in the modules. This sadly often means that it is tested less frequently.  Consequently, if you do try to use these plugins for production calulculations,
+ you are strongly recommended __to run the test suite after compilation__.  To run these test suits you change to the `regtest` directory that will be contained in the plugin directory.  Once in that 
+directory you then simply type:
+
+```bash
+make
+``` 
+
+The tests will then run and any errors are reported. 
+
+The plugins that you can use with PLUMED are listed below: 
+"""
+    mf.write(content)
+    printDataTable(mf, ["Name", "Description", "Authors"], tabledata)
 
 
 def addSpecialGroupsToPage(file, groups):
@@ -638,6 +672,19 @@ def getModuleDictionary(modname):
     }
 
 
+def getPluginDictionary(plugname):
+    if os.path.exists("../../plugins/" + plugname + "/plugin.yml"):
+        with open("../../plugins/" + plugname + "/plugin.yml") as f:
+            plugdict = yaml.load(f, Loader=yaml.BaseLoader)
+        return plugdict
+    return {
+        "name": plugname,
+        "authors": "authors",
+        "description": "Information about the plugin",
+        "dois": [],
+    }
+
+
 def createModulePage(
     version,
     modname,
@@ -812,6 +859,86 @@ def createModulePage(
             for doi in dois:
                 ref, ref_url = get_reference(doi)
                 f.write("- [" + ref + "](" + ref_url + ")\n")
+
+
+def createPluginPage(
+    version,
+    plugname,
+    plug_dict,
+    neggs,
+    nlessons,
+    tutorial_searchterm,
+    plumed_syntax,
+    plumedtags,
+    tagdictionary,
+    broken_inputs,
+):
+    with open("plugin_" + plugname + ".md", "w") as f:
+        f.write("# [Plugin](modules.md): " + plugname + "\n\n")
+        f.write("| Description    | Usage |\n")
+        f.write("|:--------|:--------:|\n")
+        f.write(
+            "| "
+            + plug_dict["description"]
+            + "\n __Authors:__ "
+            + plug_dict["authors"]
+            + " | "
+        )
+        if nlessons > 0:
+            f.write(
+                "[![used in "
+                + str(nlessons)
+                + " tutorials](https://img.shields.io/badge/tutorials-"
+                + str(nlessons)
+                + "-green.svg)](https://www.plumed-tutorials.org/browse.html?search="
+                + tutorial_searchterm
+                + ")"
+            )
+        else:
+            f.write(
+                "![used in "
+                + str(nlessons)
+                + " tutorials](https://img.shields.io/badge/tutorials-0-red.svg)"
+            )
+        if neggs > 0:
+            f.write(
+                "[![used in "
+                + str(neggs)
+                + " eggs](https://img.shields.io/badge/nest-"
+                + str(neggs)
+                + "-green.svg)](https://www.plumed-nest.org/browse.html?module="
+                + modname
+                + ")"
+            )
+        else:
+            f.write(
+                "![used in "
+                + str(neggs)
+                + " eggs](https://img.shields.io/badge/nest-0-red.svg)"
+            )
+        f.write("|\n\n")
+        f.write("## Details \n")
+        if os.path.exists("../../plugins/" + plugname + "/README.md"):
+            with open("../../plugins/" + plugname + "/README.md") as iff:
+                docs = iff.read()
+            actions = set()
+            _, nf = processMarkdownString(
+                docs,
+                "plugins_" + plugname + ".md",
+                (PLUMED,),
+                (version,),
+                actions,
+                f,
+                ghmarkdown=False,
+                test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
+            )
+            if nf[0] > 0:
+                broken_inputs.append(
+                    [
+                        '<a href="../plugins_' + plugname + '">' + plugname + "</a>",
+                        str(nf[0]),
+                    ]
+                )
 
 
 def getKeywordDescription(docs):
@@ -1576,9 +1703,43 @@ if (
             nodocs.append(
                 ['<a href="../module_' + module + '">' + module + "</a>", "module"]
             )
+
+    # And create a page for each plugin
+    plugintabledata = []
+    for plugin in os.listdir("../plugins/"):
+        if not os.path.isdir("../plugins/" + plugin):
+            continue
+        plink = '<a href="../plugin_' + plugin + '">' + plugin + "</a>"
+        print("Building plugin page", plugin)
+        with cd("docs"):
+            plug_dict = getPluginDictionary(plugin)
+
+            plugintabledata.append(
+                [plink, plug_dict["description"], plug_dict["authors"]]
+            )
+            createPluginPage(
+                version,
+                plugin,
+                plug_dict,
+                0,
+                int(plug_dict["nlessons"]),
+                plug_dict["searchterm"],
+                plumed_syntax,
+                plumedtags,
+                tagdictionary,
+                broken_inputs,
+            )
+        if not os.path.exists(
+            "../plugins/" + plugin + "/README.md"
+        ) or not os.path.exists("../plugins/" + plugin + "/plugin.yml"):
+            nodocs.append(
+                ['<a href="../plugin_' + plugin + '">' + plugin + "</a>", "plugin"]
+            )
+
     # And the page with the list of modules
     with open("docs/modules.md", "w+") as module_file:
         printModuleListPage(module_file, version, moduletabledata)
+        printPluginListPage(module_file, version, plugintabledata)
     # Create the graph that shows all the modules
     createModuleGraph(version, plumed_syntax)
 

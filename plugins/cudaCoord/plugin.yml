@@ -1,0 +1,6 @@
+name: cudaCoord
+authors: Daniele Rapetti 
+description: version of coordination number that can run on the GPU with parallelism written in CUDA
+dois: []
+nlessons: 2
+searchterm: cuda

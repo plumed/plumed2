@@ -492,7 +492,7 @@ template <class T>
 void ParallelTaskManager<T>::registerKeywords( Keywords& keys ) {
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
-  keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   keys.addLinkInDocForFlag("SERIAL", "actions.md");
 }
 

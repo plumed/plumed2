@@ -88,7 +88,7 @@ void MatrixTimesVector::registerKeywords( Keywords& keys ) {
 
   if(!keys.exists("USEGPU")) {
     keys.addFlag("USEGPU",false,"run this calculation on the GPU");
-    keys.addLinkInDocForFlag("USEGPU","gpu.md");
+    keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md.md");
   }
 }
 

@@ -62,7 +62,7 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   keys.addActionNameSuffix("_GRID");
   //keys.addActionNameSuffix("_GRIDACC");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
-  keys.addLinkInDocForFlag("USEGPU","gpu.md");
+  keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   T::registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" || keys.getDisplayName()=="CUSTOM" || keys.getDisplayName()=="MATHEVAL" ) {
     keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the values input to this function");
