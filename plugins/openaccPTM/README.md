@@ -1,28 +1,53 @@
-# Then openaccPTM plugin for PLUMED 2
-
 This plugin allows you to use the USEGPU flag with certain actions in PLUMED. This flag turns on an experimental GPU parallized version of the 
 command. GPU parallelism in PLUMED has been implemented using [openACC](https://www.openacc.org) and is currently experimental. We are actively working
 on these features at the moment. __There is thus no guarantee that the GPU accelerated versions of actions are any faster than 
 the CPU versions.__ If you have experimented with these features on your own calculations we would love to hear from you (even
 if your experience was negative.)
 
-## [Experimental] Compiling plumed with openacc
+## [Experimental] Compiling the openaccPTM plugin
 
-_This section will likely be moved  in the proper installation page_
+The openaccPTM plugin is compiled separately to the main PLUMED code. To compile the plugin you need to have the 
+[NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk) and the plumed library avaiable in your path.  You then compile 
+the plugin by issuing the following commands:
 
-To compile the plugin you need to have the [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk) avaiable on your path.
+```bash
+cd plugin/openaccPTM
+./configure 
+make clean
+NVCXX=mpic++ make
+```  
 
-Plumed is tested with the [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads) version.
+It is worth running these commands more than once if the compilation doesn't work the first time. If they complete correctly a dynamic libarary called `plumedOpenACC.so` 
+will be created in the plumed2/plugin directory.
 
-To prepare the compilation add `--enable-opeacc` to the `./configure` options.
-It is also possible to pass some extra options by exporting or specifying the the following variables:
- - **PLUMED_ACC_TYPE**: if omitted defaults to `gpu`, can be changed to `host` or `multicore` to try a compilation that targets the CPU also for the openacc accellerate part of the code.
- - **PLUMED_ACC_GPU**: if `PLUMED_ACC_TYPE` is set to `gpu`, it can be used to specify a range of `-gpu` optios to pass to the nvhpc compiler (for example the target gpu, see the [compiler manual](https://docs.nvidia.com/hpc-sdk/compilers/hpc-compilers-user-guide/index.html) for the options) options can be comma separated or space separated
+We have tested this module with the [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads) version of the NVIDIA HPC SDK compiler and found that it works.
+It currently does not work with NVHPC 26.5 compiler.
 
+Note that we recommend running the test suite after compilation.  You can do this by issuing the following commands:
 
-!!! warning
-    (Currently) modules that use a custom openmp reduction can be compiled with nvhpc.
-    Currently `membranefusion` is not compatible and should be excluded from the compilation
+```bash
+cd plugin/openaccPTM/regtest
+make
+```
+
+## [Experimental] Using PLUMED with the openaccPTM plugin
+
+To use openACC in PLUMED you need to load the dynamic libary that you compiled in the previous section.  You can do this as follows:
+
+```plumed
+LOAD FILE=/path/to/plumedOpenACC.so
+```
+
+where `/path/to` is the directory that contains the compiled plugins. If you choose not to move the library after compilation this will 
+be the `plumed2/plugin` directory. To use the plugin to calculate an action using the GPU you add the `USEGPU` keyword to the list of keywords
+for that action.  For example, to calculate a contact matrix using the GPU you would use the following input:
+
+```plumed
+LOAD FILE=/path/to/plumedOpenACC.so
+CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
+``` 
+
+The next section contains a list of the actions that can take the USEGPU command in input and that can thus be run on the GPU using this plugin.
 
 ## List of actions that can be called with the USEGPU option:
 
