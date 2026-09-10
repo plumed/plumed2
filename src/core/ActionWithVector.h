@@ -57,7 +57,8 @@ public:
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Get the list of tasks that are active
-  virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
+  virtual std::vector<unsigned>& getListOfActiveTasks();
+  const std::vector<unsigned>& getConstListOfActiveTasks() const ;
 /// Find out how many tasks we need to perform in this loop
   virtual void getNumberOfTasks( unsigned& ntasks );
 /// Determine if a particular task is active based on the values of the input argument
@@ -92,6 +93,11 @@ inline
 void ActionWithVector::ignoreMaskArguments() {
   plumed_assert( nmask<=0 );
   nmask=NoMasksUsed;
+}
+
+inline
+const std::vector<unsigned>& ActionWithVector::getConstListOfActiveTasks() const {
+  return active_tasks;
 }
 
 }

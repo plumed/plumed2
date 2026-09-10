@@ -21,17 +21,21 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
 #include "tools/Communicator.h"
+#include "tools/OpenMP.h"
 
 namespace PLMD {
 
 void ActionWithMatrix::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
+  keys.addFlag("AVOID_THREAD_GATHER",false,"avoid race conditions in shared memory by doing calculations rather than using more memory");
 }
 
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  diagzero(false) {
+  maxcolsize(0),
+  diagzero(false),
+  gatherForceOnColumns(false) {
 
   if( keywords.exists("ELEMENTS_ON_DIAGONAL_ARE_ZERO") ) {
     parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",diagzero);
@@ -39,6 +43,14 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
       log.printf("  setting diagonal elements equal to zero\n");
     }
   }
+  parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
+  if( OpenMP::getNumThreads()==1 && getName().find("ACC")==std::string::npos ) {
+      no_thread_gather = false;
+  }
+  if( no_thread_gather && comm.Get_size()>1 ) {
+      error("AVOID_THREAD_GATHER keyword is incompatible with MPI - it should be possible to fix this. Email: gareth.tribello@gmail.com if you are interested");
+  }
+  if( no_thread_gather ) log.printf("  turning on low memory implementation for force gathering\n");
 }
 
 
@@ -95,7 +107,66 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
   }
+  findMaximumColumnLength();
 }
+
+void ActionWithMatrix::findMaximumColumnLength() {
+  if( !no_thread_gather || doNotCalculateDerivatives() ) {
+    return;
+  }
+  Value* mycomp = getPntrToComponent(0);
+  std::vector<unsigned> column_totals( getConstPntrToComponent(0)->getShape()[1], 0 );
+  for(unsigned i=0; i<mycomp->getShape()[0]; ++i) {
+    for(unsigned j=0; j<mycomp->getRowLength(i); ++j) {
+      column_totals[ mycomp->getRowIndex(i,j) ]++;
+    }
+  }
+  unsigned n_nonzerocols = 0;
+  maxcolsize = column_totals[0];
+  if( maxcolsize>0 ) {
+      n_nonzerocols = 1;
+  }
+  for(unsigned i=1; i<column_totals.size(); ++i) {
+    if( column_totals[i]>maxcolsize ) {
+      maxcolsize = column_totals[i];
+    } 
+    if( column_totals[i]>0 ) {
+      n_nonzerocols++;
+    }
+  }
+  column_list.resize( n_nonzerocols );
+  n_nonzerocols = 0;
+  for(unsigned i=0; i<column_totals.size(); ++i) {
+    if( column_totals[i]>0 ) {
+        column_list[n_nonzerocols]=i;
+        n_nonzerocols++;
+    }
+  }
+}
+
+void ActionWithMatrix::getColumnBookeepingArrays( RequiredMatrixElements& outmat ) {
+  outmat.ncols = maxcolsize;
+  Value* mycomp = getPntrToComponent(0);
+  outmat.resize( outmat.ncols*(1+mycomp->getShape()[1]) );
+  for(unsigned i=0; i<mycomp->getShape()[1]; ++i) {
+      outmat[i*(1+outmat.ncols)] = 0;
+  }
+  for(unsigned i=0; i<mycomp->getShape()[0]; ++i) {
+    for(unsigned j=0; j<mycomp->getRowLength(i); ++j) {
+      unsigned cstart = mycomp->getRowIndex(i,j)*( 1 + outmat.ncols );
+      outmat[cstart + 1 + outmat[cstart]] = i;
+      outmat[cstart]++;
+    }
+  }
+}
+
+std::vector<unsigned>& ActionWithMatrix::getListOfActiveTasks() {
+  if( gatherForceOnColumns ) {
+    return column_list;
+  } else {
+    return ActionWithVector::getListOfActiveTasks();
+  }
+} 
 
 void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   unsigned ncomp = getNumberOfComponents();
@@ -138,38 +209,72 @@ void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& parti
 void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
-  unsigned nrows = partialTaskList.size();
-  for(unsigned i=0; i<nrows; ++i) {
-    unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
+  if( gatherForceOnColumns ) {
+     const std::vector<unsigned>& rowTasks( getConstListOfActiveTasks() ); 
+     unsigned nrows = rowTasks.size();
+     std::vector<unsigned> column_totals( getConstPntrToComponent(0)->getShape()[1], 0 );
+     for(unsigned i=0; i<nrows; ++i) {
+       unsigned ncr = getConstPntrToComponent(0)->getRowLength(rowTasks[i]);
+       for(unsigned j=0; j<ncr; ++j) {
+           unsigned colno = getConstPntrToComponent(0)->getRowIndex(rowTasks[i],j);
+           for(unsigned k=0; k<ncomp; ++k) {
+               plumed_dbg_assert( colno==getConstPntrToComponent(k)->getRowIndex(rowTasks[i],j) );
+               stash[ncomp*maxcolsize*colno + column_totals[colno]*ncomp + k] = getConstPntrToComponent(k)->getForce( rowTasks[i]*ncols+j );
+           }
+           column_totals[colno]++;
+       }
+     }
+  } else {
+     unsigned nrows = partialTaskList.size(); 
+     for(unsigned i=0; i<nrows; ++i) {
+       unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
 #ifndef NDEBUG
-    for(unsigned k=1; k<ncomp; ++k) {
-      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
-    }
+       for(unsigned k=1; k<ncomp; ++k) {
+         plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+       }
 #endif
-    for(unsigned j=0; j<ncr; ++j) {
-      for(unsigned k=0; k<ncomp; ++k) {
-        stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
-      }
-    }
+       for(unsigned j=0; j<ncr; ++j) {
+         for(unsigned k=0; k<ncomp; ++k) {
+           stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
+         }
+       }
+     }
   }
 }
 
 void ActionWithMatrix::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
-  unsigned nrows = partialTaskList.size();
-  for(unsigned i=0; i<nrows; ++i) {
-    unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
+  if( gatherForceOnColumns ) {
+     const std::vector<unsigned>& rowTasks( getConstListOfActiveTasks() );
+     unsigned nrows = rowTasks.size(); 
+     std::vector<unsigned> column_totals( getConstPntrToComponent(0)->getShape()[1], 0 );
+     for(unsigned i=0; i<nrows; ++i) {
+       unsigned ncr = getConstPntrToComponent(0)->getRowLength(rowTasks[i]);
+       for(unsigned j=0; j<ncr; ++j) {
+           unsigned colno = getConstPntrToComponent(0)->getRowIndex(rowTasks[i],j);
+           for(unsigned k=0; k<ncomp; ++k) {
+               plumed_dbg_assert( colno==getConstPntrToComponent(k)->getRowIndex(rowTasks[i],j) );
+               stash[ncomp*maxcolsize*colno + column_totals[colno]*ncomp + k] = getConstPntrToComponent(k)->getForce( rowTasks[i]*ncols+j );
+           }
+           column_totals[colno]++;
+       }
+     }
+  } else {
+     unsigned nrows = partialTaskList.size();
+     for(unsigned i=0; i<nrows; ++i) {
+       unsigned ncr = getConstPntrToComponent(0)->getRowLength(partialTaskList[i]);
 #ifndef NDEBUG
-    for(unsigned k=1; k<ncomp; ++k) {
-      plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
-    }
+       for(unsigned k=1; k<ncomp; ++k) {
+         plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(partialTaskList[i]) );
+       }
 #endif
-    for(unsigned j=0; j<ncr; ++j) {
-      for(unsigned k=0; k<ncomp; ++k) {
-        stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
-      }
-    }
+       for(unsigned j=0; j<ncr; ++j) {
+         for(unsigned k=0; k<ncomp; ++k) {
+           stash[ncomp*ncols*partialTaskList[i]+j*ncomp+k] = getConstPntrToComponent(k)->getForce( partialTaskList[i]*ncols+j );
+         }
+       }
+     }
   }
 }
 

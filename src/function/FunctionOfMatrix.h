@@ -61,7 +61,7 @@ public:
   void prepare() override ;
   void calculate() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
+  std::vector<unsigned>& getListOfActiveTasks() override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
   void getInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
@@ -218,7 +218,7 @@ void FunctionOfMatrix<CV,myPTM>::getNumberOfTasks( unsigned& ntasks ) {
 }
 
 template <class CV, typename myPTM>
-std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }

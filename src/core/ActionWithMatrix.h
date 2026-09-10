@@ -69,14 +69,29 @@ public:
 };
 
 class ActionWithMatrix : public ActionWithVector {
+private:
+/// List of columns in matrix that have non-zero elements
+  std::vector<unsigned> column_list;
 protected:
+/// The number of elements in the longest column of the sparse matrix that is output by this action
+  unsigned maxcolsize;
 /// Some actions have a flag that sets this to true.  The elements on the diagonal of the resulting matrix are then set to zero
   bool diagzero;
+/// This flag turns on a low memory implemntation of the multi-threaded calculation
+  bool no_thread_gather;
+/// This flag is activated when we run through the columns of the matrix when gathering forces in a thread safe way
+  bool gatherForceOnColumns;
 /// Update all the arrays for doing bookeeping
   void updateBookeepingArrays( RequiredMatrixElements& mat );
+/// Find the length of the longest column in the output matrix if it is required
+  void findMaximumColumnLength();
+/// Get an array that tells us which indices are in each column
+  void getColumnBookeepingArrays( RequiredMatrixElements& outmat );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
+/// Get the list of active tasks for this action
+  std::vector<unsigned>& getListOfActiveTasks() override ;
 /// Get the elements of the matrices into the output values
   void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
 /// Get the elements of the matrices into the output values

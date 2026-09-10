@@ -161,7 +161,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
   return -1;
 }
 
-std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }

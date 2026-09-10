@@ -23,7 +23,6 @@
 #define __PLUMED_core_ParallelTaskManager_h
 
 #include "ActionWithVector.h"
-#include "ActionWithMatrix.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 #include "tools/View.h"
@@ -421,8 +420,6 @@ protected:
   ActionWithVector* action;
 /// The MPI communicator
   Communicator& comm;
-/// Is this an action with matrix
-  bool ismatrix;
 /// True if not using MPI for parllisation
   bool serial;
 /// Are we using acc for parallisation
@@ -460,6 +457,8 @@ public:
   void setActionInput( const input_type& adata );
 /// Creating the size of the workspace
   void setWorkspaceSize( std::size_t size );
+//// Set the number of force scalars per row
+  void setNForceScalars( const unsigned& n );
 /// Get the action input so we can use it
   input_type& getActionInput();
   const input_type& getActionInput() const ;
@@ -470,7 +469,7 @@ public:
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
-  void applyForces( std::vector<double>& forcesForApply );
+  void applyForces( std::vector<double>& forcesForApply, bool reset_forces=true );
 /// This is used to gather forces that are thread safe
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
                                       const ForceIndexHolder& force_indices,
@@ -500,16 +499,11 @@ template <class T>
 ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
-  ismatrix(false),
   useacc(false),
   nderivatives_per_task(0),
   nthreaded_forces(0),
   myinput(ParallelActionsInput::create(av->getPbc())),
   workspace_size(0) {
-  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
-  if(am) {
-    ismatrix=true;
-  }
   action->parseFlag("USEGPU",useacc);
 #ifdef __PLUMED_USE_OPENACC
   if( useacc ) {
@@ -582,6 +576,12 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
 }
 
 template <class T>
+void ParallelTaskManager<T>::setNForceScalars( const unsigned& n ) {
+  myinput.nforcescalars = n;
+  nderivatives_per_task = myinput.nderivatives_per_scalar*myinput.nforcescalars;
+}
+
+template <class T>
 void ParallelTaskManager<T>::setActionInput( const input_type& adata ) {
   actiondata=adata;
 }
@@ -604,7 +604,7 @@ void ParallelTaskManager<T>::setWorkspaceSize( std::size_t size ) {
 template <class T>
 void ParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
@@ -695,13 +695,17 @@ struct forceData<double> {
   }
 };
 template <class T>
-void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
+void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, bool reset_forces ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action ) ;
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks() ;
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
-  // Clear force buffer
-  std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  // Only set to false if we are doing a loop over the columns of a matrix to avoid 
+  // having to gather forces across multiple nodes
+  if( reset_forces ) {
+      // Clear force buffer
+      std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values

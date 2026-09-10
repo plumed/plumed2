@@ -140,7 +140,7 @@ void runAllTasksACC(typename T::input_type actiondata,
 template <class T>
 void AccParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
@@ -328,7 +328,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 template <class T>
 void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action );
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
   // Clear force buffer

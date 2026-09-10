@@ -32,6 +32,8 @@ template <class T>
 class OuterProductInput {
 public:
   T funcinput;
+  bool no_thread_gather;
+  bool gatherForceOnColumns;
   RequiredMatrixElements outmat;
 };
 
@@ -127,6 +129,8 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
     isproduct=(func=="x*y");
   }
   OuterProductInput<T> actiondata;
+  actiondata.gatherForceOnColumns = false;
+  actiondata.no_thread_gather = no_thread_gather;
   actiondata.funcinput.setup( shape, func, this );
 
   if( getNumberOfComponents()==0 ) {
@@ -176,8 +180,13 @@ int OuterProductBase<T>::checkTaskIsActive( const unsigned& itask ) const {
 template <class T>
 void OuterProductBase<T>::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  taskmanager.setupParallelTaskManager( 2*getNumberOfComponents(), getNumberOfComponents()*getPntrToComponent(0)->getShape()[1] );
-  taskmanager.setWorkspaceSize( 2*getNumberOfComponents() );
+  if( no_thread_gather ) {
+    taskmanager.setupParallelTaskManager( getNumberOfComponents(), 0 );
+    taskmanager.setWorkspaceSize( (2+2*getNumberOfComponents())*getNumberOfComponents() );
+  } else {
+    taskmanager.setupParallelTaskManager( 2*getNumberOfComponents(), getNumberOfComponents()*getPntrToComponent(0)->getShape()[1] );
+    taskmanager.setWorkspaceSize( 2*getNumberOfComponents() );
+  }
   taskmanager.runAllTasks();
 }
 
@@ -187,27 +196,65 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
                                        ParallelActionsInput& input,
                                        ParallelActionsOutput& output ) {
   auto args = output.buffer.subview(0, 2*input.ncomponents);
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    args[i] = input.inputdata[input.argstarts[i] + task_index];
-  }
-  unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-  unsigned nelements = actiondata.outmat[fstart];
-  for(unsigned i=0; i<nelements; ++i) {
-    std::size_t argpos = actiondata.outmat[fstart+1+i];
-    for(unsigned j=0; j<input.ncomponents; ++j) {
-      args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
-    }
-    MatrixElementOutput matout( input.ncomponents,
-                                2*input.ncomponents,
-                                output.values.data()+i*input.ncomponents,
-                                output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
-    T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
+  if( actiondata.no_thread_gather ) {
+      unsigned first_arg_base = 0, second_arg_base = input.ncomponents, ind = 0; 
+      if( actiondata.gatherForceOnColumns ) {
+        first_arg_base = input.ncomponents;
+        second_arg_base = 0;
+        ind = input.ncomponents;
+      }
+      for(unsigned i=0; i<input.ncomponents; ++i) {
+        args[first_arg_base+i] = input.inputdata[input.argstarts[first_arg_base + i] + task_index];
+      }                        
+      unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+      unsigned nelements = actiondata.outmat[fstart];
+      for(unsigned i=0; i<nelements; ++i) {
+        std::size_t argpos = actiondata.outmat[fstart+1+i];
+        for(unsigned j=0; j<input.ncomponents; ++j) {
+          args[second_arg_base+j] = input.inputdata[input.argstarts[second_arg_base+j] + argpos];
+        }                          
+        MatrixElementOutput matout( input.ncomponents,
+                                    2*input.ncomponents,
+                                    output.values.data()+i*input.ncomponents,
+                                    output.buffer.data()+2*input.ncomponents );
+        T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
+        for(unsigned j=0; j<input.ncomponents; ++j) {
+            for(unsigned k=0; k<input.ncomponents; ++k) {
+                output.derivatives[i*input.ncomponents*input.ncomponents+input.ncomponents*j+k] = matout.derivs[j][ind+k];
+            }
+        }
+      }
+  } else {
+      for(unsigned i=0; i<input.ncomponents; ++i) {
+        args[i] = input.inputdata[input.argstarts[i] + task_index];
+      }
+      unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+      unsigned nelements = actiondata.outmat[fstart];
+      for(unsigned i=0; i<nelements; ++i) {
+        std::size_t argpos = actiondata.outmat[fstart+1+i];
+        for(unsigned j=0; j<input.ncomponents; ++j) {
+          args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
+        }
+        MatrixElementOutput matout( input.ncomponents,
+                                    2*input.ncomponents,
+                                    output.values.data()+i*input.ncomponents,
+                                    output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
+        T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
+      }
   }
 }
 
 template <class T>
 void OuterProductBase<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
+  if( no_thread_gather ) {
+    getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
+    taskmanager.setNForceScalars( getNumberOfComponents()*maxcolsize );
+    taskmanager.applyForces( outforces, false );
+    taskmanager.setNForceScalars( getNumberOfComponents()*getPntrToComponent(0)->getNumberOfColumns() );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = false;
+  }
 }
 
 template <class T>
@@ -224,14 +271,28 @@ void OuterProductBase<T>::getForceIndices( std::size_t task_index,
     const OuterProductInput<T>& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-  for(unsigned j=0; j<input.ncomponents; ++j) {
-    for(unsigned k=0; k<input.ncomponents; ++k) {
-      force_indices.indices[j][k] = input.argstarts[k] + task_index;
-      force_indices.indices[j][input.ncomponents+k] = input.argstarts[input.ncomponents+k] + actiondata.outmat[fstart+1+colno];
+  if( actiondata.no_thread_gather ) {
+    unsigned argbase = 0;
+    if( actiondata.gatherForceOnColumns ) {
+      argbase = input.ncomponents;
     }
-    force_indices.threadsafe_derivatives_end[j] = input.ncomponents;
-    force_indices.tot_indices[j] = 2*input.ncomponents;
+    for(unsigned j=0; j<input.ncomponents; ++j) {
+      for(unsigned k=0; k<input.ncomponents; ++k) {
+        force_indices.indices[j][k] = input.argstarts[argbase+k] + task_index;
+      }
+      force_indices.threadsafe_derivatives_end[j] = input.ncomponents;
+      force_indices.tot_indices[j] = input.ncomponents;
+    }
+  } else {
+    unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+    for(unsigned j=0; j<input.ncomponents; ++j) {
+      for(unsigned k=0; k<input.ncomponents; ++k) {
+        force_indices.indices[j][k] = input.argstarts[k] + task_index;
+        force_indices.indices[j][input.ncomponents+k] = input.argstarts[input.ncomponents+k] + actiondata.outmat[fstart+1+colno];
+      }
+      force_indices.threadsafe_derivatives_end[j] = input.ncomponents;
+      force_indices.tot_indices[j] = 2*input.ncomponents;
+    }
   }
 }
 

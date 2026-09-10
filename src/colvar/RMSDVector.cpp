@@ -436,7 +436,7 @@ void RMSDVector::gatherForces( std::size_t task_index,
 
 void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Clear force buffer
   outforces.assign( outforces.size(), 0.0 );

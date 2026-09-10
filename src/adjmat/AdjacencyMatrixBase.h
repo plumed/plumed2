@@ -403,7 +403,7 @@ template <class CV, typename myPTM>
 void AdjacencyMatrixBase<CV, myPTM>::calculate() {
   Value* myval = getPntrToComponent(0);
   // Retrieve the task list
-  std::vector<unsigned> & pTaskList( getListOfActiveTasks(this) );
+  std::vector<unsigned> & pTaskList( getListOfActiveTasks() );
   // Get the number of tasks we have to deal with
   unsigned ntasks=myval->getShape()[0];
   if( nl_stride==1 ) {
@@ -495,6 +495,7 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToComponent(0) );
   }
+  findMaximumColumnLength();
   // We need to setup the task manager here because at this point we know the size of the sparse matrices
   unsigned nder = 6 + 3*matdata.natoms_per_three_list + virialSize;
   //there was an if on `matdata.components` but both branches were calling the next line
