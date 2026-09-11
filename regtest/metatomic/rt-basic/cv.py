@@ -32,13 +32,14 @@ class TestCollectiveVariable(torch.nn.Module):
     CV^2 are returned.
     """
 
-    def __init__(self, cutoff, multiple_properties):
+    def __init__(self, cutoff, multiple_properties, feature_key="feature"):
         super().__init__()
 
         self._nl_request = NeighborListOptions(
             cutoff=cutoff, full_list=True, strict=True
         )
         self._multiple_properties = multiple_properties
+        self._feature_key = feature_key
 
     def forward(
         self,
@@ -46,16 +47,16 @@ class TestCollectiveVariable(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-        if "features" not in outputs:
+        if self._feature_key not in outputs:
             return {}
 
         device = torch.device("cpu")
         if len(systems) > 0:
             device = systems[0].positions.device
 
-        output = outputs["features"]
+        output = outputs[self._feature_key]
 
-        if output.per_atom:
+        if output.sample_kind == "atom":
             samples_list: List[List[int]] = []
             for s, system in enumerate(systems):
                 for i in range(len(system)):
@@ -67,6 +68,7 @@ class TestCollectiveVariable(torch.nn.Module):
                 sample_values.reshape(-1, 2),
             )
         else:
+            assert output.sample_kind == "system"
             samples = Labels(
                 "system", torch.arange(len(systems), device=device).reshape(-1, 1)
             )
@@ -89,14 +91,14 @@ class TestCollectiveVariable(torch.nn.Module):
             distances = torch.linalg.vector_norm(neighbors.values.reshape(-1, 3), dim=1)
             inv_dist = 1.0 / distances
 
-            if output.per_atom:
+            if output.sample_kind == "atom":
                 sliced = values[system_start:system_stop, 0]
                 sliced += sliced.index_add(0, atom_index, inv_dist)
             else:
                 values[system_i, 0] += inv_dist.sum()
 
             if self._multiple_properties:
-                if output.per_atom:
+                if output.sample_kind == "atom":
                     sliced = values[system_start:system_stop, 1]
                     sliced += sliced.index_add(0, atom_index, inv_dist**2)
                 else:
@@ -116,14 +118,14 @@ class TestCollectiveVariable(torch.nn.Module):
         )
 
         if selected_atoms is not None:
-            if output.per_atom:
+            if output.sample_kind == "atom":
                 cv = mts.slice(cv, axis="samples", selection=selected_atoms)
             else:
                 raise ValueError(
                     "selected atoms is only supported with per-atom output"
                 )
 
-        return {"features": cv}
+        return {self._feature_key: cv}
 
     def requested_neighbor_lists(self) -> List[NeighborListOptions]:
         return [self._nl_request]
@@ -132,7 +134,7 @@ class TestCollectiveVariable(torch.nn.Module):
 CUTOFF = 3.5
 
 capabilities = ModelCapabilities(
-    outputs={"features": ModelOutput(per_atom=True)},
+    outputs={"feature": ModelOutput(sample_kind="atom")},
     interaction_range=CUTOFF,
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
@@ -152,7 +154,7 @@ model = AtomisticModel(cv, ModelMetadata(), capabilities)
 model.save("vector-per-atom.pt")
 
 capabilities = ModelCapabilities(
-    outputs={"features": ModelOutput(per_atom=False)},
+    outputs={"feature": ModelOutput(sample_kind="system")},
     interaction_range=CUTOFF,
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
@@ -169,3 +171,12 @@ cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
 cv.eval()
 model = AtomisticModel(cv, ModelMetadata(), capabilities)
 model.save("vector-global.pt")
+
+
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF, multiple_properties=False, feature_key="feature/variant"
+)
+capabilities.outputs = {"feature/variant": ModelOutput(sample_kind="system")}
+cv.eval()
+model = AtomisticModel(cv, ModelMetadata(), capabilities)
+model.save("variant-global.pt")

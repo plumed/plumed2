@@ -68,7 +68,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
-  keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
+  keys.add("optional","FMT","specify format for STATUS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
@@ -1777,4 +1777,3 @@ void MetainferenceBase::writeStatus() {
 
 }
 }
-

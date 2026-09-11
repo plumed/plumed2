@@ -94,6 +94,8 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
   keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
+  keys.addFlag("ROUND_TO_BASE_TEN",false,"is this quantity written by the user in base ten, as the timestep is.  If the MD code "
+               "passes floats, the extra digits that appear when converting them to double are removed");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.setValueDescription("scalar/vector/matrix/grid","the data that was passed from the MD code");
 }
@@ -144,6 +146,9 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
     }
     parseFlag("FROM_DOMAINS",from_domains);
     parseFlag("MUTABLE",resetable);
+    bool round_to_base_ten=false;
+    parseFlag("ROUND_TO_BASE_TEN",round_to_base_ten);
+    mydata->setRoundToBaseTen( round_to_base_ten );
   }
 }
 
@@ -276,12 +281,17 @@ void ActionToPutData::apply() {
 }
 
 unsigned ActionToPutData::getNumberOfForcesToRescale() const {
-  if( getName()!="ENERGY" || getDependencies().size()>0 ) {
+  // Values that are passed through the domain decomposition only store the atoms
+  // that are local to this rank, so the number of forces held in the buffer of the
+  // MD code is the number of local atoms and not the number of values
+  if( !from_domains || getDependencies().size()!=1 ) {
     return copyOutput(0)->getNumberOfValues();
   }
-  plumed_assert( getDependencies().size()==1 );
   plumed_assert(getDependencies()[0]); // needed for following calls, see #1046
   ActionForInterface* ai = getDependencies()[0]->castToActionForInterface();
+  if( !ai ) {
+    return copyOutput(0)->getNumberOfValues();
+  }
   return ai->getNumberOfForcesToRescale();
 }
 

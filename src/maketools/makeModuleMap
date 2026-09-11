@@ -2,7 +2,7 @@
 # shellcheck disable=SC2059
 
 outputfile=$1
-rm -f $outputfile~
+rm -f "$outputfile~"
 
 problems=""
 toPrint='  {"%s", "%s"}'
@@ -11,7 +11,7 @@ toPrint='  {"%s", "%s"}'
 regex='PLUMED_REGISTER_ACTION *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
 regex_cl='PLUMED_REGISTER_CLTOOL *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_-]+)" *\)'
 
-for module in ../*/module.type; do
+for module in ../*/module.type ../../plugins/*/module.type; do
   moduledir=${module%%/module.type}
   modulename=${moduledir##*/}
   {
@@ -41,8 +41,8 @@ for module in ../*/module.type; do
           # echo $action
           if [[ $action =~ $regex ]]; then
             actionName=${BASH_REMATCH[1]}
-            printf "$toPrint" "$actionName" "$modulename" >> $outputfile~
-            
+            printf "$toPrint" "$actionName" "$modulename" >>"$outputfile~"
+
             toPrint=',\n  {"%s", "%s"}'
           fi
         done
@@ -54,8 +54,8 @@ for module in ../*/module.type; do
           # echo $action
           if [[ $cltool =~ $regex_cl ]]; then
             clName=${BASH_REMATCH[1]}
-            printf "$toPrint" "$clName" "$modulename" >> $outputfile~
-    
+            printf "$toPrint" "$clName" "$modulename" >>"$outputfile~"
+
             toPrint=',\n  {"%s", "%s"}'
           fi
         done
@@ -67,15 +67,14 @@ for module in ../*/module.type; do
 
 done
 
-cmp -s $outputfile~ $outputfile || cp $outputfile~ $outputfile
-rm $outputfile~
+cmp -s "$outputfile~" "$outputfile" || cp "$outputfile~" "$outputfile"
+rm "$outputfile~"
 
 echo -e '\n'
 if [[ -n $problems ]]; then
   echo >&2 some problems in the following:
   for p in $problems; do
-    echo >&2 $p
+    echo >&2 "$p"
   done
   exit 1
 fi
-

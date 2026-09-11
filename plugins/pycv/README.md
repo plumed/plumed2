@@ -1,5 +1,3 @@
-# The PYCV module/plugin for PLUMED 2
-
 The PYCV module enables
 PLUMED2 Collective Variables (CVs) and arbitrary functions to be
 defined and auto-differentiated in the Python language.

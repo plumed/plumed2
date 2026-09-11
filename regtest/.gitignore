@@ -30,6 +30,7 @@
 !/molfile_plugin
 !/pamm
 !/isdb
+!/kenref
 !/ves
 !/funnel
 !/opes
@@ -46,6 +47,8 @@
 !/metatomic
 !/sizeshape
 !/pines
+!/ttsketch
+!/xsprint
 
 # These files we just want to ignore completely
 tmp

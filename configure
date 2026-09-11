@@ -637,11 +637,11 @@ make_doc
 readelf
 LD_MAIN_RUNPATH
 use_debug_glibcxx
-PYTHON_CFLAGS
-PYTHON_LDFLAGS
-PYBIND11_CFLAGS
-PLUMED_CAN_PYCV
-CYTHON_FOUND
+KENREF_INCLUDE
+KENREF_LIBS
+HAVE_KENREF
+KENREF_PLUMED_INCLUDE
+PYTHON_BUILD_FOUND
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -668,6 +668,9 @@ PYTHON_BIN
 LDSHARED
 STATIC_LIBS
 SOEXT
+KENREF_ACCEL
+KENREF_GIT_TAG
+KENREF_GIT_URL
 target_alias
 host_alias
 build_alias
@@ -748,19 +751,25 @@ enable_boost_graph
 enable_boost_serialization
 enable_fftw
 enable_python
-enable_pycv
 enable_af_ocl
 enable_af_cuda
 enable_af_cpu
 enable_libtorch
 enable_libmetatomic
+enable_libitensor
+enable_libhdf5
 enable_linuxperf
 enable_openacc
+enable_kenref
+with_kenref_src
 enable_openmp
 '
       ac_precious_vars='build_alias
 host_alias
 target_alias
+KENREF_GIT_URL
+KENREF_GIT_TAG
+KENREF_ACCEL
 SOEXT
 STATIC_LIBS
 LDSHARED
@@ -1455,20 +1464,40 @@ Optional Features:
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
-  --enable-pycv           enable set up the pycv plugin, default: yes
   --enable-af_ocl         enable search for arrayfire_ocl, default: no
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
   --enable-libmetatomic   enable search for libmetatomic, default: no
+  --enable-libitensor     enable search for libitensor, default: no
+  --enable-libhdf5        enable search for libhdf5, default: no
   --enable-linuxperf      enable activate the compile options for a more
                           accurate report with perf on linux, default: no
   --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
                           PLUMED_ACC_GPU for controlling the settings),
                           default: no
+  --enable-kenref         enable enable the KEnRef pathway (compile the kenref
+                          module + find/link libkenref_core); equivalent to
+                          --enable-modules=+kenref, default: no
   --disable-openmp        do not use OpenMP
 
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-kenref-src=DIR   use a local KEnRef checkout instead of cloning it
+                          (with --enable-kenref)
+
 Some influential environment variables:
+  KENREF_GIT_URL
+              KEnRef git URL to clone when --enable-kenref and kenref_core is
+              not installed (default:
+              https://github.com/Smith-Group/KEnRef.git)
+  KENREF_GIT_TAG
+              KEnRef git branch/tag to clone (default: master, KEnRef's
+              development trunk)
+  KENREF_ACCEL
+              ACCEL/SIMD width to build the fetched kenref_core with (default:
+              auto-detect this machine's SIMD)
   SOEXT       extension of dynamic libraries (so/dylib)
   STATIC_LIBS variables that should be linked statically directly to MD code -
               configure will add here -ldl if necessary
@@ -3156,24 +3185,6 @@ fi
 
 
 
-pycv=
-# Check whether --enable-pycv was given.
-if test "${enable_pycv+set}" = set; then :
-  enableval=$enable_pycv; case "${enableval}" in
-             (yes) pycv=true ;;
-             (no)  pycv=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-pycv" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) pycv=true ;;
-             (no)  pycv=false ;;
-  esac
-
-fi
-
-
-
 af_ocl=
 # Check whether --enable-af_ocl was given.
 if test "${enable_af_ocl+set}" = set; then :
@@ -3264,6 +3275,42 @@ fi
 
 
 
+libitensor=
+# Check whether --enable-libitensor was given.
+if test "${enable_libitensor+set}" = set; then :
+  enableval=$enable_libitensor; case "${enableval}" in
+             (yes) libitensor=true ;;
+             (no)  libitensor=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libitensor" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) libitensor=true ;;
+             (no)  libitensor=false ;;
+  esac
+
+fi
+
+
+
+libhdf5=
+# Check whether --enable-libhdf5 was given.
+if test "${enable_libhdf5+set}" = set; then :
+  enableval=$enable_libhdf5; case "${enableval}" in
+             (yes) libhdf5=true ;;
+             (no)  libhdf5=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libhdf5" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) libhdf5=true ;;
+             (no)  libhdf5=false ;;
+  esac
+
+fi
+
+
+
 linuxperf=
 # Check whether --enable-linuxperf was given.
 if test "${enable_linuxperf+set}" = set; then :
@@ -3300,6 +3347,37 @@ fi
 
 
 
+kenref=
+# Check whether --enable-kenref was given.
+if test "${enable_kenref+set}" = set; then :
+  enableval=$enable_kenref; case "${enableval}" in
+             (yes) kenref=true ;;
+             (no)  kenref=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-kenref" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) kenref=true ;;
+             (no)  kenref=false ;;
+  esac
+
+fi
+
+ # Added by Amr Alhossary
+# KEnRef find-or-fetch controls: with --enable-kenref, if kenref_core is not already installed, configure
+# clones the KEnRef repo and delegates the build to its own CMake. Override the source / coordinates here.
+
+# Check whether --with-kenref-src was given.
+if test "${with_kenref_src+set}" = set; then :
+  withval=$with_kenref_src; with_kenref_src="$withval"
+else
+  with_kenref_src=""
+fi
+
+
+
+
+
 
 
 
@@ -3315,6 +3393,7 @@ if test -z "$CXXFLAGS"
 then
   CXXFLAGS=-O3
 fi
+
 # this is a list of common compilers
 compilers="g++ c++ cxx icpc"
 c_compilers="gcc cc icc"
@@ -9092,15 +9171,9 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
-# python executable: if any of CYTHON_FOUND or PLUMED_CAN_PYCV is on will store
-# the python executable
+# python executable: if PYTHON_BUILD_FOUND is on will store the python executable
 
-# set if PYTHON_BIN has Cython in its environment
-
-# definitions and variables related to pycv and in general embedding python
-
-
-
+# set if PYTHON_BIN has build in its environment
 
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
@@ -9152,53 +9225,13 @@ fi
 if test -n "$PYTHON_BIN" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-  if test $pycv = true  ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking pycv: support for required python modules (python3, pybind11, numpy)" >&5
-$as_echo_n "checking pycv: support for required python modules (python3, pybind11, numpy)... " >&6; }
-  testimport="
-import numpy
-import pybind11
-#no need to check for python3, if you have python2, you don't have pybind11 (and vice-versa)
-"
-    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
-
-       pyver=$($PYTHON_BIN -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))")
-       python_config=python${pyver}-config
-
-       if ${python_config} --ldflags --embed 1>/dev/null 2>/dev/null ;then
-          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-          PYBIND11_CFLAGS="$($PYTHON_BIN -m pybind11 --includes) -fvisibility=hidden"
-          PYTHON_CFLAGS=$(${python_config} --cflags --embed)
-          PYTHON_LDFLAGS=$(${python_config} --ldflags --embed)
-          #TODO: conda_fixup
-          PLUMED_CAN_PYCV=yes
-        else
-          { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
-$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
-          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"PyCV needs python to be embeddable, please rebuild python\"" >&5
-$as_echo "$as_me: WARNING: \"PyCV needs python to be embeddable, please rebuild python\"" >&2;}
-       fi
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
-$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
-    fi
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
-$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
-  fi
-
   if test $python = true  ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking python wrapper: support for required python modules (python3, setuptools, cython)" >&5
-$as_echo_n "checking python wrapper: support for required python modules (python3, setuptools, cython)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking python wrapper: support for required python modules (python3, setuptools, build)" >&5
+$as_echo_n "checking python wrapper: support for required python modules (python3, setuptools, build)... " >&6; }
     testimport="
 from setuptools import setup
 from setuptools import Extension
-from Cython.Build import cythonize
+import build
 import sys
 if sys.version_info < (3,):
     raise ImportError('PLUMED>= 2.6 only supports Python 3')
@@ -9208,7 +9241,7 @@ if sys.version_info < (3,):
 $as_echo "yes" >&6; }
        $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
 
-       CYTHON_FOUND=yes
+       PYTHON_BUILD_FOUND=yes
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -9221,7 +9254,7 @@ $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
 fi
 
-if test "${PLUMED_CAN_PYCV}" != yes &&  test "${CYTHON_FOUND}" != yes; then
+if test "${PYTHON_BUILD_FOUND}" != yes; then
   #this deactivate python bin if no package was found
   PYTHON_BIN=
 fi
@@ -9913,6 +9946,275 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
 
 fi
 
+# ==============================================================================
+# KEnRef library check.
+#
+# Deliberately NOT PKG_CHECK_MODULES: that macro lives in pkg.m4, pkg-config's own
+# aclocal file, and PLUMED does not use aclocal — there is no aclocal.m4 in this tree
+# and plain `autoconf` regenerates `configure` byte-for-byte. Calling PKG_CHECK_MODULES
+# here would leave it (and every AC_SUBST/AC_MSG_NOTICE nested inside it) UNEXPANDED in
+# the generated configure. Plain `pkg-config` shell calls are also what the rest of this
+# file already does — see the BASH_COMPLETION_DIR probe.
+#
+# Two flavours are accepted, the first preferred:
+#   kenref_core       + external eigen3   (kenref_core.pc has `Requires: eigen3`)
+#   kenref_and_eigen3                     (self-contained; Eigen headers embedded)
+# ==============================================================================
+
+# ==============================================================================
+# KEnRef gating (Amr Alhossary) — CONVERGENCE.
+# --enable-kenref and --enable-modules=+kenref are two entry points to the SAME
+# pathway: passing EITHER one enables the whole KEnRef feature (the `kenref`
+# module is compiled AND the KEnRef core library is located & linked); passing
+# NEITHER disables it entirely (no dependency, module not built). Because the
+# module's on/off marker (src/kenref.on) is consumed at make time (globbed), we
+# can flip it here so whichever switch the user chose converges to one result.
+# ==============================================================================
+KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref_core (keep in lockstep
+                                  # with KEnRef's CMake project(VERSION); v2.0.0 = model-abstraction restructure)
+
+# The kenref module's COMPILE includes are resolved ONCE here (below, on success) and baked into
+# Makefile.conf as KENREF_PLUMED_INCLUDE, so src/kenref/Makefile never calls pkg-config at parse time (which
+# would fail under a `sudo make install` that re-parses this Makefile with a stripped PKG_CONFIG_PATH).
+# Default empty so @KENREF_PLUMED_INCLUDE@ always substitutes, even when KEnRef is disabled.
+KENREF_PLUMED_INCLUDE=""
+
+
+kenref_module_on=no
+test -f src/kenref.on && kenref_module_on=yes
+
+# Is the LIBRARY required, or merely welcome?
+#
+#   --enable-kenref              the user asked for KEnRef by name -> not finding it is an ERROR, and
+#                                configure may fetch and build it.
+#   --enable-modules=all (or +kenref) alone
+#                                the user asked to build every module they can. KEnRef is an external
+#                                dependency they never mentioned, so a missing library must NOT fail the
+#                                build and must NEVER trigger a download: skip the module and carry on.
+#                                This is what lets `--enable-modules=all` keep working on a machine that
+#                                has never heard of KEnRef -- which is exactly what PLUMED's own CI does.
+kenref_required=no
+test "$kenref" = true && kenref_required=yes
+
+# "KEnRef wanted" iff EITHER switch is set (the library flag OR the module flag).
+if test "$kenref" = true || test "$kenref_module_on" = yes ; then
+  # (0) rpath ON by default for KEnRef builds. A KEnRef build links libkenref_core from a non-system prefix
+  #     (and, IF you choose such a toolchain, may also link a non-system C++ runtime such as libc++). If ANY
+  #     linked library lives outside the system loader path, the plumed executable AND libplumedKernel.so must
+  #     record those dirs (RPATH) to run without LD_LIBRARY_PATH -- otherwise `sudo make install` (which
+  #     re-runs the build's json step with the environment stripped) can fail with e.g. "libc++.so.1: cannot
+  #     open shared object file", and the installed binary only runs when a matching module is loaded.
+  #     --enable-rpath records $LIBRARY_PATH into the RUNPATH of both; it is harmless for a pure
+  #     system-library build. Default it ON here (PLUMED's global default is off) UNLESS the user EXPLICITLY
+  #     passed --disable-rpath. $enable_rpath is set by AC_ARG_ENABLE: "no" iff --disable-rpath.
+  if test "$enable_rpath" != "no" && test "$rpath" != true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&5
+$as_echo "$as_me: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&6;}
+    rpath=true
+  fi
+  # (a) make sure the module gets compiled — covers `--enable-kenref` given without +kenref (idempotent).
+  if test "$kenref_module_on" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: --enable-kenref implies the 'kenref' module -> enabling it" >&5
+$as_echo "$as_me: KEnRef: --enable-kenref implies the 'kenref' module -> enabling it" >&6;}
+    rm -f src/kenref.off
+    touch src/kenref.on
+  fi
+  # (b) FIND OR FETCH+BUILD the core library, so `--enable-kenref` ALONE is self-sufficient (no build.sh
+  #     needed). A plain pkg-config pre-check (NOT PKG_CHECK_MODULES, to dodge autoconf's result caching):
+  #     if kenref_core is not already installed, clone the KEnRef repo and DELEGATE the build to its OWN
+  #     build manager (CMake — core lib + the exported plumedinterface source the module compiles in-tree)
+  #     — kenref knows how to build kenref. Then the authoritative
+  #     KENREF_CHECK_LIBS runs once and wires the CFLAGS/LIBS. Controls: --with-kenref-src=DIR (local
+  #     checkout), KENREF_GIT_URL / KENREF_GIT_TAG (clone coords), KENREF_ACCEL (SIMD of the built core).
+  if pkg-config --exists "kenref_core >= $KENREF_MIN_VERSION" 2>/dev/null \
+     || pkg-config --exists "kenref_and_eigen3 >= $KENREF_MIN_VERSION" 2>/dev/null ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: found an installed kenref_core >= $KENREF_MIN_VERSION via pkg-config" >&5
+$as_echo "$as_me: KEnRef: found an installed kenref_core >= $KENREF_MIN_VERSION via pkg-config" >&6;}
+  elif test "$kenref_required" = no ; then
+    # Enabled only by --enable-modules=all/+kenref, and no library present. Do not download anything and
+    # do not fail: switch the module back off and continue, as an unavailable optional dependency should.
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module" >&5
+$as_echo "$as_me: KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module" >&6;}
+    rm -f src/kenref.on
+    touch src/kenref.off
+    kenref_skipped=yes
+  else
+    test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
+    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&5
+$as_echo "$as_me: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&6;}
+    kn_src="$with_kenref_src"
+    if test -z "$kn_src" ; then
+      kn_src="$PWD/kenref-deps/src"
+      if test ! -d "$kn_src/.git" ; then
+        kn_git=`command -v git 2>/dev/null`
+        test -n "$kn_git" || as_fn_error $? "git is required to fetch KEnRef (or pass --with-kenref-src=DIR)" "$LINENO" 5
+        { $as_echo "$as_me:${as_lineno-$LINENO}:   cloning $KENREF_GIT_URL${KENREF_GIT_TAG:+ (branch $KENREF_GIT_TAG)}" >&5
+$as_echo "$as_me:   cloning $KENREF_GIT_URL${KENREF_GIT_TAG:+ (branch $KENREF_GIT_TAG)}" >&6;}
+        git clone ${KENREF_GIT_TAG:+--branch "$KENREF_GIT_TAG"} "$KENREF_GIT_URL" "$kn_src" \
+          || as_fn_error $? "failed to clone KEnRef from $KENREF_GIT_URL -- pass --with-kenref-src=DIR to use a local checkout" "$LINENO" 5
+      fi
+    fi
+    test -f "$kn_src/CMakeLists.txt" || as_fn_error $? "--with-kenref-src='$kn_src' is not a KEnRef checkout" "$LINENO" 5
+    kn_cmake=`command -v cmake 2>/dev/null`
+    test -n "$kn_cmake" || as_fn_error $? "cmake is required to build the fetched KEnRef core" "$LINENO" 5
+    kn_bdir="$PWD/kenref-deps/build"
+    kn_prefix="$PWD/kenref-deps/prefix"
+    # Build kenref_core AND export the plumedinterface (headers + src/plumedinterface/*.cpp + kenref_plumed.pc)
+    # -- KENREF_EXPORT_PLUMEDINTERFACE=ON: this PLUMED build needs that source to compile the module in-tree
+    # (Option A), so it IS "asked for" here. We do NOT compile-validate it (BUILD_KENREF_PLUMED) -- that is a
+    # separate opt-in the module's own `make` covers.
+    { $as_echo "$as_me:${as_lineno-$LINENO}:   building kenref_core + exporting plumedinterface -> $kn_prefix (delegated to KEnRef's CMake; a few minutes)" >&5
+$as_echo "$as_me:   building kenref_core + exporting plumedinterface -> $kn_prefix (delegated to KEnRef's CMake; a few minutes)" >&6;}
+    "$kn_cmake" -S "$kn_src" -B "$kn_bdir" -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_KENREF_CORE=ON -DBUILD_KENREF_GMX=OFF -DKENREF_EXPORT_PLUMEDINTERFACE=ON \
+        ${KENREF_ACCEL:+-DACCEL="$KENREF_ACCEL"} -DCMAKE_INSTALL_PREFIX="$kn_prefix" \
+        ${CXX:+-DCMAKE_CXX_COMPILER="$CXX"} ${CC:+-DCMAKE_C_COMPILER="$CC"} \
+        ${CXXFLAGS:+-DCMAKE_CXX_FLAGS="$CXXFLAGS"} \
+        || as_fn_error $? "CMake configure of KEnRef failed" "$LINENO" 5
+    "$kn_cmake" --build "$kn_bdir" -j || as_fn_error $? "building KEnRef core failed" "$LINENO" 5
+    "$kn_cmake" --install "$kn_bdir" || as_fn_error $? "installing KEnRef core failed" "$LINENO" 5
+    export PKG_CONFIG_PATH="$kn_prefix/lib/pkgconfig:$kn_prefix/share/pkgconfig:$PKG_CONFIG_PATH"
+    # prefer the external-eigen flavor: surface the eigen3.pc KEnRef's CMake used (from its build cache)
+    kn_eig=`sed -n 's/^Eigen3_DIR:PATH=//p' "$kn_bdir/CMakeCache.txt" 2>/dev/null`
+    if test -n "$kn_eig" && test -f "$kn_eig/eigen3.pc" ; then
+      export PKG_CONFIG_PATH="$kn_eig:$PKG_CONFIG_PATH"
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: kenref_core built; PKG_CONFIG_PATH updated for the checks below" >&5
+$as_echo "$as_me: KEnRef: kenref_core built; PKG_CONFIG_PATH updated for the checks below" >&6;}
+  fi
+
+fi
+
+# Everything below wires the library in. It is skipped when the module was switched off just above
+# because it was only implied by --enable-modules and no library is present.
+if test "$kenref_skipped" != yes && ( test "$kenref" = true || test "$kenref_module_on" = yes ) ; then
+
+  # authoritative check (finds it whether pre-installed or just built) + CFLAGS/LIBS wiring:
+
+  # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
+  # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
+  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
+  # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
+  # shell. Forcing the flag through keeps the captured value self-contained.
+  have_kenref=no
+  HAVE_KENREF=no
+  KENREF_LIBS=""
+  KENREF_INCLUDE=""
+  kenref_flavor=""
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for kenref_core >= $KENREF_MIN_VERSION with external Eigen3" >&5
+$as_echo_n "checking for kenref_core >= $KENREF_MIN_VERSION with external Eigen3... " >&6; }
+  if pkg-config --exists "kenref_core >= $KENREF_MIN_VERSION" 2>/dev/null \
+     && pkg-config --exists eigen3 2>/dev/null ; then
+    # kenref_core.pc already `Requires: eigen3`, so --cflags carries the eigen3 -I exactly once.
+    # Do NOT append eigen3's own --cflags as well, or the include lands twice.
+    KENREF_INCLUDE=`pkg-config --cflags kenref_core`
+    KENREF_LIBS=`PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 pkg-config --libs kenref_core`
+    have_kenref=yes
+    kenref_flavor="kenref_core + external eigen3"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for self-contained kenref_and_eigen3 >= $KENREF_MIN_VERSION" >&5
+$as_echo_n "checking for self-contained kenref_and_eigen3 >= $KENREF_MIN_VERSION... " >&6; }
+    if pkg-config --exists "kenref_and_eigen3 >= $KENREF_MIN_VERSION" 2>/dev/null ; then
+      KENREF_INCLUDE=`pkg-config --cflags kenref_and_eigen3`
+      KENREF_LIBS=`PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 pkg-config --libs kenref_and_eigen3`
+      have_kenref=yes
+      kenref_flavor="kenref_and_eigen3 (self-contained)"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    fi
+  fi
+
+  if test "$have_kenref" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: using $kenref_flavor" >&5
+$as_echo "$as_me: KEnRef: using $kenref_flavor" >&6;}
+    LIBS="$KENREF_LIBS $LIBS"
+    HAVE_KENREF=yes
+  fi
+
+
+
+
+  if test "$HAVE_KENREF" != yes ; then
+    if test "$kenref_required" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module" >&5
+$as_echo "$as_me: KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module" >&6;}
+      rm -f src/kenref.on
+      touch src/kenref.off
+      kenref_skipped=yes
+    else
+      as_fn_error $? "KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
+  fetch+build. See the build log above, or pass --with-kenref-src=DIR / set KENREF_GIT_URL." "$LINENO" 5
+    fi
+  fi
+fi
+
+if test "$kenref_skipped" != yes && test "$HAVE_KENREF" = yes ; then
+  # The module's sources are guarded by this, so that a tree configured with --enable-modules=all but
+  # without the library still compiles (the guarded translation units simply produce nothing).
+
+$as_echo "#define __PLUMED_HAS_KENREF 1" >>confdefs.h
+
+
+  # Resolve the module's COMPILE includes ONCE, here, while PKG_CONFIG_PATH is set, and bake them into
+  # Makefile.conf (KENREF_PLUMED_INCLUDE -> src/kenref/Makefile's KENREF_PLUMED_CPPFLAGS). This mirrors how the
+  # LINK flags already flow (configure -> LIBS -> DYNAMIC_LIBS): the module never calls pkg-config at make
+  # time, so a later `sudo make install` (which re-parses src/kenref/Makefile as root with PKG_CONFIG_PATH
+  # stripped) still gets the flags configure captured. kenref_plumed.pc exposes -I core -I plumedinterface
+  # -I src (+ eigen3) -- the Option-A source paths kenref_core.pc lacks.
+  # Mirror the two library flavours: kenref_plumed `Requires: eigen3`, so when eigen3.pc is absent the
+  # LIBRARY check above can still succeed via kenref_and_eigen3 while this one fails. kenref_plumed_and_eigen3
+  # is the self-contained counterpart (embedded Eigen, no Requires:), so the two halves stay in step.
+  kenref_plumed_pc=""
+  if pkg-config --exists kenref_plumed 2>/dev/null ; then
+    kenref_plumed_pc=kenref_plumed
+  elif pkg-config --exists kenref_plumed_and_eigen3 2>/dev/null ; then
+    kenref_plumed_pc=kenref_plumed_and_eigen3
+  fi
+  if test -z "$kenref_plumed_pc" ; then
+    # Report what pkg-config itself says rather than guessing a cause. `--cflags` alone cannot tell the
+    # two apart: it returns empty both when the .pc is missing and when the .pc is present but one of its
+    # `Requires:` cannot be resolved -- and the old message blamed the export for both.
+    kenref_pc_err=`pkg-config --print-errors --exists kenref_plumed 2>&1`
+    as_fn_error $? "KEnRef: kenref_core was found, but the module's plumedinterface include paths are not
+  available -- neither kenref_plumed.pc nor its self-contained counterpart kenref_plumed_and_eigen3.pc
+  could be used. pkg-config reports:
+      $kenref_pc_err
+  Two things cause this. Either the KEnRef install was not built with -DKENREF_EXPORT_PLUMEDINTERFACE=ON
+  (so no such .pc exists -- rebuild it, and put its prefix on PKG_CONFIG_PATH), or the .pc is there but a
+  dependency of it is not: kenref_plumed.pc has \`Requires: eigen3\`, so a missing eigen3.pc fails it even
+  though the library check above may have succeeded through the self-contained kenref_and_eigen3 flavour.
+  In that case add eigen3.pc to PKG_CONFIG_PATH, or install a KEnRef that also ships
+  kenref_plumed_and_eigen3.pc (Eigen embedded, no Requires:)." "$LINENO" 5
+  fi
+  KENREF_PLUMED_INCLUDE=`pkg-config --cflags $kenref_plumed_pc`
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: module compile includes from $kenref_plumed_pc baked into Makefile.conf: $KENREF_PLUMED_INCLUDE" >&5
+$as_echo "$as_me: KEnRef: module compile includes from $kenref_plumed_pc baked into Makefile.conf: $KENREF_PLUMED_INCLUDE" >&6;}
+else
+  # Either neither switch was given, or the module was implied by --enable-modules and the library turned
+  # out to be absent. In both cases: no dependency, no module.
+  if test "$kenref_skipped" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: module skipped (library not available and not explicitly requested)." >&5
+$as_echo "$as_me: KEnRef: module skipped (library not available and not explicitly requested)." >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: disabled (neither --enable-kenref nor --enable-modules=+kenref) -> module not built." >&5
+$as_echo "$as_me: KEnRef: disabled (neither --enable-kenref nor --enable-modules=+kenref) -> module not built." >&6;}
+  fi
+  HAVE_KENREF=no
+
+  have_kenref=no
+fi
+
 # libmetatomic requires libtorch
 if test $libmetatomic = true ; then
   libtorch=true;
@@ -10265,8 +10567,8 @@ $as_echo_n "checking libmetatomic without extra libs... " >&6; }
     #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
     #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
-    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
+    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
     #endif
     int main() {
       metatomic_torch::version();
@@ -10314,8 +10616,8 @@ $as_echo_n "checking libmetatomic with $all_LIBS... " >&6; }
     #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
     #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
-    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
+    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
     #endif
     int main() {
       metatomic_torch::version();
@@ -10363,8 +10665,8 @@ $as_echo_n "checking libmetatomic with -l$testlib... " >&6; }
     #include <metatensor.hpp>
     #include <metatensor/torch.hpp>
     #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1
-    #error "this code is only compatible with metatomic-torch >=0.1,<0.2"
+    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
+    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
     #endif
     int main() {
       metatomic_torch::version();
@@ -10403,6 +10705,318 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBMETATOMIC" >&2;}
       LIBS="$save_LIBS"
     fi
 
+fi
+
+# libitensor requires libhdf5
+if test $libitensor = true ; then
+  libhdf5=true;
+fi
+
+if test $libhdf5 = true ; then
+
+    found=ko
+    __PLUMED_HAS_LIBHDF5=no
+    if test "${libsearch}" = true ; then
+      testlibs=" hdf5_hl hdf5 "
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "true" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libhdf5 without extra libs" >&5
+$as_echo_n "checking libhdf5 without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <hdf5.h>
+    int main() {
+      unsigned majnum, minnum, relnum;
+      H5get_libversion(&majnum, &minnum, &relnum);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libhdf5 with $all_LIBS" >&5
+$as_echo_n "checking libhdf5 with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <hdf5.h>
+    int main() {
+      unsigned majnum, minnum, relnum;
+      H5get_libversion(&majnum, &minnum, &relnum);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libhdf5 with -l$testlib" >&5
+$as_echo_n "checking libhdf5 with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <hdf5.h>
+    int main() {
+      unsigned majnum, minnum, relnum;
+      H5get_libversion(&majnum, &minnum, &relnum);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBHDF5 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBHDF5=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBHDF5" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBHDF5" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
+if test $libitensor = true ; then
+  # NOTE: ITensor headers use C++20 'requires' expressions. -fconcepts enables them on
+  # GCC without forcing -std=c++20 globally. When PLUMED upgrades to -std=c++20
+  # everywhere, this PLUMED_CHECK_CXXFLAG call can be removed.
+  # PLUMED_CHECK_CXXFLAG([-fconcepts])
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -fconcepts $OPENMP_CXXFLAGS"
+
+    found=ko
+    __PLUMED_HAS_LIBITENSOR=no
+    if test "${libsearch}" = true ; then
+      testlibs=" itensor openblas "
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "true" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libitensor without extra libs" >&5
+$as_echo_n "checking libitensor without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <itensor/all.h>
+    int main() {
+      auto i = itensor::Index(2,"i");
+      auto j = itensor::Index(2,"j");
+      auto T = itensor::ITensor(i,j);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libitensor with $all_LIBS" >&5
+$as_echo_n "checking libitensor with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <itensor/all.h>
+    int main() {
+      auto i = itensor::Index(2,"i");
+      auto j = itensor::Index(2,"j");
+      auto T = itensor::ITensor(i,j);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libitensor with -l$testlib" >&5
+$as_echo_n "checking libitensor with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <itensor/all.h>
+    int main() {
+      auto i = itensor::Index(2,"i");
+      auto j = itensor::Index(2,"j");
+      auto T = itensor::ITensor(i,j);
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBITENSOR 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBITENSOR=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBITENSOR" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBITENSOR" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+  CXXFLAGS="$save_CXXFLAGS"
+  if test "$__PLUMED_HAS_LIBITENSOR" = yes ; then
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -fconcepts"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -fconcepts" >&5
+$as_echo_n "checking whether $CXX accepts -fconcepts... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  fi
 fi
 
 acc_found=ko

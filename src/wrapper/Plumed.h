@@ -1777,29 +1777,29 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <new> /* bad_alloc bad_array_new_length (C++11) */
 #include <typeinfo> /* bad_typeid bad_cast */
 #include <limits> /* numeric_limits */
+//C++11 functionalities
+#if __cplusplus > 199711L
+#include <array> /* array */
+#include <initializer_list> /* initializer_list */
+#include <type_traits> /* std::enable_if */
+#include <memory> /* unique_ptr */
+#endif
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 #include <system_error> /* system_error generic_category system_category */
 #include <future> /* future_category */
-#include <memory> /* bad_weak_ptr */
 #include <functional> /* bad_function_call */
 #include <regex> /* regex_error */
+#endif
+
+//C++17 functionalities
+#if __cplusplus >= 201703L
+#include <string_view> /* string_view */
 #endif
 #if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
 #include <any> /* bad_any_cast */
 #include <variant> /* bad_variant_access */
 #include <optional> /* bad_optional_access */
 #include <filesystem> /* filesystem_error */
-#endif
-
-#if __cplusplus >= 201703L
-#include <memory> /* unique_ptr */
-#include <string_view> /* string_view */
-#endif
-
-#if __cplusplus > 199711L
-#include <array> /* array */
-#include <initializer_list> /* initializer_list */
-#include <type_traits> /* std::enable_if */
 #endif
 
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */

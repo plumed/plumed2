@@ -1,0 +1,4 @@
+# The kenref module is default-off and needs an external library, so skip when it is not built in.
+plumed_modules=kenref
+type=driver
+arg="--plumed plumed.dat --mf_pdb traj.pdb"

@@ -154,7 +154,8 @@ public:
 /// Remove trailing comments
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
-  static double pbc(double);
+  template <typename T>
+  static double pbc(T);
 /// Retrieve a key from a vector of options.
 /// It finds a key starting with "key=" or equal to "key" and copy the
 /// part after the = on s. E.g.:
@@ -542,8 +543,8 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 }
 
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
-inline
-double Tools::pbc(double x) {
+template <typename T>
+inline double Tools::pbc(T x) {
 #ifdef __PLUMED_PBC_WHILE
   while (x>0.5) {
     x-=1.0;
@@ -554,12 +555,12 @@ double Tools::pbc(double x) {
   return x;
 #else
   if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
-    constexpr double offset=100.0;
-    const double y=x+offset;
-    if(y>=0) {
-      return y-int(y+0.5);
+    constexpr T offset=100.0;
+    x+=offset;
+    if(x>=0) {
+      return x-int(x+0.5);
     } else {
-      return y-int(y-0.5);
+      return x-int(x-0.5);
     }
   } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);

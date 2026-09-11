@@ -25,6 +25,7 @@
 !/gridtools
 !/imd
 !/isdb
+!/kenref
 !/landmarks
 !/lapack
 !/lepton
@@ -70,6 +71,8 @@
 !/metatensor
 !/metatomic
 !/sizeshape
+!/ttsketch
+!/xsprint
 
 # And just ignore these files
 *.xxd

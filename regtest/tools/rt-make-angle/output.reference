@@ -1,16 +1,23 @@
-testCompute2Vectors90Degrees
-1.5708
-testCompute2Vectors45Degrees
-0.785398
-testCompute4Vectors45Degrees
-0.785398
--0.5 0.5 -0
--0 -1 -0
-testCompute4VectorsParallel
-0
-0 0 0
-0 0 0
-testCompute4VectorsAntiParallel
-3.14159
-0 0 0
-0 0 0
+testCompute2Vectors90Degrees 1.5708
+testCompute2Vectors45Degrees 0.785398
+testCompute4Vectors45Degrees 0.785398
+testCompute4Vectors45Degrees d1= -0.5 0.5 -0
+testCompute4Vectors45Degrees d2= -0 -1 -0
+testCompute4VectorsParallel 0
+testCompute4VectorsParallel d1= 0 0 0
+testCompute4VectorsParallel d2= 0 0 0
+testCompute4VectorsAntiParallel 3.14159
+testCompute4VectorsAntiParallel d1= 0 0 0
+testCompute4VectorsAntiParallel d2= 0 0 0
+float
+testCompute2Vectors90Degrees 1.5708
+testCompute2Vectors45Degrees 0.785398
+testCompute4Vectors45Degrees 0.785398
+testCompute4Vectors45Degrees d1= -0.5 0.5 -0
+testCompute4Vectors45Degrees d2= -0 -1 -0
+testCompute4VectorsParallel 0
+testCompute4VectorsParallel d1= 0 0 0
+testCompute4VectorsParallel d2= 0 0 0
+testCompute4VectorsAntiParallel 3.14159
+testCompute4VectorsAntiParallel d1= 0 0 0
+testCompute4VectorsAntiParallel d2= 0 0 0

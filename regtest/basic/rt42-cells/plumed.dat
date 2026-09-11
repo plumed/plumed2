@@ -1,0 +1,14 @@
+DEBUG DETAILED_TIMERS
+
+
+#forcing a d_max<NL_cutoff
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLIST      NL_STRIDE=4 NL_CUTOFF=2.0
+d: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLISTCELLS NL_STRIDE=4 NL_CUTOFF=2.0
+#FLUSH STRIDE=1
+s: CUSTOM ARG=c,d FUNC=y-x PERIODIC=NO
+PRINT ARG=s FILE=check_diff FMT=%8.4f STRIDE=1
+
+# this should add zero forces
+RESTRAINT ARG=s KAPPA=0 SLOPE=0.001 AT=0
+# SLOPE is very small in order to avoid numerical errors to appear
+# it should be sufficient to detect errors

@@ -79,8 +79,12 @@ public:
   explicit ActionWithMatrix(const ActionOptions&);
 /// Get the elements of the matrices into the output values
   void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
+/// Get the elements of the matrices into the output values
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) override ;
 /// Get the forces from the output values and transfer them to the stash
   void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const override ;
+/// Get the forces from the output values and transfer them to the stash
+  void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const override ;
 };
 
 }

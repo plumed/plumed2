@@ -64,10 +64,15 @@ public:
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU
   virtual void getInputData( std::vector<double>& inputdata ) const ;
+  virtual void getInputData( std::vector<float>& inputdata ) const ;
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
   virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash );
+/// This is so we an transfer data gathered in the parallel task manager to the underlying values
+  virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash );
 /// This is so we can transfer forces from the values to the parallel task manager
   virtual void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const ;
+/// This is so we can transfer forces from the values to the parallel task manager
+  virtual void transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const ;
 /// Get the number of forces to use
   unsigned getNumberOfForceDerivatives() const ;
 /// Apply the forces on this data

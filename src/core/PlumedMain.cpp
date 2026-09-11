@@ -731,19 +731,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         if( !ts ) {
-          readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT", true);
+          readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT ROUND_TO_BASE_TEN", true);
           ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         }
         if( !ts->setValuePointer("timestep", val ) ) {
           plumed_error();
-        }
-        // The following is to avoid extra digits in case the MD code uses floats
-        // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
-        // To avoid this, we keep only up to 6 significant digits after first one
-        if( getRealPrecision()<=4 ) {
-          Value* tstepv = ts->copyOutput(0);
-          double magnitude=std::pow(10,std::floor(std::log10(tstepv->get())));
-          tstepv->set( std::round(tstepv->get()/magnitude*1e6)/1e6*magnitude );
         }
         ts->updateUnits( passtools.get() );
       }
@@ -881,7 +873,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        val.set(int(actionRegister().check(dlloader.getHandles(), std::string(words[1])) ? 1:0));
+        val.set(int(checkAction(std::string(words[1])) ? 1:0));
         break;
       case cmd_setExtraCV: {
         CHECK_NOTNULL(val,word);
@@ -1455,6 +1447,9 @@ void PlumedMain::update() {
       p->fflush();
     }
   }
+// invalidate the checkpoint status
+// this fix issues like #1428
+  doCheckPoint = false;
 }
 
 void PlumedMain::load(const std::string& fileName) {
@@ -1752,6 +1747,9 @@ void PlumedMain::getKeywordsForAction( const std::string& action, Keywords& keys
   actionRegister().getKeywords( dlloader.getHandles(), action, keys );
 }
 
+bool PlumedMain::checkAction(const std::string& action) const {
+  return actionRegister().check(dlloader.getHandles(),action);
+}
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error
 #endif

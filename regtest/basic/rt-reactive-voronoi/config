@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --ixyz frame.xyz --length-units A --box 30,30,30"

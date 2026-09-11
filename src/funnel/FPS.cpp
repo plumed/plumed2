@@ -234,7 +234,7 @@ void FUNNEL_PS::calculate() {
   // I call the method calc_FitElements that initializes all feature that I need
   // except for centerreference that I need to calculate from scratch
   // Buffer has no meaning but I had to fulfill the requirements of calc_FitElements
-  double rmsd = alignment.calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
+  alignment.calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
 
   // To Plumed developers: it would be interesting to make the functions to calculate centers of mass public or protected
   centerreference.zero();
@@ -270,8 +270,6 @@ void FUNNEL_PS::calculate() {
   //Projection vector v onto s
 
   Vector prj = (dotProduct(s,v)/dotProduct(s,s))*s;
-  const double prj_length = prj.modulo() ;
-  const double inv_prj_length = 1.0/prj_length;
 
   Vector height = v - prj;
   const double prj_height = height.modulo() ;

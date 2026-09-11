@@ -146,6 +146,20 @@ int main () {
   PLMD::OFile out_float;
   out_float.open("output_float");
   matrixTest<float>(out_float,"%8.4f");
+
+  {
+    std::vector<double> a(3);
+    a[0]=1.0;
+    a[1]=2.0;
+    a[2]=3.0;
+    std::vector<double> b(3);
+    b[0]=4.0;
+    b[1]=5.0;
+    b[2]=6.0;
+    out_float << "Test dotProduct and norm ";
+    out_float << PLMD::dotProduct(a,b) << " " << PLMD::norm(a);
+    out_float << "\n";
+  }
   out_float.close();
   return 0;
 }

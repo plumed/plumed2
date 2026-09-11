@@ -148,7 +148,7 @@ In papers where symmetry functions similar to this one have been used a switchin
 six nearest neighbours to each atom.  If you would like to calculate this quantity using PLUMED you can use an input like this:
 
 ```plumed
-dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=3.0 COMPONENTS
+dmat: DISTANCE_MATRIX GROUP=1-400 LINKCELL_CUTOFF=3.0 COMPONENTS
 neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
 harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
 rprod: CUSTOM ARG=neigh,harm.rm FUNC=x*y PERIODIC=NO

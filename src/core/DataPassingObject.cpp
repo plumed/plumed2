@@ -94,6 +94,24 @@ void DataPassingObjectTyped<T>::saveValueAsDouble( const TypesafePtr & val ) {
   bvalue=double(val.template get<T>());
 }
 
+template <>
+void DataPassingObjectTyped<float>::saveValueAsDouble( const TypesafePtr & val ) {
+  hasbackup=true;
+  bvalue=double(val.template get<float>());
+  // The following is to avoid extra digits in case the MD code uses floats
+  // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
+  // To avoid this, we keep only up to 6 significant digits after first one.
+  // This is done only for quantities that the user writes in base ten, namely the timestep,
+  // because the resulting grid is coarser than the float itself and would discard
+  // information from quantities that the MD code computes, such as the energy.
+  // std::to_chars would express this better, as it writes the shortest decimal that reads
+  // back as the same float, but floating point <charconv> requires GCC 11 or libc++ 14
+  if( roundToBaseTen && bvalue != 0.0 ) {
+    double magnitude=std::pow(10,std::floor(std::log10(std::fabs(bvalue))));
+    bvalue = std::round(bvalue/magnitude*1e6)/1e6*magnitude;
+  }
+}
+
 template <class T>
 void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const std::vector<std::size_t>& shape, const bool& isconst ) {
   if( shape.size()==0 ) {

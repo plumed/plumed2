@@ -40,6 +40,8 @@ class OuterProductBase : public ActionWithMatrix {
 public:
   using input_type = OuterProductInput<T>;
   using PTM = ParallelTaskManager<OuterProductBase<T>>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool isproduct;
   PTM taskmanager;

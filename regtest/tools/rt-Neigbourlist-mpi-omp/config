@@ -1,0 +1,9 @@
+mpiprocs=3
+type=make
+extra_files="../rt-Neigbourlist/main.cpp"
+
+export PLUMED_NUM_THREADS=3
+
+function plumed_regtest_before() {
+  perl -pi.bk -e 's%//#define USE_MPI%#define USE_MPI%g' main.cpp
+}

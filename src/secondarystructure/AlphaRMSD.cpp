@@ -108,7 +108,7 @@ public:
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureBase<Vector>::registerKeywords( keys );
+  SecondaryStructureInput::registerKeywords( keys );
   keys.remove("ATOMS");
   keys.remove("SEGMENT");
   keys.remove("STRUCTURE");
@@ -122,11 +122,11 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureBase<Vector>::readShortcutWords( ltmap, this );
+  bool uselessthan=SecondaryStructureInput::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
   std::vector<std::string> all_atoms;
-  SecondaryStructureBase<Vector>::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
+  SecondaryStructureInput::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nprevious=0, segno=1;

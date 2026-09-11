@@ -25,3 +25,7 @@ makefile.dep
 /autom4*
 /stamp-h
 __pycache__
+#to not export personal pyenv settings
+.python-version
+.vscode
+.claude

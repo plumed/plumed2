@@ -27,9 +27,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
-
-#include <iostream>
-
 namespace PLMD {
 namespace crystdistrib {
 
@@ -51,7 +48,7 @@ In this example, 3 quaternion frames are calculated, and multiplied element-wise
 #calculate the quaternion frames for 3 molecules
 quat: QUATERNION ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
 #also find the distance between the 3 origins of the molecule frames
-c1: DISTANCE_MATRIX GROUP=1,4,7 CUTOFF=100.0 COMPONENTS
+c1: DISTANCE_MATRIX GROUP=1,4,7 LINKCELL_CUTOFF=100.0 COMPONENTS
 qp: QUATERNION_BOND_PRODUCT_MATRIX ARG=quat.*,c1.*
 #this is now a matrix showing how each molecule is oriented in 3D space
 #relative to eachother's origins
@@ -78,6 +75,8 @@ class QuaternionBondProductMatrix : public ActionWithVector {
 public:
   using input_type = QuatBondProdMatInput;
   using PTM = ParallelTaskManager<QuaternionBondProductMatrix>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   PTM taskmanager;
   std::vector<unsigned> active_tasks;
@@ -85,7 +84,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit QuaternionBondProductMatrix(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override ;
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
@@ -319,12 +318,11 @@ void QuaternionBondProductMatrix::performTask( std::size_t task_index,
 //I hold off on normalizing because this can be done at the very end, and it
 // makes the derivatives with respect to 'bond' more simple
 
-  double wf=0,xf=0,yf=0,zf=0;
+  double xf=0,yf=0,zf=0;
 
   for(unsigned i=0; i<4; ++i) {
     //real part of q1*q2
     output.values[0] += normFac*conj[i]*quatTemp[i]*quat[i];
-    wf+=normFac*conj[i]*quatTemp[i]*quat[i];
     //i component
     output.values[1] += normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];
     xf+=normFac*pref_i[i]*quatTemp[i]*quat[(5-i)%4];

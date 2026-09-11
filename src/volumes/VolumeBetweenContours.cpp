@@ -90,6 +90,9 @@ namespace volumes {
 
 class VolumeInEnvelope {
 public:
+  using precision=double;
+  typedef VolumeIn<precision> VolumeInput;
+  typedef VolumeOut<precision> VolumeOutput;
   double gvol, maxs;
   std::string kerneltype;
   std::vector<double> bandwidth;

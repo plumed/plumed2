@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from utilities_for_test import *
+from utilities_for_test import cd, preparePlumed, create_plumed_var, setUpTraj
 
 import os
 

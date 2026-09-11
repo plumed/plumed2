@@ -26,11 +26,13 @@
 #include "AtomNumber.h"
 
 #include <vector>
+#include <tuple>
 
 namespace PLMD {
 
 class Pbc;
 class Communicator;
+class Colvar;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
@@ -41,13 +43,17 @@ public:
 private:
   enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
+  bool listBuilded=false;
   bool serial_;
   bool do_pbc_;
+  bool useCellList_=false;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
+  //The size of this vectior is nallpairs_ if stride==0 (aka the NL is deactivated) or if the size is relatively small
+  //In case neighbors_.size() != nallpairs_,
   std::vector<pairIDs > neighbors_{};
   double distance_;
   size_t nlist0_=0;
@@ -59,7 +65,7 @@ private:
   void initialize();
 /// Return the pair of indexes in the positions array
 /// of the two atoms forming the i-th pair among all possible pairs
-  pairIDs getIndexPair(unsigned i);
+  pairIDs getIndexPair(unsigned i) const;
 /// Extract the list of atoms from the current list of close pairs
   void setRequestList();
 public:
@@ -71,20 +77,26 @@ public:
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                bool serial,
                bool do_pbc,
                const PLMD::Pbc& pbc,
                Communicator &cm,
                double distance=1.0e+30,
-               unsigned stride=0);
+               unsigned stride=0,
+               bool doCells=false);
   ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
+/// Please use the `prepare()` method instead of directly calling this outside the constructor of your action
   std::vector<PLMD::AtomNumber>& getFullAtomList();
 /// Update the indexes in the neighbor list to match the
 /// ordering in the new positions array
 /// and return the new list of atoms that must be requested to the main code
+///
+/// Please prefer calling the `prepare()` method
+/// this is kept public for backward compatibility
   std::vector<PLMD::AtomNumber>& getReducedAtomList();
 /// Update the neighbor list and prepare the new
 /// list of atoms that will be requested to the main code
@@ -101,10 +113,26 @@ public:
   double distance() const;
 /// Get the i-th pair of the neighbor list
   pairIDs getClosePair(unsigned i) const;
+/// Get the i-th pair of the neighbor list **THIS ASSUMES THAT THE NL HAS BEEN BUILT** otherwise is UB
+  pairIDs getUpdatedPair(unsigned i) const;
+/// Returns true if it is safe to use getUpdatedPair
+  bool ready() const;
 /// Get the list of neighbors of the i-th atom
-  std::vector<unsigned> getNeighbors(unsigned i);
+  std::vector<unsigned> getNeighbors(unsigned i) const;
 /// Get the i-th pair of AtomNumbers from the neighbor list
   pairAtomNumbers getClosePairAtomNumber(unsigned i) const;
+  struct preparestatus {
+    bool firsttime;
+    bool invalidateList;
+    // this little method makes possible to write
+    // std::tie(firsttime,invalidateList) = nl->prepare(this,firsttime).get();
+    // and keep the named nature of this "return struct"
+    std::tuple<bool,bool>get() const {
+      return {firsttime,invalidateList};
+    }
+  };
+/// Returns if the neighborlist is invalidated for this step
+  preparestatus prepare(Colvar*,bool firsttime, bool invalidateList);
 };
 
 } // namespace PLMD

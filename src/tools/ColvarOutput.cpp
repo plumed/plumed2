@@ -20,16 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ColvarOutput.h"
-#include "core/Colvar.h"
 
 namespace PLMD {
 
-ColvarOutput ColvarOutput::createColvarOutput( std::vector<double>& v,
-    std::vector<double>& d,
-    Colvar* action ) {
-  View<double> val(v.data(),v.size());
-  d.resize( action->getNumberOfComponents()*action->getNumberOfDerivatives() );
-  return ColvarOutput( val, action->getNumberOfDerivatives(), d.data() );
-}
 
 } // namespace PLMD

@@ -1,0 +1,7 @@
+mpiprocs=3
+type=make
+extra_files="../rt-make-CellLists/main.cpp"
+
+function plumed_regtest_before() {
+  perl -pi.bk -e 's%//#define USE_MPI%#define USE_MPI%g' main.cpp
+}

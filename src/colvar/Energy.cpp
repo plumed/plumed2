@@ -47,10 +47,9 @@ number of required replicas.
 
 !!! caution "long tail corrections for energy"
 
-    The ENERGY output by PLUMED does not include long tail corrections.
-    Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
-    the potential energy from ENERGY will be slightly different from the one that is output by the MD code.
-    You should still be able to bias the ENERGY and then reweight your simulation with the correct MD energy values.
+    Some MD engines communicate to PLUMED the energy without the long tail corrections,
+    leading to a small mismatch. If this is the case, use the energy from the MD engine for
+    reweighting. See \issue{567}.
 
 !!! caution "replica exchange"
 

@@ -36,10 +36,12 @@ namespace PLMD {
 This is the abstract base class to use for implementing new collective variables, within it there is
 \ref AddingAColvar "information" as to how to go about implementing a new CV.
 */
-
+class NeighborList;
 class Colvar :
   public ActionAtomistic,
   public ActionWithValue {
+
+  friend class NeighborList;
 private:
 protected:
   void requestAtoms(const std::vector<AtomNumber> & a);

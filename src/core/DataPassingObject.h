@@ -44,9 +44,11 @@ protected:
 /// The backup value of the quantity (used if the value is passed directly)
   bool hasbackup;
   double bvalue;
+/// Whether the quantity is one that the user specifies in base ten, such as the timestep
+  bool roundToBaseTen;
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
-  explicit DataPassingObject() : start(0), stride(1), unit(1), funit(1), hasbackup(false), bvalue(0) {}
+  explicit DataPassingObject() : start(0), stride(1), unit(1), funit(1), hasbackup(false), bvalue(0), roundToBaseTen(false) {}
   /// Virtual destructor, just to allow inheritance.
   virtual ~DataPassingObject() {}
 /// Convert what comes from the MD code to a double
@@ -66,6 +68,10 @@ public:
 /// Set the unit for the force
   void setForceUnit( const double& u ) {
     funit=u;
+  }
+/// Only set this for quantities that the user specifies in base ten, see saveValueAsDouble
+  void setRoundToBaseTen( const bool& r ) {
+    roundToBaseTen=r;
   }
 /// This is used when you want to save the passed object to a double variable in PLUMED rather than the pointer
 /// this can be used even when you don't pass a pointer from the MD code

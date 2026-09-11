@@ -1,0 +1,6 @@
+LOAD FILE=../../../../plumedOpenACC.so
+plns: PLANE ATOMS1=1,2,3 ATOMS2=2,3,4 ATOMS3=3,4,5  ATOMS4=4,5,6 USEGPU
+
+PRINT ARG=plns.* FILE=planes FMT=%8.4f 
+
+BIASVALUE ARG=plns.y

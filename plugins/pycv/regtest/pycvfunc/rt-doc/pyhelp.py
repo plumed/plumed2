@@ -8,17 +8,19 @@
 import plumedCommunications
 import pydoc
 
+
 def plumedInit(_):
-    with open('PythonCVInterface.help.txt', 'w') as f:
+    with open("PythonCVInterface.help.txt", "w") as f:
         h = pydoc.Helper(output=f)
         h(plumedCommunications.PythonCVInterface)
-    with open('plumedCommunications.help.txt', 'w') as f:
+    with open("plumedCommunications.help.txt", "w") as f:
         h = pydoc.Helper(output=f)
         h(plumedCommunications)
-    with open('plumedCommunications.defaults.help.txt', 'w') as f:
+    with open("plumedCommunications.defaults.help.txt", "w") as f:
         h = pydoc.Helper(output=f)
         h(plumedCommunications.defaults)
-    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV, "ATOMS":"1"}
+    return {"Value": plumedCommunications.defaults.COMPONENT_NODEV, "ATOMS": "1"}
+
 
 def plumedCalculate(_):
     return 0

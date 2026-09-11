@@ -258,6 +258,8 @@ class ProjectPoints : public ActionWithVector {
 public:
   using input_type = ProjectPointsInput;
   using PTM = ParallelTaskManager<ProjectPoints>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   unsigned dimout;
   mutable std::vector<unsigned> rowstart;
@@ -467,7 +469,11 @@ void ProjectPoints::performTask( std::size_t task_index, const ProjectPointsInpu
     auto myargh=ArgumentBookeepingHolder::create( input.ncomponents, input );
     actiondata.action->rowstart[OpenMP::getThreadNum()] = task_index*myargh.shape[1];
   }
-  actiondata.action->myminimiser.minimise( actiondata.cgtol, point, &ProjectPoints::calculateStress );
+
+  int code = actiondata.action->myminimiser.minimise( actiondata.cgtol, point, &ProjectPoints::calculateStress );
+  if( code>0 ) {
+    plumed_merror("failure in conjugate gradient minimisation");
+  }
   for(unsigned i=0; i<input.ncomponents; ++i) {
     output.values[i] = point[i];
   }

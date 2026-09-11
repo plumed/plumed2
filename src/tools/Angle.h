@@ -23,6 +23,8 @@
 #define __PLUMED_tools_Angle_h
 
 #include "Vector.h"
+#include "Tools.h"
+#include <cmath>
 
 namespace PLMD {
 
@@ -40,11 +42,51 @@ class Angle {
 // still empty, but may accommodate some options in the future
 public:
 /// Compute the angle between vectors v1 and v2
-#pragma acc routine seq
-  double compute(const Vector& v1,const Vector& v2)const;
+  template <typename T>
+  static T compute(const VectorTyped<T,3> v1,const VectorTyped<T,3> v2) {
+    return std::acos(dotProduct(v1,v2)/(v1.modulo()*v2.modulo()));
+  }
 /// Compute the angle between vectors v1 and v2 and its derivatives wrt v1 and v2
-#pragma acc routine seq
-  double compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)const;
+  template <typename T>
+  static T compute(const VectorTyped<T,3> v1,
+                   const VectorTyped<T,3> v2,
+                   VectorTyped<T,3>& d1,
+                   VectorTyped<T,3>& d2) {
+    using V3=VectorTyped<T,3>;
+    const T dp(dotProduct(v1,v2));
+    const V3& dp_dv1(v2);
+    const V3& dp_dv2(v1);
+    const T sv1(v1.modulo2());
+    const T sv2(v2.modulo2());
+    const V3 dsv1_dv1(2*v1);
+    const V3 dsv2_dv2(2*v2);
+    const T nn(1.0/std::sqrt(sv1*sv2));
+    const V3 dnn_dv1(-0.5*nn/sv1*dsv1_dv1);
+    const V3 dnn_dv2(-0.5*nn/sv2*dsv2_dv2);
+
+    const T dpnn(dp*nn);
+    if(dpnn>=1.0-epsilon) {
+      d1=V3(0.0,0.0,0.0);
+      d2=V3(0.0,0.0,0.0);
+      return 0.0;
+    }
+    if(dpnn<=-1.0+epsilon) {
+      d1=V3(0.0,0.0,0.0);
+      d2=V3(0.0,0.0,0.0);
+      return pi;
+    }
+    const V3 ddpnn_dv1(dp*dnn_dv1+dp_dv1*nn);
+    const V3 ddpnn_dv2(dp*dnn_dv2+dp_dv2*nn);
+
+    const T x(-1.0/std::sqrt(1-dpnn*dpnn));
+
+    d1=x*ddpnn_dv1;
+    d2=x*ddpnn_dv2;
+
+
+    return std::acos(dpnn);
+  }
+
 };
 
 }

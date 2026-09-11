@@ -261,7 +261,7 @@ double Value::get(const std::size_t ival, const bool trueind) const {
     plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
   }
 #endif
-  if( shape.size()==2 && trueind ) {
+  if( shape.size()==2 && ncols<shape[1] && trueind ) {
     const unsigned irow = std::floor( ival / shape[1] );
     const unsigned jcol = ival%shape[1];
     // This is a special treatment for the lower triangular matrices that are used when

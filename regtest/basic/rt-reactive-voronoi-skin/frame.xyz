@@ -1,0 +1,10 @@
+3
+buffered-list frame 0; coordinates in angstrom
+O 0.5 0.0 0.0
+O 5.5 0.0 0.0
+H 1.0 0.0 0.0
+3
+buffered-list frame 1; assigned atom crosses the cutoff
+O 0.5 0.0 0.0
+O 5.5 0.0 0.0
+H 4.7 0.0 0.0

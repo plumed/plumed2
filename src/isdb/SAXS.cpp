@@ -78,7 +78,9 @@ representation, two types of coarse-grained mapping are available:
 Whether for PARAMETERS, ATOMISTIC, and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the
 SAXS instruction. MARTINI requires a mapping scheme consisting of a PDB file that contains both the all-atom
 and MARTINI representations, and a bead position file (e.g., bead1: CENTER ATOMS=1,5,7,11,12 WEIGHTS=14,12,12,
-12,16).
+12,16). The MARTINI_FF keyword selects the form-factor generation: MARTINI_FF=2 (default) uses the Martini 2.2
+form factors for proteins and nucleic acids, while MARTINI_FF=3 uses Martini 3 form factors for proteins. The
+Martini 3 protein form factors are described in the corresponding paper in the bibliography below.
 
 ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
 the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
@@ -256,7 +258,10 @@ private:
          DA_SC4, DA_3TE, DA_5TE, DA_TE3, DA_TE5, DC_BB1, DC_BB2, DC_BB3, DC_SC1, DC_SC2, DC_SC3,
          DC_3TE, DC_5TE, DC_TE3, DC_TE5, DG_BB1, DG_BB2, DG_BB3, DG_SC1, DG_SC2, DG_SC3, DG_SC4,
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
-         DT_5TE, DT_TE3, DT_TE5, NMARTINI
+         DT_5TE, DT_TE3, DT_TE5,
+         // Extra protein beads present only in the Martini 3 topology (MARTINI_FF=3)
+         ALA_SC1, TRP_SC5, TYR_SC4,
+         NMARTINI
        };
   enum { TRP,
          TYR,
@@ -416,6 +421,7 @@ private:
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
+  void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atoms);
   unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
@@ -452,6 +458,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
   keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"Calculate SAXS for a Martini model");
+  keys.add("compulsory","MARTINI_FF","2","Martini form-factor generation to use with MARTINI: 2 (default, Martini 2.2 proteins and nucleic acids) or 3 (Martini 3 proteins)");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
@@ -538,8 +545,15 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   bool martini=false;
   parseFlag("MARTINI",martini);
+  unsigned martini_ff=2;
+  parse("MARTINI_FF",martini_ff);
   if(martini) {
-    log.printf("  using MARTINI form factors\n");
+    if(martini_ff!=2&&martini_ff!=3) {
+      error("MARTINI_FF must be 2 (Martini 2.2) or 3 (Martini 3)");
+    }
+    log.printf("  using MARTINI %u form factors\n",martini_ff);
+  } else if(martini_ff!=2) {
+    error("MARTINI_FF can only be used together with MARTINI");
   }
   onebead=false;
   parseFlag("ONEBEAD",onebead);
@@ -901,7 +915,11 @@ SAXS::SAXS(const ActionOptions&ao):
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
     std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
-    getMartiniFFparam(atoms, parameter);
+    if(martini_ff==3) {
+      getMartiniFFparam_v3(atoms, parameter);
+    } else {
+      getMartiniFFparam(atoms, parameter);
+    }
     for(unsigned i=0; i<NMARTINI; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
@@ -1123,6 +1141,9 @@ SAXS::SAXS(const ActionOptions&ao):
   if(martini) {
     log<<plumed.cite("Niebling, Björling, Westenhoff, J. Appl. Crystallogr., 47, 1190–1198 (2014)");
     log<<plumed.cite("Paissoni, Jussupow, Camilloni, J. Appl. Crystallogr., 52, 394-402 (2019)");
+    if(martini_ff==3) {
+      log<<plumed.cite("Vinterbladh, Vuillemot, Grudinin, Lund, ChemRxiv, doi:10.26434/chemrxiv.15006205/v1 (2026)");
+    }
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978)");
@@ -3262,6 +3283,287 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
     }
   } else {
     error("MOLINFO DATA not found\n");
+  }
+}
+
+
+void SAXS::getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter) {
+  // Kept separate from the Martini 2.2 table in getMartiniFFparam because the coefficients
+  // differ and the Martini 3 protein topology adds beads absent in 2.2 (ALA_SC1, TRP_SC5,
+  // TYR_SC4). The 7-coefficient / degree-6-in-q form is deliberately unchanged so the same
+  // downstream polynomial evaluator serves both MARTINI_FF versions. See the Martini 3
+  // form-factor paper in the bibliography for how the coefficients were derived.
+  parameter[ALA_BB] = {10.643806846255465, 0.0, 2.0616371683115733, 0.7872168906775016, -5.080460379455372, 3.222662883174488, -0.5960016057238122};
+  parameter[ALA_SC1] = {-1.7010874177132265, 0.0, 7.118764019567526, 1.1145464157804394, -5.950013175357564, 2.8714126567294755, -0.42838104934301313};
+
+  parameter[ARG_BB] = {10.64380122599819, 0.0, 2.061637183212542, 0.7872187072333622, -5.080459366793695, 3.2226607845095225, -0.5960010250566496};
+  parameter[ARG_SC1] = {-2.582459965203611, 0.0, 16.093491676712716, 1.1997535742302685, -15.212231100907612, 8.324901545777502, -1.3612064124992838};
+  parameter[ARG_SC2] = {14.428248841779087, 0.0, -0.5306373105617507, 1.6708928597353037, -4.220821223435202, 2.340601736383018, -0.3836111601465304};
+
+  parameter[ASN_BB] = {10.64380637290148, 0.0, 2.0616383733664607, 0.7872206653851905, -5.080466495994918, 3.2226654178553917, -0.5960019074982035};
+  parameter[ASN_SC1] = {9.305752980758708, 0.0, 8.028095134281596, -2.3099183822637563, -6.632212819638959, 4.4228155805014255, -0.7764062905424147};
+
+  parameter[ASP_BB] = {10.643806310047486, 0.0, 2.06163743145317, 0.787217929242442, -5.080461918557475, 3.222663478750303, -0.5960016686083391};
+  parameter[ASP_SC1] = {10.498866776432472, 0.0, 7.536374464512118, -2.8556236565791147, -5.4787540182953105, 3.815664106474512, -0.67328443867979};
+
+  parameter[CYS_BB] = {10.643806815155962, 0.0, 2.0616371622877585, 0.7872168883774691, -5.080460364611164, 3.222662873758418, -0.5960016039823965};
+  parameter[CYS_SC1] = {7.84213323319376, 0.0, 9.953170739451108, -1.2903802262350998, -7.207970655489376, 4.191794051784442, -0.688509627116269};
+
+  parameter[GLN_BB] = {10.643801955137343, 0.0, 2.061635484428877, 0.7872153749124453, -5.080458169900939, 3.2226625571952128, -0.5960016907141563};
+  parameter[GLN_SC1] = {8.444221071382211, 0.0, 17.678600522511136, -15.30698404588629, -1.7525725905064409, 4.726896859211768, -1.1004371797545023};
+
+  parameter[GLU_BB] = {10.643804801462782, 0.0, 2.0616367722480975, 0.7872167394450527, -5.080459403443487, 3.2226622640656624, -0.5960014912253735};
+  parameter[GLU_SC1] = {9.637509830770533, 0.0, 16.9079134467359, -14.850360181614349, -1.4743561994477412, 4.367483853252233, -1.011774253849401};
+
+  parameter[GLY_BB] = {10.030507380458893, 0.0, 3.8641270986545533, 0.5938012695810033, -6.486785053096451, 4.045479409708778, -0.7318132454163564};
+
+  parameter[HIS_BB] = {10.643806239423265, 0.0, 2.061636403138179, 0.7872153348214171, -5.080458934227526, 3.222662755527101, -0.5960016737782905};
+  parameter[HIS_SC1] = {-0.3510341202994483, 0.0, 7.193968257062204, 1.0071445792130653, -5.966246573308775, 2.857512357903082, -0.4182231235167757};
+  parameter[HIS_SC2] = {5.208533893792252, 0.0, 3.8539382664534454, -0.7578802642311985, -2.104343630945438, 1.154962103610813, -0.17552755823901833};
+  parameter[HIS_SC3] = {5.917304757860416, 0.0, 3.4514167501354183, -0.7996735949256304, -1.9263229210885686, 1.0965585639684268, -0.17072583342582792};
+
+  parameter[ILE_BB] = {10.64380615454994, 0.0, 2.0616374013343046, 0.7872179177418046, -5.080461844335988, 3.2226634316697726, -0.5960016599012332};
+  parameter[ILE_SC1] = {-2.8097860782245627, 0.0, 17.343971902022577, -0.23891906441869626, -15.000405961544278, 8.58845914300296, -1.441332654688594};
+
+  parameter[LEU_BB] = {10.643806213809782, 0.0, 2.061633435208698, 0.7872076376318345, -5.080448157052189, 3.222659304574193, -0.5960014675554544};
+  parameter[LEU_SC1] = {-4.5114171929323135, 0.0, 25.86498421391297, -0.3593827525321407, -25.217858321420422, 15.064085710903564, -2.607530763046867};
+
+  parameter[LYS_BB] = {10.64380376754201, 0.0, 2.0616367677184795, 0.7872172380281511, -5.080459867292311, 3.222662355248592, -0.5960014828825799};
+  parameter[LYS_SC1] = {-2.5824810746850932, 0.0, 16.13252189664475, 1.128748246295519, -15.254770450814124, 8.38659674454396, -1.375867210865735};
+  parameter[LYS_SC2] = {2.1875912973408798, 0.0, 7.73920607666854, -0.27554644744459345, -5.278638129524195, 2.7078403428197415, -0.40648308930112886};
+
+  parameter[MET_BB] = {10.643805945882942, 0.0, 2.061638855896697, 0.7872212846351714, -5.080465329413779, 3.2226637799383036, -0.5960014813592833};
+  parameter[MET_SC1] = {5.941578575762451, 0.0, 27.196511296595972, -14.885385896082838, -11.454742034363008, 10.47605161022688, -2.1101041439081705};
+
+  parameter[PHE_BB] = {10.643806006706622, 0.0, 2.0616372014304547, 0.7872174036368966, -5.080460936081678, 3.2226630332083683, -0.596001608264948};
+  parameter[PHE_SC1] = {-0.8462636496033878, 0.0, 14.839441617245123, 2.2004608533314522, -16.95606436299522, 9.510075608290261, -1.5946587656311024};
+  parameter[PHE_SC2] = {-0.742231268614823, 0.0, 10.63643103868057, 1.7786090791808593, -10.450445500864703, 5.373874846922616, -0.8428947987047763};
+  parameter[PHE_SC3] = {-0.7422313155110873, 0.0, 10.636434560542588, 1.7789447792708137, -10.451993220972495, 5.374862813071748, -0.8430703179386754};
+
+  parameter[PRO_BB] = {10.643806843833374, 0.0, 2.0616339242389112, 0.7872087624627253, -5.080450252830959, 3.2226602532621835, -0.5960015957447156};
+  parameter[PRO_SC1] = {-2.5823799290163008, 0.0, 15.935745257970094, 1.5755615408846868, -15.321956596666128, 8.243503230527706, -1.3306121395565977};
+
+  parameter[SER_BB] = {10.643806777864874, 0.0, 2.0616387389176625, 0.7872199109819031, -5.080462650852676, 3.222662175078477, -0.5960011782019041};
+  parameter[SER_SC1] = {3.4162901978899263, 0.0, 7.046526576582673, -0.7405001447742399, -4.171626396336101, 2.17896359910637, -0.3261396940578125};
+
+  parameter[THR_BB] = {10.643806692667567, 0.0, 2.0616395632827773, 0.7872229931327475, -5.080468438252067, 3.2226651681904412, -0.596001665635775};
+  parameter[THR_SC1] = {2.3286130028844063, 0.0, 15.22075528248213, -7.075948421013035, -4.803271805624368, 3.801442540603149, -0.6738285661353789};
+
+  parameter[TRP_BB] = {10.6438056642156, 0.0, 2.0616365723567625, 0.7872157250296694, -5.080458020204383, 3.222661767357874, -0.5960014466255745};
+  parameter[TRP_SC1] = {-0.351034177345441, 0.0, 7.194381667728987, 1.0062737316596095, -5.967563386286029, 2.8587212292759863, -0.41846073110281257};
+  parameter[TRP_SC2] = {5.2085335935035015, 0.0, 3.846414533476574, -0.7548987022087086, -2.1045634954549053, 1.1551370044816633, -0.17558936197499975};
+  parameter[TRP_SC3] = {1.0191615583089166, 0.0, 4.052957128215075, 0.9232332263552776, -3.327471251075115, 1.4497288158043133, -0.19659298783187706};
+  parameter[TRP_SC4] = {-0.4946782468748683, 0.0, 6.9061019054469925, 1.4448598321835506, -6.077337073118115, 2.8277650354743824, -0.40813950611040006};
+  parameter[TRP_SC5] = {-0.49467887303237984, 0.0, 6.906755828716037, 1.4448532336312239, -6.084567814617669, 2.83287175092946, -0.4090847242312874};
+
+  parameter[TYR_BB] = {10.643806827500029, 0.0, 2.061632625815723, 0.7872057392672824, -5.080447933834761, 3.2226603604678723, -0.5960017988956865};
+  parameter[TYR_SC1] = {-0.3510348934006665, 0.0, 7.198047296937748, 0.9985596099204095, -5.979206265377417, 2.869439868998658, -0.4205709369357118};
+  parameter[TYR_SC2] = {-0.49467730589685305, 0.0, 6.905064702126387, 1.4448572769420103, -6.0657993256015255, 2.8196314526492494, -0.4066356099898165};
+  parameter[TYR_SC3] = {-0.49467728298728963, 0.0, 6.905040827851511, 1.444857019166638, -6.065533022896432, 2.8194439448562316, -0.4066009631311269};
+  parameter[TYR_SC4] = {4.7864749265977435, 0.0, 3.379084515901221, 0.457435669705735, -2.6386732256533407, 1.184403517784809, -0.16175671046904316};
+
+  parameter[VAL_BB] = {10.643806849587198, 0.0, 2.061631159601996, 0.7872024303709435, -5.080444479262741, 3.2226600061868638, -0.5960019731764394};
+  parameter[VAL_SC1] = {-3.650489697568667, 0.0, 20.152880104569256, -1.3077717593059774, -16.48666338249699, 9.710777748612122, -1.654724631578258};
+
+  // Resolve beads by (residue, bead) name rather than by input order so the coefficients
+  // stay correct regardless of how the user ordered ATOMS. An unrecognised name means the
+  // topology is not Martini 3, so we error out early instead of silently applying the wrong
+  // form factor and producing a plausible-looking but incorrect intensity.
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      if(Rname=="ALA") {
+        if(Aname=="BB") {
+          atoi[i]=ALA_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=ALA_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="ARG") {
+        if(Aname=="BB") {
+          atoi[i]=ARG_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=ARG_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=ARG_SC2;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="ASN") {
+        if(Aname=="BB") {
+          atoi[i]=ASN_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=ASN_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="ASP") {
+        if(Aname=="BB") {
+          atoi[i]=ASP_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=ASP_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="CYS") {
+        if(Aname=="BB") {
+          atoi[i]=CYS_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=CYS_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="GLN") {
+        if(Aname=="BB") {
+          atoi[i]=GLN_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=GLN_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="GLU") {
+        if(Aname=="BB") {
+          atoi[i]=GLU_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=GLU_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="GLY") {
+        if(Aname=="BB") {
+          atoi[i]=GLY_BB;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="HIS") {
+        if(Aname=="BB") {
+          atoi[i]=HIS_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=HIS_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=HIS_SC2;
+        } else if(Aname=="SC3") {
+          atoi[i]=HIS_SC3;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="ILE") {
+        if(Aname=="BB") {
+          atoi[i]=ILE_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=ILE_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="LEU") {
+        if(Aname=="BB") {
+          atoi[i]=LEU_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=LEU_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="LYS") {
+        if(Aname=="BB") {
+          atoi[i]=LYS_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=LYS_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=LYS_SC2;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="MET") {
+        if(Aname=="BB") {
+          atoi[i]=MET_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=MET_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="PHE") {
+        if(Aname=="BB") {
+          atoi[i]=PHE_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=PHE_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=PHE_SC2;
+        } else if(Aname=="SC3") {
+          atoi[i]=PHE_SC3;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="PRO") {
+        if(Aname=="BB") {
+          atoi[i]=PRO_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=PRO_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="SER") {
+        if(Aname=="BB") {
+          atoi[i]=SER_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=SER_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="THR") {
+        if(Aname=="BB") {
+          atoi[i]=THR_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=THR_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="TRP") {
+        if(Aname=="BB") {
+          atoi[i]=TRP_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=TRP_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=TRP_SC2;
+        } else if(Aname=="SC3") {
+          atoi[i]=TRP_SC3;
+        } else if(Aname=="SC4") {
+          atoi[i]=TRP_SC4;
+        } else if(Aname=="SC5") {
+          atoi[i]=TRP_SC5;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="TYR") {
+        if(Aname=="BB") {
+          atoi[i]=TYR_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=TYR_SC1;
+        } else if(Aname=="SC2") {
+          atoi[i]=TYR_SC2;
+        } else if(Aname=="SC3") {
+          atoi[i]=TYR_SC3;
+        } else if(Aname=="SC4") {
+          atoi[i]=TYR_SC4;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else if(Rname=="VAL") {
+        if(Aname=="BB") {
+          atoi[i]=VAL_BB;
+        } else if(Aname=="SC1") {
+          atoi[i]=VAL_SC1;
+        } else {
+          error("Atom name not known: "+Aname);
+        }
+      } else {
+        error("Residue not known: "+Rname);
+      }
+    }
+  } else {
+    error("MOLINFO DATA not found");
   }
 }
 

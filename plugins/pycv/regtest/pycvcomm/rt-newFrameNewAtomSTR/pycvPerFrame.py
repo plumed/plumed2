@@ -11,10 +11,13 @@ import plumedCommunications
 log = open("pycv.log", "w")
 
 print("Imported.", file=log)
-plumedInit={"Value": plumedCommunications.defaults.COMPONENT,}
+plumedInit = {
+    "Value": plumedCommunications.defaults.COMPONENT,
+}
+
 
 def changeAtom(plmdAction: plumedCommunications.PythonCVInterface):
-    print(f"pyCVCALLED")
+    print("pyCVCALLED")
     toret = {"setAtomRequest": f"1, {int(plmdAction.getStep()) + 2}"}
     # this is just for "fun"
     if plmdAction.getStep() == 3:

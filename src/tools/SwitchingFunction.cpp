@@ -325,6 +325,7 @@ return std::make_unique<SwitchInterface<fixedRational<x>>>( \
     }
 #undef FIXEDRATIONALENUM
   }
+#undef FIXEDRATIONALENUM
   //continue with the 'at runtime implementation'
   auto data = rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
   if(2*N==M || M == 0) {
@@ -366,6 +367,7 @@ return std::pair <switchType,Data> {switchType::rationalfix##x,Data::init(D0,DMA
     }
 #undef FIXEDRATIONALENUM
   }
+#undef FIXEDRATIONALENUM
   //continue with the 'at runtime implementation'
   return rational<rationalPow::standard,rationalForm::standard>::init(D0,DMAX,R0,N,M);
 }
@@ -1197,6 +1199,10 @@ double SwitchingFunction::get_dmax2() const {
   return function->getData().dmax_2;
 }
 
+const switchContainers::Data& SwitchingFunction::get_data() const {
+  return function->getData();
+}
+
 void SwitchingFunctionAccelerable::registerKeywords( Keywords& keys ) {
   SwitchingFunction::registerKeywords(keys);
 }
@@ -1343,6 +1349,9 @@ double SwitchingFunctionAccelerable::get_dmax2() const {
   return switchData.dmax_2;
 }
 
+const switchContainers::Data& SwitchingFunctionAccelerable::get_data() const {
+  return switchData;
+}
 void SwitchingFunctionAccelerable::toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],type)
   switchData.toACCDevice();

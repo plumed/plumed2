@@ -1,0 +1,4 @@
+plumed_needs=libitensor
+plumed_modules=ttsketch
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro"

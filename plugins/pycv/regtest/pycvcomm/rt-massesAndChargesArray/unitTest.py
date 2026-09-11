@@ -28,10 +28,6 @@ def mypytest(action: PLMD.PythonCVInterface):
     ret = {}
     absoluteIndexes = action.absoluteIndexes()
     for i in range(action.nat):
-        ret[f"mass{i}"] = (
-            action.data["masses"][absoluteIndexes[i]] == masses[i]
-        )
-        ret[f"charge{i}"] = (
-            action.data["charges"][absoluteIndexes[i]] == charges[i]
-        )
+        ret[f"mass{i}"] = action.data["masses"][absoluteIndexes[i]] == masses[i]
+        ret[f"charge{i}"] = action.data["charges"][absoluteIndexes[i]] == charges[i]
     return ret

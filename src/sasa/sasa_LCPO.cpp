@@ -183,10 +183,10 @@ SASA_LCPO::SASA_LCPO(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   nopbc(false),
   DeltaGValues("absent"),
-  Ti(0),
   stride(10),
   nl_update(0),
-  firstStepFlag(0) {
+  firstStepFlag(0),
+  Ti(0) {
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);

@@ -1,0 +1,14 @@
+exclude = [
+  # excluding the examples in the manual
+ "user-doc",
+ # regtests - only in the main dir, so that pycv will get checked
+ "./regtest"
+]
+
+#unlike with clang-format I was promised that the formattation rules behaviour should not change between ruff versions
+line-length=88
+indent-width=4
+target-version="py310"
+
+[lint]
+ignore=[ "E741" ]

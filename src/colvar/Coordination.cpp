@@ -66,6 +66,10 @@ The following example instructs plumed to calculate the total coordination numbe
 COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
 ```
 
+```plumed
+COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLISTCELLS NL_CUTOFF=0.5 NL_STRIDE=80
+```
+
 The following is a dummy example which should compute the value 0 because the self interaction
 of atom 1 is skipped. Notice that in plumed 2.0 "self interactions" were not skipped, and the
 same calculation should return 1.

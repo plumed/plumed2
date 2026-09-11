@@ -129,7 +129,8 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
   if( keys.getDisplayName()=="GYRATION" ) {
     keys.setValueDescription("scalar","the radius that was computed from the weights");
-    keys.addActionNameSuffix("_FAST");
+    keys.addActionNameSuffix("_SCALAR");
+    keys.addActionNameSuffix("_VECTOR");
   } else if( keys.getDisplayName()=="GYRATION_TENSOR" ) {
     keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
   }
@@ -171,7 +172,13 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
       if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
         wt_str = "MASS_WEIGHTED";
       }
-      readInputLine( getShortcutLabel() + ": GYRATION_FAST " + wt_str + " " + convertInputLineToString() );
+      std::string inpt;
+      parseNumbered( "ATOMS", 1, inpt );
+      if( inpt.length()>0 ) {
+        readInputLine( getShortcutLabel() + ": GYRATION_VECTOR " + wt_str + " ATOMS1=" + inpt + " " +  convertInputLineToString() );
+      } else {
+        readInputLine( getShortcutLabel() + ": GYRATION_SCALAR " + wt_str + " " + convertInputLineToString() );
+      }
       return;
     }
   }

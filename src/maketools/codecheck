@@ -42,9 +42,13 @@ if [[ $do_modified = true ]]; then
            /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
   )
 elif [ $do_local == true ]; then
-  files="$(ls ./*.{h,cpp})"
+  # sadly *.{cpp,h,cu,cuh} brings errors if any combination is not present
+  files="$(find . -maxdepth 1 \( -name '*.h' -o -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' \))"
 else
-  files="$(ls ./*/*.{h,cpp})"
+  files="$(
+   ls ./*/*.{h,cpp}
+   ls ../plugins/*/src/*.{h,cpp,cu,cuh}
+  )"
 fi
 
 {
@@ -56,6 +60,10 @@ fi
       extra[${#extra[@]}]="${basedir}/configure.ac"
     fi
     if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+      #plumedcheck will call "cython" this check may give some problems if you use pyenv
+      if which cython &> /dev/null; then
+         extra[${#extra[@]}]="${basedir}/python/plumed.pyx"
+      fi
       extra[${#extra[@]}]=--global-check
     fi
     # shellcheck disable=SC2086
@@ -63,21 +71,70 @@ fi
       --astyle="${basedir}/astyle/astyle" \
       --astyle-options="${basedir}/.astyle.options" \
       "${extra[@]}" $files
+    if [[ $do_modified = false ]] && [[ $do_local == false ]]; then
+    (
+    # Addig an extra format check for python files.
+    # The settings are in the ruff.toml in the home directory
+    # ruff format outputs a list of "would reformat file" followed by a recap
+    # "head" discards the recap and awk reformat the error message
+      cd "${basedir}"
+      #this uses the same check in the base Makefile
+      if which ruff &>/dev/null; then
+        ruff format --check \
+          | grep 'Would reformat' \
+          | awk '{ printf "[%s:0] (error) :ruff_format: python ruff formatting non satisfied\n", $3 }' \
+            >&2
+        #human readable
+        ruff check --output-format concise \
+          | head -n -2 \
+          | awk '{ printf "[%s] (error) :ruff_check: %s", substr($1,1,length($1)-1), $2;
+                   $1=$2="";
+                   print $0 }' \
+            >&2
+        #machine readable
+        #ruff is "blazingly fast" and we have a few python files:
+        ruff check --output-format sarif -o src/ruff.sarif >&2 || true
+      else
+        #local error message
+        echo "      codecheck did not found ruff:"
+        echo '      if you want to check python code, please install "ruff" in a virtual environment'
+        echo '      suggestion: python -m venv plumedenv; source ./plumedenv/bin/activate; pip install "ruff==0.14.14"'
+      fi
+
+    )
+    fi
   fi
 
   if [ $do_cppcheck == true ]; then
     # we discard configurations introduced in small_vector because they are many and
     # get included in many files
-    # shellcheck disable=SC2086
-    cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
-      -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
-      -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
-      -U__PLUMED_HAS_ASMJIT \
-      -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-      --config-exclude=small_vector/ \
-      --template='[{file}:{line}] ({severity}) :{id}: {message}' \
-      --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
-      $files
+    function docheck(){
+      # With cppcheck 2.16.1 and later you can get a report already in sarif format and put it on the CI alongside the old style of output
+      # setting up a function to not repeat the arguments
+      # shellcheck disable=SC2086
+      cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
+        -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
+        -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
+        -U__PLUMED_HAS_ASMJIT \
+        -U__PLUMED_HAS_KENREF \
+        -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
+        --config-exclude=small_vector/ \
+        -i vesin.cpp \
+        --template='[{file}:{line}] ({severity}) :{id}: {message}' \
+        --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
+	"$@"
+    }
+    srcfiles=$(grep -E -v -s '/plugins/'  <<< "$files" || true)
+    if [[ -n $srcfiles ]];then
+     # shellcheck disable=SC2086
+      docheck $srcfiles
+    fi
+    pluginfiles=$(grep -E  '/plugins/'  <<< "$files" || true)
+    if [[ -n $pluginfiles ]];then
+      # this will work only if plumed is configured
+      # shellcheck disable=SC2086
+      docheck  -I "${basedir}/src/include/" $pluginfiles
+    fi
     #You coud add -I ${basedir}/src/ but that will not check if the correct
     # requisite modules are set in the module configuration file
   fi
@@ -160,7 +217,31 @@ echo "      excluding (style) and (information)"
 echo
 cat "${FATAL_FILE}"
 echo
+if grep -q 'ruff_' "${FATAL_FILE}"; then
+  # info message that can be useful for user that has simply seen the error message in the CI
+  echo "      codecheck found errors in the python code:"
+  echo '      if you want to check python code, please install "ruff" in a virtual environment'
+  echo '      suggestion: python -m venv plumedenv; source ./plumedenv/bin/activate; pip install "ruff==0.14.14"'
+  echo '                  python -m ruff format; python -m ruff check'
+  echo
+fi
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
+
+#just a small check to see if python is there
+if [[ $do_local == false ]] && python --version &>/dev/null; then
+# --------------------------------------------------------------------
+#   This converst $FATAL_FILE to the sarif format,
+#   so that it can be integrated with the codeQL stuff in the CI
+#   SARIF is a fancy json with some specific fields
+#
+#   As now this converts only things in this form:
+#   [{file}:{line}] ({severity}) :{id}: {message}
+#   As now the errors in the format:
+#   [global_check] ({severity}) :{id}: {message}
+#   are ignored
+
+  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
+fi
 
 exit 1

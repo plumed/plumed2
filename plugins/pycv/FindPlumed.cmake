@@ -66,10 +66,10 @@ if(NOT Plumed_FOUND)
             endif()
           endforeach()
         endif()
-        if(${_line} MATCHES ".*-fopenmp.*")
-          set(Plumed_HAS_MPI
+        if(${_line} MATCHES ".*-[fq]openmp.*")
+          set(Plumed_HAS_OPENMP
               1
-              CACHE INTERNAL "plumed has MPI")
+              CACHE INTERNAL "plumed has OpenMP")
         endif()
       endforeach()
 

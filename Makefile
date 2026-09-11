@@ -32,7 +32,7 @@ all_plus_docs:
 lib:
 	$(MAKE)	-C src
 
-install:
+install: all
 	$(MAKE) -C src install
 
 uninstall:
@@ -140,6 +140,8 @@ config.status: configure
 astyle:
 	$(MAKE) -C astyle
 	$(MAKE) -C src astyle
+	$(MAKE) -C plugins astyle
+	@which ruff &> /dev/null && ./pythonformatter.sh || echo "ruff not found, cannot format python files"
 
 ifeq ($(use_debug_glibcxx),yes)
 nmcheck:

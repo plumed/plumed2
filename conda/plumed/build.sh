@@ -33,7 +33,7 @@ export LIBS="-lfftw3 -lgsl -lgslcblas -llapack -lblas -lz $LIBS"
 # --disable-libsearch forces to link only explicitely requested libraries
 # --disable-static-patch avoid tests that are only required for static patches
 # --disable-static-archive makes package smaller
-# --disable-basic-warnings deactivet the warning, compiling with the current compiler version (today is 28/10/2025) shows some false positives in ActionPilot
+# --disable-basic-warnings deactive the warning, compiling with the current compiler version (today is 28/10/2025) shows some false positives in ActionPilot
 ./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings
 
 make -j${CPU_COUNT}

@@ -38,14 +38,16 @@ datadir=@datadir@
 docdir=@docdir@
 htmldir=@htmldir@
 python_bin=@PYTHON_BIN@
-plumed_found_cython=@CYTHON_FOUND@
-canPyCV=@PLUMED_CAN_PYCV@
-pybind11_cflags=@PYBIND11_CFLAGS@
-python_cf_embedded=@PYTHON_CFLAGS@
-python_ld_embedded=@PYTHON_LDFLAGS@
+plumed_found_python_build=@PYTHON_BUILD_FOUND@
 mpiexec=@MPIEXEC@
 make_static_archive=@make_static_archive@
 use_absolute_soname=@use_absolute_soname@
 use_loader_path=@use_loader_path@
 use_debug_glibcxx=@use_debug_glibcxx@
 BASH_COMPLETION_DIR=@BASH_COMPLETION_DIR@
+HAVE_KENREF=@HAVE_KENREF@
+KENREF_INCLUDE=@KENREF_INCLUDE@
+KENREF_LIBS=@KENREF_LIBS@
+# kenref module COMPILE includes, resolved at configure time (pkg-config --cflags kenref_plumed) so the
+# module Makefile does not re-run pkg-config at parse time. Read by src/kenref/Makefile.
+KENREF_PLUMED_CPPFLAGS=@KENREF_PLUMED_INCLUDE@

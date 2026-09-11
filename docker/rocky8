@@ -24,13 +24,8 @@ RUN PYVERSION="3.9.16" \
  && make install \
  && echo "export LD_LIBRARY_PATH=$HOME/.local/lib/${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}" >> "$HOME/.bashrc"
 
-RUN . ./.bashrc \                
- && pip3 install --user -U pip \
- && pip3 install --user pillow \
- && pip3 install --user Cython \
- && pip3 install --user pandas \
- && pip3 install --user mdtraj     \
- && pip3 install --user MDAnalysis
+RUN . ./.bashrc \
+ && pip3 install --user -U pip
 
 # import plumed code.
 # assumes a file plumed2.tgz is present in the Dockerfile directory
@@ -53,6 +48,8 @@ RUN . ./.bashrc \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
  && export PYTHON_BIN=python3 \
+ && pip3 install --user -r ./python/requirements_build.txt \
+ && pip3 install --user -r ./python/requirements_run.txt \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check

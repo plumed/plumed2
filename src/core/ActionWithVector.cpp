@@ -205,6 +205,33 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   }
 }
 
+void ActionWithVector::getInputData( std::vector<float>& inputdata ) const {
+  plumed_dbg_assert( getNumberOfAtoms()==0 );
+  unsigned nargs = getNumberOfArguments();
+  int nmasks=getNumberOfMasks();
+  if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+
+  std::size_t total_args = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    total_args += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
+
+  if( inputdata.size()!=total_args ) {
+    inputdata.resize( total_args );
+  }
+
+  total_args = 0;
+  for(unsigned i=0; i<nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
+      inputdata[total_args] = myarg->get(j,false);
+      total_args++;
+    }
+  }
+}
+
 void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
@@ -216,7 +243,29 @@ void ActionWithVector::transferStashToValues( const std::vector<unsigned>& parti
   }
 }
 
+void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) {
+  unsigned ntask = partialTaskList.size();
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    Value* myval = copyOutput(i);
+    for(unsigned j=0; j<ntask; ++j) {
+      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
+    }
+  }
+}
+
 void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
+  unsigned ntask = partialTaskList.size();
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    auto myval = getConstPntrToComponent(i);
+    for(unsigned j=0; j<ntask; ++j) {
+      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
+    }
+  }
+}
+
+void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const {
   unsigned ntask = partialTaskList.size();
   unsigned ncomponents = getNumberOfComponents();
   for(unsigned i=0; i<ncomponents; ++i) {

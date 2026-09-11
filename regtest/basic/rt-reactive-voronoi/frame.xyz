@@ -1,0 +1,12 @@
+4
+asymmetric two-center soft assignment; coordinates in angstrom
+O 0.0 0.0 0.0
+O 2.0 0.0 0.0
+H 0.4 0.0 0.0
+H 1.2 0.0 0.0
+4
+symmetric neutral frame at the POWER=2 sign boundary; coordinates in angstrom
+O 0.0 0.0 0.0
+O 2.0 0.0 0.0
+H 0.4 0.0 0.0
+H 1.6 0.0 0.0

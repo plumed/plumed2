@@ -242,16 +242,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     parse("VALUE",valuestr);
     std::string tstyle, filen;
     parse("FILE",filen);
-    if( filen.length()>0 ) {
-      std::size_t dot=filen.find_first_of(".");
-      if( dot!=std::string::npos ) {
-        tstyle=filen.substr(dot+1);
-      }
-      if( tstyle!="grid" ) {
-        error("can only read in grids using read value in setup");
-      }
-      log.printf("  reading function %s on grid from file %s \n", valuestr.c_str(), filen.c_str() );
-    }
+    log.printf("  reading function %s on grid from file %s \n", valuestr.c_str(), filen.c_str() );
     IFile ifile;
     ifile.open(filen);
     if( !ifile.FieldExist( valuestr ) ) {

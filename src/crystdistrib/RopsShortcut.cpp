@@ -159,7 +159,7 @@ RopsShortcut::RopsShortcut(const ActionOptions&ao):
   Tools::convert( cutoff, cutstr );
   // Setup the contact matrix
 //  std::string switchstr; parse("SWITCH",switchstr);
-  readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr);
+  readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " LINKCELL_CUTOFF=" + cutstr);
 
   if( specA.length()==0 ) {
     std::string quatstr;

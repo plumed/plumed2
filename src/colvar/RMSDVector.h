@@ -42,6 +42,8 @@ class RMSDVector : public ActionWithVector {
 public:
   using input_type = RMSDVectorData;
   using PTM = ParallelTaskManager<RMSDVector>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
   bool norm_weights;

@@ -5,19 +5,25 @@ set -x
 
 cd "$(mktemp -dt plumed.XXXXXX)"
 
-git clone https://github.com/doxygen/doxygen.git
+repo="https://github.com/doxygen/doxygen.git"
 
-cd doxygen
-
-if [ -n "$1" ] ; then
-  echo "installing doxygen $version"
+if [ -n "$1" ]; then
   version=$1
+  echo "installing doxigen $version"
 else
-  echo "installing latest doxygen"
-  version=$(git tag | tail -n 1)
+  # getting the latest version without downloading the repo
+  version=$(
+    git -c 'versionsort.suffix=-' \
+      ls-remote --exit-code --refs --sort='version:refname' --tags "$repo" 'Release_*_*_*' \
+      | tail --lines=1 \
+      | cut --delimiter='/' --fields=3
+  )
+  echo "installing latest doxigen ($version)"
 fi
 
-git checkout $version
+#cloning ONLY the code we need
+git clone "$repo" --branch "$version" --depth 1
+cd doxygen
 
 mkdir build
 cd build
@@ -26,4 +32,3 @@ make -j 4
 make install
 
 cd ../
-

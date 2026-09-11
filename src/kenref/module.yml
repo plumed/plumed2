@@ -1,0 +1,8 @@
+name: kenref
+authors: Amr Alhossary and Colin Smith
+description: kinetic ensemble refinement of a replica ensemble against NMR observables
+dois:
+  - 10.1021/acs.jpcb.5c08554
+  - 10.1007/s10858-019-00288-8
+tags:
+  KENREF: bias that restrains an ensemble of replicas against NMR relaxation observables

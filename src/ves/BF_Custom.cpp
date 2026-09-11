@@ -243,14 +243,14 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
   if(transf_str.size()>0) {
     do_transf_ = true;
     addKeywordToList("TRANSFORM",transf_str);
-    for(unsigned int k=0;; k++) {
+    while(true) {
       if(transf_str.find("min")!=std::string::npos) {
         transf_str.replace(transf_str.find("min"), std::string("min").length(),intervalMinStr());
       } else {
         break;
       }
     }
-    for(unsigned int k=0;; k++) {
+    while(true) {
       if(transf_str.find("max")!=std::string::npos) {
         transf_str.replace(transf_str.find("max"), std::string("max").length(),intervalMaxStr());
       } else {

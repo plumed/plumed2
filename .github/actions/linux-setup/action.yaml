@@ -1,0 +1,115 @@
+name: 'Prepare linux environment'
+description: 'Set up the linux environment for plumed'
+inputs:
+  pytest-make:
+    descriptions: 'set to yes for exporting PYTHONPATH to be used in the tests'
+    required: false
+    default: false
+    type: boolean
+  export-kernel:
+    descriptions: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
+    required: false
+    default: false
+    type: boolean
+  mpi:
+    description: 'setup the mpi library and environmental variables'
+    required: false
+    default: false
+    type: boolean
+  ccache:
+    description: 'setup ccache and the environmentalvariable to use che chache action with the ~/.ccache directory'
+    required: false
+    default: false
+    type: boolean
+  boost-debug:
+    description: 'install boost libraries in debug mode'
+    required: false
+    default: false
+    type: boolean
+runs:
+  using: "composite"
+  steps:
+    # the boolean are evaluated to string... -> the various "=='true'"
+    - name: Remove unused stuff
+      run: |
+        echo "Making some space"
+        df -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        df -h
+      shell: bash
+
+    - name: Install generic packages
+      run: |
+        echo "Install generic packages"
+        sudo apt-get update -qq
+        sudo apt-get install -y libatlas-base-dev
+        sudo apt-get install -y libfftw3-dev
+        sudo apt-get install -y gsl-bin
+        sudo apt-get install -y libgsl0-dev
+      shell: bash
+
+    - name: Install boost
+      if: ${{ inputs.boost-debug != 'true' }}
+      run: |
+        echo "Install boost"
+        sudo apt-get install -y libboost-serialization-dev
+      shell: bash
+
+    - name: Install boost in debug mode
+      if: ${{ inputs.boost-debug == 'true' }}
+      run: |
+        echo "Install boost in debug mode"
+        ${{ github.action_path }}/install.boost
+      shell: bash
+
+    - name: Set paths for the installed plumed
+      run: |
+        echo "Setting up the basig enviroment variables for running plumed installed with --prefix=\"\$HOME/opt\""
+        #accessing installed plumed
+        echo "$HOME/opt/bin" >> $GITHUB_PATH
+        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Set paths for python tests
+      if: ${{ inputs.pytest-make  == 'true' }}
+      run: |
+        echo "Preparing some variables for pytest"
+        # path required for pytest:
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Export PLUMED_KERNEL
+      if: ${{ inputs.export-kernel  == 'true' }}
+      run: |
+        echo "Setting up PLUMED_KERNEL"
+        echo "PLUMED_KERNEL=$HOME/opt/lib/libplumedKernel.so" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Prepare the environment with for mpi
+      if: ${{ inputs.mpi  == 'true' }}
+      run: |
+        echo "Setup opempi"
+        sudo apt-get install -y libopenmpi-dev openmpi-bin
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
+        echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
+        echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Prepare the enviroment with for ccache
+      if: ${{ inputs.ccache  == 'true' }}
+      run: |
+        echo "Setup ccache"
+        sudo apt-get install -y ccache
+        #forcing the legacy directory for ccache
+        echo "CCACHE_DIR=$HOME/.ccache/" >> $GITHUB_ENV
+      shell: bash

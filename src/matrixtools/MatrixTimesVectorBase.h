@@ -28,11 +28,19 @@
 namespace PLMD {
 namespace matrixtools {
 
+namespace helpers {
+///true if T has a public declared "isRowSum" type
+template <typename T, typename=void>
+constexpr bool isRowSum=false;
+template <typename T>
+constexpr bool isRowSum<T,std::void_t<typename T::isRowSum>> =true;
+}
+
 class MatrixTimesVectorData {
 public:
   std::size_t fshift;
   Matrix<std::size_t> pairs;
-#ifdef __PLUMED_USE_OPENACC
+#ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],fshift)
     pairs.toACCDevice();
@@ -41,13 +49,15 @@ public:
     pairs.removeFromACCDevice();
 #pragma acc exit data delete(fshift,this[0:1])
   }
-#endif //__PLUMED_USE_OPENACC
+#endif //__PLUMED_HAS_OPENACC
 };
 
 class MatrixForceIndexInput {
 public:
   std::size_t rowlen;
   View<const std::size_t> indices;
+//temporary template for compilation
+  template <typename ParallelActionsInput>
   MatrixForceIndexInput( std::size_t task_index,
                          std::size_t ipair,
                          const MatrixTimesVectorData& actiondata,
@@ -59,18 +69,20 @@ public:
             rowlen) {}
 };
 
-class MatrixTimesVectorInput {
-public:
+template <typename precision>
+struct MatrixTimesVectorInput {
   bool noderiv;
   std::size_t rowlen;
   View<const std::size_t> indices;
-  View<const double> matrow;
-  View<const double> vector;
+  View<const precision> matrow;
+  View<const precision> vector;
+//temporary template for compilation
+  template <typename ParallelActionsInput>
   MatrixTimesVectorInput( std::size_t task_index,
                           std::size_t ipair,
                           const MatrixTimesVectorData& actiondata,
                           const ParallelActionsInput& input,
-                          double* argdata ):
+                          precision* argdata ):
     noderiv(input.noderiv),
     rowlen(input.bookeeping[input.bookstarts[actiondata.pairs[ipair][0]]
                             + (1+input.ncols[actiondata.pairs[ipair][0]])*task_index]),
@@ -82,12 +94,15 @@ public:
   }
 };
 
+template <typename precision>
 class MatrixTimesVectorOutput {
 public:
   std::size_t rowlen;
-  View<double,1> values;
-  View<double> matrow_deriv;
-  View<double> vector_deriv;
+  View<precision,1> values;
+  View<precision> matrow_deriv;
+  View<precision> vector_deriv;
+//temporary template for compilation
+  template <typename ParallelActionsInput, typename ParallelActionsOutput>
   MatrixTimesVectorOutput( std::size_t task_index,
                            std::size_t ipair,
                            std::size_t nder,
@@ -102,11 +117,15 @@ public:
   }
 };
 
-template <class T>
+template <class CV, typename myPTM=defaultPTM>
 class MatrixTimesVectorBase : public ActionWithVector {
 public:
   using input_type = MatrixTimesVectorData;
-  using PTM = ParallelTaskManager<MatrixTimesVectorBase<T>>;
+  typedef cvprecision_t<CV> precision;
+  typedef MatrixTimesVectorBase<CV,myPTM> mytype;
+  using PTM = typename myPTM::template PTM<mytype>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -138,8 +157,8 @@ public:
                                ForceIndexHolder force_indices );
 };
 
-template <class T>
-void MatrixTimesVectorBase<T>::registerKeywords( Keywords& keys ) {
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords(keys);
   keys.setDisplayName("MATRIX_VECTOR_PRODUCT");
   registerLocalKeywords( keys );
@@ -147,8 +166,8 @@ void MatrixTimesVectorBase<T>::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::registerLocalKeywords( Keywords& keys ) {
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::registerLocalKeywords( Keywords& keys ) {
   PTM::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","matrix/vector/scalar","the label for the matrix and the vector/scalar that are being multiplied.  Alternatively, you can provide labels for multiple matrices and a single vector or labels for a single matrix and multiple vectors. In these cases multiple matrix vector products will be computed.");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
@@ -156,8 +175,8 @@ void MatrixTimesVectorBase<T>::registerLocalKeywords( Keywords& keys ) {
   ActionWithValue::useCustomisableComponents(keys);
 }
 
-template <class T>
-std::string MatrixTimesVectorBase<T>::getOutputComponentDescription( const std::string& cname,
+template <class CV, typename myPTM>
+std::string MatrixTimesVectorBase<CV, myPTM>::getOutputComponentDescription( const std::string& cname,
     const Keywords& keys ) const {
   if( getPntrToArgument(1)->getRank()==1 ) {
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
@@ -175,8 +194,8 @@ std::string MatrixTimesVectorBase<T>::getOutputComponentDescription( const std::
   return "";
 }
 
-template <class T>
-MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
+template <class CV, typename myPTM>
+MatrixTimesVectorBase<CV, myPTM>::MatrixTimesVectorBase(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this) {
@@ -251,8 +270,8 @@ MatrixTimesVectorBase<T>::MatrixTimesVectorBase(const ActionOptions&ao):
   taskmanager.setActionInput( input );
 }
 
-template <class T>
-unsigned MatrixTimesVectorBase<T>::getNumberOfDerivatives() {
+template <class CV, typename myPTM>
+unsigned MatrixTimesVectorBase<CV, myPTM>::getNumberOfDerivatives() {
   unsigned nderivatives=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     nderivatives += getPntrToArgument(i)->getNumberOfStoredValues();
@@ -260,8 +279,8 @@ unsigned MatrixTimesVectorBase<T>::getNumberOfDerivatives() {
   return nderivatives;
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::prepare() {
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::prepare() {
   ActionWithVector::prepare();
   Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) {
@@ -272,15 +291,16 @@ void MatrixTimesVectorBase<T>::prepare() {
   myval->setShape(shape);
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::calculate() {
-  std::size_t nvectors, nder = getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::calculate() {
+  std::size_t nder = getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
+  std::size_t nvectors;
   if( getPntrToArgument(1)->getRank()==2 ) {
     nvectors = 1;
   } else {
     nvectors = getNumberOfArguments()-1;
   }
-  if( getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
+  if constexpr ( helpers::isRowSum<CV>) { //getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
     taskmanager.setupParallelTaskManager( nder, 0 );
   } else {
     taskmanager.setupParallelTaskManager( 2*nder, nvectors*nder );
@@ -288,8 +308,8 @@ void MatrixTimesVectorBase<T>::calculate() {
   taskmanager.runAllTasks();
 }
 
-template <class T>
-int MatrixTimesVectorBase<T>::checkTaskIsActive( const unsigned& itask ) const {
+template <class CV, typename myPTM>
+int MatrixTimesVectorBase<CV, myPTM>::checkTaskIsActive( const unsigned& itask ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
     if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
@@ -305,40 +325,40 @@ int MatrixTimesVectorBase<T>::checkTaskIsActive( const unsigned& itask ) const {
   return 0;
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::performTask( std::size_t task_index,
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::performTask( std::size_t task_index,
     const MatrixTimesVectorData& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
   for(unsigned i=0; i<actiondata.pairs.nrows(); ++i) {
-    MatrixTimesVectorOutput doutput( task_index,
-                                     i,
-                                     input.nderivatives_per_scalar,
-                                     actiondata,
-                                     input,
-                                     output );
-    T::performTask( MatrixTimesVectorInput( task_index,
-                                            i,
-                                            actiondata,
-                                            input,
-                                            input.inputdata ),
-                    doutput );
+    MatrixTimesVectorOutput<precision> doutput( task_index,
+        i,
+        input.nderivatives_per_scalar,
+        actiondata,
+        input,
+        output );
+    CV::performTask( MatrixTimesVectorInput<precision>( task_index,
+                     i,
+                     actiondata,
+                     input,
+                     input.inputdata ),
+                     doutput );
   }
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-int MatrixTimesVectorBase<T>::getNumberOfValuesPerTask( std::size_t task_index,
+template <class CV, typename myPTM>
+int MatrixTimesVectorBase<CV, myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const MatrixTimesVectorData& actiondata ) {
   return 1;
 }
 
-template <class T>
-void MatrixTimesVectorBase<T>::getForceIndices( std::size_t task_index,
+template <class CV, typename myPTM>
+void MatrixTimesVectorBase<CV, myPTM>::getForceIndices( std::size_t task_index,
     std::size_t colno,
     std::size_t ntotal_force,
     const MatrixTimesVectorData& actiondata,
@@ -353,13 +373,61 @@ void MatrixTimesVectorBase<T>::getForceIndices( std::size_t task_index,
       force_indices.indices[i][j] = base + j;
     }
     force_indices.threadsafe_derivatives_end[i] = n;
-    force_indices.tot_indices[i] = T::getAdditionalIndices( n,
+    force_indices.tot_indices[i] = CV::getAdditionalIndices( n,
                                    input.argstarts[actiondata.pairs[i][1]],
                                    MatrixForceIndexInput( task_index, i, actiondata, input ),
                                    force_indices.indices[i] );
   }
 }
 
+template <typename T>
+struct MatrixTimesVectorRowSums {
+  typedef void isRowSums;
+  typedef T precision;
+  static void performTask( const MatrixTimesVectorInput<T>& input,
+                           MatrixTimesVectorOutput<T>& output ) {
+    for(unsigned i=0; i<input.rowlen; ++i) {
+      output.values[0] += input.matrow[i];
+      if( input.noderiv ) {
+        continue;
+      }
+      output.matrow_deriv[i] = 1;
+    }
+  }
+  static std::size_t getAdditionalIndices( std::size_t n,
+      std::size_t vecstart,
+      const MatrixForceIndexInput& fin,
+      View<std::size_t> indices ) {
+    return n;
+  }
+};
+
+
+template <typename T>
+struct MatrixTimesVectorProper {
+  typedef T precision;
+  static void performTask( const MatrixTimesVectorInput<T>& input,
+                           MatrixTimesVectorOutput<T>& output ) {
+    for(unsigned i=0; i<input.rowlen; ++i) {
+      std::size_t ind = input.indices[i];
+      output.values[0] += input.matrow[i]*input.vector[ind];
+      if( input.noderiv ) {
+        continue;
+      }
+      output.matrow_deriv[i] = input.vector[ind];
+      output.vector_deriv[i] = input.matrow[i];
+    }
+  }
+  static std::size_t getAdditionalIndices( std::size_t n,
+      std::size_t vecstart,
+      const MatrixForceIndexInput& fin,
+      View<std::size_t> indices ) {
+    for(unsigned i=0; i<fin.rowlen; ++i) {
+      indices[n+i] = vecstart + fin.indices[i];
+    }
+    return n + fin.rowlen;
+  }
+};
 }
 }
 #endif

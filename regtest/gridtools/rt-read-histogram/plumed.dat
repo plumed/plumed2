@@ -1,0 +1,6 @@
+# We use natural units here so that kBT is set to 1
+UNITS NATURAL
+data: READ FILE=colvar_in VALUES=rand
+hhh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=-4.5 GRID_MAX=4.5 GRID_BIN=100 KERNEL=DISCRETE
+fes: CONVERT_TO_FES ARG=hhh TEMP=1
+DUMPGRID ARG=fes FILE=fes.dat FMT=%8.4f

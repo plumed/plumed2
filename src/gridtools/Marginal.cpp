@@ -142,6 +142,8 @@ class Marginal : public ActionWithGrid {
 public:
   using input_type = MarginalInput;
   using PTM = ParallelTaskManager<Marginal>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
 /// The parallel task manager

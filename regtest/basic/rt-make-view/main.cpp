@@ -3,6 +3,8 @@
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/tools/View.h"
 
+#include "testUtils.h"
+
 #include <numeric>
 #include <fstream>
 #include <array>
@@ -14,24 +16,6 @@
 using PLMD::View;
 
 #define displaycall(x) #x << " = " << (x)
-///A very barebone tee implementation
-class tee {
-  std::ofstream ofs;
-public:
-  tee(std::string filename) : ofs(filename) {}
-  template<typename T>
-  tee& operator<<(const T& t) {
-    ofs<<t;
-    std::cout <<t;
-    return *this;
-  }
-  template<typename Iterable>
-  tee&  dump(const Iterable& v) {
-    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(ofs," "));
-    std::copy(v.begin(),v.end(),std::ostream_iterator<double>(std::cout," "));
-    return *this;
-  }
-};
 
 void basics(tee& out);
 void nonspanlikeInteractions(tee& out);

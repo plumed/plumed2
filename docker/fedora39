@@ -9,11 +9,7 @@ RUN yum -y update \
  && yum -y install environment-modules gawk vim wget \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
                    python3 python3-devel python3-pip \
- && dnf -y downgrade libfabric-1.18.1-3.fc39 \
- && pip3 install numpy \
- && pip3 install cython numpy pandas \
- && pip3 install MDAnalysis \
- && pip3 install mdtraj
+ && dnf -y downgrade libfabric-1.18.1-3.fc39 
 
 RUN useradd -ms /bin/bash plumed
 USER plumed
@@ -40,6 +36,8 @@ RUN . /etc/bashrc \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
  && export PYTHON_BIN=python3 \
+ && pip3 install --user -r ./python/requirements_build.txt \
+ && pip3 install --user -r ./python/requirements_run.txt \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check

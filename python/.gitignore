@@ -1,12 +1,6 @@
-/*
-# in this directory, only accept source, Makefile and README
-!/.gitignore
-!/*.pxd
-!/*.py
-!/*.pyx
-!/Makefile
-!/README
-!/module.type
-!/test
-!/MANIFEST.in
-!/README.rst
+build/
+pypi/
+*.so
+dist/
+plumed.egg-info/
+PLUMED_VERSION

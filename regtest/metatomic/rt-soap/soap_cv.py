@@ -44,11 +44,11 @@ class SOAP_CV(torch.nn.Module):
         outputs: Dict[str, ModelOutput],
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
-        if "features" not in outputs:
+        if "feature" not in outputs:
             return {}
 
-        if not outputs["features"].per_atom:
-            raise ValueError("per_atom=False is not supported")
+        if outputs["feature"].sample_kind != "atom":
+            raise ValueError("only per-atom output is supported")
 
         if len(systems[0]) == 0:
             # PLUMED is trying to determine the size of the output
@@ -75,7 +75,7 @@ class SOAP_CV(torch.nn.Module):
             blocks=[block],
         )
 
-        return {"features": cv}
+        return {"feature": cv}
 
 
 cv = SOAP_CV(species=[1, 6, 7, 8])
@@ -83,7 +83,7 @@ cv.eval()
 
 
 capabilities = ModelCapabilities(
-    outputs={"features": ModelOutput(per_atom=True)},
+    outputs={"feature": ModelOutput(sample_kind="atom")},
     interaction_range=4.0,
     supported_devices=["cpu"],
     length_unit="nm",

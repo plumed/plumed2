@@ -1,0 +1,15 @@
+LOAD FILE=../../../../plumedOpenACC.so
+c1: CONTACT_MATRIX ...
+ GROUPA=1-3
+ GROUPB=1-512
+ SWITCH={EXP D_0=4 R_0=0.5 D_MAX=6}
+ USEGPU
+...
+
+PRINT ARG=c1 FILE=cmcolvar FMT=%8.4f
+
+ones: ONES SIZE=512
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones 
+mts: SUM ARG=cc PERIODIC=NO
+PRINT ARG=mts FILE=fcolvar FMT=%8.5f
+BIASVALUE ARG=mts

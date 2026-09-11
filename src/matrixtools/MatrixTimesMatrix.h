@@ -28,11 +28,18 @@
 namespace PLMD {
 namespace matrixtools {
 
-template <class T>
+namespace helpers {
+template <typename T, typename=void>
+constexpr bool isDissimilarities=false;
+template <typename T>
+constexpr bool isDissimilarities<T,std::void_t<typename T::isDissimilarities>> =true;
+}
+
+template <typename T>
 struct MatrixTimesMatrixInput {
   T funcinput;
   RequiredMatrixElements outmat;
-#ifdef __PLUMED_USE_OPENACC
+#ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     funcinput.toACCDevice();
@@ -43,7 +50,7 @@ struct MatrixTimesMatrixInput {
     outmat.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_USE_OPENACC
+#endif //__PLUMED_HAS_OPENACC
 };
 
 class InputVectors {
@@ -54,11 +61,15 @@ public:
   InputVectors( std::size_t n,  double* b ) : nelem(n), arg1(b,n), arg2(b+n,n) {}
 };
 
-template <class T>
+template <class CV, typename myPTM=defaultPTM>
 class MatrixTimesMatrix : public ActionWithMatrix {
 public:
-  using input_type = MatrixTimesMatrixInput<T>;
-  using PTM = ParallelTaskManager<MatrixTimesMatrix<T>>;
+  using input_type = MatrixTimesMatrixInput<CV>;
+  using mytype = MatrixTimesMatrix<CV, myPTM>;
+  using PTM = typename myPTM::template PTM<mytype>;
+  typedef typename PTM::ParallelActionsInput ParallelActionsInput;
+  typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
+  constexpr static bool isDissimilarities=helpers::isDissimilarities<CV>;
 private:
   PTM taskmanager;
 public:
@@ -68,25 +79,34 @@ public:
   unsigned getNumberOfDerivatives() override;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  static void performTask( std::size_t task_index, const MatrixTimesMatrixInput<T>& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
-  static int getNumberOfValuesPerTask( std::size_t task_index, const MatrixTimesMatrixInput<T>& actiondata );
-  static void getForceIndices( std::size_t task_index, std::size_t colno, std::size_t ntotal_force, const MatrixTimesMatrixInput<T>& actiondata, const ParallelActionsInput& input, ForceIndexHolder force_indices );
+  static void performTask( std::size_t task_index,
+                           const input_type& actiondata,
+                           ParallelActionsInput& input,
+                           ParallelActionsOutput& output );
+  static int getNumberOfValuesPerTask( std::size_t task_index,
+                                       const input_type& actiondata );
+  static void getForceIndices( std::size_t task_index,
+                               std::size_t colno,
+                               std::size_t ntotal_force,
+                               const input_type& actiondata,
+                               const ParallelActionsInput& input,
+                               ForceIndexHolder force_indices );
 };
 
-template <class T>
-void MatrixTimesMatrix<T>::registerKeywords( Keywords& keys ) {
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys);
   keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.addInputKeyword("compulsory","ARG","matrix","the label of the two matrices from which the product is calculated");
-  if( keys.getDisplayName()=="MATRIX_PRODUCT" ) {
-    keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
-  }
-  T::registerKeywords( keys );
+  //if( keys.getDisplayName()=="MATRIX_PRODUCT" ) {
+  //  keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
+  //}
+  CV::registerKeywords( keys );
   PTM::registerKeywords( keys );
 }
 
-template <class T>
-MatrixTimesMatrix<T>::MatrixTimesMatrix(const ActionOptions&ao):
+template <class CV, typename myPTM>
+MatrixTimesMatrix<CV, myPTM>::MatrixTimesMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao),
   taskmanager(this) {
@@ -112,7 +132,7 @@ MatrixTimesMatrix<T>::MatrixTimesMatrix(const ActionOptions&ao):
   addValue( shape );
   setNotPeriodic();
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
-  if( getName()!="DISSIMILARITIES" && getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() && getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) {
+  if( !isDissimilarities && getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() && getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) {
     getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   }
 
@@ -125,18 +145,18 @@ MatrixTimesMatrix<T>::MatrixTimesMatrix(const ActionOptions&ao):
       error("argument passed to MASK keyword has the wrong shape");
     }
   }
-  MatrixTimesMatrixInput<T> actdata;
+  input_type actdata;
   actdata.funcinput.setup( this, getPntrToArgument(0) );
   taskmanager.setActionInput( actdata );
 }
 
-template <class T>
-unsigned MatrixTimesMatrix<T>::getNumberOfDerivatives() {
+template <class CV, typename myPTM>
+unsigned MatrixTimesMatrix<CV, myPTM>::getNumberOfDerivatives() {
   return getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(1)->getNumberOfStoredValues();
 }
 
-template <class T>
-void MatrixTimesMatrix<T>::prepare() {
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::prepare() {
   ActionWithVector::prepare();
   Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[1] ) {
@@ -149,35 +169,37 @@ void MatrixTimesMatrix<T>::prepare() {
   myval->reshapeMatrixStore( shape[1] );
 }
 
-template <class T>
-void MatrixTimesMatrix<T>::calculate() {
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::calculate() {
   if( !getPntrToComponent(0)->isDerivativeZeroWhenValueIsZero() ) {
     if( getPntrToArgument(0)->getNumberOfColumns()<getPntrToArgument(0)->getShape()[1] ) {
       if( !doNotCalculateDerivatives() ) {
         error("cannot calculate derivatives for this action with sparse matrices");
-      } else if( getName()=="DISSIMILARITIES" ) {
+      } else if(isDissimilarities ) {
         error("cannot calculate dissimilarities for sparse matrices");
       }
     }
     if( getPntrToArgument(1)->getNumberOfColumns()<getPntrToArgument(1)->getShape()[1] ) {
       if( !doNotCalculateDerivatives() ) {
         error("cannot calculate derivatives for this action with sparse matrices");
-      } else if( getName()=="DISSIMILARITIES" ) {
+      } else if( isDissimilarities ) {
         error("cannot calculate dissimilarities for sparse matrices");
       }
     }
   }
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(), getPntrToArgument(1)->getNumberOfStoredValues() );
+  //unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
+  taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(),
+                                        getPntrToArgument(1)->getNumberOfStoredValues() );
   taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
   taskmanager.runAllTasks();
 }
 
-template <class T>
-void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
-                                        const MatrixTimesMatrixInput<T>& actiondata,
-                                        ParallelActionsInput& input,
-                                        ParallelActionsOutput& output ) {
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
+    const input_type& actiondata,
+    ParallelActionsInput& input,
+    ParallelActionsOutput& output ) {
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
   std::size_t fpos = task_index*(1+arg0.ncols);
@@ -216,7 +238,7 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
         }
       }
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
-      T::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+      CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
       for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
         elem.derivs[0][ii] = 0;
       }
@@ -236,28 +258,28 @@ void MatrixTimesMatrix<T>::performTask( std::size_t task_index,
         vectors.arg2[j] = input.inputdata[ base + arg1.ncols*arg0.bookeeping[fpos+1+j] ];
       }
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
-      T::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+      CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
     }
   }
 }
 
-template <class T>
-void MatrixTimesMatrix<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class T>
-int MatrixTimesMatrix<T>::getNumberOfValuesPerTask( std::size_t task_index,
-    const MatrixTimesMatrixInput<T>& actiondata ) {
+template <class CV, typename myPTM>
+int MatrixTimesMatrix<CV, myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
+    const input_type& actiondata ) {
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   return actiondata.outmat[fstart];
 }
 
-template <class T>
-void MatrixTimesMatrix<T>::getForceIndices( std::size_t task_index,
+template <class CV, typename myPTM>
+void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
     std::size_t colno,
     std::size_t ntotal_force,
-    const MatrixTimesMatrixInput<T>& actiondata,
+    const input_type& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
