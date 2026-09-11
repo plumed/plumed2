@@ -87,15 +87,28 @@ public:
 
         // Access the plumed filename this is used to activate the plumed module
         notifier->simulationSetupNotifier_.subscribe(
-                [this](const PlumedInputFilename& plumedFilename)
+                [this, notifier](const PlumedInputFilename& plumedFilename)
                 {
                     this->options_.setPlumedFile(plumedFilename.plumedFilename_);
                     this->options_.setReplex(plumedFilename.replex_);
+                    /* Subscribing to the multi-simulation record is not side-effect free:
+                       do_md() infers that the simulations share state -- and so must checkpoint
+                       and stop in lockstep -- from whether ANY module subscribed to a
+                       const gmx_multisim_t*. Subscribing unconditionally imposes that on every
+                       -multidir run of a PLUMED-patched GROMACS, including runs that never pass
+                       -plumed, and those deadlock when the simulations run different numbers of
+                       steps. So subscribe only once the input file has shown PLUMED is in use.
+                       PlumedInputFilename is notified at runner.cpp:1141 and the gmx_multisim_t*
+                       at runner.cpp:1801, so the subscription is in place in time. Subscribing
+                       here is safe: the notifier keeps a separate callback vector per
+                       CallParameter type, so this does not mutate the vector being iterated. */
+                    if (this->options_.active())
+                    {
+                        notifier->simulationSetupNotifier_.subscribe(
+                                [this](const gmx_multisim_t* ms)
+                                { this->options_.setMultisim(ms); });
+                    }
                 });
-        // Retrieve the multi-simulation object, needed to set up PLUMED's
-        // multi-replica communicator
-        notifier->simulationSetupNotifier_.subscribe([this](const gmx_multisim_t* ms)
-                                                     { this->options_.setMultisim(ms); });
         // Access the temperature if it is constant during the simulation
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const EnsembleTemperature& ensembleT)
