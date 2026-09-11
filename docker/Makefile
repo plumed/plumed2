@@ -1,11 +1,11 @@
 
-.PHONY: ubuntu plumed2.tgz clean  fedora37 rocky8
+.PHONY: ubuntu plumed2.tgz clean  fedora39 rocky8
 
 ubuntu: plumed2.tgz
 	docker build --shm-size 1024M -t plumed .
 
-fedora37: plumed2.tgz
-	docker build --shm-size 1024M -t plumed -f fedora37 .
+fedora39: plumed2.tgz
+	docker build --shm-size 1024M -t plumed -f fedora39 .
 
 rocky8: plumed2.tgz
 	docker build --shm-size 1024M -t plumed -f rocky8 .
