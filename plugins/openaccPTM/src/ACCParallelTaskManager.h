@@ -144,11 +144,10 @@ void AccParallelTaskManager<T>::runAllTasks() {
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
-  action->getInputData( input_buffer );
+  action->getInputData( input_buffer, argumentsMap );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  argumentsMap.setupArguments( action );
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();

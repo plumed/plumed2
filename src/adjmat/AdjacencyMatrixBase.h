@@ -119,8 +119,8 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void getInputData( std::vector<double>& inputdata ) const override;
-  void getInputData( std::vector<float>& inputdata ) const override;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override;
   std::string writeInGraph() const override {
     if constexpr ( std::is_same_v<ContactMatrix,CV> ) {
       //TODO:this will change to  std::is_same_v<ContactMatrix<precision>,CV> when adding the mixed precision to the contact matrix
@@ -355,7 +355,7 @@ void AdjacencyMatrixBase<CV, myPTM>::setLinkCellCutoff( const bool& symmetric,
 }
 
 template <class CV, typename myPTM>
-void AdjacencyMatrixBase<CV, myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void AdjacencyMatrixBase<CV, myPTM>::getAtomicInputData( std::vector<double>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -373,7 +373,7 @@ void AdjacencyMatrixBase<CV, myPTM>::getInputData( std::vector<double>& inputdat
 }
 
 template <class CV, typename myPTM>
-void AdjacencyMatrixBase<CV, myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void AdjacencyMatrixBase<CV, myPTM>::getAtomicInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }

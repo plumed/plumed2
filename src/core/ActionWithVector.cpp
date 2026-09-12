@@ -179,8 +179,15 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
   return active_tasks;
 }
 
-void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
+void ActionWithVector::getAtomicInputData( std::vector<double>& inputdata ) const { 
   plumed_dbg_assert( getNumberOfAtoms()==0 );
+}
+
+void ActionWithVector::getAtomicInputData( std::vector<float>& inputdata ) const {
+  plumed_dbg_assert( getNumberOfAtoms()==0 );
+}
+
+void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   unsigned nmasks=getNumberOfMasks();
   // getNumberOfMasks(); returns nmask, that it is an int
@@ -205,8 +212,7 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   }
 }
 
-void ActionWithVector::getInputData( std::vector<float>& inputdata ) const {
-  plumed_dbg_assert( getNumberOfAtoms()==0 );
+void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks=getNumberOfMasks();
   if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
@@ -230,6 +236,76 @@ void ActionWithVector::getInputData( std::vector<float>& inputdata ) const {
       total_args++;
     }
   }
+}
+
+void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMap ) const {
+  argumentsMap.nargs = getNumberOfArguments();
+  argumentsMap.ranks.resize( argumentsMap.nargs );
+  argumentsMap.shapestarts.resize( argumentsMap.nargs );
+  argumentsMap.argstarts.resize( argumentsMap.nargs );
+  std::size_t s = 0;
+  std::size_t ts = 0;
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    argumentsMap.shapestarts[i] = ts;
+    argumentsMap.ranks[i] = myarg->getRank();
+    ts += argumentsMap.ranks[i];
+    argumentsMap.argstarts[i] = s;
+    s += myarg->getNumberOfStoredValues();
+  }
+  argumentsMap.shapedata.resize( ts );
+  ts = 0;
+  argumentsMap.ncols.resize( argumentsMap.nargs );
+  argumentsMap.bookstarts.resize( argumentsMap.nargs );
+  argumentsMap.booksizes.resize( argumentsMap.nargs );
+  std::size_t nbook = 0;
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<argumentsMap.ranks[i]; ++j) {
+      argumentsMap.shapedata[ts] = myarg->getShape()[j];
+      ++ts;
+    }
+    argumentsMap.bookstarts[i] = nbook;
+    if( argumentsMap.ranks[i]==1 ) {
+      argumentsMap.ncols[i] = 1;
+      argumentsMap.booksizes[i] = 2*myarg->getShape()[0];
+    } else if( argumentsMap.ranks[i]==2 ) {
+      argumentsMap.ncols[i] = myarg->getNumberOfColumns();
+      argumentsMap.booksizes[i] = myarg->matrix_bookeeping.size();
+    }
+    nbook += argumentsMap.booksizes[i];
+  }
+  argumentsMap.bookeeping.resize( nbook );
+  ts = 0;
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    if( argumentsMap.ranks[i]==1 ) {
+      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
+        argumentsMap.bookeeping[ts] = 1;
+        argumentsMap.bookeeping[ts+1] = 0;
+        ts += 2;
+      }
+    } else if( argumentsMap.ranks[i]==2 ) {
+      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
+        argumentsMap.bookeeping[ts] = myarg->matrix_bookeeping[j];
+        ++ts;
+      }
+    }
+  }
+}
+
+void ActionWithVector::getInputData( std::vector<double>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
+  getAtomicInputData( inputdata );
+  if( getNumberOfArguments()==0 ) return;
+  getArgumentInputData( inputdata );
+  copyArgumentBookeeping( argumentsMap );
+}
+
+void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
+  getAtomicInputData( inputdata );
+  if( getNumberOfArguments()==0 ) return;
+  getArgumentInputData( inputdata );
+  copyArgumentBookeeping( argumentsMap );
 }
 
 void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {

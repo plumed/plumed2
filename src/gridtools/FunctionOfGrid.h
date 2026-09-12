@@ -60,7 +60,7 @@ public:
 /// Get the underlying grid coordinates object
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
 /// Get the input data for doing the parallel calculation
-  void getInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
 /// Do the calculation
   void calculate() override ;
 // Calculate the value of the function at a grid point
@@ -208,7 +208,7 @@ void FunctionOfGrid<T>::calculate() {
 }
 
 template <class T>
-void FunctionOfGrid<T>::getInputData( std::vector<double>& inputdata ) const {
+void FunctionOfGrid<T>::getArgumentInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
 
   std::size_t ntasks = 0, ngder = 0;

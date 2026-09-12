@@ -62,8 +62,8 @@ public:
   void calculate() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   std::vector<unsigned>& getListOfActiveTasks() override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const FunctionData<CV>& actiondata,
                            ParallelActionsInput& input,
@@ -274,7 +274,7 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
 }
 
 template <class CV, typename myPTM>
-void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<double>& inputdata ) const {
   int nmasks = getNumberOfMasks();
   unsigned nargs = getNumberOfFunctionArguments();
 
@@ -319,7 +319,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
 }
 
 template <class CV, typename myPTM>
-void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<float>& inputdata ) const {
   int nmasks = getNumberOfMasks();
   unsigned nargs = getNumberOfFunctionArguments();
 

@@ -33,76 +33,6 @@
 
 namespace PLMD {
 
-struct ArgumentsBookkeeping {
-  std::size_t nargs{0};
-  std::vector<std::size_t> ranks;
-  std::vector<std::size_t> shapestarts;
-  std::vector<std::size_t> shapedata;
-  std::vector<std::size_t> ncols;
-  std::vector<std::size_t> bookstarts;
-  std::vector<std::size_t> booksizes;
-  std::vector<std::size_t> bookeeping;
-  std::vector<std::size_t> argstarts;
-  void setupArguments( const ActionWithArguments* action );
-};
-
-inline
-void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
-  nargs = action->getNumberOfArguments();
-  ranks.resize( nargs );
-  shapestarts.resize( nargs );
-  argstarts.resize( nargs );
-  std::size_t s = 0;
-  std::size_t ts = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    shapestarts[i] = ts;
-    ranks[i] = myarg->getRank();
-    ts += ranks[i];
-    argstarts[i] = s;
-    s += myarg->getNumberOfStoredValues();
-  }
-  shapedata.resize( ts );
-  ts = 0;
-  ncols.resize( nargs );
-  bookstarts.resize( nargs );
-  booksizes.resize( nargs );
-  std::size_t nbook = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    for(unsigned j=0; j<ranks[i]; ++j) {
-      shapedata[ts] = myarg->getShape()[j];
-      ++ts;
-    }
-    bookstarts[i] = nbook;
-    if( ranks[i]==1 ) {
-      ncols[i] = 1;
-      booksizes[i] = 2*myarg->getShape()[0];
-    } else if( ranks[i]==2 ) {
-      ncols[i] = myarg->getNumberOfColumns();
-      booksizes[i] = myarg->matrix_bookeeping.size();
-    }
-    nbook += booksizes[i];
-  }
-  bookeeping.resize( nbook );
-  ts = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    if( ranks[i]==1 ) {
-      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
-        bookeeping[ts] = 1;
-        bookeeping[ts+1] = 0;
-        ts += 2;
-      }
-    } else if( ranks[i]==2 ) {
-      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
-        bookeeping[ts] = myarg->matrix_bookeeping[j];
-        ++ts;
-      }
-    }
-  }
-}
-
 template<typename precision>
 struct ParActionsInput {
   /// Do we need to calculate the derivatives
@@ -614,11 +544,10 @@ void ParallelTaskManager<T>::runAllTasks() {
       break;
     }
   }
-  action->getInputData( input_buffer );
+  action->getInputData( input_buffer, argumentsMap );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  argumentsMap.setupArguments( action );
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();

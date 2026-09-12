@@ -179,7 +179,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   }
   force_stash.resize( total_vals );
   ArgumentsBookkeeping abk;
-  abk.setupArguments( this );
+  copyArgumentBookeeping( abk );
   input.setupArguments( abk );
 }
 
@@ -219,7 +219,7 @@ void RMSDVector::calculate() {
     firststep=false;
   }
   input.noderiv = false;
-  getInputData( input_buffer );
+  getArgumentInputData( input_buffer );
   input.dataSize = input_buffer.size();
   input.inputdata = input_buffer.data();
 
