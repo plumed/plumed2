@@ -69,6 +69,13 @@ namespace PLMD {
 namespace matrixtools {
 
 class TransposeMatrix : public MatrixOperationBase {
+private: 
+/// Holds the lengths of the rows
+  std::vector<unsigned> row_lengths;
+/// Holds the lengths of the columns
+  std::vector<unsigned> column_lengths;
+/// The array for matrix bookeeping
+  std::vector<unsigned> matrix_bookeeping;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -84,7 +91,7 @@ public:
 ///
   void apply() override ;
 ///
-  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override;
+  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(TransposeMatrix,"TRANSPOSE")
@@ -116,6 +123,8 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
     shape.resize(2);
     shape[0]=getPntrToArgument(0)->getShape()[1];
     shape[1]=getPntrToArgument(0)->getShape()[0];
+    row_lengths.resize( shape[1] );
+    column_lengths.resize( shape[0] );
   }
   addValue( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
@@ -124,9 +133,6 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
     setPeriodic( smin, smax );
   } else {
     setNotPeriodic();
-  }
-  if( shape.size()==2 ) {
-    getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   }
 }
 
@@ -139,7 +145,9 @@ void TransposeMatrix::prepare() {
       shape[0] = 1;
       shape[1] = myarg->getShape()[0];
       myval->setShape( shape );
-      myval->reshapeMatrixStore( shape[1] );
+    } 
+    if( myval->getNumberOfColumns()!=myarg->getShape()[0] ) {
+      myval->reshapeMatrixStore( myarg->getShape()[0]  );
     }
   } else if( myarg->getShape()[0]==1 ) {
     if( myval->getShape()[0]!=myarg->getShape()[1] ) {
@@ -152,7 +160,8 @@ void TransposeMatrix::prepare() {
     shape[0] = myarg->getShape()[1];
     shape[1] = myarg->getShape()[0];
     myval->setShape( shape );
-    myval->reshapeMatrixStore( shape[1] );
+    row_lengths.resize( shape[1] );
+    column_lengths.resize( shape[0] );
   }
 }
 
@@ -161,36 +170,47 @@ void TransposeMatrix::calculate() {
   Value* myarg=getPntrToArgument(0);
   Value* myval=getPntrToComponent(0);
   if( myarg->getRank()<=1 || myval->getRank()==1 ) {
-    if( myarg->getRank()<=1 && myval->getShape()[1]!=myarg->getShape()[0] ) {
-      std::vector<std::size_t> shape( 2 );
-      shape[0] = 1;
-      shape[1] = myarg->getShape()[0];
-      myval->setShape( shape );
-      myval->reshapeMatrixStore( shape[1] );
-    } else if( myval->getRank()==1 && myval->getShape()[0]!=myarg->getShape()[1] ) {
-      std::vector<std::size_t> shape( 1 );
-      shape[0] = myarg->getShape()[1];
-      myval->setShape( shape );
-    }
     unsigned nv=myarg->getNumberOfValues();
     for(unsigned i=0; i<nv; ++i) {
       myval->set( i, myarg->get(i) );
     }
   } else {
-    if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
-      std::vector<std::size_t> shape( 2 );
-      shape[0] = myarg->getShape()[1];
-      shape[1] = myarg->getShape()[0];
-      myval->setShape( shape );
-      myval->reshapeMatrixStore( shape[1] );
+    // Find the lengths of all the columns
+    std::fill( column_lengths.begin(), column_lengths.end(), 0 );
+    for(unsigned i=0; i<myarg->getShape()[0]; ++i) { 
+        unsigned nr = myarg->getRowLength(i);
+        for(unsigned j=0; j<nr; ++j) {
+            unsigned ind = myarg->getRowIndex( i, j );    
+            column_lengths[ind]++;
+        }
     }
-    std::vector<double> vals;
-    std::vector<std::pair<unsigned,unsigned> > pairs;
-    std::vector<std::size_t> shape( myval->getShape() );
-    unsigned nedge=0;
-    myarg->retrieveEdgeList( nedge, pairs, vals );
-    for(unsigned i=0; i<nedge; ++i) {
-      myval->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] );
+    // Find the longest column
+    unsigned maxcol = column_lengths[0];
+    for(unsigned i=1; i<column_lengths.size(); ++i) {
+        if( column_lengths[i]>maxcol ) {
+            maxcol = column_lengths[i];
+        }
+    }
+    myval->reshapeMatrixStore( maxcol );
+    matrix_bookeeping.resize( myval->getShape()[0]*(1+maxcol) );
+    for(unsigned i=0; i<column_lengths.size(); ++i) {
+        matrix_bookeeping[i*(1+maxcol)] = 0;
+    }
+    // Now get the bookeeping 
+    unsigned arg_ncol = myarg->getNumberOfColumns();
+    for(unsigned i=0; i<myarg->getShape()[0]; ++i) {
+        unsigned nr = myarg->getRowLength(i);
+        for(unsigned j=0; j<nr; ++j) {
+            unsigned ind = myarg->getRowIndex( i, j );
+            unsigned startpos = ind*(1+maxcol); 
+            matrix_bookeeping[startpos + 1 + matrix_bookeeping[startpos]] = i; 
+            myval->set( ind*maxcol + matrix_bookeeping[startpos], myarg->get( i*arg_ncol+j, false)  );
+            matrix_bookeeping[startpos]++;
+        }
+    }
+    // And copy all the bookeeping to the output value
+    for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
+        myval->setMatrixBookeepingElement( i, matrix_bookeeping[i] );
     }
   }
 }
@@ -210,15 +230,20 @@ void TransposeMatrix::apply() {
         myarg->addForce( i, myval->getForce(i) );
       }
     } else {
-      MatrixOperationBase::apply();
+      unsigned narg_cols = myarg->getNumberOfColumns();
+      unsigned nval_cols = myval->getNumberOfColumns();
+      std::fill( row_lengths.begin(), row_lengths.end(), 0 );
+      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+          unsigned nr = myval->getRowLength(i);
+          for(unsigned j=0; j<nr; ++j) {
+              unsigned ind = myval->getRowIndex( i, j );
+              myarg->addForce( narg_cols*ind + row_lengths[ind], myval->getForce(nval_cols*i + j), false );
+              row_lengths[ind]++;       
+          }
+      }
     }
   }
 }
-
-double TransposeMatrix::getForceOnMatrixElement( const unsigned& jrow, const unsigned& kcol ) const {
-  return getConstPntrToComponent(0)->getForce(kcol*getConstPntrToComponent(0)->getShape()[1]+jrow);
-}
-
 
 }
 }
