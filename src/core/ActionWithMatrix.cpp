@@ -63,6 +63,15 @@ public:
   }
 };
 
+void ActionWithMatrix::copyMatrixBookeepingFromFirstComponent( RequiredMatrixElements& outmat ) {
+  Value* mycomp = getPntrToComponent(0);
+  outmat.ncols = mycomp->getNumberOfColumns();
+  outmat.resize( mycomp->matrix_bookeeping.size() );
+  for(unsigned i=0; i<outmat.size(); ++i) {
+    outmat[i] = mycomp->matrix_bookeeping[i];
+  }
+}
+
 void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) {
   RequiredMatrixElementsUpdater updater(outmat);
   Value* myval = getPntrToComponent(0);
@@ -80,6 +89,11 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       }
     }
   } else if ( diagzero ) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(i)->getNumberOfColumns() ) {
+            error("DIAGZERO flag is incompatible with sparse matrices");
+        }
+    }
     for(unsigned i=0; i<getNumberOfComponents(); ++i) {
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1]-1 );
     }
@@ -98,12 +112,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
       getPntrToComponent(i)->reshapeMatrixStore( myval->getShape()[1] );
     }
   }
-  Value* mycomp = getPntrToComponent(0);
-  outmat.ncols = mycomp->getNumberOfColumns();
-  outmat.resize( mycomp->matrix_bookeeping.size() );
-  for(unsigned i=0; i<outmat.size(); ++i) {
-    outmat[i] = mycomp->matrix_bookeeping[i];
-  }
+  copyMatrixBookeepingFromFirstComponent( outmat ); 
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
   }

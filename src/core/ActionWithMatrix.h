@@ -81,6 +81,8 @@ protected:
   bool no_thread_gather;
 /// This flag is activated when we run through the columns of the matrix when gathering forces in a thread safe way
   bool gatherForceOnColumns;
+/// Copy the matrix bookeeping for task list stuff from the first component
+  void copyMatrixBookeepingFromFirstComponent( RequiredMatrixElements& outmat );
 /// Update all the arrays for doing bookeeping
   void updateBookeepingArrays( RequiredMatrixElements& mat );
 /// Find the length of the longest column in the output matrix if it is required
