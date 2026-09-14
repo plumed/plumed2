@@ -21,10 +21,10 @@ ifeq ($(make_doc),yes)
 	ln -s ../../regtest/ docs/regtest
 	PLUMED_MAXBACKUP=0 python build_manual.py
 	rm docs/regtest
-	mkdocs build
+	python run_mkdocs.py build
+	python finalize_site.py
 endif
 endif
 
 clean:
 	rm -rf docs site
-
