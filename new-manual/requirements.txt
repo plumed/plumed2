@@ -2,5 +2,6 @@ numpy
 requests
 PlumedToHTML
 networkx
-mkdocs-material
+mkdocs>=1.6,<2
+pymdown-extensions
 python-markdown-math
