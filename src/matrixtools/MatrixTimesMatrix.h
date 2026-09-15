@@ -38,6 +38,8 @@ constexpr bool isDissimilarities<T,std::void_t<typename T::isDissimilarities>> =
 template <typename T>
 struct MatrixTimesMatrixInput {
   T funcinput;
+  bool no_thread_gather;
+  bool gatherForceOnColumns;
   bool secondMatrixIsSparse;
   std::vector<unsigned> locations;
   RequiredMatrixElements outmat;
@@ -152,6 +154,8 @@ MatrixTimesMatrix<CV, myPTM>::MatrixTimesMatrix(const ActionOptions&ao):
   }
   input_type actdata;
   actdata.funcinput.setup( this, getPntrToArgument(0) );
+  actdata.gatherForceOnColumns = false;
+  actdata.no_thread_gather = no_thread_gather;
   taskmanager.setActionInput( actdata );
 }
 
@@ -240,9 +244,14 @@ void MatrixTimesMatrix<CV, myPTM>::calculate() {
       findMaximumColumnLength();
   }
   taskmanager.getActionInput().secondMatrixIsSparse = getPntrToArgument(1)->getNumberOfColumns()<getPntrToArgument(1)->getShape()[1];
-  taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(),
-                                        getPntrToArgument(1)->getNumberOfStoredValues() );
-  taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
+  if( no_thread_gather ) {
+      taskmanager.setupParallelTaskManager( getPntrToArgument(0)->getNumberOfColumns(), 0 );
+      taskmanager.setWorkspaceSize( 4*getPntrToArgument(0)->getNumberOfColumns() ); 
+  } else {
+      taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(),
+                                            getPntrToArgument(1)->getNumberOfStoredValues() );
+      taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );
+  }
   taskmanager.runAllTasks();
 }
 
@@ -354,53 +363,132 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
   std::size_t output_rowlen = actiondata.outmat[outrowstart];
   InputVectors vectors( nmult, output.buffer.data() );
   if( actiondata.secondMatrixIsSparse ) {
-      for(unsigned i=0; i<output_rowlen; ++i) {
-          std::size_t nm = 0;
-          std::size_t arg1_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg1.ncols);
-          std::size_t arg1_nelements = arg1.bookeeping[arg1_bookstart];
-          for(unsigned j=0; j<nmult; ++j) {
-              std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
-              for(unsigned k=0; k<arg1_nelements; ++k) {
-                  if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
-                      nm++;
-                      break;
+      if( actiondata.no_thread_gather ) {
+          std::size_t arg1_start = arg1.start + task_index*arg1.ncols;
+          std::size_t arg1_bookstart = task_index*(1+arg1.ncols);
+          for(unsigned i=0; i<output_rowlen; ++i) {
+              if( actiondata.gatherForceOnColumns ) {
+                  arg0_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg0.ncols);
+                  arg0_start = actiondata.outmat[outrowstart+1+i]*arg0.ncols;
+              } else {
+                  arg1_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg1.ncols);
+                  arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
+              }           
+              std::size_t nm = 0;  
+              std::size_t arg1_nelements = arg1.bookeeping[arg1_bookstart];
+              for(unsigned j=0; j<nmult; ++j) {
+                  std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+                  for(unsigned k=0; k<arg1_nelements; ++k) {
+                      if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                          nm++;
+                          break;
+                      }
+                  }
+              }
+              if( nm==0 ) {
+                  continue ;
+              }
+              vectors.nelem = nm;
+              nm = 0;
+              for(unsigned j=0; j<nmult; ++j) {
+                  std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+                  for(unsigned k=0; k<arg1_nelements; ++k) {
+                      if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                          vectors.arg1[nm] = input.inputdata[ arg0_start + j ];
+                          vectors.arg2[nm] = input.inputdata[ arg1_start + k ];
+                          nm++;
+                          break;
+                      }
+                  }
+              }
+              MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.buffer.data() + 2*nmult );
+              CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+              if( actiondata.gatherForceOnColumns ) {
+                  for(unsigned k=0; k<nm; ++k) {
+                      output.derivatives[nmult*i + k] = elem.derivs[0][nmult+k];
+                  } 
+              } else {
+                  for(unsigned k=0; k<nm; ++k) {
+                      output.derivatives[nmult*i + k] = elem.derivs[0][k];
                   }
               }
           }
-          if( nm==0 ) {
-              continue ;
-          }
-          vectors.nelem = nm;
-          nm = 0;
-          std::size_t arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols; 
-          for(unsigned j=0; j<nmult; ++j) {
-              std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
-              for(unsigned k=0; k<arg1_nelements; ++k) {
-                  if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
-                      vectors.arg1[nm] = input.inputdata[ arg0_start + j ];
-                      vectors.arg2[nm] = input.inputdata[ arg1_start + k ];
-                      nm++;
-                      break;
+      } else {
+          for(unsigned i=0; i<output_rowlen; ++i) {
+              std::size_t nm = 0;
+              std::size_t arg1_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg1.ncols);
+              std::size_t arg1_nelements = arg1.bookeeping[arg1_bookstart];
+              for(unsigned j=0; j<nmult; ++j) {
+                  std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+                  for(unsigned k=0; k<arg1_nelements; ++k) {
+                      if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                          nm++;
+                          break;
+                      }
                   }
               }
-          }
-          MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
-          CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
-          for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
-              elem.derivs[0][ii] = 0;
+              if( nm==0 ) {
+                  continue ;
+              }
+              vectors.nelem = nm;
+              nm = 0;
+              std::size_t arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols; 
+              for(unsigned j=0; j<nmult; ++j) {
+                  std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+                  for(unsigned k=0; k<arg1_nelements; ++k) {
+                      if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                          vectors.arg1[nm] = input.inputdata[ arg0_start + j ];
+                          vectors.arg2[nm] = input.inputdata[ arg1_start + k ];
+                          nm++;
+                          break;
+                      }
+                  }
+              }
+              MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
+              CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+              for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
+                  elem.derivs[0][ii] = 0;
+              }
           }
       }
   } else {
-      for(unsigned i=0; i<nmult; ++i){
-          vectors.arg1[i] = input.inputdata[arg0_start + i];
-      }
-      for(unsigned i=0; i<output_rowlen; ++i) {
-         std::size_t arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
-         for(unsigned j=0; j<nmult; ++j) {
-             vectors.arg2[j] = input.inputdata[arg1_start + arg0.bookeeping[arg0_bookstart+1+j]];
+      if( actiondata.no_thread_gather ) { 
+         std::size_t arg1_start = arg1.start + task_index*arg1.ncols;
+         for(unsigned i=0; i<output_rowlen; ++i) {
+            if( actiondata.gatherForceOnColumns ) {
+                arg0_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg0.ncols);
+                arg0_start = actiondata.outmat[outrowstart+1+i]*arg0.ncols;
+            } else {
+                arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
+            }
+            for(unsigned j=0; j<nmult; ++j) {
+                vectors.arg1[j] = input.inputdata[arg0_start + j];
+                vectors.arg2[j] = input.inputdata[arg1_start + arg0.bookeeping[arg0_bookstart+1+j]];
+            }
+            MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.buffer.data() + 2*nmult );
+            CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+            if( actiondata.gatherForceOnColumns ) {
+                for(unsigned k=0; k<nmult; ++k) {
+                    output.derivatives[nmult*i + k] = elem.derivs[0][nmult+k];
+                }       
+            } else {    
+                for(unsigned k=0; k<nmult; ++k) {
+                    output.derivatives[nmult*i + k] = elem.derivs[0][k];
+                }   
+            } 
          }
-         MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
-         CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+      } else {
+         for(unsigned i=0; i<nmult; ++i){
+             vectors.arg1[i] = input.inputdata[arg0_start + i];
+         }
+         for(unsigned i=0; i<output_rowlen; ++i) {
+            std::size_t arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
+            for(unsigned j=0; j<nmult; ++j) {
+                vectors.arg2[j] = input.inputdata[arg1_start + arg0.bookeeping[arg0_bookstart+1+j]];
+            }
+            MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
+            CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
+         }
       }
   }
 }
@@ -429,6 +517,14 @@ void MatrixTimesMatrix<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& 
       }
   }
   taskmanager.applyForces( outforces );
+  if( no_thread_gather ) { 
+    getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
+    taskmanager.setNForceScalars( maxcolsize );
+    taskmanager.applyForces( outforces, false );
+    taskmanager.setNForceScalars( getPntrToComponent(0)->getNumberOfColumns() );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = false;
+  } 
 }
 
 template <class CV, typename myPTM>
@@ -447,38 +543,85 @@ void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
     ForceIndexHolder force_indices ) {
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
+  std::size_t outcol = actiondata.outmat[task_index*(1+actiondata.outmat.ncols)+1+colno];
   std::size_t arg0_start = task_index*arg0.ncols;
   std::size_t arg0_bookstart = task_index*(1+arg0.ncols);
+  std::size_t arg1_bookstart = outcol*(1+arg1.ncols);
+  if( actiondata.gatherForceOnColumns ) {
+      arg0_start = outcol*arg0.ncols;
+      arg0_bookstart = outcol*(1+arg0.ncols);
+      arg1_bookstart = task_index*(1+arg1.ncols);
+  }
   std::size_t nmult = arg0.bookeeping[arg0_bookstart];
-  std::size_t outcol = actiondata.outmat[task_index*(1+actiondata.outmat.ncols)+1+colno];
-  std::size_t arg1_bookstart = outcol*(1+arg1.ncols); 
   if( actiondata.secondMatrixIsSparse ) {
     std::size_t nm = 0;
     std::size_t arg1_nelements = arg1.bookeeping[arg1_bookstart];
-    for(unsigned j=0; j<nmult; ++j) {
-        std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
-        for(unsigned k=0; k<arg1_nelements; ++k) {
-            if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
-                force_indices.indices[0][nm] = arg0_start + j;
-                force_indices.indices[0][nmult+nm] = arg1.start + actiondata.locations[ arg1_bookstart + 1 + k ];
-                nm++;
-                break;
+    if( !actiondata.no_thread_gather ) {
+        for(unsigned j=0; j<nmult; ++j) {
+            std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+            for(unsigned k=0; k<arg1_nelements; ++k) {
+                if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                    force_indices.indices[0][nm] = arg0_start + j;
+                    force_indices.indices[0][nmult+nm] = arg1.start + actiondata.locations[ arg1_bookstart + 1 + k ];
+                    nm++;
+                    break;
+                }
             }
         }
-    }
-    force_indices.threadsafe_derivatives_end[0] = nm;
-    if( nm==0 ) {
-        force_indices.tot_indices[0] = 0;
+        force_indices.threadsafe_derivatives_end[0] = nm;
+        if( nm==0 ) {
+            force_indices.tot_indices[0] = 0;
+        } else {
+            force_indices.tot_indices[0] = nmult + nm;
+        }
+    } else if( actiondata.gatherForceOnColumns ) {
+       for(unsigned j=0; j<nmult; ++j) {
+            std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+            for(unsigned k=0; k<arg1_nelements; ++k) {
+                if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                    force_indices.indices[0][nm] = arg1.start + actiondata.locations[ arg1_bookstart + 1 + k ];
+                    nm++;
+                    break;
+                }
+            }
+        }
+        force_indices.threadsafe_derivatives_end[0] = nm;
+        force_indices.tot_indices[0] = nm;
     } else {
-        force_indices.tot_indices[0] = nmult + nm;
+        for(unsigned j=0; j<nmult; ++j) {
+            std::size_t arg0_ind = arg0.bookeeping[arg0_bookstart+1+j];
+            for(unsigned k=0; k<arg1_nelements; ++k) {
+                if( arg1.bookeeping[arg1_bookstart+1+k]==arg0_ind ) {
+                    force_indices.indices[0][nm] = arg0_start + j;
+                    nm++;
+                    break;
+                }
+            }
+        }
+        force_indices.threadsafe_derivatives_end[0] = nm;
+        force_indices.tot_indices[0] = nm;
     }
   } else {
-    for(unsigned j=0; j<nmult; ++j) {
-      force_indices.indices[0][j] = task_index*arg0.ncols + j;
-      force_indices.indices[0][nmult+j] = arg1.start + arg0.bookeeping[arg0_bookstart+1+j]*arg1.shape[1] + outcol;
+    if( !actiondata.no_thread_gather ) { 
+        for(unsigned j=0; j<nmult; ++j) {
+          force_indices.indices[0][j] = task_index*arg0.ncols + j;
+          force_indices.indices[0][nmult+j] = arg1.start + arg0.bookeeping[arg0_bookstart+1+j]*arg1.shape[1] + outcol;
+        }
+        force_indices.threadsafe_derivatives_end[0] = nmult;
+        force_indices.tot_indices[0] = 2*nmult;
+    } else if( actiondata.gatherForceOnColumns ) {
+        for(unsigned j=0; j<nmult; ++j) {
+          force_indices.indices[0][j] = arg1.start + arg0.bookeeping[arg0_bookstart+1+j]*arg1.shape[1] + task_index;  
+        }
+        force_indices.threadsafe_derivatives_end[0] = nmult;
+        force_indices.tot_indices[0] = nmult;
+    } else {
+        for(unsigned j=0; j<nmult; ++j) {
+          force_indices.indices[0][j] = task_index*arg0.ncols + j;   
+        }
+        force_indices.threadsafe_derivatives_end[0] = nmult;
+        force_indices.tot_indices[0] = nmult;
     }
-    force_indices.threadsafe_derivatives_end[0] = nmult;
-    force_indices.tot_indices[0] = 2*nmult;
   }
 }
 
