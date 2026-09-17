@@ -241,7 +241,6 @@ void MatrixTimesMatrix<CV, myPTM>::calculate() {
           myval->setMatrixBookeepingElement( rstart, rowlen );
       }
       copyMatrixBookeepingFromFirstComponent( taskmanager.getActionInput().outmat );
-      findMaximumColumnLength();
   }
   taskmanager.getActionInput().secondMatrixIsSparse = getPntrToArgument(1)->getNumberOfColumns()<getPntrToArgument(1)->getShape()[1];
   if( no_thread_gather ) {

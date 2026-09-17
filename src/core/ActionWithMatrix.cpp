@@ -64,16 +64,46 @@ public:
 };
 
 void ActionWithMatrix::copyMatrixBookeepingFromFirstComponent( RequiredMatrixElements& outmat ) {
+  RequiredMatrixElementsUpdater updater(outmat);
   Value* mycomp = getPntrToComponent(0);
   outmat.ncols = mycomp->getNumberOfColumns();
   outmat.resize( mycomp->matrix_bookeeping.size() );
   for(unsigned i=0; i<outmat.size(); ++i) {
     outmat[i] = mycomp->matrix_bookeeping[i];
   }
+  if( !no_thread_gather || doNotCalculateDerivatives() ) {
+    return;
+  }
+  std::vector<unsigned> column_totals( getConstPntrToComponent(0)->getShape()[1], 0 );
+  for(unsigned i=0; i<mycomp->getShape()[0]; ++i) {
+    for(unsigned j=0; j<mycomp->getRowLength(i); ++j) {
+      column_totals[ mycomp->getRowIndex(i,j) ]++;
+    }
+  }
+  unsigned n_nonzerocols = 0;
+  maxcolsize = column_totals[0];
+  if( maxcolsize>0 ) {
+      n_nonzerocols = 1;
+  } 
+  for(unsigned i=1; i<column_totals.size(); ++i) {
+    if( column_totals[i]>maxcolsize ) {
+      maxcolsize = column_totals[i]; 
+    } 
+    if( column_totals[i]>0 ) {
+      n_nonzerocols++;
+    }   
+  }   
+  column_list.resize( n_nonzerocols );
+  n_nonzerocols = 0;
+  for(unsigned i=0; i<column_totals.size(); ++i) {
+    if( column_totals[i]>0 ) {
+        column_list[n_nonzerocols]=i;
+        n_nonzerocols++;
+    }
+  }
 }
 
 void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) {
-  RequiredMatrixElementsUpdater updater(outmat);
   Value* myval = getPntrToComponent(0);
   unsigned lstart = myval->getShape()[0];
   if( getNumberOfMasks()>0 ) {
@@ -115,41 +145,6 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
   copyMatrixBookeepingFromFirstComponent( outmat ); 
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( myval );
-  }
-  findMaximumColumnLength();
-}
-
-void ActionWithMatrix::findMaximumColumnLength() {
-  if( !no_thread_gather || doNotCalculateDerivatives() ) {
-    return;
-  }
-  Value* mycomp = getPntrToComponent(0);
-  std::vector<unsigned> column_totals( getConstPntrToComponent(0)->getShape()[1], 0 );
-  for(unsigned i=0; i<mycomp->getShape()[0]; ++i) {
-    for(unsigned j=0; j<mycomp->getRowLength(i); ++j) {
-      column_totals[ mycomp->getRowIndex(i,j) ]++;
-    }
-  }
-  unsigned n_nonzerocols = 0;
-  maxcolsize = column_totals[0];
-  if( maxcolsize>0 ) {
-      n_nonzerocols = 1;
-  }
-  for(unsigned i=1; i<column_totals.size(); ++i) {
-    if( column_totals[i]>maxcolsize ) {
-      maxcolsize = column_totals[i];
-    } 
-    if( column_totals[i]>0 ) {
-      n_nonzerocols++;
-    }
-  }
-  column_list.resize( n_nonzerocols );
-  n_nonzerocols = 0;
-  for(unsigned i=0; i<column_totals.size(); ++i) {
-    if( column_totals[i]>0 ) {
-        column_list[n_nonzerocols]=i;
-        n_nonzerocols++;
-    }
   }
 }
 

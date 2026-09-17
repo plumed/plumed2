@@ -38,31 +38,29 @@ struct AdjacencyMatrixData {
   T matrixdata;
   bool usepbc{true};
   bool components{false};
+  unsigned fbsize{0};
+  RequiredMatrixElements outmat; 
   std::size_t nlists{0};
-  unsigned natoms_per_list{0};
-  std::vector<std::size_t> nlist_v;
-  std::size_t *nlist{nullptr};
   unsigned natoms_per_three_list{0};
   std::vector<std::size_t> nlist_three_v;
   std::size_t* nlist_three{nullptr};
   void update() {
-    nlist=nlist_v.data();
     nlist_three=nlist_three_v.data();
   }
 #ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1],usepbc,components,nlists, \
-                              natoms_per_list,nlist[0:nlist_v.size()], \
-                              natoms_per_three_list, \
+#pragma acc enter data copyin(this[0:1],usepbc,components,fbsize, \
+                              nlists,natoms_per_three_list, \
                               nlist_three[0:nlist_three_v.size()])
     matrixdata.toACCDevice();
+    outmat.toACCDevice();
   }
   void removeFromACCDevice() const {
     matrixdata.removeFromACCDevice();
+    outmat.removeFromACCDevice();
 #pragma acc exit data delete(nlist_three[0:nlist_three_v.size()], \
-                             natoms_per_three_list, \
-                             nlist[0:nlist_v.size()], natoms_per_list, \
-                             nlists, components, usepbc, this[0:1])
+                             natoms_per_three_list,nlists, \
+                             fbsize, components, usepbc, this[0:1])
   }
 #endif //__PLUMED_HAS_OPENACC
 };
@@ -106,6 +104,8 @@ public:
 private:
   PTM taskmanager;
   bool nopbc, read_one_group;
+  unsigned natoms_per_list;
+  std::vector<std::size_t> nlist_v;
   LinkCells linkcells, threecells;
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
@@ -173,6 +173,7 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
   ActionWithMatrix(ao),
   taskmanager(this),
   read_one_group(false),
+  natoms_per_list(0),
   linkcells(comm),
   threecells(comm) {
   std::vector<std::size_t> shape(2);
@@ -307,6 +308,10 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
   matdata.usepbc = !nopbc;
   matdata.components = components;
   matdata.nlists = getPntrToComponent(0)->getShape()[0];
+  matdata.fbsize = 0;
+  if( ablocks[0]>=getConstPntrToComponent(0)->getShape()[0] ) {
+      matdata.fbsize = getConstPntrToComponent(0)->getShape()[0];
+  }
   matdata.matrixdata.parseInput( this );
   taskmanager.setActionInput( matdata );
 }
@@ -411,14 +416,6 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
   } else {
     error("neighbour list non updates are not actually implemented or tested");
   }
-  unsigned fbsize=0;
-  unsigned lstart = getConstPntrToComponent(0)->getShape()[0];
-  // This is triggered if you have GROUPA/GROUPB
-  // in that case the second index for the matrix is recovered from the neighbour list
-  // by subtracting the number of atoms in GROUPA as we do here.
-  if( ablocks[0]>=lstart ) {
-    fbsize = lstart;
-  }
 
   // Get the atoms
   std::vector<Vector> ltmp_pos2( ntasks );
@@ -440,8 +437,8 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
                                   make_const_view(ltmp_pos),
                                   make_const_view(ablocks),
                                   getPbc(),
-                                  matdata.natoms_per_list,
-                                  matdata.nlist_v );
+                                  natoms_per_list,
+                                  nlist_v );
     if( threeblocks.size()>0 ) {
       std::vector<Vector> ltmp_pos3( threeblocks.size() );
       for(unsigned i=0; i<threeblocks.size(); ++i) {
@@ -462,10 +459,10 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
     error("neighbour list non updates are not actually implemented or tested");
   }
   // And finally work out maximum number of columns to use
-  unsigned maxcol = matdata.nlist[0];
+  unsigned maxcol = nlist_v[0];
   for(unsigned i=1; i<getConstPntrToComponent(0)->getShape()[0]; ++i) {
-    if( matdata.nlist[i]>maxcol ) {
-      maxcol = matdata.nlist[i];
+    if( nlist_v[i]>maxcol ) {
+      maxcol = nlist_v[i];
     }
   }
   // The first element returned by the neighbour list is the central atom.  The
@@ -479,23 +476,25 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
       getPntrToComponent(i)->reshapeMatrixStore( maxcol );
     }
   }
-  // Clear the bookeeping array
-  for(unsigned i=0; i<lstart; ++i) {
-    myval->setMatrixBookeepingElement( i*(1+maxcol), 0 );
-  }
   // Transfer neighbor list data to the bookeeping arrays
+  unsigned lstart = getConstPntrToComponent(0)->getShape()[0];
+  if( ntasks<lstart ) {
+     for(unsigned i=0; i<lstart; ++i) {
+       myval->setMatrixBookeepingElement( i*(1+maxcol), 0 );
+     }
+  }
   for(unsigned i=0; i<ntasks; ++i) {
     unsigned bstart = pTaskList[i]*(1+maxcol);
-    unsigned rstart = lstart + pTaskList[i]*(1+matdata.natoms_per_list);
-    myval->setMatrixBookeepingElement( bstart, matdata.nlist[pTaskList[i]] - 1 );
-    for(unsigned j=1; j<matdata.nlist[pTaskList[i]]; ++j) {
-      myval->setMatrixBookeepingElement( bstart+j, matdata.nlist[rstart+j] - fbsize );
+    unsigned rstart = lstart + pTaskList[i]*(1+natoms_per_list);
+    myval->setMatrixBookeepingElement( bstart, nlist_v[pTaskList[i]] - 1 );
+    for(unsigned j=1; j<nlist_v[pTaskList[i]]; ++j) {
+      myval->setMatrixBookeepingElement( bstart+j, nlist_v[rstart+j] - matdata.fbsize );
     }
   }
+  copyMatrixBookeepingFromFirstComponent( taskmanager.getActionInput().outmat );
   for(unsigned i=1; i<getNumberOfComponents(); ++i) {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToComponent(0) );
   }
-  findMaximumColumnLength();
   // We need to setup the task manager here because at this point we know the size of the sparse matrices
   unsigned nder = 6 + 3*matdata.natoms_per_three_list + virialSize;
   //there was an if on `matdata.components` but both branches were calling the next line
@@ -511,17 +510,17 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
     const AdjacencyMatrixData<CV>& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput output ) {
-  const unsigned nneigh=actiondata.nlist[task_index];
+  const unsigned fstart=task_index*(1+actiondata.outmat.ncols);
+  const unsigned nneigh=actiondata.outmat[fstart];
   const unsigned n3neigh=(actiondata.natoms_per_three_list>0) ?
                          actiondata.nlist_three[task_index]:0;
   VectorView atoms(output.buffer.data(), nneigh + n3neigh );
 
-  const unsigned fstart = actiondata.nlists + task_index*(1+actiondata.natoms_per_list);
   const View<double,3> pos0( input.inputdata + 3 * task_index);
   for(unsigned i=0; i<nneigh; ++i) {
-    atoms[i][0] = input.inputdata[3*actiondata.nlist[fstart+i]+0] - pos0[0];
-    atoms[i][1] = input.inputdata[3*actiondata.nlist[fstart+i]+1] - pos0[1];
-    atoms[i][2] = input.inputdata[3*actiondata.nlist[fstart+i]+2] - pos0[2];
+    atoms[i][0] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+0] - pos0[0];
+    atoms[i][1] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+1] - pos0[1];
+    atoms[i][2] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+2] - pos0[2];
   }
 
   if( actiondata.natoms_per_three_list>0 ) {
@@ -565,10 +564,10 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
     }
   }
 
-  for(unsigned i=1; i<nneigh; ++i ) {
+  for(unsigned i=0; i<nneigh; ++i ) {
     adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
-    const std::size_t valpos = (i-1)*ncomponents;
-    MatrixOutput adjout{View<double,1>{&output.values[ valpos]},
+    const std::size_t valpos = i*ncomponents;
+    MatrixOutput adjout{View<double,1>{&output.values[valpos]},
                         View{output.derivatives.data() + valpos*nderiv,nderiv}};
     CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
     if( !actiondata.components ) {
@@ -601,7 +600,7 @@ void AdjacencyMatrixBase<CV, myPTM>::applyNonZeroRankForces( std::vector<double>
 template <class CV, typename myPTM>
 int AdjacencyMatrixBase<CV, myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const AdjacencyMatrixData<CV>& actiondata ) {
-  return actiondata.nlist[task_index] - 1;
+  return actiondata.outmat[task_index*(1+actiondata.outmat.ncols)];
 }
 
 template <class CV, typename myPTM>
@@ -612,15 +611,12 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
     const ParallelActionsInput& /*input*/,
     ForceIndexHolder force_indices ) {
 
-  const unsigned fstart = actiondata.nlists
-                          + task_index*(1 + actiondata.natoms_per_list);
-
   const auto three_task_index= 3 * task_index;
   force_indices.indices[0][0] = three_task_index;
   force_indices.indices[0][1] = three_task_index + 1;
   force_indices.indices[0][2] = three_task_index + 2;
 
-  const unsigned myatom = 3 * actiondata.nlist[fstart + 1 + colno];
+  const unsigned myatom = 3 * (actiondata.outmat[ task_index*(1+actiondata.outmat.ncols) + 1 + colno] + actiondata.fbsize); 
   force_indices.indices[0][3] = myatom;
   force_indices.indices[0][4] = myatom + 1;
   force_indices.indices[0][5] = myatom + 2;

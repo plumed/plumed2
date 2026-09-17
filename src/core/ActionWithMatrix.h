@@ -85,8 +85,6 @@ protected:
   void copyMatrixBookeepingFromFirstComponent( RequiredMatrixElements& outmat );
 /// Update all the arrays for doing bookeeping
   void updateBookeepingArrays( RequiredMatrixElements& mat );
-/// Find the length of the longest column in the output matrix if it is required
-  void findMaximumColumnLength();
 /// Get an array that tells us which indices are in each column
   void getColumnBookeepingArrays( RequiredMatrixElements& outmat );
 public:
