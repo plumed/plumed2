@@ -41,18 +41,22 @@ struct MatrixTimesMatrixInput {
   bool no_thread_gather;
   bool gatherForceOnColumns;
   bool secondMatrixIsSparse;
-  std::vector<unsigned> locations;
+  std::vector<std::size_t> locations_v;
+  std::size_t* locations{nullptr};
   RequiredMatrixElements outmat;
+  void update() {
+    locations=locations_v.data();
+  }
 #ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1])
+#pragma acc enter data copyin(this[0:1],no_thread_gather,gatherForceOnColumns,secondMatrixIsSparse,locations[0:locations_v.size()])
     funcinput.toACCDevice();
     outmat.toACCDevice();
   }
   void removeFromACCDevice() const {
     funcinput.removeFromACCDevice();
     outmat.removeFromACCDevice();
-#pragma acc exit data delete(this[0:1])
+#pragma acc exit data delete(locations[0:locations_v.size()],secondMatrixIsSparse,gatherForceOnColumns,no_thread_gather,this[0:1])
   }
 #endif //__PLUMED_HAS_OPENACC
 };
@@ -497,7 +501,7 @@ void MatrixTimesMatrix<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& 
   Value* arg1 = getPntrToArgument(1);
   if( arg1->getNumberOfColumns()<arg1->getShape()[1] ){
       std::size_t maxcol = arg1->getLengthOfLongestColumn();
-      std::vector<unsigned>& loc = taskmanager.getActionInput().locations;
+      std::vector<std::size_t>& loc = taskmanager.getActionInput().locations_v;
       if( loc.size()!=(1+maxcol)*arg1->getShape()[1] ) {
           loc.resize( (1+maxcol)*arg1->getShape()[1] );
       }
@@ -514,6 +518,7 @@ void MatrixTimesMatrix<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& 
               loc[startpos]++;
           }
       }
+      taskmanager.getActionInput().update();
   }
   taskmanager.applyForces( outforces );
   if( no_thread_gather ) { 
