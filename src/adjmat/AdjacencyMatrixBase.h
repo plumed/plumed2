@@ -38,6 +38,8 @@ struct AdjacencyMatrixData {
   T matrixdata;
   bool usepbc{true};
   bool components{false};
+  bool no_thread_gather{false};
+  bool gatherForceOnColumns{false};
   unsigned fbsize{0};
   RequiredMatrixElements outmat; 
   std::size_t nlists{0};
@@ -49,7 +51,7 @@ struct AdjacencyMatrixData {
   }
 #ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1],usepbc,components,fbsize, \
+#pragma acc enter data copyin(this[0:1],usepbc,components,no_thread_gather,gatherForceOnColumns,fbsize, \
                               nlists,natoms_per_three_list, \
                               nlist_three[0:nlist_three_v.size()])
     matrixdata.toACCDevice();
@@ -60,7 +62,7 @@ struct AdjacencyMatrixData {
     outmat.removeFromACCDevice();
 #pragma acc exit data delete(nlist_three[0:nlist_three_v.size()], \
                              natoms_per_three_list,nlists, \
-                             fbsize, components, usepbc, this[0:1])
+                             fbsize,gatherForceOnColumns,no_thread_gather,components,usepbc,this[0:1])
   }
 #endif //__PLUMED_HAS_OPENACC
 };
@@ -313,6 +315,11 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
       matdata.fbsize = getConstPntrToComponent(0)->getShape()[0];
   }
   matdata.matrixdata.parseInput( this );
+  matdata.gatherForceOnColumns = false;
+  matdata.no_thread_gather = no_thread_gather;
+  if( no_thread_gather && threeblocks.size()>0 ) {
+      error("AVOID_THREAD_GATHER flag cannot be used with this action");
+  } 
   taskmanager.setActionInput( matdata );
 }
 
@@ -496,11 +503,17 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
     getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToComponent(0) );
   }
   // We need to setup the task manager here because at this point we know the size of the sparse matrices
-  unsigned nder = 6 + 3*matdata.natoms_per_three_list + virialSize;
-  //there was an if on `matdata.components` but both branches were calling the next line
-  taskmanager.setupParallelTaskManager( nder, getNumberOfDerivatives() );
-  // Create the workspace that we use in performTask
-  taskmanager.setWorkspaceSize(3*(maxcol + 2 + matdata.natoms_per_three_list) );
+  if( no_thread_gather ) {
+     unsigned maxatoms = maxcol;
+     if( maxcolsize>maxatoms ){
+         maxatoms = maxcolsize;
+     }
+     taskmanager.setupParallelTaskManager( 3 + 3*matdata.natoms_per_three_list + virialSize, 3*threeblocks.size()+virialSize );
+     taskmanager.setWorkspaceSize(3*(maxatoms + 1 + matdata.natoms_per_three_list) + 3*(6+matdata.natoms_per_three_list)+virialSize ); 
+  } else { 
+     taskmanager.setupParallelTaskManager( 6 + 3*matdata.natoms_per_three_list + virialSize, getNumberOfDerivatives() );
+     taskmanager.setWorkspaceSize(3*(maxcol + 1 + matdata.natoms_per_three_list) );
+  }
   // And run all the tasks
   taskmanager.runAllTasks();
 }
@@ -516,25 +529,34 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
                          actiondata.nlist_three[task_index]:0;
   VectorView atoms(output.buffer.data(), nneigh + n3neigh );
 
-  const View<double,3> pos0( input.inputdata + 3 * task_index);
-  for(unsigned i=0; i<nneigh; ++i) {
-    atoms[i][0] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+0] - pos0[0];
-    atoms[i][1] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+1] - pos0[1];
-    atoms[i][2] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+2] - pos0[2];
-  }
+  if( actiondata.gatherForceOnColumns ) {
+     const View<double,3> pos0( input.inputdata + 3 * (task_index+actiondata.fbsize) ); 
+     for(unsigned i=0; i<nneigh; ++i) {
+       atoms[i][0] = pos0[0] - input.inputdata[3*actiondata.outmat[fstart+1+i]+0];
+       atoms[i][1] = pos0[1] - input.inputdata[3*actiondata.outmat[fstart+1+i]+1];
+       atoms[i][2] = pos0[2] - input.inputdata[3*actiondata.outmat[fstart+1+i]+2];
+     }
+  } else {
+     const View<double,3> pos0( input.inputdata + 3 * task_index);
+     for(unsigned i=0; i<nneigh; ++i) {
+       atoms[i][0] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+0] - pos0[0];
+       atoms[i][1] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+1] - pos0[1];
+       atoms[i][2] = input.inputdata[3*(actiondata.outmat[fstart+1+i]+actiondata.fbsize)+2] - pos0[2];
+     }
 
-  if( actiondata.natoms_per_three_list>0 ) {
-    // Retrieve the set of third atoms
-    unsigned fstart3 = actiondata.nlists
-                       + task_index*(1+actiondata.natoms_per_three_list);
-    for(unsigned i=1; i<n3neigh; ++i) {
-      atoms[nneigh+i-1][0] =
-        input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
-      atoms[nneigh+i-1][1] =
-        input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
-      atoms[nneigh+i-1][2] =
-        input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
-    }
+     if( actiondata.natoms_per_three_list>0 ) {
+       // Retrieve the set of third atoms
+       unsigned fstart3 = actiondata.nlists
+                          + task_index*(1+actiondata.natoms_per_three_list);
+       for(unsigned i=1; i<n3neigh; ++i) {
+         atoms[nneigh+i-1][0] =
+           input.inputdata[3*actiondata.nlist_three[fstart3+i]+0] - pos0[0];
+         atoms[nneigh+i-1][1] =
+           input.inputdata[3*actiondata.nlist_three[fstart3+i]+1] - pos0[1];
+         atoms[nneigh+i-1][2] =
+           input.inputdata[3*actiondata.nlist_three[fstart3+i]+2] - pos0[2];
+       }
+     }
   }
 
 
@@ -554,6 +576,9 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
 
   // And calculate this row of the matrices
   std::size_t nderiv(6 + 3*adjinp.natoms + virialSize);
+  if( actiondata.no_thread_gather ) {
+      nderiv = 3 + + 3*adjinp.natoms + virialSize;
+  } 
   const unsigned ncomponents =(actiondata.components) ? 4 : 1;
 
   // Must clear the derivatives here as otherwise sparsity pattern
@@ -564,37 +589,95 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
     }
   }
 
-  for(unsigned i=0; i<nneigh; ++i ) {
-    adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
-    const std::size_t valpos = i*ncomponents;
-    MatrixOutput adjout{View<double,1>{&output.values[valpos]},
-                        View{output.derivatives.data() + valpos*nderiv,nderiv}};
-    CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
-    if( !actiondata.components ) {
-      continue ;
-    }
-    output.values[valpos+1] = atoms[i][0];
-    output.values[valpos+2] = atoms[i][1];
-    output.values[valpos+3] = atoms[i][2];
-    if( input.noderiv ) {
-      continue ;
-    }
-    //sugar for not having to repeat [valpos*nderiv+something]
-    for(int ii=1; ii<4; ++ii) {
-      auto derivs  = output.derivatives.template subview_n<5>(valpos*nderiv+ii*nderiv);
-      derivs[0] = -1.0;
-      derivs[1] =  1.0;
-      derivs[2] = -atoms[i][0];
-      derivs[3] = -atoms[i][1];
-      derivs[4] = -atoms[i][2];
-    }
-
+  if( actiondata.no_thread_gather ) {
+     for(unsigned i=0; i<nneigh; ++i ) {
+       adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
+       const std::size_t valpos = i*ncomponents;
+       MatrixOutput adjout{View<double,1>{&output.values[valpos]},
+                           View{output.buffer.data() + 3*(nneigh+n3neigh),nderiv+3}};
+       CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
+       if( actiondata.components ) {
+           output.values[valpos+1] = atoms[i][0];
+           output.values[valpos+2] = atoms[i][1];
+           output.values[valpos+3] = atoms[i][2]; 
+       }
+       if( input.noderiv ) {
+           continue;
+       }
+       if( fabs(adjout.val[0])>epsilon ) {
+           if( actiondata.gatherForceOnColumns ) {
+               auto derivs  = output.derivatives.template subview_n<3>(valpos*nderiv);
+               derivs[0] = adjout.deriv[3];
+               derivs[1] = adjout.deriv[4];  
+               derivs[2] = adjout.deriv[5]; 
+           } else {
+               auto derivs  = output.derivatives.template subview_n<3>(valpos*nderiv);
+               derivs[0] = adjout.deriv[0];
+               derivs[1] = adjout.deriv[1];
+               derivs[2] = adjout.deriv[2];
+               for(unsigned j=6; j<nderiv+3;++j) {
+                   output.derivatives[valpos*nderiv + j - 3] = adjout.deriv[j];
+               }
+           }
+       }
+       if( !actiondata.components ) {
+           continue;
+       }
+       if( actiondata.gatherForceOnColumns ) {
+          for(int ii=1; ii<4; ++ii) {
+            auto derivs  = output.derivatives.template subview_n<1>(valpos*nderiv+ii*nderiv);
+            derivs[0] = 1.0;
+          }
+       } else {
+          for(int ii=1; ii<4; ++ii) {
+            auto derivs  = output.derivatives.template subview_n<4>(valpos*nderiv+ii*nderiv);
+            derivs[0] = -1.0;
+            derivs[1] = -atoms[i][0];
+            derivs[2] = -atoms[i][1];
+            derivs[3] = -atoms[i][2];
+          }
+       }
+     }
+  } else {
+     for(unsigned i=0; i<nneigh; ++i ) {
+       adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
+       const std::size_t valpos = i*ncomponents;
+       MatrixOutput adjout{View<double,1>{&output.values[valpos]},
+                           View{output.derivatives.data() + valpos*nderiv,nderiv}};
+       CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
+       if( !actiondata.components ) {
+         continue ;
+       }
+       output.values[valpos+1] = atoms[i][0];
+       output.values[valpos+2] = atoms[i][1];
+       output.values[valpos+3] = atoms[i][2];
+       if( input.noderiv ) {
+         continue ;
+       }
+       //sugar for not having to repeat [valpos*nderiv+something]
+       for(int ii=1; ii<4; ++ii) {
+         auto derivs  = output.derivatives.template subview_n<5>(valpos*nderiv+ii*nderiv);
+         derivs[0] = -1.0;
+         derivs[1] =  1.0;
+         derivs[2] = -atoms[i][0];
+         derivs[3] = -atoms[i][1];
+         derivs[4] = -atoms[i][2];
+       }
+     }
   }
 }
 
 template <class CV, typename myPTM>
 void AdjacencyMatrixBase<CV, myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
+  if( no_thread_gather ) {
+    getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
+    taskmanager.setNForceScalars( maxcolsize );
+    taskmanager.applyForces( outforces, false );
+    taskmanager.setNForceScalars( getPntrToComponent(0)->getNumberOfColumns() );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = false;
+  }
 }
 
 template <class CV, typename myPTM>
@@ -611,66 +694,123 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
     const ParallelActionsInput& /*input*/,
     ForceIndexHolder force_indices ) {
 
-  const auto three_task_index= 3 * task_index;
-  force_indices.indices[0][0] = three_task_index;
-  force_indices.indices[0][1] = three_task_index + 1;
-  force_indices.indices[0][2] = three_task_index + 2;
+  if( !actiondata.no_thread_gather ) { 
+     const auto three_task_index= 3 * task_index;
+     force_indices.indices[0][0] = three_task_index;
+     force_indices.indices[0][1] = three_task_index + 1;
+     force_indices.indices[0][2] = three_task_index + 2;
 
-  const unsigned myatom = 3 * (actiondata.outmat[ task_index*(1+actiondata.outmat.ncols) + 1 + colno] + actiondata.fbsize); 
-  force_indices.indices[0][3] = myatom;
-  force_indices.indices[0][4] = myatom + 1;
-  force_indices.indices[0][5] = myatom + 2;
-  if( actiondata.components ) {
-    force_indices.indices[1][0] = three_task_index;
-    force_indices.indices[1][1] = myatom;
-    force_indices.indices[2][0] = three_task_index + 1;
-    force_indices.indices[2][1] = myatom + 1;
-    force_indices.indices[3][0] = three_task_index + 2;
-    force_indices.indices[3][1] = myatom + 2;
-  }
+     const unsigned myatom = 3 * (actiondata.outmat[ task_index*(1+actiondata.outmat.ncols) + 1 + colno] + actiondata.fbsize); 
+     force_indices.indices[0][3] = myatom;
+     force_indices.indices[0][4] = myatom + 1;
+     force_indices.indices[0][5] = myatom + 2;
+     if( actiondata.components ) {
+       force_indices.indices[1][0] = three_task_index;
+       force_indices.indices[1][1] = myatom;
+       force_indices.indices[2][0] = three_task_index + 1;
+       force_indices.indices[2][1] = myatom + 1;
+       force_indices.indices[3][0] = three_task_index + 2;
+       force_indices.indices[3][1] = myatom + 2;
+     }
 
-  force_indices.threadsafe_derivatives_end[0] = 0;
-  unsigned n = 6;
-  if( actiondata.natoms_per_three_list>0 ) {
-    const unsigned n3neigh = actiondata.nlist_three[task_index];
-    const unsigned fstart3 = actiondata.nlists
-                             + task_index*(1 + actiondata.natoms_per_three_list);
-    for(unsigned j=1; j<n3neigh; ++j) {
-      unsigned my3atom = 3 * actiondata.nlist_three[fstart3 + j];
-      force_indices.indices[0][n  ] = my3atom;
-      force_indices.indices[0][n+1] = my3atom + 1;
-      force_indices.indices[0][n+2] = my3atom + 2;
-      n += 3;
-    }
-  }
-  const unsigned virstart = ntotal_force - 9;
-  force_indices.indices[0][n  ] = virstart + 0;
-  force_indices.indices[0][n+1] = virstart + 1;
-  force_indices.indices[0][n+2] = virstart + 2;
-  force_indices.indices[0][n+3] = virstart + 3;
-  force_indices.indices[0][n+4] = virstart + 4;
-  force_indices.indices[0][n+5] = virstart + 5;
-  force_indices.indices[0][n+6] = virstart + 6;
-  force_indices.indices[0][n+7] = virstart + 7;
-  force_indices.indices[0][n+8] = virstart + 8;
+     force_indices.threadsafe_derivatives_end[0] = 0;
+     unsigned n = 6;
+     if( actiondata.natoms_per_three_list>0 ) {
+       const unsigned n3neigh = actiondata.nlist_three[task_index];
+       const unsigned fstart3 = actiondata.nlists
+                                + task_index*(1 + actiondata.natoms_per_three_list);
+       for(unsigned j=1; j<n3neigh; ++j) {
+         unsigned my3atom = 3 * actiondata.nlist_three[fstart3 + j];
+         force_indices.indices[0][n  ] = my3atom;
+         force_indices.indices[0][n+1] = my3atom + 1;
+         force_indices.indices[0][n+2] = my3atom + 2;
+         n += 3;
+       }
+     }
+     const unsigned virstart = ntotal_force - 9;
+     force_indices.indices[0][n  ] = virstart + 0;
+     force_indices.indices[0][n+1] = virstart + 1;
+     force_indices.indices[0][n+2] = virstart + 2;
+     force_indices.indices[0][n+3] = virstart + 3;
+     force_indices.indices[0][n+4] = virstart + 4;
+     force_indices.indices[0][n+5] = virstart + 5;
+     force_indices.indices[0][n+6] = virstart + 6;
+     force_indices.indices[0][n+7] = virstart + 7;
+     force_indices.indices[0][n+8] = virstart + 8;
 
-  force_indices.tot_indices[0] = n + 9;
-  if( actiondata.components ) {
-    force_indices.threadsafe_derivatives_end[1] = 0;
-    force_indices.threadsafe_derivatives_end[2] = 0;
-    force_indices.threadsafe_derivatives_end[3] = 0;
-    force_indices.indices[1][2] = virstart;
-    force_indices.indices[1][3] = virstart + 1;
-    force_indices.indices[1][4] = virstart + 2;
-    force_indices.indices[2][2] = virstart + 3;
-    force_indices.indices[2][3] = virstart + 4;
-    force_indices.indices[2][4] = virstart + 5;
-    force_indices.indices[3][2] = virstart + 6;
-    force_indices.indices[3][3] = virstart + 7;
-    force_indices.indices[3][4] = virstart + 8;
-    force_indices.tot_indices[1] = 5;
-    force_indices.tot_indices[2] = 5;
-    force_indices.tot_indices[3] = 5;
+     force_indices.tot_indices[0] = n + 9;
+     if( actiondata.components ) {
+       force_indices.threadsafe_derivatives_end[1] = 0;
+       force_indices.threadsafe_derivatives_end[2] = 0;
+       force_indices.threadsafe_derivatives_end[3] = 0;
+       force_indices.indices[1][2] = virstart;
+       force_indices.indices[1][3] = virstart + 1;
+       force_indices.indices[1][4] = virstart + 2;
+       force_indices.indices[2][2] = virstart + 3;
+       force_indices.indices[2][3] = virstart + 4;
+       force_indices.indices[2][4] = virstart + 5;
+       force_indices.indices[3][2] = virstart + 6;
+       force_indices.indices[3][3] = virstart + 7;
+       force_indices.indices[3][4] = virstart + 8;
+       force_indices.tot_indices[1] = 5;
+       force_indices.tot_indices[2] = 5;
+       force_indices.tot_indices[3] = 5;
+     }
+  } else if( actiondata.gatherForceOnColumns ) {
+     const auto three_task_index = 3 * (task_index+actiondata.fbsize);
+     force_indices.indices[0][0] = three_task_index;
+     force_indices.indices[0][1] = three_task_index + 1;
+     force_indices.indices[0][2] = three_task_index + 2;
+     force_indices.threadsafe_derivatives_end[0] = 3;
+     force_indices.tot_indices[0] = 3;
+     if( actiondata.components ) {
+       force_indices.indices[1][0] = three_task_index;
+       force_indices.indices[2][0] = three_task_index + 1;
+       force_indices.indices[3][0] = three_task_index + 2;
+       force_indices.threadsafe_derivatives_end[1] = 1;
+       force_indices.threadsafe_derivatives_end[2] = 1;
+       force_indices.threadsafe_derivatives_end[3] = 1;
+       force_indices.tot_indices[1] = 1;
+       force_indices.tot_indices[2] = 1;
+       force_indices.tot_indices[3] = 1;
+     }
+  } else {
+     const auto three_task_index= 3 * task_index;
+     force_indices.indices[0][0] = three_task_index;
+     force_indices.indices[0][1] = three_task_index + 1;
+     force_indices.indices[0][2] = three_task_index + 2; 
+     force_indices.threadsafe_derivatives_end[0] = 3;
+     const unsigned virstart = ntotal_force - 9;
+     force_indices.indices[0][3] = virstart + 0;
+     force_indices.indices[0][4] = virstart + 1;
+     force_indices.indices[0][5] = virstart + 2;
+     force_indices.indices[0][6] = virstart + 3;
+     force_indices.indices[0][7] = virstart + 4;
+     force_indices.indices[0][8] = virstart + 5;
+     force_indices.indices[0][9] = virstart + 6;
+     force_indices.indices[0][10] = virstart + 7;
+     force_indices.indices[0][11] = virstart + 8;
+     force_indices.tot_indices[0] = 12; 
+     if( actiondata.components ) {
+       force_indices.indices[1][0] = three_task_index;
+       force_indices.indices[2][0] = three_task_index + 1;
+       force_indices.indices[3][0] = three_task_index + 2;
+       force_indices.threadsafe_derivatives_end[1] = 1;
+       force_indices.threadsafe_derivatives_end[2] = 1;
+       force_indices.threadsafe_derivatives_end[3] = 1;
+       force_indices.indices[1][1] = virstart;
+       force_indices.indices[1][2] = virstart + 1;
+       force_indices.indices[1][3] = virstart + 2;
+       force_indices.indices[2][1] = virstart + 3;
+       force_indices.indices[2][2] = virstart + 4;
+       force_indices.indices[2][3] = virstart + 5;
+       force_indices.indices[3][1] = virstart + 6;
+       force_indices.indices[3][2] = virstart + 7;
+       force_indices.indices[3][3] = virstart + 8;
+       force_indices.tot_indices[1] = 4;
+       force_indices.tot_indices[2] = 4;
+       force_indices.tot_indices[3] = 4;
+     }
   }
 }
 
