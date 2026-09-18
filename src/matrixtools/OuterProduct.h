@@ -226,9 +226,11 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
                                   output.values.data()+i*input.ncomponents,
                                   output.buffer.data()+2*input.ncomponents );
       T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
-      for(unsigned j=0; j<input.ncomponents; ++j) {
-        for(unsigned k=0; k<input.ncomponents; ++k) {
-          output.derivatives[i*input.ncomponents*input.ncomponents+input.ncomponents*j+k] = matout.derivs[j][ind+k];
+      if( !input.noderiv ) {
+        for(unsigned j=0; j<input.ncomponents; ++j) {
+          for(unsigned k=0; k<input.ncomponents; ++k) {
+            output.derivatives[i*input.ncomponents*input.ncomponents+input.ncomponents*j+k] = matout.derivs[j][ind+k];
+          }
         }
       }
     }

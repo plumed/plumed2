@@ -433,6 +433,7 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
   useacc(false),
+  derivativesZeroWhenValueZero(false),
   nderivatives_per_task(0),
   nthreaded_forces(0),
   myinput(ParallelActionsInput::create(av->getPbc())),
