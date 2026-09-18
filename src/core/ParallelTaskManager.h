@@ -354,6 +354,9 @@ protected:
   bool serial;
 /// Are we using acc for parallisation
   bool useacc;
+/// Check if the value of the derivative is known to be zero if the value
+/// is zero.  Used to optimise force calculation
+  bool derivativesZeroWhenValueZero;
 /// Number of derivatives calculated for each task
   std::size_t nderivatives_per_task;
 /// The number of forces on each thread
@@ -502,6 +505,14 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   omp_forces.resize(t);
   for(unsigned i=0; i<t; ++i) {
     omp_forces[i].resize(nforce_ts);
+  }
+  // Check if we know the derivative of the component is zero if the value is zero
+  derivativesZeroWhenValueZero = true;
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+      if( !(action->getConstPntrToComponent(i))->isDerivativeZeroWhenValueIsZero() ) {
+          derivativesZeroWhenValueZero = false;
+          break;
+      }
   }
 }
 
@@ -684,7 +695,19 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
 
         // If this is a matrix this returns a number that isn't one as we have to loop over the columns
         const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
-        for(unsigned j=0; j<nvpt; ++j) {
+        for(unsigned j=0; j<nvpt; ++j) { 
+          // Skip the force calculation if we have been told that we can do this when the value is zero 
+          if( derivativesZeroWhenValueZero ) {
+              bool canskip = true;
+              for(unsigned k=0; k<myinput.ncomponents;++k) {
+                  if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
+                      canskip = false;
+                  }
+              }
+              if( canskip ) {
+                  continue;
+              }
+          }
           // Get the force indices
           T::getForceIndices( task_index,
                               j,
