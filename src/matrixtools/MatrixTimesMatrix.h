@@ -38,9 +38,9 @@ constexpr bool isDissimilarities<T,std::void_t<typename T::isDissimilarities>> =
 template <typename T>
 struct MatrixTimesMatrixInput {
   T funcinput;
-  bool no_thread_gather;
-  bool gatherForceOnColumns;
-  bool secondMatrixIsSparse;
+  bool no_thread_gather{false};
+  bool gatherForceOnColumns{false};
+  bool secondMatrixIsSparse{false};
   std::vector<std::size_t> locations_v;
   std::size_t* locations{nullptr};
   RequiredMatrixElements outmat;
