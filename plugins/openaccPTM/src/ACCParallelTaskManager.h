@@ -48,6 +48,7 @@ class AccParallelTaskManager : public ParallelTaskManager<T> {
   using ParallelTaskManager<T>::input_buffer;
   using ParallelTaskManager<T>::serial;
   using ParallelTaskManager<T>::useacc;
+  using ParallelTaskManager<T>::derivativesZeroWhenValueZero;
   using ParallelTaskManager<T>::getValueStashSize;
 public:
   typedef typename ParallelTaskManager<T>::ParallelActionsInput ParallelActionsInput;
@@ -252,6 +253,18 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
+        // Skip the force calculation if we have been told that we can do this when the value is zero 
+        if( derivativesZeroWhenValueZero ) {
+            bool canskip = true;
+            for(unsigned k=0; k<myinput.ncomponents;++k) {
+                if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
+                    canskip = false;
+                }
+            }
+            if( canskip ) {
+                continue;
+            }
+        }
         auto force_indices = forces_indicesArg(t,vID);
         // Create a force index holder
         // Get the indices for forces
