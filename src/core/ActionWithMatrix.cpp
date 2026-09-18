@@ -151,7 +151,7 @@ void ActionWithMatrix::updateBookeepingArrays( RequiredMatrixElements& outmat ) 
 void ActionWithMatrix::getColumnBookeepingArrays( RequiredMatrixElements& outmat ) {
   outmat.ncols = maxcolsize;
   Value* mycomp = getPntrToComponent(0);
-  outmat.resize( outmat.ncols*(1+mycomp->getShape()[1]) );
+  outmat.resize( mycomp->getShape()[1]*(1+outmat.ncols) );
   for(unsigned i=0; i<mycomp->getShape()[1]; ++i) {
       outmat[i*(1+outmat.ncols)] = 0;
   }
