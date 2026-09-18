@@ -673,9 +673,9 @@ void AdjacencyMatrixBase<CV, myPTM>::applyNonZeroRankForces( std::vector<double>
   if( no_thread_gather ) {
     getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
     taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
-    taskmanager.setNForceScalars( maxcolsize );
+    taskmanager.setNForceScalars( getNumberOfComponents()*maxcolsize );
     taskmanager.applyForces( outforces, false );
-    taskmanager.setNForceScalars( getPntrToComponent(0)->getNumberOfColumns() );
+    taskmanager.setNForceScalars( getNumberOfComponents()*getPntrToComponent(0)->getNumberOfColumns() );
     taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = false;
   }
 }
