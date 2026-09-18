@@ -69,11 +69,11 @@ namespace PLMD {
 namespace matrixtools {
 
 class TransposeMatrix : public MatrixOperationBase {
-private: 
+private:
 /// The array for matrix bookeeping
   std::vector<unsigned> matrix_bookeeping;
 /// The locations of each element of the transposed matrix in the original matrix
-  std::vector<unsigned> force_mapper; 
+  std::vector<unsigned> force_mapper;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -89,7 +89,9 @@ public:
 ///
   void apply() override ;
 ///
-  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
+  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override {
+    plumed_error();
+  }
 };
 
 PLUMED_REGISTER_ACTION(TransposeMatrix,"TRANSPOSE")
@@ -131,7 +133,7 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
     setNotPeriodic();
   }
   if( getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() ) {
-      getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
+    getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   }
 }
 
@@ -144,7 +146,7 @@ void TransposeMatrix::prepare() {
       shape[0] = 1;
       shape[1] = myarg->getShape()[0];
       myval->setShape( shape );
-    } 
+    }
     if( myval->getNumberOfColumns()!=myarg->getShape()[0] ) {
       myval->reshapeMatrixStore( myarg->getShape()[0]  );
     }
@@ -178,24 +180,24 @@ void TransposeMatrix::calculate() {
     matrix_bookeeping.resize( myval->getShape()[0]*(1+maxcol) );
     force_mapper.resize( myval->getShape()[0]*maxcol );
     for(unsigned i=0; i<myval->getShape()[0]; ++i) {
-        matrix_bookeeping[i*(1+maxcol)] = 0;
+      matrix_bookeeping[i*(1+maxcol)] = 0;
     }
-    // Now get the bookeeping 
+    // Now get the bookeeping
     unsigned arg_ncol = myarg->getNumberOfColumns();
     for(unsigned i=0; i<myarg->getShape()[0]; ++i) {
-        unsigned nr = myarg->getRowLength(i);
-        for(unsigned j=0; j<nr; ++j) {
-            unsigned ind = myarg->getRowIndex( i, j );
-            unsigned startpos = ind*(1+maxcol); 
-            matrix_bookeeping[startpos + 1 + matrix_bookeeping[startpos]] = i; 
-            myval->set( ind*maxcol + matrix_bookeeping[startpos], myarg->get( i*arg_ncol+j, false)  );
-            force_mapper[ind*maxcol + matrix_bookeeping[startpos]] = i*arg_ncol+j;
-            matrix_bookeeping[startpos]++;
-        }
+      unsigned nr = myarg->getRowLength(i);
+      for(unsigned j=0; j<nr; ++j) {
+        unsigned ind = myarg->getRowIndex( i, j );
+        unsigned startpos = ind*(1+maxcol);
+        matrix_bookeeping[startpos + 1 + matrix_bookeeping[startpos]] = i;
+        myval->set( ind*maxcol + matrix_bookeeping[startpos], myarg->get( i*arg_ncol+j, false)  );
+        force_mapper[ind*maxcol + matrix_bookeeping[startpos]] = i*arg_ncol+j;
+        matrix_bookeeping[startpos]++;
+      }
     }
     // And copy all the bookeeping to the output value
     for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
-        myval->setMatrixBookeepingElement( i, matrix_bookeeping[i] );
+      myval->setMatrixBookeepingElement( i, matrix_bookeeping[i] );
     }
   }
 }
@@ -217,10 +219,10 @@ void TransposeMatrix::apply() {
     } else {
       unsigned nval_cols = myval->getNumberOfColumns();
       for(unsigned i=0; i<myval->getShape()[0]; ++i) {
-          unsigned nr = myval->getRowLength(i);
-          for(unsigned j=0; j<nr; ++j) {
-              myarg->addForce( force_mapper[nval_cols*i+j], myval->getForce(nval_cols*i + j), false );
-          }
+        unsigned nr = myval->getRowLength(i);
+        for(unsigned j=0; j<nr; ++j) {
+          myarg->addForce( force_mapper[nval_cols*i+j], myval->getForce(nval_cols*i + j), false );
+        }
       }
     }
   }

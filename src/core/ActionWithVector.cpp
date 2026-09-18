@@ -179,7 +179,7 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
   return active_tasks;
 }
 
-void ActionWithVector::getAtomicInputData( std::vector<double>& inputdata ) const { 
+void ActionWithVector::getAtomicInputData( std::vector<double>& inputdata ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
 }
 
@@ -296,14 +296,18 @@ void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMa
 
 void ActionWithVector::getInputData( std::vector<double>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
   getAtomicInputData( inputdata );
-  if( getNumberOfArguments()==0 ) return;
+  if( getNumberOfArguments()==0 ) {
+    return;
+  }
   getArgumentInputData( inputdata );
   copyArgumentBookeeping( argumentsMap );
 }
 
 void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
   getAtomicInputData( inputdata );
-  if( getNumberOfArguments()==0 ) return;
+  if( getNumberOfArguments()==0 ) {
+    return;
+  }
   getArgumentInputData( inputdata );
   copyArgumentBookeeping( argumentsMap );
 }

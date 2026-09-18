@@ -42,12 +42,12 @@ $s_B$ are switching functions, and $r_{ij}$ and $r_{ik}$ are the distances betwe
 $i$ and $k$.  Less formally, this formula ensures that $j,k$ element of the output matrix is one if there is a bridging
 atom between atom $j$ and $k$.
 
-Notice that the BRIDGE_MATRIX action is also a shortcut. If we have a single group of non-bridging atoms then we can compute 
-the contact matrix $\mathbf{C}$ between the non-bridging and bridging atoms. The BRIDGE_MATRIX, $\mathbf{M}$, can by calculated 
-from $\mathbf{C}$ by multiplying $\mathbf{C}$ by its transpose.  Similarly, if we have two groups of non-bridging atoms 
-we can calculate the BRIDGE_MATRIX by calculating a [CONTACT_MATRIX](CONTACT_MATRIX.md) between the first set of non-bridging atoms and 
-a second [CONTACT_MATRIX](CONTACT_MATRIX.md) between the bridging atoms and the bridging atoms and the second set of non-bridging atoms.  
-The bridge matrix is the product of these two matrices.  
+Notice that the BRIDGE_MATRIX action is also a shortcut. If we have a single group of non-bridging atoms then we can compute
+the contact matrix $\mathbf{C}$ between the non-bridging and bridging atoms. The BRIDGE_MATRIX, $\mathbf{M}$, can by calculated
+from $\mathbf{C}$ by multiplying $\mathbf{C}$ by its transpose.  Similarly, if we have two groups of non-bridging atoms
+we can calculate the BRIDGE_MATRIX by calculating a [CONTACT_MATRIX](CONTACT_MATRIX.md) between the first set of non-bridging atoms and
+a second [CONTACT_MATRIX](CONTACT_MATRIX.md) between the bridging atoms and the bridging atoms and the second set of non-bridging atoms.
+The bridge matrix is the product of these two matrices.
 
 In the following example input atoms 100-200 can serve as bridging atoms between the atoms in GROUPA and GROUPB and the
 two switching functions $s_A$ and $s_B$ in the formula above are identical.
@@ -125,47 +125,49 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
 }
 
 BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao) {
+  Action(ao),
+  ActionShortcut(ao) {
   std::string b_atoms;
   parse("BRIDGING_ATOMS",b_atoms);
   std::string swstr, swA_str, swB_str;
   parse("SWITCH",swstr);
   if( swstr.length()==0 ) {
-      parse("SWITCHA",swA_str);
-      if( swA_str.length()==0 ) {
-          error("must set either SWITCH or SWITCHA+SWITCHB");
-      }
-      parse("SWITCHB",swB_str);
-      if( swB_str.length()==0 ) {
-          error("found SWITCHA but no SWITCHB");
-      }
-  } 
+    parse("SWITCHA",swA_str);
+    if( swA_str.length()==0 ) {
+      error("must set either SWITCH or SWITCHA+SWITCHB");
+    }
+    parse("SWITCHB",swB_str);
+    if( swB_str.length()==0 ) {
+      error("found SWITCHA but no SWITCHB");
+    }
+  }
   bool nopbc;
-  std::string pbcstr=""; 
+  std::string pbcstr="";
   parseFlag("NOPBC",nopbc);
   if( nopbc ) {
-      pbcstr = " NOPBC";
+    pbcstr = " NOPBC";
   }
 
   std::string grp_str;
   if( grp_str.length()>0 ) {
-      if( swstr.length()>0 ) {
-          readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grp_str + " GROUPB=" + b_atoms + " SWITCH={" + swstr + "}" + pbcstr );
-          readInputLine( getShortcutLabel() + "_cmatT: TRANSPOSE ARG=" + getShortcutLabel() + "_cmat" );
-      } else {
-          readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grp_str + " GROUPB=" + b_atoms + " SWITCH={" + swA_str + "}" + pbcstr );
-          readInputLine( getShortcutLabel() + "_cmatT: CONTACT_MATRIX GROUPA=" + b_atoms + " GROUPB=" + grp_str + " SWITCH={" + swB_str + "}" + pbcstr );
-      }
-      readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cmatT");
+    if( swstr.length()>0 ) {
+      readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grp_str + " GROUPB=" + b_atoms + " SWITCH={" + swstr + "}" + pbcstr );
+      readInputLine( getShortcutLabel() + "_cmatT: TRANSPOSE ARG=" + getShortcutLabel() + "_cmat" );
+    } else {
+      readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grp_str + " GROUPB=" + b_atoms + " SWITCH={" + swA_str + "}" + pbcstr );
+      readInputLine( getShortcutLabel() + "_cmatT: CONTACT_MATRIX GROUPA=" + b_atoms + " GROUPB=" + grp_str + " SWITCH={" + swB_str + "}" + pbcstr );
+    }
+    readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cmatT");
   } else {
-      if( swA_str.length()==0 ) { swA_str = swB_str = swstr; }
-      std::string grpA_str, grpB_str;
-      parse("GROUPA",grpA_str);
-      parse("GROUPB",grpB_str);
-      readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grpA_str + " GROUPB=" + b_atoms + " SWITCH={" + swA_str + "}" + pbcstr );
-      readInputLine( getShortcutLabel() + "_cmatT: CONTACT_MATRIX GROUPA=" + b_atoms + " GROUPB=" + grpB_str + " SWITCH={" + swB_str + "}" + pbcstr );
-      readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cmatT");
+    if( swA_str.length()==0 ) {
+      swA_str = swB_str = swstr;
+    }
+    std::string grpA_str, grpB_str;
+    parse("GROUPA",grpA_str);
+    parse("GROUPB",grpB_str);
+    readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grpA_str + " GROUPB=" + b_atoms + " SWITCH={" + swA_str + "}" + pbcstr );
+    readInputLine( getShortcutLabel() + "_cmatT: CONTACT_MATRIX GROUPA=" + b_atoms + " GROUPB=" + grpB_str + " SWITCH={" + swB_str + "}" + pbcstr );
+    readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cmatT");
   }
 }
 

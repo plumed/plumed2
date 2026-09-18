@@ -509,10 +509,10 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   // Check if we know the derivative of the component is zero if the value is zero
   derivativesZeroWhenValueZero = true;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-      if( !(action->getConstPntrToComponent(i))->isDerivativeZeroWhenValueIsZero() ) {
-          derivativesZeroWhenValueZero = false;
-          break;
-      }
+    if( !(action->getConstPntrToComponent(i))->isDerivativeZeroWhenValueIsZero() ) {
+      derivativesZeroWhenValueZero = false;
+      break;
+    }
   }
 }
 
@@ -640,11 +640,11 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks() ;
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
-  // Only set to false if we are doing a loop over the columns of a matrix to avoid 
+  // Only set to false if we are doing a loop over the columns of a matrix to avoid
   // having to gather forces across multiple nodes
   if( reset_forces ) {
-      // Clear force buffer
-      std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+    // Clear force buffer
+    std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
   }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
@@ -695,18 +695,18 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
 
         // If this is a matrix this returns a number that isn't one as we have to loop over the columns
         const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
-        for(unsigned j=0; j<nvpt; ++j) { 
-          // Skip the force calculation if we have been told that we can do this when the value is zero 
+        for(unsigned j=0; j<nvpt; ++j) {
+          // Skip the force calculation if we have been told that we can do this when the value is zero
           if( derivativesZeroWhenValueZero ) {
-              bool canskip = true;
-              for(unsigned k=0; k<myinput.ncomponents;++k) {
-                  if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
-                      canskip = false;
-                  }
+            bool canskip = true;
+            for(unsigned k=0; k<myinput.ncomponents; ++k) {
+              if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
+                canskip = false;
               }
-              if( canskip ) {
-                  continue;
-              }
+            }
+            if( canskip ) {
+              continue;
+            }
           }
           // Get the force indices
           T::getForceIndices( task_index,

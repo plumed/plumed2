@@ -145,11 +145,11 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
   }
   secondArgumentIsConstant=true;
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      if( !getPntrToArgument(getNumberOfComponents()+i)->isConstant() ) {
-          secondArgumentIsConstant=false;
-          break;
-      }
-  } 
+    if( !getPntrToArgument(getNumberOfComponents()+i)->isConstant() ) {
+      secondArgumentIsConstant=false;
+      break;
+    }
+  }
   taskmanager.setActionInput( actiondata );
 }
 
@@ -205,50 +205,50 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
                                        ParallelActionsOutput& output ) {
   auto args = output.buffer.subview(0, 2*input.ncomponents);
   if( actiondata.no_thread_gather ) {
-      unsigned first_arg_base = 0, second_arg_base = input.ncomponents, ind = 0; 
-      if( actiondata.gatherForceOnColumns ) {
-        first_arg_base = input.ncomponents;
-        second_arg_base = 0;
-        ind = input.ncomponents;
+    unsigned first_arg_base = 0, second_arg_base = input.ncomponents, ind = 0;
+    if( actiondata.gatherForceOnColumns ) {
+      first_arg_base = input.ncomponents;
+      second_arg_base = 0;
+      ind = input.ncomponents;
+    }
+    for(unsigned i=0; i<input.ncomponents; ++i) {
+      args[first_arg_base+i] = input.inputdata[input.argstarts[first_arg_base + i] + task_index];
+    }
+    unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+    unsigned nelements = actiondata.outmat[fstart];
+    for(unsigned i=0; i<nelements; ++i) {
+      std::size_t argpos = actiondata.outmat[fstart+1+i];
+      for(unsigned j=0; j<input.ncomponents; ++j) {
+        args[second_arg_base+j] = input.inputdata[input.argstarts[second_arg_base+j] + argpos];
       }
-      for(unsigned i=0; i<input.ncomponents; ++i) {
-        args[first_arg_base+i] = input.inputdata[input.argstarts[first_arg_base + i] + task_index];
-      }                        
-      unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-      unsigned nelements = actiondata.outmat[fstart];
-      for(unsigned i=0; i<nelements; ++i) {
-        std::size_t argpos = actiondata.outmat[fstart+1+i];
-        for(unsigned j=0; j<input.ncomponents; ++j) {
-          args[second_arg_base+j] = input.inputdata[input.argstarts[second_arg_base+j] + argpos];
-        }                          
-        MatrixElementOutput matout( input.ncomponents,
-                                    2*input.ncomponents,
-                                    output.values.data()+i*input.ncomponents,
-                                    output.buffer.data()+2*input.ncomponents );
-        T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
-        for(unsigned j=0; j<input.ncomponents; ++j) {
-            for(unsigned k=0; k<input.ncomponents; ++k) {
-                output.derivatives[i*input.ncomponents*input.ncomponents+input.ncomponents*j+k] = matout.derivs[j][ind+k];
-            }
+      MatrixElementOutput matout( input.ncomponents,
+                                  2*input.ncomponents,
+                                  output.values.data()+i*input.ncomponents,
+                                  output.buffer.data()+2*input.ncomponents );
+      T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
+      for(unsigned j=0; j<input.ncomponents; ++j) {
+        for(unsigned k=0; k<input.ncomponents; ++k) {
+          output.derivatives[i*input.ncomponents*input.ncomponents+input.ncomponents*j+k] = matout.derivs[j][ind+k];
         }
       }
+    }
   } else {
-      for(unsigned i=0; i<input.ncomponents; ++i) {
-        args[i] = input.inputdata[input.argstarts[i] + task_index];
+    for(unsigned i=0; i<input.ncomponents; ++i) {
+      args[i] = input.inputdata[input.argstarts[i] + task_index];
+    }
+    unsigned fstart = task_index*(1+actiondata.outmat.ncols);
+    unsigned nelements = actiondata.outmat[fstart];
+    for(unsigned i=0; i<nelements; ++i) {
+      std::size_t argpos = actiondata.outmat[fstart+1+i];
+      for(unsigned j=0; j<input.ncomponents; ++j) {
+        args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
       }
-      unsigned fstart = task_index*(1+actiondata.outmat.ncols);
-      unsigned nelements = actiondata.outmat[fstart];
-      for(unsigned i=0; i<nelements; ++i) {
-        std::size_t argpos = actiondata.outmat[fstart+1+i];
-        for(unsigned j=0; j<input.ncomponents; ++j) {
-          args[input.ncomponents+j] = input.inputdata[input.argstarts[input.ncomponents+j] + argpos];
-        }
-        MatrixElementOutput matout( input.ncomponents,
-                                    2*input.ncomponents,
-                                    output.values.data()+i*input.ncomponents,
-                                    output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
-        T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
-      }
+      MatrixElementOutput matout( input.ncomponents,
+                                  2*input.ncomponents,
+                                  output.values.data()+i*input.ncomponents,
+                                  output.derivatives.data() + 2*i*input.ncomponents*input.ncomponents );
+      T::calculate( input.noderiv, actiondata.funcinput, {args.data(),args.size()}, matout );
+    }
   }
 }
 
