@@ -46,6 +46,7 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool isproduct;
+  bool secondArgumentIsConstant;
   PTM taskmanager;
 public:
   static void registerKeywords( Keywords& keys );
@@ -142,6 +143,13 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
       getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
     }
   }
+  secondArgumentIsConstant=true;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      if( !getPntrToArgument(getNumberOfComponents()+i)->isConstant() ) {
+          secondArgumentIsConstant=false;
+          break;
+      }
+  } 
   taskmanager.setActionInput( actiondata );
 }
 
@@ -247,7 +255,7 @@ void OuterProductBase<T>::performTask( std::size_t task_index,
 template <class T>
 void OuterProductBase<T>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
-  if( no_thread_gather ) {
+  if( no_thread_gather && !secondArgumentIsConstant ) {
     getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
     taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
     taskmanager.setNForceScalars( getNumberOfComponents()*maxcolsize );
