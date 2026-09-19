@@ -519,6 +519,7 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
 
 template <class T>
 void ParallelTaskManager<T>::setNForceScalars( const unsigned& n ) {
+  myinput.nscalars = n;
   myinput.nforcescalars = n;
   nderivatives_per_task = myinput.nderivatives_per_scalar*myinput.nforcescalars;
 }
