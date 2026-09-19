@@ -257,7 +257,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
         if( derivativesZeroWhenValueZero ) {
           bool canskip = true;
           for(unsigned k=0; k<myinput.ncomponents; ++k) {
-            if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
+            if( fabs(fake_vals[vID*myinput.ncomponents+k])>epsilon ) {
               canskip = false;
             }
           }
