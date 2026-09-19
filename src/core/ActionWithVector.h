@@ -30,6 +30,18 @@
 
 namespace PLMD {
 
+struct ArgumentsBookkeeping {
+  std::size_t nargs{0};
+  std::vector<std::size_t> ranks;
+  std::vector<std::size_t> shapestarts;
+  std::vector<std::size_t> shapedata;
+  std::vector<std::size_t> ncols;
+  std::vector<std::size_t> bookstarts;
+  std::vector<std::size_t> booksizes;
+  std::vector<std::size_t> bookeeping;
+  std::vector<std::size_t> argstarts;
+};
+
 class ActionWithVector:
   public ActionAtomistic,
   public ActionWithValue,
@@ -46,6 +58,8 @@ protected:
   void ignoreMaskArguments();
 /// Accumulate the forces from the Values
   bool checkForForces();
+/// Copy all the data to the bookeeping array
+  void copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMap ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithVector(const ActionOptions&);
@@ -57,14 +71,21 @@ public:
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Get the list of tasks that are active
-  virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
+  virtual std::vector<unsigned>& getListOfActiveTasks();
+  const std::vector<unsigned>& getConstListOfActiveTasks() const ;
 /// Find out how many tasks we need to perform in this loop
   virtual void getNumberOfTasks( unsigned& ntasks );
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This is so we can parallelize with GPU
-  virtual void getInputData( std::vector<double>& inputdata ) const ;
-  virtual void getInputData( std::vector<float>& inputdata ) const ;
+  virtual void getInputData( std::vector<double>& inputdata, ArgumentsBookkeeping& argumentsMap ) const ;
+  virtual void getInputData( std::vector<float>& inputdata, ArgumentsBookkeeping& argumentsMap ) const ;
+/// Get the atomic input data
+  virtual void getAtomicInputData( std::vector<double>& inputdata ) const ;
+  virtual void getAtomicInputData( std::vector<float>& inputdata ) const ;
+/// Get the argument input data
+  virtual void getArgumentInputData( std::vector<double>& inputdata ) const ;
+  virtual void getArgumentInputData( std::vector<float>& inputdata ) const ;
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
   virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash );
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
@@ -92,6 +113,11 @@ inline
 void ActionWithVector::ignoreMaskArguments() {
   plumed_assert( nmask<=0 );
   nmask=NoMasksUsed;
+}
+
+inline
+const std::vector<unsigned>& ActionWithVector::getConstListOfActiveTasks() const {
+  return active_tasks;
 }
 
 }

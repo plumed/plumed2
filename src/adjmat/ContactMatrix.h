@@ -97,6 +97,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data,
                                      MatrixOutput output ) {
   const double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
+    output.val[0]=0;
     return;  // Atoms can't be bonded to themselves
   }
   double dfunc;

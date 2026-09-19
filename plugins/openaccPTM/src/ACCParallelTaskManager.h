@@ -48,6 +48,7 @@ class AccParallelTaskManager : public ParallelTaskManager<T> {
   using ParallelTaskManager<T>::input_buffer;
   using ParallelTaskManager<T>::serial;
   using ParallelTaskManager<T>::useacc;
+  using ParallelTaskManager<T>::derivativesZeroWhenValueZero;
   using ParallelTaskManager<T>::getValueStashSize;
 public:
   typedef typename ParallelTaskManager<T>::ParallelActionsInput ParallelActionsInput;
@@ -140,15 +141,14 @@ void runAllTasksACC(typename T::input_type actiondata,
 template <class T>
 void AccParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
-  action->getInputData( input_buffer );
+  action->getInputData( input_buffer, argumentsMap );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  argumentsMap.setupArguments( action );
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
@@ -253,6 +253,18 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
+        // Skip the force calculation if we have been told that we can do this when the value is zero
+        if( derivativesZeroWhenValueZero ) {
+          bool canskip = true;
+          for(unsigned k=0; k<myinput.ncomponents; ++k) {
+            if( fabs(fake_vals[vID*myinput.ncomponents+k])>epsilon ) {
+              canskip = false;
+            }
+          }
+          if( canskip ) {
+            continue;
+          }
+        }
         auto force_indices = forces_indicesArg(t,vID);
         // Create a force index holder
         // Get the indices for forces
@@ -328,7 +340,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 template <class T>
 void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action );
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
   // Clear force buffer

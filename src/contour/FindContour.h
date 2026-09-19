@@ -52,7 +52,7 @@ public:
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override;
   void calculate() override;
-  void getInputData( std::vector<double>& inputdata ) const override;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
                            const ContourFindingObject<gridtools::EvaluateGridFunction>& actiondata,
                            ParallelActionsInput& input,

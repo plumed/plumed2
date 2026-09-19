@@ -240,6 +240,8 @@ public:
 ///
   void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
 ///
+  std::size_t getLengthOfLongestColumn() const ;
+///
   std::size_t getNumberOfColumns() const ;
 ///
   bool isSymmetric() const ;

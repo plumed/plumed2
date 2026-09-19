@@ -23,7 +23,6 @@
 #define __PLUMED_core_ParallelTaskManager_h
 
 #include "ActionWithVector.h"
-#include "ActionWithMatrix.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 #include "tools/View.h"
@@ -33,76 +32,6 @@
 #include "tools/OpenACC.h"
 
 namespace PLMD {
-
-struct ArgumentsBookkeeping {
-  std::size_t nargs{0};
-  std::vector<std::size_t> ranks;
-  std::vector<std::size_t> shapestarts;
-  std::vector<std::size_t> shapedata;
-  std::vector<std::size_t> ncols;
-  std::vector<std::size_t> bookstarts;
-  std::vector<std::size_t> booksizes;
-  std::vector<std::size_t> bookeeping;
-  std::vector<std::size_t> argstarts;
-  void setupArguments( const ActionWithArguments* action );
-};
-
-inline
-void ArgumentsBookkeeping::setupArguments( const ActionWithArguments* action ) {
-  nargs = action->getNumberOfArguments();
-  ranks.resize( nargs );
-  shapestarts.resize( nargs );
-  argstarts.resize( nargs );
-  std::size_t s = 0;
-  std::size_t ts = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    shapestarts[i] = ts;
-    ranks[i] = myarg->getRank();
-    ts += ranks[i];
-    argstarts[i] = s;
-    s += myarg->getNumberOfStoredValues();
-  }
-  shapedata.resize( ts );
-  ts = 0;
-  ncols.resize( nargs );
-  bookstarts.resize( nargs );
-  booksizes.resize( nargs );
-  std::size_t nbook = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    for(unsigned j=0; j<ranks[i]; ++j) {
-      shapedata[ts] = myarg->getShape()[j];
-      ++ts;
-    }
-    bookstarts[i] = nbook;
-    if( ranks[i]==1 ) {
-      ncols[i] = 1;
-      booksizes[i] = 2*myarg->getShape()[0];
-    } else if( ranks[i]==2 ) {
-      ncols[i] = myarg->getNumberOfColumns();
-      booksizes[i] = myarg->matrix_bookeeping.size();
-    }
-    nbook += booksizes[i];
-  }
-  bookeeping.resize( nbook );
-  ts = 0;
-  for(unsigned i=0; i<nargs; ++i) {
-    Value* myarg = action->getPntrToArgument(i);
-    if( ranks[i]==1 ) {
-      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
-        bookeeping[ts] = 1;
-        bookeeping[ts+1] = 0;
-        ts += 2;
-      }
-    } else if( ranks[i]==2 ) {
-      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
-        bookeeping[ts] = myarg->matrix_bookeeping[j];
-        ++ts;
-      }
-    }
-  }
-}
 
 template<typename precision>
 struct ParActionsInput {
@@ -421,12 +350,13 @@ protected:
   ActionWithVector* action;
 /// The MPI communicator
   Communicator& comm;
-/// Is this an action with matrix
-  bool ismatrix;
 /// True if not using MPI for parllisation
   bool serial;
 /// Are we using acc for parallisation
   bool useacc;
+/// Check if the value of the derivative is known to be zero if the value
+/// is zero.  Used to optimise force calculation
+  bool derivativesZeroWhenValueZero;
 /// Number of derivatives calculated for each task
   std::size_t nderivatives_per_task;
 /// The number of forces on each thread
@@ -460,6 +390,8 @@ public:
   void setActionInput( const input_type& adata );
 /// Creating the size of the workspace
   void setWorkspaceSize( std::size_t size );
+//// Set the number of force scalars per row
+  void setNForceScalars( const unsigned& n );
 /// Get the action input so we can use it
   input_type& getActionInput();
   const input_type& getActionInput() const ;
@@ -470,7 +402,7 @@ public:
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
-  void applyForces( std::vector<double>& forcesForApply );
+  void applyForces( std::vector<double>& forcesForApply, bool reset_forces=true );
 /// This is used to gather forces that are thread safe
   static void gatherThreadSafeForces( const ParallelActionsInput& input,
                                       const ForceIndexHolder& force_indices,
@@ -500,16 +432,12 @@ template <class T>
 ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   action(av),
   comm(av->comm),
-  ismatrix(false),
   useacc(false),
+  derivativesZeroWhenValueZero(false),
   nderivatives_per_task(0),
   nthreaded_forces(0),
   myinput(ParallelActionsInput::create(av->getPbc())),
   workspace_size(0) {
-  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(av);
-  if(am) {
-    ismatrix=true;
-  }
   action->parseFlag("USEGPU",useacc);
 #ifdef __PLUMED_USE_OPENACC
   if( useacc ) {
@@ -579,6 +507,21 @@ void ParallelTaskManager<T>::setupParallelTaskManager( std::size_t nder,
   for(unsigned i=0; i<t; ++i) {
     omp_forces[i].resize(nforce_ts);
   }
+  // Check if we know the derivative of the component is zero if the value is zero
+  derivativesZeroWhenValueZero = true;
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+    if( !(action->getConstPntrToComponent(i))->isDerivativeZeroWhenValueIsZero() ) {
+      derivativesZeroWhenValueZero = false;
+      break;
+    }
+  }
+}
+
+template <class T>
+void ParallelTaskManager<T>::setNForceScalars( const unsigned& n ) {
+  myinput.nscalars = n;
+  myinput.nforcescalars = n;
+  nderivatives_per_task = myinput.nderivatives_per_scalar*myinput.nforcescalars;
 }
 
 template <class T>
@@ -604,7 +547,7 @@ void ParallelTaskManager<T>::setWorkspaceSize( std::size_t size ) {
 template <class T>
 void ParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = true;
@@ -614,11 +557,10 @@ void ParallelTaskManager<T>::runAllTasks() {
       break;
     }
   }
-  action->getInputData( input_buffer );
+  action->getInputData( input_buffer, argumentsMap );
   myinput.dataSize = input_buffer.size();
   myinput.inputdata = input_buffer.data();
   // Transfer all the bookeeping information about the arguments
-  argumentsMap.setupArguments( action );
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
@@ -695,13 +637,17 @@ struct forceData<double> {
   }
 };
 template <class T>
-void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
+void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, bool reset_forces ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action ) ;
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks() ;
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
-  // Clear force buffer
-  std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  // Only set to false if we are doing a loop over the columns of a matrix to avoid
+  // having to gather forces across multiple nodes
+  if( reset_forces ) {
+    // Clear force buffer
+    std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
@@ -752,6 +698,18 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) 
         // If this is a matrix this returns a number that isn't one as we have to loop over the columns
         const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
         for(unsigned j=0; j<nvpt; ++j) {
+          // Skip the force calculation if we have been told that we can do this when the value is zero
+          if( derivativesZeroWhenValueZero ) {
+            bool canskip = true;
+            for(unsigned k=0; k<myinput.ncomponents; ++k) {
+              if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
+                canskip = false;
+              }
+            }
+            if( canskip ) {
+              continue;
+            }
+          }
           // Get the force indices
           T::getForceIndices( task_index,
                               j,

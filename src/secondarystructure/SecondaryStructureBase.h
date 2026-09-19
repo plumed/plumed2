@@ -79,8 +79,8 @@ public:
   explicit SecondaryStructureBase(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   void calculate() override;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const T& actiondata );
@@ -304,7 +304,7 @@ void SecondaryStructureBase<T,myPTM>::calculate() {
 }
 
 template <class T,typename myPTM>
-void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void SecondaryStructureBase<T,myPTM>::getAtomicInputData( std::vector<double>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -322,7 +322,7 @@ void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<double>& inputda
 }
 
 template <class T,typename myPTM>
-void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void SecondaryStructureBase<T,myPTM>::getAtomicInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
