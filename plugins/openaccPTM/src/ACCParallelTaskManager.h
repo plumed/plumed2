@@ -188,6 +188,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const std::vector<precision>& value_stash,
                         const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
+                        const bool derivativesZeroWhenValueZero,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size
                        ) {
@@ -257,7 +258,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
         if( derivativesZeroWhenValueZero ) {
           bool canskip = true;
           for(unsigned k=0; k<myinput.ncomponents; ++k) {
-            if( fabs(fake_vals[vID*myinput.ncomponents+k])>epsilon ) {
+            if( fabs(valstmp[myinput.nscalars*t+vID*myinput.ncomponents+k])>epsilon ) {
               canskip = false;
             }
           }
@@ -332,6 +333,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const std::vector<precision>& value_stash,
                         const std::vector<unsigned> & partialTaskList,
                         const unsigned nactive_tasks,
+                        const bool derivativesZeroWhenValueZero,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size
                        );
@@ -359,6 +361,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
       value_stash,
       partialTaskList,
       nactive_tasks,
+      derivativesZeroWhenValueZero,
       nderivatives_per_task,
       workspace_size
     );
