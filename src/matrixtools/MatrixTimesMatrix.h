@@ -286,7 +286,7 @@ void MatrixTimesMatrix<CV, myPTM>::getBasicMatrixBookeeping( ArgumentsBookkeepin
   argumentsMap.ncols[1] = arg1->getLengthOfLongestColumn();
   argumentsMap.bookstarts.resize(2);
   argumentsMap.bookstarts[0] = 0;
-  argumentsMap.bookstarts[1] = arg0->getShape()[1]*(1+argumentsMap.ncols[0]);
+  argumentsMap.bookstarts[1] = arg0->getShape()[0]*(1+argumentsMap.ncols[0]);
   argumentsMap.booksizes.resize(2);
   argumentsMap.booksizes[0] = arg0->getShape()[0]*(1+argumentsMap.ncols[0]);
   argumentsMap.booksizes[1] = arg1->getShape()[1]*(1+argumentsMap.ncols[1]);
