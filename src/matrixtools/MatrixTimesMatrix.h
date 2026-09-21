@@ -288,7 +288,7 @@ void MatrixTimesMatrix<CV, myPTM>::getBasicMatrixBookeeping( ArgumentsBookkeepin
   argumentsMap.bookstarts[0] = 0;
   argumentsMap.bookstarts[1] = arg0->getShape()[1]*(1+argumentsMap.ncols[0]);
   argumentsMap.booksizes.resize(2);
-  argumentsMap.booksizes[0] = arg0->getShape()[1]*(1+argumentsMap.ncols[0]);
+  argumentsMap.booksizes[0] = arg0->getShape()[0]*(1+argumentsMap.ncols[0]);
   argumentsMap.booksizes[1] = arg1->getShape()[1]*(1+argumentsMap.ncols[1]);
   argumentsMap.bookeeping.resize( argumentsMap.booksizes[0] + argumentsMap.booksizes[1] );
   for(unsigned i=0; i<arg0->getShape()[0]; ++i) {
