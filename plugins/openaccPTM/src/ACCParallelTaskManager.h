@@ -66,7 +66,7 @@ public:
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
-  void applyForces( std::vector<double>& forcesForApply );
+  void applyForces( std::vector<double>& forcesForApply, bool reset_forces=true );
 };
 
 struct ACCPTM {
@@ -340,13 +340,15 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #endif //__PLUMED_USE_OPENACC_FORCESMINE
 
 template <class T>
-void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
+void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, bool reset_forces ) {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
   forceData<precision> forces(forcesForApply);
-  // Clear force buffer
-  std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  if( reset_forces ) {
+    // Clear force buffer
+    std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+  }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
   // Retrieve the forces from the values
