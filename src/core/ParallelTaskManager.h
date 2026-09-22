@@ -458,12 +458,7 @@ template <class T>
 std::size_t ParallelTaskManager<T>::getValueStashSize() const {
   std::size_t valuesize=0;
   for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-    const Value* mycomp = action->getConstPntrToComponent(i);
-    if( mycomp->hasDerivatives() ) {
-      valuesize += mycomp->getNumberOfStoredValues()*(1+action->getNumberOfDerivatives());
-    } else {
-      valuesize += mycomp->getNumberOfStoredValues();
-    }
+    valuesize += action->getSizeOfValueInStash( action->getConstPntrToComponent(i) );
   }
   return valuesize;
 }

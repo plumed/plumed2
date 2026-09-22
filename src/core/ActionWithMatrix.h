@@ -92,6 +92,8 @@ public:
   explicit ActionWithMatrix(const ActionOptions&);
 /// Get the list of active tasks for this action
   std::vector<unsigned>& getListOfActiveTasks() override ;
+/// Get the size to use for the value in the stash
+  unsigned getSizeOfValueInStash( const Value* myval ) override ;
 /// Get the elements of the matrices into the output values
   void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
 /// Get the elements of the matrices into the output values

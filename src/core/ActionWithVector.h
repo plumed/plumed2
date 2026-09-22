@@ -86,6 +86,8 @@ public:
 /// Get the argument input data
   virtual void getArgumentInputData( std::vector<double>& inputdata ) const ;
   virtual void getArgumentInputData( std::vector<float>& inputdata ) const ;
+/// Get the size of the value in the stash
+  virtual unsigned getSizeOfValueInStash( const Value* myval );
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
   virtual void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash );
 /// This is so we an transfer data gathered in the parallel task manager to the underlying values
@@ -118,6 +120,14 @@ void ActionWithVector::ignoreMaskArguments() {
 inline
 const std::vector<unsigned>& ActionWithVector::getConstListOfActiveTasks() const {
   return active_tasks;
+}
+
+inline
+unsigned ActionWithVector::getSizeOfValueInStash( const Value* myval ) {
+  if( myval->hasDerivatives() ) {
+    return myval->getNumberOfStoredValues()*(1+getNumberOfDerivatives());
+  }
+  return myval->getNumberOfStoredValues();
 }
 
 }

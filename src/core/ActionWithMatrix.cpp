@@ -174,6 +174,17 @@ std::vector<unsigned>& ActionWithMatrix::getListOfActiveTasks() {
   }
 }
 
+unsigned ActionWithMatrix::getSizeOfValueInStash( const Value* myval ) {
+  unsigned nstored = myval->getNumberOfStoredValues();
+  if( no_thread_gather ) {
+    unsigned ncolstore = maxcolsize*myval->getShape()[1];
+    if( ncolstore>nstored ) {
+      return ncolstore;
+    }
+  }
+  return nstored;
+}
+
 void ActionWithMatrix::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
   unsigned ncomp = getNumberOfComponents();
   unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
