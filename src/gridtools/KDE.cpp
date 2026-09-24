@@ -223,8 +223,8 @@ public:
   static void convertHeightsToVolumes( const std::size_t& nargs, const std::vector<std::string>& bw, const std::string& volstr, ActionWithArguments* action );
   static void readGridParameters( KDEGridTools<K,P>& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
   static void setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
-  static void getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, const K& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
-  static void getNeighbors( const P& p, K& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
+  static void getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
+  static void getNeighbors( const P& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };
 
 template <class K, class P>
@@ -527,34 +527,34 @@ void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box
 }
 
 template <class K, class P>
-void KDEGridTools<K, P>::getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, const K& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
+void KDEGridTools<K, P>::getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
   std::size_t ng = gridobject.getDimension();
   plumed_assert( nneigh.size()==ng );
   std::vector<double> support( ng );
-  P::getSupport( p, kp, g.dp2cutoff, support );
+  P::getSupport( p, shape, g.dp2cutoff, support );
   for(unsigned i=0; i<ng; ++i) {
     nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
   }
 }
 
 template <>
-void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getDiscreteSupport( const KDEGridTools<DiagonalKernelParams,DiscreteKernel>& g, DiscreteKernel& p, const DiagonalKernelParams& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
+void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getDiscreteSupport( const KDEGridTools<DiagonalKernelParams,DiscreteKernel>& g, DiscreteKernel& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
   return;
 }
 
 template <class K, class P>
-void KDEGridTools<K,P>::getNeighbors( const P& p, K& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
-  gridobject.getNeighbors( kp.at, nneigh, num_neighbors, neighbors );
+void KDEGridTools<K,P>::getNeighbors( const P& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
+  gridobject.getNeighbors( View<const double>(at.data(),at.size()), nneigh, num_neighbors, neighbors );
 }
 
 template <>
-void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getNeighbors( const DiscreteKernel& p, DiagonalKernelParams& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
+void KDEGridTools<DiagonalKernelParams,DiscreteKernel>::getNeighbors( const DiscreteKernel& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
   num_neighbors=1;
   neighbors.resize(1);
-  for(unsigned i=0; i<kp.at.size(); ++i) {
-    kp.at[i] += 0.5*gridobject.getGridSpacing()[i];
+  for(unsigned i=0; i<at.size(); ++i) {
+    at[i] += 0.5*gridobject.getGridSpacing()[i];
   }
-  neighbors[0]=gridobject.getIndex( kp.at );
+  neighbors[0]=gridobject.getIndex( View<const double>(at.data(),at.size()) );
 }
 
 class SphericalKDEGridTools {
@@ -564,8 +564,8 @@ public:
   static void readBandwidthAndHeight( const UniversalVonMisses& params, ActionWithArguments* action );
   static void readGridParameters( SphericalKDEGridTools& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
   static void setupGridBounds( SphericalKDEGridTools& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
-  static void getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const VonMissesKernelParams& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
-  static void getNeighbors( const UniversalVonMisses& p, const VonMissesKernelParams& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
+  static void getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
+  static void getNeighbors( const UniversalVonMisses& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };
 
 void SphericalKDEGridTools::registerKeywords( Keywords& keys ) {
@@ -606,15 +606,15 @@ void SphericalKDEGridTools::readGridParameters( SphericalKDEGridTools& g, Action
   shape[1]=shape[2]=1;
 }
 
-void SphericalKDEGridTools::getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const VonMissesKernelParams& kp, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
+void SphericalKDEGridTools::getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject ) {
   plumed_assert( nneigh.size()==gridobject.getDimension() );
   std::vector<bool> ipbc( 3, false );
-  double fib_cutoff = std::log( epsilon / (kp.concentration/(4*pi*sinh(kp.concentration))) ) / kp.concentration;
+  double fib_cutoff = std::log( epsilon / (shape[0]/(4*pi*sinh(shape[0]))) ) / shape[0];   // The shape here is the concentration of the fisher kernel
   gridobject.setup( "fibonacci", ipbc, gridobject.getNumberOfPoints(), fib_cutoff );
 }
 
-void SphericalKDEGridTools::getNeighbors( const UniversalVonMisses& p, const VonMissesKernelParams& kp, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
-  gridobject.getNeighbors( kp.at, nneigh, num_neighbors, neighbors );
+void SphericalKDEGridTools::getNeighbors( const UniversalVonMisses& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors ) {
+  gridobject.getNeighbors( View<const double>(at.data(),at.size()), nneigh, num_neighbors, neighbors );
 }
 
 typedef KDE<DiagonalKernelParams,DiscreteKernel,KDEGridTools<DiagonalKernelParams,DiscreteKernel>> discretekde;
@@ -648,10 +648,12 @@ void KDEShortcut::registerKeywords(Keywords& keys) {
 KDEShortcut::KDEShortcut(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
+  bool usegpuFLAG=false;
+  parseFlag("USEGPU",usegpuFLAG);
   std::string kerneltype;
   parse("KERNEL",kerneltype);
   if( kerneltype=="DISCRETE" ) {
-    readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + (usegpuFLAG ? "ACC ":" ") + convertInputLineToString() );
     return;
   }
   std::vector<std::string> args;
@@ -675,25 +677,25 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
       error("invalid input for bandwidth parameter");
     } else if( bwargs[0]->getRank()<=1 ) {
       if( kerneltype.find("bin")==std::string::npos ) {
-        readInputLine( getShortcutLabel() + ": KDE_KERNELS " + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
       } else {
         std::size_t dd = kerneltype.find("-bin");
-        readInputLine( getShortcutLabel() + ": KDE_BEADS " + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
       }
     } else if( bwargs[0]->getRank()==2 ) {
-      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
     } else {
       error("found strange rank for bandwidth parameter");
     }
   } else if( bw.size()==argvals.size() ) {
     if( kerneltype.find("bin")==std::string::npos ) {
-      readInputLine( getShortcutLabel() + ": KDE_KERNELS " + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
     } else {
       std::size_t dd = kerneltype.find("-bin");
-      readInputLine( getShortcutLabel() + ": KDE_BEADS " + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
     }
   } else if( bw.size()==argvals.size()*argvals.size() ) {
-    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ")+ argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
   } else {
     error("invalid input for bandwidth");
   }
