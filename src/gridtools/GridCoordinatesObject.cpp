@@ -432,6 +432,11 @@ std::vector<std::size_t> GridCoordinatesObject::getNbin( const bool& shape ) con
 
 void GridCoordinatesObject::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
     unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
+  getNeighbors( View( pp.data(), pp.size() ), nneigh, num_neighbors, neighbors );
+}
+
+void GridCoordinatesObject::getNeighbors( const View<const double> pp, const std::vector<unsigned>& nneigh,
+    unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
   plumed_dbg_assert( bounds_set );
 
   if( gtype == flat ) {
