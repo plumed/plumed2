@@ -133,12 +133,12 @@ public:
   }
 #ifdef __PLUMED_HAS_OPENACC
   void toACCDevice() const {
-#pragma acc enter data copyin(this[0:1],periodic[0:periodic_v.size()],max_minus_min[0:max_minus_min_v.size()],inv_max_minus_min[0:inv_max_minus_min.size()])
+#pragma acc enter data copyin(this[0:1],periodic[0:periodic_v.size()],max_minus_min[0:max_minus_min_v.size()],inv_max_minus_min[0:inv_max_minus_min_v.size()])
     switchingFunction.toACCDevice();
   }
   void removeFromACCDevice() const  {
     switchingFunction.removeFromACCDevice();
-#pragma acc exit data delete(inv_max_minus_min[0:inv_max_minus_min.size()],max_minus_min[0:max_minus_min_v.size()],periodic[0:periodic_v.size()],this[0:1])
+#pragma acc exit data delete(inv_max_minus_min[0:inv_max_minus_min_v.size()],max_minus_min[0:max_minus_min_v.size()],periodic[0:periodic_v.size()],this[0:1])
   }
 #endif //__PLUMED_HAS_OPENACC
 };
