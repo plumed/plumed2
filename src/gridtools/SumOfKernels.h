@@ -77,16 +77,32 @@ public:
 
 class HistogramBeadKernel {
 public:
-  std::vector<HistogramBead> beads;
-  std::vector<double> gridspacing;
+  HistogramBead::KernelType kerneltype;
+  std::vector<std::size_t> periodic_v;
+  std::size_t* periodic{nullptr};
+  std::vector<double> domainmin_v;
+  double* domainmin{nullptr};
+  std::vector<double> domainmax_v;
+  double* domainmax{nullptr};
+  std::vector<double> gridspacing_v;
+  double* gridspacing{nullptr};
   static void registerKeywords( Keywords& keys );
   static void read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
   static void getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
   static double calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
-  void update() {}
-  void toACCDevice() const {}
-  void removeFromACCDevice() const  {}
+  void update() {
+    periodic = periodic_v.data();
+    domainmin = domainmin_v.data();
+    domainmax = domainmax_v.data();
+    gridspacing = gridspacing_v.data();
+  }
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],kerneltype,periodic[0:periodic_v.size()],domainmin[0:domainmin_v.size()],domainmax[0:domainmax_v.size()],gridspacing[0:gridspacing_v.size()])
+  }
+  void removeFromACCDevice() const  {
+#pragma acc exit data delete(gridspacing[0:gridspacing_v.size()],domainmax[0:domainmax_v.size()],domainmin[0:domainmin_v.size()],periodic[0:periodic_v.size()],kerneltype,this[0:1])
+  }
 };
 
 template <class K>

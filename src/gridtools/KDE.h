@@ -119,6 +119,13 @@ template <class K, class P, class G>
 void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
   // Setup the grid boundaries on first step
   G::setupGridBounds( func.g, box, gridobject, args, myval );
+  if( gridobject.getGridType()!="fibonacci" ) {
+    // Set the periodicity of the parameters
+    for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+      P::setArgumentDomain( i, func.kernelsum.params, gridobject.getGridSpacing()[i], gridobject.isPeriodic(i), gridobject.getMin()[i], gridobject.getMax()[i] );
+    }
+  }
+  func.kernelsum.params.update();
   // Check if the bandwidth changes during the simulation
   func.fixed_width = false;
   std::size_t ndim = gridobject.getDimension();
@@ -130,14 +137,6 @@ void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& bo
     G::getDiscreteSupport( func.g, func.kernelsum.params, View<const double>( myargs.data() + ndim, K::getNumberOfShapeParameters(ndim)), func.nneigh, gridobject );
     func.fixed_width = true;
   }
-  if( gridobject.getGridType()=="fibonacci" ) {
-    return;
-  }
-  // Set the periodicity of the parameters
-  for(unsigned i=0; i<gridobject.getDimension(); ++i) {
-    P::setArgumentDomain( i, func.kernelsum.params, gridobject.getGridSpacing()[i], gridobject.isPeriodic(i), gridobject.getMin()[i], gridobject.getMax()[i] );
-  }
-  func.kernelsum.params.update();
 }
 
 template <class K, class P, class G>

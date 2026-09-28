@@ -30,8 +30,8 @@ namespace PLMD {
 namespace gridtools {
 typedef KDE<DiagonalKernelParams,DiscreteKernel,KDEGridTools<DiagonalKernelParams,DiscreteKernel>,PLMD::ACCPTM> discretekde;
 PLUMED_REGISTER_ACTION(discretekde,"KDE_DISCRETEACC")
-// typedef KDE<DiagonalKernelParams,HistogramBeadKernel,KDEGridTools<DiagonalKernelParams,HistogramBeadKernel>,PLMD::ACCPTM> beadkde;
-// PLUMED_REGISTER_ACTION(beadkde,"KDE_BEADS")
+typedef KDE<DiagonalKernelParams,HistogramBeadKernel,KDEGridTools<DiagonalKernelParams,HistogramBeadKernel>,PLMD::ACCPTM> beadkde;
+PLUMED_REGISTER_ACTION(beadkde,"KDE_BEADS")
 typedef KDE<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>,PLMD::ACCPTM> flatkde;
 PLUMED_REGISTER_ACTION(flatkde,"KDE_KERNELSACC")
 typedef KDE<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools,PLMD::ACCPTM> sphericalkde;
