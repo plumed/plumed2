@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "plumed/core/ActionRegister.h"
 #include "plumed/gridtools/KDE.h"
+#include "plumed/gridtools/KDEGridTools.h"
+#include "plumed/gridtools/SphericalKDEGridTools.h"
 
 #include "ACCParallelTaskManager.h"
 
@@ -33,7 +35,7 @@ PLUMED_REGISTER_ACTION(discretekde,"KDE_DISCRETEACC")
 typedef KDE<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>,PLMD::ACCPTM> flatkde;
 PLUMED_REGISTER_ACTION(flatkde,"KDE_KERNELSACC")
 typedef KDE<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools,PLMD::ACCPTM> sphericalkde;
-PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDEACC") 
+PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDEACC")
 typedef KDE<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>,PLMD::ACCPTM> flatfkde;
 PLUMED_REGISTER_ACTION(flatfkde,"KDE_FULLCOVARACC")
 } // namespace colvar

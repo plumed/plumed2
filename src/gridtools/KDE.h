@@ -301,7 +301,6 @@ public:
   using input_type = KDEHelper<K, P, G>;
   using mytype=KDE<K, P, G, myPTM>;
   using PTM = typename myPTM::template PTM<mytype>;
-  // using PTM = ParallelTaskManager<KDE<K,P,G>>;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
