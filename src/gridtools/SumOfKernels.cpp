@@ -33,35 +33,47 @@ void HistogramBeadKernel::registerKeywords( Keywords& keys ) {
 }
 
 void HistogramBeadKernel::read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {
-  std::string kerneltype;
-  action->parse("KERNEL",kerneltype);
-  p.gridspacing.resize( args.size() );
-  p.beads.resize( args.size(), HistogramBead(HistogramBead::getKernelType(kerneltype), 0.0, 1.0, 0.5 ) );
+  std::string mykerneltype;
+  action->parse("KERNEL",mykerneltype);
+  p.kerneltype=HistogramBead::getKernelType(mykerneltype);
+  p.periodic_v.resize( args.size(), 0 );
+  p.domainmin_v.resize( args.size(), 0 );
+  p.domainmax_v.resize( args.size(), 0 );
+  p.gridspacing_v.resize( args.size() );
 }
 
 void HistogramBeadKernel::setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {
-  params.gridspacing[i] = spacing;
+  params.gridspacing_v[i] = spacing;
   if( isp ) {
-    double lcoord,  ucoord;
-    Tools::convert( min1, lcoord );
-    Tools::convert( max1, ucoord );
-    params.beads[i].isPeriodic( lcoord, ucoord );
-  } else {
-    params.beads[i].isNotPeriodic();
+    params.periodic_v[i] = 1;
+    Tools::convert( min1, params.domainmin_v[i] );
+    Tools::convert( max1, params.domainmax_v[i] );
   }
 }
 
 void HistogramBeadKernel::getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {
+  HistogramBead mybead( params.kerneltype, 0, 1, 0.5 );
   for(unsigned i=0; i<support.size(); ++i) {
-    params.beads[i].set( 0, params.gridspacing[i], shape[i] );
-    support[i] = params.beads[i].getCutoff();
+    if( params.periodic[i] ) {
+      mybead.isPeriodic( params.domainmin[i], params.domainmax[i] );
+    } else {
+      mybead.isNotPeriodic();
+    }
+    mybead.set( 0, params.gridspacing[i], shape[i] );
+    support[i] = mybead.getCutoff();
   }
 }
 
 double HistogramBeadKernel::calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
   double val = kp.height[0];
+  HistogramBead mybead( params.kerneltype, 0, 1, 0.5 );
   for(unsigned i=0; i<x.size(); ++i) {
-    paramderivs[i] = params.beads[i].calculateWithCutoff( kp.at[i], x[i], x[i]+params.gridspacing[i], kp.sigma[i], der[i] );
+    if( params.periodic[i] ) {
+      mybead.isPeriodic( params.domainmin[i], params.domainmax[i] );
+    } else {
+      mybead.isNotPeriodic();
+    }
+    paramderivs[i] = mybead.calculateWithCutoff( kp.at[i], x[i], x[i]+params.gridspacing[i], kp.sigma[i], der[i] );
     val = val*paramderivs[i];
   }
   for(unsigned i=0; i<x.size(); ++i) {
