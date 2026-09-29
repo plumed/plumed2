@@ -86,12 +86,6 @@ double HistogramBeadKernel::calc( const HistogramBeadKernel& params, const Diago
   return val;
 }
 
-DiagonalKernelParams::DiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
-  at(params.data(),ndim),
-  sigma(params.data()+ndim,ndim),
-  height(params.data()+2*ndim) {
-}
-
 bool DiagonalKernelParams::setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& argval ) {
   View<double> loc( params.data(), ndim );
   if( argval.size()==ndim+1 ) {
@@ -129,10 +123,6 @@ bool DiagonalKernelParams::bandwidthsAllSame( std::size_t ndim, const std::vecto
   return true;
 }
 
-std::size_t DiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
-  return 2*nargs + 1;
-}
-
 std::size_t DiagonalKernelParams::getNumberOfShapeParameters( const std::size_t& nargs ) {
   return nargs;
 }
@@ -155,12 +145,6 @@ double DiagonalKernelParams::evaluateR2( const RegularKernel<DiagonalKernelParam
     r2 += tmp*paramderivs[i];
   }
   return r2;
-}
-
-NonDiagonalKernelParams::NonDiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
-  at(params.data(),ndim),
-  metric(params.data()+ndim,ndim,ndim),
-  height(params.data()+ndim*(1+ndim)) {
 }
 
 bool NonDiagonalKernelParams::setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& argval ) {
@@ -191,10 +175,6 @@ bool NonDiagonalKernelParams::bandwidthIsConstant( std::size_t ndim, const std::
 
 bool NonDiagonalKernelParams::bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args ) {
   return DiagonalKernelParams::bandwidthsAllSame( ndim, args );
-}
-
-std::size_t NonDiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
-  return nargs + nargs*nargs + 1;
 }
 
 std::size_t NonDiagonalKernelParams::getNumberOfShapeParameters( const std::size_t& nargs ) {
@@ -257,12 +237,6 @@ double UniversalVonMisses::calc( const UniversalVonMisses& params, const VonMiss
   return newval;
 }
 
-VonMissesKernelParams::VonMissesKernelParams( const View<const double>& params, const std::size_t ndim ):
-  at(params.data()),
-  concentration(params.data()+3),
-  height(params.data()+4) {
-}
-
 bool VonMissesKernelParams::bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args ) {
   return args[3]->isConstant();
 }
@@ -282,11 +256,6 @@ bool VonMissesKernelParams::setKernelAndCheckHeight( View<double>& params, std::
   View<double,1> h( params.data()+4 );
   h[0] = argval[4];
   return true;
-}
-
-std::size_t VonMissesKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
-  plumed_dbg_assert( nargs==3 );
-  return 5;
 }
 
 std::size_t VonMissesKernelParams::getNumberOfShapeParameters( const std::size_t& nargs ) {
