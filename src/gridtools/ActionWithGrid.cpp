@@ -58,5 +58,19 @@ void ActionWithGrid::transferStashToValues( const std::vector<unsigned>& partial
   }
 }
 
+void ActionWithGrid::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) {
+  unsigned ncomponents = getNumberOfComponents();
+  for(unsigned i=0; i<ncomponents; ++i) {
+    Value* myval = copyOutput(i);
+    std::size_t ngder = myval->getNumberOfGridDerivatives();
+    for(unsigned j=0; j<myval->getNumberOfStoredValues(); ++j) {
+      myval->set( j, stash[(j*ncomponents + i)*(1+ngder)] );
+      for(unsigned k=0; k<ngder; ++k) {
+        myval->setGridDerivatives( j, k, stash[(j*ncomponents + i)*(1+ngder)+1+k] );
+      }
+    }
+  }
+}
+
 }
 }
