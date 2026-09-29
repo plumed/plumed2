@@ -38,7 +38,11 @@ public:
   View<const double> at;
   View<const double> sigma;
   View<const double,1> height;
-  DiagonalKernelParams( const View<const double>& params, const std::size_t ndim );
+  DiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data(),ndim),
+    sigma(params.data()+ndim,ndim),
+    height(params.data()+2*ndim) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
   static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& args );
@@ -48,12 +52,21 @@ public:
   static double evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
 
+inline
+std::size_t DiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  return 2*nargs + 1;
+}
+
 class NonDiagonalKernelParams {
 public:
   View<const double> at;
   View2D<const double> metric;
   View<const double,1> height;
-  NonDiagonalKernelParams( const View<const double>& params, const std::size_t ndim );
+  NonDiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data(),ndim),
+    metric(params.data()+ndim,ndim,ndim),
+    height(params.data()+ndim*(1+ndim)) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
   static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& args );
@@ -62,6 +75,11 @@ public:
   static void getSigmaProjections( const View<const double>& shape, std::vector<double>& support );
   static double evaluateR2( const RegularKernel<NonDiagonalKernelParams>& p, const NonDiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
+
+inline
+std::size_t NonDiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  return nargs + nargs*nargs + 1;
+}
 
 class DiscreteKernel {
 public:
@@ -212,13 +230,23 @@ public:
   View<const double,3> at;
   View<const double,1> concentration;
   View<const double,1> height;
-  VonMissesKernelParams( const View<const double>& params, const std::size_t ndim );
+  VonMissesKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data()),
+    concentration(params.data()+3),
+    height(params.data()+4) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
   static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& argval );
   static std::size_t getNumberOfParameters( const std::size_t& nargs );
   static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
 };
+
+inline
+std::size_t VonMissesKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  plumed_dbg_assert( nargs==3 );
+  return 5;
+}
 
 class UniversalVonMisses {
 public:
