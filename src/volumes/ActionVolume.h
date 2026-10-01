@@ -106,8 +106,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
   unsigned getNumberOfDerivatives() override;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index,
@@ -182,7 +182,7 @@ ActionVolume<CV, myPTM>::ActionVolume(const ActionOptions&ao):
 }
 
 template <class CV, typename myPTM>
-void ActionVolume<CV, myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void ActionVolume<CV, myPTM>::getAtomicInputData( std::vector<double>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -196,7 +196,7 @@ void ActionVolume<CV, myPTM>::getInputData( std::vector<double>& inputdata ) con
 }
 
 template <class CV, typename myPTM>
-void ActionVolume<CV, myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void ActionVolume<CV, myPTM>::getAtomicInputData( std::vector<float>& inputdata ) const {
   if( inputdata.size()!=3*getNumberOfAtoms() ) {
     inputdata.resize( 3*getNumberOfAtoms() );
   }
@@ -222,7 +222,7 @@ void ActionVolume<CV, myPTM>::calculate() {
   if( getPntrToComponent(0)->getRank()==0 ) {
     std::size_t nref = getNumberOfAtoms() - 1;
     std::vector<double> posvec;
-    getInputData( posvec );
+    getAtomicInputData( posvec );
     std::vector<double> deriv( getNumberOfDerivatives() );
     std::vector<double> val(1);
     View<double> valview(val.data(),1);

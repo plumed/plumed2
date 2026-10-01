@@ -537,4 +537,24 @@ bool Value::allElementsEqual() const {
   return true;
 }
 
+std::size_t Value::getLengthOfLongestColumn() const {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  std::vector<unsigned> column_lengths( shape[1], 0 );
+  for(unsigned i=0; i<shape[0]; ++i) {
+    unsigned nr = getRowLength(i);
+    for(unsigned j=0; j<nr; ++j) {
+      unsigned ind = getRowIndex( i, j );
+      column_lengths[ind]++;
+    }
+  }
+  // Find the longest column
+  std::size_t maxcol = column_lengths[0];
+  for(unsigned i=1; i<column_lengths.size(); ++i) {
+    if( column_lengths[i]>maxcol ) {
+      maxcol = column_lengths[i];
+    }
+  }
+  return maxcol;
+}
+
 }

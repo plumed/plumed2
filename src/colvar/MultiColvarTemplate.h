@@ -79,8 +79,8 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override ;
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index,
@@ -211,7 +211,7 @@ void MultiColvarTemplate<T,myPTM>::addComponentWithDerivatives( const std::strin
 }
 
 template <class CV, typename myPTM>
-void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void MultiColvarTemplate<CV,myPTM>::getAtomicInputData( std::vector<double>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -244,7 +244,7 @@ void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata
 }
 
 template <class CV, typename myPTM>
-void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void MultiColvarTemplate<CV,myPTM>::getAtomicInputData( std::vector<float>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );

@@ -163,7 +163,7 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
-  void getInputData( std::vector<double>& inputdata ) const override;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
                            const FindSphericalContourObject& actiondata,
                            ParallelActionsInput& input,
@@ -231,7 +231,7 @@ void FindSphericalContour::calculate() {
   taskmanager.runAllTasks();
 }
 
-void FindSphericalContour::getInputData( std::vector<double>& inputdata ) const {
+void FindSphericalContour::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t ndata = gridcoords.getNumberOfPoints();
   if( inputdata.size()!=6*ndata ) {
     inputdata.resize( 6*ndata );

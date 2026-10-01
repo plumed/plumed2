@@ -1,0 +1,37 @@
+# Compute sigma(r_ij) and the (x_ij,y_ij,z_ij) vectors
+q6mat: CONTACT_MATRIX ...
+GROUP=@mdatoms COMPONENTS AVOID_THREAD_GATHER
+SWITCH={RATIONAL  D_0=3.0 R_0=1.5}
+...
+# Evaluate the Y_l^m values for each bond
+q6sh: SPHERICAL_HARMONIC ARG=q6mat.x,q6mat.y,q6mat.z,q6mat.w L=6
+# Calculate the vector of q_lm(i) values
+aones: ONES SIZE=@natoms
+q6sp: MATRIX_VECTOR_PRODUCT ARG=q6sh.*,aones
+# Evaluate the |q_l(i)| values
+q6norm2: COMBINE ...
+PERIODIC=NO ARG=q6sp.*
+POWERS=2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+...
+q6norm: CUSTOM ARG=q6norm2 FUNC=sqrt(x) PERIODIC=NO
+# Construct a matrix in which the ith row contains the set of q_lm(i) values
+vecs: VSTACK ARG=q6sp.*
+# Divide each of the q_lm(i) values in the matrix we just calculated by |q_l(i)|
+ones: ONES SIZE=26
+normmat: OUTER_PRODUCT ARG=q6norm,ones AVOID_THREAD_GATHER
+uvecs: CUSTOM ARG=vecs,normmat FUNC=x/y PERIODIC=NO
+# Calculate a matrix containing all the Q(i,j) values
+# Notice that we use a MASK here so Q(i,j) is not calculated
+# if atoms i and j are further apart than d_max
+uvecsT: TRANSPOSE ARG=uvecs
+dpmat: MATRIX_PRODUCT ARG=uvecs,uvecsT MASK=q6mat.w AVOID_THREAD_GATHER
+prod: CUSTOM ARG=q6mat.w,dpmat FUNC=x*y PERIODIC=NO
+# Evaluate the numerator in the expression for s_i above
+numer: MATRIX_VECTOR_PRODUCT ARG=prod,aones
+# Evaluate the coordination numbers
+denom: MATRIX_VECTOR_PRODUCT ARG=q6mat.w,aones
+# Evaluate equation 7 for the atoms in the region of interest
+lq6: CUSTOM ARG=numer,denom FUNC=x/y PERIODIC=NO
+mean: MEAN ARG=lq6 PERIODIC=NO
+PRINT ARG=mean FILE=colvar FMT=%8.4f
+BIASVALUE ARG=mean

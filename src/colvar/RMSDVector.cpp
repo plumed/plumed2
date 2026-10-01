@@ -179,7 +179,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   }
   force_stash.resize( total_vals );
   ArgumentsBookkeeping abk;
-  abk.setupArguments( this );
+  copyArgumentBookeeping( abk );
   input.setupArguments( abk );
 }
 
@@ -219,7 +219,7 @@ void RMSDVector::calculate() {
     firststep=false;
   }
   input.noderiv = false;
-  getInputData( input_buffer );
+  getArgumentInputData( input_buffer );
   input.dataSize = input_buffer.size();
   input.inputdata = input_buffer.data();
 
@@ -436,7 +436,7 @@ void RMSDVector::gatherForces( std::size_t task_index,
 
 void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Clear force buffer
   outforces.assign( outforces.size(), 0.0 );

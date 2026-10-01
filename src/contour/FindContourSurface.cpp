@@ -172,7 +172,7 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
-  void getInputData( std::vector<double>& inputdata ) const override;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
                            const FindContourSurfaceObject& actiondata,
                            ParallelActionsInput& input,
@@ -275,7 +275,7 @@ const gridtools::GridCoordinatesObject& FindContourSurface::getGridCoordinatesOb
   return gridcoords;
 }
 
-void FindContourSurface::getInputData( std::vector<double>& inputdata ) const {
+void FindContourSurface::getArgumentInputData( std::vector<double>& inputdata ) const {
 #ifndef DNDEBUG
   std::size_t rank = gridcoords.getDimension();
   std::size_t ndata = gridcoords.getNumberOfPoints();
