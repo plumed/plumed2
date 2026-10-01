@@ -43,9 +43,18 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
       log.printf("  setting diagonal elements equal to zero\n");
     }
   }
-  parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
-  if( OpenMP::getNumThreads()==1 && getName().find("ACC")==std::string::npos ) {
-    no_thread_gather = false;
+  if( getName().find("ACC")!=std::string::npos ) {
+    bool ignore;
+    parseFlag("AVOID_THREAD_GATHER",ignore);
+    if( ignore ) {
+      warning("AVOID_THREAD_GATHER flag is always activated when the calculation is run on the GPU as the calculation is much faster with this option activated");
+    }
+    no_thread_gather=true;
+  } else {
+    parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
+    if( OpenMP::getNumThreads()==1 ) {
+      no_thread_gather = false;
+    }
   }
   if( no_thread_gather && comm.Get_size()>1 ) {
     error("AVOID_THREAD_GATHER keyword is incompatible with MPI - it should be possible to fix this. Email: gareth.tribello@gmail.com if you are interested");
