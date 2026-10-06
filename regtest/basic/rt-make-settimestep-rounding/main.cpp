@@ -12,8 +12,8 @@ void run(){
   std::vector<T> masses;
   std::vector<std::array<T,3>> positions;
   std::vector<std::array<T,3>> forces;
-  T box[3][3];
-  T virial[3][3];
+  T box[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+  T virial[3][3]={};
   
   Plumed p;
 
