@@ -218,6 +218,7 @@ void Ensemble::calculate() {
   comm.Sum(&mean[0], narg);
 
   std::vector<double> v_moment, dv_moment;
+  std::vector<double> central_lower_moment(do_central ? narg : 0,0.0);
   // calculate other moments
   if(do_moments) {
     v_moment.resize(narg);
@@ -239,25 +240,43 @@ void Ensemble::calculate() {
           dv_moment[i]     = moment*tmp;
         }
       }
-      // central moment
+      // A central moment also depends on the replica-averaged mean.
     } else {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
-          v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
-          dv_moment[i]     = moment*tmp*(fact-fact/norm);
+          const double delta=getArgument(i)-mean[i];
+          central_lower_moment[i]=fact*std::pow(delta,moment-1);
+          v_moment[i]=central_lower_moment[i]*delta;
         }
         if(ens_dim>1) {
           multi_sim_comm.Sum(&v_moment[0], narg);
+          multi_sim_comm.Sum(&central_lower_moment[0], narg);
         }
-      } else {
-        for(unsigned i=0; i<narg; ++i) {
-          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
-          dv_moment[i]     = moment*tmp*(fact-fact/norm);
-        }
+      }
+      comm.Sum(&central_lower_moment[0], narg);
+      for(unsigned i=0; i<narg; ++i) {
+        dv_moment[i]=moment*fact*(std::pow(getArgument(i)-mean[i],moment-1)-central_lower_moment[i]);
       }
     }
     comm.Sum(&v_moment[0], narg);
+  }
+
+  // Differentiate normalized weights before applying an optional power.
+  std::vector<double> dmean_bias(do_reweight ? narg : 0,0.0);
+  std::vector<double> dmoment_bias(do_reweight && do_moments ? narg : 0,0.0);
+  if(do_reweight) {
+    for(unsigned i=0; i<narg; ++i) {
+      const double delta=getArgument(i)-mean[i];
+      dmean_bias[i]=fact_kbt*delta;
+      if(do_moments) {
+        if(do_central) {
+          dmoment_bias[i]=fact_kbt*(std::pow(delta,moment)-v_moment[i]
+                                    -moment*delta*central_lower_moment[i]);
+        } else {
+          dmoment_bias[i]=fact_kbt*(std::pow(getArgument(i),moment)-v_moment[i]);
+        }
+      }
+    }
   }
 
   // calculate powers of moments
@@ -266,10 +285,16 @@ void Ensemble::calculate() {
       const double tmp1 = std::pow(mean[i],power-1);
       mean[i]          *= tmp1;
       dmean[i]         *= power*tmp1;
+      if(do_reweight) {
+        dmean_bias[i]*=power*tmp1;
+      }
       if(do_moments) {
         const double tmp2 = std::pow(v_moment[i],power-1);
         v_moment[i]      *= tmp2;
         dv_moment[i]     *= power*tmp2;
+        if(do_reweight) {
+          dmoment_bias[i]*=power*tmp2;
+        }
       }
     }
   }
@@ -281,8 +306,7 @@ void Ensemble::calculate() {
     v->set(mean[i]);
     setDerivative(v, i, dmean[i]);
     if(do_reweight) {
-      const double w_tmp = fact_kbt*(getArgument(i) - mean[i]);
-      setDerivative(v, narg, w_tmp);
+      setDerivative(v, narg, dmean_bias[i]);
     }
     if(do_moments) {
       // set moments
@@ -290,8 +314,7 @@ void Ensemble::calculate() {
       u->set(v_moment[i]);
       setDerivative(u, i, dv_moment[i]);
       if(do_reweight) {
-        const double w_tmp = fact_kbt*(pow(getArgument(i),moment) - v_moment[i]);
-        setDerivative(u, narg, w_tmp);
+        setDerivative(u, narg, dmoment_bias[i]);
       }
     }
   }
