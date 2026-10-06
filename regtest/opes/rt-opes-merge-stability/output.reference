@@ -1,0 +1,4 @@
+OPES_METAD constant translation-invariance PASS
+OPES_METAD moving translation-invariance PASS
+OPES_METAD_EXPLORE constant translation-invariance PASS
+OPES_METAD_EXPLORE moving translation-invariance PASS
