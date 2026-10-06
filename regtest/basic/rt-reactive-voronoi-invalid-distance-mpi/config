@@ -1,0 +1,4 @@
+type=make
+mpiprocs=4
+export PLUMED_NUM_THREADS=2
+export PLUMED_STACK_TRACE=no
