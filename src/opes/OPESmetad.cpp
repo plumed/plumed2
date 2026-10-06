@@ -390,7 +390,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   kbt_=getkBT();
 
 //other compulsory input
-  parse("PACE",stride_);
+  long long pace=0;
+  parse("PACE",pace);
+  plumed_massert(pace>0 && static_cast<unsigned long long>(pace)<=std::numeric_limits<unsigned>::max(),
+                 "PACE must be greater than zero and no larger than "+std::to_string(std::numeric_limits<unsigned>::max()));
+  stride_=static_cast<unsigned>(pace);
 
   double barrier=0;
   parse("BARRIER",barrier);
@@ -437,6 +441,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is not ADAPTIVE you cannot set an ADAPTIVE_SIGMA_STRIDE");
     for(unsigned i=0; i<ncv_; i++) {
       plumed_massert(Tools::convertNoexcept(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
+      plumed_massert(std::isfinite(sigma0_[i]) && sigma0_[i]>0,"SIGMA values must be finite and greater than zero");
       if(mode::explore) {
         sigma0_[i]*=std::sqrt(biasfactor_);  //the sigma of the target is broader Ftg(s)=1/gamma*F(s)
       }
@@ -444,6 +449,9 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   }
   parseVector("SIGMA_MIN",sigma_min_);
   plumed_massert(sigma_min_.size()==0 || sigma_min_.size()==ncv_,"number of SIGMA_MIN does not match number of arguments");
+  for(double sigma : sigma_min_) {
+    plumed_massert(std::isfinite(sigma) && sigma>0,"SIGMA_MIN values must be finite and greater than zero");
+  }
   if(sigma_min_.size()>0 && !adaptive_sigma_) {
     for(unsigned i=0; i<ncv_; i++) {
       plumed_massert(sigma_min_[i]<=sigma0_[i],"SIGMA_MIN should be smaller than SIGMA");
