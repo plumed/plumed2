@@ -1254,7 +1254,10 @@ void PlumedMain::waitData() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
   for(const auto & ip : inputs) {
-    if( ip->isActive() && ip->hasBeenSet() ) {
+    // shareData also starts the first-step domain exchange for inactive
+    // inputs, to initialize fixed masses and charges. Complete that exchange
+    // before clearing firststep, or later atomic actions receive stale data.
+    if( (ip->isActive() || ip->firststep) && ip->hasBeenSet() ) {
       ip->wait();
     } else if( ip->isActive() ) {
       ip->warning("input requested but this quantity has not been set");
