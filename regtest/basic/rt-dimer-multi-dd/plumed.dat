@@ -1,0 +1,8 @@
+# DIMER with one DSIGMA per replica, run with two ranks per replica under a
+# fake domain decomposition. Every rank must use its own replica's DSIGMA, not
+# only the rank that received the inter-replica communicator (issue #1443).
+GROUP ATOMS=1,2,3,4 LABEL=d1g1
+GROUP ATOMS=5,6,7,8 LABEL=d1g2
+dim: DIMER ATOMS1=d1g1 ATOMS2=d1g2 Q=0.5 TEMP=300 DSIGMA=0.002,0.004
+RESTRAINT ARG=dim AT=0.0 KAPPA=10.0
+PRINT ARG=dim FILE=colvar FMT=%8.4f
