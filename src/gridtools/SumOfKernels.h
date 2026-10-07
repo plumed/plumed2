@@ -35,63 +35,130 @@ class RegularKernel;
 
 class DiagonalKernelParams {
 public:
-  std::vector<double> at;
-  std::vector<double> sigma;
-  double height;
+  View<const double> at;
+  View<const double> sigma;
+  View<const double,1> height;
+  DiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data(),ndim),
+    sigma(params.data()+ndim,ndim),
+    height(params.data()+2*ndim) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
-  static bool setKernelAndCheckHeight( DiagonalKernelParams& kp, std::size_t ndim, const std::vector<double>& args );
-  static std::size_t getNumberOfParameters( const DiagonalKernelParams& kp );
-  static void getSigmaProjections( const DiagonalKernelParams& kp, std::vector<double>& support );
+  static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& args );
+  static std::size_t getNumberOfParameters( const std::size_t& nargs );
+  static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
+  static void getSigmaProjections( const View<const double>& shape, std::vector<double>& support );
   static double evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
 
+inline
+std::size_t DiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  return 2*nargs + 1;
+}
+
 class NonDiagonalKernelParams {
 public:
-  std::vector<double> at;
-  Matrix<double> sigma, metric;
-  double height;
+  View<const double> at;
+  View2D<const double> metric;
+  View<const double,1> height;
+  NonDiagonalKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data(),ndim),
+    metric(params.data()+ndim,ndim,ndim),
+    height(params.data()+ndim*(1+ndim)) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
-  static bool setKernelAndCheckHeight( NonDiagonalKernelParams& kp, std::size_t ndim, const std::vector<double>& args );
-  static std::size_t getNumberOfParameters( const NonDiagonalKernelParams& kp );
-  static void getSigmaProjections( const NonDiagonalKernelParams& kp, std::vector<double>& support );
+  static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& args );
+  static std::size_t getNumberOfParameters( const std::size_t& nargs );
+  static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
+  static void getSigmaProjections( const View<const double>& shape, std::vector<double>& support );
   static double evaluateR2( const RegularKernel<NonDiagonalKernelParams>& p, const NonDiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
+
+inline
+std::size_t NonDiagonalKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  return nargs + nargs*nargs + 1;
+}
 
 class DiscreteKernel {
 public:
   static void registerKeywords( Keywords& keys ) {}
   static void read( DiscreteKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {}
   static void setArgumentDomain( const unsigned& i, DiscreteKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {}
-  static void getSupport( DiscreteKernel& params, const DiagonalKernelParams& kp, double dp2cutoff, std::vector<double>& support ) {}
+  static void getSupport( DiscreteKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {}
   static double calc( const DiscreteKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
+  void update() {}
+  void toACCDevice() const {}
+  void removeFromACCDevice() const  {}
 };
 
 class HistogramBeadKernel {
 public:
-  std::vector<HistogramBead> beads;
-  std::vector<double> gridspacing;
+  HistogramBead::KernelType kerneltype;
+  std::vector<std::size_t> periodic_v;
+  std::size_t* periodic{nullptr};
+  std::vector<double> domainmin_v;
+  double* domainmin{nullptr};
+  std::vector<double> domainmax_v;
+  double* domainmax{nullptr};
+  std::vector<double> gridspacing_v;
+  double* gridspacing{nullptr};
   static void registerKeywords( Keywords& keys );
   static void read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
-  static void getSupport( HistogramBeadKernel& params, const DiagonalKernelParams& kp, double dp2cutoff, std::vector<double>& support );
+  static void getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
   static double calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
+  void update() {
+    periodic = periodic_v.data();
+    domainmin = domainmin_v.data();
+    domainmax = domainmax_v.data();
+    gridspacing = gridspacing_v.data();
+  }
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],kerneltype,periodic[0:periodic_v.size()],domainmin[0:domainmin_v.size()],domainmax[0:domainmax_v.size()],gridspacing[0:gridspacing_v.size()])
+  }
+  void removeFromACCDevice() const  {
+#pragma acc exit data delete(gridspacing[0:gridspacing_v.size()],domainmax[0:domainmax_v.size()],domainmin[0:domainmin_v.size()],periodic[0:periodic_v.size()],kerneltype,this[0:1])
+  }
 };
 
 template <class K>
 class RegularKernel {
 public:
   bool canusevol;
+#ifdef __PLUMED_HAS_OPENACC
+  SwitchingFunctionAccelerable switchingFunction;
+#else
   SwitchingFunction switchingFunction;
-  std::vector<bool> periodic;
-  std::vector<double> max_minus_min, inv_max_minus_min;
+#endif //__PLUMED_HAS_OPENACC
+  std::vector<int> periodic_v;
+  int* periodic{nullptr};
+  std::vector<double> max_minus_min_v;
+  double* max_minus_min{nullptr};
+  std::vector<double> inv_max_minus_min_v;
+  double* inv_max_minus_min{nullptr};
   static void registerKeywords( Keywords& keys );
   static void read( RegularKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, RegularKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
   static double difference( const RegularKernel& params, unsigned i, const double& val1, const double& val2 );
-  static void getSupport( const RegularKernel& params, const K& kp, double dp2cutoff, std::vector<double>& support );
+  static void getSupport( const RegularKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
   static double calc( const RegularKernel& params, const K& kp, View<const double> x, View<double> der, View<double> paramderivs );
+  void update() {
+    periodic = periodic_v.data();
+    max_minus_min = max_minus_min_v.data();
+    inv_max_minus_min = inv_max_minus_min_v.data();
+  }
+#ifdef __PLUMED_HAS_OPENACC
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],periodic[0:periodic_v.size()],max_minus_min[0:max_minus_min_v.size()],inv_max_minus_min[0:inv_max_minus_min_v.size()])
+    switchingFunction.toACCDevice();
+  }
+  void removeFromACCDevice() const  {
+    switchingFunction.removeFromACCDevice();
+#pragma acc exit data delete(inv_max_minus_min[0:inv_max_minus_min_v.size()],max_minus_min[0:max_minus_min_v.size()],periodic[0:periodic_v.size()],this[0:1])
+  }
+#endif //__PLUMED_HAS_OPENACC
 };
 
 template <class K>
@@ -112,34 +179,34 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
   if( errors.length()!=0 ) {
     action->error("problem reading switching function description " + errors);
   }
-  p.periodic.resize( args.size() );
-  p.max_minus_min.resize( args.size() );
-  p.inv_max_minus_min.resize( args.size() );
+  p.periodic_v.resize( args.size(), 0 );
+  p.max_minus_min_v.resize( args.size() );
+  p.inv_max_minus_min_v.resize( args.size() );
 }
 
 template <class K>
 void RegularKernel<K>::setArgumentDomain( const unsigned& i, RegularKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {
-  params.periodic[i] = isp;
-  if( params.periodic[i] ) {
+  if( isp ) {
     double min, max;
     Tools::convert( min1, min );
     Tools::convert( max1, max );
-    params.max_minus_min[i]=max-min;
-    params.inv_max_minus_min[i]=1.0/params.max_minus_min[i];
+    params.periodic_v[i] = 1;
+    params.max_minus_min_v[i]=max-min;
+    params.inv_max_minus_min_v[i]=1.0/params.max_minus_min_v[i];
   }
 }
 
 template <class K>
 double RegularKernel<K>::difference( const RegularKernel<K>& params, unsigned i, const double& val1, const double& val2 ) {
-  if( !params.periodic[i] ) {
+  if( params.periodic[i]==0 ) {
     return val1 - val2;
   }
   return params.max_minus_min[i]*Tools::pbc( params.inv_max_minus_min[i]*( val1 - val2 ) );
 }
 
 template <class K>
-void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const K& kp, double dp2cutoff, std::vector<double>& support ) {
-  K::getSigmaProjections( kp, support );
+void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {
+  K::getSigmaProjections( shape, support );
   for(unsigned i=0; i<support.size(); ++i) {
     support[i] = sqrt(2.0*dp2cutoff)*support[i];
   }
@@ -148,47 +215,71 @@ void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const K& kp, 
 template <class K>
 double RegularKernel<K>::calc( const RegularKernel<K>& params, const K& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
   double r2 = K::evaluateR2( params, kp, x, paramderivs );
-  double dval, val = kp.height*params.switchingFunction.calculateSqr( r2, dval );
-  dval *= kp.height;
+  double dval, val = kp.height[0]*params.switchingFunction.calculateSqr( r2, dval );
+  dval *= kp.height[0];
   for(unsigned i=0; i<der.size(); ++i) {
     der[i] += dval*paramderivs[i];
     paramderivs[i] = -dval*paramderivs[i];
   }
-  paramderivs[2*kp.at.size()] = val / kp.height;
+  paramderivs[2*kp.at.size()] = val / kp.height[0];
   return val;
 }
 
 class VonMissesKernelParams {
 public:
-  std::vector<double> at;
-  double concentration;
-  double norm;
-  double height;
+  View<const double,3> at;
+  View<const double,1> concentration;
+  View<const double,1> height;
+  VonMissesKernelParams( const View<const double>& params, const std::size_t ndim ):
+    at(params.data()),
+    concentration(params.data()+3),
+    height(params.data()+4) {
+  }
   static bool bandwidthIsConstant( std::size_t ndim, const std::vector<Value*>& args );
   static bool bandwidthsAllSame( std::size_t ndim, const std::vector<Value*>& args );
-  static bool setKernelAndCheckHeight( VonMissesKernelParams& kp, std::size_t ndim, const std::vector<double>& argval );
-  static std::size_t getNumberOfParameters( const VonMissesKernelParams& kp );
+  static bool setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& argval );
+  static std::size_t getNumberOfParameters( const std::size_t& nargs );
+  static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
 };
+
+inline
+std::size_t VonMissesKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
+  plumed_dbg_assert( nargs==3 );
+  return 5;
+}
 
 class UniversalVonMisses {
 public:
-  std::string kerneltype;
-  SwitchingFunction switchingFunction;
   static void registerKeywords( Keywords& keys ) {}
   static void read( UniversalVonMisses& p, ActionWithArguments* action, const std::vector<Value*>& args ) {}
   static void setArgumentDomain( const unsigned& i, UniversalVonMisses& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {}
   static double calc( const UniversalVonMisses& params, const VonMissesKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
+  void update() {}
+  void toACCDevice() const {}
+  void removeFromACCDevice() const  {}
 };
 
 template <class K, class P>
 class SumOfKernels {
 public:
   P params;
-  std::vector<K> kernelParams;
+  std::vector<double> kernelParams_v;
+  double* kernelParams{nullptr};
 /// This is used to setup the input gridobject's bounds with the grid data from values
   static void registerKeywords( Keywords& keys );
   static void read( SumOfKernels<K,P>& func, ActionWithArguments* action, const std::vector<Value*>& args, function::FunctionOptions& options );
   static void calc( View<const std::size_t> klist, const SumOfKernels<K,P>& func, View<const double> args, View<double> values, View<double> der, View<double> paramderivs );
+  void update() {
+    kernelParams=kernelParams_v.data();
+  }
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],kernelParams[0:kernelParams_v.size()])
+    params.toACCDevice();
+  }
+  void removeFromACCDevice() const  {
+    params.removeFromACCDevice();
+#pragma acc exit data delete(kernelParams[0:kernelParams_v.size()],this[0:1])
+  }
 };
 
 template <class K, class P>
@@ -208,9 +299,10 @@ void SumOfKernels<K,P>::calc( View<const std::size_t> klist, const SumOfKernels<
   for(unsigned i=0; i<der.size(); ++i) {
     der[i] = 0;
   }
-  std::size_t nparams = K::getNumberOfParameters( func.kernelParams[0] );
+  std::size_t ndim = args.size();
+  std::size_t nparams = K::getNumberOfParameters( ndim );
   for(unsigned i=0; i<klist.size(); ++i) {
-    values[0] += P::calc( func.params, func.kernelParams[klist[i]], args, der, View<double>( paramderivs.data() + i*nparams, nparams ) );
+    values[0] += P::calc( func.params, K(View<const double>(func.kernelParams + nparams*klist[i],nparams),ndim), args, der, View<double>( paramderivs.data() + i*nparams, nparams ) );
   }
 }
 

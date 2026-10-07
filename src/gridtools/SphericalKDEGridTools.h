@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,24 +19,23 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_ActionWithGrid_h
-#define __PLUMED_gridtools_ActionWithGrid_h
+#ifndef __PLUMED_gridtools_SphericalKDEGridTools_h
+#define __PLUMED_gridtools_SphericalKDEGridTools_h
 
-#include "core/ActionWithVector.h"
-#include "GridCoordinatesObject.h"
+#include "KDE.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class ActionWithGrid : public ActionWithVector {
+class SphericalKDEGridTools {
 public:
+  std::size_t nbins;
   static void registerKeywords( Keywords& keys );
-  static ActionWithGrid* getInputActionWithGrid( Action* action );
-  explicit ActionWithGrid(const ActionOptions&ao);
-  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
-  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) override ;
-  virtual std::vector<std::string> getGridCoordinateNames() const = 0;
-  virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
+  static void readBandwidthAndHeight( const UniversalVonMisses& params, ActionWithArguments* action );
+  static void readGridParameters( SphericalKDEGridTools& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
+  static void setupGridBounds( SphericalKDEGridTools& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
+  static void getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
+  static void getNeighbors( const UniversalVonMisses& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };
 
 }
