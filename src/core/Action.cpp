@@ -315,6 +315,14 @@ void Action::setupConstantValues( const bool& have_atoms ) {
   }
 }
 
+int Action::getNumberOfReplicas() const {
+  return plumed.getNumberOfReplicas();
+}
+
+int Action::getReplicaIndex() const {
+  return plumed.getReplicaIndex();
+}
+
 long long int Action::getStep()const {
   return plumed.getStep();
 }

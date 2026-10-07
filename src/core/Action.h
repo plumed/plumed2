@@ -223,6 +223,17 @@ public:
   Communicator& comm;
   Communicator& multi_sim_comm;
 
+/// Number of replicas in a multi-replica simulation (1 otherwise), and the index
+/// of this replica. Prefer these to multi_sim_comm.Get_size() and Get_rank(), which
+/// are only correct on the rank that received the inter-replica communicator: with
+/// several ranks per replica, the others see a single replica. These are computed
+/// once at initialization, so they are correct on every rank and need no
+/// communication, which makes them safe to call anywhere, including calculate().
+/// multi_sim_comm is still the communicator to use for exchanging data, and only on
+/// the rank that holds it.
+  int getNumberOfReplicas() const;
+  int getReplicaIndex() const;
+
   const Keywords& keywords;
 /// Prepare an Action for calculation
 /// This can be used by Action if they need some special preparation
