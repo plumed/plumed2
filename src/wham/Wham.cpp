@@ -144,10 +144,7 @@ Wham::Wham(const ActionOptions&ao):
   // Now read in parameters of WHAM
   parse("MAXITER",maxiter);
   parse("WHAMTOL",thresh);
-  if(comm.Get_rank()==0) {
-    nreplicas=multi_sim_comm.Get_size();
-  }
-  comm.Bcast(nreplicas,0);
+  nreplicas=getNumberOfReplicas();
   addValue( getPntrToArgument(0)->getShape() );
   setNotPeriodic();
 }

@@ -186,15 +186,8 @@ Rescale::Rescale(const ActionOptions&ao):
   nores_(0), Biaspace_(1), first_bias_(true),
   MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0) {
   // set up replica stuff
-  if(comm.Get_rank()==0) {
-    nrep_    = multi_sim_comm.Get_size();
-    replica_ = multi_sim_comm.Get_rank();
-  } else {
-    nrep_    = 0;
-    replica_ = 0;
-  }
-  comm.Sum(&nrep_,1);
-  comm.Sum(&replica_,1);
+  nrep_    = getNumberOfReplicas();
+  replica_ = getReplicaIndex();
 
   // wt-parameters
   parse("W0", w0_);

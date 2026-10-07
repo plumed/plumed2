@@ -228,14 +228,8 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   no_broadcast(false),
   printFirstStep(true),
   done_average(getNumberOfArguments(),false) {
-  if(comm.Get_rank()==0) {
-    nrep=multi_sim_comm.Get_size();
-  }
-  if(comm.Get_rank()==0) {
-    myrep=multi_sim_comm.Get_rank();
-  }
-  comm.Bcast(nrep,0);
-  comm.Bcast(myrep,0);
+  nrep=getNumberOfReplicas();
+  myrep=getReplicaIndex();
   parseFlag("NO_BROADCAST",no_broadcast);
   //if(no_broadcast){
   //for(int irep=0;irep<nrep;irep++){

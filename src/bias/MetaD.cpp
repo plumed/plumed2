@@ -842,11 +842,7 @@ MetaD::MetaD(const ActionOptions& ao):
   std::vector<double> rect_biasf_;
   parseVector("RECT",rect_biasf_);
   if(rect_biasf_.size()>0) {
-    int r=0;
-    if(comm.Get_rank()==0) {
-      r=multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(r,0);
+    int r=getReplicaIndex();
     biasf_=rect_biasf_[r];
     log<<"  You are using RECT\n";
   } else {
@@ -1286,13 +1282,7 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mw_dir_!="") {
         log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       }
-      if(comm.Get_rank()==0) {
-        // Only root of group can communicate with other walkers
-        mpi_nw_=multi_sim_comm.Get_size();
-      }
-      // Communicate to the other members of the same group
-      // info abount number of walkers and walker index
-      comm.Bcast(mpi_nw_,0);
+      mpi_nw_=getNumberOfReplicas();
     }
   }
 
@@ -1665,11 +1655,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(wgridstride_>0) {
     gridfile_.link(*this);
     if(walkers_mpi_) {
-      int r=0;
-      if(comm.Get_rank()==0) {
-        r=multi_sim_comm.Get_rank();
-      }
-      comm.Bcast(r,0);
+      int r=getReplicaIndex();
       if(r>0) {
         gridfilename_="/dev/null";
       }
@@ -1684,11 +1670,7 @@ MetaD::MetaD(const ActionOptions& ao):
   // open hills file for writing
   hillsOfile_.link(*this);
   if(walkers_mpi_) {
-    int r=0;
-    if(comm.Get_rank()==0) {
-      r=multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(r,0);
+    int r=getReplicaIndex();
     if(r>0) {
       ifilesnames_[mw_id_]="/dev/null";
     }
@@ -2498,10 +2480,7 @@ void MetaD::update() {
     else {
       int r = 0;
       if(walkers_mpi_) {
-        if(comm.Get_rank()==0) {
-          r=multi_sim_comm.Get_rank();
-        }
-        comm.Bcast(r,0);
+        r=getReplicaIndex();
       }
       if(r==0) {
         gridfile_.rewind();

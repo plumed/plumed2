@@ -255,12 +255,8 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
     plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
 
-    if(comm.Get_rank()==0) { //multi_sim_comm works on first rank only
-      NumWalkers_=multi_sim_comm.Get_size();
-      walker_rank_=multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
-    comm.Bcast(walker_rank_,0);
+    NumWalkers_=getNumberOfReplicas();
+    walker_rank_=getReplicaIndex();
   } else {
     NumWalkers_=1;
     walker_rank_=0;
