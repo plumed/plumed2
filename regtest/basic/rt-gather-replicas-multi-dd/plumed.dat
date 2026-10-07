@@ -1,0 +1,7 @@
+# GATHER_REPLICAS with two ranks per replica under a fake domain decomposition.
+# Every rank must create one component per replica and receive the gathered
+# values, not only the rank that holds the inter-replica communicator (#1443).
+d: DISTANCE ATOMS=1,8
+g: GATHER_REPLICAS ARG=d
+s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+PRINT ARG=d,g.rep-1,g.rep-2,s FILE=colvar FMT=%8.4f
