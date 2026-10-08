@@ -1,0 +1,2 @@
+PASS firststep-inactive-domain async=no
+PASS firststep-inactive-domain async=yes
