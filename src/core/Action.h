@@ -181,7 +181,28 @@ public:
 /// a final Action has been initialized
   void checkRead();
 
+/// Communicator of this replica: all the MPI processes running this PLUMED
+/// instance (set by the MD code with setMPIComm). It is valid on every process.
   Communicator& comm;
+/// Communicator between replicas, in multiple-replica simulations.
+/// It holds one process per replica, namely process 0 of comm (set with
+/// GREX setMPIIntercomm or setMPImultiSimComm).
+/// It is valid only on process 0 of comm. On the other processes it is
+/// MPI_COMM_SELF, so Get_size() returns 1 and Get_rank() returns 0 whatever
+/// the number of replicas, and communication over it reaches no other replica.
+/// Code that needs the number of replicas or the replica index on every
+/// process must read them on process 0 of comm and broadcast them over comm:
+/// \code
+/// unsigned nrep=0, irep=0;
+/// if(comm.Get_rank()==0) {
+///   nrep=multi_sim_comm.Get_size();
+///   irep=multi_sim_comm.Get_rank();
+/// }
+/// comm.Bcast(nrep,0);
+/// comm.Bcast(irep,0);
+/// \endcode
+/// The same applies to communication over multi_sim_comm: do it on process 0
+/// of comm, then broadcast the result over comm.
   Communicator& multi_sim_comm;
 
   const Keywords& keywords;
