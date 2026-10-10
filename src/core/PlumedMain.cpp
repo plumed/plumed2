@@ -969,10 +969,17 @@ void PlumedMain::updateReplicaIdentity(Communicator& intra) {
   // its MPI_COMM_SELF default and reports size 1, rank 0. Taking the maximum over
   // the intra-replica communicator gives every rank the same, correct answer,
   // whichever rank or ranks the engine chose. This is a collective over intra.
-  nReplicas=multi_sim_comm.Get_size();
+  // This can run twice (GREX init and init), so clear the stand-in mark first.
+  multi_sim_comm.setStandIn(false);
+  const int localSize=multi_sim_comm.Get_size();
+  nReplicas=localSize;
   replicaIndex=multi_sim_comm.Get_rank();
   intra.Max(nReplicas);
   intra.Max(replicaIndex);
+  // With more than one replica, a rank whose multi_sim_comm has size 1 was not
+  // given the inter-replica communicator. Mark it, so that using it there
+  // raises an error in debug builds instead of silently acting on one replica.
+  multi_sim_comm.setStandIn(nReplicas>1 && localSize==1);
 }
 
 void PlumedMain::init() {
