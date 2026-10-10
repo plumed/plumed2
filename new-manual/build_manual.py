@@ -15,6 +15,7 @@ from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript,
 import networkx as nx
 from multiprocessing import Pool, cpu_count
 import functools
+import re
 
 PLUMED = "plumed"
 
@@ -23,6 +24,96 @@ search:
   exclude: true
 ---
 """
+
+
+def split_front_matter(text):
+    """Return (front matter, body) for the small YAML headers we generate."""
+    if not text.startswith("---\n"):
+        return "", text
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return "", text
+    return text[4:end], text[end + 5 :]
+
+
+def convert_admonitions(text):
+    """Convert Python-Markdown admonitions to portable blockquote alerts."""
+    lines = text.splitlines()
+    converted = []
+    i = 0
+    # Be liberal here because a few source comments contain an extra "!" or
+    # an unmatched quote. Material accepted these imperfect inputs unevenly;
+    # normalizing them keeps the generated warning visible after migration.
+    pattern = re.compile(r"^(\s*)!{3,}\s+([\w-]+)(?:\s+(.*?))?\s*$")
+    while i < len(lines):
+        match = pattern.match(lines[i])
+        if not match:
+            converted.append(lines[i])
+            i += 1
+            continue
+
+        indent, kind, title = match.groups()
+        title = title.strip().strip('"') if title else kind.replace("-", " ").title()
+        converted.append(f"{indent}> [!{kind.upper()}] {title}")
+        i += 1
+        if i < len(lines) and not lines[i].strip():
+            converted.append(f"{indent}>")
+            i += 1
+
+        body_indent = indent + "    "
+        while i < len(lines):
+            line = lines[i]
+            if line.startswith(body_indent):
+                converted.append(f"{indent}> {line[len(body_indent):]}")
+                i += 1
+            elif not line.strip():
+                next_nonblank = i + 1
+                while next_nonblank < len(lines) and not lines[next_nonblank].strip():
+                    next_nonblank += 1
+                if next_nonblank < len(lines) and lines[next_nonblank].startswith(body_indent):
+                    converted.append(f"{indent}>")
+                    i += 1
+                else:
+                    break
+            else:
+                break
+    suffix = "\n" if text.endswith("\n") else ""
+    return "\n".join(converted) + suffix
+
+
+def page_url(path, docs_dir):
+    relative = path.relative_to(docs_dir)
+    if relative.name.lower() in ("index.md", "readme.md"):
+        parts = relative.parent.parts
+    else:
+        parts = relative.parent.parts + (relative.stem.lower(),)
+    return "/" + "/".join(parts) + ("/" if parts else "")
+
+
+def prepare_mkdocs2_sources(docs_dir):
+    """Normalize generated Markdown and write the theme-independent search index."""
+    entries = []
+    for path in sorted(docs_dir.rglob("*.md")):
+        front_matter, body = split_front_matter(path.read_text())
+        exclude_search = "exclude: true" in front_matter
+        normalized = convert_admonitions(body)
+        path.write_text(normalized)
+
+        if exclude_search or path.name.lower() == "readme.md":
+            continue
+        heading = re.search(r"^#\s+(.+)$", normalized, re.MULTILINE)
+        title = heading.group(1) if heading else path.stem
+        title = re.sub(r"\[([^]]+)\]\([^)]+\)", r"\1", title)
+        title = re.sub(r"<[^>]+>", " ", title)
+        searchable = re.sub(r"<[^>]+>", " ", normalized)
+        searchable = re.sub(r"[`*_#>|\[\]()]", " ", searchable)
+        searchable = re.sub(r"\s+", " ", searchable).strip()
+        entries.append(
+            {"title": title.strip(), "location": page_url(path, docs_dir), "text": searchable}
+        )
+
+    with open(docs_dir / "assets" / "search_index.json", "w") as index_file:
+        json.dump(entries, index_file, ensure_ascii=False, separators=(",", ":"))
 
 
 @contextmanager
@@ -1528,6 +1619,8 @@ if (
     shutil.copytree("figures", "docs/figures")
     # Create the assets
     shutil.copytree("assets", "docs/assets")
+    # Copy the project-owned MkDocs 2 templates
+    shutil.copytree("templates", "docs/templates")
     # Create the javascript
     with open("docs/assets/plumedtohtml.js", "w+") as jf:
         jf.write(get_javascript())
@@ -1755,3 +1848,4 @@ if (
     createSummaryPage(
         broken_inputs, nodocs, undocumented_keywords, noexamples, unexempled_keywords
     )
+    prepare_mkdocs2_sources(Path("docs"))
