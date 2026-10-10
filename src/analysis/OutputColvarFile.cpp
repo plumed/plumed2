@@ -126,7 +126,12 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
 void OutputColvarFile::performAnalysis() {
   if( !output_for_all_replicas ) {
     bool found=false;
-    unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    // multi_sim_comm is valid only on rank 0 of each replica
+    unsigned myrep=0;
+    if(comm.Get_rank()==0) {
+      myrep=multi_sim_comm.Get_rank();
+    }
+    comm.Bcast(myrep,0);
     for(unsigned i=0; i<preps.size(); ++i) {
       if( myrep==preps[i] ) {
         found=true;
