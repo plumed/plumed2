@@ -963,6 +963,18 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
 
 ////////////////////////////////////////////////////////////////////////
 
+void PlumedMain::updateReplicaIdentity(Communicator& intra) {
+  // The engine normally hands the inter-replica communicator to a single rank of
+  // each replica (see GREX setMPIIntercomm); on the other ranks multi_sim_comm keeps
+  // its MPI_COMM_SELF default and reports size 1, rank 0. Taking the maximum over
+  // the intra-replica communicator gives every rank the same, correct answer,
+  // whichever rank or ranks the engine chose. This is a collective over intra.
+  nReplicas=multi_sim_comm.Get_size();
+  replicaIndex=multi_sim_comm.Get_rank();
+  intra.Max(nReplicas);
+  intra.Max(replicaIndex);
+}
+
 void PlumedMain::init() {
 // check that initialization just happens once
   initialized=true;
@@ -996,6 +1008,8 @@ void PlumedMain::init() {
     log.printf("GROMACS-like replica exchange is on\n");
   }
   log.printf("File suffix: %s\n",getSuffix().c_str());
+  // Before any action is created, so that their constructors can rely on it.
+  updateReplicaIdentity(comm);
   if(plumedDat.length()>0) {
     readInputFile(plumedDat);
     plumedDat="";

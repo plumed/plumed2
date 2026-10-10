@@ -125,14 +125,8 @@ Ensemble::Ensemble(const ActionOptions&ao):
   checkRead();
 
   master = (comm.Get_rank()==0);
-  ens_dim=0;
-  my_repl=0;
-  if(master) {
-    ens_dim=multi_sim_comm.Get_size();
-    my_repl=multi_sim_comm.Get_rank();
-  }
-  comm.Bcast(ens_dim,0);
-  comm.Bcast(my_repl,0);
+  ens_dim=getNumberOfReplicas();
+  my_repl=getReplicaIndex();
   if(ens_dim<2) {
     log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
   }

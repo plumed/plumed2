@@ -1,0 +1,4 @@
+mpiprocs=4
+type=driver
+# two replicas with two ranks each, under a fake domain decomposition
+arg="--plumed plumed.dat --mf_pdb dimer8.pdb --dump-forces ff --dump-forces-fmt %10.6f --multi 2 --debug-dd yes"
