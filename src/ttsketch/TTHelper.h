@@ -5,6 +5,7 @@
 #ifdef __PLUMED_HAS_LIBITENSOR
 #ifdef __PLUMED_HAS_LIBHDF5
 #include <itensor/all.h>
+#include <utility>
 
 namespace PLMD {
 namespace ttsketch {
@@ -21,9 +22,6 @@ itensor::MPS ttSumRead(const std::string& filename, unsigned count);
 // Evaluate the TT bias at point `elements` by contracting each core with its
 // 1D basis vector. If conv=true, basis functions are evaluated in convolution mode.
 double ttEval(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv);
-// Gradient of ttEval w.r.t. `elements`. Computed by replacing the k-th dimension's
-// basis vector with its derivative while keeping all others unchanged (chain rule).
-std::vector<double> ttGrad(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv);
 // Compute the covariance matrix, mean vector, and partition function of the TT distribution.
 // Normalizes tt by Z = int tt(x) dx, then returns:
 //   sigma(k,l) = E[x_k * x_l] - E[x_k]*E[x_l]  (covariance matrix)
@@ -34,7 +32,11 @@ std::tuple<Matrix<double>, std::vector<double>, double> covMat(const itensor::MP
 // Fill `grid` (bins x bins) with the 2D marginal density of `tt` for dimensions
 // pos1 and pos2, obtained by integrating out all other dimensions analytically.
 void marginal2d(const itensor::MPS& tt, const std::vector<BasisFunc>& basis, int pos1, int pos2, Matrix<double>& grid, bool conv);
-
+std::pair<double, std::vector<double>>
+                                    ttEvalAndGrad(const itensor::MPS& tt,
+                                        const std::vector<BasisFunc>& basis,
+                                        const std::vector<double>& elements,
+                                        bool conv);
 }
 }
 #endif // __PLUMED_HAS_LIBHDF5

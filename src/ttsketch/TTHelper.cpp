@@ -4,6 +4,7 @@
    See the COPYRIGHT file distributed with this software for license details.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TTHelper.h"
+#include "tools/OpenMP.h"
 #ifdef __PLUMED_HAS_LIBITENSOR
 #ifdef __PLUMED_HAS_LIBHDF5
 
@@ -20,8 +21,7 @@ void ttWrite(const std::string& filename, const MPS& tt, unsigned count) {
 
 MPS ttRead(const std::string& filename, unsigned count) {
   auto f = h5_open(filename, 'r');
-  auto tt = h5_read<MPS>(f, "tt_" + std::to_string(count - 1));
-  return tt;
+  return h5_read<MPS>(f, "tt_" + std::to_string(count - 1));
 }
 
 void ttSumWrite(const std::string& filename, const MPS& tt, unsigned count) {
@@ -31,54 +31,69 @@ void ttSumWrite(const std::string& filename, const MPS& tt, unsigned count) {
 
 MPS ttSumRead(const std::string& filename, unsigned count) {
   auto f = h5_open(filename, 'r');
-  auto tt = h5_read<MPS>(f, "vb_" + std::to_string(count - 1));
-  return tt;
+  return h5_read<MPS>(f, "vb_" + std::to_string(count - 1));
 }
 
-// Evaluate TT by contracting each core with its 1D basis vector phi(x_i):
-//   result = sum_{i_1,...,i_d} G_1[i_1] * ... * G_d[i_d] * phi_1(x_1,i_1) * ... * phi_d(x_d,i_d)
-// The contraction is performed left-to-right so intermediate results stay rank-1 scalars.
-double ttEval(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
+// Evaluate TT and gradient together using a prefix-suffix sweep: O(d) contractions.
+//
+// For a TT of length d:
+//   L[i] = (G_1 * phi_1) * ... * (G_i * phi_i)   [left partial product up to i]
+//   R[i] = (G_i * phi_i) * ... * (G_d * phi_d)   [right partial product from i]
+//
+// val       = elt(L[d])
+// grad[k]   = L[k-1] * (G_k * dphi_k) * R[k+1]
+std::pair<double, std::vector<double>>
+                                    ttEvalAndGrad(const itensor::MPS& tt,
+                                        const std::vector<BasisFunc>& basis,
+                                        const std::vector<double>& elements,
+bool conv) {
   int d = length(tt);
   auto s = siteInds(tt);
-  std::vector<ITensor> basis_evals(d);
-  for(int i = 1; i <= d; ++i) {
-    basis_evals[i - 1] = ITensor(s(i));
-    for(int j = 1; j <= dim(s(i)); ++j) {
-      basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j, conv));
+  const unsigned nt = OpenMP::getNumThreads();
+
+  // Cache cores and build phi/dphi — all independent across dimensions
+  std::vector<ITensor> cores(d), phi(d), dphi(d);
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for (int i = 0; i < d; ++i) {
+    cores[i] = tt(i + 1);
+    phi[i] = dphi[i] = ITensor(s(i + 1));
+    for (int j = 1; j <= dim(s(i + 1)); ++j) {
+      phi[i].set(s(i + 1) = j,  basis[i](elements[i], j, conv));
+      dphi[i].set(s(i + 1) = j, basis[i].grad(elements[i], j, conv));
     }
   }
-  auto result = tt(1) * basis_evals[0];
-  for(int i = 2; i <= d; ++i) {
-    result *= tt(i) * basis_evals[i - 1];
+
+  // Prefix-suffix sweep
+  std::vector<ITensor> L(d + 1), R(d + 1);
+  L[0] = ITensor(1.0);
+  for (int i = 0; i < d; ++i) {
+    L[i + 1] = L[i] * (cores[i] * phi[i]);
   }
-  return elt(result);
+  R[d] = ITensor(1.0);
+  for (int i = d - 1; i >= 0; --i) {
+    R[i] = (cores[i] * phi[i]) * R[i + 1];
+  }
+
+  double val = elt(L[d]);
+
+  // Gradient combination — independent across k
+  std::vector<double> grad(d);
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for (int k = 0; k < d; ++k) {
+    grad[k] = elt(L[k] * (cores[k] * dphi[k]) * R[k + 1]);
+  }
+
+  return {val, grad};
 }
 
-// Gradient of ttEval w.r.t. elements. For each dimension k, one TT contraction is performed
-// with the k-th basis vector replaced by its derivative d phi_k/dx_k (chain rule).
-// All basis evaluations are precomputed to avoid redundant work across the d contractions.
-std::vector<double> ttGrad(const MPS& tt, const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv) {
-  int d = length(tt);
-  auto s = siteInds(tt);
-  std::vector<double> grad(d, 0.0);
-  std::vector<ITensor> basis_evals(d), basisd_evals(d);
-  for(int i = 1; i <= d; ++i) {
-    basis_evals[i - 1] = basisd_evals[i - 1] = ITensor(s(i));
-    for(int j = 1; j <= dim(s(i)); ++j) {
-      basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j, conv));
-      basisd_evals[i - 1].set(s(i) = j, basis[i - 1].grad(elements[i - 1], j, conv));
-    }
-  }
-  for(int k = 1; k <= d; ++k) {
-    // replace dimension k's basis vector with its derivative, keep all others unchanged
-    auto result = tt(1) * (k == 1 ? basisd_evals[0] : basis_evals[0]);
-    for(int i = 2; i <= d; ++i) {
-      result *= tt(i) * (k == i ? basisd_evals[i - 1] : basis_evals[i - 1]);
-    }
-    grad[k - 1] = elt(result);
-  }
-  return grad;
+// ttEval delegates to ttEvalAndGrad and discards the gradient.
+// Called infrequently (error measurement, well-tempered height) so the
+// cost of computing dphi is negligible relative to avoiding code duplication.
+double ttEval(const MPS& tt,
+              const std::vector<BasisFunc>& basis,
+              const std::vector<double>& elements,
+              bool conv) {
+  return ttEvalAndGrad(tt, basis, elements, conv).first;
 }
 
 // Compute covariance matrix, marginal means, and partition function of the TT distribution.
