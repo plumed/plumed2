@@ -87,6 +87,21 @@ By default this file is overwritten, but you can instead append to it using the 
 
 Multiple walkers are supported only with MPI communication, via the keyword WALKERS_MPI.
 
+For synchronized beads of one ring polymer, WALKERS_SHARED_BIAS selects the
+common log weight `mean_b(B(s_b)+EXTRA_BIAS_b)/kBT`, before exponentiation.
+Use it only when the sampled bias Hamiltonian is that same bead average.
+With a bead-local wall, define the wall before OPES and include its `.bias` in
+EXTRA_BIAS to estimate the wall-free marginal; omit it to retain the wall in
+the target ensemble. This option changes deposition weights, not bias forces.
+It requires WALKERS_MPI, explicit SIGMA, equal temperatures and PACE, no
+EXCLUDED_REGION, and synchronized updates on every bead. It is not available
+for OPES_METAD_EXPLORE. Each bead still deposits a kernel, so the kernel counter
+and neff remain walker counts, not independent ring-polymer sample counts.
+The constant number of beads cancels between the KDE numerator and denominator.
+A STATE or KERNELS history records this mode and bead count; changing either
+requires a fresh history. Legacy histories retain the local-weight convention.
+
+
 ## Examples
 
 Several examples can be found on the <a href="https://www.plumed-nest.org/browse.html">PLUMED-NEST website</a>, by searching for the OPES keyword.
@@ -233,6 +248,7 @@ private:
 
   Value* excluded_region_;
   std::vector<Value*> extra_biases_;
+  bool walkers_shared_bias_;
 
   OFile stateOfile_;
   int wStateStride_;
@@ -348,6 +364,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
 //miscellaneous
   keys.addInputKeyword("optional","EXCLUDED_REGION","scalar","kernels are not deposited when the action provided here has a nonzero value, see example above");
   if(!mode::explore) {
+    keys.addFlag("WALKERS_SHARED_BIAS",false,"use the mean bias plus EXTRA_BIAS over synchronous WALKERS_MPI replicas as the common deposition log weight; for a single ring polymer only");
     keys.addInputKeyword("optional","EXTRA_BIAS","scalar","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   }
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
@@ -388,6 +405,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //set kbt_
   const double kB=getKBoltzmann();
   kbt_=getkBT();
+  plumed_massert(std::isfinite(kbt_) && kbt_>0,"OPES requires a finite positive temperature");
 
 //other compulsory input
   long long pace=0;
@@ -538,6 +556,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     }
   }
 
+  walkers_shared_bias_=false;
+  if(!mode::explore) {
+    parseFlag("WALKERS_SHARED_BIAS",walkers_shared_bias_);
+  }
+
 //kernels file
   std::string kernelsFileName;
   parse("FILE",kernelsFileName);
@@ -582,6 +605,48 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     walker_rank_=0;
   }
 
+// A shared-path estimator needs one synchronous deposition group. Ordinary
+// independent walkers retain their original local weights and counters.
+  if(walkers_mpi && !mode::explore) {
+    std::vector<int> flags(NumWalkers_);
+    const int flag=walkers_shared_bias_ ? 1 : 0;
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Allgather(flag,flags);
+    }
+    comm.Bcast(flags,0);
+    for(int other : flags) {
+      plumed_massert(other==flag,"WALKERS_SHARED_BIAS must agree on every walker");
+    }
+  }
+  if(walkers_shared_bias_) {
+    plumed_massert(walkers_mpi,"WALKERS_SHARED_BIAS requires WALKERS_MPI");
+    // Reject on every rank before the next collective, even if only one
+    // walker requests an option that could skip a deposition collective.
+    std::vector<int> unsupported(NumWalkers_);
+    const int local_unsupported=(excluded_region_!=NULL || adaptive_sigma_) ? 1 : 0;
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Allgather(local_unsupported,unsupported);
+    }
+    comm.Bcast(unsupported,0);
+    for(int flag : unsupported) {
+      plumed_massert(flag==0,
+                     "WALKERS_SHARED_BIAS requires explicit SIGMA and no EXCLUDED_REGION on every walker");
+    }
+    std::vector<double> temperatures(NumWalkers_);
+    std::vector<unsigned> strides(NumWalkers_);
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Allgather(kbt_,temperatures);
+      multi_sim_comm.Allgather(stride_,strides);
+    }
+    comm.Bcast(temperatures,0);
+    comm.Bcast(strides,0);
+    for(unsigned w=0; w<NumWalkers_; ++w) {
+      plumed_massert(temperatures[w]==kbt_ && strides[w]==stride_,
+                     "WALKERS_SHARED_BIAS requires identical temperatures and PACE");
+    }
+    log.printf("  shared-path deposition: mean bias plus mean EXTRA_BIAS; walker counts are not independent frame ESS\n");
+  }
+
 //parallelization stuff
   NumOMP_=OpenMP::getNumThreads();
   NumParallel_=comm.Get_size();
@@ -623,6 +688,17 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
       std::string old_action_name;
       ifile.scanField("action",old_action_name);
       plumed_massert(action_name==old_action_name,"RESTART - mismatch between old and new action name. Expected '"+action_name+"', but found '"+old_action_name+"'");
+      std::string weight_mode="local";
+      if(ifile.FieldExist("walker_weight_mode")) {
+        ifile.scanField("walker_weight_mode",weight_mode);
+      }
+      plumed_massert(weight_mode==(walkers_shared_bias_ ? "shared_path" : "local"),
+                     "RESTART - walker weight mode mismatch; start a new bias history");
+      if(walkers_shared_bias_) {
+        unsigned old_walkers=0;
+        ifile.scanField("shared_path_walkers",old_walkers);
+        plumed_massert(old_walkers==NumWalkers_,"RESTART - shared-path bead count mismatch");
+      }
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
       if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF") {
@@ -795,6 +871,12 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   }
   kernelsOfile_.setHeavyFlush(); //do I need it?
   //define and set const fields
+  if(walkers_shared_bias_) {
+    kernelsOfile_.addConstantField("walker_weight_mode");
+    kernelsOfile_.addConstantField("shared_path_walkers");
+    kernelsOfile_.printField("walker_weight_mode","shared_path");
+    kernelsOfile_.printField("shared_path_walkers",NumWalkers_);
+  }
   kernelsOfile_.addConstantField("action");
   kernelsOfile_.addConstantField("biasfactor");
   kernelsOfile_.addConstantField("epsilon");
@@ -1032,6 +1114,13 @@ void OPESmetad<mode>::update() {
     double log_weight=getOutputQuantity(0)/kbt_; //first value is always the current bias
     for(unsigned e=0; e<extra_biases_.size(); e++) {
       log_weight+=extra_biases_[e]->get()/kbt_;  //extra biases contribute to the weight
+    }
+    if(walkers_shared_bias_) {
+      if(comm.Get_rank()==0) {
+        multi_sim_comm.Sum(log_weight);
+        log_weight/=NumWalkers_;
+      }
+      comm.Bcast(log_weight,0);
     }
     double height=std::exp(log_weight);
 
@@ -1589,6 +1678,12 @@ void OPESmetad<mode>::dumpStateToFile() {
     stateOfile_.rewind();
   }
 //define fields
+  if(walkers_shared_bias_) {
+    stateOfile_.addConstantField("walker_weight_mode");
+    stateOfile_.addConstantField("shared_path_walkers");
+    stateOfile_.printField("walker_weight_mode","shared_path");
+    stateOfile_.printField("shared_path_walkers",NumWalkers_);
+  }
   stateOfile_.addConstantField("action");
   stateOfile_.addConstantField("biasfactor");
   stateOfile_.addConstantField("epsilon");
@@ -1690,11 +1785,12 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
       return 0;
     }
   }
-  const double val=G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
+  const double gaussian=G.height*std::exp(-0.5*norm2);
   for(unsigned i=0; i<ncv_; i++) {
-    acc_der[i]-=dist[i]/G.sigma[i]*val;  //NB: we accumulate the derivative into der
+    // The cutoff shift is constant and does not contribute to the derivative.
+    acc_der[i]-=dist[i]/G.sigma[i]*gaussian;
   }
-  return val;
+  return gaussian-G.height*val_at_cutoff_;
 }
 
 template <class mode>
@@ -1705,10 +1801,15 @@ inline void OPESmetad<mode>::mergeKernels(kernel& k1,const kernel& k2) {
     if(isPeriodic_i) {
       k1.center[i]=k2.center[i]+difference(i,k2.center[i],k1.center[i]);  //fix PBC
     }
-    const double c_i=(k1.height*k1.center[i]+k2.height*k2.center[i])/h;
-    const double ss_k1_part=k1.height*(k1.sigma[i]*k1.sigma[i]+k1.center[i]*k1.center[i]);
-    const double ss_k2_part=k2.height*(k2.sigma[i]*k2.sigma[i]+k2.center[i]*k2.center[i]);
-    const double ss_i=(ss_k1_part+ss_k2_part)/h-c_i*c_i;
+    const double w1=k1.height/h;
+    const double w2=k2.height/h;
+    const double delta=k2.center[i]-k1.center[i];
+    const double c_i=k1.center[i]+w2*delta;
+    // Merge centered second moments. Subtracting E[x]^2 from E[x^2]
+    // loses the width for narrow kernels far from the CV origin and can
+    // produce zero or negative variance from entirely finite input.
+    const double ss_i=w1*k1.sigma[i]*k1.sigma[i]+
+                      w2*k2.sigma[i]*k2.sigma[i]+w1*w2*delta*delta;
     if(isPeriodic_i) {
       k1.center[i]=bringBackInPbc(i,c_i);
     } else {

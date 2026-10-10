@@ -1,0 +1,20 @@
+local-bare weights PASS
+local-bare frozen-force PASS
+local-bare same-mode-restart PASS
+local-bare changed-mode-rejected PASS
+shared-bare weights PASS
+shared-bare frozen-force PASS
+shared-bare same-mode-restart PASS
+shared-bare changed-mode-rejected PASS
+local-wall weights PASS
+local-wall frozen-force PASS
+local-wall same-mode-restart PASS
+local-wall changed-mode-rejected PASS
+shared-wall weights PASS
+shared-wall frozen-force PASS
+shared-wall same-mode-restart PASS
+shared-wall changed-mode-rejected PASS
+mismatched-flags-rejected PASS
+changed-bead-count-rejected PASS
+single-walker-adaptive-rejected PASS
+single-walker-excluded-rejected PASS
