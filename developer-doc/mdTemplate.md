@@ -301,6 +301,27 @@ plumed_cmd(plumedmain,"setAtomsFGatindex",gatindex);        // Pass an array (fr
 plumed_cmd(plumedmain,"setAtomsContiguous",&start);         // Number the atoms on this node from start to start+nlocal   (used for particle decomposition)
 \endverbatim
 
+\section mpireplicas Dealing with multiple replicas
+
+For multiple-replica simulations (replica exchange, multiple walkers, ensemble averaging), PLUMED uses two communicators:
+
+- the communicator of the replica, passed with "setMPIComm" on every process of the replica (and "GREX setMPIIntracomm" if replica exchange is used);
+- the communicator between replicas, which contains <b>only process 0 of each replica</b>, passed with "GREX setMPIIntercomm" (or "setMPImultiSimComm") <b>on process 0 of each replica only</b>.
+
+All these calls must come before "init". This is what the driver does:
+
+\verbatim
+if(intracomm.Get_rank()==0) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&intercomm);  // process 0 of each replica only
+plumed_cmd(plumedmain,"GREX setMPIIntracomm",&intracomm);                              // every process
+plumed_cmd(plumedmain,"GREX init",NULL);                                                // every process
+plumed_cmd(plumedmain,"setMPIComm",&intracomm);                                         // every process
+\endverbatim
+
+Inside PLUMED these become PLMD::Action::comm and PLMD::Action::multi_sim_comm.
+On every process except process 0 of a replica, multi_sim_comm stays MPI_COMM_SELF: it reports one replica, with index 0, and communication over it reaches no other replica.
+Action code that needs the number of replicas, the replica index, or data from other replicas on every process must therefore use multi_sim_comm on process 0 of comm and broadcast the result over comm.
+See the documentation of PLMD::Action::multi_sim_comm.
+
 \section apiversion Inquiring for the plumed version
 
 New functionalities might be added in the future to plumed. The description of

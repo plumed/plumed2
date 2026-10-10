@@ -203,6 +203,7 @@ public:
 /// \endcode
 /// The same applies to communication over multi_sim_comm: do it on process 0
 /// of comm, then broadcast the result over comm.
+/// For how MD codes set up these communicators, see \ref mpireplicas.
   Communicator& multi_sim_comm;
 
   const Keywords& keywords;
