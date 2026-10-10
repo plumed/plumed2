@@ -204,7 +204,11 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   if(this->walkers_mpi_ && this->mw_dir_== "") {
     const std::string ret = std::filesystem::current_path();
     this->mw_dir_ = ret + "/";
-    multi_sim_comm.Bcast(this->mw_dir_, 0);
+    // multi_sim_comm is valid only on the first rank of each replica
+    if(comm.Get_rank() == 0) {
+      multi_sim_comm.Bcast(this->mw_dir_, 0);
+    }
+    comm.Bcast(this->mw_dir_, 0);
   }
   if(this->walkers_mpi_ && this->mw_dir_ != "") {
     this->hillsfname_ = this->mw_dir_ + "/" + this->hillsfname_;
@@ -282,8 +286,8 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
     error("kernel smoothing incompatible with kernel basis");
   }
   if(this->walkers_mpi_) {
-    this->mpi_size_ = multi_sim_comm.Get_size();
-    this->mpi_rank_ = multi_sim_comm.Get_rank();
+    this->mpi_size_ = getNumberOfReplicas();
+    this->mpi_rank_ = getReplicaIndex();
   }
 
   parse("SKETCH_UNTIL", this->sketch_until_);
@@ -512,11 +516,17 @@ void TTMetaD::update() {
       if(this->walkers_mpi_) {
         ttfilename = "../" + ttfilename;
       }
-      ttWrite(ttfilename, this->vb_, this->sketch_count_);
+      // all ranks of the replica hold the same vb_; one of them writes it
+      if(comm.Get_rank() == 0) {
+        ttWrite(ttfilename, this->vb_, this->sketch_count_);
+      }
     }
 
     if(this->walkers_mpi_) {
-      multi_sim_comm.Bcast(this->sketch_count_, 0);
+      if(comm.Get_rank() == 0) {
+        multi_sim_comm.Bcast(this->sketch_count_, 0);
+      }
+      comm.Bcast(this->sketch_count_, 0);
       if(this->mpi_rank_ != 0) {
         this->hills_.clear();
         this->vb_ = ttRead("../ttsketch.h5", this->sketch_count_);
@@ -557,9 +567,14 @@ void TTMetaD::update() {
       std::vector<double> all_cv(this->mpi_size_ * this->d_, 0.0);
       std::vector<double> all_sigma(this->mpi_size_ * this->sigma0_.size(), 0.0);
       std::vector<double> all_height(this->mpi_size_, 0.0);
-      multi_sim_comm.Allgather(cv, all_cv);
-      multi_sim_comm.Allgather(this->sigma0_, all_sigma);
-      multi_sim_comm.Allgather(height * (this->biasf_ > 1.0 ? this->biasf_ / (this->biasf_ - 1.0) : 1.0), all_height);
+      if(comm.Get_rank() == 0) {
+        multi_sim_comm.Allgather(cv, all_cv);
+        multi_sim_comm.Allgather(this->sigma0_, all_sigma);
+        multi_sim_comm.Allgather(height * (this->biasf_ > 1.0 ? this->biasf_ / (this->biasf_ - 1.0) : 1.0), all_height);
+      }
+      comm.Bcast(all_cv, 0);
+      comm.Bcast(all_sigma, 0);
+      comm.Bcast(all_height, 0);
 
       for(int i = 0; i < this->mpi_size_; i++) {
         std::vector<double> cv_now(this->d_);
@@ -903,7 +918,10 @@ void TTMetaD::paraSketch() {
 // full weight while all other harmonics are scaled down by sketch_alpha_. This
 // ensures the sketch captures the large constant component of the bias accurately.
 MPS TTMetaD::createTTCoeff() const {
-  std::default_random_engine generator(this->deterministic_ ? 42u : static_cast<unsigned int>(time(nullptr)));
+  unsigned seed = this->deterministic_ ? 42u : static_cast<unsigned int>(time(nullptr));
+  // all ranks of a replica must build the same sketch
+  comm.Bcast(seed, 0);
+  std::default_random_engine generator(seed);
   std::normal_distribution<double> distribution(0.0, 1.0);
   int n = this->sketch_basis_[0].nbasis();
   auto sites = SiteSet(this->d_, n);
