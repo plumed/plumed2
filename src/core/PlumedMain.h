@@ -89,7 +89,8 @@ class PlumedMain:
   ForwardDecl<Communicator> comm_fwd;
 public:
 /// Communicator for plumed.
-/// Includes all the processors used by plumed.
+/// Includes all the processors used by plumed in this replica.
+/// See Action::comm.
   Communicator&comm=*comm_fwd;
 
 private:
@@ -119,6 +120,9 @@ private:
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
   DeprecatedAtoms& getAtoms();
+/// Communicator between replicas.
+/// Valid only on process 0 of comm; MPI_COMM_SELF elsewhere.
+/// See Action::multi_sim_comm.
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
