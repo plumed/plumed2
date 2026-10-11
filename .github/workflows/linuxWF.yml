@@ -89,7 +89,7 @@ jobs:
         echo "CPPFLAGS=$PIP_CPPFLAGS $CPPFLAGS" >> $GITHUB_ENV
 
         # the flags above enable the use of both libmetatomic and libtorch
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch --enable-cxx=20" >> $GITHUB_ENV
     - name: Install ITensor
       if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
       run: |
