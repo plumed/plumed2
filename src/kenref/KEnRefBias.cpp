@@ -259,8 +259,9 @@ void KEnRefBias::gatherFittedSubAtomsX(const std::vector<CoordsMatrixType<KEnRef
    *
    * Returning early is safe because `all` is read only where simulationIndex() == 0, which is a
    * main rank by construction. */
-  if (!isReplicaMainRank_)
+  if (!isReplicaMainRank_) {
     return;
+  }
   const auto &fitted = localFitted[0];
   const int subSize = static_cast<int>(fitted.size()); // rows*3
   multi_sim_comm.Gather(const_cast<KEnRef_Real_t *>(fitted.data()), subSize,
@@ -290,10 +291,12 @@ void KEnRefBias::scatterModelDerivatives(const std::vector<CoordsMatrixType<KEnR
      * replica's main rank -- ran the model, so allPerModel is populated there and EMPTY elsewhere;
      * copying it would leave the other ranks indexing an empty vector. */
     localPerModel.resize(1);
-    if (simulationIndex() == 0)
+    if (simulationIndex() == 0) {
       std::copy_n(allPerModel[0].data(), subSize, derivatives_buffer_.data());
-    if (comm.Get_size() > 1)
+    }
+    if (comm.Get_size() > 1) {
       comm.Bcast(derivatives_buffer_.data(), subSize, 0);
+    }
     localPerModel[0] = CoordsMapType<KEnRef_Real_t>(derivatives_buffer_.data(), numSubAtoms_, 3);
     return;
   }
@@ -308,8 +311,9 @@ void KEnRefBias::scatterModelDerivatives(const std::vector<CoordsMatrixType<KEnR
     multi_sim_comm.Scatter(allDerivatives_buffer_.data(), subSize, derivatives_buffer_.data(), subSize, 0);
   }
   // Push this replica's block from its main rank down to the rest of the replica's ranks.
-  if (comm.Get_size() > 1)
+  if (comm.Get_size() > 1) {
     comm.Bcast(derivatives_buffer_.data(), subSize, 0);
+  }
   localPerModel.resize(1);
   localPerModel[0] = CoordsMapType<KEnRef_Real_t>(derivatives_buffer_.data(), numSubAtoms_, 3);
 }
