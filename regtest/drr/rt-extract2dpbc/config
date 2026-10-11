@@ -2,3 +2,7 @@ type=plumed
 plumed_needs=boost_serialization
 plumed_modules=drr
 arg="drr_tool --extract eabf2dpbc.drrstate"
+plumed_custom_skip() {
+  [ "$GITHUB_ACTIONS" = true ] &&
+  $plumed_nompi info --configuration | grep -q '^CXX=.*icp[cx]'
+}
