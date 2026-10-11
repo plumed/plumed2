@@ -4,7 +4,7 @@ type=driver
 # replica 1 reads structure.1.pdb, so the replicas see different structures
 arg="--plumed plumed.dat --mf_pdb structure.pdb --multi 2 --debug-dd yes"
 
-# only the requested replica must write each file: frames.1 must not appear
+# each replica must write exactly one file, its own
 function plumed_regtest_after(){
   ls frames* | grep -v reference > files
 }
