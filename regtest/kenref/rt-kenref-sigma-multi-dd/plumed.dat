@@ -1,0 +1,24 @@
+# KENREF with two replicas, each split over two ranks (see config).
+#
+# The ensemble restraint is computed once, on the first rank of replica 0, from the coordinates of
+# both replicas. Every other rank must receive its replica's derivatives. The reference forces are
+# those of the same run with one rank per replica, so a rank that falls back to a single-replica
+# restraint, or that receives no derivatives, changes forces.*.
+#
+# Experimental data: the two-member SIGMA set of KEnRef (res/sigma/md_double).
+
+kenref: KENREF ...
+  MODEL=SIGMA
+  K=1.0
+  N=0.25
+  PROTON_MHZ=700.0
+  EXP_DATA_FOLDER=./
+  REF=./ref.pdb
+  ATOMNAME_MAPPING=./ref.pdb
+  GUIDE_ATOMS=39,60,82,101,117,234,241,256,270,284,358,368,383,397,407,422,444,454,474,496,513,534,544,558,626,642,666,680,701,771,785,805,819
+  MAX_FORCE=999
+  FIT_TO_REFERENCE
+  SATURATE_FORCES
+...
+
+PRINT ARG=kenref.bias,kenref.energy,kenref.rmsd FILE=colvar FMT=%8.4f

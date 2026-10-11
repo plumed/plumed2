@@ -1,0 +1,7 @@
+# The kenref module is default-off and needs an external library, so skip when it is not built in.
+plumed_modules=kenref
+mpiprocs=4
+type=driver
+# two replicas with two ranks each, under a fake domain decomposition;
+# replica 1 reads traj.1.pdb, in which some atoms are displaced, so the replicas get different forces
+arg="--plumed plumed.dat --mf_pdb traj.pdb --multi 2 --debug-dd yes --dump-forces forces --dump-forces-fmt %8.4f"
