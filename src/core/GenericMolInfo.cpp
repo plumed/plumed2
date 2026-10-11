@@ -27,6 +27,8 @@
 #include "tools/PDB.h"
 #include "tools/Communicator.h"
 #include "config/Config.h"
+#include <cmath>
+#include <algorithm>
 
 namespace PLMD {
 
@@ -47,7 +49,7 @@ void GenericMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
-  keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC");
+  keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC. If the pdb file has a CRYST1 record with space group P 1, this is checked for the atoms of each group that is made whole with it");
 }
 
 GenericMolInfo::~GenericMolInfo() {
@@ -89,6 +91,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   if( read_backbone.size()==0 ) {
     parse("STRUCTURE",reference);
 
+    pdbscale_=usingNaturalUnits() ? 1.0 : 0.1/getUnits().getLength();
     if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength())) {
       plumed_merror("missing input file " + reference );
     }
@@ -417,6 +420,25 @@ Vector GenericMolInfo::getPosition(AtomNumber a)const {
 
 bool GenericMolInfo::isWhole() const {
   return iswhole_;
+}
+
+Tensor GenericMolInfo::getReferenceBox() const {
+  const Vector & axs(pdb.getBoxAxs());
+  const Vector & ang(pdb.getBoxAng());
+  bool unitcube=true;
+  for(unsigned i=0; i<3; i++) {
+    if(std::fabs(axs[i]-pdbscale_)>1e-3*pdbscale_ || std::fabs(ang[i]-90.0)>1e-3) {
+      unitcube=false;
+    }
+  }
+  std::string group=pdb.getSpaceGroup();
+  group.erase(std::remove(group.begin(),group.end(),' '),group.end());
+  const Tensor & box(pdb.getBoxVec());
+  const double det=box.determinant();
+  if(unitcube || (group.length()>0 && group!="P1") || !std::isfinite(det) || det<=0.0) {
+    return Tensor();
+  }
+  return box;
 }
 
 void GenericMolInfo::prepare() {

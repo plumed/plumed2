@@ -61,6 +61,8 @@ private:
   bool selector_running=false;
 /// Structure in pdb file is whole
   bool iswhole_;
+/// Length of 1 A in PLUMED units, as used to read the pdb file
+  double pdbscale_=1.0;
 public:
   ~GenericMolInfo();
   void calculate() override {}
@@ -75,6 +77,11 @@ public:
   std::string getChainID(AtomNumber a)const;
   Vector getPosition(AtomNumber a)const;
   bool isWhole() const;
+/// Box of the CRYST1 record in the pdb file, in PLUMED units, when it can be the periodic box
+/// the structure was written in. It is a zero tensor otherwise: no CRYST1 record, a degenerate cell,
+/// the 1 A unit cube that the PDB format writes when there is no unit cell, or a crystallographic
+/// cell (a space group other than P 1; simulation programs write P 1).
+  Tensor getReferenceBox() const;
   unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );
