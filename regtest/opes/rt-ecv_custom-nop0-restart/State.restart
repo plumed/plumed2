@@ -1,0 +1,6 @@
+#! FIELDS mc.t_1 mc.t_2 DeltaF
+#! SET time   48.000000
+#! SET counter  15
+#! SET rct   50.192221
+  t-1  NaN  5.539691
+  NaN  t-2 -32.527826

@@ -633,6 +633,13 @@ void OPESexpanded::update() {
         }
         updateDeltaF(all_bias[w]);
       }
+      if(calc_work_) { //the ECVs must be those of this walker
+        unsigned index_j=0;
+        for(unsigned k=0; k<pntrToECVsClass_.size(); k++) {
+          pntrToECVsClass_[k]->calculateECVs(&cvs[index_j]);
+          index_j+=pntrToECVsClass_[k]->getNumberOfArguments();
+        }
+      }
     }
 
     //write DeltaFs to file
@@ -677,8 +684,8 @@ void OPESexpanded::update() {
     }
   }
 
-//dump state if requested
-  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) ) {
+//dump state if requested, but not before initialization
+  if(obs_steps_==0 && ((wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()))) {
     dumpStateToFile();
   }
 }
@@ -851,10 +858,15 @@ void OPESexpanded::printDeltaF() {
 }
 
 void OPESexpanded::dumpStateToFile() {
+//only the first walker writes the state, the others would write on /dev/null,
+//and their fields would pile up since they never rewind
+  if(walker_rank_>0) {
+    return;
+  }
 //rewrite header or rewind file
   if(storeOldStates_) {
     stateOfile_.clearFields();
-  } else if(walker_rank_==0) {
+  } else {
     stateOfile_.rewind();
   }
 //define fields
