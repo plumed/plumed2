@@ -9,7 +9,7 @@ set -x
 # to be on a branch today, and a pinned tag also lets the install directory be cached.
 # KENREF_VERSION and KENREF_URL are parsed out of this file by the workflow (to resolve the ref to a
 # commit for the cache key), so keep them as plain, unquoted assignments at the start of a line.
-KENREF_VERSION=v2.0.0
+KENREF_VERSION=release/2.x
 KENREF_URL=https://github.com/Smith-Group/KEnRef.git
 KENREF_INSTALL_DIR="$HOME/opt/kenref"
 
