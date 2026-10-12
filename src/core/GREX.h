@@ -37,8 +37,13 @@ class GREX:
   public WithCmd {
   bool initialized;
   ForwardDecl<Communicator> intracomm_fwd;
+/// Communicator of this replica (set with setMPIIntracomm).
+/// Normally the same processes as PlumedMain::comm.
   Communicator& intracomm=*intracomm_fwd;
   ForwardDecl<Communicator> intercomm_fwd;
+/// Communicator between replicas (set with setMPIIntercomm, which also sets
+/// PlumedMain::multi_sim_comm). The MD code passes it only on process 0 of
+/// intracomm; on the other processes it stays MPI_COMM_SELF.
   Communicator& intercomm=*intercomm_fwd;
   PlumedMain& plumedMain;
   Atoms&      atoms;
