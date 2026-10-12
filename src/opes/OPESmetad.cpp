@@ -723,12 +723,19 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
           for(unsigned i=0; i<ncv_; i++) {
             ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
           }
-          if(counter_==(1+walker_rank_) && adaptive_sigma_) {
-            sigma0_=sigma;
-          }
           ifile.scanField("height",height);
           ifile.scanField("logweight",logweight);
           ifile.scanField();
+          if(counter_==(1+walker_rank_) && adaptive_sigma_) {
+            //the first kernel has sigma=s*sigma0, where s is the rescaling at the first deposition,
+            //and height=w*prod_i(sigma0_i/sigma_i)=w/s^ncv, with w=1 for EXPLORE, so s can be recovered
+            //(exactly, unless SIGMA_MIN was used)
+            const double prod_ratio=mode::explore?height:height*std::exp(-logweight);
+            const double s=std::pow(prod_ratio,-1./ncv_);
+            for(unsigned i=0; i<ncv_; i++) {
+              sigma0_[i]=sigma[i]/s;
+            }
+          }
           addKernel(height,center,sigma);
           const double weight=std::exp(logweight);
           sum_weights_+=weight; //this sum is slightly inaccurate, because when printing some precision is lost
@@ -1182,8 +1189,8 @@ void OPESmetad<mode>::update() {
     //update Zed_
     if(!no_Zed_) {
       double sum_uprob=0;
-      const unsigned ks=kernels_.size();
-      const unsigned ds=delta_kernels_.size();
+      const double ks=kernels_.size(); //in double, since ks*ks overflows an unsigned for more than 65535 kernels
+      const double ds=delta_kernels_.size();
       const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
       if(few_kernels) { //really needed? Probably is almost always false
         #pragma omp parallel num_threads(NumOMP_)
@@ -1444,7 +1451,7 @@ unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_ce
         for(unsigned i=0; i<ncv_; i++) {
           const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
           norm2+=dist_i*dist_i;
-          if(norm2>=min_norm2) {
+          if(norm2>=min_norm2_omp) {
             break;
           }
         }
@@ -1581,10 +1588,15 @@ void OPESmetad<mode>::dumpStateToFile() {
     comm.Bcast(all_av_M2,0);
   }
 
+//only the first walker writes the state, the others would write on /dev/null,
+//and their fields would pile up since they never rewind
+  if(walker_rank_>0) {
+    return;
+  }
 //rewrite header or rewind file
   if(storeOldStates_) {
     stateOfile_.clearFields();
-  } else if(walker_rank_==0) {
+  } else {
     stateOfile_.rewind();
   }
 //define fields
