@@ -216,13 +216,14 @@ private:
   OFile kernelsOfile_;
 //neighbour list stuff
   bool nlist_;
-  double nlist_param_[2];
+  double nlist_param_; //kernels within sqrt(nlist_param_)*cutoff are in the list
   std::vector<unsigned> nlist_index_;
   std::vector<double> nlist_center_;
-  std::vector<double> nlist_dev2_;
   unsigned nlist_steps_;
   bool nlist_update_;
   bool nlist_pace_reset_;
+  double nlist_skin2_; //square of the largest displacement allowed, in units of nlist_sigma_min_
+  std::vector<double> nlist_sigma_min_; //smallest sigma of all kernels, for each CV, at the last rebuild
 
   bool calc_work_;
   double work_;
@@ -239,7 +240,7 @@ private:
   double getProbAndDerivatives(const std::vector<double>&,std::vector<double>&);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const double); //also print to file
-  unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
+  unsigned getMergeableKernel(const std::vector<double>&,const unsigned,const bool all_kernels=false);
   void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
 
@@ -328,8 +329,9 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
-  keys.add("optional","NLIST_PARAMETERS","( default=3.0,0.5 ) the two cutoff parameters for the kernels neighbor list");
-  keys.addFlag("NLIST",false,"use neighbor list for kernels summation, faster but experimental");
+  keys.add("optional","NLIST_PARAMETERS","( default=3.0 ) the kernels within sqrt(NLIST_PARAMETERS)*KERNEL_CUTOFF are in the neighbor list. "
+           "Larger values give a larger list, rebuilt less often. A second value is accepted for backward compatibility, but is not used");
+  keys.addFlag("NLIST",false,"use a neighbor list for the kernels summation. The result is the same as without it, and it is faster when there are many kernels");
   keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
@@ -489,23 +491,20 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   }
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
-  if(nlist_param.size()==0) {
-    nlist_param_[0]=3.0;//*cutoff2_ -> max distance of neighbors
-    nlist_param_[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
-  } else {
+  nlist_param_=3.0;//*cutoff2_ -> max distance of neighbors
+  if(nlist_param.size()>0) {
     nlist_=true;
-    plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
-    plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
-    const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]))+0.16;
-    plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
-    plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0) = "+std::to_string(min_PARAM_1));
-    nlist_param_[0]=nlist_param[0];
-    nlist_param_[1]=nlist_param[1];
+    plumed_massert(nlist_param.size()<=2,"NLIST_PARAMETERS takes one value");
+    plumed_massert(nlist_param[0]>1.0,"NLIST_PARAMETERS must be greater than 1");
+    nlist_param_=nlist_param[0];
   }
   nlist_center_.resize(ncv_);
-  nlist_dev2_.resize(ncv_,0.);
   nlist_steps_=0;
   nlist_update_=true;
+  //the list is rebuilt before any kernel outside it can get within the cutoff,
+  //i.e. when the CV moves out of a skin of (sqrt(nlist_param_)-1)*cutoff, in units of the smallest sigma
+  nlist_skin2_=std::pow(std::sqrt(nlist_param_)-1,2)*cutoff2_;
+  nlist_sigma_min_.resize(ncv_,std::numeric_limits<double>::max());
 
 //optional stuff
   no_Zed_=false;
@@ -918,7 +917,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
   }
   if(nlist_) {
-    log.printf(" -- NLIST: using neighbor list for kernels, with parameters: %g,%g\n",nlist_param_[0],nlist_param_[1]);
+    log.printf(" -- NLIST: using neighbor list for kernels, with parameter: %g\n",nlist_param_);
+    if(nlist_param.size()==2) {
+      log.printf(" +++ WARNING +++ the second of NLIST_PARAMETERS is not used anymore, the neighbor list is now exact\n");
+    }
   }
   if(nlist_pace_reset_) {
     log.printf(" -- NLIST_PACE_RESET: forcing the neighbor list to update every PACE\n");
@@ -979,12 +981,14 @@ void OPESmetad<mode>::calculate() {
     if(getExchangeStep()) {
       nlist_update_=true;
     } else {
+      //kernels outside the list cannot be within the cutoff as long as this displacement is within the skin
+      double norm2=0;
       for(unsigned i=0; i<ncv_; i++) {
-        const double diff_i=difference(i,cv[i],nlist_center_[i]);
-        if(diff_i*diff_i>nlist_param_[1]*nlist_dev2_[i]) {
-          nlist_update_=true;
-          break;
-        }
+        const double dist_i=difference(i,nlist_center_[i],cv[i])/nlist_sigma_min_[i];
+        norm2+=dist_i*dist_i;
+      }
+      if(norm2>nlist_skin2_) {
+        nlist_update_=true;
       }
     }
     if(nlist_update_) {
@@ -1208,28 +1212,15 @@ void OPESmetad<mode>::update() {
         // Here instead of redoing the full summation, we add only the changes, knowing that
         // uprob = old_uprob + delta_uprob
         // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
+        // All kernels are used, also with the neighbor list: a merged kernel changes the sum also at centers outside the list
         double delta_sum_uprob=0;
-        if(!nlist_) {
-          #pragma omp parallel num_threads(NumOMP_)
-          {
-            #pragma omp for reduction(+:delta_sum_uprob) nowait
-            for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-              for(unsigned d=0; d<delta_kernels_.size(); d++) {
-                const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-                delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
-              }
-            }
-          }
-        } else {
-          #pragma omp parallel num_threads(NumOMP_)
-          {
-            #pragma omp for reduction(+:delta_sum_uprob) nowait
-            for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
-              const unsigned k=nlist_index_[nk];
-              for(unsigned d=0; d<delta_kernels_.size(); d++) {
-                const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-                delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
-              }
+        #pragma omp parallel num_threads(NumOMP_)
+        {
+          #pragma omp for reduction(+:delta_sum_uprob) nowait
+          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
+            for(unsigned d=0; d<delta_kernels_.size(); d++) {
+              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
             }
           }
         }
@@ -1343,8 +1334,10 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
       mergeKernels(kernels_[taker_k],kernel(height,center,sigma));
       delta_kernels_.push_back(kernels_[taker_k]);
       if(recursive_merge_) { //the overhead is worth it if it keeps low the total number of kernels
+        //the neighbor list holds all kernels within the cutoff of the current CV, thus also those that can
+        //merge with the new kernel, but the merged kernel has moved: search all kernels
         unsigned giver_k=taker_k;
-        taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
+        taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k,true);
         while(taker_k<kernels_.size()) {
           delta_kernels_.pop_back();
           delta_kernels_.emplace_back(-1*kernels_[taker_k].height,kernels_[taker_k].center,kernels_[taker_k].sigma);
@@ -1354,23 +1347,22 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
           mergeKernels(kernels_[taker_k],kernels_[giver_k]);
           delta_kernels_.push_back(kernels_[taker_k]);
           kernels_.erase(kernels_.begin()+giver_k);
-          if(nlist_) {
-            unsigned giver_nk=0;
-            bool found_giver=false;
-            for(unsigned nk=0; nk<nlist_index_.size(); nk++) {
-              if(found_giver) {
-                nlist_index_[nk]--;  //all the indexes shift due to erase
-              }
-              if(nlist_index_[nk]==giver_k) {
-                giver_nk=nk;
-                found_giver=true;
+          if(nlist_) { //remove the giver from the sorted list, shift the indexes after it, and make sure the taker is listed
+            std::vector<unsigned> new_nlist_index;
+            new_nlist_index.reserve(nlist_index_.size()+1);
+            for(unsigned k : nlist_index_) {
+              if(k!=giver_k) {
+                new_nlist_index.push_back(k<giver_k?k:k-1);
               }
             }
-            plumed_dbg_massert(found_giver,"problem with merging and NLIST");
-            nlist_index_.erase(nlist_index_.begin()+giver_nk);
+            const auto taker_pos=std::lower_bound(new_nlist_index.begin(),new_nlist_index.end(),taker_k); //taker_k<giver_k
+            if(taker_pos==new_nlist_index.end() || *taker_pos!=taker_k) { //possible, since all kernels are searched
+              new_nlist_index.insert(taker_pos,taker_k);
+            }
+            nlist_index_.swap(new_nlist_index);
           }
           giver_k=taker_k;
-          taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
+          taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k,true);
         }
       }
     }
@@ -1401,71 +1393,41 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
 }
 
 template <class mode>
-unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k) {
+unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k,const bool all_kernels) {
   //returns kernels_.size() if no match is found
+  //with NLIST only the kernels in the list are searched, unless all_kernels is true
+  const bool use_nlist=(nlist_ && !all_kernels);
+  const unsigned size=use_nlist?nlist_index_.size():kernels_.size();
   unsigned min_k=kernels_.size();
   double min_norm2=threshold2_;
-  if(!nlist_) {
-    #pragma omp parallel num_threads(NumOMP_)
-    {
-      unsigned min_k_omp = min_k;
-      double min_norm2_omp = threshold2_;
-      #pragma omp for nowait
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-        if(k==giver_k) { //a kernel should not be merged with itself
-          continue;
-        }
-        double norm2=0;
-        for(unsigned i=0; i<ncv_; i++) {
-          const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-          norm2+=dist_i*dist_i;
-          if(norm2>=min_norm2_omp) {
-            break;
-          }
-        }
-        if(norm2<min_norm2_omp) {
-          min_norm2_omp=norm2;
-          min_k_omp=k;
+  #pragma omp parallel num_threads(NumOMP_)
+  {
+    unsigned min_k_omp = min_k;
+    double min_norm2_omp = threshold2_;
+    #pragma omp for nowait
+    for(unsigned nk=rank_; nk<size; nk+=NumParallel_) {
+      const unsigned k=use_nlist?nlist_index_[nk]:nk;
+      if(k==giver_k) { //a kernel should not be merged with itself
+        continue;
+      }
+      double norm2=0;
+      for(unsigned i=0; i<ncv_; i++) {
+        const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2+=dist_i*dist_i;
+        if(norm2>=min_norm2_omp) {
+          break;
         }
       }
-      #pragma omp critical
-      {
-        if(min_norm2_omp < min_norm2) {
-          min_norm2 = min_norm2_omp;
-          min_k = min_k_omp;
-        }
+      if(norm2<min_norm2_omp) {
+        min_norm2_omp=norm2;
+        min_k_omp=k;
       }
     }
-  } else {
-    #pragma omp parallel num_threads(NumOMP_)
+    #pragma omp critical
     {
-      unsigned min_k_omp = min_k;
-      double min_norm2_omp = threshold2_;
-      #pragma omp for nowait
-      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
-        const unsigned k=nlist_index_[nk];
-        if(k==giver_k) { //a kernel should not be merged with itself
-          continue;
-        }
-        double norm2=0;
-        for(unsigned i=0; i<ncv_; i++) {
-          const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-          norm2+=dist_i*dist_i;
-          if(norm2>=min_norm2_omp) {
-            break;
-          }
-        }
-        if(norm2<min_norm2_omp) {
-          min_norm2_omp=norm2;
-          min_k_omp=k;
-        }
-      }
-      #pragma omp critical
-      {
-        if(min_norm2_omp < min_norm2) {
-          min_norm2 = min_norm2_omp;
-          min_k = min_k_omp;
-        }
+      if(min_norm2_omp < min_norm2) {
+        min_norm2 = min_norm2_omp;
+        min_k = min_k_omp;
       }
     }
   }
@@ -1488,6 +1450,9 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
 
   nlist_center_=new_center;
   nlist_index_.clear();
+  //smallest sigma of all kernels: it bounds the distance of the kernels outside the list from below.
+  //Using only those outside would never trigger a rebuild when all kernels are in the list
+  std::vector<double> sigma_min(ncv_,std::numeric_limits<double>::max());
   //first we gather all the nlist_index
   if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_) {
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
@@ -1495,8 +1460,9 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
       for(unsigned i=0; i<ncv_; i++) {
         const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
         norm2_k+=dist_ik*dist_ik;
+        sigma_min[i]=std::min(sigma_min[i],kernels_[k].sigma[i]);
       }
-      if(norm2_k<=nlist_param_[0]*cutoff2_) {
+      if(norm2_k<=nlist_param_*cutoff2_) {
         nlist_index_.push_back(k);
       }
     }
@@ -1504,19 +1470,26 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<unsigned> private_nlist_index;
+      std::vector<double> private_sigma_min(ncv_,std::numeric_limits<double>::max());
       #pragma omp for nowait
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
         double norm2_k=0;
         for(unsigned i=0; i<ncv_; i++) {
           const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
           norm2_k+=dist_ik*dist_ik;
+          private_sigma_min[i]=std::min(private_sigma_min[i],kernels_[k].sigma[i]);
         }
-        if(norm2_k<=nlist_param_[0]*cutoff2_) {
+        if(norm2_k<=nlist_param_*cutoff2_) {
           private_nlist_index.push_back(k);
         }
       }
       #pragma omp critical
-      nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
+      {
+        nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
+        for(unsigned i=0; i<ncv_; i++) {
+          sigma_min[i]=std::min(sigma_min[i],private_sigma_min[i]);
+        }
+      }
     }
     if(recursive_merge_) {
       std::sort(nlist_index_.begin(),nlist_index_.end());
@@ -1543,24 +1516,10 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
       }
     }
   }
-  //calculate the square deviation
-  std::vector<double> dev2(ncv_,0.);
-  for(unsigned k=rank_; k<nlist_index_.size(); k+=NumParallel_) {
-    for(unsigned i=0; i<ncv_; i++) {
-      const double diff_ik=difference(i,nlist_center_[i],kernels_[nlist_index_[k]].center[i]);
-      dev2[i]+=diff_ik*diff_ik;
-    }
-  }
   if(NumParallel_>1) {
-    comm.Sum(dev2);
+    comm.Min(sigma_min);
   }
-  for(unsigned i=0; i<ncv_; i++) {
-    if(dev2[i]==0) { //e.g. if nlist_index_.size()==0
-      nlist_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
-    } else {
-      nlist_dev2_[i]=dev2[i]/nlist_index_.size();
-    }
-  }
+  nlist_sigma_min_=sigma_min;
   getPntrToComponent("nlker")->set(nlist_index_.size());
   getPntrToComponent("nlsteps")->set(nlist_steps_);
   nlist_steps_=0;
