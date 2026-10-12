@@ -68,6 +68,11 @@ If the system has a basin that is clearly more stable than the others, it is bet
 By default, the kernels SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to [METAD](METAD.md) ADAPTIVE=DIFF, but contrary to that, no artifacts are introduced and the bias will converge to the correct one).
 However, notice that depending on the system this might not be the optimal choice for SIGMA.
 
+The kernels are Gaussians truncated at KERNEL_CUTOFF, in units of SIGMA.
+They are force-shifted, so that both their value and their derivative go to zero at the cutoff.
+At a distance $r$ from its center, in units of SIGMA, a kernel is proportional to $e^{-r^2/2}-c\,\big(1+(r_c^2-r^2)/2\big)$, where $r_c$ is the cutoff and $c=e^{-r_c^2/2}$, and it is zero beyond the cutoff.
+The default cutoff is set from BARRIER, and the kernels then differ from Gaussians only in their far tails.
+
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
@@ -218,7 +223,7 @@ private:
 
   double threshold2_;
   bool recursive_merge_;
-//kernels are truncated diagonal Gaussians
+//kernels are truncated diagonal Gaussians, force-shifted so that their value and derivative go to zero at the cutoff
   struct kernel {
     double height;
     std::vector<double> center;
@@ -371,7 +376,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   }
   keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
-  keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
+  keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma. The truncated kernels are force-shifted, see above");
   keys.add("optional","NLIST_PARAMETERS","( default=3.0 ) the kernels within sqrt(NLIST_PARAMETERS)*KERNEL_CUTOFF are in the neighbor list. "
            "Larger values give a larger list, rebuilt less often. A second value is accepted for backward compatibility, but is not used");
   keys.addFlag("NLIST",false,"use a neighbor list for the kernels summation. The result is the same as without it, and it is faster when there are many kernels");
@@ -1522,16 +1527,18 @@ void OPESmetad<mode>::sumKernels(const std::vector<double>& cv,const unsigned be
       if(norm2[k]>=cutoff2_) {
         continue;
       }
-      const double gaussian=sum_height_[b+k]*std::exp(-0.5*norm2[k]);
-      prob+=gaussian-sum_height_[b+k]*val_at_cutoff_;
+      //force-shifted kernel: with c=exp(-rc2/2), its value is G*(exp(-r2/2)-c*(1+(rc2-r2)/2))
+      //and its derivative -G*(exp(-r2/2)-c)*dr2/2, both going to zero at the cutoff
+      const double height=sum_height_[b+k];
+      const double der_val=height*(std::exp(-0.5*norm2[k])-val_at_cutoff_);
+      prob+=der_val-height*val_at_cutoff_*0.5*(cutoff2_-norm2[k]);
       for(unsigned i=0; i<ncv_; i++) {
         double diff=cv[i]-sum_center_[i*size+b+k];
         if(period_[i]>0) {
           diff-=period_[i]*std::nearbyint(diff*inv_period_[i]);
         }
         const double inv_sigma=sum_inv_sigma_[i*size+b+k];
-        //NB: we accumulate the derivative into der_prob. The cutoff shift is constant and does not contribute to it
-        der_prob[i]-=diff*inv_sigma*inv_sigma*gaussian;
+        der_prob[i]-=diff*inv_sigma*inv_sigma*der_val; //NB: we accumulate the derivative into der_prob
       }
     }
   }
@@ -1977,8 +1984,8 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
 
 template <class mode>
 inline double OPESmetad<mode>::shiftedGaussian(const double norm2) const {
-  //Gaussian at a squared distance norm2 within the cutoff, shifted to be zero at the cutoff
-  return std::exp(-0.5*norm2)-val_at_cutoff_;
+  //force-shifted Gaussian at a squared distance norm2 within the cutoff
+  return std::exp(-0.5*norm2)-val_at_cutoff_*(1+0.5*(cutoff2_-norm2));
 }
 
 template <class mode>
