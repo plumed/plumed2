@@ -214,8 +214,20 @@ private:
   double val_at_cutoff_;
   void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   double evaluateKernel(const kernel&,const std::vector<double>&) const;
-  double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
+  double shiftedGaussian(const double) const; //for a squared distance within the cutoff
   std::vector<kernel> kernels_; //all compressed kernels
+//kernels summed at every step (all of them, or those in the neighbor list), with each CV in a
+//contiguous array, so that the distances to all of them are computed in a loop without branches
+  bool sum_outdated_; //kernels_ or nlist_index_ changed since the last updateSum()
+  std::vector<double> sum_center_; //CV i of the k-th summed kernel is sum_center_[i*size+k]
+  std::vector<double> sum_inv_sigma_; //same layout, inverse of sigma
+  std::vector<double> sum_height_;
+  std::vector<double> period_; //period of each CV, zero if not periodic
+  std::vector<double> inv_period_;
+  std::vector<double> cv_; //buffers for calculate(), to avoid allocations at every step
+  std::vector<double> der_prob_;
+  void updateSum();
+  void sumKernels(const std::vector<double>&,const unsigned,const unsigned,double&,std::vector<double>&) const;
   OFile kernelsOfile_;
 //neighbour list stuff
   bool nlist_;
@@ -227,11 +239,20 @@ private:
   bool nlist_pace_reset_;
   double nlist_skin2_; //square of the largest displacement allowed, in units of nlist_sigma_min_
   std::vector<double> nlist_sigma_min_; //smallest sigma of all kernels, for each CV, at the last rebuild
+//all kernels, with the same layout as the summed ones, to rebuild the list and update Zed quickly
+  bool nlist_all_outdated_; //kernels_ changed since the last updateNlistAll()
+  std::vector<double> nlist_all_center_;
+  std::vector<double> nlist_all_inv_sigma_;
+  std::vector<double> nlist_all_height_;
+  std::vector<double> nlist_all_sigma_min_; //smallest sigma of all kernels, for each CV
+  void updateNlistAll();
+  void listKernels(const unsigned,const unsigned,std::vector<unsigned>&) const;
 
   bool calc_work_;
   double work_;
   double old_KDEnorm_;
   std::vector<kernel> delta_kernels_;
+  double deltaSumUprob(const unsigned,const unsigned,const bool) const;
 
   Value* excluded_region_;
   std::vector<Value*> extra_biases_;
@@ -508,6 +529,20 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   //i.e. when the CV moves out of a skin of (sqrt(nlist_param_)-1)*cutoff, in units of the smallest sigma
   nlist_skin2_=std::pow(std::sqrt(nlist_param_)-1,2)*cutoff2_;
   nlist_sigma_min_.resize(ncv_,std::numeric_limits<double>::max());
+  nlist_all_outdated_=true;
+
+//setup the sum of the kernels
+  sum_outdated_=true;
+  period_.resize(ncv_,0.);
+  inv_period_.resize(ncv_,0.);
+  cv_.resize(ncv_);
+  der_prob_.resize(ncv_);
+  for(unsigned i=0; i<ncv_; i++) {
+    if(getPntrToArgument(i)->isPeriodic()) {
+      period_[i]=getPntrToArgument(i)->getMaxMinusMin();
+      inv_period_[i]=1./period_[i];
+    }
+  }
 
 //optional stuff
   no_Zed_=false;
@@ -746,15 +781,27 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
         }
         KDEnorm_=mode::explore?counter_:sum_weights_;
         if(!no_Zed_) {
+          //all kernels evaluated at all centers, with the kernel sum used for the bias (nlist_ is off here).
+          //Each MPI process takes a contiguous share of the centers, split among the OpenMP threads
+          updateSum();
+          const unsigned size=kernels_.size();
+          const unsigned share=(size+NumParallel_-1)/NumParallel_;
+          const unsigned begin=std::min(rank_*share,size);
+          const unsigned end=std::min(begin+share,size);
           double sum_uprob=0;
-          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-            for(unsigned kk=0; kk<kernels_.size(); kk++) {
-              sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+          #pragma omp parallel num_threads(NumOMP_)
+          {
+            std::vector<double> unused_der(ncv_); //derivatives are not needed
+            #pragma omp for reduction(+:sum_uprob) nowait
+            for(unsigned k=begin; k<end; k++) {
+              sumKernels(kernels_[k].center,0,size,sum_uprob,unused_der);
             }
+          }
           if(NumParallel_>1) {
             comm.Sum(sum_uprob);
           }
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
+          sum_outdated_=true; //the neighbor list, if any, is not set yet
         }
         log.printf("    a total of %llu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
         convertKernelsToState=true;
@@ -973,7 +1020,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 template <class mode>
 void OPESmetad<mode>::calculate() {
 //get cv
-  std::vector<double> cv(ncv_);
+  std::vector<double>& cv=cv_;
   for(unsigned i=0; i<ncv_; i++) {
     cv[i]=getArgument(i);
   }
@@ -987,7 +1034,9 @@ void OPESmetad<mode>::calculate() {
       //kernels outside the list cannot be within the cutoff as long as this displacement is within the skin
       double norm2=0;
       for(unsigned i=0; i<ncv_; i++) {
-        const double dist_i=difference(i,nlist_center_[i],cv[i])/nlist_sigma_min_[i];
+        double diff=cv[i]-nlist_center_[i];
+        diff-=period_[i]*std::nearbyint(diff*inv_period_[i]); //zero for non-periodic CVs
+        const double dist_i=diff/nlist_sigma_min_[i];
         norm2+=dist_i*dist_i;
       }
       if(norm2>nlist_skin2_) {
@@ -1000,7 +1049,8 @@ void OPESmetad<mode>::calculate() {
   }
 
 //set bias and forces
-  std::vector<double> der_prob(ncv_,0);
+  std::vector<double>& der_prob=der_prob_;
+  std::fill(der_prob.begin(),der_prob.end(),0.);
   const double prob=getProbAndDerivatives(cv,der_prob);
   const double bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
   setBias(bias);
@@ -1177,6 +1227,7 @@ void OPESmetad<mode>::update() {
           comm.Bcast(all_nlist_index,0);
           std::set<unsigned> nlist_index_set(all_nlist_index.begin(),all_nlist_index.end()); //remove duplicates and sort
           nlist_index_.assign(nlist_index_set.begin(),nlist_index_set.end());
+          sum_outdated_=true;
         }
       }
       for(unsigned w=0; w<NumWalkers_; w++) {
@@ -1215,15 +1266,32 @@ void OPESmetad<mode>::update() {
         // Here instead of redoing the full summation, we add only the changes, knowing that
         // uprob = old_uprob + delta_uprob
         // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
-        // All kernels are used, also with the neighbor list: a merged kernel changes the sum also at centers outside the list
+        // All kernels are used: the summed ones without the neighbor list, otherwise the copy used to rebuild the list,
+        // since a merged kernel changes the sum also at centers outside the list.
+        // Each MPI process takes a contiguous share of them, split in blocks among the OpenMP threads
+        const bool all=nlist_;
+        if(all && nlist_all_outdated_) {
+          updateNlistAll();
+        }
+        if(!all && sum_outdated_) {
+          updateSum();
+        }
+        const unsigned size=all?nlist_all_height_.size():sum_height_.size();
+        const unsigned share=(size+NumParallel_-1)/NumParallel_;
+        const unsigned begin=std::min(rank_*share,size);
+        const unsigned end=std::min(begin+share,size);
+        constexpr unsigned omp_block=64;
         double delta_sum_uprob=0;
-        #pragma omp parallel num_threads(NumOMP_)
-        {
-          #pragma omp for reduction(+:delta_sum_uprob) nowait
-          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-            for(unsigned d=0; d<delta_kernels_.size(); d++) {
-              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+        if(NumOMP_==1 || end-begin<2*NumOMP_*omp_block) {
+          delta_sum_uprob=deltaSumUprob(begin,end,all);
+        } else {
+          const unsigned nblocks=(end-begin+omp_block-1)/omp_block;
+          #pragma omp parallel num_threads(NumOMP_)
+          {
+            #pragma omp for reduction(+:delta_sum_uprob) nowait
+            for(unsigned n=0; n<nblocks; n++) {
+              const unsigned b=begin+n*omp_block;
+              delta_sum_uprob+=deltaSumUprob(b,std::min(b+omp_block,end),all);
             }
           }
         }
@@ -1265,48 +1333,32 @@ void OPESmetad<mode>::update() {
 
 template <class mode>
 double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std::vector<double>& der_prob) {
+  if(sum_outdated_) {
+    updateSum();
+  }
+  //each MPI process sums a contiguous share of the kernels, split in blocks among the OpenMP threads
+  const unsigned size=sum_height_.size();
+  const unsigned share=(size+NumParallel_-1)/NumParallel_;
+  const unsigned begin=std::min(rank_*share,size);
+  const unsigned end=std::min(begin+share,size);
+  constexpr unsigned omp_block=64;
   double prob=0.0;
-  if(!nlist_) {
-    if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_) {
-      // for performances and thread safety
-      std::vector<double> dist(ncv_);
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-        prob+=evaluateKernel(kernels_[k],cv,der_prob,dist);
-      }
-    } else {
-      #pragma omp parallel num_threads(NumOMP_)
-      {
-        std::vector<double> omp_deriv(der_prob.size(),0.);
-        // for performances and thread safety
-        std::vector<double> dist(ncv_);
-        #pragma omp for reduction(+:prob) nowait
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-          prob+=evaluateKernel(kernels_[k],cv,omp_deriv,dist);
-        }
-        #pragma omp critical
-        for(unsigned i=0; i<ncv_; i++) {
-          der_prob[i]+=omp_deriv[i];
-        }
-      }
-    }
+  if(NumOMP_==1 || end-begin<2*NumOMP_*omp_block) {
+    sumKernels(cv,begin,end,prob,der_prob);
   } else {
-    if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_) {
-      // for performances and thread safety
-      std::vector<double> dist(ncv_);
-      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
-        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob,dist);
+    const unsigned nblocks=(end-begin+omp_block-1)/omp_block;
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      double omp_prob=0;
+      std::vector<double> omp_deriv(ncv_,0.);
+      #pragma omp for nowait
+      for(unsigned n=0; n<nblocks; n++) {
+        const unsigned b=begin+n*omp_block;
+        sumKernels(cv,b,std::min(b+omp_block,end),omp_prob,omp_deriv);
       }
-    } else {
-      #pragma omp parallel num_threads(NumOMP_)
+      #pragma omp critical
       {
-        std::vector<double> omp_deriv(der_prob.size(),0.);
-        // for performances and thread safety
-        std::vector<double> dist(ncv_);
-        #pragma omp for reduction(+:prob) nowait
-        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
-          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv,dist);
-        }
-        #pragma omp critical
+        prob+=omp_prob;
         for(unsigned i=0; i<ncv_; i++) {
           der_prob[i]+=omp_deriv[i];
         }
@@ -1327,7 +1379,141 @@ double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std:
 }
 
 template <class mode>
+void OPESmetad<mode>::updateSum() {
+  const unsigned size=nlist_?nlist_index_.size():kernels_.size();
+  sum_center_.resize(ncv_*size);
+  sum_inv_sigma_.resize(ncv_*size);
+  sum_height_.resize(size);
+  for(unsigned k=0; k<size; k++) {
+    const kernel& G=kernels_[nlist_?nlist_index_[k]:k];
+    sum_height_[k]=G.height;
+    for(unsigned i=0; i<ncv_; i++) {
+      sum_center_[i*size+k]=G.center[i];
+      sum_inv_sigma_[i*size+k]=1./G.sigma[i];
+    }
+  }
+  sum_outdated_=false;
+}
+
+template <class mode>
+void OPESmetad<mode>::sumKernels(const std::vector<double>& cv,const unsigned begin,const unsigned end,double& prob,std::vector<double>& der_prob) const {
+  //adds the summed kernels from begin to end to prob and der_prob (not normalized).
+  //For a block of kernels, the squared distances are first computed for all of them, without branches,
+  //then only the few within the cutoff are evaluated. The result is the same as summing one kernel at a time
+  constexpr unsigned block=128;
+  double norm2[block];
+  const unsigned size=sum_height_.size();
+  for(unsigned b=begin; b<end; b+=block) {
+    const unsigned nb=std::min(block,end-b);
+    for(unsigned k=0; k<nb; k++) {
+      norm2[k]=0;
+    }
+    for(unsigned i=0; i<ncv_; i++) {
+      const double* center_i=&sum_center_[i*size+b];
+      const double* inv_sigma_i=&sum_inv_sigma_[i*size+b];
+      const double cv_i=cv[i];
+      if(period_[i]>0) {
+        const double period=period_[i];
+        const double inv_period=inv_period_[i];
+        //unlike Tools::pbc, nearbyint has no branches: it is a single instruction on aarch64 and on x86 with SSE4.1
+        for(unsigned k=0; k<nb; k++) {
+          double diff=cv_i-center_i[k];
+          diff-=period*std::nearbyint(diff*inv_period);
+          const double dist=diff*inv_sigma_i[k];
+          norm2[k]+=dist*dist;
+        }
+      } else {
+        for(unsigned k=0; k<nb; k++) {
+          const double dist=(cv_i-center_i[k])*inv_sigma_i[k];
+          norm2[k]+=dist*dist;
+        }
+      }
+    }
+    for(unsigned k=0; k<nb; k++) {
+      if(norm2[k]>=cutoff2_) {
+        continue;
+      }
+      const double gaussian=sum_height_[b+k]*std::exp(-0.5*norm2[k]);
+      prob+=gaussian-sum_height_[b+k]*val_at_cutoff_;
+      for(unsigned i=0; i<ncv_; i++) {
+        double diff=cv[i]-sum_center_[i*size+b+k];
+        if(period_[i]>0) {
+          diff-=period_[i]*std::nearbyint(diff*inv_period_[i]);
+        }
+        const double inv_sigma=sum_inv_sigma_[i*size+b+k];
+        //NB: we accumulate the derivative into der_prob. The cutoff shift is constant and does not contribute to it
+        der_prob[i]-=diff*inv_sigma*inv_sigma*gaussian;
+      }
+    }
+  }
+}
+
+template <class mode>
+double OPESmetad<mode>::deltaSumUprob(const unsigned begin,const unsigned end,const bool all) const {
+  //change of the sum of all kernels evaluated at all centers due to the delta_kernels_, for the kernels from
+  //begin to end: the delta kernels evaluated at the centers of these kernels, plus these kernels evaluated at the
+  //centers of the delta kernels (minus, for those that are gone). The kernels are the summed ones, or with all=true
+  //the nlist_all_ ones. As in sumKernels(), the squared distances of a block of kernels are computed without
+  //branches, both in units of the delta kernel sigma and of their own sigma
+  const std::vector<double>& center=all?nlist_all_center_:sum_center_;
+  const std::vector<double>& inv_sigma=all?nlist_all_inv_sigma_:sum_inv_sigma_;
+  const std::vector<double>& height=all?nlist_all_height_:sum_height_;
+  constexpr unsigned block=128;
+  double norm2_d[block]; //in units of the delta kernel sigma
+  double norm2_k[block]; //in units of their own sigma
+  const unsigned size=height.size();
+  double delta_sum_uprob=0;
+  for(unsigned b=begin; b<end; b+=block) {
+    const unsigned nb=std::min(block,end-b);
+    for(const kernel& D : delta_kernels_) {
+      for(unsigned k=0; k<nb; k++) {
+        norm2_d[k]=0;
+        norm2_k[k]=0;
+      }
+      for(unsigned i=0; i<ncv_; i++) {
+        const double* center_i=&center[i*size+b];
+        const double* inv_sigma_i=&inv_sigma[i*size+b];
+        const double c_i=D.center[i];
+        const double inv_sigma_d=1./D.sigma[i];
+        if(period_[i]>0) {
+          const double period=period_[i];
+          const double inv_period=inv_period_[i];
+          for(unsigned k=0; k<nb; k++) {
+            double diff=c_i-center_i[k];
+            diff-=period*std::nearbyint(diff*inv_period);
+            const double dist_d=diff*inv_sigma_d;
+            const double dist_k=diff*inv_sigma_i[k];
+            norm2_d[k]+=dist_d*dist_d;
+            norm2_k[k]+=dist_k*dist_k;
+          }
+        } else {
+          for(unsigned k=0; k<nb; k++) {
+            const double diff=c_i-center_i[k];
+            const double dist_d=diff*inv_sigma_d;
+            const double dist_k=diff*inv_sigma_i[k];
+            norm2_d[k]+=dist_d*dist_d;
+            norm2_k[k]+=dist_k*dist_k;
+          }
+        }
+      }
+      const double sign=D.height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+      for(unsigned k=0; k<nb; k++) {
+        if(norm2_d[k]<cutoff2_) {
+          delta_sum_uprob+=D.height*shiftedGaussian(norm2_d[k]);
+        }
+        if(norm2_k[k]<cutoff2_) {
+          delta_sum_uprob+=sign*height[b+k]*shiftedGaussian(norm2_k[k]);
+        }
+      }
+    }
+  }
+  return delta_sum_uprob;
+}
+
+template <class mode>
 void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+  sum_outdated_=true;
+  nlist_all_outdated_=true;
   bool no_match=true;
   if(threshold2_!=0) {
     unsigned taker_k=getMergeableKernel(center,kernels_.size());
@@ -1453,46 +1639,32 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
 
   nlist_center_=new_center;
   nlist_index_.clear();
+  if(nlist_all_outdated_) {
+    updateNlistAll();
+  }
   //smallest sigma of all kernels: it bounds the distance of the kernels outside the list from below.
   //Using only those outside would never trigger a rebuild when all kernels are in the list
-  std::vector<double> sigma_min(ncv_,std::numeric_limits<double>::max());
-  //first we gather all the nlist_index
-  if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_) {
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-      double norm2_k=0;
-      for(unsigned i=0; i<ncv_; i++) {
-        const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2_k+=dist_ik*dist_ik;
-        sigma_min[i]=std::min(sigma_min[i],kernels_[k].sigma[i]);
-      }
-      if(norm2_k<=nlist_param_*cutoff2_) {
-        nlist_index_.push_back(k);
-      }
-    }
+  nlist_sigma_min_=nlist_all_sigma_min_;
+  //each MPI process lists a contiguous share of the kernels, split in blocks among the OpenMP threads
+  const unsigned size=kernels_.size();
+  const unsigned share=(size+NumParallel_-1)/NumParallel_;
+  const unsigned begin=std::min(rank_*share,size);
+  const unsigned end=std::min(begin+share,size);
+  constexpr unsigned omp_block=64;
+  if(NumOMP_==1 || end-begin<2*NumOMP_*omp_block) {
+    listKernels(begin,end,nlist_index_);
   } else {
+    const unsigned nblocks=(end-begin+omp_block-1)/omp_block;
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<unsigned> private_nlist_index;
-      std::vector<double> private_sigma_min(ncv_,std::numeric_limits<double>::max());
       #pragma omp for nowait
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-        double norm2_k=0;
-        for(unsigned i=0; i<ncv_; i++) {
-          const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-          norm2_k+=dist_ik*dist_ik;
-          private_sigma_min[i]=std::min(private_sigma_min[i],kernels_[k].sigma[i]);
-        }
-        if(norm2_k<=nlist_param_*cutoff2_) {
-          private_nlist_index.push_back(k);
-        }
+      for(unsigned n=0; n<nblocks; n++) {
+        const unsigned b=begin+n*omp_block;
+        listKernels(b,std::min(b+omp_block,end),private_nlist_index);
       }
       #pragma omp critical
-      {
-        nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
-        for(unsigned i=0; i<ncv_; i++) {
-          sigma_min[i]=std::min(sigma_min[i],private_sigma_min[i]);
-        }
-      }
+      nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
     }
     if(recursive_merge_) {
       std::sort(nlist_index_.begin(),nlist_index_.end());
@@ -1519,14 +1691,70 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
       }
     }
   }
-  if(NumParallel_>1) {
-    comm.Min(sigma_min);
-  }
-  nlist_sigma_min_=sigma_min;
   getPntrToComponent("nlker")->set(nlist_index_.size());
   getPntrToComponent("nlsteps")->set(nlist_steps_);
   nlist_steps_=0;
   nlist_update_=false;
+  sum_outdated_=true;
+}
+
+template <class mode>
+void OPESmetad<mode>::updateNlistAll() {
+  //all kernels with each CV in a contiguous array, as for the sum, refreshed only when they changed
+  const unsigned size=kernels_.size();
+  nlist_all_center_.resize(ncv_*size);
+  nlist_all_inv_sigma_.resize(ncv_*size);
+  nlist_all_height_.resize(size);
+  nlist_all_sigma_min_.assign(ncv_,std::numeric_limits<double>::max());
+  for(unsigned k=0; k<size; k++) {
+    nlist_all_height_[k]=kernels_[k].height;
+    for(unsigned i=0; i<ncv_; i++) {
+      nlist_all_center_[i*size+k]=kernels_[k].center[i];
+      nlist_all_inv_sigma_[i*size+k]=1./kernels_[k].sigma[i];
+      nlist_all_sigma_min_[i]=std::min(nlist_all_sigma_min_[i],kernels_[k].sigma[i]);
+    }
+  }
+  nlist_all_outdated_=false;
+}
+
+template <class mode>
+void OPESmetad<mode>::listKernels(const unsigned begin,const unsigned end,std::vector<unsigned>& index) const {
+  //appends to index the kernels from begin to end within the neighbor list cutoff.
+  //As in sumKernels(), the squared distances of a block of kernels are computed without branches
+  constexpr unsigned block=128;
+  double norm2[block];
+  const unsigned size=kernels_.size();
+  for(unsigned b=begin; b<end; b+=block) {
+    const unsigned nb=std::min(block,end-b);
+    for(unsigned k=0; k<nb; k++) {
+      norm2[k]=0;
+    }
+    for(unsigned i=0; i<ncv_; i++) {
+      const double* center_i=&nlist_all_center_[i*size+b];
+      const double* inv_sigma_i=&nlist_all_inv_sigma_[i*size+b];
+      const double c_i=nlist_center_[i];
+      if(period_[i]>0) {
+        const double period=period_[i];
+        const double inv_period=inv_period_[i];
+        for(unsigned k=0; k<nb; k++) {
+          double diff=c_i-center_i[k];
+          diff-=period*std::nearbyint(diff*inv_period);
+          const double dist=diff*inv_sigma_i[k];
+          norm2[k]+=dist*dist;
+        }
+      } else {
+        for(unsigned k=0; k<nb; k++) {
+          const double dist=(c_i-center_i[k])*inv_sigma_i[k];
+          norm2[k]+=dist*dist;
+        }
+      }
+    }
+    for(unsigned k=0; k<nb; k++) {
+      if(norm2[k]<=nlist_param_*cutoff2_) {
+        index.push_back(b+k);
+      }
+    }
+  }
 }
 
 template <class mode>
@@ -1649,26 +1877,13 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
       return 0;
     }
   }
-  return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
+  return G.height*shiftedGaussian(norm2);
 }
 
 template <class mode>
-inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist) {
-  //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
-  double norm2=0;
-  for(unsigned i=0; i<ncv_; i++) {
-    dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];
-    norm2+=dist[i]*dist[i];
-    if(norm2>=cutoff2_) {
-      return 0;
-    }
-  }
-  const double gaussian=G.height*std::exp(-0.5*norm2);
-  for(unsigned i=0; i<ncv_; i++) {
-    // The cutoff shift is constant and does not contribute to the derivative.
-    acc_der[i]-=dist[i]/G.sigma[i]*gaussian;
-  }
-  return gaussian-G.height*val_at_cutoff_;
+inline double OPESmetad<mode>::shiftedGaussian(const double norm2) const {
+  //Gaussian at a squared distance norm2 within the cutoff, shifted to be zero at the cutoff
+  return std::exp(-0.5*norm2)-val_at_cutoff_;
 }
 
 template <class mode>
