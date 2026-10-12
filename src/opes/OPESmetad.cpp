@@ -83,6 +83,9 @@ For an exact restart you must use STATE_RFILE to read a checkpoint with all the 
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
 
+To continue a simulation with a static bias, for example once the bias has converged, restart from the STATE file and add UPDATE_UNTIL=0.
+No new kernels are then deposited, and the bias remains the one read from STATE_RFILE (no STATE_WFILE is needed).
+
 Multiple walkers are supported only with MPI communication, via the keyword WALKERS_MPI.
 
 \par Examples
