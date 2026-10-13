@@ -184,16 +184,18 @@ public:
                                  ForceProviderOutput*      forceProviderOutput) = 0;
 
     /*! \brief
-     * Whether this provider needs the MD potential energy on \p step.
+     * Prepares this provider for \p step, and returns whether it needs the MD
+     * potential energy on that step.
      *
      * Called from the MD loop before setupStepWorkload(), which is the last
      * point at which the workload can still be changed. A true return value
      * requests GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL so that the potential
      * energy is valid in applyAfterPotentialEnergy().
      *
-     * \param[in] step  The step that is about to be computed
+     * \param[in] step                 The step that is about to be computed
+     * \param[in] isCheckpointingStep  Whether a checkpoint is written at \p step
      */
-    virtual bool requestsPotentialEnergy(int64_t /*step*/) { return false; }
+    virtual bool prepareStep(int64_t /*step*/, bool /*isCheckpointingStep*/) { return false; }
 
     /*! \brief
      * Optional callback after the potential energy has been accumulated
@@ -251,8 +253,8 @@ public:
     void calculateForces(const gmx::ForceProviderInput& forceProviderInput,
                          gmx::ForceProviderOutput*      forceProviderOutput) const;
 
-    //! Whether any provider needs the potential energy on \p step.
-    bool requestsPotentialEnergy(int64_t step) const;
+    //! Prepares all providers for \p step, and returns whether any needs the potential energy.
+    bool prepareStep(int64_t step, bool isCheckpointingStep) const;
 
     //! Forwards applyAfterPotentialEnergy() to all providers.
     void applyAfterPotentialEnergy(bool energyWasComputed,

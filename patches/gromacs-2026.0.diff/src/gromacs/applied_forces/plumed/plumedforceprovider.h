@@ -73,6 +73,10 @@ public:
     void setGlobalAtomIndices(const std::optional<ArrayRef<const int>>& globalAtomIndices);
     /*! \brief Tells PLUMED to output the checkpoint data
      *
+     * This is called on the main rank only, when GROMACS writes a checkpoint. It is only a
+     * fallback for the simulators that do not call prepareStep(), such as the modular
+     * simulator, which writes its checkpoints before the force calculation of the step.
+     * calculateForces() then tells PLUMED on all ranks.
      * If the PLUMED API version is not greater than 3 it will do nothing.
      */
     void writeCheckpointData();
@@ -82,10 +86,11 @@ public:
      */
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
-    /*! \brief Whether the PLUMED input needs the potential energy on \p step
-     * \param[in] step  the step that is about to be computed
+    /*! \brief Prepares PLUMED for \p step, and returns whether it needs the potential energy
+     * \param[in] step                 the step that is about to be computed
+     * \param[in] isCheckpointingStep  whether GROMACS writes a checkpoint at \p step
      */
-    bool requestsPotentialEnergy(int64_t step) override;
+    bool prepareStep(int64_t step, bool isCheckpointingStep) override;
     /*! \brief Passes the potential energy to PLUMED and applies energy biases
      * \param[in]     energyWasComputed  whether the potential energy is valid this step
      * \param[in,out] potentialEnergy    the MD potential energy
@@ -109,8 +114,12 @@ private:
     int                                plumedNeedsEnergy_ = 0;
     int                                plumedWantsToStop_ = 0;
     matrix                             plumedVir_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-    //! Step for which requestsPotentialEnergy() already prepared the dependencies, if any
+    //! Step for which prepareStep() already prepared the dependencies, if any
     std::optional<int64_t> preparedStep_;
+    //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation
+    bool prepareStepIsCalled_ = false;
+    //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces()
+    int checkpointRequested_ = 0;
 };
 
 } // namespace gmx
