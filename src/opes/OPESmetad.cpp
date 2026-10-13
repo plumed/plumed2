@@ -73,6 +73,10 @@ They are force-shifted, so that both their value and their derivative go to zero
 At a distance $r$ from its center, in units of SIGMA, a kernel is proportional to $e^{-r^2/2}-c\,\big(1+(r_c^2-r^2)/2\big)$, where $r_c$ is the cutoff and $c=e^{-r_c^2/2}$, and it is zero beyond the cutoff.
 The default cutoff is set from BARRIER, and the kernels then differ from Gaussians only in their far tails.
 
+The kernels are summed using a neighbor list, which is rebuilt before any kernel outside it can get within the cutoff.
+The result is the same as when summing all the kernels, and with two or more CVs it is usually much faster.
+The neighbor list can be switched off with NLIST_OFF.
+
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
@@ -140,7 +144,6 @@ opes: OPES_METAD ...
   STATE_WSTRIDE=500*100
   STORE_STATES
   WALKERS_MPI
-  NLIST
 ...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 ```
@@ -180,7 +183,6 @@ opes: OPES_METAD ...
   PACE=500
   BARRIER=30
   EXCLUDED_REGION=xx
-  NLIST
 ...
 PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=phi,psi,xx,opes.*
 ```
@@ -257,7 +259,7 @@ private:
   std::vector<double> nlist_center_;
   unsigned nlist_steps_;
   bool nlist_update_;
-  bool nlist_pace_reset_;
+  bool nlist_components_; //the nlker and nlsteps components, only with the deprecated NLIST flag
   double nlist_skin2_; //square of the largest displacement allowed, in units of nlist_sigma_min_
   std::vector<double> nlist_sigma_min_; //smallest sigma of all kernels, for each CV, at the last rebuild
 //all kernels, with the same layout as the summed ones, to rebuild the list and update Zed quickly
@@ -379,8 +381,8 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma. The truncated kernels are force-shifted, see above");
   keys.add("optional","NLIST_PARAMETERS","( default=3.0 ) the kernels within sqrt(NLIST_PARAMETERS)*KERNEL_CUTOFF are in the neighbor list. "
            "Larger values give a larger list, rebuilt less often. A second value is accepted for backward compatibility, but is not used");
-  keys.addFlag("NLIST",false,"use a neighbor list for the kernels summation. The result is the same as without it, and it is faster when there are many kernels");
-  keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
+  keys.addFlag("NLIST_OFF",false,"do not use the neighbor list for the kernels summation. The result is the same, but it can be slower when there are many kernels");
+  keys.addDeprecatedFlag("NLIST","");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, Z_n=1");
@@ -528,19 +530,19 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
   }
 
-//setup neighbor list
-  nlist_=false;
-  parseFlag("NLIST",nlist_);
-  nlist_pace_reset_=false;
-  parseFlag("NLIST_PACE_RESET",nlist_pace_reset_);
-  if(nlist_pace_reset_) {
-    nlist_=true;
-  }
+//setup neighbor list, used by default
+  bool nlist_off=false;
+  parseFlag("NLIST_OFF",nlist_off);
+  bool nlist_flag=false; //deprecated, it only adds the nlker and nlsteps components, as in previous versions
+  parseFlag("NLIST",nlist_flag);
+  plumed_massert(!(nlist_off && nlist_flag),"NLIST and NLIST_OFF cannot be used together");
+  nlist_=!nlist_off;
+  nlist_components_=nlist_flag;
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
   nlist_param_=3.0;//*cutoff2_ -> max distance of neighbors
   if(nlist_param.size()>0) {
-    nlist_=true;
+    plumed_massert(!nlist_off,"NLIST_PARAMETERS cannot be used with NLIST_OFF");
     plumed_massert(nlist_param.size()<=2,"NLIST_PARAMETERS takes one value");
     plumed_massert(nlist_param[0]>1.0,"NLIST_PARAMETERS must be greater than 1");
     nlist_param_=nlist_param[0];
@@ -990,7 +992,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     addComponent("work");
     componentIsNotPeriodic("work");
   }
-  if(nlist_) {
+  if(nlist_components_) {
     addComponent("nlker");
     componentIsNotPeriodic("nlker");
     addComponent("nlsteps");
@@ -1054,13 +1056,15 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
   }
   if(nlist_) {
-    log.printf(" -- NLIST: using neighbor list for kernels, with parameter: %g\n",nlist_param_);
+    log.printf("  kernels are summed using a neighbor list, with NLIST_PARAMETERS = %g (NLIST_OFF to disable it)\n",nlist_param_);
     if(nlist_param.size()==2) {
       log.printf(" +++ WARNING +++ the second of NLIST_PARAMETERS is not used anymore, the neighbor list is now exact\n");
     }
-  }
-  if(nlist_pace_reset_) {
-    log.printf(" -- NLIST_PACE_RESET: forcing the neighbor list to update every PACE\n");
+    if(nlist_flag) {
+      log.printf(" -- NLIST: this flag is not needed anymore, the neighbor list is used by default\n");
+    }
+  } else {
+    log.printf(" -- NLIST_OFF: all kernels are summed, without a neighbor list\n");
   }
   if(no_Zed_) {
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
@@ -1332,8 +1336,10 @@ void OPESmetad<mode>::update() {
     }
     getPntrToComponent("nker")->set(kernels_.size());
     if(nlist_) {
-      getPntrToComponent("nlker")->set(nlist_index_.size());
-      if(nlist_pace_reset_) {
+      if(nlist_components_) {
+        getPntrToComponent("nlker")->set(nlist_index_.size());
+      }
+      if(NumWalkers_>1) { //the list is now the union of the walkers' lists, needed only for the merges
         nlist_update_=true;
       }
     }
@@ -1787,8 +1793,10 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
       }
     }
   }
-  getPntrToComponent("nlker")->set(nlist_index_.size());
-  getPntrToComponent("nlsteps")->set(nlist_steps_);
+  if(nlist_components_) {
+    getPntrToComponent("nlker")->set(nlist_index_.size());
+    getPntrToComponent("nlsteps")->set(nlist_steps_);
+  }
   nlist_steps_=0;
   nlist_update_=false;
   sum_outdated_=true;

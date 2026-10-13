@@ -15,7 +15,6 @@ opes: OPES_METAD ...
   RESTART=YES
   NLIST
   NLIST_PARAMETERS=1.1,0.2
-  NLIST_PACE_RESET
 ...
 
 PRINT FMT=%g STRIDE=5 FILE=Colvar.data ARG=phi,psi,opes.bias,opes.rct,opes.zed,opes.neff,opes.nker,opes.nlker,opes.nlsteps
