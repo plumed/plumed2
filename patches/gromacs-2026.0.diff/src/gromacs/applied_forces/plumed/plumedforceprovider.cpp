@@ -176,10 +176,9 @@ void PlumedForceProvider::setGlobalAtomIndices(const std::optional<ArrayRef<cons
 void PlumedForceProvider::writeCheckpointData()
 try
 {
-    if (plumedAPIversion_ > 3)
+    if (!prepareStepIsCalled_)
     {
-        int checkp = 1;
-        plumed_->cmd("doCheckPoint", &checkp);
+        checkpointRequested_ = 1;
     }
 }
 catch (const std::exception& ex)
@@ -210,7 +209,7 @@ try
 
     if (preparedStep_ == lstep)
     {
-        // requestsPotentialEnergy() already ran the first half of prepareCalc
+        // prepareStep() already ran the first half of prepareCalc
         plumed_->cmd("shareData", nullptr);
     }
     else
@@ -223,6 +222,21 @@ try
 
     plumedWantsToStop_ = 0;
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
+
+    if (!prepareStepIsCalled_)
+    {
+        // writeCheckpointData() runs only on the main rank: pass its request to all ranks
+        if (forceProviderInput.mpiComm_.isParallel())
+        {
+            forceProviderInput.mpiComm_.sumReduce(1, &checkpointRequested_);
+        }
+        if (plumedAPIversion_ > 3)
+        {
+            int checkp = checkpointRequested_ != 0 ? 1 : 0;
+            plumed_->cmd("doCheckPoint", &checkp);
+        }
+        checkpointRequested_ = 0;
+    }
 
     // Biasing the energy rescales the total MD force, which is only complete once the
     // potential energy has been accumulated: finish in applyAfterPotentialEnergy()
@@ -268,7 +282,7 @@ void PlumedForceProvider::checkReplicaExchangeBias()
     }
 }
 
-bool PlumedForceProvider::requestsPotentialEnergy(int64_t step)
+bool PlumedForceProvider::prepareStep(int64_t step, bool isCheckpointingStep)
 try
 {
     /* Whether PLUMED needs the energy depends on which actions are active on this step,
@@ -277,6 +291,13 @@ try
        positions are available. */
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
+    prepareStepIsCalled_ = true;
+    if (plumedAPIversion_ > 3)
+    {
+        // Set on every step: PLUMED resets it only on the steps when some action is active
+        int checkp = isCheckpointingStep ? 1 : 0;
+        plumed_->cmd("doCheckPoint", &checkp);
+    }
     plumed_->cmd("prepareDependencies", nullptr);
     plumedNeedsEnergy_ = 0;
     plumed_->cmd("isEnergyNeeded", &plumedNeedsEnergy_);

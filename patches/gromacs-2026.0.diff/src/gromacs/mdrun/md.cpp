@@ -1122,7 +1122,10 @@ void gmx::LegacySimulator::do_md()
                 (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                  | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
         /* PLUMED */
-        if (fr_->forceProviders != nullptr && fr_->forceProviders->requestsPotentialEnergy(step))
+        /* PLUMED is told here, before the force calculation, whether this step writes a
+           checkpoint, so that it writes its own checkpoint data on the same step. */
+        if (fr_->forceProviders != nullptr
+            && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep()))
         {
             /* setupStepWorkload() snapshots force_flags below, so PLUMED has to be
                asked for the potential energy before that, not from within do_force(). */

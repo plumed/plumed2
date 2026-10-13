@@ -98,13 +98,13 @@ void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInpu
     }
 }
 
-bool ForceProviders::requestsPotentialEnergy(int64_t step) const
+bool ForceProviders::prepareStep(int64_t step, bool isCheckpointingStep) const
 {
     bool needed = false;
     for (auto& provider : impl_->providers_)
     {
         // Every provider is asked, they may need the call to prepare for the step.
-        needed = provider.first->requestsPotentialEnergy(step) || needed;
+        needed = provider.first->prepareStep(step, isCheckpointingStep) || needed;
     }
     return needed;
 }

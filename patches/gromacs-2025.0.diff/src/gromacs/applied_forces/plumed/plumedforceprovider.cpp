@@ -43,6 +43,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -155,10 +156,9 @@ catch (const std::exception& ex)
 void PlumedForceProvider::writeCheckpointData()
 try
 {
-    if (plumedAPIversion_ > 3)
+    if (!prepareStepIsCalled_)
     {
-        int checkp = 1;
-        plumed_->cmd("doCheckPoint", &checkp);
+        checkpointRequested_ = 1;
     }
 }
 catch (const std::exception& ex)
@@ -190,7 +190,7 @@ try
 
     if (preparedStep_ == lstep)
     {
-        // requestsPotentialEnergy() already ran the first half of prepareCalc.
+        // prepareStep() already ran the first half of prepareCalc.
         plumed_->cmd("shareData", nullptr);
     }
     else
@@ -203,6 +203,18 @@ try
 
     plumedWantsToStop_ = 0;
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
+
+    if (!prepareStepIsCalled_)
+    {
+        // writeCheckpointData() runs only on the main rank: pass its request to all ranks.
+        gmx_sumi(1, &checkpointRequested_, cr);
+        if (plumedAPIversion_ > 3)
+        {
+            int checkp = checkpointRequested_ != 0 ? 1 : 0;
+            plumed_->cmd("doCheckPoint", &checkp);
+        }
+        checkpointRequested_ = 0;
+    }
 
     // ENERGY biasing rescales the total MD force, which is only complete once
     // the potential energy has been accumulated: finish in applyAfterPotentialEnergy().
@@ -230,7 +242,7 @@ catch (const std::exception& ex)
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }
 
-bool PlumedForceProvider::requestsPotentialEnergy(int64_t step)
+bool PlumedForceProvider::prepareStep(int64_t step, bool isCheckpointingStep)
 try
 {
     /* Whether PLUMED needs the energy depends on which actions are active on this
@@ -239,6 +251,13 @@ try
        the positions are available. */
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
+    prepareStepIsCalled_ = true;
+    if (plumedAPIversion_ > 3)
+    {
+        // Set on every step: PLUMED resets it only on the steps when some action is active
+        int checkp = isCheckpointingStep ? 1 : 0;
+        plumed_->cmd("doCheckPoint", &checkp);
+    }
     plumed_->cmd("prepareDependencies", nullptr);
     plumedNeedsEnergy_ = 0;
     plumed_->cmd("isEnergyNeeded", &plumedNeedsEnergy_);
