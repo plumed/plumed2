@@ -1,0 +1,12 @@
+PASS empty-rank async=no owner=0 step=0
+PASS empty-rank async=no owner=0 step=1
+PASS empty-rank async=no owner=1 step=0
+PASS empty-rank async=no owner=1 step=1
+PASS empty-rank async=no owner=2 step=0
+PASS empty-rank async=no owner=2 step=1
+PASS empty-rank async=yes owner=0 step=0
+PASS empty-rank async=yes owner=0 step=1
+PASS empty-rank async=yes owner=1 step=0
+PASS empty-rank async=yes owner=1 step=1
+PASS empty-rank async=yes owner=2 step=0
+PASS empty-rank async=yes owner=2 step=1
