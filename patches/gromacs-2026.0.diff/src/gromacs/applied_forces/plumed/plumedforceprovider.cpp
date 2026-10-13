@@ -272,7 +272,7 @@ void PlumedForceProvider::checkReplicaExchangeBias()
 {
     if (replex_)
     {
-        double bias = 0.0;
+        real bias = 0.0;
         plumed_->cmd("getBias", &bias);
         if (bias != 0.0)
         {
