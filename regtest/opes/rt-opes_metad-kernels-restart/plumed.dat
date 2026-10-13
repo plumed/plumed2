@@ -1,0 +1,23 @@
+# vim:ft=plumed
+# Restart from KERNELS files written with adaptive SIGMA (no STATE file).
+# SIGMA0 is recovered from the first kernel, whose sigma was already rescaled:
+# State*.data must have the same sigma0 as the original run, which was
+#   OPES_METAD:          sigma0_phi 1.074577449925414  sigma0_psi 1.129505030722208
+#   OPES_METAD_EXPLORE:  sigma0_phi 3.042811255802709  sigma0_psi 3.198346123125766
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+opes: OPES_METAD ...
+  ARG=phi,psi PACE=2 BARRIER=20 TEMP=300
+  SIGMA=ADAPTIVE ADAPTIVE_SIGMA_STRIDE=10
+  FILE=Kernels.data FMT=%.10f
+  STATE_WFILE=State.data STATE_WSTRIDE=1000
+...
+explore: OPES_METAD_EXPLORE ...
+  ARG=phi,psi PACE=2 BARRIER=20 TEMP=300
+  SIGMA=ADAPTIVE ADAPTIVE_SIGMA_STRIDE=10
+  FILE=KernelsExplore.data FMT=%.10f
+  STATE_WFILE=StateExplore.data STATE_WSTRIDE=1000
+...
+PRINT FMT=%g STRIDE=5 FILE=Colvar.data ARG=phi,psi,opes.bias,explore.bias
+ENDPLUMED

@@ -47,11 +47,14 @@
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
 #include "small_vector/small_vector.h"
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <set>
 #include <exception>
+#include <iomanip>
+#include <sstream>
 #include <stdexcept>
 #include <ios>
 #include <new>
@@ -69,6 +72,150 @@
 #include <filesystem>
 
 namespace PLMD {
+
+namespace {
+
+const std::set<std::string>& nonFiniteActionTraceLabels() {
+  static const std::set<std::string> labels=[]() {
+    std::set<std::string> result;
+    const char* environment=std::getenv("PLUMED_NONFINITE_ACTION_TRACE");
+    if(!environment) {
+      return result;
+    }
+    std::string selection(environment);
+    std::replace(selection.begin(),selection.end(),',',' ');
+    std::istringstream words(selection);
+    std::string label;
+    while(words >> label) {
+      result.insert(label);
+    }
+    return result;
+  }
+  ();
+  return labels;
+}
+
+bool traceActionSelected(const std::string& label) {
+  const std::set<std::string>& labels=nonFiniteActionTraceLabels();
+  return labels.count("*")>0 || labels.count(label)>0;
+}
+
+void traceActionNonFiniteLocal(const ActionSet& actions, const Action& trigger,
+                               const long long step, const char* phase,
+                               const bool checkValues, const bool checkForces) {
+  if(nonFiniteActionTraceLabels().empty()) {
+    return;
+  }
+  for(const auto& actionPointer : actions) {
+    Action* action=actionPointer.get();
+    // Forward data are only current after their owning action has run.
+    // Backward atom/box interface forces must also be checked: finite scalar
+    // forces and derivatives can overflow when multiplied or accumulated.
+    const bool interfaceForce=checkForces &&
+                              dynamic_cast<ActionForInterface*>(action);
+    if(!traceActionSelected(action->getLabel()) && !interfaceForce) {
+      continue;
+    }
+    if(checkValues && action!=&trigger) {
+      continue;
+    }
+    ActionWithValue* actionWithValue=action->castToActionWithValue();
+    if(!actionWithValue) {
+      continue;
+    }
+    for(unsigned component=0;
+        component<actionWithValue->getNumberOfComponents(); ++component) {
+      Value* value=actionWithValue->copyOutput(component);
+      const std::size_t numberOfValues=value->getNumberOfValues();
+      if(checkValues && value->valueHasBeenSet()) {
+        for(std::size_t element=0; element<numberOfValues; ++element) {
+          const double current=value->get(element);
+          if(std::isfinite(current)) {
+            continue;
+          }
+          std::ostringstream message;
+          message << std::setprecision(17)
+                  << "PLUMED action non-finite trace: step=" << step
+                  << " phase=" << phase
+                  << " after_action=" << trigger.getLabel()
+                  << " after_action_type=" << trigger.getName()
+                  << " target=" << value->getName()
+                  << " field=value element=" << element
+                  << " value=" << current;
+          plumed_merror(message.str());
+        }
+        // Scalar actions store a derivative array. Grid derivatives have a
+        // different layout and are deliberately not treated as scalar data.
+        if(value->hasDerivatives() && value->getRank()==0) {
+          for(unsigned derivative=0;
+              derivative<value->getNumberOfDerivatives(); ++derivative) {
+            const double current=value->getDerivative(derivative);
+            if(std::isfinite(current)) {
+              continue;
+            }
+            std::ostringstream message;
+            message << std::setprecision(17)
+                    << "PLUMED action non-finite trace: step=" << step
+                    << " phase=" << phase
+                    << " after_action=" << trigger.getLabel()
+                    << " after_action_type=" << trigger.getName()
+                    << " target=" << value->getName()
+                    << " field=derivative element=" << derivative
+                    << " value=" << current;
+            plumed_merror(message.str());
+          }
+        }
+      }
+      if(checkForces && value->forcesWereAdded()) {
+        for(std::size_t element=0; element<numberOfValues; ++element) {
+          const double current=value->getForce(element);
+          if(std::isfinite(current)) {
+            continue;
+          }
+          std::ostringstream message;
+          message << std::setprecision(17)
+                  << "PLUMED action non-finite trace: step=" << step
+                  << " phase=" << phase
+                  << " after_action=" << trigger.getLabel()
+                  << " after_action_type=" << trigger.getName()
+                  << " target=" << value->getName()
+                  << " field=force element=" << element
+                  << " value=" << current;
+          plumed_merror(message.str());
+        }
+      }
+    }
+  }
+}
+
+
+void traceActionNonFinite(const ActionSet& actions, const Action& trigger,
+                          const long long step, const char* phase,
+                          const bool checkValues, const bool checkForces,
+                          Communicator& comm) {
+  if(nonFiniteActionTraceLabels().empty()) {
+    return;
+  }
+  std::string message;
+  try {
+    traceActionNonFiniteLocal(actions,trigger,step,phase,checkValues,checkForces);
+  } catch(const std::exception& error) {
+    message=error.what();
+  }
+  // A derivative or force may be non-finite on only one spatial rank.
+  // Report the first failing rank to every participant before throwing.
+  int reporter=message.empty() ? comm.Get_size() : comm.Get_rank();
+  comm.Min(reporter);
+  if(reporter<comm.Get_size()) {
+    unsigned length=message.size();
+    comm.Bcast(length,reporter);
+    message.resize(length);
+    comm.Bcast(message,reporter);
+    plumed_merror("non-finite action trace on MPI rank="+std::to_string(reporter)+": "+message);
+  }
+}
+
+}
 
 /// Small utility just used in this file to throw arbitrary exceptions
 [[noreturn]] static void testThrow(const char* what) {
@@ -963,6 +1110,25 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
 
 ////////////////////////////////////////////////////////////////////////
 
+void PlumedMain::updateReplicaIdentity(Communicator& intra) {
+  // The engine normally hands the inter-replica communicator to a single rank of
+  // each replica (see GREX setMPIIntercomm); on the other ranks multi_sim_comm keeps
+  // its MPI_COMM_SELF default and reports size 1, rank 0. Taking the maximum over
+  // the intra-replica communicator gives every rank the same, correct answer,
+  // whichever rank or ranks the engine chose. This is a collective over intra.
+  // This can run twice (GREX init and init), so clear the stand-in mark first.
+  multi_sim_comm.setStandIn(false);
+  const int localSize=multi_sim_comm.Get_size();
+  nReplicas=localSize;
+  replicaIndex=multi_sim_comm.Get_rank();
+  intra.Max(nReplicas);
+  intra.Max(replicaIndex);
+  // With more than one replica, a rank whose multi_sim_comm has size 1 was not
+  // given the inter-replica communicator. Mark it, so that using it there
+  // raises an error in debug builds instead of silently acting on one replica.
+  multi_sim_comm.setStandIn(nReplicas>1 && localSize==1);
+}
+
 void PlumedMain::init() {
 // check that initialization just happens once
   initialized=true;
@@ -996,6 +1162,8 @@ void PlumedMain::init() {
     log.printf("GROMACS-like replica exchange is on\n");
   }
   log.printf("File suffix: %s\n",getSuffix().c_str());
+  // Before any action is created, so that their constructors can rely on it.
+  updateReplicaIdentity(comm);
   if(plumedDat.length()>0) {
     readInputFile(plumedDat);
     plumedDat="";
@@ -1254,7 +1422,10 @@ void PlumedMain::waitData() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
   for(const auto & ip : inputs) {
-    if( ip->isActive() && ip->hasBeenSet() ) {
+    // shareData also starts the first-step domain exchange for inactive
+    // inputs, to initialize fixed masses and charges. Complete that exchange
+    // before clearing firststep, or later atomic actions receive stale data.
+    if( (ip->isActive() || ip->firststep) && ip->hasBeenSet() ) {
       ip->wait();
     } else if( ip->isActive() ) {
       ip->warning("input requested but this quantity has not been set");
@@ -1331,6 +1502,8 @@ void PlumedMain::justCalculate() {
         } else {
           p->calculate();
         }
+        traceActionNonFinite(actionSet,*p,step,"forward",true,false,comm);
+
         // This retrieves components called bias
         if(av) {
           bias+=av->getOutputQuantity("bias");
@@ -1388,6 +1561,7 @@ void PlumedMain::backwardPropagate() {
       }
 
       p->apply();
+      traceActionNonFinite(actionSet,*p,step,"backward",false,true,comm);
     }
     iaction++;
   }

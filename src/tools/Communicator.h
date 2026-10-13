@@ -52,6 +52,11 @@ class MPI_Request {};
 class Communicator {
 /// Communicator
   MPI_Comm communicator;
+/// True if this process holds the communicator only as a stand-in.
+/// See setStandIn().
+  bool standIn=false;
+/// In debug builds, raise an error if this communicator is a stand-in.
+  void checkNotStandIn()const;
 /// Function returning the MPI type.
 /// You can use it to access to the MPI type of a C++ type, e.g.
 /// `MPI_Datatype type=getMPIType<double>();`
@@ -198,6 +203,16 @@ public:
   void Set_comm(MPI_Comm comm);
 /// Reference to MPI communicator
   MPI_Comm & Get_comm();
+/// Mark this communicator as a stand-in on this process.
+/// A stand-in is a communicator that other processes were given but this
+/// process was not, so it does not connect this process to the processes it
+/// is meant to connect. This is the case of PLMD::Action::multi_sim_comm on
+/// all the processes of a replica except the first one.
+/// In debug builds, using a stand-in (asking its rank or size, or
+/// communicating over it) raises an error. Set_comm() clears the mark.
+  void setStandIn(bool s);
+/// True if this communicator has been marked as a stand-in with setStandIn().
+  bool isStandIn()const;
 /// Set from a pointer to a real MPI communicator (C).
 /// \param comm Pointer to a C MPI communicator
   void Set_comm(const TypesafePtr & comm);

@@ -606,19 +606,12 @@ EMMI::EMMI(const ActionOptions&ao):
   rank_=comm.Get_rank();
 
   // get number of replicas
-  if(rank_==0) {
-    if(no_aver_) {
-      nrep_ = 1;
-    } else {
-      nrep_ = multi_sim_comm.Get_size();
-    }
-    replica_ = multi_sim_comm.Get_rank();
+  if(no_aver_) {
+    nrep_ = 1;
   } else {
-    nrep_ = 0;
-    replica_ = 0;
+    nrep_ = getNumberOfReplicas();
   }
-  comm.Sum(&nrep_,1);
-  comm.Sum(&replica_,1);
+  replica_ = getReplicaIndex();
 
   // Reweighting flag
   parseFlag("REWEIGHT", do_reweight_);

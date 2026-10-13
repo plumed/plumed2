@@ -89,7 +89,8 @@ class PlumedMain:
   ForwardDecl<Communicator> comm_fwd;
 public:
 /// Communicator for plumed.
-/// Includes all the processors used by plumed.
+/// Includes all the processors used by plumed in this replica.
+/// See Action::comm.
   Communicator&comm=*comm_fwd;
 
 private:
@@ -119,6 +120,9 @@ private:
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
   DeprecatedAtoms& getAtoms();
+/// Communicator between replicas.
+/// Valid only on process 0 of comm; MPI_COMM_SELF elsewhere.
+/// See Action::multi_sim_comm.
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
@@ -264,6 +268,10 @@ public:
 
 /// GpuDevice Identifier
   int gpuDeviceId=-1;
+/// Number of replicas, and the index of this one, as seen from every rank.
+/// Set by updateReplicaIdentity(); see getNumberOfReplicas().
+  int nReplicas=1;
+  int replicaIndex=0;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
@@ -496,6 +504,16 @@ public:
   bool getEndPlumed() const ;
 /// Get the value of the gpuDeviceId
   int getGpuDeviceId() const ;
+/// Number of replicas in a multi-replica simulation (1 otherwise).
+/// Unlike multi_sim_comm.Get_size(), this is correct on every rank of a replica,
+/// not only on the rank that received the inter-replica communicator.
+  int getNumberOfReplicas() const ;
+/// Index of this replica, in [0, getNumberOfReplicas()). Correct on every rank.
+  int getReplicaIndex() const ;
+/// Recompute getNumberOfReplicas() and getReplicaIndex() from multi_sim_comm.
+/// Collective over intra, the intra-replica communicator. Called from init() and
+/// from GREX init, so the result does not depend on which the engine calls first.
+  void updateReplicaIdentity(Communicator& intra);
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
@@ -610,6 +628,16 @@ bool PlumedMain::getEndPlumed() const {
 inline
 int PlumedMain::getGpuDeviceId() const {
   return gpuDeviceId;
+}
+
+inline
+int PlumedMain::getNumberOfReplicas() const {
+  return nReplicas;
+}
+
+inline
+int PlumedMain::getReplicaIndex() const {
+  return replicaIndex;
 }
 
 inline

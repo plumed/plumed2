@@ -140,15 +140,8 @@ Shadow::Shadow(const ActionOptions&ao):
   rank_ = comm.Get_rank();
 
   // get number of (MPI) replicas
-  int nrep = 0;
-  int replica = 0;
-  // only if openmp master
-  if(rank_==0) {
-    nrep    = multi_sim_comm.Get_size();
-    replica = multi_sim_comm.Get_rank();
-  }
-  comm.Sum(&nrep,1);
-  comm.Sum(&replica,1);
+  int nrep = getNumberOfReplicas();
+  int replica = getReplicaIndex();
   // check number of replicas
   //if(nrep<2) error("SHADOW must be used with at least two replicas");
 

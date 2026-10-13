@@ -622,11 +622,7 @@ std::unique_ptr<OFile> VesBias::getOFile(const std::string& filepath, const bool
     ofile_pntr->enforceBackup();
   }
   if(multi_sim_single_file) {
-    unsigned int r=0;
-    if(comm.Get_rank()==0) {
-      r=multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(r,0);
+    unsigned int r=getReplicaIndex();
     if(r>0) {
       fp="/dev/null";
     }

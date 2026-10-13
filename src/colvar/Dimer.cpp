@@ -181,8 +181,8 @@ Dimer::Dimer(const ActionOptions& ao):
   parseFlag("NOVSITES",notrim);
   trimer=!notrim;
 
-  nranks=multi_sim_comm.Get_size();
-  myrank=multi_sim_comm.Get_rank();
+  nranks=getNumberOfReplicas();
+  myrank=getReplicaIndex();
   if(dsigmas.size()==1) {
     dsigma=dsigmas[0];
   } else {

@@ -28,9 +28,11 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -109,6 +111,57 @@ std::unique_ptr<NeighborListType> makeCandidateNeighborList(
 
 class SoftVoronoiBase : public Colvar {
 protected:
+  enum InvalidPairKind {
+    InvalidPairNone=0,
+    InvalidPairMapping,
+    InvalidCenterCoordinate,
+    InvalidAssignedCoordinate,
+    InvalidPbcBoxNonFinite,
+    InvalidPbcBoxDegenerate,
+    InvalidDisplacement,
+    InvalidLength,
+    InvalidSeparation,
+    InvalidScore
+  };
+
+  struct InvalidPairRecord {
+    InvalidPairKind kind;
+    unsigned pairIndex;
+    unsigned firstNeighborIndex;
+    unsigned secondNeighborIndex;
+    unsigned centerAtomSerial;
+    unsigned assignedAtomSerial;
+    unsigned rank;
+    unsigned thread;
+    bool pbc;
+    Vector centerPosition;
+    Vector assignedPosition;
+    Vector displacement;
+    double length;
+    Tensor box;
+
+    InvalidPairRecord():
+      kind(InvalidPairNone),
+      pairIndex(std::numeric_limits<unsigned>::max()),
+      firstNeighborIndex(std::numeric_limits<unsigned>::max()),
+      secondNeighborIndex(std::numeric_limits<unsigned>::max()),
+      centerAtomSerial(0),
+      assignedAtomSerial(0),
+      rank(0),
+      thread(0),
+      pbc(false),
+      centerPosition(std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::quiet_NaN()),
+      assignedPosition(std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN()),
+      displacement(std::numeric_limits<double>::quiet_NaN(),
+                   std::numeric_limits<double>::quiet_NaN(),
+                   std::numeric_limits<double>::quiet_NaN()),
+      length(std::numeric_limits<double>::quiet_NaN()) {}
+  };
+
   struct PairData {
     unsigned center;
     unsigned assigned;
@@ -142,6 +195,10 @@ protected:
 
   static void registerCommonKeywords(Keywords&);
   static void setScalarDescription(Keywords&, const std::string&);
+  static bool finiteVector(const Vector&);
+  static bool finiteTensor(const Tensor&);
+  static const char* invalidPairKindName(InvalidPairKind);
+  std::string invalidPairMessage(const InvalidPairRecord&) const;
   void broadcastOrCheck(std::vector<double>&, unsigned, const std::string&) const;
   std::string normalizedSign(std::string) const;
   std::vector<unsigned> mapSelection(const std::vector<AtomNumber>&,
@@ -177,6 +234,115 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
 void SoftVoronoiBase::setScalarDescription(
   Keywords& keys, const std::string& description) {
   setScalarDescriptionImpl(keys,description,0);
+}
+
+bool SoftVoronoiBase::finiteVector(const Vector& value) {
+  for(unsigned i=0; i<3; ++i) {
+    if(!std::isfinite(value[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool SoftVoronoiBase::finiteTensor(const Tensor& value) {
+  for(unsigned i=0; i<3; ++i) {
+    for(unsigned j=0; j<3; ++j) {
+      if(!std::isfinite(value(i,j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+const char* SoftVoronoiBase::invalidPairKindName(
+  const InvalidPairKind kind) {
+  switch(kind) {
+  case InvalidPairMapping:
+    return "neighbor-list-mapping";
+  case InvalidCenterCoordinate:
+    return "center-coordinate-non-finite";
+  case InvalidAssignedCoordinate:
+    return "assigned-coordinate-non-finite";
+  case InvalidPbcBoxNonFinite:
+    return "pbc-box-non-finite";
+  case InvalidPbcBoxDegenerate:
+    return "pbc-box-degenerate";
+  case InvalidDisplacement:
+    return "minimum-image-displacement-non-finite";
+  case InvalidLength:
+    return "distance-non-finite";
+  case InvalidSeparation:
+    return "distance-zero-or-near-zero";
+  case InvalidScore:
+    return "kappa-times-distance-non-finite";
+  case InvalidPairNone:
+    return "none";
+  }
+  return "unknown";
+}
+
+std::string SoftVoronoiBase::invalidPairMessage(
+  const InvalidPairRecord& record) const {
+  std::ostringstream message;
+  message << std::setprecision(17);
+  if(record.kind==InvalidPairMapping) {
+    message << "internal neighbor-list index does not map to CENTERS and ASSIGNED; ";
+  } else if(record.kind==InvalidScore) {
+    message << "KAPPA times a CENTER-ASSIGNED distance is too large; ";
+  } else {
+    message << "a CENTER-ASSIGNED distance is zero or non-finite; ";
+  }
+  message << "reactive Voronoi pair validation failed: category="
+          << invalidPairKindName(record.kind)
+          << " step=" << getStep()
+          << " action=" << getLabel()
+          << " pair_index=" << record.pairIndex << "(zero-based)"
+          << " center_atom=";
+  if(record.centerAtomSerial>0) {
+    message << record.centerAtomSerial;
+  } else {
+    message << "unavailable";
+  }
+  message << " assigned_atom=";
+  if(record.assignedAtomSerial>0) {
+    message << record.assignedAtomSerial;
+  } else {
+    message << "unavailable";
+  }
+  message << " neighbor_indices=(" << record.firstNeighborIndex
+          << "," << record.secondNeighborIndex << ")"
+          << " rank=" << record.rank
+          << " thread=" << record.thread
+          << " coordinate_units=PLUMED-internal"
+          << " center_position=(" << record.centerPosition[0]
+          << "," << record.centerPosition[1]
+          << "," << record.centerPosition[2] << ")"
+          << " assigned_position=(" << record.assignedPosition[0]
+          << "," << record.assignedPosition[1]
+          << "," << record.assignedPosition[2] << ")"
+          << " minimum_image_displacement=(" << record.displacement[0]
+          << "," << record.displacement[1]
+          << "," << record.displacement[2] << ")"
+          << " length=" << record.length
+          << " threshold=" << std::numeric_limits<double>::epsilon()
+          << " pbc=" << (record.pbc ? "on" : "off")
+          << " box_determinant=" << record.box.determinant()
+          << " box=[";
+  for(unsigned i=0; i<3; ++i) {
+    if(i>0) {
+      message << ";";
+    }
+    for(unsigned j=0; j<3; ++j) {
+      if(j>0) {
+        message << ",";
+      }
+      message << record.box(i,j);
+    }
+  }
+  message << "]";
+  return message.str();
 }
 
 void SoftVoronoiBase::broadcastOrCheck(std::vector<double>& keywordValues,
@@ -429,6 +595,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   const unsigned numberOfPairs=neighborList_->size();
   const unsigned stride=serial_ ? 1 : comm.Get_size();
   const unsigned rank=serial_ ? 0 : comm.Get_rank();
+  const unsigned communicatorRank=comm.Get_rank();
   const unsigned pairsPerRank=(numberOfPairs+stride-1)/stride;
   const unsigned start=std::min(rank*pairsPerRank,numberOfPairs);
   const unsigned end=std::min(start+pairsPerRank,numberOfPairs);
@@ -443,33 +610,102 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
 #endif
   std::vector<double> maximumScore(
     numberOfThreads*assigned_.size(),negativeInfinity);
-  std::vector<unsigned> threadErrors(numberOfThreads,0);
+  std::vector<InvalidPairRecord> threadFailures(numberOfThreads);
+  const Tensor currentBox=getPbc().getBox();
+  const double currentBoxDeterminant=currentBox.determinant();
+  InvalidPairKind boxFailure=InvalidPairNone;
+  if(pbc_) {
+    if(!finiteTensor(currentBox) ||
+        !std::isfinite(currentBoxDeterminant)) {
+      boxFailure=InvalidPbcBoxNonFinite;
+    } else if(!getPbc().isSet() ||
+              std::fabs(currentBoxDeterminant)<=1.0e-14) {
+      boxFailure=InvalidPbcBoxDegenerate;
+    }
+  }
 
   // Evaluate retained pairs and collect per-thread shifted-softmax maxima.
   const auto evaluatePair=[&](const unsigned pairIndex,
   const unsigned thread, PairData& pair) {
     const std::pair<unsigned,unsigned> pairIndexes=
       neighborList_->getClosePair(pairIndex);
+    bool mappingValid=false;
+    bool positionsAvailable=false;
+    bool displacementAvailable=false;
+    bool lengthAvailable=false;
+    Vector centerPosition;
+    Vector assignedPosition;
+    const auto recordFailure=[&](const InvalidPairKind kind) {
+      InvalidPairRecord failure;
+      failure.kind=kind;
+      failure.pairIndex=pairIndex;
+      failure.firstNeighborIndex=pairIndexes.first;
+      failure.secondNeighborIndex=pairIndexes.second;
+      failure.rank=communicatorRank;
+      failure.thread=thread;
+      failure.pbc=pbc_;
+      failure.box=currentBox;
+      if(mappingValid) {
+        failure.centerAtomSerial=centers_[pair.center].serial();
+        failure.assignedAtomSerial=assigned_[pair.assigned].serial();
+      }
+      if(positionsAvailable) {
+        failure.centerPosition=centerPosition;
+        failure.assignedPosition=assignedPosition;
+      }
+      if(displacementAvailable) {
+        failure.displacement=pair.distance;
+      }
+      if(lengthAvailable) {
+        failure.length=pair.length;
+      }
+      if(failure.pairIndex<threadFailures[thread].pairIndex) {
+        threadFailures[thread]=failure;
+      }
+    };
     if(pairIndexes.first>=centers_.size() ||
         pairIndexes.second<centers_.size()) {
-      threadErrors[thread]|=1;
+      recordFailure(InvalidPairMapping);
       return;
     }
     pair.center=pairIndexes.first;
     pair.assigned=pairIndexes.second-centers_.size();
     if(pair.assigned>=assigned_.size()) {
-      threadErrors[thread]|=1;
+      recordFailure(InvalidPairMapping);
+      return;
+    }
+    mappingValid=true;
+    centerPosition=getPosition(pairIndexes.first);
+    assignedPosition=getPosition(pairIndexes.second);
+    positionsAvailable=true;
+    if(!finiteVector(centerPosition)) {
+      recordFailure(InvalidCenterCoordinate);
+      return;
+    }
+    if(!finiteVector(assignedPosition)) {
+      recordFailure(InvalidAssignedCoordinate);
+      return;
+    }
+    if(boxFailure!=InvalidPairNone) {
+      recordFailure(boxFailure);
       return;
     }
     pair.distance=pbc_ ?
-                  pbcDistance(getPosition(pairIndexes.first),
-                              getPosition(pairIndexes.second)) :
-                  delta(getPosition(pairIndexes.first),
-                        getPosition(pairIndexes.second));
+                  pbcDistance(centerPosition,assignedPosition) :
+                  delta(centerPosition,assignedPosition);
+    displacementAvailable=true;
+    if(!finiteVector(pair.distance)) {
+      recordFailure(InvalidDisplacement);
+      return;
+    }
     pair.length=pair.distance.modulo();
-    if(!std::isfinite(pair.length) ||
-        pair.length<=std::numeric_limits<double>::epsilon()) {
-      threadErrors[thread]|=2;
+    lengthAvailable=true;
+    if(!std::isfinite(pair.length)) {
+      recordFailure(InvalidLength);
+      return;
+    }
+    if(pair.length<=std::numeric_limits<double>::epsilon()) {
+      recordFailure(InvalidSeparation);
       return;
     }
     if(filterCandidatePairs_ && pair.length>neighborCutoff_) {
@@ -478,7 +714,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
     pair.score=-kappa_*pair.length;
     if(!std::isfinite(pair.score)) {
-      threadErrors[thread]|=4;
+      recordFailure(InvalidScore);
       return;
     }
     pair.weight=0.0;
@@ -490,7 +726,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   if(numberOfThreads==1) {
     result.pairs.reserve(localPairCount);
     for(unsigned pairIndex=start; pairIndex<end; ++pairIndex) {
-      PairData pair;
+      PairData pair= {};
       evaluatePair(pairIndex,0,pair);
       result.pairs.push_back(pair);
     }
@@ -503,10 +739,12 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     }
   }
 
-  // Reduce thread-local errors and maxima before the MPI maximum reduction.
-  unsigned pairErrors=0;
+  // Reduce thread-local failures and maxima before the MPI maximum reduction.
+  InvalidPairRecord localFailure;
   for(unsigned thread=0; thread<numberOfThreads; ++thread) {
-    pairErrors|=threadErrors[thread];
+    if(threadFailures[thread].pairIndex<localFailure.pairIndex) {
+      localFailure=threadFailures[thread];
+    }
     if(thread>0) {
       for(unsigned j=0; j<assigned_.size(); ++j) {
         maximumScore[j]=
@@ -514,25 +752,100 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       }
     }
   }
-  if(pairErrors&1) {
-    error("internal neighbor-list index does not map to CENTERS and ASSIGNED");
+
+  // Reuse the existing maximum collective to select the globally first bad
+  // pair.  A zero key means success; larger keys correspond to smaller pair
+  // indices, so MPI_MAX selects the same pair independently of rank layout.
+  std::vector<double> rankMaximum(assigned_.size()+1,negativeInfinity);
+  for(unsigned j=0; j<assigned_.size(); ++j) {
+    rankMaximum[j]=maximumScore[j];
   }
-  if(pairErrors&2) {
-    error("a CENTER-ASSIGNED distance is zero or non-finite");
+  rankMaximum.back()=localFailure.kind==InvalidPairNone ? 0.0 :
+                     static_cast<double>(numberOfPairs-localFailure.pairIndex);
+  if(!serial_ && comm.Get_size()>1) {
+    comm.Max(&rankMaximum[0],static_cast<int>(rankMaximum.size()));
   }
-  if(pairErrors&4) {
-    error("KAPPA times a CENTER-ASSIGNED distance is too large");
+  for(unsigned j=0; j<assigned_.size(); ++j) {
+    maximumScore[j]=rankMaximum[j];
   }
+
+  if(rankMaximum.back()>0.0) {
+    const unsigned errorKey=static_cast<unsigned>(rankMaximum.back());
+    const unsigned globalPairIndex=numberOfPairs-errorKey;
+    const unsigned reportingRank=(!serial_ && comm.Get_size()>1) ?
+                                 globalPairIndex/pairsPerRank : communicatorRank;
+    InvalidPairRecord selectedFailure;
+    if(communicatorRank==reportingRank) {
+      for(unsigned thread=0; thread<numberOfThreads; ++thread) {
+        if(threadFailures[thread].pairIndex==globalPairIndex) {
+          selectedFailure=threadFailures[thread];
+          break;
+        }
+      }
+    }
+
+    unsigned metadata[9]= {0,0,0,0,0,0,0,0,0};
+    double details[19]= {0.0};
+    if(communicatorRank==reportingRank &&
+        selectedFailure.kind!=InvalidPairNone) {
+      metadata[0]=static_cast<unsigned>(selectedFailure.kind);
+      metadata[1]=selectedFailure.pairIndex;
+      metadata[2]=selectedFailure.firstNeighborIndex;
+      metadata[3]=selectedFailure.secondNeighborIndex;
+      metadata[4]=selectedFailure.centerAtomSerial;
+      metadata[5]=selectedFailure.assignedAtomSerial;
+      metadata[6]=selectedFailure.rank;
+      metadata[7]=selectedFailure.thread;
+      metadata[8]=selectedFailure.pbc ? 1U : 0U;
+      for(unsigned i=0; i<3; ++i) {
+        details[i]=selectedFailure.centerPosition[i];
+        details[3+i]=selectedFailure.assignedPosition[i];
+        details[6+i]=selectedFailure.displacement[i];
+      }
+      details[9]=selectedFailure.length;
+      for(unsigned i=0; i<3; ++i) {
+        for(unsigned j=0; j<3; ++j) {
+          details[10+3*i+j]=selectedFailure.box(i,j);
+        }
+      }
+    }
+    if(!serial_ && comm.Get_size()>1) {
+      comm.Bcast(metadata,9,static_cast<int>(reportingRank));
+      comm.Bcast(details,19,static_cast<int>(reportingRank));
+    }
+    selectedFailure.kind=static_cast<InvalidPairKind>(metadata[0]);
+    selectedFailure.pairIndex=metadata[1];
+    selectedFailure.firstNeighborIndex=metadata[2];
+    selectedFailure.secondNeighborIndex=metadata[3];
+    selectedFailure.centerAtomSerial=metadata[4];
+    selectedFailure.assignedAtomSerial=metadata[5];
+    selectedFailure.rank=metadata[6];
+    selectedFailure.thread=metadata[7];
+    selectedFailure.pbc=metadata[8]!=0;
+    for(unsigned i=0; i<3; ++i) {
+      selectedFailure.centerPosition[i]=details[i];
+      selectedFailure.assignedPosition[i]=details[3+i];
+      selectedFailure.displacement[i]=details[6+i];
+    }
+    selectedFailure.length=details[9];
+    for(unsigned i=0; i<3; ++i) {
+      for(unsigned j=0; j<3; ++j) {
+        selectedFailure.box(i,j)=details[10+3*i+j];
+      }
+    }
+    if(selectedFailure.kind==InvalidPairNone ||
+        selectedFailure.pairIndex!=globalPairIndex) {
+      error("internal error while selecting the first invalid reactive Voronoi pair");
+    }
+    error(invalidPairMessage(selectedFailure));
+  }
+
   if(filterCandidatePairs_) {
     result.pairs.erase(
       std::remove_if(result.pairs.begin(),result.pairs.end(),
     [](const PairData& pair) {
       return pair.length<0.0;
     }),result.pairs.end());
-  }
-
-  if(!serial_ && comm.Get_size()>1) {
-    comm.Max(&maximumScore[0],static_cast<int>(assigned_.size()));
   }
   for(unsigned j=0; j<assigned_.size(); ++j) {
     if(!std::isfinite(maximumScore[j])) {

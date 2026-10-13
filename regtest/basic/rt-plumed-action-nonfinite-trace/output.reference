@@ -1,0 +1,6 @@
+PASS custom-derivative-localization
+PASS colvar-derivative-localization
+PASS atomic-force-overflow-localization
+PASS backward-force-localization
+PASS box-force-overflow-localization
+PASS select-boundary-finite
