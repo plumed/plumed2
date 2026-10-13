@@ -1,0 +1,34 @@
+beads=2 coupling=0.000000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+beads=2 coupling=0.500000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+beads=2 coupling=0.900000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+extreme-1000 PASS
+extreme--1000 PASS
+domain-rejected PASS
+coupling-rejected PASS
+coupling-rejected PASS
+beads=4 coupling=0.000000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+beads=4 coupling=0.500000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+beads=4 coupling=0.900000 value-force PASS
+cyclic-energy PASS
+cyclic-force PASS
+stateless-reconstruction PASS
+extreme-1000 PASS
+extreme--1000 PASS
+domain-rejected PASS
+coupling-rejected PASS
+coupling-rejected PASS
