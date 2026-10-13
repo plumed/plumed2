@@ -108,8 +108,8 @@ int main(int argc, char** argv) {
       std::vector<std::vector<double>> expected;
       bool fd_pass=true, nlist_pass=true;
       {
-        Harness h(intra,inter,local_rank,name,shared,wall);
-        Harness listed(intra,inter,local_rank,name+"-nlist",shared,wall,""," NLIST");
+        Harness h(intra,inter,local_rank,name,shared,wall,""," NLIST_OFF");
+        Harness listed(intra,inter,local_rank,name+"-nlist",shared,wall);
         for(int step=0; step<5; ++step) {
           const double distance=0.8+0.35*bead_fraction+0.05*step;
           const double energy=h.sample(step,distance,true);
