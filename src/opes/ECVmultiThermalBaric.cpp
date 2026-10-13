@@ -296,7 +296,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
       kB_temp_low_=kB*temp_low;
       coeff_=(pres_high-pres_low)/(temp_high-temp_low)/kB;
       plumed_massert(coeff_!=0,"this should not be possible");
-      const double small_value=(temp_high-pres_low)/1e4;
+      const double small_value=(pres_high-pres_low)/1e4;
       pres_low_=pres_low-small_value; //make sure pres_max is included
       plumed_massert(pres_max>=coeff_*(kB*temp_max-kB_temp_low_)+pres_low_,"please chose a pres_high slightly smaller than PRESSURE_MAX in "+cc_usage);
     } else {
