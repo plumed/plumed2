@@ -693,47 +693,47 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
         // If this is a matrix this returns a number that isn't one as we have to loop over the columns
         const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
         for(unsigned j=0; j<nvpt; ++j) {
+          bool noforces = false;
           // Skip the force calculation if we have been told that we can do this when the value is zero
           if( derivativesZeroWhenValueZero ) {
-            bool canskip = true;
+            noforces = true;
             for(unsigned k=0; k<myinput.ncomponents; ++k) {
               if( fabs(fake_vals[j*myinput.ncomponents+k])>epsilon ) {
-                canskip = false;
+                noforces = false;
               }
             }
-            if( canskip ) {
-              continue;
-            }
           }
-          // Get the force indices
-          T::getForceIndices( task_index,
-                              j,
-                              forces.ffa.size(),
-                              actiondata,
-                              myinput,
-                              force_indices );
-          // Create a force input object
-          auto finput=ForceInput::create( myinput.nforcescalars,
-                                          value_stash.data()
-                                          + myinput.nforcescalars*task_index
-                                          + j*myinput.ncomponents,
-                                          myinput.nderivatives_per_scalar,
-                                          derivatives.data()
-                                          + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
+          if( !noforces ) {
+            // Get the force indices
+            T::getForceIndices( task_index,
+                                j,
+                                forces.ffa.size(),
+                                actiondata,
+                                myinput,
+                                force_indices );
+            // Create a force input object
+            auto finput=ForceInput::create( myinput.nforcescalars,
+                                            value_stash.data()
+                                            + myinput.nforcescalars*task_index
+                                            + j*myinput.ncomponents,
+                                            myinput.nderivatives_per_scalar,
+                                            derivatives.data()
+                                            + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
 
-          // Gather forces that are thread safe
-          gatherThreadSafeForces( myinput,
-                                  force_indices,
-                                  finput,
-                                  View<double>(forces.ffa.data(),
-                                               forces.ffa.size()) );
-
-          // Gather forces that are not thread safe
-          gatherThreadUnsafeForces( myinput,
+            // Gather forces that are thread safe
+            gatherThreadSafeForces( myinput,
                                     force_indices,
                                     finput,
-                                    View<precision>(omp_forces[t].data(),
-                                        omp_forces[t].size()) );
+                                    View<double>(forces.ffa.data(),
+                                                 forces.ffa.size()) );
+
+            // Gather forces that are not thread safe
+            gatherThreadUnsafeForces( myinput,
+                                      force_indices,
+                                      finput,
+                                      View<precision>(omp_forces[t].data(),
+                                          omp_forces[t].size()) );
+          }
         }
       }
 
