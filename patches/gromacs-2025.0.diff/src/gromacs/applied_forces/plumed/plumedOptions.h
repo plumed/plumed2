@@ -61,7 +61,7 @@ struct PlumedOptions
     std::string         plumedFile_;
     int                 natoms_;
     const t_commrec*    cr_;
-    const gmx_multisim_t* ms_;
+    const gmx_multisim_t* ms_{ nullptr };
     real                simulationTimeStep_;
     std::optional<real> ensembleTemperature_{};
     StartingBehavior    startingBehavior_{};
