@@ -359,12 +359,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   if(!multiple_walkers) {
     NumWalkers_=1;
   } else {
-    if(comm.Get_rank()==0) { //multi_sim_comm works well on first rank only
-      NumWalkers_=multi_sim_comm.Get_size();
-    }
-    if(comm.Get_size()>1) { //if each walker has more than one processor update them all
-      comm.Bcast(NumWalkers_,0);
-    }
+    NumWalkers_=getNumberOfReplicas();
   }
 
   checkRead();

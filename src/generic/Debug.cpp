@@ -41,6 +41,26 @@ a: DEBUG DETAILED_TIMERS
 b: DEBUG logRequestedAtoms STRIDE=2
 ```
 
+
+For diagnosing non-finite values in an action graph, set the environment
+variable `PLUMED_NONFINITE_ACTION_TRACE` before starting the program. It
+accepts comma- or space-separated action labels, or `*` for all labels.
+The selection is read once per process and is disabled when unset. This
+option is independent of the DEBUG action.
+
+Selected actions are checked after their forward calculation for non-finite
+values and scalar derivatives. During force propagation, selected action
+forces and the atomic-position and cell force buffers are also checked.
+A failure reports the step, forward/backward phase, triggering action,
+target component and element. The diagnostic can add substantial overhead.
+All spatial MPI ranks must use the same selection and action graph. The first failing rank is reported to every rank
+before an exception is raised. Separate multi-simulation communicators are
+not synchronized by this diagnostic; the MD code must terminate the other
+replicas if one replica raises an exception.
+It does not check all internal action state or grid-derivative layouts, and
+cannot detect errors introduced later by the molecular dynamics engine.
+A finite result is not evidence of a valid physical simulation.
+
 */
 //+ENDPLUMEDOC
 class Debug:

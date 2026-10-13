@@ -376,18 +376,11 @@ Metainference::Metainference(const ActionOptions&ao):
 
   // set up replica stuff
   master = (comm.Get_rank()==0);
-  if(master) {
-    nrep_    = multi_sim_comm.Get_size();
-    replica_ = multi_sim_comm.Get_rank();
-    if(noensemble) {
-      nrep_ = 1;
-    }
-  } else {
-    nrep_    = 0;
-    replica_ = 0;
+  nrep_    = getNumberOfReplicas();
+  replica_ = getReplicaIndex();
+  if(noensemble) {
+    nrep_ = 1;
   }
-  comm.Sum(&nrep_,1);
-  comm.Sum(&replica_,1);
 
   unsigned nsel = 1;
   parse("SELECTOR", selector_);

@@ -250,11 +250,23 @@ void KEnRefBias::gatherFittedSubAtomsX(const std::vector<CoordsMatrixType<KEnRef
     all = localFitted; // single replica owns the whole ensemble
     return;
   }
+  /* ONLY a replica's main rank may touch multi_sim_comm: PLUMED populates it under
+   * `if (MAIN(cr))`, and elsewhere it is MPI_COMM_SELF, whose Get_size() silently returns 1. A
+   * collective over it from a non-main rank is meaningless rather than diagnosable (PLUMED #1443;
+   * #1484 makes debug builds say so). Every rank of a replica fits the same atoms -- the request
+   * list, and therefore getPositions(), is complete on every rank -- so localFitted is identical
+   * across the replica and gathering it from the main rank alone loses nothing.
+   *
+   * Returning early is safe because `all` is read only where simulationIndex() == 0, which is a
+   * main rank by construction. */
+  if (!isReplicaMainRank_) {
+    return;
+  }
   const auto &fitted = localFitted[0];
   const int subSize = static_cast<int>(fitted.size()); // rows*3
   multi_sim_comm.Gather(const_cast<KEnRef_Real_t *>(fitted.data()), subSize,
                         allSimulationsSubAtomsX_buffer_.data(), subSize, 0);
-  if (simulationIndex_ == 0) {
+  if (simulationIndex() == 0) {
     const Eigen::Index nSub = fitted.rows();
     all.resize(numSimulations_);
     for (int m = 0; m < numSimulations_; ++m) { // zero-copy view materialised by the assignment
@@ -265,16 +277,43 @@ void KEnRefBias::gatherFittedSubAtomsX(const std::vector<CoordsMatrixType<KEnRef
 
 void KEnRefBias::scatterModelDerivatives(const std::vector<CoordsMatrixType<KEnRef_Real_t>> &allPerModel,
     std::vector<CoordsMatrixType<KEnRef_Real_t>> &localPerModel) const {
+  /* EVERY RANK NEEDS THE FINISHED DERIVATIVES, even though only one rank computed them.
+   * addLocalModelDerivatives() walks every restrained atom and calls addForce for it; PLUMED then
+   * writes those forces through g2l, so a rank's contribution lands only on the atoms it homes
+   * (DomainDecomposition keeps `unique` local-only, and apply() indexes through g2l). That makes
+   * the redundant call on every rank harmless -- but it also means a rank with no derivatives
+   * silently contributes nothing for its own atoms. Hence the broadcast down `comm` in both
+   * branches below: it is what makes the forces complete, not an optimisation. */
+  const int subSize = numSubAtoms_ * 3;
+
   if (!isMultiSim_) {
-    localPerModel = allPerModel; // single replica
+    /* One replica, but possibly several ranks over it. Only simulationIndex() == 0 -- this
+     * replica's main rank -- ran the model, so allPerModel is populated there and EMPTY elsewhere;
+     * copying it would leave the other ranks indexing an empty vector. */
+    localPerModel.resize(1);
+    if (simulationIndex() == 0) {
+      std::copy_n(allPerModel[0].data(), subSize, derivatives_buffer_.data());
+    }
+    if (comm.Get_size() > 1) {
+      comm.Bcast(derivatives_buffer_.data(), subSize, 0);
+    }
+    localPerModel[0] = CoordsMapType<KEnRef_Real_t>(derivatives_buffer_.data(), numSubAtoms_, 3);
     return;
   }
-  const int subSize = numSubAtoms_ * 3;
-  if (simulationIndex_ == 0)
-    for (int m = 0; m < numSimulations_; ++m) {
-      std::copy_n(allPerModel[m].data(), subSize, &allDerivatives_buffer_[m * subSize]);
-    }
-  multi_sim_comm.Scatter(allDerivatives_buffer_.data(), subSize, derivatives_buffer_.data(), subSize, 0);
+
+  /* Several replicas. Only the replica main ranks are in multi_sim_comm, so only they may pack and
+   * scatter; the ensemble master is the one that also has replicaIndex_ == 0. */
+  if (isReplicaMainRank_) {
+    if (simulationIndex() == 0)
+      for (int m = 0; m < numSimulations_; ++m) {
+        std::copy_n(allPerModel[m].data(), subSize, &allDerivatives_buffer_[m * subSize]);
+      }
+    multi_sim_comm.Scatter(allDerivatives_buffer_.data(), subSize, derivatives_buffer_.data(), subSize, 0);
+  }
+  // Push this replica's block from its main rank down to the rest of the replica's ranks.
+  if (comm.Get_size() > 1) {
+    comm.Bcast(derivatives_buffer_.data(), subSize, 0);
+  }
   localPerModel.resize(1);
   localPerModel[0] = CoordsMapType<KEnRef_Real_t>(derivatives_buffer_.data(), numSubAtoms_, 3);
 }
@@ -286,10 +325,12 @@ void KEnRefBias::calculate() {
   const auto begin = std::chrono::high_resolution_clock::now();
   const long step = getStep();
 
-  // Refresh per-step replica state (read by the EngineAdapter callbacks the driver invokes).
-  isMultiSim_ = Communicator::plumedHasMPI() && Communicator::initialized() && multi_sim_comm.Get_size() > 1;
-  numSimulations_ = isMultiSim_ ? multi_sim_comm.Get_size() : 1;
-  simulationIndex_ = isMultiSim_ ? multi_sim_comm.Get_rank() : 0;
+  /* The replica state is NOT refreshed here any more. It used to be read from multi_sim_comm every
+   * step, which is wrong on every rank that was never given that communicator: unset means
+   * MPI_COMM_SELF, so Get_size() returns 1 and Get_rank() 0 in silence, and each non-main rank
+   * restrained its own domain against a one-replica ensemble (PLUMED #1443). It now comes from
+   * getNumberOfReplicas()/getReplicaIndex() at setup -- correct on every rank, communication-free,
+   * and fixed for the whole run, so there is nothing to refresh. */
 
   // Run the whole engine-agnostic pipeline (no-jump -> fit -> gather -> compute -> scatter ->
   // inverse-fit -> unit-scale -> saturate -> addForce) through the adapter callbacks above.
@@ -311,7 +352,8 @@ void KEnRefBias::calculate() {
 
   const auto end = std::chrono::high_resolution_clock::now();
   calculate_time_ += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
-  if (simulationIndex_ == 0 && step % 10 == 0) {
+  // One line per job, not one per domain: simulationIndex() is 0 on exactly one rank in the run.
+  if (simulationIndex() == 0 && step % 10 == 0) {
     std::cout << "  Step " << step << "  KEnRef energy = " << energy << std::endl;
   }
 }

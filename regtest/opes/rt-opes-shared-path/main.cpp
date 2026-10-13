@@ -106,11 +106,18 @@ int main(int argc, char** argv) {
         }) {
       const std::string name=std::string(shared ? "shared" : "local")+(wall ? "-wall" : "-bare");
       std::vector<std::vector<double>> expected;
-      bool fd_pass=true;
+      bool fd_pass=true, nlist_pass=true;
       {
         Harness h(intra,inter,local_rank,name,shared,wall);
+        Harness listed(intra,inter,local_rank,name+"-nlist",shared,wall,""," NLIST");
         for(int step=0; step<5; ++step) {
-          const double energy=h.sample(step,0.8+0.35*bead_fraction+0.05*step,true);
+          const double distance=0.8+0.35*bead_fraction+0.05*step;
+          const double energy=h.sample(step,distance,true);
+          const double listed_energy=listed.sample(step,distance,true);
+          nlist_pass=nlist_pass && std::abs(energy-listed_energy)<1e-10;
+          for(unsigned i=0; i<h.f.size(); ++i) {
+            nlist_pass=nlist_pass && std::abs(h.f[i]-listed.f[i])<1e-9;
+          }
           std::vector<double> energies(beads);
           if(local_rank==0) {
             MPI_Allgather(&energy,1,MPI_DOUBLE,energies.data(),1,MPI_DOUBLE,inter);
@@ -137,30 +144,42 @@ int main(int argc, char** argv) {
         const double plus=h.sample(5,distance+eps,false);
         const double minus=h.sample(5,distance-eps,false);
         fd_pass=std::isfinite(force) && std::abs(force+(plus-minus)/(2*eps))<2e-7;
+        listed.sample(5,distance,false);
+        const double listed_force=listed.f[3];
+        const double listed_plus=listed.sample(5,distance+eps,false);
+        const double listed_minus=listed.sample(5,distance-eps,false);
+        fd_pass=fd_pass && std::isfinite(listed_force) &&
+                std::abs(listed_force+(listed_plus-listed_minus)/(2*eps))<2e-7;
+        nlist_pass=nlist_pass && std::abs(force-listed_force)<1e-9;
       }
       MPI_Barrier(MPI_COMM_WORLD);
       bool weights_pass=true;
       if(rank==0) {
-        std::ifstream in(name+".kernels");
-        std::string line;
-        unsigned row=0;
-        while(std::getline(in,line)) {
-          if(line.empty() || line[0]=='#') {
-            continue;
+        for(const std::string suffix : {
+              "", "-nlist"
+            }) {
+          std::ifstream in(name+suffix+".kernels");
+          std::string line;
+          unsigned row=0;
+          while(std::getline(in,line)) {
+            if(line.empty() || line[0]=='#') {
+              continue;
+            }
+            double time,center,sigma,height,logweight;
+            std::istringstream parser(line);
+            weights_pass=weights_pass && bool(parser>>time>>center>>sigma>>height>>logweight);
+            weights_pass=weights_pass && row<expected.size()*beads;
+            if(row<expected.size()*beads) {
+              weights_pass=weights_pass && std::abs(logweight-expected[row/beads][row%beads])<1e-9;
+            }
+            ++row;
           }
-          double time,center,sigma,height,logweight;
-          std::istringstream parser(line);
-          weights_pass=weights_pass && bool(parser>>time>>center>>sigma>>height>>logweight);
-          weights_pass=weights_pass && row<expected.size()*beads;
-          if(row<expected.size()*beads) {
-            weights_pass=weights_pass && std::abs(logweight-expected[row/beads][row%beads])<1e-9;
-          }
-          ++row;
+          weights_pass=weights_pass && row==expected.size()*beads;
         }
-        weights_pass=weights_pass && row==expected.size()*beads;
       }
       report(name+" weights",weights_pass);
       report(name+" frozen-force",fd_pass);
+      report(name+" neighbor-list-parity",nlist_pass);
       bool same_restart=true;
       try {
         Harness h(intra,inter,local_rank,name+"-resume",shared,wall,name+".state");

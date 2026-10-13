@@ -25,6 +25,7 @@
 #include "Vector.h"
 #include "Tools.h"
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 
@@ -65,12 +66,14 @@ public:
     const V3 dnn_dv2(-0.5*nn/sv2*dsv2_dv2);
 
     const T dpnn(dp*nn);
-    if(dpnn>=1.0-epsilon) {
+    // the tolerance must be T's: PLMD::epsilon is double's, which for float means "exactly 1"
+    const T eps(std::numeric_limits<T>::epsilon());
+    if(dpnn>=1.0-eps) {
       d1=V3(0.0,0.0,0.0);
       d2=V3(0.0,0.0,0.0);
       return 0.0;
     }
-    if(dpnn<=-1.0+epsilon) {
+    if(dpnn<=-1.0+eps) {
       d1=V3(0.0,0.0,0.0);
       d2=V3(0.0,0.0,0.0);
       return pi;

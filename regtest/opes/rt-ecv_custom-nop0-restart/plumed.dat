@@ -1,0 +1,20 @@
+# vim:ft=plumed
+# Restart of ECV_CUSTOM with '_' in the ARG labels, from the DELTAFS file (opes)
+# and from the STATE file (opes2) written by rt-ecv_custom-nop0.
+# The STATE file names the columns after the ARG of OPES_EXPANDED, so mc must keep its label
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+
+t_1: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/500-1)*x
+t_2: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/1000-1)*x
+mc2: ECV_CUSTOM ARG=t_1,t_2 TEMP=300
+opes: OPES_EXPANDED FMT={% f} ARG=mc2.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10 FILE=DELTAFS
+
+mc: ECV_CUSTOM ARG=t_1,t_2 TEMP=300
+opes2: OPES_EXPANDED FMT={% f} ARG=mc.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10 FILE=DELTAFS2 STATE_RFILE=State.restart
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED

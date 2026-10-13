@@ -1,0 +1,35 @@
+# The kenref module is default-off and needs an external library, so skip when it is not built in.
+plumed_modules=kenref
+mpiprocs=4
+type=driver
+# Two replicas with two ranks each, under a fake domain decomposition. Replica 1 reads traj.1.pdb, in
+# which some atoms are displaced, so the replicas get different forces.
+arg="--plumed plumed.dat --mf_pdb traj.pdb --multi 2 --debug-dd yes --dump-forces forces --dump-forces-fmt %8.4f"
+
+# The expected output is the same run with one rank per replica, made here rather than stored, so the
+# test holds no KEnRef numbers and does not need updating when an energy model changes.
+function plumed_regtest_before() {
+  ${mpi% -np *} -np 2 $valgrind $plumed driver --plumed plumed.dat --mf_pdb traj.pdb --multi 2 \
+    --dump-forces forces --dump-forces-fmt %8.4f > out_nodd 2> err_nodd || return 1
+  for r in 0 1; do
+    mv colvar.$r nodd_colvar.$r && mv forces.$r nodd_forces.$r || return 1
+  done
+}
+
+# Under --debug-dd the force files are per rank: forces.0 and forces.1 are replica 0, forces.2 and
+# forces.3 replica 1. Every rank must hold its replica's forces.
+function plumed_regtest_after() {
+  same() { cmp -s "$1" "$2" && echo same || echo DIFFERENT; }
+  nonzero() { awk '$1=="X"{for(i=2;i<=4;i++) if($i+0!=0) n++} END{print (n>0)?"yes":"no"}' "$1"; }
+  {
+    for k in 0 1 2 3; do
+      echo "replica $((k/2)) rank $((k%2)) forces: $(same forces.$k nodd_forces.$((k/2)))"
+    done
+    for r in 0 1; do
+      echo "replica $r colvar: $(same colvar.$r nodd_colvar.$r)"
+    done
+    # Guard against a vacuous pass: two runs that both produce no restraint would also agree.
+    echo "forces are non-zero: $(nonzero nodd_forces.0)"
+    echo "replicas get different forces: $(cmp -s nodd_forces.0 nodd_forces.1 && echo no || echo yes)"
+  } > dd_vs_nodd
+}

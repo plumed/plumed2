@@ -144,10 +144,10 @@ try : plumed_(std::make_unique<PLMD::Plumed>()), replex_(options.replex_)
 
     if (options.mpiComm_->isParallel())
     {
-        /* PLUMED dereferences this argument as an MPI_Comm*, so it must be given
-           the address of a communicator, not the communicator itself. */
-        MPI_Comm intracomm = options.mpiComm_->comm();
-        plumed_->cmd("setMPIComm", &intracomm);
+        /* PLUMED reads this argument as an MPI_Comm*, so it must be handed the
+           address of a communicator rather than the communicator itself. */
+        MPI_Comm plumedComm = options.mpiComm_->comm();
+        plumed_->cmd("setMPIComm", &plumedComm);
     }
 
     plumed_->cmd("setNatoms", options.natoms_);
