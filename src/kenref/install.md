@@ -22,15 +22,15 @@ Both are thin orchestrators sharing `_common.sh`; power users need only a comman
 src/kenref/build-only.sh -y                          # find kenref (or clone), build+install PLUMED
 src/kenref/build-only.sh --kenref-src ~/KEnRef -y
 
-# PLUMED + a GROMACS 2025.x batched with it:
-src/kenref/build-and-batch.sh -y                     # also fetch+patch+build GROMACS 2025.x
-src/kenref/build-and-batch.sh --gromacs-src ~/gromacs-2025.4 -y   # use a provided gromacs
+# PLUMED + a GROMACS 2026.x patched with it:
+src/kenref/build-and-patch.sh -y                     # also fetch+patch+build GROMACS 2026.x
+src/kenref/build-and-patch.sh --gromacs-src ~/gromacs-2026.4 -y   # use a provided gromacs
 ```
 
 What they do: **kenref_core** — reused if found via `pkg-config`, else the KEnRef repo is located
 (`--kenref-src`) or **auto-cloned** and **its** `build.sh` builds+installs it (with the plumedinterface
 exported). Starting from PLUMED never assumes KEnRef is already present — an empty machine just clones it. **PLUMED** — built by its own autotools (`--enable-kenref
---enable-modules=+kenref`). **GROMACS** (batch script) — a provided source, else fetched to a
+--enable-modules=+kenref`). **GROMACS** (patch script) — a provided source, else fetched to a
 plumed-related dir; `plumed patch`ed (native `GMX_USE_PLUMED` alone is *not* full integration) then built.
 Toolchain from the environment (`CXX=mpicxx CXXFLAGS="-stdlib=libc++" …`); `--accel` auto-detects.
 
@@ -74,7 +74,7 @@ default, so nothing here is a surprise to someone who already knows that project
 |---|---|---|
 | PLUMED | `/usr/local` | autotools' default (`--prefix`) |
 | `kenref_core` | `/usr/local/kenref` | KEnRef's CMake (`KENREF_INSTALL_BASE/kenref`) |
-| GROMACS (batched) | `/usr/local/gromacs` | GROMACS's CMake |
+| GROMACS (patched) | `/usr/local/gromacs` | GROMACS's CMake |
 
 Override any of them: `--plumed-prefix DIR`, `--kenref-prefix DIR`, `--gromacs-prefix DIR` (Option A), or
 `--prefix` (Option B). Build directories always stay inside the source trees — they are artefacts, not
@@ -85,7 +85,7 @@ when the destination is not writable. Redirect the prefixes into your own space 
 password:
 
 ```bash
-src/kenref/build-and-batch.sh --kenref-src ~/KEnRef --gromacs-src ~/gromacs-2025.4 \
+src/kenref/build-and-patch.sh --kenref-src ~/KEnRef --gromacs-src ~/gromacs-2026.4 \
     --plumed-prefix ~/.local --kenref-prefix ~/.local/kenref --gromacs-prefix ~/.local/gromacs -y
 ```
 
@@ -121,15 +121,15 @@ plumed --version        # runs with no module / no LD_LIBRARY_PATH
 - At **build time**, `libc++` must also be on `LD_LIBRARY_PATH` (configure runs test programs that have no
   rpath yet) — normally provided by loading your compiler/toolchain module.
 
-## Batching GROMACS (2025.x)
+## Patching GROMACS (2026.x)
 
-Running KEnRef-on-PLUMED-**on-GROMACS** needs GROMACS **2025.x (pref. 2025.4)**, batched with `plumed patch`
-(native `-DGMX_USE_PLUMED=ON` compiles but isn't full integration on its own). `build-and-batch.sh` does this;
+Running KEnRef-on-PLUMED-**on-GROMACS** needs GROMACS **2026.x (pref. 2026.4)**, patched with `plumed patch`
+(native `-DGMX_USE_PLUMED=ON` compiles but isn't full integration on its own). `build-and-patch.sh` does this;
 manually:
 
 ```bash
-cd /path/to/gromacs-2025.x           # a source DEDICATED to the PLUMED path (not the kenref-gmx one)
-plumed patch -p -e gromacs-2025.0 --mode runtime
+cd /path/to/gromacs-2026.x           # a source DEDICATED to the PLUMED path (not the kenref-gmx one)
+plumed patch -p -e gromacs-2026.0 --mode runtime
 cmake -S . -B build -DGMX_USE_PLUMED=ON -DGMX_MPI=ON && cmake --build build && cmake --install build
 ```
 
