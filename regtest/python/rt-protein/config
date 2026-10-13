@@ -3,3 +3,7 @@ plumed_needs=python
 type=python
 arg="./python-script.py"
 extra_files="../../trajectories/trajectory.xyz"
+
+# OpenMP workers can outlive dlclose during Python process shutdown.
+# Retain the kernel while preserving the configured thread count.
+export PLUMED_LOAD_DLCLOSE=no

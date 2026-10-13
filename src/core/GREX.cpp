@@ -98,6 +98,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 // note that for PEs!=root this is automatically 0 (comm defaults to MPI_COMM_SELF)
       myreplica=intercomm.Get_rank();
       intracomm.Sum(myreplica);
+      plumedMain.updateReplicaIdentity(intracomm);
       {
         std::string s;
         Tools::convert(myreplica,s);

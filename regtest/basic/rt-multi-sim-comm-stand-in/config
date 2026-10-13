@@ -1,0 +1,6 @@
+mpiprocs=4
+type=driver
+# two replicas with two ranks each: multi_sim_comm must be a stand-in
+# on the second rank of each replica, and using it there must fail in
+# debug builds only
+arg="--plumed plumed.dat --mf_pdb structure.pdb --multi 2"

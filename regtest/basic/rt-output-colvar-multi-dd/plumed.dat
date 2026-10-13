@@ -1,0 +1,4 @@
+d: DISTANCE ATOMS=1,8
+ff: COLLECT_FRAMES ARG=d
+# each replica writes the frames it collected: frames.0 and frames.1
+DUMPVECTOR ARG=ff.* FILE=frames FMT=%8.4f
