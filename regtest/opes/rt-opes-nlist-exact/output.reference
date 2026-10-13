@@ -1,0 +1,4 @@
+OPES_METAD default: exact neighbor list PASS
+OPES_METAD_EXPLORE default: exact neighbor list PASS
+OPES_METAD merges: exact neighbor list PASS
+OPES_METAD_EXPLORE merges: exact neighbor list PASS
