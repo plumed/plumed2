@@ -19,6 +19,8 @@
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
 
+#include <algorithm>
+
 namespace PLMD {
 namespace opes {
 
@@ -75,7 +77,6 @@ public:
   void calculateECVs(const double *) override;
   const double * getPntrToECVs(unsigned) override;
   const double * getPntrToDerECVs(unsigned) override;
-  std::vector< std::vector<unsigned> > getIndex_k() const override;
   std::vector<std::string> getLambdas() const override;
   void initECVs_observ(const std::vector<double>&,const unsigned,const unsigned) override;
   void initECVs_restart(const std::vector<std::string>&) override;
@@ -160,17 +161,6 @@ const double * ECVcustom::getPntrToDerECVs(unsigned j) {
   return &derECVs_[j][0];
 }
 
-std::vector< std::vector<unsigned> > ECVcustom::getIndex_k() const {
-  plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
-  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(getNumberOfArguments()));
-  for(unsigned k=0; k<totNumECVs_; k++)
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-      if(k==j+P0_contribution_) {
-        index_k[k][j]=k;
-      }
-  return index_k;
-}
-
 std::vector<std::string> ECVcustom::getLambdas() const {
   std::vector<std::string> lambdas(totNumECVs_);
   if(P0_contribution_==1) {
@@ -181,18 +171,24 @@ std::vector<std::string> ECVcustom::getLambdas() const {
     }
     lambdas[0]=subs.str();
   }
+  //the lambdas are the ARG names, with '_' replaced, since it separates the lambdas of different CVs
+  //the getLambdas method is const, so it complains if one tries to access a non-const pointer, hence the const_cast
+  auto argName=[this](unsigned j) {
+    std::string name=const_cast<ECVcustom *>(this)->getPntrToArgument(j)->getName();
+    std::replace(name.begin(),name.end(),'_','-');
+    return name;
+  };
   for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
     const unsigned kk=k-P0_contribution_;
     std::ostringstream subs;
-//the getLambdas method is const, so it complains if one tries to access a non-const pointer, hence the const_cast
     if(kk==0) {
-      subs<<const_cast<ECVcustom *>(this)->getPntrToArgument(kk)->getName();
+      subs<<argName(kk);
     } else {
       subs<<"NaN";
     }
     for(unsigned j=1; j<getNumberOfArguments(); j++) {
       if(kk==j) {
-        subs<<"_"<<const_cast<ECVcustom *>(this)->getPntrToArgument(kk)->getName();
+        subs<<"_"<<argName(kk);
       } else {
         subs<<"_NaN";
       }

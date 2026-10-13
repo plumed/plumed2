@@ -1,0 +1,8 @@
+#! FIELDS time rct DeltaF_t-1_NaN DeltaF_NaN_t-2
+#! SET print_stride  10
+  20.000000  0.000000 -48.667013 -89.474841
+  40.000000  50.965852  5.539691 -32.527827
+#! FIELDS time rct DeltaF_t-1_NaN DeltaF_NaN_t-2
+#! SET print_stride  10
+  20.000000  49.352945  5.539691 -32.527827
+  40.000000  48.381488  5.539691 -32.527827
