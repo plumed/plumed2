@@ -37,6 +37,9 @@ class ActionToPutData :
 private:
 /// Are we not applying forces on this values
   bool noforce;
+/// Are the forces on this value added by another rank? The forces that the MD code
+/// holds in this value are still rescaled on this rank (e.g. its share of the virial)
+  bool forces_added_elsewhere;
 /// Is this quantity fixed
   bool fixed;
 /// Is this quantity passed from the domains
