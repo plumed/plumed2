@@ -1034,6 +1034,8 @@ void gmx::LegacySimulator::do_md()
                                   imdSession, pull_work,
                                   state,&f,mdAtoms,&top,fr,vsite,constr,
                                   nrnb,wcycle,FALSE);
+              /* as GROMACS does after repartitioning */
+              upd.setNumAtoms(state->natoms);
             }
           }
           /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
@@ -1080,6 +1082,8 @@ void gmx::LegacySimulator::do_md()
                                   imdSession, pull_work,
                                   state,&f,mdAtoms,&top,fr,vsite,constr,
                                   nrnb,wcycle,FALSE);
+              /* as GROMACS does after repartitioning */
+              upd.setNumAtoms(state->natoms);
               int nat_home = dd_numHomeAtoms(*cr->dd);
               plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
               plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());

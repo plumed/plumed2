@@ -1246,6 +1246,9 @@ void gmx::LegacySimulator::do_md()
                                   nrnb_,
                                   wallCycleCounters_,
                                   do_verbose && !bPMETunePrinting);
+              /* as GROMACS does after repartitioning */
+              upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+              fr_->longRangeNonbondeds->updateAfterPartition(*md);
           }
           /* GROMACS >= 2024 takes the workload of do_force() from runScheduleWork_, which is only set up
              later in the step: set it up here, with a pair search and the energy */
@@ -1339,6 +1342,9 @@ void gmx::LegacySimulator::do_md()
                                 nrnb_,
                                 wallCycleCounters_,
                                 do_verbose && !bPMETunePrinting);
+            /* as GROMACS does after repartitioning */
+            upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+            fr_->longRangeNonbondeds->updateAfterPartition(*md);
             int nat_home = dd_numHomeAtoms(*cr_->dd);
             plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
             plumed_cmd(plumedmain,"setAtomsGatindex",cr_->dd->globalAtomIndices.data());

@@ -1247,6 +1247,15 @@ void gmx::LegacySimulator::do_md()
                                   nrnb,
                                   wcycle,
                                   do_verbose && !bPMETunePrinting);
+              /* as GROMACS does after repartitioning */
+              upd.updateAfterPartition(state->natoms,
+                                       md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
+                                                   : gmx::ArrayRef<const unsigned short>(),
+                                       md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                               : gmx::ArrayRef<const unsigned short>(),
+                                       md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                                : gmx::ArrayRef<const unsigned short>());
+              fr->longRangeNonbondeds->updateAfterPartition(*md);
           }
           /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
              calculate (and e.g. deposit or print) again for the previous step inside do_force() */
@@ -1330,6 +1339,15 @@ void gmx::LegacySimulator::do_md()
                                   nrnb,
                                   wcycle,
                                   do_verbose && !bPMETunePrinting);
+              /* as GROMACS does after repartitioning */
+              upd.updateAfterPartition(state->natoms,
+                                       md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
+                                                   : gmx::ArrayRef<const unsigned short>(),
+                                       md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                               : gmx::ArrayRef<const unsigned short>(),
+                                       md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                                : gmx::ArrayRef<const unsigned short>());
+              fr->longRangeNonbondeds->updateAfterPartition(*md);
             int nat_home = dd_numHomeAtoms(*cr->dd);
             plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
             plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
