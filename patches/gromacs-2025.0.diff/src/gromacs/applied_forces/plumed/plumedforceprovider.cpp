@@ -188,7 +188,12 @@ try
     // setup: these instructions in the original patch are BEFORE do_force()
     // now this is called within do_force(), but this does not impact the results
     const t_commrec* cr    = &(forceProviderInput.cr_);
-    long int         lstep = forceProviderInput.step_;
+    long int         lstep = prepareStepIsCalled_ ? currentStep_ : forceProviderInput.step_;
+    // With shell particles, relax_shell_flexcon() calls do_force() again on the same step (passing
+    // step 1): PLUMED then calculates its forces again, without updating (depositing, printing...).
+    // Only in MD, where prepareStep() gives the step: e.g. reruns can have frames with the same step
+    repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
+    calculatedStep_ = lstep;
     plumed_->cmd("setStepLong", &lstep);
     if (haveDDAtomOrdering(*cr))
     {
@@ -215,7 +220,10 @@ try
     }
     preparedStep_.reset();
 
-    plumedWantsToStop_ = 0;
+    if (!repeatedCall_)
+    {
+        plumedWantsToStop_ = 0;
+    }
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
 
     if (!prepareStepIsCalled_)
@@ -243,7 +251,7 @@ try
     clear_mat(plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
 
-    plumed_->cmd("performCalc", nullptr);
+    plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
 
     checkReplicaExchangeBias();
 
@@ -289,6 +297,7 @@ try
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
     prepareStepIsCalled_ = true;
+    currentStep_         = step;
     if (plumedAPIversion_ > 3)
     {
         // Set on every step: PLUMED resets it only on the steps when some action is active
@@ -359,7 +368,7 @@ try
     // Match the legacy GROMACS patch: pass 2*virial into PLUMED, then replace.
     msmul(virial, 2.0, plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
-    plumed_->cmd("performCalc", nullptr);
+    plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
 
     checkReplicaExchangeBias();
 

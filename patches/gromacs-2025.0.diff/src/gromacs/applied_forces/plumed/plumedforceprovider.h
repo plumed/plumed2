@@ -107,6 +107,12 @@ private:
     bool prepareStepIsCalled_ = false;
     //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces().
     int checkpointRequested_ = 0;
+    //! Step for which prepareStep() was last called
+    int64_t currentStep_ = 0;
+    //! Last step that PLUMED calculated
+    std::optional<int64_t> calculatedStep_;
+    //! Whether PLUMED already calculated this MD step (shell relaxation): it is then not updated again
+    bool repeatedCall_ = false;
 };
 
 } // namespace gmx
