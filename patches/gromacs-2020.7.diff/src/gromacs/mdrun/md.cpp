@@ -700,6 +700,11 @@ void gmx::LegacySimulator::do_md()
 
     /* PLUMED */
     if(plumedswitch){
+      if(shellfc){
+        /* relax_shell_flexcon() calls do_force() without setting PLUMED up for the step */
+        gmx_fatal(FARGS,"PLUMED cannot be used with shell (polarizable) particles with this version of GROMACS: "
+                        "PLUMED would not be applied.");
+      }
       /* detect plumed API version */
       int pversion=0;
       plumed_cmd(plumedmain,"getApiVersion",&pversion);
