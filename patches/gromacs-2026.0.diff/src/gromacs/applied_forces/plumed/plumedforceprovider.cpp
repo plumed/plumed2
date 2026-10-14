@@ -165,6 +165,11 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     plumed_->cmd("setTimestep", &options.simulationTimeStep_);
     plumed_->cmd("init", nullptr);
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
@@ -183,6 +188,11 @@ try
     {
         checkpointRequested_ = 1;
     }
+}
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
 }
 catch (const std::exception& ex)
 {
@@ -265,6 +275,11 @@ try
     msmul(plumedVir_, 0.5, plumedVir_);
     forceProviderOutput->forceWithVirial_.addVirialContribution(plumedVir_);
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
@@ -330,6 +345,11 @@ try
     preparedStep_ = step;
     return plumedNeedsEnergy_ != 0;
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
@@ -370,6 +390,11 @@ try
 
     msmul(plumedVir_, 0.5, virial);
     return usesVirtualSites();
+}
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
 }
 catch (const std::exception& ex)
 {
