@@ -1036,7 +1036,8 @@ int Mdrunner::mdrunner()
                                                               replExParams,
                                                               nullptr,
                                                               doEssentialDynamics,
-                                                              membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
+                                                              membedHolder.doMembed())
+                                     && (plumedswitch==0) /* PLUMED: not supported by the modular simulator */;
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the master rank. The ranks can now all run

@@ -918,7 +918,8 @@ int Mdrunner::mdrunner()
 
     const bool useModularSimulator =
             checkUseModularSimulator(false, inputrec.get(), doRerun, mtop, ms, replExParams,
-                                     nullptr, doEssentialDynamics, membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
+                                     nullptr, doEssentialDynamics, membedHolder.doMembed())
+            && (plumedswitch==0) /* PLUMED: not supported by the modular simulator */;
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
