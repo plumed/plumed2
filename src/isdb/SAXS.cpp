@@ -2119,7 +2119,6 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
   // Atom numbers in TEMPLATE traversal order, one entry per atom, ions included.
   std::vector<AtomNumber> atom_numbers;
   atom_numbers.reserve(atoms.size());
-  unsigned nalias = 0;
   // Audit trail. Accepting several spellings for the same residue is only safe if the
   // user can see what each one was taken to mean, so every distinct residue name that
   // reaches the glycan or alias path is recorded with its resolution and its count and
@@ -2212,7 +2211,6 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
       const std::string Rraw = Rname;
       Rname = onebeadResidueAlias(Rname);
       if(Rname!=Rraw) {
-        nalias++;
         alias_seen[Rraw].first = Rname;
         alias_seen[Rraw].second++;
       }
