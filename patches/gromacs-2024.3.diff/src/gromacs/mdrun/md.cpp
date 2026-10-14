@@ -848,6 +848,16 @@ void gmx::LegacySimulator::do_md()
       real real_delta_t=ir->delta_t;
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",nullptr);
+      if(MAIN(cr_)){
+        /* Stop through the stop handler, so that the request reaches all ranks and, as
+           simulationsShareState is set, the other simulations, and mdrun writes a checkpoint */
+        stopHandlerBuilder_->registerStopCondition(
+                [&plumedWantsToStop, logFile=fpLog_, reported=std::make_shared<bool>(false)]() {
+                  if(!plumedWantsToStop) return StopSignal::noSignal;
+                  if(logFile && !*reported){ fprintf(logFile,"\n\nPLUMED asked to stop the simulation\n\n"); *reported=true; }
+                  return StopSignal::stopImmediately;
+                });
+      }
       if(virtualSites_){
         /* The forces that PLUMED applies on virtual sites in the energy path are spread below */
         plumedIsVirtualSite.assign(topGlobal_.natoms,false);
@@ -1592,7 +1602,6 @@ void gmx::LegacySimulator::do_md()
                 m_add(force_vir,plumed_vir,force_vir);
               }
               if(bDoReplEx) plumed_cmd(plumedmain,"GREX savePositions",nullptr);
-              if(plumedWantsToStop) bLastStep = true;
               if(bHREX) plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd_->term[F_EPOT]);
             }
             /* END PLUMED */
