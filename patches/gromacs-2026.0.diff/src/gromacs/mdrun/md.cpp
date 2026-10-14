@@ -1129,6 +1129,18 @@ void gmx::LegacySimulator::do_md()
         {
             /* setupStepWorkload() snapshots force_flags below, so PLUMED has to be
                asked for the potential energy before that, not from within do_force(). */
+            if (simulationWork.useMts && !do_per_step(step, ir->mtsLevels.back().stepFactor))
+            {
+                gmx_fatal(FARGS,
+                          "PLUMED needs the potential energy at step %" PRId64
+                          ", but with multiple time stepping the slow forces, and so the "
+                          "potential energy, are computed only every %d steps "
+                          "(mts-level2-factor). Use a PLUMED input that needs the energy only "
+                          "on those steps (e.g. no bias on ENERGY), or do not use multiple time "
+                          "stepping.",
+                          step,
+                          ir->mtsLevels.back().stepFactor);
+            }
             force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
         }
         /* END PLUMED */
