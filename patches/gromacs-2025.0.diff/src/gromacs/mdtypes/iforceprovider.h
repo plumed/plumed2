@@ -212,12 +212,15 @@ public:
      * \param[in,out] potentialEnergy    Pointer to the potential energy (F_EPOT)
      * \param[in,out] force              Complete force array (home atoms)
      * \param[in,out] virial             Force virial tensor
+     * \returns Whether the provider might have applied forces on virtual sites,
+     *          which then have to be spread on the constructing atoms
      */
-    virtual void applyAfterPotentialEnergy(bool /*energyWasComputed*/,
+    virtual bool applyAfterPotentialEnergy(bool /*energyWasComputed*/,
                                            real* /*potentialEnergy*/,
                                            ArrayRef<RVec> /*force*/,
                                            tensor /*virial*/)
     {
+        return false;
     }
 
 protected:
@@ -263,8 +266,9 @@ public:
     //! Whether any provider asks to stop the simulation.
     bool requestsStop() const;
 
-    //! Forwards applyAfterPotentialEnergy() to all providers.
-    void applyAfterPotentialEnergy(bool energyWasComputed,
+    //! Forwards applyAfterPotentialEnergy() to all providers, and returns whether any might have
+    //! applied forces on virtual sites.
+    bool applyAfterPotentialEnergy(bool energyWasComputed,
                                    real* potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor virial) const;

@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -82,17 +83,21 @@ public:
                          ForceProviderOutput*      forceProviderOutput) override;
     bool prepareStep(int64_t step, bool isCheckpointingStep) override;
     bool requestsStop() const override;
-    void applyAfterPotentialEnergy(bool energyWasComputed,
+    bool applyAfterPotentialEnergy(bool energyWasComputed,
                                    real* potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor virial) override;
 
 private:
     void checkReplicaExchangeBias();
+    //! Whether the atoms that PLUMED used on this step include virtual sites
+    bool usesVirtualSites();
 
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>             isVirtualSite_;
     int                           plumedNeedsEnergy_ = 0;
     int                           plumedWantsToStop_ = 0;
     matrix                        plumedVir_         = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };

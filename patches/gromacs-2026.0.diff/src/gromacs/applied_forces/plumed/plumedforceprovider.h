@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -98,8 +99,9 @@ public:
      * \param[in,out] potentialEnergy    the MD potential energy
      * \param[in,out] force              the complete force array
      * \param[in,out] virial             the force virial
+     * \returns whether the atoms that PLUMED used include virtual sites
      */
-    void applyAfterPotentialEnergy(bool           energyWasComputed,
+    bool applyAfterPotentialEnergy(bool           energyWasComputed,
                                    real*          potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor         virial) override;
@@ -107,10 +109,14 @@ public:
 private:
     //! Throws if PLUMED computed a bias while replica exchange is active
     void checkReplicaExchangeBias();
+    //! Whether the atoms that PLUMED used on this step include virtual sites
+    bool usesVirtualSites();
 
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>             isVirtualSite_;
 
     std::optional<ArrayRef<const int>> globalAtomIndices_;
     int                                plumedNeedsEnergy_ = 0;

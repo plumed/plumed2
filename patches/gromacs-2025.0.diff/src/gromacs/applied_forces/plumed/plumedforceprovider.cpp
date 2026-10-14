@@ -41,6 +41,8 @@
 
 #include "plumedforceprovider.h"
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -74,7 +76,9 @@ namespace gmx
 
 PlumedForceProvider::~PlumedForceProvider() = default;
 PlumedForceProvider::PlumedForceProvider(const PlumedOptions& options)
-try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
+try : plumed_(std::make_unique<PLMD::Plumed>()),
+      replex_(options.replex_),
+      isVirtualSite_(options.isVirtualSite_)
 {
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
@@ -242,6 +246,24 @@ catch (const std::exception& ex)
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }
 
+bool PlumedForceProvider::usesVirtualSites()
+{
+    if (isVirtualSite_.empty())
+    {
+        return false;
+    }
+    /* PLUMED applies forces only on the atoms it uses. Their list is the same on all ranks,
+       so that all take the same decision. It is empty when PLUMED only biases the energy. */
+    int numAtoms = 0;
+    plumed_->cmd("createFullList", &numAtoms);
+    const int* atoms = nullptr;
+    plumed_->cmd("getFullList", &atoms);
+    const bool found =
+            std::any_of(atoms, atoms + numAtoms, [this](int atom) { return isVirtualSite_[atom]; });
+    plumed_->cmd("clearFullList", nullptr);
+    return found;
+}
+
 bool PlumedForceProvider::prepareStep(int64_t step, bool isCheckpointingStep)
 try
 {
@@ -289,7 +311,7 @@ void PlumedForceProvider::checkReplicaExchangeBias()
     }
 }
 
-void PlumedForceProvider::applyAfterPotentialEnergy(bool          energyWasComputed,
+bool PlumedForceProvider::applyAfterPotentialEnergy(bool          energyWasComputed,
                                                     real*         potentialEnergy,
                                                     ArrayRef<RVec> force,
                                                     tensor        virial)
@@ -297,7 +319,7 @@ try
 {
     if (!plumedNeedsEnergy_)
     {
-        return;
+        return false;
     }
     if (!energyWasComputed || potentialEnergy == nullptr)
     {
@@ -322,6 +344,7 @@ try
     checkReplicaExchangeBias();
 
     msmul(plumedVir_, 0.5, virial);
+    return usesVirtualSites();
 }
 catch (const std::exception& ex)
 {
