@@ -1247,6 +1247,21 @@ void gmx::LegacySimulator::do_md()
                                   wallCycleCounters_,
                                   do_verbose && !bPMETunePrinting);
           }
+          /* GROMACS >= 2024 takes the workload of do_force() from runScheduleWork_, which is only set up
+             later in the step: set it up here, with a pair search and the energy */
+          if (fr_->listedForcesGpu)
+          {
+              fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+          }
+          runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                  *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
+          runScheduleWork_->stepWork = setupStepWorkload(
+                  GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL
+                          | GMX_FORCE_ENERGY | GMX_FORCE_DHDL | GMX_FORCE_NS,
+                  ir->mtsLevels,
+                  step,
+                  runScheduleWork_->domainWork,
+                  simulationWork);
           /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
              calculate (and e.g. deposit or print) again for the previous step inside do_force() */
           plumedswitch=0;
