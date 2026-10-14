@@ -923,6 +923,14 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
         plumed_cmd(plumedmain,"performCalc",nullptr);
         msmul(plumed_vir,0.5,force_vir);
+        if(vsite){
+          /* do_force() already spread the forces on the virtual sites and cleared them:
+             spread those that PLUMED applied, with their virial */
+          matrix vsiteVir={{0}};
+          vsite->spreadForces(ems->s.x.arrayRefWithPadding().unpaddedArrayRef(),ems->f.view().force(),
+                              VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb,ems->s.box,wcycle);
+          m_add(force_vir,vsiteVir,force_vir);
+        }
       } else {
         msmul(plumed_vir,0.5,plumed_vir);
         m_add(force_vir,plumed_vir,force_vir);

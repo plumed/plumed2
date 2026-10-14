@@ -156,6 +156,24 @@ extern plumed plumedmain;
 extern int plumed_hrex;
 /* END PLUMED HREX */
 
+/* PLUMED */
+//! Whether the atoms that PLUMED used on this step include virtual sites
+static bool plumedUsesVirtualSites(const std::vector<bool>& isVirtualSite)
+{
+  if(isVirtualSite.empty()) return false;
+  /* PLUMED applies forces only on the atoms it uses. Their list is the same on all ranks,
+     so that all take the same decision. It is empty when PLUMED only biases the energy. */
+  int numAtoms=0;
+  plumed_cmd(plumedmain,"createFullList",&numAtoms);
+  const int* atoms=nullptr;
+  plumed_cmd(plumedmain,"getFullList",&atoms);
+  bool found=false;
+  for(int i=0; i<numAtoms && !found; i++) found=isVirtualSite[atoms[i]];
+  plumed_cmd(plumedmain,"clearFullList",nullptr);
+  return found;
+}
+/* END PLUMED */
+
 using gmx::SimulationSignaller;
 
 void gmx::LegacySimulator::do_md()
@@ -210,6 +228,7 @@ void gmx::LegacySimulator::do_md()
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
     matrix plumed_vir;
+    std::vector<bool> plumedIsVirtualSite; // which atoms are virtual sites, empty if there are none
     real lambdaForce=0;
     real realFepState=0;
     /* END PLUMED */
@@ -714,6 +733,13 @@ void gmx::LegacySimulator::do_md()
       real real_delta_t=ir->delta_t;
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",NULL);
+      if(vsite){
+        /* The forces that PLUMED applies on virtual sites in the energy path are spread below */
+        plumedIsVirtualSite.assign(top_global->natoms,false);
+        for(const AtomProxy atomP : AtomRange(*top_global)){
+          plumedIsVirtualSite[atomP.globalAtomNumber()]=(atomP.atom().ptype==eptVSite);
+        }
+      }
 
       if(PAR(cr)){
         if(DOMAINDECOMP(cr)) {
@@ -1142,6 +1168,14 @@ void gmx::LegacySimulator::do_md()
                 plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",NULL);
                 msmul(plumed_vir,0.5,force_vir);
+                if(vsite && plumedUsesVirtualSites(plumedIsVirtualSite)){
+                  /* do_force() already spread the forces on the virtual sites and cleared them:
+                     spread those that PLUMED applied, with their virial */
+                  matrix vsiteVir={{0}};
+                  spread_vsite_f(vsite,as_rvec_array(state->x.data()),as_rvec_array(f.data()),nullptr,TRUE,vsiteVir,
+                                 nrnb,&top.idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr,wcycle);
+                  m_add(force_vir,vsiteVir,force_vir);
+                }
               } else {
                 msmul(plumed_vir,0.5,plumed_vir);
                 m_add(force_vir,plumed_vir,force_vir);

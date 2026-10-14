@@ -160,6 +160,7 @@
 
 /* PLUMED */
 #include "../../../Plumed.h"
+#include "gromacs/topology/mtop_atomloops.h"
 extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
@@ -167,6 +168,24 @@ extern plumed plumedmain;
 /* PLUMED HREX */
 extern int plumed_hrex;
 /* END PLUMED HREX */
+
+/* PLUMED */
+//! Whether the atoms that PLUMED used on this step include virtual sites
+static bool plumedUsesVirtualSites(const std::vector<bool>& isVirtualSite)
+{
+  if(isVirtualSite.empty()) return false;
+  /* PLUMED applies forces only on the atoms it uses. Their list is the same on all ranks,
+     so that all take the same decision. It is empty when PLUMED only biases the energy. */
+  int numAtoms=0;
+  plumed_cmd(plumedmain,"createFullList",&numAtoms);
+  const int* atoms=nullptr;
+  plumed_cmd(plumedmain,"getFullList",&atoms);
+  bool found=false;
+  for(int i=0; i<numAtoms && !found; i++) found=isVirtualSite[atoms[i]];
+  plumed_cmd(plumedmain,"clearFullList",nullptr);
+  return found;
+}
+/* END PLUMED */
 
 using gmx::SimulationSignaller;
 
@@ -218,6 +237,7 @@ void gmx::LegacySimulator::do_md()
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
     matrix plumed_vir;
+    std::vector<bool> plumedIsVirtualSite; // which atoms are virtual sites, empty if there are none
     real lambdaForce=0;
     real realFepState=0;
     /* END PLUMED */
@@ -828,6 +848,13 @@ void gmx::LegacySimulator::do_md()
       real real_delta_t=ir->delta_t;
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",nullptr);
+      if(virtualSites_){
+        /* The forces that PLUMED applies on virtual sites in the energy path are spread below */
+        plumedIsVirtualSite.assign(topGlobal_.natoms,false);
+        for(const AtomProxy atomP : AtomRange(topGlobal_)){
+          plumedIsVirtualSite[atomP.globalAtomNumber()]=(atomP.atom().ptype==ParticleType::VSite);
+        }
+      }
 
       if(haveDDAtomOrdering(*cr_)) {
         int nat_home = dd_numHomeAtoms(*cr_->dd);
@@ -1535,6 +1562,14 @@ void gmx::LegacySimulator::do_md()
                 plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",nullptr);
                 msmul(plumed_vir,0.5,force_vir);
+                if(virtualSites_ && plumedUsesVirtualSites(plumedIsVirtualSite)){
+                  /* do_force() already spread the forces on the virtual sites and cleared them:
+                     spread those that PLUMED applied, with their virial */
+                  matrix vsiteVir={{0}};
+                  virtualSites_->spreadForces(state_->x.arrayRefWithPadding().unpaddedArrayRef(),f.view().force(),
+                                              VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb_,state_->box,wallCycleCounters_);
+                  m_add(force_vir,vsiteVir,force_vir);
+                }
               } else {
                 msmul(plumed_vir,0.5,plumed_vir);
                 m_add(force_vir,plumed_vir,force_vir);
