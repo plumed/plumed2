@@ -198,6 +198,14 @@ public:
     virtual bool prepareStep(int64_t /*step*/, bool /*isCheckpointingStep*/) { return false; }
 
     /*! \brief
+     * Whether this provider asks to stop the simulation, after the forces it computed last.
+     *
+     * Used by PLUMED, e.g. when COMMITTOR finds the system in a basin. The MD loop gets the
+     * request through a stop condition registered with the StopHandlerBuilder.
+     */
+    virtual bool requestsStop() const { return false; }
+
+    /*! \brief
      * Optional callback after the potential energy has been accumulated
      * and the total force buffer is complete.
      *
@@ -255,6 +263,9 @@ public:
 
     //! Prepares all providers for \p step, and returns whether any needs the potential energy.
     bool prepareStep(int64_t step, bool isCheckpointingStep) const;
+
+    //! Whether any provider asks to stop the simulation.
+    bool requestsStop() const;
 
     //! Forwards applyAfterPotentialEnergy() to all providers.
     void applyAfterPotentialEnergy(bool energyWasComputed,

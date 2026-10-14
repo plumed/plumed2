@@ -138,6 +138,7 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
@@ -2351,6 +2352,37 @@ int Mdrunner::mdrunner()
             simulatorBuilder.add(SimulatorStateData(
                     globalState.get(), localState, &observablesHistory, &enerd, &ekind));
             simulatorBuilder.add(std::move(membedHolder));
+            /* PLUMED */
+            if (fr->forceProviders != nullptr && isSimulationMainRank)
+            {
+                /* PLUMED can ask to stop the simulation, e.g. COMMITTOR. As a stop condition, the
+                   request reaches all ranks and the simulations that share state, in both the
+                   legacy and the modular simulator. The simulation stops after the next step
+                   with global communication. The request is the same on all ranks, so only
+                   the main rank signals it, which also keeps the summed signal small.
+                   The modular simulator stops at the next neighbor-search step: when asked to
+                   stop at another step, it clears the task queue it is running, and crashes. */
+                const StopSignal plumedStopSignal = useModularSimulator ? StopSignal::stopAtNextNSStep
+                                                                        : StopSignal::stopImmediately;
+                stopHandlerBuilder_->registerStopCondition(
+                        [forceProviders = fr->forceProviders,
+                         plumedStopSignal,
+                         fplog,
+                         reported = std::make_shared<bool>(false)]()
+                        {
+                            if (!forceProviders->requestsStop())
+                            {
+                                return StopSignal::noSignal;
+                            }
+                            if (fplog != nullptr && !*reported)
+                            {
+                                fprintf(fplog, "\n\nPLUMED asked to stop the simulation\n\n");
+                                *reported = true;
+                            }
+                            return plumedStopSignal;
+                        });
+            }
+            /* END PLUMED */
             simulatorBuilder.add(std::move(stopHandlerBuilder_));
             simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));
 

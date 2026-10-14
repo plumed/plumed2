@@ -81,6 +81,7 @@ public:
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
     bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    bool requestsStop() const override;
     void applyAfterPotentialEnergy(bool energyWasComputed,
                                    real* potentialEnergy,
                                    ArrayRef<RVec> force,

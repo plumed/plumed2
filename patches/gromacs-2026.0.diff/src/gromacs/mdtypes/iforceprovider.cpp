@@ -109,6 +109,18 @@ bool ForceProviders::prepareStep(int64_t step, bool isCheckpointingStep) const
     return needed;
 }
 
+bool ForceProviders::requestsStop() const
+{
+    for (const auto& provider : impl_->providers_)
+    {
+        if (provider.first->requestsStop())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ForceProviders::applyAfterPotentialEnergy(bool          energyWasComputed,
                                                real*         potentialEnergy,
                                                ArrayRef<RVec> force,

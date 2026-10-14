@@ -270,6 +270,11 @@ catch (const std::exception& ex)
             std::string("An error occurred while PLUMED was preparing the step\n:") + ex.what()));
 }
 
+bool PlumedForceProvider::requestsStop() const
+{
+    return plumedWantsToStop_ != 0;
+}
+
 void PlumedForceProvider::checkReplicaExchangeBias()
 {
     if (replex_)

@@ -91,6 +91,8 @@ public:
      * \param[in] isCheckpointingStep  whether GROMACS writes a checkpoint at \p step
      */
     bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    //! Whether PLUMED asked to stop the simulation during the last calculation
+    bool requestsStop() const override;
     /*! \brief Passes the potential energy to PLUMED and applies energy biases
      * \param[in]     energyWasComputed  whether the potential energy is valid this step
      * \param[in,out] potentialEnergy    the MD potential energy
