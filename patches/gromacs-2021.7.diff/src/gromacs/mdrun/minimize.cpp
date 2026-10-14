@@ -897,6 +897,12 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     matrix plumed_vir;
     if(plumedswitch){
       long int lstep=count; plumed_cmd(plumedmain,"setStepLong",&lstep);
+      if(DOMAINDECOMP(cr)) {
+        /* The atoms can have been repartitioned since the last call, e.g. by em_dd_partition_system() */
+        int nat_home = dd_numHomeAtoms(*cr->dd);
+        plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+        plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
+      }
       plumed_cmd(plumedmain,"setPositions",&ems->s.x[0][0]);
       plumed_cmd(plumedmain,"setMasses",&mdAtoms->mdatoms()->massT[0]);
       plumed_cmd(plumedmain,"setCharges",&mdAtoms->mdatoms()->chargeA[0]);
