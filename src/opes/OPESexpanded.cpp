@@ -55,6 +55,8 @@ Its value is also needed for restarting a simulation.
 
 You can store the instantaneous $\Delta F_n(\lambda)$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
 Restart can be done either from a DELTAFS file or from a STATE_RFILE, it is equivalent.
+To continue a simulation with a static bias, for example once the $\Delta F(\lambda)$ estimates have converged, restart and add UPDATE_UNTIL=0.
+The $\Delta F(\lambda)$ estimates are then no longer updated, and the bias remains the one read at restart.
 
 Contrary to [OPES_METAD](OPES_METAD.md), OPES_EXPANDED does not use kernel density estimation.
 
@@ -214,7 +216,11 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , rct_(0)
   , work_(0) {
 //set pace
-  parse("PACE",stride_);
+  long long pace=0;
+  parse("PACE",pace);
+  plumed_massert(pace>0 && static_cast<unsigned long long>(pace)<=std::numeric_limits<unsigned>::max(),
+                 "PACE must be greater than zero and no larger than "+std::to_string(std::numeric_limits<unsigned>::max()));
+  stride_=static_cast<unsigned>(pace);
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
   obs_cvs_.resize(obs_steps_*ncv_);
@@ -629,6 +635,13 @@ void OPESexpanded::update() {
         }
         updateDeltaF(all_bias[w]);
       }
+      if(calc_work_) { //the ECVs must be those of this walker
+        unsigned index_j=0;
+        for(unsigned k=0; k<pntrToECVsClass_.size(); k++) {
+          pntrToECVsClass_[k]->calculateECVs(&cvs[index_j]);
+          index_j+=pntrToECVsClass_[k]->getNumberOfArguments();
+        }
+      }
     }
 
     //write DeltaFs to file
@@ -673,8 +686,8 @@ void OPESexpanded::update() {
     }
   }
 
-//dump state if requested
-  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) ) {
+//dump state if requested, but not before initialization
+  if(obs_steps_==0 && ((wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()))) {
     dumpStateToFile();
   }
 }
@@ -847,10 +860,15 @@ void OPESexpanded::printDeltaF() {
 }
 
 void OPESexpanded::dumpStateToFile() {
+//only the first walker writes the state, the others would write on /dev/null,
+//and their fields would pile up since they never rewind
+  if(walker_rank_>0) {
+    return;
+  }
 //rewrite header or rewind file
   if(storeOldStates_) {
     stateOfile_.clearFields();
-  } else if(walker_rank_==0) {
+  } else {
     stateOfile_.rewind();
   }
 //define fields

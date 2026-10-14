@@ -1,0 +1,24 @@
+# vim:ft=plumed
+# ECV_CUSTOM without ADD_P0, with '_' in the ARG labels, on 2 MPI processes,
+# writing the STATE also during the observation phase (STATE_WSTRIDE is not a multiple of PACE).
+# The first DeltaFs after the observation must be the same as with ADD_P0 (see rt-ecv_custom)
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+
+t_1: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/500-1)*x
+t_2: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/1000-1)*x
+mc: ECV_CUSTOM ARG=t_1,t_2 TEMP=300
+opes: OPES_EXPANDED ...
+  FMT={% f}
+  ARG=mc.*
+  PACE=2
+  OBSERVATION_STEPS=10
+  PRINT_STRIDE=10
+  STATE_WFILE=State.data
+  STATE_WSTRIDE=3
+...
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
