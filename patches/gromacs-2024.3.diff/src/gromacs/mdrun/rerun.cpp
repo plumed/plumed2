@@ -438,6 +438,42 @@ void gmx::LegacySimulator::do_rerun()
         fprintf(fpLog_, "\n");
     }
 
+    /* PLUMED */
+    if(plumedswitch){
+      /* detect plumed API version */
+      int pversion=0;
+      plumed_cmd(plumedmain,"getApiVersion",&pversion);
+      /* setting kbT is only implemented with api>1) */
+      real kbT=ir->opts.ref_t[0]*gmx::c_boltz;
+      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+      if(pversion>2){
+        int res=1;
+        if( (startingBehavior_ != StartingBehavior::NewSimulation) ) plumed_cmd(plumedmain,"setRestart",&res);
+      }
+
+      if(PAR(cr_)){
+        if(haveDDAtomOrdering(*cr_)) {
+          plumed_cmd(plumedmain,"setMPIComm",&cr_->dd->mpi_comm_all);
+        }
+      }
+      plumed_cmd(plumedmain,"setNatoms",topGlobal_.natoms);
+      plumed_cmd(plumedmain,"setMDEngine","gromacs");
+      plumed_cmd(plumedmain,"setLog",fpLog_);
+      real real_delta_t=ir->delta_t;
+      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
+      plumed_cmd(plumedmain,"init",nullptr);
+
+      if(haveDDAtomOrdering(*cr_)) {
+        int nat_home = dd_numHomeAtoms(*cr_->dd);
+        plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+        plumed_cmd(plumedmain,"setAtomsGatindex",cr_->dd->globalAtomIndices.data());
+      }
+      realFepState = state_->fep_state;
+      plumed_cmd(plumedmain, "setExtraCV lambda", &realFepState);
+      plumed_cmd(plumedmain, "setExtraCVForce lambda", &lambdaForce);
+    }
+    /* END PLUMED */
+
     walltime_accounting_start_time(wallTimeAccounting_);
     wallcycle_start(wallCycleCounters_, WallCycleCounter::Run);
     print_start(fpLog_, cr_, wallTimeAccounting_, "mdrun");
@@ -607,6 +643,13 @@ void gmx::LegacySimulator::do_rerun()
                                 nrnb_,
                                 wallCycleCounters_,
                                 mdrunOptions_.verbose);
+            /* PLUMED */
+            if(plumedswitch){
+              int nat_home = dd_numHomeAtoms(*cr_->dd);
+              plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+              plumed_cmd(plumedmain,"setAtomsGatindex",cr_->dd->globalAtomIndices.data());
+            }
+            /* END PLUMED */
         }
 
         if (MAIN(cr_))
@@ -692,6 +735,23 @@ void gmx::LegacySimulator::do_rerun()
              * Check comments in sim_util.c
              */
             Awh* awh = nullptr;
+            /* PLUMED */
+            plumedNeedsEnergy=0;
+            if(plumedswitch){
+              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
+              plumed_cmd(plumedmain,"setPositions",&state_->x[0][0]);
+              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
+              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
+              plumed_cmd(plumedmain,"setBox",&state_->box[0][0]);
+              plumed_cmd(plumedmain,"prepareCalc",nullptr);
+              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
+              plumed_cmd(plumedmain,"setForces",&f.view().force()[0][0]);
+              /* the energy and the virial are always computed in a rerun (force_flags above) */
+              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              clear_mat(plumed_vir);
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+            }
+            /* END PLUMED */
 
             try
             {
