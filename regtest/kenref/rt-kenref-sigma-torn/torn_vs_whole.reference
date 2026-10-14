@@ -1,0 +1,4 @@
+colvar: same
+forces: same
+frames differ: yes
+forces are non-zero: yes

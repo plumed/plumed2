@@ -91,6 +91,12 @@ that maps atom names to indices, and is also used as the reference structure whe
 before the observable is computed, and the derivatives are rotated back afterwards. `SATURATE_FORCES`
 clamps the resulting force to `MAX_FORCE`.
 
+The restraint needs whole molecules: the fit uses all `GUIDE_ATOMS` at once and the atom-pair distances
+have no cutoff. At every step KENREF therefore moves each atom it reads to the periodic image nearest its
+neighbour in a spanning tree built from the reference structure. The reference must be whole itself; if
+one edge of that tree is not shorter than half the smallest box width, KENREF stops with an error.
+Coordinates that are already whole are left unchanged.
+
 The action outputs its restraint energy as `.energy` (equal to `.bias`) and, as a diagnostic, the RMSD
 from the reference as `.rmsd`.
 
@@ -179,7 +185,8 @@ void KEnRefBias::registerKeywords(Keywords &keys) {
 //  Helpers: current PLUMED positions (nm) -> Angstrom Eigen
 // ============================================================
 CoordsMatrixType<KEnRef_Real_t> KEnRefBias::getGuideAtomsX() const {
-  const std::vector<Vector> &pos = getPositions();
+  // Periodically repaired positions, not getPositions(): see makeRequestedAtomsWhole().
+  const std::vector<Vector> &pos = wholePositions_;
   const int nGuide = static_cast<int>(guideAtoms_.size());
   CoordsMatrixType<KEnRef_Real_t> gx(nGuide, 3);
   for (int i = 0; i < nGuide; ++i) {
@@ -192,7 +199,8 @@ CoordsMatrixType<KEnRef_Real_t> KEnRefBias::getGuideAtomsX() const {
 }
 
 void KEnRefBias::fillSubAtomsX(CoordsMatrixType<KEnRef_Real_t> &out) const {
-  const std::vector<Vector> &pos = getPositions();
+  // Periodically repaired positions, not getPositions(): see makeRequestedAtomsWhole().
+  const std::vector<Vector> &pos = wholePositions_;
   for (int i = 0; i < out.rows(); ++i) {
     const int serial = sub0Id_to_global1Serial_[i];
     const int li = serial_to_localIdx_.at(serial);
@@ -220,6 +228,10 @@ int KEnRefBias::numOmpThreads() const {
 void KEnRefBias::getLocalModelX(int /*localModel*/, CoordsMatrixType<KEnRef_Real_t> &guideX,
                                 CoordsMatrixType<KEnRef_Real_t> &subX,
                                 Eigen::Matrix<KEnRef_Real_t, 3, 3> &box) const {
+  /* Repair first, for the WHOLE requested set, before a single coordinate is read. KEnRef restrains a
+   * whole molecule -- global Kabsch fit, pair distances with no cutoff -- so a molecule split across a
+   * periodic boundary would give a different energy and different forces. */
+  makeRequestedAtomsWhole();
   guideX = getGuideAtomsX();
   subX.resize(numSubAtoms_, 3);
   fillSubAtomsX(subX);

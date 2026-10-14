@@ -16,6 +16,17 @@ keyword:
 Because the observables are ensemble averages, `RELAX` requires at least two replicas; run PLUMED with
 `--multi` in the usual way. `SIGMA` and `PLATEAUS` also work with a single replica.
 
+KENREF makes the atoms it reads whole at every step, using the reference structure, which must therefore
+be whole (see [KENREF](KENREF.md)). Builds of the `master` branch made before this was added (October
+2026) do not do it, and stop with an error when a molecule is split across the box. With those, make the
+molecule whole before `KENREF`, using a whole reference:
+
+```plumed
+#SETTINGS MOLFILE=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb
+MOLINFO STRUCTURE=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb WHOLE
+WHOLEMOLECULES ENTITY0=1-98
+```
+
 ## Installation
 
 This module is not compiled by default. It requires the KEnRef core library, which supplies both the
