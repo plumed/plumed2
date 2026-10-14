@@ -1506,6 +1506,17 @@ void gmx::LegacySimulator::do_md()
                   if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
                   plumed_cmd(plumedmain,"setForces",&f.view().force()[0][0]);
                   plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+                  if(plumedNeedsEnergy && simulationWork.useMts && !do_per_step(step,ir->mtsLevels.back().stepFactor)){
+                    gmx_fatal(FARGS,
+                              "PLUMED needs the potential energy at step %" PRId64
+                              ", but with multiple time stepping the slow forces, and so the "
+                              "potential energy, are computed only every %d steps "
+                              "(mts-level2-factor). Use a PLUMED input that needs the energy only "
+                              "on those steps (e.g. no bias on ENERGY), or do not use multiple time "
+                              "stepping.",
+                              step,
+                              ir->mtsLevels.back().stepFactor);
+                  }
                   if(plumedNeedsEnergy) {
                     /* GROMACS >= 2024 ignores force_flags at the do_force call:
                        stepWork was already built above, so rebuild it here. */
@@ -1558,6 +1569,12 @@ void gmx::LegacySimulator::do_md()
             /* PLUMED */
             if(plumedswitch){
               if(plumedNeedsEnergy){
+                ArrayRef<RVec> forceForPlumed=f.view().force();
+                if(simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0){
+                  /* On the slow steps the update uses the combined MTS force buffer */
+                  forceForPlumed=f.view().forceMtsCombined();
+                  plumed_cmd(plumedmain,"setForces",&forceForPlumed[0][0]);
+                }
                 msmul(force_vir,2.0,plumed_vir);
                 plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",nullptr);
@@ -1566,7 +1583,7 @@ void gmx::LegacySimulator::do_md()
                   /* do_force() already spread the forces on the virtual sites and cleared them:
                      spread those that PLUMED applied, with their virial */
                   matrix vsiteVir={{0}};
-                  virtualSites_->spreadForces(state_->x.arrayRefWithPadding().unpaddedArrayRef(),f.view().force(),
+                  virtualSites_->spreadForces(state_->x.arrayRefWithPadding().unpaddedArrayRef(),forceForPlumed,
                                               VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb_,state_->box,wallCycleCounters_);
                   m_add(force_vir,vsiteVir,force_vir);
                 }
