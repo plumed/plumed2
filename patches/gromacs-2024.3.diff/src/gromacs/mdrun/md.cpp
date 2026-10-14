@@ -2380,6 +2380,10 @@ void gmx::LegacySimulator::do_md()
             /* Have to do this part _after_ outputting the logfile and the edr file */
             /* Gets written into the state at the beginning of next loop*/
             state_->fep_state = lamnew;
+            if(plumedswitch)
+            {
+                realFepState = state_->fep_state;
+            }
         }
         else if (ir->bDoAwh && awh->needForeignEnergyDifferences(step))
         {
