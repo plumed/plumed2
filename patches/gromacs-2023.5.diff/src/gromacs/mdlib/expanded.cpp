@@ -861,8 +861,9 @@ static int ChooseNewLambda(int               nlim,
     starting_fep_state = fep_state;
     lamnew             = fep_state; /* so that there is a default setting -- stays the same */
 
-    // Don't equilibrate weights when using PLUMED
-    if (!plumedswitch || !EWL(expand->elamstats)) /* ignore equilibrating the weights if using WL */
+    // Don't equilibrate the weights when using the PLUMED bias as weights (lmc-stats = no)
+    if ((!plumedswitch || expand->elamstats != LambdaWeightCalculation::No) /* PLUMED */
+        && !EWL(expand->elamstats)) /* ignore equilibrating the weights if using WL */
     {
         if ((expand->lmc_forced_nstart > 0) && (dfhist->n_at_lam[nlim - 1] <= expand->lmc_forced_nstart))
         {
@@ -1177,8 +1178,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
     if (step % frequency == 0)
     {
         fprintf(outfile, "             MC-lambda information\n");
-        // Ignore Wang-Landau when using plumed
-        if (EWL(expand->elamstats) && (!(dfhist->bEquil)) && !plumedswitch) /* PLUMED */
+        if (EWL(expand->elamstats) && (!(dfhist->bEquil)))
         {
             fprintf(outfile, "  Wang-Landau incrementor is: %11.5g\n", dfhist->wl_delta);
         }
@@ -1230,8 +1230,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     fprintf(outfile, "%9.3f", simtemp->temperatures[ifep]);
                 }
             }
-            // No Wang-Landau when using Plumed
-            if (EWL(expand->elamstats) && (!plumedswitch) /* PLUMED */
+            if (EWL(expand->elamstats)
                 && (!(dfhist->bEquil))) /* if performing WL and still haven't equilibrated */
             {
                 if (expand->elamstats == LambdaWeightCalculation::WL)
@@ -1449,7 +1448,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
         weighted_lamee[i] -= maxweighted;
     }
 
-    if (plumedswitch && !EWL(expand->elamstats)) /* PLUMED */
+    if (plumedswitch && expand->elamstats == LambdaWeightCalculation::No) /* PLUMED */
     {
         // Update weights at all lambda states with current values from Plumed.
         // For acceptance criterion, expanded ensemble is expecting the weight at
@@ -1471,7 +1470,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
         }
         *realFepState = fep_state;
     }
-    else // Don't update weights using different method when PLUMED is active
+    else // Don't update the weights with another method when using the PLUMED bias
     {
         /* update weights - we decide whether or not to actually do this inside */
  
