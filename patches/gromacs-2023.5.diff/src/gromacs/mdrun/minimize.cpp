@@ -1063,6 +1063,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     /* PLUMED */
     int plumedNeedsEnergy=0;
     matrix plumed_vir;
+    bool plumedAfterForces=false;
     if(plumedswitch){
       long int lstep=count; plumed_cmd(plumedmain,"setStepLong",&lstep);
       if(haveDDAtomOrdering(*cr)) {
@@ -1080,6 +1081,10 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
       plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
       clear_mat(plumed_vir);
       plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+      /* GROMACS computes the virial here, so PLUMED runs after do_force(), as when it needs the
+         energy: inside do_force(), its forces would also enter the virial of GROMACS */
+      plumedAfterForces=true;
+      plumedswitch=0;
     }
     /* END PLUMED */
     do_force(fplog,
@@ -1114,23 +1119,26 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              DDBalanceRegionHandler(cr));
 
     /* PLUMED */
+    if(plumedAfterForces) plumedswitch=1;
     if(plumedswitch){
-      if(plumedNeedsEnergy) {
+      if(plumedNeedsEnergy){
         msmul(force_vir,2.0,plumed_vir);
         plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-        plumed_cmd(plumedmain,"performCalc",nullptr);
+      }
+      plumed_cmd(plumedmain,"performCalc",nullptr);
+      if(plumedNeedsEnergy){
         msmul(plumed_vir,0.5,force_vir);
-        if(vsite){
-          /* do_force() already spread the forces on the virtual sites and cleared them:
-             spread those that PLUMED applied, with their virial */
-          matrix vsiteVir={{0}};
-          vsite->spreadForces(ems->s.x.arrayRefWithPadding().unpaddedArrayRef(),ems->f.view().force(),
-                              VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb,ems->s.box,wcycle);
-          m_add(force_vir,vsiteVir,force_vir);
-        }
       } else {
         msmul(plumed_vir,0.5,plumed_vir);
         m_add(force_vir,plumed_vir,force_vir);
+      }
+      if(vsite){
+        /* do_force() already spread the forces on the virtual sites and cleared them:
+           spread those that PLUMED applied, with their virial */
+        matrix vsiteVir={{0}};
+        vsite->spreadForces(ems->s.x.arrayRefWithPadding().unpaddedArrayRef(),ems->f.view().force(),
+                            VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb,ems->s.box,wcycle);
+        m_add(force_vir,vsiteVir,force_vir);
       }
     }
     /* END PLUMED */

@@ -238,6 +238,7 @@ void gmx::LegacySimulator::do_md()
     int plumedWantsToStop=0;
     matrix plumed_vir;
     std::vector<bool> plumedIsVirtualSite; // which atoms are virtual sites, empty if there are none
+    bool plumedAfterForces=false; // whether PLUMED runs after do_force() on this step
     real lambdaForce=0;
     real realFepState=0;
     /* END PLUMED */
@@ -1511,6 +1512,7 @@ void gmx::LegacySimulator::do_md()
 
                 /* PLUMED */
                 plumedNeedsEnergy=0;
+                plumedAfterForces=false;
                 if(plumedswitch){
                   int pversion=0;
                   plumed_cmd(plumedmain,"getApiVersion",&pversion);
@@ -1553,6 +1555,10 @@ void gmx::LegacySimulator::do_md()
                   }
                   clear_mat(plumed_vir);
                   plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+                  /* When GROMACS computes the virial, PLUMED runs after do_force(), as when it needs the energy:
+                     inside do_force(), its forces would also enter the virial of GROMACS, on top of its own one */
+                  plumedAfterForces = plumedNeedsEnergy || runScheduleWork_->stepWork.computeVirial;
+                  if(plumedAfterForces) plumedswitch=0;
                 }
                 /* END PLUMED */
                 do_force(fpLog_,
@@ -1586,18 +1592,26 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             /* PLUMED */
+            if(plumedAfterForces) plumedswitch=1;
             if(plumedswitch){
-              if(plumedNeedsEnergy){
+              if(plumedAfterForces){
                 ArrayRef<RVec> forceForPlumed=f.view().force();
                 if(simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0){
                   /* On the slow steps the update uses the combined MTS force buffer */
                   forceForPlumed=f.view().forceMtsCombined();
                   plumed_cmd(plumedmain,"setForces",&forceForPlumed[0][0]);
                 }
-                msmul(force_vir,2.0,plumed_vir);
-                plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
+                if(plumedNeedsEnergy){
+                  msmul(force_vir,2.0,plumed_vir);
+                  plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
+                }
                 plumed_cmd(plumedmain,"performCalc",nullptr);
-                msmul(plumed_vir,0.5,force_vir);
+                if(plumedNeedsEnergy){
+                  msmul(plumed_vir,0.5,force_vir);
+                } else {
+                  msmul(plumed_vir,0.5,plumed_vir);
+                  m_add(force_vir,plumed_vir,force_vir);
+                }
                 if(virtualSites_ && plumedUsesVirtualSites(plumedIsVirtualSite)){
                   /* do_force() already spread the forces on the virtual sites and cleared them:
                      spread those that PLUMED applied, with their virial */

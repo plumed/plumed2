@@ -221,6 +221,7 @@ void gmx::LegacySimulator::do_rerun()
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
     matrix plumed_vir;
+    bool plumedAfterForces=false;
     real lambdaForce=0;
     real realFepState=0;
     /* END PLUMED */
@@ -631,6 +632,7 @@ void gmx::LegacySimulator::do_rerun()
             gmx_edsam* ed  = nullptr;
             /* PLUMED */
             plumedNeedsEnergy=0;
+            plumedAfterForces=false;
             if(plumedswitch){
               int pversion=0;
               plumed_cmd(plumedmain,"getApiVersion",&pversion);
@@ -646,6 +648,10 @@ void gmx::LegacySimulator::do_rerun()
               if(plumedNeedsEnergy) force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
               clear_mat(plumed_vir);
               plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+              /* GROMACS computes the virial here, so PLUMED runs after do_force(), as when it needs the
+                 energy: inside do_force(), its forces would also enter the virial of GROMACS */
+              plumedAfterForces=true;
+              plumedswitch=0;
             }
             /* END PLUMED */
             do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession, pull_work, step, nrnb,
@@ -654,11 +660,14 @@ void gmx::LegacySimulator::do_rerun()
                      fr, runScheduleWork, vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
             /* PLUMED */
+            if(plumedAfterForces) plumedswitch=1;
             if(plumedswitch){
               if(plumedNeedsEnergy){
                 msmul(force_vir,2.0,plumed_vir);
                 plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-                plumed_cmd(plumedmain,"performCalc",nullptr);
+              }
+              plumed_cmd(plumedmain,"performCalc",nullptr);
+              if(plumedNeedsEnergy){
                 msmul(plumed_vir,0.5,force_vir);
               } else {
                 msmul(plumed_vir,0.5,plumed_vir);
