@@ -1242,6 +1242,9 @@ void gmx::LegacySimulator::do_md()
                                   wcycle,
                                   do_verbose && !bPMETunePrinting);
           }
+          /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
+             calculate (and e.g. deposit or print) again for the previous step inside do_force() */
+          plumedswitch=0;
           do_force(fplog,
                    cr,
                    ms,
@@ -1278,6 +1281,7 @@ void gmx::LegacySimulator::do_md()
                    GMX_FORCE_NS,
                    ddBalanceRegionHandler);
 
+          plumedswitch=1;
           plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&(&hrex_enerd)->term[F_EPOT]);
 
           /* exchange back */
