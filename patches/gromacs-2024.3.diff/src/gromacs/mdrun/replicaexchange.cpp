@@ -528,6 +528,12 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
         snew(re->de[i], re->nrepl);
     }
     re->nex = replExParams.numExchanges;
+    /* PLUMED */
+    if(plumedswitch && re->nex > 1) {
+      /* the multiple-exchange code below does not include the PLUMED bias, nor calls GREX calculate */
+      gmx_fatal(FARGS,"PLUMED is not compatible with multiple exchanges (-nex)");
+    }
+    /* END PLUMED */
     return re;
 }
 
