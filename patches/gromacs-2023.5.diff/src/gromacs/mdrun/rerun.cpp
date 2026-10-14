@@ -955,7 +955,8 @@ void gmx::LegacySimulator::do_rerun()
         if (MAIN(cr))
         {
             /* read next frame from input trajectory */
-            isLastStep = !read_next_frame(oenv, status, &rerun_fr);
+            /* PLUMED: keep a stop request from PLUMED */
+            isLastStep = isLastStep || !read_next_frame(oenv, status, &rerun_fr);
         }
 
         if (PAR(cr))
