@@ -109,13 +109,29 @@ bool ForceProviders::prepareStep(int64_t step, bool isCheckpointingStep) const
     return needed;
 }
 
-void ForceProviders::applyAfterPotentialEnergy(bool          energyWasComputed,
+bool ForceProviders::requestsStop() const
+{
+    for (const auto& provider : impl_->providers_)
+    {
+        if (provider.first->requestsStop())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ForceProviders::applyAfterPotentialEnergy(bool          energyWasComputed,
                                                real*         potentialEnergy,
                                                ArrayRef<RVec> force,
                                                tensor        virial) const
 {
+    bool forcesOnVirtualSites = false;
     for (auto& provider : impl_->providers_)
     {
-        provider.first->applyAfterPotentialEnergy(energyWasComputed, potentialEnergy, force, virial);
+        forcesOnVirtualSites = provider.first->applyAfterPotentialEnergy(
+                                       energyWasComputed, potentialEnergy, force, virial)
+                               || forcesOnVirtualSites;
     }
+    return forcesOnVirtualSites;
 }
