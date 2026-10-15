@@ -234,8 +234,10 @@ void DomainDecomposition::Set_comm(Communicator& newcomm) {
   setAtomsNlocal(getNumberOfAtoms());
   setAtomsContiguous(0);
   if( dd.Get_rank()!=0 ) {
+    // The virial computed by PLUMED is added on the first rank only. The virial of the
+    // MD code is instead spread over all ranks, so each rank still rescales its share (ENERGY)
     ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-    ap->noforce=true;
+    ap->forces_added_elsewhere=true;
   }
 }
 
@@ -601,9 +603,17 @@ void DomainDecomposition::wait() {
       Communicator::Status status;
       std::size_t count=0;
       for(int i=0; i<dd.Get_size(); i++) {
-        dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
-        int c=status.Get_count<int>();
-        dd.Recv(&dd.positionsToBeReceived[ndata*count],dd.positionsToBeReceived.size()-ndata*count,i,667);
+        plumed_assert(count<=dd.positionsToBeReceived.size()/ndata);
+        const std::size_t remaining=dd.indexToBeReceived.size()-count;
+        const std::size_t remainingData=dd.positionsToBeReceived.size()-ndata*count;
+        // Empty ranks still send messages after an earlier rank fills the buffer.
+        // Avoid indexing one past the end, including for zero-sized storage.
+        int* indices=remaining ? dd.indexToBeReceived.data()+count : nullptr;
+        double* positionData=remainingData ? dd.positionsToBeReceived.data()+ndata*count : nullptr;
+        dd.Recv(indices,remaining,i,666,status);
+        const int c=status.Get_count<int>();
+        plumed_assert(c>=0 && static_cast<std::size_t>(c)<=remaining);
+        dd.Recv(positionData,remainingData,i,667);
         count+=c;
       }
       for(unsigned i=0; i<count; i++) {

@@ -767,15 +767,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(mw_dir_!="") {
         log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       }
-      if(comm.Get_rank()==0) {
-        // Only root of group can communicate with other walkers
-        mpi_nw_ = multi_sim_comm.Get_size();
-        mpi_id_ = multi_sim_comm.Get_rank();
-      }
-      // Communicate to the other members of the same group
-      // info abount number of walkers and walker index
-      comm.Bcast(mpi_nw_,0);
-      comm.Bcast(mpi_id_,0);
+      mpi_nw_=getNumberOfReplicas();
+      mpi_id_=getReplicaIndex();
     }
   }
 
@@ -959,11 +952,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     ofile->link(*this);
     // if MPI multiple walkers, only rank 0 will write to file
     if(walkers_mpi_) {
-      int r=0;
-      if(comm.Get_rank()==0) {
-        r=multi_sim_comm.Get_rank();
-      }
-      comm.Bcast(r,0);
+      int r=getReplicaIndex();
       if(r>0) {
         ifilesnames_[mw_id_*hillsfname_.size()+i]="/dev/null";
       }
@@ -996,11 +985,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       ofile->link(*this);
       std::string gridfname_tmp = gridfilenames_[i];
       if(walkers_mpi_) {
-        int r = 0;
-        if(comm.Get_rank() == 0) {
-          r = multi_sim_comm.Get_rank();
-        }
-        comm.Bcast(r, 0);
+        int r=getReplicaIndex();
         if(r>0) {
           gridfname_tmp = "/dev/null";
         }
@@ -1384,10 +1369,7 @@ void PBMetaD::update() {
   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
     int r = 0;
     if(walkers_mpi_) {
-      if(comm.Get_rank()==0) {
-        r=multi_sim_comm.Get_rank();
-      }
-      comm.Bcast(r,0);
+      r=getReplicaIndex();
     }
     if(r==0) {
       for(unsigned i=0; i<gridfiles_.size(); ++i) {

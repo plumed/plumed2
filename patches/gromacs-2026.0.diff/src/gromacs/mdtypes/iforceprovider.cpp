@@ -98,24 +98,40 @@ void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInpu
     }
 }
 
-bool ForceProviders::requestsPotentialEnergy(int64_t step) const
+bool ForceProviders::prepareStep(int64_t step, bool isCheckpointingStep) const
 {
     bool needed = false;
     for (auto& provider : impl_->providers_)
     {
         // Every provider is asked, they may need the call to prepare for the step.
-        needed = provider.first->requestsPotentialEnergy(step) || needed;
+        needed = provider.first->prepareStep(step, isCheckpointingStep) || needed;
     }
     return needed;
 }
 
-void ForceProviders::applyAfterPotentialEnergy(bool          energyWasComputed,
+bool ForceProviders::requestsStop() const
+{
+    for (const auto& provider : impl_->providers_)
+    {
+        if (provider.first->requestsStop())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ForceProviders::applyAfterPotentialEnergy(bool          energyWasComputed,
                                                real*         potentialEnergy,
                                                ArrayRef<RVec> force,
                                                tensor        virial) const
 {
+    bool forcesOnVirtualSites = false;
     for (auto& provider : impl_->providers_)
     {
-        provider.first->applyAfterPotentialEnergy(energyWasComputed, potentialEnergy, force, virial);
+        forcesOnVirtualSites = provider.first->applyAfterPotentialEnergy(
+                                       energyWasComputed, potentialEnergy, force, virial)
+                               || forcesOnVirtualSites;
     }
+    return forcesOnVirtualSites;
 }

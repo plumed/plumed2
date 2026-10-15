@@ -160,6 +160,7 @@
 
 /* PLUMED */
 #include "../../../Plumed.h"
+#include "gromacs/topology/mtop_atomloops.h"
 extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
@@ -167,6 +168,24 @@ extern plumed plumedmain;
 /* PLUMED HREX */
 extern int plumed_hrex;
 /* END PLUMED HREX */
+
+/* PLUMED */
+//! Whether the atoms that PLUMED used on this step include virtual sites
+static bool plumedUsesVirtualSites(const std::vector<bool>& isVirtualSite)
+{
+  if(isVirtualSite.empty()) return false;
+  /* PLUMED applies forces only on the atoms it uses. Their list is the same on all ranks,
+     so that all take the same decision. It is empty when PLUMED only biases the energy. */
+  int numAtoms=0;
+  plumed_cmd(plumedmain,"createFullList",&numAtoms);
+  const int* atoms=nullptr;
+  plumed_cmd(plumedmain,"getFullList",&atoms);
+  bool found=false;
+  for(int i=0; i<numAtoms && !found; i++) found=isVirtualSite[atoms[i]];
+  plumed_cmd(plumedmain,"clearFullList",nullptr);
+  return found;
+}
+/* END PLUMED */
 
 using gmx::SimulationSignaller;
 
@@ -218,6 +237,8 @@ void gmx::LegacySimulator::do_md()
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
     matrix plumed_vir;
+    std::vector<bool> plumedIsVirtualSite; // which atoms are virtual sites, empty if there are none
+    bool plumedAfterForces=false; // whether PLUMED runs after do_force() on this step
     real lambdaForce=0;
     real realFepState=0;
     /* END PLUMED */
@@ -795,6 +816,11 @@ void gmx::LegacySimulator::do_md()
 
     /* PLUMED */
     if(plumedswitch){
+      if(shellfc){
+        /* relax_shell_flexcon() calls do_force() without setting PLUMED up for the step */
+        gmx_fatal(FARGS,"PLUMED cannot be used with shell (polarizable) particles with this version of GROMACS: "
+                        "PLUMED would not be applied.");
+      }
       /* detect plumed API version */
       int pversion=0;
       plumed_cmd(plumedmain,"getApiVersion",&pversion);
@@ -828,6 +854,23 @@ void gmx::LegacySimulator::do_md()
       real real_delta_t=ir->delta_t;
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",nullptr);
+      if(MAIN(cr_)){
+        /* Stop through the stop handler, so that the request reaches all ranks and, as
+           simulationsShareState is set, the other simulations, and mdrun writes a checkpoint */
+        stopHandlerBuilder_->registerStopCondition(
+                [&plumedWantsToStop, logFile=fpLog_, reported=std::make_shared<bool>(false)]() {
+                  if(!plumedWantsToStop) return StopSignal::noSignal;
+                  if(logFile && !*reported){ fprintf(logFile,"\n\nPLUMED asked to stop the simulation\n\n"); *reported=true; }
+                  return StopSignal::stopImmediately;
+                });
+      }
+      if(virtualSites_){
+        /* The forces that PLUMED applies on virtual sites in the energy path are spread below */
+        plumedIsVirtualSite.assign(topGlobal_.natoms,false);
+        for(const AtomProxy atomP : AtomRange(topGlobal_)){
+          plumedIsVirtualSite[atomP.globalAtomNumber()]=(atomP.atom().ptype==ParticleType::VSite);
+        }
+      }
 
       if(haveDDAtomOrdering(*cr_)) {
         int nat_home = dd_numHomeAtoms(*cr_->dd);
@@ -1203,7 +1246,28 @@ void gmx::LegacySimulator::do_md()
                                   nrnb_,
                                   wallCycleCounters_,
                                   do_verbose && !bPMETunePrinting);
+              /* as GROMACS does after repartitioning */
+              upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+              fr_->longRangeNonbondeds->updateAfterPartition(*md);
           }
+          /* GROMACS >= 2024 takes the workload of do_force() from runScheduleWork_, which is only set up
+             later in the step: set it up here, with a pair search and the energy */
+          if (fr_->listedForcesGpu)
+          {
+              fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+          }
+          runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                  *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
+          runScheduleWork_->stepWork = setupStepWorkload(
+                  GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL
+                          | GMX_FORCE_ENERGY | GMX_FORCE_DHDL | GMX_FORCE_NS,
+                  ir->mtsLevels,
+                  step,
+                  runScheduleWork_->domainWork,
+                  simulationWork);
+          /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
+             calculate (and e.g. deposit or print) again for the previous step inside do_force() */
+          plumedswitch=0;
           do_force(fpLog_,
                    cr_,
                    ms_,
@@ -1235,6 +1299,7 @@ void gmx::LegacySimulator::do_md()
                    fr_->longRangeNonbondeds.get(),
                    ddBalanceRegionHandler);
 
+          plumedswitch=1;
           plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&(&hrex_enerd)->term[F_EPOT]);
 
           /* exchange back */
@@ -1277,6 +1342,9 @@ void gmx::LegacySimulator::do_md()
                                 nrnb_,
                                 wallCycleCounters_,
                                 do_verbose && !bPMETunePrinting);
+            /* as GROMACS does after repartitioning */
+            upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+            fr_->longRangeNonbondeds->updateAfterPartition(*md);
             int nat_home = dd_numHomeAtoms(*cr_->dd);
             plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
             plumed_cmd(plumedmain,"setAtomsGatindex",cr_->dd->globalAtomIndices.data());
@@ -1465,6 +1533,7 @@ void gmx::LegacySimulator::do_md()
 
                 /* PLUMED */
                 plumedNeedsEnergy=0;
+                plumedAfterForces=false;
                 if(plumedswitch){
                   int pversion=0;
                   plumed_cmd(plumedmain,"getApiVersion",&pversion);
@@ -1479,6 +1548,17 @@ void gmx::LegacySimulator::do_md()
                   if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
                   plumed_cmd(plumedmain,"setForces",&f.view().force()[0][0]);
                   plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+                  if(plumedNeedsEnergy && simulationWork.useMts && !do_per_step(step,ir->mtsLevels.back().stepFactor)){
+                    gmx_fatal(FARGS,
+                              "PLUMED needs the potential energy at step %" PRId64
+                              ", but with multiple time stepping the slow forces, and so the "
+                              "potential energy, are computed only every %d steps "
+                              "(mts-level2-factor). Use a PLUMED input that needs the energy only "
+                              "on those steps (e.g. no bias on ENERGY), or do not use multiple time "
+                              "stepping.",
+                              step,
+                              ir->mtsLevels.back().stepFactor);
+                  }
                   if(plumedNeedsEnergy) {
                     /* GROMACS >= 2024 ignores force_flags at the do_force call:
                        stepWork was already built above, so rebuild it here. */
@@ -1496,6 +1576,10 @@ void gmx::LegacySimulator::do_md()
                   }
                   clear_mat(plumed_vir);
                   plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+                  /* When GROMACS computes the virial, PLUMED runs after do_force(), as when it needs the energy:
+                     inside do_force(), its forces would also enter the virial of GROMACS, on top of its own one */
+                  plumedAfterForces = plumedNeedsEnergy || runScheduleWork_->stepWork.computeVirial;
+                  if(plumedAfterForces) plumedswitch=0;
                 }
                 /* END PLUMED */
                 do_force(fpLog_,
@@ -1529,18 +1613,39 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             /* PLUMED */
+            if(plumedAfterForces) plumedswitch=1;
             if(plumedswitch){
-              if(plumedNeedsEnergy){
-                msmul(force_vir,2.0,plumed_vir);
-                plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
+              if(plumedAfterForces){
+                ArrayRef<RVec> forceForPlumed=f.view().force();
+                if(simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0){
+                  /* On the slow steps the update uses the combined MTS force buffer */
+                  forceForPlumed=f.view().forceMtsCombined();
+                  plumed_cmd(plumedmain,"setForces",&forceForPlumed[0][0]);
+                }
+                if(plumedNeedsEnergy){
+                  msmul(force_vir,2.0,plumed_vir);
+                  plumed_cmd(plumedmain,"setEnergy",&enerd_->term[F_EPOT]);
+                }
                 plumed_cmd(plumedmain,"performCalc",nullptr);
-                msmul(plumed_vir,0.5,force_vir);
+                if(plumedNeedsEnergy){
+                  msmul(plumed_vir,0.5,force_vir);
+                } else {
+                  msmul(plumed_vir,0.5,plumed_vir);
+                  m_add(force_vir,plumed_vir,force_vir);
+                }
+                if(virtualSites_ && plumedUsesVirtualSites(plumedIsVirtualSite)){
+                  /* do_force() already spread the forces on the virtual sites and cleared them:
+                     spread those that PLUMED applied, with their virial */
+                  matrix vsiteVir={{0}};
+                  virtualSites_->spreadForces(state_->x.arrayRefWithPadding().unpaddedArrayRef(),forceForPlumed,
+                                              VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb_,state_->box,wallCycleCounters_);
+                  m_add(force_vir,vsiteVir,force_vir);
+                }
               } else {
                 msmul(plumed_vir,0.5,plumed_vir);
                 m_add(force_vir,plumed_vir,force_vir);
               }
               if(bDoReplEx) plumed_cmd(plumedmain,"GREX savePositions",nullptr);
-              if(plumedWantsToStop) bLastStep = true;
               if(bHREX) plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd_->term[F_EPOT]);
             }
             /* END PLUMED */
@@ -2281,6 +2386,10 @@ void gmx::LegacySimulator::do_md()
             /* Have to do this part _after_ outputting the logfile and the edr file */
             /* Gets written into the state at the beginning of next loop*/
             state_->fep_state = lamnew;
+            if(plumedswitch)
+            {
+                realFepState = state_->fep_state;
+            }
         }
         else if (ir->bDoAwh && awh->needForeignEnergyDifferences(step))
         {

@@ -106,7 +106,7 @@ GatherReplicas::GatherReplicas( const ActionOptions& ao ):
 
   std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   std::string min, max;
-  nreplicas=multi_sim_comm.Get_size();
+  nreplicas=getNumberOfReplicas();
   bool periodic=false;
   if( getPntrToArgument(0)->isPeriodic() ) {
     periodic=true;
@@ -152,6 +152,9 @@ void GatherReplicas::calculate() {
   if(comm.Get_rank()==0) {
     multi_sim_comm.Allgather(dval,datap);
   }
+  // Only rank 0 of each replica takes part in the gather; share the result with
+  // the other ranks of the replica, which would otherwise keep a zero-filled datap.
+  comm.Bcast(datap,0);
 
   for(unsigned k=0; k<nreplicas; k++) {
     Value* myout = getPntrToComponent(k);

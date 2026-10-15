@@ -1122,10 +1122,25 @@ void gmx::LegacySimulator::do_md()
                 (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                  | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
         /* PLUMED */
-        if (fr_->forceProviders != nullptr && fr_->forceProviders->requestsPotentialEnergy(step))
+        /* PLUMED is told here, before the force calculation, whether this step writes a
+           checkpoint, so that it writes its own checkpoint data on the same step. */
+        if (fr_->forceProviders != nullptr
+            && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep()))
         {
             /* setupStepWorkload() snapshots force_flags below, so PLUMED has to be
                asked for the potential energy before that, not from within do_force(). */
+            if (simulationWork.useMts && !do_per_step(step, ir->mtsLevels.back().stepFactor))
+            {
+                gmx_fatal(FARGS,
+                          "PLUMED needs the potential energy at step %" PRId64
+                          ", but with multiple time stepping the slow forces, and so the "
+                          "potential energy, are computed only every %d steps "
+                          "(mts-level2-factor). Use a PLUMED input that needs the energy only "
+                          "on those steps (e.g. no bias on ENERGY), or do not use multiple time "
+                          "stepping.",
+                          step,
+                          ir->mtsLevels.back().stepFactor);
+            }
             force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
         }
         /* END PLUMED */
@@ -1395,10 +1410,11 @@ void gmx::LegacySimulator::do_md()
             //       prior to GPU update.
             // TODO: When the output flags will be included in step workload, this copy can be combined with the
             //       copy call in do_force(...).
-            // NOTE: The forces should not be copied here if the vsites are present, since they were modified
+            // NOTE: The forces should not be copied here if the vsites or CPU-staged PP-PME comms are present, since they were modified
             //       on host after the D2H copy in do_force(...).
             if (runScheduleWork_->stepWork.useGpuFBufferOps
-                && (simulationWork.useGpuUpdate && !virtualSites_) && do_per_step(step, ir->nstfout))
+                && (simulationWork.useGpuUpdate && !virtualSites_ && !simulationWork.useCpuPmePpCommunication)
+                && do_per_step(step, ir->nstfout))
             {
                 stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);

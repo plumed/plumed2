@@ -46,7 +46,7 @@ QVALUE15=0.44
 ...
 
 PRINT ARG=(saxs\.q-.*) FILE=colvar STRIDE=1
-PRINT ARG=(saxsb\.q-.*) FILE=colvarb STRIDE=1
+PRINT ARG=(saxsb\.q-.*) FILE=colvarb STRIDE=1 FMT=%.4f
 
 BIASVALUE ARG=saxsb.q-0
 

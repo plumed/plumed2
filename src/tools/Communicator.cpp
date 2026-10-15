@@ -45,6 +45,7 @@ Communicator::Communicator()
 
 Communicator::Communicator(const Communicator&pc) {
   Set_comm(pc.communicator);
+  standIn=pc.standIn;
 }
 
 Communicator::Status Communicator::StatusIgnore;
@@ -52,11 +53,36 @@ Communicator::Status Communicator::StatusIgnore;
 Communicator& Communicator::operator=(const Communicator&pc) {
   if (this != &pc) {
     Set_comm(pc.communicator);
+    standIn=pc.standIn;
   }
   return *this;
 }
 
+void Communicator::setStandIn(bool s) {
+  standIn=s;
+}
+
+bool Communicator::isStandIn()const {
+  return standIn;
+}
+
+void Communicator::checkNotStandIn()const {
+  constexpr const char* msg="this communicator is a stand-in on this process: it was given to other processes but not to this one. "
+                            "For multi_sim_comm, this means that only the first process of each replica can use it. "
+                            "Use getNumberOfReplicas() and getReplicaIndex(), or use multi_sim_comm on the first process of comm and broadcast the result over comm.";
+#ifndef NDEBUG
+  if(standIn) {
+    // Typically only some processes get here. The log is written collectively,
+    // so the exception message might never reach it: print it right away.
+    std::fprintf(stderr,"\nPLUMED: ERROR (debug build): %s\n",msg);
+    std::fflush(stderr);
+  }
+#endif
+  plumed_dbg_massert(!standIn,msg);
+}
+
 int Communicator::Get_rank()const {
+  checkNotStandIn();
   int r=0;
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) {
@@ -67,6 +93,7 @@ int Communicator::Get_rank()const {
 }
 
 int Communicator::Get_size()const {
+  checkNotStandIn();
   int s=1;
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) {
@@ -77,6 +104,7 @@ int Communicator::Get_size()const {
 }
 
 void Communicator::Set_comm(MPI_Comm c) {
+  standIn=false;
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) {
     if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) {
@@ -135,6 +163,7 @@ void Communicator::Abort(int errorcode) {
 }
 
 void Communicator::Bcast(Data data,int root) {
+  checkNotStandIn();
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Bcast(data.pointer,data.size,data.type,root,communicator);
@@ -146,6 +175,7 @@ void Communicator::Bcast(Data data,int root) {
 }
 
 void Communicator::Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+  checkNotStandIn();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
@@ -169,6 +199,7 @@ void Communicator::Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recv
 }
 
 void Communicator::Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+  checkNotStandIn();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
@@ -192,6 +223,7 @@ void Communicator::Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvc
 }
 
 void Communicator::Sum(Data data) {
+  checkNotStandIn();
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_SUM,communicator);
@@ -202,6 +234,7 @@ void Communicator::Sum(Data data) {
 }
 
 void Communicator::Prod(Data data) {
+  checkNotStandIn();
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_PROD,communicator);
@@ -212,6 +245,7 @@ void Communicator::Prod(Data data) {
 }
 
 void Communicator::Max(Data data) {
+  checkNotStandIn();
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_MAX,communicator);
@@ -222,6 +256,7 @@ void Communicator::Max(Data data) {
 }
 
 void Communicator::Min(Data data) {
+  checkNotStandIn();
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_MIN,communicator);
@@ -232,6 +267,7 @@ void Communicator::Min(Data data) {
 }
 
 Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
+  checkNotStandIn();
   Request req;
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
@@ -247,6 +283,7 @@ Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
 }
 
 void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const int*displs) {
+  checkNotStandIn();
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
   int*rc=const_cast<int*>(recvcounts);
@@ -280,6 +317,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
 }
 
 void Communicator::Allgather(ConstData in,Data out) {
+  checkNotStandIn();
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
 #if defined(__PLUMED_HAS_MPI)
@@ -305,6 +343,7 @@ void Communicator::Allgather(ConstData in,Data out) {
 }
 
 void Communicator::Recv(Data data,int source,int tag,Status&status) {
+  checkNotStandIn();
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(&status==&StatusIgnore) {
@@ -322,6 +361,7 @@ void Communicator::Recv(Data data,int source,int tag,Status&status) {
 }
 
 void Communicator::Barrier()const {
+  checkNotStandIn();
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) {
     MPI_Barrier(communicator);
@@ -419,6 +459,7 @@ template<> MPI_Datatype Communicator::getMPIType<long double>() {
 #endif
 
 void Communicator::Split(int color,int key,Communicator&pc)const {
+  checkNotStandIn();
 #ifdef __PLUMED_HAS_MPI
   MPI_Comm_split(communicator,color,key,&pc.communicator);
 #else

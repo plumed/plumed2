@@ -268,6 +268,10 @@ void DataPassingObjectTyped<T>::rescale_force( const unsigned& n, const double& 
   }
   T* pp;
   getPointer( f, s, start, stride, pp );
+  // The MD code might not pass this buffer on every rank (e.g. the virial)
+  if( !pp ) {
+    return;
+  }
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pp,n))
   for(unsigned i=0; i<n; ++i) {
     pp[i*stride] *= T(factor);

@@ -29,7 +29,10 @@
 #include "tools/Random.h"
 #include "tools/Communicator.h"
 #include <chrono>
+#include <iomanip>
+#include <limits>
 #include <numeric>
+#include <sstream>
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -376,18 +379,11 @@ Metainference::Metainference(const ActionOptions&ao):
 
   // set up replica stuff
   master = (comm.Get_rank()==0);
-  if(master) {
-    nrep_    = multi_sim_comm.Get_size();
-    replica_ = multi_sim_comm.Get_rank();
-    if(noensemble) {
-      nrep_ = 1;
-    }
-  } else {
-    nrep_    = 0;
-    replica_ = 0;
+  nrep_    = getNumberOfReplicas();
+  replica_ = getReplicaIndex();
+  if(noensemble) {
+    nrep_ = 1;
   }
-  comm.Sum(&nrep_,1);
-  comm.Sum(&replica_,1);
 
   unsigned nsel = 1;
   parse("SELECTOR", selector_);
@@ -753,6 +749,7 @@ Metainference::Metainference(const ActionOptions&ao):
         }
       }
       // nsel
+      const bool restart_sigma_history=restart_sfile.FieldExist("sigmaMean2History_0_0");
       for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
         std::string msg_i;
         Tools::convert(i,msg_i);
@@ -777,6 +774,28 @@ Metainference::Metainference(const ActionOptions&ao):
             sigma_mean2_last_[i][j][0] = read_sm*read_sm;
           }
         }
+        if(restart_sigma_history) {
+          for(unsigned j=0; j<narg; ++j) {
+            std::string msg_j;
+            Tools::convert(j,msg_j);
+            std::string msg = msg_i+"_"+msg_j;
+            std::string read_history;
+            restart_sfile.scanField("sigmaMean2History_"+msg,read_history);
+            std::vector<std::string> history_values=Tools::getWords(read_history,",");
+            plumed_massert(!history_values.empty(),"empty sigma mean history in restart file");
+            if(optsigmamean_stride_>0) {
+              plumed_massert(history_values.size()<=optsigmamean_stride_,"sigma mean history is longer than AVERAGING in restart file");
+            } else {
+              plumed_massert(history_values.size()==1,"sigma mean history has invalid size in restart file");
+            }
+            sigma_mean2_last_[i][j].clear();
+            for(unsigned k=0; k<history_values.size(); ++k) {
+              double value;
+              Tools::convert(history_values[k],value);
+              sigma_mean2_last_[i][j].push_back(value);
+            }
+          }
+        }
       }
 
       for(unsigned i=0; i<sigma_.size(); ++i) {
@@ -788,7 +807,26 @@ Metainference::Metainference(const ActionOptions&ao):
         std::string msg;
         Tools::convert(i,msg);
         restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
+      }
+      if(do_optsigmamean_>1&&restart_sfile.FieldExist("optimized_step_")) {
+        restart_sfile.scanField("optimized_step_",optimized_step_);
+        sigmamax_opt_done_=optimized_step_>N_optimized_step_;
+        for(unsigned i=0; i<sigma_max_est_.size(); ++i) {
+          std::string msg;
+          Tools::convert(i,msg);
+          restart_sfile.scanField("sigma_max_est_"+msg,sigma_max_est_[i]);
+          if(sigmamax_opt_done_) {
+            restart_sfile.scanField("dsigma_"+msg,Dsigma_[i]);
+          } else {
+            double restart_Dsigma;
+            restart_sfile.scanField("dsigma_"+msg,restart_Dsigma);
+          }
+        }
+      } else {
         sigmamax_opt_done_=true;
+        if(do_optsigmamean_>1) {
+          optimized_step_=N_optimized_step_+1;
+        }
       }
       if(noise_type_==GENERIC) {
         for(unsigned i=0; i<ftilde_.size(); ++i) {
@@ -1993,6 +2031,26 @@ void Metainference::writeStatus() {
       sfile_.printField("sigmaMean_"+msg, max_now);
     }
   }
+  if(do_optsigmamean_>0) {
+    for(unsigned i=0; i<sigma_mean2_last_.size(); ++i) {
+      std::string msg_i;
+      Tools::convert(i,msg_i);
+      for(unsigned j=0; j<narg; ++j) {
+        std::string msg_j;
+        Tools::convert(j,msg_j);
+        std::string msg = msg_i+"_"+msg_j;
+        std::ostringstream history;
+        history << " " << std::setprecision(std::numeric_limits<double>::max_digits10);
+        for(unsigned k=0; k<sigma_mean2_last_[i][j].size(); ++k) {
+          if(k>0) {
+            history << ",";
+          }
+          history << sigma_mean2_last_[i][j][k];
+        }
+        sfile_.printField("sigmaMean2History_"+msg,history.str());
+      }
+    }
+  }
   for(unsigned i=0; i<sigma_.size(); ++i) {
     std::string msg;
     Tools::convert(i,msg);
@@ -2002,6 +2060,15 @@ void Metainference::writeStatus() {
     std::string msg;
     Tools::convert(i,msg);
     sfile_.printField("sigma_max_"+msg,sigma_max_[i]);
+  }
+  if(do_optsigmamean_>1) {
+    sfile_.printField("optimized_step_",optimized_step_);
+    for(unsigned i=0; i<sigma_max_est_.size(); ++i) {
+      std::string msg;
+      Tools::convert(i,msg);
+      sfile_.printField("sigma_max_est_"+msg,sigma_max_est_[i]);
+      sfile_.printField("dsigma_"+msg,Dsigma_[i]);
+    }
   }
   if(noise_type_==GENERIC) {
     for(unsigned i=0; i<ftilde_.size(); ++i) {

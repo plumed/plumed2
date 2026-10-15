@@ -229,11 +229,7 @@ API([&]() {
 
   bool noreplicas;
   parseFlag("NOREPLICAS",noreplicas);
-  int nreps;
-  if(root) {
-    nreps=multi_sim_comm.Get_size();
-  }
-  comm.Bcast(nreps,0);
+  int nreps=getNumberOfReplicas();
   if(nreps>1) {
     if(noreplicas) {
       log<<"  running replicas as independent (no suffix used)\n";

@@ -1,0 +1,56 @@
+mpiprocs=4
+type=driver
+arg="--plumed plumed.D.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajD.xyz --multi 2"
+
+state_line() {
+  local tag="$1"
+  local file="$2"
+  awk -v tag="$tag" -v file="$file" '
+    NR==1 {
+      for(i=3;i<=NF;i++) {
+        if($i ~ /^sigmaMean_/ || $i ~ /^sigmaMean2History_/ || $i ~ /^sigma_max_/ || $i=="optimized_step_" || $i ~ /^sigma_max_est_/ || $i ~ /^dsigma_/) {
+          n++
+          idx[n]=i-2
+          name[n]=$i
+        }
+      }
+      next
+    }
+    NR==2 {
+      printf "%s %s",tag,file
+      for(i=1;i<=n;i++) printf " %s=%s",name[i],$idx[i]
+      printf "\n"
+    }
+  ' "$file"
+}
+
+snapshot_statuses() {
+  local tag="$1"
+  for f in MISTATUSspe.0 MISTATUSspe.1 MISTATUSrdcmi.0 MISTATUSrdcmi.1; do
+    test -f "$f" || return 1
+    cp -f "$f" "${tag}_$f"
+  done
+}
+
+plumed_regtest_before() {
+  $mpi $plumed driver --plumed plumed.A.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajA.xyz --multi 2 > pre_A.out 2> pre_A.err || return 1
+  snapshot_statuses A || return 1
+  $mpi $plumed driver --plumed plumed.B.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajB.xyz --multi 2 > pre_B.out 2> pre_B.err || return 1
+  snapshot_statuses B || return 1
+  $mpi $plumed driver --plumed plumed.C.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajC.xyz --multi 2 > pre_C.out 2> pre_C.err || return 1
+  snapshot_statuses C || return 1
+  return 0
+}
+
+plumed_regtest_after() {
+  snapshot_statuses D || return 1
+  : > state
+  state_line A A_MISTATUSspe.0 >> state
+  state_line A A_MISTATUSrdcmi.0 >> state
+  state_line B B_MISTATUSspe.0 >> state
+  state_line B B_MISTATUSrdcmi.0 >> state
+  state_line C C_MISTATUSspe.0 >> state
+  state_line C C_MISTATUSrdcmi.0 >> state
+  state_line D D_MISTATUSspe.0 >> state
+  state_line D D_MISTATUSrdcmi.0 >> state
+}

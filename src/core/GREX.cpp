@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GREX.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
+#include "DomainDecomposition.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
@@ -98,6 +100,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 // note that for PEs!=root this is automatically 0 (comm defaults to MPI_COMM_SELF)
       myreplica=intercomm.Get_rank();
       intracomm.Sum(myreplica);
+      plumedMain.updateReplicaIdentity(intracomm);
       {
         std::string s;
         Tools::convert(myreplica,s);
@@ -188,6 +191,14 @@ void GREX::savePositions() {
   plumedMain.resetActive(true);
   plumedMain.shareAll();
   plumedMain.waitData();
+  // shareAll() also starts the exchange of the domain decomposition when no action needs atoms on this
+  // step, but waitData() only completes the exchanges of the active inputs. Complete it here, or the
+  // next exchange waits for messages that were never received (with asynchronous sharing).
+  for(const auto & dd : plumedMain.getActionSet().select<DomainDecomposition*>()) {
+    if(!dd->isActive() && dd->hasBeenSet()) {
+      dd->wait();
+    }
+  }
   std::ostringstream o;
   plumedMain.writeBinary(o);
   buffer=o.str();

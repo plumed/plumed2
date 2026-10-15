@@ -44,6 +44,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/real.h"
 
@@ -68,6 +69,8 @@ struct PlumedOptions
     StartingBehavior      startingBehavior_{};
     bool                  active_{ false };
     bool                  replex_{ false };
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>     isVirtualSite_;
 };
 
 class PlumedOptionProvider

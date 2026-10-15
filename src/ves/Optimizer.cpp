@@ -208,12 +208,8 @@ Optimizer::Optimizer(const ActionOptions&ao):
 
   int numwalkers=1;
   int walker_rank=0;
-  if(comm.Get_rank()==0) {
-    numwalkers = multi_sim_comm.Get_size();
-    walker_rank = multi_sim_comm.Get_rank();
-  }
-  comm.Bcast(numwalkers,0);
-  comm.Bcast(walker_rank,0);
+  numwalkers=getNumberOfReplicas();
+  walker_rank=getReplicaIndex();
   if(use_mwalkers_mpi_ && numwalkers==1) {
     plumed_merror("using the MULTIPLE_WALKERS keyword does not make sense if running the MD code with a single replica");
   }
@@ -525,11 +521,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       maskOFile.link(*this);
       maskOFile.enforceBackup();
       if(use_mwalkers_mpi_ && mwalkers_mpi_single_files_) {
-        unsigned int r=0;
-        if(comm.Get_rank()==0) {
-          r=multi_sim_comm.Get_rank();
-        }
-        comm.Bcast(r,0);
+        unsigned int r=getReplicaIndex();
         if(r>0) {
           mask_fnames_out[i]="/dev/null";
         }
@@ -1136,11 +1128,7 @@ void Optimizer::setupOFiles(std::vector<std::string>& fnames, std::vector<std::u
     OFiles[i] = Tools::make_unique<OFile>();
     OFiles[i]->link(*this);
     if(multi_sim_single_files) {
-      unsigned int r=0;
-      if(comm.Get_rank()==0) {
-        r=multi_sim_comm.Get_rank();
-      }
-      comm.Bcast(r,0);
+      unsigned int r=getReplicaIndex();
       if(r>0) {
         fnames[i]="/dev/null";
       }

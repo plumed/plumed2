@@ -1767,6 +1767,24 @@ void do_force(FILE*                         fplog,
     }
 
 
+    const bool haveGpuNonbondedOrBondedWork =
+            simulationWork.useGpuNonbonded
+            && (stepWork.computeNonbondedForces || domainWork.haveGpuBondedWork);
+
+    if (haveGpuNonbondedOrBondedWork)
+    {
+        // Ensure local and non-local compute kernels will have
+        // the necessary shift vectors on the GPUs in time.
+        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
+        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
+        gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
+    }
+
+    /* Coordinate conversion acts as a synchronization point between local and non-local
+     * streams. All "misc" operations which are needed by both local and non-local
+     * NBNXM kernels must be submitted before. */
     if (!stepWork.doNeighborSearch && !EI_TPI(inputrec.eI) && stepWork.computeNonbondedForces)
     {
         if (stepWork.useGpuXBufferOps)
@@ -1787,13 +1805,17 @@ void do_force(FILE*                         fplog,
         }
     }
 
-    if (simulationWork.useGpuNonbonded && (stepWork.computeNonbondedForces || domainWork.haveGpuBondedWork))
+    if (haveDDAtomOrdering(*cr))
+    {
+        dd_force_flop_start(cr->dd, nrnb);
+    }
+
+    if (haveGpuNonbondedOrBondedWork)
     {
         ddBalanceRegionHandler.openBeforeForceComputationGpu();
 
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
         if (!stepWork.useGpuXBufferOps)
         {
             gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::Local);
@@ -2064,7 +2086,6 @@ void do_force(FILE*                         fplog,
     if (haveDDAtomOrdering(*cr) && simulationWork.haveSeparatePmeRank)
     {
         wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
-        dd_force_flop_start(cr->dd, nrnb);
     }
 
     if (inputrec.bRot)
@@ -2719,8 +2740,26 @@ void do_force(FILE*                         fplog,
         {
             forceForPlumed = forceView->forceMtsCombined();
         }
-        fr->forceProviders->applyAfterPotentialEnergy(
+        const bool plumedForcesOnVirtualSites = fr->forceProviders->applyAfterPotentialEnergy(
                 stepWork.computeEnergy, &enerd->term[InteractionFunction::PotentialEnergy], forceForPlumed, vir_force);
+        if (plumedForcesOnVirtualSites && vsite)
+        {
+            /* The forces on the virtual sites were spread above and are now zero, except
+               those PLUMED just applied: spread these too, as in postProcessForces() */
+            const VirtualSitesHandler::VirialHandling virialHandling =
+                    (stepWork.computeVirial ? VirtualSitesHandler::VirialHandling::NonLinear
+                                            : VirtualSitesHandler::VirialHandling::None);
+            matrix virial = { { 0 } };
+            vsite->spreadForces(x.unpaddedArrayRef(),
+                                forceForPlumed,
+                                virialHandling,
+                                {},
+                                virial,
+                                nrnb,
+                                box,
+                                wcycle);
+            m_add(vir_force, virial, vir_force);
+        }
     }
     /* END PLUMED */
 

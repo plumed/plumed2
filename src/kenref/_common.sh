@@ -1,11 +1,11 @@
 # =============================================================================
 # _common.sh — shared logic for the PLUMED-side KEnRef build scripts.
-# Sourced by build-only.sh and build-and-batch.sh; defines defaults, helpers and
+# Sourced by build-only.sh and build-and-patch.sh; defines defaults, helpers and
 # the three build steps. Not executable on its own.
 #
 # Division of labor: kenref_core is DELEGATED to the KEnRef repo (kenref builds
-# kenref); PLUMED is built by its OWN autotools; GROMACS (batch script only) is
-# batched with PLUMED's own `plumed patch` then built by GROMACS's CMake.
+# kenref); PLUMED is built by its OWN autotools; GROMACS (patch script only) is
+# patched with PLUMED's own `plumed patch` then built by GROMACS's CMake.
 # =============================================================================
 [ -n "${_KN_COMMON_SOURCED:-}" ] && return; _KN_COMMON_SOURCED=1
 
@@ -36,14 +36,14 @@ KENREF_GIT_TAG="${KENREF_GIT_TAG:-master}"
 # install). BUILD and FETCH dirs stay in the source trees — they are artefacts, not installs.
 KENREF_PREFIX=""               # kenref_core install prefix (default: /usr/local/kenref)
 PLUMED_PREFIX="/usr/local"
-# GROMACS (batch script): use a provided source, else fetch one to a PLUMED-related dir (separate tree).
+# GROMACS (patch script): use a provided source, else fetch one to a PLUMED-related dir (separate tree).
 # NB: this auto-fetch is exactly what makes this the "downloads" branch; kenref-plumed-master omits it.
 GROMACS_SRC=""
 GROMACS_PREFIX="/usr/local/gromacs"
 GROMACS_GIT_URL="${GROMACS_GIT_URL:-https://gitlab.com/gromacs/gromacs.git}"
-GROMACS_GIT_TAG="${GROMACS_GIT_TAG:-latest-2025}"   # 'latest-2025' => newest v2025.x
+GROMACS_GIT_TAG="${GROMACS_GIT_TAG:-latest-2026}"   # 'latest-YYYY' => newest vYYYY.x
 GROMACS_FETCH_DIR="${PLUMED_ROOT}/build/gromacs-src"   # plumed-related; persisted+reused
-PATCH_ENGINE=""                # empty => auto (newest gromacs-2025.x shipped with this PLUMED)
+PATCH_ENGINE=""                # empty => auto (newest gromacs-<year>.x patch shipped with this PLUMED, for the source's year)
 
 say()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 warn() { printf '\033[1;33mWARNING: %s\033[0m\n' "$*" >&2; }
@@ -105,8 +105,8 @@ Usage: src/kenref/${KN_SCRIPT:-build}.sh [options]   (no options => interactive)
   --build-type T         Release | Debug | RelWithDebInfo   (default: ${BUILD_TYPE})
   --accel A              AVX_512 | AVX_256 | AVX2_256        (default: auto-detect)
   --jobs N               parallel build jobs                (default: ${JOBS})
-$( [ "${KN_BATCHES:-0}" = 1 ] && cat <<G
-  --gromacs-src DIR      GROMACS 2025.x source (omit to auto-fetch ${GROMACS_GIT_TAG})
+$( [ "${KN_PATCHES:-0}" = 1 ] && cat <<G
+  --gromacs-src DIR      GROMACS 2026.x source (omit to auto-fetch ${GROMACS_GIT_TAG})
   --gromacs-prefix DIR   GROMACS install prefix      (default: ${GROMACS_PREFIX})
   --patch-engine E       plumed patch -e engine      (default: auto)
 G
@@ -240,21 +240,22 @@ build_plumed() {
     say "PLUMED installed -> ${PLUMED_PREFIX}"
 }
 
-# ---- STEP 3: GROMACS 2025.x, batched with THIS PLUMED's `plumed patch` -------
+# ---- STEP 3: GROMACS 2026.x, patched with THIS PLUMED's `plumed patch` -------
 build_gromacs() {
     # Provided source, else FETCH one to a plumed-related dir (separate from any kenref-gmx gromacs).
     # `plumed patch` REWRITES the tree in place, which is why a fetched copy lives under the build dir.
     if [ -z "$GROMACS_SRC" ] && interactive; then
-        ask_val GROMACS_SRC "GROMACS 2025.x source (blank = fetch ${GROMACS_GIT_TAG})"
+        ask_val GROMACS_SRC "GROMACS 2026.x source (blank = fetch ${GROMACS_GIT_TAG})"
     fi
     if [ -z "$GROMACS_SRC" ]; then
         GROMACS_SRC="$GROMACS_FETCH_DIR"
         if [ ! -f "${GROMACS_SRC}/CMakeLists.txt" ]; then
             local tag="$GROMACS_GIT_TAG"
-            if [ "$tag" = "latest-2025" ]; then
-                tag="$(git ls-remote --tags --refs "$GROMACS_GIT_URL" 2>/dev/null | grep -oE 'v2025\.[0-9]+' | sort -V | tail -1)"
-                [ -z "$tag" ] && tag="v2025.4"
-            fi
+            case "$tag" in latest-[0-9][0-9][0-9][0-9])
+                local year="${tag#latest-}"
+                tag="$(git ls-remote --tags --refs "$GROMACS_GIT_URL" 2>/dev/null | grep -oE "v${year}\\.[0-9]+\$" | sort -V | tail -1)"
+                [ -z "$tag" ] && { [ "$year" = 2026 ] && tag="v2026.4" || die "could not find a GROMACS v${year}.x tag at ${GROMACS_GIT_URL} (none exists, or the server was unreachable); pass --gromacs-src DIR."; } ;;
+            esac
             say "fetching GROMACS ${tag} -> ${GROMACS_SRC} (plumed-related)"
             git clone --depth 1 --branch "$tag" "$GROMACS_GIT_URL" "$GROMACS_SRC" \
                 || die "GROMACS clone failed; provide one with --gromacs-src DIR."
@@ -268,12 +269,12 @@ build_gromacs() {
     # GROMACS's authoritative version is `project(Gromacs VERSION <year>.<minor>)` in its TOP-LEVEL
     # CMakeLists.txt. Do NOT scan cmake/gmxVersionInfo.cmake for the first 20xx: the first match there is the
     # COPYRIGHT year ("# Copyright 2014- The GROMACS Authors"), so every tree was reported as "2014.x" and
-    # rejected by the check below — i.e. this gate refused EVERY gromacs, including a valid 2025.x.
+    # rejected by the check below — i.e. this gate refused EVERY gromacs, including a valid one.
     ver="$(grep -iE '^[[:space:]]*project\(.*VERSION[[:space:]]+[0-9]{4}' "${GROMACS_SRC}/CMakeLists.txt" 2>/dev/null \
            | grep -oE '[0-9]{4}' | head -1)"
-    if [ -z "$ver" ]; then warn "could not detect GROMACS version; full integration needs 2025.x (pref 2025.4)."
-    elif [ "$ver" -lt 2025 ]; then die "GROMACS ${ver}.x — PLUMED not well integrated before 2025; use 2025.x (pref 2025.4)."
-    elif [ "$ver" -ge 2026 ]; then warn "GROMACS ${ver}.x — PLUMED integration regressed after 2025; 2025.x (pref 2025.4) recommended."
+    if [ -z "$ver" ]; then warn "could not detect GROMACS version; full integration needs 2026.x (pref 2026.4)."
+    elif [ "$ver" -lt 2025 ]; then die "GROMACS ${ver}.x — PLUMED not well integrated before 2025; use 2026.x (pref 2026.4)."
+    elif [ "$ver" -lt 2026 ]; then warn "GROMACS ${ver}.x — still patchable, but 2026.x (pref 2026.4) is recommended."
     else say "GROMACS ${ver}.x — good."; fi
 
     local plumed="${PLUMED_PREFIX}/bin/plumed" engine="$PATCH_ENGINE"
@@ -287,10 +288,11 @@ build_gromacs() {
     "$plumed" --no-mpi info --version >/dev/null 2>&1 \
         || die "the installed plumed at ${plumed} is not runnable (kernel not loadable?) — cannot 'plumed patch'."
     if [ -z "$engine" ]; then
-        engine="$(ls "${PLUMED_ROOT}/patches"/gromacs-2025.*.config 2>/dev/null | sed 's#.*/##; s#\.config$##' | sort -V | tail -1)"
-        [ -z "$engine" ] && engine="gromacs-2025.0"
+        # The patch must be for the SAME GROMACS year as the source: a 2025 patch does not apply to a 2026 tree.
+        engine="$(ls "${PLUMED_ROOT}/patches"/gromacs-"${ver:-2026}".*.config 2>/dev/null | sed 's#.*/##; s#\.config$##' | sort -V | tail -1)"
+        [ -z "$engine" ] && die "this PLUMED ships no gromacs-${ver:-2026}.x patch (see 'plumed patch --list-engines'); pass --patch-engine."
     fi
-    say "batching GROMACS with 'plumed patch -e ${engine} --mode runtime' (native GMX_USE_PLUMED alone is not full integration)"
+    say "patching GROMACS with 'plumed patch -e ${engine} --mode runtime' (native GMX_USE_PLUMED alone is not full integration)"
     ( cd "$GROMACS_SRC"
       "$plumed" patch -r -e "$engine" 2>/dev/null || true
       "$plumed" patch -p -e "$engine" --mode runtime )
@@ -302,5 +304,5 @@ build_gromacs() {
         -DCMAKE_INSTALL_PREFIX="$GROMACS_PREFIX"
     cmake --build "$build_dir" -j "$JOBS"
     kn_install_as_needed "$GROMACS_PREFIX" cmake --install "$build_dir"
-    say "GROMACS installed -> ${GROMACS_PREFIX} (batched against PLUMED at ${PLUMED_PREFIX})."
+    say "GROMACS installed -> ${GROMACS_PREFIX} (patched against PLUMED at ${PLUMED_PREFIX})."
 }

@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --mf_pdb template.pdb --timestep 1 --trajectory-stride 1 --dump-forces forces --dump-forces-fmt=%14.8e"

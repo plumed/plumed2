@@ -184,10 +184,8 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   //parse ENSEMBLE
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) {
-      error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    }
+  if(ensemble && getNumberOfReplicas()<2) {
+    error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
   }
 
   log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";

@@ -2642,8 +2642,26 @@ void do_force(FILE*                         fplog,
         {
             forceForPlumed = forceView->forceMtsCombined();
         }
-        fr->forceProviders->applyAfterPotentialEnergy(
+        const bool plumedForcesOnVirtualSites = fr->forceProviders->applyAfterPotentialEnergy(
                 stepWork.computeEnergy, &enerd->term[F_EPOT], forceForPlumed, vir_force);
+        if (plumedForcesOnVirtualSites && vsite)
+        {
+            /* The forces on the virtual sites were spread above and are now zero, except
+               those PLUMED just applied: spread these too, as in postProcessForces() */
+            const VirtualSitesHandler::VirialHandling virialHandling =
+                    (stepWork.computeVirial ? VirtualSitesHandler::VirialHandling::NonLinear
+                                            : VirtualSitesHandler::VirialHandling::None);
+            matrix virial = { { 0 } };
+            vsite->spreadForces(x.unpaddedArrayRef(),
+                                forceForPlumed,
+                                virialHandling,
+                                {},
+                                virial,
+                                nrnb,
+                                box,
+                                wcycle);
+            m_add(vir_force, virial, vir_force);
+        }
     }
     /* END PLUMED */
 

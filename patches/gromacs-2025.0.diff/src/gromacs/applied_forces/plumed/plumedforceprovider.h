@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -67,6 +68,10 @@ public:
     ~PlumedForceProvider();
     /*! \brief Tells PLUMED to output the checkpoint data
      *
+     * This is called on the main rank only, when GROMACS writes a checkpoint. It is only a
+     * fallback for the simulators that do not call prepareStep(), such as the modular
+     * simulator, which writes its checkpoints before the force calculation of the step.
+     * calculateForces() then tells PLUMED on all ranks.
      * If the PLUMED API version is not greater than 3 it will do nothing.
      */
     void writeCheckpointData();
@@ -76,23 +81,38 @@ public:
      */
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
-    bool requestsPotentialEnergy(int64_t step) override;
-    void applyAfterPotentialEnergy(bool energyWasComputed,
+    bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    bool requestsStop() const override;
+    bool applyAfterPotentialEnergy(bool energyWasComputed,
                                    real* potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor virial) override;
 
 private:
     void checkReplicaExchangeBias();
+    //! Whether the atoms that PLUMED used on this step include virtual sites
+    bool usesVirtualSites();
 
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>             isVirtualSite_;
     int                           plumedNeedsEnergy_ = 0;
     int                           plumedWantsToStop_ = 0;
     matrix                        plumedVir_         = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-    //! Step for which requestsPotentialEnergy() already prepared the dependencies, if any.
+    //! Step for which prepareStep() already prepared the dependencies, if any.
     std::optional<int64_t> preparedStep_;
+    //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation.
+    bool prepareStepIsCalled_ = false;
+    //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces().
+    int checkpointRequested_ = 0;
+    //! Step for which prepareStep() was last called
+    int64_t currentStep_ = 0;
+    //! Last step that PLUMED calculated
+    std::optional<int64_t> calculatedStep_;
+    //! Whether PLUMED already calculated this MD step (shell relaxation): it is then not updated again
+    bool repeatedCall_ = false;
 };
 
 } // namespace gmx
