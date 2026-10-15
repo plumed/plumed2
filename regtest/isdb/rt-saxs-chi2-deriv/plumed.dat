@@ -26,5 +26,5 @@ SANS ...
   CHI2
 ... SANS
 
-DUMPDERIVATIVES ARG=saxs.chi2,saxs.chi2red,sans.chi2,sans.chi2red FILE=derivatives FMT=%22.15e
-PRINT ARG=saxs.chi2,saxs.chi2red,saxs.chi2scale,sans.chi2,sans.chi2red,sans.chi2scale FILE=chi2.dat STRIDE=1 FMT=%22.15e
+DUMPDERIVATIVES ARG=saxs.chi2,saxs.chi2red,sans.chi2,sans.chi2red FILE=derivatives FMT=%17.10e
+PRINT ARG=saxs.chi2,saxs.chi2red,saxs.chi2scale,sans.chi2,sans.chi2red,sans.chi2scale FILE=chi2.dat STRIDE=1 FMT=%17.10e
