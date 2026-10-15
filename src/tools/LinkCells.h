@@ -202,6 +202,60 @@ inline
 const std::array<unsigned,3>& LinkCells::getCellLimits() const {
   return ncells;
 }
+
+/** @brief Apply the T operation on all the couples in the given collections
+
+The T worker should have a work method that accepts two unsigned integers and expose a public `static constexpr bool dopbc` value.
+The T worker should be copy constructable, and ideally contain only references to the array that should be modified and eventually a minimum amount of data.
+
+A very simplified example, this worker does not use the pbcs and pushes only couples if the first index is smaller than the second:
+@code{.cpp}
+class myworker {
+  std::vector<std::pair<unsigned, unsigned>>& nl;
+public:
+  static constexpr bool dopbc = false;
+  myworker(std::vector<std::pair<unsigned, unsigned>& nl_)
+    :nl(nl_)
+  {}
+
+  void work(const unsigned A, const unsigned B) {
+    if (A<B) {
+      nl.push_back({A,B});
+    }
+  }
+};
+@endcode
+In the worker construction you can pass the positions and store a view to them and also a pointer/reference to a PBC object to calculate
+distances. In that case you can store the maximum distance, see the PLMD::NeighborList
+*/
+template<typename T>
+void updateWithLC(const LinkCells& cells,
+                  const LinkCells::CellCollection& listA,
+                  const LinkCells::CellCollection& listB,
+                  const unsigned start,
+                  const unsigned end,
+                  T worker) {
+  //worker array
+  std::vector<unsigned> cells_required(27);
+  for(unsigned c = start; c < end; ++c) {
+    auto atomsInC= listA.getCellIndexes(c);
+    if(atomsInC.size()>0) {
+      auto cell = cells.findMyCell(c);
+      unsigned ncells_required=0;
+      //the T::dopbc makes this more clunky to setup (you can't use a lambda)
+      //but ensures that the use of the pbc is coherent with the worker
+      cells.addRequiredCells(cell,ncells_required, cells_required,T::dopbc);
+      for (auto A : atomsInC) {
+        for (unsigned cb=0; cb <ncells_required ; ++cb) {
+          for (auto B : listB.getCellIndexes(cells_required[cb])) {
+            worker.work(A,B);
+          }
+        }
+      }
+    }
+  }
+}
+
 }
 
 #endif

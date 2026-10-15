@@ -47,6 +47,8 @@ private:
   bool serial_;
   bool do_pbc_;
   bool useCellList_=false;
+  //when set to true combines LinkCells and the standard Neighborlist approach (with NLIST=true, not with NLISTCELLS=true)
+  bool use_NL_LC_=false;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
@@ -117,6 +119,8 @@ public:
   pairIDs getUpdatedPair(unsigned i) const;
 /// Returns true if it is safe to use getUpdatedPair
   bool ready() const;
+/// Forces to use the combined NLLC algorithm when the neigbhorlist is active
+  void forceNLLC(bool=true);
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i) const;
 /// Get the i-th pair of AtomNumbers from the neighbor list
