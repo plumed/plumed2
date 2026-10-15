@@ -870,6 +870,9 @@ void gmx::LegacySimulator::do_md()
     }
 
     bool usedMdGpuGraphLastStep = false;
+    /* PLUMED */
+    bool plumedWarnedAboutShells = false;
+    /* END PLUMED */
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -1154,6 +1157,19 @@ void gmx::LegacySimulator::do_md()
                           "stepping.",
                           step,
                           ir->mtsLevels.back().stepFactor);
+            }
+            if (shellfc != nullptr && !plumedWarnedAboutShells)
+            {
+                GMX_LOG(mdLog_.warning)
+                        .asParagraph()
+                        .appendText(
+                                "With shell particles or flexible constraints, PLUMED updates (e.g. "
+                                "prints, deposits its bias, checks COMMITTOR) on the first force "
+                                "calculation of each step, before the shells are relaxed. This PLUMED "
+                                "input needs the potential energy: the energy that it uses for these "
+                                "updates, like the collective variables that depend on the shells, is "
+                                "the one before the relaxation.");
+                plumedWarnedAboutShells = true;
             }
             force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
         }

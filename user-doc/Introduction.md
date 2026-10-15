@@ -60,14 +60,21 @@ and the patches for the older versions of GROMACS have some more:
 
 | Feature | GROMACS 2025 or later, without patches | patches for GROMACS 2025 and 2026 | patches for GROMACS 2022 to 2024 |
 |:--|:--:|:--:|:--:|
-| biases on atoms, with domain decomposition and multiple time stepping | yes | yes | yes |
-| \ref ENERGY collective variable and biases on the energy | no | yes | yes |
-| multiple walkers (e.g. `WALKERS_MPI`) | no | yes | yes |
-| PLUMED checkpoint data written at the steps of the GROMACS checkpoints | no | yes | yes |
+| biases on atoms, with domain decomposition and multiple time stepping | yes (1) | yes | yes |
+| \ref ENERGY collective variable and biases on the energy | no | yes (2,3) | yes (3) |
+| multiple simulations that communicate through MPI (e.g. `WALKERS_MPI`) | no | yes | yes |
+| PLUMED checkpoint data written at the steps of the GROMACS checkpoints | no | yes (2) | yes |
 | PLUMED stopping the simulation (e.g. \ref COMMITTOR) | no | yes | yes |
-| polarizable models with shells | no | yes | no |
+| polarizable models with shells | no | yes (4) | no |
 | replica exchange with a PLUMED bias (`-replex`, `-hrex`) | no | no | yes |
 | lambda dynamics (expanded ensemble) | no | no | yes |
+
+Notes on the table:
+
+1. GROMACS 2026.0 to 2026.3 without patches stop at startup with more than one MPI rank.
+2. Not with the modular simulator of GROMACS, the default for md-vv: set `GMX_DISABLE_MODULAR_SIMULATOR=1`.
+3. With multiple time stepping, only on the steps when the slow forces are computed.
+4. With \ref ENERGY, PLUMED updates (e.g. deposits its bias) with the energy before the shells are relaxed.
 
 The interface with GROMACS is tested on the [PLUMED testcenter](https://plumed-testcenter.github.io/browse.html).
 
