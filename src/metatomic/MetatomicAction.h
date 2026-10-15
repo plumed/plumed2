@@ -36,8 +36,8 @@ namespace PLMD {
 namespace metatomic {
 
 /// The METATOMIC action. It owns the PLUMED-side state (atoms, output value)
-/// and forwards the model evaluation to one of two backends: TorchScript models
-/// through metatomic-torch, or plugin models through metatomic-core.
+/// and forwards the model evaluation to metatomic-core, which runs TorchScript
+/// models from metatomic-torch through its Python plugin.
 class MetatomicPlumedAction: public ActionAtomistic, public ActionWithValue {
 public:
     static void registerKeywords(Keywords& keys);
@@ -56,7 +56,6 @@ public:
     };
 
 private:
-    friend class TorchBackend;
     friend class CoreBackend;
 
     /// Parse SPECIES/SPECIES_TO_TYPES, request all atoms in order, and return
@@ -82,9 +81,7 @@ private:
     std::unique_ptr<Backend> backend_;
 };
 
-/// Create the TorchScript backend, or error if PLUMED was built without it
-std::unique_ptr<MetatomicPlumedAction::Backend> makeTorchBackend(MetatomicPlumedAction& action);
-/// Create the metatomic-core backend, or error if PLUMED was built without it
+/// Create the metatomic-core backend, only available if PLUMED was built with it
 std::unique_ptr<MetatomicPlumedAction::Backend> makeCoreBackend(
     MetatomicPlumedAction& action,
     const std::vector<std::string>& plugin_libraries,

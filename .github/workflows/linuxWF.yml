@@ -74,15 +74,26 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        # testing the oldest supported python version, see the "python" workflow for newer version
-        python-version: "3.10"
+        # metatomic-core requires Python >=3.11; other versions have their own workflow.
+        python-version: "3.11"
+    - name: Select one Python runtime
+      run: |
+        PYTHON_BIN=$(python -c "import sys; print(sys.executable)")
+        echo "PYTHON_BIN=$PYTHON_BIN" >> $GITHUB_ENV
+        echo "METATOMIC_PYTHON=$PYTHON_BIN" >> $GITHUB_ENV
+        echo "PLUMED_PYTHON_SELECT=$PYTHON_BIN" >> $GITHUB_ENV
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
-        pip install --user -r ./python/requirements_build.txt
-        pip install --user -r ./python/requirements_run.txt
-        pip install --user -r ./.ci/pytorch/requirements.txt
+        python -m pip install --user -r ./python/requirements_build.txt
+        python -m pip install --user -r ./python/requirements_run.txt
+        python -m pip install --user -r ./.ci/pytorch/requirements.txt
 
+    - name: Build metatomic from the pinned wrapper commit
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }}
+      run: |
+        rustup toolchain install 1.88.0 --profile minimal
+        RUSTUP_TOOLCHAIN=1.88.0 bash .ci/install.metatomic
     - name: Configure libmetatomic & libtorch
       # the libraries on PyPI are not compiled with GLIBCXX_DEBUG.
       # -nvhpc- only checks that the openacc plugin compiles. The plugin is built with PLUMED's flags,
@@ -90,8 +101,8 @@ jobs:
       # Before C++20 was added here, configure could not enable them in this job anyway.
       if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
-        PIP_CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags)
-        PIP_LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags)
+        PIP_CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags --with-torch)
+        PIP_LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags --with-torch)
 
         echo "LDFLAGS=$PIP_LDFLAGS $LDFLAGS" >> $GITHUB_ENV
         echo "CPPFLAGS=$PIP_CPPFLAGS $CPPFLAGS" >> $GITHUB_ENV
@@ -119,7 +130,7 @@ jobs:
       if: contains( matrix.variant, '-doc-' )
       run: |
         python -m pip install --upgrade pip
-        pip install --user -r ./new-manual/requirements.txt
+        python -m pip install --user -r ./new-manual/requirements.txt
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         .ci/install.doxygen Release_1_13_2
@@ -160,7 +171,7 @@ jobs:
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
       run: |
-        pip install --user mpi4py
+        python -m pip install --user mpi4py
         python -c "import mpi4py"
     - name: Install KEnRef
       # Kept AFTER the compiler steps above, because .ci/install.kenref builds libkenref_core with $CXX
@@ -248,7 +259,7 @@ jobs:
     - name: Run python tests
       run: |
          cd python
-         pip install --user pytest
+         python -m pip install --user pytest
          pytest -v
     - name: Build doc
       env:
@@ -289,4 +300,13 @@ jobs:
       run: |
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
-            make check
+            CMAKE_ARGS="${CMAKE_ARGS:-} -DPython_EXECUTABLE=$PYTHON_BIN" make check PYTHON="$PYTHON_BIN"
+    - name: Test pycv and metatomic in one process
+      if: contains( matrix.variant, '-pycv-' )
+      run: |
+        source sourceme.sh
+        PLUMED_METATOMIC_TEST_PYCV=1 make -C regtest/metatomic/rt-core-per-atom
+        test -f regtest/metatomic/rt-core-per-atom/tmp/check
+        if grep -E 'FAILURE|NOT_APPLICABLE' regtest/metatomic/rt-core-per-atom/report.txt; then
+          exit 1
+        fi

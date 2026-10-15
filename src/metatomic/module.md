@@ -9,123 +9,99 @@ reference:
 This module implements the interface between PLUMED and [metatomic], allowing to
 use arbitrary machine learning models as collective variables. These machine
 learning models are defined using custom Python code — following the [metatomic]
-interface — and then exported to [TorchScript]. The exported model is then
-loaded inside PLUMED and executed during the simulation.
+interface — and then either exported to [TorchScript], or loaded directly from
+Python scripts. The model is then loaded inside PLUMED and executed during the
+simulation.
+
+PLUMED uses the C++ API of metatomic-core to load and execute models.
+TorchScript models exported with `metatomic-torch` run through the Python plugin
+of metatomic-core, which starts the Python interpreter of the active environment
+inside PLUMED. Models can also be loaded through other metatomic plugins, see
+the documentation of the [METATOMIC](METATOMIC.md) action.
 
 
 # Installation
 
-This module requires two main dependencies: the C++ torch library (i.e.
-`libtorch`); and the C++ metatomic_torch library. There are multiple ways of
-installing both libraries, which are discussed below. Models compiled as
-metatomic-core plugins can instead be used without torch, see
-[below](#plugin-models-with-metatomic-core).
+This module requires the C++ metatomic (from metatomic-core) and metatensor
+libraries. To use TorchScript models, the Python environment found by the
+metatomic Python plugin also needs `metatomic-torch`.
 
 ## Getting the dependencies
 
-### Using Python's package manager (`pip`)
+The easiest way to get all dependencies is to install the Python packages with
+`pip`, and use the libraries they contain. This ensures that PLUMED and the
+Python plugin share the same copy of `libmetatomic`.
 
-The easiest way to get all dependencies on your system is to download the
-pre-built Python wheels with `pip`. This is the same set of wheels you will need
-to define custom models.
+metatomic-core is not yet released on PyPI, and needs to be installed from the
+sources of [metatomic], together with `metatomic-torch` for TorchScript models.
+The script `.ci/install.metatomic` shows how this is done for PLUMED's tests,
+with the metatomic commit they use. Building from source requires Python 3.11
+or newer, a Rust compiler (version 1.88 or newer) and CMake.
 
 ```bash
-# change this version to get newer releases
-pip install "metatomic-torch ==0.1.13"  # change this version to get newer releases
-
 # you can then get the compiler and linker flags using the script at
 # src/metatomic/flags-from-python.py
 CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags)
 LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags)
 ```
 
-That's it, you can now jump to [the last part](#building-plumed-with-metatensor)
-of the installation instructions.
+## Building plumed with metatomic
 
-### Using conda
-
-You can also use conda with the [conda-forge] channel to install all
-dependencies:
+Once you installed all dependencies, you can now configure PLUMED:
 
 ```bash
-conda install -c conda-forge libmetatomic-torch
-
-# setup compiler flags:
-CPPFLAGS="-I$CONDA_PREFIX/include $CPPFLAGS"
-CPPFLAGS="-I$CONDA_PREFIX/include/torch/csrc/api/include $CPPFLAGS"
-
-LDFLAGS="-L$CONDA_PREFIX/lib $LDFLAGS"
-LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib $LDFLAGS"
-
-# if you are using linux, force the use of rpath instead of runpath
-# (we rely on the rpath to find dependencies of dependencies)
-LDFLAGS="-Wl,--disable-new-dtags"
-```
-
-That's it, you can now jump to [the last part](#building-plumed-with-metatensor)
-of the installation instructions.
-
-### From sources
-
-You can also compile all required libraries from source. To this end, please
-follow the corresponding instructions:
-
-- **torch**: <https://pytorch.org/get-started/locally/>, for the C++ language
-- **metatensor**: <https://docs.metatensor.org/latest/installation.html#install-c>
-- **metatensor-torch**: <https://docs.metatensor.org/latest/installation.html#install-torch-cxx>
-- **metatomic-torch**: <https://docs.metatensor.org/metatomic/latest/installation.html#install-torch-cxx>
-
-Once everything is compiled and installed, you should set the corresponding
-preprocessor flags in `CPPFLAGS` and the corresponding linker flags in
-`LDFLAGS`.
-
-## Building plumed with metatensor
-
-Once you installed all dependencies with one of the methods above, you can now
-configure PLUMED:
-
-```bash
-./configure --enable-libtorch \
-            --enable-libmetatomic \
+./configure --enable-libmetatomic \
             --enable-modules=+metatomic \
             LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
 ```
 
 !!! note
 
-    Pay close attention to the output, it should contain **both** a line about
-    `checking libtorch` and a line about `checking libmetatomic`, both ending with
-    `...yes`. If this is not the case, you'll get a warning about `cannot enable
-    __PLUMED_HAS_LIBTORCH` or `cannot enable __PLUMED_HAS_LIBMETATOMIC`.
+    Pay close attention to the output, it should contain a line about
+    `checking libmetatomic` ending with `...yes`. If this is not the case,
+    you'll get a warning about `cannot enable __PLUMED_HAS_LIBMETATOMIC`. You
+    should then check `config.log` to know more about what's going on and why
+    the library can't be found.
 
-    If you get any of these warnings, you should check `config.log` to know more
-    about what's going on and why these libraries can't be found.
+## Running models
 
-## Plugin models with metatomic-core
+At runtime, PLUMED registers the Python plugin installed next to
+`libmetatomic`. The plugin uses the Python interpreter given by the
+`METATOMIC_PYTHON` environment variable, or the active virtual or conda
+environment, or the first `python` in `PATH`. This interpreter must be able to
+import `metatomic` (and `metatomic_torch` for TorchScript models), from the same
+installation PLUMED was built with.
 
-PLUMED can also load models through the plugin interface of metatomic-core,
-which does not require torch. Such models are written in C++ (or any language
-with a C API) and compiled into a shared library, which is given to the
-`METATOMIC` action with the `PLUGIN_LIBRARY` keyword. This uses the C++ API of
-the `metatomic` and `metatensor` libraries, which you can compile from source
-(see the links above), and enable with:
+This PLUMED backend supports `DEVICE=cpu` only. This is a restriction of the
+backend, not of `LegacyModel`.
+
+To bias an output, the model must provide both position and strain gradients.
+At the pinned core version, the standard `feature` output has no autograd
+support, for either per-system or per-atom samples. The model must declare and
+return both gradients explicitly. Features without these gradients can be
+printed, but applying a bias produces an error.
+
+Core consistency checks currently reject gradients on `feature`. Leave
+`CHECK_CONSISTENCY` off when biasing these outputs. The per-atom regression test
+checks forces and all nine strain derivatives numerically; this does not replace
+a future core fix to accept feature gradients.
+
+If you also use pycv, build and run both plugins with the same Python
+installation. Set `METATOMIC_PYTHON` to that interpreter before starting PLUMED:
 
 ```bash
-./configure --enable-libmetatomic-core \
-            --enable-modules=+metatomic \
-            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
+export METATOMIC_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+# In plugins/pycv, use this same interpreter to build and test:
+CMAKE_ARGS="-DPython_EXECUTABLE=$METATOMIC_PYTHON" make check PYTHON="$METATOMIC_PYTHON"
 ```
 
-`CPPFLAGS` should contain the include directories of metatomic and metatensor,
-as well as `<prefix>/include/metatomic/third-party` if `nlohmann/json.hpp` is not
-already installed on your system. Check that the output contains a line about
-`checking libmetatomic_core` ending with `...yes`.
+If pycv initializes Python inside a virtual environment, also make that
+environment's packages visible through `PYTHONPATH`. `METATOMIC_PYTHON` selects
+the interpreter only when the metatomic plugin initializes Python itself.
 
-`--enable-libmetatomic-core` can be combined with `--enable-libmetatomic` to
-support both TorchScript and plugin models in the same PLUMED build, as long as
-both use the same version of the `metatensor` library.
+The CI workflow uses one Python 3.11 installation for dependency builds, model
+exports, pycv, and the metatomic Python plugin.
 
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
 [metatomic]: https://docs.metatensor.org/metatomic/
-[conda-forge]: https://conda-forge.org/

@@ -1468,7 +1468,8 @@ Optional Features:
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-libtorch       enable search for libtorch, default: no
-  --enable-libmetatomic   enable search for libmetatomic, default: no
+  --enable-libmetatomic   enable search for libmetatomic (metatomic-core),
+                          default: no
   --enable-libitensor     enable search for libitensor, default: no
   --enable-libhdf5        enable search for libhdf5, default: no
   --enable-linuxperf      enable activate the compile options for a more
@@ -10216,11 +10217,6 @@ $as_echo "$as_me: KEnRef: disabled (neither --enable-kenref nor --enable-modules
   have_kenref=no
 fi
 
-# libmetatomic requires libtorch
-if test $libmetatomic = true ; then
-  libtorch=true;
-fi
-
 #added by luigibonati
 if test $libtorch = true ; then
   # disable as-needed in linking libraries (both static and shared)
@@ -10520,13 +10516,13 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
   fi
 fi
 
+# metatomic-core, which also runs TorchScript models through its Python plugin
 if test $libmetatomic = true ; then
-  # find metatomic & related libraries
 
     found=ko
     __PLUMED_HAS_LIBMETATOMIC=no
     if test "${libsearch}" = true ; then
-      testlibs="metatomic_torch metatensor_torch metatensor"
+      testlibs="metatomic metatensor"
     else
       testlibs=""
     fi
@@ -10550,32 +10546,13 @@ $as_echo_n "checking libmetatomic without extra libs... " >&6; }
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-    // torch header creates a lot a pedantic warnings, which we can't do anything about
-    // we disable them to make finding the relevant part in the config.log easier
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
-    #pragma GCC diagnostic ignored "-Wfloat-equal"
-    #pragma GCC diagnostic ignored "-Wfloat-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
-    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
-    #pragma GCC diagnostic ignored "-Wsign-conversion"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #include <torch/torch.h>
-    #include <torch/script.h>
-    #pragma GCC diagnostic pop
     #include <metatensor.hpp>
-    #include <metatensor/torch.hpp>
-    #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
-    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
-    #endif
+    #include <metatomic.hpp>
     int main() {
-      metatomic_torch::version();
-      metatensor_torch::version();
+      auto model = metatomic::load_model("model");
+      auto outputs = metatomic::execute_model(model, std::vector<metatomic::System>(), std::nullopt, {}, false);
       mts_version();
-      return 0;
+      return static_cast<int>(outputs.size());
     }
 
 _ACEOF
@@ -10599,32 +10576,13 @@ $as_echo_n "checking libmetatomic with $all_LIBS... " >&6; }
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-    // torch header creates a lot a pedantic warnings, which we can't do anything about
-    // we disable them to make finding the relevant part in the config.log easier
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
-    #pragma GCC diagnostic ignored "-Wfloat-equal"
-    #pragma GCC diagnostic ignored "-Wfloat-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
-    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
-    #pragma GCC diagnostic ignored "-Wsign-conversion"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #include <torch/torch.h>
-    #include <torch/script.h>
-    #pragma GCC diagnostic pop
     #include <metatensor.hpp>
-    #include <metatensor/torch.hpp>
-    #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
-    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
-    #endif
+    #include <metatomic.hpp>
     int main() {
-      metatomic_torch::version();
-      metatensor_torch::version();
+      auto model = metatomic::load_model("model");
+      auto outputs = metatomic::execute_model(model, std::vector<metatomic::System>(), std::nullopt, {}, false);
       mts_version();
-      return 0;
+      return static_cast<int>(outputs.size());
     }
 
 _ACEOF
@@ -10648,32 +10606,13 @@ $as_echo_n "checking libmetatomic with -l$testlib... " >&6; }
           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-    // torch header creates a lot a pedantic warnings, which we can't do anything about
-    // we disable them to make finding the relevant part in the config.log easier
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
-    #pragma GCC diagnostic ignored "-Wfloat-equal"
-    #pragma GCC diagnostic ignored "-Wfloat-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
-    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
-    #pragma GCC diagnostic ignored "-Wsign-conversion"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #include <torch/torch.h>
-    #include <torch/script.h>
-    #pragma GCC diagnostic pop
     #include <metatensor.hpp>
-    #include <metatensor/torch.hpp>
-    #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
-    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
-    #endif
+    #include <metatomic.hpp>
     int main() {
-      metatomic_torch::version();
-      metatensor_torch::version();
+      auto model = metatomic::load_model("model");
+      auto outputs = metatomic::execute_model(model, std::vector<metatomic::System>(), std::nullopt, {}, false);
       mts_version();
-      return 0;
+      return static_cast<int>(outputs.size());
     }
 
 _ACEOF

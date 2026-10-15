@@ -22,14 +22,22 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /*INDENT-OFF*/
-#ifdef __PLUMED_HAS_LIBMETATOMIC_CORE
+#ifdef __PLUMED_HAS_LIBMETATOMIC
 
 #include "MetatomicAction.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <type_traits>
+
+#include <unistd.h>
+#ifdef __PLUMED_HAS_DLOPEN
+#include <dlfcn.h>
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -182,20 +190,119 @@ metatensor::TensorBlock pairsBlock(const vesin::VesinNeighborList& neighbors) {
     );
 }
 
+/// The Python plugin installed next to the libmetatomic used by PLUMED (with
+/// the same layout as `metatomic.utils.python_plugin_path`), or an empty string
+std::string defaultPythonPlugin() {
+#ifdef __PLUMED_HAS_DLOPEN
+    Dl_info info;
+    auto* symbol = dlsym(RTLD_DEFAULT, "mta_load_model");
+    if (symbol != nullptr && dladdr(symbol, &info) != 0 && info.dli_fname != nullptr) {
+        auto plugin = std::filesystem::path(info.dli_fname).parent_path().parent_path()
+            / "libexec" / "metatomic" / "metatomic-python-plugin.so";
+        if (std::filesystem::exists(plugin)) {
+            return plugin.string();
+        }
+    }
+#endif
+    return "";
+}
+
+/// Temporary script for metatomic-core's Python plugin, loading the TorchScript
+/// model at `path` with metatomic-torch's `LegacyModel`. The file is removed
+/// when this goes out of scope.
+class TorchScriptLoader {
+public:
+    TorchScriptLoader(const std::string& path, const std::string& extensions_directory) {
+        // JSON strings are valid Python string literals
+        auto script = std::string(
+            "import metatensor\n"
+            "from metatomic_torch.legacy import LegacyModel\n"
+            "\n"
+            "# PLUMED gives pair lists as metatensor's C++ SimpleDataArray\n"
+            "metatensor.register_external_data_wrapper(\n"
+            "    \"metatensor::SimpleDataArray\", metatensor.ExternalCpuArray\n"
+            ")\n"
+            "\n"
+            "model = LegacyModel.load(\n"
+            "    ") + nlohmann::json(path).dump() + ",\n"
+            "    extensions_directory=" + (
+                extensions_directory.empty() ? "None" : nlohmann::json(extensions_directory).dump()
+            ) + ",\n"
+            ")\n";
+
+        file_ = (std::filesystem::temp_directory_path() / "plumed-metatomic-XXXXXX.py").string();
+        auto fd = mkstemps(file_.data(), 3);
+        if (fd == -1) {
+            throw std::runtime_error("could not create a temporary file to load the TorchScript model");
+        }
+        close(fd);
+        std::ofstream(file_) << script;
+    }
+
+    ~TorchScriptLoader() {
+        std::error_code ignored;
+        std::filesystem::remove(file_, ignored);
+    }
+
+    TorchScriptLoader(const TorchScriptLoader&) = delete;
+    TorchScriptLoader& operator=(const TorchScriptLoader&) = delete;
+
+    const std::string& path() const {
+        return file_;
+    }
+
+private:
+    std::string file_;
+};
+
 mta::ExternalModel loadModel(
     MetatomicPlumedAction& action,
-    const std::vector<std::string>& plugin_libraries,
-    const std::string& plugin,
+    std::vector<std::string> plugin_libraries,
+    std::string plugin,
     const std::string& model
 ) {
+    std::string device;
+    action.parse("DEVICE", device);
+    if (!device.empty() && device != "cpu") {
+        action.error("metatomic models only run on CPU in PLUMED, DEVICE=" + device + " is not supported");
+    }
+
+    // TorchScript models exported with metatomic-torch run in the Python plugin
+    auto torchscript = plugin.empty() && model.size() > 3 && model.compare(model.size() - 3, 3, ".pt") == 0;
+
+    std::string extensions_directory;
+    action.parse("EXTENSIONS_DIRECTORY", extensions_directory);
+    if (!extensions_directory.empty() && !torchscript) {
+        action.error("EXTENSIONS_DIRECTORY can only be used with TorchScript (.pt) models");
+    }
+
+    if (plugin_libraries.empty()) {
+        auto python = defaultPythonPlugin();
+        if (!python.empty()) {
+            plugin_libraries.push_back(python);
+        } else if (torchscript) {
+            action.error(
+                "could not find metatomic's Python plugin, which is required to load TorchScript models. "
+                "Give its path with PLUGIN_LIBRARY (see `metatomic.utils.python_plugin_path`)"
+            );
+        }
+    }
+
     try {
         for (const auto& library: plugin_libraries) {
             action.log.printf("  loading metatomic plugin from %s\n", library.c_str());
             mta::load_plugin(library);
         }
 
+        auto loader = std::optional<TorchScriptLoader>();
+        if (torchscript) {
+            action.log.printf("  loading TorchScript model with metatomic-torch's LegacyModel\n");
+            loader.emplace(model, extensions_directory);
+            plugin = "python";
+        }
+
         auto plugin_name = plugin.empty() ? std::nullopt : std::optional<std::string>(plugin);
-        return mta::load_model(model, /*options_json=*/ std::nullopt, plugin_name);
+        return mta::load_model(loader ? loader->path() : model, /*options_json=*/ std::nullopt, plugin_name);
     } catch (const std::exception& e) {
         action.error("failed to load model '" + model + "' with metatomic-core: " + e.what());
     }
@@ -203,8 +310,8 @@ mta::ExternalModel loadModel(
 
 } // namespace
 
-/// Run models loaded through metatomic-core plugins. There is no automatic
-/// differentiation here, forces use the explicit gradients of the model output.
+/// Run models loaded through metatomic-core plugins. Forces use the gradients
+/// of the model output, computed by the model (explicitly or with autograd).
 class CoreBackend final: public MetatomicPlumedAction::Backend {
 public:
     CoreBackend(
@@ -230,13 +337,19 @@ private:
     template<typename T>
     mta::System createSystem(bool empty);
 
-    metatensor::TensorMap execute(mta::System system, std::optional<metatensor::Labels> selected_atoms);
+    metatensor::TensorMap execute(
+        mta::System system,
+        std::optional<metatensor::Labels> selected_atoms,
+        const std::vector<mta::Quantity>& outputs
+    );
 
     MetatomicPlumedAction& action_;
     std::string model_name_;
     mta::ExternalModel model_;
 
+    // requested output, with and without the gradients needed for forces
     std::vector<mta::Quantity> outputs_;
+    std::vector<mta::Quantity> values_only_;
     std::vector<PairList> pair_lists_;
     std::vector<int32_t> atomic_types_;
     std::optional<metatensor::Labels> selected_atoms_;
@@ -260,14 +373,6 @@ CoreBackend::CoreBackend(
     model_(loadModel(action, plugin_libraries, plugin, model_name_))
 {
     auto& log = action.log;
-
-    std::string device;
-    action.parse("DEVICE", device);
-    std::string extensions_directory;
-    action.parse("EXTENSIONS_DIRECTORY", extensions_directory);
-    if (!device.empty() || !extensions_directory.empty()) {
-        action.error("DEVICE and EXTENSIONS_DIRECTORY can only be used with TorchScript models, not with PLUGIN or PLUGIN_LIBRARY");
-    }
 
     try {
         auto metadata = model_.metadata();
@@ -311,7 +416,7 @@ CoreBackend::CoreBackend(
             action.error("this model does not have a '" + feature_name + "' output, available outputs are [" + names + "]");
         }
 
-        // only request the explicit gradients the model knows how to compute
+        // only request the gradients the model knows how to compute
         auto gradients = std::vector<mta::Gradients>{};
         for (auto gradient: {mta::Gradients::Positions, mta::Gradients::Strain}) {
             const auto& declared_gradients = declared->gradients();
@@ -320,14 +425,16 @@ CoreBackend::CoreBackend(
             }
         }
 
-        outputs_.push_back(
-            mta::Quantity::builder()
+        auto request = [&](std::vector<mta::Gradients> gradients) {
+            return mta::Quantity::builder()
                 .name(feature_name)
                 .unit("")
                 .sample_kind(declared->sample_kind())
-                .gradients(gradients)
-                .build()
-        );
+                .gradients(std::move(gradients))
+                .build();
+        };
+        outputs_.push_back(request(gradients));
+        values_only_.push_back(request({}));
 
         auto inputs = model_.requested_inputs(outputs_);
         if (!inputs.empty()) {
@@ -361,7 +468,7 @@ CoreBackend::CoreBackend(
         // determine how many properties there will be in the output by running
         // the model once on an empty system
         auto empty = float64_ ? createSystem<double>(/*empty=*/true) : createSystem<float>(/*empty=*/true);
-        auto dummy = this->execute(std::move(empty), std::nullopt);
+        auto dummy = this->execute(std::move(empty), std::nullopt, values_only_);
         auto n_properties = static_cast<unsigned>(dummy.block_by_id(0).properties().count());
 
         // parse and handle atom sub-selection. This is done AFTER determining
@@ -439,7 +546,7 @@ mta::System CoreBackend::createSystem(bool empty) {
             continue;
         }
 
-        vesin::VesinOptions options;
+        vesin::VesinOptions options{};
         options.cutoff = pairs.engine_cutoff;
         options.full = pairs.options.full_list();
         options.return_shifts = true;
@@ -471,18 +578,22 @@ mta::System CoreBackend::createSystem(bool empty) {
     return system;
 }
 
-metatensor::TensorMap CoreBackend::execute(mta::System system, std::optional<metatensor::Labels> selected_atoms) {
+metatensor::TensorMap CoreBackend::execute(
+    mta::System system,
+    std::optional<metatensor::Labels> selected_atoms,
+    const std::vector<mta::Quantity>& outputs
+) {
     auto systems = std::vector<mta::System>();
     systems.push_back(std::move(system));
 
-    auto outputs = std::vector<metatensor::TensorMap>();
+    auto results = std::vector<metatensor::TensorMap>();
     try {
-        outputs = mta::execute_model(model_, systems, std::move(selected_atoms), outputs_, check_consistency_);
+        results = mta::execute_model(model_, systems, std::move(selected_atoms), outputs, check_consistency_);
     } catch (const std::exception& e) {
         plumed_merror("failed to evaluate the model: " + std::string(e.what()));
     }
 
-    auto& output = outputs.at(0);
+    auto& output = results.at(0);
     plumed_massert(output.keys().count() == 1, "output should have a single block");
     plumed_massert(output.block_by_id(0).components().empty(), "components are not yet supported in the output");
     return std::move(output);
@@ -490,7 +601,9 @@ metatensor::TensorMap CoreBackend::execute(mta::System system, std::optional<met
 
 void CoreBackend::calculate() {
     auto system = float64_ ? createSystem<double>(/*empty=*/false) : createSystem<float>(/*empty=*/false);
-    output_ = this->execute(std::move(system), selected_atoms_);
+    // gradients can be expensive, only ask for them when forces might be applied
+    const auto& outputs = action_.doNotCalculateDerivatives() ? values_only_ : outputs_;
+    output_ = this->execute(std::move(system), selected_atoms_, outputs);
 
     auto block = output_->block_by_id(0);
     auto values = valuesAsDoubles(block);
@@ -512,7 +625,8 @@ void CoreBackend::calculate() {
 
     output_rows_ = {0};
     if (n_samples != 1) {
-        plumed_assert((std::vector<std::string>(samples.names().begin(), samples.names().end()) == std::vector<std::string>{"system", "atom"}));
+        const auto sample_names = samples.names();
+        plumed_assert((std::vector<std::string>(sample_names.begin(), sample_names.end()) == std::vector<std::string>{"system", "atom"}));
         const auto samples_values = samples.values_cpu();
 
         // samples might be returned in any order. If the users picked some
@@ -543,9 +657,12 @@ void CoreBackend::apply() {
     auto gradients = block.gradients_list();
     for (const auto* parameter: {"positions", "strain"}) {
         if (std::find(gradients.begin(), gradients.end(), parameter) == gradients.end()) {
+            auto per_atom = outputs_[0].sample_kind() == mta::SampleKind::Atom;
             plumed_merror(
                 std::string("forces were applied to this METATOMIC action, but the model did not compute "
-                "explicit gradients of '") + outputs_[0].name() + "' with respect to " + parameter
+                "gradients of '") + outputs_[0].name() + "' with respect to " + parameter +
+                (per_atom ? ". Per-atom features can only be biased if the model computes these gradients "
+                "explicitly, metatomic-core does not compute them with autograd" : "")
             );
         }
     }
