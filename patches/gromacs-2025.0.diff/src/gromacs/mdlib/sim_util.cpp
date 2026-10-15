@@ -2637,10 +2637,17 @@ void do_force(FILE*                         fplog,
     /* PLUMED */
     if (fr->forceProviders != nullptr)
     {
-        ArrayRef<RVec> forceForPlumed = force.unpaddedArrayRef();
+        ArrayRef<RVec>    forceForPlumed = force.unpaddedArrayRef();
+        std::vector<RVec> forceBeforePlumed;
         if (simulationWork.useMts && stepWork.computeSlowForces)
         {
+            /* The update uses the combined MTS buffer, and the constraint virial the normal one,
+               which is complete when the virial is computed: PLUMED's forces are added to it below */
             forceForPlumed = forceView->forceMtsCombined();
+            if (stepWork.computeVirial)
+            {
+                forceBeforePlumed.assign(forceForPlumed.begin(), forceForPlumed.begin() + mdatoms->homenr);
+            }
         }
         const bool plumedForcesOnVirtualSites = fr->forceProviders->applyAfterPotentialEnergy(
                 stepWork.computeEnergy, &enerd->term[F_EPOT], forceForPlumed, vir_force);
@@ -2661,6 +2668,14 @@ void do_force(FILE*                         fplog,
                                 box,
                                 wcycle);
             m_add(vir_force, virial, vir_force);
+        }
+        if (!forceBeforePlumed.empty())
+        {
+            ArrayRef<RVec> forceNormal = force.unpaddedArrayRef();
+            for (int i = 0; i < mdatoms->homenr; i++)
+            {
+                forceNormal[i] += forceForPlumed[i] - forceBeforePlumed[i];
+            }
         }
     }
     /* END PLUMED */
