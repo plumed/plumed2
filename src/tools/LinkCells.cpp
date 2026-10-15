@@ -62,7 +62,7 @@ void LinkCells::setupCells(View<const Vector> pos) {
         minp[k] = pos[i][k];
       }
     }
-    if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) {
+    if( link_cutoff < std::sqrt(std::numeric_limits<double>::max()) ) {
       box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
     } else {
       box[k][k] = maxp[k] - minp[k] + 1;

@@ -161,8 +161,7 @@ https://docs.metatensor.org/metatomic/latest/outputs/features.html
 //+ENDPLUMEDOC
 
 /*INDENT-OFF*/
-#if defined(__PLUMED_HAS_LIBMETATOMIC) && defined(__PLUMED_HAS_LIBTORCH)
-
+#if defined(__PLUMED_HAS_LIBMETATOMIC) 
 #include <type_traits>
 
 #pragma GCC diagnostic push
@@ -176,17 +175,11 @@ https://docs.metatensor.org/metatomic/latest/outputs/features.html
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 
-#include <torch/script.h>
-#include <torch/version.h>
-#include <torch/cuda.h>
-#if TORCH_VERSION_MAJOR >= 2
-#include <torch/mps.h>
-#endif
 
 #pragma GCC diagnostic pop
 
-#include <metatensor/torch.hpp>
-#include <metatomic/torch.hpp>
+#include <metatensor.hpp>
+#include <metatomic.hpp>
 
 #include "vesin.h"
 
