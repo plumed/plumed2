@@ -16,7 +16,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #-dc adds relocatable device code 
 #-dlto Perform link-time optimization of device code. 
 CVS_OBJS = $(patsubst src/%,%, $(wildcard src/*.cpp))
-TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingFunction.o extra/tools/HistogramBead.o
+TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingFunction.o extra/tools/HistogramBead.o extra/gridtools/SumOfKernels.o
 
 #this makes make search for files in src
 VPATH = src
@@ -48,12 +48,17 @@ extra/tools/%.o: plumed/tools/%.cpp $(DEPDIR)/extra/tools/%.d | $(DEPDIR)/extra/
 	@echo Compiling object $@
 	@$(NVCXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
 
+extra/gridtools/%.o: plumed/gridtools/%.cpp $(DEPDIR)/extra/gridtools/%.d | $(DEPDIR)/extra/gridtools extra/gridtools
+	@echo Compiling object $@
+	@$(NVCXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
 
 $(DEPDIR): ; @mkdir -p $@
 $(DEPDIR)/extra/colvar: ; @mkdir -p $@
 $(DEPDIR)/extra/tools: ; @mkdir -p $@
+$(DEPDIR)/extra/gridtools: ; @mkdir -p $@
 extra/colvar: ; mkdir -p $@
 extra/tools: ; mkdir -p $@
+extra/gridtools: ; mkdir -p $@
 
 DEPFILES := $(OBJS:%.o=$(DEPDIR)/%.d)
 $(DEPFILES):
