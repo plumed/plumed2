@@ -1566,10 +1566,13 @@ void gmx::LegacySimulator::do_md()
             if(plumedswitch){
               if(plumedAfterForces){
                 ArrayRef<RVec> forceForPlumed=f.view().force();
+                std::vector<RVec> forceBeforePlumed;
                 if(simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0){
-                  /* On the slow steps the update uses the combined MTS force buffer */
+                  /* On the slow steps the update uses the combined MTS force buffer, and the constraint virial
+                     the normal one: PLUMED's forces are added to the latter below */
                   forceForPlumed=f.view().forceMtsCombined();
                   plumed_cmd(plumedmain,"setForces",&forceForPlumed[0][0]);
+                  forceBeforePlumed.assign(forceForPlumed.begin(),forceForPlumed.begin()+md->homenr);
                 }
                 if(plumedNeedsEnergy){
                   msmul(force_vir,2.0,plumed_vir);
@@ -1589,6 +1592,10 @@ void gmx::LegacySimulator::do_md()
                   vsite->spreadForces(state->x.arrayRefWithPadding().unpaddedArrayRef(),forceForPlumed,
                                       VirtualSitesHandler::VirialHandling::NonLinear,{},vsiteVir,nrnb,state->box,wcycle);
                   m_add(force_vir,vsiteVir,force_vir);
+                }
+                if(!forceBeforePlumed.empty()){
+                  ArrayRef<RVec> forceNormal=f.view().force();
+                  for(int i=0;i<md->homenr;i++) forceNormal[i]+=forceForPlumed[i]-forceBeforePlumed[i];
                 }
               } else {
                 msmul(plumed_vir,0.5,plumed_vir);
