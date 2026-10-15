@@ -185,6 +185,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
       //
       plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,static_cast<int>(filenames.size()), filenames.data()));
       plumedswitch=1;
+      plumedIsUsed=1;
     }
     /* PLUMED HREX*/
     if(getenv("PLUMED_HREX")) plumed_hrex=1;

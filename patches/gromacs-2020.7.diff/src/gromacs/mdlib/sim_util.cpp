@@ -115,7 +115,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 /* PLUMED */
-extern int plumedswitch;
+extern int plumedIsUsed;
 /* END PLUMED */
 
 using gmx::AtomLocality;
@@ -800,7 +800,7 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
             domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
             || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
             || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0
-            || plumedswitch; /* PLUMED: it adds its forces to the CPU force buffer */
+            || plumedIsUsed; /* PLUMED: it adds its forces to the CPU force buffer */
 
     return domainWork;
 }

@@ -60,6 +60,7 @@
 /* PLUMED */
 #include "../../../Plumed.h"
 extern int    plumedswitch;
+extern int    plumedIsUsed;
 extern plumed plumedmain; 
 /* END PLUMED */
 

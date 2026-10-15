@@ -76,6 +76,7 @@
 /* PLUMED */
 #include "../../../Plumed.h"
 int    plumedswitch=0;
+int    plumedIsUsed=0; /* unlike plumedswitch, not switched off while PLUMED runs after do_force() */
 plumed plumedmain;
 /* END PLUMED */
 
