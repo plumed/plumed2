@@ -1001,7 +1001,7 @@ int Mdrunner::mdrunner()
                                                 inputrec.get(),
                                                 mtop,
                                                 mdlog,
-                                                              membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
+                                                membedHolder.doMembed());
 
         // Now start the threads for thread MPI.
         spawnThreads(hw_opt.nthreads_tmpi);
@@ -1085,7 +1085,8 @@ int Mdrunner::mdrunner()
                                                               nullptr,
                                                               doEssentialDynamics,
                                                               membedHolder.doMembed(),
-                                                              updateTarget == TaskTarget::Gpu);
+                                                              updateTarget == TaskTarget::Gpu)
+                                     && (plumedswitch==0) /* PLUMED: not supported by the modular simulator */;
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the main rank. The ranks can now all run
@@ -2244,6 +2245,10 @@ int Mdrunner::mdrunner()
         /* PLUMED */
         if(plumedswitch){
           if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
+#if GMX_THREAD_MPI
+          /* all the thread-MPI ranks would share the same PLUMED object */
+          if(PAR(cr)) gmx_fatal(FARGS, "PLUMED cannot be used with more than one thread-MPI rank: use GROMACS built with MPI");
+#endif
           /* detect plumed API version */
           int pversion=0;
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
