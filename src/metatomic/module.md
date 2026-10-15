@@ -17,7 +17,9 @@ loaded inside PLUMED and executed during the simulation.
 
 This module requires two main dependencies: the C++ torch library (i.e.
 `libtorch`); and the C++ metatomic_torch library. There are multiple ways of
-installing both libraries, which are discussed below.
+installing both libraries, which are discussed below. Models compiled as
+metatomic-core plugins can instead be used without torch, see
+[below](#plugin-models-with-metatomic-core).
 
 ## Getting the dependencies
 
@@ -98,6 +100,30 @@ configure PLUMED:
 
     If you get any of these warnings, you should check `config.log` to know more
     about what's going on and why these libraries can't be found.
+
+## Plugin models with metatomic-core
+
+PLUMED can also load models through the plugin interface of metatomic-core,
+which does not require torch. Such models are written in C++ (or any language
+with a C API) and compiled into a shared library, which is given to the
+`METATOMIC` action with the `PLUGIN_LIBRARY` keyword. This uses the C++ API of
+the `metatomic` and `metatensor` libraries, which you can compile from source
+(see the links above), and enable with:
+
+```bash
+./configure --enable-libmetatomic-core \
+            --enable-modules=+metatomic \
+            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
+```
+
+`CPPFLAGS` should contain the include directories of metatomic and metatensor,
+as well as `<prefix>/include/metatomic/third-party` if `nlohmann/json.hpp` is not
+already installed on your system. Check that the output contains a line about
+`checking libmetatomic_core` ending with `...yes`.
+
+`--enable-libmetatomic-core` can be combined with `--enable-libmetatomic` to
+support both TorchScript and plugin models in the same PLUMED build, as long as
+both use the same version of the `metatensor` library.
 
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
