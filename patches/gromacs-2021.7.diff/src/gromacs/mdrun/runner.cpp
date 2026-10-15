@@ -918,7 +918,8 @@ int Mdrunner::mdrunner()
 
     const bool useModularSimulator =
             checkUseModularSimulator(false, inputrec.get(), doRerun, mtop, ms, replExParams,
-                                     nullptr, doEssentialDynamics, membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
+                                     nullptr, doEssentialDynamics, membedHolder.doMembed())
+            && (plumedswitch==0) /* PLUMED: not supported by the modular simulator */;
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
@@ -1766,6 +1767,10 @@ int Mdrunner::mdrunner()
         /* PLUMED */
         if(plumedswitch){
           if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
+#if GMX_THREAD_MPI
+          /* all the thread-MPI ranks would share the same PLUMED object */
+          if(PAR(cr)) gmx_fatal(FARGS, "PLUMED cannot be used with more than one thread-MPI rank: use GROMACS built with MPI");
+#endif
           /* detect plumed API version */
           int pversion=0;
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
