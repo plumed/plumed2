@@ -104,22 +104,32 @@ configure PLUMED:
 ## Plugin models with metatomic-core
 
 PLUMED can also load models through the plugin interface of metatomic-core,
-which does not require torch. Such models are written in C++ (or any language
-with a C API) and compiled into a shared library, which is given to the
-`METATOMIC` action with the `PLUGIN_LIBRARY` keyword. This uses the C++ API of
-the `metatomic` and `metatensor` libraries, which you can compile from source
-(see the links above), and enable with:
+which does not require torch. A plugin is a shared library given to the
+`METATOMIC` action with the `PLUGIN_LIBRARY` keyword. The recommended way to
+write models is as Python scripts based on `metatomic.NumpyModel`, loaded with
+the Python plugin from the `metatomic-core` Python package; plugins written in
+C++ (or any language with a C API) work the same way.
+
+Install the `metatomic-core` Python package, and use the `metatomic` and
+`metatensor` libraries it contains when configuring PLUMED. Using the libraries
+from the Python package ensures that PLUMED and the Python plugin share the same
+copy of `libmetatomic`:
 
 ```bash
+METATOMIC=$(python -c "import os, metatomic; print(os.path.dirname(metatomic.__file__))")
+METATENSOR=$(python -c "import os, metatensor; print(os.path.dirname(metatensor.__file__))")
+
+CPPFLAGS="-I$METATOMIC/include -I$METATOMIC/include/metatomic/third-party -I$METATENSOR/include $CPPFLAGS"
+LDFLAGS="-L$METATOMIC/lib -Wl,-rpath,$METATOMIC/lib -L$METATENSOR/lib -Wl,-rpath,$METATENSOR/lib $LDFLAGS"
+
 ./configure --enable-libmetatomic-core \
             --enable-modules=+metatomic \
             LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
 ```
 
-`CPPFLAGS` should contain the include directories of metatomic and metatensor,
-as well as `<prefix>/include/metatomic/third-party` if `nlohmann/json.hpp` is not
-already installed on your system. Check that the output contains a line about
-`checking libmetatomic_core` ending with `...yes`.
+Check that the output contains a line about `checking libmetatomic_core` ending
+with `...yes`. The path to the Python plugin is then given by
+`python -c "import metatomic.utils; print(metatomic.utils.python_plugin_path)"`.
 
 `--enable-libmetatomic-core` can be combined with `--enable-libmetatomic` to
 support both TorchScript and plugin models in the same PLUMED build, as long as

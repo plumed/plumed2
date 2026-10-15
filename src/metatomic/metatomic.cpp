@@ -129,16 +129,28 @@ consistency checks do not accept explicit gradients on `feature`, so
 `CHECK_CONSISTENCY` only works for plugin models that are used without biasing
 forces.
 
+The simplest way to write such a model is a Python script that subclasses
+`metatomic.NumpyModel` and defines a module-level `model` variable. Such scripts
+are loaded with the Python plugin shipped in the `metatomic-core` Python package
+(its path is given by `metatomic.utils.python_plugin_path`), which uses the
+active Python environment. Have a look at `regtest/metatomic/rt-core/distance.py`
+for a complete example.
+
 ```plumed
 cv: METATOMIC ...
-    PLUGIN_LIBRARY=path/to/libmy-plugin.so
-    PLUGIN=my-plugin
-    MODEL=my-model
+    PLUGIN_LIBRARY=path/to/metatomic-python-plugin.so
+    PLUGIN=python
+    MODEL=my_model.py
 
     SPECIES1=1-10
     SPECIES_TO_TYPES=6
 ...
 ```
+
+Pair lists are given to such Python models as metatensor C++ arrays, and the
+model script should register them with
+`metatensor.register_external_data_wrapper("metatensor::SimpleDataArray",
+metatensor.ExternalCpuArray)` before reading `system.pairs(...)`.
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html [metatomic]:
 https://docs.metatensor.org/metatomic/ [mta_tutorials]:
