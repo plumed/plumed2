@@ -49,6 +49,7 @@ public:
   static std::size_t getNumberOfParameters( const std::size_t& nargs );
   static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
   static void getSigmaProjections( const View<const double>& shape, std::vector<double>& support );
+#pragma acc routine seq
   static double evaluateR2( const RegularKernel<DiagonalKernelParams>& p, const DiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
 
@@ -73,6 +74,7 @@ public:
   static std::size_t getNumberOfParameters( const std::size_t& nargs );
   static std::size_t getNumberOfShapeParameters( const std::size_t& nargs );
   static void getSigmaProjections( const View<const double>& shape, std::vector<double>& support );
+#pragma acc routine seq
   static double evaluateR2( const RegularKernel<NonDiagonalKernelParams>& p, const NonDiagonalKernelParams& kp, View<const double> x, View<double> paramderivs );
 };
 
@@ -87,6 +89,7 @@ public:
   static void read( DiscreteKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {}
   static void setArgumentDomain( const unsigned& i, DiscreteKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {}
   static void getSupport( DiscreteKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {}
+#pragma acc routine seq
   static double calc( const DiscreteKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {}
   void toACCDevice() const {}
@@ -108,6 +111,7 @@ public:
   static void read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
   static void getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
+#pragma acc routine seq
   static double calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {
     periodic = periodic_v.data();
@@ -244,7 +248,6 @@ public:
 
 inline
 std::size_t VonMissesKernelParams::getNumberOfParameters( const std::size_t& nargs ) {
-  plumed_dbg_assert( nargs==3 );
   return 5;
 }
 
@@ -253,6 +256,7 @@ public:
   static void registerKeywords( Keywords& keys ) {}
   static void read( UniversalVonMisses& p, ActionWithArguments* action, const std::vector<Value*>& args ) {}
   static void setArgumentDomain( const unsigned& i, UniversalVonMisses& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {}
+#pragma acc routine seq
   static double calc( const UniversalVonMisses& params, const VonMissesKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {}
   void toACCDevice() const {}
