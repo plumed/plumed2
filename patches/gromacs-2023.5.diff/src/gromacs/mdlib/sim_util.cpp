@@ -137,6 +137,7 @@ using gmx::StepWorkload;
 /* PLUMED */
 #include "../../../Plumed.h"
 extern int    plumedswitch;
+extern int    plumedIsUsed;
 extern plumed plumedmain;
 /* END PLUMED */
 
@@ -968,7 +969,7 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
             domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
             || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
             || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0
-            || plumedswitch; /* PLUMED: it adds its forces to the CPU force buffer */
+            || plumedIsUsed; /* PLUMED: it adds its forces to the CPU force buffer */
     domainWork.haveCpuNonLocalForceWork = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
     domainWork.haveLocalForceContribInCpuBuffer =
             domainWork.haveCpuLocalForceWork || simulationWork.havePpDomainDecomposition;
