@@ -1599,7 +1599,7 @@ int Mdrunner::mdrunner()
           if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
 #if GMX_THREAD_MPI
           /* all the thread-MPI ranks would share the same PLUMED object */
-          if(PAR(cr)) gmx_fatal(FARGS, "PLUMED cannot be used with more than one thread-MPI rank: use GROMACS built with MPI");
+          if(PAR(cr)) gmx_fatal(FARGS, "PLUMED cannot be used with more than one thread-MPI rank: run with -ntmpi 1, or use GROMACS built with MPI");
 #endif
           /* detect plumed API version */
           int pversion=0;
