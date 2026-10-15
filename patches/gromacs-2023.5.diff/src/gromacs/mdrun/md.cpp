@@ -813,8 +813,8 @@ void gmx::LegacySimulator::do_md()
     if(plumedswitch){
       if(shellfc){
         /* relax_shell_flexcon() calls do_force() without setting PLUMED up for the step */
-        gmx_fatal(FARGS,"PLUMED cannot be used with shell (polarizable) particles with this version of GROMACS: "
-                        "PLUMED would not be applied.");
+        gmx_fatal(FARGS,"PLUMED cannot be used with shell (polarizable) particles or flexible constraints with this version "
+                        "of GROMACS: PLUMED would not be applied.");
       }
       /* detect plumed API version */
       int pversion=0;
@@ -860,7 +860,7 @@ void gmx::LegacySimulator::do_md()
                 });
       }
       if(vsite){
-        /* The forces that PLUMED applies on virtual sites in the energy path are spread below */
+        /* When PLUMED runs after do_force(), the forces it applies on virtual sites are spread below */
         plumedIsVirtualSite.assign(top_global.natoms,false);
         for(const AtomProxy atomP : AtomRange(top_global)){
           plumedIsVirtualSite[atomP.globalAtomNumber()]=(atomP.atom().ptype==ParticleType::VSite);
