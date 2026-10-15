@@ -167,8 +167,10 @@ void DomainDecomposition::Set_comm(Communicator& comm) {
   setAtomsNlocal(getNumberOfAtoms());
   setAtomsContiguous(0);
   if( dd.Get_rank()!=0 ) {
+    // The virial computed by PLUMED is added on the first rank only. The virial of the
+    // MD code is instead spread over all ranks, so each rank still rescales its share (ENERGY)
     ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-    ap->noforce=true;
+    ap->forces_added_elsewhere=true;
   }
 }
 

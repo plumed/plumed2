@@ -46,7 +46,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 - [ASE](https://wiki.fysik.dtu.dk/ase/)
 - [GPUMD](https://gpumd.org/)
-- [GROMACS](https://www.gromacs.org/) as of version 2025, with limited support (no replica exchange, no \ref ENERGY collective variable, no lambda dynamics).
+- [GROMACS](https://www.gromacs.org/) as of version 2025, with limited support (see the table below).
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
@@ -54,6 +54,22 @@ If you maintain another MD code that is PLUMED-ready let us know and we will add
 Additionally, we provide patching procedures for the following codes:
 
 @CODESL@
+
+The patches for GROMACS 2025 and 2026 add features to the PLUMED interface that GROMACS includes since version 2025,
+and the patches for the older versions of GROMACS have some more:
+
+| Feature | GROMACS 2025 or later, without patches | patches for GROMACS 2025 and 2026 | patches for GROMACS 2022 to 2024 |
+|:--|:--:|:--:|:--:|
+| biases on atoms, with domain decomposition and multiple time stepping | yes | yes | yes |
+| \ref ENERGY collective variable and biases on the energy | no | yes | yes |
+| multiple walkers (e.g. `WALKERS_MPI`) | no | yes | yes |
+| PLUMED checkpoint data written at the steps of the GROMACS checkpoints | no | yes | yes |
+| PLUMED stopping the simulation (e.g. \ref COMMITTOR) | no | yes | yes |
+| polarizable models with shells | no | yes | no |
+| replica exchange with a PLUMED bias (`-replex`, `-hrex`) | no | no | yes |
+| lambda dynamics (expanded ensemble) | no | no | yes |
+
+The interface with GROMACS is tested on the [PLUMED testcenter](https://plumed-testcenter.github.io/browse.html).
 
 Alternatively, one
 can use PLUMED as a \ref tools for post processing the results from molecular dynamics 

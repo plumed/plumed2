@@ -44,6 +44,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/mtop_atomloops.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 
 namespace gmx
@@ -52,6 +55,16 @@ namespace gmx
 void PlumedOptionProvider::setTopology(const gmx_mtop_t& mtop)
 {
     opts_.natoms_ = mtop.natoms;
+    opts_.isVirtualSite_.clear();
+    if (gmx_mtop_particletype_count(mtop)[ParticleType::VSite] > 0)
+    {
+        opts_.isVirtualSite_.resize(mtop.natoms, false);
+        for (const AtomProxy atomP : AtomRange(mtop))
+        {
+            opts_.isVirtualSite_[atomP.globalAtomNumber()] =
+                    (atomP.atom().ptype == ParticleType::VSite);
+        }
+    }
 }
 
 void PlumedOptionProvider::setEnsembleTemperature(const EnsembleTemperature& temp)

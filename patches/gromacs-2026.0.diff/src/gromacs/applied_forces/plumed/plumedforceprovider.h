@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -91,13 +92,16 @@ public:
      * \param[in] isCheckpointingStep  whether GROMACS writes a checkpoint at \p step
      */
     bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    //! Whether PLUMED asked to stop the simulation during the last calculation
+    bool requestsStop() const override;
     /*! \brief Passes the potential energy to PLUMED and applies energy biases
      * \param[in]     energyWasComputed  whether the potential energy is valid this step
      * \param[in,out] potentialEnergy    the MD potential energy
      * \param[in,out] force              the complete force array
      * \param[in,out] virial             the force virial
+     * \returns whether the atoms that PLUMED used include virtual sites
      */
-    void applyAfterPotentialEnergy(bool           energyWasComputed,
+    bool applyAfterPotentialEnergy(bool           energyWasComputed,
                                    real*          potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor         virial) override;
@@ -105,10 +109,14 @@ public:
 private:
     //! Throws if PLUMED computed a bias while replica exchange is active
     void checkReplicaExchangeBias();
+    //! Whether the atoms that PLUMED used on this step include virtual sites
+    bool usesVirtualSites();
 
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>             isVirtualSite_;
 
     std::optional<ArrayRef<const int>> globalAtomIndices_;
     int                                plumedNeedsEnergy_ = 0;
@@ -120,6 +128,12 @@ private:
     bool prepareStepIsCalled_ = false;
     //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces()
     int checkpointRequested_ = 0;
+    //! Step for which prepareStep() was last called
+    int64_t currentStep_ = 0;
+    //! Last step that PLUMED calculated
+    std::optional<int64_t> calculatedStep_;
+    //! Whether PLUMED already calculated this MD step (shell relaxation): it is then not updated again
+    bool repeatedCall_ = false;
 };
 
 } // namespace gmx
