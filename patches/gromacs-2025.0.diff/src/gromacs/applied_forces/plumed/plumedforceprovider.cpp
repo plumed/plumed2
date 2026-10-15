@@ -191,7 +191,7 @@ try
     long int         lstep = prepareStepIsCalled_ ? currentStep_ : forceProviderInput.step_;
     // With shell particles, relax_shell_flexcon() calls do_force() again on the same step (passing
     // step 1): PLUMED then calculates its forces again, without updating (depositing, printing...).
-    // Only in MD, where prepareStep() gives the step: e.g. reruns can have frames with the same step
+    // "Again" means since the last prepareStep(), which MD and reruns call before each step
     repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
     calculatedStep_ = lstep;
     plumed_->cmd("setStepLong", &lstep);
@@ -298,6 +298,7 @@ try
     plumed_->cmd("setStepLong", &lstep);
     prepareStepIsCalled_ = true;
     currentStep_         = step;
+    calculatedStep_.reset();
     if (plumedAPIversion_ > 3)
     {
         // Set on every step: PLUMED resets it only on the steps when some action is active

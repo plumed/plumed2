@@ -111,6 +111,7 @@
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/iforceprovider.h" /* PLUMED */
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -645,6 +646,15 @@ void gmx::LegacySimulator::do_rerun()
                                                        runScheduleWork_->domainWork,
                                                        runScheduleWork_->simulationWork);
 
+        /* PLUMED */
+        /* As in md.cpp, PLUMED gets the step before the force calculation: with shell particles, it
+           then only calculates again, without updating, in the rest of the shell relaxation */
+        if (fr_->forceProviders != nullptr)
+        {
+            fr_->forceProviders->prepareStep(step, false);
+        }
+        /* END PLUMED */
+
         if (shellfc)
         {
             /* Now is the time to relax the shells */
@@ -892,8 +902,9 @@ void gmx::LegacySimulator::do_rerun()
         if (MAIN(cr_))
         {
             /* read next frame from input trajectory */
-            /* PLUMED: keep a stop request, e.g. from PLUMED (COMMITTOR) through the stop handler */
-            isLastStep = isLastStep || !read_next_frame(oenv_, status, &rerun_fr);
+            /* PLUMED: stop after this frame if asked, e.g. by PLUMED (COMMITTOR) through the stop handler */
+            isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS)
+                         || !read_next_frame(oenv_, status, &rerun_fr);
         }
 
         if (PAR(cr_))
