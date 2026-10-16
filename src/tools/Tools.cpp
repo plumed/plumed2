@@ -620,7 +620,7 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 std::vector<std::string> Tools::ls(const std::string&d) {
   std::vector<std::string> result;
   for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
-    result.push_back(dir_entry.path().filename());
+    result.push_back(dir_entry.path().filename().string());
   }
   return result;
 }

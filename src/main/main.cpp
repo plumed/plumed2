@@ -57,7 +57,7 @@ int main(int argc,char**argv) {
   try {
     PLMD::Plumed p;
     p.cmd("CLTool setArgc",&argc);
-    p.cmd("CLTool setArgv",argv, {argc});
+    p.cmd("CLTool setArgv",argv, {static_cast<std::size_t>(argc)});
 #ifdef __PLUMED_HAS_MPI
     if(!nompi) {
       MPI_Comm comm;

@@ -905,7 +905,7 @@ public:
         return new Delta();
     }
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
-        return (args[0] == 0.0 ? 1.0/0.0 : 0.0);
+        return (args[0] == 0.0 ? std::numeric_limits<double>::infinity() : 0.0);
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
 };

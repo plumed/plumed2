@@ -23,6 +23,7 @@
 #define __PLUMED_ves_WaveletGrid_h
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
