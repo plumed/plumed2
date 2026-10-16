@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} · {% endif %}PLUMED manual</title>
+    <link rel="icon" href="{{ '/assets/pigeon.png' | url }}">
+    <link rel="stylesheet" href="{{ '/assets/plumedTheme.css' | url }}">
+    <link rel="stylesheet" href="{{ '/assets/plumedtohtml.css' | url }}">
+    <link rel="stylesheet" href="{{ '/assets/mermaid.css' | url }}">
+    <link rel="stylesheet" href="{{ '/assets/dropdown.css' | url }}">
+    <link rel="stylesheet" href="{{ '/assets/plumedManual.css' | url }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.1/b-3.2.3/b-html5-3.2.3/datatables.min.css">
+  </head>
+  <body data-search-index="{{ '/assets/search_index.json' | url }}" data-site-root="{{ '/' | url }}">
+    <header class="site-header">
+      <a class="brand" href="{{ '/' | url }}">
+        <img src="{{ '/assets/pigeon.png' | url }}" alt="">
+        <span>PLUMED manual</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false">Menu</button>
+      <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+        <a href="{{ '/' | url }}">Introduction</a>
+        <a href="https://www.plumed-tutorials.org/lessons/20/001/data/NAVIGATION.html">Installation</a>
+        <a href="{{ '/modules/' | url }}">Modules</a>
+        <a href="{{ '/actionlist/' | url }}">Actions</a>
+        <a href="https://www.plumed-tutorials.org/lessons/21/001/data/NAVIGATION.html">Getting started</a>
+        <a href="https://www.plumed-tutorials.org">Tutorials</a>
+        <a href="https://www.plumed-nest.org">Examples</a>
+        {% set page_depth = page.url.strip('/').split('/') | reject('equalto', '') | list | length %}
+        <a href="{{ '../' * (page_depth + 2) }}developer-doc/html/index.html">Developer docs</a>
+        <a href="https://github.com/plumed/plumed2">GitHub</a>
+      </nav>
+      <div class="header-tools">
+        <button id="search-open" type="button" aria-haspopup="dialog">Search</button>
+        <button id="theme-toggle" type="button" aria-label="Change colour scheme">Theme</button>
+      </div>
+    </header>
+
+    <div class="page-layout">
+      <main id="content" class="content">
+        {{ page.html }}
+      </main>
+      {% if page.toc %}
+      <aside class="page-toc" aria-label="On this page">
+        <strong>On this page</strong>
+        {{ page.toc.html }}
+      </aside>
+      {% endif %}
+    </div>
+
+    <dialog id="search-dialog">
+      <form method="dialog"><button class="search-close" aria-label="Close search">×</button></form>
+      <label for="search-query">Search the PLUMED manual</label>
+      <input id="search-query" type="search" autocomplete="off" autofocus>
+      <ol id="search-results"></ol>
+    </dialog>
+
+    <script src="{{ '/assets/plumedtohtml.js' | url }}"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="{{ '/assets/tablecode.js' | url }}"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+    <script src="https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.1/b-3.2.3/b-html5-3.2.3/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js"></script>
+    <script src="{{ '/assets/mermaid.js' | url }}"></script>
+    <script src="{{ '/assets/plumedTheme.js' | url }}"></script>
+  </body>
+</html>
