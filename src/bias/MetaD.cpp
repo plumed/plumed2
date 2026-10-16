@@ -1360,7 +1360,7 @@ MetaD::MetaD(const ActionOptions& ao):
       // read the grid in input, find the keys
       if(walkers_mpi_&&gridreadfilename_.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
-        const std::string ret = std::filesystem::current_path();
+        const std::string ret = std::filesystem::current_path().string();
         gridreadfilename_ = "/" + gridreadfilename_;
         gridreadfilename_ = ret + gridreadfilename_;
         if(comm.Get_rank()==0) {
@@ -1414,7 +1414,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   if(walkers_mpi_&&mw_dir_==""&&hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
-    const std::string ret = std::filesystem::current_path();
+    const std::string ret = std::filesystem::current_path().string();
     mw_dir_ = ret;
     mw_dir_ = mw_dir_ + "/";
     if(comm.Get_rank()==0) {
