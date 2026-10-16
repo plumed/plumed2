@@ -1,0 +1,18 @@
+# a metatomic-core model defined in Python (distance.py), computing the
+# distance between the two atoms with explicit gradients. The second frame
+# crosses the periodic boundary.
+distance: METATOMIC ...
+      PLUGIN_LIBRARY=./metatomic-python-plugin.so
+      PLUGIN=python
+      MODEL=distance.py
+
+      SPECIES1=1
+      SPECIES2=2
+      SPECIES_TO_TYPES=8,1
+...
+
+reference: DISTANCE ATOMS=1,2
+
+PRINT ARG=distance,reference FILE=colvar FMT=%10.6f
+
+RESTRAINT ARG=distance AT=1.2 KAPPA=10.0

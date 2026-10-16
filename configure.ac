@@ -374,6 +374,7 @@ PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
+PLUMED_CONFIG_ENABLE([libmetatomic-core],[search for libmetatomic (metatomic-core C++ API)],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
@@ -1291,6 +1292,21 @@ if test $libmetatomic = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic_torch metatensor_torch metatensor], [true])
+fi
+
+# metatomic-core does not need libtorch
+if test $libmetatomic_core = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libmetatomic_core],[
+    #include <metatensor.hpp>
+    #include <metatomic/model.hpp>
+    #include <metatomic/plugin.hpp>
+    int main() {
+      auto model = metatomic::load_model("model");
+      auto outputs = metatomic::execute_model(model, std::vector<metatomic::System>(), std::nullopt, {}, false);
+      mts_version();
+      return static_cast<int>(outputs.size());
+    }
+  ], [__PLUMED_HAS_LIBMETATOMIC_CORE], [metatomic metatensor], [true])
 fi
 
 # libitensor requires libhdf5
