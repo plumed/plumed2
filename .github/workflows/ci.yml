@@ -279,7 +279,7 @@ jobs:
 #       done
 
   macsimple:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
     - uses: actions/checkout@v6
     - name: Set paths
@@ -308,7 +308,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-14 ]
+        os: [ubuntu-22.04, macos-15 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
