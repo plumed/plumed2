@@ -317,7 +317,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
 void NeighborList::setRequestList() {
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
-  // so as now it is not necessary to add extra logic in this function
+  // so as now it is not necessary to add extra logic in this function
   requestlist_.clear();
   for(unsigned int i=0; i<size(); ++i) {
     requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
