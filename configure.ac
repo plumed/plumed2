@@ -926,8 +926,9 @@ AC_SUBST(PYTHON_BIN)
 AC_SUBST(PYTHON_BUILD_FOUND)
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
-# Otherwise, search from a list of names:
-if test -z "$PYTHON_BIN" ; then
+# Otherwise, search from a list of names (only when the python interface is
+# enabled, so that --disable-python does not look for python at all):
+if test "$python" = true && test -z "$PYTHON_BIN" ; then
     AC_CHECK_PROGS([PYTHON_BIN],[python3])
 fi
 if test -n "$PYTHON_BIN" ; then
