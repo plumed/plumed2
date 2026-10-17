@@ -9177,8 +9177,9 @@ fi
 
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
-# Otherwise, search from a list of names:
-if test -z "$PYTHON_BIN" ; then
+# Otherwise, search from a list of names (only when the python interface is
+# enabled, so that --disable-python does not look for python at all):
+if test "$python" = true && test -z "$PYTHON_BIN" ; then
     for ac_prog in python3
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
