@@ -341,6 +341,10 @@ void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<float>& inputdat
 
 template <class T,typename myPTM>
 void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
+  // Empty is only used to reach the static shortcut helpers (see the
+  // SecondaryStructureInput alias); this body is never called for it. MSVC
+  // instantiates member bodies eagerly, hence the guard.
+  if constexpr ( !std::is_same_v<T,Empty> ) {
   // std::vector<Vector> pos( actiondata.natoms );
   std::array<Vector,30> pos;
 
@@ -378,6 +382,7 @@ void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T&
   for(unsigned i=0; i<rs; ++i) {
     T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
   }
+  }
 }
 
 template <class T,typename myPTM>
@@ -398,6 +403,8 @@ void SecondaryStructureBase<T,myPTM>::getForceIndices( std::size_t task_index,
     const T& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
+  // Guarded for the same reason as performTask().
+  if constexpr ( !std::is_same_v<T,Empty> ) {
   for(unsigned i=0; i<input.ncomponents; ++i) {
     std::size_t m = 0;
     for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
@@ -415,6 +422,7 @@ void SecondaryStructureBase<T,myPTM>::getForceIndices( std::size_t task_index,
     }
     force_indices.threadsafe_derivatives_end[i] = 0;
     force_indices.tot_indices[i] = m;
+  }
   }
 }
 
