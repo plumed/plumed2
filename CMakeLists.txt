@@ -31,45 +31,34 @@ if(PLUMED_ENABLE_VES)
 endif()
 
 # ------------------------------------------------- build-time .inc generation
-# Python replication of upstream maketools scripts (makecmd, makeModuleMap, xxd)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-
-set(GEN_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/generate_incs.py)
+# CMake reimplementation of the upstream maketools scripts (makecmd,
+# makeModuleMap, xxd, update-version.sh and the Config.inc rules from
+# src/config/Makefile), so that no external interpreter (python/awk/sed) is
+# needed at build time.
+set(GEN_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/generate.cmake)
+set(GEN_MODULE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedGenerate.cmake)
 set(PPM_INC ${PLUMED_GEN}/PlumedMainEnum.inc ${PLUMED_GEN}/PlumedMainMap.inc
             ${PLUMED_GEN}/GREXEnum.inc ${PLUMED_GEN}/GREXMap.inc
             ${PLUMED_GEN}/CLToolMainEnum.inc ${PLUMED_GEN}/CLToolMainMap.inc
             ${PLUMED_GEN}/ModuleMap.inc)
-# Config.inc / version.h / Makefile.conf.xxd: upstream generates them with sed
-# (src/config/Makefile) and update-version.sh; here the same substitutions are
-# done by the generator script, into the build tree.
 set(CONFIG_OUT ${PLUMED_GEN}/Config.inc ${PLUMED_GEN}/version.h
                ${PLUMED_GEN}/Makefile.conf.xxd)
+set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd)
+# The module map is built from every module source; make the generation
+# command depend on them so that it is rerun when actions are added/removed.
+file(GLOB _generator_inputs CONFIGURE_DEPENDS ${PLUMED_SRC}/src/*/*.cpp)
 add_custom_command(
-    OUTPUT ${PPM_INC} ${CONFIG_OUT}
-    COMMAND ${Python3_EXECUTABLE} ${GEN_SCRIPT}
-            --src ${PLUMED_SRC} --outdir ${PLUMED_GEN}
-    DEPENDS ${GEN_SCRIPT}
-            ${PLUMED_SRC}/src/core/PlumedMain.cpp
-            ${PLUMED_SRC}/src/core/GREX.cpp
-            ${PLUMED_SRC}/src/core/CLToolMain.cpp
+    OUTPUT ${PPM_INC} ${CONFIG_OUT} ${COMPLETION_XXD}
+    COMMAND ${CMAKE_COMMAND}
+            "-DSRC=${PLUMED_SRC}" "-DOUT=${PLUMED_GEN}"
+            -P ${GEN_SCRIPT}
+    DEPENDS ${GEN_SCRIPT} ${GEN_MODULE}
             ${PLUMED_SRC}/src/config/Config.inc.in
             ${PLUMED_SRC}/VERSION.txt
-    COMMENT "Generating PLUMED enum/map/config files"
+            ${PLUMED_SRC}/src/cltools/completion.sh
+            ${_generator_inputs}
+    COMMENT "Generating PLUMED enum/map/config files (CMake)"
     VERBATIM)
-
-# completion.xxd: shell completion bytes (generated once from completion.sh;
-# content is inert data for the Completion cltool)
-set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd)
-add_custom_command(
-    OUTPUT ${COMPLETION_XXD}
-    COMMAND ${Python3_EXECUTABLE} ${GEN_SCRIPT}
-            --src ${PLUMED_SRC} --outdir ${PLUMED_GEN} --completion-only
-    DEPENDS ${GEN_SCRIPT} ${PLUMED_SRC}/src/cltools/completion.sh
-    COMMENT "Generating completion.xxd"
-    VERBATIM)
-
-# Config.inc / version.h / Makefile.conf.xxd are produced by the command above
-# (see CONFIG_OUT); no generated files are kept in the source tree.
 
 # ---------------------------------------------------------------- library
 set(PLUMED_SOURCES)
@@ -141,5 +130,7 @@ if(MSVC)
     target_compile_options(plumed PRIVATE /permissive- /EHsc /utf-8 /Zc:__cplusplus /W1)
 endif()
 
-list(LENGTH PLUMED_SOURCES PLUMED_NSRC)
+set(_compilable ${PLUMED_SOURCES})
+list(FILTER _compilable INCLUDE REGEX "\.(cpp|c|cxx)$")
+list(LENGTH _compilable PLUMED_NSRC)
 message(STATUS "PLUMED MSVC build: ${PLUMED_NSRC} sources")
