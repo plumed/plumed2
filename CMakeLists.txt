@@ -134,3 +134,39 @@ set(_compilable ${PLUMED_SOURCES})
 list(FILTER _compilable INCLUDE REGEX "\.(cpp|c|cxx)$")
 list(LENGTH _compilable PLUMED_NSRC)
 message(STATUS "PLUMED MSVC build: ${PLUMED_NSRC} sources")
+
+# ---------------------------------------------------------------- install
+# Mirror the essential parts of `make install` (src/lib/Makefile) for the
+# static-kernel build. See cmake-msvc/PlumedInstall.cmake for the details.
+include(GNUInstallDirs)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedInstall.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedGenerate.cmake)
+plumed_read_version("${PLUMED_SRC}")
+
+set(PLUMED_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+set(PLUMED_INSTALL_PROGRAM_DIR "${CMAKE_INSTALL_LIBDIR}/plumed")
+
+install(TARGETS plumed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES $<TARGET_FILE:plumedKernel> DESTINATION ${PLUMED_INSTALL_LIBDIR})
+
+# headers, with the same include rewrite as maketools/install.headers
+install(CODE "
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedInstall.cmake)
+  message(STATUS \"Installing headers\")
+  plumed_install_headers(\"${PLUMED_SRC}\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/plumed\")
+")
+
+# link files for MD engines (make and cmake), pkg-config file, patches/scripts
+set(_libplumeddir "\${CMAKE_INSTALL_PREFIX}/${PLUMED_INSTALL_PROGRAM_DIR}")
+set(_srcroot "${CMAKE_CURRENT_SOURCE_DIR}")
+set(_libdir "\${CMAKE_INSTALL_PREFIX}/${PLUMED_INSTALL_LIBDIR}")
+install(CODE "
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedInstall.cmake)
+  file(MAKE_DIRECTORY \"${_libplumeddir}/src/lib\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig\")
+  message(STATUS \"Writing Plumed.inc / Plumed.cmake\")
+  plumed_write_link_files(\"${_libdir}/plumedKernel.lib\" \"${_libdir}\" plumed \"${_libplumeddir}/src/lib\" \"${_srcroot}\")
+  message(STATUS \"Writing pkg-config file\")
+  plumed_write_pkgconfig(plumed \"\${CMAKE_INSTALL_PREFIX}\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}\" \"${_libdir}\" \"${PLUMED_VERSION_LONG}\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig/plumed.pc\")
+")
+install(DIRECTORY ${PLUMED_SRC}/patches ${PLUMED_SRC}/scripts DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR})
+install(FILES ${PLUMED_SRC}/fortran/plumed.f90 ${PLUMED_SRC}/fortran/plumed_f08.f90 DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/fortran)
