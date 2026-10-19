@@ -1,6 +1,6 @@
 type=driver
 # a small bilayer, continuous across the box, in one group and in separate groups.
-# In one group, the reference is reported as maybe not whole (a warning), and the frames are still made whole right.
+# There is no warning, and the frames are made whole right.
 arg="--plumed plumed.dat --igro traj.gro"
 
 function plumed_regtest_before() {
@@ -11,6 +11,6 @@ function plumed_regtest_before() {
 function plumed_regtest_after() {
   for f in out_sep out; do
     echo "# $f"
-    grep -E "^PLUMED: (Action WHOLEMOLECULES|WARNING for action MOLINFO)" $f | sed -e "s/^PLUMED: //" -e "s/\\. If these atoms.*//"
+    grep -E "^PLUMED: (Action WHOLEMOLECULES|WARNING for action MOLINFO)" $f | sed -e "s/^PLUMED: //" -e "s/\\. WHOLEMOLECULES will.*//"
   done > warnings
 }

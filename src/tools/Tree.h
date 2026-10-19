@@ -41,12 +41,6 @@ private:
   std::vector<unsigned> root_indexes_;
   std::vector<unsigned> tree_indexes_;
 
-/// Write a warning to the log if the reference structure looks split by the periodic boundary
-  void checkReferenceIsWhole(const std::vector<AtomNumber> & atoms,
-                             const std::vector<unsigned> & newatoms,
-                             const std::vector<Vector> & positions,
-                             double longest2) const;
-
 public:
 /// constructor
   explicit Tree(GenericMolInfo* moldat);

@@ -1,5 +1,5 @@
 # a small bilayer: 18 lipids of 6 beads, continuous across the box in x and y
 MOLINFO STRUCTURE=ref.pdb WHOLE
-# all lipids in one group: a warning is written, and every lipid is still made whole
+# all lipids in one group: no warning (the check does not go from one lipid to the next), and every lipid is made whole
 WHOLEMOLECULES ENTITY0=1-108
 DUMPATOMS ATOMS=1-108 FILE=whole.xyz PRECISION=3

@@ -6,10 +6,12 @@
 
 // MOLINFO WHOLE takes the reference structure as whole. Here each reference is read with
 // MOLINFO ... WHOLE and used by WHOLEMOLECULES, and we report whether PLUMED accepts it or
-// writes a warning that it looks split by the periodic boundary of its CRYST1 record.
+// writes a warning that a chain looks split by the periodic boundary of its CRYST1 record.
 // torn.pdb is whole.pdb with 15 atoms wrapped across a face of its (rhombic dodecahedron) cell.
 // Its copies without a usable cell (no CRYST1, the 1 A placeholder, a zero cell, a crystallographic
 // space group) cannot be checked and are accepted.
+// dna_torn.pdb is dna_whole.pdb (chain A of 1BNA) wrapped nucleotide by nucleotide: each nucleotide is
+// whole, and the chain is split between them.
 int main(int, char**) {
   std::ofstream out("output");
   unsigned natoms=304;
@@ -17,11 +19,12 @@ int main(int, char**) {
   const std::vector<std::pair<std::string,std::string>> cases{
     {"whole.pdb","1-304"},
     {"torn.pdb","1-304"},
-    {"torn.pdb","1-150"},
     {"torn_nocryst.pdb","1-304"},
     {"torn_placeholder.pdb","1-304"},
     {"torn_zero.pdb","1-304"},
-    {"torn_crystal.pdb","1-304"}
+    {"torn_crystal.pdb","1-304"},
+    {"dna_whole.pdb","1-243"},
+    {"dna_torn.pdb","1-243"}
   };
   for(unsigned i=0; i<cases.size(); ++i) {
     const auto & c(cases[i]);
@@ -48,12 +51,11 @@ int main(int, char**) {
       out<<"accepted\n";
       continue;
     }
-    const auto b=m.find("Atoms:",a);
-    const auto e=m.find(". If these atoms",a);
-    if(b==std::string::npos || e==std::string::npos) {
+    const auto e=m.find(". WHOLEMOLECULES",a);
+    if(e==std::string::npos) {
       out<<"unexpected warning: "<<m.substr(a)<<"\n";
     } else {
-      out<<"warning, "<<m.substr(a+18,m.find(" atoms",a)-a-18)<<" atoms;"<<m.substr(b+6,e-b-6)<<"\n";
+      out<<"warning, "<<m.substr(a+18,e-a-18)<<"\n";
     }
   }
   return 0;

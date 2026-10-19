@@ -2,4 +2,3 @@
 Action WHOLEMOLECULES
 # out
 Action WHOLEMOLECULES
-WARNING for action MOLINFO with label @0 : the reference structure in the MOLINFO pdb file may not be whole: 9 of its 313 atoms here are closer to a periodic image of the others, in the box of its CRYST1 record, than to the others themselves. Atoms: 305 (BEN21) 306 (BEN21) 307 (BEN21) 308 (BEN21) 309 (BEN21) 310 (BEN21) 311 (BEN21) 312 (BEN21) 313 (BEN21)
