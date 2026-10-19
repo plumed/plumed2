@@ -24,7 +24,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: plumed --version
-        run: ./build/plumed.exe --version
+        run: ./build/plumed.exe info --version
 
       - name: Smoke test (kt)
         run: ./build/plumed.exe kt --temp 300
