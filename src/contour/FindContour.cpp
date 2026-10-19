@@ -222,7 +222,7 @@ int FindContour::checkTaskIsActive( const unsigned& taskno ) const {
   return -1;
 }
 
-void FindContour::getInputData( std::vector<double>& inputdata ) const {
+void FindContour::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t rank = getPntrToArgument(0)->getRank();
   std::size_t ndata = getInputGridObject().getNumberOfPoints()*rank;
   if( inputdata.size()!=2*rank*ndata ) {
