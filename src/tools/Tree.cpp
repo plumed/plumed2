@@ -31,6 +31,7 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 
 namespace PLMD {
 
@@ -294,13 +295,19 @@ void Tree::checkReferenceIsWhole(const std::vector<AtomNumber> & atoms,
     if(moved.size()>10) {
       list+=" and "+std::to_string(moved.size()-10)+" more";
     }
-    plumed_error()<<"the reference structure in the MOLINFO pdb file is not whole: "<<moved.size()
-                  <<" of its "<<n<<" atoms here are closer to a periodic image of the others,"
-                  <<" in the box of its CRYST1 record, than to the others themselves. Atoms:"<<list
-                  <<". This happens when the pdb was written with molecules split by the periodic boundary"
-                  <<" (make it whole, for example with gmx trjconv -pbc whole),"
-                  <<" when its CRYST1 record is not the box the structure was written in,"
-                  <<" or when these atoms are too sparse for that box";
+    // A warning, not an error: a group of several molecules that are not in contact (a ligand away
+    // from the protein, a membrane) is reported too, and WHOLEMOLECULES can still handle it.
+    std::ostringstream msg;
+    msg<<"the reference structure in the MOLINFO pdb file may not be whole: "<<moved.size()
+       <<" of its "<<n<<" atoms here are closer to a periodic image of the others,"
+       <<" in the box of its CRYST1 record, than to the others themselves. Atoms:"<<list
+       <<". If these atoms are one molecule, WHOLEMOLECULES will split it in every frame:"
+       <<" the pdb was then written with molecules split by the periodic boundary"
+       <<" (make it whole, for example with gmx trjconv -pbc whole),"
+       <<" or its CRYST1 record is not the box the structure was written in."
+       <<" This is also reported when the group holds several molecules that are not in contact,"
+       <<" such as a ligand away from the protein or a membrane, or atoms too sparse for that box";
+    moldat_->warning(msg.str());
   }
 }
 

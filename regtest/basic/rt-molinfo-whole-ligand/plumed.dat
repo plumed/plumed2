@@ -1,0 +1,5 @@
+# trp-cage and a ligand away from it, closer to a periodic image of the protein than to the protein itself
+MOLINFO STRUCTURE=ref.pdb WHOLE
+# protein and ligand in one group: a warning is written, and the frames are made whole as the reference
+WHOLEMOLECULES ENTITY0=1-313
+DUMPATOMS ATOMS=1-313 FILE=whole.xyz PRECISION=3

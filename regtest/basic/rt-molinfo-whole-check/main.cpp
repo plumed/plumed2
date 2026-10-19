@@ -1,11 +1,12 @@
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 // MOLINFO WHOLE takes the reference structure as whole. Here each reference is read with
 // MOLINFO ... WHOLE and used by WHOLEMOLECULES, and we report whether PLUMED accepts it or
-// reports it as split by the periodic boundary of its CRYST1 record.
+// writes a warning that it looks split by the periodic boundary of its CRYST1 record.
 // torn.pdb is whole.pdb with 15 atoms wrapped across a face of its (rhombic dodecahedron) cell.
 // Its copies without a usable cell (no CRYST1, the 1 A placeholder, a zero cell, a crystallographic
 // space group) cannot be checked and are accepted.
@@ -22,26 +23,37 @@ int main(int, char**) {
     {"torn_zero.pdb","1-304"},
     {"torn_crystal.pdb","1-304"}
   };
-  for(const auto & c : cases) {
-    PLMD::Plumed plumed;
-    plumed.cmd("setNatoms",&natoms);
-    plumed.cmd("setLogFile","test.log");
-    plumed.cmd("init");
+  for(unsigned i=0; i<cases.size(); ++i) {
+    const auto & c(cases[i]);
+    const std::string logfile="test"+std::to_string(i)+".log";
     out<<c.first<<" ENTITY0="<<c.second<<" : ";
     try {
+      PLMD::Plumed plumed;
+      plumed.cmd("setNatoms",&natoms);
+      plumed.cmd("setLogFile",logfile.c_str());
+      plumed.cmd("init");
       plumed.cmd("readInputLine",("MOLINFO STRUCTURE="+c.first+" WHOLE").c_str());
       plumed.cmd("readInputLine",("WHOLEMOLECULES ENTITY0="+c.second).c_str());
-      out<<"accepted\n";
     } catch(PLMD::Plumed::ExceptionError &e) {
-      const std::string m(e.what());
-      const auto a=m.find("is not whole: ");
-      const auto b=m.find("Atoms:");
-      const auto e2=m.find(". This happens");
-      if(a==std::string::npos || b==std::string::npos || e2==std::string::npos) {
-        out<<"unexpected error: "<<m<<"\n";
-      } else {
-        out<<"not whole, "<<m.substr(a+14,m.find(" atoms",a)-a-14)<<" atoms;"<<m.substr(b+6,e2-b-6)<<"\n";
-      }
+      out<<"unexpected error: "<<e.what()<<"\n";
+      continue;
+    }
+    // the log is complete once plumed is destroyed
+    std::ifstream in(logfile);
+    std::stringstream ss;
+    ss<<in.rdbuf();
+    const std::string m(ss.str());
+    const auto a=m.find("may not be whole: ");
+    if(a==std::string::npos) {
+      out<<"accepted\n";
+      continue;
+    }
+    const auto b=m.find("Atoms:",a);
+    const auto e=m.find(". If these atoms",a);
+    if(b==std::string::npos || e==std::string::npos) {
+      out<<"unexpected warning: "<<m.substr(a)<<"\n";
+    } else {
+      out<<"warning, "<<m.substr(a+18,m.find(" atoms",a)-a-18)<<" atoms;"<<m.substr(b+6,e-b-6)<<"\n";
     }
   }
   return 0;

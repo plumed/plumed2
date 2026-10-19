@@ -1,3 +1,1 @@
 type=make
-# the test checks exception messages
-export PLUMED_STACK_TRACE=no

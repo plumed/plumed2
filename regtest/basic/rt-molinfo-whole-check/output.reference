@@ -1,5 +1,5 @@
 whole.pdb ENTITY0=1-304 : accepted
-torn.pdb ENTITY0=1-304 : not whole, 15 of its 304 atoms; 200 (SER13) 201 (SER13) 205 (SER13) 207 (SER13) 211 (SER14) 212 (SER14) 216 (SER14) 220 (GLY15) 221 (GLY15) 222 (GLY15) and 5 more
+torn.pdb ENTITY0=1-304 : warning, 15 of its 304 atoms; 200 (SER13) 201 (SER13) 205 (SER13) 207 (SER13) 211 (SER14) 212 (SER14) 216 (SER14) 220 (GLY15) 221 (GLY15) 222 (GLY15) and 5 more
 torn.pdb ENTITY0=1-150 : accepted
 torn_nocryst.pdb ENTITY0=1-304 : accepted
 torn_placeholder.pdb ENTITY0=1-304 : accepted

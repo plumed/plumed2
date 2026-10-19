@@ -49,7 +49,7 @@ void GenericMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
-  keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC. If the pdb file has a CRYST1 record with space group P 1, this is checked for the atoms of each group that is made whole with it");
+  keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC. If the pdb file has a CRYST1 record with space group P 1, this is checked for the atoms of each group that is made whole with it, and a warning is written to the log if some of them are closer to a periodic image of the others than to the others themselves");
 }
 
 GenericMolInfo::~GenericMolInfo() {

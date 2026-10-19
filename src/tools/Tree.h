@@ -41,7 +41,7 @@ private:
   std::vector<unsigned> root_indexes_;
   std::vector<unsigned> tree_indexes_;
 
-/// Raise an error if the reference structure is split by the periodic boundary
+/// Write a warning to the log if the reference structure looks split by the periodic boundary
   void checkReferenceIsWhole(const std::vector<AtomNumber> & atoms,
                              const std::vector<unsigned> & newatoms,
                              const std::vector<Vector> & positions,
