@@ -345,43 +345,43 @@ void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T&
   // SecondaryStructureInput alias); this body is never called for it. MSVC
   // instantiates member bodies eagerly, hence the guard.
   if constexpr ( !std::is_same_v<T,Empty> ) {
-  // std::vector<Vector> pos( actiondata.natoms );
-  std::array<Vector,30> pos;
+    // std::vector<Vector> pos( actiondata.natoms );
+    std::array<Vector,30> pos;
 
-  for(unsigned i=0; i<actiondata.natoms; ++i) {
-    const unsigned atno = actiondata.colvar_atoms(task_index,i);
-    pos[i][0] = input.inputdata[3*atno+0];
-    pos[i][1] = input.inputdata[3*atno+1];
-    pos[i][2] = input.inputdata[3*atno+2];
-  }
-  // This aligns the two strands if this is required
-  if( actiondata.align_strands ) {
-    Vector distance=input.pbc->distance( pos[6],pos[21] );
-    distance += pos[6] - pos[21];
-    //Vector origin_old, origin_new;
-    //origin_old=pos[21];
-    //origin_new=pos[6]+distance;
-    for(unsigned i=15; i<30; ++i) {
-      //pos[i]+=( origin_new - origin_old );
-      pos[i]+=distance;
+    for(unsigned i=0; i<actiondata.natoms; ++i) {
+      const unsigned atno = actiondata.colvar_atoms(task_index,i);
+      pos[i][0] = input.inputdata[3*atno+0];
+      pos[i][1] = input.inputdata[3*atno+1];
+      pos[i][2] = input.inputdata[3*atno+2];
     }
-  } else if( !actiondata.nopbc ) {
-    for(unsigned i=0; i<actiondata.natoms-1; ++i) {
-      const Vector & first (pos[i]);
-      Vector & second (pos[i+1]);
-      second=first+input.pbc->distance(first,second);
+    // This aligns the two strands if this is required
+    if( actiondata.align_strands ) {
+      Vector distance=input.pbc->distance( pos[6],pos[21] );
+      distance += pos[6] - pos[21];
+      //Vector origin_old, origin_new;
+      //origin_old=pos[21];
+      //origin_new=pos[6]+distance;
+      for(unsigned i=15; i<30; ++i) {
+        //pos[i]+=( origin_new - origin_old );
+        pos[i]+=distance;
+      }
+    } else if( !actiondata.nopbc ) {
+      for(unsigned i=0; i<actiondata.natoms-1; ++i) {
+        const Vector & first (pos[i]);
+        Vector & second (pos[i+1]);
+        second=first+input.pbc->distance(first,second);
+      }
     }
-  }
 
-  // Create a holder for the derivatives
-  const unsigned rs = actiondata.nstructures;
-  ColvarOutput rmsd_output( output.values,
-                            3*pos.size()+virialSize,
-                            output.derivatives.data() );
-  // And now calculate the DRMSD
-  for(unsigned i=0; i<rs; ++i) {
-    T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
-  }
+    // Create a holder for the derivatives
+    const unsigned rs = actiondata.nstructures;
+    ColvarOutput rmsd_output( output.values,
+                              3*pos.size()+virialSize,
+                              output.derivatives.data() );
+    // And now calculate the DRMSD
+    for(unsigned i=0; i<rs; ++i) {
+      T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
+    }
   }
 }
 
@@ -405,24 +405,24 @@ void SecondaryStructureBase<T,myPTM>::getForceIndices( std::size_t task_index,
     ForceIndexHolder force_indices ) {
   // Guarded for the same reason as performTask().
   if constexpr ( !std::is_same_v<T,Empty> ) {
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    std::size_t m = 0;
-    for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
-      std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
-      force_indices.indices[i][m] = base + 0;
-      ++m;
-      force_indices.indices[i][m] = base + 1;
-      ++m;
-      force_indices.indices[i][m] = base + 2;
-      ++m;
+    for(unsigned i=0; i<input.ncomponents; ++i) {
+      std::size_t m = 0;
+      for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
+        std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
+        force_indices.indices[i][m] = base + 0;
+        ++m;
+        force_indices.indices[i][m] = base + 1;
+        ++m;
+        force_indices.indices[i][m] = base + 2;
+        ++m;
+      }
+      for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
+        force_indices.indices[i][m] = n;
+        ++m;
+      }
+      force_indices.threadsafe_derivatives_end[i] = 0;
+      force_indices.tot_indices[i] = m;
     }
-    for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
-      force_indices.indices[i][m] = n;
-      ++m;
-    }
-    force_indices.threadsafe_derivatives_end[i] = 0;
-    force_indices.tot_indices[i] = m;
-  }
   }
 }
 
