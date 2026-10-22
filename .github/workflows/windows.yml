@@ -1,11 +1,13 @@
 name: windows-cmake
 
 on:
-  push:
-    branches: [ cmake-msvc ]
-  pull_request:
-    branches: [ master ]
-  workflow_dispatch:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
 
 jobs:
   windows-build:
