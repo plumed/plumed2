@@ -203,11 +203,17 @@ install/lib$(program_name).a: install/kernel.o $(OBJ_WRAPPER)
 endif
 
 # standard target (according to GNU doc)
+# The user manual is built with MkDocs into new-manual/site and installed as user-doc/html,
+# which is where "plumed info --user-doc" looks for it and the same layout used online
+# (see .ci/push); the manual's link to the developer docs also relies on it.
+# Any previously installed user-doc (possibly an old Doxygen manual) is removed first,
+# so that a stale manual is never left behind. The legacy user-doc/html and
+# user-doc/manual.pdf are no longer built by "make doc" and are not installed.
 install-html:
-	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	rm -fr "$(DESTDIR)$(htmldir)/user-doc"
+	if test -d ../../new-manual/site ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc/html" && cd ../../new-manual/site && tar cf - . | tar xf - -C "$(DESTDIR)$(htmldir)/user-doc/html/" ; fi
 	if test -d ../../developer-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
 	if test -d ../../developer-doc/coverage ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/coverage | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
-	if test -f ../../user-doc/manual.pdf ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc" && cp ../../user-doc/manual.pdf "$(DESTDIR)$(htmldir)/user-doc/" ; fi
 
 install:
 ifdef PLUMED_PREFIX
