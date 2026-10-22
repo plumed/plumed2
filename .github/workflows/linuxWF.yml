@@ -32,11 +32,15 @@ jobs:
         - -nvhpc-mpi-
     steps:
     - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      # ImageOS is set by GitHub on hosted runners (e.g. "ubuntu24"); fail loudly if it ever disappears
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@v5
       with:
         path: ~/.ccache
-        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
+        key: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-
     # kenref_core is built from a pinned ref, so it only needs rebuilding when that ref moves.
     # .ci/install.kenref exits early when the cache restored a usable prefix.
     #
@@ -58,7 +62,7 @@ jobs:
     - uses: actions/cache@v5
       with:
         path: ~/opt/kenref
-        key: kenref-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
+        key: kenref-${{ steps.image.outputs.os }}-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:

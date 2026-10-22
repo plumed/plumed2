@@ -2,12 +2,12 @@ name: 'Prepare linux environment'
 description: 'Set up the linux environment for plumed'
 inputs:
   pytest-make:
-    descriptions: 'set to yes for exporting PYTHONPATH to be used in the tests'
+    description: 'set to yes for exporting PYTHONPATH to be used in the tests'
     required: false
     default: false
     type: boolean
   export-kernel:
-    descriptions: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
+    description: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
     required: false
     default: false
     type: boolean
