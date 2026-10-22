@@ -290,7 +290,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
           error("missing input file " + reffile );
         }
         environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
-        log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
+        log.printf("  Reference environment %d : reading %zu reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
       }
     }
   } else {
