@@ -199,9 +199,9 @@ Collect::Collect( const ActionOptions& ao ):
   }
 
   if( type=="vector" ) {
-    log.printf("  adding %ld elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  adding %zu elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
   } else {
-    log.printf("  constructing matrix with rows of length %ld from input data\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  constructing matrix with rows of length %zu from input data\n", getPntrToArgument(0)->getNumberOfValues() );
   }
 
   parse("CLEAR",clearstride);

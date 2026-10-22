@@ -168,12 +168,12 @@ BAIES::BAIES(const ActionOptions&ao):
   read_data_file(datafile, atoms, sigma_min);
 
   // print stuff to log
-  log.printf("  number of atoms involved : %u\n", atoms.size());
+  log.printf("  number of atoms involved : %zu\n", atoms.size());
   log.printf("  AF2 fit parameters file : %s\n", datafile.c_str());
   log.printf("  prior type : %s\n", prior.c_str());
   // print stuff from data file
   log.printf("  noise model type : %s\n", mtype_.c_str());
-  log.printf("  number of pairs involved : %u\n", atom_pairs_.size());
+  log.printf("  number of pairs involved : %zu\n", atom_pairs_.size());
   // other info
   log.printf("  temperature of the system in energy unit : %f\n", kbt_);
   log.printf("  minimum value of sigma : %f\n", sigma_min);

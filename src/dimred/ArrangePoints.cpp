@@ -380,15 +380,15 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       error("interpolation only works in two dimensions");
     }
     log.printf("  doing %u cycles of global optimization sweeps\n",ncycles);
-    log.printf("  using coarse grid of points that is %u",npoints[0]);
+    log.printf("  using coarse grid of points that is %zu",npoints[0]);
     for(unsigned j=1; j<npoints.size(); ++j) {
-      log.printf(" by %u",npoints[j]);
+      log.printf(" by %zu",npoints[j]);
     }
     log.printf("\n  grid is %f times larger than the difference between the position of the minimum and maximum projection \n",gbuf);
     if( nfgrid[0]>0 ) {
-      log.printf("  interpolating stress onto grid of points that is %u",nfgrid[0]);
+      log.printf("  interpolating stress onto grid of points that is %zu",nfgrid[0]);
       for(unsigned j=1; j<nfgrid.size(); ++j) {
-        log.printf(" by %u",nfgrid[j]);
+        log.printf(" by %zu",nfgrid[j]);
       }
       log.printf("\n");
     }
