@@ -1,5 +1,5 @@
 exclude = [
-  # excluding the examples in the manual
+  # excluding the python files in the old tutorials
  "user-doc",
  # regtests - only in the main dir, so that pycv will get checked
  "./regtest"

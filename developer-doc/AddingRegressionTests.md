@@ -49,15 +49,15 @@ extra_files="../../trajectories/diala_traj_nm.xyz  ../trajectories/path_msd/all.
 - The first line in this file - the one containing the string mpiprocs=2 - tells PLUMED that when this regtest should be run using MPI on two nodes.
 If mpiprocs is not specified then PLUMED will, by default, run the test one node.
 
-- The second line tells PLUMED that the test is to be performed using the command line tool <a href="../../user-doc/html/driver.html">driver</a>.
+- The second line tells PLUMED that the test is to be performed using the command line tool <a href="../../user-doc/html/driver/index.html">driver</a>.
 The vast majority of features are best tested using type=driver here although the type=make function can be useful for testing tools that are used in many places in the code (see the code in regtest/basic/rt-make-4 for an example of how use type=make to test PLUMED's internal matrix class).  If you need to test PLUMED in a way that is not included in these various types please contact the PLUMED developers before
 making any changes.
 There are four options that you can use here:
-    - type=driver tells PLUMED to run the test by reading in a trajectory and analysing it using <a href="../../user-doc/html/driver.html">driver</a>,
+    - type=driver tells PLUMED to run the test by reading in a trajectory and analysing it using <a href="../../user-doc/html/driver/index.html">driver</a>,
     - type=simplemd tells PLUMED that the test will involve
-running some Lennard Jones MD using <a href="../../user-doc/html/simplemd.html">simplemd</a>,
+running some Lennard Jones MD using <a href="../../user-doc/html/simplemd/index.html">simplemd</a>,
     - type=sum_hills tells PLUMED that the test will involve summing gaussians using the 
-<a href="../../user-doc/html/sum_hills.html">sum_hills</a> utility
+<a href="../../user-doc/html/sum_hills/index.html">sum_hills</a> utility
     - type=make tells PLUMED that a main function (called main.cpp) is included in the regtest directory and that the test should compile this function, link in
 the PLUMED library and run the resulting executible.
 
@@ -171,7 +171,7 @@ other words the file deriv does not contain derivatives with respect to atomic p
 If your feature is more complicated than those covered in the previous section - if for example you are using multiple lines in the PLUMED input
 to calculate a final CV or if you have had to write a new apply method in your method - then you will need to do more to test your implementation.
 It is probably still a good idea to test analytical derivatives against numerical derivatives in these complicated cases, however.  You can do this
-by adding a bias to the system and by exploiting the --debug-forces feature that is contained in <a href="../../user-doc/html/driver.html">driver</a>.  
+by adding a bias to the system and by exploiting the --debug-forces feature that is contained in <a href="../../user-doc/html/driver/index.html">driver</a>.  
 To understand how this works suppose you have a PLUMED input that looks like this:
 
 \verbatim

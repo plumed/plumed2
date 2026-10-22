@@ -83,7 +83,7 @@ the keywords for your new method.  These keywords will have one of 5 attributes:
 </tr> <tr>
 <td> <b> flag </b> </td> <td> This is used to declare keywords such as NOPBC that tell plumed to turn on/off some feature of the calculation </td>
 </tr> <tr>
-<td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword. You can easily specify if there are multiple ways of defining the atoms involved in the action in the manual.  To register the keywords for this first method of specifying the atoms using atoms-1. Then register the keywords for the second way of specifying the atoms using atoms-2 and so on.  A manual that states that these keywords can be used in an either or fashion, much that for <a href="../../user-doc/html/_t_o_r_s_i_o_n.html"> TORSION </a>, will then be generated.  </td>
+<td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword. You can easily specify if there are multiple ways of defining the atoms involved in the action in the manual.  To register the keywords for this first method of specifying the atoms using atoms-1. Then register the keywords for the second way of specifying the atoms using atoms-2 and so on.  A manual that states that these keywords can be used in an either or fashion, much that for <a href="../../user-doc/html/TORSION/index.html"> TORSION </a>, will then be generated.  </td>
 </tr> <tr>
 <td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option.  These keywords will be assumed to be optional.  However, you can set them to be atoms or whatever by using reset_style(keyword,newstyle).  </td>
 </table>
@@ -388,9 +388,9 @@ the line that includes the string PLUMEDOC.  These tags provide a community-sour
 
 \section updating-web-manuals Updating web manuals
 
-Precompiled versions of PLUMED manuals can be found on github at an address such as http://www.plumed.org/doc-v2.1/user-doc/html/index.html
+Precompiled versions of PLUMED manuals can be found on github at an address such as https://www.plumed.org/doc-v2.1/user-doc/html/index.html
 (replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
-is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
+is shown as a webpage. In this example, the repository is located at https://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done
 from Travis CI automatically whenever a commit containing in its log the tag [makedoc] is pushed into the plumed2 github repository.
 Since version 2.3.3, manual is always updated, and tag [makedoc] is ignored.

@@ -8,7 +8,7 @@ endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim json astyle python
+SUBDIRS := $(SRCDIRS) new-manual developer-doc regtest macports vim json astyle python
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
@@ -102,7 +102,7 @@ fullclean:
 
 
 docclean:
-	cd user-doc && make clean
+	cd new-manual && make clean
 	cd developer-doc && make clean
 
 cppcheck:

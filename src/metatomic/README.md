@@ -3,7 +3,7 @@
 
 ## Building the code
 
-See [the main documentation](../../user-doc/METATOMICMOD.md) for more
+See [the main documentation](module.md) for more
 information on how to compile and use this module.
 
 

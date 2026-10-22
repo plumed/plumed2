@@ -93,7 +93,7 @@ Here's a description of the content of each file and directory in the root PLUME
     sourceme.sh.in   : template configuration script
     src              : source code
     test             : examples
-    user-doc         : legacy (Doxygen) user documentation
+    user-doc         : old tutorials and pages from the Doxygen manual, not part of the current manual
     vim              : directory where vim syntax is generated
 
 Required software
