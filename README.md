@@ -9,7 +9,7 @@
 [![DPorts package](https://repology.org/badge/version-for-repo/dports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Spack package](https://repology.org/badge/version-for-repo/spack/plumed.svg)](https://repology.org/project/plumed/versions)
-[![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
+[![Bluesky](https://img.shields.io/bluesky/followers/plumed.org?label=Follow)](https://bsky.app/profile/plumed.org)
 
 Branches and releases
 ---------------------
