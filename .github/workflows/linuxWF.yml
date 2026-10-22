@@ -270,8 +270,18 @@ jobs:
       run: |
          make -C developer-doc coverage
          .ci/push coverage
-         # this is hanging for some reason now (2024-04-03) - GB
-         #bash <(curl -s https://codecov.io/bash) > /dev/null
+    # Replaces the deprecated codecov.io/bash uploader, disabled in 2024 because it was hanging.
+    # Upload the lcov report built above (third-party libraries already removed, consistently
+    # with .codecov.yml) instead of letting the action search for and re-process gcov files.
+    # Errors are not fatal: a Codecov outage should not make CI fail.
+    - name: Upload coverage to Codecov
+      if: contains( matrix.variant, '-coverage-' )
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./developer-doc/coverage.info
+        disable_search: true
+        fail_ci_if_error: false
     - name: Push doc
       if: contains( matrix.variant, '-doc-' )
       env:
