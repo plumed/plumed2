@@ -1,0 +1,30 @@
+name: windows-cmake
+
+on:
+  push:
+    branches: [ cmake-msvc ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: plumed --version
+        run: ./build/plumed.exe info --version
+
+      - name: Smoke test (kt)
+        run: ./build/plumed.exe kt --temp 300

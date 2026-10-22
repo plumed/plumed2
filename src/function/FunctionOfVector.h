@@ -336,6 +336,11 @@ void FunctionOfVector<CV, myPTM>::getForceIndices( std::size_t task_index,
   }
 }
 
+
+
+/// Explicit specialization defined in the corresponding .cpp file; declared
+/// here so that every translation unit instantiating the template sees it.
+template <> std::string FunctionOfVector<Custom>::writeInGraph() const;
 }
 }
 #endif
