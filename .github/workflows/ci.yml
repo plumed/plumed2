@@ -26,6 +26,10 @@ jobs:
       contents: read
       security-events: write
 
+  windows:
+    uses: ./.github/workflows/windows.yml
+    secrets: inherit
+
   mac:
     uses: ./.github/workflows/macWF.yml
     secrets: inherit
