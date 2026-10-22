@@ -470,7 +470,7 @@ void Rescale::calculate() {
 
   // now separate terms that should be rescaled
   std::vector<double> args;
-  if(getNumberOfArguments()-nores_>0) {
+  if(getNumberOfArguments()>nores_) {
     args.resize(getNumberOfArguments()-nores_);
   }
   for(unsigned i=0; i<args.size(); ++i) {
