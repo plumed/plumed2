@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04 , macos-15, macos-latest ]
+        os: [ubuntu-latest , macos-15, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
