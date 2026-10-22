@@ -270,11 +270,12 @@ jobs:
     # Errors are not fatal: a Codecov outage should not make CI fail.
     - name: Upload coverage to Codecov
       if: contains( matrix.variant, '-coverage-' )
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./developer-doc/coverage.info
         disable_search: true
+        plugins: noop
         fail_ci_if_error: false
     - name: Push doc
       if: contains( matrix.variant, '-doc-' )
