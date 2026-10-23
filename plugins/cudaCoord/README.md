@@ -41,6 +41,17 @@ Assuming you are using this plugin from the plugin directory of a plumed source 
  - do not support the SWITCH keyword
  - new `THREADS` keyword to control the maximum number of threads that can be used by the kernels
 
+## Performance notes
+
+The plugin is designed to coexist with an MD code that keeps the GPU busy (e.g. GPU-resident GROMACS):
+
+ - all the work is enqueued on non-blocking, highest-priority CUDA streams, so it never implicitly synchronizes with the legacy default stream (and so with the other code's streams), and there are no device-wide synchronizations (`cudaDeviceSynchronize`): each step waits only for its own work with a single `cudaStreamSynchronize`
+ - device and pinned host buffers are persistent and grow-only, so there are no `cudaMalloc`/`cudaFree` (that synchronize the whole device) in the steady state
+ - each step does one host-to-device copy (positions), the kernels, a deterministic two-stage reduction of the coordination and of the virial, and one device-to-host copy (derivatives, coordination and virial)
+ - the cell lists are built on the CPU and uploaded only when the neighbor list is updated: by default this happens at every step, set `NL_CUTOFF` larger than `D_MAX` and `NL_STRIDE` > 1 to reduce this cost
+
+Since PLUMED receives the positions and returns the forces through host memory, each step still pays for the data round trip: for small groups the CPU `COORDINATION` may still be faster.
+
 ## Current TODO
  
  - The GPU device needs to be explicitly selected
