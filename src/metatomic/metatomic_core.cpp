@@ -439,7 +439,7 @@ mta::System CoreBackend::createSystem(bool empty) {
             continue;
         }
 
-        vesin::VesinOptions options;
+        vesin::VesinOptions options{};
         options.cutoff = pairs.engine_cutoff;
         options.full = pairs.options.full_list();
         options.return_shifts = true;

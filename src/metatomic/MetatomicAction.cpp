@@ -281,7 +281,7 @@ metatensor_torch::TensorBlock NeighborListCalculator::compute(
 
     // use https://github.com/Luthaf/vesin to compute the requested neighbor
     // lists since we can not get these from PLUMED
-    vesin::VesinOptions vesin_options;
+    vesin::VesinOptions vesin_options{};
     vesin_options.cutoff = this->engine_cutoff_;
     vesin_options.full = this->options->full_list();
     vesin_options.return_shifts = true;
