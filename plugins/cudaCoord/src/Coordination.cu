@@ -121,22 +121,34 @@ constexpr unsigned roundUpToWarp(unsigned const n) {
 /// sum of the coordination and of the virial in
 /// `partials[k*ngroups+blockIdx.x]` (k in [0,nAccumulators) )
 /// these partials then need to be reduced with CUDAHELPERS::reducePartials
+/// the device view of a set of cell lists, in CSR format:
+/// the atoms in the cell `c` are `cellAtoms[cellStart[c]:cellStart[c+1]]` and
+/// the atoms in its neighbourhood (the 27 cells around it, itself included)
+/// are `neighAtoms[neighStart[c]:neighStart[c+1]]`.
+/// Only the non empty cells are stored.
+struct cellListsDevice {
+  /// number of (non empty) cells
+  unsigned nCells=0;
+  /// number of atoms in the most populated cell
+  unsigned maxAtomsInCell=0;
+  /// number of atoms in the most populated neighbourhood
+  unsigned maxNeighbours=0;
+  unsigned const * cellStart=nullptr;
+  unsigned const * cellAtoms=nullptr;
+  unsigned const * neighStart=nullptr;
+  unsigned const * neighAtoms=nullptr;
+};
+
 template <typename precision>
 struct worker {
   virtual ~worker() = default;
   // threads must be a multiple of 32
   virtual void runSelf(
-    unsigned ngroups,
     unsigned threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned maxOtherAtoms,
-    unsigned const * nat_OtherAtoms,
-    unsigned const * otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut,
@@ -144,34 +156,22 @@ struct worker {
 
   // threads must be a multiple of 32
   virtual void runDual(
-    unsigned ngroups,
     unsigned threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned maxOtherAtoms,
-    unsigned const * nat_OtherAtoms,
-    unsigned const * otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut,
     precision* partials ) =0;
 
   virtual void runDualDev(
-    unsigned  ngroups,
     unsigned  threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned  maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned const maxOtherAtoms,
-    unsigned const *nat_OtherAtoms,
-    unsigned const *otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut)=0;
@@ -213,85 +213,89 @@ T __device__ __forceinline__ calculatePBC (T const val,
   }
 }
 
+// each block works on a (non empty) cell, the threads of the block loop on the
+// atoms of the cell (so a cell can contain more atoms than the threads in the
+// block) and compare them with the atoms in the neighbourhood, that are loaded
+// in shared memory in tiles of `tile_size` atoms
+// blockDim.x must be a multiple of 32 (for the final reduction)
 template <typename calcType,typename calculateFloat>
-__global__ void getCoord (const unsigned max_inCell,
-                          const unsigned max_neigh,
-                          const unsigned tile_size,
+__global__ void getCoord (const unsigned tile_size,
                           const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
                           const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
-                          unsigned const * n_inCell,
-                          unsigned const * cellIndexes,
-                          unsigned const * n_neigh,
-                          unsigned const * neighIndexes,
+                          const cellListsDevice lists,
                           calculateFloat const* coordinates,
                           unsigned const* trueIndexes,
                           calculateFloat* devOut,
                           calculateFloat* partials) {
-  //each block works on a (non empty) cell
-  //blockDim.x must be a multiple of 32 (for the final reduction)
   const unsigned cellId=blockIdx.x;
   CUDAHELPERS::sharedArena arena;
   auto sPos = arena.get_shared_memory<calculateFloat>(3*tile_size);
   auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
 
-  // active if does the calculations, incactive if only loads the memory
-  const bool activeThread = threadIdx.x < n_inCell[cellId];
-  // the number of threads is equal to the number of atoms in the biggest cell
-  const unsigned i = (activeThread) ?
-                     cellIndexes[threadIdx.x + cellId * max_inCell] : 0;
-  // we try working with less global memory possible, so we set up a bunch of
-  // temporary variables
-  const unsigned idx = trueIndexes[i];
-  // local results
-  calculateFloat mydev[3]  = {0.0, 0.0, 0.0};
+  const unsigned atomsStart = lists.cellStart[cellId];
+  const unsigned nInCell = lists.cellStart[cellId+1] - atomsStart;
+  const unsigned neighStart = lists.neighStart[cellId];
+  const unsigned nNeigh = lists.neighStart[cellId+1] - neighStart;
+  unsigned const * neighbours = lists.neighAtoms + neighStart;
+
+  // local results, accumulated over all the atoms processed by this thread
   calculateFloat mycoord = 0.0;
 //static array became registers with the compiler (cuda 12)
   calculateFloat myVirial[9] = {0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0
                                };
-  // local calculation aid
-  const calculateFloat xyz[3] = {coordinates[X (i)],
-                                 coordinates[Y (i)],
-                                 coordinates[Z (i)]
-                                };
-  for(unsigned tile=0; tile < n_neigh[cellId]; tile+=tile_size) {
-    // loading shared memory
-    const auto activeCandidates=min(tile_size,n_neigh[cellId]-tile);
-    const auto nnI=neighIndexes+cellId*max_neigh+tile;
-    for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
-      sPos[X (k)] = coordinates[X (nnI[k])];
-      sPos[Y (k)] = coordinates[Y (nnI[k])];
-      sPos[Z (k)] = coordinates[Z (nnI[k])];
-      realIndexes[k] = trueIndexes[nnI[k]];
-    }
-
-    __syncthreads();
-
-    if (activeThread) {
-      for (unsigned j = 0; j < activeCandidates; ++j) {
-        // Safeguard
-        if (idx != realIndexes[j] ) {
-          mycoord+=calcType:: coordLoop(j,
-                                        i,
-                                        nnI,
-                                        xyz,
-                                        sPos,
-                                        myVirial,
-                                        mydev,
-                                        myPBC,
-                                        switchingParameters);
-        }
-
+  // the loop bounds are the same for all the threads of the block,
+  // so the __syncthreads() within are safe
+  for (unsigned base=0; base < nInCell; base += blockDim.x) {
+    // active if does the calculations, inactive if only loads the memory
+    const bool activeThread = base + threadIdx.x < nInCell;
+    const unsigned i = (activeThread) ?
+                       lists.cellAtoms[atomsStart + base + threadIdx.x] : 0;
+    const unsigned idx = trueIndexes[i];
+    calculateFloat mydev[3]  = {0.0, 0.0, 0.0};
+    // local calculation aid
+    const calculateFloat xyz[3] = {coordinates[X (i)],
+                                   coordinates[Y (i)],
+                                   coordinates[Z (i)]
+                                  };
+    for(unsigned tile=0; tile < nNeigh; tile+=tile_size) {
+      // loading shared memory
+      const unsigned activeCandidates=min(tile_size,nNeigh-tile);
+      const auto nnI=neighbours+tile;
+      for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
+        sPos[X (k)] = coordinates[X (nnI[k])];
+        sPos[Y (k)] = coordinates[Y (nnI[k])];
+        sPos[Z (k)] = coordinates[Z (nnI[k])];
+        realIndexes[k] = trueIndexes[nnI[k]];
       }
+
+      __syncthreads();
+
+      if (activeThread) {
+        for (unsigned j = 0; j < activeCandidates; ++j) {
+          // Safeguard
+          if (idx != realIndexes[j] ) {
+            mycoord+=calcType:: coordLoop(j,
+                                          i,
+                                          nnI,
+                                          xyz,
+                                          sPos,
+                                          myVirial,
+                                          mydev,
+                                          myPBC,
+                                          switchingParameters);
+          }
+        }
+      }
+      __syncthreads();
     }
-    __syncthreads();
-  }
-  if (activeThread) {
-    // working in global memory ONLY at the end
-    devOut[X (i)] = mydev[0];
-    devOut[Y (i)] = mydev[1];
-    devOut[Z (i)] = mydev[2];
+    if (activeThread) {
+      // working in global memory ONLY at the end
+      devOut[X (i)] = mydev[0];
+      devOut[Y (i)] = mydev[1];
+      devOut[Z (i)] = mydev[2];
+    }
   }
   // reducing coordination and virial within the block (inactive threads contribute zeros)
   // the shared memory used for the tiles is reused: the last iteration of
@@ -305,18 +309,15 @@ __global__ void getCoord (const unsigned max_inCell,
   CUDAHELPERS::blockReduceToPartials (acc, sPos, partials);
 }
 
+// same structure of getCoord, but calculates only the derivatives
+// (used for the atoms of the second group in dual mode)
 template <bool usePBC, typename mySwitch, typename calculateFloat>
 __global__ void
 getDualDev (
-  const unsigned max_inCell,
-  const unsigned max_neigh,
   const unsigned tile_size,
   const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
   const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
-  unsigned const * n_inCell,
-  unsigned const * cellIndexes,
-  unsigned const * n_neigh,
-  unsigned const * neighIndexes,
+  const cellListsDevice lists,
   calculateFloat const* coordinates,
   unsigned const* trueIndexes,
   calculateFloat* devOut
@@ -325,70 +326,75 @@ getDualDev (
   CUDAHELPERS::sharedArena arena;
   auto sPos = arena.get_shared_memory<calculateFloat>(3 * tile_size);
   auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
-  // active if does the calculations, incactive if only loads the memory
-  const bool activeThread = threadIdx.x < n_inCell[cellId];
-  // the number of threads is equal to the number of atoms in the biggest cell
-  const unsigned i = (activeThread) ?
-                     cellIndexes[threadIdx.x + cellId * max_inCell] : 0;
-  // we try working with less global memory possible, so we set up a bunch of
-  // temporary variables
-  const unsigned idx = trueIndexes[i];
-  // local results
-  calculateFloat mydevX = 0.0;
-  calculateFloat mydevY = 0.0;
-  calculateFloat mydevZ = 0.0;
 
-  // local calculation aid
-  const calculateFloat x = coordinates[X (i)];
-  const calculateFloat y = coordinates[Y (i)];
-  const calculateFloat z = coordinates[Z (i)];
+  const unsigned atomsStart = lists.cellStart[cellId];
+  const unsigned nInCell = lists.cellStart[cellId+1] - atomsStart;
+  const unsigned neighStart = lists.neighStart[cellId];
+  const unsigned nNeigh = lists.neighStart[cellId+1] - neighStart;
+  unsigned const * neighbours = lists.neighAtoms + neighStart;
 
-  for(auto tile=0; tile < n_neigh[cellId]; tile+=tile_size) {
-    // loading shared memory
-    const auto activeCandidates=min(tile_size,n_neigh[cellId]-tile);
-    const auto nnI=neighIndexes+cellId*max_neigh+tile;
-    for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
-      sPos[X (k)] = coordinates[X (nnI[k])];
-      sPos[Y (k)] = coordinates[Y (nnI[k])];
-      sPos[Z (k)] = coordinates[Z (nnI[k])];
-      realIndexes[k] = trueIndexes[nnI[k]];
-    }
+  for (unsigned base=0; base < nInCell; base += blockDim.x) {
+    // active if does the calculations, inactive if only loads the memory
+    const bool activeThread = base + threadIdx.x < nInCell;
+    const unsigned i = (activeThread) ?
+                       lists.cellAtoms[atomsStart + base + threadIdx.x] : 0;
+    const unsigned idx = trueIndexes[i];
+    // local results
+    calculateFloat mydevX = 0.0;
+    calculateFloat mydevY = 0.0;
+    calculateFloat mydevZ = 0.0;
 
-    __syncthreads();
+    // local calculation aid
+    const calculateFloat x = coordinates[X (i)];
+    const calculateFloat y = coordinates[Y (i)];
+    const calculateFloat z = coordinates[Z (i)];
 
-    if (activeThread) {
-      calculateFloat d[3];
-      calculateFloat t;
-      calculateFloat dfunc;
+    for(unsigned tile=0; tile < nNeigh; tile+=tile_size) {
+      // loading shared memory
+      const unsigned activeCandidates=min(tile_size,nNeigh-tile);
+      const auto nnI=neighbours+tile;
+      for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
+        sPos[X (k)] = coordinates[X (nnI[k])];
+        sPos[Y (k)] = coordinates[Y (nnI[k])];
+        sPos[Z (k)] = coordinates[Z (nnI[k])];
+        realIndexes[k] = trueIndexes[nnI[k]];
+      }
 
-      for (unsigned j = 0; j < activeCandidates; ++j) {
-        // Safeguard
-        if (idx != realIndexes[j] ) {
+      __syncthreads();
 
-          d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
-          d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
-          d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+      if (activeThread) {
+        calculateFloat d[3];
+        calculateFloat dfunc;
 
-          dfunc = 0.;
-          t = GPU::calculateSqr<mySwitch> (
-                d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
-                switchingParameters,
-                dfunc);
+        for (unsigned j = 0; j < activeCandidates; ++j) {
+          // Safeguard
+          if (idx != realIndexes[j] ) {
 
-          mydevX -= dfunc * d[0];
-          mydevY -= dfunc * d[1];
-          mydevZ -= dfunc * d[2];
+            d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
+            d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
+            d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+
+            dfunc = 0.;
+            GPU::calculateSqr<mySwitch> (
+              d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
+              switchingParameters,
+              dfunc);
+
+            mydevX -= dfunc * d[0];
+            mydevY -= dfunc * d[1];
+            mydevZ -= dfunc * d[2];
+          }
         }
       }
+      __syncthreads();
     }
-    __syncthreads();
-  }
 
-  if (activeThread) {
-    // working in global memory ONLY at the end
-    devOut[X (i)] = mydevX;
-    devOut[Y (i)] = mydevY;
-    devOut[Z (i)] = mydevZ;
+    if (activeThread) {
+      // working in global memory ONLY at the end
+      devOut[X (i)] = mydevX;
+      devOut[Y (i)] = mydevY;
+      devOut[Z (i)] = mydevZ;
+    }
   }
 }
 
@@ -604,41 +610,30 @@ public:
     }()}
   {}
   void runSelf(
-    unsigned const ngroups,
     unsigned const threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned const maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned const maxOtherAtoms,
-    unsigned const * nat_OtherAtoms,
-    unsigned const * otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut,
     precision* partials) override {
-    //how many atoms accumulate in hsared memory,
-    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
-    const auto tile_size= std::min(maxAtomsPerCell, maxOtherAtoms);
+    //how many atoms accumulate in shared memory,
+    //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
+    const auto tile_size= std::min(maxAtomsPerCell, lists.maxNeighbours);
     //the shared memory is reused for the final block reduction
     const auto memSize=std::max(tile_size
                                 * (3*sizeof(precision) + sizeof(unsigned)),
                                 CUDAHELPERS::blockReduceMemory<nAccumulators,precision>(threads));
     getCoord<self,precision>
-    <<<ngroups,threads,
+    <<<lists.nCells,threads,
     memSize,
     mystream
-    >>> (maxAtomsInCells,
-         maxOtherAtoms,
-         tile_size,
+    >>> (tile_size,
          switchingParameters,
          myPBC,
-         nat_InCells,
-         atomsInCellsIdxs,
-         nat_OtherAtoms,
-         otherAtomsIdxs,
+         lists,
          coordinates,
          trueIndexes,
          devOut,
@@ -647,42 +642,30 @@ public:
   }
 
   void runDual(
-    unsigned const ngroups,
     unsigned const threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned const maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned const maxOtherAtoms,
-    unsigned const * nat_OtherAtoms,
-    unsigned const * otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut,
     precision* partials) override {
-
-    //how many atoms accumulate in hsared memory,
-    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
-    const auto tile_size= std::min(maxAtomsPerCell_dual, maxOtherAtoms);
+    //how many atoms accumulate in shared memory,
+    //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
+    const auto tile_size= std::min(maxAtomsPerCell_dual, lists.maxNeighbours);
     //the shared memory is reused for the final block reduction
     const auto memSize=std::max(tile_size
                                 * (3*sizeof(precision) + sizeof(unsigned)),
                                 CUDAHELPERS::blockReduceMemory<nAccumulators,precision>(threads));
     getCoord<dual,precision>
-    <<<ngroups,threads,
+    <<<lists.nCells,threads,
     memSize,
     mystream
-    >>> (maxAtomsInCells,
-         maxOtherAtoms,
-         tile_size,
+    >>> (tile_size,
          switchingParameters,
          myPBC,
-         nat_InCells,
-         atomsInCellsIdxs,
-         nat_OtherAtoms,
-         otherAtomsIdxs,
+         lists,
          coordinates,
          trueIndexes,
          devOut,
@@ -691,39 +674,28 @@ public:
   }
 
   void runDualDev(
-    unsigned const ngroups,
     unsigned const threads,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
-    unsigned const maxAtomsInCells,
-    unsigned const * nat_InCells,
-    unsigned const * atomsInCellsIdxs,
-    unsigned const maxOtherAtoms,
-    unsigned const * nat_OtherAtoms,
-    unsigned const * otherAtomsIdxs,
+    cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
     precision* devOut) override {
-    //how many atoms accumulate in hsared memory,
-    //so that the kernel will loop on them with no risk of exceeding the mazimum memory allowe
-    const auto tile_size= std::min(maxAtomsPerCell_dualdv, maxOtherAtoms);
+    //how many atoms accumulate in shared memory,
+    //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
+    const auto tile_size= std::min(maxAtomsPerCell_dualdv, lists.maxNeighbours);
     const auto memSize=tile_size
                        * (3*sizeof(precision) + sizeof(unsigned));
     getDualDev<pbc,function,precision>
-    <<<ngroups,threads,
+    <<<lists.nCells,threads,
     memSize,
     mystream
     >>> (
-      maxAtomsInCells,
-      maxOtherAtoms,
       tile_size,
       switchingParameters,
       myPBC,
-      nat_InCells,
-      atomsInCellsIdxs,
-      nat_OtherAtoms,
-      otherAtomsIdxs,
+      lists,
       coordinates,
       trueIndexes,
       devOut
@@ -786,69 +758,102 @@ std::unique_ptr<worker<calculateFloat>> make_worker(bool usePBC,
   }
 }
 
-//A way of moving all the informations about the cell setup in the least possible numbers of data movements
+//The cell lists of a group of atoms, in CSR format (see cellListsDevice).
 //
 //Only the non-empty cells are stored ("active cells"): the kernels are launched
 //with one block per active cell. The data lives in a pinned host buffer and is
 //uploaded on a persistent device buffer only when the neighbor list is updated
 class cellSetup {
-  struct lims {
-    unsigned start=0;
-    unsigned size=0;
-  };
-  lims atomsInCells;
-  lims otherAtoms;
-  lims nat_InCells;
-  lims nat_otherAtoms;
+  // layout of data:
+  // [cellStart (nCells+1) | neighStart (nCells+1) | cellAtoms (nAtoms) | neighAtoms (nNeigh)]
   CUDAHELPERS::pinnedBuffer<unsigned> data{};
   CUDAHELPERS::deviceBuffer<unsigned> deviceData{};
-  unsigned maxNeighbors=0;
+  // scratch space, kept here to avoid reallocations
+  std::vector<unsigned> activeCells{};
+  std::vector<unsigned> nRequired{};
+  std::vector<unsigned> requiredCells{};
+  std::vector<unsigned> cells_required=std::vector<unsigned>(27);
+  unsigned nCells=0;
+  unsigned nAtoms=0;
+  unsigned nNeigh=0;
   unsigned maxAtomsPerCell=0;
-  unsigned nActive=0;
+  unsigned maxNeighbours=0;
 public:
-  unsigned maxExpected()const {
-    return maxNeighbors;
+  unsigned activeCellsCount()const {
+    return nCells;
   }
   unsigned biggestCell()const {
     return maxAtomsPerCell;
   }
-  unsigned activeCells()const {
-    return nActive;
+  unsigned maxExpected()const {
+    return maxNeighbours;
   }
-  void reset(
-    const unsigned nActiveCells,//the number of non-empty cells
-    const unsigned biggest_cell, //the number of atoms in the biggest cell
-    const unsigned cellUpper,// the error value for the cell
-    const unsigned max_expected,// the maximum number of atoms in the neibourhood
-    const unsigned otherUpper//the error value for the neighbourood
-  ) {
-    nActive=nActiveCells;
-    maxNeighbors=max_expected;
-    maxAtomsPerCell=biggest_cell;
-    //this resizes and set to zero the part of the array that stores the number
-    // of atoms in cell or in the neigbor list for the cells
-    //some slack avoids reallocating at each update of the lists
-    data.resize((maxAtomsPerCell+maxNeighbors+1+1)*nActive,1.2);
-    std::fill(data.begin(),data.end(),0u);
-    atomsInCells= {0,nActive*maxAtomsPerCell};
-    otherAtoms= {nActive*maxAtomsPerCell,maxNeighbors*nActive};
-    nat_InCells= {(maxAtomsPerCell+maxNeighbors)*nActive,nActive};
-    nat_otherAtoms= {(maxAtomsPerCell+maxNeighbors+1)*nActive,nActive};
-    //we test in production
-    plumed_assert(data.size() ==
-                  get_atomsInCells().size()
-                  +get_otherAtoms().size()
-                  +get_nat_InCells().size()
-                  +get_nat_otherAtoms().size()) << "the view in cellSetup are not built correcly";
-    if (data.size()>0) {
-      auto tmp_nat_otherAtoms = get_nat_otherAtoms();
-      plumed_assert(&data[data.size()-1] == &tmp_nat_otherAtoms[tmp_nat_otherAtoms.size()-1])
-          << "the view may not be correctly set up";
+  ///builds the lists: for each non empty cell of listCell, the atoms in that
+  ///cell and the atoms of listNeigh that are in the 27 cells around it
+  void build(const PLMD::LinkCells& cells,
+             const PLMD::LinkCells::CellCollection& listCell,
+             const PLMD::LinkCells::CellCollection& listNeigh,
+             const bool pbc) {
+    activeCells.clear();
+    nRequired.clear();
+    requiredCells.clear();
+    nAtoms=0;
+    nNeigh=0;
+    maxAtomsPerCell=0;
+    maxNeighbours=0;
+    //first pass: counting
+    for(unsigned c =0; c < cells.getNumberOfCells() ; ++c) {
+      const unsigned n=listCell.lcell_tots[c];
+      if(n==0) {
+        continue;
+      }
+      auto cell = cells.findMyCell(c);
+      unsigned ncells_required=0;
+      cells.addRequiredCells(cell,ncells_required, cells_required,pbc);
+      unsigned nn=0;
+      for (unsigned cb=0; cb <ncells_required ; ++cb) {
+        nn+=listNeigh.lcell_tots[cells_required[cb]];
+      }
+      activeCells.push_back(c);
+      nRequired.push_back(ncells_required);
+      requiredCells.insert(requiredCells.end(),
+                           cells_required.begin(),
+                           cells_required.begin()+ncells_required);
+      nAtoms+=n;
+      nNeigh+=nn;
+      maxAtomsPerCell=std::max(maxAtomsPerCell,n);
+      maxNeighbours=std::max(maxNeighbours,nn);
     }
-    auto aic=get_atomsInCells();
-    std::fill(aic.begin(),aic.end(),cellUpper);
-    auto oa=get_otherAtoms();
-    std::fill(oa.begin(),oa.end(),otherUpper);
+    nCells=activeCells.size();
+    //second pass: filling
+    //some slack avoids reallocating at each update of the lists
+    data.resize(2*(nCells+1)+nAtoms+nNeigh,1.2);
+    unsigned* cellStart=data.data();
+    unsigned* neighStart=cellStart+nCells+1;
+    unsigned* cellAtoms=neighStart+nCells+1;
+    unsigned* neighAtoms=cellAtoms+nAtoms;
+    unsigned atomsOffset=0;
+    unsigned neighOffset=0;
+    unsigned requiredOffset=0;
+    for(unsigned k=0; k<nCells; ++k) {
+      cellStart[k]=atomsOffset;
+      neighStart[k]=neighOffset;
+      auto atomsInC= listCell.getCellIndexes(activeCells[k]);
+      std::copy(atomsInC.begin(),atomsInC.end(),cellAtoms+atomsOffset);
+      atomsOffset+=atomsInC.size();
+      for (unsigned cb=0; cb <nRequired[k] ; ++cb) {
+        for (auto B : listNeigh.getCellIndexes(requiredCells[requiredOffset+cb])) {
+          neighAtoms[neighOffset]=B;
+          ++neighOffset;
+        }
+      }
+      requiredOffset+=nRequired[k];
+    }
+    cellStart[nCells]=atomsOffset;
+    neighStart[nCells]=neighOffset;
+    //we test in production
+    plumed_assert(atomsOffset==nAtoms && neighOffset==nNeigh)
+        << "the cell lists are not built correctly";
   }
   ///asynchronously copies the data on the GPU
   ///
@@ -864,80 +869,19 @@ public:
                              "uploading the cell lists");
     }
   }
-#define getter(tp) PLMD::View<unsigned> get_##tp() {return {data.data()+tp.start,tp.size};}
-  getter(atomsInCells)
-  getter(otherAtoms)
-  getter(nat_InCells)
-  getter(nat_otherAtoms)
-#undef getter
-#define deviceMap(tp) const unsigned* deviceMap_##tp() const { \
-    return deviceData.data() + tp.start; }
-  deviceMap(atomsInCells)
-  deviceMap(otherAtoms)
-  deviceMap(nat_InCells)
-  deviceMap(nat_otherAtoms)
-#undef deviceMap
-};
-
-// returns the number of non empty cells in the collection
-unsigned countActiveCells(const PLMD::LinkCells::CellCollection& list) {
-  return std::count_if(list.lcell_tots.begin(),list.lcell_tots.end(),
-  [](unsigned n) {
-    return n>0;
-  });
-}
-
-// companion function for cellSetup
-void updateCellists(
-  const PLMD::LinkCells& cells,
-  const PLMD::LinkCells::CellCollection& listCell,
-  const PLMD::LinkCells::CellCollection& listNeigh,
-  const unsigned upperCheck,// for checking
-  const unsigned maxNNExpected,
-  const unsigned biggestCell,
-  const bool pbc,
-  PLMD::View<unsigned> atomsIncells,
-  PLMD::View<unsigned> otherAtoms,
-  PLMD::View<unsigned> nat_InCells,
-  PLMD::View<unsigned> nat_otherAtoms
-) {
-  std::vector<unsigned> cells_required(27);
-  //the index of the current non-empty cell
-  unsigned ac=0;
-  for(unsigned c =0; c < cells.getNumberOfCells() ; ++c) {
-    auto atomsInC= listCell.getCellIndexes(c);
-    if(atomsInC.size()>0) {
-      plumed_assert(ac < nat_InCells.size())
-          << "Unexpected number of non empty cells";
-      plumed_assert(atomsInC.size() <= biggestCell)
-          << "Unexpected number of atoms in cell " << c << " (" <<atomsInC.size() <<"!<=" << biggestCell<< ")";
-      nat_InCells[ac]=atomsInC.size();
-      //todo: setup a check to see if the cell needs pbcs (inner)
-      auto cell = cells.findMyCell(c);
-      unsigned ncells_required=0;
-      cells.addRequiredCells(cell,ncells_required, cells_required,pbc);
-      std::copy(atomsInC.begin(),atomsInC.end(),atomsIncells.begin()+biggestCell*ac);
-      unsigned otherAtomsId=ac*maxNNExpected;
-      for (unsigned cb=0; cb <ncells_required ; ++cb) {
-        for (auto B : listNeigh.getCellIndexes(cells_required[cb])) {
-          otherAtoms[otherAtomsId]=B;
-          ++otherAtomsId;
-        }
-      }
-      nat_otherAtoms[ac]=otherAtomsId - ac*maxNNExpected;
-      if(nat_otherAtoms[ac]>0) {
-        //no sense in risking to check the address before the start of otherAtoms or to check if no atoms have been added
-        plumed_assert(otherAtoms[otherAtomsId-1]<upperCheck)
-            << "otherAtoms["<<otherAtomsId-1<<"]"<<"("<<otherAtoms[otherAtomsId-1]<<")"<<"<"<<upperCheck;
-      }
-      plumed_assert(nat_otherAtoms[ac] <= maxNNExpected);
-      plumed_assert(nat_InCells[ac] <= biggestCell);
-      ++ac;
-    }
+  ///the pointers to the data on the GPU, valid after upload()
+  cellListsDevice deviceView() const {
+    cellListsDevice v;
+    v.nCells=nCells;
+    v.maxAtomsInCell=maxAtomsPerCell;
+    v.maxNeighbours=maxNeighbours;
+    v.cellStart=deviceData.data();
+    v.neighStart=v.cellStart+nCells+1;
+    v.cellAtoms=v.neighStart+nCells+1;
+    v.neighAtoms=v.cellAtoms+nAtoms;
+    return v;
   }
-  plumed_assert(ac == nat_InCells.size())
-      << "Unexpected number of non empty cells ("<<ac<<"!="<<nat_InCells.size()<<")";
-}
+};
 
 template <typename calculateFloat>
 class CudaCoordination : public Colvar {
@@ -988,6 +932,12 @@ class CudaCoordination : public Colvar {
   } NL;
   /// true until the neighbor lists have been built for the first time
   bool firstNLUpdate{true};
+  /// if true the lists are also updated when an atom moves more than half the skin
+  bool checkDisplacement{false};
+  /// (half the skin)^2, where the skin is NL_CUTOFF-D_MAX
+  double maxDisplacementSQ{0.0};
+  /// the positions at the last update of the neighbor lists
+  std::vector<Vector> positionsAtLastUpdate;
 
   std::unique_ptr<worker<calculateFloat>> runner=nullptr;
 
@@ -1005,6 +955,8 @@ class CudaCoordination : public Colvar {
   cellSetup cellConfiguration_coord;
   //used in dual mode for the derivatives of group b
   cellSetup cellConfiguration_dv;
+  /// decides (consistently on all the MPI processes) if the lists must be updated
+  bool needsListUpdate();
   void updateNeighborLists();
   // these return the number of the partial sums to be reduced
   unsigned doSelf();
@@ -1070,8 +1022,10 @@ void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
     "compulsory", "D_MAX", D_MAXdefault, "The cut off of the switching function");
   keys.add (
     "compulsory", "D_0", D_0default, "The value of d_0 in the switching function");
-  keys.add("compulsory","NL_CUTOFF","-1.0","The cutoff for the neighbor list");
-  keys.add("compulsory","NL_STRIDE","-1","The frequency with which we are updating the atoms in the neighbor list");
+  keys.add("compulsory","NL_CUTOFF","-1.0","The cutoff for the neighbor list. "
+           "If larger than D_MAX the lists are updated automatically when an atom moves more than (NL_CUTOFF-D_MAX)/2");
+  keys.add("compulsory","NL_STRIDE","-1","The frequency with which we are updating the atoms in the neighbor list, "
+           "if NL_CUTOFF is larger than D_MAX the lists are also updated when needed");
 }
 
 template <typename calculateFloat>
@@ -1098,6 +1052,33 @@ CudaCoordination<calculateFloat>::~CudaCoordination() {
 }
 
 template <typename calculateFloat>
+bool CudaCoordination<calculateFloat>::needsListUpdate() {
+  if (mode == calculationMode::pair) {
+    return false;
+  }
+  if (firstNLUpdate) {
+    return true;
+  }
+  int update = (getStep()%NL.stride==0);
+  if (!update && checkDisplacement) {
+    //same condition on all the MPI processes, so the Bcast is safe
+    if (mpiActive) {
+      // the raw displacement is used (no pbcs): an atom that has been wrapped
+      // in the box by the MD code only triggers a (harmless) extra update
+      const auto & positions = getPositions();
+      for (unsigned i = 0; i < nat; ++i) {
+        if (delta(positionsAtLastUpdate[i],positions[i]).modulo2() > maxDisplacementSQ) {
+          update = 1;
+          break;
+        }
+      }
+    }
+    comm.Bcast (update, 0);
+  }
+  return update;
+}
+
+template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::updateNeighborLists() {
   cells.setCutoff(NL.cutoff);
   if (pbc) {
@@ -1112,30 +1093,7 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
                           make_const_view(getPositions()),
                           make_const_view(indexesForCells));
     if (mpiActive) {
-      const auto maxExpected = cs.listA.getMaximimumCombination(27);
-      const auto biggestCell = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-      plumed_assert(biggestCell <= maxNumThreads)
-          << "the number of atoms in a single cell("<<biggestCell
-          <<") exceds the maximum number of threads avaiable("<<maxNumThreads
-          <<"), try by reducing the cell dimensions or by increase the THREADS asked";
-
-      cellConfiguration_coord.reset(countActiveCells(cs.listA),
-                                    biggestCell,
-                                    nat,
-                                    maxExpected,
-                                    nat);
-
-      updateCellists(cells,
-                     cs.listA,
-                     cs.listA,
-                     nat,
-                     maxExpected,
-                     biggestCell,
-                     pbc,
-                     cellConfiguration_coord.get_atomsInCells(),
-                     cellConfiguration_coord.get_otherAtoms(),
-                     cellConfiguration_coord.get_nat_InCells(),
-                     cellConfiguration_coord.get_nat_otherAtoms());
+      cellConfiguration_coord.build(cells, cs.listA, cs.listA, pbc);
       cellConfiguration_coord.upload(stream);
     }
   }
@@ -1150,59 +1108,10 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
                           View<const unsigned> {indexesForCells.data() + atomsInA, atomsInB});
 
     if (mpiActive) {
-      //the largest cell combination in listA
-      const auto maxExpected_dv=cs.listA.getMaximimumCombination(27);
-      const auto biggestCell_coord = (*std::max_element(cs.listA.lcell_tots.begin(),cs.listA.lcell_tots.end()));
-      plumed_assert(biggestCell_coord <= maxNumThreads)
-          << "the number of atoms in a single cell("<<biggestCell_coord
-          <<") exceds the maximum number of threads avaiable("<<maxNumThreads
-          <<"), try by reducing the cell dimensions or by increase the THREADS asked";
-
-      //the largest cell combination in listB
-      const auto maxExpected_coord=cs.listB.getMaximimumCombination(27);
-      const auto biggestCell_dv = (*std::max_element(cs.listB.lcell_tots.begin(),cs.listB.lcell_tots.end()));
-      plumed_assert(biggestCell_dv <= maxNumThreads_dv)
-          << "the number of atoms in a single cell("<<biggestCell_dv
-          <<") exceds the maximum number of threads avaiable("<<maxNumThreads_dv
-          <<"), try by reducing the cell dimensions or by increase the THREADS asked";
-
-      cellConfiguration_coord.reset(countActiveCells(cs.listA),
-                                    biggestCell_coord,
-                                    //the higher index in listA
-                                    atomsInA,
-                                    maxExpected_coord,
-                                    //the higher index in listB
-                                    nat);
-      cellConfiguration_dv.reset(countActiveCells(cs.listB),
-                                 biggestCell_dv,
-                                 //the higher index in listB
-                                 nat,
-                                 maxExpected_dv,
-                                 //the higher index in listA
-                                 atomsInA);
-      updateCellists(cells,
-                     cs.listA,
-                     cs.listB,
-                     nat,
-                     maxExpected_coord,
-                     biggestCell_coord,
-                     pbc,
-                     cellConfiguration_coord.get_atomsInCells(),
-                     cellConfiguration_coord.get_otherAtoms(),
-                     cellConfiguration_coord.get_nat_InCells(),
-                     cellConfiguration_coord.get_nat_otherAtoms());
-
-      updateCellists(cells,
-                     cs.listB,
-                     cs.listA,
-                     atomsInA,//the higher index +1 of the first list
-                     maxExpected_dv,
-                     biggestCell_dv,
-                     pbc,
-                     cellConfiguration_dv.get_atomsInCells(),
-                     cellConfiguration_dv.get_otherAtoms(),
-                     cellConfiguration_dv.get_nat_InCells(),
-                     cellConfiguration_dv.get_nat_otherAtoms());
+      //atoms of A, with the atoms of B as neighbours: coordination, virial and derivatives of A
+      cellConfiguration_coord.build(cells, cs.listA, cs.listB, pbc);
+      //atoms of B, with the atoms of A as neighbours: derivatives of B
+      cellConfiguration_dv.build(cells, cs.listB, cs.listA, pbc);
       //both on the main stream: they will be completed before the
       //inputReady event that the auxiliary stream waits for
       cellConfiguration_coord.upload(stream);
@@ -1213,12 +1122,15 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
   default:
   {}
   }
+  if (mpiActive && checkDisplacement) {
+    const auto & positions = getPositions();
+    std::copy(positions.begin(), positions.end(), positionsAtLastUpdate.begin());
+  }
 }
 
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::calculate() {
-  if (mode != calculationMode::pair
-      && (firstNLUpdate || getStep()%NL.stride==0)) {
+  if (needsListUpdate()) {
     updateNeighborLists();
     firstNLUpdate=false;
   }
@@ -1314,62 +1226,50 @@ template <typename calculateFloat>
 unsigned CudaCoordination<calculateFloat>::doSelf() {
   //Here I am assuming that cellConfiguration_coord has been updated and uploaded,
   //if that contract is broke this cannot work
-  const unsigned ngroups = cellConfiguration_coord.activeCells();
-  if (ngroups == 0) {
+  const auto lists = cellConfiguration_coord.deviceView();
+  if (lists.nCells == 0) {
     return 0;
   }
-  //I have alreadyy checked that the biggest cell has less atoms than the limit of threads
-  //maxNumThreads is a multiple of 32, so this does not exceed it
-  const unsigned threads = roundUpToWarp(cellConfiguration_coord.biggestCell());
-  devPartials.resize (nAccumulators * ngroups, 1.2);
+  //the threads loop on the atoms of the cell, so the cells can be bigger than the block
+  //maxNumThreads is a multiple of 32
+  const unsigned threads = std::min(roundUpToWarp(lists.maxAtomsInCell), maxNumThreads);
+  devPartials.resize (nAccumulators * lists.nCells, 1.2);
 
   runner->runSelf (
-    ngroups,
     threads,
     stream,
     switchingParameters,
     myPBC,
-    cellConfiguration_coord.biggestCell(),
-    cellConfiguration_coord.deviceMap_nat_InCells(),
-    cellConfiguration_coord.deviceMap_atomsInCells(),
-    cellConfiguration_coord.maxExpected(),
-    cellConfiguration_coord.deviceMap_nat_otherAtoms(),
-    cellConfiguration_coord.deviceMap_otherAtoms(),
+    lists,
     devPositions.data(),
     devTrueIndexes.data(),
     devOutput.data(),
     devPartials.data()
   );
-  return ngroups;
+  return lists.nCells;
 }
 
 template <typename calculateFloat>
 unsigned CudaCoordination<calculateFloat>::doDual() {
-  const unsigned ngroups_coord = cellConfiguration_coord.activeCells();
-  const unsigned ngroups_dv = cellConfiguration_dv.activeCells();
-  //I have alreadyy checked that the biggest cell has less atoms than the limit of threads
-  const unsigned threads_coord = roundUpToWarp(cellConfiguration_coord.biggestCell());
-  const unsigned threads_dv = cellConfiguration_dv.biggestCell();
-  devPartials.resize (nAccumulators * ngroups_coord, 1.2);
+  const auto lists_coord = cellConfiguration_coord.deviceView();
+  const auto lists_dv = cellConfiguration_dv.deviceView();
+  //the threads loop on the atoms of the cell, so the cells can be bigger than the block
+  const unsigned threads_coord = std::min(roundUpToWarp(lists_coord.maxAtomsInCell), maxNumThreads);
+  const unsigned threads_dv = std::min(lists_dv.maxAtomsInCell, maxNumThreads_dv);
+  devPartials.resize (nAccumulators * lists_coord.nCells, 1.2);
 
   // the two kernels write on different parts of the derivatives (A and B atoms)
   // so they can run concurrently: the auxiliary stream waits for the inputs
   // (positions and lists) and then the main stream waits for it
   CUDAHELPERS::cudaCheck (cudaEventRecord (inputReady, stream), "cudaEventRecord");
   CUDAHELPERS::cudaCheck (cudaStreamWaitEvent (streamAux, inputReady, 0), "cudaStreamWaitEvent");
-  if (ngroups_dv > 0) {
+  if (lists_dv.nCells > 0) {
     runner->runDualDev(
-      ngroups_dv,
       threads_dv,
       streamAux,
       switchingParameters,
       myPBC,
-      cellConfiguration_dv.biggestCell(),
-      cellConfiguration_dv.deviceMap_nat_InCells(),
-      cellConfiguration_dv.deviceMap_atomsInCells(),
-      cellConfiguration_dv.maxExpected(),
-      cellConfiguration_dv.deviceMap_nat_otherAtoms(),
-      cellConfiguration_dv.deviceMap_otherAtoms(),
+      lists_dv,
       devPositions.data(),
       devTrueIndexes.data(),
       devOutput.data()
@@ -1377,19 +1277,13 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
   }
   CUDAHELPERS::cudaCheck (cudaEventRecord (auxDone, streamAux), "cudaEventRecord");
 
-  if (ngroups_coord > 0) {
+  if (lists_coord.nCells > 0) {
     runner->runDual(
-      ngroups_coord,
       threads_coord,
       stream,
       switchingParameters,
       myPBC,
-      cellConfiguration_coord.biggestCell(),
-      cellConfiguration_coord.deviceMap_nat_InCells(),
-      cellConfiguration_coord.deviceMap_atomsInCells(),
-      cellConfiguration_coord.maxExpected(),
-      cellConfiguration_coord.deviceMap_nat_otherAtoms(),
-      cellConfiguration_coord.deviceMap_otherAtoms(),
+      lists_coord,
       devPositions.data(),
       devTrueIndexes.data(),
       devOutput.data(),
@@ -1397,7 +1291,7 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
     );
   }
   CUDAHELPERS::cudaCheck (cudaStreamWaitEvent (stream, auxDone, 0), "cudaStreamWaitEvent");
-  return ngroups_coord;
+  return lists_coord.nCells;
 }
 
 template <typename calculateFloat>
@@ -1586,7 +1480,21 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
       error("You must setup manually the cutoff of the neigbor list to be higher than DMAX if you want to setup manually the stride");
     }
   }
-  if(NL.stride < 0) {
+  const double skin = NL.cutoff - dmax;
+  if (skin > 0.0) {
+    //with a skin the lists are exact as long as no atom moves more than skin/2
+    //since the last update: we check that, so that the lists are always valid
+    checkDisplacement = true;
+    maxDisplacementSQ = 0.25 * skin * skin;
+    if (NL.stride < 0) {
+      NL.stride = std::numeric_limits<int>::max();
+      log << "  (the neighbor list will be updated only when an atom moves more than half the skin, "
+          << 0.5 * skin << ")\n";
+    } else {
+      log << "  (the neighbor list will be updated every " << NL.stride
+          << " steps or when an atom moves more than half the skin, " << 0.5 * skin << ")\n";
+    }
+  } else if(NL.stride < 0) {
     log << "  (Forcing the neighbor list to be calculated at each step)\n";
     NL.stride=1;
   }
@@ -1595,6 +1503,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
 
   runner = make_worker(pbc,switchingParameters);
   nat = getPositions().size();
+  if (checkDisplacement) {
+    positionsAtLastUpdate.resize(nat);
+  }
   //these are needed by all the MPI processes
   deriv.resize(nat);
   indexesForCells.resize(nat);
@@ -1671,7 +1582,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
 
   log << "Neighbor list info:\n"
       << "\tcutoff: "<< NL.cutoff << "\n"
-      << "\tstride: "<< NL.stride << "\n";
+      << "\tstride: "<< ((NL.stride == std::numeric_limits<int>::max())?
+                         std::string("automatic (displacement based)"):
+                         std::to_string(NL.stride)) << "\n";
   if (NL.stride == 1 && mode != calculationMode::pair) {
     log << "\t(the neighbor list is rebuilt on the CPU at every step: consider setting"
         " NL_CUTOFF larger than D_MAX and NL_STRIDE>1 for better performance)\n";

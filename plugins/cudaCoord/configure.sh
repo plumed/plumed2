@@ -8,7 +8,10 @@ fi
 {
   plumed config makefile_conf
   echo "PLUMED_INCLUDE=-I$(plumed info --include-dir)"
-  echo "PLUMED_KERNEL=-L${PLUMED_KERNEL}"
+  #link the plugin directly to the kernel (and remember where it is), so that it
+  #can be LOADed also when the kernel has been loaded with RTLD_LOCAL
+  #(the default for runtime loading since PLUMED 2.10, e.g. GROMACS with PLUMED_KERNEL)
+  echo "PLUMED_KERNEL=${PLUMED_KERNEL} -Xlinker -rpath=$(dirname "${PLUMED_KERNEL}")"
 } >Make.tmp
 
 if [[ ${SILENT_CUDA_COMPILATION} ]]; then
@@ -17,11 +20,14 @@ if [[ ${SILENT_CUDA_COMPILATION} ]]; then
     -e 's/-c/-w -c /g' Make.tmp
 fi
 
+#-fconcepts (e.g. needed by ITensor in the main build) makes libstdc++ expose C++20
+#concepts code that nvcc cannot parse in C++17 mode, so it is removed
 #pendantic adds a unuseful FOR EACH line with
 #"" warning: style of line directive is a GCC extension"
 {
   grep CXXFLAGS Make.tmp \
-    | sed -E -e 's/-f([a-zA-Z-]*)\>/-Xcompiler -f\1/g' \
+    | sed -E -e 's/-fconcepts\>//g' \
+      -e 's/-f([a-zA-Z-]*)\>/-Xcompiler -f\1/g' \
       -e 's/-gdwarf/-Xcompiler -gdwarf/g' \
       -e 's/-pedantic//g' \
       -e 's/-W/-Xcompiler -W/g'
