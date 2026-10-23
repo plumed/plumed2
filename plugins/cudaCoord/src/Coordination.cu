@@ -1146,7 +1146,9 @@ void CudaCoordination<calculateFloat>::calculate() {
       myPBC.X = box (0, 0);
       myPBC.Y = box (1, 1);
       myPBC.Z = box (2, 2);
-      makeWhole();
+      // no makeWhole() here: the kernels apply the minimum image convention
+      // themselves and the cells wrap the coordinates, so it is not needed and
+      // it would cost an O(nat) serial pass at every step
     }
     /***************************copying data on the GPU**************************/
     const auto & positions = getPositions();
