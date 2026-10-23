@@ -41,10 +41,13 @@ public:
   G g;
   bool fixed_width;
   std::size_t maxkernels;
+  std::size_t ndim{0};
   SumOfKernels<K, P> kernelsum;
   std::vector<unsigned> nneigh;
-  std::vector<std::size_t> nkernels_per_point;
-  std::vector<std::size_t> kernels_for_gridpoint;
+  std::vector<std::size_t> nkernels_per_point_v;
+  std::size_t *nkernels_per_point{nullptr};
+  std::vector<std::size_t> kernels_for_gridpoint_v;
+  std::size_t *kernels_for_gridpoint{nullptr};
   static void registerKeywords( Keywords& keys );
   static void read( KDEHelper<K,P,G>& func,
                     ActionWithArguments* action,
@@ -55,8 +58,26 @@ public:
   static void readKernelParameters( std::string& value, ActionWithArguments* action, const std::string& outlab, bool rerequestargs );
   static void addArgument( const std::string& value, ActionWithArguments* action );
   static void setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
-  static void transferParamsToKernel( const std::vector<double>& argval, KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, bool updateNeighborsOnEachKernel, std::size_t nkernels, unsigned kval, K& kp );
+  static void transferParamsToKernel( const std::vector<double>& argval, KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, bool updateNeighborsOnEachKernel, std::size_t nkernels, unsigned kval, View<double>& params );
   static void transferKernels( KDEHelper<K,P,G>& func, const std::vector<Value*>& args, GridCoordinatesObject& gridobject );
+  void update() {
+    ndim = nneigh.size();
+    nkernels_per_point = nkernels_per_point_v.data();
+    kernels_for_gridpoint = kernels_for_gridpoint_v.data();
+    kernelsum.update();
+  }
+  void toACCDevice() const {
+#pragma acc enter data copyin(this[0:1],fixed_width,maxkernels,ndim, \
+                              nkernels_per_point[0:nkernels_per_point_v.size()], \
+                              kernels_for_gridpoint[0:kernels_for_gridpoint_v.size()])
+    kernelsum.toACCDevice();
+  }
+  void removeFromACCDevice() const  {
+    kernelsum.removeFromACCDevice();
+#pragma acc exit data delete(kernels_for_gridpoint[0:kernels_for_gridpoint_v.size()], \
+                             nkernels_per_point[0:nkernels_per_point_v.size()], \
+                             ndim,maxkernels,fixed_width,this[0:1])
+  }
 };
 
 template <class K, class P, class G>
@@ -98,24 +119,23 @@ template <class K, class P, class G>
 void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
   // Setup the grid boundaries on first step
   G::setupGridBounds( func.g, box, gridobject, args, myval );
+  if( gridobject.getGridType()!="fibonacci" ) {
+    // Set the periodicity of the parameters
+    for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+      P::setArgumentDomain( i, func.kernelsum.params, gridobject.getGridSpacing()[i], gridobject.isPeriodic(i), gridobject.getMin()[i], gridobject.getMax()[i] );
+    }
+  }
+  func.kernelsum.params.update();
   // Check if the bandwidth changes during the simulation
   func.fixed_width = false;
-  if( K::bandwidthIsConstant( gridobject.getDimension(), args ) && K::bandwidthsAllSame( gridobject.getDimension(), args ) ) {
-    K myk;
+  std::size_t ndim = gridobject.getDimension();
+  if( K::bandwidthIsConstant( ndim, args ) && K::bandwidthsAllSame( ndim, args ) ) {
     std::vector<double> myargs( args.size() );
     for(unsigned j=0; j<args.size(); ++j) {
       myargs[j] = args[j]->get(0);
     }
-    K::setKernelAndCheckHeight( myk, gridobject.getDimension(), myargs );
-    G::getDiscreteSupport( func.g, func.kernelsum.params, myk, func.nneigh, gridobject );
+    G::getDiscreteSupport( func.g, func.kernelsum.params, View<const double>( myargs.data() + ndim, K::getNumberOfShapeParameters(ndim)), func.nneigh, gridobject );
     func.fixed_width = true;
-  }
-  if( gridobject.getGridType()=="fibonacci" ) {
-    return;
-  }
-  // Set the periodicity of the parameters
-  for(unsigned i=0; i<gridobject.getDimension(); ++i) {
-    P::setArgumentDomain( i, func.kernelsum.params, gridobject.getGridSpacing()[i], gridobject.isPeriodic(i), gridobject.getMin()[i], gridobject.getMax()[i] );
   }
 }
 
@@ -178,27 +198,28 @@ void KDEHelper<K,P,G>::addArgument( const std::string& value, ActionWithArgument
 }
 
 template <class K, class P, class G>
-void KDEHelper<K,P,G>::transferParamsToKernel( const std::vector<double>& argval, KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, bool updateNeighborsOnEachKernel, std::size_t nkernels, unsigned kval, K& kp ) {
+void KDEHelper<K,P,G>::transferParamsToKernel( const std::vector<double>& argval, KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, bool updateNeighborsOnEachKernel, std::size_t nkernels, unsigned kval, View<double>& params ) {
   // This sets the kernel parameters for the Kth kernel and checks that we want
   // to consider it
-  if( !K::setKernelAndCheckHeight( kp, gridobject.getDimension(), argval ) ) {
+  std::size_t ndim = gridobject.getDimension();
+  if( !K::setKernelAndCheckHeight( params, ndim, argval ) ) {
     return;
   }
   // If the widths of each kernel are not all the same then get the discrete support
   if( updateNeighborsOnEachKernel ) {
-    G::getDiscreteSupport( func.g, func.kernelsum.params, kp, func.nneigh, gridobject );
+    G::getDiscreteSupport( func.g, func.kernelsum.params, View<const double>(params.data()+ndim,K::getNumberOfShapeParameters(ndim)), func.nneigh, gridobject );
   }
 
   // Now get the grid points for this particular kernel
   unsigned num_neigh;
   std::vector<unsigned> neighbors;
-  G::getNeighbors( func.kernelsum.params, kp, gridobject, func.nneigh, num_neigh, neighbors );
+  G::getNeighbors( func.kernelsum.params, View<double>(params.data(),ndim), gridobject, func.nneigh, num_neigh, neighbors );
 
   // And transfer the neighbor information to the holders
   for(unsigned j=0; j<num_neigh; ++j) {
-    plumed_assert( neighbors[j]*nkernels + func.nkernels_per_point[neighbors[j]] < func.kernels_for_gridpoint.size() );
-    func.kernels_for_gridpoint[ neighbors[j]*nkernels + func.nkernels_per_point[neighbors[j]] ] = kval;
-    func.nkernels_per_point[ neighbors[j] ]++;
+    plumed_assert( neighbors[j]*nkernels + func.nkernels_per_point_v[neighbors[j]] < func.kernels_for_gridpoint_v.size() );
+    func.kernels_for_gridpoint_v[ neighbors[j]*nkernels + func.nkernels_per_point_v[neighbors[j]] ] = kval;
+    func.nkernels_per_point_v[ neighbors[j] ]++;
   }
 }
 
@@ -209,22 +230,22 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
   std::size_t nkernels = args[args.size()-1]->getNumberOfStoredValues();
   // And resize the grid counters if we need to
   std::size_t ngp = gridobject.getNumberOfPoints();
-  if( func.nkernels_per_point.size()!=ngp ) {
-    func.nkernels_per_point.resize( ngp );
+  if( func.nkernels_per_point_v.size()!=ngp ) {
+    func.nkernels_per_point_v.resize( ngp );
   }
-  std::fill( func.nkernels_per_point.begin(), func.nkernels_per_point.end(), 0 );
-  if( func.kernelsum.kernelParams.size()!=nkernels ) {
-    func.kernelsum.kernelParams.resize( nkernels );
-    func.kernels_for_gridpoint.resize( ngp*nkernels );
-  }
-
-  bool updateNeighborsOnEachKernel = !func.fixed_width;
-  if( !func.fixed_width && K::bandwidthsAllSame( gridobject.getDimension(), args ) ) {
-    G::getDiscreteSupport( func.g, func.kernelsum.params, func.kernelsum.kernelParams[0], func.nneigh, gridobject );
-    updateNeighborsOnEachKernel = false;
+  std::size_t ndim = gridobject.getDimension();
+  std::size_t nparams_per_kernel = K::getNumberOfParameters(ndim);
+  std::fill( func.nkernels_per_point_v.begin(), func.nkernels_per_point_v.end(), 0 );
+  if( func.kernelsum.kernelParams_v.size()!=nkernels*nparams_per_kernel ) {
+    func.kernelsum.kernelParams_v.resize( nkernels*nparams_per_kernel );
+    func.kernels_for_gridpoint_v.resize( ngp*nkernels );
   }
 
   std::vector<double> argval( args.size() );
+  bool bandwidthsAllSame = false, updateNeighborsOnEachKernel = !func.fixed_width;
+  if( updateNeighborsOnEachKernel ) {
+    bandwidthsAllSame = K::bandwidthsAllSame( ndim, args );
+  }
   if( args[args.size()-1]->getRank()==2 ) {
     const unsigned nc    = args[args.size()-1]->getShape()[1];
     const unsigned nrows = args[args.size()-1]->getShape()[0];
@@ -243,7 +264,11 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
             argval[k] = args[k]->get( i*nc + jind );
           }
         }
-        KDEHelper<K,P,G>::transferParamsToKernel( argval, func, gridobject, updateNeighborsOnEachKernel, nkernels, i*ncs+j, func.kernelsum.kernelParams[i*ncs+j] );
+        View<double> myparams( func.kernelsum.kernelParams_v.data() + nparams_per_kernel*(i*ncs+j), nparams_per_kernel );
+        KDEHelper<K,P,G>::transferParamsToKernel( argval, func, gridobject, updateNeighborsOnEachKernel, nkernels, i*ncs+j, myparams );
+        if( bandwidthsAllSame ) {
+          updateNeighborsOnEachKernel = false;
+        }
       }
     }
   } else {
@@ -252,23 +277,29 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
       for(unsigned j=0; j<args.size(); ++j) {
         argval[j] = args[j]->get(i,false);
       }
-      KDEHelper<K,P,G>::transferParamsToKernel( argval, func, gridobject, updateNeighborsOnEachKernel, nkernels, i, func.kernelsum.kernelParams[i] );
+      View<double> myparams( func.kernelsum.kernelParams_v.data() + nparams_per_kernel*i, nparams_per_kernel );
+      KDEHelper<K,P,G>::transferParamsToKernel( argval, func, gridobject, updateNeighborsOnEachKernel, nkernels, i, myparams );
+      if( bandwidthsAllSame ) {
+        updateNeighborsOnEachKernel = false;
+      }
     }
   }
   // Get the maximum number of kernels for any given grid point (used for resizing derivatives)
   func.maxkernels = 0;
   for(unsigned i=0; i<ngp; ++i) {
-    if( func.nkernels_per_point[i]>func.maxkernels ) {
-      func.maxkernels = func.nkernels_per_point[i];
+    if( func.nkernels_per_point_v[i]>func.maxkernels ) {
+      func.maxkernels = func.nkernels_per_point_v[i];
     }
   }
+  func.update();
 }
 
-template <class K, class P, class G>
+template <class K, class P, class G, typename myPTM=defaultPTM>
 class KDE : public ActionWithGrid {
 public:
   using input_type = KDEHelper<K, P, G>;
-  using PTM = ParallelTaskManager<KDE<K,P,G>>;
+  using mytype=KDE<K, P, G, myPTM>;
+  using PTM = typename myPTM::template PTM<mytype>;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
@@ -286,6 +317,7 @@ public:
   void prepare() override ;
   void calculate() override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
+  void getInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const KDEHelper<K, P, G>& actiondata,
                            ParallelActionsInput& input,
@@ -301,8 +333,8 @@ public:
                                ForceIndexHolder force_indices );
 };
 
-template <class K, class P, class G>
-void KDE<K,P,G>::registerKeywords( Keywords& keys ) {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords( keys );
   keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label for the value that should be used to construct the histogram");
   KDEHelper<K,P,G>::registerKeywords( keys );
@@ -315,8 +347,8 @@ void KDE<K,P,G>::registerKeywords( Keywords& keys ) {
   PTM::registerKeywords( keys );
 }
 
-template <class K, class P, class G>
-KDE<K,P,G>::KDE(const ActionOptions&ao):
+template <class K, class P, class G, typename myPTM>
+KDE<K,P,G,myPTM>::KDE(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
   firststep(true),
@@ -337,13 +369,13 @@ KDE<K,P,G>::KDE(const ActionOptions&ao):
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
 }
 
-template <class K, class P, class G>
-unsigned KDE<K,P,G>::getNumberOfDerivatives() {
+template <class K, class P, class G, typename myPTM>
+unsigned KDE<K,P,G,myPTM>::getNumberOfDerivatives() {
   return gridobject.getDimension();
 }
 
-template <class K, class P, class G>
-std::vector<std::string> KDE<K,P,G>::getGridCoordinateNames() const {
+template <class K, class P, class G, typename myPTM>
+std::vector<std::string> KDE<K,P,G,myPTM>::getGridCoordinateNames() const {
   std::vector<std::string> names( gridobject.getDimension() );
   for(unsigned i=0; i<names.size(); ++i) {
     names[i] = getPntrToArgument(i)->getName();
@@ -351,21 +383,21 @@ std::vector<std::string> KDE<K,P,G>::getGridCoordinateNames() const {
   return names;
 }
 
-template <class K, class P, class G>
-const GridCoordinatesObject& KDE<K,P,G>::getGridCoordinatesObject() const {
+template <class K, class P, class G, typename myPTM>
+const GridCoordinatesObject& KDE<K,P,G,myPTM>::getGridCoordinatesObject() const {
   return gridobject;
 }
 
-template <class K, class P, class G>
-int KDE<K,P,G>::checkTaskIsActive( const unsigned& itask ) const {
-  if( taskmanager.getActionInput().nkernels_per_point[itask]>0 ) {
+template <class K, class P, class G, typename myPTM>
+int KDE<K,P,G,myPTM>::checkTaskIsActive( const unsigned& itask ) const {
+  if( taskmanager.getActionInput().nkernels_per_point_v[itask]>0 ) {
     return 1;
   }
   return -1;
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::prepare() {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::prepare() {
   ActionWithVector::prepare();
   std::size_t nkernels = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=1; i<getNumberOfArguments(); ++i) {
@@ -380,8 +412,8 @@ void KDE<K,P,G>::prepare() {
   }
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::calculate() {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::calculate() {
   if( firststep ) {
     Tensor box;
     PbcAction* bv = plumed.getActionSet().template selectWithLabel<PbcAction*>("Box");
@@ -396,8 +428,8 @@ void KDE<K,P,G>::calculate() {
   taskmanager.runAllTasks();
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::getInputData( std::vector<double>& inputdata ) const {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::getInputData( std::vector<double>& inputdata ) const {
   std::size_t ndim = gridobject.getDimension();
   std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
   std::vector<double> pos( ndim );
@@ -413,42 +445,59 @@ void KDE<K,P,G>::getInputData( std::vector<double>& inputdata ) const {
   }
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::performTask( std::size_t task_index,
-                              const KDEHelper<K, P, G>& actiondata,
-                              ParallelActionsInput& input,
-                              ParallelActionsOutput& output ) {
-  std::size_t ndim = actiondata.nneigh.size();
-  SumOfKernels<K,P>::calc( View<const std::size_t>( actiondata.kernels_for_gridpoint.data() + task_index*input.argstarts[1], actiondata.nkernels_per_point[task_index] ),
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+  std::size_t ndim = gridobject.getDimension();
+  std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
+  std::vector<double> pos( ndim );
+  if( inputdata.size()!=nstored*ndim ) {
+    inputdata.resize( ndim*nstored );
+  }
+
+  for(unsigned i=0; i<nstored; ++i) {
+    gridobject.getGridPointCoordinates( i, pos );
+    for(unsigned j=0; j<ndim; ++j) {
+      inputdata[ i*ndim + j ] = pos[j];
+    }
+  }
+}
+
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::performTask( std::size_t task_index,
+                                    const KDEHelper<K, P, G>& actiondata,
+                                    ParallelActionsInput& input,
+                                    ParallelActionsOutput& output ) {
+  std::size_t ndim = actiondata.ndim;
+  SumOfKernels<K,P>::calc( View<const std::size_t>( actiondata.kernels_for_gridpoint + task_index*input.argstarts[1], actiondata.nkernels_per_point[task_index] ),
                            actiondata.kernelsum,
-                           View<const double>(input.inputdata + task_index*actiondata.nneigh.size(),ndim),
+                           View<const double>(input.inputdata + task_index*ndim,ndim),
                            View<double>(output.values.data(), 1),
                            View<double>(output.values.data()+1, ndim),
                            View<double>(output.derivatives.data(),actiondata.maxkernels*input.nargs) );
 
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::applyNonZeroRankForces( std::vector<double>& outforces ) {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
 }
 
-template <class K, class P, class G>
-int KDE<K,P,G>::getNumberOfValuesPerTask( std::size_t task_index,
+template <class K, class P, class G, typename myPTM>
+int KDE<K,P,G,myPTM>::getNumberOfValuesPerTask( std::size_t task_index,
     const KDEHelper<K, P, G>& actiondata ) {
   return 1;
 }
 
-template <class K, class P, class G>
-void KDE<K,P,G>::getForceIndices( std::size_t task_index,
-                                  std::size_t colno,
-                                  std::size_t ntotal_force,
-                                  const KDEHelper<K, P, G>& actiondata,
-                                  const ParallelActionsInput& input,
-                                  ForceIndexHolder force_indices ) {
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::getForceIndices( std::size_t task_index,
+                                        std::size_t colno,
+                                        std::size_t ntotal_force,
+                                        const KDEHelper<K, P, G>& actiondata,
+                                        const ParallelActionsInput& input,
+                                        ForceIndexHolder force_indices ) {
   force_indices.threadsafe_derivatives_end[0] = 0;
-  std::size_t nparams = K::getNumberOfParameters( actiondata.kernelsum.kernelParams[0] );
-  View<const std::size_t> kernellist( actiondata.kernels_for_gridpoint.data() + task_index*input.argstarts[1], actiondata.nkernels_per_point[task_index] );
+  std::size_t nparams = K::getNumberOfParameters( actiondata.ndim );
+  View<const std::size_t> kernellist( actiondata.kernels_for_gridpoint + task_index*input.argstarts[1], actiondata.nkernels_per_point[task_index] );
   for(unsigned i=0; i<kernellist.size(); ++i) {
     for(unsigned j=0; j<nparams; ++j) {
       force_indices.indices[0][i*nparams+j] = input.argstarts[j] + kernellist[i];
