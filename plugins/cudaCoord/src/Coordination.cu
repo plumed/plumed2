@@ -760,9 +760,13 @@ std::unique_ptr<worker<calculateFloat>> make_worker(bool usePBC,
 
 //The cell lists of a group of atoms, in CSR format (see cellListsDevice).
 //
-//Only the non-empty cells are stored ("active cells"): the kernels are launched
-//with one block per active cell. The data lives in a pinned host buffer and is
-//uploaded on a persistent device buffer only when the neighbor list is updated
+//Only the cells that are non-empty AND have a non-empty neighbourhood are
+//stored ("active cells"): the kernels are launched with one block per active
+//cell. The data lives in a pinned host buffer and is uploaded on a persistent
+//device buffer only when the neighbor list is updated.
+//The lists are built with the indexes of the atoms in the action, that can
+//then be remapped (see forEachAtomIndex) to the compact indexes of the
+//"active atoms", the only ones that are moved to/from the GPU
 class cellSetup {
   // layout of data:
   // [cellStart (nCells+1) | neighStart (nCells+1) | cellAtoms (nAtoms) | neighAtoms (nNeigh)]
@@ -814,6 +818,10 @@ public:
       for (unsigned cb=0; cb <ncells_required ; ++cb) {
         nn+=listNeigh.lcell_tots[cells_required[cb]];
       }
+      if(nn==0) {
+        //nothing to compute for the atoms in this cell (their derivatives are zero)
+        continue;
+      }
       activeCells.push_back(c);
       nRequired.push_back(ncells_required);
       requiredCells.insert(requiredCells.end(),
@@ -854,6 +862,16 @@ public:
     //we test in production
     plumed_assert(atomsOffset==nAtoms && neighOffset==nNeigh)
         << "the cell lists are not built correctly";
+  }
+  ///applies f(unsigned&) to each atom index stored in the lists (the atoms
+  ///of the cells first, then the neighbours), in order: it can be used to
+  ///remap the indexes in place
+  template <typename F>
+  void forEachAtomIndex(F&& f) {
+    unsigned* cellAtoms=data.data()+2*(nCells+1);
+    for (unsigned k=0; k<nAtoms+nNeigh; ++k) {
+      f(cellAtoms[k]);
+    }
   }
   ///asynchronously copies the data on the GPU
   ///
@@ -901,6 +919,16 @@ class CudaCoordination : public Colvar {
   /// the derivatives, kept here to avoid reallocating them each step
   std::vector<Vector> deriv;
   std::vector<unsigned> indexesForCells;
+  /// the absolute index of each atom of the action
+  std::vector<unsigned> trueIndexes;
+  /// Only the "active atoms", i.e. the ones that appear in the cell lists,
+  /// are moved to/from the GPU: activeAtoms[k] is the index (in the action)
+  /// of the k-th active atom, globalToActive its inverse (-1 if not active)
+  unsigned nActive=0;
+  CUDAHELPERS::pinnedBuffer<unsigned> activeAtoms;
+  std::vector<int> globalToActive;
+  /// pinned host mirror of devTrueIndexes (for the active atoms)
+  CUDAHELPERS::pinnedBuffer<unsigned> hostTrueIndexes;
 
   LinkCells cells;
   struct cellsSettings {
@@ -955,6 +983,8 @@ class CudaCoordination : public Colvar {
   cellSetup cellConfiguration_coord;
   //used in dual mode for the derivatives of group b
   cellSetup cellConfiguration_dv;
+  /// assigns compact indexes to the atoms in the lists and remaps the lists
+  void remapActiveAtoms();
   /// decides (consistently on all the MPI processes) if the lists must be updated
   bool needsListUpdate();
   void updateNeighborLists();
@@ -983,16 +1013,60 @@ void CudaCoordination<calculateFloat>::setUpPermanentGPUMemory() {
   devOutput.resize (3 * nat + nAccumulators);
   hostOutput.resize (3 * nat + nAccumulators);
   devTrueIndexes.resize (nat);
-  std::vector<unsigned> trueIndexes (nat);
+  hostTrueIndexes.resize (nat);
+  activeAtoms.resize (nat);
+  globalToActive.assign (nat, -1);
+  trueIndexes.resize (nat);
+  // initially all the atoms are active, with the identity mapping
+  // (this stays so in pair mode, self and dual modes remap on each list update)
+  nActive = nat;
   for (size_t i = 0; i < nat; ++i) {
     trueIndexes[i] = getAbsoluteIndex (i).index();
+    hostTrueIndexes[i] = trueIndexes[i];
+    activeAtoms[i] = i;
+    globalToActive[i] = i;
   }
   //done only once: a synchronous copy is fine here
   CUDAHELPERS::cudaCheck (cudaMemcpy (devTrueIndexes.data(),
-                                      trueIndexes.data(),
+                                      hostTrueIndexes.data(),
                                       nat * sizeof (unsigned),
                                       cudaMemcpyHostToDevice),
                           "copying the atom indexes to the GPU");
+}
+
+template <typename calculateFloat>
+void CudaCoordination<calculateFloat>::remapActiveAtoms() {
+  // the stream must be idle here: the previous step ended with a
+  // cudaStreamSynchronize, so the buffers rewritten below are not in use
+  std::fill (globalToActive.begin(), globalToActive.end(), -1);
+  nActive = 0;
+  auto assign = [this] (unsigned & g) {
+    int & c = globalToActive[g];
+    if (c < 0) {
+      c = nActive;
+      activeAtoms[nActive] = g;
+      hostTrueIndexes[nActive] = trueIndexes[g];
+      ++nActive;
+    }
+    g = c;
+  };
+  // the atoms of the cells come first, so that the active atoms are sorted by
+  // cell: this improves the locality of the loads in the kernels
+  cellConfiguration_coord.forEachAtomIndex (assign);
+  if (mode == calculationMode::dual) {
+    cellConfiguration_dv.forEachAtomIndex (assign);
+  }
+  if (nActive > 0) {
+    CUDAHELPERS::cudaCheck (cudaMemcpyAsync (devTrueIndexes.data(),
+                            hostTrueIndexes.data(),
+                            nActive * sizeof (unsigned),
+                            cudaMemcpyHostToDevice,
+                            stream),
+                            "copying the atom indexes to the GPU");
+  }
+  // the derivatives of the atoms that are not active are zero: the active
+  // ones are overwritten at each step, so zeroing here is enough
+  std::fill (deriv.begin(), deriv.end(), Vector (0.0, 0.0, 0.0));
 }
 
 constexpr auto NNdefault="6";
@@ -1094,6 +1168,7 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
                           make_const_view(indexesForCells));
     if (mpiActive) {
       cellConfiguration_coord.build(cells, cs.listA, cs.listA, pbc);
+      remapActiveAtoms();
       cellConfiguration_coord.upload(stream);
     }
   }
@@ -1112,6 +1187,7 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
       cellConfiguration_coord.build(cells, cs.listA, cs.listB, pbc);
       //atoms of B, with the atoms of A as neighbours: derivatives of B
       cellConfiguration_dv.build(cells, cs.listB, cs.listA, pbc);
+      remapActiveAtoms();
       //both on the main stream: they will be completed before the
       //inputReady event that the auxiliary stream waits for
       cellConfiguration_coord.upload(stream);
@@ -1151,18 +1227,22 @@ void CudaCoordination<calculateFloat>::calculate() {
       // it would cost an O(nat) serial pass at every step
     }
     /***************************copying data on the GPU**************************/
+    // only the active atoms (the ones in the cell lists) are needed on the GPU
     const auto & positions = getPositions();
-    for (unsigned i = 0; i < nat; ++i) {
-      hostPositions[3 * i]     = positions[i][0];
-      hostPositions[3 * i + 1] = positions[i][1];
-      hostPositions[3 * i + 2] = positions[i][2];
+    for (unsigned k = 0; k < nActive; ++k) {
+      const unsigned i = activeAtoms[k];
+      hostPositions[3 * k]     = positions[i][0];
+      hostPositions[3 * k + 1] = positions[i][1];
+      hostPositions[3 * k + 2] = positions[i][2];
     }
-    CUDAHELPERS::cudaCheck (cudaMemcpyAsync (devPositions.data(),
-                            hostPositions.data(),
-                            3 * nat * sizeof (calculateFloat),
-                            cudaMemcpyHostToDevice,
-                            stream),
-                            "copying the positions to the GPU");
+    if (nActive > 0) {
+      CUDAHELPERS::cudaCheck (cudaMemcpyAsync (devPositions.data(),
+                              hostPositions.data(),
+                              3 * nActive * sizeof (calculateFloat),
+                              cudaMemcpyHostToDevice,
+                              stream),
+                              "copying the positions to the GPU");
+    }
     /*******************************calculations*******************************/
     // number of partial results to be reduced
     unsigned nPartials = 0;
@@ -1187,12 +1267,12 @@ void CudaCoordination<calculateFloat>::calculate() {
     CUDAHELPERS::reducePartials<calculateFloat>
     <<<nAccumulators, 256, 0, stream>>> (devPartials.data(),
                                          nPartials,
-                                         devOutput.data() + 3 * nat);
+                                         devOutput.data() + 3 * nActive);
     CUDAHELPERS::cudaCheck (cudaGetLastError(), "launching the CUDACOORDINATION kernels");
     // a single transfer for derivatives, coordination and virial
     CUDAHELPERS::cudaCheck (cudaMemcpyAsync (hostOutput.data(),
                             devOutput.data(),
-                            (3 * nat + nAccumulators) * sizeof (calculateFloat),
+                            (3 * nActive + nAccumulators) * sizeof (calculateFloat),
                             cudaMemcpyDeviceToHost,
                             stream),
                             "copying the results from the GPU");
@@ -1200,12 +1280,14 @@ void CudaCoordination<calculateFloat>::calculate() {
     // not for the other work on the device (like GROMACS' kernels)
     CUDAHELPERS::cudaCheck (cudaStreamSynchronize (stream),
                             "running the CUDACOORDINATION kernels");
-    for (unsigned i = 0; i < nat; ++i) {
-      deriv[i][0] = hostOutput[3 * i];
-      deriv[i][1] = hostOutput[3 * i + 1];
-      deriv[i][2] = hostOutput[3 * i + 2];
+    // the derivatives of the non active atoms are zero (set when the lists are updated)
+    for (unsigned k = 0; k < nActive; ++k) {
+      const unsigned i = activeAtoms[k];
+      deriv[i][0] = hostOutput[3 * k];
+      deriv[i][1] = hostOutput[3 * k + 1];
+      deriv[i][2] = hostOutput[3 * k + 2];
     }
-    const calculateFloat *results = hostOutput.data() + 3 * nat;
+    const calculateFloat *results = hostOutput.data() + 3 * nActive;
     coordination = results[0];
     for (unsigned i = 0; i < 3; ++i) {
       for (unsigned j = 0; j < 3; ++j) {
