@@ -112,9 +112,29 @@ CUDACOORDINATION GROUPA=group R_0=0.3
 /// [0] the coordination, [1-9] the virial (row major)
 constexpr unsigned nAccumulators = 10;
 
+/// the candidates are loaded in shared memory in tiles of at most this size:
+/// keeping it small lets more blocks be resident on each multiprocessor
+constexpr unsigned maxTileSize = 512;
+/// the number of threads per block used by the cell kernels (a warp per atom):
+/// enough warps to load the tiles efficiently, small enough to spread the
+/// atoms of a crowded cell over many blocks
+constexpr unsigned cellKernelThreads = 256;
+
 /// rounds up to a multiple of the warp size
 constexpr unsigned roundUpToWarp(unsigned const n) {
   return ((n + 31u) / 32u) * 32u;
+}
+
+/// the number of threads per block for the cell kernels (a warp per atom):
+/// cellKernelThreads, unless the cells are small or the user asked for less
+/// (maxThreads is a multiple of 32)
+constexpr unsigned cellThreads(unsigned const maxAtomsInCell, unsigned const maxThreads) {
+  return std::min({roundUpToWarp(32u * std::max(1u, maxAtomsInCell)), cellKernelThreads, maxThreads});
+}
+
+/// the number of blocks needed to cover the biggest cell with a warp per atom
+constexpr unsigned cellChunks(unsigned const maxAtomsInCell, unsigned const threads) {
+  return (maxAtomsInCell + threads / 32u - 1u) / (threads / 32u);
 }
 
 /// the kernels that compute the coordination write a block-reduced partial
@@ -142,9 +162,10 @@ struct cellListsDevice {
 template <typename precision>
 struct worker {
   virtual ~worker() = default;
-  // threads must be a multiple of 32
+  // threads must be a multiple of 32, chunks the number of blocks per cell
   virtual void runSelf(
     unsigned threads,
+    unsigned chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -154,9 +175,10 @@ struct worker {
     precision* devOut,
     precision* partials ) =0;
 
-  // threads must be a multiple of 32
+  // threads must be a multiple of 32, chunks the number of blocks per cell
   virtual void runDual(
     unsigned threads,
+    unsigned chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -166,8 +188,10 @@ struct worker {
     precision* devOut,
     precision* partials ) =0;
 
+  // threads must be a multiple of 32, chunks the number of blocks per cell
   virtual void runDualDev(
     unsigned  threads,
+    unsigned  chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -213,11 +237,24 @@ T __device__ __forceinline__ calculatePBC (T const val,
   }
 }
 
-// each block works on a (non empty) cell, the threads of the block loop on the
-// atoms of the cell (so a cell can contain more atoms than the threads in the
-// block) and compare them with the atoms in the neighbourhood, that are loaded
-// in shared memory in tiles of `tile_size` atoms
-// blockDim.x must be a multiple of 32 (for the final reduction)
+/// reduces the 3 components of a vector within the warp (the result is valid in lane 0)
+template <typename calculateFloat>
+__device__ __forceinline__ void warpReduce3 (calculateFloat (&v)[3]) {
+#pragma unroll
+  for (unsigned offset = 16; offset > 0; offset /= 2) {
+    v[0] += __shfl_down_sync (0xffffffffu, v[0], offset);
+    v[1] += __shfl_down_sync (0xffffffffu, v[1], offset);
+    v[2] += __shfl_down_sync (0xffffffffu, v[2], offset);
+  }
+}
+
+// Each block works on a chunk of (blockDim.x/32) atoms of a (non empty) cell:
+// blockIdx.x is the cell, blockIdx.y the chunk. Each warp takes one atom of the
+// chunk and its 32 lanes split the atoms in the neighbourhood of the cell, that
+// are loaded in shared memory in tiles of `tile_size` atoms. In this way the
+// work of a single atom is spread over the lanes and cells with many atoms are
+// spread over many blocks: the whole GPU is used also with few, crowded cells.
+// blockDim.x must be a multiple of 32
 template <typename calcType,typename calculateFloat>
 __global__ void getCoord (const unsigned tile_size,
                           const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
@@ -228,6 +265,9 @@ __global__ void getCoord (const unsigned tile_size,
                           calculateFloat* devOut,
                           calculateFloat* partials) {
   const unsigned cellId=blockIdx.x;
+  const unsigned nWarps = blockDim.x / 32u;
+  const unsigned warp = threadIdx.x / 32u;
+  const unsigned lane = threadIdx.x % 32u;
   CUDAHELPERS::sharedArena arena;
   auto sPos = arena.get_shared_memory<calculateFloat>(3*tile_size);
   auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
@@ -237,21 +277,22 @@ __global__ void getCoord (const unsigned tile_size,
   const unsigned neighStart = lists.neighStart[cellId];
   const unsigned nNeigh = lists.neighStart[cellId+1] - neighStart;
   unsigned const * neighbours = lists.neighAtoms + neighStart;
+  // the atoms of the cell processed by this block
+  const unsigned base = blockIdx.y * nWarps;
 
-  // local results, accumulated over all the atoms processed by this thread
+  // local results, accumulated by each thread over its pairs
   calculateFloat mycoord = 0.0;
 //static array became registers with the compiler (cuda 12)
   calculateFloat myVirial[9] = {0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0,
                                 0.0, 0.0, 0.0
                                };
-  // the loop bounds are the same for all the threads of the block,
-  // so the __syncthreads() within are safe
-  for (unsigned base=0; base < nInCell; base += blockDim.x) {
-    // active if does the calculations, inactive if only loads the memory
-    const bool activeThread = base + threadIdx.x < nInCell;
-    const unsigned i = (activeThread) ?
-                       lists.cellAtoms[atomsStart + base + threadIdx.x] : 0;
+  // uniform within the block (the __syncthreads() inside are safe)
+  if (base < nInCell) {
+    // uniform within the warp
+    const bool activeWarp = base + warp < nInCell;
+    const unsigned i = (activeWarp) ?
+                       lists.cellAtoms[atomsStart + base + warp] : 0;
     const unsigned idx = trueIndexes[i];
     calculateFloat mydev[3]  = {0.0, 0.0, 0.0};
     // local calculation aid
@@ -260,7 +301,7 @@ __global__ void getCoord (const unsigned tile_size,
                                    coordinates[Z (i)]
                                   };
     for(unsigned tile=0; tile < nNeigh; tile+=tile_size) {
-      // loading shared memory
+      // loading shared memory (all the threads of the block)
       const unsigned activeCandidates=min(tile_size,nNeigh-tile);
       const auto nnI=neighbours+tile;
       for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
@@ -272,8 +313,9 @@ __global__ void getCoord (const unsigned tile_size,
 
       __syncthreads();
 
-      if (activeThread) {
-        for (unsigned j = 0; j < activeCandidates; ++j) {
+      if (activeWarp) {
+        // the lanes of the warp split the candidates
+        for (unsigned j = lane; j < activeCandidates; j += 32u) {
           // Safeguard
           if (idx != realIndexes[j] ) {
             mycoord+=calcType:: coordLoop(j,
@@ -290,7 +332,9 @@ __global__ void getCoord (const unsigned tile_size,
       }
       __syncthreads();
     }
-    if (activeThread) {
+    // the derivative of the atom is spread over the lanes
+    warpReduce3 (mydev);
+    if (activeWarp && lane == 0) {
       // working in global memory ONLY at the end
       devOut[X (i)] = mydev[0];
       devOut[Y (i)] = mydev[1];
@@ -306,7 +350,9 @@ __global__ void getCoord (const unsigned tile_size,
     myVirial[3], myVirial[4], myVirial[5],
     myVirial[6], myVirial[7], myVirial[8]
   };
-  CUDAHELPERS::blockReduceToPartials (acc, sPos, partials);
+  CUDAHELPERS::blockReduceToPartials (acc, sPos, partials,
+                                      blockIdx.y * gridDim.x + blockIdx.x,
+                                      gridDim.x * gridDim.y);
 }
 
 // same structure of getCoord, but calculates only the derivatives
@@ -323,6 +369,9 @@ getDualDev (
   calculateFloat* devOut
 ) {
   const unsigned cellId=blockIdx.x;
+  const unsigned nWarps = blockDim.x / 32u;
+  const unsigned warp = threadIdx.x / 32u;
+  const unsigned lane = threadIdx.x % 32u;
   CUDAHELPERS::sharedArena arena;
   auto sPos = arena.get_shared_memory<calculateFloat>(3 * tile_size);
   auto realIndexes = arena.get_shared_memory<unsigned>(tile_size);
@@ -332,69 +381,69 @@ getDualDev (
   const unsigned neighStart = lists.neighStart[cellId];
   const unsigned nNeigh = lists.neighStart[cellId+1] - neighStart;
   unsigned const * neighbours = lists.neighAtoms + neighStart;
+  const unsigned base = blockIdx.y * nWarps;
+  if (base >= nInCell) {
+    // uniform within the block
+    return;
+  }
+  const bool activeWarp = base + warp < nInCell;
+  const unsigned i = (activeWarp) ?
+                     lists.cellAtoms[atomsStart + base + warp] : 0;
+  const unsigned idx = trueIndexes[i];
+  // local results
+  calculateFloat mydev[3] = {0.0, 0.0, 0.0};
 
-  for (unsigned base=0; base < nInCell; base += blockDim.x) {
-    // active if does the calculations, inactive if only loads the memory
-    const bool activeThread = base + threadIdx.x < nInCell;
-    const unsigned i = (activeThread) ?
-                       lists.cellAtoms[atomsStart + base + threadIdx.x] : 0;
-    const unsigned idx = trueIndexes[i];
-    // local results
-    calculateFloat mydevX = 0.0;
-    calculateFloat mydevY = 0.0;
-    calculateFloat mydevZ = 0.0;
+  // local calculation aid
+  const calculateFloat x = coordinates[X (i)];
+  const calculateFloat y = coordinates[Y (i)];
+  const calculateFloat z = coordinates[Z (i)];
 
-    // local calculation aid
-    const calculateFloat x = coordinates[X (i)];
-    const calculateFloat y = coordinates[Y (i)];
-    const calculateFloat z = coordinates[Z (i)];
+  for(unsigned tile=0; tile < nNeigh; tile+=tile_size) {
+    // loading shared memory
+    const unsigned activeCandidates=min(tile_size,nNeigh-tile);
+    const auto nnI=neighbours+tile;
+    for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
+      sPos[X (k)] = coordinates[X (nnI[k])];
+      sPos[Y (k)] = coordinates[Y (nnI[k])];
+      sPos[Z (k)] = coordinates[Z (nnI[k])];
+      realIndexes[k] = trueIndexes[nnI[k]];
+    }
 
-    for(unsigned tile=0; tile < nNeigh; tile+=tile_size) {
-      // loading shared memory
-      const unsigned activeCandidates=min(tile_size,nNeigh-tile);
-      const auto nnI=neighbours+tile;
-      for (auto k = threadIdx.x; k < activeCandidates; k += blockDim.x) {
-        sPos[X (k)] = coordinates[X (nnI[k])];
-        sPos[Y (k)] = coordinates[Y (nnI[k])];
-        sPos[Z (k)] = coordinates[Z (nnI[k])];
-        realIndexes[k] = trueIndexes[nnI[k]];
-      }
+    __syncthreads();
 
-      __syncthreads();
+    if (activeWarp) {
+      calculateFloat d[3];
+      calculateFloat dfunc;
 
-      if (activeThread) {
-        calculateFloat d[3];
-        calculateFloat dfunc;
+      for (unsigned j = lane; j < activeCandidates; j += 32u) {
+        // Safeguard
+        if (idx != realIndexes[j] ) {
 
-        for (unsigned j = 0; j < activeCandidates; ++j) {
-          // Safeguard
-          if (idx != realIndexes[j] ) {
+          d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
+          d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
+          d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
 
-            d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
-            d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
-            d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+          dfunc = 0.;
+          GPU::calculateSqr<mySwitch> (
+            d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
+            switchingParameters,
+            dfunc);
 
-            dfunc = 0.;
-            GPU::calculateSqr<mySwitch> (
-              d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
-              switchingParameters,
-              dfunc);
-
-            mydevX -= dfunc * d[0];
-            mydevY -= dfunc * d[1];
-            mydevZ -= dfunc * d[2];
-          }
+          mydev[0] -= dfunc * d[0];
+          mydev[1] -= dfunc * d[1];
+          mydev[2] -= dfunc * d[2];
         }
       }
-      __syncthreads();
     }
+    __syncthreads();
+  }
 
-    if (activeThread) {
-      // working in global memory ONLY at the end
-      devOut[X (i)] = mydevX;
-      devOut[Y (i)] = mydevY;
-      devOut[Z (i)] = mydevZ;
-    }
+  warpReduce3 (mydev);
+  if (activeWarp && lane == 0) {
+    // working in global memory ONLY at the end
+    devOut[X (i)] = mydev[0];
+    devOut[Y (i)] = mydev[1];
+    devOut[Z (i)] = mydev[2];
   }
 }
 
@@ -478,7 +527,7 @@ __global__ void getCoordPair (
     myVirial[3], myVirial[4], myVirial[5],
     myVirial[6], myVirial[7], myVirial[8]
   };
-  CUDAHELPERS::blockReduceToPartials (acc, smem, partials);
+  CUDAHELPERS::blockReduceToPartials (acc, smem, partials, blockIdx.x, gridDim.x);
 }
 
 template <bool usePBC, typename mySwitch, typename calculateFloat>
@@ -611,6 +660,7 @@ public:
   {}
   void runSelf(
     unsigned const threads,
+    unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -621,13 +671,13 @@ public:
     precision* partials) override {
     //how many atoms accumulate in shared memory,
     //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
-    const auto tile_size= std::min(maxAtomsPerCell, lists.maxNeighbours);
+    const auto tile_size= std::min({maxAtomsPerCell, lists.maxNeighbours, maxTileSize});
     //the shared memory is reused for the final block reduction
     const auto memSize=std::max(tile_size
                                 * (3*sizeof(precision) + sizeof(unsigned)),
                                 CUDAHELPERS::blockReduceMemory<nAccumulators,precision>(threads));
     getCoord<self,precision>
-    <<<lists.nCells,threads,
+    <<<dim3(lists.nCells,chunks),threads,
     memSize,
     mystream
     >>> (tile_size,
@@ -643,6 +693,7 @@ public:
 
   void runDual(
     unsigned const threads,
+    unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -653,13 +704,13 @@ public:
     precision* partials) override {
     //how many atoms accumulate in shared memory,
     //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
-    const auto tile_size= std::min(maxAtomsPerCell_dual, lists.maxNeighbours);
+    const auto tile_size= std::min({maxAtomsPerCell_dual, lists.maxNeighbours, maxTileSize});
     //the shared memory is reused for the final block reduction
     const auto memSize=std::max(tile_size
                                 * (3*sizeof(precision) + sizeof(unsigned)),
                                 CUDAHELPERS::blockReduceMemory<nAccumulators,precision>(threads));
     getCoord<dual,precision>
-    <<<lists.nCells,threads,
+    <<<dim3(lists.nCells,chunks),threads,
     memSize,
     mystream
     >>> (tile_size,
@@ -675,6 +726,7 @@ public:
 
   void runDualDev(
     unsigned const threads,
+    unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
     PLMD::GPU::ortoPBCs<precision> myPBC,
@@ -684,11 +736,11 @@ public:
     precision* devOut) override {
     //how many atoms accumulate in shared memory,
     //so that the kernel will loop on them with no risk of exceeding the maximum memory allowed
-    const auto tile_size= std::min(maxAtomsPerCell_dualdv, lists.maxNeighbours);
+    const auto tile_size= std::min({maxAtomsPerCell_dualdv, lists.maxNeighbours, maxTileSize});
     const auto memSize=tile_size
                        * (3*sizeof(precision) + sizeof(unsigned));
     getDualDev<pbc,function,precision>
-    <<<lists.nCells,threads,
+    <<<dim3(lists.nCells,chunks),threads,
     memSize,
     mystream
     >>> (
@@ -1077,7 +1129,7 @@ template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
   Colvar::registerKeywords (keys);
 
-  keys.add ("optional", "THREADS", "The upper limit of the number of threads");
+  keys.add ("optional", "THREADS", "The upper limit of the number of threads per block (default 512, the cell kernels use at most 256)");
   keys.add ("atoms", "GROUPA", "First list of atoms");
   keys.add ("atoms", "GROUPB", "Second list of atoms, optional");
   keys.addFlag ("PAIR",
@@ -1314,13 +1366,15 @@ unsigned CudaCoordination<calculateFloat>::doSelf() {
   if (lists.nCells == 0) {
     return 0;
   }
-  //the threads loop on the atoms of the cell, so the cells can be bigger than the block
-  //maxNumThreads is a multiple of 32
-  const unsigned threads = std::min(roundUpToWarp(lists.maxAtomsInCell), maxNumThreads);
-  devPartials.resize (nAccumulators * lists.nCells, 1.2);
+  //a warp per atom: the atoms of a cell are spread over `chunks` blocks
+  const unsigned threads = cellThreads (lists.maxAtomsInCell, maxNumThreads);
+  const unsigned chunks = cellChunks (lists.maxAtomsInCell, threads);
+  const unsigned nBlocks = lists.nCells * chunks;
+  devPartials.resize (nAccumulators * nBlocks, 1.2);
 
   runner->runSelf (
     threads,
+    chunks,
     stream,
     switchingParameters,
     myPBC,
@@ -1330,17 +1384,20 @@ unsigned CudaCoordination<calculateFloat>::doSelf() {
     devOutput.data(),
     devPartials.data()
   );
-  return lists.nCells;
+  return nBlocks;
 }
 
 template <typename calculateFloat>
 unsigned CudaCoordination<calculateFloat>::doDual() {
   const auto lists_coord = cellConfiguration_coord.deviceView();
   const auto lists_dv = cellConfiguration_dv.deviceView();
-  //the threads loop on the atoms of the cell, so the cells can be bigger than the block
-  const unsigned threads_coord = std::min(roundUpToWarp(lists_coord.maxAtomsInCell), maxNumThreads);
-  const unsigned threads_dv = std::min(lists_dv.maxAtomsInCell, maxNumThreads_dv);
-  devPartials.resize (nAccumulators * lists_coord.nCells, 1.2);
+  //a warp per atom: the atoms of a cell are spread over `chunks` blocks
+  const unsigned threads_coord = cellThreads (lists_coord.maxAtomsInCell, maxNumThreads);
+  const unsigned chunks_coord = cellChunks (lists_coord.maxAtomsInCell, threads_coord);
+  const unsigned threads_dv = cellThreads (lists_dv.maxAtomsInCell, maxNumThreads_dv);
+  const unsigned chunks_dv = cellChunks (lists_dv.maxAtomsInCell, threads_dv);
+  const unsigned nBlocks = lists_coord.nCells * chunks_coord;
+  devPartials.resize (nAccumulators * nBlocks, 1.2);
 
   // the two kernels write on different parts of the derivatives (A and B atoms)
   // so they can run concurrently: the auxiliary stream waits for the inputs
@@ -1350,6 +1407,7 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
   if (lists_dv.nCells > 0) {
     runner->runDualDev(
       threads_dv,
+      chunks_dv,
       streamAux,
       switchingParameters,
       myPBC,
@@ -1364,6 +1422,7 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
   if (lists_coord.nCells > 0) {
     runner->runDual(
       threads_coord,
+      chunks_coord,
       stream,
       switchingParameters,
       myPBC,
@@ -1375,7 +1434,7 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
     );
   }
   CUDAHELPERS::cudaCheck (cudaStreamWaitEvent (stream, auxDone, 0), "cudaStreamWaitEvent");
-  return lists_coord.nCells;
+  return nBlocks;
 }
 
 template <typename calculateFloat>
@@ -1645,6 +1704,7 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
       cudaFuncAttributes attr;
       runner->getDualDevAttr(attr);
       maxNumThreads_dv = min (attr.maxThreadsPerBlock, maxNumThreads_dv);
+      maxNumThreads_dv = std::max(32u, (maxNumThreads_dv / 32u) * 32u);
       maxDynamicSharedMemory_dualDev=attr.maxDynamicSharedSizeBytes;
       maxNumberOfNeighborsPerCell_dv = maxDynamicSharedMemory_dualDev / (3*sizeof(calculateFloat)+sizeof(unsigned));
       register_dv = attr.numRegs;
@@ -1675,9 +1735,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   }
 
   log << "GPU info:\n"
-      << "\t max threads per coordination -upper limit on inner cells-: " << maxNumThreads << "\n";
+      << "\t threads per block (a warp per atom): " << std::min(cellKernelThreads, maxNumThreads) << "\n";
   if (mode == calculationMode::dual) {
-    log<< "\t max threads per coordination(derivatives loop): " << maxNumThreads_dv << "\n";
+    log<< "\t threads per block (derivatives loop): " << std::min(cellKernelThreads, maxNumThreads_dv) << "\n";
   }
 
   if (mode == calculationMode::dual || mode == calculationMode::self) {

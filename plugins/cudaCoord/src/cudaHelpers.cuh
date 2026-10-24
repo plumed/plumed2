@@ -561,7 +561,7 @@ public:
 };
 
 /// @brief reduces N values per thread over the block and writes the N block
-/// totals in partials[k*gridDim.x + blockIdx.x]
+/// totals in partials[k*nBlocks + blockId]
 ///
 /// Deterministic (no atomics). All the threads of the block must call this,
 /// blockDim.x must be a multiple of 32 and smem must hold at least
@@ -570,7 +570,9 @@ public:
 template <unsigned N, typename T>
 __device__ __forceinline__ void blockReduceToPartials (const T (&vals)[N],
     T *smem,
-    T *partials) {
+    T *partials,
+    const unsigned blockId,
+    const unsigned nBlocks) {
   const unsigned lane = threadIdx.x % 32u;
   const unsigned warp = threadIdx.x / 32u;
   const unsigned nwarps = blockDim.x / 32u;
@@ -591,7 +593,7 @@ __device__ __forceinline__ void blockReduceToPartials (const T (&vals)[N],
     for (unsigned w = 0; w < nwarps; ++w) {
       acc += smem[w * N + threadIdx.x];
     }
-    partials[threadIdx.x * gridDim.x + blockIdx.x] = acc;
+    partials[threadIdx.x * nBlocks + blockId] = acc;
   }
 }
 
