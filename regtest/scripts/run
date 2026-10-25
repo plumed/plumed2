@@ -43,6 +43,7 @@ mpiprocs=0
 
 plumed_needs=
 plumed_modules=
+plumed_long=
 
 plumed_language=c++
 
@@ -56,6 +57,12 @@ done
 echo "++ Test type: $type"
 echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
+
+# long tests run only when asked for (CI asks for them in its nightly run)
+if test "$plumed_long" = yes && test "$PLUMED_LONG_TESTS" != yes ; then
+  echo "DEFERRED (long test, set PLUMED_LONG_TESTS=yes to run it)"
+  exit 0
+fi
 
 mpi=env
 

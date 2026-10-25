@@ -8,6 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
@@ -260,7 +262,8 @@ jobs:
     - name: Coverage
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
-      if: contains( matrix.variant, '-coverage-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
       run: |
          make -C developer-doc coverage
          .ci/push coverage
@@ -269,7 +272,8 @@ jobs:
     # with .codecov.yml) instead of letting the action search for and re-process gcov files.
     # Errors are not fatal: a Codecov outage should not make CI fail.
     - name: Upload coverage to Codecov
-      if: contains( matrix.variant, '-coverage-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
       uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -278,7 +282,8 @@ jobs:
         plugins: noop
         fail_ci_if_error: false
     - name: Push doc
-      if: contains( matrix.variant, '-doc-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-doc-' ) && github.event_name != 'schedule' }}
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
