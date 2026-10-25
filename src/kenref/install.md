@@ -102,12 +102,12 @@ own prefix (e.g. `/usr/local/kenref/lib`) that is **not** on the system loader p
 binaries can't find it at run time. If you *also* choose a **non-system C++ runtime** (e.g. build with
 `-stdlib=libc++`), the same applies to `libc++.so.1`.
 
-rpath records **`LIBRARY_PATH`**, so put your non-system runtime library dirs on it at configure time — the
-`libkenref_core` lib dir, plus, for a libc++ build, the dir holding `libc++.so.1` (with LLVM that is the
-`…/lib/x86_64-unknown-linux-gnu` **subdir**, not the parent `…/lib`):
+rpath records **`LIBRARY_PATH`**, plus the `libkenref_core` lib dir that `pkg-config` reports, so a KEnRef
+that `configure` fetched and built, or one found through `PKG_CONFIG_PATH`, needs nothing more. Put any other
+non-system runtime library dir on `LIBRARY_PATH` at configure time — for a libc++ build, the dir holding
+`libc++.so.1` (with LLVM that is the `…/lib/x86_64-unknown-linux-gnu` **subdir**, not the parent `…/lib`):
 
 ```bash
-export LIBRARY_PATH="/usr/local/kenref/lib:$LIBRARY_PATH"                 # libkenref_core
 export LIBRARY_PATH="$LLVM/lib/x86_64-unknown-linux-gnu:$LIBRARY_PATH"    # only if building with libc++
 ./configure --enable-kenref --with-kenref-src=~/KEnRef CXXFLAGS="-O3 -std=c++17"
 make -j && sudo make install

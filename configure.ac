@@ -990,7 +990,7 @@ fi
 AC_DEFUN([KENREF_CHECK_LIBS], [
   # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
   # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
-  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # Users may put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
   # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
   # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
   # shell. Forcing the flag through keeps the captured value self-contained.
@@ -1028,6 +1028,22 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
     AC_MSG_NOTICE([KEnRef: using $kenref_flavor])
     LIBS="$KENREF_LIBS $LIBS"
     HAVE_KENREF=yes
+    # The rpath that --enable-rpath records below is "$libdir:$LIBRARY_PATH", not the -L dirs of LIBS.
+    # A KEnRef that configure built in kenref-deps/, or one found only through PKG_CONFIG_PATH, has its
+    # libdir in LIBS but not on LIBRARY_PATH, so libplumedKernel.so got no RUNPATH to it and linking the
+    # plumed executable failed with "libkenref_core.so.2 ... not found". Add those dirs to LIBRARY_PATH.
+    for kn_flag in $KENREF_LIBS ; do
+      case "$kn_flag" in
+      (-L*)
+        kn_dir=`echo "$kn_flag" | sed 's/^-L//'`
+        case ":$LIBRARY_PATH:" in
+        (*":$kn_dir:"*) ;;
+        (*) LIBRARY_PATH="$kn_dir${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
+        esac
+      ;;
+      esac
+    done
+    export LIBRARY_PATH
   fi
   AC_SUBST([HAVE_KENREF])
   AC_SUBST([KENREF_LIBS])
