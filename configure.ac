@@ -364,7 +364,6 @@ PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
@@ -873,20 +872,6 @@ if test $execinfo = true ; then
 fi
 if test $zlib = true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
-fi
-
-if test $gsl = true ; then
-  found=ko
-  PLUMED_SEARCH_LIBS([cblas_dgemv],[gslcblas], [
-    AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
-      PLUMED_SEARCH_LIBS([gsl_vector_alloc],[gsl],[found=ok])
-    ])
-  ])
-  if test $found = ok ; then
-    AC_DEFINE([__PLUMED_HAS_GSL])
-  else
-    AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
-  fi
 fi
 
 if test $boost_graph = true ; then
