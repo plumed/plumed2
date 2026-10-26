@@ -273,6 +273,8 @@ template <typename calcType,typename calculateFloat>
 __global__ void getCoord (const unsigned tile_size,
                           const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
                           const PLMD::GPU::pbcData<calculateFloat> myPBC,
+                          // a kernel argument: a reference would point to host memory
+                          // cppcheck-suppress passedByValue
                           const cellListsDevice lists,
                           calculateFloat const* coordinates,
                           unsigned const* trueIndexes,
@@ -377,6 +379,8 @@ getDualDev (
   const unsigned tile_size,
   const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
   const PLMD::GPU::pbcData<calculateFloat> myPBC,
+  // a kernel argument: a reference would point to host memory
+  // cppcheck-suppress passedByValue
   const cellListsDevice lists,
   calculateFloat const* coordinates,
   unsigned const* trueIndexes,
@@ -660,19 +664,22 @@ public:
     //getting the tiling informations
     maxAtomsPerCell{[this]{
       cudaFuncAttributes attr;
-      getSelfAttr(attr);
+      // the qualified call makes explicit that the virtual function of this class is used
+      runFunction::getSelfAttr(attr);
       auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
       return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
     }()},
   maxAtomsPerCell_dual{[this]{
       cudaFuncAttributes attr;
-      getDualAttr(attr);
+      // the qualified call makes explicit that the virtual function of this class is used
+      runFunction::getDualAttr(attr);
       auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
       return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
     }()},
   maxAtomsPerCell_dualdv {[this]{
       cudaFuncAttributes attr;
-      getDualDevAttr(attr);
+      // the qualified call makes explicit that the virtual function of this class is used
+      runFunction::getDualDevAttr(attr);
       auto maxDynamicSharedMemory=attr.maxDynamicSharedSizeBytes;
       return static_cast<unsigned>(maxDynamicSharedMemory / (3*sizeof(precision)+sizeof(unsigned)));
     }()}
@@ -1582,7 +1589,7 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
 
   parse ("THREADS", maxNumThreads);
   maxNumThreads_dv =  maxNumThreads;
-  if (maxNumThreads <= 0) {
+  if (maxNumThreads == 0) {
     error ("THREADS should be positive");
   }
   addValueWithDerivatives();
@@ -1598,8 +1605,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   if (mode == calculationMode::pair) {
     log.printf ("  with PAIR option\n");
   }
-  std::string sw, errors;
-
   PLMD::SwitchingFunction sf;
 
   int nn_ = 6;
@@ -1663,8 +1668,8 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   } else {
     switchingParameters.invr0_2 = invr0;
   }
-  constexpr bool dostretch = true;
-  if (dostretch && mpiActive) {
+  // the switching function is stretched so that it is 1 in 0 and 0 in dmax
+  if (mpiActive) {
     std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
 
     thrust::device_vector<calculateFloat> inputZeroMax = inputs;
