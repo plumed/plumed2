@@ -121,9 +121,11 @@ unsigned  Distance<T>::getModeAndSetupValues( ActionWithValue* av ) {
   av->parseFlag("SCALED_COMPONENTS",sc);
   if( c && sc ) {
     av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
-  } else if ( s & c ) {
+  }
+  if ( s & c ) {
     av->error("SQUARED and COMPONENTS are not compatible");
-  } else if ( s & sc ) {
+  }
+  if ( s & sc ) {
     av->error("SQUARED and SCALED_COMPONENTS are not compatible");
   }
   if(c) {
