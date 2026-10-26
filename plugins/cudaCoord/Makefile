@@ -14,8 +14,8 @@ DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 NVCC = nvcc
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
-#-dc adds relocatable device code 
-#-dlto Perform link-time optimization of device code. 
+#-dc adds relocatable device code
+#-dlto Perform link-time optimization of device code.
 NVCCCFLAGS = -dc -dlto
 NVCCLDFLAGS = -shared -dlto
 OBJS = Coordination.o cudaHelpers.o

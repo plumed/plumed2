@@ -36,7 +36,12 @@ fi
      else operator=0
 
   }' $1 |
-sed "s/GCH/PLUMED_GCH/g" > small_vector.h
+sed "s/GCH/PLUMED_GCH/g" |
+# the EDG front end used by nvcc warns (#186-D, "pointless comparison of unsigned
+# integer with zero") on two static_asserts that are always true for unsigned
+# types; these equivalent forms do not trigger it
+sed -e 's/static_assert (0 <= (std::numeric_limits<Integer>::max) ()/static_assert (0 < (std::numeric_limits<Integer>::max) ()/' \
+    -e 's/static_assert (InlineCapacity <= (std::numeric_limits<size_type>::max) ()/static_assert (InlineCapacity == 0u || InlineCapacity <= (std::numeric_limits<size_type>::max) ()/' > small_vector.h
 
 git add small_vector.h
 git commit -m update small_vector.h

@@ -1998,7 +1998,7 @@ public:
   static PLUMED_GCH_CONSTEVAL
   std::size_t
   numeric_max (void) noexcept {
-    static_assert (0 <= (std::numeric_limits<Integer>::max) (), "Integer is nonpositive.");
+    static_assert (0 < (std::numeric_limits<Integer>::max) (), "Integer is nonpositive.");
     return static_cast<std::size_t> ((std::numeric_limits<Integer>::max) ());
   }
 
@@ -4887,7 +4887,7 @@ public:
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  static_assert (InlineCapacity <= (std::numeric_limits<size_type>::max) (),
+  static_assert (InlineCapacity == 0u || InlineCapacity <= (std::numeric_limits<size_type>::max) (),
                  "InlineCapacity must be less than or equal to the maximum value of size_type.");
 
   static constexpr

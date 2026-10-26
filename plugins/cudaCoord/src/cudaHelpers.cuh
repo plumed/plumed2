@@ -541,6 +541,16 @@ void doReductionND (T *inputArray,
     inputArray, outputArray, len, blocks, nthreads, stream);
 }
 
+/// The dynamic shared memory of the kernel, seen as an array of T
+///
+/// For kernels that use the dynamic shared memory for a single purpose;
+/// kernels that split it in more arrays should use sharedArena
+template <typename T>
+__device__ __forceinline__ T *dynamicSharedMemory() {
+  extern __shared__ __align__ (16) unsigned char memory[];
+  return reinterpret_cast<T *> (memory);
+}
+
 ///A simple struct to use the allocated shared memory in multiple ways
 ///
 ///Usage: declare this at the begininnig of your kernel (a single instance per kernel)
@@ -551,12 +561,10 @@ class sharedArena {
 public:
   template <typename T>
   __device__ T *get_shared_memory(unsigned const size) {
-    // do we need an __align__() here?
-    extern __shared__ unsigned char memory[];
-    auto ptr = reinterpret_cast<T *> (&memory[allocated]);
+    // the caller is responsible for the alignment of the subsequent arrays
+    auto ptr = reinterpret_cast<T *> (dynamicSharedMemory<unsigned char>() + allocated);
     allocated+=size * sizeof(T);
     return ptr;
-
   }
 };
 

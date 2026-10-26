@@ -519,8 +519,8 @@ __global__ void getCoordPair (
     devOutI[Z (i)] = t;
     devOutJ[Z (i)] = -t;
   }
-  CUDAHELPERS::sharedArena arena;
-  auto smem = arena.get_shared_memory<calculateFloat>(nAccumulators * (blockDim.x / 32));
+  // the dynamic shared memory is used only by the reduction
+  auto smem = CUDAHELPERS::dynamicSharedMemory<calculateFloat>();
   const calculateFloat acc[nAccumulators] = {
     myCoord,
     myVirial[0], myVirial[1], myVirial[2],
