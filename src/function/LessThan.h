@@ -118,11 +118,14 @@ void LessThan::calc( const LessThan& func,
   double d;
   if( func.squared ) {
     funcout.values[0] = func.switchingFunction.calculateSqr( args[0], d );
+    if( !noderiv ) {
+      funcout.derivs[0][0] = d/2;
+    }
   } else {
     funcout.values[0] = func.switchingFunction.calculate( args[0], d );
-  }
-  if( !noderiv ) {
-    funcout.derivs[0][0] = args[0]*d;
+    if( !noderiv ) {
+      funcout.derivs[0][0] = args[0]*d;
+    }
   }
 }
 

@@ -31,7 +31,7 @@ namespace colvar {
 
 template <typename T=double>
 class Distance : public Colvar {
-  enum components:unsigned {scaled=2,standard=1,scalar=0} mode{scalar};
+  enum components:unsigned {squared=3,scaled=2,standard=1,scalar=0} mode{scalar};
   bool pbc;
 
   //not Typep, the float version is only used for the PTM
@@ -58,6 +58,7 @@ void  Distance<T>::registerKeywords( Keywords& keys ) {
   constexpr auto scalarOrVector = Keywords::componentType::scalar
                                   | Keywords::componentType::vector;
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
+  keys.addFlag("SQUARED",false,"calculate and store the square of the distance");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","COMPONENTS",scalarOrVector,"the x-component of the vector connecting the two atoms");
@@ -112,12 +113,18 @@ void  Distance<T>::parseAtomList( const int& num,
 
 template <typename T>
 unsigned  Distance<T>::getModeAndSetupValues( ActionWithValue* av ) {
+  bool s;
+  av->parseFlag("SQUARED",s);
   bool c;
   av->parseFlag("COMPONENTS",c);
   bool sc;
   av->parseFlag("SCALED_COMPONENTS",sc);
   if( c && sc ) {
     av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  } else if ( s & c ) {
+    av->error("SQUARED and COMPONENTS are not compatible");
+  } else if ( s & sc ) {
+    av->error("SQUARED and SCALED_COMPONENTS are not compatible");
   }
   if(c) {
     av->addComponentWithDerivatives("x");
@@ -139,6 +146,9 @@ unsigned  Distance<T>::getModeAndSetupValues( ActionWithValue* av ) {
   }
   av->addValueWithDerivatives();
   av->setNotPeriodic();
+  if(s) {
+    return components::squared;
+  }
   return components::scalar;
 }
 
@@ -236,6 +246,12 @@ void  Distance<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvo
     cvout.derivs[2][0].copyConv(matmul(cvin.pbc.getInvBox(),zm<T>));
     cvout.derivs[2][1].copyConv(matmul(cvin.pbc.getInvBox(),zp<T>));
     cvout.values[2] = Tools::pbc(d[2]);
+  } else if(cvin.mode==components::squared) {
+    const double value=distance.modulo2();
+    cvout.derivs[0][0] = -2*distance;
+    cvout.derivs[0][1] = 2*distance;
+    ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
+    cvout.values[0] = value;
   } else {
     const double value=distance.modulo();
     const double invvalue=1.0/value;
