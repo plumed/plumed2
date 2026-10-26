@@ -21,7 +21,7 @@ TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingF
 #this makes make search for files in src
 VPATH = src
 OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
-ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
 ADDCLDFLAGS=-acc -static-nvidia
 
 ifeq ($(SOEXT),dylib)
