@@ -82,18 +82,32 @@ struct invData {
   }
 };
 
+/// The periodic box as seen by the kernels
+///
+/// The box vectors are the rows of `box` (the PLMD::Tensor convention, stored
+/// row-major) and `invBox` is its inverse. When the box vectors are along the
+/// cartesian axes (`ortho`) the kernels use the cheaper per-component
+/// minimum image with the lengths in X, Y and Z; otherwise the minimum image
+/// is taken in scaled coordinates, which is exact for a box of any
+/// orientation (e.g. after FIT_TO_TEMPLATE, that rotates the box) and, for a
+/// skewed box, for distances smaller than half the smallest box height.
 template <typename calculateFloat>
-struct ortoPBCs {
+struct pbcData {
+  calculateFloat box[9] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+  calculateFloat invBox[9] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
   invData<calculateFloat> X{1.0};
   invData<calculateFloat> Y{1.0};
   invData<calculateFloat> Z{1.0};
+  bool ortho = true;
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const ortoPBCs<T>& opc) {
-  os << "X: " << opc.X.val << " " << opc.X.inv << "\n";
-  os << "Y: " << opc.Y.val << " " << opc.Y.inv << "\n";
-  os << "Z: " << opc.Z.val << " " << opc.Z.inv << "\n";
+std::ostream& operator<<(std::ostream& os, const pbcData<T>& pbc) {
+  os << "box:\n";
+  for (unsigned i = 0; i < 3; ++i) {
+    os << "  " << pbc.box[3*i] << " " << pbc.box[3*i+1] << " " << pbc.box[3*i+2] << "\n";
+  }
+  os << "orthorhombic: " << (pbc.ortho ? "yes" : "no") << "\n";
   return os;
 }
 
@@ -126,7 +140,7 @@ __device__ __forceinline__ calculateFloat pcuda_fastpow (calculateFloat base,
     int expo) {
   if (expo < 0) {
     expo = -expo;
-    base = 1.0 / base;
+    base = calculateFloat (1.0) / base;
   }
   calculateFloat result = 1.0;
   while (expo) {
@@ -139,6 +153,13 @@ __device__ __forceinline__ calculateFloat pcuda_fastpow (calculateFloat base,
   return result;
 }
 
+/// half width of the window around rdist=1 where the rational function
+/// (1-rdist^N)/(1-rdist^M) is evaluated with its Taylor expansion: the direct
+/// formula loses precision there (both the numerator and the denominator go
+/// to zero). The CPU uses 5e10*epsilon (~1e-5) in double; in single precision
+/// a wider window is needed: at x=rdist-1 the relative error of the direct
+/// formula is ~epsilon/(N*x), while the error of the second order expansion
+/// is ~x^3, so x~1e-3 balances the two
 template <typename calculateFloat>
 __device__ calculateFloat pcuda_eps() {
   return 0;
@@ -146,12 +167,12 @@ __device__ calculateFloat pcuda_eps() {
 
 template <>
 constexpr __device__ float pcuda_eps<float>() {
-  return FLT_EPSILON * 10.0f;
+  return 1.0e-3f;
 }
 
 template <>
 constexpr __device__ double pcuda_eps<double>() {
-  return DBL_EPSILON * 10.0;
+  return 5.0e10 * DBL_EPSILON;
 }
 
 //Use this as a base to implement different new switching functions, inclued this in the make_worker function
@@ -165,19 +186,28 @@ struct Rational {
     if (2 * pars.nn == pars.mm) {//simplified
       // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
       calculateFloat rNdist = pcuda_fastpow (rdist, pars.nn - 1);
-      result = 1.0 / (1 + rNdist * rdist);
+      result = calculateFloat (1.0) / (calculateFloat (1.0) + rNdist * rdist);
       dfunc = -pars.nn * rNdist * result * result;
     } else {
-      if (rdist > (1. - pcuda_eps<calculateFloat>()) &&
-          rdist < (1 + pcuda_eps<calculateFloat>())) {
-
-        result = pars.nn / pars.mm;
-        dfunc = 0.5 * pars.nn * (pars.nn - pars.mm) / pars.mm;
+      if (rdist > (calculateFloat (1.0) - pcuda_eps<calculateFloat>()) &&
+          rdist < (calculateFloat (1.0) + pcuda_eps<calculateFloat>())) {
+        // second order Taylor expansion around rdist=1, as on the CPU:
+        // the limits of the function, of its first and second derivatives
+        const calculateFloat N = pars.nn;
+        const calculateFloat M = pars.mm;
+        const calculateFloat res1 = N / M;
+        const calculateFloat dfunc1 = calculateFloat (0.5) * N * (N - M) / M;
+        const calculateFloat secDev = (N * (M * M - calculateFloat (3.0) * M * (N - calculateFloat (1.0))
+                                            + N * (calculateFloat (2.0) * N - calculateFloat (3.0))))
+                                      / (calculateFloat (6.0) * M);
+        const calculateFloat x = rdist - calculateFloat (1.0);
+        result = res1 + x * (dfunc1 + calculateFloat (0.5) * x * secDev);
+        dfunc = dfunc1 + x * secDev;
       } else {
         calculateFloat rNdist = pcuda_fastpow (rdist, pars.nn - 1);
         calculateFloat rMdist = pcuda_fastpow (rdist, pars.mm - 1);
-        calculateFloat num = 1. - rNdist * rdist;
-        calculateFloat iden = 1.0 / (1.0 - rMdist * rdist);
+        calculateFloat num = calculateFloat (1.0) - rNdist * rdist;
+        calculateFloat iden = calculateFloat (1.0) / (calculateFloat (1.0) - rMdist * rdist);
         result = num * iden;
         dfunc = ((-pars.nn * rNdist * iden) + (result * (iden * pars.mm) * rMdist));
       }
@@ -210,6 +240,10 @@ __device__ __forceinline__ calculateFloat calculate (
   dfunc = 0.0;
   //if (distance < switchingParameters.dmaxSQ) { already tested in caclulateSqr
   const calculateFloat rdist_2 = (distance-switchingParameters.d0) * switchingParameters.invr0_2;
+  if (rdist_2 <= calculateFloat (0.0)) {
+    // distance <= d0: the switching function is 1 (before the stretch), as on the CPU
+    return switchingParameters.stretch + switchingParameters.shift;
+  }
   result = mySwitch::pcuda_func (
              rdist_2, switchingParameters, dfunc);
   // chain rule:

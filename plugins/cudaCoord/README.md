@@ -30,7 +30,7 @@ Assuming you are using this plugin from the plugin directory of a plumed source 
 
 `CUDACOORDINATION` and `CUDACOORDINATIONFLOAT` work more or less as the standard `COORDINATION`, except from:
 
- - work only with orthogonal pbcs or no pbcs at all
+ - the minimum image convention is applied in scaled coordinates: it is exact for an orthorhombic box in any orientation (e.g. the box rotated by `FIT_TO_TEMPLATE`); for a skewed (triclinic) box it is exact only up to half the smallest height of the box, so `D_MAX` must be smaller than that (an error is raised otherwise)
  - do not support the SWITCH keyword
  - new `THREADS` keyword to control the maximum number of threads per block used by the kernels (rounded down to a multiple of 32, the cell kernels use at most 256); there is no limit on the number of atoms per cell
 

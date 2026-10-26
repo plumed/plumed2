@@ -136,6 +136,8 @@ constexpr unsigned cellThreads(unsigned const maxAtomsInCell, unsigned const max
 constexpr unsigned cellChunks(unsigned const maxAtomsInCell, unsigned const threads) {
   return (maxAtomsInCell + threads / 32u - 1u) / (threads / 32u);
 }
+/// the chunks go in gridDim.y, that is limited to 65535 blocks
+constexpr unsigned maxCellChunks = 65535u;
 
 /// the kernels that compute the coordination write a block-reduced partial
 /// sum of the coordination and of the virial in
@@ -168,7 +170,7 @@ struct worker {
     unsigned chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -181,7 +183,7 @@ struct worker {
     unsigned chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -194,7 +196,7 @@ struct worker {
     unsigned  chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -208,7 +210,7 @@ struct worker {
     unsigned couples,
     unsigned totThreads,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     precision const * coordinatesI, // const pointer to const values
     precision const * coordinatesJ, // const pointer to const values
     unsigned const* trueIndexes,
@@ -227,13 +229,25 @@ struct worker {
 #define Y(I) 3 * I + 1
 #define Z(I) 3 * I + 2
 
+/// applies the minimum image convention to the distance vector d (in place)
 template <bool usePBC = false, typename T>
-T __device__ __forceinline__ calculatePBC (T const val,
-    PLMD::GPU::invData<T> const pbc) {
+__device__ __forceinline__ void minimumImage (T (&d)[3],
+    PLMD::GPU::pbcData<T> const & pbc) {
   if constexpr (usePBC) {
-    return PLMD::GPU::pbcClamp (val * pbc.inv) * pbc.val;
-  } else {
-    return val;
+    // pbc.ortho is a kernel argument: the branch is uniform
+    if (pbc.ortho) {
+      d[0] = PLMD::GPU::pbcClamp (d[0] * pbc.X.inv) * pbc.X.val;
+      d[1] = PLMD::GPU::pbcClamp (d[1] * pbc.Y.inv) * pbc.Y.val;
+      d[2] = PLMD::GPU::pbcClamp (d[2] * pbc.Z.inv) * pbc.Z.val;
+    } else {
+      // scaled coordinates: s = d * invBox, with d a row vector (PLMD convention)
+      const T s0 = PLMD::GPU::pbcClamp (d[0] * pbc.invBox[0] + d[1] * pbc.invBox[3] + d[2] * pbc.invBox[6]);
+      const T s1 = PLMD::GPU::pbcClamp (d[0] * pbc.invBox[1] + d[1] * pbc.invBox[4] + d[2] * pbc.invBox[7]);
+      const T s2 = PLMD::GPU::pbcClamp (d[0] * pbc.invBox[2] + d[1] * pbc.invBox[5] + d[2] * pbc.invBox[8]);
+      d[0] = s0 * pbc.box[0] + s1 * pbc.box[3] + s2 * pbc.box[6];
+      d[1] = s0 * pbc.box[1] + s1 * pbc.box[4] + s2 * pbc.box[7];
+      d[2] = s0 * pbc.box[2] + s1 * pbc.box[5] + s2 * pbc.box[8];
+    }
   }
 }
 
@@ -258,7 +272,7 @@ __device__ __forceinline__ void warpReduce3 (calculateFloat (&v)[3]) {
 template <typename calcType,typename calculateFloat>
 __global__ void getCoord (const unsigned tile_size,
                           const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
-                          const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
+                          const PLMD::GPU::pbcData<calculateFloat> myPBC,
                           const cellListsDevice lists,
                           calculateFloat const* coordinates,
                           unsigned const* trueIndexes,
@@ -319,8 +333,8 @@ __global__ void getCoord (const unsigned tile_size,
           // Safeguard
           if (idx != realIndexes[j] ) {
             mycoord+=calcType:: coordLoop(j,
-                                          i,
-                                          nnI,
+                                          idx,
+                                          realIndexes,
                                           xyz,
                                           sPos,
                                           myVirial,
@@ -362,7 +376,7 @@ __global__ void
 getDualDev (
   const unsigned tile_size,
   const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
-  const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
+  const PLMD::GPU::pbcData<calculateFloat> myPBC,
   const cellListsDevice lists,
   calculateFloat const* coordinates,
   unsigned const* trueIndexes,
@@ -419,9 +433,10 @@ getDualDev (
         // Safeguard
         if (idx != realIndexes[j] ) {
 
-          d[0] = calculatePBC<usePBC> (sPos[X(j)] - x, myPBC.X);
-          d[1] = calculatePBC<usePBC> (sPos[Y(j)] - y, myPBC.Y);
-          d[2] = calculatePBC<usePBC> (sPos[Z(j)] - z, myPBC.Z);
+          d[0] = sPos[X(j)] - x;
+          d[1] = sPos[Y(j)] - y;
+          d[2] = sPos[Z(j)] - z;
+          minimumImage<usePBC> (d, myPBC);
 
           dfunc = 0.;
           GPU::calculateSqr<mySwitch> (
@@ -453,7 +468,7 @@ __global__ void getCoordPair (
   const unsigned couples,
   const unsigned totThreads,
   const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters,
-  const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
+  const PLMD::GPU::pbcData<calculateFloat> myPBC,
   const calculateFloat *const coordinatesI, // const pointer to const values
   const calculateFloat *const coordinatesJ, // const pointer to const values
   const unsigned *const trueIndexes,
@@ -484,12 +499,10 @@ __global__ void getCoordPair (
       break;
     }
     // I do not understand why I need to invert
-    d[0] = calculatePBC<usePBC> (coordinatesJ[X (i)] - coordinatesI[X (i)],
-                                 myPBC.X);
-    d[1] = calculatePBC<usePBC> (coordinatesJ[Y (i)] - coordinatesI[Y (i)],
-                                 myPBC.Y);
-    d[2] = calculatePBC<usePBC> (coordinatesJ[Z (i)] - coordinatesI[Z (i)],
-                                 myPBC.Z);
+    d[0] = coordinatesJ[X (i)] - coordinatesI[X (i)];
+    d[1] = coordinatesJ[Y (i)] - coordinatesI[Y (i)];
+    d[2] = coordinatesJ[Z (i)] - coordinatesI[Z (i)];
+    minimumImage<usePBC> (d, myPBC);
     dfunc = 0.;
     if (trueIndexes[i] != trueIndexes[i + couples]) {
       myCoord += GPU::calculateSqr<mySwitch> (
@@ -532,22 +545,25 @@ __global__ void getCoordPair (
 
 template <bool usePBC, typename mySwitch, typename calculateFloat>
 struct selfCalc {
+  /// idx is the true index of the atom and trueIndexes the true indexes of
+  /// the candidates in the tile (in shared memory): idx != trueIndexes[j]
   static __device__ __forceinline__ calculateFloat coordLoop(
     unsigned const j,
-    unsigned const i,
-    unsigned const * nnI,
+    unsigned const idx,
+    unsigned const * trueIndexes,
     calculateFloat const * xyz,
     calculateFloat const * sPos,
     calculateFloat * myVirial,
     calculateFloat * myDev,
-    const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
+    const PLMD::GPU::pbcData<calculateFloat> myPBC,
     const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters
   ) {
     calculateFloat d[3],t[3];
 
-    d[0] = calculatePBC<usePBC> (sPos[X(j)] - xyz[0], myPBC.X);
-    d[1] = calculatePBC<usePBC> (sPos[Y(j)] - xyz[1], myPBC.Y);
-    d[2] = calculatePBC<usePBC> (sPos[Z(j)] - xyz[2], myPBC.Z);
+    d[0] = sPos[X(j)] - xyz[0];
+    d[1] = sPos[Y(j)] - xyz[1];
+    d[2] = sPos[Z(j)] - xyz[2];
+    minimumImage<usePBC> (d, myPBC);
 
     calculateFloat dfunc = 0.;
     calculateFloat coord = GPU::calculateSqr<mySwitch> (
@@ -561,7 +577,9 @@ struct selfCalc {
     myDev[0] += t[0];
     myDev[1] += t[1];
     myDev[2] += t[2];
-    if (i < nnI[j]) {
+    // each pair is counted once, from the side with the lower true index
+    // (equal true indexes are excluded by the caller)
+    if (idx < trueIndexes[j]) {
       myVirial[0] += t[0] * d[0];
       myVirial[1] += t[0] * d[1];
       myVirial[2] += t[0] * d[2];
@@ -582,20 +600,21 @@ template <bool usePBC, typename mySwitch, typename calculateFloat>
 struct dualCalc {
   static __device__ __forceinline__ calculateFloat coordLoop(
     unsigned const j,
-    unsigned const i,
-    unsigned const * /*nnI*/,
+    unsigned const /*idx*/,
+    unsigned const * /*trueIndexes*/,
     calculateFloat const * xyz,
     calculateFloat const * sPos,
     calculateFloat * myVirial,
     calculateFloat * myDev,
-    const PLMD::GPU::ortoPBCs<calculateFloat> myPBC,
+    const PLMD::GPU::pbcData<calculateFloat> myPBC,
     const PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters
   ) {
     calculateFloat d[3],t;
 
-    d[0] = calculatePBC<usePBC> (sPos[X(j)] - xyz[0], myPBC.X);
-    d[1] = calculatePBC<usePBC> (sPos[Y(j)] - xyz[1], myPBC.Y);
-    d[2] = calculatePBC<usePBC> (sPos[Z(j)] - xyz[2], myPBC.Z);
+    d[0] = sPos[X(j)] - xyz[0];
+    d[1] = sPos[Y(j)] - xyz[1];
+    d[2] = sPos[Z(j)] - xyz[2];
+    minimumImage<usePBC> (d, myPBC);
 
     calculateFloat dfunc = 0.;
     calculateFloat coord = GPU::calculateSqr<mySwitch> (
@@ -663,7 +682,7 @@ public:
     unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -696,7 +715,7 @@ public:
     unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -729,7 +748,7 @@ public:
     unsigned const chunks,
     cudaStream_t mystream,
     PLMD::GPU::rationalSwitchParameters<precision> switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> myPBC,
+    PLMD::GPU::pbcData<precision> myPBC,
     cellListsDevice const& lists,
     precision const * coordinates,
     unsigned const * trueIndexes,
@@ -761,7 +780,7 @@ public:
     unsigned const couples,
     unsigned const totThreads,
     PLMD::GPU::rationalSwitchParameters<precision> const switchingParameters,
-    PLMD::GPU::ortoPBCs<precision> const myPBC,
+    PLMD::GPU::pbcData<precision> const myPBC,
     precision const *const coordinatesI,
     precision const *const coordinatesJ,
     unsigned const *const trueIndexes,
@@ -1022,7 +1041,7 @@ class CudaCoordination : public Colvar {
   std::unique_ptr<worker<calculateFloat>> runner=nullptr;
 
   PLMD::GPU::rationalSwitchParameters<calculateFloat> switchingParameters;
-  PLMD::GPU::ortoPBCs<calculateFloat> myPBC;
+  PLMD::GPU::pbcData<calculateFloat> myPBC;
 
   bool pbc{true};
   /// THis is used to not launch 3 times the same thing with MPI
@@ -1040,6 +1059,8 @@ class CudaCoordination : public Colvar {
   /// decides (consistently on all the MPI processes) if the lists must be updated
   bool needsListUpdate();
   void updateNeighborLists();
+  /// passes the current box to the kernels (and checks that the minimum image is exact)
+  void setupPBC();
   // these return the number of the partial sums to be reduced
   unsigned doSelf();
   unsigned doDual();
@@ -1178,6 +1199,61 @@ CudaCoordination<calculateFloat>::~CudaCoordination() {
 }
 
 template <typename calculateFloat>
+void CudaCoordination<calculateFloat>::setupPBC() {
+  // no makeWhole() here: the kernels apply the minimum image convention
+  // themselves and the cells wrap the coordinates, so it is not needed and
+  // it would cost an O(nat) serial pass at every step
+  const Pbc & myPbc = getPbc();
+  const Tensor & box = myPbc.getBox();
+  myPBC.ortho = myPbc.isOrthorombic();
+  if (myPBC.ortho) {
+    myPBC.X = box (0, 0);
+    myPBC.Y = box (1, 1);
+    myPBC.Z = box (2, 2);
+  } else {
+    const Tensor & invBox = myPbc.getInvBox();
+    for (unsigned i = 0; i < 3; ++i) {
+      for (unsigned j = 0; j < 3; ++j) {
+        myPBC.box[3 * i + j] = box (i, j);
+        myPBC.invBox[3 * i + j] = invBox (i, j);
+      }
+    }
+    // The minimum image in scaled coordinates is exact for any pair closer
+    // than half the smallest height of the box (the distance between two
+    // opposite faces), which is what matters since the switching function is
+    // zero beyond dmax. For a box with orthogonal vectors (e.g. an
+    // orthorhombic box rotated by FIT_TO_TEMPLATE) it is exact for any
+    // distance, like Pbc::distance.
+    bool orthogonalVectors = true;
+    for (unsigned i = 0; i < 3 && orthogonalVectors; ++i) {
+      for (unsigned j = i + 1; j < 3; ++j) {
+        const Vector a = box.getRow (i);
+        const Vector b = box.getRow (j);
+        if (std::abs (dotProduct (a, b)) > 1e-6 * a.modulo() * b.modulo()) {
+          orthogonalVectors = false;
+          break;
+        }
+      }
+    }
+    if (!orthogonalVectors) {
+      // the heights are the inverse of the norms of the reciprocal vectors,
+      // the columns of invBox
+      double minHeight = std::numeric_limits<double>::max();
+      for (unsigned j = 0; j < 3; ++j) {
+        const Vector reciprocal (invBox (0, j), invBox (1, j), invBox (2, j));
+        minHeight = std::min (minHeight, 1.0 / reciprocal.modulo());
+      }
+      const double dmax = std::sqrt (static_cast<double> (switchingParameters.dmaxSQ));
+      if (2.0 * dmax > minHeight) {
+        error ("with a skewed (non orthogonal) box D_MAX must be smaller than half the smallest "
+               "height of the box (" + std::to_string (0.5 * minHeight) + ") for the minimum image "
+               "convention to be exact; D_MAX=" + std::to_string (dmax));
+      }
+    }
+  }
+}
+
+template <typename calculateFloat>
 bool CudaCoordination<calculateFloat>::needsListUpdate() {
   if (mode == calculationMode::pair) {
     return false;
@@ -1267,16 +1343,7 @@ void CudaCoordination<calculateFloat>::calculate() {
   double coordination=0.0;
   if(mpiActive) {
     if (pbc) {
-      //myPBC is used in the three calculation mode functions
-      // Only ortho as now
-      auto box = getBox();
-
-      myPBC.X = box (0, 0);
-      myPBC.Y = box (1, 1);
-      myPBC.Z = box (2, 2);
-      // no makeWhole() here: the kernels apply the minimum image convention
-      // themselves and the cells wrap the coordinates, so it is not needed and
-      // it would cost an O(nat) serial pass at every step
+      setupPBC();
     }
     /***************************copying data on the GPU**************************/
     // only the active atoms (the ones in the cell lists) are needed on the GPU
@@ -1316,8 +1383,8 @@ void CudaCoordination<calculateFloat>::calculate() {
 
     /**************************accumulating the results**************************/
     // one block per accumulated quantity, the results go right after the derivatives
-    CUDAHELPERS::reducePartials<calculateFloat>
-    <<<nAccumulators, 256, 0, stream>>> (devPartials.data(),
+    CUDAHELPERS::reducePartials<calculateFloat, CUDAHELPERS::reducePartialsThreads>
+    <<<nAccumulators, CUDAHELPERS::reducePartialsThreads, 0, stream>>> (devPartials.data(),
                                          nPartials,
                                          devOutput.data() + 3 * nActive);
     CUDAHELPERS::cudaCheck (cudaGetLastError(), "launching the CUDACOORDINATION kernels");
@@ -1369,6 +1436,10 @@ unsigned CudaCoordination<calculateFloat>::doSelf() {
   //a warp per atom: the atoms of a cell are spread over `chunks` blocks
   const unsigned threads = cellThreads (lists.maxAtomsInCell, maxNumThreads);
   const unsigned chunks = cellChunks (lists.maxAtomsInCell, threads);
+  if (chunks > maxCellChunks) {
+    error ("too many atoms in a single cell (" + std::to_string (lists.maxAtomsInCell)
+           + "): increase THREADS or reduce D_MAX/NL_CUTOFF");
+  }
   const unsigned nBlocks = lists.nCells * chunks;
   devPartials.resize (nAccumulators * nBlocks, 1.2);
 
@@ -1396,6 +1467,10 @@ unsigned CudaCoordination<calculateFloat>::doDual() {
   const unsigned chunks_coord = cellChunks (lists_coord.maxAtomsInCell, threads_coord);
   const unsigned threads_dv = cellThreads (lists_dv.maxAtomsInCell, maxNumThreads_dv);
   const unsigned chunks_dv = cellChunks (lists_dv.maxAtomsInCell, threads_dv);
+  if (chunks_coord > maxCellChunks || chunks_dv > maxCellChunks) {
+    error ("too many atoms in a single cell (" + std::to_string (std::max (lists_coord.maxAtomsInCell, lists_dv.maxAtomsInCell))
+           + "): increase THREADS or reduce D_MAX/NL_CUTOFF");
+  }
   const unsigned nBlocks = lists_coord.nCells * chunks_coord;
   devPartials.resize (nAccumulators * nBlocks, 1.2);
 
@@ -1474,6 +1549,9 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   parseAtomList ("GROUPA", GroupA);
   std::vector<AtomNumber> GroupB;
   parseAtomList ("GROUPB", GroupB);
+  if (GroupA.size() == 0) {
+    error ("GROUPA must contain at least one atom");
+  }
 
   if (GroupB.size() == 0) {
     mode = calculationMode::self;
@@ -1576,7 +1654,7 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   switchingParameters.mm = mm_;
   switchingParameters.stretch = 1.0;
   switchingParameters.shift = 0.0;
-  switchingParameters.calcSquared= (! d0 > calculateFloat(0.0) ) && (nn_%2 == 0 && mm_%2 == 0);
+  switchingParameters.calcSquared= (d0 == calculateFloat(0.0)) && (nn_%2 == 0 && mm_%2 == 0);
   switchingParameters.d0=d0;
   switchingParameters.dmaxSQ=sf.get_dmax2();
   calculateFloat invr0 = 1.0 / r0_;
@@ -1616,12 +1694,16 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
 
   parse("NL_CUTOFF",NL.cutoff);
   parse("NL_STRIDE",NL.stride);
+  if(NL.stride == 0) {
+    error("NL_STRIDE must be positive (or negative to let the lists be updated automatically)");
+  }
   if(NL.cutoff < dmax) {
     log << "  (Forcing the cutoff of the neighbor list to be equal to DMAX)\n";
     NL.cutoff = dmax;
-    if(NL.stride > 0) {
-      error("You must setup manually the cutoff of the neigbor list to be higher than DMAX if you want to setup manually the stride");
-    }
+  }
+  if(!(NL.cutoff > dmax) && NL.stride > 1) {
+    // without a skin a list is valid only at the step it was built
+    error("You must setup manually the cutoff of the neigbor list to be higher than DMAX if you want to setup manually the stride");
   }
   const double skin = NL.cutoff - dmax;
   if (skin > 0.0) {
