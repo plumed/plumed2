@@ -339,6 +339,7 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addFlag("SQUARED",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
+  keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addDeprecatedFlag("LOWMEM","");
   keys.reset_style("ATOMS","atoms");
   MultiColvarShortcuts::shortcutKeywords( keys );
@@ -384,6 +385,11 @@ Distances::Distances(const ActionOptions& ao):
     parseFlag("SQUARED",sq);
     if( sq ) {
       dline += " SQUARED";
+    }
+    bool gpu;
+    parseFlag("USEGPU",gpu);
+    if( gpu ) {
+      dline += " USEGPU";
     }
   } else {
     dline += " COMPONENTS";
