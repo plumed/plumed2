@@ -1493,8 +1493,8 @@ Some influential environment variables:
               not installed (default:
               https://github.com/Smith-Group/KEnRef.git)
   KENREF_GIT_TAG
-              KEnRef git branch/tag to clone (default: master, KEnRef's
-              development trunk)
+              KEnRef git branch/tag to clone (default: stable, KEnRef's latest
+              verified release; master gives its development trunk)
   KENREF_ACCEL
               ACCEL/SIMD width to build the fetched kenref_core with (default:
               auto-detect this machine's SIMD)
@@ -10041,7 +10041,7 @@ $as_echo "$as_me: KEnRef: kenref_core not found and --enable-kenref was not give
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
-    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
+    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="stable"
     { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&5
 $as_echo "$as_me: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&6;}
     kn_src="$with_kenref_src"

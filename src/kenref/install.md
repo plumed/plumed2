@@ -59,7 +59,7 @@ pkg-config --variable=simdflags kenref_core   # e.g. -march=skylake-avx512
 the version PLUMED's committed `configure` is generated with; a newer autoconf rewrites the whole script
 and buries your change in thousands of unrelated lines.
 
-Controls (only if you don't want the default clone): `--with-kenref-src=DIR`, `KENREF_GIT_URL`/`KENREF_GIT_TAG`,
+Controls (only if you don't want the default clone, of KEnRef's `stable` branch): `--with-kenref-src=DIR`, `KENREF_GIT_URL`/`KENREF_GIT_TAG` (e.g. `KENREF_GIT_TAG=master` for KEnRef's development trunk),
 `KENREF_ACCEL` (the SIMD tier to build a fetched core with; default: KEnRef's own per-machine
 auto-detection, *not* a fixed tier). Already have `kenref_core` installed? Put it on `PKG_CONFIG_PATH` and `configure` reuses it.
 `--enable-kenref` and `--enable-modules=+kenref` converge (either enables the whole pathway); a

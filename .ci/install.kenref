@@ -5,11 +5,12 @@ set -x
 
 # Build and install the KEnRef core library, which the (default-off) kenref module links against.
 #
-# The version is PINNED. configure can fetch KEnRef itself, but CI must not depend on whatever happens
-# to be on a branch today, and a pinned tag also lets the install directory be cached.
-# KENREF_VERSION and KENREF_URL are parsed out of this file by the workflow (to resolve the ref to a
-# commit for the cache key), so keep them as plain, unquoted assignments at the start of a line.
-KENREF_VERSION=v2.0.1
+# The version follows KEnRef's `stable` branch, which KEnRef moves only onto releases that passed its
+# full pipeline, never onto its development trunk. The workflow resolves the ref to a commit for the
+# cache key, so the cached install is rebuilt whenever `stable` moves.
+# KENREF_VERSION and KENREF_URL are parsed out of this file by the workflow, so keep them as plain,
+# unquoted assignments at the start of a line.
+KENREF_VERSION=stable
 KENREF_URL=https://github.com/Smith-Group/KEnRef.git
 KENREF_INSTALL_DIR="$HOME/opt/kenref"
 
