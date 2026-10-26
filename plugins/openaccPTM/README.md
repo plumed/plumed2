@@ -17,6 +17,19 @@ make clean
 NVCXX=mpic++ make
 ```  
 
+If PLUMED has been compiled with MPI, `configure` sets `NVCXX=mpic++`. Make sure this wrapper calls `nvc++` and not the compiler
+that was used to build MPI: with OpenMPI you can check with `OMPI_CXX=nvc++ mpic++ --showme` and then compile with `OMPI_CXX=nvc++ make`
+(use `MPICH_CXX` or `I_MPI_CXX` with MPICH or Intel MPI).
+
+If PLUMED has been compiled with a GCC that is not the default one known by `nvc++` (for example one loaded via `module load`),
+you may need to point `nvc++` to it, so that the same C++ standard library is used. After running `./configure` you can do:
+
+```bash
+GCCROOT=$(dirname $(dirname $(which g++)))
+echo "CXXFLAGS += --gcc-toolchain=$GCCROOT" >> Makefile.conf
+echo "LDSHARED += --gcc-toolchain=$GCCROOT" >> Makefile.conf
+```
+
 It is worth running these commands more than once if the compilation doesn't work the first time. If they complete correctly a dynamic libarary called `plumedOpenACC.so` 
 will be created in the plumed2/plugin directory.
 
