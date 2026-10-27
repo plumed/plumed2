@@ -24,10 +24,13 @@ OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
 ADDCLDFLAGS=-acc -static-nvidia
 
+# The soname must be passed to the linker as a single token: nvc++ splits
+# "-Xlinker -soname,name" at the comma and then treats "name" as an input
+# file, which makes ld fail with "input file 'name' is the same as output file".
 ifeq ($(SOEXT),dylib)
-  SONAME_OPTION:=-Xlinker -install_name
+  SONAME_FLAGS=-Xlinker -install_name -Xlinker $(notdir $@)
 else
-  SONAME_OPTION:=-Xlinker -soname
+  SONAME_FLAGS=-Xlinker -soname=$(notdir $@)
 endif
 
 PLUGIN=plumedOpenACC.$(SOEXT)
@@ -61,7 +64,7 @@ include $(wildcard $(DEPFILES))
 
 $(PLUGIN): $(OBJS)
 	@echo Linking $@
-	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_FLAGS) $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 clean:
 	@rm -fv $(OBJS) $(PLUGIN)
