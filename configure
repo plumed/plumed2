@@ -746,7 +746,6 @@ enable_dladdr
 enable_rtld_default
 enable_subprocess
 enable_execinfo
-enable_gsl
 enable_boost_graph
 enable_boost_serialization
 enable_fftw
@@ -1458,7 +1457,6 @@ Optional Features:
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
-  --enable-gsl            enable search for gsl, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
@@ -1493,8 +1491,8 @@ Some influential environment variables:
               not installed (default:
               https://github.com/Smith-Group/KEnRef.git)
   KENREF_GIT_TAG
-              KEnRef git branch/tag to clone (default: master, KEnRef's
-              development trunk)
+              KEnRef git branch/tag to clone (default: stable, KEnRef's latest
+              verified release; master gives its development trunk)
   KENREF_ACCEL
               ACCEL/SIMD width to build the fetched kenref_core with (default:
               auto-detect this machine's SIMD)
@@ -3089,24 +3087,6 @@ else
   case "yes" in
              (yes) execinfo=true ;;
              (no)  execinfo=false ;;
-  esac
-
-fi
-
-
-
-gsl=
-# Check whether --enable-gsl was given.
-if test "${enable_gsl+set}" = set; then :
-  enableval=$enable_gsl; case "${enableval}" in
-             (yes) gsl=true ;;
-             (no)  gsl=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-gsl" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) gsl=true ;;
-             (no)  gsl=false ;;
   esac
 
 fi
@@ -8393,384 +8373,6 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
 
 fi
 
-if test $gsl = true ; then
-  found=ko
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cblas_dgemv" >&5
-$as_echo_n "checking for library containing cblas_dgemv... " >&6; }
-if ${ac_cv_search_cblas_dgemv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cblas_dgemv ();
-int
-main ()
-{
-return cblas_dgemv ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' gslcblas; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_cblas_dgemv=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_cblas_dgemv+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_cblas_dgemv+:} false; then :
-
-else
-  ac_cv_search_cblas_dgemv=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cblas_dgemv" >&5
-$as_echo "$ac_cv_search_cblas_dgemv" >&6; }
-ac_res=$ac_cv_search_cblas_dgemv
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-    ac_fn_cxx_check_header_mongrel "$LINENO" "gsl/gsl_vector.h" "ac_cv_header_gsl_gsl_vector_h" "$ac_includes_default"
-if test "x$ac_cv_header_gsl_gsl_vector_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
-$as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gsl_vector_alloc ();
-int
-main ()
-{
-return gsl_vector_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' gsl; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_gsl_vector_alloc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-
-else
-  ac_cv_search_gsl_vector_alloc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gsl_vector_alloc" >&5
-$as_echo "$ac_cv_search_gsl_vector_alloc" >&6; }
-ac_res=$ac_cv_search_gsl_vector_alloc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
-$as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gsl_vector_alloc ();
-int
-main ()
-{
-return gsl_vector_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_gsl_vector_alloc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-
-else
-  ac_cv_search_gsl_vector_alloc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gsl_vector_alloc" >&5
-$as_echo "$ac_cv_search_gsl_vector_alloc" >&6; }
-ac_res=$ac_cv_search_gsl_vector_alloc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cblas_dgemv" >&5
-$as_echo_n "checking for library containing cblas_dgemv... " >&6; }
-if ${ac_cv_search_cblas_dgemv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cblas_dgemv ();
-int
-main ()
-{
-return cblas_dgemv ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_cblas_dgemv=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_cblas_dgemv+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_cblas_dgemv+:} false; then :
-
-else
-  ac_cv_search_cblas_dgemv=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cblas_dgemv" >&5
-$as_echo "$ac_cv_search_cblas_dgemv" >&6; }
-ac_res=$ac_cv_search_cblas_dgemv
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-    ac_fn_cxx_check_header_mongrel "$LINENO" "gsl/gsl_vector.h" "ac_cv_header_gsl_gsl_vector_h" "$ac_includes_default"
-if test "x$ac_cv_header_gsl_gsl_vector_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
-$as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gsl_vector_alloc ();
-int
-main ()
-{
-return gsl_vector_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' gsl; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_gsl_vector_alloc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-
-else
-  ac_cv_search_gsl_vector_alloc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gsl_vector_alloc" >&5
-$as_echo "$ac_cv_search_gsl_vector_alloc" >&6; }
-ac_res=$ac_cv_search_gsl_vector_alloc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
-$as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gsl_vector_alloc ();
-int
-main ()
-{
-return gsl_vector_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_gsl_vector_alloc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_gsl_vector_alloc+:} false; then :
-
-else
-  ac_cv_search_gsl_vector_alloc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gsl_vector_alloc" >&5
-$as_echo "$ac_cv_search_gsl_vector_alloc" >&6; }
-ac_res=$ac_cv_search_gsl_vector_alloc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-
-fi
-
-  fi
-
-  if test $found = ok ; then
-    $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GSL" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GSL" >&2;}
-  fi
-fi
-
 if test $boost_graph = true ; then
 
     found=ko
@@ -10041,7 +9643,7 @@ $as_echo "$as_me: KEnRef: kenref_core not found and --enable-kenref was not give
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
-    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
+    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="stable"
     { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&5
 $as_echo "$as_me: KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)" >&6;}
     kn_src="$with_kenref_src"
@@ -10095,7 +9697,7 @@ if test "$kenref_skipped" != yes && ( test "$kenref" = true || test "$kenref_mod
 
   # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
   # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
-  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # Users may put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
   # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
   # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
   # shell. Forcing the flag through keeps the captured value self-contained.
@@ -10140,6 +9742,22 @@ $as_echo "no" >&6; }
 $as_echo "$as_me: KEnRef: using $kenref_flavor" >&6;}
     LIBS="$KENREF_LIBS $LIBS"
     HAVE_KENREF=yes
+    # The rpath that --enable-rpath records below is "$libdir:$LIBRARY_PATH", not the -L dirs of LIBS.
+    # A KEnRef that configure built in kenref-deps/, or one found only through PKG_CONFIG_PATH, has its
+    # libdir in LIBS but not on LIBRARY_PATH, so libplumedKernel.so got no RUNPATH to it and linking the
+    # plumed executable failed with "libkenref_core.so.2 ... not found". Add those dirs to LIBRARY_PATH.
+    for kn_flag in $KENREF_LIBS ; do
+      case "$kn_flag" in
+      (-L*)
+        kn_dir=`echo "$kn_flag" | sed 's/^-L//'`
+        case ":$LIBRARY_PATH:" in
+        (*":$kn_dir:"*) ;;
+        (*) LIBRARY_PATH="$kn_dir${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
+        esac
+      ;;
+      esac
+    done
+    export LIBRARY_PATH
   fi
 
 

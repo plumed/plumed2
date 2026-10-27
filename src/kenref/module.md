@@ -41,7 +41,8 @@ If `kenref_core` is already installed, put its prefix on `PKG_CONFIG_PATH` and c
 (the install ships an `env.sh` that does this for you). Otherwise configure clones KEnRef and delegates
 the build to KEnRef's own CMake, into `kenref-deps/` inside the PLUMED build tree. Point it at a local
 checkout instead with `--with-kenref-src=DIR`, or override the clone with `KENREF_GIT_URL` /
-`KENREF_GIT_TAG`.
+`KENREF_GIT_TAG`. The clone follows KEnRef's `stable` branch, its latest verified release;
+`KENREF_GIT_TAG=master` builds its development trunk instead.
 
 KEnRef stores Eigen objects inside its own containers, so **the module must be compiled with the same
 Eigen alignment as `libkenref_core`** — that is, the same `-march`/SIMD width. A mismatch is caught at

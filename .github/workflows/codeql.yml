@@ -36,7 +36,7 @@ jobs:
         if: ${{ matrix.language == 'cpp' }}
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libboost-all-dev libgsl-dev libfftw3-dev libatlas-base-dev libopenmpi-dev
+          sudo apt-get install --yes libboost-all-dev libfftw3-dev libatlas-base-dev libopenmpi-dev
 
       - name: Configure (cpp)
         if: ${{ matrix.language == 'cpp' }}

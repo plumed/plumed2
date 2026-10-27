@@ -59,7 +59,7 @@ pkg-config --variable=simdflags kenref_core   # e.g. -march=skylake-avx512
 the version PLUMED's committed `configure` is generated with; a newer autoconf rewrites the whole script
 and buries your change in thousands of unrelated lines.
 
-Controls (only if you don't want the default clone): `--with-kenref-src=DIR`, `KENREF_GIT_URL`/`KENREF_GIT_TAG`,
+Controls (only if you don't want the default clone, of KEnRef's `stable` branch): `--with-kenref-src=DIR`, `KENREF_GIT_URL`/`KENREF_GIT_TAG` (e.g. `KENREF_GIT_TAG=master` for KEnRef's development trunk),
 `KENREF_ACCEL` (the SIMD tier to build a fetched core with; default: KEnRef's own per-machine
 auto-detection, *not* a fixed tier). Already have `kenref_core` installed? Put it on `PKG_CONFIG_PATH` and `configure` reuses it.
 `--enable-kenref` and `--enable-modules=+kenref` converge (either enables the whole pathway); a
@@ -102,12 +102,12 @@ own prefix (e.g. `/usr/local/kenref/lib`) that is **not** on the system loader p
 binaries can't find it at run time. If you *also* choose a **non-system C++ runtime** (e.g. build with
 `-stdlib=libc++`), the same applies to `libc++.so.1`.
 
-rpath records **`LIBRARY_PATH`**, so put your non-system runtime library dirs on it at configure time — the
-`libkenref_core` lib dir, plus, for a libc++ build, the dir holding `libc++.so.1` (with LLVM that is the
-`…/lib/x86_64-unknown-linux-gnu` **subdir**, not the parent `…/lib`):
+rpath records **`LIBRARY_PATH`**, plus the `libkenref_core` lib dir that `pkg-config` reports, so a KEnRef
+that `configure` fetched and built, or one found through `PKG_CONFIG_PATH`, needs nothing more. Put any other
+non-system runtime library dir on `LIBRARY_PATH` at configure time — for a libc++ build, the dir holding
+`libc++.so.1` (with LLVM that is the `…/lib/x86_64-unknown-linux-gnu` **subdir**, not the parent `…/lib`):
 
 ```bash
-export LIBRARY_PATH="/usr/local/kenref/lib:$LIBRARY_PATH"                 # libkenref_core
 export LIBRARY_PATH="$LLVM/lib/x86_64-unknown-linux-gnu:$LIBRARY_PATH"    # only if building with libc++
 ./configure --enable-kenref --with-kenref-src=~/KEnRef CXXFLAGS="-O3 -std=c++17"
 make -j && sudo make install

@@ -364,7 +364,6 @@ PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
@@ -385,7 +384,7 @@ AC_ARG_WITH([kenref-src],
   AS_HELP_STRING([--with-kenref-src=DIR],[use a local KEnRef checkout instead of cloning it (with --enable-kenref)]),
   [with_kenref_src="$withval"],[with_kenref_src=""])
 AC_ARG_VAR([KENREF_GIT_URL],[KEnRef git URL to clone when --enable-kenref and kenref_core is not installed (default: https://github.com/Smith-Group/KEnRef.git)])
-AC_ARG_VAR([KENREF_GIT_TAG],[KEnRef git branch/tag to clone (default: master, KEnRef's development trunk)])
+AC_ARG_VAR([KENREF_GIT_TAG],[KEnRef git branch/tag to clone (default: stable, KEnRef's latest verified release; master gives its development trunk)])
 dnl NB: -DACCEL is passed to KEnRef's CMake only when this variable is SET (see below), so leaving it
 dnl empty does not select a fixed tier -- it lets KEnRef auto-detect this machine's SIMD, as it does for
 dnl its own builds. Set it explicitly for a portable binary (e.g. KENREF_ACCEL=AVX2_256).
@@ -875,20 +874,6 @@ if test $zlib = true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
 
-if test $gsl = true ; then
-  found=ko
-  PLUMED_SEARCH_LIBS([cblas_dgemv],[gslcblas], [
-    AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
-      PLUMED_SEARCH_LIBS([gsl_vector_alloc],[gsl],[found=ok])
-    ])
-  ])
-  if test $found = ok ; then
-    AC_DEFINE([__PLUMED_HAS_GSL])
-  else
-    AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
-  fi
-fi
-
 if test $boost_graph = true ; then
   PLUMED_CHECK_CXX_PACKAGE([boost graph],[
 #include <boost/graph/graph_utility.hpp>
@@ -990,7 +975,7 @@ fi
 AC_DEFUN([KENREF_CHECK_LIBS], [
   # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
   # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
-  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # Users may put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
   # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
   # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
   # shell. Forcing the flag through keeps the captured value self-contained.
@@ -1028,6 +1013,22 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
     AC_MSG_NOTICE([KEnRef: using $kenref_flavor])
     LIBS="$KENREF_LIBS $LIBS"
     HAVE_KENREF=yes
+    # The rpath that --enable-rpath records below is "$libdir:$LIBRARY_PATH", not the -L dirs of LIBS.
+    # A KEnRef that configure built in kenref-deps/, or one found only through PKG_CONFIG_PATH, has its
+    # libdir in LIBS but not on LIBRARY_PATH, so libplumedKernel.so got no RUNPATH to it and linking the
+    # plumed executable failed with "libkenref_core.so.2 ... not found". Add those dirs to LIBRARY_PATH.
+    for kn_flag in $KENREF_LIBS ; do
+      case "$kn_flag" in
+      (-L*)
+        kn_dir=`echo "$kn_flag" | sed 's/^-L//'`
+        case ":$LIBRARY_PATH:" in
+        (*":$kn_dir:"*) ;;
+        (*) LIBRARY_PATH="$kn_dir${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
+        esac
+      ;;
+      esac
+    done
+    export LIBRARY_PATH
   fi
   AC_SUBST([HAVE_KENREF])
   AC_SUBST([KENREF_LIBS])
@@ -1108,7 +1109,7 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
-    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
+    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="stable"
     AC_MSG_NOTICE([KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)])
     kn_src="$with_kenref_src"
     if test -z "$kn_src" ; then
