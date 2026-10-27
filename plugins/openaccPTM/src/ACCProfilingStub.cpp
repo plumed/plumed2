@@ -30,5 +30,10 @@
 // A hidden definition here is bound when the plugin is linked, so libgomp's
 // stub is never reached. As a consequence, OpenACC profiling tools that rely on
 // acc_register_library being found are not registered by the plugin.
+// The function has C linkage, so the enclosing namespace does not affect the
+// symbol name; it is there to follow the PLUMED convention that every source
+// file lives in namespace PLMD.
+namespace PLMD {
 extern "C" __attribute__((visibility("hidden")))
 void acc_register_library(void*, void*, void*) {}
+}
