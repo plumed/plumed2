@@ -143,8 +143,8 @@ public:
   memoryManager& operator=(const memoryManager&)=delete;
   memoryManager(memoryManager&& other) noexcept
     : size_{other.size_},
-      stored_{other.stored_},
-      ptr_{other.ptr_} {
+  stored_{other.stored_},
+  ptr_{other.ptr_} {
     other.size_=0;
     other.stored_=0;
     other.ptr_=nullptr;
