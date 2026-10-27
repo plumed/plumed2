@@ -159,6 +159,7 @@ void Constant::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NCOLS","0","the number of columns in your matrix");
   keys.add("optional","VALUE","the single number that you would like to store");
   keys.add("optional","VALUES","the numbers that are in your constant value");
+  keys.add("compulsory","PERIODIC","NO","the domain of the values in your constant, the default implies that the constant is not periodic");
   keys.addFlag("SCALARS",false,"treat the input list of numbers as a set of scalars");
   keys.addFlag("NOLOG",false,"do not report all the read in scalars in the log");
   keys.addOutputComponent("v","SCALARS","scalar","the # value");
@@ -254,15 +255,24 @@ Constant::Constant(const ActionOptions&ao):
       shape[0] = vals.size();
     }
   }
+  std::vector<std::string> domain(2);
+  parseVector("PERIODIC",domain);
   if( !scalars ) {
     // Now set the value
     addValue( shape );
-    setNotPeriodic();
+    if( domain[0]!="NO" ) {
+      setPeriodic( domain[0], domain[1] );
+    } else {
+      setNotPeriodic();
+    }
     getPntrToComponent(0)->setConstant();
     for(unsigned i=0; i<vals.size(); ++i) {
       getPntrToComponent(0)->set( i, vals[i] );
     }
   } else {
+    if( domain[0]!="NO") {
+      error("use multiple CONSTANT commands to create scalar constants with a periodic domain");
+    }
     for(unsigned i=0; i<vals.size(); i++) {
       std::string num;
       Tools::convert(i,num);
