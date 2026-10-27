@@ -138,6 +138,29 @@ public:
       ptr_{acc_malloc(size_ * sizeof(T))} {
     copyToDevice(data.data());
   }
+  /// owns device memory: copying would free it twice
+  memoryManager(const memoryManager&)=delete;
+  memoryManager& operator=(const memoryManager&)=delete;
+  memoryManager(memoryManager&& other) noexcept
+    : size_{other.size_},
+      stored_{other.stored_},
+      ptr_{other.ptr_} {
+    other.size_=0;
+    other.stored_=0;
+    other.ptr_=nullptr;
+  }
+  memoryManager& operator=(memoryManager&& other) noexcept {
+    if (this!=&other) {
+      acc_free(ptr_);
+      size_=other.size_;
+      stored_=other.stored_;
+      ptr_=other.ptr_;
+      other.size_=0;
+      other.stored_=0;
+      other.ptr_=nullptr;
+    }
+    return *this;
+  }
   /// frees the stored memory
   ~memoryManager() {
     acc_free(ptr_);
