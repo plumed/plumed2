@@ -287,8 +287,10 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
   parse("NL_CUTOFF",nl_cut);
   nl_cut2=nl_cut*nl_cut;
   parse("NL_STRIDE",nl_stride);
-  if( nl_cut==0 && nl_stride>1 ) {
-    error("NL_CUTOFF must be set if NL_STRIDE is set greater than 1");
+  // calculate() rebuilds the neighbor list at every step and cannot reuse it:
+  // reject NL_STRIDE>1 here, so that the input fails at setup and not at the first step
+  if( nl_stride!=1 ) {
+    error("NL_STRIDE different from 1 is not implemented: the neighbor list is rebuilt at every step with link cells (cutoff from D_MAX, or NL_CUTOFF if set). Remove NL_STRIDE from the input");
   }
   if( nl_cut>0 ) {
     log.printf("  using neighbor list with cutoff %f.  List is updated every %u steps.\n",nl_cut,nl_stride);
