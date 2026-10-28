@@ -1,6 +1,5 @@
 # METAD with ADAPTIVE (multivariate) Gaussians on a grid, compared with the same bias without grid
-# NOTE: when this test was added, ADAPTIVE Gaussians on a grid (mg, md) are truncated by a wrong support
-# estimate in getGaussianSupport, so mg differs from mn; reference to be updated with the fix
+# mg and mn must be equal within the grid interpolation error
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 d1:  DISTANCE ATOMS=2,19

@@ -272,23 +272,13 @@ std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const G
         k++;
       }
     }
-    // Reinvert so to have the ellipses
-    Matrix<double> myinv(ncv,ncv);
-    Invert(mymatrix,myinv);
-    Matrix<double> myautovec(ncv,ncv);
-    std::vector<double> myautoval(ncv); //should I take this or their square root?
-    diagMat(myinv,myautoval,myautovec);
-    double maxautoval=0.;
-    unsigned ind_maxautoval;
-    ind_maxautoval=ncv;
+    // the covariance matrix is the inverse of the matrix stored in the hill
+    Matrix<double> mycov(ncv,ncv);
+    Invert(mymatrix,mycov);
+    // the hill is truncated on the ellipsoid 0.5*d^T*mymatrix*d = dp2cutoff,
+    // whose bounding box has half-width sqrt(2*dp2cutoff*cov_ii) along CV i
     for(unsigned i=0; i<ncv; i++) {
-      if(myautoval[i]>maxautoval) {
-        maxautoval=myautoval[i];
-        ind_maxautoval=i;
-      }
-    }
-    for(unsigned i=0; i<ncv; i++) {
-      cutoff.push_back(std::sqrt(2.0*dp2cutoff)*std::abs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
+      cutoff.push_back(std::sqrt(2.0*dp2cutoff)*std::sqrt(mycov(i,i)));
     }
   } else {
     for(unsigned i=0; i<ncv; ++i) {
