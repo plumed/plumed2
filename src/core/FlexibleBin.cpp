@@ -110,11 +110,14 @@ void FlexibleBin::update(bool nowAddAHill) {
     for(unsigned i=0; i<ncv; i++) {
       cv.push_back(paction->getArgument(i));
     }
+    bool restarted;
+    restarted=false;
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(ncv);
       for(unsigned i=0; i<ncv; i++) {
         average[i]=cv[i];
       }
+      restarted=(variance.size()>0); // after restartAverage() the variance is kept as it is
     } else { // accumulate
       for(unsigned i=0; i<ncv; i++) {
         delta[i]=paction->difference(i,average[i],cv[i]);
@@ -126,7 +129,7 @@ void FlexibleBin::update(bool nowAddAHill) {
     // THE VARIANCE
     if(variance.size()==0) {
       variance.resize(dimension,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
-    } else {
+    } else if(!restarted) {
       unsigned k=0;
       for(unsigned i=0; i<ncv; i++) {
         for(unsigned j=i; j<ncv; j++) { // upper diagonal loop
@@ -156,6 +159,11 @@ void FlexibleBin::update(bool nowAddAHill) {
   default:
     plumed_merror("This flexible bin method is not recognized");
   }
+}
+
+void FlexibleBin::restartAverage() {
+  plumed_massert(type==diffusion,"the average can be restarted only for diffusion-based adaptive hills");
+  average.clear();
 }
 
 std::vector<double> FlexibleBin::getMatrix() const {

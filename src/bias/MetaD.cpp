@@ -260,6 +260,11 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 
 The sigma values that are provided to these two keywords are specified in the units of the CV.
 Note that if you use a negative number, this means that the limit is not set.
+
+ADAPTIVE=DIFF can be used with replica exchange. Since the MD code does not tell PLUMED
+whether an exchange has been accepted, after an exchange attempt the CV values are compared with those
+of the exchange partner: when the exchange is detected as accepted, the running average of the CVs is
+restarted from their new values, while the estimate of their fluctuations is kept.
 Note also that in this case the histogram correction is needed when summing up hills.
 
 ## Metadynamics with the interval keyword
@@ -521,6 +526,13 @@ private:
   std::vector<Gaussian> hills_;
   std::unique_ptr<FlexibleBin> flexbin_;
   int adaptive_=FlexibleBin::none;
+  /// ADAPTIVE=DIFF with replica exchange: CVs of the exchange partner and CVs at the previous update,
+  /// used to detect whether an attempted exchange was accepted
+  struct ExchangeDetection {
+    bool attempted=false;
+    std::vector<double> partner_cv;
+    std::vector<double> last_cv;
+  } exchange_;
   OFile hillsOfile_;
   /// hills files that are read (own file when restarting, files of the other walkers)
   std::vector<std::unique_ptr<IFile>> ifiles_;
@@ -684,6 +696,8 @@ private:
   bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate, double& time);
   /// true at the first step of this run
   bool   isRunFirstStep() const;
+  /// update the adaptive hill widths; with ADAPTIVE=DIFF also handle replica exchanges
+  void   updateFlexibleBin(bool nowAddAHill);
   /// true if a hill has to be added at the current step
   bool   isHillStep() const;
   /// remove an incomplete last line from a hills file that is going to be appended to
@@ -2194,11 +2208,6 @@ void MetaD::temperHeight(double& height, const TemperingSpecs& t_specs, const do
 }
 
 void MetaD::calculate() {
-  // this is because presently there is no way to properly pass information
-  // on adaptive hills (diff) after exchanges:
-  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
-    error("ADAPTIVE=DIFF is not compatible with replica exchange");
-  }
 
   if(!runStarted_) {
     runStarted_=true;
@@ -2209,6 +2218,14 @@ void MetaD::calculate() {
   std::vector<double> cv(ncv);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
+  }
+
+  // during a replica exchange attempt the bias is computed on the coordinates of the partner.
+  // The MD code does not tell whether the exchange is accepted: with ADAPTIVE=DIFF this is
+  // detected at the next update, comparing the CVs with those of the partner (see updateFlexibleBin)
+  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
+    exchange_.attempted=true;
+    exchange_.partner_cv=cv;
   }
 
   if(nlist_.enabled) {
@@ -2247,7 +2264,7 @@ void MetaD::calculate() {
     getPntrToComponent("rbias")->set(ene - reweight_factor_);
   }
   // calculate the acceleration factor
-  if(acceleration_&&!isRunFirstStep()) {
+  if(acceleration_&&!isRunFirstStep()&&!getExchangeStep()) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
@@ -2284,6 +2301,39 @@ bool MetaD::isHillStep() const {
   return true;
 }
 
+void MetaD::updateFlexibleBin(bool nowAddAHill) {
+  if(adaptive_==FlexibleBin::diffusion) {
+    const unsigned ncv=getNumberOfArguments();
+    std::vector<double> cv(ncv);
+    for(unsigned i=0; i<ncv; ++i) {
+      cv[i]=getArgument(i);
+    }
+    if(exchange_.attempted && exchange_.last_cv.size()==ncv) {
+      // the exchange has been accepted if the CVs are now closer to those of the partner than
+      // to their own value at the previous update (distances in units of the current fluctuations)
+      const std::vector<double> var=flexbin_->getMatrix();
+      double dpartner=0.0;
+      double down=0.0;
+      unsigned k=0;
+      for(unsigned i=0; i<ncv; i++) {
+        const double s2=(var.size()>k && var[k]>0.0 ? var[k] : 1.0);
+        const double dp=difference(i,exchange_.partner_cv[i],cv[i]);
+        const double dl=difference(i,exchange_.last_cv[i],cv[i]);
+        dpartner+=dp*dp/s2;
+        down+=dl*dl/s2;
+        k+=ncv-i; // index of the next diagonal element of the upper triangle
+      }
+      if(dpartner<down) {
+        // the CVs jumped: restart the running average, but keep the variance
+        flexbin_->restartAverage();
+      }
+    }
+    exchange_.attempted=false;
+    exchange_.last_cv=cv;
+  }
+  flexbin_->update(nowAddAHill);
+}
+
 void MetaD::update() {
   // adding hills criteria (could be more complex though)
   bool nowAddAHill=isHillStep();
@@ -2302,7 +2352,7 @@ void MetaD::update() {
   // if you use adaptive, call the FlexibleBin
   bool multivariate=false;
   if(adaptive_!=FlexibleBin::none) {
-    flexbin_->update(nowAddAHill);
+    updateFlexibleBin(nowAddAHill);
     multivariate=true;
   }
 
