@@ -2010,22 +2010,14 @@ double MetaD::getBias(const std::vector<double>& cv) {
 #endif //_OPENMP
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
+    // with the neighbor list only the listed hills are summed
+    const std::vector<Gaussian>& hills=(nlist_.enabled ? nlist_.hills : hills_);
 
-    if(!nlist_.enabled) {
-      #pragma omp parallel num_threads(nt)
-      {
-        #pragma omp for reduction(+:bias) nowait
-        for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          bias+=kernel_.evaluate(cv,hills_[i]);
-        }
-      }
-    } else {
-      #pragma omp parallel num_threads(nt)
-      {
-        #pragma omp for reduction(+:bias) nowait
-        for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
-          bias+=kernel_.evaluate(cv,nlist_.hills[i]);
-        }
+    #pragma omp parallel num_threads(nt)
+    {
+      #pragma omp for reduction(+:bias) nowait
+      for(unsigned i=rank; i<hills.size(); i+=stride) {
+        bias+=kernel_.evaluate(cv,hills[i]);
       }
     }
     comm.Sum(bias);
@@ -2047,51 +2039,30 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
     unsigned nt=OpenMP::getNumThreads();
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
+    // with the neighbor list only the listed hills are summed
+    const std::vector<Gaussian>& hills=(nlist_.enabled ? nlist_.hills : hills_);
 
-    if(!nlist_.enabled) {
-      if(hills_.size()<2*nt*stride||nt==1) {
-        // for performance reasons and thread safety
-        std::vector<double> dp(ncv);
-        for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          bias+=kernel_.evaluateWithDerivatives(cv,hills_[i],der,dp);
-        }
-      } else {
-        #pragma omp parallel num_threads(nt)
-        {
-          std::vector<double> omp_deriv(ncv,0.);
-          // for performance reasons and thread safety
-          std::vector<double> dp(ncv);
-          #pragma omp for reduction(+:bias) nowait
-          for(unsigned i=rank; i<hills_.size(); i+=stride) {
-            bias+=kernel_.evaluateWithDerivatives(cv,hills_[i],omp_deriv,dp);
-          }
-          #pragma omp critical
-          for(unsigned i=0; i<ncv; i++) {
-            der[i]+=omp_deriv[i];
-          }
-        }
+    // NOTE: the choice between the serial and the parallel loop is based on the total
+    // number of hills also when the neighbor list is used
+    if(hills_.size()<2*nt*stride||nt==1) {
+      // for performance reasons and thread safety
+      std::vector<double> dp(ncv);
+      for(unsigned i=rank; i<hills.size(); i+=stride) {
+        bias+=kernel_.evaluateWithDerivatives(cv,hills[i],der,dp);
       }
     } else {
-      if(hills_.size()<2*nt*stride||nt==1) {
+      #pragma omp parallel num_threads(nt)
+      {
+        std::vector<double> omp_deriv(ncv,0.);
         // for performance reasons and thread safety
         std::vector<double> dp(ncv);
-        for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
-          bias+=kernel_.evaluateWithDerivatives(cv,nlist_.hills[i],der,dp);
+        #pragma omp for reduction(+:bias) nowait
+        for(unsigned i=rank; i<hills.size(); i+=stride) {
+          bias+=kernel_.evaluateWithDerivatives(cv,hills[i],omp_deriv,dp);
         }
-      } else {
-        #pragma omp parallel num_threads(nt)
-        {
-          std::vector<double> omp_deriv(ncv,0.);
-          // for performance reasons and thread safety
-          std::vector<double> dp(ncv);
-          #pragma omp for reduction(+:bias) nowait
-          for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
-            bias+=kernel_.evaluateWithDerivatives(cv,nlist_.hills[i],omp_deriv,dp);
-          }
-          #pragma omp critical
-          for(unsigned i=0; i<ncv; i++) {
-            der[i]+=omp_deriv[i];
-          }
+        #pragma omp critical
+        for(unsigned i=0; i<ncv; i++) {
+          der[i]+=omp_deriv[i];
         }
       }
     }
