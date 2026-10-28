@@ -34,6 +34,7 @@
 #include "tools/Communicator.h"
 #include <ctime>
 #include <deque>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <numeric>
@@ -513,6 +514,19 @@ The number of elements in the RECT array should be equal to the number of replic
 */
 //+ENDPLUMEDOC
 
+namespace {
+/// broadcast a string from process 0: the length is sent first, as on the other processes the string
+/// can have a different length (Communicator::Bcast of a string uses the local length)
+void bcastString(Communicator& c, std::string& s) {
+  unsigned n=s.size();
+  c.Bcast(n,0);
+  s.resize(n);
+  if(n>0) {
+    c.Bcast(s,0);
+  }
+}
+}
+
 class MetaD : public Bias {
 
 private:
@@ -592,6 +606,8 @@ private:
     std::vector<double> last_cv;
   } exchange_;
   OFile hillsOfile_;
+  /// communicator of the process alone, linked to ifiles_: they are used by the first process only
+  Communicator selfcomm_;
   /// hills files that are read (own file when restarting, files of the other walkers)
   std::vector<std::unique_ptr<IFile>> ifiles_;
   std::vector<std::string> ifilesnames_;
@@ -678,6 +694,8 @@ private:
   MetaDKernel kernel_;
 
   bool noStretchWarningDone=false;
+  /// a hill with a Gaussian (not stretched) kernel was read
+  bool gaussianKernelsFound_=false;
 
   void noStretchWarning() {
     if(!noStretchWarningDone) {
@@ -765,7 +783,8 @@ private:
   /// true if a hill has to be added at the current step
   bool   isHillStep() const;
   /// remove an incomplete last line from a hills file that is going to be appended to
-  void   removeIncompleteLastLine(const std::string& path);
+  /// returns the message for the log (empty if the file is fine)
+  std::string removeIncompleteLastLine(const std::string& path);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
@@ -1674,10 +1693,11 @@ void MetaD::setupBiasGrid(SetupInput& in) {
         const std::string ret = std::filesystem::current_path().string();
         in.gridreadfilename = "/" + in.gridreadfilename;
         in.gridreadfilename = ret + in.gridreadfilename;
+        // the paths of the replicas can have different lengths
         if(comm.Get_rank()==0) {
-          multi_sim_comm.Bcast(in.gridreadfilename,0);
+          bcastString(multi_sim_comm,in.gridreadfilename);
         }
-        comm.Bcast(in.gridreadfilename,0);
+        bcastString(comm,in.gridreadfilename);
       }
       IFile gridfile;
       gridfile.link(*this);
@@ -1736,10 +1756,11 @@ void MetaD::readHillsFiles(const SetupInput& in) {
     const std::string ret = std::filesystem::current_path().string();
     mw_.dir = ret;
     mw_.dir = mw_.dir + "/";
+    // the paths of the replicas can have different lengths
     if(comm.Get_rank()==0) {
-      multi_sim_comm.Bcast(mw_.dir,0);
+      bcastString(multi_sim_comm,mw_.dir);
     }
-    comm.Bcast(mw_.dir,0);
+    bcastString(comm,mw_.dir);
   }
 
   // creating std::vector of ifile* for hills reading
@@ -1777,8 +1798,20 @@ void MetaD::readHillsFiles(const SetupInput& in) {
     IFile *ifile = ifiles_.back().get();
     ifilesnames_.push_back(fname);
     ifile->link(*this);
-    if(ifile->FileExist(fname)) {
-      ifile->open(fname);
+    // The hills files are opened and read by the first process only (see readGaussians), which also decides
+    // if they exist: the file operations must not synchronize the processes, as with comm they would do
+    ifile->link(selfcomm_);
+    int exists=0;
+    if(comm.Get_rank()==0) {
+      exists=ifile->FileExist(fname);
+    }
+    if(comm.Get_size()>1) {
+      comm.Bcast(exists,0);
+    }
+    if(exists) {
+      if(comm.Get_rank()==0) {
+        ifile->open(fname);
+      }
       if(getRestart()&&!in.restartedFromGrid) {
         log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
         if(i==mw_.id) {
@@ -1849,30 +1882,38 @@ void MetaD::readHillsFiles(const SetupInput& in) {
 
   // all walkers have read the hills: the one that writes the file can now remove an incomplete
   // last line (left by a run that was interrupted while writing), before new hills are appended to it
+  std::string message;
   if(ownpath.length()>0 && comm.Get_rank()==0 && !(mw_.mpi && getReplicaIndex()>0)) {
-    removeIncompleteLastLine(ownpath);
+    message=removeIncompleteLastLine(ownpath);
+  }
+  // the log must be written by all the processes
+  if(comm.Get_size()>1) {
+    bcastString(comm,message);
+  }
+  if(message.length()>0) {
+    log<<message;
   }
 }
 
-void MetaD::removeIncompleteLastLine(const std::string& path) {
+std::string MetaD::removeIncompleteLastLine(const std::string& path) {
   // compressed files cannot be fixed in place
   if(path.length()>3 && path.substr(path.length()-3)==".gz") {
-    return;
+    return "";
   }
   std::ifstream f(path,std::ios::binary);
   if(!f) {
-    return;
+    return "";
   }
   f.seekg(0,std::ios::end);
   const std::streamoff size=f.tellg();
   if(size<=0) {
-    return;
+    return "";
   }
   char last;
   f.seekg(size-1);
   f.get(last);
   if(last=='\n') {
-    return;
+    return "";
   }
   // look backward for the end of the last complete line
   std::streamoff pos=size-1;
@@ -1889,13 +1930,14 @@ void MetaD::removeIncompleteLastLine(const std::string& path) {
   f.seekg(pos);
   f.read(&tail[0],size-pos);
   f.close();
-  log.printf("  WARNING: the last line of %s is incomplete (the previous run was probably interrupted while writing it) and is removed:\n",path.c_str());
-  log.printf("  %s\n",tail.c_str());
+  std::string message="  WARNING: the last line of "+path+" is incomplete (the previous run was probably interrupted while writing it) and is removed:\n";
+  message+="  "+tail+"\n";
   std::error_code ec;
   std::filesystem::resize_file(path,pos,ec);
   if(ec) {
-    warning("the incomplete last line of "+path+" could not be removed ("+ec.message()+")");
+    message+="  WARNING: the incomplete last line of "+path+" could not be removed ("+ec.message()+")\n";
   }
+  return message;
 }
 
 void MetaD::setupTargetGrid() {
@@ -2088,39 +2130,119 @@ int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
     tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
   }
 
-  double time;
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time)) {
-    nhills++;
-    if(lasttime) {
-      *lasttime=time;
-    }
-    if(lasttime && diffrestart_.pending) {
-      // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
-      if(!multivariate) {
-        // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
-        diffrestart_.time.clear();
-        diffrestart_.center.clear();
-        diffrestart_.sigma.clear();
-      } else {
-        diffrestart_.time.push_back(time);
-        diffrestart_.center.push_back(center);
-        diffrestart_.sigma.push_back(sigma);
-        if(diffrestart_.time.size()>diffrestart_.maxhills) {
-          diffrestart_.time.pop_front();
-          diffrestart_.center.pop_front();
-          diffrestart_.sigma.pop_front();
+  // With MPI only the first process reads the file, then the hills are broadcast to the others.
+  // The file of another walker can grow while it is read: if each process read it, they could read a
+  // different number of hills, and their biases would differ.
+  // The hills are read and broadcast in chunks; each one is stored as
+  // time, multivariate, height, center (ncv), sigma (ncv or ncv*(ncv+1)/2).
+  const unsigned nsigmamax=ncv*(ncv+1)/2;
+  const unsigned recordsize=3+ncv+nsigmamax;
+  const unsigned chunksize=4096;
+  const bool parallel=(comm.Get_size()>1);
+  const bool reader=(comm.Get_rank()==0);
+  std::vector<double> buffer;
+  bool more=true;
+  while(more) {
+    unsigned nread=0;
+    if(reader) {
+      buffer.clear();
+      int failed=0;
+      std::string message;
+      std::exception_ptr exception;
+      try {
+        double time;
+        while(nread<chunksize && (more=scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time))) {
+          buffer.push_back(time);
+          buffer.push_back(multivariate ? 1.0 : 0.0);
+          buffer.push_back(height);
+          buffer.insert(buffer.end(),center.begin(),center.end());
+          buffer.insert(buffer.end(),sigma.begin(),sigma.end());
+          buffer.resize(buffer.size()+nsigmamax-sigma.size(),0.0);
+          nread++;
+        }
+      } catch(const std::exception& e) {
+        failed=1;
+        message=e.what();
+        exception=std::current_exception();
+      }
+      if(parallel) {
+        // the other processes must know if reading failed, so that all of them stop
+        comm.Bcast(failed,0);
+        if(failed) {
+          bcastString(comm,message);
+          // all the processes throw the same exception: its message can be written on the log,
+          // which requires the same output on all the processes
+          throw ExceptionError(message);
         }
       }
-      diffrestart_.file=ifile->getPath();
+      if(failed) {
+        std::rethrow_exception(exception);
+      }
+    } else {
+      int failed=0;
+      comm.Bcast(failed,0);
+      if(failed) {
+        std::string message;
+        bcastString(comm,message);
+        throw ExceptionError(message);
+      }
     }
-    if(!addtobias) {
-      continue;
+    // the warning about Gaussian kernels is written on the log after reading, by all the processes
+    // (the log requires the same output on all the processes)
+    int gaussiankernels=gaussianKernelsFound_;
+    if(parallel) {
+      int imore=more;
+      comm.Bcast(nread,0);
+      comm.Bcast(imore,0);
+      comm.Bcast(gaussiankernels,0);
+      more=imore;
+      buffer.resize(nread*recordsize);
+      if(nread>0) {
+        comm.Bcast(buffer,0);
+      }
     }
-    // note that for gamma=1 we store directly -F
-    if(welltemp_ && biasf_>1.0) {
-      height*=(biasf_-1.0)/biasf_;
+    if(gaussiankernels) {
+      noStretchWarning();
     }
-    addGaussian(Gaussian(multivariate,height,center,sigma));
+    for(unsigned h=0; h<nread; h++) {
+      const double* record=&buffer[h*recordsize];
+      const double time=record[0];
+      multivariate=(record[1]!=0.0);
+      height=record[2];
+      center.assign(record+3,record+3+ncv);
+      sigma.assign(record+3+ncv,record+3+ncv+(multivariate ? nsigmamax : ncv));
+      nhills++;
+      if(lasttime) {
+        *lasttime=time;
+      }
+      if(lasttime && diffrestart_.pending) {
+        // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
+        if(!multivariate) {
+          // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
+          diffrestart_.time.clear();
+          diffrestart_.center.clear();
+          diffrestart_.sigma.clear();
+        } else {
+          diffrestart_.time.push_back(time);
+          diffrestart_.center.push_back(center);
+          diffrestart_.sigma.push_back(sigma);
+          if(diffrestart_.time.size()>diffrestart_.maxhills) {
+            diffrestart_.time.pop_front();
+            diffrestart_.center.pop_front();
+            diffrestart_.sigma.pop_front();
+          }
+        }
+        diffrestart_.file=ifile->getPath();
+      }
+      if(!addtobias) {
+        continue;
+      }
+      // note that for gamma=1 we store directly -F
+      if(welltemp_ && biasf_>1.0) {
+        height*=(biasf_-1.0)/biasf_;
+      }
+      addGaussian(Gaussian(multivariate,height,center,sigma));
+    }
   }
   if(addtobias) {
     log.printf("      %d Gaussians read\n",nhills);
@@ -2886,10 +3008,23 @@ void MetaD::readOtherWalkersHills() {
     if(i==mw_.id) {
       continue;
     }
+    // The files are opened and read by the first process only (see readGaussians), which also takes the
+    // decisions: the other processes could see the files at a slightly different time.
+    int isopen=ifiles_[i]->isOpen();
+    if(comm.Get_size()>1) {
+      comm.Bcast(isopen,0);
+    }
     // if the file is not open yet
-    if(!(ifiles_[i]->isOpen())) {
+    if(!isopen) {
       // check if it exists now and open it!
-      if(ifiles_[i]->FileExist(ifilesnames_[i])) {
+      int exists=0;
+      if(comm.Get_rank()==0) {
+        exists=ifiles_[i]->FileExist(ifilesnames_[i]);
+      }
+      if(comm.Get_size()>1) {
+        comm.Bcast(exists,0);
+      }
+      if(exists && comm.Get_rank()==0) {
         ifiles_[i]->open(ifilesnames_[i]);
         ifiles_[i]->reset(false);
       }
@@ -2948,7 +3083,8 @@ bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector
       ifile->scanField("kerneltype",ktype);
     }
     if( ktype=="gaussian" ) {
-      noStretchWarning();
+      // the warning is written by readGaussians
+      gaussianKernelsFound_=true;
     } else if( ktype!="stretched-gaussian") {
       error("non Gaussian kernels are not supported in MetaD");
     }
