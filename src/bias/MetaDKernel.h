@@ -83,7 +83,7 @@ class MetaDKernel {
   std::vector<Value*> args_;
   /// periodicity of the arguments, cached to compute the differences inline
   /// (same arithmetic as Value::difference)
-  std::vector<bool> periodic_;
+  std::vector<char> periodic_;
   std::vector<double> period_;
   std::vector<double> invperiod_;
   double stretchA_=1.0;
@@ -133,6 +133,15 @@ public:
   /// the derivatives are subtracted to der. Outside the cutoff it returns 0, leaves der unchanged and sets
   /// inside=false. Same arithmetic as evaluateWithDerivatives, INTERVAL is not taken into account.
   double evaluateFromDifferences(const double* dp, const MetaDGaussian& hill, double* der, bool& inside) const;
+  /// true if INTERVAL is used
+  bool hasInterval() const {
+    return interval_;
+  }
+  /// as evaluate, for a diagonal hill given by pointers to its center and inverse widths (no INTERVAL)
+  double evaluateDiagonal(const std::vector<double>& cv, const double* center, const double* invsigma, double height) const;
+  /// as evaluateWithDerivatives, for a diagonal hill given by pointers to its center and inverse widths (no INTERVAL)
+  double evaluateDiagonalWithDerivatives(const std::vector<double>& cv, const double* center, const double* invsigma, double height,
+                                         std::vector<double>& der, std::vector<double>& dp_) const;
   /// number of grid points along each direction that are within the cutoff of hill
   std::vector<unsigned> getSupport(const MetaDGaussian& hill, const GridBase& grid) const;
   /// squared distance of cv from the center of hill, in units of the hill widths (d^T*S^-1*d, S covariance);
@@ -427,6 +436,43 @@ double MetaDKernel::evaluateFromDifferences(const double* dp, const MetaDGaussia
       }
       bias=stretchA_*bias+hill.height*stretchB_;
     }
+  }
+  return bias;
+}
+
+inline
+double MetaDKernel::evaluateDiagonal(const std::vector<double>& cv, const double* center, const double* invsigma, double height) const {
+  const unsigned ncv=cv.size();
+  double dp2=0.0;
+  for(unsigned i=0; i<ncv; i++) {
+    double dp=difference(i,center[i],cv[i])*invsigma[i];
+    dp2+=dp*dp;
+  }
+  dp2*=0.5;
+  double bias=0.0;
+  if(dp2<dp2cutoff) {
+    bias=height*(stretchA_*std::exp(-dp2)+stretchB_);
+  }
+  return bias;
+}
+
+inline
+double MetaDKernel::evaluateDiagonalWithDerivatives(const std::vector<double>& cv, const double* center, const double* invsigma, double height,
+    std::vector<double>& der, std::vector<double>& dp_) const {
+  const unsigned ncv=cv.size();
+  double dp2=0.0;
+  for(unsigned i=0; i<ncv; i++) {
+    dp_[i]=difference(i,center[i],cv[i])*invsigma[i];
+    dp2+=dp_[i]*dp_[i];
+  }
+  dp2*=0.5;
+  double bias=0.0;
+  if(dp2<dp2cutoff) {
+    bias=height*std::exp(-dp2);
+    for(unsigned i=0; i<ncv; i++) {
+      der[i]-=bias*dp_[i]*invsigma[i]*stretchA_;
+    }
+    bias=stretchA_*bias+height*stretchB_;
   }
   return bias;
 }

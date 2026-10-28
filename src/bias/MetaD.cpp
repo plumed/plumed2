@@ -550,6 +550,23 @@ private:
   std::vector<double> sigma0max_;
   // Gaussians
   std::vector<Gaussian> hills_;
+  /// the hills without grid also as contiguous arrays (center and inverse widths of diagonal hills),
+  /// for the loops that sum them
+  struct HillArrays {
+    std::vector<double> center;
+    std::vector<double> invsigma;
+    std::vector<double> height;
+    std::vector<char> diagonal;
+    void clear() {
+      center.clear();
+      invsigma.clear();
+      height.clear();
+      diagonal.clear();
+    }
+  } hillarrays_;
+  /// value of hill h, and its derivatives (subtracted to der); dp is a work array
+  double evaluateHill(const std::vector<double>& cv, unsigned h) const;
+  double evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, std::vector<double>& der, std::vector<double>& dp) const;
   std::unique_ptr<FlexibleBin> flexbin_;
   int adaptive_=FlexibleBin::none;
   /// ADAPTIVE=DIFF: accumulate the CV statistics at every step, also outside the update window (PRECAL_DIFF)
@@ -649,7 +666,8 @@ private:
     unsigned steps=0;
     /// cutoff (in units of dp2cutoff) and rebuild threshold (in units of dev2)
     std::array<double,2> param;
-    std::vector<Gaussian> hills;
+    /// indices of the listed hills in hills_
+    std::vector<unsigned> index;
     /// CV values at the last update
     std::vector<double> center;
     /// mean square distance of the listed hills from center, per CV
@@ -2327,7 +2345,30 @@ void MetaD::addGaussian(const Gaussian& hill) {
     }
   } else {
     hills_.push_back(hill);
+    const unsigned ncv=getNumberOfArguments();
+    for(unsigned i=0; i<ncv; i++) {
+      hillarrays_.center.push_back(hill.center[i]);
+      hillarrays_.invsigma.push_back(hill.multivariate ? 0.0 : hill.invsigma[i]);
+    }
+    hillarrays_.height.push_back(hill.height);
+    hillarrays_.diagonal.push_back(!hill.multivariate);
   }
+}
+
+double MetaD::evaluateHill(const std::vector<double>& cv, unsigned h) const {
+  if(hillarrays_.diagonal[h] && !kernel_.hasInterval()) {
+    const unsigned ncv=cv.size();
+    return kernel_.evaluateDiagonal(cv,&hillarrays_.center[h*ncv],&hillarrays_.invsigma[h*ncv],hillarrays_.height[h]);
+  }
+  return kernel_.evaluate(cv,hills_[h]);
+}
+
+double MetaD::evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, std::vector<double>& der, std::vector<double>& dp) const {
+  if(hillarrays_.diagonal[h] && !kernel_.hasInterval()) {
+    const unsigned ncv=cv.size();
+    return kernel_.evaluateDiagonalWithDerivatives(cv,&hillarrays_.center[h*ncv],&hillarrays_.invsigma[h*ncv],hillarrays_.height[h],der,dp);
+  }
+  return kernel_.evaluateWithDerivatives(cv,hills_[h],der,dp);
 }
 
 double MetaD::getBias(const std::vector<double>& cv) {
@@ -2342,13 +2383,13 @@ double MetaD::getBias(const std::vector<double>& cv) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
     // with the neighbor list only the listed hills are summed
-    const std::vector<Gaussian>& hills=(nlist_.enabled ? nlist_.hills : hills_);
+    const unsigned nhills=(nlist_.enabled ? nlist_.index.size() : hills_.size());
 
     #pragma omp parallel num_threads(nt)
     {
       #pragma omp for reduction(+:bias) nowait
-      for(unsigned i=rank; i<hills.size(); i+=stride) {
-        bias+=kernel_.evaluate(cv,hills[i]);
+      for(unsigned i=rank; i<nhills; i+=stride) {
+        bias+=evaluateHill(cv,nlist_.enabled ? nlist_.index[i] : i);
       }
     }
     comm.Sum(bias);
@@ -2371,15 +2412,15 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
     // with the neighbor list only the listed hills are summed
-    const std::vector<Gaussian>& hills=(nlist_.enabled ? nlist_.hills : hills_);
+    const unsigned nhills=(nlist_.enabled ? nlist_.index.size() : hills_.size());
 
     // NOTE: the choice between the serial and the parallel loop is based on the total
     // number of hills also when the neighbor list is used
     if(hills_.size()<2*nt*stride||nt==1) {
       // for performance reasons and thread safety
       std::vector<double> dp(ncv);
-      for(unsigned i=rank; i<hills.size(); i+=stride) {
-        bias+=kernel_.evaluateWithDerivatives(cv,hills[i],der,dp);
+      for(unsigned i=rank; i<nhills; i+=stride) {
+        bias+=evaluateHillWithDerivatives(cv,nlist_.enabled ? nlist_.index[i] : i,der,dp);
       }
     } else {
       #pragma omp parallel num_threads(nt)
@@ -2388,8 +2429,8 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
         // for performance reasons and thread safety
         std::vector<double> dp(ncv);
         #pragma omp for reduction(+:bias) nowait
-        for(unsigned i=rank; i<hills.size(); i+=stride) {
-          bias+=kernel_.evaluateWithDerivatives(cv,hills[i],omp_deriv,dp);
+        for(unsigned i=rank; i<nhills; i+=stride) {
+          bias+=evaluateHillWithDerivatives(cv,nlist_.enabled ? nlist_.index[i] : i,omp_deriv,dp);
         }
         #pragma omp critical
         for(unsigned i=0; i<ncv; i++) {
@@ -2776,6 +2817,7 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
     // Flying Gaussian
     if (mw_.flying) {
       hills_.clear();
+      hillarrays_.clear();
       comm.Barrier();
     }
 
@@ -3082,10 +3124,10 @@ void MetaD::updateNlist() {
   for(unsigned k=0; k<hills_.size(); k++) {
     inlist[k]=(kernel_.getDistance2(cv,hills_[k])<=nlist_.param[0]*dp2cutoff);
   }
-  nlist_.hills.clear();
+  nlist_.index.clear();
   for(unsigned k=0; k<hills_.size(); k++) {
     if(inlist[k]) {
-      nlist_.hills.push_back(hills_[k]);
+      nlist_.index.push_back(k);
     }
   }
 
@@ -3095,22 +3137,22 @@ void MetaD::updateNlist() {
   }
   std::vector<double> dev2;
   dev2.resize(getNumberOfArguments(),0);
-  for(unsigned k=0; k<nlist_.hills.size(); k++) {
+  for(unsigned k=0; k<nlist_.index.size(); k++) {
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      const double d=difference(i,getArgument(i),nlist_.hills[k].center[i]);
+      const double d=difference(i,getArgument(i),hills_[nlist_.index[k]].center[i]);
       dev2[i]+=d*d;
     }
   }
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     if(dev2[i]>0.) {
-      nlist_.dev2[i]=dev2[i]/static_cast<double>(nlist_.hills.size());
+      nlist_.dev2[i]=dev2[i]/static_cast<double>(nlist_.index.size());
     } else {
       nlist_.dev2[i]=kernel_.getVariance(hills_.back(),i);
     }
   }
 
   // we are done
-  getPntrToComponent("nlker")->set(nlist_.hills.size());
+  getPntrToComponent("nlker")->set(nlist_.index.size());
   getPntrToComponent("nlsteps")->set(nlist_.steps);
   nlist_.steps=0;
   nlist_.update=false;
