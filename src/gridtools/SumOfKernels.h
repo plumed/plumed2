@@ -188,16 +188,10 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
     action->log<<"  using switching function for kernel with r0="<<p.switchingFunction.description()<<" and cutoff "<<p.cutoff<<"\n";
   } else {
     p.cutoff = sqrt(2*dp2cutoff);
-    if( args.size()>1 ) {
-      std::string strdim;
-      Tools::convert( args.size(), strdim );
-      action->warning("using a switching function without a D_MAX parameter for the kernel is not recommended. As discussed in the manual, "
-                      "when D_MAX is unset the cutoff is set equal to sqrt(2*6.25). In " + strdim + "D density from any given kernel "
-                      "will be accumulated at points that are more than this D_MAX from the center of the kernel. The reason why can be understood by considering "
-                      "the two dimensional case. To determine if we need to evaluate a kernel centered at (x,y) for the grid point (w,z) we first determine if "
-                      "|x-w|<D_MAX and |y-z|<D_MAX. This is a necessary but not sufficient condition for (x-w)^2+(y-z)^2<=D_MAX^2.  If D_MAX is set we perform an "
-                      "explicit check on this second condition. If it is not set we do check if (x-w)^2+(y-z)^2<=D_MAX^2 before evaluating the switching function");
-    }
+    action->warning("using a switching function without a D_MAX parameter for the kernel is not recommended. As discussed in the manual, "
+                    "when D_MAX is unset the cutoff is set equal to sqrt(2*6.25). However, density from any given kernel "
+                    "will be accumulated at points that are more than this D_MAX from the center of the kernel. The reason why "
+                    "is explained on the manual pages for KDE in the section on selecting kernels.");
   }
   if( errors.length()!=0 ) {
     action->error("problem reading switching function description " + errors);
