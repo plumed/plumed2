@@ -904,6 +904,9 @@ void MetaD::parseHillsAndTempering(SetupInput& in) {
   parseVector("RECT",in.rect_biasf);
   if(in.rect_biasf.size()>0) {
     int r=getReplicaIndex();
+    if(r>=static_cast<int>(in.rect_biasf.size())) {
+      error("RECT needs one bias factor for each replica");
+    }
     biasf_=in.rect_biasf[r];
     log<<"  You are using RECT\n";
   } else {
@@ -1181,7 +1184,7 @@ void MetaD::parseAcceleration(SetupInput& in) {
   fa_.update_frequency=0;
   parse("FA_UPDATE_FREQUENCY",fa_.update_frequency);
   if(fa_.update_frequency!=0 && !fa_.enabled) {
-    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    plumed_merror("It doesn't make sense to use the FA_UPDATE_FREQUENCY keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   if(fa_.update_frequency==0 && fa_.enabled) {
     fa_.update_frequency=stride_;
@@ -1794,7 +1797,7 @@ void MetaD::logBibliography(const SetupInput& in) {
   if(in.rect_biasf.size()>0) {
     if(mw_.mpi) {
       log<<"  You are using RECT in its 'altruistic' implementation\n";
-    }{
+    } else {
       log<<"  You are using RECT\n";
     }
   }
