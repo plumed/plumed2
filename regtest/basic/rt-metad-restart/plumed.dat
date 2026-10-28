@@ -1,0 +1,18 @@
+# Continuation of a simulation, the driver starts at step 50 (PACE=10).
+# HA: the previous run stopped at step 49, no hill at step 50 yet: the hill at step 50 must be added
+# HB: the previous run also computed step 50 (as e.g. GROMACS does): the hill at step 50 is not repeated
+# HC: the previous run was interrupted while writing the last hill: the incomplete line is removed
+#     before appending new hills, so that the file can be read again
+# HD: (not a restart) UPDATE_FROM=0.2 ps: the hill at step 100, the first of the update window, is added
+# HE: as HA with ADAPTIVE=DIFF: the hill at step 50 is not added, since its width is not known yet
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+a: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=1.0 PACE=10 FILE=HA FMT=%10.5f
+b: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=1.0 PACE=10 FILE=HB FMT=%10.5f
+c: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=1.0 PACE=10 FILE=HC FMT=%10.5f
+d: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=1.0 PACE=10 FILE=HD FMT=%10.5f UPDATE_FROM=0.2 RESTART=NO
+e: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=20 HEIGHT=1.0 PACE=10 FILE=HE FMT=%10.5f
+
+PRINT ARG=phi,psi,a.bias,b.bias,c.bias,d.bias,e.bias STRIDE=10 FILE=colvar FMT=%10.5f

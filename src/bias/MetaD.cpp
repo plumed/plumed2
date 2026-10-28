@@ -34,6 +34,7 @@
 #include "tools/Communicator.h"
 #include <ctime>
 #include <filesystem>
+#include <fstream>
 #include <numeric>
 
 namespace PLMD {
@@ -685,6 +686,8 @@ private:
   bool   isRunFirstStep() const;
   /// true if a hill has to be added at the current step
   bool   isHillStep() const;
+  /// remove an incomplete last line from a hills file that is going to be appended to
+  void   removeIncompleteLastLine(const std::string& path);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
@@ -1637,6 +1640,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
   bool restartedFromHills=false;  // restart from hills files
+  std::string ownpath;  // actual path of the hills file of this walker, if it was read
   for(int i=0; i<mw_.n; ++i) {
     std::string fname;
     if(mw_.dir!="") {
@@ -1671,6 +1675,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
           double lasttime=0.0;
           restartLastHillTimeKnown_=(readGaussians(ifiles_[i].get(),&lasttime)>0);
           restartLastHillTime_=lasttime;
+          ownpath=ifile->getPath();
         } else {
           readGaussians(ifiles_[i].get());
         }
@@ -1712,6 +1717,56 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   // see issue #168 on github
   if(comm.Get_rank()==0 && mw_.mpi) {
     multi_sim_comm.Barrier();
+  }
+
+  // all walkers have read the hills: the one that writes the file can now remove an incomplete
+  // last line (left by a run that was interrupted while writing), before new hills are appended to it
+  if(ownpath.length()>0 && comm.Get_rank()==0 && !(mw_.mpi && getReplicaIndex()>0)) {
+    removeIncompleteLastLine(ownpath);
+  }
+}
+
+void MetaD::removeIncompleteLastLine(const std::string& path) {
+  // compressed files cannot be fixed in place
+  if(path.length()>3 && path.substr(path.length()-3)==".gz") {
+    return;
+  }
+  std::ifstream f(path,std::ios::binary);
+  if(!f) {
+    return;
+  }
+  f.seekg(0,std::ios::end);
+  const std::streamoff size=f.tellg();
+  if(size<=0) {
+    return;
+  }
+  char last;
+  f.seekg(size-1);
+  f.get(last);
+  if(last=='\n') {
+    return;
+  }
+  // look backward for the end of the last complete line
+  std::streamoff pos=size-1;
+  while(pos>0) {
+    char c;
+    f.seekg(pos-1);
+    f.get(c);
+    if(c=='\n') {
+      break;
+    }
+    pos--;
+  }
+  std::string tail(size-pos,' ');
+  f.seekg(pos);
+  f.read(&tail[0],size-pos);
+  f.close();
+  log.printf("  WARNING: the last line of %s is incomplete (the previous run was probably interrupted while writing it) and is removed:\n",path.c_str());
+  log.printf("  %s\n",tail.c_str());
+  std::error_code ec;
+  std::filesystem::resize_file(path,pos,ec);
+  if(ec) {
+    warning("the incomplete last line of "+path+" could not be removed ("+ec.message()+")");
   }
 }
 
