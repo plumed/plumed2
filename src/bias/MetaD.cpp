@@ -2561,31 +2561,29 @@ void MetaD::updateNlist() {
     return;
   }
 
-  // here we generate the neighbor list
-  nlist_.hills.clear();
-  std::vector<Gaussian> local_flat_nl;
+  // here we generate the neighbor list:
+  // first the hills close to the current CVs are flagged, then they are collected in their
+  // original order, so that the list (and thus the bias) does not depend on the number of threads
+  const unsigned ncv=getNumberOfArguments();
+  std::vector<double> cv(ncv);
+  for(unsigned i=0; i<ncv; i++) {
+    cv[i]=getArgument(i);
+  }
+  std::vector<char> inlist(hills_.size(),0); // char rather than bool, so that threads can write concurrently
   unsigned nt=OpenMP::getNumThreads();
   if(hills_.size()<2*nt) {
     nt=1;
   }
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<Gaussian> private_flat_nl;
-    #pragma omp for nowait
-    for(unsigned k=0; k<hills_.size(); k++) {
-      double dist2=0;
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        const double d=difference(i,getArgument(i),hills_[k].center[i])/hills_[k].sigma[i];
-        dist2+=d*d;
-      }
-      if(dist2<=nlist_.param[0]*dp2cutoff) {
-        private_flat_nl.push_back(hills_[k]);
-      }
-    }
-    #pragma omp critical
-    local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
+  #pragma omp parallel for num_threads(nt)
+  for(unsigned k=0; k<hills_.size(); k++) {
+    inlist[k]=(kernel_.getDistance2(cv,hills_[k])<=nlist_.param[0]*dp2cutoff);
   }
-  nlist_.hills = local_flat_nl;
+  nlist_.hills.clear();
+  for(unsigned k=0; k<hills_.size(); k++) {
+    if(inlist[k]) {
+      nlist_.hills.push_back(hills_[k]);
+    }
+  }
 
   // here we set some properties that are used to decide when to update it again
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -2603,7 +2601,7 @@ void MetaD::updateNlist() {
     if(dev2[i]>0.) {
       nlist_.dev2[i]=dev2[i]/static_cast<double>(nlist_.hills.size());
     } else {
-      nlist_.dev2[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
+      nlist_.dev2[i]=kernel_.getVariance(hills_.back(),i);
     }
   }
 

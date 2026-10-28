@@ -96,6 +96,11 @@ public:
   double evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, std::vector<double>& der, std::vector<double>& dp_) const;
   /// number of grid points along each direction that are within the cutoff of hill
   std::vector<unsigned> getSupport(const MetaDGaussian& hill, const GridBase& grid) const;
+  /// squared distance of cv from the center of hill, in units of the hill widths (d^T*S^-1*d, S covariance);
+  /// the hill is truncated where this is 2*dp2cutoff. INTERVAL is not taken into account.
+  double getDistance2(const std::vector<double>& cv, const MetaDGaussian& hill) const;
+  /// variance of hill along CV i (diagonal of the covariance matrix for multivariate hills)
+  double getVariance(const MetaDGaussian& hill, unsigned i) const;
 };
 
 inline
@@ -301,6 +306,51 @@ std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const G
   }
 
   return nneigh;
+}
+
+inline
+double MetaDKernel::getDistance2(const std::vector<double>& cv, const MetaDGaussian& hill) const {
+  const unsigned ncv=args_.size();
+  double dist2=0.0;
+  if(hill.multivariate) {
+    // hill.sigma holds the upper triangle of the inverse covariance matrix
+    std::vector<double> d(ncv);
+    for(unsigned i=0; i<ncv; i++) {
+      d[i]=difference(i,cv[i],hill.center[i]);
+    }
+    unsigned k=0;
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=i; j<ncv; j++) {
+        dist2+=(i==j ? 1.0 : 2.0)*d[i]*d[j]*hill.sigma[k];
+        k++;
+      }
+    }
+  } else {
+    for(unsigned i=0; i<ncv; i++) {
+      const double d=difference(i,cv[i],hill.center[i])/hill.sigma[i];
+      dist2+=d*d;
+    }
+  }
+  return dist2;
+}
+
+inline
+double MetaDKernel::getVariance(const MetaDGaussian& hill, unsigned i) const {
+  if(!hill.multivariate) {
+    return hill.sigma[i]*hill.sigma[i];
+  }
+  const unsigned ncv=args_.size();
+  Matrix<double> mymatrix(ncv,ncv);
+  unsigned k=0;
+  for(unsigned j=0; j<ncv; j++) {
+    for(unsigned l=j; l<ncv; l++) {
+      mymatrix(j,l)=mymatrix(l,j)=hill.sigma[k];
+      k++;
+    }
+  }
+  Matrix<double> mycov(ncv,ncv);
+  Invert(mymatrix,mycov);
+  return mycov(i,i);
 }
 
 }

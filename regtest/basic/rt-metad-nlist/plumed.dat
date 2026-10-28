@@ -1,7 +1,5 @@
 # NLIST should reproduce the bias computed without neighbor list,
 # both for diagonal and for ADAPTIVE (multivariate) Gaussians
-# NOTE: when this test was added, NLIST with ADAPTIVE Gaussians (a1) gives a bias different from a0
-# (updateNlist treats the multivariate inverse-covariance entries as diagonal sigmas); reference to be updated with the fix
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
