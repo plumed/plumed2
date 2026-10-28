@@ -515,6 +515,26 @@ The number of elements in the RECT array should be equal to the number of replic
 //+ENDPLUMEDOC
 
 namespace {
+/// Work arrays of the OpenMP threads, written at every hill or grid point. When two threads write in the
+/// same cache line (false sharing), or one writes where another one reads, both become much slower, and
+/// using more threads can take longer than using one: this happened with small vectors allocated by
+/// each thread, depending on where the heap placed them. Here the arrays of all the threads are in a
+/// single allocation, separated from each other and from the ends of the allocation by 128 bytes that
+/// are never used.
+template<typename T>
+class ThreadWorkArrays {
+  static constexpr unsigned gap=128/sizeof(T);
+  unsigned stride;
+  std::vector<T> buffer;
+public:
+  ThreadWorkArrays(unsigned nthreads, unsigned size):
+    stride(size+gap),
+    buffer(gap+nthreads*stride,T()) {}
+  T* get(unsigned thread) {
+    return buffer.data()+gap+thread*stride;
+  }
+};
+
 /// broadcast a string from process 0: the length is sent first, as on the other processes the string
 /// can have a different length (Communicator::Bcast of a string uses the local length)
 void bcastString(Communicator& c, std::string& s) {
@@ -580,7 +600,7 @@ private:
   } hillarrays_;
   /// value of hill h, and its derivatives (subtracted to der); dp is a work array
   double evaluateHill(const std::vector<double>& cv, unsigned h) const;
-  double evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, std::vector<double>& der, std::vector<double>& dp) const;
+  double evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, double* der, double* dp) const;
   std::unique_ptr<FlexibleBin> flexbin_;
   int adaptive_=FlexibleBin::none;
   /// ADAPTIVE=DIFF: accumulate the CV statistics at every step, also outside the update window (PRECAL_DIFF)
@@ -2357,60 +2377,55 @@ void MetaD::addGaussianToGrid(const Gaussian& hill) {
   if(npoints==0) {
     return;
   }
-  // loop over all the points of the box, the first direction being the fastest
-  const unsigned nranks=comm.Get_size();
-  const unsigned rank=comm.Get_rank();
-  // with MPI each process computes a part of the points, then values and derivatives are summed
-  std::vector<double> buffer;
-  if(nranks>1) {
-    buffer.assign(npoints*(ncv+1),0.0);
+  // Loop over all the points of the box, the first direction being the fastest.
+  // With MPI every process adds the whole hill to its copy of the grid: the hills are the same on all
+  // processes, so the grids stay identical without communication (splitting the points among the processes
+  // requires summing values and derivatives of the whole box at every hill, which costs more than computing them).
+  // With OpenMP the box is split in blocks of consecutive points; each point is computed and added by one
+  // thread only, with the same arithmetic as the serial loop, so the result does not depend on the number of
+  // threads. Sparse grids are filled serially, as new points are inserted.
+  unsigned nt=OpenMP::getNumThreads();
+  if(sparsegrid_ || npoints<static_cast<Grid::index_t>(1024*nt)) {
+    nt=1;
   }
-  std::vector<unsigned> k(ncv,0);
-  std::vector<double> dp(ncv);
-  std::vector<double> der(ncv);
-  for(Grid::index_t n=0; n<npoints; n++) {
-    if(nranks==1 || n%nranks==rank) {
+  ThreadWorkArrays<unsigned> kwork(nt,ncv);
+  ThreadWorkArrays<double> dpwork(nt,ncv);
+  ThreadWorkArrays<double> derwork(nt,ncv);
+  #pragma omp parallel for num_threads(nt) schedule(static,1)
+  for(unsigned block=0; block<nt; block++) {
+    const Grid::index_t first=(npoints*block)/nt;
+    const Grid::index_t last=(npoints*(block+1))/nt;
+    // indices of the first point of the block along each direction
+    unsigned* k=kwork.get(block);
+    Grid::index_t m=first;
+    for(unsigned d=0; d<ncv; d++) {
+      k[d]=m%indices[d].size();
+      m/=indices[d].size();
+    }
+    double* dp=dpwork.get(block);
+    double* der=derwork.get(block);
+    for(Grid::index_t n=first; n<last; n++) {
       for(unsigned d=0; d<ncv; d++) {
         dp[d]=differences[d][k[d]];
         der[d]=0.0;
       }
       bool inside;
-      const double bias=kernel_.evaluateFromDifferences(dp.data(),hill,der.data(),inside);
-      if(nranks>1) {
-        buffer[n*(ncv+1)]=bias;
-        for(unsigned d=0; d<ncv; d++) {
-          buffer[n*(ncv+1)+1+d]=der[d];
-        }
-      } else if(inside || sparsegrid_) {
+      const double bias=kernel_.evaluateFromDifferences(dp,hill,der,inside);
+      if(inside || sparsegrid_) {
         // adding zero outside the cutoff only matters for sparse grids, where it creates the point
         Grid::index_t index=0;
         for(unsigned d=0; d<ncv; d++) {
           index+=indices[d][k[d]]*stride[d];
         }
-        BiasGrid_->addValueAndDerivatives(index,bias,der);
+        BiasGrid_->addValueAndDerivatives(index,bias,der,ncv);
       }
-    }
-    // next point
-    for(unsigned d=0; d<ncv; d++) {
-      if(++k[d]<indices[d].size()) {
-        break;
-      }
-      k[d]=0;
-    }
-  }
-  if(nranks>1) {
-    comm.Sum(buffer);
-    for(Grid::index_t n=0; n<npoints; n++) {
-      Grid::index_t index=0;
-      Grid::index_t m=n;
+      // next point
       for(unsigned d=0; d<ncv; d++) {
-        index+=indices[d][m%indices[d].size()]*stride[d];
-        m/=indices[d].size();
+        if(++k[d]<indices[d].size()) {
+          break;
+        }
+        k[d]=0;
       }
-      for(unsigned d=0; d<ncv; d++) {
-        der[d]=buffer[n*(ncv+1)+1+d];
-      }
-      BiasGrid_->addValueAndDerivatives(index,buffer[n*(ncv+1)],der);
     }
   }
 }
@@ -2424,46 +2439,16 @@ void MetaD::addGaussian(const Gaussian& hill) {
     std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
     std::vector<double> der(ncv);
     std::vector<double> xx(ncv);
-    if(comm.Get_size()==1) {
-      // for performance reasons and thread safety
-      std::vector<double> dp(ncv);
-      for(size_t i=0; i<neighbors.size(); ++i) {
-        Grid::index_t ineigh=neighbors[i];
-        for(unsigned j=0; j<ncv; ++j) {
-          der[j]=0.0;
-        }
-        BiasGrid_->getPoint(ineigh,xx);
-        double bias=kernel_.evaluateWithDerivatives(xx,hill,der,dp);
-        BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
+    // every MPI process adds the whole hill to its copy of the grid (see addGaussianToGrid)
+    std::vector<double> dp(ncv);
+    for(size_t i=0; i<neighbors.size(); ++i) {
+      Grid::index_t ineigh=neighbors[i];
+      for(unsigned j=0; j<ncv; ++j) {
+        der[j]=0.0;
       }
-    } else {
-      unsigned stride=comm.Get_size();
-      unsigned rank=comm.Get_rank();
-      std::vector<double> allder(ncv*neighbors.size(),0.0);
-      std::vector<double> n_der(ncv,0.0);
-      std::vector<double> allbias(neighbors.size(),0.0);
-      // for performance reasons and thread safety
-      std::vector<double> dp(ncv);
-      for(unsigned i=rank; i<neighbors.size(); i+=stride) {
-        Grid::index_t ineigh=neighbors[i];
-        for(unsigned j=0; j<ncv; ++j) {
-          n_der[j]=0.0;
-        }
-        BiasGrid_->getPoint(ineigh,xx);
-        allbias[i]=kernel_.evaluateWithDerivatives(xx,hill,n_der,dp);
-        for(unsigned j=0; j<ncv; j++) {
-          allder[ncv*i+j]=n_der[j];
-        }
-      }
-      comm.Sum(allbias);
-      comm.Sum(allder);
-      for(unsigned i=0; i<neighbors.size(); ++i) {
-        Grid::index_t ineigh=neighbors[i];
-        for(unsigned j=0; j<ncv; ++j) {
-          der[j]=allder[ncv*i+j];
-        }
-        BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
-      }
+      BiasGrid_->getPoint(ineigh,xx);
+      double bias=kernel_.evaluateWithDerivatives(xx,hill,der.data(),dp.data());
+      BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
     }
   } else {
     hills_.push_back(hill);
@@ -2485,7 +2470,7 @@ double MetaD::evaluateHill(const std::vector<double>& cv, unsigned h) const {
   return kernel_.evaluate(cv,hills_[h]);
 }
 
-double MetaD::evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, std::vector<double>& der, std::vector<double>& dp) const {
+double MetaD::evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, double* der, double* dp) const {
   if(hillarrays_.diagonal[h] && !kernel_.hasInterval()) {
     const unsigned ncv=cv.size();
     return kernel_.evaluateDiagonalWithDerivatives(cv,&hillarrays_.center[h*ncv],&hillarrays_.invsigma[h*ncv],hillarrays_.height[h],der,dp);
@@ -2542,14 +2527,16 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
       // for performance reasons and thread safety
       std::vector<double> dp(ncv);
       for(unsigned i=rank; i<nhills; i+=stride) {
-        bias+=evaluateHillWithDerivatives(cv,nlist_.enabled ? nlist_.index[i] : i,der,dp);
+        bias+=evaluateHillWithDerivatives(cv,nlist_.enabled ? nlist_.index[i] : i,der.data(),dp.data());
       }
     } else {
+      ThreadWorkArrays<double> derwork(nt,ncv);
+      ThreadWorkArrays<double> dpwork(nt,ncv);
       #pragma omp parallel num_threads(nt)
       {
-        std::vector<double> omp_deriv(ncv,0.);
+        double* omp_deriv=derwork.get(OpenMP::getThreadNum());
         // for performance reasons and thread safety
-        std::vector<double> dp(ncv);
+        double* dp=dpwork.get(OpenMP::getThreadNum());
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<nhills; i+=stride) {
           bias+=evaluateHillWithDerivatives(cv,nlist_.enabled ? nlist_.index[i] : i,omp_deriv,dp);
@@ -2560,8 +2547,19 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
         }
       }
     }
-    comm.Sum(bias);
-    comm.Sum(der);
+    if(stride>1) {
+      // a single reduction for bias and derivatives
+      std::vector<double> buffer(ncv+1);
+      buffer[0]=bias;
+      for(unsigned i=0; i<ncv; i++) {
+        buffer[1+i]=der[i];
+      }
+      comm.Sum(buffer);
+      bias=buffer[0];
+      for(unsigned i=0; i<ncv; i++) {
+        der[i]=buffer[1+i];
+      }
+    }
   }
 
   return bias;
@@ -2918,23 +2916,26 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
   // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
   if(mw_.mpi) {
     // Allocate arrays to store all walkers hills
-    std::vector<double> all_cv(mw_.mpi_nw*ncv,0.0);
-    std::vector<double> all_sigma(mw_.mpi_nw*thissigma.size(),0.0);
-    std::vector<double> all_height(mw_.mpi_nw,0.0);
-    std::vector<int>    all_multivariate(mw_.mpi_nw,0);
+    // (packed in a single array: center, sigma, height, multivariate, so that one collective is enough)
+    const unsigned nsigma=thissigma.size();
+    const unsigned recordsize=ncv+nsigma+2;
+    std::vector<double> record(recordsize);
+    for(unsigned j=0; j<ncv; j++) {
+      record[j]=cv[j];
+    }
+    for(unsigned j=0; j<nsigma; j++) {
+      record[ncv+j]=thissigma[j];
+    }
+    // notice that if gamma=1 we store directly -F so this scaling is not necessary:
+    record[ncv+nsigma]=height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0);
+    record[ncv+nsigma+1]=(multivariate ? 1.0 : 0.0);
+    std::vector<double> all_records(mw_.mpi_nw*recordsize,0.0);
     if(comm.Get_rank()==0) {
       // Communicate (only root)
-      multi_sim_comm.Allgather(cv,all_cv);
-      multi_sim_comm.Allgather(thissigma,all_sigma);
-      // notice that if gamma=1 we store directly -F so this scaling is not necessary:
-      multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
-      multi_sim_comm.Allgather(int(multivariate),all_multivariate);
+      multi_sim_comm.Allgather(record,all_records);
     }
     // Share info with group members
-    comm.Bcast(all_cv,0);
-    comm.Bcast(all_sigma,0);
-    comm.Bcast(all_height,0);
-    comm.Bcast(all_multivariate,0);
+    comm.Bcast(all_records,0);
 
     // Flying Gaussian
     if (mw_.flying) {
@@ -2945,17 +2946,12 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
 
     for(unsigned i=0; i<mw_.mpi_nw; i++) {
       // actually add hills one by one
-      std::vector<double> cv_now(ncv);
-      std::vector<double> sigma_now(thissigma.size());
-      for(unsigned j=0; j<ncv; j++) {
-        cv_now[j]=all_cv[i*ncv+j];
-      }
-      for(unsigned j=0; j<thissigma.size(); j++) {
-        sigma_now[j]=all_sigma[i*thissigma.size()+j];
-      }
+      const double* rec=&all_records[i*recordsize];
+      std::vector<double> cv_now(rec,rec+ncv);
+      std::vector<double> sigma_now(rec+ncv,rec+ncv+nsigma);
       // notice that if gamma=1 we store directly -F so this scaling is not necessary:
       double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
-      Gaussian newhill=Gaussian(all_multivariate[i],all_height[i]*fact,cv_now,sigma_now);
+      Gaussian newhill=Gaussian(rec[ncv+nsigma+1]!=0.0,rec[ncv+nsigma]*fact,cv_now,sigma_now);
       addGaussian(newhill);
       if(!mw_.flying) {
         writeGaussian(newhill,hillsOfile_);

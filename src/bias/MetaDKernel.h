@@ -127,7 +127,7 @@ public:
   /// value of hill in cv
   double evaluate(const std::vector<double>& cv, const MetaDGaussian& hill) const;
   /// value of hill in cv; the derivatives are subtracted to der; dp_ is a work array of size ncv
-  double evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, std::vector<double>& der, std::vector<double>& dp_) const;
+  double evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, double* der, double* dp_) const;
   /// value of hill at a point, given the differences dp of the point from the center of the hill
   /// (multiplied by invsigma for diagonal hills, plain differences for multivariate hills);
   /// the derivatives are subtracted to der. Outside the cutoff it returns 0, leaves der unchanged and sets
@@ -141,7 +141,7 @@ public:
   double evaluateDiagonal(const std::vector<double>& cv, const double* center, const double* invsigma, double height) const;
   /// as evaluateWithDerivatives, for a diagonal hill given by pointers to its center and inverse widths (no INTERVAL)
   double evaluateDiagonalWithDerivatives(const std::vector<double>& cv, const double* center, const double* invsigma, double height,
-                                         std::vector<double>& der, std::vector<double>& dp_) const;
+                                         double* der, double* dp_) const;
   /// number of grid points along each direction that are within the cutoff of hill
   std::vector<unsigned> getSupport(const MetaDGaussian& hill, const GridBase& grid) const;
   /// squared distance of cv from the center of hill, in units of the hill widths (d^T*S^-1*d, S covariance);
@@ -207,7 +207,7 @@ double MetaDKernel::evaluate(const std::vector<double>& cv, const MetaDGaussian&
 }
 
 inline
-double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, std::vector<double>& der, std::vector<double>& dp_) const {
+double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, double* der, double* dp_) const {
   unsigned ncv=cv.size();
 
   // I use a pointer here because cv is const (and should be const)
@@ -458,7 +458,7 @@ double MetaDKernel::evaluateDiagonal(const std::vector<double>& cv, const double
 
 inline
 double MetaDKernel::evaluateDiagonalWithDerivatives(const std::vector<double>& cv, const double* center, const double* invsigma, double height,
-    std::vector<double>& der, std::vector<double>& dp_) const {
+    double* der, double* dp_) const {
   const unsigned ncv=cv.size();
   double dp2=0.0;
   for(unsigned i=0; i<ncv; i++) {

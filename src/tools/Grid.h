@@ -327,6 +327,8 @@ public:
 /// add to grid value and derivatives
   virtual void addValueAndDerivatives(index_t index, double value, std::vector<double>& der)=0;
   void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
+/// add to grid value and derivatives (der_size must be the dimension of the grid)
+  virtual void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size);
 /// add a kernel function to the grid
   void addKernel( const KernelFunctions& kernel );
 
@@ -401,6 +403,7 @@ public:
   void addValue(index_t index, double value) override;
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
+  void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
 
 /// get minimum value
   double getMinValue() const override;
@@ -468,6 +471,7 @@ public:
   void addValue(index_t index, double value) override;
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
+  void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
 
 /// get minimum value
   double getMinValue() const override;

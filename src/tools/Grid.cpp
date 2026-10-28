@@ -523,6 +523,11 @@ void GridBase::addValueAndDerivatives(const std::vector<unsigned> & indices, dou
   addValueAndDerivatives(getIndex(indices),value,der);
 }
 
+void GridBase::addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) {
+  std::vector<double> d(der,der+der_size);
+  addValueAndDerivatives(index,value,d);
+}
+
 void GridBase::writeHeader(OFile& ofile) {
   for(unsigned i=0; i<dimension_; ++i) {
     ofile.addConstantField("min_" + argnames[i]);
@@ -912,6 +917,14 @@ void Grid::addValueAndDerivatives(index_t index, double value, std::vector<doubl
   }
 }
 
+void Grid::addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) {
+  plumed_dbg_assert(index<maxsize_ && usederiv_ && der_size==dimension_);
+  grid_[index]+=value;
+  for(unsigned int i=0; i<dimension_; ++i) {
+    der_[index*dimension_+i]+=der[i];
+  }
+}
+
 Grid::index_t SparseGrid::getSize() const {
   return map_.size();
 }
@@ -968,6 +981,15 @@ void SparseGrid::addValue(index_t index, double value) {
 
 void SparseGrid::addValueAndDerivatives(index_t index, double value, std::vector<double>& der) {
   plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
+  map_[index]+=value;
+  der_[index].resize(dimension_);
+  for(unsigned int i=0; i<dimension_; ++i) {
+    der_[index][i]+=der[i];
+  }
+}
+
+void SparseGrid::addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) {
+  plumed_assert(index<maxsize_ && usederiv_ && der_size==dimension_);
   map_[index]+=value;
   der_[index].resize(dimension_);
   for(unsigned int i=0; i<dimension_; ++i) {
