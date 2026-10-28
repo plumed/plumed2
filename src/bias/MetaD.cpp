@@ -2553,7 +2553,8 @@ void MetaD::updateFrequencyAdaptiveStride() {
 
 bool MetaD::checkNeedsGradients()const {
   if(adaptive_==FlexibleBin::geometry) {
-    if(getStep()%stride_==0 && !isFirstStep_) {
+    // gradients are needed when a hill is added (the pace can change with FREQUENCY_ADAPTIVE)
+    if(getStep()%current_stride_==0 && !isFirstStep_) {
       return true;
     } else {
       return false;
