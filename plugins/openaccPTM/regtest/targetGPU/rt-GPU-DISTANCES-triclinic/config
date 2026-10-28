@@ -2,8 +2,37 @@ type=driver
 # generic (non orthorhombic) box: tests the minimum image search with lattice
 # shifts on the GPU. The box is a rhombic dodecahedron, as written by GROMACS
 # (rows are the lattice vectors)
-# The GPU computes in single precision and the coordinates span several nm,
-# so forces and colvar are printed with 3 decimals: with 4, about 5% of the
-# numbers fall close enough to a rounding boundary to flip the last digit
-# with respect to the CPU references
-arg="--plumed plumed.dat --ixyz triclinic.xyz --box 3.0,0.0,0.0,0.0,3.0,0.0,1.5,1.5,2.1213203 --dump-forces forces --dump-forces-fmt=%8.3f"
+arg="--plumed plumed.dat --ixyz triclinic.xyz --box 3.0,0.0,0.0,0.0,3.0,0.0,1.5,1.5,2.1213203 --dump-forces forces --dump-forces-fmt=%8.4f"
+
+# The GPU computes in single precision and the coordinates span several nm, so
+# a few printed numbers differ from the (CPU, double precision) references in
+# the last digit, whatever the number of digits, when a value falls close to a
+# rounding boundary. colvar and forces are therefore compared number by number
+# with an absolute tolerance: if every number is within it, the output file is
+# replaced by its reference, so that the diff done by the regtest script passes;
+# otherwise it is left untouched and the diff shows where it fails.
+# The diff file (GPU minus CPU in the same run) is still compared exactly.
+function plumed_regtest_after(){
+  local tol=2e-4
+  for f in colvar forces ; do
+    test -f $f.reference && test -f $f || continue
+    if awk -v tol=$tol '
+      NR==FNR { ref[FNR]=$0; nref=FNR; next }
+      {
+        n++
+        nr=split(ref[FNR],r); nn=split($0,c)
+        if(nr!=nn) bad=1
+        for(i=1;i<=nn;i++){
+          if(c[i]==r[i]) continue
+          # non numeric fields (e.g. atom names, headers) must match exactly
+          if(c[i]!=c[i]+0 && c[i]!="0") { bad=1; continue }
+          d=c[i]-r[i]; if(d<0) d=-d
+          if(d>tol) bad=1
+        }
+      }
+      END { if(n!=nref) bad=1; exit bad }' $f.reference $f
+    then
+      cp $f.reference $f
+    fi
+  done
+}
