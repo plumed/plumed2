@@ -676,6 +676,14 @@ private:
   bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
+  /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
+  void addHill(const std::vector<double>& cv, bool multivariate);
+  /// write the bias grid to GRID_WFILE
+  void writeBiasGrid();
+  /// read the new hills deposited by the other walkers (WALKERS_N)
+  void readOtherWalkersHills();
+  /// recompute rct, maxbias and transbias if the bias has changed in this step
+  void updateBiasQuantities(bool nowAddAHill);
   void   updateFrequencyAdaptiveStride();
   void   updateNlist();
 
@@ -2219,78 +2227,12 @@ void MetaD::update() {
     multivariate=true;
   }
 
-  std::vector<double> thissigma;
   if(nowAddAHill) {
-    // add a Gaussian
-    double height=getHeight(cv);
-    // returns upper diagonal inverse
-    if(adaptive_!=FlexibleBin::none) {
-      thissigma=flexbin_->getInverseMatrix();
-    }
-    // returns normal sigma
-    else {
-      thissigma=sigma0_;
-    }
-
-    // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
-    if(mw_.mpi) {
-      // Allocate arrays to store all walkers hills
-      std::vector<double> all_cv(mw_.mpi_nw*ncv,0.0);
-      std::vector<double> all_sigma(mw_.mpi_nw*thissigma.size(),0.0);
-      std::vector<double> all_height(mw_.mpi_nw,0.0);
-      std::vector<int>    all_multivariate(mw_.mpi_nw,0);
-      if(comm.Get_rank()==0) {
-        // Communicate (only root)
-        multi_sim_comm.Allgather(cv,all_cv);
-        multi_sim_comm.Allgather(thissigma,all_sigma);
-        // notice that if gamma=1 we store directly -F so this scaling is not necessary:
-        multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
-        multi_sim_comm.Allgather(int(multivariate),all_multivariate);
-      }
-      // Share info with group members
-      comm.Bcast(all_cv,0);
-      comm.Bcast(all_sigma,0);
-      comm.Bcast(all_height,0);
-      comm.Bcast(all_multivariate,0);
-
-      // Flying Gaussian
-      if (mw_.flying) {
-        hills_.clear();
-        comm.Barrier();
-      }
-
-      for(unsigned i=0; i<mw_.mpi_nw; i++) {
-        // actually add hills one by one
-        std::vector<double> cv_now(ncv);
-        std::vector<double> sigma_now(thissigma.size());
-        for(unsigned j=0; j<ncv; j++) {
-          cv_now[j]=all_cv[i*ncv+j];
-        }
-        for(unsigned j=0; j<thissigma.size(); j++) {
-          sigma_now[j]=all_sigma[i*thissigma.size()+j];
-        }
-        // notice that if gamma=1 we store directly -F so this scaling is not necessary:
-        double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
-        Gaussian newhill=Gaussian(all_multivariate[i],all_height[i]*fact,cv_now,sigma_now);
-        addGaussian(newhill);
-        if(!mw_.flying) {
-          writeGaussian(newhill,hillsOfile_);
-        }
-      }
-    } else {
-      Gaussian newhill=Gaussian(multivariate,height,cv,thissigma);
-      addGaussian(newhill);
-      writeGaussian(newhill,hillsOfile_);
-    }
-
-    // this is to update the hills neighbor list
-    if(nlist_.enabled) {
-      nlist_.update=true;
-    }
+    addHill(cv,multivariate);
   }
 
   // this should be outside of the if block in case
-  // mw_rstride_ is not a multiple of stride_
+  // WALKERS_RSTRIDE is not a multiple of PACE
   if(mw_.n>1 && getStep()%mw_.rstride==0) {
     hillsOfile_.flush();
   }
@@ -2305,62 +2247,150 @@ void MetaD::update() {
 
   // dump grid on file
   if(wgridstride_>0&&(getStep()%wgridstride_==0||getCPT())) {
-    // in case old grids are stored, a sequence of grids should appear
-    // this call results in a repetition of the header:
-    if(storeOldGrids_) {
-      gridfile_.clearFields();
-    }
-    // in case only latest grid is stored, file should be rewound
-    // this will overwrite previously written grids
-    else {
-      int r = 0;
-      if(mw_.mpi) {
-        r=getReplicaIndex();
-      }
-      if(r==0) {
-        gridfile_.rewind();
-      }
-    }
-    BiasGrid_->writeToFile(gridfile_);
-    // if a single grid is stored, it is necessary to flush it, otherwise
-    // the file might stay empty forever (when a single grid is not large enough to
-    // trigger flushing from the operating system).
-    // on the other hand, if grids are stored one after the other this is
-    // no necessary, and we leave the flushing control to the user as usual
-    // (with FLUSH keyword)
-    if(!storeOldGrids_) {
-      gridfile_.flush();
-    }
+    writeBiasGrid();
   }
 
   // if multiple walkers and time to read Gaussians
   if(mw_.n>1 && getStep()%mw_.rstride==0) {
-    for(int i=0; i<mw_.n; ++i) {
-      // don't read your own Gaussians
-      if(i==mw_.id) {
-        continue;
-      }
-      // if the file is not open yet
-      if(!(ifiles_[i]->isOpen())) {
-        // check if it exists now and open it!
-        if(ifiles_[i]->FileExist(ifilesnames_[i])) {
-          ifiles_[i]->open(ifilesnames_[i]);
-          ifiles_[i]->reset(false);
-        }
-        // otherwise read the new Gaussians
-      } else {
-        log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
-        readGaussians(ifiles_[i].get());
-        ifiles_[i]->reset(false);
-      }
-    }
-    // this is to update the hills neighbor list
-    if(nlist_.enabled) {
-      nlist_.update=true;
-    }
+    readOtherWalkersHills();
   }
 
   // Recalculate special bias quantities whenever the bias has been changed by the update.
+  updateBiasQuantities(nowAddAHill);
+
+  // Frequency adaptive metadynamics - update hill addition frequency
+  if(fa_.enabled && getStep()%fa_.update_frequency==0) {
+    updateFrequencyAdaptiveStride();
+  }
+}
+
+void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
+  unsigned ncv=getNumberOfArguments();
+  std::vector<double> thissigma;
+  // add a Gaussian
+  double height=getHeight(cv);
+  // returns upper diagonal inverse
+  if(adaptive_!=FlexibleBin::none) {
+    thissigma=flexbin_->getInverseMatrix();
+  }
+  // returns normal sigma
+  else {
+    thissigma=sigma0_;
+  }
+
+  // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
+  if(mw_.mpi) {
+    // Allocate arrays to store all walkers hills
+    std::vector<double> all_cv(mw_.mpi_nw*ncv,0.0);
+    std::vector<double> all_sigma(mw_.mpi_nw*thissigma.size(),0.0);
+    std::vector<double> all_height(mw_.mpi_nw,0.0);
+    std::vector<int>    all_multivariate(mw_.mpi_nw,0);
+    if(comm.Get_rank()==0) {
+      // Communicate (only root)
+      multi_sim_comm.Allgather(cv,all_cv);
+      multi_sim_comm.Allgather(thissigma,all_sigma);
+      // notice that if gamma=1 we store directly -F so this scaling is not necessary:
+      multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
+      multi_sim_comm.Allgather(int(multivariate),all_multivariate);
+    }
+    // Share info with group members
+    comm.Bcast(all_cv,0);
+    comm.Bcast(all_sigma,0);
+    comm.Bcast(all_height,0);
+    comm.Bcast(all_multivariate,0);
+
+    // Flying Gaussian
+    if (mw_.flying) {
+      hills_.clear();
+      comm.Barrier();
+    }
+
+    for(unsigned i=0; i<mw_.mpi_nw; i++) {
+      // actually add hills one by one
+      std::vector<double> cv_now(ncv);
+      std::vector<double> sigma_now(thissigma.size());
+      for(unsigned j=0; j<ncv; j++) {
+        cv_now[j]=all_cv[i*ncv+j];
+      }
+      for(unsigned j=0; j<thissigma.size(); j++) {
+        sigma_now[j]=all_sigma[i*thissigma.size()+j];
+      }
+      // notice that if gamma=1 we store directly -F so this scaling is not necessary:
+      double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
+      Gaussian newhill=Gaussian(all_multivariate[i],all_height[i]*fact,cv_now,sigma_now);
+      addGaussian(newhill);
+      if(!mw_.flying) {
+        writeGaussian(newhill,hillsOfile_);
+      }
+    }
+  } else {
+    Gaussian newhill=Gaussian(multivariate,height,cv,thissigma);
+    addGaussian(newhill);
+    writeGaussian(newhill,hillsOfile_);
+  }
+
+  // this is to update the hills neighbor list
+  if(nlist_.enabled) {
+    nlist_.update=true;
+  }
+}
+
+void MetaD::writeBiasGrid() {
+  // in case old grids are stored, a sequence of grids should appear
+  // this call results in a repetition of the header:
+  if(storeOldGrids_) {
+    gridfile_.clearFields();
+  }
+  // in case only latest grid is stored, file should be rewound
+  // this will overwrite previously written grids
+  else {
+    int r = 0;
+    if(mw_.mpi) {
+      r=getReplicaIndex();
+    }
+    if(r==0) {
+      gridfile_.rewind();
+    }
+  }
+  BiasGrid_->writeToFile(gridfile_);
+  // if a single grid is stored, it is necessary to flush it, otherwise
+  // the file might stay empty forever (when a single grid is not large enough to
+  // trigger flushing from the operating system).
+  // on the other hand, if grids are stored one after the other this is
+  // no necessary, and we leave the flushing control to the user as usual
+  // (with FLUSH keyword)
+  if(!storeOldGrids_) {
+    gridfile_.flush();
+  }
+}
+
+void MetaD::readOtherWalkersHills() {
+  for(int i=0; i<mw_.n; ++i) {
+    // don't read your own Gaussians
+    if(i==mw_.id) {
+      continue;
+    }
+    // if the file is not open yet
+    if(!(ifiles_[i]->isOpen())) {
+      // check if it exists now and open it!
+      if(ifiles_[i]->FileExist(ifilesnames_[i])) {
+        ifiles_[i]->open(ifilesnames_[i]);
+        ifiles_[i]->reset(false);
+      }
+      // otherwise read the new Gaussians
+    } else {
+      log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
+      readGaussians(ifiles_[i].get());
+      ifiles_[i]->reset(false);
+    }
+  }
+  // this is to update the hills neighbor list
+  if(nlist_.enabled) {
+    nlist_.update=true;
+  }
+}
+
+void MetaD::updateBiasQuantities(bool nowAddAHill) {
   bool bias_has_changed = (nowAddAHill || (mw_.n > 1 && getStep() % mw_.rstride == 0));
   if (calc_rct_ && bias_has_changed && getStep()%(stride_*rct_ustride_)==0) {
     computeReweightingFactor();
@@ -2372,11 +2402,6 @@ void MetaD::update() {
   if (calc_transition_bias_ && bias_has_changed) {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
-  }
-
-  // Frequency adaptive metadynamics - update hill addition frequency
-  if(fa_.enabled && getStep()%fa_.update_frequency==0) {
-    updateFrequencyAdaptiveStride();
   }
 }
 
