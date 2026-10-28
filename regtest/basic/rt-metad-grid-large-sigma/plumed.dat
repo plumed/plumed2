@@ -1,7 +1,5 @@
 # Gaussians whose support is larger than the periodic domain:
 # the bias on the grid should match the bias computed without grid
-# NOTE: at the time this test was added the grid version double-counts the periodic images
-# (support wraps around the periodic grid), so the two columns differ; reference to be updated with the fix
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 

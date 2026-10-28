@@ -63,6 +63,11 @@ public:
     unsigned small_nbin=1;
     for(unsigned j=0; j<dimension_; ++j) {
       small_bin[j]=(2*nneigh[j]+1);
+      // along a periodic direction a neighborhood larger than the grid would visit
+      // some points more than once: visit each point of the grid exactly once instead
+      if(pbc_[j] && small_bin[j]>nbin_[j]) {
+        small_bin[j]=nbin_[j];
+      }
       small_nbin*=small_bin[j];
     }
     neighbors.reserve(small_nbin);
@@ -81,11 +86,9 @@ public:
         if(!pbc_[i] && i0>=static_cast<int>(nbin_[i])) {
           continue;
         }
-        if( pbc_[i] && i0<0) {
-          i0=nbin_[i]-(-i0)%nbin_[i];
-        }
-        if( pbc_[i] && i0>=static_cast<int>(nbin_[i])) {
-          i0%=nbin_[i];
+        if( pbc_[i] ) {
+          const int n=nbin_[i];
+          i0=((i0%n)+n)%n;
         }
         tmp_indices[ll]=static_cast<unsigned>(i0);
         ll++;
