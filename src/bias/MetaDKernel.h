@@ -291,17 +291,25 @@ std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const G
     }
   }
 
+  // number of grid points within the cutoff along CV i; it is never larger than the grid
+  // (a support larger than the grid, or not finite for a degenerate hill, covers the whole grid)
+  const std::vector<unsigned> nbin=grid.getNbin();
+  const std::vector<double> dx=grid.getDx();
+  auto npoints=[&](unsigned i) {
+    const double n=std::ceil(cutoff[i]/dx[i]);
+    return (n>=0.0 && n<nbin[i]) ? static_cast<unsigned>(n) : nbin[i];
+  };
   if(interval_) {
     if(hill.center[0]+cutoff[0] > upper_ || hill.center[0]-cutoff[0] < lower_) {
       // in this case, we updated the entire grid to avoid problems
-      return grid.getNbin();
+      return nbin;
     } else {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/grid.getDx()[0])) );
+      nneigh.push_back(npoints(0));
       return nneigh;
     }
   } else {
     for(unsigned i=0; i<ncv; i++) {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/grid.getDx()[i])) );
+      nneigh.push_back(npoints(i));
     }
   }
 
