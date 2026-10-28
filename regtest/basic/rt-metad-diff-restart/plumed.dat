@@ -4,6 +4,8 @@
 # s: same, with DIFF_FROM_SCRATCH: the statistics start from scratch (very narrow hills)
 # g: restart from GRID, written at step 300 by a run that went on until step 400: the hills file HG
 #    is scanned for the statistics, using only the hills up to step 300
+#    (the last hill of HG is also incomplete, as if the run had been interrupted while writing it:
+#    it is removed before appending the new hills)
 RESTART
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17

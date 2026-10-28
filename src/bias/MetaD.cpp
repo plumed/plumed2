@@ -1768,6 +1768,10 @@ void MetaD::readHillsFiles(const SetupInput& in) {
         }
         restartedFromHills=true;
       }
+      if(getRestart() && in.restartedFromGrid && i==mw_.id) {
+        // new hills will be appended to this file also when the bias is read from a grid
+        ownpath=ifile->getPath();
+      }
       if(getRestart() && in.restartedFromGrid && i==mw_.id && diffrestart_.pending) {
         // the bias is read from the grid, but the hills are still needed for the statistics of ADAPTIVE=DIFF
         log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
