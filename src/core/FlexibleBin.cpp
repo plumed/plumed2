@@ -166,6 +166,15 @@ void FlexibleBin::restartAverage() {
   average.clear();
 }
 
+void FlexibleBin::setStatistics(const std::vector<double>& av, const std::vector<double>& var, unsigned ns) {
+  plumed_massert(type==diffusion,"the statistics can be set only for diffusion-based adaptive hills");
+  const unsigned ncv=paction->getNumberOfArguments();
+  plumed_assert(av.size()==ncv && var.size()==ncv*(ncv+1)/2);
+  average=av;
+  variance=var;
+  nsamples=ns;
+}
+
 std::vector<double> FlexibleBin::getMatrix() const {
   return variance;
 }

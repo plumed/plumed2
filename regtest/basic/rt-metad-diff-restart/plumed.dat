@@ -1,0 +1,15 @@
+# ADAPTIVE=DIFF, continuation at step 300 of a run with SIGMA=100 (steps) and PACE=5.
+# a: restart from the hills (HA, hills up to step 295): the statistics of the CV fluctuations are
+#    initialized from the last hills, so that the hill at step 300 is added with the right width
+# s: same, with DIFF_FROM_SCRATCH: the statistics start from scratch (very narrow hills)
+# g: restart from GRID, written at step 300 by a run that went on until step 400: the hills file HG
+#    is scanned for the statistics, using only the hills up to step 300
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+a: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HA
+s: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HS DIFF_FROM_SCRATCH
+g: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HG GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=30,30 SIGMA_MIN=0.01,0.01 GRID_RFILE=GRID
+
+PRINT ARG=phi,psi,a.bias,s.bias,g.bias STRIDE=5 FILE=colvar FMT=%10.5f

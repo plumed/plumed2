@@ -33,6 +33,7 @@
 #include "tools/File.h"
 #include "tools/Communicator.h"
 #include <ctime>
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <numeric>
@@ -273,8 +274,18 @@ d1: DISTANCE ATOMS=3,5
 restraint: METAD ARG=d1 SIGMA=500 HEIGHT=0.3 PACE=50 ADAPTIVE=DIFF PRECAL_DIFF UPDATE_FROM=2.0
 ```
 
-The statistics are not stored in the hills file, so that after a restart they are accumulated
-again, and no hill is added before at least two CV values are available.
+When restarting, the statistics are initialized from the last hills of the hills file of the walker:
+the covariance of the fluctuations is the one of the last hill, and the running average of the CVs is
+estimated from the centers of the last hills, with the weights used by the running average.
+This is also done when the bias is read from a grid (GRID_RFILE), if the hills file is available,
+using only the hills deposited before the current time.
+In this way the hills deposited after a restart have the same width they would have had without the restart,
+apart from the effect of the limits set with SIGMA_MIN and SIGMA_MAX, which are applied to the hills.
+Only the last hills of the walker that belong to the same run and precede the current time are used.
+The hills file does not record how the hills were obtained: if it was written with a different
+SIGMA, or with ADAPTIVE=GEOM, use the DIFF_FROM_SCRATCH flag. With this flag the statistics are
+accumulated again from the restart, as in previous versions; no hill is then added before at least two
+CV values are available.
 
 ADAPTIVE=DIFF can be used with replica exchange. Since the MD code does not tell PLUMED
 whether an exchange has been accepted, after an exchange attempt the CV values are compared with those
@@ -543,6 +554,19 @@ private:
   int adaptive_=FlexibleBin::none;
   /// ADAPTIVE=DIFF: accumulate the CV statistics at every step, also outside the update window (PRECAL_DIFF)
   bool precal_diff_=false;
+  /// ADAPTIVE=DIFF: when restarting, the statistics of the fluctuations are initialized from the last hills
+  /// read from the hills file of this walker (unless DIFF_FROM_SCRATCH). They are kept here until the
+  /// first update, when the current time is known.
+  struct DiffusionRestart {
+    bool pending=false;
+    /// maximum number of hills to keep
+    unsigned maxhills=0;
+    std::deque<double> time;
+    std::deque<std::vector<double>> center;
+    /// as stored in the hills: upper triangle of the inverse covariance matrix
+    std::deque<std::vector<double>> sigma;
+    std::string file;
+  } diffrestart_;
   /// ADAPTIVE=DIFF with replica exchange: CVs of the exchange partner and CVs at the previous update,
   /// used to detect whether an attempted exchange was accepted
   struct ExchangeDetection {
@@ -703,7 +727,9 @@ private:
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
   /// read all the hills in the file and add them to the bias; returns the number of hills read and
   /// (if lasttime is given and at least one hill is read) sets lasttime to the time of the last hill
-  int    readGaussians(IFile*, double* lasttime=nullptr);
+  int    readGaussians(IFile*, double* lasttime=nullptr, bool addtobias=true);
+  /// ADAPTIVE=DIFF: initialize the statistics of the fluctuations from the hills kept in diffrestart_
+  void   initializeDiffusionStatistics();
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const std::vector<double>&);
@@ -787,6 +813,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.add("optional", "NLIST_PARAMETERS","(default=6.,0.5) the two cutoff parameters for the Gaussians neighbor list");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
+  keys.addFlag("DIFF_FROM_SCRATCH",false,"with ADAPTIVE=DIFF, when restarting accumulate the statistics of the CV fluctuations from scratch, instead of initializing them from the last hills of the hills file");
   keys.addFlag("PRECAL_DIFF",false,"with ADAPTIVE=DIFF, accumulate the statistics of the CV fluctuations at every step from the beginning of the simulation, also before UPDATE_FROM, after UPDATE_UNTIL and when UPDATE_IF is false, so that the first hills have a width estimated over a sufficiently long time");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -892,6 +919,20 @@ void MetaD::parseGaussianWidth() {
       error("PRECAL_DIFF can only be used with ADAPTIVE=DIFF");
     }
     log.printf("  The statistics for the hills width are accumulated at every step, also outside the update window (PRECAL_DIFF)\n");
+  }
+  bool diff_from_scratch=false;
+  parseFlag("DIFF_FROM_SCRATCH",diff_from_scratch);
+  if(diff_from_scratch && adaptive_!=FlexibleBin::diffusion) {
+    error("DIFF_FROM_SCRATCH can only be used with ADAPTIVE=DIFF");
+  }
+  // the hills are kept only if needed (restart with ADAPTIVE=DIFF), see readGaussians
+  diffrestart_.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch);
+  if(adaptive_==FlexibleBin::diffusion && getRestart()) {
+    if(diff_from_scratch) {
+      log.printf("  The statistics for the hills width are accumulated from scratch after the restart (DIFF_FROM_SCRATCH)\n");
+    } else {
+      log.printf("  The statistics for the hills width are initialized from the last hills of the hills file, if available\n");
+    }
   }
 
   parse("FMT",fmt_);
@@ -1681,6 +1722,11 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
   bool restartedFromHills=false;  // restart from hills files
+  if(diffrestart_.pending) {
+    // hills of the last ~6 averaging times (older ones have weight < exp(-6));
+    // with MPI walkers the file contains the hills of all walkers
+    diffrestart_.maxhills=(static_cast<unsigned>(std::ceil(6.0*sigma0_[0]/stride_))+2)*std::max(1u,mw_.mpi_nw);
+  }
   std::string ownpath;  // actual path of the hills file of this walker, if it was read
   for(int i=0; i<mw_.n; ++i) {
     std::string fname;
@@ -1721,6 +1767,20 @@ void MetaD::readHillsFiles(const SetupInput& in) {
           readGaussians(ifiles_[i].get());
         }
         restartedFromHills=true;
+      }
+      if(getRestart() && in.restartedFromGrid && i==mw_.id && diffrestart_.pending) {
+        // the bias is read from the grid, but the hills are still needed for the statistics of ADAPTIVE=DIFF
+        log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
+        double lasttime=0.0;
+        try {
+          readGaussians(ifiles_[i].get(),&lasttime,false);
+        } catch(const std::exception& e) {
+          // the bias comes from the grid: if the hills file cannot be used, the statistics start from scratch
+          log.printf("\n  WARNING: the hills file cannot be used for the statistics of ADAPTIVE=DIFF:\n%s\n",e.what());
+          diffrestart_.time.clear();
+          diffrestart_.center.clear();
+          diffrestart_.sigma.clear();
+        }
       }
       ifiles_[i]->reset(false);
       // close only the walker own hills file for later writing
@@ -1988,7 +2048,7 @@ void MetaD::logTemperingSpecs(const TemperingSpecs &t_specs) {
   }
 }
 
-int MetaD::readGaussians(IFile *ifile, double* lasttime) {
+int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
   unsigned ncv=getNumberOfArguments();
   std::vector<double> center(ncv);
   std::vector<double> sigma(ncv);
@@ -2007,13 +2067,39 @@ int MetaD::readGaussians(IFile *ifile, double* lasttime) {
     if(lasttime) {
       *lasttime=time;
     }
+    if(lasttime && diffrestart_.pending) {
+      // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
+      if(!multivariate) {
+        // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
+        diffrestart_.time.clear();
+        diffrestart_.center.clear();
+        diffrestart_.sigma.clear();
+      } else {
+        diffrestart_.time.push_back(time);
+        diffrestart_.center.push_back(center);
+        diffrestart_.sigma.push_back(sigma);
+        if(diffrestart_.time.size()>diffrestart_.maxhills) {
+          diffrestart_.time.pop_front();
+          diffrestart_.center.pop_front();
+          diffrestart_.sigma.pop_front();
+        }
+      }
+      diffrestart_.file=ifile->getPath();
+    }
+    if(!addtobias) {
+      continue;
+    }
     // note that for gamma=1 we store directly -F
     if(welltemp_ && biasf_>1.0) {
       height*=(biasf_-1.0)/biasf_;
     }
     addGaussian(Gaussian(multivariate,height,center,sigma));
   }
-  log.printf("      %d Gaussians read\n",nhills);
+  if(addtobias) {
+    log.printf("      %d Gaussians read\n",nhills);
+  } else {
+    log.printf("      %d Gaussians scanned for the statistics of ADAPTIVE=DIFF\n",nhills);
+  }
   return nhills;
 }
 
@@ -2337,6 +2423,9 @@ void MetaD::beforeUpdate() {
 }
 
 void MetaD::updateFlexibleBin(bool nowAddAHill) {
+  if(adaptive_==FlexibleBin::diffusion && diffrestart_.pending) {
+    initializeDiffusionStatistics();
+  }
   if(adaptive_==FlexibleBin::diffusion) {
     const unsigned ncv=getNumberOfArguments();
     std::vector<double> cv(ncv);
@@ -2367,6 +2456,99 @@ void MetaD::updateFlexibleBin(bool nowAddAHill) {
     exchange_.last_cv=cv;
   }
   flexbin_->update(nowAddAHill);
+}
+
+void MetaD::initializeDiffusionStatistics() {
+  diffrestart_.pending=false;
+  const unsigned ncv=getNumberOfArguments();
+  const double dt=getTimeStep();
+  // times are written with a finite precision (FMT): times closer than half a PACE are the same time
+  const double tol=0.5*stride_*dt;
+  // the hills of this walker: with MPI walkers each time appears once per walker, in the order of the replicas
+  std::vector<unsigned> own;
+  for(unsigned k=0; k<diffrestart_.time.size();) {
+    unsigned l=k;
+    while(l<diffrestart_.time.size() && std::abs(diffrestart_.time[l]-diffrestart_.time[k])<tol) {
+      l++;
+    }
+    if(!mw_.mpi) {
+      for(unsigned j=k; j<l; j++) {
+        own.push_back(j);
+      }
+    } else if(l-k==mw_.mpi_nw) {
+      own.push_back(k+getReplicaIndex());
+    }
+    k=l;
+  }
+  // only the hills deposited up to now (when restarting from a grid, or from a checkpoint older than the
+  // end of the hills file, the file can go further)
+  {
+    std::vector<unsigned> before;
+    for(const auto j : own) {
+      if(diffrestart_.time[j]<=getTime()+tol) {
+        before.push_back(j);
+      }
+    }
+    own.swap(before);
+  }
+  // only the last sequence of increasing times: the file can contain several runs (e.g. a run restarted
+  // from an older checkpoint, or a new simulation appended to an old file)
+  if(!own.empty()) {
+    unsigned first=own.size()-1;
+    while(first>0 && diffrestart_.time[own[first-1]]<diffrestart_.time[own[first]]+tol) {
+      first--;
+    }
+    own.erase(own.begin(),own.begin()+first);
+  }
+  if(own.empty()) {
+    log.printf("  ADAPTIVE=DIFF: no hills available, the statistics for the hills width start from scratch\n");
+    return;
+  }
+  // covariance: the one of the last hill, i.e. the running estimate of the previous run at that time
+  const unsigned last=own.back();
+  Matrix<double> mymatrix(ncv,ncv);
+  unsigned k=0;
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      mymatrix(i,j)=mymatrix(j,i)=diffrestart_.sigma[last][k];
+      k++;
+    }
+  }
+  Matrix<double> mycov(ncv,ncv);
+  Invert(mymatrix,mycov);
+  std::vector<double> variance(ncv*(ncv+1)/2);
+  k=0;
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      variance[k]=mycov(i,j);
+      k++;
+    }
+  }
+  // running average: the center of a hill is the instantaneous value of the CVs, which differs from
+  // the running average by about one standard deviation, so the centers of the last hills are averaged
+  // with the same exponential weights used by the running average
+  const double decay=1.0/sigma0_[0];
+  const std::vector<double>& ref=diffrestart_.center[last];
+  std::vector<double> average(ncv,0.0);
+  double wsum=0.0;
+  for(const auto j : own) {
+    // age in number of updates of the running average (one every STRIDE steps)
+    const double age=std::max(0.0,(diffrestart_.time[last]-diffrestart_.time[j])/(dt*getStride()));
+    const double w=std::pow(1.0-decay,age);
+    for(unsigned i=0; i<ncv; i++) {
+      average[i]+=w*difference(i,ref[i],diffrestart_.center[j][i]);
+    }
+    wsum+=w;
+  }
+  for(unsigned i=0; i<ncv; i++) {
+    average[i]=bringBackInPbc(i,ref[i]+average[i]/wsum);
+  }
+  flexbin_->setStatistics(average,variance,2);
+  log.printf("  ADAPTIVE=DIFF: the statistics for the hills width are initialized from %u hills of %s (last one at time %f)\n",
+             static_cast<unsigned>(own.size()),diffrestart_.file.c_str(),diffrestart_.time[last]);
+  diffrestart_.time.clear();
+  diffrestart_.center.clear();
+  diffrestart_.sigma.clear();
 }
 
 void MetaD::update() {

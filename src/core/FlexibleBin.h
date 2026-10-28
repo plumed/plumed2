@@ -55,6 +55,9 @@ public:
   /// (diffusion only) restart the running average of the CVs from their next value, keeping the variance:
   /// used when the CVs jump, e.g. after an accepted replica exchange
   void restartAverage();
+  /// (diffusion only) set the running average, the variance (upper triangle) and the number of samples,
+  /// e.g. to continue the statistics of a previous run
+  void setStatistics(const std::vector<double>& average, const std::vector<double>& variance, unsigned nsamples);
   void update(bool nowAddAHill, unsigned iarg);
   std::vector<double> getMatrix() const;
   /// (diffusion only) number of CV values used so far to estimate the variance
