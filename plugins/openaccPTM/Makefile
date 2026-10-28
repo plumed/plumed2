@@ -37,6 +37,14 @@ PLUGIN=plumedOpenACC.$(SOEXT)
 
 NVCXX ?= nvc++
 NVLDSHARED = $(LDSHARED:$(CXX)=$(NVCXX))
+# configure sets NVCXX=mpic++ when PLUMED has MPI: the wrapper must then call
+# nvc++ and not the compiler that was used to build MPI. These variables are
+# read by the OpenMPI, MPICH and Intel MPI wrappers respectively (and ignored
+# by nvc++ itself); they are exported to the compile and link commands, and a
+# value already set in the environment takes precedence.
+export OMPI_CXX ?= nvc++
+export MPICH_CXX ?= nvc++
+export I_MPI_CXX ?= nvc++
 all: $(PLUGIN)
 
 %.o: %.cpp $(DEPDIR)/%.d | $(DEPDIR)

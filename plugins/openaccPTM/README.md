@@ -17,9 +17,10 @@ make clean
 NVCXX=mpic++ make
 ```  
 
-If PLUMED has been compiled with MPI, `configure` sets `NVCXX=mpic++`. Make sure this wrapper calls `nvc++` and not the compiler
-that was used to build MPI: with OpenMPI you can check with `OMPI_CXX=nvc++ mpic++ --showme` and then compile with `OMPI_CXX=nvc++ make`
-(use `MPICH_CXX` or `I_MPI_CXX` with MPICH or Intel MPI).
+If PLUMED has been compiled with MPI, `configure` sets `NVCXX=mpic++`. The wrapper must call `nvc++` and not the compiler
+that was used to build MPI: the Makefile takes care of this by exporting `OMPI_CXX=nvc++`, `MPICH_CXX=nvc++` and `I_MPI_CXX=nvc++`
+(for OpenMPI, MPICH and Intel MPI respectively) to the compile and link commands, so a plain `make` is enough. If these variables are
+already set in your environment they are not overridden. With OpenMPI you can check what the wrapper calls with `OMPI_CXX=nvc++ mpic++ --showme`.
 
 If PLUMED has been compiled with a GCC that is not the default one known by `nvc++` (for example one loaded via `module load`),
 you may need to point `nvc++` to it, so that the same C++ standard library is used. After running `./configure` you can do:
