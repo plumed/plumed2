@@ -261,6 +261,21 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 The sigma values that are provided to these two keywords are specified in the units of the CV.
 Note that if you use a negative number, this means that the limit is not set.
 
+With ADAPTIVE=DIFF the width of the hills is obtained from running averages of the CV values and of
+their fluctuations over a time given by SIGMA (in time steps). These statistics are accumulated when the bias
+is updated, so that with UPDATE_FROM they start only at the beginning of the update window and the first
+hills can be much narrower than the following ones. With the PRECAL_DIFF flag the statistics are
+accumulated from the beginning of the simulation: by using UPDATE_FROM with a time
+larger than the one given by SIGMA, all the hills have a width estimated over a sufficiently long time.
+
+```plumed
+d1: DISTANCE ATOMS=3,5
+restraint: METAD ARG=d1 SIGMA=500 HEIGHT=0.3 PACE=50 ADAPTIVE=DIFF PRECAL_DIFF UPDATE_FROM=2.0
+```
+
+The statistics are not stored in the hills file, so that after a restart they are accumulated
+again, and no hill is added before at least two CV values are available.
+
 ADAPTIVE=DIFF can be used with replica exchange. Since the MD code does not tell PLUMED
 whether an exchange has been accepted, after an exchange attempt the CV values are compared with those
 of the exchange partner: when the exchange is detected as accepted, the running average of the CVs is
@@ -526,6 +541,8 @@ private:
   std::vector<Gaussian> hills_;
   std::unique_ptr<FlexibleBin> flexbin_;
   int adaptive_=FlexibleBin::none;
+  /// ADAPTIVE=DIFF: accumulate the CV statistics at every step, also outside the update window (PRECAL_DIFF)
+  bool precal_diff_=false;
   /// ADAPTIVE=DIFF with replica exchange: CVs of the exchange partner and CVs at the previous update,
   /// used to detect whether an attempted exchange was accepted
   struct ExchangeDetection {
@@ -719,6 +736,7 @@ public:
   explicit MetaD(const ActionOptions&);
   void calculate() override;
   void update() override;
+  void beforeUpdate() override;
   static void registerKeywords(Keywords& keys);
   bool checkNeedsGradients()const override;
 };
@@ -769,6 +787,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.add("optional", "NLIST_PARAMETERS","(default=6.,0.5) the two cutoff parameters for the Gaussians neighbor list");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
+  keys.addFlag("PRECAL_DIFF",false,"with ADAPTIVE=DIFF, accumulate the statistics of the CV fluctuations at every step from the beginning of the simulation, also before UPDATE_FROM, after UPDATE_UNTIL and when UPDATE_IF is false, so that the first hills have a width estimated over a sufficiently long time");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","WALKERS_ID", "walker id");
@@ -865,6 +884,14 @@ void MetaD::parseGaussianWidth() {
     adaptive_=FlexibleBin::none;
   } else {
     error("I do not know this type of adaptive scheme");
+  }
+
+  parseFlag("PRECAL_DIFF",precal_diff_);
+  if(precal_diff_) {
+    if(adaptive_!=FlexibleBin::diffusion) {
+      error("PRECAL_DIFF can only be used with ADAPTIVE=DIFF");
+    }
+    log.printf("  The statistics for the hills width are accumulated at every step, also outside the update window (PRECAL_DIFF)\n");
   }
 
   parse("FMT",fmt_);
@@ -2301,6 +2328,14 @@ bool MetaD::isHillStep() const {
   return true;
 }
 
+void MetaD::beforeUpdate() {
+  // called at every step, also outside the update window and when the action is not active
+  // (e.g. with STRIDE), in which case the arguments have not been computed
+  if(precal_diff_ && isActive()) {
+    updateFlexibleBin(false);
+  }
+}
+
 void MetaD::updateFlexibleBin(bool nowAddAHill) {
   if(adaptive_==FlexibleBin::diffusion) {
     const unsigned ncv=getNumberOfArguments();
@@ -2350,9 +2385,12 @@ void MetaD::update() {
   }
 
   // if you use adaptive, call the FlexibleBin
+  // (with PRECAL_DIFF the statistics have already been updated in beforeUpdate)
   bool multivariate=false;
   if(adaptive_!=FlexibleBin::none) {
-    updateFlexibleBin(nowAddAHill);
+    if(!precal_diff_) {
+      updateFlexibleBin(nowAddAHill);
+    }
     multivariate=true;
   }
 
