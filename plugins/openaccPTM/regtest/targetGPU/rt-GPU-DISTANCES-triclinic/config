@@ -2,4 +2,8 @@ type=driver
 # generic (non orthorhombic) box: tests the minimum image search with lattice
 # shifts on the GPU. The box is a rhombic dodecahedron, as written by GROMACS
 # (rows are the lattice vectors)
-arg="--plumed plumed.dat --ixyz triclinic.xyz --box 3.0,0.0,0.0,0.0,3.0,0.0,1.5,1.5,2.1213203 --dump-forces forces --dump-forces-fmt=%8.4f"
+# The GPU computes in single precision and the coordinates span several nm,
+# so forces and colvar are printed with 3 decimals: with 4, about 5% of the
+# numbers fall close enough to a rounding boundary to flip the last digit
+# with respect to the CPU references
+arg="--plumed plumed.dat --ixyz triclinic.xyz --box 3.0,0.0,0.0,0.0,3.0,0.0,1.5,1.5,2.1213203 --dump-forces forces --dump-forces-fmt=%8.3f"

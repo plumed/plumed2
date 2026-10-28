@@ -23,6 +23,6 @@ dx: CUSTOM ARG=c.x,ccpu.x FUNC=x-y PERIODIC=NO
 dy: CUSTOM ARG=c.y,ccpu.y FUNC=x-y PERIODIC=NO
 dz: CUSTOM ARG=c.z,ccpu.z FUNC=x-y PERIODIC=NO
 
-PRINT ARG=n,cx,cy,cz FILE=colvar FMT=%8.4f
+PRINT ARG=n,cx,cy,cz FILE=colvar FMT=%8.3f
 PRINT ARG=dd,diff_n,dx,dy,dz FILE=diff FMT=%8.4f
 BIASVALUE ARG=n,cx,cy,cz
