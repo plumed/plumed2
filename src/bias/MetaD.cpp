@@ -1578,8 +1578,13 @@ void MetaD::setupBiasGrid(SetupInput& in) {
         Tools::convert(in.gmin[i],a);
         Tools::convert(in.gmax[i],b);
         double mesh=(b-a)/((double)in.gbin[i]);
-        if(mesh>0.5*sigma0_[i]) {
-          log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+        // with ADAPTIVE there is a single SIGMA: compare with SIGMA_MIN (if given) as for a new grid
+        if(adaptive_==FlexibleBin::none) {
+          if(mesh>0.5*sigma0_[i]) {
+            log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+          }
+        } else if(sigma0min_[i]>0. && mesh>0.5*sigma0min_[i]) {
+          log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
         }
       }
       log.printf("  Restarting from %s\n",in.gridreadfilename.c_str());
