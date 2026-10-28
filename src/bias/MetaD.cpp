@@ -580,6 +580,7 @@ private:
   std::vector<std::string> ifilesnames_;
   // Grids
   bool grid_=false;
+  bool sparsegrid_=false;
   std::unique_ptr<GridBase> BiasGrid_;
   OFile gridfile_;
   bool storeOldGrids_=false;
@@ -732,6 +733,8 @@ private:
   void   initializeDiffusionStatistics();
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
+  /// add a hill to the grid (without INTERVAL)
+  void   addGaussianToGrid(const Gaussian&);
   double getHeight(const std::vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const std::vector<double>&);
@@ -1628,6 +1631,7 @@ void MetaD::setupBiasGrid(SetupInput& in) {
         }
       }
       std::string funcl=getLabel() + ".bias";
+      sparsegrid_=in.sparsegrid;
       if(!in.sparsegrid) {
         BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.spline,true);
       } else {
@@ -1665,6 +1669,7 @@ void MetaD::setupBiasGrid(SetupInput& in) {
         error("The GRID file you want to read: " + in.gridreadfilename + ", cannot be found!");
       }
       std::string funcl=getLabel() + ".bias";
+      sparsegrid_=in.sparsegrid;
       BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, in.gmin, in.gmax, in.gbin, in.sparsegrid, in.spline, true);
       if(BiasGrid_->getDimension()!=getNumberOfArguments()) {
         error("mismatch between dimensionality of input grid and number of arguments");
@@ -2162,8 +2167,118 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
   file.printField();
 }
 
+void MetaD::addGaussianToGrid(const Gaussian& hill) {
+  // The hill is evaluated on the grid points within its support. The difference of a grid point from the
+  // center of the hill along CV d only depends on the index of the point along d, so the differences are
+  // computed once per direction; the value at each point is then computed from them
+  // (MetaDKernel::evaluateFromDifferences, same arithmetic as MetaDKernel::evaluateWithDerivatives).
+  const unsigned ncv=getNumberOfArguments();
+  const std::vector<unsigned> nneigh=kernel_.getSupport(hill,*BiasGrid_);
+  const std::vector<unsigned> nbin=BiasGrid_->getNbin();
+  const std::vector<bool> pbc=BiasGrid_->getIsPeriodic();
+  std::vector<unsigned> center(ncv);
+  BiasGrid_->getIndices(hill.center,center);
+  // grid indices and differences along each direction (as in GridBase::getNeighbors)
+  std::vector<std::vector<unsigned>> indices(ncv);
+  std::vector<std::vector<double>> differences(ncv);
+  std::vector<unsigned> tmpindices(center);
+  std::vector<double> point(ncv);
+  for(unsigned d=0; d<ncv; d++) {
+    unsigned nb=2*nneigh[d]+1;
+    if(pbc[d] && nb>nbin[d]) {
+      nb=nbin[d];
+    }
+    for(unsigned k=0; k<nb; k++) {
+      int i0=static_cast<int>(k)-static_cast<int>(nneigh[d])+static_cast<int>(center[d]);
+      const int n=nbin[d];
+      if(pbc[d]) {
+        i0=((i0%n)+n)%n;
+      } else if(i0<0 || i0>=n) {
+        continue;
+      }
+      tmpindices[d]=i0;
+      BiasGrid_->getPoint(tmpindices.data(),ncv,point.data(),ncv);
+      double dd=kernel_.difference(d,hill.center[d],point[d]);
+      if(!hill.multivariate) {
+        dd*=hill.invsigma[d];
+      }
+      indices[d].push_back(i0);
+      differences[d].push_back(dd);
+    }
+    tmpindices[d]=center[d];
+  }
+  // linear index of a point (column-major order, as in GridBase::getIndex)
+  std::vector<Grid::index_t> stride(ncv);
+  Grid::index_t npoints=1;
+  for(unsigned d=0; d<ncv; d++) {
+    stride[d]=(d==0 ? 1 : stride[d-1]*nbin[d-1]);
+    npoints*=indices[d].size();
+  }
+  if(npoints==0) {
+    return;
+  }
+  // loop over all the points of the box, the first direction being the fastest
+  const unsigned nranks=comm.Get_size();
+  const unsigned rank=comm.Get_rank();
+  // with MPI each process computes a part of the points, then values and derivatives are summed
+  std::vector<double> buffer;
+  if(nranks>1) {
+    buffer.assign(npoints*(ncv+1),0.0);
+  }
+  std::vector<unsigned> k(ncv,0);
+  std::vector<double> dp(ncv);
+  std::vector<double> der(ncv);
+  for(Grid::index_t n=0; n<npoints; n++) {
+    if(nranks==1 || n%nranks==rank) {
+      for(unsigned d=0; d<ncv; d++) {
+        dp[d]=differences[d][k[d]];
+        der[d]=0.0;
+      }
+      bool inside;
+      const double bias=kernel_.evaluateFromDifferences(dp.data(),hill,der.data(),inside);
+      if(nranks>1) {
+        buffer[n*(ncv+1)]=bias;
+        for(unsigned d=0; d<ncv; d++) {
+          buffer[n*(ncv+1)+1+d]=der[d];
+        }
+      } else if(inside || sparsegrid_) {
+        // adding zero outside the cutoff only matters for sparse grids, where it creates the point
+        Grid::index_t index=0;
+        for(unsigned d=0; d<ncv; d++) {
+          index+=indices[d][k[d]]*stride[d];
+        }
+        BiasGrid_->addValueAndDerivatives(index,bias,der);
+      }
+    }
+    // next point
+    for(unsigned d=0; d<ncv; d++) {
+      if(++k[d]<indices[d].size()) {
+        break;
+      }
+      k[d]=0;
+    }
+  }
+  if(nranks>1) {
+    comm.Sum(buffer);
+    for(Grid::index_t n=0; n<npoints; n++) {
+      Grid::index_t index=0;
+      Grid::index_t m=n;
+      for(unsigned d=0; d<ncv; d++) {
+        index+=indices[d][m%indices[d].size()]*stride[d];
+        m/=indices[d].size();
+      }
+      for(unsigned d=0; d<ncv; d++) {
+        der[d]=buffer[n*(ncv+1)+1+d];
+      }
+      BiasGrid_->addValueAndDerivatives(index,buffer[n*(ncv+1)],der);
+    }
+  }
+}
+
 void MetaD::addGaussian(const Gaussian& hill) {
-  if(grid_) {
+  if(grid_ && !interval_.enabled) {
+    addGaussianToGrid(hill);
+  } else if(grid_) {
     size_t ncv=getNumberOfArguments();
     std::vector<unsigned> nneighb=kernel_.getSupport(hill,*BiasGrid_);
     std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);

@@ -128,6 +128,11 @@ public:
   double evaluate(const std::vector<double>& cv, const MetaDGaussian& hill) const;
   /// value of hill in cv; the derivatives are subtracted to der; dp_ is a work array of size ncv
   double evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, std::vector<double>& der, std::vector<double>& dp_) const;
+  /// value of hill at a point, given the differences dp of the point from the center of the hill
+  /// (multiplied by invsigma for diagonal hills, plain differences for multivariate hills);
+  /// the derivatives are subtracted to der. Outside the cutoff it returns 0, leaves der unchanged and sets
+  /// inside=false. Same arithmetic as evaluateWithDerivatives, INTERVAL is not taken into account.
+  double evaluateFromDifferences(const double* dp, const MetaDGaussian& hill, double* der, bool& inside) const;
   /// number of grid points along each direction that are within the cutoff of hill
   std::vector<unsigned> getSupport(const MetaDGaussian& hill, const GridBase& grid) const;
   /// squared distance of cv from the center of hill, in units of the hill widths (d^T*S^-1*d, S covariance);
@@ -379,6 +384,51 @@ double MetaDKernel::getVariance(const MetaDGaussian& hill, unsigned i) const {
   Matrix<double> mycov(ncv,ncv);
   Invert(mymatrix,mycov);
   return mycov(i,i);
+}
+
+inline
+double MetaDKernel::evaluateFromDifferences(const double* dp, const MetaDGaussian& hill, double* der, bool& inside) const {
+  const unsigned ncv=hill.center.size();
+  double dp2=0.0;
+  double bias=0.0;
+  if(hill.multivariate) {
+    const double* mymatrix=hill.metric.data();
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=i; j<ncv; j++) {
+        if(i==j) {
+          dp2+=dp[i]*dp[i]*mymatrix[i*ncv+j]*0.5;
+        } else {
+          dp2+=dp[i]*dp[j]*mymatrix[i*ncv+j];
+        }
+      }
+    }
+    inside=(dp2<dp2cutoff);
+    if(inside) {
+      bias=hill.height*std::exp(-dp2);
+      for(unsigned i=0; i<ncv; i++) {
+        double tmp=0.0;
+        for(unsigned j=0; j<ncv; j++) {
+          tmp += dp[j]*mymatrix[i*ncv+j]*bias;
+        }
+        der[i]-=tmp*stretchA_;
+      }
+      bias=stretchA_*bias+hill.height*stretchB_;
+    }
+  } else {
+    for(unsigned i=0; i<ncv; i++) {
+      dp2+=dp[i]*dp[i];
+    }
+    dp2*=0.5;
+    inside=(dp2<dp2cutoff);
+    if(inside) {
+      bias=hill.height*std::exp(-dp2);
+      for(unsigned i=0; i<ncv; i++) {
+        der[i]-=bias*dp[i]*hill.invsigma[i]*stretchA_;
+      }
+      bias=stretchA_*bias+hill.height*stretchB_;
+    }
+  }
+  return bias;
 }
 
 }
