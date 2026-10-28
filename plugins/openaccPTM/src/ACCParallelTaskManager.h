@@ -31,6 +31,10 @@
 
 #include "plumed/tools/ColvarOutput.h"
 #include "plumed/tools/OpenACC.h"
+#include "plumed/tools/Pbc.h"
+
+#include <algorithm>
+#include <vector>
 
 namespace PLMD {
 
@@ -40,6 +44,12 @@ namespace PLMD {
 /// Allocation happens on first use, so ranks that do not run on the GPU do not allocate.
 template <typename precision>
 struct AccDeviceWorkspace {
+  /// device copies of the data pointed by ParActionsInput (see toDeviceInput)
+  OpenACC::memoryManager<precision> inputdata;
+  OpenACC::memoryManager<Pbc> pbc;
+  OpenACC::memoryManager<std::size_t> argbook;
+  /// host staging area for the argument bookkeeping, packed in a single array
+  std::vector<std::size_t> argbook_host;
   OpenACC::memoryManager<precision> value_stash;
   OpenACC::memoryManager<unsigned> taskList;
   OpenACC::memoryManager<precision> buffer;
@@ -92,6 +102,65 @@ struct ACCPTM {
   using PTM=AccParallelTaskManager<T>;
 };
 
+/// Returns a copy of the input whose pointers are device addresses.
+/// The data (input data, Pbc and argument bookkeeping) is copied in the
+/// device buffers of the workspace, with one transfer per array: the
+/// bookkeeping arrays are packed in a single buffer. The returned object can
+/// be passed to the kernels as firstprivate, i.e. as a kernel argument.
+/// Before this, the input was put on the device with "enter data" and removed
+/// with "exit data" at every call: each pointer member costs a transfer and
+/// an attach/detach (another small transfer), i.e. about 40 transfers of a
+/// few microseconds each per call, which dominated the time of small actions.
+template <typename precision>
+ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
+    AccDeviceWorkspace<precision>& ws) {
+  ParActionsInput<precision> dev=in;
+
+  ws.inputdata.resize(in.dataSize);
+  if(in.dataSize>0) {
+    ws.inputdata.copyToDevice(in.inputdata);
+  }
+  dev.inputdata=ws.inputdata.devicePtr();
+
+  // Pbc only holds fixed-size members, so a bitwise copy is valid on the device
+  ws.pbc.resize(1);
+  ws.pbc.copyToDevice(in.pbc);
+  dev.pbc=ws.pbc.devicePtr();
+
+  if(in.nargs>0) {
+    const std::size_t* src[]= {in.ranks, in.shapestarts, in.shapedata, in.ncols,
+                               in.bookstarts, in.booksizes, in.bookeeping, in.argstarts
+                              };
+    const std::size_t sizes[]= {in.ranks_size, in.shapestarts_size, in.shapedata_size, in.ncols_size,
+                                in.bookstarts_size, in.booksizes_size, in.bookeeping_size, in.argstarts_size
+                               };
+    const std::size_t** dst[]= {&dev.ranks, &dev.shapestarts, &dev.shapedata, &dev.ncols,
+                                &dev.bookstarts, &dev.booksizes, &dev.bookeeping, &dev.argstarts
+                               };
+    constexpr unsigned narrays=sizeof(sizes)/sizeof(sizes[0]);
+    std::size_t total=0;
+    for(unsigned i=0; i<narrays; ++i) {
+      total+=sizes[i];
+    }
+    ws.argbook_host.resize(total);
+    std::size_t offset=0;
+    for(unsigned i=0; i<narrays; ++i) {
+      std::copy(src[i], src[i]+sizes[i], ws.argbook_host.begin()+offset);
+      offset+=sizes[i];
+    }
+    ws.argbook.resize(total);
+    if(total>0) {
+      ws.argbook.copyToDevice(ws.argbook_host.data());
+    }
+    offset=0;
+    for(unsigned i=0; i<narrays; ++i) {
+      *dst[i]=ws.argbook.devicePtr()+offset;
+      offset+=sizes[i];
+    }
+  }
+  return dev;
+}
+
 //use the __PLUMED_USE_OPENACC_TASKSMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_TASKSMINE
@@ -105,7 +174,8 @@ void runAllTasksACC(typename T::input_type actiondata,
                     const std::size_t workspace_size,
                     AccDeviceWorkspace<precision>& ws
                    ) {
-  auto myinput_acc = OpenACC::fromToDataHelper(myinput);
+  // from here on the pointers in myinput are device addresses
+  myinput = toDeviceInput(myinput, ws);
   auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
@@ -121,10 +191,12 @@ void runAllTasksACC(typename T::input_type actiondata,
   auto buffer = ws.buffer.devicePtr();
   ws.derivatives.resize(nderivatives_per_task*nactive_tasks);
   auto derivatives = ws.derivatives.devicePtr();
-#pragma acc parallel loop present(myinput, actiondata) \
-                           copyin(nactive_tasks, \
-                                 nderivatives_per_task, \
-                                 workspace_size)\
+  // myinput and the scalars are passed by value as kernel arguments
+#pragma acc parallel loop present(actiondata) \
+                     firstprivate(myinput, \
+                                  nactive_tasks, \
+                                  nderivatives_per_task, \
+                                  workspace_size)\
                         deviceptr(derivatives, \
                                   partialTaskList_data, \
                                   value_stash_data, \
@@ -215,7 +287,8 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const std::size_t workspace_size,
                         AccDeviceWorkspace<precision>& ws
                        ) {
-  auto myinput_acc = OpenACC::fromToDataHelper(myinput);
+  // from here on the pointers in myinput are device addresses
+  myinput = toDeviceInput(myinput, ws);
   auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
@@ -269,22 +342,23 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #define stashDrift(taskID,scalarID) taskID*myinput.nscalars \
                            + scalarID*myinput.ncomponents
 
-#pragma acc data present(myinput,actiondata) \
-                  copyin(nactive_tasks, \
-                         forcesForApply_size, \
-                         nderivatives_per_task, ind_stride_task, ind_stride_value, \
-                         useAtomics, \
-                         workspace_size) \
-               deviceptr(derivatives, \
-                         indices, \
-                         value_stash_data, \
-                         partialTaskList_data, \
-                         forcesForApply_data, \
-                         valstmp, \
-                         buffer) \
-                 default(none)
+  // myinput and the scalars are passed by value as kernel arguments
   {
-#pragma acc parallel loop
+#pragma acc parallel loop present(actiondata) \
+                     firstprivate(myinput, \
+                                  nactive_tasks, \
+                                  forcesForApply_size, \
+                                  nderivatives_per_task, ind_stride_task, ind_stride_value, \
+                                  useAtomics, \
+                                  workspace_size) \
+                        deviceptr(derivatives, \
+                                  indices, \
+                                  value_stash_data, \
+                                  partialTaskList_data, \
+                                  forcesForApply_data, \
+                                  valstmp, \
+                                  buffer) \
+                          default(none)
     for(unsigned t=0; t<nactive_tasks; ++t) {
       std::size_t task_index = partialTaskList_data[t];
       auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
@@ -339,7 +413,17 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     }
 
     if( !useAtomics ) {
-#pragma acc parallel loop
+#pragma acc parallel loop present(actiondata) \
+                     firstprivate(myinput, \
+                                  nactive_tasks, \
+                                  forcesForApply_size, \
+                                  nderivatives_per_task, ind_stride_task, ind_stride_value) \
+                        deviceptr(derivatives, \
+                                  indices, \
+                                  value_stash_data, \
+                                  partialTaskList_data, \
+                                  forcesForApply_data) \
+                          default(none)
       for(unsigned v=myinput.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
         double tmp = 0.0;
 #pragma acc loop reduction(+:tmp)
