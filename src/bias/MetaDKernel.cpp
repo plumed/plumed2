@@ -21,5 +21,11 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetaDKernel.h"
 
+namespace PLMD {
+namespace bias {
+
 // All the functions of MetaDKernel are inline, since they are used in the loops over the hills.
 // This file only checks that the header can be compiled on its own.
+
+}
+}
