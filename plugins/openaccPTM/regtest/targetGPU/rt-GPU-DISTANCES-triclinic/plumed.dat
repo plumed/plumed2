@@ -1,0 +1,28 @@
+LOAD FILE=../../../../plumedOpenACC.so
+# colvar.reference and forces.reference must be generated with the CPU version
+# (this input without USEGPU); diff must be zero
+
+# one origin and many atoms, as for a solvation shell
+d: DISTANCES USEGPU ORIGIN=1 ATOMS=2-40
+dcpu: DISTANCES ORIGIN=1 ATOMS=2-40
+lt: LESS_THAN USEGPU ARG=d SWITCH={RATIONAL D_0=0.0 R_0=0.6 NN=6 MM=10 D_MAX=1.2}
+ltcpu: LESS_THAN ARG=dcpu SWITCH={RATIONAL D_0=0.0 R_0=0.6 NN=6 MM=10 D_MAX=1.2}
+n: SUM ARG=lt PERIODIC=NO
+ncpu: SUM ARG=ltcpu PERIODIC=NO
+
+# components, to check the full minimum image vector
+c: DISTANCE USEGPU COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10 ATOMS6=11,12
+ccpu: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10 ATOMS6=11,12
+cx: SUM ARG=c.x PERIODIC=NO
+cy: SUM ARG=c.y PERIODIC=NO
+cz: SUM ARG=c.z PERIODIC=NO
+
+dd: CUSTOM ARG=d,dcpu FUNC=x-y PERIODIC=NO
+diff_n: CUSTOM ARG=n,ncpu FUNC=x-y PERIODIC=NO
+dx: CUSTOM ARG=c.x,ccpu.x FUNC=x-y PERIODIC=NO
+dy: CUSTOM ARG=c.y,ccpu.y FUNC=x-y PERIODIC=NO
+dz: CUSTOM ARG=c.z,ccpu.z FUNC=x-y PERIODIC=NO
+
+PRINT ARG=n,cx,cy,cz FILE=colvar FMT=%8.4f
+PRINT ARG=dd,diff_n,dx,dy,dz FILE=diff FMT=%8.4f
+BIASVALUE ARG=n,cx,cy,cz
