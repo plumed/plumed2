@@ -514,7 +514,7 @@ private:
     double biasf;
     double threshold;
     double alpha;
-    //no need for a specialized ctor: data is assigned in order of delcaration (but needs an initializer list)
+    //no need for a specialized ctor: data is assigned in order of declaration (but needs an initializer list)
   };
   // general setup
   double kbt_=0.0;
@@ -698,7 +698,6 @@ private:
   double getBiasAndDerivatives(const std::vector<double>&, std::vector<double>&);
   double evaluateGaussian(const std::vector<double>&, const Gaussian&);
   double evaluateGaussianAndDerivatives(const std::vector<double>&, const Gaussian&,std::vector<double>&,std::vector<double>&);
-  double getGaussianNormalization(const Gaussian&);
   std::vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate);
   void   computeReweightingFactor();
@@ -1165,7 +1164,7 @@ void MetaD::parseMultipleWalkers() {
 }
 
 void MetaD::parseInterval() {
-  // Inteval keyword
+  // Interval keyword
   std::vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
   if(tmpI.size()!=2&&tmpI.size()!=0) {
@@ -1474,10 +1473,6 @@ void MetaD::setupComponents(const SetupInput& in) {
     log<<"  Number of transition wells "<<transitionwells_.size()<<"\n";
     if (transitionwells_.size() == 0) {
       error("Calculating the transition bias on the fly requires definition of at least one transition well");
-    }
-    // Check that a grid is in use.
-    if (!grid_) {
-      error(" transition barrier finding requires a grid for the bias");
     }
     // Log the wells and check that they are in the grid.
     for (unsigned i = 0; i < transitionwells_.size(); i++) {
@@ -2179,32 +2174,6 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
   }
 
   return bias;
-}
-
-double MetaD::getGaussianNormalization(const Gaussian& hill) {
-  double norm=1;
-  unsigned ncv=hill.center.size();
-
-  if(hill.multivariate) {
-    // recompose the full sigma from the upper diag cholesky
-    unsigned k=0;
-    Matrix<double> mymatrix(ncv,ncv);
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) {
-        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
-        k++;
-      }
-      double ldet;
-      logdet( mymatrix, ldet );
-      norm = std::exp( ldet );  // Not sure here if mymatrix is sigma or inverse
-    }
-  } else {
-    for(unsigned i=0; i<hill.sigma.size(); i++) {
-      norm*=hill.sigma[i];
-    }
-  }
-
-  return norm*std::pow(2*pi,static_cast<double>(ncv)/2.0);
 }
 
 double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hill) {
