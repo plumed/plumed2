@@ -42,6 +42,8 @@ struct MetaDGaussian {
   std::vector<double> center;
   std::vector<double> sigma;
   std::vector<double> invsigma;
+  /// multivariate hills: the full inverse covariance matrix (row-major), built from sigma
+  std::vector<double> metric;
   MetaDGaussian(const bool m,
                 const double h,
                 const std::vector<double>& c,
@@ -59,6 +61,17 @@ struct MetaDGaussian {
         invsigma[i]=0.0;
       }
     }
+    if(multivariate) {
+      const unsigned ncv=center.size();
+      metric.resize(ncv*ncv);
+      unsigned k=0;
+      for(unsigned i=0; i<ncv; i++) {
+        for(unsigned j=i; j<ncv; j++) {
+          metric[i*ncv+j]=metric[j*ncv+i]=sigma[k];
+          k++;
+        }
+      }
+    }
   }
 };
 
@@ -68,17 +81,38 @@ struct MetaDGaussian {
 class MetaDKernel {
   /// the arguments of the action, used for (periodic) differences
   std::vector<Value*> args_;
+  /// periodicity of the arguments, cached to compute the differences inline
+  /// (same arithmetic as Value::difference)
+  std::vector<bool> periodic_;
+  std::vector<double> period_;
+  std::vector<double> invperiod_;
   double stretchA_=1.0;
   double stretchB_=0.0;
   bool interval_=false;
   double lower_=-1;
   double upper_=-1;
-  double difference(unsigned i,double d1,double d2) const {
-    return args_[i]->difference(d1,d2);
-  }
 public:
+  /// d2-d1, with the periodicity of argument i (as Value::difference)
+  double difference(unsigned i,double d1,double d2) const {
+    if(!periodic_[i]) {
+      return d2-d1;
+    }
+    double s=(d2-d1)*invperiod_[i];
+    s=Tools::pbc(s);
+    return s*period_[i];
+  }
   void setArguments(const std::vector<Value*>& args) {
     args_=args;
+    periodic_.resize(args.size());
+    period_.assign(args.size(),0.0);
+    invperiod_.assign(args.size(),0.0);
+    for(unsigned i=0; i<args.size(); i++) {
+      periodic_[i]=args[i]->isPeriodic();
+      if(periodic_[i]) {
+        period_[i]=args[i]->getMaxMinusMin();
+        invperiod_[i]=1.0/period_[i];
+      }
+    }
   }
   /// stretched Gaussians: A*exp(-dp2)+B, so that they go to zero at the cutoff
   void setStretch(double A,double B) {
@@ -129,23 +163,16 @@ double MetaDKernel::evaluate(const std::vector<double>& cv, const MetaDGaussian&
 
   double dp2=0.0;
   if(hill.multivariate) {
-    unsigned k=0;
-    // recompose the full sigma from the upper diag cholesky
-    Matrix<double> mymatrix(ncv,ncv);
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) {
-        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
-        k++;
-      }
-    }
+    // full inverse covariance matrix
+    const double* mymatrix=hill.metric.data();
     for(unsigned i=0; i<ncv; i++) {
       double dp_i=difference(i,hill.center[i],pcv[i]);
       for(unsigned j=i; j<ncv; j++) {
         if(i==j) {
-          dp2+=dp_i*dp_i*mymatrix(i,j)*0.5;
+          dp2+=dp_i*dp_i*mymatrix[i*ncv+j]*0.5;
         } else {
           double dp_j=difference(j,hill.center[j],pcv[j]);
-          dp2+=dp_i*dp_j*mymatrix(i,j);
+          dp2+=dp_i*dp_j*mymatrix[i*ncv+j];
         }
       }
     }
@@ -199,23 +226,16 @@ double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const
   double dp2=0.0;
   double bias=0.0;
   if(hill.multivariate) {
-    unsigned k=0;
-    // recompose the full sigma from the upper diag cholesky
-    Matrix<double> mymatrix(ncv,ncv);
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) {
-        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
-        k++;
-      }
-    }
+    // full inverse covariance matrix
+    const double* mymatrix=hill.metric.data();
     for(unsigned i=0; i<ncv; i++) {
       dp_[i]=difference(i,hill.center[i],pcv[i]);
       for(unsigned j=i; j<ncv; j++) {
         if(i==j) {
-          dp2+=dp_[i]*dp_[i]*mymatrix(i,j)*0.5;
+          dp2+=dp_[i]*dp_[i]*mymatrix[i*ncv+j]*0.5;
         } else {
           double dp_j=difference(j,hill.center[j],pcv[j]);
-          dp2+=dp_[i]*dp_j*mymatrix(i,j);
+          dp2+=dp_[i]*dp_j*mymatrix[i*ncv+j];
         }
       }
     }
@@ -225,7 +245,7 @@ double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const
         for(unsigned i=0; i<ncv; i++) {
           double tmp=0.0;
           for(unsigned j=0; j<ncv; j++) {
-            tmp += dp_[j]*mymatrix(i,j)*bias;
+            tmp += dp_[j]*mymatrix[i*ncv+j]*bias;
           }
           der[i]-=tmp*stretchA_;
         }
