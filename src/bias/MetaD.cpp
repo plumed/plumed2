@@ -33,6 +33,7 @@
 #include "tools/File.h"
 #include "tools/Communicator.h"
 #include <ctime>
+#include <filesystem>
 #include <numeric>
 
 namespace PLMD {
@@ -504,8 +505,12 @@ private:
   double biasf_=-1.0;
   // output files format
   std::string fmt_;
-  // first step?
-  bool isFirstStep_=true;
+  /// the first step of this run (set at the first call of calculate())
+  bool runStarted_=false;
+  long long int runStartStep_=0;
+  /// time of the last hill read from the own hills file when restarting (if any)
+  bool restartLastHillTimeKnown_=false;
+  double restartLastHillTime_=0.0;
   // Gaussian starting parameters
   double height0_=std::numeric_limits<double>::max();
   std::vector<double> sigma0_;
@@ -666,14 +671,20 @@ private:
   static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
-  void   readGaussians(IFile*);
+  /// read all the hills in the file and add them to the bias; returns the number of hills read and
+  /// (if lasttime is given and at least one hill is read) sets lasttime to the time of the last hill
+  int    readGaussians(IFile*, double* lasttime=nullptr);
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const std::vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const std::vector<double>&);
   double getBiasAndDerivatives(const std::vector<double>&, std::vector<double>&);
-  bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate);
+  bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate, double& time);
+  /// true at the first step of this run
+  bool   isRunFirstStep() const;
+  /// true if a hill has to be added at the current step
+  bool   isHillStep() const;
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
@@ -1656,7 +1667,13 @@ void MetaD::readHillsFiles(const SetupInput& in) {
       ifile->open(fname);
       if(getRestart()&&!in.restartedFromGrid) {
         log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
-        readGaussians(ifiles_[i].get());
+        if(i==mw_.id) {
+          double lasttime=0.0;
+          restartLastHillTimeKnown_=(readGaussians(ifiles_[i].get(),&lasttime)>0);
+          restartLastHillTime_=lasttime;
+        } else {
+          readGaussians(ifiles_[i].get());
+        }
         restartedFromHills=true;
       }
       ifiles_[i]->reset(false);
@@ -1875,7 +1892,7 @@ void MetaD::logTemperingSpecs(const TemperingSpecs &t_specs) {
   }
 }
 
-void MetaD::readGaussians(IFile *ifile) {
+int MetaD::readGaussians(IFile *ifile, double* lasttime) {
   unsigned ncv=getNumberOfArguments();
   std::vector<double> center(ncv);
   std::vector<double> sigma(ncv);
@@ -1888,8 +1905,12 @@ void MetaD::readGaussians(IFile *ifile) {
     tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
   }
 
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)) {
+  double time;
+  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time)) {
     nhills++;
+    if(lasttime) {
+      *lasttime=time;
+    }
     // note that for gamma=1 we store directly -F
     if(welltemp_ && biasf_>1.0) {
       height*=(biasf_-1.0)/biasf_;
@@ -1897,6 +1918,7 @@ void MetaD::readGaussians(IFile *ifile) {
     addGaussian(Gaussian(multivariate,height,center,sigma));
   }
   log.printf("      %d Gaussians read\n",nhills);
+  return nhills;
 }
 
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
@@ -2123,6 +2145,11 @@ void MetaD::calculate() {
     error("ADAPTIVE=DIFF is not compatible with replica exchange");
   }
 
+  if(!runStarted_) {
+    runStarted_=true;
+    runStartStep_=getStep();
+  }
+
   const unsigned ncv=getNumberOfArguments();
   std::vector<double> cv(ncv);
   for(unsigned i=0; i<ncv; ++i) {
@@ -2165,11 +2192,11 @@ void MetaD::calculate() {
     getPntrToComponent("rbias")->set(ene - reweight_factor_);
   }
   // calculate the acceleration factor
-  if(acceleration_&&!isFirstStep_) {
+  if(acceleration_&&!isRunFirstStep()) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (acceleration_ && isFirstStep_ && acc_restart_mean_ > 0.0) {
+  } else if (acceleration_ && isRunFirstStep() && acc_restart_mean_ > 0.0) {
     acc_ = acc_restart_mean_ * static_cast<double>(getStep());
     if(fa_.enabled) {
       // has to be done here if restarting, as the acc is not defined before
@@ -2178,15 +2205,33 @@ void MetaD::calculate() {
   }
 }
 
+bool MetaD::isRunFirstStep() const {
+  // checkNeedsGradients is called before the first calculate() of the run
+  return !runStarted_ || getStep()==runStartStep_;
+}
+
+bool MetaD::isHillStep() const {
+  if(getStep()%current_stride_!=0) {
+    return false;
+  }
+  if(isRunFirstStep()) {
+    // At step 0 no hill is added (also when the bias of a previous simulation is read with RESTART).
+    // When continuing a simulation, the hill is not added only if the hills file already contains it,
+    // i.e. if the previous run already performed this step (some MD codes compute again
+    // the last step of the previous run when restarting, others do not).
+    if(getStep()==0 || !restartLastHillTimeKnown_) {
+      return false;
+    }
+    // times are written with a finite precision (FMT), so that a hill within half a PACE is considered
+    // to be the hill of this step; a later hill means that the previous run went beyond this step
+    return restartLastHillTime_<getTime()-0.5*stride_*getTimeStep();
+  }
+  return true;
+}
+
 void MetaD::update() {
   // adding hills criteria (could be more complex though)
-  bool nowAddAHill;
-  if(getStep()%current_stride_==0 && !isFirstStep_) {
-    nowAddAHill=true;
-  } else {
-    nowAddAHill=false;
-    isFirstStep_=false;
-  }
+  bool nowAddAHill=isHillStep();
 
   unsigned ncv=getNumberOfArguments();
   std::vector<double> cv(ncv);
@@ -2204,6 +2249,12 @@ void MetaD::update() {
   if(adaptive_!=FlexibleBin::none) {
     flexbin_->update(nowAddAHill);
     multivariate=true;
+  }
+
+  // with ADAPTIVE=DIFF the width of a hill requires the fluctuations of at least two CV values
+  // (this happens at the first update, e.g. after UPDATE_FROM or when restarting)
+  if(nowAddAHill && adaptive_==FlexibleBin::diffusion && flexbin_->getNumberOfSamples()<2) {
+    nowAddAHill=false;
   }
 
   if(nowAddAHill) {
@@ -2385,10 +2436,10 @@ void MetaD::updateBiasQuantities(bool nowAddAHill) {
 }
 
 /// takes a pointer to the file and a template std::string with values v and gives back the next center, sigma and height
-bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate) {
+bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate, double& time) {
   double dummy;
   multivariate=false;
-  if(ifile->scanField("time",dummy)) {
+  if(ifile->scanField("time",time)) {
     unsigned ncv=tmpvalues.size();
     for(unsigned i=0; i<ncv; ++i) {
       ifile->scanField( &tmpvalues[i] );
@@ -2554,7 +2605,7 @@ void MetaD::updateFrequencyAdaptiveStride() {
 bool MetaD::checkNeedsGradients()const {
   if(adaptive_==FlexibleBin::geometry) {
     // gradients are needed when a hill is added (the pace can change with FREQUENCY_ADAPTIVE)
-    if(getStep()%current_stride_==0 && !isFirstStep_) {
+    if(isHillStep()) {
       return true;
     } else {
       return false;

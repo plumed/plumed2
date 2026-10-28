@@ -38,6 +38,8 @@ private:
   std::vector<double> variance;
   // this is only there
   std::vector<double> average;
+  /// number of samples accumulated (diffusion only)
+  unsigned nsamples=0;
   // minimum and maximum values
   std::vector<double> sigmamin;
   std::vector<double> sigmamax;
@@ -52,6 +54,10 @@ public:
   void update(bool nowAddAHill);
   void update(bool nowAddAHill, unsigned iarg);
   std::vector<double> getMatrix() const;
+  /// (diffusion only) number of CV values used so far to estimate the variance
+  unsigned getNumberOfSamples() const {
+    return nsamples;
+  }
   std::vector<double> getInverseMatrix() const;
   std::vector<double> getInverseMatrix(unsigned iarg) const;
   enum AdaptiveHillsType { none, diffusion, geometry };

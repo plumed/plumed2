@@ -122,6 +122,7 @@ void FlexibleBin::update(bool nowAddAHill) {
         average[i]=paction->bringBackInPbc(i,average[i]); // equation 8 of "Metadynamics with adaptive Gaussians"
       }
     }
+    nsamples++;
     // THE VARIANCE
     if(variance.size()==0) {
       variance.resize(dimension,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
