@@ -746,7 +746,6 @@ enable_dladdr
 enable_rtld_default
 enable_subprocess
 enable_execinfo
-enable_boost_graph
 enable_boost_serialization
 enable_fftw
 enable_python
@@ -1457,7 +1456,6 @@ Optional Features:
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
-  --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: yes
@@ -3087,24 +3085,6 @@ else
   case "yes" in
              (yes) execinfo=true ;;
              (no)  execinfo=false ;;
-  esac
-
-fi
-
-
-
-boost_graph=
-# Check whether --enable-boost_graph was given.
-if test "${enable_boost_graph+set}" = set; then :
-  enableval=$enable_boost_graph; case "${enableval}" in
-             (yes) boost_graph=true ;;
-             (no)  boost_graph=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-boost_graph" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) boost_graph=true ;;
-             (no)  boost_graph=false ;;
   esac
 
 fi
@@ -8369,139 +8349,6 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
-    fi
-
-fi
-
-if test $boost_graph = true ; then
-
-    found=ko
-    __PLUMED_HAS_BOOST_GRAPH=no
-    if test "${libsearch}" = true ; then
-      testlibs=""
-    else
-      testlibs=""
-    fi
-    save_LIBS="$LIBS"
-
-    # check if multiple libraries are required simultaneously
-    multiple="no"
-    if test "" = "true"; then
-      multiple="yes"
-      all_LIBS=""
-      for testlib in $testlibs;
-      do
-        all_LIBS="$all_LIBS -l$testlib"
-      done
-      testlibs=" " # to check only without libraries, and later with all together
-    fi
-
-    # check without libraries
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph without extra libs" >&5
-$as_echo_n "checking boost graph without extra libs... " >&6; }
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <boost/graph/graph_utility.hpp>
-#include <boost/graph/adjacency_matrix.hpp>
-int
-main ()
-{
-  boost::adjacency_matrix<boost::directedS> a(1);
-  ;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  found=ok
-          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-    if test "$found" = "ko" ; then
-      if test "$multiple" = "yes" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with $all_LIBS" >&5
-$as_echo_n "checking boost graph with $all_LIBS... " >&6; }
-        LIBS="$all_LIBS $LIBS"
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <boost/graph/graph_utility.hpp>
-#include <boost/graph/adjacency_matrix.hpp>
-int
-main ()
-{
-  boost::adjacency_matrix<boost::directedS> a(1);
-  ;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  found=ok
-              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-      else
-        for testlib in $testlibs
-        do
-          { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
-$as_echo_n "checking boost graph with -l$testlib... " >&6; }
-          LIBS="-l$testlib $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <boost/graph/graph_utility.hpp>
-#include <boost/graph/adjacency_matrix.hpp>
-int
-main ()
-{
-  boost::adjacency_matrix<boost::directedS> a(1);
-  ;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  found=ok
-                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-          if test $found = ok ; then
-            break
-          fi
-          LIBS="$save_LIBS"
-        done
-      fi
-    fi
-
-    if test $found = ok ; then
-      $as_echo "#define __PLUMED_HAS_BOOST_GRAPH 1" >>confdefs.h
-
-      __PLUMED_HAS_BOOST_GRAPH=yes
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&2;}
-      LIBS="$save_LIBS"
     fi
 
 fi

@@ -364,7 +364,6 @@ PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
@@ -872,20 +871,6 @@ if test $execinfo = true ; then
 fi
 if test $zlib = true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
-fi
-
-if test $boost_graph = true ; then
-  PLUMED_CHECK_CXX_PACKAGE([boost graph],[
-#include <boost/graph/graph_utility.hpp>
-#include <boost/graph/adjacency_matrix.hpp>
-int
-main ()
-{
-  boost::adjacency_matrix<boost::directedS> a(1);
-  ;
-  return 0;
-}
-  ], [__PLUMED_HAS_BOOST_GRAPH])
 fi
 
 if test $boost_serialization = true ; then

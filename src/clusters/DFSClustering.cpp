@@ -22,12 +22,6 @@
 #include "ClusteringBase.h"
 #include "core/ActionRegister.h"
 
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/connected_components.hpp>
-#include <boost/graph/graph_utility.hpp>
-#endif
-
 //+PLUMEDOC MATRIXF DFSCLUSTERING
 /*
 Find the connected components of the matrix using the depth first search clustering algorithm.
@@ -60,7 +54,6 @@ namespace clusters {
 
 class DFSClustering : public ClusteringBase {
 private:
-#ifndef __PLUMED_HAS_BOOST_GRAPH
 /// The number of neighbors each atom has
   std::vector<unsigned> nneigh;
 /// The adjacency list
@@ -69,7 +62,6 @@ private:
   std::vector<unsigned> color;
 /// The recursive function at the heart of this method
   int explore( const unsigned& index );
-#endif
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -89,10 +81,8 @@ void DFSClustering::registerKeywords( Keywords& keys ) {
 DFSClustering::DFSClustering(const ActionOptions&ao):
   Action(ao),
   ClusteringBase(ao) {
-#ifndef __PLUMED_HAS_BOOST_GRAPH
   nneigh.resize( getNumberOfNodes() );
   color.resize(getNumberOfNodes());
-#endif
   bool lowmem;
   parseFlag("LOWMEM",lowmem);
   if( lowmem ) {
@@ -101,22 +91,6 @@ DFSClustering::DFSClustering(const ActionOptions&ao):
 }
 
 void DFSClustering::performClustering() {
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-  // Get the list of edges
-  unsigned nedges=0;
-  retrieveEdgeList( 0, nedges );
-
-  // Build the graph using boost
-  boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&pairs[0],&pairs[nedges],getNumberOfNodes());
-
-  // Find the connected components using boost (-1 here for compatibility with non-boost version)
-  number_of_cluster=boost::connected_components(sg,&which_cluster[0]) - 1;
-
-  // And work out the size of each cluster
-  for(unsigned i=0; i<which_cluster.size(); ++i) {
-    cluster_sizes[which_cluster[i]].first++;
-  }
-#else
   // Get the adjacency matrix
   retrieveAdjacencyLists( nneigh, adj_list );
 
@@ -129,10 +103,8 @@ void DFSClustering::performClustering() {
       color[i]=explore(i);
     }
   }
-#endif
 }
 
-#ifndef __PLUMED_HAS_BOOST_GRAPH
 int DFSClustering::explore( const unsigned& index ) {
 
   color[index]=1;
@@ -148,7 +120,6 @@ int DFSClustering::explore( const unsigned& index ) {
   which_cluster[index] = number_of_cluster;
   return color[index];
 }
-#endif
 
 }
 }
