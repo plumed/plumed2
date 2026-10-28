@@ -1,0 +1,15 @@
+# NLIST should reproduce the bias computed without neighbor list,
+# both for diagonal and for ADAPTIVE (multivariate) Gaussians
+# NOTE: when this test was added, NLIST with ADAPTIVE Gaussians (a1) gives a bias different from a0
+# (updateNlist treats the multivariate inverse-covariance entries as diagonal sigmas); reference to be updated with the fix
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+m0: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=0.5 PACE=2 FILE=H0 FMT=%14.6f
+m1: METAD ARG=phi,psi SIGMA=0.3,0.3 HEIGHT=0.5 PACE=2 FILE=H1 FMT=%14.6f NLIST
+
+a0: METAD ARG=phi,psi ADAPTIVE=GEOM SIGMA=0.1 HEIGHT=0.5 PACE=2 FILE=A0 FMT=%14.6f
+a1: METAD ARG=phi,psi ADAPTIVE=GEOM SIGMA=0.1 HEIGHT=0.5 PACE=2 FILE=A1 FMT=%14.6f NLIST
+
+PRINT ARG=phi,psi,m0.bias,m1.bias,a0.bias,a1.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,psi STRIDE=2 FILE=forces FMT=%10.5f

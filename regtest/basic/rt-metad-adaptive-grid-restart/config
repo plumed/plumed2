@@ -1,0 +1,3 @@
+type=driver
+arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz --timestep 0.002"
+extra_files="../../trajectories/diala_traj_nm.xyz"

@@ -1,0 +1,16 @@
+# METAD with ADAPTIVE (multivariate) Gaussians on a grid, compared with the same bias without grid
+# NOTE: when this test was added, ADAPTIVE Gaussians on a grid (mg, md) are truncated by a wrong support
+# estimate in getGaussianSupport, so mg differs from mn; reference to be updated with the fix
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+d1:  DISTANCE ATOMS=2,19
+
+# geometry-adaptive, periodic grid
+mg: METAD ARG=phi,psi ADAPTIVE=GEOM SIGMA=0.05 SIGMA_MIN=0.2,0.2 SIGMA_MAX=0.6,0.6 HEIGHT=1.0 BIASFACTOR=8 TEMP=300 PACE=5 GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_SPACING=0.05,0.05 FILE=HILLS_geom FMT=%14.6f
+mn: METAD ARG=phi,psi ADAPTIVE=GEOM SIGMA=0.05 SIGMA_MIN=0.2,0.2 SIGMA_MAX=0.6,0.6 HEIGHT=1.0 BIASFACTOR=8 TEMP=300 PACE=5 FILE=HILLS_geom_nogrid FMT=%14.6f
+
+# diffusion-adaptive, mixed periodic/non-periodic grid, grid written to file
+md: METAD ARG=phi,d1 ADAPTIVE=DIFF SIGMA=10 SIGMA_MIN=0.2,0.02 HEIGHT=1.0 BIASFACTOR=8 TEMP=300 PACE=5 GRID_MIN=-pi,0.4 GRID_MAX=pi,0.8 GRID_SPACING=0.1,0.01 GRID_WFILE=GRID_diff GRID_WSTRIDE=250 FILE=HILLS_diff FMT=%14.6f
+
+PRINT ARG=phi,psi,d1,mg.bias,mn.bias,md.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,psi,d1 STRIDE=2 FILE=forces FMT=%10.5f
