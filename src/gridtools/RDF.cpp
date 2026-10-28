@@ -104,7 +104,9 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("atoms-2","GROUPA","the atoms that you would like to compute the RDF about.  Must be used with GROUPB.");
   keys.add("atoms-2","GROUPB","the atoms that you would like to use when computing the RDF around the atoms that were specified with GROUPA");
   keys.add("compulsory","GRID_BIN","the number of bins to use when computing the RDF");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the type of kernel to use for computing the histograms for the RDF");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN D_MAX=" + strcut,"the type of kernel to use for computing the histograms for the RDF");
   keys.add("compulsory","MAXR","the maximum distance to use for the rdf");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   if( keys.getDisplayName()=="RDF") {

@@ -240,8 +240,10 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed can be found in the documentation for KDE.");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN CUTOFF=" + strcut,"the switching function which is used to transform the distance from the kernel center");
+  keys.linkActionInDocs("KERNEL","LESS_THAN");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");

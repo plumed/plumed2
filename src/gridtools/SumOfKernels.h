@@ -168,7 +168,9 @@ public:
 
 template <class K>
 void RegularKernel<K>::registerKeywords( Keywords& keys ) {
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN D_MAX=" + strcut,"the kernel function you are using.");
 }
 
 template <class K>
@@ -180,7 +182,7 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
     c = std::toupper(c);
   }
   p.canusevol = (kerneltype.find("GAUSSIAN")!=std::string::npos );
-  p.switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH", errors );
+  p.switchingFunction.set( kerneltype + " R_0=1.0", errors );
   if( p.switchingFunction.get_dmax()<std::numeric_limits<double>::max() ) {
     p.cutoff = p.switchingFunction.get_dmax();
     action->log<<"  using switching function for kernel with r0="<<p.switchingFunction.description()<<" and cutoff "<<p.cutoff<<"\n";
