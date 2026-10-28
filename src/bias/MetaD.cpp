@@ -607,6 +607,61 @@ private:
     noStretchWarningDone=true;
   }
 
+  /// values parsed in the constructor that are needed by more than one setup step
+  struct SetupInput {
+    std::string hillsfname;
+    std::vector<double> rect_biasf;
+    double tau=0.0;
+    std::vector<std::string> gmin;
+    std::vector<std::string> gmax;
+    std::vector<unsigned> gbin;
+    bool sparsegrid=false;
+    bool spline=true;
+    std::string gridfilename;
+    std::string gridreadfilename;
+    std::string acc_rfilename;
+    bool restartedFromGrid=false;
+  };
+  // setup steps called by the constructor, in this order
+  /// ADAPTIVE, FMT, SIGMA, SIGMA_MIN, SIGMA_MAX
+  void parseGaussianWidth();
+  /// HEIGHT, PACE, FILE, RECT, BIASFACTOR, DAMPFACTOR, CALC_WORK, transition tempering, TARGET, TAU
+  void parseHillsAndTempering(SetupInput& in);
+  /// GRID_* keywords
+  void parseGrid(SetupInput& in);
+  /// NLIST, NLIST_PARAMETERS
+  void parseNeighborList();
+  /// CALC_RCT, RCT_USTRIDE
+  void parseReweightingFactor();
+  /// WALKERS_*, FLYING_GAUSSIAN
+  void parseMultipleWalkers();
+  /// INTERVAL
+  void parseInterval();
+  /// ACCELERATION, ACCELERATION_RFILE, FREQUENCY_ADAPTIVE and FA_*
+  void parseAcceleration(SetupInput& in);
+  /// log Gaussian parameters
+  void logHillsSetup(const SetupInput& in);
+  /// check consistency and stability of the tempering options
+  void checkTempering();
+  /// log interval and grid parameters
+  void logIntervalAndGrid(const SetupInput& in);
+  /// check and log multiple walkers options
+  void setupMultipleWalkers();
+  /// add output components (and read ACCELERATION_RFILE)
+  void setupComponents(const SetupInput& in);
+  /// create the bias grid, or read it from GRID_RFILE
+  void setupBiasGrid(SetupInput& in);
+  /// open the hills files of all walkers and read them when restarting
+  void readHillsFiles(const SetupInput& in);
+  /// read the TARGET grid
+  void setupTargetGrid();
+  /// initialize the quantities that depend on the bias when restarting
+  void initializeRestartQuantities();
+  /// open the grid and hills files for writing
+  void openOutputFiles(SetupInput& in);
+  /// log the bibliography
+  void logBibliography(const SetupInput& in);
+
   static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
@@ -763,6 +818,37 @@ MetaD::MetaD(const ActionOptions& ao):
     stretchA=dp2cutoffA;
     stretchB=dp2cutoffB;
   }
+  SetupInput in;
+  parseGaussianWidth();
+  parseHillsAndTempering(in);
+  parseGrid(in);
+  parseNeighborList();
+  parseReweightingFactor();
+  if(dampfactor_>0.0) {
+    if(!grid_) {
+      error("With DAMPFACTOR you should use grids");
+    }
+  }
+  parseMultipleWalkers();
+  parseInterval();
+  parseAcceleration(in);
+
+  checkRead();
+
+  logHillsSetup(in);
+  checkTempering();
+  logIntervalAndGrid(in);
+  setupMultipleWalkers();
+  setupComponents(in);
+  setupBiasGrid(in);
+  readHillsFiles(in);
+  setupTargetGrid();
+  initializeRestartQuantities();
+  openOutputFiles(in);
+  logBibliography(in);
+}
+
+void MetaD::parseGaussianWidth() {
   // parse the flexible hills
   std::string adaptiveoption;
   adaptiveoption="NONE";
@@ -822,7 +908,9 @@ MetaD::MetaD(const ActionOptions& ao):
 
     flexbin_=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
+}
 
+void MetaD::parseHillsAndTempering(SetupInput& in) {
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
@@ -830,8 +918,8 @@ MetaD::MetaD(const ActionOptions& ao):
     error("frequency for hill addition is nonsensical");
   }
   current_stride_ = stride_;
-  std::string hillsfname="HILLS";
-  parse("FILE",hillsfname);
+  in.hillsfname="HILLS";
+  parse("FILE",in.hillsfname);
 
   // Manually set to calculate special bias quantities
   // throughout the course of simulation. (These are chosen due to
@@ -839,11 +927,10 @@ MetaD::MetaD(const ActionOptions& ao):
   parseFlag("CALC_MAX_BIAS", calc_max_bias_);
   parseFlag("CALC_TRANSITION_BIAS", calc_transition_bias_);
 
-  std::vector<double> rect_biasf_;
-  parseVector("RECT",rect_biasf_);
-  if(rect_biasf_.size()>0) {
+  parseVector("RECT",in.rect_biasf);
+  if(in.rect_biasf.size()>0) {
     int r=getReplicaIndex();
-    biasf_=rect_biasf_[r];
+    biasf_=in.rect_biasf[r];
     log<<"  You are using RECT\n";
   } else {
     parse("BIASFACTOR",biasf_);
@@ -893,17 +980,17 @@ MetaD::MetaD(const ActionOptions& ao):
   if(targetfilename_.length()>0 && kbt_==0.0) {
     error("with TARGET temperature must be specified");
   }
-  double tau=0.0;
-  parse("TAU",tau);
-  if(tau==0.0) {
+  in.tau=0.0;
+  parse("TAU",in.tau);
+  if(in.tau==0.0) {
     if(height0_==std::numeric_limits<double>::max()) {
       error("At least one between HEIGHT and TAU should be specified");
     }
     // if tau is not set, we compute it here from the other input parameters
     if(welltemp_) {
-      tau=(kbt_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
+      in.tau=(kbt_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
     } else if(dampfactor_>0.0) {
-      tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
+      in.tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
     }
   } else {
     if(height0_!=std::numeric_limits<double>::max()) {
@@ -911,49 +998,51 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     if(welltemp_) {
       if(biasf_!=1.0) {
-        height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+        height0_=(kbt_*(biasf_-1.0))/in.tau*getTimeStep()*stride_;
       } else {
-        height0_=kbt_/tau*getTimeStep()*stride_;  // special case for gamma=1
+        height0_=kbt_/in.tau*getTimeStep()*stride_;  // special case for gamma=1
       }
     } else if(dampfactor_>0.0) {
-      height0_=(kbt_*dampfactor_)/tau*getTimeStep()*stride_;
+      height0_=(kbt_*dampfactor_)/in.tau*getTimeStep()*stride_;
     } else {
       error("TAU only makes sense in well-tempered or damped metadynamics");
     }
   }
+}
 
+void MetaD::parseGrid(SetupInput& in) {
   // Grid Stuff
-  std::vector<std::string> gmin(getNumberOfArguments());
-  parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=getNumberOfArguments() && gmin.size()!=0) {
+  in.gmin.assign(getNumberOfArguments(),std::string());
+  parseVector("GRID_MIN",in.gmin);
+  if(in.gmin.size()!=getNumberOfArguments() && in.gmin.size()!=0) {
     error("not enough values for GRID_MIN");
   }
-  std::vector<std::string> gmax(getNumberOfArguments());
-  parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) {
+  in.gmax.assign(getNumberOfArguments(),std::string());
+  parseVector("GRID_MAX",in.gmax);
+  if(in.gmax.size()!=getNumberOfArguments() && in.gmax.size()!=0) {
     error("not enough values for GRID_MAX");
   }
-  std::vector<unsigned> gbin(getNumberOfArguments());
+  in.gbin.assign(getNumberOfArguments(),0);
   std::vector<double>   gspacing;
-  parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) {
+  parseVector("GRID_BIN",in.gbin);
+  if(in.gbin.size()!=getNumberOfArguments() && in.gbin.size()!=0) {
     error("not enough values for GRID_BIN");
   }
   parseVector("GRID_SPACING",gspacing);
   if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) {
     error("not enough values for GRID_SPACING");
   }
-  if(gmin.size()!=gmax.size()) {
+  if(in.gmin.size()!=in.gmax.size()) {
     error("GRID_MAX and GRID_MIN should be either present or absent");
   }
-  if(gspacing.size()!=0 && gmin.size()==0) {
+  if(gspacing.size()!=0 && in.gmin.size()==0) {
     error("If GRID_SPACING is present also GRID_MIN and GRID_MAX should be present");
   }
-  if(gbin.size()!=0     && gmin.size()==0) {
+  if(in.gbin.size()!=0     && in.gmin.size()==0) {
     error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
   }
-  if(gmin.size()!=0) {
-    if(gbin.size()==0 && gspacing.size()==0) {
+  if(in.gmin.size()!=0) {
+    if(in.gbin.size()==0 && gspacing.size()==0) {
       if(adaptive_==FlexibleBin::none) {
         log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
@@ -973,60 +1062,60 @@ MetaD::MetaD(const ActionOptions& ao):
           gspacing[i]=0.2*sigma0min_[i];
         }
       }
-    } else if(gspacing.size()!=0 && gbin.size()==0) {
+    } else if(gspacing.size()!=0 && in.gbin.size()==0) {
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
-    } else if(gspacing.size()!=0 && gbin.size()!=0) {
+    } else if(gspacing.size()!=0 && in.gbin.size()!=0) {
       log<<"  You specified both GRID_BIN and GRID_SPACING\n";
       log<<"  The more conservative (highest) number of bins will be used for each variable\n";
     }
-    if(gbin.size()==0) {
-      gbin.assign(getNumberOfArguments(),1);
+    if(in.gbin.size()==0) {
+      in.gbin.assign(getNumberOfArguments(),1);
     }
     if(gspacing.size()!=0)
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
         double a,b;
-        Tools::convert(gmin[i],a);
-        Tools::convert(gmax[i],b);
+        Tools::convert(in.gmin[i],a);
+        Tools::convert(in.gmax[i],b);
         unsigned n=std::ceil(((b-a)/gspacing[i]));
-        if(gbin[i]<n) {
-          gbin[i]=n;
+        if(in.gbin[i]<n) {
+          in.gbin[i]=n;
         }
       }
   }
-  if(gbin.size()>0) {
+  if(in.gbin.size()>0) {
     grid_=true;
   }
 
-  bool sparsegrid=false;
-  parseFlag("GRID_SPARSE",sparsegrid);
+  in.sparsegrid=false;
+  parseFlag("GRID_SPARSE",in.sparsegrid);
   bool nospline=false;
   parseFlag("GRID_NOSPLINE",nospline);
-  bool spline=!nospline;
+  in.spline=!nospline;
   parse("GRID_WSTRIDE",wgridstride_);
-  std::string gridfilename_;
-  parse("GRID_WFILE",gridfilename_);
+  parse("GRID_WFILE",in.gridfilename);
   parseFlag("STORE_GRIDS",storeOldGrids_);
-  if(grid_ && gridfilename_.length()>0) {
+  if(grid_ && in.gridfilename.length()>0) {
     if(wgridstride_==0 ) {
       error("frequency with which to output grid not specified use GRID_WSTRIDE");
     }
   }
   if(grid_ && wgridstride_>0) {
-    if(gridfilename_.length()==0) {
+    if(in.gridfilename.length()==0) {
       error("grid filename not specified use GRID_WFILE");
     }
   }
 
-  std::string gridreadfilename_;
-  parse("GRID_RFILE",gridreadfilename_);
+  parse("GRID_RFILE",in.gridreadfilename);
 
-  if(!grid_&&gridfilename_.length()> 0) {
+  if(!grid_&&in.gridfilename.length()> 0) {
     error("To write a grid you need first to define it!");
   }
-  if(!grid_&&gridreadfilename_.length()>0) {
+  if(!grid_&&in.gridreadfilename.length()>0) {
     error("To read a grid you need first to define it!");
   }
+}
 
+void MetaD::parseNeighborList() {
   /*setup neighbor list stuff*/
   parseFlag("NLIST", nlist_);
   nlist_center_.resize(getNumberOfArguments());
@@ -1048,20 +1137,18 @@ MetaD::MetaD(const ActionOptions& ao):
     nlist_param_[0]=nlist_param[0];
     nlist_param_[1]=nlist_param[1];
   }
+}
 
+void MetaD::parseReweightingFactor() {
   // Reweighting factor rct
   parseFlag("CALC_RCT",calc_rct_);
   if (calc_rct_) {
     plumed_massert(grid_,"CALC_RCT is supported only if bias is on a grid");
   }
   parse("RCT_USTRIDE",rct_ustride_);
+}
 
-  if(dampfactor_>0.0) {
-    if(!grid_) {
-      error("With DAMPFACTOR you should use grids");
-    }
-  }
-
+void MetaD::parseMultipleWalkers() {
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
@@ -1082,7 +1169,9 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // Flying Gaussian
   parseFlag("FLYING_GAUSSIAN", flying_);
+}
 
+void MetaD::parseInterval() {
   // Inteval keyword
   std::vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
@@ -1102,12 +1191,13 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     doInt_=true;
   }
+}
 
+void MetaD::parseAcceleration(SetupInput& in) {
   parseFlag("ACCELERATION",acceleration_);
   // Check for a restart acceleration if acceleration is active.
-  std::string acc_rfilename;
   if(acceleration_) {
-    parse("ACCELERATION_RFILE", acc_rfilename);
+    parse("ACCELERATION_RFILE", in.acc_rfilename);
   }
 
   freq_adaptive_=false;
@@ -1133,9 +1223,9 @@ MetaD::MetaD(const ActionOptions& ao):
   if(fa_min_acceleration_!=1.0 && !freq_adaptive_) {
     plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
+}
 
-  checkRead();
-
+void MetaD::logHillsSetup(const SetupInput& in) {
   log.printf("  Gaussian width ");
   if (adaptive_==FlexibleBin::diffusion) {
     log.printf(" (Note: The units of sigma are in timesteps) ");
@@ -1148,13 +1238,15 @@ MetaD::MetaD(const ActionOptions& ao):
   }
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_);
-  log.printf("  Gaussian file %s\n",hillsfname.c_str());
+  log.printf("  Gaussian file %s\n",in.hillsfname.c_str());
   if(welltemp_) {
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
-    log.printf("  Hills relaxation time (tau) %f\n",tau);
+    log.printf("  Hills relaxation time (tau) %f\n",in.tau);
     log.printf("  KbT %f\n",kbt_);
   }
+}
 
+void MetaD::checkTempering() {
   // Transition tempered metadynamics options
   if (tt_specs_.is_active) {
     logTemperingSpecs(tt_specs_);
@@ -1234,38 +1326,42 @@ MetaD::MetaD(const ActionOptions& ao):
       error("for stable tempering, the sum of the inverse Delta T parameters for the greatest asymptotic hill decay exponents must be greater than zero!");
     }
   }
+}
 
+void MetaD::logIntervalAndGrid(const SetupInput& in) {
   if(doInt_) {
     log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   }
 
   if(grid_) {
     log.printf("  Grid min");
-    for(unsigned i=0; i<gmin.size(); ++i) {
-      log.printf(" %s",gmin[i].c_str() );
+    for(unsigned i=0; i<in.gmin.size(); ++i) {
+      log.printf(" %s",in.gmin[i].c_str() );
     }
     log.printf("\n");
     log.printf("  Grid max");
-    for(unsigned i=0; i<gmax.size(); ++i) {
-      log.printf(" %s",gmax[i].c_str() );
+    for(unsigned i=0; i<in.gmax.size(); ++i) {
+      log.printf(" %s",in.gmax[i].c_str() );
     }
     log.printf("\n");
     log.printf("  Grid bin");
-    for(unsigned i=0; i<gbin.size(); ++i) {
-      log.printf(" %u",gbin[i]);
+    for(unsigned i=0; i<in.gbin.size(); ++i) {
+      log.printf(" %u",in.gbin[i]);
     }
     log.printf("\n");
-    if(spline) {
+    if(in.spline) {
       log.printf("  Grid uses spline interpolation\n");
     }
-    if(sparsegrid) {
+    if(in.sparsegrid) {
       log.printf("  Grid uses sparse grid\n");
     }
     if(wgridstride_>0) {
-      log.printf("  Grid is written on file %s with stride %d\n",gridfilename_.c_str(),wgridstride_);
+      log.printf("  Grid is written on file %s with stride %d\n",in.gridfilename.c_str(),wgridstride_);
     }
   }
+}
 
+void MetaD::setupMultipleWalkers() {
   if(mw_n_>1) {
     if(walkers_mpi_) {
       error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
@@ -1292,7 +1388,9 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
+}
 
+void MetaD::setupComponents(const SetupInput& in) {
   if(nlist_) {
     addComponent("nlker");
     componentIsNotPeriodic("nlker");
@@ -1323,7 +1421,7 @@ MetaD::MetaD(const ActionOptions& ao):
     componentIsNotPeriodic("acc");
     // Set the initial value of the the acceleration.
     // If this is not a restart, set to 1.0.
-    if (acc_rfilename.length() == 0) {
+    if (in.acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
       if(getRestart()) {
         log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results.\n");
@@ -1338,10 +1436,10 @@ MetaD::MetaD(const ActionOptions& ao):
       // Open the ACCELERATION_RFILE.
       IFile acc_rfile;
       acc_rfile.link(*this);
-      if(acc_rfile.FileExist(acc_rfilename)) {
-        acc_rfile.open(acc_rfilename);
+      if(acc_rfile.FileExist(in.acc_rfilename)) {
+        acc_rfile.open(in.acc_rfilename);
       } else {
-        error("The ACCELERATION_RFILE file you want to read: " + acc_rfilename + ", cannot be found!");
+        error("The ACCELERATION_RFILE file you want to read: " + in.acc_rfilename + ", cannot be found!");
       }
       // Read the file to find the restart acceleration.
       double acc_rmean=0.0;
@@ -1355,12 +1453,12 @@ MetaD::MetaD(const ActionOptions& ao):
         found=true;
       }
       if(!found) {
-        error("The ACCELERATION_RFILE file you want to read: " + acc_rfilename + ", does not contain a time field!");
+        error("The ACCELERATION_RFILE file you want to read: " + in.acc_rfilename + ", does not contain a time field!");
       }
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
-      log.printf("  initial acceleration factor read from file %s: value of %f at time %f\n",acc_rfilename.c_str(),acc_rmean,acc_rtime);
+      log.printf("  initial acceleration factor read from file %s: value of %f at time %f\n",in.acc_rfilename.c_str(),acc_rmean,acc_rtime);
     }
   }
 
@@ -1399,8 +1497,8 @@ MetaD::MetaD(const ActionOptions& ao):
       // Check that the coordinate is in the grid.
       for (unsigned j = 0; j < getNumberOfArguments(); j++) {
         double max, min;
-        Tools::convert(gmin[j], min);
-        Tools::convert(gmax[j], max);
+        Tools::convert(in.gmin[j], min);
+        Tools::convert(in.gmax[j], max);
         if (transitionwells_[i][j] < min || transitionwells_[i][j] > max) {
           error(" transition well is not in grid");
         }
@@ -1417,7 +1515,7 @@ MetaD::MetaD(const ActionOptions& ao):
     }
 
     log.printf("  Frequency adaptive metadynamics enabled\n");
-    if(getRestart() && acc_rfilename.length() == 0) {
+    if(getRestart() && in.acc_rfilename.length() == 0) {
       log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results.\n");
       log.printf("           You should use the ACCELERATION_RFILE keyword.\n");
     }
@@ -1433,17 +1531,19 @@ MetaD::MetaD(const ActionOptions& ao):
     componentIsNotPeriodic("pace");
     updateFrequencyAdaptiveStride();
   }
+}
 
+void MetaD::setupBiasGrid(SetupInput& in) {
   // initializing and checking grid
-  bool restartedFromGrid=false;  // restart from grid file
+  in.restartedFromGrid=false;  // restart from grid file
   if(grid_) {
-    if(!(gridreadfilename_.length()>0)) {
+    if(!(in.gridreadfilename.length()>0)) {
       // check for mesh and sigma size
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
         double a,b;
-        Tools::convert(gmin[i],a);
-        Tools::convert(gmax[i],b);
-        double mesh=(b-a)/((double)gbin[i]);
+        Tools::convert(in.gmin[i],a);
+        Tools::convert(in.gmax[i],b);
+        double mesh=(b-a)/((double)in.gbin[i]);
         if(adaptive_==FlexibleBin::none) {
           if(mesh>0.5*sigma0_[i]) {
             log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width (SIGMA) can produce artifacts\n";
@@ -1458,44 +1558,44 @@ MetaD::MetaD(const ActionOptions& ao):
         }
       }
       std::string funcl=getLabel() + ".bias";
-      if(!sparsegrid) {
-        BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);
+      if(!in.sparsegrid) {
+        BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.spline,true);
       } else {
-        BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);
+        BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.spline,true);
       }
       std::vector<std::string> actualmin=BiasGrid_->getMin();
       std::vector<std::string> actualmax=BiasGrid_->getMax();
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
         std::string is;
         Tools::convert(i,is);
-        if(gmin[i]!=actualmin[i]) {
+        if(in.gmin[i]!=actualmin[i]) {
           error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
         }
-        if(gmax[i]!=actualmax[i]) {
+        if(in.gmax[i]!=actualmax[i]) {
           error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
         }
       }
     } else {
       // read the grid in input, find the keys
-      if(walkers_mpi_&&gridreadfilename_.at(0)!='/') {
+      if(walkers_mpi_&&in.gridreadfilename.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
         const std::string ret = std::filesystem::current_path().string();
-        gridreadfilename_ = "/" + gridreadfilename_;
-        gridreadfilename_ = ret + gridreadfilename_;
+        in.gridreadfilename = "/" + in.gridreadfilename;
+        in.gridreadfilename = ret + in.gridreadfilename;
         if(comm.Get_rank()==0) {
-          multi_sim_comm.Bcast(gridreadfilename_,0);
+          multi_sim_comm.Bcast(in.gridreadfilename,0);
         }
-        comm.Bcast(gridreadfilename_,0);
+        comm.Bcast(in.gridreadfilename,0);
       }
       IFile gridfile;
       gridfile.link(*this);
-      if(gridfile.FileExist(gridreadfilename_)) {
-        gridfile.open(gridreadfilename_);
+      if(gridfile.FileExist(in.gridreadfilename)) {
+        gridfile.open(in.gridreadfilename);
       } else {
-        error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
+        error("The GRID file you want to read: " + in.gridreadfilename + ", cannot be found!");
       }
       std::string funcl=getLabel() + ".bias";
-      BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
+      BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, in.gmin, in.gmax, in.gbin, in.sparsegrid, in.spline, true);
       if(BiasGrid_->getDimension()!=getNumberOfArguments()) {
         error("mismatch between dimensionality of input grid and number of arguments");
       }
@@ -1504,25 +1604,27 @@ MetaD::MetaD(const ActionOptions& ao):
           error("periodicity mismatch between arguments and input bias");
         }
         double a, b;
-        Tools::convert(gmin[i],a);
-        Tools::convert(gmax[i],b);
-        double mesh=(b-a)/((double)gbin[i]);
+        Tools::convert(in.gmin[i],a);
+        Tools::convert(in.gmax[i],b);
+        double mesh=(b-a)/((double)in.gbin[i]);
         if(mesh>0.5*sigma0_[i]) {
           log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
         }
       }
-      log.printf("  Restarting from %s\n",gridreadfilename_.c_str());
+      log.printf("  Restarting from %s\n",in.gridreadfilename.c_str());
       if(getRestart()) {
-        restartedFromGrid=true;
+        in.restartedFromGrid=true;
       }
     }
   }
+}
 
+void MetaD::readHillsFiles(const SetupInput& in) {
   // if we are restarting from GRID and using WALKERS_MPI we can check that all walkers have actually read the grid
   if(getRestart()&&walkers_mpi_) {
     std::vector<int> restarted(mpi_nw_,0);
     if(comm.Get_rank()==0) {
-      multi_sim_comm.Allgather(int(restartedFromGrid), restarted);
+      multi_sim_comm.Allgather(int(in.restartedFromGrid), restarted);
     }
     comm.Bcast(restarted,0);
     unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
@@ -1531,7 +1633,7 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
-  if(walkers_mpi_&&mw_dir_==""&&hillsfname.at(0)!='/') {
+  if(walkers_mpi_&&mw_dir_==""&&in.hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
     const std::string ret = std::filesystem::current_path().string();
     mw_dir_ = ret;
@@ -1551,19 +1653,19 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mw_n_>1) {
         std::stringstream out;
         out << i;
-        fname = mw_dir_+"/"+hillsfname+"."+out.str();
+        fname = mw_dir_+"/"+in.hillsfname+"."+out.str();
       } else if(walkers_mpi_) {
-        fname = mw_dir_+"/"+hillsfname;
+        fname = mw_dir_+"/"+in.hillsfname;
       } else {
-        fname = hillsfname;
+        fname = in.hillsfname;
       }
     } else {
       if(mw_n_>1) {
         std::stringstream out;
         out << i;
-        fname = hillsfname+"."+out.str();
+        fname = in.hillsfname+"."+out.str();
       } else {
-        fname = hillsfname;
+        fname = in.hillsfname;
       }
     }
     ifiles_.emplace_back(Tools::make_unique<IFile>());
@@ -1573,7 +1675,7 @@ MetaD::MetaD(const ActionOptions& ao):
     ifile->link(*this);
     if(ifile->FileExist(fname)) {
       ifile->open(fname);
-      if(getRestart()&&!restartedFromGrid) {
+      if(getRestart()&&!in.restartedFromGrid) {
         log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
         readGaussians(ifiles_[i].get());
         restartedFromHills=true;
@@ -1585,7 +1687,7 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     } else {
       // in case a file does not exist and we are restarting, complain that the file was not found
-      if(getRestart()&&!restartedFromGrid) {
+      if(getRestart()&&!in.restartedFromGrid) {
         error("restart file "+fname+" not found");
       }
     }
@@ -1615,7 +1717,9 @@ MetaD::MetaD(const ActionOptions& ao):
   if(comm.Get_rank()==0 && walkers_mpi_) {
     multi_sim_comm.Barrier();
   }
+}
 
+void MetaD::setupTargetGrid() {
   if(targetfilename_.length()>0) {
     IFile gridfile;
     gridfile.open(targetfilename_);
@@ -1630,7 +1734,9 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
   }
+}
 
+void MetaD::initializeRestartQuantities() {
   if(getRestart()) {
     // if this is a restart the neighbor list should be immediately updated
     if(nlist_) {
@@ -1650,21 +1756,23 @@ MetaD::MetaD(const ActionOptions& ao):
       getPntrToComponent("transbias")->set(transition_bias_);
     }
   }
+}
 
+void MetaD::openOutputFiles(SetupInput& in) {
   // open grid file for writing
   if(wgridstride_>0) {
     gridfile_.link(*this);
     if(walkers_mpi_) {
       int r=getReplicaIndex();
       if(r>0) {
-        gridfilename_="/dev/null";
+        in.gridfilename="/dev/null";
       }
       gridfile_.enforceSuffix("");
     }
     if(mw_n_>1) {
       gridfile_.enforceSuffix("");
     }
-    gridfile_.open(gridfilename_);
+    gridfile_.open(in.gridfilename);
   }
 
   // open hills file for writing
@@ -1694,7 +1802,9 @@ MetaD::MetaD(const ActionOptions& ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     hillsOfile_.setupPrintValue( getPntrToArgument(i) );
   }
+}
 
+void MetaD::logBibliography(const SetupInput& in) {
   bool concurrent=false;
   const ActionSet&actionSet(plumed.getActionSet());
   for(const auto & p : actionSet)
@@ -1705,7 +1815,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(concurrent) {
     log<<"  You are using concurrent metadynamics\n";
   }
-  if(rect_biasf_.size()>0) {
+  if(in.rect_biasf.size()>0) {
     if(walkers_mpi_) {
       log<<"  You are using RECT in its 'altruistic' implementation\n";
     }{
@@ -1736,10 +1846,10 @@ MetaD::MetaD(const ActionOptions& ao):
   if(calc_rct_) {
     log<<plumed.cite("Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
   }
-  if(concurrent || rect_biasf_.size()>0) {
+  if(concurrent || in.rect_biasf.size()>0) {
     log<<plumed.cite("Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   }
-  if(rect_biasf_.size()>0 && walkers_mpi_) {
+  if(in.rect_biasf.size()>0 && walkers_mpi_) {
     log<<plumed.cite("Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   }
   if(targetfilename_.length()>0) {
