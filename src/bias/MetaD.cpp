@@ -517,83 +517,107 @@ private:
     //no need for a specialized ctor: data is assigned in order of delcaration (but needs an initializer list)
   };
   // general setup
-  double kbt_;
-  int stride_;
-  bool calc_work_;
+  double kbt_=0.0;
+  int stride_=0;
+  /// current hill deposition pace (equal to stride_ unless FREQUENCY_ADAPTIVE is used)
+  int current_stride_=0;
+  bool calc_work_=false;
   // well-tempered MetaD
-  bool welltemp_;
-  double biasf_;
+  bool welltemp_=false;
+  double biasf_=-1.0;
   // output files format
   std::string fmt_;
   // first step?
-  bool isFirstStep_;
+  bool isFirstStep_=true;
   // Gaussian starting parameters
-  double height0_;
+  double height0_=std::numeric_limits<double>::max();
   std::vector<double> sigma0_;
   std::vector<double> sigma0min_;
   std::vector<double> sigma0max_;
   // Gaussians
   std::vector<Gaussian> hills_;
   std::unique_ptr<FlexibleBin> flexbin_;
-  int adaptive_;
+  int adaptive_=FlexibleBin::none;
   OFile hillsOfile_;
+  /// hills files that are read (own file when restarting, files of the other walkers)
   std::vector<std::unique_ptr<IFile>> ifiles_;
   std::vector<std::string> ifilesnames_;
   // Grids
-  bool grid_;
+  bool grid_=false;
   std::unique_ptr<GridBase> BiasGrid_;
   OFile gridfile_;
-  bool storeOldGrids_;
-  int wgridstride_;
-  // multiple walkers
-  int mw_n_;
-  std::string mw_dir_;
-  int mw_id_;
-  int mw_rstride_;
-  bool walkers_mpi_;
-  unsigned mpi_nw_;
-  // flying gaussians
-  bool flying_;
+  bool storeOldGrids_=false;
+  int wgridstride_=0;
+  /// multiple walkers, sharing hills either through files (WALKERS_N) or through MPI (WALKERS_MPI)
+  struct MultipleWalkers {
+    /// number of walkers sharing hills through files
+    int n=1;
+    /// directory with the hills files
+    std::string dir;
+    /// id of this walker
+    int id=0;
+    /// stride for reading the hills files of the other walkers
+    int rstride=1;
+    /// MPI version
+    bool mpi=false;
+    /// number of MPI walkers
+    unsigned mpi_nw=0;
+    /// flying Gaussians (MPI walkers only)
+    bool flying=false;
+  } mw_;
   // kinetics from metadynamics
-  bool acceleration_;
-  double acc_;
-  double acc_restart_mean_;
+  bool acceleration_=false;
+  double acc_=0.0;
+  double acc_restart_mean_=0.0;
   // transition-tempering metadynamics
-  bool calc_max_bias_;
-  double max_bias_;
-  bool calc_transition_bias_;
-  double transition_bias_;
+  bool calc_max_bias_=false;
+  double max_bias_=0.0;
+  bool calc_transition_bias_=false;
+  double transition_bias_=0.0;
   std::vector<std::vector<double> > transitionwells_;
   static const size_t n_tempering_options_ = 1;
   static const std::string tempering_names_[1][2];
-  double dampfactor_;
-  struct TemperingSpecs tt_specs_;
+  double dampfactor_=0.0;
+  TemperingSpecs tt_specs_{false,"TT","Transition Tempered", -1.0, 0.0, 1.0};
   std::string targetfilename_;
   std::unique_ptr<GridBase> TargetGrid_;
-  // frequency adaptive metadynamics
-  int current_stride_;
-  bool freq_adaptive_;
-  int fa_update_frequency_;
-  int fa_max_stride_;
-  double fa_min_acceleration_;
-  // intervals
-  double uppI_;
-  double lowI_;
-  bool doInt_;
+  /// frequency adaptive metadynamics
+  struct FrequencyAdaptive {
+    bool enabled=false;
+    /// how often the pace is updated
+    int update_frequency=0;
+    /// maximum pace (0 means no maximum)
+    int max_stride=0;
+    /// the pace is changed only when the acceleration is larger than this
+    double min_acceleration=1.0;
+  } fa_;
+  /// INTERVAL (1D only): outside [lower,upper] the bias force is not felt
+  struct Interval {
+    bool enabled=false;
+    double lower=-1;
+    double upper=-1;
+  } interval_;
   // reweighting
-  bool calc_rct_;
-  double reweight_factor_;
-  unsigned rct_ustride_;
+  bool calc_rct_=false;
+  double reweight_factor_=0.0;
+  unsigned rct_ustride_=1;
   // work
-  double work_;
-  // neighbour list stuff
-  bool nlist_;
-  bool nlist_update_;
-  unsigned nlist_steps_;
-  std::array<double,2> nlist_param_;
-  std::vector<Gaussian> nlist_hills_;
-  std::vector<double> nlist_center_;
-  std::vector<double> nlist_dev2_;
+  double work_=0;
+  /// neighbor list of the Gaussians that are close to the current CV values (NLIST)
+  struct NeighborList {
+    bool enabled=false;
+    /// the list has to be rebuilt
+    bool update=false;
+    /// steps since the last update
+    unsigned steps=0;
+    /// cutoff (in units of dp2cutoff) and rebuild threshold (in units of dev2)
+    std::array<double,2> param;
+    std::vector<Gaussian> hills;
+    /// CV values at the last update
+    std::vector<double> center;
+    /// mean square distance of the listed hills from center, per CV
+    std::vector<double> dev2;
+  } nlist_;
 
   double stretchA=1.0;
   double stretchB=0.0;
@@ -782,38 +806,7 @@ void MetaD::registerTemperingKeywords(const std::string &name_stem, const std::s
 }
 
 MetaD::MetaD(const ActionOptions& ao):
-  PLUMED_BIAS_INIT(ao),
-  kbt_(0.0),
-  stride_(0),
-  calc_work_(false),
-  welltemp_(false),
-  biasf_(-1.0),
-  isFirstStep_(true),
-  height0_(std::numeric_limits<double>::max()),
-  adaptive_(FlexibleBin::none),
-  grid_(false),
-  wgridstride_(0),
-  mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
-  walkers_mpi_(false), mpi_nw_(0),
-  flying_(false),
-  acceleration_(false), acc_(0.0), acc_restart_mean_(0.0),
-  calc_max_bias_(false), max_bias_(0.0),
-  calc_transition_bias_(false), transition_bias_(0.0),
-  dampfactor_(0.0),
-  tt_specs_{false,"TT","Transition Tempered", -1.0, 0.0, 1.0},
-  current_stride_(0),
-  freq_adaptive_(false),
-  fa_update_frequency_(0),
-  fa_max_stride_(0),
-  fa_min_acceleration_(1.0),
-  uppI_(-1), lowI_(-1), doInt_(false),
-  calc_rct_(false),
-  reweight_factor_(0.0),
-  rct_ustride_(1),
-  work_(0),
-  nlist_(false),
-  nlist_update_(false),
-  nlist_steps_(0) {
+  PLUMED_BIAS_INIT(ao) {
   if(!dp2cutoffNoStretch()) {
     stretchA=dp2cutoffA;
     stretchB=dp2cutoffB;
@@ -1117,25 +1110,25 @@ void MetaD::parseGrid(SetupInput& in) {
 
 void MetaD::parseNeighborList() {
   /*setup neighbor list stuff*/
-  parseFlag("NLIST", nlist_);
-  nlist_center_.resize(getNumberOfArguments());
-  nlist_dev2_.resize(getNumberOfArguments());
-  if(nlist_&&grid_) {
+  parseFlag("NLIST", nlist_.enabled);
+  nlist_.center.resize(getNumberOfArguments());
+  nlist_.dev2.resize(getNumberOfArguments());
+  if(nlist_.enabled&&grid_) {
     error("NLIST and GRID cannot be combined!");
   }
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
   if(nlist_param.size()==0) {
-    nlist_param_[0]=6.0;//*DP2CUTOFF -> max distance of neighbors
-    nlist_param_[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
+    nlist_.param[0]=6.0;//*DP2CUTOFF -> max distance of neighbors
+    nlist_.param[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
   } else {
     plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
     plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
     const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]/2))+0.16;
     plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
     plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0/2) = "+std::to_string(min_PARAM_1));
-    nlist_param_[0]=nlist_param[0];
-    nlist_param_[1]=nlist_param[1];
+    nlist_.param[0]=nlist_param[0];
+    nlist_.param[1]=nlist_param[1];
   }
 }
 
@@ -1150,25 +1143,25 @@ void MetaD::parseReweightingFactor() {
 
 void MetaD::parseMultipleWalkers() {
   // Multiple walkers
-  parse("WALKERS_N",mw_n_);
-  parse("WALKERS_ID",mw_id_);
-  if(mw_n_<=mw_id_) {
+  parse("WALKERS_N",mw_.n);
+  parse("WALKERS_ID",mw_.id);
+  if(mw_.n<=mw_.id) {
     error("walker ID should be a numerical value less than the total number of walkers");
   }
-  parse("WALKERS_DIR",mw_dir_);
-  parse("WALKERS_RSTRIDE",mw_rstride_);
+  parse("WALKERS_DIR",mw_.dir);
+  parse("WALKERS_RSTRIDE",mw_.rstride);
 
   // MPI version
-  parseFlag("WALKERS_MPI",walkers_mpi_);
+  parseFlag("WALKERS_MPI",mw_.mpi);
 
   //If this Action is not compiled with MPI the user is informed and we exit gracefully
-  if(walkers_mpi_) {
+  if(mw_.mpi) {
     plumed_assert(Communicator::plumedHasMPI()) << "Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation";
     plumed_assert(Communicator::initialized()) << "Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.";
   }
 
   // Flying Gaussian
-  parseFlag("FLYING_GAUSSIAN", flying_);
+  parseFlag("FLYING_GAUSSIAN", mw_.flying);
 }
 
 void MetaD::parseInterval() {
@@ -1178,18 +1171,18 @@ void MetaD::parseInterval() {
   if(tmpI.size()!=2&&tmpI.size()!=0) {
     error("both a lower and an upper limits must be provided with INTERVAL");
   } else if(tmpI.size()==2) {
-    lowI_=tmpI.at(0);
-    uppI_=tmpI.at(1);
+    interval_.lower=tmpI.at(0);
+    interval_.upper=tmpI.at(1);
     if(getNumberOfArguments()!=1) {
       error("INTERVAL limits correction works only for monodimensional metadynamics!");
     }
-    if(uppI_<lowI_) {
+    if(interval_.upper<interval_.lower) {
       error("The Upper limit must be greater than the Lower limit!");
     }
     if(getPntrToArgument(0)->isPeriodic()) {
       error("INTERVAL cannot be used with periodic variables!");
     }
-    doInt_=true;
+    interval_.enabled=true;
   }
 }
 
@@ -1200,27 +1193,27 @@ void MetaD::parseAcceleration(SetupInput& in) {
     parse("ACCELERATION_RFILE", in.acc_rfilename);
   }
 
-  freq_adaptive_=false;
-  parseFlag("FREQUENCY_ADAPTIVE",freq_adaptive_);
+  fa_.enabled=false;
+  parseFlag("FREQUENCY_ADAPTIVE",fa_.enabled);
   //
-  fa_update_frequency_=0;
-  parse("FA_UPDATE_FREQUENCY",fa_update_frequency_);
-  if(fa_update_frequency_!=0 && !freq_adaptive_) {
+  fa_.update_frequency=0;
+  parse("FA_UPDATE_FREQUENCY",fa_.update_frequency);
+  if(fa_.update_frequency!=0 && !fa_.enabled) {
     plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
-  if(fa_update_frequency_==0 && freq_adaptive_) {
-    fa_update_frequency_=stride_;
+  if(fa_.update_frequency==0 && fa_.enabled) {
+    fa_.update_frequency=stride_;
   }
   //
-  fa_max_stride_=0;
-  parse("FA_MAX_PACE",fa_max_stride_);
-  if(fa_max_stride_!=0 && !freq_adaptive_) {
+  fa_.max_stride=0;
+  parse("FA_MAX_PACE",fa_.max_stride);
+  if(fa_.max_stride!=0 && !fa_.enabled) {
     plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   //
-  fa_min_acceleration_=1.0;
-  parse("FA_MIN_ACCELERATION",fa_min_acceleration_);
-  if(fa_min_acceleration_!=1.0 && !freq_adaptive_) {
+  fa_.min_acceleration=1.0;
+  parse("FA_MIN_ACCELERATION",fa_.min_acceleration);
+  if(fa_.min_acceleration!=1.0 && !fa_.enabled) {
     plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
 }
@@ -1329,8 +1322,8 @@ void MetaD::checkTempering() {
 }
 
 void MetaD::logIntervalAndGrid(const SetupInput& in) {
-  if(doInt_) {
-    log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
+  if(interval_.enabled) {
+    log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", interval_.lower, interval_.upper);
   }
 
   if(grid_) {
@@ -1362,36 +1355,36 @@ void MetaD::logIntervalAndGrid(const SetupInput& in) {
 }
 
 void MetaD::setupMultipleWalkers() {
-  if(mw_n_>1) {
-    if(walkers_mpi_) {
+  if(mw_.n>1) {
+    if(mw_.mpi) {
       error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
     }
-    log.printf("  %d multiple walkers active\n",mw_n_);
-    log.printf("  walker id %d\n",mw_id_);
-    log.printf("  reading stride %d\n",mw_rstride_);
-    if(mw_dir_!="") {
-      log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+    log.printf("  %d multiple walkers active\n",mw_.n);
+    log.printf("  walker id %d\n",mw_.id);
+    log.printf("  reading stride %d\n",mw_.rstride);
+    if(mw_.dir!="") {
+      log.printf("  directory with hills files %s\n",mw_.dir.c_str());
     }
   } else {
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n");
-      if(mw_dir_!="") {
-        log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+      if(mw_.dir!="") {
+        log.printf("  directory with hills files %s\n",mw_.dir.c_str());
       }
-      mpi_nw_=getNumberOfReplicas();
+      mw_.mpi_nw=getNumberOfReplicas();
     }
   }
 
-  if(flying_) {
-    if(!walkers_mpi_) {
+  if(mw_.flying) {
+    if(!mw_.mpi) {
       error("Flying Gaussian method must be used with MPI version of multiple walkers");
     }
-    log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
+    log.printf("  Flying Gaussian method with %d walkers active\n",mw_.mpi_nw);
   }
 }
 
 void MetaD::setupComponents(const SetupInput& in) {
-  if(nlist_) {
+  if(nlist_.enabled) {
     addComponent("nlker");
     componentIsNotPeriodic("nlker");
     addComponent("nlsteps");
@@ -1506,11 +1499,11 @@ void MetaD::setupComponents(const SetupInput& in) {
     }
   }
 
-  if(freq_adaptive_) {
+  if(fa_.enabled) {
     if(!acceleration_) {
       plumed_merror("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
     }
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       plumed_merror("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
     }
 
@@ -1520,12 +1513,12 @@ void MetaD::setupComponents(const SetupInput& in) {
       log.printf("           You should use the ACCELERATION_RFILE keyword.\n");
     }
     log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
-    log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
-    if(fa_min_acceleration_>1.0) {
-      log.printf("  The hill addition frequency will only be updated once the metadynamics acceleration factor becomes larger than %.1f \n",fa_min_acceleration_);
+    log.printf("  The hill addition frequency will be updated every %d steps\n",fa_.update_frequency);
+    if(fa_.min_acceleration>1.0) {
+      log.printf("  The hill addition frequency will only be updated once the metadynamics acceleration factor becomes larger than %.1f \n",fa_.min_acceleration);
     }
-    if(fa_max_stride_!=0) {
-      log.printf("  The hill addition frequency will not become larger than %d steps\n",fa_max_stride_);
+    if(fa_.max_stride!=0) {
+      log.printf("  The hill addition frequency will not become larger than %d steps\n",fa_.max_stride);
     }
     addComponent("pace");
     componentIsNotPeriodic("pace");
@@ -1577,7 +1570,7 @@ void MetaD::setupBiasGrid(SetupInput& in) {
       }
     } else {
       // read the grid in input, find the keys
-      if(walkers_mpi_&&in.gridreadfilename.at(0)!='/') {
+      if(mw_.mpi&&in.gridreadfilename.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
         const std::string ret = std::filesystem::current_path().string();
         in.gridreadfilename = "/" + in.gridreadfilename;
@@ -1621,46 +1614,46 @@ void MetaD::setupBiasGrid(SetupInput& in) {
 
 void MetaD::readHillsFiles(const SetupInput& in) {
   // if we are restarting from GRID and using WALKERS_MPI we can check that all walkers have actually read the grid
-  if(getRestart()&&walkers_mpi_) {
-    std::vector<int> restarted(mpi_nw_,0);
+  if(getRestart()&&mw_.mpi) {
+    std::vector<int> restarted(mw_.mpi_nw,0);
     if(comm.Get_rank()==0) {
       multi_sim_comm.Allgather(int(in.restartedFromGrid), restarted);
     }
     comm.Bcast(restarted,0);
     unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
-    if(result!=0&&result!=mpi_nw_) {
+    if(result!=0&&result!=mw_.mpi_nw) {
       error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
     }
   }
 
-  if(walkers_mpi_&&mw_dir_==""&&in.hillsfname.at(0)!='/') {
+  if(mw_.mpi&&mw_.dir==""&&in.hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
     const std::string ret = std::filesystem::current_path().string();
-    mw_dir_ = ret;
-    mw_dir_ = mw_dir_ + "/";
+    mw_.dir = ret;
+    mw_.dir = mw_.dir + "/";
     if(comm.Get_rank()==0) {
-      multi_sim_comm.Bcast(mw_dir_,0);
+      multi_sim_comm.Bcast(mw_.dir,0);
     }
-    comm.Bcast(mw_dir_,0);
+    comm.Bcast(mw_.dir,0);
   }
 
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
   bool restartedFromHills=false;  // restart from hills files
-  for(int i=0; i<mw_n_; ++i) {
+  for(int i=0; i<mw_.n; ++i) {
     std::string fname;
-    if(mw_dir_!="") {
-      if(mw_n_>1) {
+    if(mw_.dir!="") {
+      if(mw_.n>1) {
         std::stringstream out;
         out << i;
-        fname = mw_dir_+"/"+in.hillsfname+"."+out.str();
-      } else if(walkers_mpi_) {
-        fname = mw_dir_+"/"+in.hillsfname;
+        fname = mw_.dir+"/"+in.hillsfname+"."+out.str();
+      } else if(mw_.mpi) {
+        fname = mw_.dir+"/"+in.hillsfname;
       } else {
         fname = in.hillsfname;
       }
     } else {
-      if(mw_n_>1) {
+      if(mw_.n>1) {
         std::stringstream out;
         out << i;
         fname = in.hillsfname+"."+out.str();
@@ -1682,7 +1675,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
       }
       ifiles_[i]->reset(false);
       // close only the walker own hills file for later writing
-      if(i==mw_id_) {
+      if(i==mw_.id) {
         ifiles_[i]->close();
       }
     } else {
@@ -1694,14 +1687,14 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   }
 
   // if we are restarting from FILE and using WALKERS_MPI we can check that all walkers have actually read the FILE
-  if(getRestart()&&walkers_mpi_) {
-    std::vector<int> restarted(mpi_nw_,0);
+  if(getRestart()&&mw_.mpi) {
+    std::vector<int> restarted(mw_.mpi_nw,0);
     if(comm.Get_rank()==0) {
       multi_sim_comm.Allgather(int(restartedFromHills), restarted);
     }
     comm.Bcast(restarted,0);
     unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
-    if(result!=0&&result!=mpi_nw_) {
+    if(result!=0&&result!=mw_.mpi_nw) {
       error("in this WALKERS_MPI run some replica have restarted from FILE while other do not!");
     }
   }
@@ -1714,7 +1707,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   // it would introduce troubles when using replicas without METAD
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
-  if(comm.Get_rank()==0 && walkers_mpi_) {
+  if(comm.Get_rank()==0 && mw_.mpi) {
     multi_sim_comm.Barrier();
   }
 }
@@ -1739,8 +1732,8 @@ void MetaD::setupTargetGrid() {
 void MetaD::initializeRestartQuantities() {
   if(getRestart()) {
     // if this is a restart the neighbor list should be immediately updated
-    if(nlist_) {
-      nlist_update_=true;
+    if(nlist_.enabled) {
+      nlist_.update=true;
     }
     // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
     if(calc_rct_) {
@@ -1762,14 +1755,14 @@ void MetaD::openOutputFiles(SetupInput& in) {
   // open grid file for writing
   if(wgridstride_>0) {
     gridfile_.link(*this);
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       int r=getReplicaIndex();
       if(r>0) {
         in.gridfilename="/dev/null";
       }
       gridfile_.enforceSuffix("");
     }
-    if(mw_n_>1) {
+    if(mw_.n>1) {
       gridfile_.enforceSuffix("");
     }
     gridfile_.open(in.gridfilename);
@@ -1777,25 +1770,25 @@ void MetaD::openOutputFiles(SetupInput& in) {
 
   // open hills file for writing
   hillsOfile_.link(*this);
-  if(walkers_mpi_) {
+  if(mw_.mpi) {
     int r=getReplicaIndex();
     if(r>0) {
-      ifilesnames_[mw_id_]="/dev/null";
+      ifilesnames_[mw_.id]="/dev/null";
     }
     hillsOfile_.enforceSuffix("");
   }
-  if(mw_n_>1) {
+  if(mw_.n>1) {
     hillsOfile_.enforceSuffix("");
   }
-  hillsOfile_.open(ifilesnames_[mw_id_]);
+  hillsOfile_.open(ifilesnames_[mw_.id]);
   if(fmt_.length()>0) {
     hillsOfile_.fmtField(fmt_);
   }
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.addConstantField("kerneltype");
-  if(doInt_) {
-    hillsOfile_.addConstantField("lower_int").printField("lower_int",lowI_);
-    hillsOfile_.addConstantField("upper_int").printField("upper_int",uppI_);
+  if(interval_.enabled) {
+    hillsOfile_.addConstantField("lower_int").printField("lower_int",interval_.lower);
+    hillsOfile_.addConstantField("upper_int").printField("upper_int",interval_.upper);
   }
   hillsOfile_.setHeavyFlush();
   // output periodicities of variables
@@ -1816,7 +1809,7 @@ void MetaD::logBibliography(const SetupInput& in) {
     log<<"  You are using concurrent metadynamics\n";
   }
   if(in.rect_biasf.size()>0) {
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       log<<"  You are using RECT in its 'altruistic' implementation\n";
     }{
       log<<"  You are using RECT\n";
@@ -1831,13 +1824,13 @@ void MetaD::logBibliography(const SetupInput& in) {
     log << plumed.cite("Dama, Rotskoff, Parrinello, and Voth, J. Chem. Theory Comput. 10, 3626 (2014)");
     log << plumed.cite("Dama, Parrinello, and Voth, Phys. Rev. Lett. 112, 240602 (2014)");
   }
-  if(mw_n_>1||walkers_mpi_) {
+  if(mw_.n>1||mw_.mpi) {
     log<<plumed.cite("Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   }
   if(adaptive_!=FlexibleBin::none) {
     log<<plumed.cite("Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   }
-  if(doInt_) {
+  if(interval_.enabled) {
     log<<plumed.cite("Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   }
   if(acceleration_) {
@@ -1849,7 +1842,7 @@ void MetaD::logBibliography(const SetupInput& in) {
   if(concurrent || in.rect_biasf.size()>0) {
     log<<plumed.cite("Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   }
-  if(in.rect_biasf.size()>0 && walkers_mpi_) {
+  if(in.rect_biasf.size()>0 && mw_.mpi) {
     log<<plumed.cite("Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   }
   if(targetfilename_.length()>0) {
@@ -1857,7 +1850,7 @@ void MetaD::logBibliography(const SetupInput& in) {
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
-  if(freq_adaptive_) {
+  if(fa_.enabled) {
     log<<plumed.cite("Wang, Valsson, Tiwary, Parrinello, and Lindorff-Larsen, J. Chem. Phys. 149, 072309 (2018)");
   }
   log<<"\n";
@@ -1969,7 +1962,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
     height*=biasf_/(biasf_-1.0);
   }
   file.printField("height",height).printField("biasf",biasf_);
-  if(mw_n_>1) {
+  if(mw_.n>1) {
     file.printField("clock",int(std::time(0)));
   }
   file.printField();
@@ -2068,8 +2061,8 @@ std::vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill) {
     }
   }
 
-  if(doInt_) {
-    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) {
+  if(interval_.enabled) {
+    if(hill.center[0]+cutoff[0] > interval_.upper || hill.center[0]-cutoff[0] < interval_.lower) {
       // in this case, we updated the entire grid to avoid problems
       return BiasGrid_->getNbin();
     } else {
@@ -2097,7 +2090,7 @@ double MetaD::getBias(const std::vector<double>& cv) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
 
-    if(!nlist_) {
+    if(!nlist_.enabled) {
       #pragma omp parallel num_threads(nt)
       {
         #pragma omp for reduction(+:bias) nowait
@@ -2109,8 +2102,8 @@ double MetaD::getBias(const std::vector<double>& cv) {
       #pragma omp parallel num_threads(nt)
       {
         #pragma omp for reduction(+:bias) nowait
-        for(unsigned i=rank; i<nlist_hills_.size(); i+=stride) {
-          bias+=evaluateGaussian(cv,nlist_hills_[i]);
+        for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
+          bias+=evaluateGaussian(cv,nlist_.hills[i]);
         }
       }
     }
@@ -2134,7 +2127,7 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
 
-    if(!nlist_) {
+    if(!nlist_.enabled) {
       if(hills_.size()<2*nt*stride||nt==1) {
         // for performance reasons and thread safety
         std::vector<double> dp(ncv);
@@ -2161,8 +2154,8 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
       if(hills_.size()<2*nt*stride||nt==1) {
         // for performance reasons and thread safety
         std::vector<double> dp(ncv);
-        for(unsigned i=rank; i<nlist_hills_.size(); i+=stride) {
-          bias+=evaluateGaussianAndDerivatives(cv,nlist_hills_[i],der,dp);
+        for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
+          bias+=evaluateGaussianAndDerivatives(cv,nlist_.hills[i],der,dp);
         }
       } else {
         #pragma omp parallel num_threads(nt)
@@ -2171,8 +2164,8 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
           // for performance reasons and thread safety
           std::vector<double> dp(ncv);
           #pragma omp for reduction(+:bias) nowait
-          for(unsigned i=rank; i<nlist_hills_.size(); i+=stride) {
-            bias+=evaluateGaussianAndDerivatives(cv,nlist_hills_[i],omp_deriv,dp);
+          for(unsigned i=rank; i<nlist_.hills.size(); i+=stride) {
+            bias+=evaluateGaussianAndDerivatives(cv,nlist_.hills[i],omp_deriv,dp);
           }
           #pragma omp critical
           for(unsigned i=0; i<ncv; i++) {
@@ -2225,14 +2218,14 @@ double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hi
   if(ncv>0) {
     pcv=&cv[0];
   }
-  if(doInt_) {
+  if(interval_.enabled) {
     plumed_assert(ncv==1);
     tmpcv[0]=cv[0];
-    if(cv[0]<lowI_) {
-      tmpcv[0]=lowI_;
+    if(cv[0]<interval_.lower) {
+      tmpcv[0]=interval_.lower;
     }
-    if(cv[0]>uppI_) {
-      tmpcv[0]=uppI_;
+    if(cv[0]>interval_.upper) {
+      tmpcv[0]=interval_.upper;
     }
     pcv=&(tmpcv[0]);
   }
@@ -2282,25 +2275,25 @@ double MetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, cons
   // but when using doInt it is easier to locally replace cv[0] with
   // the upper/lower limit in case it is out of range
   const double *pcv=NULL; // pointer to cv
-  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
+  double tmpcv[1]; // tmp array with cv (to be used with INTERVAL)
   if(ncv>0) {
     pcv=&cv[0];
   }
-  if(doInt_) {
+  if(interval_.enabled) {
     plumed_assert(ncv==1);
     tmpcv[0]=cv[0];
-    if(cv[0]<lowI_) {
-      tmpcv[0]=lowI_;
+    if(cv[0]<interval_.lower) {
+      tmpcv[0]=interval_.lower;
     }
-    if(cv[0]>uppI_) {
-      tmpcv[0]=uppI_;
+    if(cv[0]>interval_.upper) {
+      tmpcv[0]=interval_.upper;
     }
     pcv=&(tmpcv[0]);
   }
 
   bool int_der=false;
-  if(doInt_) {
-    if(cv[0]<lowI_ || cv[0]>uppI_) {
+  if(interval_.enabled) {
+    if(cv[0]<interval_.lower || cv[0]>interval_.upper) {
       int_der=true;
     }
   }
@@ -2417,21 +2410,21 @@ void MetaD::calculate() {
     cv[i]=getArgument(i);
   }
 
-  if(nlist_) {
-    nlist_steps_++;
+  if(nlist_.enabled) {
+    nlist_.steps++;
     if(getExchangeStep()) {
-      nlist_update_=true;
+      nlist_.update=true;
     } else {
       for(unsigned i=0; i<ncv; ++i) {
-        double d = difference(i, cv[i], nlist_center_[i]);
-        double nk_dist2 = d*d/nlist_dev2_[i];
-        if(nk_dist2>nlist_param_[1]) {
-          nlist_update_=true;
+        double d = difference(i, cv[i], nlist_.center[i]);
+        double nk_dist2 = d*d/nlist_.dev2[i];
+        if(nk_dist2>nlist_.param[1]) {
+          nlist_.update=true;
           break;
         }
       }
     }
-    if(nlist_update_) {
+    if(nlist_.update) {
       updateNlist();
     }
   }
@@ -2459,7 +2452,7 @@ void MetaD::calculate() {
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration_ && isFirstStep_ && acc_restart_mean_ > 0.0) {
     acc_ = acc_restart_mean_ * static_cast<double>(getStep());
-    if(freq_adaptive_) {
+    if(fa_.enabled) {
       // has to be done here if restarting, as the acc is not defined before
       updateFrequencyAdaptiveStride();
     }
@@ -2508,12 +2501,12 @@ void MetaD::update() {
     }
 
     // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       // Allocate arrays to store all walkers hills
-      std::vector<double> all_cv(mpi_nw_*ncv,0.0);
-      std::vector<double> all_sigma(mpi_nw_*thissigma.size(),0.0);
-      std::vector<double> all_height(mpi_nw_,0.0);
-      std::vector<int>    all_multivariate(mpi_nw_,0);
+      std::vector<double> all_cv(mw_.mpi_nw*ncv,0.0);
+      std::vector<double> all_sigma(mw_.mpi_nw*thissigma.size(),0.0);
+      std::vector<double> all_height(mw_.mpi_nw,0.0);
+      std::vector<int>    all_multivariate(mw_.mpi_nw,0);
       if(comm.Get_rank()==0) {
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
@@ -2529,12 +2522,12 @@ void MetaD::update() {
       comm.Bcast(all_multivariate,0);
 
       // Flying Gaussian
-      if (flying_) {
+      if (mw_.flying) {
         hills_.clear();
         comm.Barrier();
       }
 
-      for(unsigned i=0; i<mpi_nw_; i++) {
+      for(unsigned i=0; i<mw_.mpi_nw; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(ncv);
         std::vector<double> sigma_now(thissigma.size());
@@ -2548,7 +2541,7 @@ void MetaD::update() {
         double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
         Gaussian newhill=Gaussian(all_multivariate[i],all_height[i]*fact,cv_now,sigma_now);
         addGaussian(newhill);
-        if(!flying_) {
+        if(!mw_.flying) {
           writeGaussian(newhill,hillsOfile_);
         }
       }
@@ -2559,19 +2552,19 @@ void MetaD::update() {
     }
 
     // this is to update the hills neighbor list
-    if(nlist_) {
-      nlist_update_=true;
+    if(nlist_.enabled) {
+      nlist_.update=true;
     }
   }
 
   // this should be outside of the if block in case
   // mw_rstride_ is not a multiple of stride_
-  if(mw_n_>1 && getStep()%mw_rstride_==0) {
+  if(mw_.n>1 && getStep()%mw_.rstride==0) {
     hillsOfile_.flush();
   }
 
   if(calc_work_) {
-    if(nlist_) {
+    if(nlist_.enabled) {
       updateNlist();
     }
     double vbias1=getBias(cv);
@@ -2589,7 +2582,7 @@ void MetaD::update() {
     // this will overwrite previously written grids
     else {
       int r = 0;
-      if(walkers_mpi_) {
+      if(mw_.mpi) {
         r=getReplicaIndex();
       }
       if(r==0) {
@@ -2609,10 +2602,10 @@ void MetaD::update() {
   }
 
   // if multiple walkers and time to read Gaussians
-  if(mw_n_>1 && getStep()%mw_rstride_==0) {
-    for(int i=0; i<mw_n_; ++i) {
+  if(mw_.n>1 && getStep()%mw_.rstride==0) {
+    for(int i=0; i<mw_.n; ++i) {
       // don't read your own Gaussians
-      if(i==mw_id_) {
+      if(i==mw_.id) {
         continue;
       }
       // if the file is not open yet
@@ -2630,13 +2623,13 @@ void MetaD::update() {
       }
     }
     // this is to update the hills neighbor list
-    if(nlist_) {
-      nlist_update_=true;
+    if(nlist_.enabled) {
+      nlist_.update=true;
     }
   }
 
   // Recalculate special bias quantities whenever the bias has been changed by the update.
-  bool bias_has_changed = (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0));
+  bool bias_has_changed = (nowAddAHill || (mw_.n > 1 && getStep() % mw_.rstride == 0));
   if (calc_rct_ && bias_has_changed && getStep()%(stride_*rct_ustride_)==0) {
     computeReweightingFactor();
   }
@@ -2650,7 +2643,7 @@ void MetaD::update() {
   }
 
   // Frequency adaptive metadynamics - update hill addition frequency
-  if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
+  if(fa_.enabled && getStep()%fa_.update_frequency==0) {
     updateFrequencyAdaptiveStride();
   }
 }
@@ -2807,17 +2800,17 @@ double MetaD::getTransitionBarrierBias() {
 }
 
 void MetaD::updateFrequencyAdaptiveStride() {
-  plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
+  plumed_massert(fa_.enabled,"should only be used if frequency adaptive metadynamics is enabled");
   plumed_massert(acceleration_,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
   const double mean_acc = acc_/((double) getStep());
-  int tmp_stride= stride_*floor((mean_acc/fa_min_acceleration_)+0.5);
-  if(mean_acc >= fa_min_acceleration_) {
+  int tmp_stride= stride_*floor((mean_acc/fa_.min_acceleration)+0.5);
+  if(mean_acc >= fa_.min_acceleration) {
     if(tmp_stride > current_stride_) {
       current_stride_ = tmp_stride;
     }
   }
-  if(fa_max_stride_!=0 && current_stride_>fa_max_stride_) {
-    current_stride_=fa_max_stride_;
+  if(fa_.max_stride!=0 && current_stride_>fa_.max_stride) {
+    current_stride_=fa_.max_stride;
   }
   getPntrToComponent("pace")->set(current_stride_);
 }
@@ -2841,7 +2834,7 @@ void MetaD::updateNlist() {
   }
 
   // here we generate the neighbor list
-  nlist_hills_.clear();
+  nlist_.hills.clear();
   std::vector<Gaussian> local_flat_nl;
   unsigned nt=OpenMP::getNumThreads();
   if(hills_.size()<2*nt) {
@@ -2857,40 +2850,40 @@ void MetaD::updateNlist() {
         const double d=difference(i,getArgument(i),hills_[k].center[i])/hills_[k].sigma[i];
         dist2+=d*d;
       }
-      if(dist2<=nlist_param_[0]*dp2cutoff) {
+      if(dist2<=nlist_.param[0]*dp2cutoff) {
         private_flat_nl.push_back(hills_[k]);
       }
     }
     #pragma omp critical
     local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
   }
-  nlist_hills_ = local_flat_nl;
+  nlist_.hills = local_flat_nl;
 
   // here we set some properties that are used to decide when to update it again
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    nlist_center_[i]=getArgument(i);
+    nlist_.center[i]=getArgument(i);
   }
   std::vector<double> dev2;
   dev2.resize(getNumberOfArguments(),0);
-  for(unsigned k=0; k<nlist_hills_.size(); k++) {
+  for(unsigned k=0; k<nlist_.hills.size(); k++) {
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      const double d=difference(i,getArgument(i),nlist_hills_[k].center[i]);
+      const double d=difference(i,getArgument(i),nlist_.hills[k].center[i]);
       dev2[i]+=d*d;
     }
   }
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     if(dev2[i]>0.) {
-      nlist_dev2_[i]=dev2[i]/static_cast<double>(nlist_hills_.size());
+      nlist_.dev2[i]=dev2[i]/static_cast<double>(nlist_.hills.size());
     } else {
-      nlist_dev2_[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
+      nlist_.dev2[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
     }
   }
 
   // we are done
-  getPntrToComponent("nlker")->set(nlist_hills_.size());
-  getPntrToComponent("nlsteps")->set(nlist_steps_);
-  nlist_steps_=0;
-  nlist_update_=false;
+  getPntrToComponent("nlker")->set(nlist_.hills.size());
+  getPntrToComponent("nlsteps")->set(nlist_.steps);
+  nlist_.steps=0;
+  nlist_.update=false;
 }
 
 }
