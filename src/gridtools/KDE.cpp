@@ -71,17 +71,6 @@ DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 If $x$ is one of the input arguments to the KDE action and $x<g_{min}$ or $x>g_{max}$, where $g_{min}$ and $g_{max}$ are the minimum
 and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by PLUMED will crash.
 
-Notice also that when you use Gaussian kernels to accumulate a denisty as in the input above you need to define a cutoff beyond, which the
-Gaussian (which is a function with infinite support) is assumed not to contribute to the accumulated density.  When setting this cutoff you
-set the value of $x$ in the following expression $\sigma \sqrt{2*x}$, where $\sigma$ is the bandwidth.  By default $x$ is set equal to 6.25 but
-you can change this value by using the CUTOFF keyword as shown below:
-
-```plumed
-d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2 CUTOFF=6.25
-DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
-```
-
 ## Constructing the density
 
 If you are performing a simulation in the NVT ensemble and wish to look at the density as a function of position in the cell you can use an input like the one shown below:
@@ -277,25 +266,25 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
       error("invalid input for bandwidth parameter");
     } else if( bwargs[0]->getRank()<=1 ) {
       if( kerneltype.find("bin")==std::string::npos ) {
-        readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
       } else {
         std::size_t dd = kerneltype.find("-bin");
         readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
       }
     } else if( bwargs[0]->getRank()==2 ) {
-      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
     } else {
       error("found strange rank for bandwidth parameter");
     }
   } else if( bw.size()==argvals.size() ) {
     if( kerneltype.find("bin")==std::string::npos ) {
-      readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
     } else {
       std::size_t dd = kerneltype.find("-bin");
       readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
     }
   } else if( bw.size()==argvals.size()*argvals.size() ) {
-    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ")+ argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ")+ argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
   } else {
     error("invalid input for bandwidth");
   }

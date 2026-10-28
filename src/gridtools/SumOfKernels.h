@@ -88,7 +88,7 @@ public:
   static void registerKeywords( Keywords& keys ) {}
   static void read( DiscreteKernel& p, ActionWithArguments* action, const std::vector<Value*>& args ) {}
   static void setArgumentDomain( const unsigned& i, DiscreteKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 ) {}
-  static void getSupport( DiscreteKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {}
+  static void getSupport( DiscreteKernel& params, const View<const double>& shape, std::vector<double>& support ) {}
 #pragma acc routine seq
   static double calc( const DiscreteKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {}
@@ -110,7 +110,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void read( HistogramBeadKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, HistogramBeadKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
-  static void getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
+  static void getSupport( HistogramBeadKernel& params, const View<const double>& shape, std::vector<double>& support );
 #pragma acc routine seq
   static double calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {
@@ -131,6 +131,7 @@ template <class K>
 class RegularKernel {
 public:
   bool canusevol;
+  double cutoff;
 #ifdef __PLUMED_HAS_OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
@@ -146,7 +147,7 @@ public:
   static void read( RegularKernel& p, ActionWithArguments* action, const std::vector<Value*>& args );
   static void setArgumentDomain( const unsigned& i, RegularKernel& params, const double& spacing, const bool isp, const std::string& min1, const std::string& max1 );
   static double difference( const RegularKernel& params, unsigned i, const double& val1, const double& val2 );
-  static void getSupport( const RegularKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support );
+  static void getSupport( const RegularKernel& params, const View<const double>& shape, std::vector<double>& support );
   static double calc( const RegularKernel& params, const K& kp, View<const double> x, View<double> der, View<double> paramderivs );
   void update() {
     periodic = periodic_v.data();
@@ -178,8 +179,24 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
   for(auto & c: kerneltype) {
     c = std::toupper(c);
   }
-  p.canusevol = (kerneltype=="GAUSSIAN");
+  p.canusevol = (kerneltype.find("GAUSSIAN")!=std::string::npos );
   p.switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH", errors );
+  if( p.switchingFunction.get_dmax()<std::numeric_limits<double>::max() ) {
+    p.cutoff = p.switchingFunction.get_dmax();
+    action->log<<"  using switching function for kernel with r0="<<p.switchingFunction.description()<<" and cutoff "<<p.cutoff<<"\n";
+  } else {
+    p.cutoff = sqrt(2*dp2cutoff);
+    if( args.size()>1 ) {
+      std::string strdim;
+      Tools::convert( args.size(), strdim );
+      action->warning("using a switching function without a D_MAX parameter for the kernel is not recommended. As discussed in the manual, "
+                      "when D_MAX is unset the cutoff is set equal to sqrt(2*6.25). In " + strdim + "D density from any given kernel "
+                      "will be accumulated at points that are more than this D_MAX from the center of the kernel. The reason why can be understood by considering "
+                      "the two dimensional case. To determine if we need to evaluate a kernel centered at (x,y) for the grid point (w,z) we first determine if "
+                      "|x-w|<D_MAX and |y-z|<D_MAX. This is a necessary but not sufficient condition for (x-w)^2+(y-z)^2<=D_MAX^2.  If D_MAX is set we perform an "
+                      "explicit check on this second condition. If it is not set we do check if (x-w)^2+(y-z)^2<=D_MAX^2 before evaluating the switching function");
+    }
+  }
   if( errors.length()!=0 ) {
     action->error("problem reading switching function description " + errors);
   }
@@ -209,10 +226,10 @@ double RegularKernel<K>::difference( const RegularKernel<K>& params, unsigned i,
 }
 
 template <class K>
-void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {
+void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const View<const double>& shape, std::vector<double>& support ) {
   K::getSigmaProjections( shape, support );
   for(unsigned i=0; i<support.size(); ++i) {
-    support[i] = sqrt(2.0*dp2cutoff)*support[i];
+    support[i] = params.cutoff*support[i];
   }
 }
 

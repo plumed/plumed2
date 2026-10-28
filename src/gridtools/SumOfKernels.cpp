@@ -51,7 +51,7 @@ void HistogramBeadKernel::setArgumentDomain( const unsigned& i, HistogramBeadKer
   }
 }
 
-void HistogramBeadKernel::getSupport( HistogramBeadKernel& params, const View<const double>& shape, double dp2cutoff, std::vector<double>& support ) {
+void HistogramBeadKernel::getSupport( HistogramBeadKernel& params, const View<const double>& shape, std::vector<double>& support ) {
   HistogramBead mybead( params.kerneltype, 0, 1, 0.5 );
   for(unsigned i=0; i<support.size(); ++i) {
     if( params.periodic[i] ) {
