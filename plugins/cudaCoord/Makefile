@@ -27,6 +27,15 @@ ifeq ($(SOEXT),dylib)
   SONAME_OPTION:=-Xlinker -install_name
 else
   SONAME_OPTION:=-Xlinker -soname
+# nvcc links the CUDA runtime statically by default, so the plugin carries its
+# own copy, which is finalized when the plugin is unloaded. PLUMED unloads the
+# libraries of LOAD with dlclose when it is destroyed, and an MD code destroys
+# PLUMED before freeing its own GPU memory (GROMACS >= 2025 does it just before
+# destroying the forcerec). With nodelete dlclose does not unload the plugin, and
+# the runtime is finalized at process exit, as for a statically linked code.
+# The same flag fixed "Freeing of the device buffer failed ... cudaErrorInvalidValue"
+# at the end of GROMACS runs with the openaccPTM plugin.
+  ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
 endif
 
 #this makes make search for files in src
