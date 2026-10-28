@@ -31,6 +31,15 @@ ifeq ($(SOEXT),dylib)
   SONAME_FLAGS=-Xlinker -install_name -Xlinker $(notdir $@)
 else
   SONAME_FLAGS=-Xlinker -soname=$(notdir $@)
+# The NVIDIA runtime is linked statically in the plugin (-static-nvidia), so it
+# is finalized when the plugin is unloaded. PLUMED unloads the libraries
+# of LOAD with dlclose when it is destroyed, and an MD code destroys PLUMED
+# before freeing its own GPU memory (GROMACS >= 2025 does it just before
+# destroying the forcerec): the runtime shutdown then invalidates the MD code's
+# allocations, which fails with "Freeing of the device buffer failed ...
+# cudaErrorInvalidValue". With nodelete dlclose does not unload the plugin, and
+# the runtime is finalized at process exit, as for a statically linked code.
+  ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
 endif
 
 PLUGIN=plumedOpenACC.$(SOEXT)
