@@ -1897,9 +1897,9 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
   for(unsigned i=0; i<ncv; ++i) {
     file.printField(getPntrToArgument(i),hill.center[i]);
   }
-  hillsOfile_.printField("kerneltype","stretched-gaussian");
+  file.printField("kerneltype","stretched-gaussian");
   if(hill.multivariate) {
-    hillsOfile_.printField("multivariate","true");
+    file.printField("multivariate","true");
     Matrix<double> mymatrix(ncv,ncv);
     unsigned k=0;
     for(unsigned i=0; i<ncv; i++) {
@@ -1929,7 +1929,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
       }
     }
   } else {
-    hillsOfile_.printField("multivariate","false");
+    file.printField("multivariate","false");
     for(unsigned i=0; i<ncv; ++i) {
       file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
     }
