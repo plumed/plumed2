@@ -979,10 +979,21 @@ void MetaD::parseGaussianWidth() {
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
+  for(const auto s : sigma0_) {
+    if(!(s>0.0)) {
+      error("SIGMA should be positive");
+    }
+  }
   if(adaptive_==FlexibleBin::none) {
     // if you use normal sigma you need one sigma per argument
     if( sigma0_.size()!=getNumberOfArguments() ) {
       error("number of arguments does not match number of SIGMA parameters");
+    }
+    std::vector<double> smin,smax;
+    parseVector("SIGMA_MIN",smin);
+    parseVector("SIGMA_MAX",smax);
+    if(smin.size()>0 || smax.size()>0) {
+      error("SIGMA_MIN and SIGMA_MAX can only be used with ADAPTIVE");
     }
   } else {
     // if you use flexible hills you need one sigma
@@ -998,7 +1009,7 @@ void MetaD::parseGaussianWidth() {
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
     if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
-      error("the number of SIGMA_MIN values be the same of the number of the arguments");
+      error("the number of SIGMA_MIN values should be the same as the number of arguments");
     } else if(sigma0min_.size()==0) {
       sigma0min_.resize(getNumberOfArguments());
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1008,7 +1019,7 @@ void MetaD::parseGaussianWidth() {
 
     parseVector("SIGMA_MAX",sigma0max_);
     if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
-      error("the number of SIGMA_MAX values be the same of the number of the arguments");
+      error("the number of SIGMA_MAX values should be the same as the number of arguments");
     } else if(sigma0max_.size()==0) {
       sigma0max_.resize(getNumberOfArguments());
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1023,6 +1034,9 @@ void MetaD::parseGaussianWidth() {
 void MetaD::parseHillsAndTempering(SetupInput& in) {
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
+  if(height0_<0.0) {
+    error("HEIGHT should not be negative");
+  }
   parse("PACE",stride_);
   if(stride_<=0) {
     error("frequency for hill addition is nonsensical");
@@ -1095,6 +1109,9 @@ void MetaD::parseHillsAndTempering(SetupInput& in) {
   }
   in.tau=0.0;
   parse("TAU",in.tau);
+  if(in.tau<0.0) {
+    error("TAU should be positive");
+  }
   if(in.tau==0.0) {
     if(height0_==std::numeric_limits<double>::max()) {
       error("At least one between HEIGHT and TAU should be specified");
@@ -1161,6 +1178,9 @@ void MetaD::parseGrid(SetupInput& in) {
   parseFlag("GRID_NOSPLINE",nospline);
   in.spline=!nospline;
   parse("GRID_WSTRIDE",wgridstride_);
+  if(wgridstride_<0) {
+    error("GRID_WSTRIDE should not be negative");
+  }
   parse("GRID_WFILE",in.gridfilename);
   parseFlag("STORE_GRIDS",storeOldGrids_);
   if(grid_ && in.gridfilename.length()>0) {
@@ -1176,7 +1196,7 @@ void MetaD::parseGrid(SetupInput& in) {
 
   parse("GRID_RFILE",in.gridreadfilename);
 
-  if(!grid_&&in.gridfilename.length()> 0) {
+  if(!grid_&&(in.gridfilename.length()> 0 || wgridstride_>0)) {
     error("To write a grid you need first to define it!");
   }
   if(!grid_&&in.gridreadfilename.length()>0) {
@@ -1198,11 +1218,19 @@ void MetaD::parseNeighborList() {
     nlist_.param[0]=6.0;//*DP2CUTOFF -> max distance of neighbors
     nlist_.param[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
   } else {
-    plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
-    plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
+    if(nlist_param.size()!=2) {
+      error("two cutoff parameters are needed for the neighbor list");
+    }
+    if(!(nlist_param[0]>1.0)) {
+      error("the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
+    }
     const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]/2))+0.16;
-    plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
-    plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0/2) = "+std::to_string(min_PARAM_1));
+    if(!(nlist_param[1]>0)) {
+      error("the second of NLIST_PARAMETERS must be greater than 0");
+    }
+    if(nlist_param[1]>min_PARAM_1) {
+      error("the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0/2) = "+std::to_string(min_PARAM_1));
+    }
     nlist_.param[0]=nlist_param[0];
     nlist_.param[1]=nlist_param[1];
   }
@@ -1212,32 +1240,54 @@ void MetaD::parseReweightingFactor() {
   // Reweighting factor rct
   parseFlag("CALC_RCT",calc_rct_);
   if (calc_rct_) {
-    plumed_massert(grid_,"CALC_RCT is supported only if bias is on a grid");
+    if(!grid_) {
+      error("CALC_RCT is supported only if bias is on a grid");
+    }
+    if(kbt_==0.0) {
+      error("Unless the MD engine passes the temperature to plumed, with CALC_RCT you must specify it using TEMP");
+    }
   }
   parse("RCT_USTRIDE",rct_ustride_);
+  if(rct_ustride_==0) {
+    error("RCT_USTRIDE should be positive");
+  }
 }
 
 void MetaD::parseMultipleWalkers() {
   // Multiple walkers
   parse("WALKERS_N",mw_.n);
   parse("WALKERS_ID",mw_.id);
-  if(mw_.n<=mw_.id) {
-    error("walker ID should be a numerical value less than the total number of walkers");
+  if(mw_.n<1) {
+    error("the number of walkers should be positive");
+  }
+  if(mw_.id<0 || mw_.n<=mw_.id) {
+    error("walker ID should be a numerical value between 0 and the total number of walkers minus one");
   }
   parse("WALKERS_DIR",mw_.dir);
   parse("WALKERS_RSTRIDE",mw_.rstride);
+  if(mw_.rstride<=0) {
+    error("WALKERS_RSTRIDE should be positive");
+  }
 
   // MPI version
   parseFlag("WALKERS_MPI",mw_.mpi);
 
   //If this Action is not compiled with MPI the user is informed and we exit gracefully
   if(mw_.mpi) {
-    plumed_assert(Communicator::plumedHasMPI()) << "Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation";
-    plumed_assert(Communicator::initialized()) << "Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.";
+    if(!Communicator::plumedHasMPI()) {
+      error("Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
+    }
+    if(!Communicator::initialized()) {
+      error("Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
+    }
   }
 
   // Flying Gaussian
   parseFlag("FLYING_GAUSSIAN", mw_.flying);
+  if(mw_.flying && grid_) {
+    // the hills of the flying Gaussians are replaced at every deposition, which cannot be done on a grid
+    error("FLYING_GAUSSIAN cannot be used with a grid");
+  }
 }
 
 void MetaD::parseInterval() {
@@ -1276,7 +1326,7 @@ void MetaD::parseAcceleration(SetupInput& in) {
   fa_.update_frequency=0;
   parse("FA_UPDATE_FREQUENCY",fa_.update_frequency);
   if(fa_.update_frequency!=0 && !fa_.enabled) {
-    plumed_merror("It doesn't make sense to use the FA_UPDATE_FREQUENCY keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    error("It doesn't make sense to use the FA_UPDATE_FREQUENCY keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   if(fa_.update_frequency==0 && fa_.enabled) {
     fa_.update_frequency=stride_;
@@ -1285,13 +1335,13 @@ void MetaD::parseAcceleration(SetupInput& in) {
   fa_.max_stride=0;
   parse("FA_MAX_PACE",fa_.max_stride);
   if(fa_.max_stride!=0 && !fa_.enabled) {
-    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    error("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   //
   fa_.min_acceleration=1.0;
   parse("FA_MIN_ACCELERATION",fa_.min_acceleration);
   if(fa_.min_acceleration!=1.0 && !fa_.enabled) {
-    plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    error("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
 }
 
@@ -1582,10 +1632,10 @@ void MetaD::setupComponents(const SetupInput& in) {
 
   if(fa_.enabled) {
     if(!acceleration_) {
-      plumed_merror("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
+      error("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword");
     }
     if(mw_.mpi) {
-      plumed_merror("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
+      error("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
     }
 
     log.printf("  Frequency adaptive metadynamics enabled\n");
@@ -1613,26 +1663,9 @@ void MetaD::setupBiasGrid(SetupInput& in) {
   if(grid_) {
     std::string funcl=getLabel() + ".bias";
     BiasGrid_=Tools::make_unique<MetaDBiasGrid>(*this);
+    // check for mesh and sigma size (for a grid read from file, on the lattice of the grid in input)
+    MetaDBiasGrid::checkSpacing(*this,in.gmin,in.gmax,in.gbin,adaptive_!=FlexibleBin::none,sigma0_,sigma0min_);
     if(!(in.gridreadfilename.length()>0)) {
-      // check for mesh and sigma size
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        double a,b;
-        Tools::convert(in.gmin[i],a);
-        Tools::convert(in.gmax[i],b);
-        double mesh=(b-a)/((double)in.gbin[i]);
-        if(adaptive_==FlexibleBin::none) {
-          if(mesh>0.5*sigma0_[i]) {
-            log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width (SIGMA) can produce artifacts\n";
-          }
-        } else {
-          if(sigma0min_[i]<0.) {
-            error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
-          }
-          if(mesh>0.5*sigma0min_[i]) {
-            log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
-          }
-        }
-      }
       BiasGrid_->create(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.sparsegrid,in.spline,in.gridnobounds);
     } else {
       // read the grid in input, find the keys
@@ -1663,20 +1696,6 @@ void MetaD::setupBiasGrid(SetupInput& in) {
       if(mw_.n>1) {
         // the hills of the other walkers in the grid
         gridWalkerHills_=MetaDHillsFiles::readGridComment(comm,gridfile.getPath(),mw_.n);
-      }
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        double a, b;
-        Tools::convert(in.gmin[i],a);
-        Tools::convert(in.gmax[i],b);
-        double mesh=(b-a)/((double)in.gbin[i]);
-        // with ADAPTIVE there is a single SIGMA: compare with SIGMA_MIN (if given) as for a new grid
-        if(adaptive_==FlexibleBin::none) {
-          if(mesh>0.5*sigma0_[i]) {
-            log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-          }
-        } else if(sigma0min_[i]>0. && mesh>0.5*sigma0min_[i]) {
-          log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
-        }
       }
       log.printf("  Restarting from %s\n",in.gridreadfilename.c_str());
       if(getRestart()) {
@@ -2038,6 +2057,9 @@ void MetaD::readTemperingSpecs(TemperingSpecs &t_specs) {
     }
     if (t_specs.biasf == 1.0) {
       error("A bias factor of 1 corresponds to zero delta T and zero hill size, so it is not allowed.");
+    }
+    if (t_specs.biasf < 1.0) {
+      error(t_specs.name + " bias factor is nonsensical");
     }
     t_specs.is_active = true;
     parse(t_specs.name_stem + "BIASTHRESHOLD", t_specs.threshold);

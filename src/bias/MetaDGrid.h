@@ -71,6 +71,11 @@ public:
   static bool setupBins(Action& action, const std::vector<Value*>& args, std::vector<std::string>& gmin, std::vector<std::string>& gmax,
                         std::vector<unsigned>& gbin, std::vector<double>& gspacing, bool adaptive, const std::vector<double>& sigma0,
                         const std::vector<double>& sigma0min);
+  /// warnings if the spacing of the grid is larger than half the width of the hills (SIGMA, or SIGMA_MIN with ADAPTIVE,
+  /// which must be given)
+  static void checkSpacing(Action& action, const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
+                           const std::vector<unsigned>& gbin, bool adaptive, const std::vector<double>& sigma0,
+                           const std::vector<double>& sigma0min);
   /// error if GRID_SIZE_LIMIT is not valid
   static void checkSizeLimit(Action& action, double limit);
   explicit MetaDBiasGrid(Action& action);

@@ -533,11 +533,22 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
+  for(const auto s : sigma0_) {
+    if(!(s>0.0)) {
+      error("SIGMA should be positive");
+    }
+  }
   if(adaptive_==FlexibleBin::none) {
-    // if you use normal sigma you need one sigma per argument
+    // if you use normal sigma you need one sigma per family
     if( sigma0_.size()!=pf_n ) {
       std::string fields = do_pf_ ? "PFs" : "arguments";
       error("number of " + fields + " does not match number of SIGMA parameters");
+    }
+    std::vector<double> smin,smax;
+    parseVector("SIGMA_MIN",smin);
+    parseVector("SIGMA_MAX",smax);
+    if(smin.size()>0 || smax.size()>0) {
+      error("SIGMA_MIN and SIGMA_MAX can only be used with ADAPTIVE");
     }
   } else {
     // if you use flexible hills you need one sigma
@@ -553,14 +564,14 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
     if(sigma0min_.size()>0 && sigma0min_.size()!=pf_n) {
-      error("the number of SIGMA_MIN values be the same of the number of the arguments/PF");
+      error("the number of SIGMA_MIN values should be the same as the number of arguments (PFs)");
     } else if(sigma0min_.size()==0) {
       sigma0min_.assign(pf_n,-1.);
     }
 
     parseVector("SIGMA_MAX",sigma0max_);
     if(sigma0max_.size()>0 && sigma0max_.size()!=pf_n) {
-      error("the number of SIGMA_MAX values be the same of the number of the arguments/PF");
+      error("the number of SIGMA_MAX values should be the same as the number of arguments (PFs)");
     } else if(sigma0max_.size()==0) {
       sigma0max_.assign(pf_n,-1.);
     }
@@ -591,6 +602,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
+  if(height0_<0.0) {
+    error("HEIGHT should not be negative");
+  }
   parse("PACE",stride_);
   if(stride_<=0) {
     error("frequency for hill addition is nonsensical");
@@ -605,7 +619,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
   }
   if( hillsfname.size()!=pf_n ) {
-    error("number of FILE arguments does not match number of HILLS files");
+    error("the number of FILE names does not match the number of arguments (PFs)");
   }
 
   parse("BIASFACTOR",biasf_);
@@ -614,9 +628,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   kbt_=getkBT();
   if(biasf_>1.0) {
-    if(kbt_==0.0) {
-      error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
-    }
     welltemp_=true;
   }
   // the biases of the families are combined, and the heights of the hills are computed, with kBT
@@ -625,6 +636,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   double tau=0.0;
   parse("TAU",tau);
+  if(tau<0.0) {
+    error("TAU should be positive");
+  }
   if(tau==0.0) {
     if(height0_==std::numeric_limits<double>::max()) {
       error("At least one between HEIGHT and TAU should be specified");
@@ -646,17 +660,26 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
-  if(mw_n_<=mw_id_) {
-    error("walker ID should be a numerical value less than the total number of walkers");
+  if(mw_n_<1) {
+    error("the number of walkers should be positive");
+  }
+  if(mw_id_<0 || mw_n_<=mw_id_) {
+    error("walker ID should be a numerical value between 0 and the total number of walkers minus one");
   }
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
+  if(mw_rstride_<=0) {
+    error("WALKERS_RSTRIDE should be positive");
+  }
 
   // MPI version
   parseFlag("WALKERS_MPI",walkers_mpi_);
 
   // Grid file
   parse("GRID_WSTRIDE",wgridstride_);
+  if(wgridstride_<0) {
+    error("GRID_WSTRIDE should not be negative");
+  }
   std::vector<std::string> gridfilenames;
   parseVector("GRID_WFILES",gridfilenames);
   if (wgridstride_ == 0 && gridfilenames.size() > 0) {
@@ -727,30 +750,31 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("INTERVAL_MAX",uppI);
   // various checks
   if(lowI.size()!=uppI.size()) {
-    error("both a lower and an upper limits must be provided with INTERVAL");
+    error("both the lower and the upper limits must be provided with INTERVAL_MIN and INTERVAL_MAX");
   }
   if(lowI.size()!=0 && lowI.size()!=pf_n) {
-    error("check number of argument of INTERVAL");
+    error("the number of INTERVAL_MIN and INTERVAL_MAX values should be the same as the number of arguments (PFs)");
   }
   for(unsigned i=0; i<lowI.size(); ++i) {
     if(uppI[i]<lowI[i]) {
       error("The Upper limit must be greater than the Lower limit!");
     }
+    // (a value must be given for every family: the values for the periodic ones are not used)
     if(pfhold[i]->isPeriodic()) {
-      warning("INTERVAL is not used for periodic variables");
-    } else {
-      families_[i].interval=true;
-      families_[i].lower=lowI[i];
-      families_[i].upper=uppI[i];
-      families_[i].kernel.setInterval(lowI[i],uppI[i]);
+      warning("INTERVAL is not used for the periodic variable "+pfhold[i]->getName());
+      continue;
     }
+    families_[i].interval=true;
+    families_[i].lower=lowI[i];
+    families_[i].upper=uppI[i];
+    families_[i].kernel.setInterval(lowI[i],uppI[i]);
   }
 
   // parse selector stuff
   parse("SELECTOR", selector_);
   if(selector_.length()>0) {
     do_select_ = true;
-    select_value_ = 0; // set defalt value or it might be not initialized if the user does not pass SELECTOR_ID
+    select_value_ = 0; // default value, used if SELECTOR_ID is not given
     parse("SELECTOR_ID", select_value_);
   }
 
@@ -796,7 +820,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
   } else {
     if(walkers_mpi_) {
-      log.printf("  Multiple walkers active using MPI communnication\n");
+      log.printf("  Multiple walkers active using MPI communication\n");
       if(mw_dir_!="") {
         log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       }
@@ -902,19 +926,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     std::string funcl=getLabel() + ".bias";
     for(unsigned f=0; f<pf_n; ++f) {
       // check for mesh and sigma size
-      double a,b;
-      Tools::convert(gmin[f],a);
-      Tools::convert(gmax[f],b);
-      double mesh=(b-a)/((double)gbin[f]);
-      if(adaptive_==FlexibleBin::none) {
-        if(mesh>0.5*sigma0_[f]) {
-          log<<"  WARNING: Using a PBMETAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-        }
-      } else {
-        if(mesh>0.5*sigma0min_[f]||sigma0min_[f]<0.) {
-          log<<"  WARNING: to use a PBMETAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
-        }
-      }
+      MetaDBiasGrid::checkSpacing(*this,std::vector<std::string>(1,gmin[f]),std::vector<std::string>(1,gmax[f]),std::vector<unsigned>(1,gbin[f]),
+                                  adaptive_!=FlexibleBin::none,std::vector<double>(1,sigma0_[adaptive_!=FlexibleBin::none ? 0 : f]),
+                                  std::vector<double>(1,adaptive_!=FlexibleBin::none ? sigma0min_[f] : -1.0));
       std::vector<Value*> args(1,pfhold[f]);
       std::vector<std::string> gmin_t(1,gmin[f]);
       std::vector<std::string> gmax_t(1,gmax[f]);
@@ -1409,7 +1423,11 @@ void PBMetaD::calculate() {
 
   // set Forces - set them to zero if SELECTOR is active
   if(do_select_) {
-    current_value_ = static_cast<unsigned>(plumed.passMap[selector_]);
+    const auto selector=plumed.passMap.find(selector_);
+    if(selector==plumed.passMap.end()) {
+      error("SELECTOR "+selector_+" has not been defined");
+    }
+    current_value_ = static_cast<unsigned>(selector->second);
   }
 
   if(!do_select_ || select_value_==current_value_) {

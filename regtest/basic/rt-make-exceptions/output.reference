@@ -84,6 +84,18 @@ readInputLine PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 HEIGHT=1
 +++ catched
 readInputLine PBMETAD ARG=d,t PF0=d,t PACE=1 SIGMA=1 HEIGHT=1 TEMP=300
 +++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=0 HEIGHT=1
++++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 SIGMA_MIN=0.1
++++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=0 WALKERS_RSTRIDE=0
++++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=-1
++++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 GRID_WSTRIDE=10
++++ catched
+readInputLine PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 TAU=-1 BIASFACTOR=5 TEMP=300
++++ catched
 something random here NULL
 +++ catched
 setStep NULL

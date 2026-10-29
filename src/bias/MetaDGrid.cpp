@@ -43,6 +43,11 @@ bool MetaDBiasGrid::setupBins(Action& action, const std::vector<Value*>& args, s
   if(gbin.size()!=0     && gmin.size()==0) {
     action.error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
   }
+  for(const auto s : gspacing) {
+    if(!(s>0.0)) {
+      action.error("GRID_SPACING should be positive");
+    }
+  }
   if(gmin.size()!=0) {
     if(gbin.size()==0 && gspacing.size()==0) {
       if(!adaptive) {
@@ -109,6 +114,29 @@ bool MetaDBiasGrid::setupBins(Action& action, const std::vector<Value*>& args, s
     }
   }
   return nobounds;
+}
+
+void MetaDBiasGrid::checkSpacing(Action& action, const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
+                                 const std::vector<unsigned>& gbin, bool adaptive, const std::vector<double>& sigma0,
+                                 const std::vector<double>& sigma0min) {
+  for(unsigned i=0; i<gbin.size(); i++) {
+    double a,b;
+    Tools::convert(gmin[i],a);
+    Tools::convert(gmax[i],b);
+    const double mesh=(b-a)/static_cast<double>(gbin[i]);
+    if(!adaptive) {
+      if(mesh>0.5*sigma0[i]) {
+        action.log<<"  WARNING: Using a "<<action.getName()<<" with a Grid Spacing larger than half of the Gaussians width (SIGMA) can produce artifacts\n";
+      }
+    } else {
+      if(!(sigma0min[i]>0.0)) {
+        action.error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
+      }
+      if(mesh>0.5*sigma0min[i]) {
+        action.log<<"  WARNING: to use a "<<action.getName()<<" with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
+      }
+    }
+  }
 }
 
 void MetaDBiasGrid::checkSizeLimit(Action& action, double limit) {
