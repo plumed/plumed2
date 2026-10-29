@@ -502,6 +502,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   for(unsigned f=0; f<pf_n; f++) {
     families_[f].arg=pfhold[f];
     families_[f].kernel.setArguments(std::vector<Value*>(1,pfhold[f]));
+    // stretched Gaussians (they go to zero at the cutoff), as in METAD and as written in the hills files
+    if(!dp2cutoffNoStretch()) {
+      families_[f].kernel.setStretch(dp2cutoffA,dp2cutoffB);
+    }
   }
 
   // parse the sigma
