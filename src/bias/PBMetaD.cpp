@@ -827,8 +827,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   for(unsigned f=0; f<pf_n; f++) {
     if(families_[f].interval) {
-      log.printf("  Upper and Lower limits boundaries for the bias of %s are activated at %f - %f\n",pfhold[f]->getName().c_str(),
-                 families_[f].lower,families_[f].upper);
+      log.printf("  Upper and Lower limits boundaries for the bias of %s%s are activated at %f - %f\n",
+                 do_pf_ ? ("PF"+std::to_string(f)+": ").c_str() : "",pfhold[f]->getName().c_str(),families_[f].lower,families_[f].upper);
     }
   }
   if(grid_ && gridnobounds) {

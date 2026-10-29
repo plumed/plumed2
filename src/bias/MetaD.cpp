@@ -416,8 +416,8 @@ normalized by $c(t)$ is given by the rbias component (rbias=bias-rct).  As illus
 value  can be used to obtain a reweighted histogram.
 
 By default $c(t)$ is updated every time the bias changes.  If this slows down the simulation, you can use the keyword
-RCT_USTRIDE to update it only every RCT_USTRIDE Gaussian depositions: in the example input above $c(t)$ is calculated
-every 10 Gaussian depositions.
+RCT_USTRIDE to update it only every RCT_USTRIDE*PACE steps (every RCT_USTRIDE Gaussian depositions, unless the pace
+changes with FREQUENCY_ADAPTIVE): in the example input above $c(t)$ is calculated every 10 Gaussian depositions.
 
 
 ## Concurrent metadynamics
@@ -836,7 +836,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.addFlag("CALC_RCT",false,"calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor, in number of Gaussian depositions. "
+  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor, in units of PACE steps. "
            "The default is 1, so c(t) is updated every time the bias is updated.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (initial range: the grid is extended when needed)");
   keys.add("optional","GRID_MAX","the upper bounds for the grid (initial range: the grid is extended when needed)");
@@ -2333,7 +2333,8 @@ void MetaD::calculate() {
       acc_ = acc_restart_mean_ * static_cast<double>(getStep()-getStride()) + static_cast<double>(getStride()) * std::exp(ene/(kbt_));
       getPntrToComponent("acc")->set(acc_/static_cast<double>(getStep()));
     } else {
-      acc_ = acc_restart_mean_ * static_cast<double>(getStep());
+      // (with STRIDE, the acceleration is accumulated at the steps that are multiples of STRIDE)
+      acc_ = acc_restart_mean_ * static_cast<double>(getStep()-getStep()%getStride());
     }
     if(fa_.enabled) {
       // has to be done here if restarting, as the acc is not defined before
