@@ -521,7 +521,9 @@ PRINT ARG=d1,t1.bias STRIDE=100 FILE=COLVAR
 ```
 
 Notice that the BIASFACTOR can also be set equal to 1. In this case one will perform
-unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter as illustrated below.
+unbiased sampling: no bias is applied, and the hills files and the grid contain the estimate of the negative of the
+free energy (the heights of the hills are those of the limit of well-tempered metadynamics for a bias factor going to 1,
+as in [PBMETAD](PBMETAD.md)). Instead of using HEIGHT, one should provide the TAU parameter as illustrated below.
 
 ```plumed
 d: DISTANCE ATOMS=3,5
@@ -824,7 +826,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify TEMP");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify TEMP. With BIASFACTOR=1 no bias is applied, and the hills files and grids contain the estimate of -F");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kT*DAMPFACTOR)");
@@ -1347,6 +1349,9 @@ void MetaD::logHillsSetup(const SetupInput& in) {
   log.printf("\n  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_);
   log.printf("  Gaussian file %s\n",in.hillsfname.c_str());
+  if(biasf_==1.0) {
+    log.printf("  Bias factor 1: no bias is applied, the hills files and grids contain the estimate of -F\n");
+  }
   if(welltemp_) {
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
     log.printf("  Hills relaxation time (tau) %f\n",in.tau);

@@ -131,6 +131,11 @@ With ADAPTIVE=DIFF, as in [METAD](METAD.md), when restarting the statistics of t
 deposited after the restart have the same width they would have had without the restart (use DIFF_FROM_SCRATCH to
 accumulate the statistics from scratch).  With replica exchange, the running averages of the variables are
 restarted when an exchange is accepted, and the variances are kept.
+With PRECAL_DIFF the statistics are accumulated at every step, also outside the update window (UPDATE_FROM,
+UPDATE_UNTIL), so that the first hills have a width estimated over a sufficiently long time.
+
+With GRID_WSTRIDE the grids are written to the GRID_WFILES, overwriting the previous ones, or, with STORE_GRIDS,
+appending them one after the other.
 
 Another option that is available is the well-tempered metadynamics that is discussed in the second paper cited below. In this
 variant of PBMetaD the heights of the Gaussian hills are scaled at each step by the
@@ -140,6 +145,9 @@ the output printed the Gaussian height is re-scaled using the bias factor.
 Also notice that with well-tempered metadynamics the HILLS files do not contain the bias,
 but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the $\Delta T$. The applied bias will be scaled accordingly.
+As in [METAD](METAD.md), BIASFACTOR can also be set equal to 1: in this case no bias is applied, and the hills files and
+the grids contain the estimate of the negative of the free energy (the heights of the hills are those of the limit
+of well-tempered metadynamics for a bias factor going to 1).  Instead of HEIGHT, one can give TAU.
 
 Note that you can also use here the flexible Gaussian approach that is discussed in the third paper cited below.
 This method allows you to adapt the Gaussian to the extent of Cartesian space covered by a variable or
@@ -320,7 +328,15 @@ private:
   int stride_=0;
   // well-tempered MetaD
   bool welltemp_=false;
+  /// BIASFACTOR (1 without well-tempering)
   double biasf_=1.0;
+  /// BIASFACTOR=1: no bias is applied, the hills (which contain -F) are added with the heights of the limit of
+  /// well-tempered metadynamics for a bias factor going to 1
+  bool nobias_=false;
+  /// ADAPTIVE=DIFF: accumulate the CV statistics at every step, also outside the update window (PRECAL_DIFF)
+  bool precal_diff_=false;
+  /// append every grid that is written (STORE_GRIDS)
+  bool storeOldGrids_=false;
   // output files format
   std::string fmt_;
   /// the steps when hills are added (the first step of the run, the last hill read when restarting)
@@ -383,6 +399,7 @@ public:
   explicit PBMetaD(const ActionOptions&);
   void calculate() override;
   void update() override;
+  void beforeUpdate() override;
   static void registerKeywords(Keywords& keys);
   bool checkNeedsGradients()const override;
 };
@@ -396,7 +413,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","FILE","files in which the lists of added hills are stored, default names are assigned using arguments if FILE is not found");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this bias factor, one for all biases.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this bias factor, one for all biases. With BIASFACTOR=1 no bias is applied, and the hills files and grids contain the estimate of -F");
   keys.add("optional","TEMP","the system temperature - it is needed unless the MD engine passes it to PLUMED");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (initial range: the grid is extended when needed)");
@@ -407,12 +424,14 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","GRID_SIZE_LIMIT","100000000","the maximum number of points of each grid, which is extended when a Gaussian does not fit in it");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
+  keys.addFlag("STORE_GRIDS",false,"append every grid that is written to GRID_WFILES, instead of overwriting the previous one");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
   keys.add("optional","GRID_WFILES", "dump grid for the bias (one file for each family; METAD: GRID_WFILE), default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
   keys.add("optional","GRID_RFILES", "read grid for the bias (one file for each family; METAD: GRID_RFILE)");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.addFlag("PRECAL_DIFF",false,"with ADAPTIVE=DIFF, accumulate the statistics of the CV fluctuations at every step from the beginning of the simulation, also before UPDATE_FROM, after UPDATE_UNTIL and when UPDATE_IF is false, so that the first hills have a width estimated over a sufficiently long time");
   keys.addFlag("DIFF_FROM_SCRATCH",false,"with ADAPTIVE=DIFF, when restarting accumulate the statistics of the CV fluctuations from scratch, instead of initializing them from the last hills of the hills files");
   keys.addInputKeyword("numbered","PF", "scalar", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
@@ -590,6 +609,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       flexbin_.push_back(FlexibleBin(adaptive_,this,i,sigma0_[0],tmp_smin,tmp_smax));
     }
   }
+  parseFlag("PRECAL_DIFF",precal_diff_);
+  if(precal_diff_) {
+    if(adaptive_!=FlexibleBin::diffusion) {
+      error("PRECAL_DIFF can only be used with ADAPTIVE=DIFF");
+    }
+    log.printf("  The statistics for the hills width are accumulated at every step, also outside the update window (PRECAL_DIFF)\n");
+  }
   bool diff_from_scratch=false;
   parseFlag("DIFF_FROM_SCRATCH",diff_from_scratch);
   if(diff_from_scratch && adaptive_!=FlexibleBin::diffusion) {
@@ -629,14 +655,18 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     error("the number of FILE names does not match the number of arguments (PFs)");
   }
 
-  parse("BIASFACTOR",biasf_);
-  if( biasf_<1.0 ) {
-    error("well tempered bias factor is nonsensical");
+  // (-1: not given)
+  double biasf=-1.0;
+  parse("BIASFACTOR",biasf);
+  if(biasf!=-1.0) {
+    if( biasf<1.0 ) {
+      error("well tempered bias factor is nonsensical");
+    }
+    biasf_=biasf;
+    welltemp_=(biasf_>1.0);
+    nobias_=(biasf_==1.0);
   }
   kbt_=getkBT();
-  if(biasf_>1.0) {
-    welltemp_=true;
-  }
   // the biases of the families are combined, and the heights of the hills are computed, with kBT
   if(kbt_==0.0) {
     error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
@@ -655,13 +685,17 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       tau=(kbt_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
     }
   } else {
-    if(!welltemp_) {
+    if(!welltemp_ && !nobias_) {
       error("TAU only makes sense in well-tempered metadynamics");
     }
     if(height0_!=std::numeric_limits<double>::max()) {
       error("At most one between HEIGHT and TAU should be specified");
     }
-    height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    if(welltemp_) {
+      height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    } else {
+      height0_=kbt_/tau*getTimeStep()*stride_;  // special case for BIASFACTOR=1, as in METAD
+    }
   }
 
   // Multiple walkers
@@ -726,6 +760,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
+  parseFlag("STORE_GRIDS",storeOldGrids_);
   bool nospline=false;
   parseFlag("GRID_NOSPLINE",nospline);
   bool spline=!nospline;
@@ -793,6 +828,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     log.printf("%s ",hillsfname[i].c_str());
   }
   log.printf("\n");
+  if(nobias_) {
+    log.printf("  Bias factor 1: no bias is applied, the hills files and grids contain the estimate of -F\n");
+  }
   if(welltemp_) {
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
     log.printf("  Hills relaxation time (tau) %f\n",tau);
@@ -1404,15 +1442,24 @@ void PBMetaD::calculate() {
     current_value_ = static_cast<unsigned>(selector->second);
   }
 
+  // with BIASFACTOR=1 no bias is applied
   const bool selected=(!do_select_ || select_value_==current_value_);
   for(unsigned i=0; i<nargs; ++i) {
-    const double force = (selected ? - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i] : 0.0);
+    const double force = (selected && !nobias_ ? - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i] : 0.0);
     setOutputForce(i, force);
   }
 
   // set bias
   ene = -kbt_ * (std::log(ene) - std::log(ncv)) + bmin;
-  setBias(ene);
+  setBias(nobias_ ? 0.0 : ene);
+}
+
+void PBMetaD::beforeUpdate() {
+  // called at every step, also outside the update window and when the action is not active
+  // (e.g. with STRIDE), in which case the arguments have not been computed
+  if(precal_diff_ && isActive()) {
+    updateFlexibleBins(false);
+  }
 }
 
 bool PBMetaD::isHillStep() const {
@@ -1463,9 +1510,12 @@ void PBMetaD::update() {
 
   const unsigned nargs=getNumberOfArguments();
   // if you use adaptive, call the FlexibleBin
+  // (with PRECAL_DIFF the statistics have already been updated in beforeUpdate)
   bool multivariate=false;
   if(adaptive_!=FlexibleBin::none) {
-    updateFlexibleBins(nowAddAHill);
+    if(!precal_diff_) {
+      updateFlexibleBins(nowAddAHill);
+    }
     multivariate=true;
   }
 
@@ -1499,19 +1549,27 @@ void PBMetaD::update() {
     if(selected) {
       std::vector<double> bias;
       getBiases(cv,bias,nullptr);
-      const double bmin=*std::min_element(bias.begin(),bias.end());
-      // calculate heights and norm
-      double norm = 0.0;
-      for(unsigned i=0; i<nargs; ++i) {
-        double h = std::exp((-bias[i]+bmin)/kbt_);
-        norm += h;
-        height[i] = h;
-      }
-      // normalize and apply welltemp correction
-      for(unsigned i=0; i<nargs; ++i) {
-        height[i] *=  height0_ / norm;
-        if(welltemp_) {
-          height[i] *= std::exp(-bias[i]/(kbt_*(biasf_-1.0)));
+      if(nobias_) {
+        // BIASFACTOR=1: the grids and hills contain -F and the applied bias is zero: the conditional term is 1/N,
+        // and the well-tempered factor is exp(-V/kT), the limit for a bias factor going to 1 (as in METAD)
+        for(unsigned i=0; i<nargs; ++i) {
+          height[i] = height0_/static_cast<double>(nargs)*std::exp(-bias[i]/kbt_);
+        }
+      } else {
+        const double bmin=*std::min_element(bias.begin(),bias.end());
+        // calculate heights and norm
+        double norm = 0.0;
+        for(unsigned i=0; i<nargs; ++i) {
+          double h = std::exp((-bias[i]+bmin)/kbt_);
+          norm += h;
+          height[i] = h;
+        }
+        // normalize and apply welltemp correction
+        for(unsigned i=0; i<nargs; ++i) {
+          height[i] *=  height0_ / norm;
+          if(welltemp_) {
+            height[i] *= std::exp(-bias[i]/(kbt_*(biasf_-1.0)));
+          }
         }
       }
     }
@@ -1582,13 +1640,22 @@ void PBMetaD::update() {
     if(r==0) {
       for(auto & family : families_) {
         if(family.gridOfile) {
-          family.gridOfile->rewind();
+          // with STORE_GRIDS the grids are appended (with the header repeated), otherwise the file is overwritten
+          if(storeOldGrids_) {
+            family.gridOfile->clearFields();
+          } else {
+            family.gridOfile->rewind();
+          }
           family.grid->getGrid().writeToFile(*family.gridOfile);
           if(mw_n_>1) {
             // the hills of the other walkers in the grid (see the constructor), in a comment after the grid
             family.gridOfile->printf("%s",family.hillsfiles->getGridComment(mw_id_).c_str());
           }
-          family.gridOfile->flush();
+          // a single grid must be flushed, otherwise the file could stay empty; with STORE_GRIDS
+          // flushing is left to the user (FLUSH), as in METAD
+          if(!storeOldGrids_) {
+            family.gridOfile->flush();
+          }
         }
       }
     }
