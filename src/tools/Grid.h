@@ -23,6 +23,7 @@
 #define __PLUMED_tools_Grid_h
 
 #include <vector>
+#include <functional>
 #include <array>
 #include <string>
 #include <map>
@@ -347,6 +348,9 @@ public:
 /// add a kernel function to the grid
   void addKernel( const KernelFunctions& kernel );
 
+/// call f(index,value) for each point that is stored, in increasing order of index: all the points of a dense grid,
+/// the points that have been set in a sparse grid (the others are zero)
+  virtual void forEachStoredPoint(const std::function<void(index_t,double)> & f) const;
 /// get minimum value
   virtual double getMinValue() const = 0;
 /// get maximum value
@@ -493,6 +497,7 @@ public:
 protected:
   void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) override;
 public:
+  void forEachStoredPoint(const std::function<void(index_t,double)> & f) const override;
 
 /// get minimum value
   double getMinValue() const override;

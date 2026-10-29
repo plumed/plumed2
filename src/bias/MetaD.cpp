@@ -1868,9 +1868,9 @@ void MetaD::setupBiasGrid(SetupInput& in) {
       // a grid without initial range read from a file written before the first hill: it is placed around the first hill
       if(in.gridnobounds) {
         bool empty=true;
-        for(GridBase::index_t k=0; k<BiasGrid_->getSize() && empty; k++) {
-          empty=(BiasGrid_->getValue(k)==0.0);
-        }
+        BiasGrid_->forEachStoredPoint([&](GridBase::index_t,double value) {
+          empty=empty && value==0.0;
+        });
         gridext_.pristine=empty;
       }
       log.printf("  Restarting from %s\n",in.gridreadfilename.c_str());
@@ -3468,12 +3468,26 @@ void MetaD::computeReweightingFactor() {
   }
   max_bias_=BiasGrid_->getMaxValue(); //to avoid exp overflow
 
+  // the integrals are over all the points of the grid (in its current range); the points of a sparse grid that are
+  // not stored have zero bias
   const unsigned rank=comm.Get_rank();
   const unsigned stride=comm.Get_size();
-  for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
-    const double val=BiasGrid_->getValue(t);
-    Z_0+=std::exp(minusBetaF*(val-max_bias_));
-    Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
+  Grid::index_t nstored=0;
+  BiasGrid_->forEachStoredPoint([&](Grid::index_t,double val) {
+    if(nstored%stride==rank) {
+      Z_0+=std::exp(minusBetaF*(val-max_bias_));
+      Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
+    }
+    nstored++;
+  });
+  double npoints=1.0;
+  for(const auto n : BiasGrid_->getNbin()) {
+    npoints*=n;
+  }
+  const double nzero=npoints-static_cast<double>(nstored);
+  if(rank==0 && nzero>0.0) {
+    Z_0+=nzero*std::exp(-minusBetaF*max_bias_);
+    Z_V+=nzero*std::exp(-minusBetaFplusV*max_bias_);
   }
   comm.Sum(Z_0);
   comm.Sum(Z_V);

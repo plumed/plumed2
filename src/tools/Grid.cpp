@@ -351,6 +351,19 @@ void GridBase::resize(const std::vector<long long> & lower, const std::vector<lo
   resizeData(oldnbin,lower);
 }
 
+void GridBase::forEachStoredPoint(const std::function<void(index_t,double)> & f) const {
+  const index_t n=getSize();
+  for(index_t i=0; i<n; ++i) {
+    f(i,getValue(i));
+  }
+}
+
+void SparseGrid::forEachStoredPoint(const std::function<void(index_t,double)> & f) const {
+  for(const auto & it : map_) {
+    f(it.first,it.second);
+  }
+}
+
 void GridBase::resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) {
   plumed_merror("this kind of grid cannot be resized");
 }
