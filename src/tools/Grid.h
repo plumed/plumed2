@@ -227,6 +227,9 @@ protected:
   std::string fmt_; // format for output
 /// get "neighbors" for spline
   unsigned getSplineNeighbors(const unsigned* indices, std::size_t indices_size, index_t* neighbors, std::size_t neighbors_size)const;
+/// move the values after resize(): oldnbin are the numbers of points before resizing; the point with index k
+/// along direction i before resizing has index k+shift[i] after (it was removed if this is out of range)
+  virtual void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift);
 // std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
@@ -259,6 +262,18 @@ public:
   std::vector<bool> getIsPeriodic() const;
 /// get grid dimension
   unsigned getDimension() const;
+/// true if x is within the range of the grid along all the non-periodic directions,
+/// i.e. if getIndices(x) gives a point of the grid
+  bool isInside(const std::vector<double> & x) const;
+/// position of x along direction i, in units of the grid spacing, from the first point of the grid:
+/// its floor is the index of the point below x (also outside the grid, where it can be negative or too large)
+  double getLatticeCoordinate(unsigned i, double x) const {
+    return (x-min_[i])/dx_[i];
+  }
+/// Change the range of the grid along non-periodic directions: lower[i] (upper[i]) points are added at the lower (upper)
+/// end of direction i if positive, removed if negative. The spacing does not change, and the values (and derivatives)
+/// at the points that are kept do not change; new points are set to zero, the values at removed points are lost.
+  void resize(const std::vector<long long> & lower, const std::vector<long long> & upper);
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
 /// get if the grid has derivatives
@@ -404,6 +419,9 @@ public:
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
   void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
+protected:
+  void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) override;
+public:
 
 /// get minimum value
   double getMinValue() const override;
@@ -472,6 +490,9 @@ public:
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
   void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
+protected:
+  void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) override;
+public:
 
 /// get minimum value
   double getMinValue() const override;
