@@ -142,6 +142,8 @@ public:
   /// as evaluateWithDerivatives, for a diagonal hill given by pointers to its center and inverse widths (no INTERVAL)
   double evaluateDiagonalWithDerivatives(const std::vector<double>& cv, const double* center, const double* invsigma, double height,
                                          double* der, double* dp_) const;
+  /// half-width of the box containing the hill (truncated at dp2cutoff) along each CV; it can be infinite for a degenerate hill
+  std::vector<double> getCutoff(const MetaDGaussian& hill) const;
   /// number of grid points along each direction that are within the cutoff of hill
   std::vector<unsigned> getSupport(const MetaDGaussian& hill, const GridBase& grid) const;
   /// squared distance of cv from the center of hill, in units of the hill widths (d^T*S^-1*d, S covariance);
@@ -295,8 +297,7 @@ double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const
 }
 
 inline
-std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const GridBase& grid) const {
-  std::vector<unsigned> nneigh;
+std::vector<double> MetaDKernel::getCutoff(const MetaDGaussian& hill) const {
   std::vector<double> cutoff;
   unsigned ncv=args_.size();
 
@@ -324,6 +325,14 @@ std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const G
       cutoff.push_back(std::sqrt(2.0*dp2cutoff)*hill.sigma[i]);
     }
   }
+  return cutoff;
+}
+
+inline
+std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const GridBase& grid) const {
+  std::vector<unsigned> nneigh;
+  const std::vector<double> cutoff=getCutoff(hill);
+  unsigned ncv=args_.size();
 
   // number of grid points within the cutoff along CV i; it is never larger than the grid
   // (a support larger than the grid, or not finite for a degenerate hill, covers the whole grid)
