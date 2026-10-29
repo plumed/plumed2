@@ -43,6 +43,8 @@ public:
 private:
   enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
+/// Has the reduced list been requested to the action since the last update of the list
+  bool reducedRequested=false;
   bool listBuilded=false;
   bool serial_;
   bool do_pbc_;
