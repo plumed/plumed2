@@ -353,8 +353,11 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #define stashDrift(taskID,scalarID) taskID*myinput.nscalars \
                            + scalarID*myinput.ncomponents
 
-  // myinput and the scalars are passed by value as kernel arguments
-#pragma acc parallel loop async(accQueue) present(actiondata) \
+  // myinput and the scalars are passed by value as kernel arguments.
+  // One task per thread (gang vector), and every inner loop is sequential:
+  // without this, nvc++ makes the task loop gang-only and vectorizes the
+  // short inner loops, i.e. one block of 128 threads per task, mostly idle
+#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   forcesForApply_size, \
@@ -382,6 +385,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     T::performTask( task_index, actiondata, myinput, myout );
 
     // this task's column of the buffer of the shared entries
+#pragma acc loop seq
     for(std::size_t k=0; k<nshared; ++k) {
       sharedForces[k*nactive_tasks+t]=0.0;
     }
@@ -393,6 +397,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     constexpr std::size_t noSlot=~std::size_t(0);
     std::size_t slotIndex[nslots];
     precision slotForce[nslots];
+#pragma acc loop seq
     for(unsigned s=0; s<nslots; ++s) {
       slotIndex[s]=noSlot;
       slotForce[s]=0.0;
@@ -425,8 +430,10 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                           forcesForApply_size));
       // Add the forces that other tasks can also touch
       unsigned s=0;
+#pragma acc loop seq
       for(unsigned i=0; i<myinput.ncomponents; ++i) {
         const precision ff = finput.force[i];
+#pragma acc loop seq
         for(std::size_t d=force_indices.threadsafe_derivatives_end[i];
             d<force_indices.tot_indices[i]; ++d, ++s) {
           const std::size_t fi = force_indices.indices[i][d];
@@ -453,6 +460,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       }
     }
     // flush the private accumulators
+#pragma acc loop seq
     for(unsigned s=0; s<nslots; ++s) {
       if(slotIndex[s]!=noSlot) {
         const precision old=slotForce[s];
