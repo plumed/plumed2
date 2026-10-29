@@ -109,6 +109,19 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
+As in [METAD](METAD.md), the grids are extended automatically, along the variables that are not periodic, whenever a
+Gaussian does not fit in them: a grid always contains all the points where a Gaussian is not zero, so that the bias is
+exactly zero outside it (with INTERVAL, the grid contains the interval and the bias beyond the grid is the constant value
+beyond the limits).  The grid spacing does not change and the new points are on the same lattice as the initial ones.
+Every extension is written on the log.  If you give GRID_SPACING without GRID_MIN and GRID_MAX each grid is placed
+around its first Gaussian and then extended as needed.  GRID_SIZE_LIMIT sets the maximum number of points of each grid.
+A grid read with GRID_RFILES can have any range, but it must be on the lattice of the grid given in input.
+
+As in [METAD](METAD.md), no Gaussian is added at the first step of a simulation.  When a simulation is continued with
+RESTART and the bias is read from the hills files, a Gaussian is added at the first step unless they already contain
+it (i.e. the previous run had already performed this step).  With ADAPTIVE=DIFF and replica exchange, the running averages of the variables are
+restarted when an exchange is accepted, and the variances are kept.
+
 Another option that is available is the well-tempered metadynamics that is discussed in the second paper cited below. In this
 variant of PBMetaD the heights of the Gaussian hills are scaled at each step by the
 additional well-tempered metadynamics term.
