@@ -23,6 +23,7 @@
 #include "MetaDKernel.h"
 #include "MetaDGrid.h"
 #include "MetaDHills.h"
+#include "MetaDRestart.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
@@ -627,22 +628,9 @@ private:
   bool storeOldGrids_=false;
   int wgridstride_=0;
   /// multiple walkers, sharing hills either through files (WALKERS_N) or through MPI (WALKERS_MPI)
-  struct MultipleWalkers {
-    /// number of walkers sharing hills through files
-    int n=1;
-    /// directory with the hills files
-    std::string dir;
-    /// id of this walker
-    int id=0;
-    /// stride for reading the hills files of the other walkers
-    int rstride=1;
-    /// MPI version
-    bool mpi=false;
-    /// number of MPI walkers
-    unsigned mpi_nw=0;
-    /// flying Gaussians (MPI walkers only)
-    bool flying=false;
-  } mw_;
+  MetaDWalkers mw_;
+  /// flying Gaussians (MPI walkers only)
+  bool flying_=false;
   // kinetics from metadynamics
   bool acceleration_=false;
   double acc_=0.0;
@@ -859,11 +847,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("PRECAL_DIFF",false,"with ADAPTIVE=DIFF, accumulate the statistics of the CV fluctuations at every step from the beginning of the simulation, also before UPDATE_FROM, after UPDATE_UNTIL and when UPDATE_IF is false, so that the first hills have a width estimated over a sufficiently long time");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.add("optional","WALKERS_ID", "walker id");
-  keys.add("optional","WALKERS_N", "number of walkers");
-  keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
-  keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
+  MetaDWalkers::registerKeywords(keys);
   keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force (PBMETAD: INTERVAL_MIN and INTERVAL_MAX).");
   keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
@@ -1246,36 +1230,11 @@ void MetaD::parseReweightingFactor() {
 
 void MetaD::parseMultipleWalkers() {
   // Multiple walkers
-  parse("WALKERS_N",mw_.n);
-  parse("WALKERS_ID",mw_.id);
-  if(mw_.n<1) {
-    error("the number of walkers should be positive");
-  }
-  if(mw_.id<0 || mw_.n<=mw_.id) {
-    error("walker ID should be a numerical value between 0 and the total number of walkers minus one");
-  }
-  parse("WALKERS_DIR",mw_.dir);
-  parse("WALKERS_RSTRIDE",mw_.rstride);
-  if(mw_.rstride<=0) {
-    error("WALKERS_RSTRIDE should be positive");
-  }
-
-  // MPI version
-  parseFlag("WALKERS_MPI",mw_.mpi);
-
-  //If this Action is not compiled with MPI the user is informed and we exit gracefully
-  if(mw_.mpi) {
-    if(!Communicator::plumedHasMPI()) {
-      error("Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
-    }
-    if(!Communicator::initialized()) {
-      error("Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
-    }
-  }
+  mw_.parse(*this);
 
   // Flying Gaussian
-  parseFlag("FLYING_GAUSSIAN", mw_.flying);
-  if(mw_.flying && grid_) {
+  parseFlag("FLYING_GAUSSIAN", flying_);
+  if(flying_ && grid_) {
     // the hills of the flying Gaussians are replaced at every deposition, which cannot be done on a grid
     error("FLYING_GAUSSIAN cannot be used with a grid");
   }
@@ -1487,27 +1446,9 @@ void MetaD::logIntervalAndGrid(const SetupInput& in) {
 }
 
 void MetaD::setupMultipleWalkers() {
-  if(mw_.n>1) {
-    if(mw_.mpi) {
-      error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
-    }
-    log.printf("  %d multiple walkers active\n",mw_.n);
-    log.printf("  walker id %d\n",mw_.id);
-    log.printf("  reading stride %d\n",mw_.rstride);
-    if(mw_.dir!="") {
-      log.printf("  directory with hills files %s\n",mw_.dir.c_str());
-    }
-  } else {
-    if(mw_.mpi) {
-      log.printf("  Multiple walkers active using MPI communication\n");
-      if(mw_.dir!="") {
-        log.printf("  directory with hills files %s\n",mw_.dir.c_str());
-      }
-      mw_.mpi_nw=getNumberOfReplicas();
-    }
-  }
+  mw_.setup(*this);
 
-  if(mw_.flying) {
+  if(flying_) {
     if(!mw_.mpi) {
       error("Flying Gaussian method must be used with MPI version of multiple walkers");
     }
@@ -1923,33 +1864,11 @@ void MetaD::initializeRestartQuantities(const SetupInput& in) {
 void MetaD::openOutputFiles(SetupInput& in) {
   // open grid file for writing
   if(wgridstride_>0) {
-    gridfile_.link(*this);
-    if(mw_.mpi) {
-      int r=getReplicaIndex();
-      if(r>0) {
-        in.gridfilename="/dev/null";
-      }
-      gridfile_.enforceSuffix("");
-    }
-    if(mw_.n>1) {
-      gridfile_.enforceSuffix("");
-    }
-    gridfile_.open(in.gridfilename);
+    mw_.openOutput(*this,gridfile_,in.gridfilename);
   }
 
   // open hills file for writing
-  hillsOfile_.link(*this);
-  if(mw_.mpi) {
-    int r=getReplicaIndex();
-    if(r>0) {
-      hillsfiles_->setInputName(mw_.id,"/dev/null");
-    }
-    hillsOfile_.enforceSuffix("");
-  }
-  if(mw_.n>1) {
-    hillsOfile_.enforceSuffix("");
-  }
-  hillsOfile_.open(hillsfiles_->getInputName(mw_.id));
+  mw_.openOutput(*this,hillsOfile_,hillsfiles_->getInputName(mw_.id));
   if(fmt_.length()>0) {
     hillsOfile_.fmtField(fmt_);
   }
@@ -2404,7 +2323,7 @@ void MetaD::initializeDiffusionStatistics() {
   std::vector<double> average;
   std::vector<double> variance;
   double lasttime=0.0;
-  const unsigned n=diffrestart_.compute(0.5*stride_*dt,getTime(),mw_.mpi ? mw_.mpi_nw : 0,mw_.mpi ? getReplicaIndex() : 0,
+  const unsigned n=diffrestart_.compute(0.5*stride_*dt,getTime(),mw_.mpi ? mw_.mpi_nw : 0,mw_.mpi_id,
                                         1.0/sigma0_[0],dt*getStride(),
   [&](unsigned i,double a,double b) {
     return difference(i,a,b);
@@ -2461,7 +2380,7 @@ void MetaD::update() {
 
   // this should be outside of the if block in case
   // WALKERS_RSTRIDE is not a multiple of PACE
-  if(mw_.n>1 && getStep()%mw_.rstride==0) {
+  if(mw_.isReadStep(getStep())) {
     hillsOfile_.flush();
   }
 
@@ -2479,7 +2398,7 @@ void MetaD::update() {
   }
 
   // if multiple walkers and time to read Gaussians
-  if(mw_.n>1 && getStep()%mw_.rstride==0) {
+  if(mw_.isReadStep(getStep())) {
     readOtherWalkersHills();
   }
 
@@ -2531,7 +2450,7 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
     comm.Bcast(all_records,0);
 
     // Flying Gaussian
-    if (mw_.flying) {
+    if (flying_) {
       hills_.clear();
       hillarrays_.clear();
       comm.Barrier();
@@ -2546,7 +2465,7 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
       double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
       Gaussian newhill=Gaussian(rec[ncv+nsigma+1]!=0.0,rec[ncv+nsigma]*fact,cv_now,sigma_now);
       addGaussian(newhill);
-      if(!mw_.flying) {
+      if(!flying_) {
         writeGaussian(newhill,hillsOfile_);
       }
     }
@@ -2622,7 +2541,7 @@ void MetaD::readOtherWalkersHills() {
 }
 
 void MetaD::updateBiasQuantities(bool nowAddAHill) {
-  bool bias_has_changed = (nowAddAHill || (mw_.n > 1 && getStep() % mw_.rstride == 0));
+  bool bias_has_changed = (nowAddAHill || mw_.isReadStep(getStep()));
   if (calc_rct_ && bias_has_changed && getStep()%(stride_*rct_ustride_)==0) {
     computeReweightingFactor();
   }

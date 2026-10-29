@@ -95,9 +95,6 @@ public:
   const std::string& getInputName(unsigned i) const {
     return ifilesnames_[i];
   }
-  void setInputName(unsigned i, const std::string& name) {
-    ifilesnames_[i]=name;
-  }
   /// true if the file is open (the same on all the processes)
   bool isOpen(unsigned i);
   /// path of an open file (on the first process only, empty on the others)

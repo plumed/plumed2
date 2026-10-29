@@ -23,6 +23,7 @@
 #include "MetaDGrid.h"
 #include "MetaDHills.h"
 #include "MetaDKernel.h"
+#include "MetaDRestart.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/FlexibleBin.h"
@@ -358,14 +359,8 @@ private:
   std::vector<unsigned> pfs_;
   /// if partitioned families are enabled
   bool do_pf_=false;
-  // multiple walkers
-  int mw_n_=1;
-  std::string mw_dir_;
-  int mw_id_=0;
-  int mw_rstride_=1;
-  bool walkers_mpi_=false;
-  unsigned mpi_nw_=0;
-  unsigned mpi_id_=0;
+  /// multiple walkers, sharing hills either through files (WALKERS_N) or through MPI (WALKERS_MPI)
+  MetaDWalkers mw_;
   /// ADAPTIVE=DIFF and replica exchange: an exchange has been attempted at the last step, with the CVs of
   /// the partner (partner_cv) and the CVs at the previous update (last_cv)
   struct {
@@ -436,11 +431,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.addInputKeyword("numbered","PF", "scalar", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
-  keys.add("optional","WALKERS_ID", "walker id");
-  keys.add("optional","WALKERS_N", "number of walkers");
-  keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
-  keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
+  MetaDWalkers::registerKeywords(keys);
   keys.add("optional","INTERVAL_MIN","one dimensional lower limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");
   keys.add("optional","INTERVAL_MAX","one dimensional upper limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");
   keys.use("RESTART");
@@ -699,22 +690,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
 
   // Multiple walkers
-  parse("WALKERS_N",mw_n_);
-  parse("WALKERS_ID",mw_id_);
-  if(mw_n_<1) {
-    error("the number of walkers should be positive");
-  }
-  if(mw_id_<0 || mw_n_<=mw_id_) {
-    error("walker ID should be a numerical value between 0 and the total number of walkers minus one");
-  }
-  parse("WALKERS_DIR",mw_dir_);
-  parse("WALKERS_RSTRIDE",mw_rstride_);
-  if(mw_rstride_<=0) {
-    error("WALKERS_RSTRIDE should be positive");
-  }
-
-  // MPI version
-  parseFlag("WALKERS_MPI",walkers_mpi_);
+  mw_.parse(*this);
 
   // Grid file
   parse("GRID_WSTRIDE",wgridstride_);
@@ -842,26 +818,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     log.printf("  Id of the SELECTOR for this action %u\n", select_value_);
   }
 
-  if(mw_n_>1) {
-    if(walkers_mpi_) {
-      error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
-    }
-    log.printf("  %d multiple walkers active\n",mw_n_);
-    log.printf("  walker id %d\n",mw_id_);
-    log.printf("  reading stride %d\n",mw_rstride_);
-    if(mw_dir_!="") {
-      log.printf("  directory with hills files %s\n",mw_dir_.c_str());
-    }
-  } else {
-    if(walkers_mpi_) {
-      log.printf("  Multiple walkers active using MPI communication\n");
-      if(mw_dir_!="") {
-        log.printf("  directory with hills files %s\n",mw_dir_.c_str());
-      }
-      mpi_nw_=getNumberOfReplicas();
-      mpi_id_=getReplicaIndex();
-    }
-  }
+  mw_.setup(*this);
 
   for(unsigned f=0; f<pf_n; f++) {
     if(families_[f].interval) {
@@ -925,14 +882,14 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // with WALKERS_MPI, the replicas must take the same decision; the replicas can have different directories
   auto checkReplicas=[&](bool restarted,const std::string& what) {
-    if(getRestart() && walkers_mpi_) {
-      std::vector<int> all(mpi_nw_,0);
+    if(getRestart() && mw_.mpi) {
+      std::vector<int> all(mw_.mpi_nw,0);
       if(comm.Get_rank()==0) {
         multi_sim_comm.Allgather(int(restarted),all);
       }
       comm.Bcast(all,0);
       const unsigned n=std::accumulate(all.begin(),all.end(),0);
-      if(n!=0 && n!=mpi_nw_) {
+      if(n!=0 && n!=mw_.mpi_nw) {
         error("in this WALKERS_MPI run some replicas have restarted from "+what+" while others have not");
       }
     }
@@ -947,7 +904,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     bcastString(comm,dir);
     return dir;
   };
-  if(walkers_mpi_ && gridreadfilenames.size()>0) {
+  if(mw_.mpi && gridreadfilenames.size()>0) {
     const std::string dir=firstReplicaDirectory();
     for(auto & name : gridreadfilenames) {
       if(name.at(0)!='/') {
@@ -974,7 +931,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(gridreadfilenames.size()>0) {
         IFile gridfile;
         gridfile.link(*this);
-        if(walkers_mpi_ || mw_n_>1) {
+        if(mw_.mpi || mw_.n>1) {
           // multiple walkers write their files without the suffix of the replica: with WALKERS_MPI all the walkers
           // read the same file
           gridfile.enforceSuffix("");
@@ -985,9 +942,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           error("The GRID file you want to read: " + gridreadfilenames[f] + ", cannot be found!");
         }
         grid.read(gridfile,gridreadfilenames[f],funcl,args,gmin_t,gmax_t,gbin_t,sparsegrid,spline,gridnobounds);
-        if(mw_n_>1) {
+        if(mw_.n>1) {
           // the hills of the other walkers in the grid
-          families_[f].gridWalkerHills=MetaDHillsFiles::readGridComment(comm,gridfile.getPath(),mw_n_);
+          families_[f].gridWalkerHills=MetaDHillsFiles::readGridComment(comm,gridfile.getPath(),mw_.n);
         }
         log.printf("  Restarting from %s:\n",gridreadfilenames[f].c_str());
         if(getRestart()) {
@@ -1006,13 +963,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   checkReplicas(restartedFromGrid,"GRID");
 
-  if(walkers_mpi_ && mw_dir_=="") {
+  if(mw_.mpi && mw_.dir=="") {
     bool relative=true;
     for(const auto & name : hillsfname) {
       relative=relative && name.at(0)!='/';
     }
     if(relative) {
-      mw_dir_=firstReplicaDirectory();
+      mw_.dir=firstReplicaDirectory();
     }
   }
 
@@ -1026,13 +983,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     // ADAPTIVE=DIFF: hills of the last ~6 averaging times (older ones have weight < exp(-6)), for each argument
     // of the family; with MPI walkers the file contains the hills of all walkers
     families_[f].diffrestart.maxhills=(static_cast<unsigned>(std::ceil(6.0*sigma0_[0]/stride_))+2)*
-                                      std::max(1u,mpi_nw_)*families_[f].args.size();
+                                      std::max(1u,mw_.mpi_nw)*families_[f].args.size();
   }
-  for(int j=0; j<mw_n_; ++j) {
+  for(int j=0; j<mw_.n; ++j) {
     for(unsigned f=0; f<pf_n; ++f) {
-      const std::string fname=MetaDHillsFiles::getWalkerFileName(hillsfname[f],mw_dir_,mw_n_,j,walkers_mpi_);
+      const std::string fname=MetaDHillsFiles::getWalkerFileName(hillsfname[f],mw_.dir,mw_.n,j,mw_.mpi);
       // with multiple walkers the files are written without the suffix of the replica
-      const unsigned k=families_[f].hillsfiles->addInput(fname,mw_n_>1 || walkers_mpi_);
+      const unsigned k=families_[f].hillsfiles->addInput(fname,mw_.n>1 || mw_.mpi);
       plumed_assert(k==static_cast<unsigned>(j));
     }
   }
@@ -1040,9 +997,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // which hills of the other walkers (WALKERS_N) are already in the grids
   std::vector<int> order;
   if(getRestart() && restartedFromGrid) {
-    order.push_back(mw_id_);
+    order.push_back(mw_.id);
   }
-  for(int j=0; j<mw_n_; ++j) {
+  for(int j=0; j<mw_.n; ++j) {
     if(order.empty() || order[0]!=j) {
       order.push_back(j);
     }
@@ -1054,7 +1011,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(hillsfiles.isOpen(k)) {
         if(getRestart()&&!restartedFromGrid) {
           log.printf("  Restarting from %s:",hillsfiles.getInputName(k).c_str());
-          if(j==mw_id_) {
+          if(j==mw_.id) {
             // the hills of all the families are written at the same time: the last one decides whether
             // a hill is added at the first step
             double lasttime=0.0;
@@ -1068,7 +1025,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           }
           restartedFromHills=true;
         }
-        if(getRestart() && restartedFromGrid && j==mw_id_) {
+        if(getRestart() && restartedFromGrid && j==mw_.id) {
           // new hills will be appended to this file also when the bias is read from a grid
           ownpath[f]=hillsfiles.getPath(k);
           // the bias is read from the grid, but the hills are still needed for the time of the last hill (to decide
@@ -1088,11 +1045,11 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
             families_[f].diffrestart.clear();
           }
         }
-        if(getRestart() && restartedFromGrid && j!=mw_id_) {
+        if(getRestart() && restartedFromGrid && j!=mw_.id) {
           // the hills of the other walkers that are not in the grid are added
           const std::vector<long long>& ingridcount=families_[f].gridWalkerHills;
           const double ingrid=(lastHillTimeKnown ? lastHillTime : std::numeric_limits<double>::infinity());
-          if(ingridcount.size()==static_cast<unsigned>(mw_n_) && ingridcount[j]>=0) {
+          if(ingridcount.size()==static_cast<unsigned>(mw_.n) && ingridcount[j]>=0) {
             // the grid file contains the number of hills read from each walker
             log.printf("  Reading hills from %s (the first %lld are in the grid):",hillsfiles.getInputName(k).c_str(),ingridcount[j]);
             readGaussians(f,k,nullptr,true,-std::numeric_limits<double>::infinity(),ingridcount[j]);
@@ -1107,7 +1064,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
         hillsfiles.reset(k);
         // close only the walker own hills file for later writing
-        if(j==mw_id_) {
+        if(j==mw_.id) {
           hillsfiles.close(k);
         }
       } else {
@@ -1121,7 +1078,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   checkReplicas(restartedFromHills,"FILE");
 
-  if(walkers_mpi_) {
+  if(mw_.mpi) {
     // the decision to add a hill at the first step must be the same for all the walkers (they share the hills)
     std::vector<double> last {lastHillTimeKnown ? 1.0 : 0.0, lastHillTime};
     if(comm.Get_rank()==0) {
@@ -1136,7 +1093,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
 
   comm.Barrier();
-  if(comm.Get_rank()==0 && walkers_mpi_) {
+  if(comm.Get_rank()==0 && mw_.mpi) {
     multi_sim_comm.Barrier();
   }
 
@@ -1144,7 +1101,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // last line (left by a run that was interrupted while writing), before new hills are appended to them
   for(unsigned f=0; f<pf_n; ++f) {
     std::string message;
-    if(ownpath[f].length()>0 && comm.Get_rank()==0 && !(walkers_mpi_ && getReplicaIndex()>0)) {
+    if(ownpath[f].length()>0 && comm.Get_rank()==0 && !(mw_.mpi && getReplicaIndex()>0)) {
       message=removeIncompleteLastLine(ownpath[f]);
     }
     // the log must be written by all the processes
@@ -1159,19 +1116,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // open hills files for writing
   for(unsigned f=0; f<pf_n; ++f) {
     auto ofile=Tools::make_unique<OFile>();
-    ofile->link(*this);
-    // if MPI multiple walkers, only rank 0 will write to file
-    if(walkers_mpi_) {
-      int r=getReplicaIndex();
-      if(r>0) {
-        families_[f].hillsfiles->setInputName(mw_id_,"/dev/null");
-      }
-      ofile->enforceSuffix("");
-    }
-    if(mw_n_>1) {
-      ofile->enforceSuffix("");
-    }
-    ofile->open(families_[f].hillsfiles->getInputName(mw_id_));
+    mw_.openOutput(*this,*ofile,families_[f].hillsfiles->getInputName(mw_.id));
     if(fmt_.length()>0) {
       ofile->fmtField(fmt_);
     }
@@ -1191,19 +1136,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if(wgridstride_ > 0) {
     for(unsigned f = 0; f < gridfilenames.size(); ++f) {
       auto ofile=Tools::make_unique<OFile>();
-      ofile->link(*this);
-      std::string gridfname_tmp = gridfilenames[f];
-      if(walkers_mpi_) {
-        int r=getReplicaIndex();
-        if(r>0) {
-          gridfname_tmp = "/dev/null";
-        }
-        ofile->enforceSuffix("");
-      }
-      if(mw_n_>1) {
-        ofile->enforceSuffix("");
-      }
-      ofile->open(gridfname_tmp);
+      mw_.openOutput(*this,*ofile,gridfilenames[f]);
       ofile->setHeavyFlush();
       families_[f].gridOfile=std::move(ofile);
     }
@@ -1217,7 +1150,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if(interval)
     log<<plumed.cite(
          "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
-  if(mw_n_>1||walkers_mpi_)
+  if(mw_.n>1||mw_.mpi)
     log<<plumed.cite(
          "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none)
@@ -1296,7 +1229,7 @@ void PBMetaD::initializeDiffusionStatistics() {
       std::vector<double> variance;
       double lasttime=0.0;
       // times are written with a finite precision (FMT): times closer than half a PACE are the same time
-      const unsigned n=diffrestart.compute(0.5*stride_*dt,getTime(),(walkers_mpi_ ? mpi_nw_ : 1)*nf,(walkers_mpi_ ? mpi_id_ : 0)*nf+p,
+      const unsigned n=diffrestart.compute(0.5*stride_*dt,getTime(),(mw_.mpi ? mw_.mpi_nw : 1)*nf,(mw_.mpi ? mw_.mpi_id : 0)*nf+p,
                                            1.0/sigma0_[0],dt*getStride(),
       [&](unsigned,double a,double b) {
         return difference(i,a,b);
@@ -1323,7 +1256,7 @@ void PBMetaD::writeGaussian(unsigned f, const Gaussian& hill) {
   if(welltemp_) {
     height *= biasf_/(biasf_-1.0);
   }
-  families_[f].hillsfiles->write(*families_[f].hillsOfile,getTimeStep()*getStep(),hill,height,biasf_,mw_n_>1);
+  families_[f].hillsfiles->write(*families_[f].hillsOfile,getTimeStep()*getStep(),hill,height,biasf_,mw_.n>1);
 }
 
 void PBMetaD::addGaussian(unsigned f, const Gaussian& hill) {
@@ -1532,7 +1465,7 @@ void PBMetaD::update() {
   // with SELECTOR, hills are added only when the selector has the value SELECTOR_ID; with WALKERS_MPI all the walkers
   // take part in the exchange of the hills (also those that do not add hills)
   const bool selected=(!do_select_ || select_value_==current_value_);
-  if(nowAddAHill && (selected || walkers_mpi_)) {
+  if(nowAddAHill && (selected || mw_.mpi)) {
     // get all biases and heights
     std::vector<double> cv(nargs);
     std::vector<double> thissigma(nargs);
@@ -1577,7 +1510,7 @@ void PBMetaD::update() {
     std::vector<double> cv_tmp(1);
     std::vector<double> sigma_tmp(1);
     // MPI Multiple walkers: share hills and add them all
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       // the hills of all walkers (packed in a single array: center, sigma, height of each argument, and whether the
       // walker adds hills, so that one collective is enough)
       const unsigned recordsize=3*nargs+1;
@@ -1588,7 +1521,7 @@ void PBMetaD::update() {
         record[2*nargs+i]=height[i];
       }
       record[3*nargs]=(selected ? 1.0 : 0.0);
-      std::vector<double> all_records(mpi_nw_*recordsize, 0.0);
+      std::vector<double> all_records(mw_.mpi_nw*recordsize, 0.0);
       if(comm.Get_rank()==0) {
         // Communicate (only root)
         multi_sim_comm.Allgather(record,all_records);
@@ -1596,7 +1529,7 @@ void PBMetaD::update() {
       // Share info with group members
       comm.Bcast(all_records,0);
       // now add hills one by one
-      for(unsigned j=0; j<mpi_nw_; ++j) {
+      for(unsigned j=0; j<mw_.mpi_nw; ++j) {
         const double* rec=&all_records[j*recordsize];
         if(rec[3*nargs]==0.0) {
           continue;
@@ -1625,7 +1558,7 @@ void PBMetaD::update() {
 
   // with multiple walkers the hills must reach the files before the other walkers read them
   // (this should be outside of the if block in case WALKERS_RSTRIDE is not a multiple of PACE)
-  if(mw_n_>1 && getStep()%mw_rstride_==0) {
+  if(mw_.isReadStep(getStep())) {
     for(auto & family : families_) {
       family.hillsOfile->flush();
     }
@@ -1634,7 +1567,7 @@ void PBMetaD::update() {
   // write grid files
   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
     int r = 0;
-    if(walkers_mpi_) {
+    if(mw_.mpi) {
       r=getReplicaIndex();
     }
     if(r==0) {
@@ -1647,9 +1580,9 @@ void PBMetaD::update() {
             family.gridOfile->rewind();
           }
           family.grid->getGrid().writeToFile(*family.gridOfile);
-          if(mw_n_>1) {
+          if(mw_.n>1) {
             // the hills of the other walkers in the grid (see the constructor), in a comment after the grid
-            family.gridOfile->printf("%s",family.hillsfiles->getGridComment(mw_id_).c_str());
+            family.gridOfile->printf("%s",family.hillsfiles->getGridComment(mw_.id).c_str());
           }
           // a single grid must be flushed, otherwise the file could stay empty; with STORE_GRIDS
           // flushing is left to the user (FLUSH), as in METAD
@@ -1662,11 +1595,11 @@ void PBMetaD::update() {
   }
 
   // if multiple walkers and time to read Gaussians
-  if(mw_n_>1 && getStep()%mw_rstride_==0) {
-    for(int j=0; j<mw_n_; ++j) {
+  if(mw_.isReadStep(getStep())) {
+    for(int j=0; j<mw_.n; ++j) {
       for(unsigned f=0; f<families_.size(); ++f) {
         // don't read your own Gaussians
-        if(j==mw_id_) {
+        if(j==mw_.id) {
           continue;
         }
         MetaDHillsFiles& hillsfiles=*families_[f].hillsfiles;
