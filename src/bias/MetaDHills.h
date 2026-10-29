@@ -81,8 +81,9 @@ private:
 public:
   MetaDHillsFiles(ActionWithValue& action, Communicator& comm, const std::vector<Value*>& args);
   ~MetaDHillsFiles();
-  /// add an input file, which is opened if it exists; returns its index
-  unsigned addInput(const std::string& name);
+  /// add an input file, which is opened if it exists; returns its index. With nosuffix, the name is used without
+  /// the suffix of the replica (with multiple walkers, as for the files that are written)
+  unsigned addInput(const std::string& name, bool nosuffix=false);
   const std::string& getInputName(unsigned i) const {
     return ifilesnames_[i];
   }

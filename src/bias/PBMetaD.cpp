@@ -886,6 +886,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(gridreadfilenames.size()>0) {
         IFile gridfile;
         gridfile.link(*this);
+        if(walkers_mpi_) {
+          // all the walkers read the same file
+          gridfile.enforceSuffix("");
+        }
         if(gridfile.FileExist(gridreadfilenames[f])) {
           gridfile.open(gridreadfilenames[f]);
         } else {
@@ -950,7 +954,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
       }
       MetaDHillsFiles& hillsfiles=*families_[f].hillsfiles;
-      const unsigned k=hillsfiles.addInput(fname);
+      // with multiple walkers the files are written without the suffix of the replica
+      const unsigned k=hillsfiles.addInput(fname,mw_n_>1 || walkers_mpi_);
       plumed_assert(k==static_cast<unsigned>(j));
       if(hillsfiles.isOpen(k)) {
         if(getRestart()&&!restartedFromGrid) {

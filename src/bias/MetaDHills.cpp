@@ -113,11 +113,14 @@ MetaDHillsFiles::MetaDHillsFiles(ActionWithValue& action, Communicator& comm, co
 MetaDHillsFiles::~MetaDHillsFiles() {
 }
 
-unsigned MetaDHillsFiles::addInput(const std::string& name) {
+unsigned MetaDHillsFiles::addInput(const std::string& name, bool nosuffix) {
   ifiles_.emplace_back(Tools::make_unique<IFile>());
   ifilesnames_.push_back(name);
   IFile* ifile=ifiles_.back().get();
   ifile->link(action_);
+  if(nosuffix) {
+    ifile->enforceSuffix("");
+  }
   // the file operations must not synchronize the processes, as with comm they would do
   ifile->link(selfcomm_);
   const unsigned i=ifiles_.size()-1;

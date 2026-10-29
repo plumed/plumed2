@@ -1643,6 +1643,10 @@ void MetaD::setupBiasGrid(SetupInput& in) {
       }
       IFile gridfile;
       gridfile.link(*this);
+      if(mw_.mpi) {
+        // all the walkers read the same file
+        gridfile.enforceSuffix("");
+      }
       if(gridfile.FileExist(in.gridreadfilename)) {
         gridfile.open(in.gridreadfilename);
       } else {
@@ -1749,7 +1753,8 @@ void MetaD::readHillsFiles(const SetupInput& in) {
         fname = in.hillsfname;
       }
     }
-    const unsigned k=hillsfiles_->addInput(fname);
+    // with multiple walkers the files are written without the suffix of the replica (see openOutputFiles)
+    const unsigned k=hillsfiles_->addInput(fname,mw_.n>1 || mw_.mpi);
     plumed_assert(k==static_cast<unsigned>(i));
     if(hillsfiles_->isOpen(i)) {
       if(getRestart()&&!in.restartedFromGrid) {
