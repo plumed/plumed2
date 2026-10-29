@@ -33,6 +33,26 @@
 namespace PLMD {
 namespace bias {
 
+/// Work arrays of the OpenMP threads, written at every hill or grid point. When two threads write in the
+/// same cache line (false sharing), or one writes where another one reads, both become much slower, and
+/// using more threads can take longer than using one: this happened with small vectors allocated by
+/// each thread, depending on where the heap placed them. Here the arrays of all the threads are in a
+/// single allocation, separated from each other and from the ends of the allocation by 128 bytes that
+/// are never used.
+template<typename T>
+class ThreadWorkArrays {
+  static constexpr unsigned gap=128/sizeof(T);
+  unsigned stride;
+  std::vector<T> buffer;
+public:
+  ThreadWorkArrays(unsigned nthreads, unsigned size):
+    stride(size+gap),
+    buffer(gap+nthreads*stride,T()) {}
+  T* get(unsigned thread) {
+    return buffer.data()+gap+thread*stride;
+  }
+};
+
 /// A Gaussian hill deposited by METAD.
 /// For multivariate hills (ADAPTIVE) sigma contains the upper triangle (row-major) of the
 /// inverse covariance matrix, otherwise it contains the widths along each CV.

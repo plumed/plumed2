@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "MetaDKernel.h"
+#include "MetaDGrid.h"
+#include "MetaDHills.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
@@ -536,52 +538,6 @@ The number of elements in the RECT array should be equal to the number of replic
 */
 //+ENDPLUMEDOC
 
-namespace {
-/// Work arrays of the OpenMP threads, written at every hill or grid point. When two threads write in the
-/// same cache line (false sharing), or one writes where another one reads, both become much slower, and
-/// using more threads can take longer than using one: this happened with small vectors allocated by
-/// each thread, depending on where the heap placed them. Here the arrays of all the threads are in a
-/// single allocation, separated from each other and from the ends of the allocation by 128 bytes that
-/// are never used.
-template<typename T>
-class ThreadWorkArrays {
-  static constexpr unsigned gap=128/sizeof(T);
-  unsigned stride;
-  std::vector<T> buffer;
-public:
-  ThreadWorkArrays(unsigned nthreads, unsigned size):
-    stride(size+gap),
-    buffer(gap+nthreads*stride,T()) {}
-  T* get(unsigned thread) {
-    return buffer.data()+gap+thread*stride;
-  }
-};
-
-/// shortest representation of x that is converted back to the same double
-std::string exactString(double x) {
-  char buffer[64];
-  for(int precision=15; precision<17; precision++) {
-    std::snprintf(buffer,sizeof(buffer),"%.*g",precision,x);
-    if(std::strtod(buffer,nullptr)==x) {
-      return buffer;
-    }
-  }
-  std::snprintf(buffer,sizeof(buffer),"%.17g",x);
-  return buffer;
-}
-
-/// broadcast a string from process 0: the length is sent first, as on the other processes the string
-/// can have a different length (Communicator::Bcast of a string uses the local length)
-void bcastString(Communicator& c, std::string& s) {
-  unsigned n=s.size();
-  c.Bcast(n,0);
-  s.resize(n);
-  if(n>0) {
-    c.Bcast(s,0);
-  }
-}
-}
-
 class MetaD : public Bias {
 
 private:
@@ -668,17 +624,10 @@ private:
   std::vector<std::string> ifilesnames_;
   // Grids
   bool grid_=false;
-  bool sparsegrid_=false;
-  std::unique_ptr<GridBase> BiasGrid_;
-  /// the bias grid is extended when a hill does not fit in it
-  struct {
-    /// maximum number of points (GRID_SIZE_LIMIT)
-    double sizelimit=1.0e8;
-    /// no range was given (GRID_MIN, GRID_MAX) and there are no hills yet: the grid is placed around the first one
-    bool pristine=false;
-    /// hills are being read and the log line is not complete (an extension starts a new line)
-    bool midline=false;
-  } gridext_;
+  /// the bias grid, extended when a hill does not fit in it
+  std::unique_ptr<MetaDBiasGrid> BiasGrid_;
+  /// maximum number of points of the grid (GRID_SIZE_LIMIT)
+  double gridsizelimit_=1.0e8;
   OFile gridfile_;
   bool storeOldGrids_=false;
   int wgridstride_=0;
@@ -838,13 +787,6 @@ private:
   void   addGaussian(const Gaussian&);
   /// extend the bias grid, if needed, so that it contains all the points within halfwidth[i] from x along each
   /// CV i that is not periodic, plus one point on each side
-  void   extendGrid(const std::vector<double>& x, const std::vector<double>& halfwidth);
-  /// with INTERVAL, true if the bias for cv is the constant value at an end of the grid (getIntervalBiasOutsideGrid)
-  bool   isIntervalBeyondGrid(double cv) const;
-  /// with INTERVAL, the bias for a CV beyond the ends of the grid
-  double getIntervalBiasOutsideGrid(double cv) const;
-  /// add a hill to the grid (without INTERVAL)
-  void   addGaussianToGrid(const Gaussian&);
   double getHeight(const std::vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const std::vector<double>&);
@@ -858,7 +800,6 @@ private:
   bool   isHillStep() const;
   /// remove an incomplete last line from a hills file that is going to be appended to
   /// returns the message for the log (empty if the file is fine)
-  std::string removeIncompleteLastLine(const std::string& path);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
@@ -1296,12 +1237,12 @@ void MetaD::parseGrid(SetupInput& in) {
   if(in.gbin.size()>0) {
     grid_=true;
   }
-  parse("GRID_SIZE_LIMIT",gridext_.sizelimit);
-  if(!(gridext_.sizelimit>=1.0)) {
+  parse("GRID_SIZE_LIMIT",gridsizelimit_);
+  if(!(gridsizelimit_>=1.0)) {
     error("GRID_SIZE_LIMIT should be at least 1");
   }
   // grid points are indexed with unsigned integers (see GridBase)
-  if(gridext_.sizelimit>static_cast<double>(std::numeric_limits<unsigned>::max())) {
+  if(gridsizelimit_>static_cast<double>(std::numeric_limits<unsigned>::max())) {
     error("GRID_SIZE_LIMIT cannot be larger than "+exactString(std::numeric_limits<unsigned>::max()));
   }
 
@@ -1594,7 +1535,7 @@ void MetaD::logIntervalAndGrid(const SetupInput& in) {
     if(wgridstride_>0) {
       log.printf("  Grid is written on file %s with stride %d\n",in.gridfilename.c_str(),wgridstride_);
     }
-    log.printf("  The grid is extended when a Gaussian does not fit in it, up to %s points\n",exactString(gridext_.sizelimit).c_str());
+    log.printf("  The grid is extended when a Gaussian does not fit in it, up to %s points\n",exactString(gridsizelimit_).c_str());
   }
 }
 
@@ -1761,6 +1702,8 @@ void MetaD::setupBiasGrid(SetupInput& in) {
   // initializing and checking grid
   in.restartedFromGrid=false;  // restart from grid file
   if(grid_) {
+    std::string funcl=getLabel() + ".bias";
+    BiasGrid_=Tools::make_unique<MetaDBiasGrid>(*this);
     if(!(in.gridreadfilename.length()>0)) {
       // check for mesh and sigma size
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1781,26 +1724,7 @@ void MetaD::setupBiasGrid(SetupInput& in) {
           }
         }
       }
-      std::string funcl=getLabel() + ".bias";
-      sparsegrid_=in.sparsegrid;
-      if(!in.sparsegrid) {
-        BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.spline,true);
-      } else {
-        BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.spline,true);
-      }
-      gridext_.pristine=in.gridnobounds;
-      std::vector<std::string> actualmin=BiasGrid_->getMin();
-      std::vector<std::string> actualmax=BiasGrid_->getMax();
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        std::string is;
-        Tools::convert(i,is);
-        if(in.gmin[i]!=actualmin[i]) {
-          error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
-        }
-        if(in.gmax[i]!=actualmax[i]) {
-          error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
-        }
-      }
+      BiasGrid_->create(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.sparsegrid,in.spline,in.gridnobounds);
     } else {
       // read the grid in input, find the keys
       if(mw_.mpi&&in.gridreadfilename.at(0)!='/') {
@@ -1821,38 +1745,8 @@ void MetaD::setupBiasGrid(SetupInput& in) {
       } else {
         error("The GRID file you want to read: " + in.gridreadfilename + ", cannot be found!");
       }
-      std::string funcl=getLabel() + ".bias";
-      sparsegrid_=in.sparsegrid;
-      BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, in.sparsegrid, in.spline, true);
-      if(BiasGrid_->getDimension()!=getNumberOfArguments()) {
-        error("mismatch between dimensionality of input grid and number of arguments");
-      }
+      BiasGrid_->read(gridfile,in.gridreadfilename,funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.sparsegrid,in.spline,in.gridnobounds);
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) {
-          error("periodicity mismatch between arguments and input bias");
-        }
-        // the grid in the file can have a different range (e.g. it was extended), but it must be on the same
-        // lattice as the grid in input: same spacing, points at the same positions
-        std::string is;
-        Tools::convert(i,is);
-        double gmin,gmax,fmin;
-        Tools::convert(in.gmin[i],gmin);
-        Tools::convert(in.gmax[i],gmax);
-        Tools::convert(BiasGrid_->getMin()[i],fmin);
-        const double dx=(gmax-gmin)/in.gbin[i];
-        const double fdx=BiasGrid_->getDx(i);
-        if(getPntrToArgument(i)->isPeriodic()) {
-          if(BiasGrid_->getNbin()[i]!=in.gbin[i]) {
-            error("the number of bins of the grid in "+in.gridreadfilename+" for the periodic variable "+is+" does not match the input");
-          }
-        } else {
-          const double shift=(fmin-gmin)/dx;
-          // (the bounds of an extended grid are written with 12 significant digits)
-          if(std::fabs(fdx-dx)>1e-6*dx || std::fabs(shift-std::round(shift))>1e-4) {
-            error("the grid in "+in.gridreadfilename+" for variable "+is+" is not on the lattice of the grid in input: "
-                  "its spacing should be "+exactString(dx)+" and its points should be at "+in.gmin[i]+" plus multiples of the spacing");
-          }
-        }
         double a, b;
         Tools::convert(in.gmin[i],a);
         Tools::convert(in.gmax[i],b);
@@ -1866,48 +1760,31 @@ void MetaD::setupBiasGrid(SetupInput& in) {
           log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
         }
       }
-      // a grid without initial range read from a file written before the first hill: it is placed around the first hill
-      if(in.gridnobounds) {
-        bool empty=true;
-        BiasGrid_->forEachStoredPoint([&](GridBase::index_t,double value) {
-          empty=empty && value==0.0;
-        });
-        gridext_.pristine=empty;
-      }
       log.printf("  Restarting from %s\n",in.gridreadfilename.c_str());
       if(getRestart()) {
         in.restartedFromGrid=true;
       }
     }
-    // an initial grid larger than GRID_SIZE_LIMIT (e.g. given with GRID_MIN, GRID_MAX, GRID_BIN) can still be extended
-    double size=1.0;
-    for(const auto n : BiasGrid_->getNbin()) {
-      size*=n;
-    }
-    if(size>gridext_.sizelimit) {
-      gridext_.sizelimit=std::min(2.0*size,static_cast<double>(std::numeric_limits<unsigned>::max()));
-      log.printf("  The initial grid has more points than GRID_SIZE_LIMIT: the limit is set to %s points\n",exactString(gridext_.sizelimit).c_str());
-    }
+    BiasGrid_->setSizeLimit(gridsizelimit_);
     // with INTERVAL the bias beyond the limits is constant: the grid contains the interval and at least one point
-    // beyond each limit, which holds this constant value (see extendGrid)
+    // beyond each limit, which holds this constant value
     if(interval_.enabled) {
-      const std::vector<double> center(1,0.5*(interval_.lower+interval_.upper));
-      const std::vector<double> halfwidth(1,0.5*(interval_.upper-interval_.lower)+BiasGrid_->getDx(0));
-      extendGrid(center,halfwidth);
+      BiasGrid_->setInterval(interval_.lower,interval_.upper,getTime());
     }
     // the transition wells must be in the grid (it is extended along the CVs that are not periodic)
     if(calc_transition_bias_) {
+      const GridBase& grid=BiasGrid_->getGrid();
       const std::vector<double> zero(getNumberOfArguments(),0.0);
       for(const auto & well : transitionwells_) {
         for(unsigned i=0; i<getNumberOfArguments(); i++) {
           if(getPntrToArgument(i)->isPeriodic()) {
-            const double k=BiasGrid_->getLatticeCoordinate(i,well[i]);
-            if(!(k>=0.0 && k<static_cast<double>(BiasGrid_->getNbin()[i]))) {
+            const double k=grid.getLatticeCoordinate(i,well[i]);
+            if(!(k>=0.0 && k<static_cast<double>(grid.getNbin()[i]))) {
               error(" transition well is not in grid");
             }
           }
         }
-        extendGrid(well,zero);
+        BiasGrid_->extend(well,zero,getTime());
       }
     }
   }
@@ -2071,51 +1948,6 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   }
 }
 
-std::string MetaD::removeIncompleteLastLine(const std::string& path) {
-  // compressed files cannot be fixed in place
-  if(path.length()>3 && path.substr(path.length()-3)==".gz") {
-    return "";
-  }
-  std::ifstream f(path,std::ios::binary);
-  if(!f) {
-    return "";
-  }
-  f.seekg(0,std::ios::end);
-  const std::streamoff size=f.tellg();
-  if(size<=0) {
-    return "";
-  }
-  char last;
-  f.seekg(size-1);
-  f.get(last);
-  if(last=='\n') {
-    return "";
-  }
-  // look backward for the end of the last complete line
-  std::streamoff pos=size-1;
-  while(pos>0) {
-    char c;
-    f.seekg(pos-1);
-    f.get(c);
-    if(c=='\n') {
-      break;
-    }
-    pos--;
-  }
-  std::string tail(size-pos,' ');
-  f.seekg(pos);
-  f.read(&tail[0],size-pos);
-  f.close();
-  std::string message="  WARNING: the last line of "+path+" is incomplete (the previous run was probably interrupted while writing it) and is removed:\n";
-  message+="  "+tail+"\n";
-  std::error_code ec;
-  std::filesystem::resize_file(path,pos,ec);
-  if(ec) {
-    message+="  WARNING: the incomplete last line of "+path+" could not be removed ("+ec.message()+")\n";
-  }
-  return message;
-}
-
 void MetaD::setupTargetGrid() {
   if(targetfilename_.length()>0) {
     IFile gridfile;
@@ -2145,7 +1977,7 @@ void MetaD::initializeRestartQuantities() {
     }
     // Calculate all special bias quantities desired if restarting with nonzero bias.
     if(calc_max_bias_) {
-      max_bias_ = BiasGrid_->getMaxValue();
+      max_bias_ = BiasGrid_->getGrid().getMaxValue();
       getPntrToComponent("maxbias")->set(max_bias_);
     }
     if(calc_transition_bias_) {
@@ -2317,7 +2149,9 @@ int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
   const bool parallel=(comm.Get_size()>1);
   const bool reader=(comm.Get_rank()==0);
   // the callers have started a line of the log
-  gridext_.midline=true;
+  if(BiasGrid_) {
+    BiasGrid_->setMidline(true);
+  }
   std::vector<double> buffer;
   bool more=true;
   while(more) {
@@ -2422,7 +2256,9 @@ int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
       addGaussian(Gaussian(multivariate,height,center,sigma));
     }
   }
-  gridext_.midline=false;
+  if(BiasGrid_) {
+    BiasGrid_->setMidline(false);
+  }
   if(addtobias) {
     log.printf("      %d Gaussians read\n",nhills);
   } else {
@@ -2486,251 +2322,9 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
   file.printField();
 }
 
-void MetaD::addGaussianToGrid(const Gaussian& hill) {
-  // The hill is evaluated on the grid points within its support. The difference of a grid point from the
-  // center of the hill along CV d only depends on the index of the point along d, so the differences are
-  // computed once per direction; the value at each point is then computed from them
-  // (MetaDKernel::evaluateFromDifferences, same arithmetic as MetaDKernel::evaluateWithDerivatives).
-  const unsigned ncv=getNumberOfArguments();
-  const std::vector<unsigned> nneigh=kernel_.getSupport(hill,*BiasGrid_);
-  const std::vector<unsigned> nbin=BiasGrid_->getNbin();
-  const std::vector<bool> pbc=BiasGrid_->getIsPeriodic();
-  std::vector<unsigned> center(ncv);
-  BiasGrid_->getIndices(hill.center,center);
-  // grid indices and differences along each direction (as in GridBase::getNeighbors)
-  std::vector<std::vector<unsigned>> indices(ncv);
-  std::vector<std::vector<double>> differences(ncv);
-  std::vector<unsigned> tmpindices(center);
-  std::vector<double> point(ncv);
-  for(unsigned d=0; d<ncv; d++) {
-    unsigned nb=2*nneigh[d]+1;
-    if(pbc[d] && nb>nbin[d]) {
-      nb=nbin[d];
-    }
-    for(unsigned k=0; k<nb; k++) {
-      int i0=static_cast<int>(k)-static_cast<int>(nneigh[d])+static_cast<int>(center[d]);
-      const int n=nbin[d];
-      if(pbc[d]) {
-        i0=((i0%n)+n)%n;
-      } else if(i0<0 || i0>=n) {
-        continue;
-      }
-      tmpindices[d]=i0;
-      BiasGrid_->getPoint(tmpindices.data(),ncv,point.data(),ncv);
-      double dd=kernel_.difference(d,hill.center[d],point[d]);
-      if(!hill.multivariate) {
-        dd*=hill.invsigma[d];
-      }
-      indices[d].push_back(i0);
-      differences[d].push_back(dd);
-    }
-    tmpindices[d]=center[d];
-  }
-  // linear index of a point (column-major order, as in GridBase::getIndex)
-  std::vector<Grid::index_t> stride(ncv);
-  Grid::index_t npoints=1;
-  for(unsigned d=0; d<ncv; d++) {
-    stride[d]=(d==0 ? 1 : stride[d-1]*nbin[d-1]);
-    npoints*=indices[d].size();
-  }
-  if(npoints==0) {
-    return;
-  }
-  // Loop over all the points of the box, the first direction being the fastest.
-  // With MPI every process adds the whole hill to its copy of the grid: the hills are the same on all
-  // processes, so the grids stay identical without communication (splitting the points among the processes
-  // requires summing values and derivatives of the whole box at every hill, which costs more than computing them).
-  // With OpenMP the box is split in blocks of consecutive points; each point is computed and added by one
-  // thread only, with the same arithmetic as the serial loop, so the result does not depend on the number of
-  // threads. Sparse grids are filled serially, as new points are inserted.
-  unsigned nt=OpenMP::getNumThreads();
-  if(sparsegrid_ || npoints<static_cast<Grid::index_t>(1024*nt)) {
-    nt=1;
-  }
-  ThreadWorkArrays<unsigned> kwork(nt,ncv);
-  ThreadWorkArrays<double> dpwork(nt,ncv);
-  ThreadWorkArrays<double> derwork(nt,ncv);
-  #pragma omp parallel for num_threads(nt) schedule(static,1)
-  for(unsigned block=0; block<nt; block++) {
-    const Grid::index_t first=(npoints*block)/nt;
-    const Grid::index_t last=(npoints*(block+1))/nt;
-    // indices of the first point of the block along each direction
-    unsigned* k=kwork.get(block);
-    Grid::index_t m=first;
-    for(unsigned d=0; d<ncv; d++) {
-      k[d]=m%indices[d].size();
-      m/=indices[d].size();
-    }
-    double* dp=dpwork.get(block);
-    double* der=derwork.get(block);
-    for(Grid::index_t n=first; n<last; n++) {
-      for(unsigned d=0; d<ncv; d++) {
-        dp[d]=differences[d][k[d]];
-        der[d]=0.0;
-      }
-      bool inside;
-      const double bias=kernel_.evaluateFromDifferences(dp,hill,der,inside);
-      if(inside || sparsegrid_) {
-        // adding zero outside the cutoff only matters for sparse grids, where it creates the point
-        Grid::index_t index=0;
-        for(unsigned d=0; d<ncv; d++) {
-          index+=indices[d][k[d]]*stride[d];
-        }
-        BiasGrid_->addValueAndDerivatives(index,bias,der,ncv);
-      }
-      // next point
-      for(unsigned d=0; d<ncv; d++) {
-        if(++k[d]<indices[d].size()) {
-          break;
-        }
-        k[d]=0;
-      }
-    }
-  }
-}
-
-void MetaD::extendGrid(const std::vector<double>& x, const std::vector<double>& halfwidth) {
-  const unsigned ncv=getNumberOfArguments();
-  const std::vector<bool> pbc=BiasGrid_->getIsPeriodic();
-  const std::vector<unsigned> nbin=BiasGrid_->getNbin();
-  // points to add at the lower and upper end along each CV (for a pristine grid: the change of the range, also negative)
-  std::vector<long long> lower(ncv,0), upper(ncv,0);
-  // as above, with some more points so that the grid is not extended at every hill
-  std::vector<long long> lowergrow(ncv,0), uppergrow(ncv,0);
-  bool extend=false;
-  for(unsigned i=0; i<ncv; i++) {
-    if(pbc[i]) {
-      continue;
-    }
-    // points within halfwidth on each side (as in MetaDKernel::getSupport, which adds the hill to the points from
-    // the one below x minus this number to the one below x plus this number), plus one more on each side,
-    // so that the bias and its derivatives are zero at the boundary of the grid
-    double n=std::ceil(halfwidth[i]/BiasGrid_->getDx(i));
-    if(!std::isfinite(n) || n<0.0) {
-      // support not finite (degenerate hill): the hill is added to the whole grid, x only must be in it
-      n=0.0;
-    }
-    const double k=std::floor(BiasGrid_->getLatticeCoordinate(i,x[i]));
-    const double lo=k-n-1.0;
-    const double hi=k+n+1.0;
-    if(!std::isfinite(lo) || !std::isfinite(hi) || std::fabs(lo)>1e15 || std::fabs(hi)>1e15) {
-      std::string is;
-      Tools::convert(i,is);
-      error("cannot extend the grid along variable "+is+" to contain the point "+exactString(x[i]));
-    }
-    const double last=static_cast<double>(nbin[i])-1.0;
-    if(gridext_.pristine) {
-      lower[i]=lowergrow[i]=static_cast<long long>(-lo);
-      upper[i]=uppergrow[i]=static_cast<long long>(hi-last);
-      extend=true;
-    } else {
-      // geometric growth: at least a quarter of the current number of points
-      const long long grow=static_cast<long long>(std::ceil(0.25*nbin[i]));
-      if(lo<0.0) {
-        lower[i]=static_cast<long long>(-lo);
-        lowergrow[i]=std::max(lower[i],grow);
-        extend=true;
-      }
-      if(hi>last) {
-        upper[i]=static_cast<long long>(hi-last);
-        uppergrow[i]=std::max(upper[i],grow);
-        extend=true;
-      }
-    }
-  }
-  const bool pristine=gridext_.pristine;
-  gridext_.pristine=false;
-  if(!extend) {
-    return;
-  }
-  auto size=[&](const std::vector<long long>& lo,const std::vector<long long>& up) {
-    double n=1.0;
-    for(unsigned i=0; i<ncv; i++) {
-      n*=static_cast<double>(nbin[i])+lo[i]+up[i];
-    }
-    return n;
-  };
-  if(size(lowergrow,uppergrow)>gridext_.sizelimit) {
-    lowergrow=lower;
-    uppergrow=upper;
-    if(size(lower,upper)>gridext_.sizelimit) {
-      std::string point;
-      for(unsigned i=0; i<ncv; i++) {
-        point+=(i>0?",":"")+exactString(x[i]);
-      }
-      error("a Gaussian at "+point+" requires a grid with "+exactString(size(lower,upper))+" points, more than GRID_SIZE_LIMIT="
-            +exactString(gridext_.sizelimit)+": increase GRID_SIZE_LIMIT, or check the variables (e.g. a distance that grows without limit) "
-            "and the width of the Gaussians (e.g. SIGMA_MAX with ADAPTIVE)");
-    }
-  }
-  BiasGrid_->resize(lowergrow,uppergrow);
-  if(interval_.enabled && !pristine) {
-    // With INTERVAL, all the points beyond a limit have the same value (the hills are computed at the limit there) and
-    // zero derivative: the new points beyond a limit take the value of the old point at that end of the grid.
-    const unsigned n=BiasGrid_->getNbin()[0];
-    std::vector<double> der(1);
-    auto fill=[&](unsigned from,unsigned first,unsigned last,bool beyond) {
-      if(!beyond) {
-        return;
-      }
-      const double value=BiasGrid_->getValueAndDerivatives(from,der);
-      der[0]=0.0;
-      for(unsigned k=first; k<last; k++) {
-        BiasGrid_->setValueAndDerivatives(k,value,der);
-      }
-    };
-    const unsigned first=static_cast<unsigned>(lowergrow[0]);
-    const unsigned last=n-1-static_cast<unsigned>(uppergrow[0]);
-    // (a point at the limit, e.g. in a grid file written before grids were extended, has the same value)
-    fill(first,0,first,lowergrow[0]>0 && BiasGrid_->getPoint(first)[0]<=interval_.lower);
-    fill(last,last+1,n,uppergrow[0]>0 && BiasGrid_->getPoint(last)[0]>=interval_.upper);
-  }
-  const std::vector<std::string> gmin=BiasGrid_->getMin();
-  const std::vector<std::string> gmax=BiasGrid_->getMax();
-  const std::vector<unsigned> newnbin=BiasGrid_->getNbin();
-  if(gridext_.midline) {
-    log.printf("\n");
-    gridext_.midline=false;
-  }
-  log.printf("  %s grid: min",pristine ? "Placing the" : "Extending the");
-  for(unsigned i=0; i<ncv; i++) {
-    log.printf(" %s",gmin[i].c_str());
-  }
-  log.printf(" max");
-  for(unsigned i=0; i<ncv; i++) {
-    log.printf(" %s",gmax[i].c_str());
-  }
-  log.printf(" points");
-  for(unsigned i=0; i<ncv; i++) {
-    log.printf(" %u",newnbin[i]);
-  }
-  log.printf(" at time %f\n",getTime());
-}
-
 void MetaD::addGaussian(const Gaussian& hill) {
   if(grid_) {
-    // the grid must contain all the points where the hill is not zero
-    extendGrid(hill.center,kernel_.getCutoff(hill));
-  }
-  if(grid_ && !interval_.enabled) {
-    addGaussianToGrid(hill);
-  } else if(grid_) {
-    size_t ncv=getNumberOfArguments();
-    std::vector<unsigned> nneighb=kernel_.getSupport(hill,*BiasGrid_);
-    std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
-    std::vector<double> der(ncv);
-    std::vector<double> xx(ncv);
-    // every MPI process adds the whole hill to its copy of the grid (see addGaussianToGrid)
-    std::vector<double> dp(ncv);
-    for(size_t i=0; i<neighbors.size(); ++i) {
-      Grid::index_t ineigh=neighbors[i];
-      for(unsigned j=0; j<ncv; ++j) {
-        der[j]=0.0;
-      }
-      BiasGrid_->getPoint(ineigh,xx);
-      double bias=kernel_.evaluateWithDerivatives(xx,hill,der.data(),dp.data());
-      BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
-    }
+    BiasGrid_->addHill(hill,kernel_,getTime());
   } else {
     hills_.push_back(hill);
     const unsigned ncv=getNumberOfArguments();
@@ -2762,12 +2356,7 @@ double MetaD::evaluateHillWithDerivatives(const std::vector<double>& cv, unsigne
 double MetaD::getBias(const std::vector<double>& cv) {
   double bias=0.0;
   if(grid_) {
-    // the grid contains all the points where the hills are not zero
-    if(interval_.enabled && isIntervalBeyondGrid(cv[0])) {
-      bias = getIntervalBiasOutsideGrid(cv[0]);
-    } else if(BiasGrid_->isInside(cv)) {
-      bias = BiasGrid_->getValue(cv);
-    }
+    bias=BiasGrid_->getBias(cv);
   } else {
 #ifdef _OPENMP
     //nt is unused if openmp is not declared
@@ -2795,21 +2384,7 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
   unsigned ncv=getNumberOfArguments();
   double bias=0.0;
   if(grid_) {
-    // the grid contains all the points where the hills are not zero
-    if(BiasGrid_->isInside(cv) && !(interval_.enabled && isIntervalBeyondGrid(cv[0]))) {
-      std::vector<double> vder(ncv);
-      bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-      for(unsigned i=0; i<ncv; i++) {
-        der[i]=vder[i];
-      }
-    } else {
-      if(interval_.enabled) {
-        bias=getIntervalBiasOutsideGrid(cv[0]);
-      }
-      for(unsigned i=0; i<ncv; i++) {
-        der[i]=0.0;
-      }
-    }
+    bias=BiasGrid_->getBiasAndDerivatives(cv,der);
   } else {
     unsigned nt=OpenMP::getNumThreads();
     unsigned stride=comm.Get_size();
@@ -2861,19 +2436,6 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
   return bias;
 }
 
-bool MetaD::isIntervalBeyondGrid(double cv) const {
-  // the grid contains the interval and at least one point beyond each limit, and the bias is constant beyond the limits:
-  // beyond the last point of the grid (where the spline would use this point only) the bias is the value at this point
-  const double k=BiasGrid_->getLatticeCoordinate(0,cv);
-  return !(k>=0.0 && k<static_cast<double>(BiasGrid_->getNbin()[0])-1.0);
-}
-
-double MetaD::getIntervalBiasOutsideGrid(double cv) const {
-  const unsigned n=BiasGrid_->getNbin()[0];
-  const bool below=!(BiasGrid_->getLatticeCoordinate(0,cv)>=0.0);
-  return BiasGrid_->getValue(below ? 0 : n-1);
-}
-
 double MetaD::getHeight(const std::vector<double>& cv) {
   double height=height0_;
   if(welltemp_) {
@@ -2887,7 +2449,7 @@ double MetaD::getHeight(const std::vector<double>& cv) {
   }
   if(dampfactor_>0.0) {
     plumed_assert(BiasGrid_);
-    double m=BiasGrid_->getMaxValue();
+    double m=BiasGrid_->getGrid().getMaxValue();
     height*=std::exp(-m/(kbt_*(dampfactor_)));
   }
   if (tt_specs_.is_active) {
@@ -3298,7 +2860,7 @@ void MetaD::writeBiasGrid() {
       gridfile_.rewind();
     }
   }
-  BiasGrid_->writeToFile(gridfile_);
+  BiasGrid_->getGrid().writeToFile(gridfile_);
   // if a single grid is stored, it is necessary to flush it, otherwise
   // the file might stay empty forever (when a single grid is not large enough to
   // trigger flushing from the operating system).
@@ -3355,7 +2917,7 @@ void MetaD::updateBiasQuantities(bool nowAddAHill) {
     computeReweightingFactor();
   }
   if (calc_max_bias_ && bias_has_changed) {
-    max_bias_ = BiasGrid_->getMaxValue();
+    max_bias_ = BiasGrid_->getGrid().getMaxValue();
     getPntrToComponent("maxbias")->set(max_bias_);
   }
   if (calc_transition_bias_ && bias_has_changed) {
@@ -3467,14 +3029,14 @@ void MetaD::computeReweightingFactor() {
     minusBetaF=1./kbt_;
     minusBetaFplusV=0;
   }
-  max_bias_=BiasGrid_->getMaxValue(); //to avoid exp overflow
+  max_bias_=BiasGrid_->getGrid().getMaxValue(); //to avoid exp overflow
 
   // the integrals are over all the points of the grid (in its current range); the points of a sparse grid that are
   // not stored have zero bias
   const unsigned rank=comm.Get_rank();
   const unsigned stride=comm.Get_size();
   Grid::index_t nstored=0;
-  BiasGrid_->forEachStoredPoint([&](Grid::index_t,double val) {
+  BiasGrid_->getGrid().forEachStoredPoint([&](Grid::index_t,double val) {
     if(nstored%stride==rank) {
       Z_0+=std::exp(minusBetaF*(val-max_bias_));
       Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
@@ -3482,7 +3044,7 @@ void MetaD::computeReweightingFactor() {
     nstored++;
   });
   double npoints=1.0;
-  for(const auto n : BiasGrid_->getNbin()) {
+  for(const auto n : BiasGrid_->getGrid().getNbin()) {
     npoints*=n;
   }
   const double nzero=npoints-static_cast<double>(nstored);
@@ -3517,13 +3079,13 @@ double MetaD::getTransitionBarrierBias() {
     double least_transition_bias;
     std::vector<double> sink = transitionwells_[0];
     std::vector<double> source = transitionwells_[1];
-    least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+    least_transition_bias = BiasGrid_->getGrid().findMaximalPathMinimum(source, sink);
     for (unsigned i = 2; i < transitionwells_.size(); i++) {
       if (least_transition_bias == 0.0) {
         break;
       }
       source = transitionwells_[i];
-      double curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+      double curr_transition_bias = BiasGrid_->getGrid().findMaximalPathMinimum(source, sink);
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     return least_transition_bias;
