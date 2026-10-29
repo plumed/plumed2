@@ -99,9 +99,6 @@ public:
   void setMidline(bool midline) {
     midline_=midline;
   }
-  bool isSparse() const {
-    return sparse_;
-  }
   GridBase& getGrid() {
     return *grid_;
   }

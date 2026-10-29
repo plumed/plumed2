@@ -115,6 +115,14 @@ MetaDHillsFiles::MetaDHillsFiles(ActionWithValue& action, Communicator& comm, co
 MetaDHillsFiles::~MetaDHillsFiles() {
 }
 
+std::string MetaDHillsFiles::getWalkerFileName(const std::string& name, const std::string& dir, int nwalkers, int walker, bool mpi) {
+  const std::string suffix=(nwalkers>1 ? "."+std::to_string(walker) : std::string());
+  if(dir!="" && (nwalkers>1 || mpi)) {
+    return dir+"/"+name+suffix;
+  }
+  return name+suffix;
+}
+
 unsigned MetaDHillsFiles::addInput(const std::string& name, bool nosuffix) {
   ifiles_.emplace_back(Tools::make_unique<IFile>());
   ifilesnames_.push_back(name);
@@ -339,7 +347,7 @@ std::vector<long long> MetaDHillsFiles::readGridComment(const std::string& path,
   return counts;
 }
 
-/// takes a pointer to the file and a template std::string with values v and gives back the next center, sigma and height
+/// read the next hill: tmpvalues are used to read the CVs (with their periodicity); returns false at the end of the file
 bool MetaDHillsFiles::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma,
                                   double& height, bool& multivariate, double& time) {
   double dummy;
@@ -372,7 +380,7 @@ bool MetaDHillsFiles::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, s
     } else if( ktype!="stretched-gaussian") {
       inputError("non Gaussian kernels are not supported in MetaD");
     }
-    // scan for multivariate label: record the actual file position so to eventually rewind
+    // scan for multivariate label
     std::string sss;
     ifile->scanField("multivariate",sss);
     if(sss=="true") {

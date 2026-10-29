@@ -29,18 +29,13 @@
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
-#include "tools/Matrix.h"
 #include "tools/OpenMP.h"
-#include "tools/Random.h"
 #include "tools/File.h"
 #include "tools/Communicator.h"
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <deque>
+#include <algorithm>
+#include <cmath>
 #include <exception>
 #include <filesystem>
-#include <fstream>
 #include <limits>
 #include <numeric>
 
@@ -785,8 +780,7 @@ private:
   void   updateFlexibleBin(bool nowAddAHill);
   /// true if a hill has to be added at the current step
   bool   isHillStep() const;
-  /// remove an incomplete last line from a hills file that is going to be appended to
-  /// returns the message for the log (empty if the file is fine)
+  /// the c(t) reweighting factor (CALC_RCT)
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   /// add a hill in cv (and the hills of the other MPI walkers), write them to the hills file
@@ -1012,7 +1006,7 @@ void MetaD::parseGaussianWidth() {
         error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of time steps\n");
       }
     }
-    // here evtl parse the sigma min and max values
+    // the limits of the widths
     parseVector("SIGMA_MIN",sigma0min_);
     if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
       error("the number of SIGMA_MIN values should be the same as the number of arguments");
@@ -1148,26 +1142,15 @@ void MetaD::parseHillsAndTempering(SetupInput& in) {
 
 void MetaD::parseGrid(SetupInput& in) {
   // Grid Stuff
+  // (parseVector checks the number of values: the vectors are empty if the keywords are not given)
   in.gmin.assign(getNumberOfArguments(),std::string());
   parseVector("GRID_MIN",in.gmin);
-  if(in.gmin.size()!=getNumberOfArguments() && in.gmin.size()!=0) {
-    error("not enough values for GRID_MIN");
-  }
   in.gmax.assign(getNumberOfArguments(),std::string());
   parseVector("GRID_MAX",in.gmax);
-  if(in.gmax.size()!=getNumberOfArguments() && in.gmax.size()!=0) {
-    error("not enough values for GRID_MAX");
-  }
   in.gbin.assign(getNumberOfArguments(),0);
-  std::vector<double>   gspacing;
   parseVector("GRID_BIN",in.gbin);
-  if(in.gbin.size()!=getNumberOfArguments() && in.gbin.size()!=0) {
-    error("not enough values for GRID_BIN");
-  }
+  std::vector<double> gspacing(getNumberOfArguments());
   parseVector("GRID_SPACING",gspacing);
-  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) {
-    error("not enough values for GRID_SPACING");
-  }
   in.gridnobounds=MetaDBiasGrid::setupBins(*this,getArguments(),in.gmin,in.gmax,in.gbin,gspacing,adaptive_!=FlexibleBin::none,sigma0_,sigma0min_);
   if(in.gridnobounds) {
     in.gspacing=gspacing;
@@ -1298,11 +1281,10 @@ void MetaD::parseMultipleWalkers() {
 
 void MetaD::parseInterval() {
   // Interval keyword
+  // (parseVector checks that there are two values: the vector is empty if the keyword is not given)
   std::vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
-  if(tmpI.size()!=2&&tmpI.size()!=0) {
-    error("both a lower and an upper limits must be provided with INTERVAL");
-  } else if(tmpI.size()==2) {
+  if(tmpI.size()==2) {
     interval_.lower=tmpI.at(0);
     interval_.upper=tmpI.at(1);
     if(getNumberOfArguments()!=1) {
@@ -1376,11 +1358,6 @@ void MetaD::checkTempering() {
   // Transition tempered metadynamics options
   if (tt_specs_.is_active) {
     logTemperingSpecs(tt_specs_);
-    // Check that the appropriate transition bias quantity is calculated.
-    // (Should never trip, given that the flag is automatically set.)
-    if (!calc_transition_bias_) {
-      error(" transition tempering requires calculation of a transition bias");
-    }
   }
 
   // Overall tempering sanity check (this gets tricky when multiple are active).
@@ -1572,10 +1549,6 @@ void MetaD::setupComponents(const SetupInput& in) {
       }
       // Otherwise, read and set the restart value.
     } else {
-      // Restart of acceleration does not make sense if the restart timestep is zero.
-      //if (getStep() == 0) {
-      //  error("Restarting calculation of acceleration factors works only if simulation timestep is restarted correctly");
-      //}
       // Open the ACCELERATION_RFILE.
       IFile acc_rfile;
       acc_rfile.link(*this);
@@ -1780,26 +1753,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   }
   std::string ownpath;  // actual path of the hills file of this walker, if it was read
   for(int i=0; i<mw_.n; ++i) {
-    std::string fname;
-    if(mw_.dir!="") {
-      if(mw_.n>1) {
-        std::stringstream out;
-        out << i;
-        fname = mw_.dir+"/"+in.hillsfname+"."+out.str();
-      } else if(mw_.mpi) {
-        fname = mw_.dir+"/"+in.hillsfname;
-      } else {
-        fname = in.hillsfname;
-      }
-    } else {
-      if(mw_.n>1) {
-        std::stringstream out;
-        out << i;
-        fname = in.hillsfname+"."+out.str();
-      } else {
-        fname = in.hillsfname;
-      }
-    }
+    const std::string fname=MetaDHillsFiles::getWalkerFileName(in.hillsfname,mw_.dir,mw_.n,i,mw_.mpi);
     // with multiple walkers the files are written without the suffix of the replica (see openOutputFiles)
     const unsigned k=hillsfiles_->addInput(fname,mw_.n>1 || mw_.mpi);
     plumed_assert(k==static_cast<unsigned>(i));
@@ -2371,7 +2325,7 @@ void MetaD::calculate() {
   // (only once per STRIDE steps: the action can be calculated more often when other actions need it)
   if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()&&getStep()%getStride()==0) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
-    const double mean_acc = acc_/((double) getStep());
+    const double mean_acc = acc_/static_cast<double>(getStep());
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0) {
     if(getStep()>acc_restart_step_ && !getExchangeStep() && getStep()%getStride()==0) {
@@ -2761,7 +2715,7 @@ void MetaD::updateFrequencyAdaptiveStride() {
     getPntrToComponent("pace")->set(current_stride_);
     return;
   }
-  const double mean_acc = acc_/((double) getStep());
+  const double mean_acc = acc_/static_cast<double>(getStep());
   int tmp_stride= stride_*floor((mean_acc/fa_.min_acceleration)+0.5);
   if(mean_acc >= fa_.min_acceleration) {
     if(tmp_stride > current_stride_) {
@@ -2775,16 +2729,8 @@ void MetaD::updateFrequencyAdaptiveStride() {
 }
 
 bool MetaD::checkNeedsGradients()const {
-  if(adaptive_==FlexibleBin::geometry) {
-    // gradients are needed when a hill is added (the pace can change with FREQUENCY_ADAPTIVE)
-    if(isHillStep()) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
+  // with ADAPTIVE=GEOM gradients are needed when a hill is added (the pace can change with FREQUENCY_ADAPTIVE)
+  return adaptive_==FlexibleBin::geometry && isHillStep();
 }
 
 std::vector<double> MetaD::getNlistPosition() const {

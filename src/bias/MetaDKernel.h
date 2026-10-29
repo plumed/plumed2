@@ -53,7 +53,7 @@ public:
   }
 };
 
-/// A Gaussian hill deposited by METAD.
+/// A Gaussian hill deposited by METAD or PBMETAD.
 /// For multivariate hills (ADAPTIVE) sigma contains the upper triangle (row-major) of the
 /// inverse covariance matrix, otherwise it contains the widths along each CV.
 struct MetaDGaussian {
@@ -99,8 +99,6 @@ struct MetaDGaussian {
 /// Gaussians are truncated at dp2cutoff. With INTERVAL (one dimensional only) the CV is
 /// clamped to [lower,upper] and the force outside the interval is zero.
 class MetaDKernel {
-  /// the arguments of the action, used for (periodic) differences
-  std::vector<Value*> args_;
   /// periodicity of the arguments, cached to compute the differences inline
   /// (same arithmetic as Value::difference)
   std::vector<char> periodic_;
@@ -122,7 +120,6 @@ public:
     return s*period_[i];
   }
   void setArguments(const std::vector<Value*>& args) {
-    args_=args;
     periodic_.resize(args.size());
     period_.assign(args.size(),0.0);
     invperiod_.assign(args.size(),0.0);
@@ -177,11 +174,9 @@ inline
 double MetaDKernel::evaluate(const std::vector<double>& cv, const MetaDGaussian& hill) const {
   unsigned ncv=cv.size();
 
-  // I use a pointer here because cv is const (and should be const)
-  // but when using doInt it is easier to locally replace cv[0] with
-  // the upper/lower limit in case it is out of range
+  // with INTERVAL the CV is replaced by the limit when it is beyond it (cv is const)
   double tmpcv[1];
-  const double *pcv=NULL; // pointer to cv
+  const double *pcv=nullptr; // pointer to cv
   if(ncv>0) {
     pcv=&cv[0];
   }
@@ -232,10 +227,8 @@ inline
 double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const MetaDGaussian& hill, double* der, double* dp_) const {
   unsigned ncv=cv.size();
 
-  // I use a pointer here because cv is const (and should be const)
-  // but when using doInt it is easier to locally replace cv[0] with
-  // the upper/lower limit in case it is out of range
-  const double *pcv=NULL; // pointer to cv
+  // with INTERVAL the CV is replaced by the limit when it is beyond it (cv is const)
+  const double *pcv=nullptr; // pointer to cv
   double tmpcv[1]; // tmp array with cv (to be used with INTERVAL)
   if(ncv>0) {
     pcv=&cv[0];
@@ -319,7 +312,7 @@ double MetaDKernel::evaluateWithDerivatives(const std::vector<double>& cv, const
 inline
 std::vector<double> MetaDKernel::getCutoff(const MetaDGaussian& hill) const {
   std::vector<double> cutoff;
-  unsigned ncv=args_.size();
+  unsigned ncv=periodic_.size();
 
   // traditional or flexible hill?
   if(hill.multivariate) {
@@ -352,7 +345,7 @@ inline
 std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const GridBase& grid) const {
   std::vector<unsigned> nneigh;
   const std::vector<double> cutoff=getCutoff(hill);
-  unsigned ncv=args_.size();
+  unsigned ncv=periodic_.size();
 
   // number of grid points within the cutoff along CV i; it is never larger than the grid
   // (a support larger than the grid, or not finite for a degenerate hill, covers the whole grid)
@@ -381,7 +374,7 @@ std::vector<unsigned> MetaDKernel::getSupport(const MetaDGaussian& hill, const G
 
 inline
 double MetaDKernel::getDistance2(const std::vector<double>& cv, const MetaDGaussian& hill) const {
-  const unsigned ncv=args_.size();
+  const unsigned ncv=periodic_.size();
   double dist2=0.0;
   if(hill.multivariate) {
     // hill.sigma holds the upper triangle of the inverse covariance matrix
@@ -410,7 +403,7 @@ double MetaDKernel::getVariance(const MetaDGaussian& hill, unsigned i) const {
   if(!hill.multivariate) {
     return hill.sigma[i]*hill.sigma[i];
   }
-  const unsigned ncv=args_.size();
+  const unsigned ncv=periodic_.size();
   Matrix<double> mymatrix(ncv,ncv);
   unsigned k=0;
   for(unsigned j=0; j<ncv; j++) {

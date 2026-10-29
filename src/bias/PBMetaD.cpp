@@ -24,21 +24,17 @@
 #include "MetaDHills.h"
 #include "MetaDKernel.h"
 #include "core/ActionRegister.h"
-#include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
-#include "tools/Grid.h"
-#include "tools/Matrix.h"
 #include "tools/OpenMP.h"
-#include "tools/Random.h"
 #include "tools/File.h"
 #include "tools/Communicator.h"
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <numeric>
 #include <limits>
-#include <sstream>
 
 namespace PLMD {
 namespace bias {
@@ -572,7 +568,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of time steps\n");
       }
     }
-    // here evtl parse the sigma min and max values
+    // the limits of the widths (one value for each family)
     parseVector("SIGMA_MIN",sigma0min_);
     if(sigma0min_.size()>0 && sigma0min_.size()!=pf_n) {
       error("the number of SIGMA_MIN values should be the same as the number of arguments (PFs)");
@@ -711,26 +707,15 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("GRID_RFILES",gridreadfilenames);
 
   // Grid Stuff
+  // (parseVector checks the number of values: the vectors are empty if the keywords are not given)
   std::vector<std::string> gmin(pf_n);
   parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=pf_n && gmin.size()!=0) {
-    error("not enough values for GRID_MIN");
-  }
   std::vector<std::string> gmax(pf_n);
   parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=pf_n && gmax.size()!=0) {
-    error("not enough values for GRID_MAX");
-  }
   std::vector<unsigned> gbin(pf_n);
-  std::vector<double>   gspacing;
   parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=pf_n && gbin.size()!=0) {
-    error("not enough values for GRID_BIN");
-  }
+  std::vector<double> gspacing(pf_n);
   parseVector("GRID_SPACING",gspacing);
-  if(gspacing.size()!=pf_n && gspacing.size()!=0) {
-    error("not enough values for GRID_SPACING");
-  }
   const bool gridnobounds=MetaDBiasGrid::setupBins(*this,pfhold,gmin,gmax,gbin,gspacing,adaptive_!=FlexibleBin::none,sigma0_,sigma0min_);
   if(gbin.size()>0) {
     grid_=true;
@@ -1007,26 +992,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   for(int j=0; j<mw_n_; ++j) {
     for(unsigned f=0; f<pf_n; ++f) {
-      std::string fname;
-      if(mw_dir_!="") {
-        if(mw_n_>1) {
-          std::stringstream out;
-          out << j;
-          fname = mw_dir_+"/"+hillsfname[f]+"."+out.str();
-        } else if(walkers_mpi_) {
-          fname = mw_dir_+"/"+hillsfname[f];
-        } else {
-          fname = hillsfname[f];
-        }
-      } else {
-        if(mw_n_>1) {
-          std::stringstream out;
-          out << j;
-          fname = hillsfname[f]+"."+out.str();
-        } else {
-          fname = hillsfname[f];
-        }
-      }
+      const std::string fname=MetaDHillsFiles::getWalkerFileName(hillsfname[f],mw_dir_,mw_n_,j,walkers_mpi_);
       // with multiple walkers the files are written without the suffix of the replica
       const unsigned k=families_[f].hillsfiles->addInput(fname,mw_n_>1 || walkers_mpi_);
       plumed_assert(k==static_cast<unsigned>(j));
@@ -1421,13 +1387,9 @@ void PBMetaD::calculate() {
   std::vector<double> deriv;
   getBiases(cv,bias,&deriv);
 
-  double ncv = (double) nargs;
-  double bmin = 1.0e+19;
-  for(unsigned i=0; i<nargs; ++i) {
-    if(bias[i] < bmin) {
-      bmin = bias[i];
-    }
-  }
+  // the biases are combined as -kT log(1/N sum exp(-V_i/kT)), shifting the exponents by the smallest bias
+  const double ncv = static_cast<double>(nargs);
+  const double bmin = *std::min_element(bias.begin(),bias.end());
   double ene = 0.;
   for(unsigned i=0; i<nargs; ++i) {
     ene += std::exp((-bias[i]+bmin)/kbt_);
@@ -1442,17 +1404,10 @@ void PBMetaD::calculate() {
     current_value_ = static_cast<unsigned>(selector->second);
   }
 
-  if(!do_select_ || select_value_==current_value_) {
-    for(unsigned i=0; i<nargs; ++i) {
-      const double force = - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
-      setOutputForce(i, force);
-    }
-  }
-
-  if(do_select_ && select_value_!=current_value_) {
-    for(unsigned i=0; i<nargs; ++i) {
-      setOutputForce(i, 0.0);
-    }
+  const bool selected=(!do_select_ || select_value_==current_value_);
+  for(unsigned i=0; i<nargs; ++i) {
+    const double force = (selected ? - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i] : 0.0);
+    setOutputForce(i, force);
   }
 
   // set bias

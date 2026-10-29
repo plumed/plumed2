@@ -79,10 +79,15 @@ private:
   void noStretchWarning();
   /// an error in a hills file
   [[noreturn]] void inputError(const std::string& msg) const;
+  /// the numbers of hills of the other walkers in a grid file (on one process)
+  static std::vector<long long> readGridComment(const std::string& path, unsigned nwalkers);
   bool scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height,
                    bool& multivariate, double& time);
 public:
   MetaDHillsFiles(ActionWithValue& action, Communicator& comm, const std::vector<Value*>& args);
+  /// the name of the hills file of a walker: name.walker with WALKERS_N, in the directory dir if given
+  /// (with WALKERS_N or WALKERS_MPI)
+  static std::string getWalkerFileName(const std::string& name, const std::string& dir, int nwalkers, int walker, bool mpi);
   ~MetaDHillsFiles();
   /// add an input file, which is opened if it exists; returns its index. With nosuffix, the name is used without
   /// the suffix of the replica (with multiple walkers, as for the files that are written)
@@ -102,10 +107,6 @@ public:
   /// read the hills that are in the file (an open file) up to now and call f for each one; returns their number.
   /// An error while reading (e.g. a wrong field) is thrown by all the processes.
   unsigned read(unsigned i, const Callback& f);
-  /// number of hills read from the file up to now
-  unsigned long long getNumberOfHillsRead(unsigned i) const {
-    return nread_[i];
-  }
   /// With WALKERS_N, the grid written by a walker contains the hills it has read from the files of the other walkers:
   /// their numbers are written in a comment line after the grid, so that when restarting from the grid only the
   /// hills that are not in it are added. The comment line (own is the index of this walker)
@@ -114,7 +115,6 @@ public:
   /// empty if the file does not contain them
   /// (read by the first process of comm and broadcast)
   static std::vector<long long> readGridComment(Communicator& comm, const std::string& path, unsigned nwalkers);
-  static std::vector<long long> readGridComment(const std::string& path, unsigned nwalkers);
   /// prepare an open file for the next read (the hills read up to now are not read again)
   void reset(unsigned i);
   void close(unsigned i);
