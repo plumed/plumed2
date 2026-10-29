@@ -76,11 +76,14 @@ docs:
 
 # regtests
 # perform tests using non-installed plumed
-check:
+# python regtests (regtest/python) use the in-place python interface ($PLUMED_ROOT/python),
+# which is therefore built (or checked to be up to date) here.
+# This is needed since make install does not build it anymore.
+check: python
 	LD_LIBRARY_PATH="$(realpath .)/src/lib":${LD_LIBRARY_PATH} PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
 
-check_failed:
+check_failed: python
 	LD_LIBRARY_PATH="$(realpath .)/src/lib":${LD_LIBRARY_PATH} PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail_onlyfailed
 
