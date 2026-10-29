@@ -649,6 +649,8 @@ private:
   bool acceleration_=false;
   double acc_=0.0;
   double acc_restart_mean_=0.0;
+  /// the step of the acceleration factor read from ACCELERATION_RFILE
+  long long int acc_restart_step_=0;
   // transition-tempering metadynamics
   bool calc_max_bias_=false;
   double max_bias_=0.0;
@@ -755,7 +757,8 @@ private:
   /// read the TARGET grid
   void setupTargetGrid();
   /// initialize the quantities that depend on the bias when restarting
-  void initializeRestartQuantities();
+  /// the quantities that depend on the bias read when restarting (or from GRID_RFILE)
+  void initializeRestartQuantities(const SetupInput& in);
   /// open the grid and hills files for writing
   void openOutputFiles(SetupInput& in);
   /// log the bibliography
@@ -795,6 +798,8 @@ private:
   void updateBiasQuantities(bool nowAddAHill);
   void   updateFrequencyAdaptiveStride();
   void   updateNlist();
+  /// the position of the neighbor list: the CVs (with INTERVAL, within the limits, where the hills are evaluated)
+  std::vector<double> getNlistPosition() const;
 
 public:
   explicit MetaD(const ActionOptions&);
@@ -931,7 +936,7 @@ MetaD::MetaD(const ActionOptions& ao):
   setupBiasGrid(in);
   readHillsFiles(in);
   setupTargetGrid();
-  initializeRestartQuantities();
+  initializeRestartQuantities(in);
   openOutputFiles(in);
   logBibliography(in);
 }
@@ -1583,12 +1588,23 @@ void MetaD::setupComponents(const SetupInput& in) {
       double acc_rtime=0.0;
       bool found=false;
       std::string acclabel = getLabel() + ".acc";
+      // with FREQUENCY_ADAPTIVE also the pace (it never decreases, so it is not a function of the current acceleration)
+      const std::string pacelabel = getLabel() + ".pace";
+      double acc_rpace=0.0;
       acc_rfile.allowIgnoredFields();
       while(acc_rfile.scanField("time", acc_rtime)) {
         acc_rfile.scanField(acclabel, acc_rmean);
+        if(fa_.enabled && acc_rfile.FieldExist(pacelabel)) {
+          acc_rfile.scanField(pacelabel, acc_rpace);
+        }
         acc_rfile.scanField();
         found=true;
       }
+      if(fa_.enabled && acc_rpace>current_stride_) {
+        current_stride_=static_cast<int>(std::lround(acc_rpace));
+        log.printf("  hill addition pace read from file %s: %d\n",in.acc_rfilename.c_str(),current_stride_);
+      }
+      acc_restart_step_=std::llround(acc_rtime/getTimeStep());
       if(!found) {
         error("The ACCELERATION_RFILE file you want to read: " + in.acc_rfilename + ", does not contain a time field!");
       }
@@ -1921,8 +1937,9 @@ void MetaD::setupTargetGrid() {
   }
 }
 
-void MetaD::initializeRestartQuantities() {
-  if(getRestart()) {
+void MetaD::initializeRestartQuantities(const SetupInput& in) {
+  // (a grid can be read also without RESTART)
+  if(getRestart() || in.gridreadfilename.length()>0) {
     // if this is a restart the neighbor list should be immediately updated
     if(nlist_.enabled) {
       nlist_.update=true;
@@ -2318,8 +2335,9 @@ void MetaD::calculate() {
     if(getExchangeStep()) {
       nlist_.update=true;
     } else {
+      const std::vector<double> position=getNlistPosition();
       for(unsigned i=0; i<ncv; ++i) {
-        double d = difference(i, cv[i], nlist_.center[i]);
+        double d = difference(i, position[i], nlist_.center[i]);
         double nk_dist2 = d*d/nlist_.dev2[i];
         if(nk_dist2>nlist_.param[1]) {
           nlist_.update=true;
@@ -2349,12 +2367,19 @@ void MetaD::calculate() {
     getPntrToComponent("rbias")->set(ene - reweight_factor_);
   }
   // calculate the acceleration factor
-  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()) {
+  // (only once per STRIDE steps: the action can be calculated more often when other actions need it)
+  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()&&getStep()%getStride()==0) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0) {
-    acc_ = acc_restart_mean_ * static_cast<double>(getStep());
+    if(getStep()>acc_restart_step_ && !getExchangeStep() && getStep()%getStride()==0) {
+      // the previous run did not compute this step (the steps in between, if any, are assumed to have the mean value)
+      acc_ = acc_restart_mean_ * static_cast<double>(getStep()-getStride()) + static_cast<double>(getStride()) * std::exp(ene/(kbt_));
+      getPntrToComponent("acc")->set(acc_/static_cast<double>(getStep()));
+    } else {
+      acc_ = acc_restart_mean_ * static_cast<double>(getStep());
+    }
     if(fa_.enabled) {
       // has to be done here if restarting, as the acc is not defined before
       updateFrequencyAdaptiveStride();
@@ -2447,8 +2472,9 @@ void MetaD::update() {
     cv[i] = getArgument(i);
   }
 
+  // (with BIASFACTOR=1 there is no bias: the hills contain -F)
   double vbias=0.;
-  if(calc_work_) {
+  if(calc_work_ && biasf_!=1.0) {
     vbias=getBias(cv);
   }
 
@@ -2478,7 +2504,7 @@ void MetaD::update() {
     hillsOfile_.flush();
   }
 
-  if(calc_work_) {
+  if(calc_work_ && biasf_!=1.0) {
     if(nlist_.enabled) {
       updateNlist();
     }
@@ -2729,6 +2755,11 @@ double MetaD::getTransitionBarrierBias() {
 void MetaD::updateFrequencyAdaptiveStride() {
   plumed_massert(fa_.enabled,"should only be used if frequency adaptive metadynamics is enabled");
   plumed_massert(acceleration_,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
+  if(getStep()==0) {
+    // no acceleration factor yet (e.g. when called from the constructor)
+    getPntrToComponent("pace")->set(current_stride_);
+    return;
+  }
   const double mean_acc = acc_/((double) getStep());
   int tmp_stride= stride_*floor((mean_acc/fa_.min_acceleration)+0.5);
   if(mean_acc >= fa_.min_acceleration) {
@@ -2755,6 +2786,17 @@ bool MetaD::checkNeedsGradients()const {
   }
 }
 
+std::vector<double> MetaD::getNlistPosition() const {
+  std::vector<double> cv(getNumberOfArguments());
+  for(unsigned i=0; i<cv.size(); i++) {
+    cv[i]=getArgument(i);
+  }
+  if(interval_.enabled) {
+    cv[0]=std::min(std::max(cv[0],interval_.lower),interval_.upper);
+  }
+  return cv;
+}
+
 void MetaD::updateNlist() {
   // no need to check for neighbors
   if(hills_.size()==0) {
@@ -2764,11 +2806,7 @@ void MetaD::updateNlist() {
   // here we generate the neighbor list:
   // first the hills close to the current CVs are flagged, then they are collected in their
   // original order, so that the list (and thus the bias) does not depend on the number of threads
-  const unsigned ncv=getNumberOfArguments();
-  std::vector<double> cv(ncv);
-  for(unsigned i=0; i<ncv; i++) {
-    cv[i]=getArgument(i);
-  }
+  std::vector<double> cv=getNlistPosition();
   std::vector<char> inlist(hills_.size(),0); // char rather than bool, so that threads can write concurrently
   unsigned nt=OpenMP::getNumThreads();
   if(hills_.size()<2*nt) {
@@ -2787,13 +2825,13 @@ void MetaD::updateNlist() {
 
   // here we set some properties that are used to decide when to update it again
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    nlist_.center[i]=getArgument(i);
+    nlist_.center[i]=cv[i];
   }
   std::vector<double> dev2;
   dev2.resize(getNumberOfArguments(),0);
   for(unsigned k=0; k<nlist_.index.size(); k++) {
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      const double d=difference(i,getArgument(i),hills_[nlist_.index[k]].center[i]);
+      const double d=difference(i,cv[i],hills_[nlist_.index[k]].center[i]);
       dev2[i]+=d*d;
     }
   }

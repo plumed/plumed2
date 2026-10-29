@@ -58,10 +58,6 @@ class MetaDBiasGrid {
   bool interval_=false;
   double lower_=0.0;
   double upper_=0.0;
-  /// with INTERVAL, true if the bias for cv is the constant value at an end of the grid
-  bool isIntervalBeyondGrid(double cv) const;
-  /// with INTERVAL, the bias for a CV beyond the ends of the grid
-  double getIntervalBiasOutsideGrid(double cv) const;
   /// add the hill to the points within its support (no INTERVAL)
   void addHillToPoints(const MetaDGaussian& hill, const MetaDKernel& kernel);
 public:
@@ -95,7 +91,7 @@ public:
   void extend(const std::vector<double>& x, const std::vector<double>& halfwidth, double time);
   /// add a hill (the grid is extended if needed)
   void addHill(const MetaDGaussian& hill, const MetaDKernel& kernel, double time);
-  /// the bias (zero outside the grid, or the constant value beyond the limits with INTERVAL)
+  /// the bias (zero outside the grid; with INTERVAL, beyond the limits the value at the limit)
   double getBias(const std::vector<double>& cv) const;
   /// the bias and its derivatives
   double getBiasAndDerivatives(const std::vector<double>& cv, std::vector<double>& der) const;

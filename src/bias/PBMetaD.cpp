@@ -1512,12 +1512,15 @@ void PBMetaD::update() {
     }
   }
 
-  if(nowAddAHill && (!do_select_ || select_value_==current_value_)) {
+  // with SELECTOR, hills are added only when the selector has the value SELECTOR_ID; with WALKERS_MPI all the walkers
+  // take part in the exchange of the hills (also those that do not add hills)
+  const bool selected=(!do_select_ || select_value_==current_value_);
+  if(nowAddAHill && (selected || walkers_mpi_)) {
     // get all biases and heights
     std::vector<double> cv(nargs);
     std::vector<double> thissigma(nargs);
     std::vector<double> height(nargs);
-    for(unsigned i=0; i<nargs; ++i) {
+    for(unsigned i=0; i<nargs && selected; ++i) {
       // the width of the hills of each argument
       if(adaptive_!=FlexibleBin::none) {
         thissigma[i]=flexbin_[i].getInverseMatrix(i)[0];
@@ -1526,26 +1529,23 @@ void PBMetaD::update() {
       }
       cv[i] = getArgument(i);
     }
-    std::vector<double> bias;
-    getBiases(cv,bias,nullptr);
-    double norm = 0.0;
-    double bmin = 1.0e+19;
-    for(unsigned i=0; i<nargs; ++i) {
-      if(bias[i] < bmin) {
-        bmin = bias[i];
+    if(selected) {
+      std::vector<double> bias;
+      getBiases(cv,bias,nullptr);
+      const double bmin=*std::min_element(bias.begin(),bias.end());
+      // calculate heights and norm
+      double norm = 0.0;
+      for(unsigned i=0; i<nargs; ++i) {
+        double h = std::exp((-bias[i]+bmin)/kbt_);
+        norm += h;
+        height[i] = h;
       }
-    }
-    // calculate heights and norm
-    for(unsigned i=0; i<nargs; ++i) {
-      double h = std::exp((-bias[i]+bmin)/kbt_);
-      norm += h;
-      height[i] = h;
-    }
-    // normalize and apply welltemp correction
-    for(unsigned i=0; i<nargs; ++i) {
-      height[i] *=  height0_ / norm;
-      if(welltemp_) {
-        height[i] *= std::exp(-bias[i]/(kbt_*(biasf_-1.0)));
+      // normalize and apply welltemp correction
+      for(unsigned i=0; i<nargs; ++i) {
+        height[i] *=  height0_ / norm;
+        if(welltemp_) {
+          height[i] *= std::exp(-bias[i]/(kbt_*(biasf_-1.0)));
+        }
       }
     }
 
@@ -1553,15 +1553,16 @@ void PBMetaD::update() {
     std::vector<double> sigma_tmp(1);
     // MPI Multiple walkers: share hills and add them all
     if(walkers_mpi_) {
-      // the hills of all walkers (packed in a single array: center, sigma, height of each argument,
-      // so that one collective is enough)
-      const unsigned recordsize=3*nargs;
-      std::vector<double> record(recordsize);
+      // the hills of all walkers (packed in a single array: center, sigma, height of each argument, and whether the
+      // walker adds hills, so that one collective is enough)
+      const unsigned recordsize=3*nargs+1;
+      std::vector<double> record(recordsize,0.0);
       for(unsigned i=0; i<nargs; ++i) {
         record[i]=cv[i];
         record[nargs+i]=thissigma[i];
         record[2*nargs+i]=height[i];
       }
+      record[3*nargs]=(selected ? 1.0 : 0.0);
       std::vector<double> all_records(mpi_nw_*recordsize, 0.0);
       if(comm.Get_rank()==0) {
         // Communicate (only root)
@@ -1572,6 +1573,9 @@ void PBMetaD::update() {
       // now add hills one by one
       for(unsigned j=0; j<mpi_nw_; ++j) {
         const double* rec=&all_records[j*recordsize];
+        if(rec[3*nargs]==0.0) {
+          continue;
+        }
         for(unsigned i=0; i<nargs; ++i) {
           // Add CVs of same family together and write to same file
           cv_tmp[0]    = rec[i];

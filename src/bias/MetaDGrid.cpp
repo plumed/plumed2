@@ -496,48 +496,38 @@ void MetaDBiasGrid::addHillToPoints(const MetaDGaussian& hill, const MetaDKernel
 }
 
 double MetaDBiasGrid::getBias(const std::vector<double>& cv) const {
-  double bias=0.0;
-  // the grid contains all the points where the hills are not zero
-  if(interval_ && isIntervalBeyondGrid(cv[0])) {
-    bias = getIntervalBiasOutsideGrid(cv[0]);
-  } else if(grid_->isInside(cv)) {
-    bias = grid_->getValue(cv);
+  // with INTERVAL, beyond the limits the bias is the one at the limit (the grid contains the interval and at least
+  // one point beyond each limit)
+  if(interval_ && (cv[0]<lower_ || cv[0]>upper_)) {
+    return grid_->getValue(std::vector<double>(1,std::min(std::max(cv[0],lower_),upper_)));
   }
-  return bias;
+  // the grid contains all the points where the hills are not zero
+  if(grid_->isInside(cv)) {
+    return grid_->getValue(cv);
+  }
+  return 0.0;
 }
 
 double MetaDBiasGrid::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<double>& der) const {
   const unsigned ncv=grid_->getDimension();
-  double bias=0.0;
+  // with INTERVAL, beyond the limits the bias is the one at the limit and the force is zero
+  if(interval_ && (cv[0]<lower_ || cv[0]>upper_)) {
+    der[0]=0.0;
+    return grid_->getValue(std::vector<double>(1,std::min(std::max(cv[0],lower_),upper_)));
+  }
   // the grid contains all the points where the hills are not zero
-  if(grid_->isInside(cv) && !(interval_ && isIntervalBeyondGrid(cv[0]))) {
+  if(grid_->isInside(cv)) {
     std::vector<double> vder(ncv);
-    bias=grid_->getValueAndDerivatives(cv,vder);
+    const double bias=grid_->getValueAndDerivatives(cv,vder);
     for(unsigned i=0; i<ncv; i++) {
       der[i]=vder[i];
     }
-  } else {
-    if(interval_) {
-      bias=getIntervalBiasOutsideGrid(cv[0]);
-    }
-    for(unsigned i=0; i<ncv; i++) {
-      der[i]=0.0;
-    }
+    return bias;
   }
-  return bias;
-}
-
-bool MetaDBiasGrid::isIntervalBeyondGrid(double cv) const {
-  // the grid contains the interval and at least one point beyond each limit, and the bias is constant beyond the limits:
-  // beyond the last point of the grid (where the spline would use this point only) the bias is the value at this point
-  const double k=grid_->getLatticeCoordinate(0,cv);
-  return !(k>=0.0 && k<static_cast<double>(grid_->getNbin()[0])-1.0);
-}
-
-double MetaDBiasGrid::getIntervalBiasOutsideGrid(double cv) const {
-  const unsigned n=grid_->getNbin()[0];
-  const bool below=!(grid_->getLatticeCoordinate(0,cv)>=0.0);
-  return grid_->getValue(below ? 0 : n-1);
+  for(unsigned i=0; i<ncv; i++) {
+    der[i]=0.0;
+  }
+  return 0.0;
 }
 
 }
