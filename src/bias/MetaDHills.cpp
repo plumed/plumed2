@@ -251,7 +251,7 @@ unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
   // The hills are read and broadcast in chunks; each one is stored as
   // time, multivariate, height, center (ncv), sigma (ncv or ncv*(ncv+1)/2).
   const unsigned nsigmamax=ncv*(ncv+1)/2;
-  const unsigned recordsize=3+ncv+nsigmamax;
+  const std::size_t recordsize=3+ncv+nsigmamax;
   const unsigned chunksize=4096;
   const bool parallel=(comm_.Get_size()>1);
   const bool reader=(comm_.Get_rank()==0);

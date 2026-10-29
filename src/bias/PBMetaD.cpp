@@ -922,7 +922,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     // ADAPTIVE=DIFF: hills of the last ~6 averaging times (older ones have weight < exp(-6)), for each argument
     // of the family; with MPI walkers the file contains the hills of all walkers
     family.diffrestart.maxhills=(static_cast<unsigned>(std::ceil(6.0*sigma0_[0]/stride_))+2)*
-                                std::max(1u,mw_.mpi_nw)*family.args.size();
+                                std::max(1u,mw_.mpi_nw)*static_cast<unsigned>(family.args.size());
     inputs[f].files=family.hillsfiles.get();
     inputs[f].name=hillsfname[f];
   }
@@ -1278,7 +1278,7 @@ void PBMetaD::update() {
     if(mw_.mpi) {
       // the hills of all walkers (packed in a single array: center, sigma, height of each argument, and whether the
       // walker adds hills, so that one collective is enough)
-      const unsigned recordsize=3*nargs+1;
+      const std::size_t recordsize=3*nargs+1;
       std::vector<double> record(recordsize,0.0);
       for(unsigned i=0; i<nargs; ++i) {
         record[i]=cv[i];

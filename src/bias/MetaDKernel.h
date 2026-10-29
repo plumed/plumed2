@@ -82,7 +82,7 @@ struct MetaDGaussian {
       }
     }
     if(multivariate) {
-      const unsigned ncv=center.size();
+      const std::size_t ncv=center.size();
       metric.resize(ncv*ncv);
       unsigned k=0;
       for(unsigned i=0; i<ncv; i++) {

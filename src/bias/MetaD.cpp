@@ -1841,7 +1841,7 @@ void MetaD::addGaussian(const Gaussian& hill) {
 
 double MetaD::evaluateHill(const std::vector<double>& cv, unsigned h) const {
   if(hillarrays_.diagonal[h] && !kernel_.hasInterval()) {
-    const unsigned ncv=cv.size();
+    const std::size_t ncv=cv.size();
     return kernel_.evaluateDiagonal(cv,&hillarrays_.center[h*ncv],&hillarrays_.invsigma[h*ncv],hillarrays_.height[h]);
   }
   return kernel_.evaluate(cv,hills_[h]);
@@ -1849,7 +1849,7 @@ double MetaD::evaluateHill(const std::vector<double>& cv, unsigned h) const {
 
 double MetaD::evaluateHillWithDerivatives(const std::vector<double>& cv, unsigned h, double* der, double* dp) const {
   if(hillarrays_.diagonal[h] && !kernel_.hasInterval()) {
-    const unsigned ncv=cv.size();
+    const std::size_t ncv=cv.size();
     return kernel_.evaluateDiagonalWithDerivatives(cv,&hillarrays_.center[h*ncv],&hillarrays_.invsigma[h*ncv],hillarrays_.height[h],der,dp);
   }
   return kernel_.evaluateWithDerivatives(cv,hills_[h],der,dp);
@@ -1896,7 +1896,7 @@ double MetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<d
 
     // NOTE: the choice between the serial and the parallel loop is based on the total
     // number of hills also when the neighbor list is used
-    if(hills_.size()<2*nt*stride||nt==1) {
+    if(hills_.size()<2*static_cast<std::size_t>(nt)*stride||nt==1) {
       // for performance reasons and thread safety
       std::vector<double> dp(ncv);
       for(unsigned i=rank; i<nhills; i+=stride) {
@@ -2215,7 +2215,7 @@ void MetaD::addHill(const std::vector<double>& cv, bool multivariate) {
     // Allocate arrays to store all walkers hills
     // (packed in a single array: center, sigma, height, multivariate, so that one collective is enough)
     const unsigned nsigma=thissigma.size();
-    const unsigned recordsize=ncv+nsigma+2;
+    const std::size_t recordsize=ncv+nsigma+2;
     std::vector<double> record(recordsize);
     for(unsigned j=0; j<ncv; j++) {
       record[j]=cv[j];
