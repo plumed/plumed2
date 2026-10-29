@@ -34,18 +34,18 @@ all: dirslinks
 
 # build links for all modules
 dirslinks:
-	make -C ../lib dirslinks
+	$(MAKE) -C ../lib dirslinks
 
 # buils objects in this module
 obj: $(OBJ)
 
 # build everything
 lib:
-	cd ../lib ; make
+	$(MAKE) -C ../lib
 
 .PHONY: install
 install:
-	cd ../lib ; make install
+	$(MAKE) -C ../lib install
 
 ifneq ($(disable_dependency_tracking),yes)
 -include $(DEP)
@@ -88,7 +88,7 @@ codecheck:
 
 .PHONY: astyle
 astyle:
-	make -C ../../astyle
+	$(MAKE) -C ../../astyle
 	cd ../ ; ./astyle.sh $(CURDIR)
 
 .PHONY: show_used_modules

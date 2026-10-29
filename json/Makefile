@@ -21,7 +21,14 @@ all:
 
 else
 
-all:
+# syntax.json is only regenerated if the executable (which is relinked whenever the
+# kernel changes), the scripts or the sources scanned to build the list of actions have changed.
+# A partially written syntax.json is removed if something goes wrong.
+.DELETE_ON_ERROR:
+
+all: syntax.json
+
+syntax.json: ../src/lib/plumed get_action_list.sh $(wildcard ../*/*/*.cpp)
 	./get_action_list.sh > action_list
 	../src/lib/plumed --no-mpi gen_json --actions action_list > syntax.json
 ifeq (, $(shell which jq))
