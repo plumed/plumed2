@@ -305,16 +305,12 @@ bool GridBase::isInside(const std::vector<double> & x) const {
 }
 
 namespace {
-/// shortest representation of x that is converted back to the same double
-std::string exactString(double x) {
+/// bound of a resized grid as a string: 12 significant digits, so that the files do not depend on the last digits of
+/// the bounds, which can differ between platforms (e.g. with fused multiply-add); when a grid is read from a file
+/// its lattice is compared with a tolerance
+std::string boundString(double x) {
   char buffer[64];
-  for(int precision=15; precision<17; precision++) {
-    std::snprintf(buffer,sizeof(buffer),"%.*g",precision,x);
-    if(std::strtod(buffer,nullptr)==x) {
-      return buffer;
-    }
-  }
-  std::snprintf(buffer,sizeof(buffer),"%.17g",x);
+  std::snprintf(buffer,sizeof(buffer),"%.12g",x);
   return buffer;
 }
 }
@@ -340,8 +336,8 @@ void GridBase::resize(const std::vector<long long> & lower, const std::vector<lo
       max_[i]+=static_cast<double>(upper[i])*dx_[i];
       nbin_[i]=newnbin[i];
       // as in the input of a non-periodic grid, the maximum is the last point
-      str_min_[i]=exactString(min_[i]);
-      str_max_[i]=exactString(max_[i]-dx_[i]);
+      str_min_[i]=boundString(min_[i]);
+      str_max_[i]=boundString(max_[i]-dx_[i]);
     }
   }
   maxsize_=1;

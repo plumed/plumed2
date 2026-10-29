@@ -1847,7 +1847,8 @@ void MetaD::setupBiasGrid(SetupInput& in) {
           }
         } else {
           const double shift=(fmin-gmin)/dx;
-          if(std::fabs(fdx-dx)>1e-6*dx || std::fabs(shift-std::round(shift))>1e-6) {
+          // (the bounds of an extended grid are written with 12 significant digits)
+          if(std::fabs(fdx-dx)>1e-6*dx || std::fabs(shift-std::round(shift))>1e-4) {
             error("the grid in "+in.gridreadfilename+" for variable "+is+" is not on the lattice of the grid in input: "
                   "its spacing should be "+exactString(dx)+" and its points should be at "+in.gmin[i]+" plus multiples of the spacing");
           }

@@ -274,6 +274,7 @@ public:
 /// Change the range of the grid along non-periodic directions: lower[i] (upper[i]) points are added at the lower (upper)
 /// end of direction i if positive, removed if negative. The spacing does not change, and the values (and derivatives)
 /// at the points that are kept do not change; new points are set to zero, the values at removed points are lost.
+/// The new bounds (getMin, getMax, written in the grid files) have 12 significant digits.
   void resize(const std::vector<long long> & lower, const std::vector<long long> & upper);
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;

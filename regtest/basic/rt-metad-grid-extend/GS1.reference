@@ -1,6 +1,6 @@
 #! FIELDS d s1.bias der_d
-#! SET min_d 0.19500000000000098
-#! SET max_d 0.45499999999999974
+#! SET min_d 0.195
+#! SET max_d 0.455
 #! SET nbins_d  53
 #! SET periodic_d false
     0.195000000    0.000000000    0.000000000
