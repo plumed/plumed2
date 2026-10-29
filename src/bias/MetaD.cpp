@@ -49,7 +49,7 @@ namespace bias {
 
 //+PLUMEDOC BIAS METAD
 /*
-Used to performed metadynamics on one or more collective variables.
+Used to perform metadynamics on one or more collective variables.
 
 In a metadynamics simulations a history dependent bias composed of
 intermittently added Gaussian functions is added to the potential as discussed in the first paper cited below.
@@ -64,7 +64,7 @@ $$
 This potential forces the system away from the kinetic traps in the potential energy surface
 and out into the unexplored parts of the energy landscape. Information on the Gaussian
 functions from which this potential is composed is output to a file called HILLS, which
-is used both the restart the calculation and to reconstruct the free energy as a function of the CVs.
+is used both to restart the calculation and to reconstruct the free energy as a function of the CVs.
 The free energy can be reconstructed from a metadynamics calculation because the final bias is given
 by:
 
@@ -85,8 +85,8 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 ```
 
 In this calculation the distance between atoms 3 and 5
-and the distance between atoms 2 and 4 are used as collective variables. Gaussian hills with a heigh of 0.3 kJ/mol
-are and widths of 0.2 nm in the two CVs are added every 500 steps. The values
+and the distance between atoms 2 and 4 are used as collective variables. Gaussian hills with a height of 0.3 kJ/mol
+and widths of 0.2 nm in the two CVs are added every 500 steps. The values
 of the CVs and the metadynamics bias potential are written to the COLVAR file every 100 steps.
 
 ## Using grids
@@ -111,14 +111,15 @@ of grid points for every collective variable (GRID_BIN) or the desired grid spac
 If you specify the GRID_SPACING and the number of bins  PLUMED uses the most conservative choice.  In other words, it uses
 the choice that gives you the  largest number of bins for each dimension.
 
-If you specify neither GRID_BIN nor GRID_SPACING PLUMED uses 1/5 of the Gaussian width (SIGMA) as as grid spacing if the width is
+If you specify neither GRID_BIN nor GRID_SPACING PLUMED uses 1/5 of the Gaussian width (SIGMA) as grid spacing if the width is
 fixed or 1/5 of the minimum Gaussian width (SIGMA_MIN - see next section) if the width is variable.
 This default choice should be reasonable for most applications.
 
 The grid is extended automatically, along the variables that are not periodic, whenever a Gaussian does not fit in it:
-the grid always contains all the points where a Gaussian is not zero (Gaussians are truncated, see below), so that the
-bias is exactly zero outside it (with INTERVAL, the grid contains the interval and the bias beyond the grid is the
-constant value beyond the limits).  The grid spacing does not change and the new points are on the same lattice as the
+the grid always contains all the points where a Gaussian is not zero (Gaussians are truncated at a distance of
+$\sqrt{2\cdot 6.25}$ widths, and stretched so that they go to zero there), so that the
+bias is exactly zero outside it (with INTERVAL, the grid contains the interval, and beyond the limits the bias is
+the constant value at the limits).  The grid spacing does not change and the new points are on the same lattice as the
 initial ones, so the bias is the same as with a grid that is large enough from the beginning.  Every extension is
 written on the log.  If you give GRID_SPACING without GRID_MIN and GRID_MAX the grid is placed around the first Gaussian and
 then extended as needed, so that you do not need to know in advance the range explored by the variables.  The variables
@@ -158,7 +159,7 @@ is within 6.*DP2CUTOFF*sigma*sigma. While the list is updated if the CVs are far
 standard deviation of the Gaussian center distribution of the list. These parameters (6 and 0.5) can be modified using
 NLIST_PARAMETERS. Note that the use of neighbor list does not provide the exact bias.
 
-## Restrating a metadynamics simulation
+## Restarting a metadynamics simulation
 
 Metadynamics can be restarted from a HILLS file as illustrated in the following input:
 
@@ -173,7 +174,7 @@ PRINT ARG=d,c FILE=colvar STRIDE=10
 ```
 
 If you don't specify the location of the HILLS file then PLUMED looks for a file called HILLS to read in.
-Metadynamics can also be restrated from a GRID, as in this second example.
+Metadynamics can also be restarted from a GRID, as in this second example.
 
 ```plumed
 #SETTINGS INPUTFILES=extras/1d_bias.grid
@@ -189,12 +190,13 @@ m: METAD ...
 PRINT ARG=d1,m.bias FILE=colvar STRIDE=10
 ```
 
-Notice that if you want to use this option you first need to save the GRID using GRID_WFILE (and GRID_WSTRIDE).  Using this
-option ensures that the grid file that is read in with GRID_RFILE is output.
+Notice that if you want to use this option you first need to save the GRID using GRID_WFILE (and GRID_WSTRIDE) in the
+previous simulation.
 
-When the bias is read from a grid, the hills file (FILE) is still read, without adding its hills to the bias, to know
-the time of its last hill: as when restarting from the hills, no hill is added at the first step if the hills file
-already contains it.
+No Gaussian is added at the first step of a simulation.  When a simulation is continued with RESTART, a Gaussian is added
+at the first step unless the hills file already contains it, i.e. unless the previous run had already performed this step
+(some MD codes compute again the last step of the previous run when restarting, others do not).  When the bias is read
+from a grid, the hills file (FILE) is still read, without adding its hills to the bias, to know the time of its last hill.
 
 Notice, also that in the first input above the
 [RESTART](RESTART.md) action was used, while the second input used METAD's RESTART keyword.  If you use the first input
@@ -251,9 +253,8 @@ You can also use the flexible Gaussian approach that is discussed in the fourth 
 This method adapts the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. When you use these methods the width of the deposited
 Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique that is discussed in the documenation for [sum_hills](sum_hills.md)
-mist be used when calculating the free energy from the deposited Gaussian kernels
-should be used in this case.
+(ADAPTIVE=DIFF). Note that a specific integration technique, which is discussed in the documentation for
+[sum_hills](sum_hills.md), must be used when calculating the free energy from the deposited Gaussian kernels in this case.
 
 The following example shows how to use adaptive Gaussian kernels, with the diffusion scheme.  In this example
 Gaussians that cover the space of 20 time steps in collective variables are used.
@@ -324,13 +325,13 @@ Note also that in this case the histogram correction is needed when summing up h
 
 ## Metadynamics with the interval keyword
 
-When you use the keyword INTERVAL the metadynamics bias force equal is set equal to zero
+When you use the keyword INTERVAL the metadynamics bias force is set equal to zero
 outside of a boundary as discussed in the fifth paper cited below. This feature is useful if, for example, metadynamics is performed on one or more CVs and if one is only interested
-in the free energy for s > boundary.  When you use this option the history dependent potential is still updated in accordance with the forumulas above.
+in the free energy for s > boundary.  When you use this option the history dependent potential is still updated in accordance with the formulas above.
 The difference is simply that the metadynamics force is set to zero for s < boundary. This means that Gaussian kernels are added also
 if s < boundary, as the tails of these Gaussian kernels influence VG in the relevant region s > boundary. In this way, the
 force on the system in the region s > boundary comes from both metadynamics and the force field, while in the region
-s < boundary the only force the system experiences if from the forcefield. This approach allows one to obtain a history-dependent bias potential VG that
+s < boundary the only force the system experiences is from the forcefield. This approach allows one to obtain a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Notice that:
 
@@ -419,14 +420,14 @@ $c(t)$ is given by the rct component of the METAD action above while the bias
 normalized by $c(t)$ is given by the rbias component (rbias=bias-rct).  As illustrated above this
 value  can be used to obtain a reweighted histogram.
 
-By default $c(t)$ is updated every time the bias changes, but if this slows down the simulation.
-If you use the keyword RCT_USTRIDE and set to a value higher than 1 the calculation is sped up.
-In the example input above we are calcluating $c(t)$ after every Gaussian deposition event.
+By default $c(t)$ is updated every time the bias changes.  If this slows down the simulation, you can use the keyword
+RCT_USTRIDE to update it only every RCT_USTRIDE Gaussian depositions: in the example input above $c(t)$ is calculated
+every 10 Gaussian depositions.
 
 
 ## Concurrent metadynamics
 
-To implement the method of concurrent metadynamics that is discussed in the eigth paper cited below you insert multiple
+To implement the method of concurrent metadynamics that is discussed in the eighth paper cited below you insert multiple
 METAD actions in your plumed input file.
 
 ## Infrequent metadynamics
@@ -449,7 +450,7 @@ PRINT ARG=psi,md1.bias,md1.acc FILE=colvar STRIDE=10
 ```
 
 This method can be used together with [COMMITTOR](COMMITTOR.md) analysis to stop the simulation when the system get to the target basin.
-It must be used together with Well-Tempered Metadynamics. If restarting from a previous
+It is meant to be used together with Well-Tempered Metadynamics. If restarting from a previous
 metadynamics you need to use the ACCELERATION_RFILE keyword to give the name of the
 data file from which the previous value of the acceleration factor should be read, otherwise the
 calculation of the acceleration factor will be wrong.
@@ -476,16 +477,16 @@ and $\theta$ is a threshold value that acceleration factor has to reach before
 triggering a change in the hill addition frequency given by the FA_MIN_ACCELERATION keyword.
 The frequency for updating the hill addition frequency according to this equation is
 given by the FA_UPDATE_FREQUENCY keyword, by default it is the same as the value given
-in PACE. The hill hill addition frequency increase monotonously such that if the
+in PACE. The hill addition frequency increases monotonically such that if the
 instantaneous acceleration factor is lower than in the previous updating step the
 previous $\tau_{\mathrm{dep}}$ is kept rather than updating it to a lower value.
 The instantaneous hill addition frequency $\tau_{\mathrm{dep}}(t)$ is outputted
 to pace component. Note that if restarting from a previous metadynamics run you need to
 use the ACCELERATION_RFILE keyword to read in the acceleration factors from the
-previous run, otherwise the hill addition frequency will start from the initial
-frequency.
+previous run (the acceleration factor and the pace, if they are in the file), otherwise the hill addition frequency
+will start from the initial frequency.
 
-## Targetted metadynamics
+## Targeted metadynamics
 
 You can also provide a target distribution for your metadynamics simulations by using the keyword TARGET.
 This idea is discussed in the last four papers cited in the references section.
@@ -829,7 +830,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify TEMP");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kT*DAMPFACTOR)");
@@ -837,12 +838,12 @@ void MetaD::registerKeywords(Keywords& keys) {
     registerTemperingKeywords(tempering_names_[i][0], tempering_names_[i][1], keys);
   }
   keys.add("optional","TARGET","target to a predefined distribution");
-  keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.add("optional","TEMP","the system temperature - this is needed (unless the MD engine passes it to PLUMED) with well-tempered metadynamics, DAMPFACTOR, TARGET, ACCELERATION, CALC_RCT and transition-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.addFlag("CALC_RCT",false,"calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor."
-           "The default 1, so c(t) is updated every time the bias is updated.");
+  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor, in number of Gaussian depositions. "
+           "The default is 1, so c(t) is updated every time the bias is updated.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (initial range: the grid is extended when needed)");
   keys.add("optional","GRID_MAX","the upper bounds for the grid (initial range: the grid is extended when needed)");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -853,8 +854,8 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
-  keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
-  keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
+  keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation (PBMETAD: GRID_RFILES)");
+  keys.addFlag("STORE_GRIDS",false,"append every grid that is written to GRID_WFILE, instead of overwriting the previous one");
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.add("optional", "NLIST_PARAMETERS","(default=6.,0.5) the two cutoff parameters for the Gaussians neighbor list");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
@@ -867,7 +868,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
-  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force (PBMETAD: INTERVAL_MIN and INTERVAL_MAX).");
   keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
@@ -1361,7 +1362,7 @@ void MetaD::logHillsSetup(const SetupInput& in) {
   for(unsigned i=0; i<sigma0_.size(); ++i) {
     log.printf(" %f",sigma0_[i]);
   }
-  log.printf("  Gaussian height %f\n",height0_);
+  log.printf("\n  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_);
   log.printf("  Gaussian file %s\n",in.hillsfname.c_str());
   if(welltemp_) {
@@ -1516,7 +1517,7 @@ void MetaD::setupMultipleWalkers() {
     }
   } else {
     if(mw_.mpi) {
-      log.printf("  Multiple walkers active using MPI communnication\n");
+      log.printf("  Multiple walkers active using MPI communication\n");
       if(mw_.dir!="") {
         log.printf("  directory with hills files %s\n",mw_.dir.c_str());
       }
@@ -1753,7 +1754,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
     comm.Bcast(restarted,0);
     unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mw_.mpi_nw) {
-      error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
+      error("in this WALKERS_MPI run some replicas have restarted from GRID while others have not!");
     }
   }
 
@@ -1889,7 +1890,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
     comm.Bcast(restarted,0);
     unsigned result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mw_.mpi_nw) {
-      error("in this WALKERS_MPI run some replica have restarted from FILE while other do not!");
+      error("in this WALKERS_MPI run some replicas have restarted from FILE while others have not!");
     }
   }
 

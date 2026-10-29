@@ -51,7 +51,7 @@ bool MetaDBiasGrid::setupBins(Action& action, const std::vector<Value*>& args, s
   if(gmin.size()!=0) {
     if(gbin.size()==0 && gspacing.size()==0) {
       if(!adaptive) {
-        action.log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
+        action.log<<"  Binsize not specified, 1/5 of sigma will be used\n";
         plumed_assert(sigma0.size()==args.size());
         gspacing.resize(args.size());
         for(unsigned i=0; i<gspacing.size(); i++) {
@@ -63,7 +63,7 @@ bool MetaDBiasGrid::setupBins(Action& action, const std::vector<Value*>& args, s
           if(sigma0min[i]<=0) {
             action.error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
           }
-        action.log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
+        action.log<<"  Binsize not specified, 1/5 of sigma_min will be used\n";
         gspacing.resize(args.size());
         for(unsigned i=0; i<gspacing.size(); i++) {
           gspacing[i]=0.2*sigma0min[i];

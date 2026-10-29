@@ -82,11 +82,15 @@ where $W_0$ is the initial Gaussian height.
 The PBMetaD bias potential is defined by:
 
 $$
-V_{PB}(\vec{s},t) = -k_B T \log{\sum_{i=1}^N
+V_{PB}(\vec{s},t) = -k_B T \log{\frac{1}{N}\sum_{i=1}^N
 \exp\left(
 - \frac{V(s_i,t)}{k_B T}
 \right)}.
 $$
+
+PBMETAD needs the temperature: give it with TEMP, unless the MD engine passes it to PLUMED.
+As in [METAD](METAD.md), the Gaussians are truncated and stretched so that they go to zero at the cutoff
+(the hills files contain stretched Gaussians, which is what [sum_hills](sum_hills.md) assumes).
 
 
 Information on the Gaussian functions that build each bias potential are printed to
@@ -113,8 +117,8 @@ This default choice should be reasonable for most applications.
 
 As in [METAD](METAD.md), the grids are extended automatically, along the variables that are not periodic, whenever a
 Gaussian does not fit in them: a grid always contains all the points where a Gaussian is not zero, so that the bias is
-exactly zero outside it (with INTERVAL, the grid contains the interval and the bias beyond the grid is the constant value
-beyond the limits).  The grid spacing does not change and the new points are on the same lattice as the initial ones.
+exactly zero outside it (with INTERVAL_MIN and INTERVAL_MAX, the grid contains the interval, and beyond the limits the bias
+is the constant value at the limits).  The grid spacing does not change and the new points are on the same lattice as the initial ones.
 Every extension is written on the log.  If you give GRID_SPACING without GRID_MIN and GRID_MAX each grid is placed
 around its first Gaussian and then extended as needed.  GRID_SIZE_LIMIT sets the maximum number of points of each grid.
 A grid read with GRID_RFILES can have any range, but it must be on the lattice of the grid given in input.
@@ -142,14 +146,16 @@ but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the $\Delta T$. The applied bias will be scaled accordingly.
 
 Note that you can also use here the flexible Gaussian approach that is discussed in the third paper cited below.
-This methods allows you to adapt the Gaussian to the extent of Cartesian space covered by a variable or
+This method allows you to adapt the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
 Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
-should be used in this case. Check the documentation for utility sum_hills.
+(ADAPTIVE=DIFF), and SIGMA_MIN and SIGMA_MAX (one value for each family) limit the widths. Note that a specific
+integration technique for the deposited Gaussian kernels should be used in this case. Check the documentation for utility
+sum_hills.
 
-With the keyword INTERVAL one changes the metadynamics algorithm and sets the bias force equal to zero
-outside boundary as discussed in the fourth paper cited below. If, for example, metadynamics is performed on a CV s and one is interested only
+With the keywords INTERVAL_MIN and INTERVAL_MAX (one value for each family; the values for periodic variables are
+ignored) one changes the metadynamics algorithm and sets the bias force equal to zero
+outside the boundaries as discussed in the fourth paper cited below. If, for example, metadynamics is performed on a CV s and one is interested only
 to the free energy for s > boundary, the history dependent potential is still updated according to the above
 equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussian kernels are added also
 if s < boundary, as the tails of these Gaussian kernels influence VG in the relevant region s > boundary. In this way, the
@@ -160,16 +166,21 @@ boundaries. Note that:
 
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
-- The interval limit boundary in a region where the free energy derivative is not large;
-- If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
+- The interval limit boundary should be set in a region where the free energy derivative is not large;
+- If in the region outside the limit boundary the system has a free energy minimum, INTERVAL_MIN and INTERVAL_MAX should
   be used together with a [UPPER_WALLS](UPPER_WALLS.md) or [LOWER_WALLS](LOWER_WALLS.md) at boundary.
 
 For systems with multiple CVs that share identical properties, PBMetaD with partitioned families can be used
-to group them under one bias potential that each contributes to as discussed in the penultimate paper in the references below. This is done with a list
-of PF keywords, where each PF* argument contains the list of CVs from ARG to be placed in that family. Once
-invoked, each CV in ARG must be placed in exactly one PF, even if it results in families containing only one CV.
-Additionally, in cases where each of SIGMA or GRID entry would correspond to each ARG entry, they now correspond to
-each PF and must be adjusted accordingly.
+to group them under one bias potential, to which each of them contributes, as discussed in the penultimate paper in the
+references below. This is done with a list of numbered PF keywords (PF0, PF1, ...), each of which contains the list of
+CVs from ARG to be placed in that family. Once invoked, each CV in ARG must be placed in exactly one PF, even if it
+results in families containing only one CV, and the CVs in a family must have the same periodicity.
+Keywords that take one value for each argument without families (SIGMA, SIGMA_MIN, SIGMA_MAX, FILE, the GRID keywords,
+INTERVAL_MIN, INTERVAL_MAX) take one value for each family instead.  The hills of all the CVs of a family are written in
+the hills file of the family, as hills of its first CV.
+
+With SELECTOR, the bias is applied and the hills are added only when the value of the selector (see
+[SELECTOR](SELECTOR.md)) is equal to SELECTOR_ID.
 
 The multiple walkers that is discussed in the final paper cited below can also be used. See below the examples.
 
@@ -183,7 +194,7 @@ the PBMetaD bias potential are written to the COLVAR file every 100 steps.
 ```plumed
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
-PBMETAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=pb FILE=HILLS_d1,HILLS_d2
+PBMETAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 TEMP=300 LABEL=pb FILE=HILLS_d1,HILLS_d2
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 ```
 
@@ -196,7 +207,7 @@ DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3
-PACE=500 BIASFACTOR=8 LABEL=pb
+PACE=500 BIASFACTOR=8 TEMP=300 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
@@ -213,7 +224,7 @@ DISTANCE ATOMS=1,2 LABEL=d3
 PBMETAD ...
 ARG=d1,d2,d3 SIGMA=0.2,0.2 HEIGHT=0.3
 PF0=d1 PF1=d2,d3
-PACE=500 BIASFACTOR=8 LABEL=pb
+PACE=500 BIASFACTOR=8 TEMP=300 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
 PRINT ARG=d1,d2,d3,pb.bias STRIDE=100 FILE=COLVAR
@@ -226,7 +237,7 @@ DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3
-PACE=500 BIASFACTOR=8 LABEL=pb
+PACE=500 BIASFACTOR=8 TEMP=300 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 WALKERS_MPI
 ... PBMETAD
@@ -244,7 +255,7 @@ DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3
-PACE=500 BIASFACTOR=8 LABEL=pb
+PACE=500 BIASFACTOR=8 TEMP=300 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 WALKERS_N=10
 WALKERS_ID=3
@@ -390,7 +401,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this bias factor, one for all biases.  Please note you must also specify temp");
-  keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.add("optional","TEMP","the system temperature - it is needed unless the MD engine passes it to PLUMED");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (initial range: the grid is extended when needed)");
   keys.add("optional","GRID_MAX","the upper bounds for the grid (initial range: the grid is extended when needed)");
@@ -401,8 +412,8 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
-  keys.add("optional","GRID_WFILES", "dump grid for the bias, default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
-  keys.add("optional","GRID_RFILES", "read grid for the bias");
+  keys.add("optional","GRID_WFILES", "dump grid for the bias (one file for each family; METAD: GRID_WFILE), default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
+  keys.add("optional","GRID_RFILES", "read grid for the bias (one file for each family; METAD: GRID_RFILE)");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -415,8 +426,8 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
-  keys.add("optional","INTERVAL_MIN","one dimensional lower limits, outside the limits the system will not feel the biasing force.");
-  keys.add("optional","INTERVAL_MAX","one dimensional upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL_MIN","one dimensional lower limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");
+  keys.add("optional","INTERVAL_MAX","one dimensional upper limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -790,7 +801,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   for(unsigned i=0; i<sigma0_.size(); ++i) {
     log.printf(" %f",sigma0_[i]);
   }
-  log.printf("  Gaussian height %f\n",height0_);
+  log.printf("\n  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_);
   log.printf("  Gaussian files ");
   for(unsigned i=0; i<hillsfname.size(); ++i) {
@@ -831,7 +842,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   for(unsigned f=0; f<pf_n; f++) {
     if(families_[f].interval) {
-      log.printf("  Upper and Lower limits boundaries for the bias of CV %u are activated\n", f);
+      log.printf("  Upper and Lower limits boundaries for the bias of %s are activated at %f - %f\n",pfhold[f]->getName().c_str(),
+                 families_[f].lower,families_[f].upper);
     }
   }
   if(grid_ && gridnobounds) {
