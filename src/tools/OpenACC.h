@@ -195,6 +195,20 @@ public:
   void copyFromDevice(T *data) {
     acc_memcpy_from_device(data, ptr_, sizeof(T) * size_);
   }
+  /// @brief Queues the copy of the data from the address to the device on the
+  /// given async queue: the host data must stay valid until the queue is waited
+  void copyToDeviceAsync(T const *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_to_device_async(ptr_, const_cast<T *>(data), sizeof(T) * size_, queue);
+    }
+  }
+  /// @brief Queues the copy of the data from the device to the host on the
+  /// given async queue: the host data is valid only after the queue is waited
+  void copyFromDeviceAsync(T *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_from_device_async(data, ptr_, sizeof(T) * size_, queue);
+    }
+  }
 };
 #endif //__PLUMED_HAS_OPENACC
 }//namespace OpenACC

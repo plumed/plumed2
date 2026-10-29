@@ -57,7 +57,13 @@ struct AccDeviceWorkspace {
   OpenACC::memoryManager<precision> forces;
   OpenACC::memoryManager<std::size_t> indices;
   OpenACC::memoryManager<precision> valstmp;
+  /// per-task partial sums of the forces on the last entries of the force array
+  OpenACC::memoryManager<precision> sharedForces;
 };
+
+/// The async queue used by the task manager. All the transfers and the kernels
+/// of a call are queued on it and the host waits only once, at the end.
+inline constexpr int accQueue=1;
 
 template <class T>
 class AccParallelTaskManager : public ParallelTaskManager<T> {
@@ -107,6 +113,8 @@ struct ACCPTM {
 /// device buffers of the workspace, with one transfer per array: the
 /// bookkeeping arrays are packed in a single buffer. The returned object can
 /// be passed to the kernels as firstprivate, i.e. as a kernel argument.
+/// The copies are queued on accQueue: the host data must not change until
+/// the queue is waited.
 /// Before this, the input was put on the device with "enter data" and removed
 /// with "exit data" at every call: each pointer member costs a transfer and
 /// an attach/detach (another small transfer), i.e. about 40 transfers of a
@@ -117,14 +125,12 @@ ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
   ParActionsInput<precision> dev=in;
 
   ws.inputdata.resize(in.dataSize);
-  if(in.dataSize>0) {
-    ws.inputdata.copyToDevice(in.inputdata);
-  }
+  ws.inputdata.copyToDeviceAsync(in.inputdata, accQueue);
   dev.inputdata=ws.inputdata.devicePtr();
 
   // Pbc only holds fixed-size members, so a bitwise copy is valid on the device
   ws.pbc.resize(1);
-  ws.pbc.copyToDevice(in.pbc);
+  ws.pbc.copyToDeviceAsync(in.pbc, accQueue);
   dev.pbc=ws.pbc.devicePtr();
 
   if(in.nargs>0) {
@@ -149,9 +155,7 @@ ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
       offset+=sizes[i];
     }
     ws.argbook.resize(total);
-    if(total>0) {
-      ws.argbook.copyToDevice(ws.argbook_host.data());
-    }
+    ws.argbook.copyToDeviceAsync(ws.argbook_host.data(), accQueue);
     offset=0;
     for(unsigned i=0; i<narrays; ++i) {
       *dst[i]=ws.argbook.devicePtr()+offset;
@@ -180,11 +184,11 @@ void runAllTasksACC(typename T::input_type actiondata,
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
-  ws.value_stash.copyToDevice(value_stash.data());
+  ws.value_stash.copyToDeviceAsync(value_stash.data(), accQueue);
   auto value_stash_data = ws.value_stash.devicePtr();
 
   ws.taskList.resize(partialTaskList.size());
-  ws.taskList.copyToDevice(partialTaskList.data());
+  ws.taskList.copyToDeviceAsync(partialTaskList.data(), accQueue);
   auto partialTaskList_data = ws.taskList.devicePtr();
 
   ws.buffer.resize(workspace_size*nactive_tasks);
@@ -192,7 +196,7 @@ void runAllTasksACC(typename T::input_type actiondata,
   ws.derivatives.resize(nderivatives_per_task*nactive_tasks);
   auto derivatives = ws.derivatives.devicePtr();
   // myinput and the scalars are passed by value as kernel arguments
-#pragma acc parallel loop present(actiondata) \
+#pragma acc parallel loop async(accQueue) present(actiondata) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   nderivatives_per_task, \
@@ -216,7 +220,9 @@ void runAllTasksACC(typename T::input_type actiondata,
     // Calculate the stuff in the loop for this action
     T::performTask( task_index, actiondata, myinput, myout );
   }
-  ws.value_stash.copyFromDevice(value_stash.data());
+  ws.value_stash.copyFromDeviceAsync(value_stash.data(), accQueue);
+  // the only synchronization of the call
+  acc_wait(accQueue);
 }
 #else
 template <class T, typename precision>
@@ -293,38 +299,43 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
-  ws.value_stash.copyToDevice(value_stash.data());
+  ws.value_stash.copyToDeviceAsync(value_stash.data(), accQueue);
   auto value_stash_data = ws.value_stash.devicePtr();
 
   ws.taskList.resize(partialTaskList.size());
-  ws.taskList.copyToDevice(partialTaskList.data());
+  ws.taskList.copyToDeviceAsync(partialTaskList.data(), accQueue);
   auto partialTaskList_data = ws.taskList.devicePtr();
 
   // forcesForApply has been zeroed on the host: this also clears the device buffer
   ws.forces.resize(forcesForApply.size());
-  ws.forces.copyToDevice(forcesForApply.data());
+  ws.forces.copyToDeviceAsync(forcesForApply.data(), accQueue);
   auto forcesForApply_data = ws.forces.devicePtr();
   const auto forcesForApply_size = ws.forces.size();
-  const auto nind_per_scalar = ForceIndexHolder::indexesPerScalar(myinput);
-  // Forces on entries that several tasks can touch (index >= threadunsafe_forces_start)
-  // are summed in one of two ways:
-  // - few entries (e.g. only the virial, as for multicolvars): one gather kernel
-  //   per entry, summing over all tasks with a reduction. It costs
-  //   O(n_unsafe*N_values) and avoids many atomics on the same few addresses.
-  // - many entries (e.g. the atoms of an adjacency matrix): each value adds its
-  //   contribution with an atomic update, at a cost of O(N_values). The gather
-  //   kernel would cost O(n_forces*N_values) here, which grows quadratically
-  //   with the system size.
+  const std::size_t nind_per_scalar = ForceIndexHolder::indexesPerScalar(myinput);
+
+  // Forces on entries that several tasks can touch (the "thread-unsafe" ones,
+  // with index >= threadunsafe_forces_start) are summed as follows:
+  // - the last nshared entries of the force array (all the thread-unsafe ones
+  //   if they are at most maxShared) are summed by each task in its own column
+  //   of a buffer, then a second kernel sums the columns. There are no atomics
+  //   and no search: this is the case of multicolvars, where the shared
+  //   entries are the virial and possibly an origin atom, and it also covers
+  //   the virial of matrices and the atoms of a small last group (e.g. GROUPB
+  //   of a contact matrix with a single atom).
+  // - the other thread-unsafe entries are added with atomics. Within a task,
+  //   the contributions of consecutive values that go to the same entry
+  //   (e.g. the central atom of a row of a matrix) are first summed in a
+  //   small private accumulator, so that only one atomic per entry and task
+  //   is done instead of one per value.
   // With atomics the order of the sums is not fixed, so results are
   // reproducible only up to rounding.
-  constexpr std::size_t maxUnsafeForGather = 32;
-  const std::size_t n_unsafe = forcesForApply.size() - myinput.threadunsafe_forces_start;
-  const bool useAtomics = n_unsafe > maxUnsafeForGather;
-  // With atomics, forces are added as soon as the indices are known, so each
-  // task needs space for the indices of one value at a time. The gather kernel
-  // instead needs the indices of all the values of all the tasks.
-  const std::size_t ind_stride_task = useAtomics ? nind_per_scalar : nind_per_scalar*myinput.nscalars;
-  const std::size_t ind_stride_value = useAtomics ? 0 : nind_per_scalar;
+  constexpr std::size_t maxShared = 32;
+  const std::size_t n_unsafe = forcesForApply_size - myinput.threadunsafe_forces_start;
+  const std::size_t nshared = (n_unsafe < maxShared) ? n_unsafe : maxShared;
+  const std::size_t sharedStart = forcesForApply_size - nshared;
+  // the forces are added as soon as the indices are known, so each task needs
+  // space for the indices of one value at a time
+  const std::size_t ind_stride_task = nind_per_scalar;
 
   ws.derivatives.resize(nderivatives_per_task*nactive_tasks);
   auto derivatives = ws.derivatives.devicePtr();
@@ -334,22 +345,21 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   auto valstmp = ws.valstmp.devicePtr();
   ws.buffer.resize(workspace_size*nactive_tasks);
   auto buffer = ws.buffer.devicePtr();
+  ws.sharedForces.resize(nshared*nactive_tasks);
+  auto sharedForces = ws.sharedForces.devicePtr();
 
-#define forces_indicesArg(taskID,scalarID) ForceIndexHolder::create(myinput, \
-                          indices + taskID*ind_stride_task + scalarID*ind_stride_value)
 #define derivativeDrift(taskID,scalarID)  taskID*nderivatives_per_task \
                            + scalarID*myinput.ncomponents*myinput.nderivatives_per_scalar
 #define stashDrift(taskID,scalarID) taskID*myinput.nscalars \
                            + scalarID*myinput.ncomponents
 
   // myinput and the scalars are passed by value as kernel arguments
-  {
-#pragma acc parallel loop present(actiondata) \
+#pragma acc parallel loop async(accQueue) present(actiondata) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   forcesForApply_size, \
-                                  nderivatives_per_task, ind_stride_task, ind_stride_value, \
-                                  useAtomics, \
+                                  nderivatives_per_task, ind_stride_task, \
+                                  nshared, sharedStart, \
                                   workspace_size) \
                         deviceptr(derivatives, \
                                   indices, \
@@ -357,105 +367,121 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                                   partialTaskList_data, \
                                   forcesForApply_data, \
                                   valstmp, \
+                                  sharedForces, \
                                   buffer) \
                           default(none)
-    for(unsigned t=0; t<nactive_tasks; ++t) {
-      std::size_t task_index = partialTaskList_data[t];
-      auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
-                   valstmp+myinput.nscalars*t,
-                   nderivatives_per_task,
-                   derivatives+nderivatives_per_task*t,
-                   workspace_size,
-                   (workspace_size>0)?buffer+workspace_size*t:nullptr);
-      // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, myinput, myout );
-      // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+  for(unsigned t=0; t<nactive_tasks; ++t) {
+    std::size_t task_index = partialTaskList_data[t];
+    auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
+                 valstmp+myinput.nscalars*t,
+                 nderivatives_per_task,
+                 derivatives+nderivatives_per_task*t,
+                 workspace_size,
+                 (workspace_size>0)?buffer+workspace_size*t:nullptr);
+    // Calculate the stuff in the loop for this action
+    T::performTask( task_index, actiondata, myinput, myout );
+
+    // this task's column of the buffer of the shared entries
+    for(std::size_t k=0; k<nshared; ++k) {
+      sharedForces[k*nactive_tasks+t]=0.0;
+    }
+    // private accumulators of the other thread-unsafe entries: slot s holds
+    // the s-th thread-unsafe contribution of the current value; it is summed
+    // to the one of the next value if they go to the same entry, and added
+    // to the forces with an atomic otherwise
+    constexpr unsigned nslots=32;
+    constexpr std::size_t noSlot=~std::size_t(0);
+    std::size_t slotIndex[nslots];
+    precision slotForce[nslots];
+    for(unsigned s=0; s<nslots; ++s) {
+      slotIndex[s]=noSlot;
+      slotForce[s]=0.0;
+    }
+
+    // If this is a matrix this returns a number that isn't one as we have to loop over the columns
+    const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
-      for(unsigned vID=0; vID<nvpt; ++vID) {
-        auto force_indices = forces_indicesArg(t,vID);
-        // Create a force index holder
-        // Get the indices for forces
-        T::getForceIndices( task_index,
-                            vID,
-                            forcesForApply_size,
-                            actiondata,
-                            myinput,
-                            force_indices );
+    for(unsigned vID=0; vID<nvpt; ++vID) {
+      auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
+      // Get the indices for forces
+      T::getForceIndices( task_index,
+                          vID,
+                          forcesForApply_size,
+                          actiondata,
+                          myinput,
+                          force_indices );
 
-        // Create a force input object
-        auto finput = ForcesInput<precision>::create ( myinput.nscalars,
-                      value_stash_data + stashDrift(task_index,vID),
-                      myinput.nderivatives_per_scalar,
-                      derivatives + derivativeDrift(t,vID));
+      // Create a force input object
+      auto finput = ForcesInput<precision>::create ( myinput.nscalars,
+                    value_stash_data + stashDrift(task_index,vID),
+                    myinput.nderivatives_per_scalar,
+                    derivatives + derivativeDrift(t,vID));
 
-        // Gather forces that can be gathered locally
-        ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
-            force_indices,
-            finput,
-            View<precision>(forcesForApply_data,
-                            forcesForApply_size));
-        if( !useAtomics ) {
-          continue;
-        }
-        // Add the forces that other tasks can also touch
-        for(unsigned i=0; i<myinput.ncomponents; ++i) {
-          const precision ff = finput.force[i];
-          for(std::size_t d=force_indices.threadsafe_derivatives_end[i];
-              d<force_indices.tot_indices[i]; ++d) {
-            const std::size_t fi = force_indices.indices[i][d];
-            const precision contribution = ff*finput.deriv[i][d];
+      // Gather forces that can be gathered locally
+      ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
+          force_indices,
+          finput,
+          View<precision>(forcesForApply_data,
+                          forcesForApply_size));
+      // Add the forces that other tasks can also touch
+      unsigned s=0;
+      for(unsigned i=0; i<myinput.ncomponents; ++i) {
+        const precision ff = finput.force[i];
+        for(std::size_t d=force_indices.threadsafe_derivatives_end[i];
+            d<force_indices.tot_indices[i]; ++d, ++s) {
+          const std::size_t fi = force_indices.indices[i][d];
+          const precision contribution = ff*finput.deriv[i][d];
+          if(fi>=sharedStart) {
+            sharedForces[(fi-sharedStart)*nactive_tasks+t] += contribution;
+          } else if(s<nslots) {
+            if(slotIndex[s]==fi) {
+              slotForce[s]+=contribution;
+            } else {
+              if(slotIndex[s]!=noSlot) {
+                const precision old=slotForce[s];
+#pragma acc atomic update
+                forcesForApply_data[slotIndex[s]] += old;
+              }
+              slotIndex[s]=fi;
+              slotForce[s]=contribution;
+            }
+          } else {
 #pragma acc atomic update
             forcesForApply_data[fi] += contribution;
           }
         }
       }
     }
-
-    if( !useAtomics ) {
-#pragma acc parallel loop present(actiondata) \
-                     firstprivate(myinput, \
-                                  nactive_tasks, \
-                                  forcesForApply_size, \
-                                  nderivatives_per_task, ind_stride_task, ind_stride_value) \
-                        deviceptr(derivatives, \
-                                  indices, \
-                                  value_stash_data, \
-                                  partialTaskList_data, \
-                                  forcesForApply_data) \
-                          default(none)
-      for(unsigned v=myinput.threadunsafe_forces_start; v<forcesForApply_size; ++v) {
-        double tmp = 0.0;
-#pragma acc loop reduction(+:tmp)
-        for(unsigned t=0; t<nactive_tasks; ++t) {
-          const std::size_t task_index = partialTaskList_data[t];
-          const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
-          for(unsigned vID=0; vID<nvpt; ++vID) {
-            auto force_indices = forces_indicesArg(t,vID);
-
-            auto fdata = ForcesInput<precision>::create( myinput.nscalars,
-                         value_stash_data + stashDrift(task_index,vID),
-                         myinput.nderivatives_per_scalar,
-                         derivatives + derivativeDrift(t,vID));
-            for(unsigned i=0; i<myinput.ncomponents; ++i) {
-              const double ff = fdata.force[i];
-              for(unsigned d=force_indices.threadsafe_derivatives_end[i];
-                  d<force_indices.tot_indices[i]; ++d) {
-                if( force_indices.indices[i][d]==v ) {
-                  tmp += ff*fdata.deriv[i][d];
-                }
-              }
-            }
-          }
-        }
-        forcesForApply_data[v] = tmp;
+    // flush the private accumulators
+    for(unsigned s=0; s<nslots; ++s) {
+      if(slotIndex[s]!=noSlot) {
+        const precision old=slotForce[s];
+#pragma acc atomic update
+        forcesForApply_data[slotIndex[s]] += old;
       }
     }
   }
-#undef forces_indicesArg
+
+  // sum the columns of the buffer of the shared entries: one gang per entry,
+  // the threads of the gang sum over the tasks. It runs after the previous
+  // kernel, on the same queue, and only it writes these entries
+#pragma acc parallel loop gang async(accQueue) \
+                     firstprivate(nactive_tasks, nshared, sharedStart) \
+                        deviceptr(sharedForces, forcesForApply_data) \
+                          default(none)
+  for(std::size_t k=0; k<nshared; ++k) {
+    double tmp = 0.0;
+#pragma acc loop vector reduction(+:tmp)
+    for(unsigned t=0; t<nactive_tasks; ++t) {
+      tmp += sharedForces[k*nactive_tasks+t];
+    }
+    forcesForApply_data[sharedStart+k] += tmp;
+  }
 #undef derivativeDrift
 #undef stashDrift
-  ws.forces.copyFromDevice(forcesForApply.data());
+  ws.forces.copyFromDeviceAsync(forcesForApply.data(), accQueue);
+  // the only synchronization of the call
+  acc_wait(accQueue);
 }
 #else
 template <class T, typename precision>
