@@ -35,6 +35,8 @@
 #include "tools/File.h"
 #include "tools/Communicator.h"
 #include <algorithm>
+#include <filesystem>
+#include <numeric>
 #include <limits>
 #include <sstream>
 
@@ -481,6 +483,21 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   const unsigned pf_n=pfhold.size();
   pfs_.assign(pfs.begin(),pfs.end());
+  // the arguments of a family share a one dimensional bias (and its hills file and grid)
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    const Value* arg=getPntrToArgument(i);
+    const Value* first=pfhold[pfs_[i]];
+    bool same=(arg->isPeriodic()==first->isPeriodic());
+    if(same && arg->isPeriodic()) {
+      std::string amin,amax,fmin,fmax;
+      arg->getDomain(amin,amax);
+      first->getDomain(fmin,fmax);
+      same=(amin==fmin && amax==fmax);
+    }
+    if(!same) {
+      error("the arguments in a partitioned family must have the same periodicity: "+arg->getName()+" and "+first->getName()+" do not");
+    }
+  }
   families_.resize(pf_n);
   for(unsigned f=0; f<pf_n; f++) {
     families_[f].arg=pfhold[f];
@@ -804,6 +821,39 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // restart from external grid
   bool restartedFromGrid=false;
 
+  // with WALKERS_MPI, the replicas must take the same decision; the replicas can have different directories
+  auto checkReplicas=[&](bool restarted,const std::string& what) {
+    if(getRestart() && walkers_mpi_) {
+      std::vector<int> all(mpi_nw_,0);
+      if(comm.Get_rank()==0) {
+        multi_sim_comm.Allgather(int(restarted),all);
+      }
+      comm.Bcast(all,0);
+      const unsigned n=std::accumulate(all.begin(),all.end(),0);
+      if(n!=0 && n!=mpi_nw_) {
+        error("in this WALKERS_MPI run some replicas have restarted from "+what+" while others have not");
+      }
+    }
+  };
+  // the directory of the first replica, so that all the walkers read the same files
+  auto firstReplicaDirectory=[&]() {
+    std::string dir=std::filesystem::current_path().string();
+    // the paths of the replicas can have different lengths
+    if(comm.Get_rank()==0) {
+      bcastString(multi_sim_comm,dir);
+    }
+    bcastString(comm,dir);
+    return dir;
+  };
+  if(walkers_mpi_ && gridreadfilenames.size()>0) {
+    const std::string dir=firstReplicaDirectory();
+    for(auto & name : gridreadfilenames) {
+      if(name.at(0)!='/') {
+        name=dir+"/"+name;
+      }
+    }
+  }
+
   // initializing and checking grid
   if(grid_) {
     std::string funcl=getLabel() + ".bias";
@@ -853,8 +903,20 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       }
     }
   }
+  checkReplicas(restartedFromGrid,"GRID");
+
+  if(walkers_mpi_ && mw_dir_=="") {
+    bool relative=true;
+    for(const auto & name : hillsfname) {
+      relative=relative && name.at(0)!='/';
+    }
+    if(relative) {
+      mw_dir_=firstReplicaDirectory();
+    }
+  }
 
   // open all files at the beginning and read Gaussians if restarting
+  bool restartedFromHills=false;
   std::vector<std::string> ownpath(pf_n);  // actual path of the hills files of this walker, if they were read
   bool lastHillTimeKnown=false;  // time of the last hill in the hills files of this walker, if they were read
   double lastHillTime=0.0;
@@ -901,6 +963,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           } else {
             readGaussians(f,k);
           }
+          restartedFromHills=true;
         }
         if(getRestart() && restartedFromGrid && j==mw_id_) {
           // new hills will be appended to this file also when the bias is read from a grid
@@ -920,6 +983,18 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
   }
 
+  checkReplicas(restartedFromHills,"FILE");
+
+  if(walkers_mpi_) {
+    // the decision to add a hill at the first step must be the same for all the walkers (they share the hills)
+    std::vector<double> last {lastHillTimeKnown ? 1.0 : 0.0, lastHillTime};
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Bcast(last,0);
+    }
+    comm.Bcast(last,0);
+    lastHillTimeKnown=(last[0]!=0.0);
+    lastHillTime=last[1];
+  }
   if(lastHillTimeKnown) {
     schedule_.setLastHillTime(lastHillTime);
   }

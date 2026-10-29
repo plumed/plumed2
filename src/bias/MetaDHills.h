@@ -74,6 +74,8 @@ private:
   /// a hill with a Gaussian (not stretched) kernel was read
   bool gaussianKernelsFound_=false;
   void noStretchWarning();
+  /// an error in a hills file
+  [[noreturn]] void inputError(const std::string& msg) const;
   bool scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height,
                    bool& multivariate, double& time);
 public:

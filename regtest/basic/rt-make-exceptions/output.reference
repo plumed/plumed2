@@ -82,6 +82,8 @@ readInputLine METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100
 +++ catched
 readInputLine PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 HEIGHT=1
 +++ catched
+readInputLine PBMETAD ARG=d,t PF0=d,t PACE=1 SIGMA=1 HEIGHT=1 TEMP=300
++++ catched
 something random here NULL
 +++ catched
 setStep NULL

@@ -159,6 +159,12 @@ void MetaDHillsFiles::close(unsigned i) {
   ifiles_[i]->close();
 }
 
+void MetaDHillsFiles::inputError(const std::string& msg) const {
+  // as Action::error, but without writing on the log: the files are read by the first process only, and
+  // the log requires the same output on all the processes (read throws the error on all of them)
+  plumed_merror("ERROR in input to action "+action_.getName()+" with label "+action_.getLabel()+" : "+msg);
+}
+
 void MetaDHillsFiles::noStretchWarning() {
   if(!noStretchWarningDone_) {
     action_.log<<"\nWARNING: you are using a HILLS file with Gaussian kernels, PLUMED 2.8 uses stretched Gaussians by default\n";
@@ -275,14 +281,14 @@ bool MetaDHillsFiles::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, s
     for(unsigned i=0; i<ncv; ++i) {
       ifile->scanField( &tmpvalues[i] );
       if( tmpvalues[i].isPeriodic() && ! args_[i]->isPeriodic() ) {
-        action_.error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+        inputError("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
       } else if( tmpvalues[i].isPeriodic() ) {
         std::string imin, imax;
         tmpvalues[i].getDomain( imin, imax );
         std::string rmin, rmax;
         args_[i]->getDomain( rmin, rmax );
         if( imin!=rmin || imax!=rmax ) {
-          action_.error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+          inputError("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
         }
       }
       center[i]=tmpvalues[i].get();
@@ -296,7 +302,7 @@ bool MetaDHillsFiles::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, s
       // the warning is written by read
       gaussianKernelsFound_=true;
     } else if( ktype!="stretched-gaussian") {
-      action_.error("non Gaussian kernels are not supported in MetaD");
+      inputError("non Gaussian kernels are not supported in MetaD");
     }
     // scan for multivariate label: record the actual file position so to eventually rewind
     std::string sss;
