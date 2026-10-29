@@ -33,7 +33,11 @@ static void getPointer(const TypesafePtr & p, const std::vector<std::size_t>& sh
     auto p_=p.get<T*>( {shape[0],stride} );
     pp = p_+start;
   } else if( shape.size()==2 ) {
+    // start and stride are only used for vectors that are interleaved in the same array (e.g. positions)
+    plumed_massert( start==0 && stride==1, "start and stride cannot be used when passing a matrix");
     pp=p.get<T*>( {shape[0],shape[1]} );
+  } else {
+    plumed_merror("data with rank larger than two cannot be passed between PLUMED and the MD code");
   }
 }
 
@@ -59,11 +63,15 @@ public:
 /// Share the data and put it in the value from sequential data
   void share_data( const unsigned& j, const unsigned& k, Value* value ) override;
 /// Share the data and put it in the value from a scattered data
-  void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) override;
+  void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value ) override;
+/// Check if the MD code passed an array to store the forces on this quantity
+  bool hasForcePointer() const override {
+    return static_cast<bool>(f);
+  }
 /// Pass the force from the value to the output value
   void add_force( Value* vv ) override;
   void add_force( const std::vector<int>& index, Value* value ) override;
-  void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) override;
+  void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value ) override;
 /// Rescale the force on the output value
   void rescale_force( const unsigned& n, const double& factor, Value* value ) override;
 /// This transfers everything to the output
@@ -130,6 +138,8 @@ void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const 
       val.get<const T*>({shape[0],shape[1]});
     else
       val.get<T*>({shape[0],shape[1]});  // just check type and discard pointer
+  } else {
+    plumed_merror("data with rank larger than two cannot be passed between PLUMED and the MD code");
   }
   v=val.copy();
 }
@@ -142,6 +152,9 @@ void DataPassingObjectTyped<T>::setForcePointer( const TypesafePtr & val, const 
     val.get<T*>({shape[0]});   // just check type and discard pointer
   else if( shape.size()==2 )
     val.get<T*>({shape[0],shape[1]});   // just check type and discard pointer
+  else {
+    plumed_merror("data with rank larger than two cannot be passed between PLUMED and the MD code");
+  }
   f=val.copy();
 }
 
@@ -151,7 +164,7 @@ void DataPassingObjectTyped<T>::setData( Value* value ) {
     *v.template get<T*>() = static_cast<T>(value->get()) / unit;
     return;
   }
-  T* pp;
+  T* pp=nullptr;
   getPointer( v, value->getShape(), start, stride, pp );
   unsigned nvals=value->getNumberOfValues();
   for(unsigned i=0; i<nvals; ++i) {
@@ -171,9 +184,10 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
   }
   std::vector<std::size_t> s(value->getShape());
   if( s.size()==1 ) {
-    s[0]=k-j;
+    // elements j to k-1 are read, so the array passed by the MD code must contain at least k elements
+    s[0]=k;
   }
-  const T* pp;
+  const T* pp=nullptr;
   getPointer( v, s, start, stride, pp );
   std::vector<double> & d=value->data;
   #pragma omp parallel for num_threads(value->getGoodNumThreads(j,k))
@@ -185,7 +199,7 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
 template <class T>
 void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const {
   std::vector<std::size_t> maxel(1,values.size());
-  const T* pp;
+  const T* pp=nullptr;
   getPointer( v, maxel, start, stride, pp );
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(values))
   for(unsigned i=0; i<values.size(); ++i) {
@@ -194,16 +208,13 @@ void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const 
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) {
+void DataPassingObjectTyped<T>::share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value ) {
   plumed_dbg_assert( value->getRank()==1 );
-  std::vector<std::size_t> maxel(1,index.size());
-#ifndef NDEBUG
-// bounds are only checked in debug mode since they require this extra step that is potentially expensive
-  maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
-#else
-  maxel[0]=0;
-#endif
-  const T* pp;
+  plumed_dbg_assert( index.size()==i.size() );
+  plumed_dbg_assert( i.size()==0 || *std::max_element(i.begin(),i.end())<nlocal );
+  // the size of the array passed by the MD code is checked against the number of local atoms
+  std::vector<std::size_t> maxel(1,nlocal);
+  const T* pp=nullptr;
   getPointer( v, maxel, start, stride, pp );
   // cannot be parallelized with omp because access to data is not ordered
   unsigned k=0;
@@ -219,7 +230,7 @@ void DataPassingObjectTyped<T>::add_force( Value* value ) {
     *f.template get<T*>() += funit*static_cast<T>(value->getForce(0));
     return;
   }
-  T* pp;
+  T* pp=nullptr;
   getPointer( f, value->getShape(), start, stride, pp );
   unsigned nvals=value->getNumberOfValues();
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pp,nvals))
@@ -232,7 +243,7 @@ template <class T>
 void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value* value ) {
   plumed_assert( value->getRank()==1 );
   std::vector<std::size_t> s(1,index.size());
-  T* pp;
+  T* pp=nullptr;
   getPointer( f, s, start, stride, pp );
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pp,index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
@@ -241,16 +252,13 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value*
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
+void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value ) {
   plumed_dbg_assert( value->getRank()==1 );
-  std::vector<std::size_t> maxel(1,index.size());
-#ifndef NDEBUG
-// bounds are only checked in debug mode since they require this extra step that is potentially expensive
-  maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
-#else
-  maxel[0]=0;
-#endif
-  T* pp;
+  plumed_dbg_assert( index.size()==i.size() );
+  plumed_dbg_assert( i.size()==0 || *std::max_element(i.begin(),i.end())<nlocal );
+  // the size of the array passed by the MD code is checked against the number of local atoms
+  std::vector<std::size_t> maxel(1,nlocal);
+  T* pp=nullptr;
   getPointer( f, maxel, start, stride, pp );
   unsigned k=0;
   for(const auto & p : index) {
@@ -266,7 +274,7 @@ void DataPassingObjectTyped<T>::rescale_force( const unsigned& n, const double& 
   if( s.size()==1 ) {
     s[0] = n;
   }
-  T* pp;
+  T* pp=nullptr;
   getPointer( f, s, start, stride, pp );
   // The MD code might not pass this buffer on every rank (e.g. the virial)
   if( !pp ) {

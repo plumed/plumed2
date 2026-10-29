@@ -70,6 +70,8 @@ private:
   std::vector<unsigned> uniq_index;
 /// This holds the list of atoms that have a force on
   std::vector<AtomNumber> forced_unique;
+/// The values that are exchanged between the domains in share and received in wait
+  std::vector<Value*> values_to_get;
 /// This holds the list of actions that are set from this action
   std::vector<ActionToPutData*> inputs;
 /// This holds all the actions that read atoms

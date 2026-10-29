@@ -485,17 +485,19 @@ void DomainDecomposition::share() {
 }
 
 void DomainDecomposition::share(const std::vector<AtomNumber>& uniqueIdxIn) {
-  // This retrieves what values we need to get
+  // This retrieves what values we need to get. The list is stored, as wait() must receive the same values
   int ndata=0;
-  std::vector<Value*> values_to_get;
+  values_to_get.clear();
   if(!(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
     uniq_index.resize(uniqueIdxIn.size());
     for(unsigned i=0; i<uniqueIdxIn.size(); i++) {
+      // only atoms that the MD code passes to this rank can be in this list
+      plumed_dbg_assert( g2l[uniqueIdxIn[i].index()]>=0 );
       uniq_index[i]=g2l[uniqueIdxIn[i].index()];
     }
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
+        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, gatindex.size(), ip->copyOutput(0) );
         values_to_get.push_back(ip->copyOutput(0));
         ndata++;
       }
@@ -507,7 +509,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& uniqueIdxIn) {
     }
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
+        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, gatindex.size(), ip->copyOutput(0) );
         values_to_get.push_back(ip->copyOutput(0));
         ndata++;
       }
@@ -589,21 +591,16 @@ void DomainDecomposition::wait() {
   }
 
   if(dd && shuffledAtoms>0) {
-    int ndata=0;
-    std::vector<Value*> values_to_set;
-    for(const auto & ip : inputs) {
-      if( (!ip->fixed || firststep) && ip->wasset ) {
-        values_to_set.push_back(ip->copyOutput(0));
-        ndata++;
-      }
-    }
+    // the values that were sent in share()
+    const std::vector<Value*> & values_to_set=values_to_get;
+    const std::size_t ndata=values_to_set.size();
 
 // receive toBeReceived
     if(asyncSent) {
       Communicator::Status status;
       std::size_t count=0;
       for(int i=0; i<dd.Get_size(); i++) {
-        plumed_assert(count<=dd.positionsToBeReceived.size()/ndata);
+        plumed_assert(count*ndata<=dd.positionsToBeReceived.size() && count<=dd.indexToBeReceived.size());
         const std::size_t remaining=dd.indexToBeReceived.size()-count;
         const std::size_t remainingData=dd.positionsToBeReceived.size()-ndata*count;
         // Empty ranks still send messages after an earlier rank fills the buffer.
@@ -647,9 +644,15 @@ void DomainDecomposition::apply() {
     if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
       continue;
     } else if( ip->wasscaled || (!unique_serial && gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0) ) {
+      if( gatindex.size()>0 ) {
+        ip->checkForcePointer();
+      }
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
     } else {
-      (ip->mydata)->add_force( forced_unique, forced_uniq_index, ip->getPntrToValue() );
+      if( forced_unique.size()>0 ) {
+        ip->checkForcePointer();
+      }
+      (ip->mydata)->add_force( forced_unique, forced_uniq_index, gatindex.size(), ip->getPntrToValue() );
     }
   }
 }
