@@ -252,6 +252,21 @@ private:
     MetaDKernel kernel;
     /// the hills, without grid
     std::vector<Gaussian> hills;
+    /// the hills, without grid, in contiguous arrays (for speed): center, inverse width (0 for multivariate hills),
+    /// height, and whether they can be evaluated with these arrays (not multivariate, no INTERVAL)
+    std::vector<double> center;
+    std::vector<double> invsigma;
+    std::vector<double> height;
+    std::vector<char> diagonal;
+    /// the value of hill h at cv (one dimensional), and its derivative (added to der) if der is given
+    double evaluate(const std::vector<double>& cv, unsigned h, double* der) const {
+      double dp[1];
+      if(diagonal[h]) {
+        return der ? kernel.evaluateDiagonalWithDerivatives(cv,&center[h],&invsigma[h],height[h],der,dp) :
+               kernel.evaluateDiagonal(cv,&center[h],&invsigma[h],height[h]);
+      }
+      return der ? kernel.evaluateWithDerivatives(cv,hills[h],der,dp) : kernel.evaluate(cv,hills[h]);
+    }
     /// the bias, with grid
     std::unique_ptr<MetaDBiasGrid> grid;
     /// INTERVAL
@@ -1026,6 +1041,10 @@ void PBMetaD::addGaussian(unsigned f, const Gaussian& hill) {
     family.grid->addHill(hill,family.kernel,getTime());
   } else {
     family.hills.push_back(hill);
+    family.center.push_back(hill.center[0]);
+    family.invsigma.push_back(hill.multivariate ? 0.0 : hill.invsigma[0]);
+    family.height.push_back(hill.height);
+    family.diagonal.push_back(!hill.multivariate && !family.interval);
   }
 }
 
@@ -1050,26 +1069,36 @@ void PBMetaD::getBiases(const std::vector<double>& cv, std::vector<double>& bias
     }
     return;
   }
-  // the hills are split among the MPI processes
+  // the hills are split among the MPI processes and the OpenMP threads
   const unsigned stride=comm.Get_size();
   const unsigned rank=comm.Get_rank();
-  double dp[1];
+  const unsigned nt=OpenMP::getNumThreads();
   for(unsigned i=0; i<nargs; ++i) {
     const Family& family=families_[pfs_[i]];
+    const unsigned nhills=family.hills.size();
     cvi[0]=cv[i];
     double b=0.0;
-    if(der) {
-      double d=0.0;
-      for(unsigned h=rank; h<family.hills.size(); h+=stride) {
-        b+=family.kernel.evaluateWithDerivatives(cvi,family.hills[h],&d,dp);
+    double d=0.0;
+    if(nt==1 || nhills<2*nt*stride) {
+      for(unsigned h=rank; h<nhills; h+=stride) {
+        b+=family.evaluate(cvi,h,der ? &d : nullptr);
       }
-      (*der)[i]=d;
     } else {
-      for(unsigned h=rank; h<family.hills.size(); h+=stride) {
-        b+=family.kernel.evaluate(cvi,family.hills[h]);
+      #pragma omp parallel num_threads(nt)
+      {
+        double dt=0.0;
+        #pragma omp for reduction(+:b) nowait
+        for(unsigned h=rank; h<nhills; h+=stride) {
+          b+=family.evaluate(cvi,h,der ? &dt : nullptr);
+        }
+        #pragma omp atomic
+        d+=dt;
       }
     }
     bias[i]=b;
+    if(der) {
+      (*der)[i]=d;
+    }
   }
   if(stride>1) {
     // a single reduction for the biases and the derivatives
