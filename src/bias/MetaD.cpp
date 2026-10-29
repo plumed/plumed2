@@ -1139,89 +1139,15 @@ void MetaD::parseGrid(SetupInput& in) {
   if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) {
     error("not enough values for GRID_SPACING");
   }
-  if(in.gmin.size()!=in.gmax.size()) {
-    error("GRID_MAX and GRID_MIN should be either present or absent");
-  }
-  if(in.gbin.size()!=0     && in.gmin.size()==0) {
-    error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
-  }
-  if(in.gmin.size()!=0) {
-    if(in.gbin.size()==0 && gspacing.size()==0) {
-      if(adaptive_==FlexibleBin::none) {
-        log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
-        plumed_assert(sigma0_.size()==getNumberOfArguments());
-        gspacing.resize(getNumberOfArguments());
-        for(unsigned i=0; i<gspacing.size(); i++) {
-          gspacing[i]=0.2*sigma0_[i];
-        }
-      } else {
-        // with adaptive hills and grid a sigma min must be specified
-        for(unsigned i=0; i<sigma0min_.size(); i++)
-          if(sigma0min_[i]<=0) {
-            error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
-          }
-        log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
-        gspacing.resize(getNumberOfArguments());
-        for(unsigned i=0; i<gspacing.size(); i++) {
-          gspacing[i]=0.2*sigma0min_[i];
-        }
-      }
-    } else if(gspacing.size()!=0 && in.gbin.size()==0) {
-      log<<"  The number of bins will be estimated from GRID_SPACING\n";
-    } else if(gspacing.size()!=0 && in.gbin.size()!=0) {
-      log<<"  You specified both GRID_BIN and GRID_SPACING\n";
-      log<<"  The more conservative (highest) number of bins will be used for each variable\n";
-    }
-    if(in.gbin.size()==0) {
-      in.gbin.assign(getNumberOfArguments(),1);
-    }
-    if(gspacing.size()!=0)
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        double a,b;
-        Tools::convert(in.gmin[i],a);
-        Tools::convert(in.gmax[i],b);
-        unsigned n=std::ceil(((b-a)/gspacing[i]));
-        if(in.gbin[i]<n) {
-          in.gbin[i]=n;
-        }
-      }
-  }
-  if(gspacing.size()!=0 && in.gmin.size()==0) {
-    // no range: the grid is placed around the first hill, on the lattice with a point at 0
-    // (a first range of one bin is used until then); periodic variables are covered over the whole period
-    in.gridnobounds=true;
+  in.gridnobounds=MetaDBiasGrid::setupBins(*this,getArguments(),in.gmin,in.gmax,in.gbin,gspacing,adaptive_!=FlexibleBin::none,sigma0_,sigma0min_);
+  if(in.gridnobounds) {
     in.gspacing=gspacing;
-    in.gmin.resize(getNumberOfArguments());
-    in.gmax.resize(getNumberOfArguments());
-    in.gbin.resize(getNumberOfArguments());
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(!(gspacing[i]>0.0)) {
-        error("GRID_SPACING should be positive");
-      }
-      if(getPntrToArgument(i)->isPeriodic()) {
-        getPntrToArgument(i)->getDomain(in.gmin[i],in.gmax[i]);
-        double a,b;
-        Tools::convert(in.gmin[i],a);
-        Tools::convert(in.gmax[i],b);
-        in.gbin[i]=std::ceil((b-a)/gspacing[i]);
-      } else {
-        in.gmin[i]="0";
-        in.gmax[i]=exactString(gspacing[i]);
-        in.gbin[i]=1;
-      }
-    }
   }
   if(in.gbin.size()>0) {
     grid_=true;
   }
   parse("GRID_SIZE_LIMIT",gridsizelimit_);
-  if(!(gridsizelimit_>=1.0)) {
-    error("GRID_SIZE_LIMIT should be at least 1");
-  }
-  // grid points are indexed with unsigned integers (see GridBase)
-  if(gridsizelimit_>static_cast<double>(std::numeric_limits<unsigned>::max())) {
-    error("GRID_SIZE_LIMIT cannot be larger than "+exactString(std::numeric_limits<unsigned>::max()));
-  }
+  MetaDBiasGrid::checkSizeLimit(*this,gridsizelimit_);
 
   in.sparsegrid=false;
   parseFlag("GRID_SPARSE",in.sparsegrid);

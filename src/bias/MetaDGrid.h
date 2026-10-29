@@ -65,6 +65,14 @@ class MetaDBiasGrid {
   /// add the hill to the points within its support (no INTERVAL)
   void addHillToPoints(const MetaDGaussian& hill, const MetaDKernel& kernel);
 public:
+  /// The number of bins from GRID_MIN, GRID_MAX, GRID_BIN and GRID_SPACING (empty if not given): with neither GRID_BIN
+  /// nor GRID_SPACING the spacing is 1/5 of SIGMA (of SIGMA_MIN with ADAPTIVE). With GRID_SPACING alone the grid is
+  /// placed around the first hill: gmin, gmax and gbin are set to a first range and true is returned.
+  static bool setupBins(Action& action, const std::vector<Value*>& args, std::vector<std::string>& gmin, std::vector<std::string>& gmax,
+                        std::vector<unsigned>& gbin, std::vector<double>& gspacing, bool adaptive, const std::vector<double>& sigma0,
+                        const std::vector<double>& sigma0min);
+  /// error if GRID_SIZE_LIMIT is not valid
+  static void checkSizeLimit(Action& action, double limit);
   explicit MetaDBiasGrid(Action& action);
   /// a new grid; nobounds: no initial range was given (GRID_SPACING only), the grid is placed around the first hill
   void create(const std::string& funcl, const std::vector<Value*>& args, const std::vector<std::string>& gmin,

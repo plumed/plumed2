@@ -33,6 +33,94 @@
 namespace PLMD {
 namespace bias {
 
+bool MetaDBiasGrid::setupBins(Action& action, const std::vector<Value*>& args, std::vector<std::string>& gmin, std::vector<std::string>& gmax,
+                              std::vector<unsigned>& gbin, std::vector<double>& gspacing, bool adaptive, const std::vector<double>& sigma0,
+                              const std::vector<double>& sigma0min) {
+  bool nobounds=false;
+  if(gmin.size()!=gmax.size()) {
+    action.error("GRID_MAX and GRID_MIN should be either present or absent");
+  }
+  if(gbin.size()!=0     && gmin.size()==0) {
+    action.error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
+  }
+  if(gmin.size()!=0) {
+    if(gbin.size()==0 && gspacing.size()==0) {
+      if(!adaptive) {
+        action.log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
+        plumed_assert(sigma0.size()==args.size());
+        gspacing.resize(args.size());
+        for(unsigned i=0; i<gspacing.size(); i++) {
+          gspacing[i]=0.2*sigma0[i];
+        }
+      } else {
+        // with adaptive hills and grid a sigma min must be specified
+        for(unsigned i=0; i<sigma0min.size(); i++)
+          if(sigma0min[i]<=0) {
+            action.error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
+          }
+        action.log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
+        gspacing.resize(args.size());
+        for(unsigned i=0; i<gspacing.size(); i++) {
+          gspacing[i]=0.2*sigma0min[i];
+        }
+      }
+    } else if(gspacing.size()!=0 && gbin.size()==0) {
+      action.log<<"  The number of bins will be estimated from GRID_SPACING\n";
+    } else if(gspacing.size()!=0 && gbin.size()!=0) {
+      action.log<<"  You specified both GRID_BIN and GRID_SPACING\n";
+      action.log<<"  The more conservative (highest) number of bins will be used for each variable\n";
+    }
+    if(gbin.size()==0) {
+      gbin.assign(args.size(),1);
+    }
+    if(gspacing.size()!=0)
+      for(unsigned i=0; i<args.size(); i++) {
+        double a,b;
+        Tools::convert(gmin[i],a);
+        Tools::convert(gmax[i],b);
+        unsigned n=std::ceil(((b-a)/gspacing[i]));
+        if(gbin[i]<n) {
+          gbin[i]=n;
+        }
+      }
+  }
+  if(gspacing.size()!=0 && gmin.size()==0) {
+    // no range: the grid is placed around the first hill, on the lattice with a point at 0
+    // (a first range of one bin is used until then); periodic variables are covered over the whole period
+    nobounds=true;
+    gmin.resize(args.size());
+    gmax.resize(args.size());
+    gbin.resize(args.size());
+    for(unsigned i=0; i<args.size(); i++) {
+      if(!(gspacing[i]>0.0)) {
+        action.error("GRID_SPACING should be positive");
+      }
+      if(args[i]->isPeriodic()) {
+        args[i]->getDomain(gmin[i],gmax[i]);
+        double a,b;
+        Tools::convert(gmin[i],a);
+        Tools::convert(gmax[i],b);
+        gbin[i]=std::ceil((b-a)/gspacing[i]);
+      } else {
+        gmin[i]="0";
+        gmax[i]=exactString(gspacing[i]);
+        gbin[i]=1;
+      }
+    }
+  }
+  return nobounds;
+}
+
+void MetaDBiasGrid::checkSizeLimit(Action& action, double limit) {
+  if(!(limit>=1.0)) {
+    action.error("GRID_SIZE_LIMIT should be at least 1");
+  }
+  // grid points are indexed with unsigned integers (see GridBase)
+  if(limit>static_cast<double>(std::numeric_limits<unsigned>::max())) {
+    action.error("GRID_SIZE_LIMIT cannot be larger than "+exactString(std::numeric_limits<unsigned>::max()));
+  }
+}
+
 MetaDBiasGrid::MetaDBiasGrid(Action& action):
   action_(action) {
 }
