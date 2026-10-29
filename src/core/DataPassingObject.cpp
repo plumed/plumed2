@@ -27,6 +27,7 @@
 
 namespace PLMD {
 
+#ifdef _OPENMP
 /// Number of threads used to copy n elements between the arrays of the MD code and PLUMED.
 /// These loops do very little work per element, so for the system sizes that are typical in MD
 /// starting the threads (and waking them up, as PLUMED is called once per step) costs more than
@@ -40,6 +41,7 @@ static unsigned getCopyNumThreads( const std::size_t& n ) {
   }
   return std::min<std::size_t>( m, OpenMP::getNumThreads() );
 }
+#endif
 
 template<typename T>
 static void getPointer(const TypesafePtr & p, const std::vector<std::size_t>& shape, const unsigned& start, const unsigned& stride, T*&pp ) {
