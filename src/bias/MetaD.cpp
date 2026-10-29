@@ -562,12 +562,8 @@ private:
   double biasf_=-1.0;
   // output files format
   std::string fmt_;
-  /// the first step of this run (set at the first call of calculate())
-  bool runStarted_=false;
-  long long int runStartStep_=0;
-  /// time of the last hill read from the own hills file when restarting (if any)
-  bool restartLastHillTimeKnown_=false;
-  double restartLastHillTime_=0.0;
+  /// the steps when hills are added (the first step of the run, the last hill read when restarting)
+  MetaDHillSchedule schedule_;
   // Gaussian starting parameters
   double height0_=std::numeric_limits<double>::max();
   std::vector<double> sigma0_;
@@ -617,11 +613,8 @@ private:
     std::vector<double> last_cv;
   } exchange_;
   OFile hillsOfile_;
-  /// communicator of the process alone, linked to ifiles_: they are used by the first process only
-  Communicator selfcomm_;
-  /// hills files that are read (own file when restarting, files of the other walkers)
-  std::vector<std::unique_ptr<IFile>> ifiles_;
-  std::vector<std::string> ifilesnames_;
+  /// hills files that are read (own file when restarting, files of the other walkers), and writing of the hills
+  std::unique_ptr<MetaDHillsFiles> hillsfiles_;
   // Grids
   bool grid_=false;
   /// the bias grid, extended when a hill does not fit in it
@@ -706,17 +699,6 @@ private:
   /// evaluation of the Gaussians
   MetaDKernel kernel_;
 
-  bool noStretchWarningDone=false;
-  /// a hill with a Gaussian (not stretched) kernel was read
-  bool gaussianKernelsFound_=false;
-
-  void noStretchWarning() {
-    if(!noStretchWarningDone) {
-      log<<"\nWARNING: you are using a HILLS file with Gaussian kernels, PLUMED 2.8 uses stretched Gaussians by default\n";
-    }
-    noStretchWarningDone=true;
-  }
-
   /// values parsed in the constructor that are needed by more than one setup step
   struct SetupInput {
     std::string hillsfname;
@@ -778,22 +760,17 @@ private:
   static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
-  /// read all the hills in the file and add them to the bias; returns the number of hills read and
+  /// read all the hills in input file i and add them to the bias; returns the number of hills read and
   /// (if lasttime is given and at least one hill is read) sets lasttime to the time of the last hill
-  int    readGaussians(IFile*, double* lasttime=nullptr, bool addtobias=true);
+  int    readGaussians(unsigned i, double* lasttime=nullptr, bool addtobias=true);
   /// ADAPTIVE=DIFF: initialize the statistics of the fluctuations from the hills kept in diffrestart_
   void   initializeDiffusionStatistics();
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
-  /// extend the bias grid, if needed, so that it contains all the points within halfwidth[i] from x along each
-  /// CV i that is not periodic, plus one point on each side
   double getHeight(const std::vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const std::vector<double>&);
   double getBiasAndDerivatives(const std::vector<double>&, std::vector<double>&);
-  bool   scanOneHill(IFile* ifile, std::vector<Value>& v, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate, double& time);
-  /// true at the first step of this run
-  bool   isRunFirstStep() const;
   /// update the adaptive hill widths; with ADAPTIVE=DIFF also handle replica exchanges
   void   updateFlexibleBin(bool nowAddAHill);
   /// true if a hill has to be added at the current step
@@ -1816,8 +1793,8 @@ void MetaD::readHillsFiles(const SetupInput& in) {
     bcastString(comm,mw_.dir);
   }
 
-  // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
+  hillsfiles_=Tools::make_unique<MetaDHillsFiles>(*this,comm,getArguments());
   bool restartedFromHills=false;  // restart from hills files
   if(diffrestart_.pending) {
     // hills of the last ~6 averaging times (older ones have weight < exp(-6));
@@ -1846,47 +1823,32 @@ void MetaD::readHillsFiles(const SetupInput& in) {
         fname = in.hillsfname;
       }
     }
-    ifiles_.emplace_back(Tools::make_unique<IFile>());
-    // this is just a shortcut pointer to the last element:
-    IFile *ifile = ifiles_.back().get();
-    ifilesnames_.push_back(fname);
-    ifile->link(*this);
-    // The hills files are opened and read by the first process only (see readGaussians), which also decides
-    // if they exist: the file operations must not synchronize the processes, as with comm they would do
-    ifile->link(selfcomm_);
-    int exists=0;
-    if(comm.Get_rank()==0) {
-      exists=ifile->FileExist(fname);
-    }
-    if(comm.Get_size()>1) {
-      comm.Bcast(exists,0);
-    }
-    if(exists) {
-      if(comm.Get_rank()==0) {
-        ifile->open(fname);
-      }
+    const unsigned k=hillsfiles_->addInput(fname);
+    plumed_assert(k==static_cast<unsigned>(i));
+    if(hillsfiles_->isOpen(i)) {
       if(getRestart()&&!in.restartedFromGrid) {
-        log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
+        log.printf("  Restarting from %s:",hillsfiles_->getInputName(i).c_str());
         if(i==mw_.id) {
           double lasttime=0.0;
-          restartLastHillTimeKnown_=(readGaussians(ifiles_[i].get(),&lasttime)>0);
-          restartLastHillTime_=lasttime;
-          ownpath=ifile->getPath();
+          if(readGaussians(i,&lasttime)>0) {
+            schedule_.setLastHillTime(lasttime);
+          }
+          ownpath=hillsfiles_->getPath(i);
         } else {
-          readGaussians(ifiles_[i].get());
+          readGaussians(i);
         }
         restartedFromHills=true;
       }
       if(getRestart() && in.restartedFromGrid && i==mw_.id) {
         // new hills will be appended to this file also when the bias is read from a grid
-        ownpath=ifile->getPath();
+        ownpath=hillsfiles_->getPath(i);
       }
       if(getRestart() && in.restartedFromGrid && i==mw_.id && diffrestart_.pending) {
         // the bias is read from the grid, but the hills are still needed for the statistics of ADAPTIVE=DIFF
-        log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
+        log.printf("  Reading hills from %s:",hillsfiles_->getInputName(i).c_str());
         double lasttime=0.0;
         try {
-          readGaussians(ifiles_[i].get(),&lasttime,false);
+          readGaussians(i,&lasttime,false);
         } catch(const std::exception& e) {
           // the bias comes from the grid: if the hills file cannot be used, the statistics start from scratch
           log.printf("\n  WARNING: the hills file cannot be used for the statistics of ADAPTIVE=DIFF:\n%s\n",e.what());
@@ -1895,10 +1857,10 @@ void MetaD::readHillsFiles(const SetupInput& in) {
           diffrestart_.sigma.clear();
         }
       }
-      ifiles_[i]->reset(false);
+      hillsfiles_->reset(i);
       // close only the walker own hills file for later writing
       if(i==mw_.id) {
-        ifiles_[i]->close();
+        hillsfiles_->close(i);
       }
     } else {
       // in case a file does not exist and we are restarting, complain that the file was not found
@@ -2009,14 +1971,14 @@ void MetaD::openOutputFiles(SetupInput& in) {
   if(mw_.mpi) {
     int r=getReplicaIndex();
     if(r>0) {
-      ifilesnames_[mw_.id]="/dev/null";
+      hillsfiles_->setInputName(mw_.id,"/dev/null");
     }
     hillsOfile_.enforceSuffix("");
   }
   if(mw_.n>1) {
     hillsOfile_.enforceSuffix("");
   }
-  hillsOfile_.open(ifilesnames_[mw_.id]);
+  hillsOfile_.open(hillsfiles_->getInputName(mw_.id));
   if(fmt_.length()>0) {
     hillsOfile_.fmtField(fmt_);
   }
@@ -2125,137 +2087,44 @@ void MetaD::logTemperingSpecs(const TemperingSpecs &t_specs) {
   }
 }
 
-int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
-  unsigned ncv=getNumberOfArguments();
-  std::vector<double> center(ncv);
-  std::vector<double> sigma(ncv);
-  double height;
-  int nhills=0;
-  bool multivariate=false;
-
-  std::vector<Value> tmpvalues;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-    tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
-  }
-
-  // With MPI only the first process reads the file, then the hills are broadcast to the others.
-  // The file of another walker can grow while it is read: if each process read it, they could read a
-  // different number of hills, and their biases would differ.
-  // The hills are read and broadcast in chunks; each one is stored as
-  // time, multivariate, height, center (ncv), sigma (ncv or ncv*(ncv+1)/2).
-  const unsigned nsigmamax=ncv*(ncv+1)/2;
-  const unsigned recordsize=3+ncv+nsigmamax;
-  const unsigned chunksize=4096;
-  const bool parallel=(comm.Get_size()>1);
-  const bool reader=(comm.Get_rank()==0);
+int MetaD::readGaussians(unsigned i, double* lasttime, bool addtobias) {
   // the callers have started a line of the log
   if(BiasGrid_) {
     BiasGrid_->setMidline(true);
   }
-  std::vector<double> buffer;
-  bool more=true;
-  while(more) {
-    unsigned nread=0;
-    if(reader) {
-      buffer.clear();
-      int failed=0;
-      std::string message;
-      std::exception_ptr exception;
-      try {
-        double time;
-        while(nread<chunksize && (more=scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time))) {
-          buffer.push_back(time);
-          buffer.push_back(multivariate ? 1.0 : 0.0);
-          buffer.push_back(height);
-          buffer.insert(buffer.end(),center.begin(),center.end());
-          buffer.insert(buffer.end(),sigma.begin(),sigma.end());
-          buffer.resize(buffer.size()+nsigmamax-sigma.size(),0.0);
-          nread++;
-        }
-      } catch(const std::exception& e) {
-        failed=1;
-        message=e.what();
-        exception=std::current_exception();
-      }
-      if(parallel) {
-        // the other processes must know if reading failed, so that all of them stop
-        comm.Bcast(failed,0);
-        if(failed) {
-          bcastString(comm,message);
-          // all the processes throw the same exception: its message can be written on the log,
-          // which requires the same output on all the processes
-          throw ExceptionError(message);
+  const std::string path=hillsfiles_->getPath(i);
+  const int nhills=hillsfiles_->read(i,[&](double time,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+    if(lasttime) {
+      *lasttime=time;
+    }
+    if(lasttime && diffrestart_.pending) {
+      // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
+      if(!multivariate) {
+        // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
+        diffrestart_.time.clear();
+        diffrestart_.center.clear();
+        diffrestart_.sigma.clear();
+      } else {
+        diffrestart_.time.push_back(time);
+        diffrestart_.center.push_back(center);
+        diffrestart_.sigma.push_back(sigma);
+        if(diffrestart_.time.size()>diffrestart_.maxhills) {
+          diffrestart_.time.pop_front();
+          diffrestart_.center.pop_front();
+          diffrestart_.sigma.pop_front();
         }
       }
-      if(failed) {
-        std::rethrow_exception(exception);
-      }
-    } else {
-      int failed=0;
-      comm.Bcast(failed,0);
-      if(failed) {
-        std::string message;
-        bcastString(comm,message);
-        throw ExceptionError(message);
-      }
+      diffrestart_.file=path;
     }
-    // the warning about Gaussian kernels is written on the log after reading, by all the processes
-    // (the log requires the same output on all the processes)
-    int gaussiankernels=gaussianKernelsFound_;
-    if(parallel) {
-      int imore=more;
-      comm.Bcast(nread,0);
-      comm.Bcast(imore,0);
-      comm.Bcast(gaussiankernels,0);
-      more=imore;
-      buffer.resize(nread*recordsize);
-      if(nread>0) {
-        comm.Bcast(buffer,0);
-      }
+    if(!addtobias) {
+      return;
     }
-    if(gaussiankernels) {
-      noStretchWarning();
+    // note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0) {
+      height*=(biasf_-1.0)/biasf_;
     }
-    for(unsigned h=0; h<nread; h++) {
-      const double* record=&buffer[h*recordsize];
-      const double time=record[0];
-      multivariate=(record[1]!=0.0);
-      height=record[2];
-      center.assign(record+3,record+3+ncv);
-      sigma.assign(record+3+ncv,record+3+ncv+(multivariate ? nsigmamax : ncv));
-      nhills++;
-      if(lasttime) {
-        *lasttime=time;
-      }
-      if(lasttime && diffrestart_.pending) {
-        // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
-        if(!multivariate) {
-          // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
-          diffrestart_.time.clear();
-          diffrestart_.center.clear();
-          diffrestart_.sigma.clear();
-        } else {
-          diffrestart_.time.push_back(time);
-          diffrestart_.center.push_back(center);
-          diffrestart_.sigma.push_back(sigma);
-          if(diffrestart_.time.size()>diffrestart_.maxhills) {
-            diffrestart_.time.pop_front();
-            diffrestart_.center.pop_front();
-            diffrestart_.sigma.pop_front();
-          }
-        }
-        diffrestart_.file=ifile->getPath();
-      }
-      if(!addtobias) {
-        continue;
-      }
-      // note that for gamma=1 we store directly -F
-      if(welltemp_ && biasf_>1.0) {
-        height*=(biasf_-1.0)/biasf_;
-      }
-      addGaussian(Gaussian(multivariate,height,center,sigma));
-    }
-  }
+    addGaussian(Gaussian(multivariate,height,center,sigma));
+  });
   if(BiasGrid_) {
     BiasGrid_->setMidline(false);
   }
@@ -2268,58 +2137,12 @@ int MetaD::readGaussians(IFile *ifile, double* lasttime, bool addtobias) {
 }
 
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file) {
-  unsigned ncv=getNumberOfArguments();
-  file.printField("time",getTimeStep()*getStep());
-  for(unsigned i=0; i<ncv; ++i) {
-    file.printField(getPntrToArgument(i),hill.center[i]);
-  }
-  file.printField("kerneltype","stretched-gaussian");
-  if(hill.multivariate) {
-    file.printField("multivariate","true");
-    Matrix<double> mymatrix(ncv,ncv);
-    unsigned k=0;
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) {
-        // recompose the full inverse matrix
-        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k];
-        k++;
-      }
-    }
-    // invert it
-    Matrix<double> invmatrix(ncv,ncv);
-    Invert(mymatrix,invmatrix);
-    // enforce symmetry
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) {
-        invmatrix(i,j)=invmatrix(j,i);
-      }
-    }
-
-    // do cholesky so to have a "sigma like" number
-    Matrix<double> lower(ncv,ncv);
-    cholesky(invmatrix,lower);
-    // loop in band form
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=0; j<ncv-i; j++) {
-        file.printField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
-      }
-    }
-  } else {
-    file.printField("multivariate","false");
-    for(unsigned i=0; i<ncv; ++i) {
-      file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
-    }
-  }
   double height=hill.height;
   // note that for gamma=1 we store directly -F
   if(welltemp_ && biasf_>1.0) {
     height*=biasf_/(biasf_-1.0);
   }
-  file.printField("height",height).printField("biasf",biasf_);
-  if(mw_.n>1) {
-    file.printField("clock",int(std::time(0)));
-  }
-  file.printField();
+  hillsfiles_->write(file,getTimeStep()*getStep(),hill,height,biasf_,mw_.n>1);
 }
 
 void MetaD::addGaussian(const Gaussian& hill) {
@@ -2476,10 +2299,7 @@ void MetaD::temperHeight(double& height, const TemperingSpecs& t_specs, const do
 
 void MetaD::calculate() {
 
-  if(!runStarted_) {
-    runStarted_=true;
-    runStartStep_=getStep();
-  }
+  schedule_.start(getStep());
 
   const unsigned ncv=getNumberOfArguments();
   std::vector<double> cv(ncv);
@@ -2531,11 +2351,11 @@ void MetaD::calculate() {
     getPntrToComponent("rbias")->set(ene - reweight_factor_);
   }
   // calculate the acceleration factor
-  if(acceleration_&&!isRunFirstStep()&&!getExchangeStep()) {
+  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (acceleration_ && isRunFirstStep() && acc_restart_mean_ > 0.0) {
+  } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0) {
     acc_ = acc_restart_mean_ * static_cast<double>(getStep());
     if(fa_.enabled) {
       // has to be done here if restarting, as the acc is not defined before
@@ -2544,28 +2364,8 @@ void MetaD::calculate() {
   }
 }
 
-bool MetaD::isRunFirstStep() const {
-  // checkNeedsGradients is called before the first calculate() of the run
-  return !runStarted_ || getStep()==runStartStep_;
-}
-
 bool MetaD::isHillStep() const {
-  if(getStep()%current_stride_!=0) {
-    return false;
-  }
-  if(isRunFirstStep()) {
-    // At step 0 no hill is added (also when the bias of a previous simulation is read with RESTART).
-    // When continuing a simulation, the hill is not added only if the hills file already contains it,
-    // i.e. if the previous run already performed this step (some MD codes compute again
-    // the last step of the previous run when restarting, others do not).
-    if(getStep()==0 || !restartLastHillTimeKnown_) {
-      return false;
-    }
-    // times are written with a finite precision (FMT), so that a hill within half a PACE is considered
-    // to be the hill of this step; a later hill means that the previous run went beyond this step
-    return restartLastHillTime_<getTime()-0.5*stride_*getTimeStep();
-  }
-  return true;
+  return schedule_.isHillStep(getStep(),current_stride_,getTime(),0.5*stride_*getTimeStep());
 }
 
 void MetaD::beforeUpdate() {
@@ -2878,31 +2678,17 @@ void MetaD::readOtherWalkersHills() {
     if(i==mw_.id) {
       continue;
     }
-    // The files are opened and read by the first process only (see readGaussians), which also takes the
-    // decisions: the other processes could see the files at a slightly different time.
-    int isopen=ifiles_[i]->isOpen();
-    if(comm.Get_size()>1) {
-      comm.Bcast(isopen,0);
-    }
     // if the file is not open yet
-    if(!isopen) {
+    if(!hillsfiles_->isOpen(i)) {
       // check if it exists now and open it!
-      int exists=0;
-      if(comm.Get_rank()==0) {
-        exists=ifiles_[i]->FileExist(ifilesnames_[i]);
-      }
-      if(comm.Get_size()>1) {
-        comm.Bcast(exists,0);
-      }
-      if(exists && comm.Get_rank()==0) {
-        ifiles_[i]->open(ifilesnames_[i]);
-        ifiles_[i]->reset(false);
+      if(hillsfiles_->openIfExists(i)) {
+        hillsfiles_->reset(i);
       }
       // otherwise read the new Gaussians
     } else {
-      log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
-      readGaussians(ifiles_[i].get());
-      ifiles_[i]->reset(false);
+      log.printf("  Reading hills from %s:",hillsfiles_->getInputName(i).c_str());
+      readGaussians(i);
+      hillsfiles_->reset(i);
     }
   }
   // this is to update the hills neighbor list
@@ -2923,95 +2709,6 @@ void MetaD::updateBiasQuantities(bool nowAddAHill) {
   if (calc_transition_bias_ && bias_has_changed) {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
-  }
-}
-
-/// takes a pointer to the file and a template std::string with values v and gives back the next center, sigma and height
-bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height, bool& multivariate, double& time) {
-  double dummy;
-  multivariate=false;
-  if(ifile->scanField("time",time)) {
-    unsigned ncv=tmpvalues.size();
-    for(unsigned i=0; i<ncv; ++i) {
-      ifile->scanField( &tmpvalues[i] );
-      if( tmpvalues[i].isPeriodic() && ! getPntrToArgument(i)->isPeriodic() ) {
-        error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
-      } else if( tmpvalues[i].isPeriodic() ) {
-        std::string imin, imax;
-        tmpvalues[i].getDomain( imin, imax );
-        std::string rmin, rmax;
-        getPntrToArgument(i)->getDomain( rmin, rmax );
-        if( imin!=rmin || imax!=rmax ) {
-          error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
-        }
-      }
-      center[i]=tmpvalues[i].get();
-    }
-    // scan for kerneltype
-    std::string ktype="stretched-gaussian";
-    if( ifile->FieldExist("kerneltype") ) {
-      ifile->scanField("kerneltype",ktype);
-    }
-    if( ktype=="gaussian" ) {
-      // the warning is written by readGaussians
-      gaussianKernelsFound_=true;
-    } else if( ktype!="stretched-gaussian") {
-      error("non Gaussian kernels are not supported in MetaD");
-    }
-    // scan for multivariate label: record the actual file position so to eventually rewind
-    std::string sss;
-    ifile->scanField("multivariate",sss);
-    if(sss=="true") {
-      multivariate=true;
-    } else if(sss=="false") {
-      multivariate=false;
-    } else {
-      plumed_merror("cannot parse multivariate = "+ sss);
-    }
-    if(multivariate) {
-      sigma.resize(ncv*(ncv+1)/2);
-      Matrix<double> upper(ncv,ncv);
-      Matrix<double> lower(ncv,ncv);
-      for(unsigned i=0; i<ncv; i++) {
-        for(unsigned j=0; j<ncv-i; j++) {
-          ifile->scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
-          upper(j,j+i)=lower(j+i,j);
-        }
-      }
-      Matrix<double> mymult(ncv,ncv);
-      Matrix<double> invmatrix(ncv,ncv);
-      mult(lower,upper,mymult);
-      // now invert and get the sigmas
-      Invert(mymult,invmatrix);
-      // put the sigmas in the usual order: upper diagonal (this time in normal form and not in band form)
-      unsigned k=0;
-      for(unsigned i=0; i<ncv; i++) {
-        for(unsigned j=i; j<ncv; j++) {
-          sigma[k]=invmatrix(i,j);
-          k++;
-        }
-      }
-    } else {
-      for(unsigned i=0; i<ncv; ++i) {
-        ifile->scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-      }
-    }
-
-    ifile->scanField("height",height);
-    ifile->scanField("biasf",dummy);
-    if(ifile->FieldExist("clock")) {
-      ifile->scanField("clock",dummy);
-    }
-    if(ifile->FieldExist("lower_int")) {
-      ifile->scanField("lower_int",dummy);
-    }
-    if(ifile->FieldExist("upper_int")) {
-      ifile->scanField("upper_int",dummy);
-    }
-    ifile->scanField();
-    return true;
-  } else {
-    return false;
   }
 }
 

@@ -20,9 +20,16 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetaDHills.h"
-#include "tools/Communicator.h"
+#include "core/ActionWithValue.h"
+#include "core/Value.h"
+#include "tools/Exception.h"
+#include "tools/File.h"
+#include "tools/Matrix.h"
+#include "tools/Tools.h"
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <system_error>
@@ -94,6 +101,308 @@ std::string removeIncompleteLastLine(const std::string& path) {
     message+="  WARNING: the incomplete last line of "+path+" could not be removed ("+ec.message()+")\n";
   }
   return message;
+}
+
+
+MetaDHillsFiles::MetaDHillsFiles(ActionWithValue& action, Communicator& comm, const std::vector<Value*>& args):
+  action_(action),
+  comm_(comm),
+  args_(args) {
+}
+
+MetaDHillsFiles::~MetaDHillsFiles() {
+}
+
+unsigned MetaDHillsFiles::addInput(const std::string& name) {
+  ifiles_.emplace_back(Tools::make_unique<IFile>());
+  ifilesnames_.push_back(name);
+  IFile* ifile=ifiles_.back().get();
+  ifile->link(action_);
+  // the file operations must not synchronize the processes, as with comm they would do
+  ifile->link(selfcomm_);
+  const unsigned i=ifiles_.size()-1;
+  openIfExists(i);
+  return i;
+}
+
+bool MetaDHillsFiles::isOpen(unsigned i) {
+  int isopen=ifiles_[i]->isOpen();
+  if(comm_.Get_size()>1) {
+    comm_.Bcast(isopen,0);
+  }
+  return isopen;
+}
+
+std::string MetaDHillsFiles::getPath(unsigned i) const {
+  return ifiles_[i]->isOpen() ? ifiles_[i]->getPath() : std::string();
+}
+
+bool MetaDHillsFiles::openIfExists(unsigned i) {
+  int exists=0;
+  if(comm_.Get_rank()==0) {
+    exists=ifiles_[i]->FileExist(ifilesnames_[i]);
+  }
+  if(comm_.Get_size()>1) {
+    comm_.Bcast(exists,0);
+  }
+  if(exists && comm_.Get_rank()==0) {
+    ifiles_[i]->open(ifilesnames_[i]);
+  }
+  return exists;
+}
+
+void MetaDHillsFiles::reset(unsigned i) {
+  ifiles_[i]->reset(false);
+}
+
+void MetaDHillsFiles::close(unsigned i) {
+  ifiles_[i]->close();
+}
+
+void MetaDHillsFiles::noStretchWarning() {
+  if(!noStretchWarningDone_) {
+    action_.log<<"\nWARNING: you are using a HILLS file with Gaussian kernels, PLUMED 2.8 uses stretched Gaussians by default\n";
+  }
+  noStretchWarningDone_=true;
+}
+
+unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
+  IFile* ifile=ifiles_[i].get();
+  const unsigned ncv=args_.size();
+  std::vector<double> center(ncv);
+  std::vector<double> sigma(ncv);
+  double height;
+  unsigned nhills=0;
+  bool multivariate=false;
+
+  std::vector<Value> tmpvalues;
+  for(unsigned j=0; j<ncv; ++j) {
+    tmpvalues.push_back( Value( &action_, args_[j]->getName(), false ) );
+  }
+
+  // The hills are read and broadcast in chunks; each one is stored as
+  // time, multivariate, height, center (ncv), sigma (ncv or ncv*(ncv+1)/2).
+  const unsigned nsigmamax=ncv*(ncv+1)/2;
+  const unsigned recordsize=3+ncv+nsigmamax;
+  const unsigned chunksize=4096;
+  const bool parallel=(comm_.Get_size()>1);
+  const bool reader=(comm_.Get_rank()==0);
+  std::vector<double> buffer;
+  bool more=true;
+  while(more) {
+    unsigned nread=0;
+    if(reader) {
+      buffer.clear();
+      int failed=0;
+      std::string message;
+      std::exception_ptr exception;
+      try {
+        double time;
+        while(nread<chunksize && (more=scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time))) {
+          buffer.push_back(time);
+          buffer.push_back(multivariate ? 1.0 : 0.0);
+          buffer.push_back(height);
+          buffer.insert(buffer.end(),center.begin(),center.end());
+          buffer.insert(buffer.end(),sigma.begin(),sigma.end());
+          buffer.resize(buffer.size()+nsigmamax-sigma.size(),0.0);
+          nread++;
+        }
+      } catch(const std::exception& e) {
+        failed=1;
+        message=e.what();
+        exception=std::current_exception();
+      }
+      if(parallel) {
+        // the other processes must know if reading failed, so that all of them stop
+        comm_.Bcast(failed,0);
+        if(failed) {
+          bcastString(comm_,message);
+          // all the processes throw the same exception: its message can be written on the log,
+          // which requires the same output on all the processes
+          throw ExceptionError(message);
+        }
+      }
+      if(failed) {
+        std::rethrow_exception(exception);
+      }
+    } else {
+      int failed=0;
+      comm_.Bcast(failed,0);
+      if(failed) {
+        std::string message;
+        bcastString(comm_,message);
+        throw ExceptionError(message);
+      }
+    }
+    // the warning about Gaussian kernels is written on the log after reading, by all the processes
+    // (the log requires the same output on all the processes)
+    int gaussiankernels=gaussianKernelsFound_;
+    if(parallel) {
+      int imore=more;
+      comm_.Bcast(nread,0);
+      comm_.Bcast(imore,0);
+      comm_.Bcast(gaussiankernels,0);
+      more=imore;
+      buffer.resize(nread*recordsize);
+      if(nread>0) {
+        comm_.Bcast(buffer,0);
+      }
+    }
+    if(gaussiankernels) {
+      noStretchWarning();
+    }
+    for(unsigned h=0; h<nread; h++) {
+      const double* record=&buffer[h*recordsize];
+      const double time=record[0];
+      multivariate=(record[1]!=0.0);
+      height=record[2];
+      center.assign(record+3,record+3+ncv);
+      sigma.assign(record+3+ncv,record+3+ncv+(multivariate ? nsigmamax : ncv));
+      nhills++;
+      f(time,multivariate,height,center,sigma);
+    }
+  }
+  return nhills;
+}
+
+/// takes a pointer to the file and a template std::string with values v and gives back the next center, sigma and height
+bool MetaDHillsFiles::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma,
+                                  double& height, bool& multivariate, double& time) {
+  double dummy;
+  multivariate=false;
+  if(ifile->scanField("time",time)) {
+    unsigned ncv=tmpvalues.size();
+    for(unsigned i=0; i<ncv; ++i) {
+      ifile->scanField( &tmpvalues[i] );
+      if( tmpvalues[i].isPeriodic() && ! args_[i]->isPeriodic() ) {
+        action_.error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+      } else if( tmpvalues[i].isPeriodic() ) {
+        std::string imin, imax;
+        tmpvalues[i].getDomain( imin, imax );
+        std::string rmin, rmax;
+        args_[i]->getDomain( rmin, rmax );
+        if( imin!=rmin || imax!=rmax ) {
+          action_.error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+        }
+      }
+      center[i]=tmpvalues[i].get();
+    }
+    // scan for kerneltype
+    std::string ktype="stretched-gaussian";
+    if( ifile->FieldExist("kerneltype") ) {
+      ifile->scanField("kerneltype",ktype);
+    }
+    if( ktype=="gaussian" ) {
+      // the warning is written by read
+      gaussianKernelsFound_=true;
+    } else if( ktype!="stretched-gaussian") {
+      action_.error("non Gaussian kernels are not supported in MetaD");
+    }
+    // scan for multivariate label: record the actual file position so to eventually rewind
+    std::string sss;
+    ifile->scanField("multivariate",sss);
+    if(sss=="true") {
+      multivariate=true;
+    } else if(sss=="false") {
+      multivariate=false;
+    } else {
+      plumed_merror("cannot parse multivariate = "+ sss);
+    }
+    if(multivariate) {
+      sigma.resize(ncv*(ncv+1)/2);
+      Matrix<double> upper(ncv,ncv);
+      Matrix<double> lower(ncv,ncv);
+      for(unsigned i=0; i<ncv; i++) {
+        for(unsigned j=0; j<ncv-i; j++) {
+          ifile->scanField("sigma_"+args_[j+i]->getName()+"_"+args_[j]->getName(),lower(j+i,j));
+          upper(j,j+i)=lower(j+i,j);
+        }
+      }
+      Matrix<double> mymult(ncv,ncv);
+      Matrix<double> invmatrix(ncv,ncv);
+      mult(lower,upper,mymult);
+      // now invert and get the sigmas
+      Invert(mymult,invmatrix);
+      // put the sigmas in the usual order: upper diagonal (this time in normal form and not in band form)
+      unsigned k=0;
+      for(unsigned i=0; i<ncv; i++) {
+        for(unsigned j=i; j<ncv; j++) {
+          sigma[k]=invmatrix(i,j);
+          k++;
+        }
+      }
+    } else {
+      for(unsigned i=0; i<ncv; ++i) {
+        ifile->scanField("sigma_"+args_[i]->getName(),sigma[i]);
+      }
+    }
+
+    ifile->scanField("height",height);
+    ifile->scanField("biasf",dummy);
+    if(ifile->FieldExist("clock")) {
+      ifile->scanField("clock",dummy);
+    }
+    if(ifile->FieldExist("lower_int")) {
+      ifile->scanField("lower_int",dummy);
+    }
+    if(ifile->FieldExist("upper_int")) {
+      ifile->scanField("upper_int",dummy);
+    }
+    ifile->scanField();
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void MetaDHillsFiles::write(OFile& file, double time, const MetaDGaussian& hill, double height, double biasf, bool clock) const {
+  const unsigned ncv=args_.size();
+  file.printField("time",time);
+  for(unsigned i=0; i<ncv; ++i) {
+    file.printField(args_[i],hill.center[i]);
+  }
+  file.printField("kerneltype","stretched-gaussian");
+  if(hill.multivariate) {
+    file.printField("multivariate","true");
+    Matrix<double> mymatrix(ncv,ncv);
+    unsigned k=0;
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=i; j<ncv; j++) {
+        // recompose the full inverse matrix
+        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k];
+        k++;
+      }
+    }
+    // invert it
+    Matrix<double> invmatrix(ncv,ncv);
+    Invert(mymatrix,invmatrix);
+    // enforce symmetry
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=i; j<ncv; j++) {
+        invmatrix(i,j)=invmatrix(j,i);
+      }
+    }
+
+    // do cholesky so to have a "sigma like" number
+    Matrix<double> lower(ncv,ncv);
+    cholesky(invmatrix,lower);
+    // loop in band form
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=0; j<ncv-i; j++) {
+        file.printField("sigma_"+args_[j+i]->getName()+"_"+args_[j]->getName(),lower(j+i,j));
+      }
+    }
+  } else {
+    file.printField("multivariate","false");
+    for(unsigned i=0; i<ncv; ++i) {
+      file.printField("sigma_"+args_[i]->getName(),hill.sigma[i]);
+    }
+  }
+  file.printField("height",height).printField("biasf",biasf);
+  if(clock) {
+    file.printField("clock",int(std::time(0)));
+  }
+  file.printField();
 }
 
 }
