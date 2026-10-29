@@ -271,8 +271,8 @@ private:
   double biasf_=1.0;
   // output files format
   std::string fmt_;
-  // first step?
-  bool isFirstStep_=true;
+  /// the steps when hills are added (the first step of the run, the last hill read when restarting)
+  MetaDHillSchedule schedule_;
   // Gaussian starting parameters
   double height0_=std::numeric_limits<double>::max();
   std::vector<double> sigma0_;
@@ -298,14 +298,26 @@ private:
   bool walkers_mpi_=false;
   unsigned mpi_nw_=0;
   unsigned mpi_id_=0;
+  /// ADAPTIVE=DIFF and replica exchange: an exchange has been attempted at the last step, with the CVs of
+  /// the partner (partner_cv) and the CVs at the previous update (last_cv)
+  struct {
+    bool attempted=false;
+    std::vector<double> partner_cv;
+    std::vector<double> last_cv;
+  } exchange_;
   // variable for selector
   std::string selector_;
   bool  do_select_=false;
   unsigned select_value_=0;
   unsigned current_value_=0;
 
-  /// read the hills in input file i of family f and add them to the bias; returns their number
-  unsigned readGaussians(unsigned f, unsigned i);
+  /// read the hills in input file i of family f and add them to the bias; returns their number and
+  /// (if lasttime is given and at least one hill is read) sets lasttime to the time of the last hill
+  unsigned readGaussians(unsigned f, unsigned i, double* lasttime=nullptr);
+  /// update the adaptive hill widths; with ADAPTIVE=DIFF also handle replica exchanges
+  void   updateFlexibleBins(bool nowAddAHill);
+  /// true if a hill has to be added at the current step
+  bool   isHillStep() const;
   void   writeGaussian(unsigned f, const Gaussian&);
   void   addGaussian(unsigned f, const Gaussian&);
   /// the bias of each argument, and its derivative if der is given
@@ -518,6 +530,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     }
     welltemp_=true;
+  }
+  // the biases of the families are combined, and the heights of the hills are computed, with kBT
+  if(kbt_==0.0) {
+    error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
   }
   double tau=0.0;
   parse("TAU",tau);
@@ -812,6 +828,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // open all files at the beginning and read Gaussians if restarting
   std::vector<std::string> ownpath(pf_n);  // actual path of the hills files of this walker, if they were read
+  bool lastHillTimeKnown=false;  // time of the last hill in the hills files of this walker, if they were read
+  double lastHillTime=0.0;
   for(unsigned f=0; f<pf_n; ++f) {
     families_[f].hillsfiles=Tools::make_unique<MetaDHillsFiles>(*this,comm,std::vector<Value*>(1,pfhold[f]));
   }
@@ -843,9 +861,17 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(hillsfiles.isOpen(k)) {
         if(getRestart()&&!restartedFromGrid) {
           log.printf("  Restarting from %s:",hillsfiles.getInputName(k).c_str());
-          readGaussians(f,k);
           if(j==mw_id_) {
+            // the hills of all the families are written at the same time: the last one decides whether
+            // a hill is added at the first step
+            double lasttime=0.0;
+            if(readGaussians(f,k,&lasttime)>0 && !(lastHillTimeKnown && lasttime<=lastHillTime)) {
+              lastHillTimeKnown=true;
+              lastHillTime=lasttime;
+            }
             ownpath[f]=hillsfiles.getPath(k);
+          } else {
+            readGaussians(f,k);
           }
         }
         if(getRestart() && restartedFromGrid && j==mw_id_) {
@@ -864,6 +890,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
       }
     }
+  }
+
+  if(lastHillTimeKnown) {
+    schedule_.setLastHillTime(lastHillTime);
   }
 
   comm.Barrier();
@@ -960,13 +990,16 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   log<<"\n";
 }
 
-unsigned PBMetaD::readGaussians(unsigned f, unsigned i) {
+unsigned PBMetaD::readGaussians(unsigned f, unsigned i, double* lasttime) {
   Family& family=families_[f];
   // the callers have started a line of the log
   if(family.grid) {
     family.grid->setMidline(true);
   }
-  const unsigned nhills=family.hillsfiles->read(i,[&](double,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+  const unsigned nhills=family.hillsfiles->read(i,[&](double time,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+    if(lasttime) {
+      *lasttime=time;
+    }
     if(welltemp_) {
       height*=(biasf_-1.0)/biasf_;
     }
@@ -1053,16 +1086,20 @@ void PBMetaD::getBiases(const std::vector<double>& cv, std::vector<double>& bias
 }
 
 void PBMetaD::calculate() {
-  // this is because presently there is no way to properly pass information
-  // on adaptive hills (diff) after exchanges:
-  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
-    error("ADAPTIVE=DIFF is not compatible with replica exchange");
-  }
+  schedule_.start(getStep());
 
   const unsigned nargs=getNumberOfArguments();
   std::vector<double> cv(nargs);
   for(unsigned i=0; i<nargs; ++i) {
     cv[i]=getArgument(i);
+  }
+
+  // during a replica exchange attempt the bias is computed on the coordinates of the partner.
+  // The MD code does not tell whether the exchange is accepted: with ADAPTIVE=DIFF this is
+  // detected at the next update, comparing the CVs with those of the partner (see updateFlexibleBins)
+  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
+    exchange_.attempted=true;
+    exchange_.partner_cv=cv;
   }
   std::vector<double> bias;
   std::vector<double> deriv;
@@ -1103,26 +1140,65 @@ void PBMetaD::calculate() {
   setBias(ene);
 }
 
-void PBMetaD::update() {
-  bool multivariate;
-  // adding hills criteria
-  bool nowAddAHill;
-  if(getStep()%stride_==0 && !isFirstStep_) {
-    nowAddAHill=true;
-  } else {
-    nowAddAHill=false;
-    isFirstStep_=false;
+bool PBMetaD::isHillStep() const {
+  return schedule_.isHillStep(getStep(),stride_,getTime(),0.5*stride_*getTimeStep());
+}
+
+void PBMetaD::updateFlexibleBins(bool nowAddAHill) {
+  const unsigned nargs=getNumberOfArguments();
+  if(adaptive_==FlexibleBin::diffusion) {
+    std::vector<double> cv(nargs);
+    for(unsigned i=0; i<nargs; ++i) {
+      cv[i]=getArgument(i);
+    }
+    if(exchange_.attempted && exchange_.last_cv.size()==nargs) {
+      // the exchange has been accepted if the CVs are now closer to those of the partner than
+      // to their own value at the previous update (distances in units of the current fluctuations)
+      double dpartner=0.0;
+      double down=0.0;
+      for(unsigned i=0; i<nargs; i++) {
+        const std::vector<double> var=flexbin_[i].getMatrix();
+        const double s2=(var.size()>0 && var[0]>0.0 ? var[0] : 1.0);
+        const double dp=difference(i,exchange_.partner_cv[i],cv[i]);
+        const double dl=difference(i,exchange_.last_cv[i],cv[i]);
+        dpartner+=dp*dp/s2;
+        down+=dl*dl/s2;
+      }
+      if(dpartner<down) {
+        // the CVs jumped: restart the running averages, but keep the variances
+        for(auto & fb : flexbin_) {
+          fb.restartAverage();
+        }
+      }
+    }
+    exchange_.attempted=false;
+    exchange_.last_cv=cv;
   }
+  for(unsigned i=0; i<nargs; i++) {
+    flexbin_[i].update(nowAddAHill,i);
+  }
+}
+
+void PBMetaD::update() {
+  // adding hills criteria
+  bool nowAddAHill=isHillStep();
 
   const unsigned nargs=getNumberOfArguments();
   // if you use adaptive, call the FlexibleBin
+  bool multivariate=false;
   if(adaptive_!=FlexibleBin::none) {
-    for(unsigned i=0; i<nargs; i++) {
-      flexbin_[i].update(nowAddAHill,i);
-    }
+    updateFlexibleBins(nowAddAHill);
     multivariate=true;
-  } else {
-    multivariate=false;
+  }
+
+  // with ADAPTIVE=DIFF the width of a hill requires the fluctuations of at least two CV values
+  // (this happens at the first update, e.g. after UPDATE_FROM or when restarting)
+  if(nowAddAHill && adaptive_==FlexibleBin::diffusion) {
+    for(const auto & fb : flexbin_) {
+      if(fb.getNumberOfSamples()<2) {
+        nowAddAHill=false;
+      }
+    }
   }
 
   if(nowAddAHill && (!do_select_ || select_value_==current_value_)) {
@@ -1207,6 +1283,14 @@ void PBMetaD::update() {
     }
   }
 
+  // with multiple walkers the hills must reach the files before the other walkers read them
+  // (this should be outside of the if block in case WALKERS_RSTRIDE is not a multiple of PACE)
+  if(mw_n_>1 && getStep()%mw_rstride_==0) {
+    for(auto & family : families_) {
+      family.hillsOfile->flush();
+    }
+  }
+
   // write grid files
   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
     int r = 0;
@@ -1252,15 +1336,7 @@ void PBMetaD::update() {
 }
 
 bool PBMetaD::checkNeedsGradients()const {
-  if(adaptive_==FlexibleBin::geometry) {
-    if(getStep()%stride_==0 && !isFirstStep_) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
+  return adaptive_==FlexibleBin::geometry && isHillStep();
 }
 
 }

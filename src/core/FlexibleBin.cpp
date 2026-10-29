@@ -196,18 +196,22 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
     // THE AVERAGE VALUE
     delta.resize(1);
     cv.push_back(paction->getArgument(iarg));
+    bool restarted;
+    restarted=false;
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(1);
       average[0]=cv[0];
+      restarted=(variance.size()>0); // after restartAverage() the variance is kept as it is
     } else { // accumulate
       delta[0]=paction->difference(iarg,average[0],cv[0]);
       average[0]+=decay*delta[0];
       average[0]=paction->bringBackInPbc(iarg,average[0]); // equation 8 of "Metadynamics with adaptive Gaussians"
     }
+    nsamples++;
     // THE VARIANCE
     if(variance.size()==0) {
       variance.resize(1,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
-    } else {
+    } else if(!restarted) {
       variance[0]+=decay*(delta[0]*delta[0]-variance[0]);
     }
     break;
