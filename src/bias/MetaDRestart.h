@@ -23,14 +23,20 @@
 #define __PLUMED_bias_MetaDRestart_h
 
 #include <string>
+#include <vector>
 
 namespace PLMD {
 
 class Action;
 class Keywords;
 class OFile;
+class Value;
 
 namespace bias {
+
+class MetaDBiasGrid;
+class MetaDHillSchedule;
+class MetaDHillsFiles;
 
 /// The multiple walkers of METAD and PBMETAD: they share their hills through the hills files (WALKERS_N), each
 /// walker reading the files of the others every WALKERS_RSTRIDE steps, or through MPI (WALKERS_MPI), the walkers
@@ -78,6 +84,42 @@ struct MetaDWalkers {
   /// and the walkers that do not write them write on /dev/null
   void openOutput(Action& action, OFile& file, const std::string& name) const;
 };
+
+/// Read the bias from a grid file (METAD: GRID_RFILE, PBMETAD: one of GRID_RFILES), on the lattice of the grid given
+/// in input (see MetaDBiasGrid::read). With WALKERS_MPI, a relative path is in the directory of the first replica, so
+/// that all the walkers read the same file. Returns the numbers of hills of the other walkers in the grid (WALKERS_N,
+/// see MetaDHillsFiles::getGridComment), or an empty vector.
+std::vector<long long> readBiasGrid(Action& action, const MetaDWalkers& walkers, MetaDBiasGrid& grid, const std::string& filename,
+                                    const std::string& funcl, const std::vector<Value*>& args, const std::vector<std::string>& gmin,
+                                    const std::vector<std::string>& gmax, const std::vector<unsigned>& gbin, bool sparse, bool spline,
+                                    bool nobounds);
+
+/// The hills files of a bias when the action starts (METAD: one, PBMETAD: one for each family)
+struct MetaDHillsInput {
+  /// the hills files, with the bias to which their hills are added (see MetaDHillsFiles::setBias)
+  MetaDHillsFiles* files=nullptr;
+  /// the name of the hills file (FILE)
+  std::string name;
+  /// the numbers of hills of the other walkers in the grid read from file (see readBiasGrid)
+  std::vector<long long> gridWalkerHills;
+};
+
+/// Open the hills files of all the walkers when the action starts, and read them:
+/// - with RESTART, the hills of all the files are added to the bias (a missing file is an error);
+/// - with RESTART and the bias read from grid files, the hills files of this walker are scanned, for the time of the
+///   last hill and for the statistics of ADAPTIVE=DIFF, and the hills of the other walkers that are not in the grids
+///   are added (WALKERS_N: their numbers are in the grid files; for older grid files, those up to the last hill of
+///   this walker are assumed to be in the grids).
+/// The time of the last hill of the files of this walker is given to schedule (with WALKERS_MPI, the same for all the
+/// walkers). Then the incomplete last line of these files (an interrupted run) is removed, and they are closed, to be
+/// written. With WALKERS_MPI and no WALKERS_DIR, the files with a relative path are in the directory of the first
+/// replica (walkers.dir is set). To be called by all the processes of all the replicas.
+void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<MetaDHillsInput>& inputs, bool restartedFromGrid,
+                      MetaDHillSchedule& schedule);
+
+/// WALKERS_N: add the hills that the other walkers have written in their files since the last read
+/// (the files that did not exist yet are opened, if they exist now)
+void readOtherWalkersHills(Action& action, const MetaDWalkers& walkers, const std::vector<MetaDHillsFiles*>& files);
 
 }
 }

@@ -32,6 +32,7 @@ namespace PLMD {
 
 class Action;
 class IFile;
+class OFile;
 class Value;
 
 namespace bias {
@@ -95,6 +96,10 @@ public:
   double getBias(const std::vector<double>& cv) const;
   /// the bias and its derivatives
   double getBiasAndDerivatives(const std::vector<double>& cv, std::vector<double>& der) const;
+  /// write the grid on file, replacing what was written before (and flushing it, otherwise a single grid could stay
+  /// in the buffer), or appending it (STORE_GRIDS: the header is repeated, the flushing is left to FLUSH);
+  /// comment is written after the grid
+  void write(OFile& file, bool append, const std::string& comment) const;
   /// a line of the log has been started and is not complete (e.g. while reading hills)
   void setMidline(bool midline) {
     midline_=midline;

@@ -20,10 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetaDHills.h"
+#include "MetaDGrid.h"
 #include "core/ActionWithValue.h"
 #include "core/Value.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
+#include "tools/Log.h"
 #include "tools/Matrix.h"
 #include "tools/Tools.h"
 #include <cstdio>
@@ -163,6 +165,52 @@ bool MetaDHillsFiles::openIfExists(unsigned i) {
     ifiles_[i]->open(ifilesnames_[i]);
   }
   return exists;
+}
+
+unsigned MetaDHillsFiles::readHills(unsigned i, double* lasttime, bool addtobias, double skipupto, unsigned long long skipcount) {
+  Log& log=action_.log;
+  // the callers have started a line of the log
+  if(bias_.grid) {
+    bias_.grid->setMidline(true);
+  }
+  const std::string path=getPath(i);
+  unsigned long long nskipped=0;
+  unsigned nhills=0;
+  try {
+    nhills=read(i,[&](double time,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+      if(lasttime) {
+        *lasttime=time;
+      }
+      if(lasttime && bias_.diffrestart && bias_.diffrestart->pending) {
+        // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
+        bias_.diffrestart->add(path,time,multivariate,center,sigma);
+      }
+      if(!addtobias) {
+        return;
+      }
+      if(nskipped<skipcount || time<=skipupto+bias_.tolerance) {
+        nskipped++;
+        return;
+      }
+      bias_.add(MetaDGaussian(multivariate,height*bias_.heightscale,center,sigma));
+    });
+  } catch(...) {
+    if(bias_.grid) {
+      bias_.grid->setMidline(false);
+    }
+    throw;
+  }
+  if(bias_.grid) {
+    bias_.grid->setMidline(false);
+  }
+  if(!addtobias) {
+    log.printf("      %u Gaussians scanned (the bias is read from the grid)\n",nhills);
+  } else if(nskipped>0) {
+    log.printf("      %u Gaussians read, %llu of them already in the grid\n",nhills,nskipped);
+  } else {
+    log.printf("      %u Gaussians read\n",nhills);
+  }
+  return nhills;
 }
 
 void MetaDHillsFiles::reset(unsigned i) {

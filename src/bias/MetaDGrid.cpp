@@ -530,5 +530,23 @@ double MetaDBiasGrid::getBiasAndDerivatives(const std::vector<double>& cv, std::
   return 0.0;
 }
 
+void MetaDBiasGrid::write(OFile& file, bool append, const std::string& comment) const {
+  if(append) {
+    // this results in a repetition of the header
+    file.clearFields();
+  } else {
+    // this overwrites the grid written before
+    file.rewind();
+  }
+  grid_->writeToFile(file);
+  if(comment.length()>0) {
+    // (a comment before the header would hide it to IFile)
+    file.printf("%s",comment.c_str());
+  }
+  if(!append) {
+    file.flush();
+  }
+}
+
 }
 }

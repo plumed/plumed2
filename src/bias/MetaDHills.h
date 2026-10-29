@@ -26,6 +26,7 @@
 #include "tools/Communicator.h"
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,6 +39,9 @@ class OFile;
 class Value;
 
 namespace bias {
+
+class MetaDBiasGrid;
+class MetaDDiffusionRestart;
 
 /// shortest representation of x that is converted back to the same double
 std::string exactString(double x);
@@ -63,6 +67,19 @@ public:
   /// called for each hill that is read: time, multivariate, height, center, sigma (the widths, or the upper
   /// triangle of the inverse covariance matrix for multivariate hills)
   using Callback=std::function<void(double,bool,double,const std::vector<double>&,const std::vector<double>&)>;
+  /// The bias to which the hills that are read are added (see readHills)
+  struct Bias {
+    /// add a hill to the bias
+    std::function<void(const MetaDGaussian&)> add;
+    /// the grid of the bias, if any (it completes the line of the log when it is extended)
+    MetaDBiasGrid* grid=nullptr;
+    /// ADAPTIVE=DIFF: when it is pending, the hills of the own file are kept here for the statistics of the fluctuations
+    MetaDDiffusionRestart* diffrestart=nullptr;
+    /// the height of a hill is the one in the file times heightscale (well-tempered metadynamics)
+    double heightscale=1.0;
+    /// times closer than this are the same time (times are written with a finite precision): half a PACE
+    double tolerance=0.0;
+  };
 private:
   ActionWithValue& action_;
   Communicator& comm_;
@@ -73,6 +90,7 @@ private:
   std::vector<std::string> ifilesnames_;
   /// number of hills read from each file
   std::vector<unsigned long long> nread_;
+  Bias bias_;
   bool noStretchWarningDone_=false;
   /// a hill with a Gaussian (not stretched) kernel was read
   bool gaussianKernelsFound_=false;
@@ -112,6 +130,19 @@ public:
   /// empty if the file does not contain them
   /// (read by the first process of comm and broadcast)
   static std::vector<long long> readGridComment(Communicator& comm, const std::string& path, unsigned nwalkers);
+  void setBias(const Bias& bias) {
+    bias_=bias;
+  }
+  const Bias& getBias() const {
+    return bias_;
+  }
+  /// Read the hills of file i that are in the file up to now (an open file) and add them to the bias, writing their
+  /// number on the log (the caller has started the line). Returns their number.
+  /// lasttime: if given, the time of the last hill is returned, and the hills are kept for ADAPTIVE=DIFF (own file);
+  /// addtobias: false to only scan the file; the hills up to time skipupto, and the first skipcount, are not added
+  /// (they are already in the grid read from file)
+  unsigned readHills(unsigned i, double* lasttime=nullptr, bool addtobias=true,
+                     double skipupto=-std::numeric_limits<double>::infinity(), unsigned long long skipcount=0);
   /// prepare an open file for the next read (the hills read up to now are not read again)
   void reset(unsigned i);
   void close(unsigned i);
