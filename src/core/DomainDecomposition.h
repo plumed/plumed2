@@ -65,6 +65,8 @@ private:
 
   bool asyncSent;
   bool unique_serial; // use unique in serial mode
+/// Are g2l and shuffledAtoms consistent with gatindex
+  bool g2lIsValid;
 /// Are unique, forced_unique and the corresponding indexes up to date with the atoms requested by the actions
   bool uniqueListsValid;
 /// Is allActiveUnique up to date

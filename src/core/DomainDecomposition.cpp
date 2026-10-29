@@ -184,6 +184,7 @@ DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
   shuffledAtoms(0),
   asyncSent(false),
   unique_serial(false),
+  g2lIsValid(false),
   uniqueListsValid(false),
   allActiveValid(false),
   atomsNeeded(false) {
@@ -297,7 +298,11 @@ bool DomainDecomposition::setForcePointer( const std::string& argName, const Typ
 }
 
 void DomainDecomposition::setAtomsNlocal(int n) {
-  invalidateUniqueLists();
+  if( static_cast<std::size_t>(n)!=gatindex.size() ) {
+    // the local atoms will be set again by setAtomsGatindex or setAtomsContiguous
+    g2lIsValid=false;
+    invalidateUniqueLists();
+  }
   gatindex.resize(n);
   g2l.resize(getNumberOfAtoms(),-1);
   if(dd) {
@@ -320,18 +325,17 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   auto gg=g.get<const int*>({gatindex.size()});
   ddStep=getStep();
-  if(fortran) {
-    for(unsigned i=0; i<gatindex.size(); i++) {
-      gatindex[i]=gg[i]-1;
-    }
-  } else {
-    for(unsigned i=0; i<gatindex.size(); i++) {
-      gatindex[i]=gg[i];
+  // MD codes call this at every step, but the local atoms only change when the
+  // domains are redistributed: in that case the lists of atoms are not rebuilt
+  bool localAtomsChanged=!g2lIsValid;
+  const int shift=fortran ? 1 : 0;
+  for(unsigned i=0; i<gatindex.size(); i++) {
+    if( gatindex[i]!=gg[i]-shift ) {
+      gatindex[i]=gg[i]-shift;
+      localAtomsChanged=true;
     }
   }
-  for(unsigned i=0; i<g2l.size(); i++) {
-    g2l[i]=-1;
-  }
+  const bool wasShuffled=shuffledAtoms>0;
   if( gatindex.size()==getNumberOfAtoms() ) {
     shuffledAtoms=0;
     for(unsigned i=0; i<gatindex.size(); i++) {
@@ -346,9 +350,16 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   if(dd) {
     dd.Sum(shuffledAtoms);
   }
+  if( !localAtomsChanged && wasShuffled==(shuffledAtoms>0) ) {
+    return;
+  }
+  for(unsigned i=0; i<g2l.size(); i++) {
+    g2l[i]=-1;
+  }
   for(unsigned i=0; i<gatindex.size(); i++) {
     g2l[gatindex[i]]=i;
   }
+  g2lIsValid=true;
   // keep in unique only those atoms that are local
   for(unsigned i=0; i<actions.size(); i++) {
     actions[i]->unique_local_needs_update=true;
@@ -369,6 +380,7 @@ void DomainDecomposition::setAtomsContiguous(int start) {
   for(unsigned i=0; i<gatindex.size(); i++) {
     g2l[gatindex[i]]=i;
   }
+  g2lIsValid=true;
   if(gatindex.size()<getNumberOfAtoms()) {
     shuffledAtoms=1;
   }
