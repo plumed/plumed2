@@ -442,9 +442,10 @@ install/python.config: FORCE
 	@cmp -s $@~ $@ || cp $@~ $@
 	@rm -f $@~
 
-install/python.stamp: ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
+install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
                       ../../python/onlyBuild.sh ../../python/README.rst ../../python/MANIFEST.in \
                       ../wrapper/Plumed.h ../../VERSION.txt ../../Makefile.conf install/python.config
+	$(MAKE) -C ../../python plumed.c
 	rm -fr install/python
 	cp -pr ../../python install
 	cp ../../VERSION.txt install/python/PLUMED_VERSION

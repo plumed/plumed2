@@ -124,8 +124,9 @@ if not USE_CYTHON:
 ext_modules = [
     Extension(
         name=plumedname,
-        # setuptools will automatically fallback to "plumed.c" if cython is not present
-        sources=["plumed.pyx"],
+        # without cython, compile the pregenerated plumed.c explicitly
+        # (so that it is not regenerated even if cython is installed)
+        sources=["plumed.pyx"] if USE_CYTHON else ["plumed.c"],
         include_dirs=["./include"],
         extra_compile_args=extra_compile_args,
     )
