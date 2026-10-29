@@ -1272,13 +1272,21 @@ bool CudaCoordination<calculateFloat>::needsListUpdate() {
   if (!update && checkDisplacement) {
     //same condition on all the MPI processes, so the Bcast is safe
     if (mpiActive) {
-      // the raw displacement is used (no pbcs): an atom that has been wrapped
-      // in the box by the MD code only triggers a (harmless) extra update
+      // The cheap raw displacement is checked first; an atom that has been
+      // wrapped in the box by the MD code (at its neighbour search steps) has
+      // a large raw displacement but a small physical one: only for those few
+      // atoms the minimum image displacement is computed, so that the wrapping
+      // does not trigger an update at every neighbour search step of the MD code.
+      // The lists are exact as long as the physical displacements are smaller
+      // than half the skin, so the minimum image criterion is as rigorous.
       const auto & positions = getPositions();
       for (unsigned i = 0; i < nat; ++i) {
-        if (delta(positionsAtLastUpdate[i],positions[i]).modulo2() > maxDisplacementSQ) {
-          update = 1;
-          break;
+        const Vector d = delta(positionsAtLastUpdate[i],positions[i]);
+        if (d.modulo2() > maxDisplacementSQ) {
+          if (!pbc || pbcDistance(positionsAtLastUpdate[i],positions[i]).modulo2() > maxDisplacementSQ) {
+            update = 1;
+            break;
+          }
         }
       }
     }
