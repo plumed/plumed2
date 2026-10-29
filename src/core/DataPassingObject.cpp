@@ -33,6 +33,7 @@ namespace PLMD {
 /// starting the threads (and waking them up, as PLUMED is called once per step) costs more than
 /// the copy itself: with 4 threads, copying the positions of 7000 atoms took 5 to 10 times longer
 /// than with one thread. Threads are thus only used when each one has at least this many elements.
+/// It is called outside the pragmas (and only with OpenMP), so that the call is visible also to static analysis.
 static unsigned getCopyNumThreads( const std::size_t& n ) {
   constexpr std::size_t minElementsPerThread=32768;
   const std::size_t m=n/minElementsPerThread;
@@ -208,7 +209,10 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
   const T* pp=nullptr;
   getPointer( v, s, start, stride, pp );
   std::vector<double> & d=value->data;
-  #pragma omp parallel for num_threads(getCopyNumThreads(k-j))
+#ifdef _OPENMP
+  const unsigned nt=getCopyNumThreads(k-j);
+#endif
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=j; i<k; ++i) {
     d[i]=unit*pp[i*stride];
   }
@@ -219,7 +223,10 @@ void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const 
   std::vector<std::size_t> maxel(1,values.size());
   const T* pp=nullptr;
   getPointer( v, maxel, start, stride, pp );
-  #pragma omp parallel for num_threads(getCopyNumThreads(values.size()))
+#ifdef _OPENMP
+  const unsigned nt=getCopyNumThreads(values.size());
+#endif
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<values.size(); ++i) {
     values[i]=unit*pp[i*stride];
   }
@@ -251,7 +258,10 @@ void DataPassingObjectTyped<T>::add_force( Value* value ) {
   T* pp=nullptr;
   getPointer( f, value->getShape(), start, stride, pp );
   unsigned nvals=value->getNumberOfValues();
-  #pragma omp parallel for num_threads(getCopyNumThreads(nvals))
+#ifdef _OPENMP
+  const unsigned nt=getCopyNumThreads(nvals);
+#endif
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<nvals; ++i) {
     pp[i*stride] += funit*T(value->getForce(i));
   }
@@ -263,7 +273,10 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value*
   std::vector<std::size_t> s(1,index.size());
   T* pp=nullptr;
   getPointer( f, s, start, stride, pp );
-  #pragma omp parallel for num_threads(getCopyNumThreads(index.size()))
+#ifdef _OPENMP
+  const unsigned nt=getCopyNumThreads(index.size());
+#endif
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<index.size(); ++i) {
     pp[i*stride] += funit*T(value->getForce(index[i]));
   }
@@ -298,7 +311,10 @@ void DataPassingObjectTyped<T>::rescale_force( const unsigned& n, const double& 
   if( !pp ) {
     return;
   }
-  #pragma omp parallel for num_threads(getCopyNumThreads(n))
+#ifdef _OPENMP
+  const unsigned nt=getCopyNumThreads(n);
+#endif
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<n; ++i) {
     pp[i*stride] *= T(factor);
   }
