@@ -27,6 +27,8 @@
 #include "tools/Matrix.h"
 #include "tools/Tools.h"
 #include <cstdio>
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <exception>
@@ -116,6 +118,7 @@ MetaDHillsFiles::~MetaDHillsFiles() {
 unsigned MetaDHillsFiles::addInput(const std::string& name, bool nosuffix) {
   ifiles_.emplace_back(Tools::make_unique<IFile>());
   ifilesnames_.push_back(name);
+  nread_.push_back(0);
   IFile* ifile=ifiles_.back().get();
   ifile->link(action_);
   if(nosuffix) {
@@ -271,7 +274,69 @@ unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
       f(time,multivariate,height,center,sigma);
     }
   }
+  nread_[i]+=nhills;
   return nhills;
+}
+
+namespace {
+const std::string gridCommentHeader="# WALKERS_N: hills read from the hills files of the walkers:";
+}
+
+std::string MetaDHillsFiles::getGridComment(unsigned own) const {
+  std::string line=gridCommentHeader;
+  for(unsigned i=0; i<nread_.size(); i++) {
+    line+=" "+(i==own ? std::string("-") : std::to_string(nread_[i]));
+  }
+  return line+"\n";
+}
+
+std::vector<long long> MetaDHillsFiles::readGridComment(Communicator& comm, const std::string& path, unsigned nwalkers) {
+  std::vector<long long> counts;
+  if(comm.Get_rank()==0) {
+    counts=readGridComment(path,nwalkers);
+  }
+  if(comm.Get_size()>1) {
+    // (as doubles: they are exact up to 2^53)
+    std::vector<double> buffer(counts.begin(),counts.end());
+    unsigned n=buffer.size();
+    comm.Bcast(n,0);
+    buffer.resize(n);
+    if(n>0) {
+      comm.Bcast(buffer,0);
+    }
+    counts.assign(buffer.begin(),buffer.end());
+  }
+  return counts;
+}
+
+std::vector<long long> MetaDHillsFiles::readGridComment(const std::string& path, unsigned nwalkers) {
+  std::vector<long long> counts;
+  // compressed files are not read (the hills of the other walkers are then selected by time)
+  if(path.length()>3 && path.substr(path.length()-3)==".gz") {
+    return counts;
+  }
+  std::ifstream f(path);
+  std::string line;
+  // the comment follows the grid (with STORE_GRIDS, the first grid is the one that is read)
+  while(std::getline(f,line)) {
+    if(line.compare(0,gridCommentHeader.length(),gridCommentHeader)!=0) {
+      continue;
+    }
+    std::vector<std::string> words=Tools::getWords(line.substr(gridCommentHeader.length()));
+    if(words.size()!=nwalkers) {
+      return counts;
+    }
+    for(const auto & w : words) {
+      long long n=-1;
+      if(w!="-" && !Tools::convertNoexcept(w,n)) {
+        counts.clear();
+        return counts;
+      }
+      counts.push_back(n);
+    }
+    return counts;
+  }
+  return counts;
 }
 
 /// takes a pointer to the file and a template std::string with values v and gives back the next center, sigma and height
@@ -412,6 +477,110 @@ void MetaDHillsFiles::write(OFile& file, double time, const MetaDGaussian& hill,
     file.printField("clock",int(std::time(0)));
   }
   file.printField();
+}
+
+void MetaDDiffusionRestart::add(const std::string& file, double time, bool multivariate, const std::vector<double>& center,
+                                const std::vector<double>& sigma) {
+  if(!multivariate) {
+    // e.g. a previous run without ADAPTIVE=DIFF: these hills cannot be used
+    clear();
+  } else {
+    time_.push_back(time);
+    center_.push_back(center);
+    sigma_.push_back(sigma);
+    if(time_.size()>maxhills) {
+      time_.pop_front();
+      center_.pop_front();
+      sigma_.pop_front();
+    }
+  }
+  file_=file;
+}
+
+unsigned MetaDDiffusionRestart::compute(double tol, double now, unsigned blocksize, unsigned offset, double decay, double updatetime,
+                                        const std::function<double(unsigned,double,double)>& difference,
+                                        const std::function<double(unsigned,double)>& bringBackInPbc,
+                                        std::vector<double>& average, std::vector<double>& variance, double& lasttime) const {
+  // the hills of this walker
+  std::vector<unsigned> own;
+  for(unsigned k=0; k<time_.size();) {
+    unsigned l=k;
+    while(l<time_.size() && std::abs(time_[l]-time_[k])<tol) {
+      l++;
+    }
+    if(blocksize==0) {
+      for(unsigned j=k; j<l; j++) {
+        own.push_back(j);
+      }
+    } else if(l-k==blocksize) {
+      own.push_back(k+offset);
+    }
+    k=l;
+  }
+  // only the hills deposited up to now (when restarting from a grid, or from a checkpoint older than the
+  // end of the hills file, the file can go further)
+  {
+    std::vector<unsigned> before;
+    for(const auto j : own) {
+      if(time_[j]<=now+tol) {
+        before.push_back(j);
+      }
+    }
+    own.swap(before);
+  }
+  // only the last sequence of increasing times: the file can contain several runs (e.g. a run restarted
+  // from an older checkpoint, or a new simulation appended to an old file)
+  if(!own.empty()) {
+    unsigned first=own.size()-1;
+    while(first>0 && time_[own[first-1]]<time_[own[first]]+tol) {
+      first--;
+    }
+    own.erase(own.begin(),own.begin()+first);
+  }
+  if(own.empty()) {
+    return 0;
+  }
+  // covariance: the one of the last hill, i.e. the running estimate of the previous run at that time
+  const unsigned last=own.back();
+  const unsigned ncv=center_[last].size();
+  Matrix<double> mymatrix(ncv,ncv);
+  unsigned k=0;
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      mymatrix(i,j)=mymatrix(j,i)=sigma_[last][k];
+      k++;
+    }
+  }
+  Matrix<double> mycov(ncv,ncv);
+  Invert(mymatrix,mycov);
+  variance.resize(ncv*(ncv+1)/2);
+  k=0;
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      variance[k]=mycov(i,j);
+      k++;
+    }
+  }
+  // running average: the center of a hill is the instantaneous value of the CVs, which differs from
+  // the running average by about one standard deviation, so the centers of the last hills are averaged
+  // with the same exponential weights used by the running average
+  const std::vector<double>& ref=center_[last];
+  average.assign(ncv,0.0);
+  double wsum=0.0;
+  for(const auto j : own) {
+    // age in number of updates of the running average
+    const double age=std::max(0.0,(time_[last]-time_[j])/updatetime);
+    const double w=std::pow(1.0-decay,age);
+    for(unsigned i=0; i<ncv; i++) {
+      average[i]+=w*difference(i,ref[i],center_[j][i]);
+    }
+    wsum+=w;
+  }
+  for(unsigned i=0; i<ncv; i++) {
+    average[i]=bringBackInPbc(i,ref[i]+average[i]/wsum);
+  }
+  lasttime=time_[last];
+  return own.size();
 }
 
 }

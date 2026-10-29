@@ -121,7 +121,15 @@ A grid read with GRID_RFILES can have any range, but it must be on the lattice o
 
 As in [METAD](METAD.md), no Gaussian is added at the first step of a simulation.  When a simulation is continued with
 RESTART and the bias is read from the hills files, a Gaussian is added at the first step unless they already contain
-it (i.e. the previous run had already performed this step).  With ADAPTIVE=DIFF and replica exchange, the running averages of the variables are
+it (i.e. the previous run had already performed this step).  When the bias is read from the grids (GRID_RFILES), the hills files are still read,
+without adding their hills to the bias, to know the time of their last hill.  With WALKERS_N, the grids written by a walker
+contain also the hills it has read from the files of the other walkers (their number is written in a comment line after
+the grid), and only the hills of the other walkers that are not in the grids are added.
+
+With ADAPTIVE=DIFF, as in [METAD](METAD.md), when restarting the statistics of the fluctuations of each variable
+(running average and variance) are initialized from its last hills in the hills file of its family, so that the hills
+deposited after the restart have the same width they would have had without the restart (use DIFF_FROM_SCRATCH to
+accumulate the statistics from scratch).  With replica exchange, the running averages of the variables are
 restarted when an exchange is accepted, and the variances are kept.
 
 Another option that is available is the well-tempered metadynamics that is discussed in the second paper cited below. In this
@@ -292,6 +300,13 @@ private:
     std::unique_ptr<MetaDHillsFiles> hillsfiles;
     std::unique_ptr<OFile> hillsOfile;
     std::unique_ptr<OFile> gridOfile;
+    /// ADAPTIVE=DIFF: the last hills of the own hills file, for the statistics of the fluctuations at restart
+    MetaDDiffusionRestart diffrestart;
+    /// the arguments in the family
+    std::vector<unsigned> args;
+    /// WALKERS_N, restart from a grid: the number of hills of each of the other walkers in the grid (-1 for this walker);
+    /// empty if not known (grid files written by older versions)
+    std::vector<long long> gridWalkerHills;
   };
   // general setup
   double kbt_=0.0;
@@ -341,9 +356,13 @@ private:
   unsigned select_value_=0;
   unsigned current_value_=0;
 
-  /// read the hills in input file i of family f and add them to the bias; returns their number and
+  /// read the hills in input file i of family f and add them to the bias, except the first skipcount ones and those with
+  /// time up to skipupto (they are already in the bias), or all of them if addtobias is false; returns their number and
   /// (if lasttime is given and at least one hill is read) sets lasttime to the time of the last hill
-  unsigned readGaussians(unsigned f, unsigned i, double* lasttime=nullptr);
+  unsigned readGaussians(unsigned f, unsigned i, double* lasttime=nullptr, bool addtobias=true,
+                         double skipupto=-std::numeric_limits<double>::infinity(), unsigned long long skipcount=0);
+  /// ADAPTIVE=DIFF: initialize the statistics of the fluctuations from the hills read when restarting
+  void   initializeDiffusionStatistics();
   /// update the adaptive hill widths; with ADAPTIVE=DIFF also handle replica exchanges
   void   updateFlexibleBins(bool nowAddAHill);
   /// true if a hill has to be added at the current step
@@ -387,6 +406,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.addFlag("DIFF_FROM_SCRATCH",false,"with ADAPTIVE=DIFF, when restarting accumulate the statistics of the CV fluctuations from scratch, instead of initializing them from the last hills of the hills files");
   keys.addInputKeyword("numbered","PF", "scalar", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
@@ -499,6 +519,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
   }
   families_.resize(pf_n);
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    families_[pfs_[i]].args.push_back(i);
+  }
   for(unsigned f=0; f<pf_n; f++) {
     families_[f].arg=pfhold[f];
     families_[f].kernel.setArguments(std::vector<Value*>(1,pfhold[f]));
@@ -547,6 +570,22 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       std::vector<double> tmp_smin(1,sigma0min_[pfs_[i]]);
       std::vector<double> tmp_smax(1,sigma0max_[pfs_[i]]);
       flexbin_.push_back(FlexibleBin(adaptive_,this,i,sigma0_[0],tmp_smin,tmp_smax));
+    }
+  }
+  bool diff_from_scratch=false;
+  parseFlag("DIFF_FROM_SCRATCH",diff_from_scratch);
+  if(diff_from_scratch && adaptive_!=FlexibleBin::diffusion) {
+    error("DIFF_FROM_SCRATCH can only be used with ADAPTIVE=DIFF");
+  }
+  // the hills are kept only if needed (restart with ADAPTIVE=DIFF), see readGaussians
+  for(auto & family : families_) {
+    family.diffrestart.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch);
+  }
+  if(adaptive_==FlexibleBin::diffusion && getRestart()) {
+    if(diff_from_scratch) {
+      log.printf("  The statistics for the hills width are accumulated from scratch after the restart (DIFF_FROM_SCRATCH)\n");
+    } else {
+      log.printf("  The statistics for the hills width are initialized from the last hills of the hills files, if available\n");
     }
   }
 
@@ -886,8 +925,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(gridreadfilenames.size()>0) {
         IFile gridfile;
         gridfile.link(*this);
-        if(walkers_mpi_) {
-          // all the walkers read the same file
+        if(walkers_mpi_ || mw_n_>1) {
+          // multiple walkers write their files without the suffix of the replica: with WALKERS_MPI all the walkers
+          // read the same file
           gridfile.enforceSuffix("");
         }
         if(gridfile.FileExist(gridreadfilenames[f])) {
@@ -896,6 +936,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           error("The GRID file you want to read: " + gridreadfilenames[f] + ", cannot be found!");
         }
         grid.read(gridfile,gridreadfilenames[f],funcl,args,gmin_t,gmax_t,gbin_t,sparsegrid,spline,gridnobounds);
+        if(mw_n_>1) {
+          // the hills of the other walkers in the grid
+          families_[f].gridWalkerHills=MetaDHillsFiles::readGridComment(comm,gridfile.getPath(),mw_n_);
+        }
         log.printf("  Restarting from %s:\n",gridreadfilenames[f].c_str());
         if(getRestart()) {
           restartedFromGrid=true;
@@ -930,6 +974,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   double lastHillTime=0.0;
   for(unsigned f=0; f<pf_n; ++f) {
     families_[f].hillsfiles=Tools::make_unique<MetaDHillsFiles>(*this,comm,std::vector<Value*>(1,pfhold[f]));
+    // ADAPTIVE=DIFF: hills of the last ~6 averaging times (older ones have weight < exp(-6)), for each argument
+    // of the family; with MPI walkers the file contains the hills of all walkers
+    families_[f].diffrestart.maxhills=(static_cast<unsigned>(std::ceil(6.0*sigma0_[0]/stride_))+2)*
+                                      std::max(1u,mpi_nw_)*families_[f].args.size();
   }
   for(int j=0; j<mw_n_; ++j) {
     for(unsigned f=0; f<pf_n; ++f) {
@@ -953,10 +1001,26 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[f];
         }
       }
-      MetaDHillsFiles& hillsfiles=*families_[f].hillsfiles;
       // with multiple walkers the files are written without the suffix of the replica
-      const unsigned k=hillsfiles.addInput(fname,mw_n_>1 || walkers_mpi_);
+      const unsigned k=families_[f].hillsfiles->addInput(fname,mw_n_>1 || walkers_mpi_);
       plumed_assert(k==static_cast<unsigned>(j));
+    }
+  }
+  // When the bias is read from the grids, the own hills files are read first: the time of their last hill tells
+  // which hills of the other walkers (WALKERS_N) are already in the grids
+  std::vector<int> order;
+  if(getRestart() && restartedFromGrid) {
+    order.push_back(mw_id_);
+  }
+  for(int j=0; j<mw_n_; ++j) {
+    if(order.empty() || order[0]!=j) {
+      order.push_back(j);
+    }
+  }
+  for(const int j : order) {
+    for(unsigned f=0; f<pf_n; ++f) {
+      MetaDHillsFiles& hillsfiles=*families_[f].hillsfiles;
+      const unsigned k=j;
       if(hillsfiles.isOpen(k)) {
         if(getRestart()&&!restartedFromGrid) {
           log.printf("  Restarting from %s:",hillsfiles.getInputName(k).c_str());
@@ -977,6 +1041,39 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         if(getRestart() && restartedFromGrid && j==mw_id_) {
           // new hills will be appended to this file also when the bias is read from a grid
           ownpath[f]=hillsfiles.getPath(k);
+          // the bias is read from the grid, but the hills are still needed for the time of the last hill (to decide
+          // if a hill is added at the first step, and which hills of the other walkers are in the grid) and for the
+          // statistics of ADAPTIVE=DIFF
+          log.printf("  Reading hills from %s:",hillsfiles.getInputName(k).c_str());
+          double lasttime=0.0;
+          try {
+            if(readGaussians(f,k,&lasttime,false)>0 && !(lastHillTimeKnown && lasttime<=lastHillTime)) {
+              lastHillTimeKnown=true;
+              lastHillTime=lasttime;
+            }
+          } catch(const std::exception& e) {
+            // the bias comes from the grid: if the hills file cannot be used, its information is not used
+            log.printf("\n  WARNING: the hills file cannot be used for the time of the last hill and the statistics of ADAPTIVE=DIFF"
+                       " (new hills are appended to it):\n%s\n",e.what());
+            families_[f].diffrestart.clear();
+          }
+        }
+        if(getRestart() && restartedFromGrid && j!=mw_id_) {
+          // the hills of the other walkers that are not in the grid are added
+          const std::vector<long long>& ingridcount=families_[f].gridWalkerHills;
+          const double ingrid=(lastHillTimeKnown ? lastHillTime : std::numeric_limits<double>::infinity());
+          if(ingridcount.size()==static_cast<unsigned>(mw_n_) && ingridcount[j]>=0) {
+            // the grid file contains the number of hills read from each walker
+            log.printf("  Reading hills from %s (the first %lld are in the grid):",hillsfiles.getInputName(k).c_str(),ingridcount[j]);
+            readGaussians(f,k,nullptr,true,-std::numeric_limits<double>::infinity(),ingridcount[j]);
+          } else if(lastHillTimeKnown) {
+            // grid written by an older version: those up to the last hill of this walker are assumed to be in the grid
+            log.printf("  Reading hills from %s (those up to time %f are assumed to be in the grid):",hillsfiles.getInputName(k).c_str(),ingrid);
+            readGaussians(f,k,nullptr,true,ingrid);
+          } else {
+            log.printf("  Reading hills from %s (they are assumed to be in the grid):",hillsfiles.getInputName(k).c_str());
+            readGaussians(f,k,nullptr,true,ingrid);
+          }
         }
         hillsfiles.reset(k);
         // close only the walker own hills file for later writing
@@ -985,8 +1082,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
       } else {
         // in case a file does not exist and we are restarting, complain that the file was not found
-        if(getRestart()) {
-          log<<"  WARNING: restart file "<<fname<<" not found\n";
+        if(getRestart()&&!restartedFromGrid) {
+          error("restart file "+hillsfiles.getInputName(k)+" not found");
         }
       }
     }
@@ -1102,26 +1199,93 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   log<<"\n";
 }
 
-unsigned PBMetaD::readGaussians(unsigned f, unsigned i, double* lasttime) {
+unsigned PBMetaD::readGaussians(unsigned f, unsigned i, double* lasttime, bool addtobias, double skipupto, unsigned long long skipcount) {
   Family& family=families_[f];
   // the callers have started a line of the log
   if(family.grid) {
     family.grid->setMidline(true);
   }
-  const unsigned nhills=family.hillsfiles->read(i,[&](double time,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
-    if(lasttime) {
-      *lasttime=time;
+  const std::string path=family.hillsfiles->getPath(i);
+  unsigned long long nskipped=0;
+  unsigned nhills=0;
+  try {
+    nhills=family.hillsfiles->read(i,[&](double time,bool multivariate,double height,const std::vector<double>& center,const std::vector<double>& sigma) {
+      if(lasttime) {
+        *lasttime=time;
+      }
+      if(lasttime && family.diffrestart.pending) {
+        // the own hills file is being read: keep the last hills for the statistics of ADAPTIVE=DIFF
+        family.diffrestart.add(path,time,multivariate,center,sigma);
+      }
+      if(!addtobias) {
+        return;
+      }
+      // times are written with a finite precision (FMT): times closer than half a PACE are the same time
+      if(nskipped<skipcount || time<=skipupto+0.5*stride_*getTimeStep()) {
+        nskipped++;
+        return;
+      }
+      if(welltemp_) {
+        height*=(biasf_-1.0)/biasf_;
+      }
+      addGaussian(f,Gaussian(multivariate,height,center,sigma));
+    });
+  } catch(...) {
+    if(family.grid) {
+      family.grid->setMidline(false);
     }
-    if(welltemp_) {
-      height*=(biasf_-1.0)/biasf_;
-    }
-    addGaussian(f,Gaussian(multivariate,height,center,sigma));
-  });
+    throw;
+  }
   if(family.grid) {
     family.grid->setMidline(false);
   }
-  log.printf("      %u Gaussians read\n",nhills);
+  if(!addtobias) {
+    log.printf("      %u Gaussians scanned (the bias is read from the grid)\n",nhills);
+  } else if(nskipped>0) {
+    log.printf("      %u Gaussians read, %llu of them already in the grid\n",nhills,nskipped);
+  } else {
+    log.printf("      %u Gaussians read\n",nhills);
+  }
   return nhills;
+}
+
+void PBMetaD::initializeDiffusionStatistics() {
+  const double dt=getTimeStep();
+  for(auto & family : families_) {
+    MetaDDiffusionRestart& diffrestart=family.diffrestart;
+    if(!diffrestart.pending) {
+      continue;
+    }
+    diffrestart.pending=false;
+    // In the hills file of the family, each deposition is a block with a hill for each argument of the family, in
+    // their order (and with MPI walkers for each walker, in the order of the replicas)
+    const unsigned nf=family.args.size();
+    for(unsigned p=0; p<nf; p++) {
+      const unsigned i=family.args[p];
+      std::vector<double> average;
+      std::vector<double> variance;
+      double lasttime=0.0;
+      // times are written with a finite precision (FMT): times closer than half a PACE are the same time
+      const unsigned n=diffrestart.compute(0.5*stride_*dt,getTime(),(walkers_mpi_ ? mpi_nw_ : 1)*nf,(walkers_mpi_ ? mpi_id_ : 0)*nf+p,
+                                           1.0/sigma0_[0],dt*getStride(),
+      [&](unsigned,double a,double b) {
+        return difference(i,a,b);
+      },
+      [&](unsigned,double x) {
+        return bringBackInPbc(i,x);
+      },
+      average,variance,lasttime);
+      if(n==0) {
+        log.printf("  ADAPTIVE=DIFF: no hills available for %s, the statistics for the hills width start from scratch\n",
+                   getPntrToArgument(i)->getName().c_str());
+        continue;
+      }
+      flexbin_[i].setStatistics(average,variance,2);
+      log.printf("  ADAPTIVE=DIFF: the statistics for the hills width of %s are initialized from %u hills of %s (last one at time %f)\n",
+                 getPntrToArgument(i)->getName().c_str(),n,diffrestart.getFile().c_str(),lasttime);
+    }
+    diffrestart.clear();
+  }
 }
 
 void PBMetaD::writeGaussian(unsigned f, const Gaussian& hill) {
@@ -1272,6 +1436,9 @@ bool PBMetaD::isHillStep() const {
 
 void PBMetaD::updateFlexibleBins(bool nowAddAHill) {
   const unsigned nargs=getNumberOfArguments();
+  if(adaptive_==FlexibleBin::diffusion) {
+    initializeDiffusionStatistics();
+  }
   if(adaptive_==FlexibleBin::diffusion) {
     std::vector<double> cv(nargs);
     for(unsigned i=0; i<nargs; ++i) {
@@ -1428,6 +1595,10 @@ void PBMetaD::update() {
         if(family.gridOfile) {
           family.gridOfile->rewind();
           family.grid->getGrid().writeToFile(*family.gridOfile);
+          if(mw_n_>1) {
+            // the hills of the other walkers in the grid (see the constructor), in a comment after the grid
+            family.gridOfile->printf("%s",family.hillsfiles->getGridComment(mw_id_).c_str());
+          }
           family.gridOfile->flush();
         }
       }

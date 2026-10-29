@@ -169,7 +169,8 @@ void FlexibleBin::restartAverage() {
 void FlexibleBin::setStatistics(const std::vector<double>& av, const std::vector<double>& var, unsigned ns) {
   plumed_massert(type==diffusion,"the statistics can be set only for diffusion-based adaptive hills");
   const unsigned ncv=paction->getNumberOfArguments();
-  plumed_assert(av.size()==ncv && var.size()==ncv*(ncv+1)/2);
+  // (one dimensional, for one argument of PBMETAD, or for all the arguments)
+  plumed_assert((av.size()==1 && var.size()==1) || (av.size()==ncv && var.size()==ncv*(ncv+1)/2));
   average=av;
   variance=var;
   nsamples=ns;

@@ -24,6 +24,7 @@
 
 #include "MetaDKernel.h"
 #include "tools/Communicator.h"
+#include <deque>
 #include <functional>
 #include <memory>
 #include <string>
@@ -70,6 +71,8 @@ private:
   std::vector<Value*> args_;
   std::vector<std::unique_ptr<IFile>> ifiles_;
   std::vector<std::string> ifilesnames_;
+  /// number of hills read from each file
+  std::vector<unsigned long long> nread_;
   bool noStretchWarningDone_=false;
   /// a hill with a Gaussian (not stretched) kernel was read
   bool gaussianKernelsFound_=false;
@@ -99,11 +102,60 @@ public:
   /// read the hills that are in the file (an open file) up to now and call f for each one; returns their number.
   /// An error while reading (e.g. a wrong field) is thrown by all the processes.
   unsigned read(unsigned i, const Callback& f);
+  /// number of hills read from the file up to now
+  unsigned long long getNumberOfHillsRead(unsigned i) const {
+    return nread_[i];
+  }
+  /// With WALKERS_N, the grid written by a walker contains the hills it has read from the files of the other walkers:
+  /// their numbers are written in a comment line after the grid, so that when restarting from the grid only the
+  /// hills that are not in it are added. The comment line (own is the index of this walker)
+  std::string getGridComment(unsigned own) const;
+  /// the numbers of hills of the other walkers in the grid file path (written by getGridComment), -1 for this walker;
+  /// empty if the file does not contain them
+  /// (read by the first process of comm and broadcast)
+  static std::vector<long long> readGridComment(Communicator& comm, const std::string& path, unsigned nwalkers);
+  static std::vector<long long> readGridComment(const std::string& path, unsigned nwalkers);
   /// prepare an open file for the next read (the hills read up to now are not read again)
   void reset(unsigned i);
   void close(unsigned i);
   /// write a hill; height is the one written in the file
   void write(OFile& file, double time, const MetaDGaussian& hill, double height, double biasf, bool clock) const;
+};
+
+/// ADAPTIVE=DIFF: when restarting, the statistics of the fluctuations of the variables (running average and
+/// covariance) are initialized from the last hills of this walker in its hills file. The hills are kept here while the
+/// file is read, until the first update, when the current time is known.
+class MetaDDiffusionRestart {
+  std::deque<double> time_;
+  std::deque<std::vector<double>> center_;
+  /// as stored in the hills: upper triangle of the inverse covariance matrix
+  std::deque<std::vector<double>> sigma_;
+  std::string file_;
+public:
+  /// the statistics are still to be initialized
+  bool pending=false;
+  /// maximum number of hills to keep (the older ones have a negligible weight)
+  unsigned maxhills=0;
+  void clear() {
+    time_.clear();
+    center_.clear();
+    sigma_.clear();
+  }
+  /// a hill read from file (hills that are not multivariate cannot be used: the previous ones are discarded)
+  void add(const std::string& file, double time, bool multivariate, const std::vector<double>& center, const std::vector<double>& sigma);
+  const std::string& getFile() const {
+    return file_;
+  }
+  /// The statistics from the hills of this walker. The hills with times within tol form blocks (one deposition):
+  /// with blocksize 0 all the hills are used, otherwise the hill at position offset of the blocks with blocksize hills.
+  /// Only the hills up to now, and the last sequence with increasing times, are used. The covariance is that of the
+  /// last hill; the average is the average of the centers with the exponential weights of the running average
+  /// (decay per update, updatetime is the time between updates). difference(i,a,b) and bringBackInPbc(i,x) are those
+  /// of variable i. Returns the number of hills used (0: no statistics), and the time of the last one.
+  unsigned compute(double tol, double now, unsigned blocksize, unsigned offset, double decay, double updatetime,
+                   const std::function<double(unsigned,double,double)>& difference,
+                   const std::function<double(unsigned,double)>& bringBackInPbc,
+                   std::vector<double>& average, std::vector<double>& variance, double& lasttime) const;
 };
 
 /// The steps when a hill is added: every stride steps, except the first step of a run. At step 0 no hill is
