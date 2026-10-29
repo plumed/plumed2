@@ -485,11 +485,11 @@ void ProjectPoints::calculate() {
     myinput.noderiv = true;
     myinput.ncomponents = getNumberOfComponents();
     std::vector<double> input_buffer;
-    getInputData( input_buffer );
+    getArgumentInputData( input_buffer );
     myinput.dataSize = input_buffer.size();
     myinput.inputdata = input_buffer.data();
     ArgumentsBookkeeping abk;
-    abk.setupArguments( this );
+    copyArgumentBookeeping( abk );
     myinput.setupArguments( abk );
     std::vector<double> buffer;
     std::vector<double> derivatives, point( getNumberOfComponents() );
