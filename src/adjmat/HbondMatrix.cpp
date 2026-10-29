@@ -182,7 +182,7 @@ switching functions.__ The value you pass to the `D_MAX` keyword is used as the 
 In theory we could further optimize the implementation of the HBOND_MATRIX action by exploiting neighbor lists. If we were to do this we would likely add two further keywords as shown
 below (this input is not accepted at the moment, as NL_STRIDE must be 1):
 
-```
+```plumed
 cmap: HBOND_MATRIX ...
   DONORS=1-192:3 ACCEPTORS=1-192:3 HYDROGENS=2-192:3,3-192:3
   SWITCH={RATIONAL R_0=3.20 D_MAX=4.0} HSWITCH={RATIONAL R_0=2.30 D_MAX=3.5}
