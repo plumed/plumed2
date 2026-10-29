@@ -128,8 +128,8 @@ Option interpretEnvString(const char* env,const char* str) {
 
 /// Use unique list of atoms to manipulate forces and positions.
 /// A unique list of atoms is used to manipulate forces and positions in MPI parallel runs.
-/// In serial runs, this is done if convenient. The code currently contain
-/// some heuristic to decide if the unique list should be used or not.
+/// In serial runs, this is done if convenient: with auto, the unique list is used
+/// when the atoms needed by all the active actions are less than half of the atoms.
 /// An env var can be used to override this decision.
 /// export PLUMED_FORCE_UNIQUE=yes  # enforce using the unique list in serial runs
 /// export PLUMED_FORCE_UNIQUE=no   # enforce not using the unique list in serial runs
