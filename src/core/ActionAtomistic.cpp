@@ -584,6 +584,106 @@ unsigned ActionAtomistic::getTotAtoms()const {
   return natoms;
 }
 
+namespace {
+/// matmul(rotation,Vector(x,y,z)) written out for the loops on all the atoms below, where it is several times faster.
+/// The sums start from zero and are done in the same order as in matmul, so that the result is identical.
+inline void rotateVector( const Tensor& r, const double x, const double y, const double z,
+                          double& rx, double& ry, double& rz ) {
+  rx=((0.0+r(0,0)*x)+r(0,1)*y)+r(0,2)*z;
+  ry=((0.0+r(1,0)*x)+r(1,1)*y)+r(1,2)*z;
+  rz=((0.0+r(2,0)*x)+r(2,1)*y)+r(2,2)*z;
+}
+}
+
+void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      xp[i]+=shift[0];
+      yp[i]+=shift[1];
+      zp[i]+=shift[2];
+    }
+  }
+}
+
+void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      double rx, ry, rz;
+      rotateVector( rotation, xp[i], yp[i], zp[i], rx, ry, rz );
+      xp[i]=rx;
+      yp[i]=ry;
+      zp[i]=rz;
+    }
+  }
+}
+
+void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter) {
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      double rx, ry, rz;
+      rotateVector( rotation, xp[i]-shiftBefore[0], yp[i]-shiftBefore[1], zp[i]-shiftBefore[2], rx, ry, rz );
+      xp[i]=rx+shiftAfter[0];
+      yp[i]=ry+shiftAfter[1];
+      zp[i]=rz+shiftAfter[2];
+    }
+  }
+}
+
+Vector ActionAtomistic::getTotalForceOnAllAtoms() const {
+  Vector totForce;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    const auto & fx=xpos[j]->inputForce;
+    const auto & fy=ypos[j]->inputForce;
+    const auto & fz=zpos[j]->inputForce;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      totForce+=Vector(fx[i],fy[i],fz[i]);
+    }
+  }
+  return totForce;
+}
+
+Vector ActionAtomistic::rotateForcesOnAllAtoms(const Tensor& rotation) {
+  Vector totForce;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & fx=xpos[j]->inputForce;
+    auto & fy=ypos[j]->inputForce;
+    auto & fz=zpos[j]->inputForce;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    if( n>0 ) {
+      xpos[j]->hasForce=true;
+      ypos[j]->hasForce=true;
+      zpos[j]->hasForce=true;
+    }
+    double tx=totForce[0], ty=totForce[1], tz=totForce[2];
+    for(std::size_t i=0; i<n; ++i) {
+      double nx, ny, nz;
+      rotateVector( rotation, fx[i], fy[i], fz[i], nx, ny, nz );
+      // the difference is added (as addForce would do) so that the result is identical
+      fx[i]+=nx-fx[i];
+      fy[i]+=ny-fy[i];
+      fz[i]+=nz-fz[i];
+      tx+=nx;
+      ty+=ny;
+      tz+=nz;
+    }
+    totForce=Vector(tx,ty,tz);
+  }
+  return totForce;
+}
+
 void ActionAtomistic::makeWhole() {
   if(actionMoldat && actionMoldat->isWhole()) {
     // make sure the tree has been constructed
