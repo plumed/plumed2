@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CoordinationBase.h"
+#include <array>
+#include <algorithm>
 #include "tools/NeighborList.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
@@ -140,6 +142,15 @@ void CoordinationBase::prepare() {
 
 // calculator
 void CoordinationBase::calculate() {
+  if(pbc) {
+    calculateImpl<true>();
+  } else {
+    calculateImpl<false>();
+  }
+}
+
+template<bool useBatch>
+void CoordinationBase::calculateImpl() {
 
   double ncoord=0.;
   Tensor virial;
@@ -174,37 +185,77 @@ void CoordinationBase::calculate() {
     std::vector<Vector> omp_deriv(getPositions().size());
     Tensor omp_virial;
 
-    #pragma omp for reduction(+:ncoord) nowait
-    for(unsigned int i=start; i<end; ++i) {
-
-      Vector distance;
-      const auto [i0, i1] = nl->getUpdatedPair(i);
-
-      if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) {
-        continue;
+    if constexpr (useBatch) {
+      // Keep scratch storage bounded and leave enough chunks for all threads.
+      constexpr unsigned batchSize = 1024;
+      const unsigned work=end>start ? end-start : 0;
+      const unsigned batchStep=nt>1 ? std::min(batchSize,std::max(1u,work/(4*nt))) : batchSize;
+      std::array<Vector, batchSize> distances;
+      std::array<unsigned, batchSize> firstAtoms, secondAtoms;
+      #pragma omp for reduction(+:ncoord) nowait
+      for(unsigned begin=start; begin<end; begin+=batchStep) {
+        const unsigned limit=std::min(batchStep,end-begin);
+        unsigned count=0;
+        for(unsigned j=0; j<limit; ++j) {
+          const auto [i0,i1]=nl->getUpdatedPair(begin+j);
+          if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) {
+            continue;
+          }
+          firstAtoms[count]=i0;
+          secondAtoms[count]=i1;
+          distances[count]=delta(getPosition(i0),getPosition(i1));
+          ++count;
+        }
+        if(count) {
+          getPbc().apply(VectorView(distances[0].data(),count));
+        }
+        for(unsigned j=0; j<count; ++j) {
+          const auto i0=firstAtoms[j],i1=secondAtoms[j];
+          const auto& distance=distances[j];
+          double dfunc=0.;
+          ncoord += pairing(distance.modulo2(),dfunc,i0,i1);
+          Vector dd(dfunc*distance);
+          Tensor vv(dd,distance);
+          if(nt>1) {
+            omp_deriv[i0]-=dd;
+            omp_deriv[i1]+=dd;
+            omp_virial-=vv;
+          } else {
+            deriv[i0]-=dd;
+            deriv[i1]+=dd;
+            virial-=vv;
+          }
+        }
       }
+    } else {
+      #pragma omp for reduction(+:ncoord) nowait
+      for(unsigned int i=start; i<end; ++i) {
 
-      if(pbc) {
-        distance=pbcDistance(getPosition(i0),getPosition(i1));
-      } else {
+        Vector distance;
+        const auto [i0, i1] = nl->getUpdatedPair(i);
+
+        if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) {
+          continue;
+        }
+
         distance=delta(getPosition(i0),getPosition(i1));
+
+        double dfunc=0.;
+        ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
+
+        Vector dd(dfunc*distance);
+        Tensor vv(dd,distance);
+        if(nt>1) {
+          omp_deriv[i0]-=dd;
+          omp_deriv[i1]+=dd;
+          omp_virial-=vv;
+        } else {
+          deriv[i0]-=dd;
+          deriv[i1]+=dd;
+          virial-=vv;
+        }
+
       }
-
-      double dfunc=0.;
-      ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
-
-      Vector dd(dfunc*distance);
-      Tensor vv(dd,distance);
-      if(nt>1) {
-        omp_deriv[i0]-=dd;
-        omp_deriv[i1]+=dd;
-        omp_virial-=vv;
-      } else {
-        deriv[i0]-=dd;
-        deriv[i1]+=dd;
-        virial-=vv;
-      }
-
     }
     #pragma omp critical
     if(nt>1) {

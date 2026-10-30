@@ -253,9 +253,16 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       }
     }
 #else
+    // Keep invariant box values independent of writes through the distance view.
+    const Vector inverseDiagonal(invBox(0,0),invBox(1,1),invBox(2,2));
+    const Vector diagonal(box(0,0),box(1,1),box(2,2));
+    // VectorView has exactly three components per row. Express the fixed
+    // stride directly so the compiler can prove that rows do not overlap.
+    double* const values=dlist.data();
     for(unsigned k=0; k<max_index; ++k) {
       for(int i=0; i<3; i++) {
-        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+        double& value=values[std::size_t(k)*3+i];
+        value=Tools::pbc(value*inverseDiagonal[i])*diagonal[i];
       }
     }
 #endif

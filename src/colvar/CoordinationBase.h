@@ -37,6 +37,9 @@ class CoordinationBase : public Colvar {
   bool invalidateList;
   bool firsttime;
 
+  template<bool useBatch>
+  void calculateImpl();
+
 public:
   explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();
