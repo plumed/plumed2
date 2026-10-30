@@ -495,6 +495,7 @@ void memFusionP::calculate() {
       CylDistances_Mem[i] = pbcDistance(xyzCyl_Mem, pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + membraneBeads)));
       ri_Mem = sqrt(pow(CylDistances_Mem[i][0], 2) + pow(CylDistances_Mem[i][1], 2));
       x = ri_Mem / RCYLMEM[0];
+      fradial_Mem = 0.0;
       if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0]))) {
         if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
           fradial_Mem = 1.0;
