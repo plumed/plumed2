@@ -304,11 +304,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     log<<"  You specified both GRID_BIN and GRID_SPACING\n";
     log<<"  The more conservative (highest) number of bins will be used for each variable\n";
   }
-  if(gspacing.size()!=0)
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(gbin.size()==0) {
-        gbin.assign(getNumberOfArguments(),1);
-      }
+  // the number of bins from GRID_SPACING is computed once the boundaries are known,
+  // possibly after they have been detected from the hills
+  const bool userbin=(gbin.size()!=0);
+  auto applySpacing=[&]() {
+    if(gspacing.size()==0) {
+      return;
+    }
+    if(gbin.size()==0) {
+      gbin.assign(gmin.size(),1);
+    }
+    for(unsigned i=0; i<gmin.size(); i++) {
       double a,b;
       Tools::convert(gmin[i],a);
       Tools::convert(gmax[i],b);
@@ -317,6 +323,10 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
         gbin[i]=n;
       }
     }
+  };
+  if(gmin.size()!=0 && gmax.size()!=0) {
+    applySpacing();
+  }
 
   // Inteval keyword
   std::vector<double> tmpI(2);
@@ -346,8 +356,10 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(gmax.size()==0) {
       gmax.push_back(strsmax.str());
     }
-    if(gbin.size()==0) {
+    if(gbin.size()==0 && gspacing.size()==0) {
       gbin.push_back(200);
+    } else if(gbin.size()==0) {
+      applySpacing();
     }
   }
 
@@ -425,14 +437,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       log<<"  found boundaries from hillsfile: \n";
       gmin.resize(vmin.size());
       gmax.resize(vmax.size());
-      if(gbin.size()==0) {
-        gbin=vbin;
-      } else {
-        log<<"  found nbins in input, this overrides the automatic choice \n";
-      }
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
         Tools::convert(vmin[i],gmin[i]);
         Tools::convert(vmax[i],gmax[i]);
+      }
+      if(userbin || gspacing.size()!=0) {
+        log<<"  found nbins or spacing in input, this overrides the automatic choice \n";
+        applySpacing();
+      } else {
+        gbin=vbin;
+      }
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
         log<<"  variable "<< getPntrToArgument(i)->getName()<<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
       }
     }
@@ -445,14 +460,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       log<<"  found boundaries from histofile: \n";
       gmin.resize(vmin.size());
       gmax.resize(vmax.size());
-      if(gbin.size()==0) {
-        gbin=vbin;
-      } else {
-        log<<"  found nbins in input, this overrides the automatic choice \n";
-      }
       for(unsigned i=0; i<proj.size(); i++) {
         Tools::convert(vmin[i],gmin[i]);
         Tools::convert(vmax[i],gmax[i]);
+      }
+      if(userbin || gspacing.size()!=0) {
+        log<<"  found nbins or spacing in input, this overrides the automatic choice \n";
+        applySpacing();
+      } else {
+        gbin=vbin;
+      }
+      for(unsigned i=0; i<proj.size(); i++) {
         log<<"  variable "<< proj[i] <<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
       }
     }

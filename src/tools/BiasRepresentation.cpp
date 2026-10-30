@@ -29,6 +29,15 @@
 
 namespace PLMD {
 
+namespace {
+/// factor converting the heights written in a hills file into the bias:
+/// with well-tempered metadynamics (biasf>1) the heights are scaled by biasf/(biasf-1),
+/// otherwise they are the bias itself
+double biasFactorToBias(double biasf) {
+  return biasf>1.0 ? (biasf-1.)/biasf : 1.0;
+}
+}
+
 /// the constructor here
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc) {
   lowI_=0.0;
@@ -211,7 +220,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
           bias=kk->evaluate(values,der,true);
         }
         if(rescaledToBias) {
-          double f=(biasf.back()-1.)/(biasf.back());
+          double f=biasFactorToBias(biasf.back());
           bias*=f;
           for(int j=0; j<ndim; ++j) {
             der[j]*=f;
@@ -232,12 +241,12 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
           values[j]->set(xx[j]);
         }
         if(doInt_) {
-          allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+          allbias[i]=kk->evaluate(values,tmpder,true,doInt_,lowI_,uppI_);
         } else {
-          allbias[i]=kk->evaluate(values,der,true);
+          allbias[i]=kk->evaluate(values,tmpder,true);
         }
         if(rescaledToBias) {
-          double f=(biasf.back()-1.)/(biasf.back());
+          double f=biasFactorToBias(biasf.back());
           allbias[i]*=f;
           for(int j=0; j<ndim; ++j) {
             tmpder[j]*=f;

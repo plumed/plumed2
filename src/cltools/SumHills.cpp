@@ -27,6 +27,7 @@
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
+#include <algorithm>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -247,7 +248,12 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   if(dohills) {
     // parse it as it was a restart
     bool vmultivariate;
-    findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_);
+    if(!findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_)) {
+      plumed_merror("cannot find file "+hillsFiles[0]);
+    }
+    if(vcvs.empty()) {
+      plumed_merror("no collective variable found in file "+hillsFiles[0]);
+    }
   }
 
   std::vector< std::vector<std::string> > hcvs;
@@ -257,7 +263,12 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   std::vector<std::string> sigma;
   if(dohisto) {
     bool hmultivariate;
-    findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
+    if(!findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_)) {
+      plumed_merror("cannot find file "+histoFiles[0]);
+    }
+    if(hcvs.empty()) {
+      plumed_merror("no collective variable found in file "+histoFiles[0]);
+    }
     // here need also the vector of sigmas
     parseVector("--sigma",sigma);
     if(sigma.size()==0) {
@@ -614,95 +625,71 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename,
                                         std::string &uppI_) {
   IFile ifile;
   ifile.allowIgnoredFields();
-  std::vector<std::string> fields;
-  if(ifile.FileExist(filename)) {
-    cvs.clear();
-    pmin.clear();
-    pmax.clear();
-    ifile.open(filename);
-    ifile.scanFieldList(fields);
-    bool before_sigma=true;
-    for(unsigned i=0; i<fields.size(); i++) {
-      size_t pos = 0;
-      size_t founds,foundm,foundp;
-      //found=(fields[i].find("sigma_", pos) || fields[i].find("min_", pos) || fields[i].find("max_", pos) ) ;
-      founds=fields[i].find("sigma_", pos)  ;
-      foundm=fields[i].find("min_", pos)  ;
-      foundp=fields[i].find("max_", pos)  ;
-      if (founds!=std::string::npos || foundm!=std::string::npos ||  foundp!=std::string::npos ) {
-        before_sigma=false;
-      }
-      // cvs are after time and before sigmas
-      size_t  found;
-      found=fields[i].find("time", pos);
-      if( found==std::string::npos && before_sigma) {
-        // separate the components
-        size_t dot=fields[i].find_first_of('.');
-        std::vector<std::string> ss;
-        // this loop does not take into account repetitions
-        if(dot!=std::string::npos) {
-          std::string a=fields[i].substr(0,dot);
-          std::string name=fields[i].substr(dot+1);
-          ss.push_back(a);
-          ss.push_back(name);
-          cvs.push_back(ss);
-        } else {
-          cvs.emplace_back(std::vector<std::string> {fields[i]});
-        }
-        //std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
-        //if((cvs.back()).size()!=1){
-        //	std::cerr<<"component    "<<(cvs.back()).back()<<std::endl;
-        //}
-        // get periodicity
-        pmin.push_back("none");
-        pmax.push_back("none");
-        std::string mm;
-        if((cvs.back()).size()>1) {
-          mm=cvs.back()[0]+"."+cvs.back()[1];
-        } else {
-          mm=cvs.back()[0];
-        }
-        if(ifile.FieldExist("min_"+mm)) {
-          std::string val;
-          ifile.scanField("min_"+mm,val);
-          pmin[pmin.size()-1]=val;
-          // std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
-        }
-        //std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
-        if(ifile.FieldExist("max_"+mm)) {
-          std::string val;
-          ifile.scanField("max_"+mm,val);
-          pmax[pmax.size()-1]=val;
-          // std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
-        }
-        //std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
-      }
-    }
-    // is multivariate ???
-    std::string sss;
-    multivariate=false;
-    if(ifile.FieldExist("multivariate")) {
-      ;
-      ifile.scanField("multivariate",sss);
-      if(sss=="true") {
-        multivariate=true;
-      } else if(sss=="false") {
-        multivariate=false;
-      }
-    }
-    // do interval?
-    if(ifile.FieldExist("lower_int")) {
-      ifile.scanField("lower_int",lowI_);
-      ifile.scanField("upper_int",uppI_);
-    } else {
-      lowI_="-1.";
-      uppI_="-1.";
-    }
-    ifile.scanField();
-    return true;
-  } else {
+  if(!ifile.FileExist(filename)) {
     return false;
   }
+  cvs.clear();
+  pmin.clear();
+  pmax.clear();
+  ifile.open(filename);
+  std::vector<std::string> fields;
+  ifile.scanFieldList(fields);
+  auto hasField=[&](const std::string & name) {
+    return std::find(fields.begin(),fields.end(),name)!=fields.end();
+  };
+  // In a hills file a column X is a collective variable if its width is also
+  // there (sigma_X, or sigma_X_X for multivariate kernels). Names are compared
+  // exactly, so that variables such as sigma_1 or lifetime are accepted (see #1226).
+  // In a file without widths (e.g. a COLVAR file used with --histo) all the
+  // columns but time are variables.
+  bool hasSigma=false;
+  for(const auto & f : fields) {
+    if(f!="time" && (hasField("sigma_"+f) || hasField("sigma_"+f+"_"+f))) {
+      hasSigma=true;
+      break;
+    }
+  }
+  for(const auto & f : fields) {
+    if(f=="time") {
+      continue;
+    }
+    if(hasSigma && !hasField("sigma_"+f) && !hasField("sigma_"+f+"_"+f)) {
+      continue;
+    }
+    // separate the components
+    auto dot=f.find_first_of('.');
+    if(dot!=std::string::npos) {
+      cvs.emplace_back(std::vector<std::string> {f.substr(0,dot),f.substr(dot+1)});
+    } else {
+      cvs.emplace_back(std::vector<std::string> {f});
+    }
+    // get periodicity
+    pmin.push_back("none");
+    pmax.push_back("none");
+    if(ifile.FieldExist("min_"+f)) {
+      ifile.scanField("min_"+f,pmin.back());
+    }
+    if(ifile.FieldExist("max_"+f)) {
+      ifile.scanField("max_"+f,pmax.back());
+    }
+  }
+  // is multivariate ???
+  multivariate=false;
+  if(ifile.FieldExist("multivariate")) {
+    std::string sss;
+    ifile.scanField("multivariate",sss);
+    multivariate=(sss=="true");
+  }
+  // do interval?
+  if(ifile.FieldExist("lower_int")) {
+    ifile.scanField("lower_int",lowI_);
+    ifile.scanField("upper_int",uppI_);
+  } else {
+    lowI_="-1.";
+    uppI_="-1.";
+  }
+  ifile.scanField();
+  return true;
 }
 
 

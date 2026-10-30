@@ -1,0 +1,3 @@
+# --negbias for a run that is not well tempered (no biasf column): the bias is the sum of the hills
+type=sum_hills
+arg="--hills HILLS --negbias --min -4 --max 4 --bin 80 --fmt %10.5f"
