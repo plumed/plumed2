@@ -68,7 +68,8 @@ PRINT ARG=uwall.bias,lwall.bias
 
 If an argument is periodic (e.g. a \ref TORSION), the wall acts on the value of the argument in its periodic domain
 and periodic boundary conditions are __not__ applied to the difference \f$x_i-a_i\f$. The value of AT must thus be within the
-periodic domain of the argument. The following input restrains a torsion within the interval \f$[-2,2]\f$:
+periodic domain of the argument. This is the case both when the arguments are scalars and when they are vectors.
+The following input restrains a torsion within the interval \f$[-2,2]\f$:
 \plumedfile
 t: TORSION ATOMS=1,2,3,4
 uwall: UPPER_WALLS ARG=t AT=2.0 KAPPA=150.0
