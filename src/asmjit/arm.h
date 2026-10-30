@@ -1,43 +1,62 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_arm_h
-#define __PLUMED_asmjit_arm_h
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Guard]
-#ifndef _ASMJIT_ARM_H
-#define _ASMJIT_ARM_H
+#ifndef ASMJIT_ARM_H_INCLUDED
+#define ASMJIT_ARM_H_INCLUDED
 
-// [Dependencies]
-#include "./base.h"
+//! \addtogroup asmjit_arm
+//!
+//! ### Namespaces
+//!
+//!   - \ref arm - arm namespace provides common functionality for both AArch32 and AArch64 backends.
+//!   - \ref a64 - a64 namespace provides support for AArch64 architecture. In addition it includes
+//!     \ref arm namespace, so you can only use a single namespace when targeting AArch64 architecture.
+//!
+//! ### Emitters
+//!
+//!   - AArch64
+//!     - \ref a64::Assembler - AArch64 assembler (must read, provides examples).
+//!     - \ref a64::Builder - AArch64 builder.
+//!     - \ref a64::Compiler - AArch64 compiler.
+//!     - \ref a64::Emitter - AArch64 emitter (abstract).
+//!
+//! ### Supported Instructions
+//!
+//!   - AArch64:
+//!     - Emitters:
+//!       - \ref a64::EmitterExplicitT - Provides all instructions that use explicit operands, provides also
+//!         utility functions. The member functions provided are part of all AArch64 emitters.
+//!     - Instruction representation:
+//!       - \ref a64::Inst::Id - instruction identifiers.
+//!
+//! ### Register Operands
+//!
+//!   - \ref arm::Reg - Base class for any AArch32/AArch64 register.
+//!     - \ref arm::Gp - General purpose register:
+//!       - \ref arm::GpW - 32-bit register.
+//!       - \ref arm::GpX - 64-bit register.
+//!     - \ref arm::Vec - Vector (SIMD) register:
+//!       - \ref arm::VecB - 8-bit SIMD register (AArch64 only).
+//!       - \ref arm::VecH - 16-bit SIMD register (AArch64 only).
+//!       - \ref arm::VecS - 32-bit SIMD register.
+//!       - \ref arm::VecD - 64-bit SIMD register.
+//!       - \ref arm::VecV - 128-bit SIMD register.
+//!
+//! ### Memory Operands
+//!
+//!   - \ref arm::Mem - AArch32/AArch64 memory operand that provides support for all ARM addressing features
+//!     including base, index, pre/post increment, and ARM-specific shift addressing and index extending.
+//!
+//! ### Other
+//!
+//!   - \ref arm::Shift - Shift operation and value (both AArch32 and AArch64).
+//!   - \ref arm::DataType - Data type that is part of an instruction in AArch32 mode.
+//!   - \ref a64::Utils - Utilities that can help during code generation for AArch64.
 
-#include "./arm/armassembler.h"
-#include "./arm/armbuilder.h"
-#include "./arm/armcompiler.h"
-#include "./arm/arminst.h"
-#include "./arm/armoperand.h"
+#include "core.h"
+#include "armglobals.h"
+#include "armoperand.h"
 
-// [Guard]
-#endif // _ASMJIT_ARM_H
-#endif
+#endif // ASMJIT_ARM_H_INCLUDED

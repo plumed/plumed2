@@ -1,159 +1,240 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_zone_h
-#define __PLUMED_asmjit_zone_h
-#ifdef __PLUMED_HAS_ASMJIT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Guard]
-#ifndef _ASMJIT_BASE_ZONE_H
-#define _ASMJIT_BASE_ZONE_H
+#ifndef ASMJIT_CORE_ZONE_H_INCLUDED
+#define ASMJIT_CORE_ZONE_H_INCLUDED
 
-// [Dependencies]
-#include "./utils.h"
+#include "support.h"
 
-// [Api-Begin]
-#include "./asmjit_apibegin.h"
+ASMJIT_BEGIN_NAMESPACE
 
-namespace PLMD {
-namespace asmjit {
-
-//! \addtogroup asmjit_base
+//! \addtogroup asmjit_zone
 //! \{
 
-// ============================================================================
-// [asmjit::Zone]
-// ============================================================================
-
-//! Memory zone.
+//! Zone memory.
 //!
-//! Zone is an incremental memory allocator that allocates memory by simply
-//! incrementing a pointer. It allocates blocks of memory by using standard
-//! C `malloc`, but divides these blocks into smaller segments requested by
-//! calling `Zone::alloc()` and friends.
+//! Zone is an incremental memory allocator that allocates memory by simply incrementing a pointer. It allocates
+//! blocks of memory by using C's `malloc()`, but divides these blocks into smaller segments requested by calling
+//! `Zone::alloc()` and friends.
 //!
-//! Zone has no function to release the allocated memory. It has to be released
-//! all at once by calling `reset()`. If you need a more friendly allocator that
-//! also supports `release()`, consider using \ref Zone with \ref ZoneHeap.
+//! Zone has no function to release the allocated memory. It has to be released all at once by calling `reset()`.
+//! If you need a more friendly allocator that also supports `release()`, consider using `Zone` with `ZoneAllocator`.
 class Zone {
 public:
-  //! \internal
-  //!
-  //! A single block of memory.
+  ASMJIT_NONCOPYABLE(Zone)
+
+  //! \cond INTERNAL
+
+  //! A single block of memory managed by `Zone`.
   struct Block {
-    Block* prev;                         //!< Link to the previous block.
-    Block* next;                         //!< Link to the next block.
-    size_t size;                         //!< Size of the block.
-    uint8_t data[sizeof(void*)];         //!< Data.
+    inline uint8_t* data() const noexcept {
+      return const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(this) + sizeof(*this));
+    }
+
+    //! Link to the previous block.
+    Block* prev;
+    //! Link to the next block.
+    Block* next;
+    //! Size of the block.
+    size_t size;
   };
 
-  enum {
-    //! Zone allocator overhead.
-    kZoneOverhead = Globals::kAllocOverhead + static_cast<int>(sizeof(Block))
+  enum Limits : size_t {
+    kBlockSize = sizeof(Block),
+    kBlockOverhead = Globals::kAllocOverhead + kBlockSize,
+
+    kMinBlockSize = 64, // The number is ridiculously small, but still possible.
+    kMaxBlockSize = size_t(1) << (sizeof(size_t) * 8 - 4 - 1),
+    kMinAlignment = 1,
+    kMaxAlignment = 64
   };
 
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
+  //! Pointer in the current block.
+  uint8_t* _ptr;
+  //! End of the current block.
+  uint8_t* _end;
+  //! Current block.
+  Block* _block;
 
-  //! Create a new instance of `Zone` allocator.
+  union {
+    struct {
+      //! Default block size.
+      size_t _blockSize : Support::bitSizeOf<size_t>() - 4;
+      //! First block is temporary (ZoneTmp).
+      size_t _isTemporary : 1;
+      //! Block alignment (1 << alignment).
+      size_t _blockAlignmentShift : 3;
+    };
+    size_t _packedData;
+  };
+
+  static ASMJIT_API const Block _zeroBlock;
+
+  //! \endcond
+
+  //! \name Construction & Destruction
+  //! \{
+
+  //! Creates a new Zone.
   //!
-  //! The `blockSize` parameter describes the default size of the block. If the
-  //! `size` parameter passed to `alloc()` is greater than the default size
-  //! `Zone` will allocate and use a larger block, but it will not change the
+  //! The `blockSize` parameter describes the default size of the block. If the `size` parameter passed to `alloc()`
+  //! is greater than the default size `Zone` will allocate and use a larger block, but it will not change the
   //! default `blockSize`.
   //!
-  //! It's not required, but it's good practice to set `blockSize` to a
-  //! reasonable value that depends on the usage of `Zone`. Greater block sizes
-  //! are generally safer and perform better than unreasonably low values.
-  ASMJIT_API Zone(uint32_t blockSize, uint32_t blockAlignment = 0) noexcept;
+  //! It's not required, but it's good practice to set `blockSize` to a reasonable value that depends on the usage
+  //! of `Zone`. Greater block sizes are generally safer and perform better than unreasonably low block sizes.
+  inline explicit Zone(size_t blockSize, size_t blockAlignment = 1) noexcept {
+    _init(blockSize, blockAlignment, nullptr);
+  }
 
-  //! Destroy the `Zone` instance.
+  //! Creates a new Zone with a first block pointing to a `temporary` memory.
+  inline Zone(size_t blockSize, size_t blockAlignment, const Support::Temporary& temporary) noexcept {
+    _init(blockSize, blockAlignment, &temporary);
+  }
+
+  //! \overload
+  inline Zone(size_t blockSize, size_t blockAlignment, const Support::Temporary* temporary) noexcept {
+    _init(blockSize, blockAlignment, temporary);
+  }
+
+  //! Moves an existing `Zone`.
   //!
-  //! This will destroy the `Zone` instance and release all blocks of memory
-  //! allocated by it. It performs implicit `reset(true)`.
-  ASMJIT_API ~Zone() noexcept;
+  //! \note You cannot move an existing `ZoneTmp` as it uses embedded storage. Attempting to move `ZoneTmp` would
+  //! result in assertion failure in debug mode and undefined behavior in release mode.
+  inline Zone(Zone&& other) noexcept
+    : _ptr(other._ptr),
+      _end(other._end),
+      _block(other._block),
+      _packedData(other._packedData) {
+    ASMJIT_ASSERT(!other.isTemporary());
+    other._block = const_cast<Block*>(&_zeroBlock);
+    other._ptr = other._block->data();
+    other._end = other._block->data();
+  }
 
-  // --------------------------------------------------------------------------
-  // [Reset]
-  // --------------------------------------------------------------------------
-
-  //! Reset the `Zone` invalidating all blocks allocated.
+  //! Destroys the `Zone` instance.
   //!
-  //! If `releaseMemory` is true all buffers will be released to the system.
-  ASMJIT_API void reset(bool releaseMemory = false) noexcept;
+  //! This will destroy the `Zone` instance and release all blocks of memory allocated by it. It performs implicit
+  //! `reset(ResetPolicy::kHard)`.
+  inline ~Zone() noexcept { reset(ResetPolicy::kHard); }
 
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
+  ASMJIT_API void _init(size_t blockSize, size_t blockAlignment, const Support::Temporary* temporary) noexcept;
 
-  //! Get the default block size.
-  ASMJIT_INLINE uint32_t getBlockSize() const noexcept { return _blockSize; }
-  //! Get the default block alignment.
-  ASMJIT_INLINE uint32_t getBlockAlignment() const noexcept { return (uint32_t)1 << _blockAlignmentShift; }
-  //! Get remaining size of the current block.
-  ASMJIT_INLINE size_t getRemainingSize() const noexcept { return (size_t)(_end - _ptr); }
-
-  //! Get the current zone cursor (dangerous).
+  //! Resets the `Zone` invalidating all blocks allocated.
   //!
-  //! This is a function that can be used to get exclusive access to the current
-  //! block's memory buffer.
-  ASMJIT_INLINE uint8_t* getCursor() noexcept { return _ptr; }
-  //! Get the end of the current zone block, only useful if you use `getCursor()`.
-  ASMJIT_INLINE uint8_t* getEnd() noexcept { return _end; }
+  //! See `Globals::ResetPolicy` for more details.
+  ASMJIT_API void reset(ResetPolicy resetPolicy = ResetPolicy::kSoft) noexcept;
 
-  //! Set the current zone cursor to `p` (must match the current block).
+  //! \}
+
+  //! \name Accessors
+  //! \{
+
+  //! Tests whether this `Zone` is actually a `ZoneTmp` that uses temporary memory.
+  inline bool isTemporary() const noexcept { return _isTemporary != 0; }
+
+  //! Returns the default block size.
+  inline size_t blockSize() const noexcept { return _blockSize; }
+  //! Returns the default block alignment.
+  inline size_t blockAlignment() const noexcept { return size_t(1) << _blockAlignmentShift; }
+  //! Returns remaining size of the current block.
+  inline size_t remainingSize() const noexcept { return (size_t)(_end - _ptr); }
+
+  //! Returns the current zone cursor (dangerous).
   //!
-  //! This is a counterpart of `getZoneCursor()`.
-  ASMJIT_INLINE void setCursor(uint8_t* p) noexcept {
+  //! This is a function that can be used to get exclusive access to the current block's memory buffer.
+  template<typename T = uint8_t>
+  inline T* ptr() noexcept { return reinterpret_cast<T*>(_ptr); }
+
+  //! Returns the end of the current zone block, only useful if you use `ptr()`.
+  template<typename T = uint8_t>
+  inline T* end() noexcept { return reinterpret_cast<T*>(_end); }
+
+  //! Sets the current zone pointer to `ptr` (must be within the current block).
+  template<typename T>
+  inline void setPtr(T* ptr) noexcept {
+    uint8_t* p = reinterpret_cast<uint8_t*>(ptr);
     ASMJIT_ASSERT(p >= _ptr && p <= _end);
     _ptr = p;
   }
 
-  // --------------------------------------------------------------------------
-  // [Alloc]
-  // --------------------------------------------------------------------------
+  //! Sets the end zone pointer to `end` (must be within the current block).
+  template<typename T>
+  inline void setEnd(T* end) noexcept {
+    uint8_t* p = reinterpret_cast<uint8_t*>(end);
+    ASMJIT_ASSERT(p >= _ptr && p <= _end);
+    _end = p;
+  }
 
-  //! Allocate `size` bytes of memory.
+  //! \}
+
+  //! \name Utilities
+  //! \{
+
+  inline void swap(Zone& other) noexcept {
+    // This could lead to a disaster.
+    ASMJIT_ASSERT(!this->isTemporary());
+    ASMJIT_ASSERT(!other.isTemporary());
+
+    std::swap(_ptr, other._ptr);
+    std::swap(_end, other._end);
+    std::swap(_block, other._block);
+    std::swap(_packedData, other._packedData);
+  }
+
+  //! Aligns the current pointer to `alignment`.
+  inline void align(size_t alignment) noexcept {
+    _ptr = Support::min(Support::alignUp(_ptr, alignment), _end);
+  }
+
+  //! Ensures the remaining size is at least equal or greater than `size`.
   //!
-  //! Pointer returned is valid until the `Zone` instance is destroyed or reset
-  //! by calling `reset()`. If you plan to make an instance of C++ from the
-  //! given pointer use placement `new` and `delete` operators:
+  //! \note This function doesn't respect any alignment. If you need to ensure there is enough room for an aligned
+  //! allocation you need to call `align()` before calling `ensure()`.
+  inline Error ensure(size_t size) noexcept {
+    if (size <= remainingSize())
+      return kErrorOk;
+    else
+      return _alloc(0, 1) ? kErrorOk : DebugUtils::errored(kErrorOutOfMemory);
+  }
+
+  inline void _assignBlock(Block* block) noexcept {
+    size_t alignment = blockAlignment();
+    _ptr = Support::alignUp(block->data(), alignment);
+    _end = Support::alignDown(block->data() + block->size, alignment);
+    _block = block;
+  }
+
+  inline void _assignZeroBlock() noexcept {
+    Block* block = const_cast<Block*>(&_zeroBlock);
+    _ptr = block->data();
+    _end = block->data();
+    _block = block;
+  }
+
+  //! \}
+
+  //! \name Allocation
+  //! \{
+
+  //! Allocates the requested memory specified by `size`.
   //!
-  //! ~~~
+  //! Pointer returned is valid until the `Zone` instance is destroyed or reset by calling `reset()`. If you plan to
+  //! make an instance of C++ from the given pointer use placement `new` and `delete` operators:
+  //!
+  //! ```
   //! using namespace asmjit;
   //!
   //! class Object { ... };
   //!
   //! // Create Zone with default block size of approximately 65536 bytes.
-  //! Zone zone(65536 - Zone::kZoneOverhead);
+  //! Zone zone(65536 - Zone::kBlockOverhead);
   //!
   //! // Create your objects using zone object allocating, for example:
   //! Object* obj = static_cast<Object*>( zone.alloc(sizeof(Object)) );
-  //
+  //!
   //! if (!obj) {
   //!   // Handle out of memory error.
   //! }
@@ -168,121 +249,150 @@ public:
   //!
   //! // Reset or destroy `Zone`.
   //! zone.reset();
-  //! ~~~
-  ASMJIT_INLINE void* alloc(size_t size) noexcept {
-    uint8_t* ptr = _ptr;
-    size_t remainingBytes = (size_t)(_end - ptr);
-
-    if (ASMJIT_UNLIKELY(remainingBytes < size))
-      return _alloc(size);
-
-    _ptr += size;
-    ASMJIT_ASSERT(_ptr <= _end);
-
-    return static_cast<void*>(ptr);
-  }
-
-  //! Allocate `size` bytes without any checks.
-  //!
-  //! Can only be called if `getRemainingSize()` returns size at least equal
-  //! to `size`.
-  ASMJIT_INLINE void* allocNoCheck(size_t size) noexcept {
-    ASMJIT_ASSERT((size_t)(_end - _ptr) >= size);
+  //! ```
+  inline void* alloc(size_t size) noexcept {
+    if (ASMJIT_UNLIKELY(size > remainingSize()))
+      return _alloc(size, 1);
 
     uint8_t* ptr = _ptr;
     _ptr += size;
     return static_cast<void*>(ptr);
   }
 
-  //! Allocate `size` bytes of zeroed memory.
+  //! Allocates the requested memory specified by `size` and `alignment`.
+  inline void* alloc(size_t size, size_t alignment) noexcept {
+    ASMJIT_ASSERT(Support::isPowerOf2(alignment));
+    uint8_t* ptr = Support::alignUp(_ptr, alignment);
+
+    if (ptr >= _end || size > (size_t)(_end - ptr))
+      return _alloc(size, alignment);
+
+    _ptr = ptr + size;
+    return static_cast<void*>(ptr);
+  }
+
+  //! Allocates the requested memory specified by `size` without doing any checks.
   //!
-  //! See \ref alloc() for more details.
-  ASMJIT_API void* allocZeroed(size_t size) noexcept;
+  //! Can only be called if `remainingSize()` returns size at least equal to `size`.
+  inline void* allocNoCheck(size_t size) noexcept {
+    ASMJIT_ASSERT(remainingSize() >= size);
+
+    uint8_t* ptr = _ptr;
+    _ptr += size;
+    return static_cast<void*>(ptr);
+  }
+
+  //! Allocates the requested memory specified by `size` and `alignment` without doing any checks.
+  //!
+  //! Performs the same operation as `Zone::allocNoCheck(size)` with `alignment` applied.
+  inline void* allocNoCheck(size_t size, size_t alignment) noexcept {
+    ASMJIT_ASSERT(Support::isPowerOf2(alignment));
+
+    uint8_t* ptr = Support::alignUp(_ptr, alignment);
+    ASMJIT_ASSERT(size <= (size_t)(_end - ptr));
+
+    _ptr = ptr + size;
+    return static_cast<void*>(ptr);
+  }
+
+  //! Allocates `size` bytes of zeroed memory. See `alloc()` for more details.
+  ASMJIT_API void* allocZeroed(size_t size, size_t alignment = 1) noexcept;
 
   //! Like `alloc()`, but the return pointer is casted to `T*`.
   template<typename T>
-  ASMJIT_INLINE T* allocT(size_t size = sizeof(T)) noexcept {
-    return static_cast<T*>(alloc(size));
+  inline T* allocT(size_t size = sizeof(T), size_t alignment = alignof(T)) noexcept {
+    return static_cast<T*>(alloc(size, alignment));
   }
 
   //! Like `allocNoCheck()`, but the return pointer is casted to `T*`.
   template<typename T>
-  ASMJIT_INLINE T* allocNoCheckT(size_t size = sizeof(T)) noexcept {
-    return static_cast<T*>(allocNoCheck(size));
+  inline T* allocNoCheckT(size_t size = sizeof(T), size_t alignment = alignof(T)) noexcept {
+    return static_cast<T*>(allocNoCheck(size, alignment));
   }
 
   //! Like `allocZeroed()`, but the return pointer is casted to `T*`.
   template<typename T>
-  ASMJIT_INLINE T* allocZeroedT(size_t size = sizeof(T)) noexcept {
-    return static_cast<T*>(allocZeroed(size));
+  inline T* allocZeroedT(size_t size = sizeof(T), size_t alignment = alignof(T)) noexcept {
+    return static_cast<T*>(allocZeroed(size, alignment));
   }
 
   //! Like `new(std::nothrow) T(...)`, but allocated by `Zone`.
   template<typename T>
-  ASMJIT_INLINE T* newT() noexcept {
-    void* p = alloc(sizeof(T));
+  inline T* newT() noexcept {
+    void* p = alloc(sizeof(T), alignof(T));
     if (ASMJIT_UNLIKELY(!p))
       return nullptr;
     return new(p) T();
   }
+
   //! Like `new(std::nothrow) T(...)`, but allocated by `Zone`.
-  template<typename T, typename P1>
-  ASMJIT_INLINE T* newT(P1 p1) noexcept {
-    void* p = alloc(sizeof(T));
+  template<typename T, typename... Args>
+  inline T* newT(Args&&... args) noexcept {
+    void* p = alloc(sizeof(T), alignof(T));
     if (ASMJIT_UNLIKELY(!p))
       return nullptr;
-    return new(p) T(p1);
+    return new(p) T(std::forward<Args>(args)...);
   }
 
-  //! \internal
-  ASMJIT_API void* _alloc(size_t size) noexcept;
+  //! \cond INTERNAL
+  //!
+  //! Internal alloc function used by other inlines.
+  ASMJIT_API void* _alloc(size_t size, size_t alignment) noexcept;
+  //! \endcond
 
   //! Helper to duplicate data.
   ASMJIT_API void* dup(const void* data, size_t size, bool nullTerminate = false) noexcept;
 
-  //! Helper to duplicate formatted string, maximum length is 256 bytes.
+  //! Helper to duplicate data.
+  inline void* dupAligned(const void* data, size_t size, size_t alignment, bool nullTerminate = false) noexcept {
+    align(alignment);
+    return dup(data, size, nullTerminate);
+  }
+
+  //! Helper to duplicate a formatted string, maximum size is 256 bytes.
   ASMJIT_API char* sformat(const char* str, ...) noexcept;
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  uint8_t* _ptr;                         //!< Pointer in the current block's buffer.
-  uint8_t* _end;                         //!< End of the current block's buffer.
-  Block* _block;                         //!< Current block.
-
-#if ASMJIT_ARCH_64BIT
-  uint32_t _blockSize;                   //!< Default size of a newly allocated block.
-  uint32_t _blockAlignmentShift;         //!< Minimum alignment of each block.
-#else
-  uint32_t _blockSize : 29;              //!< Default size of a newly allocated block.
-  uint32_t _blockAlignmentShift : 3;     //!< Minimum alignment of each block.
-#endif
+  //! \}
 };
 
-// ============================================================================
-// [asmjit::ZoneHeap]
-// ============================================================================
-
-//! Zone-based memory allocator that uses an existing \ref Zone and provides
-//! a `release()` functionality on top of it. It uses \ref Zone only for chunks
-//! that can be pooled, and uses libc `malloc()` for chunks that are large.
+//! \ref Zone with `N` bytes of a static storage, used for the initial block.
 //!
-//! The advantage of ZoneHeap is that it can allocate small chunks of memory
-//! really fast, and these chunks, when released, will be reused by consecutive
-//! calls to `alloc()`. Also, since ZoneHeap uses \ref Zone, you can turn any
-//! \ref Zone into a \ref ZoneHeap, and use it in your \ref Pass when necessary.
+//! Temporary zones are used in cases where it's known that some memory will be required, but in many cases it won't
+//! exceed N bytes, so the whole operation can be performed without a dynamic memory allocation.
+template<size_t N>
+class ZoneTmp : public Zone {
+public:
+  ASMJIT_NONCOPYABLE(ZoneTmp)
+
+  //! Temporary storage, embedded after \ref Zone.
+  struct Storage {
+    char data[N];
+  } _storage;
+
+  //! Creates a temporary zone. Dynamic block size is specified by `blockSize`.
+  inline explicit ZoneTmp(size_t blockSize, size_t blockAlignment = 1) noexcept
+    : Zone(blockSize, blockAlignment, Support::Temporary(_storage.data, N)) {}
+};
+
+//! Zone-based memory allocator that uses an existing `Zone` and provides a `release()` functionality on top of it.
+//! It uses `Zone` only for chunks that can be pooled, and uses libc `malloc()` for chunks that are large.
 //!
-//! ZoneHeap is used by AsmJit containers to make containers having only
-//! few elements fast (and lightweight) and to allow them to grow and use
-//! dynamic blocks when require more storage.
-class ZoneHeap {
-  ASMJIT_NONCOPYABLE(ZoneHeap)
+//! The advantage of ZoneAllocator is that it can allocate small chunks of memory really fast, and these chunks,
+//! when released, will be reused by consecutive calls to `alloc()`. Also, since ZoneAllocator uses `Zone`, you can
+//! turn any `Zone` into a `ZoneAllocator`, and use it in your `Pass` when necessary.
+//!
+//! ZoneAllocator is used by AsmJit containers to make containers having only few elements fast (and lightweight)
+//! and to allow them to grow and use dynamic blocks when require more storage.
+class ZoneAllocator {
+public:
+  ASMJIT_NONCOPYABLE(ZoneAllocator)
 
-  enum {
-    // In short, we pool chunks of these sizes:
-    //   [32, 64, 96, 128, 192, 256, 320, 384, 448, 512]
+  //! \cond INTERNAL
 
+  // In short, we pool chunks of these sizes:
+  //   [32, 64, 96, 128, 192, 256, 320, 384, 448, 512]
+
+  enum : uint32_t {
     //! How many bytes per a low granularity pool (has to be at least 16).
     kLoGranularity = 32,
     //! Number of slots of a low granularity pool.
@@ -307,160 +417,186 @@ class ZoneHeap {
     Slot* next;
   };
 
-  //! A block of memory that has been allocated dynamically and is not part of
-  //! block-list used by the allocator. This is used to keep track of all these
-  //! blocks so they can be freed by `reset()` if not freed explicitly.
+  //! A block of memory that has been allocated dynamically and is not part of block-list used by the allocator.
+  //! This is used to keep track of all these blocks so they can be freed by `reset()` if not freed explicitly.
   struct DynamicBlock {
     DynamicBlock* prev;
     DynamicBlock* next;
   };
 
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
+  //! \endcond
 
-  //! Create a new `ZoneHeap`.
+  //! \name Members
+  //! \{
+
+  //! Zone used to allocate memory that fits into slots.
+  Zone* _zone;
+  //! Indexed slots containing released memory.
+  Slot* _slots[kLoCount + kHiCount];
+  //! Dynamic blocks for larger allocations (no slots).
+  DynamicBlock* _dynamicBlocks;
+
+  //! \}
+
+  //! \name Construction & Destruction
+  //! \{
+
+  //! Creates a new `ZoneAllocator`.
   //!
-  //! NOTE: To use it, you must first `init()` it.
-  ASMJIT_INLINE ZoneHeap() noexcept {
-    ::memset(this, 0, sizeof(*this));
+  //! \note To use it, you must first `init()` it.
+  inline ZoneAllocator() noexcept {
+    memset(this, 0, sizeof(*this));
   }
-  //! Create a new `ZoneHeap` initialized to use `zone`.
-  explicit ASMJIT_INLINE ZoneHeap(Zone* zone) noexcept {
-    ::memset(this, 0, sizeof(*this));
+
+  //! Creates a new `ZoneAllocator` initialized to use `zone`.
+  inline explicit ZoneAllocator(Zone* zone) noexcept {
+    memset(this, 0, sizeof(*this));
     _zone = zone;
   }
-  //! Destroy the `ZoneHeap`.
-  ASMJIT_INLINE ~ZoneHeap() noexcept { reset(); }
 
-  // --------------------------------------------------------------------------
-  // [Init / Reset]
-  // --------------------------------------------------------------------------
+  //! Destroys the `ZoneAllocator`.
+  inline ~ZoneAllocator() noexcept { reset(); }
 
-  //! Get if the `ZoneHeap` is initialized (i.e. has `Zone`).
-  ASMJIT_INLINE bool isInitialized() const noexcept { return _zone != nullptr; }
+  //! Tests whether the `ZoneAllocator` is initialized (i.e. has `Zone`).
+  inline bool isInitialized() const noexcept { return _zone != nullptr; }
 
-  //! Convenience method to initialize the `ZoneHeap` with `zone`.
+  //! Convenience function to initialize the `ZoneAllocator` with `zone`.
   //!
   //! It's the same as calling `reset(zone)`.
-  ASMJIT_INLINE void init(Zone* zone) noexcept { reset(zone); }
+  inline void init(Zone* zone) noexcept { reset(zone); }
 
-  //! Reset this `ZoneHeap` and also forget about the current `Zone` which
-  //! is attached (if any). Reset optionally attaches a new `zone` passed, or
-  //! keeps the `ZoneHeap` in an uninitialized state, if `zone` is null.
+  //! Resets this `ZoneAllocator` and also forget about the current `Zone` which is attached (if any). Reset
+  //! optionally attaches a new `zone` passed, or keeps the `ZoneAllocator` in an uninitialized state, if
+  //! `zone` is null.
   ASMJIT_API void reset(Zone* zone = nullptr) noexcept;
 
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
+  //! \}
 
-  //! Get the `Zone` the `ZoneHeap` is using, or null if it's not initialized.
-  ASMJIT_INLINE Zone* getZone() const noexcept { return _zone; }
+  //! \name Accessors
+  //! \{
 
-  // --------------------------------------------------------------------------
-  // [Utilities]
-  // --------------------------------------------------------------------------
+  //! Returns the assigned `Zone` of this allocator or null if this `ZoneAllocator` is not initialized.
+  inline Zone* zone() const noexcept { return _zone; }
 
-  //! \internal
-  //!
-  //! Get the slot index to be used for `size`. Returns `true` if a valid slot
-  //! has been written to `slot` and `allocatedSize` has been filled with slot
-  //! exact size (`allocatedSize` can be equal or slightly greater than `size`).
-  static ASMJIT_INLINE bool _getSlotIndex(size_t size, uint32_t& slot) noexcept {
+  //! \}
+
+  //! \cond
+  //! \name Internals
+  //! \{
+
+  //! Returns the slot index to be used for `size`. Returns `true` if a valid slot has been written to `slot` and
+  //! `allocatedSize` has been filled with slot exact size (`allocatedSize` can be equal or slightly greater than
+  //! `size`).
+  static inline bool _getSlotIndex(size_t size, uint32_t& slot) noexcept {
     ASMJIT_ASSERT(size > 0);
     if (size > kHiMaxSize)
       return false;
 
     if (size <= kLoMaxSize)
-      slot = static_cast<uint32_t>((size - 1) / kLoGranularity);
+      slot = uint32_t((size - 1) / kLoGranularity);
     else
-      slot = static_cast<uint32_t>((size - kLoMaxSize - 1) / kHiGranularity) + kLoCount;
+      slot = uint32_t((size - kLoMaxSize - 1) / kHiGranularity) + kLoCount;
 
     return true;
   }
 
   //! \overload
-  static ASMJIT_INLINE bool _getSlotIndex(size_t size, uint32_t& slot, size_t& allocatedSize) noexcept {
+  static inline bool _getSlotIndex(size_t size, uint32_t& slot, size_t& allocatedSize) noexcept {
     ASMJIT_ASSERT(size > 0);
     if (size > kHiMaxSize)
       return false;
 
     if (size <= kLoMaxSize) {
-      slot = static_cast<uint32_t>((size - 1) / kLoGranularity);
-      allocatedSize = Utils::alignTo(size, kLoGranularity);
+      slot = uint32_t((size - 1) / kLoGranularity);
+      allocatedSize = Support::alignUp(size, kLoGranularity);
     }
     else {
-      slot = static_cast<uint32_t>((size - kLoMaxSize - 1) / kHiGranularity) + kLoCount;
-      allocatedSize = Utils::alignTo(size, kHiGranularity);
+      slot = uint32_t((size - kLoMaxSize - 1) / kHiGranularity) + kLoCount;
+      allocatedSize = Support::alignUp(size, kHiGranularity);
     }
 
     return true;
   }
 
-  // --------------------------------------------------------------------------
-  // [Alloc / Release]
-  // --------------------------------------------------------------------------
+  //! \}
+  //! \endcond
 
+  //! \name Allocation
+  //! \{
+
+  //! \cond INTERNAL
   ASMJIT_API void* _alloc(size_t size, size_t& allocatedSize) noexcept;
   ASMJIT_API void* _allocZeroed(size_t size, size_t& allocatedSize) noexcept;
   ASMJIT_API void _releaseDynamic(void* p, size_t size) noexcept;
+  //! \endcond
 
-  //! Allocate `size` bytes of memory, ideally from an available pool.
+  //! Allocates `size` bytes of memory, ideally from an available pool.
   //!
-  //! NOTE: `size` can't be zero, it will assert in debug mode in such case.
-  ASMJIT_INLINE void* alloc(size_t size) noexcept {
+  //! \note `size` can't be zero, it will assert in debug mode in such case.
+  inline void* alloc(size_t size) noexcept {
     ASMJIT_ASSERT(isInitialized());
     size_t allocatedSize;
     return _alloc(size, allocatedSize);
   }
 
-  //! Like `alloc(size)`, but provides a second argument `allocatedSize` that
-  //! provides a way to know how big the block returned actually is. This is
-  //! useful for containers to prevent growing too early.
-  ASMJIT_INLINE void* alloc(size_t size, size_t& allocatedSize) noexcept {
+  //! Like `alloc(size)`, but provides a second argument `allocatedSize` that provides a way to know how big
+  //! the block returned actually is. This is useful for containers to prevent growing too early.
+  inline void* alloc(size_t size, size_t& allocatedSize) noexcept {
     ASMJIT_ASSERT(isInitialized());
     return _alloc(size, allocatedSize);
   }
 
   //! Like `alloc()`, but the return pointer is casted to `T*`.
   template<typename T>
-  ASMJIT_INLINE T* allocT(size_t size = sizeof(T)) noexcept {
+  inline T* allocT(size_t size = sizeof(T)) noexcept {
     return static_cast<T*>(alloc(size));
   }
 
   //! Like `alloc(size)`, but returns zeroed memory.
-  ASMJIT_INLINE void* allocZeroed(size_t size) noexcept {
+  inline void* allocZeroed(size_t size) noexcept {
     ASMJIT_ASSERT(isInitialized());
-
     size_t allocatedSize;
     return _allocZeroed(size, allocatedSize);
   }
 
   //! Like `alloc(size, allocatedSize)`, but returns zeroed memory.
-  ASMJIT_INLINE void* allocZeroed(size_t size, size_t& allocatedSize) noexcept {
+  inline void* allocZeroed(size_t size, size_t& allocatedSize) noexcept {
     ASMJIT_ASSERT(isInitialized());
-
     return _allocZeroed(size, allocatedSize);
   }
 
   //! Like `allocZeroed()`, but the return pointer is casted to `T*`.
   template<typename T>
-  ASMJIT_INLINE T* allocZeroedT(size_t size = sizeof(T)) noexcept {
+  inline T* allocZeroedT(size_t size = sizeof(T)) noexcept {
     return static_cast<T*>(allocZeroed(size));
   }
 
-  //! Release the memory previously allocated by `alloc()`. The `size` argument
-  //! has to be the same as used to call `alloc()` or `allocatedSize` returned
-  //! by `alloc()`.
-  ASMJIT_INLINE void release(void* p, size_t size) noexcept {
-    ASMJIT_ASSERT(isInitialized());
+  //! Like `new(std::nothrow) T(...)`, but allocated by `Zone`.
+  template<typename T>
+  inline T* newT() noexcept {
+    void* p = allocT<T>();
+    if (ASMJIT_UNLIKELY(!p))
+      return nullptr;
+    return new(p) T();
+  }
+  //! Like `new(std::nothrow) T(...)`, but allocated by `Zone`.
+  template<typename T, typename... Args>
+  inline T* newT(Args&&... args) noexcept {
+    void* p = allocT<T>();
+    if (ASMJIT_UNLIKELY(!p))
+      return nullptr;
+    return new(p) T(std::forward<Args>(args)...);
+  }
 
+  //! Releases the memory previously allocated by `alloc()`. The `size` argument has to be the same as used to call
+  //! `alloc()` or `allocatedSize` returned  by `alloc()`.
+  inline void release(void* p, size_t size) noexcept {
+    ASMJIT_ASSERT(isInitialized());
     ASMJIT_ASSERT(p != nullptr);
     ASMJIT_ASSERT(size != 0);
 
     uint32_t slot;
     if (_getSlotIndex(size, slot)) {
-      //printf("RELEASING %p of size %d (SLOT %u)\n", p, int(size), slot);
       static_cast<Slot*>(p)->next = static_cast<Slot*>(_slots[slot]);
       _slots[slot] = static_cast<Slot*>(p);
     }
@@ -469,689 +605,11 @@ class ZoneHeap {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  Zone* _zone;                           //!< Zone used to allocate memory that fits into slots.
-  Slot* _slots[kLoCount + kHiCount];     //!< Indexed slots containing released memory.
-  DynamicBlock* _dynamicBlocks;          //!< Dynamic blocks for larger allocations (no slots).
-};
-
-// ============================================================================
-// [asmjit::ZoneList<T>]
-// ============================================================================
-
-//! \internal
-template <typename T>
-class ZoneList {
-public:
-  ASMJIT_NONCOPYABLE(ZoneList)
-
-  // --------------------------------------------------------------------------
-  // [Link]
-  // --------------------------------------------------------------------------
-
-  //! ZoneList node.
-  struct Link {
-    //! Get next node.
-    ASMJIT_INLINE Link* getNext() const noexcept { return _next; }
-    //! Get value.
-    ASMJIT_INLINE T getValue() const noexcept { return _value; }
-    //! Set value to `value`.
-    ASMJIT_INLINE void setValue(const T& value) noexcept { _value = value; }
-
-    Link* _next;
-    T _value;
-  };
-
-  // --------------------------------------------------------------------------
-  // [Appender]
-  // --------------------------------------------------------------------------
-
-  //! Specialized appender that takes advantage of ZoneList structure. You must
-  //! initialize it and then call done().
-  struct Appender {
-    ASMJIT_INLINE Appender(ZoneList<T>& list) noexcept { init(list); }
-
-    ASMJIT_INLINE void init(ZoneList<T>& list) noexcept {
-      pPrev = &list._first;
-    }
-
-    ASMJIT_INLINE void done(ZoneList<T>& list) noexcept {
-      list._last = *pPrev;
-      *pPrev = nullptr;
-    }
-
-    ASMJIT_INLINE void append(Link* node) noexcept {
-      *pPrev = node;
-      pPrev = &node->_next;
-    }
-
-    Link** pPrev;
-  };
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE ZoneList() noexcept : _first(nullptr), _last(nullptr) {}
-  ASMJIT_INLINE ~ZoneList() noexcept {}
-
-  // --------------------------------------------------------------------------
-  // [Data]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE bool isEmpty() const noexcept { return _first != nullptr; }
-  ASMJIT_INLINE Link* getFirst() const noexcept { return _first; }
-  ASMJIT_INLINE Link* getLast() const noexcept { return _last; }
-
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE void reset() noexcept {
-    _first = nullptr;
-    _last = nullptr;
-  }
-
-  ASMJIT_INLINE void prepend(Link* link) noexcept {
-    link->_next = _first;
-    if (!_first) _last = link;
-    _first = link;
-  }
-
-  ASMJIT_INLINE void append(Link* link) noexcept {
-    link->_next = nullptr;
-    if (!_first)
-      _first = link;
-    else
-      _last->_next = link;
-    _last = link;
-  }
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  Link* _first;
-  Link* _last;
-};
-
-// ============================================================================
-// [asmjit::ZoneVectorBase]
-// ============================================================================
-
-//! \internal
-class ZoneVectorBase {
-public:
-  ASMJIT_NONCOPYABLE(ZoneVectorBase)
-
-protected:
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  //! Create a new instance of `ZoneVectorBase`.
-  explicit ASMJIT_INLINE ZoneVectorBase() noexcept
-    : _data(nullptr),
-      _length(0),
-      _capacity(0) {}
-
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
-
-public:
-  //! Get if the vector is empty.
-  ASMJIT_INLINE bool isEmpty() const noexcept { return _length == 0; }
-  //! Get vector length.
-  ASMJIT_INLINE size_t getLength() const noexcept { return _length; }
-  //! Get vector capacity.
-  ASMJIT_INLINE size_t getCapacity() const noexcept { return _capacity; }
-
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
-
-  //! Makes the vector empty (won't change the capacity or data pointer).
-  ASMJIT_INLINE void clear() noexcept { _length = 0; }
-  //! Reset the vector data and set its `length` to zero.
-  ASMJIT_INLINE void reset() noexcept {
-    _data = nullptr;
-    _length = 0;
-    _capacity = 0;
-  }
-
-  //! Truncate the vector to at most `n` items.
-  ASMJIT_INLINE void truncate(size_t n) noexcept {
-    _length = std::min(_length, n);
-  }
-
-  // --------------------------------------------------------------------------
-  // [Memory Management]
-  // --------------------------------------------------------------------------
-
-protected:
-  ASMJIT_INLINE void _release(ZoneHeap* heap, size_t sizeOfT) noexcept {
-    if (_data != nullptr) {
-      heap->release(_data, _capacity * sizeOfT);
-      reset();
-    }
-  }
-
-  ASMJIT_API Error _grow(ZoneHeap* heap, size_t sizeOfT, size_t n) noexcept;
-  ASMJIT_API Error _resize(ZoneHeap* heap, size_t sizeOfT, size_t n) noexcept;
-  ASMJIT_API Error _reserve(ZoneHeap* heap, size_t sizeOfT, size_t n) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-public:
-  void* _data;                           //!< Vector data.
-  size_t _length;                        //!< Length of the vector.
-  size_t _capacity;                      //!< Capacity of the vector.
-};
-
-// ============================================================================
-// [asmjit::ZoneVector<T>]
-// ============================================================================
-
-//! Template used to store and manage array of Zone allocated data.
-//!
-//! This template has these advantages over other std::vector<>:
-//! - Always non-copyable (designed to be non-copyable, we want it).
-//! - No copy-on-write (some implementations of STL can use it).
-//! - Optimized for working only with POD types.
-//! - Uses ZoneHeap, thus small vectors are basically for free.
-template <typename T>
-class ZoneVector : public ZoneVectorBase {
-public:
-  ASMJIT_NONCOPYABLE(ZoneVector)
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  //! Create a new instance of `ZoneVector<T>`.
-  explicit ASMJIT_INLINE ZoneVector() noexcept : ZoneVectorBase() {}
-
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
-
-  //! Get data.
-  ASMJIT_INLINE T* getData() noexcept { return static_cast<T*>(_data); }
-  //! \overload
-  ASMJIT_INLINE const T* getData() const noexcept { return static_cast<const T*>(_data); }
-
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
-
-  //! Prepend `item` to the vector.
-  Error prepend(ZoneHeap* heap, const T& item) noexcept {
-    if (ASMJIT_UNLIKELY(_length == _capacity))
-      ASMJIT_PROPAGATE(grow(heap, 1));
-
-    ::memmove(static_cast<T*>(_data) + 1, _data, _length * sizeof(T));
-    ::memcpy(_data, &item, sizeof(T));
-
-    _length++;
-    return kErrorOk;
-  }
-
-  //! Insert an `item` at the specified `index`.
-  Error insert(ZoneHeap* heap, size_t index, const T& item) noexcept {
-    ASMJIT_ASSERT(index <= _length);
-
-    if (ASMJIT_UNLIKELY(_length == _capacity))
-      ASMJIT_PROPAGATE(grow(heap, 1));
-
-    T* dst = static_cast<T*>(_data) + index;
-    ::memmove(dst + 1, dst, _length - index);
-    ::memcpy(dst, &item, sizeof(T));
-
-    _length++;
-    return kErrorOk;
-  }
-
-  //! Append `item` to the vector.
-  Error append(ZoneHeap* heap, const T& item) noexcept {
-    if (ASMJIT_UNLIKELY(_length == _capacity))
-      ASMJIT_PROPAGATE(grow(heap, 1));
-
-    ::memcpy(static_cast<T*>(_data) + _length, &item, sizeof(T));
-
-    _length++;
-    return kErrorOk;
-  }
-
-  Error concat(ZoneHeap* heap, const ZoneVector<T>& other) noexcept {
-    size_t count = other._length;
-    if (_capacity - _length < count)
-      ASMJIT_PROPAGATE(grow(heap, count));
-
-    ::memcpy(static_cast<T*>(_data) + _length, other._data, count * sizeof(T));
-
-    _length += count;
-    return kErrorOk;
-  }
-
-  //! Prepend `item` to the vector (unsafe case).
-  //!
-  //! Can only be used together with `willGrow()`. If `willGrow(N)` returns
-  //! `kErrorOk` then N elements can be added to the vector without checking
-  //! if there is a place for them. Used mostly internally.
-  ASMJIT_INLINE void prependUnsafe(const T& item) noexcept {
-    ASMJIT_ASSERT(_length < _capacity);
-    T* data = static_cast<T*>(_data);
-
-    if (_length)
-      ::memmove(data + 1, data, _length * sizeof(T));
-
-    ::memcpy(data, &item, sizeof(T));
-    _length++;
-  }
-
-  //! Append `item` to the vector (unsafe case).
-  //!
-  //! Can only be used together with `willGrow()`. If `willGrow(N)` returns
-  //! `kErrorOk` then N elements can be added to the vector without checking
-  //! if there is a place for them. Used mostly internally.
-  ASMJIT_INLINE void appendUnsafe(const T& item) noexcept {
-    ASMJIT_ASSERT(_length < _capacity);
-
-    ::memcpy(static_cast<T*>(_data) + _length, &item, sizeof(T));
-    _length++;
-  }
-
-  //! Concatenate all items of `other` at the end of the vector.
-  ASMJIT_INLINE void concatUnsafe(const ZoneVector<T>& other) noexcept {
-    size_t count = other._length;
-    ASMJIT_ASSERT(_capacity - _length >= count);
-
-    ::memcpy(static_cast<T*>(_data) + _length, other._data, count * sizeof(T));
-    _length += count;
-  }
-
-  //! Get index of `val` or `kInvalidIndex` if not found.
-  ASMJIT_INLINE size_t indexOf(const T& val) const noexcept {
-    const T* data = static_cast<const T*>(_data);
-    size_t length = _length;
-
-    for (size_t i = 0; i < length; i++)
-      if (data[i] == val)
-        return i;
-
-    return Globals::kInvalidIndex;
-  }
-
-  //! Get whether the vector contains `val`.
-  ASMJIT_INLINE bool contains(const T& val) const noexcept {
-    return indexOf(val) != Globals::kInvalidIndex;
-  }
-
-  //! Remove item at index `i`.
-  ASMJIT_INLINE void removeAt(size_t i) noexcept {
-    ASMJIT_ASSERT(i < _length);
-
-    T* data = static_cast<T*>(_data) + i;
-    _length--;
-    ::memmove(data, data + 1, _length - i);
-  }
-
-  //! Swap this pod-vector with `other`.
-  ASMJIT_INLINE void swap(ZoneVector<T>& other) noexcept {
-    Utils::swap(_length, other._length);
-    Utils::swap(_capacity, other._capacity);
-    Utils::swap(_data, other._data);
-  }
-
-  //! Get item at index `i` (const).
-  ASMJIT_INLINE const T& getAt(size_t i) const noexcept {
-    ASMJIT_ASSERT(i < _length);
-    return getData()[i];
-  }
-
-  //! Get item at index `i`.
-  ASMJIT_INLINE T& operator[](size_t i) noexcept {
-    ASMJIT_ASSERT(i < _length);
-    return getData()[i];
-  }
-
-  //! Get item at index `i`.
-  ASMJIT_INLINE const T& operator[](size_t i) const noexcept {
-    ASMJIT_ASSERT(i < _length);
-    return getData()[i];
-  }
-
-  // --------------------------------------------------------------------------
-  // [Memory Management]
-  // --------------------------------------------------------------------------
-
-  //! Release the memory held by `ZoneVector<T>` back to the `heap`.
-  ASMJIT_INLINE void release(ZoneHeap* heap) noexcept { _release(heap, sizeof(T)); }
-
-  //! Called to grow the buffer to fit at least `n` elements more.
-  ASMJIT_INLINE Error grow(ZoneHeap* heap, size_t n) noexcept { return ZoneVectorBase::_grow(heap, sizeof(T), n); }
-
-  //! Resize the vector to hold `n` elements.
-  //!
-  //! If `n` is greater than the current length then the additional elements'
-  //! content will be initialized to zero. If `n` is less than the current
-  //! length then the vector will be truncated to exactly `n` elements.
-  ASMJIT_INLINE Error resize(ZoneHeap* heap, size_t n) noexcept { return ZoneVectorBase::_resize(heap, sizeof(T), n); }
-
-  //! Realloc internal array to fit at least `n` items.
-  ASMJIT_INLINE Error reserve(ZoneHeap* heap, size_t n) noexcept { return ZoneVectorBase::_reserve(heap, sizeof(T), n); }
-
-  ASMJIT_INLINE Error willGrow(ZoneHeap* heap, size_t n = 1) noexcept {
-    return _capacity - _length < n ? grow(heap, n) : static_cast<Error>(kErrorOk);
-  }
-};
-
-// ============================================================================
-// [asmjit::ZoneBitVector]
-// ============================================================================
-
-class ZoneBitVector {
-public:
-  ASMJIT_NONCOPYABLE(ZoneBitVector)
-
-  //! Storage used to store a pack of bits (should by compatible with a machine word).
-  typedef uintptr_t BitWord;
-  enum { kBitsPerWord = static_cast<int>(sizeof(BitWord)) * 8 };
-
-  static ASMJIT_INLINE size_t _wordsPerBits(size_t nBits) noexcept {
-    return ((nBits + kBitsPerWord) / kBitsPerWord) - 1;
-  }
-
-  // Return all bits zero if 0 and all bits set if 1.
-  static ASMJIT_INLINE BitWord _patternFromBit(bool bit) noexcept {
-    BitWord bitAsWord = static_cast<BitWord>(bit);
-    ASMJIT_ASSERT(bitAsWord == 0 || bitAsWord == 1);
-    return static_cast<BitWord>(0) - bitAsWord;
-  }
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  explicit ASMJIT_INLINE ZoneBitVector() noexcept :
-    _data(nullptr),
-    _length(0),
-    _capacity(0) {}
-
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
-
-  //! Get if the bit-vector is empty (has no bits).
-  ASMJIT_INLINE bool isEmpty() const noexcept { return _length == 0; }
-  //! Get a length of this bit-vector (in bits).
-  ASMJIT_INLINE size_t getLength() const noexcept { return _length; }
-  //! Get a capacity of this bit-vector (in bits).
-  ASMJIT_INLINE size_t getCapacity() const noexcept { return _capacity; }
-
-  //! Get data.
-  ASMJIT_INLINE BitWord* getData() noexcept { return _data; }
-  //! \overload
-  ASMJIT_INLINE const BitWord* getData() const noexcept { return _data; }
-
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE void clear() noexcept {
-    _length = 0;
-  }
-
-  ASMJIT_INLINE void reset() noexcept {
-    _data = nullptr;
-    _length = 0;
-    _capacity = 0;
-  }
-
-  ASMJIT_INLINE void truncate(size_t newLength) noexcept {
-    _length = std::min(_length, newLength);
-    _clearUnusedBits();
-  }
-
-  ASMJIT_INLINE bool getAt(size_t index) const noexcept {
-    ASMJIT_ASSERT(index < _length);
-
-    size_t idx = index / kBitsPerWord;
-    size_t bit = index % kBitsPerWord;
-    return static_cast<bool>((_data[idx] >> bit) & 1);
-  }
-
-  ASMJIT_INLINE void setAt(size_t index, bool value) noexcept {
-    ASMJIT_ASSERT(index < _length);
-
-    size_t idx = index / kBitsPerWord;
-    size_t bit = index % kBitsPerWord;
-    if (value)
-      _data[idx] |= static_cast<BitWord>(1) << bit;
-    else
-      _data[idx] &= ~(static_cast<BitWord>(1) << bit);
-  }
-
-  ASMJIT_INLINE void toggleAt(size_t index) noexcept {
-    ASMJIT_ASSERT(index < _length);
-
-    size_t idx = index / kBitsPerWord;
-    size_t bit = index % kBitsPerWord;
-    _data[idx] ^= static_cast<BitWord>(1) << bit;
-  }
-
-  ASMJIT_INLINE Error append(ZoneHeap* heap, bool value) noexcept {
-    size_t index = _length;
-    if (ASMJIT_UNLIKELY(index >= _capacity))
-      return _append(heap, value);
-
-    size_t idx = index / kBitsPerWord;
-    size_t bit = index % kBitsPerWord;
-
-    if (bit == 0)
-      _data[idx] = static_cast<BitWord>(value) << bit;
-    else
-      _data[idx] |= static_cast<BitWord>(value) << bit;
-
-    _length++;
-    return kErrorOk;
-  }
-
-  ASMJIT_API Error fill(size_t fromIndex, size_t toIndex, bool value) noexcept;
-
-  ASMJIT_INLINE void and_(const ZoneBitVector& other) noexcept {
-    BitWord* dst = _data;
-    const BitWord* src = other._data;
-
-    size_t numWords = (std::min(_length, other._length) + kBitsPerWord - 1) / kBitsPerWord;
-    for (size_t i = 0; i < numWords; i++)
-      dst[i] = dst[i] & src[i];
-    _clearUnusedBits();
-  }
-
-  ASMJIT_INLINE void andNot(const ZoneBitVector& other) noexcept {
-    BitWord* dst = _data;
-    const BitWord* src = other._data;
-
-    size_t numWords = (std::min(_length, other._length) + kBitsPerWord - 1) / kBitsPerWord;
-    for (size_t i = 0; i < numWords; i++)
-      dst[i] = dst[i] & ~src[i];
-    _clearUnusedBits();
-  }
-
-  ASMJIT_INLINE void or_(const ZoneBitVector& other) noexcept {
-    BitWord* dst = _data;
-    const BitWord* src = other._data;
-
-    size_t numWords = (std::min(_length, other._length) + kBitsPerWord - 1) / kBitsPerWord;
-    for (size_t i = 0; i < numWords; i++)
-      dst[i] = dst[i] | src[i];
-    _clearUnusedBits();
-  }
-
-  ASMJIT_INLINE void _clearUnusedBits() noexcept {
-    size_t idx = _length / kBitsPerWord;
-    size_t bit = _length % kBitsPerWord;
-
-    if (!bit) return;
-    _data[idx] &= (static_cast<BitWord>(1) << bit) - 1U;
-  }
-
-  // --------------------------------------------------------------------------
-  // [Memory Management]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE void release(ZoneHeap* heap) noexcept {
-    if (_data != nullptr) {
-      heap->release(_data, _capacity / 8);
-      reset();
-    }
-  }
-
-  ASMJIT_INLINE Error resize(ZoneHeap* heap, size_t newLength, bool newBitsValue = false) noexcept {
-    return _resize(heap, newLength, newLength, newBitsValue);
-  }
-
-  ASMJIT_API Error _resize(ZoneHeap* heap, size_t newLength, size_t idealCapacity, bool newBitsValue) noexcept;
-  ASMJIT_API Error _append(ZoneHeap* heap, bool value) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  BitWord* _data;                        //!< Bits.
-  size_t _length;                        //!< Length of the bit-vector (in bits).
-  size_t _capacity;                      //!< Capacity of the bit-vector (in bits).
-};
-
-// ============================================================================
-// [asmjit::ZoneHashNode]
-// ============================================================================
-
-//! Node used by \ref ZoneHash<> template.
-//!
-//! You must provide function `bool eq(const Key& key)` in order to make
-//! `ZoneHash::get()` working.
-class ZoneHashNode {
-public:
-  ASMJIT_INLINE ZoneHashNode(uint32_t hVal = 0) noexcept
-    : _hashNext(nullptr),
-      _hVal(hVal) {}
-
-  //! Next node in the chain, null if it terminates the chain.
-  ZoneHashNode* _hashNext;
-  //! Key hash.
-  uint32_t _hVal;
-  //! Should be used by Node that inherits ZoneHashNode, it aligns ZoneHashNode.
-  uint32_t _customData;
-};
-
-// ============================================================================
-// [asmjit::ZoneHashBase]
-// ============================================================================
-
-class ZoneHashBase {
-public:
-  ASMJIT_NONCOPYABLE(ZoneHashBase)
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE ZoneHashBase(ZoneHeap* heap) noexcept {
-    _heap = heap;
-    _size = 0;
-    _bucketsCount = 1;
-    _bucketsGrow = 1;
-    _data = _embedded;
-    _embedded[0] = nullptr;
-  }
-  ASMJIT_INLINE ~ZoneHashBase() noexcept { reset(nullptr); }
-
-  // --------------------------------------------------------------------------
-  // [Reset]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE bool isInitialized() const noexcept { return _heap != nullptr; }
-  ASMJIT_API void reset(ZoneHeap* heap) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
-
-  //! Get a `ZoneHeap` attached to this container.
-  ASMJIT_INLINE ZoneHeap* getHeap() const noexcept { return _heap; }
-
-  ASMJIT_INLINE size_t getSize() const noexcept { return _size; }
-
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_API void _rehash(uint32_t newCount) noexcept;
-  ASMJIT_API ZoneHashNode* _put(ZoneHashNode* node) noexcept;
-  ASMJIT_API ZoneHashNode* _del(ZoneHashNode* node) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  ZoneHeap* _heap;                       //!< ZoneHeap used to allocate data.
-  size_t _size;                          //!< Count of records inserted into the hash table.
-  uint32_t _bucketsCount;                //!< Count of hash buckets.
-  uint32_t _bucketsGrow;                 //!< When buckets array should grow.
-
-  ZoneHashNode** _data;                  //!< Buckets data.
-  ZoneHashNode* _embedded[1];            //!< Embedded data, used by empty hash tables.
-};
-
-// ============================================================================
-// [asmjit::ZoneHash<Key, Node>]
-// ============================================================================
-
-//! Low-level hash table specialized for storing string keys and POD values.
-//!
-//! This hash table allows duplicates to be inserted (the API is so low
-//! level that it's up to you if you allow it or not, as you should first
-//! `get()` the node and then modify it or insert a new node by using `put()`,
-//! depending on the intention).
-template<typename Node>
-class ZoneHash : public ZoneHashBase {
-public:
-  explicit ASMJIT_INLINE ZoneHash(ZoneHeap* heap = nullptr) noexcept
-    : ZoneHashBase(heap) {}
-  ASMJIT_INLINE ~ZoneHash() noexcept {}
-
-  template<typename Key>
-  ASMJIT_INLINE Node* get(const Key& key) const noexcept {
-    uint32_t hMod = key.hVal % _bucketsCount;
-    Node* node = static_cast<Node*>(_data[hMod]);
-
-    while (node && !key.matches(node))
-      node = static_cast<Node*>(node->_hashNext);
-    return node;
-  }
-
-  ASMJIT_INLINE Node* put(Node* node) noexcept { return static_cast<Node*>(_put(node)); }
-  ASMJIT_INLINE Node* del(Node* node) noexcept { return static_cast<Node*>(_del(node)); }
+  //! \}
 };
 
 //! \}
 
-} // asmjit namespace
-} // namespace PLMD
+ASMJIT_END_NAMESPACE
 
-// [Api-End]
-#include "./asmjit_apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_BASE_ZONE_H
-#pragma GCC diagnostic pop
-#endif // __PLUMED_HAS_ASMJIT
-#endif
+#endif // ASMJIT_CORE_ZONE_H_INCLUDED

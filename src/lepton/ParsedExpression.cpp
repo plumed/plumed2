@@ -1,44 +1,10 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * -------------------------------------------------------------------------- *
- *                                   Lepton                                   *
- * -------------------------------------------------------------------------- *
- * This is part of the Lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
- *                                                                            *
- * Portions copyright (c) 2013-2016 Stanford University and the Authors.      *
- * Authors: Peter Eastman                                                     *
- * Contributors:                                                              *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS, CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,    *
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR      *
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
- * -------------------------------------------------------------------------- *
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* -------------------------------------------------------------------------- *
  *                                   lepton                                   *
  * -------------------------------------------------------------------------- *
- * This is part of the lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
+ * This is part of the lepton expression parser.                              *
+ * See https://openmm.org/development.                                        *
  *                                                                            *
- * Portions copyright (c) 2009-2021 Stanford University and the Authors.      *
+ * Portions copyright (c) 2009-2022 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
@@ -184,10 +150,10 @@ ExpressionTreeNode ParsedExpression::substituteSimplerExpression(const Expressio
         else
             children[i] = cached->second;
     }
-    
+
     // Collect some info on constant expressions in children
     bool first_const = children.size() > 0 && isConstant(children[0]); // is first child constant?
-    bool second_const = children.size() > 1 && isConstant(children[1]); ; // is second child constant?   
+    bool second_const = children.size() > 1 && isConstant(children[1]); // is second child constant?
     double first, second; // if yes, value of first and second child
     if (first_const)
         first = getConstantValue(children[0]);
@@ -237,7 +203,7 @@ ExpressionTreeNode ParsedExpression::substituteSimplerExpression(const Expressio
             break;
         }
         case Operation::MULTIPLY:
-        {   
+        {
             if ((first_const && first == 0.0) || (second_const && second == 0.0)) // Multiply by 0
                 return ExpressionTreeNode(new Operation::Constant(0.0));
             if (first_const && first == 1.0) // Multiply by 1
@@ -279,7 +245,7 @@ ExpressionTreeNode ParsedExpression::substituteSimplerExpression(const Expressio
         case Operation::DIVIDE:
         {
             if (children[0] == children[1])
-                return ExpressionTreeNode(new Operation::Constant(1.0)); // Dividing anything from itself is 0
+                return ExpressionTreeNode(new Operation::Constant(1.0)); // Dividing anything by itself is 1
             if (first_const && first == 0.0) // 0 divided by something
                 return ExpressionTreeNode(new Operation::Constant(0.0));
             if (first_const && first == 1.0) // 1 divided by something
@@ -351,11 +317,19 @@ ExpressionTreeNode ParsedExpression::substituteSimplerExpression(const Expressio
         {
             if (children[0].getOperation().getId() == Operation::SQUARE) // sqrt(square(x)) = abs(x)
                 return ExpressionTreeNode(new Operation::Abs(), children[0].getChildren()[0]);
+            break;
         }
         case Operation::SQUARE:
         {
             if (children[0].getOperation().getId() == Operation::SQRT) // square(sqrt(x)) = x
                 return children[0].getChildren()[0];
+            break;
+        }
+        case Operation::SELECT:
+        {
+            if (children[1] == children[2]) // Select between two identical values
+                return children[1];
+            break;
         }
         default:
         {

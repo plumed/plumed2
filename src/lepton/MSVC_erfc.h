@@ -1,41 +1,9 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * -------------------------------------------------------------------------- *
- *                                   Lepton                                   *
- * -------------------------------------------------------------------------- *
- * This is part of the Lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
- *                                                                            *
- * Portions copyright (c) 2013-2016 Stanford University and the Authors.      *
- * Authors: Peter Eastman                                                     *
- * Contributors:                                                              *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS, CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,    *
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR      *
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
- * -------------------------------------------------------------------------- *
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_lepton_MSVC_erfc_h
 #define __PLUMED_lepton_MSVC_erfc_h
 
 /*
  * Up to version 11 (VC++ 2012), Microsoft does not support the
- * standard C99 erf() and erfc() functions so we have to fake them here. 
+ * standard C99 erf() and erfc() functions so we have to fake them here.
  * These were added in version 12 (VC++ 2013), which sets _MSC_VER=1800
  * (VC11 has _MSC_VER=1700).
  */
@@ -47,7 +15,7 @@
 #endif
 
 #if defined(_MSC_VER)
-#if _MSC_VER <= 1700 // 1700 is VC11, 1800 is VC12 
+#if _MSC_VER <= 1700 // 1700 is VC11, 1800 is VC12
 /***************************
 *   erf.cpp
 *   author:  Steve Strand
@@ -120,4 +88,5 @@ static double erfc(double x)
 #endif // _MSC_VER <= 1700
 #endif // _MSC_VER
 
-#endif // LEPTON_MSVC_ERFC_H_
+
+#endif // __PLUMED_lepton_MSVC_erfc_h

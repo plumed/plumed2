@@ -778,23 +778,24 @@ fi
 PLUMED_OPENMP
 
 if test $asmjit = true ; then
-  AC_MSG_CHECKING([whether architecture is X86/X64])
+  AC_MSG_CHECKING([whether architecture is X86/X64 or AArch64])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
       defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
       defined(__i486__) || defined(__i586__) || defined(__i686__) || \
       defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
-      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
-this_is_not_x86_x64
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__) || \
+      defined(__aarch64__) || defined(_M_ARM64))
+this_is_not_x86_x64_or_aarch64
 #endif
   ])],
   [AC_MSG_RESULT([yes])];
-  x86_x64=true,
+  asmjit_arch_supported=true,
   [AC_MSG_RESULT([no]) ;
-  x86_x64=false])
+  asmjit_arch_supported=false])
 fi
 
-if test $asmjit = true && test $x86_x64 = false ; then
+if test $asmjit = true && test $asmjit_arch_supported = false ; then
   AC_MSG_WARN([asmjit does not support this architecture, it will be disabled])
   asmjit=false
 fi
