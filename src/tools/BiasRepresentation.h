@@ -98,11 +98,26 @@ private:
   double uppI_;
   std::vector<Value*> values;
   std::vector<std::string> names;
-  std::vector<std::unique_ptr<KernelFunctions>> hills;
-  std::vector<double> biasf;
+  /// number of kernels added
+  int nkernels=0;
+  /// support of the kernels added without a grid (see getMinMaxBin)
+  std::vector<double> supmin,supmax,minbinsize;
+  void resetSupport();
   std::vector<double> histosigma;
   Communicator& mycomm;
   std::unique_ptr<Grid> BiasGrid_;
+  /// with MPI, the sum of the grids of all the processes
+  std::unique_ptr<Grid> reducedGrid_;
+  /// geometry of the grid
+  std::vector<unsigned> gridnbin;
+  std::vector<bool> gridpbc;
+  std::vector<double> griddx,gridmin;
+  std::vector<std::size_t> gridstride;
+  /// work arrays of addSeparableGaussian: for each dimension the grid indices, (x-c)/w, its square and exp(-((x-c)/w)^2/2)
+  std::vector<std::vector<unsigned>> sepIndex;
+  std::vector<std::vector<double>> sepT,sepT2,sepExp;
+  void addSeparableGaussian( const KernelFunctions & kk, double h, double a, double b, double r2cut, const std::vector<double> & w );
+  void addGenericKernel( const KernelFunctions & kk, double f );
 };
 
 }
