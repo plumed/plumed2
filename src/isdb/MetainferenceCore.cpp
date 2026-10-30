@@ -374,8 +374,8 @@ MetainferenceCore::MetainferenceCore(Action& action, const bool active):
 
   std::vector<double> read_dsigma;
   action_.parseVector("DSIGMA",read_dsigma);
-  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1) {
-    action_.error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&read_dsigma.size()>1) {
+    action_.error("If you want to use more than one DSIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
   }
   if(read_dsigma.size()>0) {
     Dsigma_.resize(read_dsigma.size());
@@ -814,6 +814,9 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
   log.printf("\n");
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
+  if(do_optsigmamean_>0&&nrep_<2) {
+    log.printf("  WARNING: with a single replica the standard error of the mean is not defined: OPTSIGMAMEAN keeps the initial value of sigma mean\n");
+  }
   log.printf("  initial standard errors of the mean");
   for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
     log.printf(" %f", std::sqrt(sigma_mean2_[i]));
@@ -1566,7 +1569,9 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
   const double dnrep    = static_cast<double>(nrep_);
   std::vector<double> sigma_mean2_tmp(sigma_mean2_.size());
 
-  if(do_optsigmamean_>0) {
+  // the standard error of the mean is not defined with a single (effective) replica:
+  // in that case the history is not updated
+  if(do_optsigmamean_>0&&neff>1.) {
     // remove first entry of the history std::vector
     if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0)
       for(unsigned i=0; i<narg; ++i) {
@@ -1600,7 +1605,9 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
           sigma_mean2_last_[iselect][i][0] = sigma_mean2_now[i];
         }
     }
+  }
 
+  if(do_optsigmamean_>0) {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
         /* set to the maximum in history std::vector */
