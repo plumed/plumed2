@@ -26,6 +26,7 @@
 #include "tools/BiasRepresentation.h"
 #include "tools/KernelFunctions.h"
 #include "tools/File.h"
+#include <limits>
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
 #include "tools/Grid.h"
@@ -36,14 +37,14 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS
 /*
-This function is intended to be called by the command line tool sum_hills.  It is meant to integrate a HILLS file or an HILLS file interpreted as a histogram in a variety of ways. It is, therefore, not expected that you use this during your dynamics (it will crash!)
+This function is used by the command line tool [sum_hills](sum_hills.md) to sum the hills of a metadynamics simulation
+or to compute a histogram. It does all its work when it is created and it cannot be used in a simulation (it stops with an error).
 
-In the future one could implement periodic integration during the metadynamics
-or straightforward MD as a tool to check convergence
+All its options are set by [sum_hills](sum_hills.md): see the documentation of [sum_hills](sum_hills.md) for their meaning.
 
 ## Examples
 
-There are currently no examples for this keyword.
+There are currently no examples for this action: use [sum_hills](sum_hills.md) instead.
 
 */
 //+ENDPLUMEDOC
@@ -56,11 +57,28 @@ class FilesHandler {
   bool parallelread;
   unsigned beingread=0;
   bool isopen=false;
+/// key used to merge the files ("time" or "clock"); empty to read the files one after the other
+  std::string sortby;
+/// a hill read from one of the files and not yet added (used when merging)
+  struct PendingHill {
+    std::unique_ptr<KernelFunctions> kernel;
+    double biasf=1.0;
+    double clock=0.0;
+    double time=0.0;
+    bool valid=false;
+  };
+  std::vector<PendingHill> pending;
+  bool mergestarted=false;
+  bool unsortedwarning=false;
+/// read the next hill of file i into pending[i] (merge mode)
+  void readPending(BiasRepresentation *br, unsigned i);
+  bool readBunchMerged(BiasRepresentation *br, int stride);
 public:
   FilesHandler(const std::vector<std::string> &filenames,
                bool parallelread,
                Action &myaction,
-               Log &mylog);
+               Log &mylog,
+               const std::string & sortby="");
   bool readBunch(BiasRepresentation *br, int stride=-1);
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
   void getMinMaxBin(const std::vector<Value*> & vals,
@@ -78,10 +96,13 @@ public:
 FilesHandler::FilesHandler(const std::vector<std::string> &fnames,
                            const bool doparallelread,
                            Action &act,
-                           Log &mylog )
+                           Log &mylog,
+                           const std::string & sort)
   :filenames(fnames),
    log(&mylog),
-   parallelread(doparallelread) {
+   parallelread(doparallelread),
+   sortby(sort) {
+  plumed_massert(sortby=="" || sortby=="time" || sortby=="clock","files can only be sorted by time or clock");
   action=&act;
   for(unsigned i=0; i<filenames.size(); i++) {
     auto ifile=Tools::make_unique<IFile>();
@@ -94,7 +115,91 @@ FilesHandler::FilesHandler(const std::vector<std::string> &fnames,
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation
 // no check are made at this level
+void FilesHandler::readPending(BiasRepresentation *br, unsigned i) {
+  IFile *ff=ifiles[i].get();
+  PendingHill & p=pending[i];
+  double t;
+  if(!ff->scanField("time",t)) {
+    (*log)<<"  closing file "<<filenames[i]<<"\n";
+    ff->close();
+    p.valid=false;
+    p.kernel.reset();
+    return;
+  }
+  double c=0.0;
+  if(ff->FieldExist("clock")) {
+    ff->scanField("clock",c);
+  } else if(sortby=="clock") {
+    plumed_merror("cannot sort by clock: there is no clock field in file "+filenames[i]);
+  }
+  if(p.valid && !unsortedwarning) {
+    const bool back = (sortby=="clock") ? (c<p.clock || (c==p.clock && t<p.time)) : (t<p.time);
+    if(back) {
+      (*log)<<"  WARNING: file "<<filenames[i]<<" is not ordered by "<<sortby<<": hills are merged in the order in which they appear in each file\n";
+      unsortedwarning=true;
+    }
+  }
+  p.time=t;
+  p.clock=c;
+  p.kernel=br->readKernel(ff,p.biasf);
+  if(br->hasSigmaInInput()) {
+    ff->allowIgnoredFields();
+  }
+  ff->scanField();
+  p.valid=true;
+}
+
+bool FilesHandler::readBunchMerged(BiasRepresentation *br, int stride) {
+  if(!mergestarted) {
+    (*log)<<"  merging the hills of "<<filenames.size()<<" files in order of "<<sortby<<"\n";
+    pending.resize(ifiles.size());
+    for(unsigned i=0; i<ifiles.size(); i++) {
+      (*log)<<"  opening file "<<filenames[i]<<"\n";
+      ifiles[i]->open(filenames[i]);
+      readPending(br,i);
+    }
+    mergestarted=true;
+  }
+  while(true) {
+    // the next hill is the earliest; ties are resolved with time (for clock) and then with the order of the files
+    int next=-1;
+    for(unsigned i=0; i<pending.size(); i++) {
+      if(!pending[i].valid) {
+        continue;
+      }
+      if(next<0) {
+        next=i;
+        continue;
+      }
+      const auto & a=pending[i];
+      const auto & b=pending[next];
+      const bool earlier = (sortby=="clock") ? (a.clock<b.clock || (a.clock==b.clock && a.time<b.time)) : (a.time<b.time);
+      if(earlier) {
+        next=i;
+      }
+    }
+    if(next<0) {
+      (*log)<<"  final chunk: now with "<<br->getNumberOfKernels()<<" kernels  \n";
+      return false;
+    }
+    br->addKernel(std::move(pending[next].kernel),pending[next].biasf,pending[next].time);
+    readPending(br,next);
+    int n=br->getNumberOfKernels();
+    if(stride>0 && n%stride==0) {
+      // stop here unless all files are over
+      for(const auto & p : pending)
+        if(p.valid) {
+          (*log)<<"  done with this chunk: now with "<<n<<" kernels  \n";
+          return true;
+        }
+    }
+  }
+}
+
 bool FilesHandler::readBunch(BiasRepresentation *br, int stride) {
+  if(sortby!="" && ifiles.size()>1) {
+    return readBunchMerged(br,stride);
+  }
   bool morefiles=true;
   if(parallelread) {
     (*log)<<"  doing parallelread \n";
@@ -178,17 +283,10 @@ void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals,
   //for(unsigned i=0;i<vals.size();i++){cerr<<"XXX "<<vmin[i]<<" "<<vmax[i]<<" "<<vbin[i]<<"\n";}
 }
 bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ) {
-  double dummy;
-  if(ifile->scanField("time",dummy)) {
-    //(*log)<<"   scanning one hill: "<<dummy<<" \n";
-    if(ifile->FieldExist("biasf")) {
-      ifile->scanField("biasf",dummy);
-    }
-    if(ifile->FieldExist("clock")) {
-      ifile->scanField("clock",dummy);
-    }
-    // keep this intermediate function in case you need to parse more data in the future
-    br->pushKernel(ifile);
+  double time;
+  if(ifile->scanField("time",time)) {
+    // the other fields (e.g. clock) are ignored
+    br->pushKernel(ifile,time);
     //(*log)<<"  read hill\n";
     if(br->hasSigmaInInput()) {
       ifile->allowIgnoredFields();
@@ -230,6 +328,14 @@ class FuncSumHills :
   std::string outhills;
   std::string outhisto;
   std::string fmt="%14.9f";
+  std::string sortby;
+/// time average of the bias
+  std::vector<double> average;
+/// boxes (min and max for each variable) defining the basins whose free energies are written
+  std::vector<std::vector<double>> basinmin,basinmax;
+  std::string outbasins;
+/// write the free energy of each basin relative to the first one
+  void writeBasins(OFile & ofile, const Grid & fes, double time, int nkernels);
   std::unique_ptr<BiasRepresentation> biasrep;
   std::unique_ptr<BiasRepresentation> historep;
 public:
@@ -263,6 +369,10 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("optional","SORT","merge the hills of multiple files in order of time or clock instead of reading the files one after the other");
+  keys.add("optional","AVERAGE","time average of the bias: from time t0 (and until t1 if given) the hills are scaled by (t1-t)/(t1-t0), where t1 is by default the time of the last hill");
+  keys.add("optional","BASINS","basins (separated by colons) given by the minimum and maximum of each variable of the output, e.g. -3,-1:1,3; their free energies relative to the first basin are written at each output");
+  keys.add("optional","OUTBASINS","output file for the free energies of the basins");
   keys.setValueDescription("scalar","a scalar");
 }
 
@@ -304,11 +414,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     log<<"  You specified both GRID_BIN and GRID_SPACING\n";
     log<<"  The more conservative (highest) number of bins will be used for each variable\n";
   }
-  if(gspacing.size()!=0)
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(gbin.size()==0) {
-        gbin.assign(getNumberOfArguments(),1);
-      }
+  // the number of bins from GRID_SPACING is computed once the boundaries are known,
+  // possibly after they have been detected from the hills
+  const bool userbin=(gbin.size()!=0);
+  auto applySpacing=[&]() {
+    if(gspacing.size()==0) {
+      return;
+    }
+    if(gbin.size()==0) {
+      gbin.assign(gmin.size(),1);
+    }
+    for(unsigned i=0; i<gmin.size(); i++) {
       double a,b;
       Tools::convert(gmin[i],a);
       Tools::convert(gmax[i],b);
@@ -317,6 +433,10 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
         gbin[i]=n;
       }
     }
+  };
+  if(gmin.size()!=0 && gmax.size()!=0) {
+    applySpacing();
+  }
 
   // Inteval keyword
   std::vector<double> tmpI(2);
@@ -346,8 +466,10 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(gmax.size()==0) {
       gmax.push_back(strsmax.str());
     }
-    if(gbin.size()==0) {
+    if(gbin.size()==0 && gspacing.size()==0) {
       gbin.push_back(200);
+    } else if(gbin.size()==0) {
+      applySpacing();
     }
   }
 
@@ -425,14 +547,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       log<<"  found boundaries from hillsfile: \n";
       gmin.resize(vmin.size());
       gmax.resize(vmax.size());
-      if(gbin.size()==0) {
-        gbin=vbin;
-      } else {
-        log<<"  found nbins in input, this overrides the automatic choice \n";
-      }
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
         Tools::convert(vmin[i],gmin[i]);
         Tools::convert(vmax[i],gmax[i]);
+      }
+      if(userbin || gspacing.size()!=0) {
+        log<<"  found nbins or spacing in input, this overrides the automatic choice \n";
+        applySpacing();
+      } else {
+        gbin=vbin;
+      }
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
         log<<"  variable "<< getPntrToArgument(i)->getName()<<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
       }
     }
@@ -445,14 +570,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       log<<"  found boundaries from histofile: \n";
       gmin.resize(vmin.size());
       gmax.resize(vmax.size());
-      if(gbin.size()==0) {
-        gbin=vbin;
-      } else {
-        log<<"  found nbins in input, this overrides the automatic choice \n";
-      }
       for(unsigned i=0; i<proj.size(); i++) {
         Tools::convert(vmin[i],gmin[i]);
         Tools::convert(vmax[i],gmax[i]);
+      }
+      if(userbin || gspacing.size()!=0) {
+        log<<"  found nbins or spacing in input, this overrides the automatic choice \n";
+        applySpacing();
+      } else {
+        gbin=vbin;
+      }
+      for(unsigned i=0; i<proj.size(); i++) {
         log<<"  variable "<< proj[i] <<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
       }
     }
@@ -461,13 +589,54 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   }
 
 
-  if( proj.size() != 0 || integratehisto==true  ) {
+  parseVector("AVERAGE",average);
+  if(average.size()!=0) {
+    if(average.size()>2) {
+      error("AVERAGE needs the initial time and optionally the final time");
+    }
+    if(!integratehills) {
+      error("AVERAGE can only be used with hills files");
+    }
+    if(average.size()==2 && average[1]<=average[0]) {
+      error("the final time of AVERAGE should be larger than the initial time");
+    }
+    log<<"  time average of the bias from time "<<average[0];
+    if(average.size()==2) {
+      log<<" to time "<<average[1];
+    }
+    log<<"\n";
+  }
+  std::string basins;
+  parse("BASINS",basins);
+  if(basins.length()>0) {
+    // the basins are defined on the variables of the output
+    const unsigned nout=(proj.size()>0 ? proj.size() : getNumberOfArguments());
+    for(const auto & b : Tools::getWords(basins,":")) {
+      std::vector<std::string> words=Tools::getWords(b,",");
+      if(words.size()!=2*nout) {
+        error("each basin needs a minimum and a maximum for each of the "+std::to_string(nout)+" variables of the output: "+b);
+      }
+      std::vector<double> bmin(nout),bmax(nout);
+      for(unsigned i=0; i<nout; i++) {
+        if(!Tools::convertNoexcept(words[2*i],bmin[i]) || !Tools::convertNoexcept(words[2*i+1],bmax[i])) {
+          error("cannot read basin "+b);
+        }
+      }
+      basinmin.push_back(bmin);
+      basinmax.push_back(bmax);
+    }
+    if(basinmin.size()<2) {
+      error("BASINS needs at least two basins");
+    }
+    log<<"  free energies of "<<basinmin.size()<<" basins relative to the first one are written at each output\n";
+  }
+  if( proj.size() != 0 || integratehisto==true || basinmin.size()>0 ) {
     parse("KT",beta);
     for(unsigned i=0; i<proj.size(); i++) {
       log<<"  projection "<<i<<" : "<<proj[i]<<"\n";
     }
     // this should be only for projection or free energy from histograms
-    plumed_massert(beta>0.,"if you make a projection or a histogram correction then you need KT flag!");
+    plumed_massert(beta>0.,"if you make a projection, a histogram correction or use basins then you need KT flag!");
     beta=1./beta;
     log<<"  beta is "<<beta<<"\n";
   }
@@ -492,6 +661,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(nohistory) {
       log<<"  nohistory: each stride block has no memory of the previous block\n";
     }
+  }
+  parse("SORT",sortby);
+  if(sortby!="" && sortby!="time" && sortby!="clock") {
+    error("SORT can only be time or clock");
+  }
+  if(sortby!="") {
+    log<<"  hills from multiple files are merged in order of "<<sortby<<"\n";
   }
   parseFlag("MINTOZERO",minTOzero);
   if(minTOzero) {
@@ -528,6 +704,12 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
       biasrep=Tools::make_unique<BiasRepresentation>(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
+      if(average.size()>0) {
+        biasrep->setTimeAverage(average[0],average.size()==2,(average.size()==2?average[1]:0.0));
+      }
+      if(negativebias && basinmin.size()>0) {
+        error("BASINS requires a free energy and cannot be used with NEGBIAS");
+      }
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -541,6 +723,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
     parse("OUTHILLS",outhills);
     parse("OUTHISTO",outhisto);
+    outbasins="basins.dat";
+    parse("OUTBASINS",outbasins);
     if(integratehills) {
       log<<"  output file for fes/bias  is :  "<<outhills<<"\n";
     }
@@ -571,13 +755,29 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     std::unique_ptr<FilesHandler> histoHandler;
 
     if(integratehills)	{
-      hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log);
+      hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log, sortby);
     }
     if(integratehisto)	{
-      histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log);
+      histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log, sortby);
     }
 
 // Stopwatch is logged when it goes out of scope
+    OFile basinsfile, histobasinsfile;
+    if(basinmin.size()>0) {
+      if(integratehills) {
+        basinsfile.link(*this);
+        basinsfile.open(outbasins);
+        basinsfile.fmtField(fmt);
+        log<<"  output file for the free energies of the basins is :  "<<outbasins<<"\n";
+      }
+      if(integratehisto) {
+        histobasinsfile.link(*this);
+        histobasinsfile.open("histo_"+outbasins);
+        histobasinsfile.fmtField(fmt);
+        log<<"  output file for the free energies of the basins from the histogram is :  histo_"<<outbasins<<"\n";
+      }
+    }
+
     Stopwatch sw(log);
 
 // Stopwatch is stopped when swh goes out of scope
@@ -594,8 +794,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           log<<"  clearing history before reading a new block\n";
         };
         log<<"  reading hills: \n";
+        const int before=biasrep->getNumberOfKernels();
         ibias=hillsHandler->readBunch(biasrep.get(),initstride) ;
         log<<"\n";
+        // when the number of hills is a multiple of the stride the last block is empty: do not write it again
+        if(!ibias && nfiles>0 && biasrep->getNumberOfKernels()==before) {
+          integratehills=false;
+        }
       }
 
       if(  integratehisto  && ihisto ) {
@@ -604,8 +809,12 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           log<<"  clearing history before reading a new block\n";
         };
         log<<"  reading histogram: \n";
+        const int before=historep->getNumberOfKernels();
         ihisto=histoHandler->readBunch(historep.get(),initstride) ;
         log<<"\n";
+        if(!ihisto && nfiles>0 && historep->getNumberOfKernels()==before) {
+          integratehisto=false;
+        }
       }
 
       // dump: need to project?
@@ -634,6 +843,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           smallGrid.setOutputFmt(fmt);
           smallGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(basinsfile,smallGrid,biasrep->getLastTime(),biasrep->getNumberOfKernels());
+          }
           gridfile.close();
           if(!ibias) {
             integratehills=false;  // once you get to the final bunch just give up
@@ -665,6 +877,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(histobasinsfile,histoGrid,historep->getLastTime(),historep->getNumberOfKernels());
+          }
 
           if(!ihisto) {
             integratehisto=false;  // once you get to the final bunch just give up
@@ -696,6 +911,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           biasGrid.setOutputFmt(fmt);
           biasGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(basinsfile,biasGrid,biasrep->getLastTime(),biasrep->getNumberOfKernels());
+          }
           // rescale back prior to accumulate
           if(!ibias) {
             integratehills=false;  // once you get to the final bunch just give up
@@ -727,6 +945,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(histobasinsfile,histoGrid,historep->getLastTime(),historep->getNumberOfKernels());
+          }
 
           if(!ihisto) {
             integratehisto=false;  // once you get to the final bunch just give up
@@ -747,6 +968,55 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   // if the grid does not exist crash and say that you need some data
   // otherwise just link with it
 
+}
+
+void FuncSumHills::writeBasins(OFile & ofile, const Grid & fes, double time, int nkernels) {
+  const unsigned nb=basinmin.size();
+  const unsigned nd=fes.getDimension();
+  const auto pbc=fes.getIsPeriodic();
+  // -kT log sum_s exp(-F(s)/kT) over the points of each basin, computed with a running maximum
+  std::vector<double> fmax(nb,-std::numeric_limits<double>::max()), sum(nb,0.0);
+  std::vector<double> x(nd);
+  for(Grid::index_t i=0; i<fes.getSize(); i++) {
+    const double mbf=-beta*fes.getValue(i);
+    if(!std::isfinite(mbf)) {
+      continue;
+    }
+    fes.getPoint(i,x);
+    for(unsigned b=0; b<nb; b++) {
+      bool inside=true;
+      for(unsigned d=0; d<nd && inside; d++) {
+        const double lo=basinmin[b][d];
+        const double hi=basinmax[b][d];
+        if(pbc[d] && lo>hi) {
+          // along a periodic variable a basin can cross the boundary
+          inside=(x[d]>=lo || x[d]<=hi);
+        } else {
+          inside=(x[d]>=lo && x[d]<=hi);
+        }
+      }
+      if(!inside) {
+        continue;
+      }
+      if(mbf>fmax[b]) {
+        sum[b]=sum[b]*std::exp(fmax[b]-mbf)+1.0;
+        fmax[b]=mbf;
+      } else {
+        sum[b]+=std::exp(mbf-fmax[b]);
+      }
+    }
+  }
+  std::vector<double> f(nb);
+  for(unsigned b=0; b<nb; b++) {
+    plumed_massert(sum[b]>0.0,"basin "+std::to_string(b)+" does not contain any point of the grid");
+    f[b]=-(std::log(sum[b])+fmax[b])/beta;
+  }
+  ofile.printField("time",time);
+  ofile.printField("nkernels",nkernels);
+  for(unsigned b=1; b<nb; b++) {
+    ofile.printField("deltaf_"+std::to_string(b),f[b]-f[0]);
+  }
+  ofile.printField();
 }
 
 void FuncSumHills::calculate() {

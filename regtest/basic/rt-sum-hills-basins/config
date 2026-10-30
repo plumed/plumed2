@@ -1,0 +1,3 @@
+# free-energy differences between basins written at each output, also on a projection
+type=sum_hills
+arg="--hills HILLS --stride 20 --kt 2.5 --basins -3,0,-3,3:0,3,-3,3:-1,1,-1,1 --fmt %10.5f"

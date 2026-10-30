@@ -155,14 +155,20 @@ IFile& IFile::scanFieldList(std::vector<std::string>&s) {
 }
 
 bool IFile::FieldExist(const std::string& s) {
-  std::vector<std::string> slist;
-  scanFieldList(slist);
-  int mycount = (int) std::count(slist.begin(), slist.end(), s);
-  if(mycount>0) {
-    return true;
-  } else {
+  if(!inMiddleOfField) {
+    advanceField();
+  }
+// using explicit conversion not to confuse cppcheck 1.86
+  if(!bool(*this)) {
     return false;
   }
+  // compare the names directly, without copying the list of the fields
+  for(const auto & f : fields) {
+    if(f.name==s) {
+      return true;
+    }
+  }
+  return false;
 }
 
 IFile& IFile::scanField(const std::string&name,std::string&str) {

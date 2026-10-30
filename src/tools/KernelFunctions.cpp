@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KernelFunctions.h"
+#include <limits>
 #include "IFile.h"
 #include <cmath>
 
@@ -524,6 +525,26 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos,
       }
   }
   return kval;
+}
+
+bool KernelFunctions::getSeparableGaussian(double & h, double & a, double & b, double & r2cut, std::vector<double> & w) const {
+  if(dtype!=matrixType::diagonal) {
+    return false;
+  }
+  if(ktype==kernelType::gaussian || ktype==kernelType::truncatedgaussian) {
+    a=1.0;
+    b=0.0;
+    r2cut=std::numeric_limits<double>::max();
+  } else if(ktype==kernelType::stretchedgaussian) {
+    a=stretchA;
+    b=stretchB;
+    r2cut=2.0*dp2cutoff;
+  } else {
+    return false;
+  }
+  h=height;
+  w=width;
+  return true;
 }
 
 std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile,

@@ -1,0 +1,3 @@
+# time average of the bias between time 10 and 30
+type=sum_hills
+arg="--hills HILLS --average 10,30 --stride 30 --min -pi --max pi --bin 60 --fmt %10.5f"
