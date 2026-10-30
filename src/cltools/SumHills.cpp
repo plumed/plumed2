@@ -40,24 +40,52 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS sum_hills
 /*
-sum_hills is a tool that allows one to to use plumed to post-process an existing hills/colvar file
+sum_hills is a tool that sums the Gaussians in a hills file and writes the resulting free energy on a grid.
 
-This tool is most frequently used as shown below after a [METAD](METAD.md) simulation has been performed to sum all the Gaussians in the hills file
-and output the free energy surface.
+This tool is most frequently used after a [METAD](METAD.md) simulation to sum all the Gaussians in the hills file
+and output the free energy surface:
 
 ```plumed
-plumed sum_hills  --hills PATHTOMYHILLSFILE
+plumed sum_hills --hills PATHTOMYHILLSFILE
 ```
 
-The default name for the output file will be `fes.dat`
-Note that plumed automatically detects the
-number of the variables you have and their periodicity.
-Additionally, if you use flexible hills (multivariate Gaussian kernels), plumed will understand it from the HILLS file.
+The default name for the output file is `fes.dat`. It contains, for each point of the grid, the free energy
+and its derivatives with respect to the variables. The free energy is minus the sum of the Gaussians: with
+well-tempered metadynamics the heights written in the hills file are already scaled by $\gamma/(\gamma-1)$
+(where $\gamma$ is the bias factor), so that their sum is directly the estimate of minus the free energy.
+As always, the free energy is defined up to an additive constant; use `--mintozero` to shift its minimum to zero.
 
-The sum_hills tool can also accept multiple files that will be integrated one after the other as shown below
+sum_hills automatically detects the variables in the hills file and their periodicity. A column `X` of the file
+is a variable if the file also contains its width (`sigma_X`, or `sigma_X_X` for multivariate Gaussians),
+whatever the name of the variable. If you used flexible hills (multivariate Gaussian kernels), sum_hills
+understands it from the hills file.
+
+## Choosing the grid
+
+By default the grid is chosen so as to contain all the Gaussians, with a spacing of about a third of the smallest width.
+You can instead choose the number of bins:
 
 ```plumed
-plumed sum_hills  --hills PATHTOMYHILLSFILE1,PATHTOMYHILLSFILE2,PATHTOMYHILLSFILE3
+plumed sum_hills --bin 99,99 --hills PATHTOMYHILLSFILE
+```
+
+In the command above the minimum and maximum of the grid are still detected for you. If you want to set them yourself
+you can do so as shown below:
+
+```plumed
+plumed sum_hills --bin 99,99 --min -pi,-pi --max pi,pi --hills PATHTOMYHILLSFILE
+```
+
+You can of course use numbers instead of -pi/pi. `--min` and `--max` must be given together. Instead of the number of bins
+you can give the grid spacing with `--spacing`, with or without `--min` and `--max`. If you give both `--bin` and `--spacing`,
+the larger number of bins is used for each variable.
+
+## Multiple files and multiple walkers
+
+sum_hills can also accept multiple files:
+
+```plumed
+plumed sum_hills --hills PATHTOMYHILLSFILE1,PATHTOMYHILLSFILE2,PATHTOMYHILLSFILE3
 ```
 
 The files are integrated one after the other. This does not change the final free energy, but when
@@ -67,113 +95,51 @@ not follow the simulation. With `--sort time` the hills of all the files are mer
 contains the hills deposited by all the walkers up to a given time:
 
 ```plumed
-plumed sum_hills  --hills HILLS.0,HILLS.1,HILLS.2 --sort time --stride 300
+plumed sum_hills --hills HILLS.0,HILLS.1,HILLS.2 --sort time --stride 300
 ```
 
 With `--sort clock` the hills are merged in order of the `clock` field (the wall-clock time at which they were
 deposited, written with multiple walkers), which is more appropriate when the walkers run at different speeds.
 Each file should be ordered by the chosen field.
 
-if you want to integrate out some variable from your output free energy surface you do
+## Integrating out variables
+
+If you want to integrate out some variables from your free energy surface you can use `--idw`:
 
 ```plumed
-plumed sum_hills  --hills PATHTOMYHILLSFILE   --idw t1 --kt 0.6
+plumed sum_hills --hills PATHTOMYHILLSFILE --idw t1 --kt 0.6
 ```
 
-where with `--idw` you define the variables that you want in the output free energy surface.
-All other variables in the hills file will be integrated out. `--kt` defines the temperature of the system in energy units.
-(be consistent with the units you have in your hills: plumed will not check this for you)
-If you need more variables then you may use a comma separated syntax shown below:
+With `--idw` you list the variables that you want in the output free energy surface.
+All the other variables in the hills file are integrated out, i.e.
+$F(s_1) = -k_BT \log \sum_{s_2} e^{-F(s_1,s_2)/k_BT}$, where the sum runs over the points of the grid.
+`--kt` is the temperature of the system in energy units: be consistent with the units of your hills file,
+since plumed will not check this for you. If you need more variables you can list them separated by commas:
 
 ```plumed
-plumed sum_hills  --hills PATHTOMYHILLSFILE   --idw t1,t2 --kt 0.6
+plumed sum_hills --hills PATHTOMYHILLSFILE --idw t1,t2 --kt 0.6
 ```
 
-You can define the output grid with the number of bins you want by using a command like this one
+## Following the convergence
 
-```plumed
-plumed sum_hills --bin 99,99 --hills PATHTOMYHILLSFILE
-```
-
-In the command above the min/max to use are detected for you.  If you want to specify the min/max yourself you can do so by using
-a command like the one shown below:
-
-```plumed
-plumed sum_hills --bin 99,99 --min -pi,-pi --max pi,pi --hills PATHTOMYHILLSFILE
-```
-
-You can of course use numbers instead of -pi/pi.
-
-You can use a `--stride` keyword to have a dump of the free energy estimate after each bunch of hills you read as shown in the following command:
+With `--stride` you can write the free energy after each bunch of hills (the stride is a number of hills):
 
 ```plumed
 plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE
 ```
 
-If you have run well tempered metadynamics you can also ask `sum_hills` to output the negative bias instead of the free energy by using the keyword `--negbias`
-as shown below
+The output files are then called `fes_0.dat`, `fes_1.dat`, etc. (see below), and the last one contains all the hills.
+
+With `--nohistory` each output contains only the hills of its own block of hills, instead of all the hills up to that point:
 
 ```plumed
-plumed sum_hills --negbias --hills PATHTOMYHILLSFILE
+plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE --nohistory
 ```
 
-Here the default output file name will be negativebias.dat
+In this way you can monitor the bias deposited in blocks of time as a metadynamics simulation goes on:
+when the bias deposited in a block is constant over the whole domain, the simulation can be considered to be at convergence.
 
-From time to time you might need to use HILLS or a COLVAR file
-as it was just a simple set  of points from which you want to build
-a free energy by using -(1/beta)log(P).  If you want to do this operation then
-you use the `--histo` option as shown below:
-
-```plumed
-plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
-```
-
-in this case you need a `--kt` to do the reweighting and you
-need to set bandwidth parameters using the `--sigma` option for the histogram calculation as this histogram is computed using
-Gaussian kernels, so it will be a continuous histogram.
-
-For the command above the default output is called histo.dat.
-Note that also here you can have multiple input files separated by a comma.
-
-Additionally, if you want to compute the histogram and sum of the hills from the same file you can do this by using a command like this one:
-
-```plumed
-plumed sum_hills --hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
-```
-
-The two files can be eventually the same
-
-Another interesting thing one can do is monitor the difference in blocks as a metadynamics goes on.
-When the bias deposited is constant over the whole domain one can consider to be at convergence.
-This can be done with the `--nohistory` keyword
-
-```plumed
-plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE  --nohistory
-```
-
-and similarly one can do the same for an histogram file
-
-```plumed
-plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6 --nohistory
-```
-
-just to check the hypothetical free energy calculated in single blocks of time during a simulation
-and not in a cumulative way
-
-With standard (not well-tempered) metadynamics the bias does not converge but fluctuates around the free energy.
-A better estimate is the time average of the bias after an initial transient, which you can obtain with `--average`:
-
-```plumed
-plumed sum_hills --hills PATHTOMYHILLSFILE --average 1000
-```
-
-computes the average of the bias between time 1000 (in the units of the time column of the hills file) and the time of
-the last hill. This is done by scaling the height of each hill deposited at time t after 1000 by (t1-t)/(t1-1000), where
-t1 is the final time. You can also give the final time explicitly, e.g. `--average 1000,5000`: hills deposited after
-5000 are ignored. The same average is useful for well-tempered metadynamics, where it reduces the fluctuations of the
-estimate of the free energy. Combined with `--stride`, each output is the average from the initial time up to the last hill read.
-
-To check whether the free energy has converged you can follow the free-energy difference between basins as the
+To check the convergence you can also follow the free-energy difference between basins as the
 simulation goes on. With `--basins` you can define two or more basins as boxes, each given by the minimum and
 the maximum of each variable of the output, with the basins separated by colons. Along a periodic variable a
 basin can cross the boundary if its minimum is larger than its maximum. For example
@@ -185,46 +151,124 @@ plumed sum_hills --hills PATHTOMYHILLSFILE --stride 500 --kt 2.5 --basins -pi,0,
 writes, at each output, the time of the last hill read, the number of hills, and the free energy of each basin
 relative to the first one, computed as $-k_BT \log \sum_{s\in\mathrm{basin}} e^{-F(s)/k_BT}$ over the points of
 the grid, in the file `basins.dat` (the name can be set with `--outbasins`). With `--idw` the basins are defined on
-the projected variables. With `--histo` the same is done for the free energy from the histogram, in the file `histo_basins.dat`.
+the projected variables. With `--histo` (see below) the same is done for the free energy from the histogram, in the file `histo_basins.dat`.
 A plateau of these differences is a necessary (not sufficient) indication of convergence.
+
+## Time average of the bias
+
+With standard (not well-tempered) metadynamics the bias does not converge but fluctuates around the free energy.
+A better estimate is the time average of the bias after an initial transient, which you can obtain with `--average`:
+
+```plumed
+plumed sum_hills --hills PATHTOMYHILLSFILE --average 1000
+```
+
+computes the average of the bias between time 1000 (in the units of the time column of the hills file) and the time of
+the last hill. This is done by scaling the height of each hill deposited at time $t$ after 1000 by $(t_1-t)/(t_1-1000)$, where
+$t_1$ is the final time. You can also give the final time explicitly, e.g. `--average 1000,5000`: hills deposited after
+5000 are ignored. The same average is useful for well-tempered metadynamics, where it reduces the fluctuations of the
+estimate of the free energy. Combined with `--stride`, each output is the average from the initial time up to the last hill read.
+This is the same average computed by the function `hills_time_average` of the plumed python module.
+
+## Bias instead of free energy
+
+If you have run well-tempered metadynamics you can also ask sum_hills to output the negative bias, $-V(s)=(\gamma-1)/\gamma\, F(s)$,
+instead of the free energy by using `--negbias`:
+
+```plumed
+plumed sum_hills --negbias --hills PATHTOMYHILLSFILE
+```
+
+Here the default output file name is `negativebias.dat`. If the simulation was not well tempered the bias is minus the free energy,
+and the output is the same as without `--negbias`.
+
+## Histograms
+
+From time to time you might need to use a hills or a colvar file as a set of points from which you want to build
+a free energy as $-k_BT \log P(s)$. You can do this with `--histo`:
+
+```plumed
+plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE --sigma 0.2,0.2 --kt 0.6
+```
+
+The histogram is computed with Gaussian kernels whose widths are given with `--sigma`, one for each variable,
+so it is a continuous histogram, and `--kt` is needed to convert it into a free energy. The default output file is `histo.dat`.
+With a hills file the variables are those of the hills; with a colvar file all the columns but time are variables, so you
+will usually select some of them with `--idw` (and give one width for each of them).
+Multiple input files can be given, separated by commas.
+
+All the points have the same weight: the result is the distribution sampled by the simulation, which is the
+free energy only if the simulation was not biased. **sum_hills does not reweight the points.** To compute a free
+energy from a biased simulation (e.g. from the COLVAR file of a metadynamics simulation) use [driver](driver.md) with
+[READ](READ.md), [REWEIGHT_BIAS](REWEIGHT_BIAS.md) (or [REWEIGHT_METAD](REWEIGHT_METAD.md)), [HISTOGRAM](HISTOGRAM.md)
+and [CONVERT_TO_FES](CONVERT_TO_FES.md), for example
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-fametad-2-restart/COLVAR
+s: READ FILE=regtest/basic/rt-fametad-2-restart/COLVAR VALUES=sum_abs IGNORE_TIME IGNORE_FORCES
+metad: READ FILE=regtest/basic/rt-fametad-2-restart/COLVAR VALUES=MetaD.bias IGNORE_TIME IGNORE_FORCES
+w: REWEIGHT_BIAS TEMP=300 ARG=metad.bias
+hh: HISTOGRAM ARG=s GRID_MIN=0 GRID_MAX=1 GRID_BIN=100 BANDWIDTH=0.02 LOGWEIGHTS=w NORMALIZATION=true
+ff: CONVERT_TO_FES ARG=hh TEMP=300
+DUMPGRID ARG=ff FILE=fes.dat
+```
+
+run with `plumed driver --plumed plumed.dat --noatoms`. With well-tempered metadynamics the bias changes with time:
+use the `rbias` component of [METAD](METAD.md) (with `CALC_RCT`) instead of the bias, or [REWEIGHT_METAD](REWEIGHT_METAD.md).
+Block averages, which give the statistical error of the free energy, are discussed in the documentation of [HISTOGRAM](HISTOGRAM.md)
+and in the tutorial linked there.
+
+You can compute the free energy from the hills and the histogram at the same time, e.g. from the same file:
+
+```plumed
+plumed sum_hills --hills PATHTOMYHILLSFILE --histo PATHTOMYHILLSFILE --sigma 0.2,0.2 --kt 0.6
+```
+
+`--nohistory` and `--stride` can also be used with `--histo`, to compute the histogram in blocks of points:
+
+```plumed
+plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE --sigma 0.2,0.2 --kt 0.6 --stride 1000 --nohistory
+```
+
+## Output
 
 The output format can be controlled by using the `--fmt` option as shown below
 
 ```plumed
-plumed sum_hills --hills PATHTOMYHILLSFILE  --fmt %8.3f
+plumed sum_hills --hills PATHTOMYHILLSFILE --fmt %8.3f
 ```
 
-where here we chose a float with length of 8 and 3 digits
+where here we chose a float with length of 8 and 3 digits.
 
-The output can be named in a arbitrary way by using the `--output` option as shown below:
+The output file can be named in an arbitrary way by using the `--outfile` option as shown below:
 
 ```plumed
-plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes.dat
+plumed sum_hills --hills PATHTOMYHILLSFILE --outfile myfes.dat
 ```
 
-This command produces a file myfes.dat which contains the free energy surface.
+This command produces a file `myfes.dat` which contains the free energy surface.
 
-If you use stride, the name specied with `--output` is the suffix so this command:
+If you use `--stride`, the name specified with `--outfile` is the prefix of the files, so this command:
 
 ```plumed
-plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes_ --stride 100
+plumed sum_hills --hills PATHTOMYHILLSFILE --outfile myfes_ --stride 100
 ```
 
-produces output files called myfes_0.dat,  myfes_1.dat, myfes_2.dat etc.
+produces output files called `myfes_0.dat`, `myfes_1.dat`, `myfes_2.dat` etc.
 
-The same is true for the output coming from histogram that is used.  So this example
+The same is true for the output of the histogram, which is named with `--outhisto`. So this example
 
 ```plumed
 plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto.dat
 ```
 
-produces a file myhisto.dat, while this input
+produces a file `myhisto.dat`, while this input
 
 ```plumed
 plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto_ --stride 100
 ```
 
-produces output files called `myhisto_0.dat`,  `myhisto_1.dat`,  `myhisto_3.dat` etc..
+produces output files called `myhisto_0.dat`, `myhisto_1.dat`, `myhisto_2.dat` etc.
 
 */
 //+ENDPLUMEDOC
@@ -243,26 +287,26 @@ public:
 void CLToolSumHills::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
-  keys.add("optional","--hills","specify the name of the hills file");
-  keys.add("optional","--histo","specify the name of the file for histogram a colvar/hills file is good");
-  keys.add("optional","--stride","specify the stride for integrating hills file (default 0=never)");
-  keys.add("optional","--min","the lower bounds for the grid");
-  keys.add("optional","--max","the upper bounds for the grid");
-  keys.add("optional","--bin","the number of bins for the grid");
-  keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
-  keys.add("optional","--idw","specify the variables to be used for the free-energy/histogram (default is all). With --hills the other variables will be integrated out, with --histo the other variables won't be considered");
-  keys.add("optional","--outfile","specify the output file for sumhills");
-  keys.add("optional","--outhisto","specify the output file for the histogram");
-  keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
-  keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
-  keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with well tempered runs and flexible hills) ");
-  keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
-  keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (useful to compare results) ");
-  keys.add("optional","--fmt","specify the output format");
-  keys.add("optional","--sort","with multiple files (e.g. one per walker), merge the hills in order of time or clock instead of reading the files one after the other");
+  keys.add("optional","--hills","the hills files to sum, separated by commas");
+  keys.add("optional","--histo","the files (hills or colvar) from which a histogram is computed, separated by commas; the points are not reweighted");
+  keys.add("optional","--stride","write the free energy (or histogram) every this number of hills (or points); by default only at the end");
+  keys.add("optional","--min","the lower bounds of the grid, one for each variable; by default they are detected from the hills");
+  keys.add("optional","--max","the upper bounds of the grid, one for each variable; by default they are detected from the hills");
+  keys.add("optional","--bin","the number of bins of the grid, one for each variable");
+  keys.add("optional","--spacing","the grid spacing, one for each variable, alternative to the number of bins");
+  keys.add("optional","--idw","the variables of the output (default all). With --hills the other variables are integrated out, with --histo the other variables are not considered");
+  keys.add("optional","--outfile","the output file for the free energy (fes.dat, or negativebias.dat with --negbias); with --stride the prefix of the files");
+  keys.add("optional","--outhisto","the output file for the histogram (histo.dat); with --stride the prefix of the files");
+  keys.add("optional","--kt","the temperature in energy units, needed with --idw, --histo and --basins");
+  keys.add("optional","--sigma","the widths of the Gaussian kernels of the histogram, one for each variable (needed with --histo)");
+  keys.addFlag("--negbias",false,"write minus the bias instead of the free energy (they differ only with well-tempered metadynamics)");
+  keys.addFlag("--nohistory",false,"with --stride, each output contains only the hills (or points) of its own block");
+  keys.addFlag("--mintozero",false,"shift the free energy (or histogram) so that its minimum is zero");
+  keys.add("optional","--fmt","the format of the numbers in the output, e.g. %14.9f");
+  keys.add("optional","--sort","time or clock: with multiple files (e.g. one per walker), merge the hills in order of time or clock instead of reading the files one after the other");
   keys.add("optional","--average","time average of the bias from time t0 (t0) or between times t0 and t1 (t0,t1); without t1 the average ends at the last hill read");
-  keys.add("optional","--basins","basins separated by colons, each given by the minimum and maximum of each output variable (e.g. -3,-1:1,3); the free energy of each basin relative to the first one is written at each output in the file basins.dat");
-  keys.add("optional","--outbasins","specify the output file for the free energies of the basins");
+  keys.add("optional","--basins","basins separated by colons, each given by the minimum and maximum of each output variable (e.g. -3,-1:1,3); the free energy of each basin relative to the first one is written at each output");
+  keys.add("optional","--outbasins","the output file for the free energies of the basins (basins.dat)");
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
@@ -271,7 +315,7 @@ CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
 }
 
 std::string CLToolSumHills::description()const {
-  return "sum the hills with  plumed";
+  return "sum the hills of metadynamics to compute the free energy";
 }
 
 int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {

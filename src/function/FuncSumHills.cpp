@@ -37,14 +37,14 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS
 /*
-This function is intended to be called by the command line tool sum_hills.  It is meant to integrate a HILLS file or an HILLS file interpreted as a histogram in a variety of ways. It is, therefore, not expected that you use this during your dynamics (it will crash!)
+This function is used by the command line tool [sum_hills](sum_hills.md) to sum the hills of a metadynamics simulation
+or to compute a histogram. It does all its work when it is created and it cannot be used in a simulation (it stops with an error).
 
-In the future one could implement periodic integration during the metadynamics
-or straightforward MD as a tool to check convergence
+All its options are set by [sum_hills](sum_hills.md): see the documentation of [sum_hills](sum_hills.md) for their meaning.
 
 ## Examples
 
-There are currently no examples for this keyword.
+There are currently no examples for this action: use [sum_hills](sum_hills.md) instead.
 
 */
 //+ENDPLUMEDOC
