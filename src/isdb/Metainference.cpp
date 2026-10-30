@@ -319,6 +319,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
+  keys.add("optional","SEED","seed of the random number generators used by the Monte Carlo sampling (by default a different seed is taken from the clock at every run)");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
@@ -686,6 +687,12 @@ Metainference::Metainference(const ActionOptions&ao):
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
   parse("MC_CHUNKSIZE", MCchunksize_);
+  int seed=-1;
+  parse("SEED",seed);
+  if(seed<-1) {
+    error("SEED must be a non-negative integer");
+  }
+  const bool fixed_seed=(seed>=0);
   // get temperature
   kbt_ = getkBT();
   if(kbt_==0.0) {
@@ -1039,36 +1046,50 @@ Metainference::Metainference(const ActionOptions&ao):
   }
 
   // initialize random seed
+  // with SEED the three streams are fixed: SEED+replica for random[0],
+  // SEED+2*nrep for random[1] (the same on all replicas), SEED+nrep+replica for random[2]
   unsigned iseed;
-  if(master) {
+  if(fixed_seed) {
+    iseed = static_cast<unsigned>(seed)+replica_;
+  } else if(master) {
     auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     iseed = static_cast<unsigned>(ts)+replica_;
   } else {
     iseed = 0;
   }
-  comm.Sum(&iseed, 1);
+  if(!fixed_seed) {
+    comm.Sum(&iseed, 1);
+  }
   // this is used for ftilde and sigma both the move and the acceptance
   // this is different for each replica
   random[0].setSeed(-iseed);
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
-    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-    iseed = static_cast<unsigned>(ts);
-    if(master&&nrep_>1) {
-      multi_sim_comm.Bcast(iseed,0);
+    if(fixed_seed) {
+      iseed = static_cast<unsigned>(seed)+2*nrep_;
+    } else {
+      auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+      iseed = static_cast<unsigned>(ts);
+      if(master&&nrep_>1) {
+        multi_sim_comm.Bcast(iseed,0);
+      }
+      comm.Bcast(iseed,0);
     }
-    comm.Bcast(iseed,0);
     // this is used for scale and offset sampling and acceptance
     random[1].setSeed(-iseed);
   }
   // this is used for random chunk of sigmas, and it is different for each replica
-  if(master) {
+  if(fixed_seed) {
+    iseed = static_cast<unsigned>(seed)+nrep_+replica_;
+  } else if(master) {
     auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     iseed = static_cast<unsigned>(ts)+replica_;
   } else {
     iseed = 0;
   }
-  comm.Sum(&iseed, 1);
+  if(!fixed_seed) {
+    comm.Sum(&iseed, 1);
+  }
   random[2].setSeed(-iseed);
 
   // outfile stuff
