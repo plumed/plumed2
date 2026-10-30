@@ -237,11 +237,10 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
           }
         }
       }
+      // The derivatives are stored contiguously: nelem with respect to the first matrix,
+      // then nelem with respect to the second one (see MatrixProduct::calculate and getForceIndices)
       MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
       CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
-      for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
-        elem.derivs[0][ii] = 0;
-      }
     }
   } else {
     // Retrieve the row of the first matrix
@@ -300,6 +299,12 @@ void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
         }
       }
     }
+    // Only the nmult_r elements of the row of the first matrix that have a matching element in
+    // the second matrix contribute. Their indices (and the derivatives in performTask) are stored
+    // contiguously: nmult_r elements of the first matrix, which only this task touches, followed
+    // by nmult_r elements of the second matrix, which other tasks can touch too. The entries of
+    // the first matrix must not be mixed with the thread-unsafe ones: the task manager subtracts
+    // threadunsafe_forces_start from them, and an index of the first matrix is smaller than that.
     std::size_t n = 0;
     for(unsigned j=0; j<nmult; ++j) {
       std::size_t kind = arg0.bookeeping[fpos+1+j];
@@ -308,14 +313,14 @@ void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
       for(unsigned k=0; k<nr; ++k) {
         if( arg1.bookeeping[bstart+1+k]==actiondata.outmat[fstart+1+colno] ) {
           force_indices.indices[0][n] = task_index*arg0.ncols + j;
-          force_indices.indices[0][nmult+n] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + k;
+          force_indices.indices[0][nmult_r+n] = arg1.start + arg0.bookeeping[fpos+1+j]*arg1.ncols + k;
           n++;
           break;
         }
       }
     }
     force_indices.threadsafe_derivatives_end[0] = nmult_r;
-    force_indices.tot_indices[0] = nmult + nmult_r;
+    force_indices.tot_indices[0] = 2*nmult_r;
   } else {
     for(unsigned j=0; j<nmult; ++j) {
       force_indices.indices[0][j] = task_index*arg0.ncols + j;
