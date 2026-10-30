@@ -27,6 +27,7 @@
 #include "tools/Keywords.h"
 #include "tools/Log.h"
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <limits>
 #include <numeric>
@@ -38,6 +39,33 @@
 
 namespace PLMD {
 namespace isdb {
+
+namespace {
+/// reflect a Monte Carlo move into [lo,hi]; the first two reflections are done as
+/// in the previous versions so that the results do not change when they suffice
+/// (a move larger than the interval needs more reflections); if hi<=lo the
+/// interval has collapsed and the value is lo
+double reflect(double x, const double lo, const double hi) {
+  if(hi<=lo) {
+    return lo;
+  }
+  if(x > hi) {
+    x = 2.0 * hi - x;
+  }
+  if(x < lo) {
+    x = 2.0 * lo - x;
+  }
+  if(x > hi || x < lo) {
+    const double w = hi - lo;
+    double y = std::fmod(x - lo, 2.0*w);
+    if(y < 0.0) {
+      y += 2.0*w;
+    }
+    x = (y <= w) ? lo + y : lo + 2.0*w - y;
+  }
+  return x;
+}
+}
 
 void MetainferenceCore::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
@@ -1049,12 +1077,7 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
       const double ds1 = Dscale_*r1;
       new_scale += ds1;
       // check boundaries
-      if(new_scale > scale_max_) {
-        new_scale = 2.0 * scale_max_ - new_scale;
-      }
-      if(new_scale < scale_min_) {
-        new_scale = 2.0 * scale_min_ - new_scale;
-      }
+      new_scale = reflect(new_scale, scale_min_, scale_max_);
     } else {
       const double r1 = random[1].Gaussian();
       const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*std::exp(1)/M_PI*r1;
@@ -1070,12 +1093,7 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
       const double ds1 = Doffset_*r1;
       new_offset += ds1;
       // check boundaries
-      if(new_offset > offset_max_) {
-        new_offset = 2.0 * offset_max_ - new_offset;
-      }
-      if(new_offset < offset_min_) {
-        new_offset = 2.0 * offset_min_ - new_offset;
-      }
+      new_offset = reflect(new_offset, offset_min_, offset_max_);
     } else {
       const double r1 = random[1].Gaussian();
       const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*std::exp(1)/M_PI*r1;
@@ -1161,12 +1179,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
       const double ds2 = Dsigma_[index]*r2;
       new_sigma[index] = sigma_[index] + ds2;
       // check boundaries
-      if(new_sigma[index] > sigma_max_[index]) {
-        new_sigma[index] = 2.0 * sigma_max_[index] - new_sigma[index];
-      }
-      if(new_sigma[index] < sigma_min_[index]) {
-        new_sigma[index] = 2.0 * sigma_min_[index] - new_sigma[index];
-      }
+      new_sigma[index] = reflect(new_sigma[index], sigma_min_[index], sigma_max_[index]);
     }
   } else {
     // change all sigmas
@@ -1175,12 +1188,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
       const double ds2 = Dsigma_[j]*r2;
       new_sigma[j] = sigma_[j] + ds2;
       // check boundaries
-      if(new_sigma[j] > sigma_max_[j]) {
-        new_sigma[j] = 2.0 * sigma_max_[j] - new_sigma[j];
-      }
-      if(new_sigma[j] < sigma_min_[j]) {
-        new_sigma[j] = 2.0 * sigma_min_[j] - new_sigma[j];
-      }
+      new_sigma[j] = reflect(new_sigma[j], sigma_min_[j], sigma_max_[j]);
     }
   }
 
@@ -1618,6 +1626,10 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
           sigma_min_[i] = std::sqrt(sigma_mean2_tmp[i]);
           if(sigma_[i] < sigma_min_[i]) {
             sigma_[i] = sigma_min_[i];
+          }
+          if(sigma_min_[i] > sigma_max_[i] && !warned_sigma_max_) {
+            warned_sigma_max_ = true;
+            log.printf("  WARNING: the standard error of the mean of datum %u (%f) is larger than SIGMA_MAX (%f): sigma is set to the standard error of the mean\n",i,sigma_min_[i],sigma_max_[i]);
           }
         }
       }

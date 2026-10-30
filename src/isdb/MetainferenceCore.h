@@ -163,6 +163,8 @@ private:
   unsigned optimized_step_;
   bool sigmamax_opt_done_;
   std::vector<double> sigma_max_est_;
+  // GENERIC: sigma mean (the minimum of sigma) has exceeded SIGMA_MAX
+  bool warned_sigma_max_=false;
 
   // average weights
   double decay_w_;
