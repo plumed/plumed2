@@ -8,13 +8,15 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
 
 jobs:
   linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -32,17 +34,22 @@ jobs:
         - -nvhpc-mpi-
     steps:
     - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      # ImageOS is set by GitHub on hosted runners (e.g. "ubuntu24"); fail loudly if it ever disappears
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@v5
       with:
         path: ~/.ccache
-        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
-    # kenref_core is built from a pinned ref, so it only needs rebuilding when that ref moves.
-    # .ci/install.kenref exits early when the cache restored a usable prefix.
+        key: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-
+    # kenref_core is built from the ref named in .ci/install.kenref, so it only needs rebuilding when
+    # that ref moves. .ci/install.kenref exits early when the cache restored a usable prefix.
     #
-    # The cache key has to name the COMMIT, not just the ref: a tag can be re-pointed while
-    # .ci/install.kenref stays byte-identical, and keying on the file alone would then restore a prefix
-    # built from the old commit and silently skip the rebuild. Resolve the ref here so the key follows it.
+    # The cache key has to name the COMMIT, not just the ref: a branch moves (and a tag can be
+    # re-pointed) while .ci/install.kenref stays byte-identical, and keying on the file alone would then
+    # restore a prefix built from the old commit and silently skip the rebuild. Resolve the ref here so
+    # the key follows it.
     - name: Resolve the pinned KEnRef commit
       id: kenref_commit
       run: |
@@ -58,7 +65,7 @@ jobs:
     - uses: actions/cache@v5
       with:
         path: ~/opt/kenref
-        key: kenref-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
+        key: kenref-${{ steps.image.outputs.os }}-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:
@@ -206,33 +213,27 @@ jobs:
 
     - name: Install NVHPC compiler
       if: contains( matrix.variant, '-nvhpc-' )
-      # use this if it does not work
-      # wget https://developer.download.nvidia.com/hpc-sdk/24.3/nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # tar xpzf nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # nvhpc_2024_243_Linux_x86_64_cuda_12.3/install
       run: |
+        NVVER=25.11
         curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
         echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
         sudo apt-get update -y
-        sudo apt-get install -y nvhpc-24-3
+        sudo apt-get install -y nvhpc-${NVVER//./-}
         NVHOME=/opt/nvidia/hpc_sdk
         NVARCH=`uname -s`_`uname -m`
-        # echo "NVHPC=$NVHOME" >> $GITHUB_ENV
-        # echo "NVHPC_ROOT=$NVHOME/$NVARCH/24.3" >> $GITHUB_ENV
-        nvcudadir=$NVHOME/$NVARCH/24.3/cuda
-        nvcompdir=$NVHOME/$NVARCH/24.3/compilers
-        nvmathdir=$NVHOME/$NVARCH/24.3/math_libs
-        nvcommdir=$NVHOME/$NVARCH/24.3/comm_libs
+        nvcudadir=$NVHOME/$NVARCH/$NVVER/cuda
+        nvcompdir=$NVHOME/$NVARCH/$NVVER/compilers
+        nvmathdir=$NVHOME/$NVARCH/$NVVER/math_libs
+        nvcommdir=$NVHOME/$NVARCH/$NVVER/comm_libs
 
         echo "PATH=$nvcudadir/bin:$nvcompdir/bin:$nvcommdir/mpi/bin:$nvcompdir/extras/qd/bin:$PATH" >> $GITHUB_ENV
-        # echo "LD_LIBRARY_PATH=$nvcudadir/lib64:$nvcudadir/12.3/targets/x86_64-linux/lib/stubs/:$nvcudadir/extras/CUPTI/lib64:$nvcompdir/extras/qd/lib:$nvcompdir/lib:$nvmathdir/lib64:$nvcommdir/nccl/lib:$nvcommdir/nvshmem/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        # echo "CPATH=$nvmathdir/include:$nvcommdir/nccl/include:$nvcommdir/nvshmem/include:$nvcompdir/extras/qd/include/qd:$CPATH" >> $GITHUB_ENV
-        # echo "NVHPC_CUDA_HOME=$nvcudadir/12.3" >> $GITHUB_ENV
 
         $nvcompdir/bin/nvc++ -help -gpu
+        ls -l $nvcommdir/mpi/bin/mpic++
         echo "NVCXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
         echo "NVCC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
         echo "NVFC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
+
     - name: check if the openacc module can be compiled
       if: contains( matrix.variant, '-nvhpc-' )
       run: |
@@ -266,14 +267,28 @@ jobs:
     - name: Coverage
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
-      if: contains( matrix.variant, '-coverage-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
       run: |
          make -C developer-doc coverage
          .ci/push coverage
-         # this is hanging for some reason now (2024-04-03) - GB
-         #bash <(curl -s https://codecov.io/bash) > /dev/null
+    # Replaces the deprecated codecov.io/bash uploader, disabled in 2024 because it was hanging.
+    # Upload the lcov report built above (third-party libraries already removed, consistently
+    # with .codecov.yml) instead of letting the action search for and re-process gcov files.
+    # Errors are not fatal: a Codecov outage should not make CI fail.
+    - name: Upload coverage to Codecov
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
+      uses: codecov/codecov-action@v7
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./developer-doc/coverage.info
+        disable_search: true
+        plugins: noop
+        fail_ci_if_error: false
     - name: Push doc
-      if: contains( matrix.variant, '-doc-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-doc-' ) && github.event_name != 'schedule' }}
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |

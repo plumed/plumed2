@@ -306,7 +306,7 @@ void position_maha_dist::kabsch_rot_mat() {
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
   // Retrieve correct sizes for work and rellocate
@@ -317,7 +317,7 @@ void position_maha_dist::kabsch_rot_mat() {
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
 

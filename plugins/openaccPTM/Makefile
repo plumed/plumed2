@@ -21,19 +21,39 @@ TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingF
 #this makes make search for files in src
 VPATH = src
 OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
-ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
 ADDCLDFLAGS=-acc -static-nvidia
 
+# The soname must be passed to the linker as a single token: nvc++ splits
+# "-Xlinker -soname,name" at the comma and then treats "name" as an input
+# file, which makes ld fail with "input file 'name' is the same as output file".
 ifeq ($(SOEXT),dylib)
-  SONAME_OPTION:=-Xlinker -install_name
+  SONAME_FLAGS=-Xlinker -install_name -Xlinker $(notdir $@)
 else
-  SONAME_OPTION:=-Xlinker -soname
+  SONAME_FLAGS=-Xlinker -soname=$(notdir $@)
+# The NVIDIA runtime is linked statically in the plugin (-static-nvidia), so it
+# is finalized when the plugin is unloaded. PLUMED unloads the libraries
+# of LOAD with dlclose when it is destroyed, and an MD code destroys PLUMED
+# before freeing its own GPU memory (GROMACS >= 2025 does it just before
+# destroying the forcerec): the runtime shutdown then invalidates the MD code's
+# allocations, which fails with "Freeing of the device buffer failed ...
+# cudaErrorInvalidValue". With nodelete dlclose does not unload the plugin, and
+# the runtime is finalized at process exit, as for a statically linked code.
+  ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
 endif
 
 PLUGIN=plumedOpenACC.$(SOEXT)
 
 NVCXX ?= nvc++
 NVLDSHARED = $(LDSHARED:$(CXX)=$(NVCXX))
+# configure sets NVCXX=mpic++ when PLUMED has MPI: the wrapper must then call
+# nvc++ and not the compiler that was used to build MPI. These variables are
+# read by the OpenMPI, MPICH and Intel MPI wrappers respectively (and ignored
+# by nvc++ itself); they are exported to the compile and link commands, and a
+# value already set in the environment takes precedence.
+export OMPI_CXX ?= nvc++
+export MPICH_CXX ?= nvc++
+export I_MPI_CXX ?= nvc++
 all: $(PLUGIN)
 
 %.o: %.cpp $(DEPDIR)/%.d | $(DEPDIR)
@@ -61,7 +81,7 @@ include $(wildcard $(DEPFILES))
 
 $(PLUGIN): $(OBJS)
 	@echo Linking $@
-	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_FLAGS) $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 clean:
 	@rm -fv $(OBJS) $(PLUGIN)

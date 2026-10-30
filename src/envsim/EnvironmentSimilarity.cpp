@@ -279,7 +279,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       PDB pdb;
       pdb.read(reffile,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
       environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
-      log.printf("  reading %d reference vectors from %s \n", environments[0].size(), reffile.c_str() );
+      log.printf("  reading %zu reference vectors from %s \n", environments[0].size(), reffile.c_str() );
     } else {
       for(unsigned int i=1;; i++) {
         PDB pdb;
@@ -290,7 +290,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
           error("missing input file " + reffile );
         }
         environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
-        log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
+        log.printf("  Reference environment %d : reading %zu reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
       }
     }
   } else {

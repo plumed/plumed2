@@ -14,7 +14,7 @@ opes: OPES_METAD ...
   TEMP=1
   PACE=500
   BARRIER=10
-#  NLIST #turn on neighbor list (big difference with 2 or more CVs)
+#  NLIST_OFF #turn off the neighbor list, used by default (big difference with 2 or more CVs)
   STATE_WFILE=STATE
   STATE_WSTRIDE=500*1000
   STORE_STATES

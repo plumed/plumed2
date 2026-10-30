@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -73,6 +74,10 @@ public:
     void setGlobalAtomIndices(const std::optional<ArrayRef<const int>>& globalAtomIndices);
     /*! \brief Tells PLUMED to output the checkpoint data
      *
+     * This is called on the main rank only, when GROMACS writes a checkpoint. It is only a
+     * fallback for the simulators that do not call prepareStep(), such as the modular
+     * simulator, which writes its checkpoints before the force calculation of the step.
+     * calculateForces() then tells PLUMED on all ranks.
      * If the PLUMED API version is not greater than 3 it will do nothing.
      */
     void writeCheckpointData();
@@ -82,17 +87,21 @@ public:
      */
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
-    /*! \brief Whether the PLUMED input needs the potential energy on \p step
-     * \param[in] step  the step that is about to be computed
+    /*! \brief Prepares PLUMED for \p step, and returns whether it needs the potential energy
+     * \param[in] step                 the step that is about to be computed
+     * \param[in] isCheckpointingStep  whether GROMACS writes a checkpoint at \p step
      */
-    bool requestsPotentialEnergy(int64_t step) override;
+    bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    //! Whether PLUMED asked to stop the simulation during the last calculation
+    bool requestsStop() const override;
     /*! \brief Passes the potential energy to PLUMED and applies energy biases
      * \param[in]     energyWasComputed  whether the potential energy is valid this step
      * \param[in,out] potentialEnergy    the MD potential energy
      * \param[in,out] force              the complete force array
      * \param[in,out] virial             the force virial
+     * \returns whether the atoms that PLUMED used include virtual sites
      */
-    void applyAfterPotentialEnergy(bool           energyWasComputed,
+    bool applyAfterPotentialEnergy(bool           energyWasComputed,
                                    real*          potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor         virial) override;
@@ -100,17 +109,31 @@ public:
 private:
     //! Throws if PLUMED computed a bias while replica exchange is active
     void checkReplicaExchangeBias();
+    //! Whether the atoms that PLUMED used on this step include virtual sites
+    bool usesVirtualSites();
 
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether each atom is a virtual site, empty if there are none
+    std::vector<bool>             isVirtualSite_;
 
     std::optional<ArrayRef<const int>> globalAtomIndices_;
     int                                plumedNeedsEnergy_ = 0;
     int                                plumedWantsToStop_ = 0;
     matrix                             plumedVir_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-    //! Step for which requestsPotentialEnergy() already prepared the dependencies, if any
+    //! Step for which prepareStep() already prepared the dependencies, if any
     std::optional<int64_t> preparedStep_;
+    //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation
+    bool prepareStepIsCalled_ = false;
+    //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces()
+    int checkpointRequested_ = 0;
+    //! Step for which prepareStep() was last called
+    int64_t currentStep_ = 0;
+    //! Last step that PLUMED calculated
+    std::optional<int64_t> calculatedStep_;
+    //! Whether PLUMED already calculated this MD step (shell relaxation): it is then not updated again
+    bool repeatedCall_ = false;
 };
 
 } // namespace gmx

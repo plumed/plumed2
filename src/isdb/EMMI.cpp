@@ -661,7 +661,7 @@ EMMI::EMMI(const ActionOptions&ao):
   if(noise_!=2) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
     log.printf("  max MC move in uncertainty : %f\n",dsigma);
-    log.printf("  MC stride : %u\n", MCstride_);
+    log.printf("  MC stride : %d\n", MCstride_);
     log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
     log.printf("  with stride : %u\n",statusstride_);
   }

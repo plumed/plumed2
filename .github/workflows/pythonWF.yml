@@ -14,7 +14,7 @@ env:
 
 jobs:
   linux-build-plumed:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
     - uses: actions/cache@v5
@@ -51,7 +51,7 @@ jobs:
   linux-test-python:
     needs:
     - linux-build-plumed
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

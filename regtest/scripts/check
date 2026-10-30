@@ -3,6 +3,7 @@
 nerror=0
 nok=0
 notapp=0
+deferred=0
 html=
 fail=
 
@@ -44,6 +45,8 @@ do
     ((notapp++));
     echo + test $dir NOT APPLICABLE >> $file1
     echo + check file $fullname for more information >> $file1
+  elif grep -q '^DEFERRED (long test' $file ; then
+    ((deferred++))
   elif grep -q FAILURE $file ; then
     ((nerror++))
     echo + ERROR in test $dir >> $file2
@@ -58,6 +61,9 @@ cat $file2
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Final report:"
 echo "+ $((nok+nerror)) tests performed, $notapp tests not applicable"
+if ((deferred>0)) ; then
+echo "+ $deferred long tests not run (set PLUMED_LONG_TESTS=yes to run them)"
+fi
 echo "+ $nerror errors found"
 if ((nerror==0)) ; then
 echo "+ Well done!!"

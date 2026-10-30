@@ -416,6 +416,11 @@ void FunctionOfMatrix<CV,myPTM>::getForceIndices( std::size_t task_index,
   FunctionOfVector<CV>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
 }
 
+
+
+/// Explicit specialization defined in the corresponding .cpp file; declared
+/// here so that every translation unit instantiating the template sees it.
+template <> std::string FunctionOfMatrix<Custom>::writeInGraph() const;
 }
 }
 #endif

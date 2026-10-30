@@ -223,7 +223,7 @@ distance between these atoms by using divide and conquer strategies such as link
 switching functions.__ The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
 
 In theory we could further optimize the implementation of the CONTACT_MATRIX action by exploiting neighbor lists. If we were to do this we would likely add two further keywords as shown
-below:
+below (this input is not accepted at the moment, as NL_STRIDE must be 1):
 
 ```plumed
 c4: CONTACT_MATRIX GROUP=1-10000 SWITCH={RATIONAL R_0=0.1 NN=6 MM=12 D_MAX=0.5} NL_CUTOFF=0.7 NL_STRIDE=5

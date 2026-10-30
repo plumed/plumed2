@@ -64,15 +64,15 @@ SUBROUTINE TEST3()
   IMPLICIT NONE
   open(10,file="log")
   CALL TEST3A()
-  write(10,*) "3A"
+  write(10,'(SS,1X,A)') "3A"
   CALL TEST3B()
-  write(10,*) "3B"
+  write(10,'(SS,1X,A)') "3B"
   CALL TEST3C()
-  write(10,*) "3C"
+  write(10,'(SS,1X,A)') "3C"
   CALL TEST3D()
-  write(10,*) "3D"
+  write(10,'(SS,1X,A)') "3D"
   CALL TEST3E()
-  write(10,*) "3E"
+  write(10,'(SS,1X,A)') "3E"
   close(10)
 END SUBROUTINE
 
@@ -89,7 +89,7 @@ SUBROUTINE TEST4()
   TYPE(PLUMEDX) :: px
   open(10,file="log",position='append')
   call px%cmd("init")
-  write(10,*) "4",px%i
+  write(10,'(SS,1X,A,1X,I11)') "4",px%i
   close(10)
 END SUBROUTINE TEST4
 
@@ -100,13 +100,13 @@ SUBROUTINE TEST5()
   ALLOCATE(b(3))
   ALLOCATE(c(3))
   open(10,file="log",position='append')
-  write(10,*)"B",b%use_count()
-  write(10,*)"C",c%use_count()
+  write(10,'(SS,1X,A,3(1X,I11))')"B",b%use_count()
+  write(10,'(SS,1X,A,3(1X,I11))')"C",c%use_count()
   c=b
-  write(10,*)"B",b%use_count()
-  write(10,*)"C",c%use_count()
+  write(10,'(SS,1X,A,3(1X,I11))')"B",b%use_count()
+  write(10,'(SS,1X,A,3(1X,I11))')"C",c%use_count()
   deallocate(b)
-  write(10,*)"C",c%use_count()
+  write(10,'(SS,1X,A,3(1X,I11))')"C",c%use_count()
   close(10)
 END SUBROUTINE TEST5
 
@@ -121,30 +121,30 @@ SUBROUTINE TEST6()
   open(10,file="error_codes")
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("init",error=error)
-  write(10,*) "should be zero",error%code
+  write(10,'(SS,1X,A,1X,I11)') "should be zero",error%code
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("initxx",error=error)
-  write(10,*) "should be nonzero",error%code
+  write(10,'(SS,1X,A,1X,I11)') "should be nonzero",error%code
  
   call plumed_create(pippo) ! reset instance
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("init",error=error)
-  write(10,*) "should be zero",error%code
+  write(10,'(SS,1X,A,1X,I11)') "should be zero",error%code
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("initxx",error=error)
-  write(10,*) "should be nonzero",error%code
+  write(10,'(SS,1X,A,1X,I11)') "should be nonzero",error%code
  
   ! test nested exceptions
  
   ! first, disabled
    call pippo%cmd_val("throw","test_nested2",error=error)
-  write(10,*) error%code,allocated(error%nested)
+  write(10,'(SS,1X,I11,1X,L1)') error%code,allocated(error%nested)
   write(10,'(A)') error%what
  
   ! then, enabled
   call pippo%cmd_val("setNestedExceptions",1)
   call pippo%cmd_val("throw","test_nested2",error=error)
-  write(10,*) "code:",error%code,"nested:",allocated(error%nested)
+  write(10,'(SS,1X,A,1X,I11,1X,A,1X,L1)') "code:",error%code,"nested:",allocated(error%nested)
   write(10,'(A)') error%what
  
  
@@ -158,7 +158,7 @@ SUBROUTINE TEST6()
   error_nested => error
   do while(allocated(error_nested%nested))
     error_nested => error_nested%nested
-    write(10,*) "code:",error_nested%code,"nested:",allocated(error_nested%nested)
+    write(10,'(SS,1X,A,1X,I11,1X,A,1X,L1)') "code:",error_nested%code,"nested:",allocated(error_nested%nested)
     write(10,'(A)') error_nested%what
   end do
 

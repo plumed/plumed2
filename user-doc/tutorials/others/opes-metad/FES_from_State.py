@@ -254,11 +254,11 @@ for n in range(len(fields_pos)-1):
         dist_x=np.minimum(dx,period_x-dx)/sigma_x
       dist2=dist_x**2
       inside=(dist2<cutoff**2)
-      kernels_i=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff,0)
+      # force-shifted kernels, zero beyond the cutoff
+      kernels_i=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff*(1+0.5*(cutoff**2-dist2)),0)
       prob[i]=np.sum(kernels_i)/Zed+epsilon
       if calc_der:
-        # the constant cutoff shift does not contribute to the derivative
-        der_kernels_i=height*np.where(inside,np.exp(-0.5*dist2),0)
+        der_kernels_i=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff,0)
         der_prob_x[i]=np.sum(-dist_x/sigma_x*der_kernels_i)/Zed
       if mintozero and prob[i]>max_prob:
         max_prob=prob[i]
@@ -282,11 +282,11 @@ for n in range(len(fields_pos)-1):
           dist_y=np.minimum(dy,period_y-dy)/sigma_y
         dist2=dist_x**2+dist_y**2
         inside=(dist2<cutoff**2)
-        kernels_ij=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff,0)
+        # force-shifted kernels, zero beyond the cutoff
+        kernels_ij=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff*(1+0.5*(cutoff**2-dist2)),0)
         prob[i,j]=np.sum(kernels_ij)/Zed+epsilon
         if calc_der:
-          # the constant cutoff shift does not contribute to the derivative
-          der_kernels_ij=height*np.where(inside,np.exp(-0.5*dist2),0)
+          der_kernels_ij=height*np.where(inside,np.exp(-0.5*dist2)-val_at_cutoff,0)
           der_prob_x[i,j]=np.sum(-dist_x/sigma_x*der_kernels_ij)/Zed
           der_prob_y[i,j]=np.sum(-dist_y/sigma_y*der_kernels_ij)/Zed
         if mintozero and prob[i,j]>max_prob:

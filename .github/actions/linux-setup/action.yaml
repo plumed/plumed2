@@ -2,12 +2,12 @@ name: 'Prepare linux environment'
 description: 'Set up the linux environment for plumed'
 inputs:
   pytest-make:
-    descriptions: 'set to yes for exporting PYTHONPATH to be used in the tests'
+    description: 'set to yes for exporting PYTHONPATH to be used in the tests'
     required: false
     default: false
     type: boolean
   export-kernel:
-    descriptions: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
+    description: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
     required: false
     default: false
     type: boolean
@@ -46,8 +46,6 @@ runs:
         sudo apt-get update -qq
         sudo apt-get install -y libatlas-base-dev
         sudo apt-get install -y libfftw3-dev
-        sudo apt-get install -y gsl-bin
-        sudo apt-get install -y libgsl0-dev
       shell: bash
 
     - name: Install boost

@@ -3,6 +3,12 @@ name: CI
 on:
   push:
   pull_request:
+  # Nightly run of the whole CI on master. It catches changes in the compilers, runner images and
+  # external libraries CI installs on the day they happen, when nothing in PLUMED changed, and it is
+  # the run that also performs the regtests marked as long (plumed_long=yes in their config).
+  schedule:
+    - cron: "37 2 * * *"
+  workflow_dispatch:
 
 env:
 # on CI, better dump stack trace in case there is an error
@@ -25,6 +31,10 @@ jobs:
     permissions:
       contents: read
       security-events: write
+
+  windows:
+    uses: ./.github/workflows/windows.yml
+    secrets: inherit
 
   mac:
     uses: ./.github/workflows/macWF.yml

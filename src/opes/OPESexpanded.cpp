@@ -55,6 +55,8 @@ Its value is also needed for restarting a simulation.
 
 You can store the instantaneous $\Delta F_n(\lambda)$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
 Restart can be done either from a DELTAFS file or from a STATE_RFILE, it is equivalent.
+To continue a simulation with a static bias, for example once the $\Delta F(\lambda)$ estimates have converged, restart and add UPDATE_UNTIL=0.
+The $\Delta F(\lambda)$ estimates are then no longer updated, and the bias remains the one read at restart.
 
 Contrary to [OPES_METAD](OPES_METAD.md), OPES_EXPANDED does not use kernel density estimation.
 
@@ -214,7 +216,11 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , rct_(0)
   , work_(0) {
 //set pace
-  parse("PACE",stride_);
+  long long pace=0;
+  parse("PACE",pace);
+  plumed_massert(pace>0 && static_cast<unsigned long long>(pace)<=std::numeric_limits<unsigned>::max(),
+                 "PACE must be greater than zero and no larger than "+std::to_string(std::numeric_limits<unsigned>::max()));
+  stride_=static_cast<unsigned>(pace);
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
   obs_cvs_.resize(obs_steps_*ncv_);

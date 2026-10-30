@@ -184,16 +184,26 @@ public:
                                  ForceProviderOutput*      forceProviderOutput) = 0;
 
     /*! \brief
-     * Whether this provider needs the MD potential energy on \p step.
+     * Prepares this provider for \p step, and returns whether it needs the MD
+     * potential energy on that step.
      *
      * Called from the MD loop before setupStepWorkload(), which is the last
      * point at which the workload can still be changed. A true return value
      * requests GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL so that the potential
      * energy is valid in applyAfterPotentialEnergy().
      *
-     * \param[in] step  The step that is about to be computed
+     * \param[in] step                 The step that is about to be computed
+     * \param[in] isCheckpointingStep  Whether a checkpoint is written at \p step
      */
-    virtual bool requestsPotentialEnergy(int64_t /*step*/) { return false; }
+    virtual bool prepareStep(int64_t /*step*/, bool /*isCheckpointingStep*/) { return false; }
+
+    /*! \brief
+     * Whether this provider asks to stop the simulation, after the forces it computed last.
+     *
+     * Used by PLUMED, e.g. when COMMITTOR finds the system in a basin. The MD loop gets the
+     * request through a stop condition registered with the StopHandlerBuilder.
+     */
+    virtual bool requestsStop() const { return false; }
 
     /*! \brief
      * Optional callback after the potential energy has been accumulated
@@ -206,12 +216,15 @@ public:
      * \param[in,out] potentialEnergy    Pointer to the potential energy (F_EPOT)
      * \param[in,out] force              Complete force array (home atoms)
      * \param[in,out] virial             Force virial tensor
+     * \returns Whether the provider might have applied forces on virtual sites,
+     *          which then have to be spread on the constructing atoms
      */
-    virtual void applyAfterPotentialEnergy(bool /*energyWasComputed*/,
+    virtual bool applyAfterPotentialEnergy(bool /*energyWasComputed*/,
                                            real* /*potentialEnergy*/,
                                            ArrayRef<RVec> /*force*/,
                                            tensor /*virial*/)
     {
+        return false;
     }
 
 protected:
@@ -251,11 +264,15 @@ public:
     void calculateForces(const gmx::ForceProviderInput& forceProviderInput,
                          gmx::ForceProviderOutput*      forceProviderOutput) const;
 
-    //! Whether any provider needs the potential energy on \p step.
-    bool requestsPotentialEnergy(int64_t step) const;
+    //! Prepares all providers for \p step, and returns whether any needs the potential energy.
+    bool prepareStep(int64_t step, bool isCheckpointingStep) const;
 
-    //! Forwards applyAfterPotentialEnergy() to all providers.
-    void applyAfterPotentialEnergy(bool energyWasComputed,
+    //! Whether any provider asks to stop the simulation.
+    bool requestsStop() const;
+
+    //! Forwards applyAfterPotentialEnergy() to all providers, and returns whether any might have
+    //! applied forces on virtual sites.
+    bool applyAfterPotentialEnergy(bool energyWasComputed,
                                    real* potentialEnergy,
                                    ArrayRef<RVec> force,
                                    tensor virial) const;

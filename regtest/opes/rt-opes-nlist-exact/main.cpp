@@ -6,7 +6,7 @@
 #include <random>
 #include <string>
 
-// OPES with the exact neighbor list must give the same bias and forces as OPES without it
+// OPES with the neighbor list, used by default, must give the same bias and forces as OPES without it (NLIST_OFF)
 int main() {
   std::ofstream output("output");
   bool all_passed=true;
@@ -34,8 +34,8 @@ int main() {
       p[n].cmd("readInputLine","d2: DISTANCE ATOMS=1,3 NOPBC");
     }
     const std::string files=mode+"-"+setting[0];
-    p[0].cmd("readInputLine",("b: "+mode+opes+" NLIST"+setting[2]+" FILE="+files+"-nlist.kernels").c_str());
-    p[1].cmd("readInputLine",("b: "+mode+opes+" FILE="+files+"-ref.kernels").c_str());
+    p[0].cmd("readInputLine",("b: "+mode+opes+setting[2]+" FILE="+files+"-nlist.kernels").c_str());
+    p[1].cmd("readInputLine",("b: "+mode+opes+" NLIST_OFF FILE="+files+"-ref.kernels").c_str());
     std::mt19937 rng(12345);
     auto uniform=[&]() {
       return rng()/4294967296.0-0.5;

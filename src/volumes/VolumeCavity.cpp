@@ -181,7 +181,7 @@ void VolumeCavity::parseInput( ActionVolume<VolumeCavity>* action ) {
   std::string mykerneltype;
   action->parse("KERNEL",mykerneltype);
   kerneltype=HistogramBead::getKernelType(mykerneltype);
-  action->log.printf("  using %s kernels with a bandwidth of %d \n", mykerneltype.c_str(), sigma );
+  action->log.printf("  using %s kernels with a bandwidth of %f \n", mykerneltype.c_str(), sigma );
 }
 
 void VolumeCavity::parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms ) {

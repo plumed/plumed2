@@ -153,9 +153,9 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
     error("MIDPOINTS, GRID_BIN or GRID_SPACING must be set");
   }
   if( nbin.size()==dimension ) {
-    log.printf("  number of bins in grid %ld", nbin[0]);
+    log.printf("  number of bins in grid %zu", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) {
-      log.printf(", %ld", nbin[i]);
+      log.printf(", %zu", nbin[i]);
     }
     log.printf("\n");
   } else if( gspacing.size()==dimension ) {

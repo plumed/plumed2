@@ -16,6 +16,17 @@ keyword:
 Because the observables are ensemble averages, `RELAX` requires at least two replicas; run PLUMED with
 `--multi` in the usual way. `SIGMA` and `PLATEAUS` also work with a single replica.
 
+KENREF makes the atoms it reads whole at every step, using the reference structure, which must therefore
+be whole (see [KENREF](KENREF.md)). Builds of the `master` branch made before this was added (October
+2026) do not do it, and stop with an error when a molecule is split across the box. With those, make the
+molecule whole before `KENREF`, using a whole reference:
+
+```plumed
+#SETTINGS MOLFILE=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb
+MOLINFO STRUCTURE=regtest/kenref/rt-kenref-sigma/gb3_frag.pdb WHOLE
+WHOLEMOLECULES ENTITY0=1-98
+```
+
 ## Installation
 
 This module is not compiled by default. It requires the KEnRef core library, which supplies both the
@@ -30,7 +41,8 @@ If `kenref_core` is already installed, put its prefix on `PKG_CONFIG_PATH` and c
 (the install ships an `env.sh` that does this for you). Otherwise configure clones KEnRef and delegates
 the build to KEnRef's own CMake, into `kenref-deps/` inside the PLUMED build tree. Point it at a local
 checkout instead with `--with-kenref-src=DIR`, or override the clone with `KENREF_GIT_URL` /
-`KENREF_GIT_TAG`.
+`KENREF_GIT_TAG`. The clone follows KEnRef's `stable` branch, its latest verified release;
+`KENREF_GIT_TAG=master` builds its development trunk instead.
 
 KEnRef stores Eigen objects inside its own containers, so **the module must be compiled with the same
 Eigen alignment as `libkenref_core`** — that is, the same `-march`/SIMD width. A mismatch is caught at

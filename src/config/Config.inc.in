@@ -24,7 +24,9 @@
 #include "version.h"
 #include <cstdlib>
 #include <cstring>
+#ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
+#endif
 
 namespace PLMD {
 namespace config {
@@ -211,8 +213,9 @@ std::string getLibraryPath() {
   } else {
     return "";
   }
+#else
+  return "";
 #endif
-
 }
 
 

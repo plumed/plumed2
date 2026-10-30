@@ -17,7 +17,7 @@ tests, not evidence of equilibrium or long-time numerical stability.
 An unsupported adaptive width or excluded region on only one walker must be
 rejected collectively, without stranding other walkers inside an MPI call.
 
-Each local/shared-weight case also runs with the exact OPES neighbor list.
+Each local/shared-weight case runs both with the default exact neighbor list and with NLIST_OFF.
 The listed and full-kernel paths must agree in bias, force and deposition
 weights, including the wall cases. Finite differences are checked in both
 paths. This keeps the shared-path contract independent of the kernel-sum
