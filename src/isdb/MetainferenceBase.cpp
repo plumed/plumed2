@@ -91,5 +91,10 @@ void MetainferenceBase::writeStatus() {
   core_->writeStatus();
 }
 
+void MetainferenceBase::update() {
+  // write the status file
+  core_->update();
+}
+
 }
 }

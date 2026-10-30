@@ -99,7 +99,6 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit JCoupling(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")
@@ -394,13 +393,6 @@ void JCoupling::calculate() {
       virial-=Tensor(getPosition(a0+5), deriv[a0+5]);
       setBoxDerivatives(val, virial);
     }
-  }
-}
-
-void JCoupling::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

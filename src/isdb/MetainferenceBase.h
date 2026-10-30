@@ -81,6 +81,7 @@ public:
   void setDerivatives();
   double getMetaDer(const unsigned index);
   void writeStatus();
+  void update() override;
   void turnOnDerivatives() override;
   unsigned getNumberOfDerivatives() override;
   void lockRequests() override;

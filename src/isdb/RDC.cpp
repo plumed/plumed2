@@ -157,7 +157,6 @@ public:
   explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(RDC,"RDC")
@@ -380,13 +379,6 @@ void RDC::calculate() {
       setAtomsDerivatives(val, r+1, -der);
     }
     setBoxDerivatives(val, dervir);
-  }
-}
-
-void RDC::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

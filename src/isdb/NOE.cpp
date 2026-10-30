@@ -76,7 +76,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
@@ -299,13 +298,6 @@ void NOE::calculate() {
       }
     }
     setBoxDerivatives(val, dervir);
-  }
-}
-
-void NOE::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

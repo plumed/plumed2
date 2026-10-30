@@ -81,7 +81,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")
@@ -372,13 +371,6 @@ void PRE::calculate() {
       }
     }
     setBoxDerivatives(val, dervir);
-  }
-}
-
-void PRE::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 
