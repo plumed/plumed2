@@ -1,0 +1,5 @@
+type=driver
+mpiprocs=2
+# c(t) with sparse grids, also extended, with two MPI processes
+arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz --timestep 0.002"
+extra_files="../../trajectories/diala_traj_nm.xyz"

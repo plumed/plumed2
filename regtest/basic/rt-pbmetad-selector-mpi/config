@@ -1,0 +1,5 @@
+type=driver
+mpiprocs=2
+# two MPI walkers, with SELECTOR: only walker 0 adds hills, but both take part in the exchange of the hills
+arg="--plumed plumed.dat --ixyz traj.xyz --timestep 0.002 --multi 2"
+extra_files="../rt-metad-diff-restart-mpi/traj.0.xyz ../rt-metad-diff-restart-mpi/traj.1.xyz"

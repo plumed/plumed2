@@ -1,0 +1,9 @@
+# Two MPI walkers (WALKERS_MPI) with two processes each: the hills of both walkers are added to the grids,
+# which are extended in the same way by all the processes.
+# b: large grid; s: small initial grid; n: no initial range. Same bias (up to round-off).
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+b: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HB WALKERS_MPI GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005
+s: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HS WALKERS_MPI GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005
+n: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HN WALKERS_MPI GRID_SPACING=0.05,0.005
+PRINT ARG=phi,d,b.bias,s.bias,n.bias FILE=colvar FMT=%10.5f

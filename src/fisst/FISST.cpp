@@ -290,7 +290,7 @@ FISST::FISST(const ActionOptions&ao):
     }
     log.printf("\n");
     observable_weight_.resize(n_interpolation_);
-    for(unsigned int i = 0; i<n_interpolation_; i++) {
+    for(int i = 0; i<n_interpolation_; i++) {
       observable_weight_[i] = 1.0;
     }
 
@@ -303,15 +303,15 @@ FISST::FISST(const ActionOptions&ao):
 
     log.printf("Using weight distribution %s with rate %f\n",initial_weight_dist_.c_str(),initial_weight_rate_);
     if(initial_weight_dist_ == "UNIFORM" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = 1.0;
       }
     } else if (initial_weight_dist_ == "EXP" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
       }
     } else if (initial_weight_dist_ == "GAUSS" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
       }
     } else {
@@ -322,7 +322,7 @@ FISST::FISST(const ActionOptions&ao):
     partition_estimate_.resize(n_interpolation_);
     NormalizeForceWeights();
     double sum = 0.0;
-    for(unsigned int i = 0; i<n_interpolation_; i++) {
+    for(int i = 0; i<n_interpolation_; i++) {
       //setting partition estimate as 1/w_i
       partition_estimate_[i] = 1/force_weight_[i];
       log.printf("force/gauss weight/force_weight: %i %f %f %f\n",i,forces_[i],gauss_weight_[i],force_weight_[i]);
@@ -360,11 +360,11 @@ FISST::FISST(const ActionOptions&ao):
 void FISST::NormalizeForceWeights() {
   double denom = 0.0;
 
-  for(unsigned i=0; i<n_interpolation_; i++) {
+  for(int i =0; i<n_interpolation_; i++) {
     denom += gauss_weight_[i] * force_weight_[i];
   }
 
-  for(unsigned i=0; i<n_interpolation_; i++) {
+  for(int i =0; i<n_interpolation_; i++) {
     force_weight_[i] /= denom;
   }
 }
@@ -425,7 +425,7 @@ void FISST::readInRestart() {
     for(unsigned int i = 0; i<ncvs_; ++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name,tmp);
-      for(unsigned int j =0; j<n_interpolation_; ++j) {
+      for(int j =0; j<n_interpolation_; ++j) {
         in_restart_.scanField(cv_name + "_f"+std::to_string(j),forces_[j]);
         in_restart_.scanField(cv_name + "_g"+std::to_string(j),gauss_weight_[j]);
         in_restart_.scanField(cv_name + "_w"+std::to_string(j),force_weight_[j]);
@@ -437,7 +437,7 @@ void FISST::readInRestart() {
   }
 
   double sum = 0.0;
-  for(unsigned int j =0; j<n_interpolation_; ++j) {
+  for(int j =0; j<n_interpolation_; ++j) {
     //clear observable weight, which will be set later
     observable_weight_[j] = 1.0;
 
@@ -592,7 +592,7 @@ void FISST::update_statistics()  {
 
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
-    for(unsigned int j=0; j<n_interpolation_; j++) {
+    for(int j =0; j<n_interpolation_; j++) {
       //if multiple cvs, these need to be updated to have 2 columns
       double f_j = forces_[j];
       double w_j = force_weight_[j];
@@ -601,7 +601,7 @@ void FISST::update_statistics()  {
       fbar_denum_integral += g_j * w_j * exp(beta_*f_j * Q_i);
     }
 
-    for(unsigned int j=0; j<n_interpolation_; j++) {
+    for(int j =0; j<n_interpolation_; j++) {
       double f_j = forces_[j];
       double sample_weight = exp(beta_*f_j * Q_i) / fbar_denum_integral;
 
@@ -626,7 +626,7 @@ void FISST::update_bias() {
     double fbar_num_integral = 0.0;
     double fbar_denum_integral = 0.0;
 
-    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+    for(int j =0; j<n_interpolation_; j++ ) {
       double f_j = forces_[j];
       double w_j = force_weight_[j];
       double g_j = gauss_weight_[j];
@@ -645,12 +645,12 @@ void FISST::compute_observable_weight() {
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
 
-    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+    for(int j =0; j<n_interpolation_; j++ ) {
       double z_j = partition_estimate_[j];
       double f_j = forces_[j];
       double denum_integral = 0.0;
 
-      for( unsigned int k=0; k<n_interpolation_; k++ ) {
+      for(int k =0; k<n_interpolation_; k++ ) {
         double f_k = forces_[k];
         double w_k = force_weight_[k];
         double g_k = gauss_weight_[k];

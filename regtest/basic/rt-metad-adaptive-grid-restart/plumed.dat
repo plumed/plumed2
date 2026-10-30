@@ -1,0 +1,10 @@
+# restart of an ADAPTIVE=DIFF METAD from a grid file (GRID_RFILE) with two CVs.
+# The grid in grid.in was written by the same input (without RESTART) and checks the reading path
+# of grids with adaptive Gaussians.
+phi: TORSION ATOMS=5,7,9,15
+d1:  DISTANCE ATOMS=2,19
+
+md: METAD ARG=phi,d1 ADAPTIVE=DIFF SIGMA=10 SIGMA_MIN=0.2,0.02 HEIGHT=1.0 BIASFACTOR=8 TEMP=300 PACE=5 GRID_MIN=-pi,0.4 GRID_MAX=pi,0.8 GRID_SPACING=0.1,0.01 GRID_RFILE=grid.in RESTART=YES FILE=HILLS FMT=%14.6f
+
+PRINT ARG=phi,d1,md.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,d1 STRIDE=2 FILE=forces FMT=%10.5f

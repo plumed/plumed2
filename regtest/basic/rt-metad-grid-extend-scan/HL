@@ -1,0 +1,5 @@
+#! FIELDS time d sigma_d height biasf
+#! SET multivariate false
+#! SET kerneltype stretched-gaussian
+0 0.95 0.1 1 -1
+2 0.3 0.1 1 -1

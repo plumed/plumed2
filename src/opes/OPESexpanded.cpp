@@ -804,13 +804,12 @@ void OPESexpanded::init_fromObs() { //This could probably be faster and/or requi
 
 //initialize deltaF_ from obs
 //for the first point, t=0, the ECVs are calculated by initECVs_observ, setting also any initial guess
-  index_j=0;
   for(unsigned i=0; i<deltaF_.size(); i++)
     for(unsigned j=0; j<ncv_; j++) {
       deltaF_[i]+=kbt_*ECVs_[j][index_k_[i][j]];
     }
   for(unsigned t=1; t<obs_steps_; t++) { //starts from t=1
-    unsigned index_j=0;
+    index_j=0;
     for(unsigned l=0; l<pntrToECVsClass_.size(); l++) {
       pntrToECVsClass_[l]->calculateECVs(&obs_cvs_[t*ncv_+index_j]);
       index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
