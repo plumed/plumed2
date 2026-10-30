@@ -50,14 +50,17 @@ jobs:
         # then generate the links
         make -C src/lib/ dirslinks
         make codecheck
+    # The reports are uploaded also when codecheck passes (they have no results then), otherwise GitHub
+    # never closes the alerts that have been fixed. Pull requests from forks are skipped: their token
+    # cannot upload security events.
     - name: Upload codecheck report to gh
-      if: failure() && steps.codecheck.outcome == 'failure'
+      if: always() && hashFiles('src/codecheck.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: src/codecheck.sarif
         category: plumedcheck
     - name: Upload ruff report to gh
-      if: failure() && steps.codecheck.outcome == 'failure'
+      if: always() && hashFiles('src/ruff.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: src/ruff.sarif

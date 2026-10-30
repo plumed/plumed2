@@ -7,7 +7,9 @@ unset CFLAGS
 unset CXXFLAGS
 unset LDSHARED
 export plumed_program_name=plumed
-export plumed_force_cython=yes
+# plumed.c (generated from plumed.pyx and cplumed.pxd, see "make cythonize" in python/Makefile)
+# is compiled directly, so cython is not needed and plumed.c is never modified by the build.
+# Export plumed_force_cython=yes before calling this script to compile plumed.pyx instead.
 export plumed_include_dir=../src/wrapper
 while getopts ":v:k:p:" opt; do
   case $opt in

@@ -203,6 +203,26 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
 grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >"${FATAL_FILE}" || true
 count=$(wc -l <"${FATAL_FILE}")
+
+#just a small check to see if python is there
+if [[ $do_local == false ]] && python --version &>/dev/null; then
+# --------------------------------------------------------------------
+#   This converst $FATAL_FILE to the sarif format,
+#   so that it can be integrated with the codeQL stuff in the CI
+#   SARIF is a fancy json with some specific fields
+#
+#   As now this converts only things in this form:
+#   [{file}:{line}] ({severity}) :{id}: {message}
+#   As now the errors in the format:
+#   [global_check] ({severity}) :{id}: {message}
+#   are ignored
+#
+#   The report is written also when there are no errors (with no results): when it is uploaded,
+#   GitHub closes the alerts of the previous reports that have been fixed
+
+  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
+fi
+
 echo
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 if ((count == 0)); then
@@ -227,21 +247,5 @@ if grep -q 'ruff_' "${FATAL_FILE}"; then
 fi
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
-
-#just a small check to see if python is there
-if [[ $do_local == false ]] && python --version &>/dev/null; then
-# --------------------------------------------------------------------
-#   This converst $FATAL_FILE to the sarif format,
-#   so that it can be integrated with the codeQL stuff in the CI
-#   SARIF is a fancy json with some specific fields
-#
-#   As now this converts only things in this form:
-#   [{file}:{line}] ({severity}) :{id}: {message}
-#   As now the errors in the format:
-#   [global_check] ({severity}) :{id}: {message}
-#   are ignored
-
-  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
-fi
 
 exit 1

@@ -95,3 +95,25 @@ jobs:
       run: |
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
+
+  # python/plumed.c is generated from plumed.pyx and cplumed.pxd and it is committed,
+  # so that building the python interface does not require cython.
+  # Here we check that it is consistent with the sources.
+  check-plumed-c:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+    - name: Check that python/plumed.c is up to date
+      working-directory: ./python
+      run: |
+        # keep the version consistent with CYTHON_VERSION in python/Makefile
+        pip install cython==3.2.4
+        python -m cython plumed.pyx
+        if ! git diff --exit-code --stat plumed.c ; then
+          echo "::error file=python/plumed.c::python/plumed.c is not consistent with plumed.pyx and cplumed.pxd. Regenerate it with 'make -C python cythonize' using cython 3.2.4 and commit it."
+          exit 1
+        fi
