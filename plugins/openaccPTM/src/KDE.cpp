@@ -35,7 +35,7 @@ PLUMED_REGISTER_ACTION(beadkde,"KDE_BEADSACC")
 typedef KDE<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>,PLMD::ACCPTM> flatkde;
 PLUMED_REGISTER_ACTION(flatkde,"KDE_KERNELSACC")
 typedef KDE<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools,PLMD::ACCPTM> sphericalkde;
-PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDEACC")
+PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDE_ACC")
 typedef KDE<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>,PLMD::ACCPTM> flatfkde;
 PLUMED_REGISTER_ACTION(flatfkde,"KDE_FULLCOVARACC")
 } // namespace colvar

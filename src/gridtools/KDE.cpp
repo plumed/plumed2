@@ -22,6 +22,7 @@
 #include "KDE.h"
 #include "KDEGridTools.h"
 #include "SphericalKDEGridTools.h"
+#include "core/AccelerableShortcut.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
@@ -217,7 +218,9 @@ PLUMED_REGISTER_ACTION(beadkde,"KDE_BEADS")
 typedef KDE<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>,KDEGridTools<DiagonalKernelParams,RegularKernel<DiagonalKernelParams>>> flatkde;
 PLUMED_REGISTER_ACTION(flatkde,"KDE_KERNELS")
 typedef KDE<VonMissesKernelParams,UniversalVonMisses,SphericalKDEGridTools> sphericalkde;
-PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDE")
+PLUMED_REGISTER_ACTION(sphericalkde,"SPHERICAL_KDE_CPU")
+typedef AccelerableShortcut<sphericalkde> sphshortcut;
+PLUMED_REGISTER_ACTION(sphshortcut,"SPHERICAL_KDE")
 typedef KDE<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>,KDEGridTools<NonDiagonalKernelParams,RegularKernel<NonDiagonalKernelParams>>> flatfkde;
 PLUMED_REGISTER_ACTION(flatfkde,"KDE_FULLCOVAR")
 
@@ -236,6 +239,10 @@ void KDEShortcut::registerKeywords(Keywords& keys) {
   keys.addActionNameSuffix("_KERNELS");
   keys.addActionNameSuffix("_BEADS");
   keys.addActionNameSuffix("_FULLCOVAR");
+  keys.addActionNameSuffix("_DISCRETEACC");
+  keys.addActionNameSuffix("_KERNELSACC");
+  keys.addActionNameSuffix("_BEADSACC");
+  keys.addActionNameSuffix("_FULLCOVARACC");  
 }
 
 KDEShortcut::KDEShortcut(const ActionOptions&ao):
