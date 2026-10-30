@@ -80,6 +80,8 @@ void MetainferenceBase::Selector() {
 }
 
 double MetainferenceBase::getScore() {
+  // selector for REM-like simulations
+  Selector();
   const double ene = core_->calculate(iselect, core_->doReweight() ? getArgument(0) : 0.);
   if(core_->doReweight()) {
     setArgDerivatives(valueScore, core_->getBiasDer());
