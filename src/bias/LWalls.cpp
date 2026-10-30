@@ -64,6 +64,27 @@ PRINT ARG=uwall.bias,lwall.bias
 \endplumedfile
 (See also \ref DISTANCE and \ref PRINT).
 
+
+\par Periodic arguments
+
+If an argument is periodic (e.g. a \ref TORSION), the wall acts on the value of the argument in its periodic domain
+and periodic boundary conditions are __not__ applied to the difference \f$x_i-a_i\f$. The value of AT must thus be within the
+periodic domain of the argument. This is the case both when the arguments are scalars and when they are vectors.
+The following input restrains a torsion within the interval \f$[-2,2]\f$:
+\plumedfile
+t: TORSION ATOMS=1,2,3,4
+uwall: UPPER_WALLS ARG=t AT=2.0 KAPPA=150.0
+lwall: LOWER_WALLS ARG=t AT=-2.0 KAPPA=150.0
+PRINT ARG=t,uwall.bias,lwall.bias
+\endplumedfile
+
+Notice that the bias is discontinuous at the boundary of the periodic domain (here at \f$\pm\pi\f$). You should thus make sure that
+the walls keep the argument far from this boundary, e.g. by using both an upper and a lower wall as in the input above.
+
+Versions of PLUMED before 2.9.7 applied periodic boundary conditions to the difference \f$x_i-a_i\f$. With that choice, each wall acts on half of the
+periodic domain, and the region left free by an upper and a lower wall is smaller than the one between AT values
+(see \issue{658}).
+
 */
 //+ENDPLUMEDOC
 
@@ -145,6 +166,23 @@ LWalls::LWalls(const ActionOptions&ao):
   }
   log.printf("\n");
 
+  // The wall acts on the value of the argument in its domain, without periodic images
+  // (see https://github.com/plumed/plumed2/issues/658).
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    Value* arg=getPntrToArgument(i);
+    if( arg->isPeriodic() ) {
+      double min, max;
+      arg->getDomain( min, max );
+      if( at[i]<min || at[i]>max ) {
+        error("the position of the wall (AT) for periodic argument " + arg->getName() + " should be within its periodic domain");
+      }
+      log.printf("  WARNING: argument %s is periodic. The wall acts on its value in the domain [%f,%f]\n"
+                 "    without periodic images, so the bias is discontinuous at the boundary of the domain.\n"
+                 "    Make sure that the walls keep the argument far from it (e.g. use both an upper and a lower wall).\n",
+                 arg->getName().c_str(), min, max );
+    }
+  }
+
   addComponent("force2");
   componentIsNotPeriodic("force2");
 }
@@ -154,7 +192,8 @@ void LWalls::calculate() {
   double totf2 = 0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double f = 0.0;
-    const double cv=difference(i,at[i],getArgument(i));
+    // no periodic boundary conditions here, see the documentation and issue #658
+    const double cv=getArgument(i)-at[i];
     const double off=offset[i];
     const double epsilon=eps[i];
     const double lscale = (cv-off)/epsilon;

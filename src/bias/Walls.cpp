@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 namespace bias {
@@ -117,7 +118,33 @@ Walls::Walls(const ActionOptions&ao):
     } else {
       argn = args[i];
     }
-    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
+    // For periodic arguments the wall acts on the value of the argument in its domain, without periodic images
+    // (see https://github.com/plumed/plumed2/issues/658).  COMBINE would apply PBCs to the difference, so CUSTOM is used instead.
+    std::vector<Value*> myvals;
+    ActionWithArguments::interpretArgumentList( std::vector<std::string>(1,args[i]), plumed.getActionSet(), this, myvals );
+    bool periodic=false;
+    for(unsigned j=0; j<myvals.size(); ++j) {
+      if( myvals[j]->isPeriodic() ) {
+        periodic=true;
+        double min, max, atval;
+        myvals[j]->getDomain( min, max );
+        if( !Tools::convertNoexcept( at[i], atval ) ) {
+          error("could not convert " + at[i] + " into a real number");
+        }
+        if( atval<min || atval>max ) {
+          error("the position of the wall (AT) for periodic argument " + myvals[j]->getName() + " should be within its periodic domain");
+        }
+        log.printf("  WARNING: argument %s is periodic. The wall acts on its value in the domain [%f,%f]\n"
+                   "    without periodic images, so the bias is discontinuous at the boundary of the domain.\n"
+                   "    Make sure that the walls keep the argument far from it (e.g. use both an upper and a lower wall).\n",
+                   myvals[j]->getName().c_str(), min, max );
+      }
+    }
+    if( periodic ) {
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": CUSTOM PERIODIC=NO FUNC=x-(" + at[i] + ") ARG=" + args[i] );
+    } else {
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
+    }
     if( getName()=="UPPER_WALLS" ) {
       readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
