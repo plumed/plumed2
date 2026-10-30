@@ -492,7 +492,8 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
   // resize std::vector for sigma_mean history
   sigma_mean2_last_.resize(nsel_);
   for(unsigned i=0; i<nsel_; i++) {
-    sigma_mean2_last_[i].resize(narg, SigmaMeanHistory(optsigmamean_stride_));
+    // the history is longer than one value only when sigma mean is optimised
+    sigma_mean2_last_[i].resize(narg, SigmaMeanHistory(do_optsigmamean_>0 ? optsigmamean_stride_ : 1));
   }
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     if(sigma_mean2_.size()==1) {
@@ -542,143 +543,170 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
     }
   }
 
+  for(unsigned i=0; i<sigma_max_.size(); i++) {
+    if(sigma_min_[i]>sigma_max_[i]) {
+      action_.error("SIGMA_MIN must not be larger than SIGMA_MAX");
+    }
+  }
+
   sigma_max_est_.resize(sigma_max_.size(), 0.);
 
   IFile restart_sfile;
   restart_sfile.link(action_);
+  bool restart_found=false;
+  double dummy=0.;
   if(action_.getRestart()&&restart_sfile.FileExist(status_file_name_)) {
     restart_sfile.open(status_file_name_);
-    log.printf("  Restarting from %s\n", status_file_name_.c_str());
-    double dummy;
-    if(restart_sfile.scanField("time",dummy)) {
-      // the weights and ftilde are not initialised from the first step
-      for(unsigned i=0; i<nsel_; i++) {
-        firstTimeW[i] = false;
-      }
-      if(noise_type_!=GENERIC) {
-        firstTime = false;
-      }
-      // check for syncronisation
-      std::vector<double> dummy_time(nrep_,0);
-      if(master&&nrep_>1) {
-        dummy_time[replica_] = dummy;
-        multi_sim_comm.Sum(dummy_time);
-      }
-      comm.Sum(dummy_time);
-      for(unsigned i=1; i<nrep_; i++) {
-        std::string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
-        if(dummy_time[i]!=dummy_time[0]) {
-          plumed_merror(msg);
-        }
-      }
-      // nsel
-      const bool restart_sigma_history=restart_sfile.FieldExist("sigmaMean2History_0_0");
-      for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
-        std::string msg_i;
-        Tools::convert(i,msg_i);
-        // narg
-        if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-          for(unsigned j=0; j<narg; ++j) {
-            std::string msg_j;
-            Tools::convert(j,msg_j);
-            std::string msg = msg_i+"_"+msg_j;
-            double read_sm;
-            restart_sfile.scanField("sigmaMean_"+msg,read_sm);
-            sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
-          }
-        }
-        if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
-          double read_sm;
-          std::string msg_j;
-          Tools::convert(0,msg_j);
-          std::string msg = msg_i+"_"+msg_j;
-          restart_sfile.scanField("sigmaMean_"+msg,read_sm);
-          for(unsigned j=0; j<narg; j++) {
-            sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
-          }
-        }
-        if(restart_sigma_history) {
-          for(unsigned j=0; j<narg; ++j) {
-            std::string msg_j;
-            Tools::convert(j,msg_j);
-            std::string msg = msg_i+"_"+msg_j;
-            std::string read_history;
-            restart_sfile.scanField("sigmaMean2History_"+msg,read_history);
-            std::vector<std::string> history_values=Tools::getWords(read_history,",");
-            plumed_massert(!history_values.empty(),"empty sigma mean history in restart file");
-            if(optsigmamean_stride_>0) {
-              plumed_massert(history_values.size()<=optsigmamean_stride_,"sigma mean history is longer than AVERAGING in restart file");
-            } else {
-              plumed_massert(history_values.size()==1,"sigma mean history has invalid size in restart file");
-            }
-            sigma_mean2_last_[i][j].clear();
-            for(unsigned k=0; k<history_values.size(); ++k) {
-              double value;
-              Tools::convert(history_values[k],value);
-              sigma_mean2_last_[i][j].push(value);
-            }
-          }
-        }
-      }
-
-      for(unsigned i=0; i<sigma_.size(); ++i) {
-        std::string msg;
-        Tools::convert(i,msg);
-        restart_sfile.scanField("sigma_"+msg,sigma_[i]);
-      }
-      for(unsigned i=0; i<sigma_max_.size(); ++i) {
-        std::string msg;
-        Tools::convert(i,msg);
-        restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
-      }
-      if(do_optsigmamean_>1&&restart_sfile.FieldExist("optimized_step_")) {
-        restart_sfile.scanField("optimized_step_",optimized_step_);
-        sigmamax_opt_done_=optimized_step_>N_optimized_step_;
-        for(unsigned i=0; i<sigma_max_est_.size(); ++i) {
-          std::string msg;
-          Tools::convert(i,msg);
-          restart_sfile.scanField("sigma_max_est_"+msg,sigma_max_est_[i]);
-          if(sigmamax_opt_done_) {
-            restart_sfile.scanField("dsigma_"+msg,Dsigma_[i]);
-          } else {
-            double restart_Dsigma;
-            restart_sfile.scanField("dsigma_"+msg,restart_Dsigma);
-          }
-        }
-      } else {
-        sigmamax_opt_done_=true;
-        if(do_optsigmamean_>1) {
-          optimized_step_=N_optimized_step_+1;
-        }
-      }
-      // ftilde is written only after the first step
-      if(noise_type_==GENERIC&&restart_sfile.FieldExist("ftilde_0")) {
-        ftilde_.resize(narg);
-        for(unsigned i=0; i<ftilde_.size(); ++i) {
-          std::string msg;
-          Tools::convert(i,msg);
-          restart_sfile.scanField("ftilde_"+msg,ftilde_[i]);
-        }
-        firstTime = false;
-      }
-      restart_sfile.scanField("scale0_",scale_);
-      restart_sfile.scanField("offset0_",offset_);
-
-      for(unsigned i=0; i<nsel_; i++) {
-        std::string msg;
-        Tools::convert(i,msg);
-        double tmp_w;
-        restart_sfile.scanField("weight_"+msg,tmp_w);
-        if(master) {
-          average_weights_[i][replica_] = tmp_w;
-          if(nrep_>1) {
-            multi_sim_comm.Sum(&average_weights_[i][0], nrep_);
-          }
-        }
-        comm.Sum(&average_weights_[i][0], nrep_);
-      }
-
+    restart_found=restart_sfile.scanField("time",dummy);
+    if(restart_found) {
+      log.printf("  Restarting from %s\n", status_file_name_.c_str());
+    } else {
+      log.printf("  The status file %s is empty: starting from scratch\n", status_file_name_.c_str());
+      restart_sfile.close();
     }
+  }
+  // reading the status files involves communication between the replicas,
+  // so either all the replicas or none of them must restart from their status files
+  if(nrep_>1) {
+    std::vector<int> nfound(1,restart_found?1:0);
+    if(master) {
+      multi_sim_comm.Sum(nfound);
+    }
+    comm.Bcast(nfound,0);
+    if(nfound[0]!=0 && nfound[0]!=static_cast<int>(nrep_)) {
+      action_.error("the Metainference status file " + status_file_name_ + " is missing or empty for some replicas only");
+    }
+  }
+  if(restart_found) {
+    // the weights and ftilde are not initialised from the first step
+    for(unsigned i=0; i<nsel_; i++) {
+      firstTimeW[i] = false;
+    }
+    if(noise_type_!=GENERIC) {
+      firstTime = false;
+    }
+    // check for syncronisation
+    std::vector<double> dummy_time(nrep_,0);
+    if(master&&nrep_>1) {
+      dummy_time[replica_] = dummy;
+      multi_sim_comm.Sum(dummy_time);
+    }
+    comm.Sum(dummy_time);
+    for(unsigned i=1; i<nrep_; i++) {
+      std::string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
+      if(dummy_time[i]!=dummy_time[0]) {
+        plumed_merror(msg);
+      }
+    }
+    // nsel
+    const bool restart_sigma_history=restart_sfile.FieldExist("sigmaMean2History_0_0");
+    for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
+      std::string msg_i;
+      Tools::convert(i,msg_i);
+      // narg
+      if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+        for(unsigned j=0; j<narg; ++j) {
+          std::string msg_j;
+          Tools::convert(j,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          double read_sm;
+          restart_sfile.scanField("sigmaMean_"+msg,read_sm);
+          sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
+        }
+      }
+      if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
+        double read_sm;
+        std::string msg_j;
+        Tools::convert(0,msg_j);
+        std::string msg = msg_i+"_"+msg_j;
+        restart_sfile.scanField("sigmaMean_"+msg,read_sm);
+        for(unsigned j=0; j<narg; j++) {
+          sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
+        }
+      }
+      if(restart_sigma_history) {
+        for(unsigned j=0; j<narg; ++j) {
+          std::string msg_j;
+          Tools::convert(j,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          std::string read_history;
+          restart_sfile.scanField("sigmaMean2History_"+msg,read_history);
+          std::vector<std::string> history_values=Tools::getWords(read_history,",");
+          plumed_massert(!history_values.empty(),"empty sigma mean history in restart file");
+          if(optsigmamean_stride_>0) {
+            plumed_massert(history_values.size()<=optsigmamean_stride_,"sigma mean history is longer than AVERAGING in restart file");
+          } else {
+            plumed_massert(history_values.size()==1,"sigma mean history has invalid size in restart file");
+          }
+          sigma_mean2_last_[i][j].clear();
+          // without OPTSIGMAMEAN only the first value is used
+          const unsigned nvalues = (do_optsigmamean_>0 ? history_values.size() : 1);
+          for(unsigned k=0; k<nvalues; ++k) {
+            double value;
+            Tools::convert(history_values[k],value);
+            sigma_mean2_last_[i][j].push(value);
+          }
+        }
+      }
+    }
+
+    for(unsigned i=0; i<sigma_.size(); ++i) {
+      std::string msg;
+      Tools::convert(i,msg);
+      restart_sfile.scanField("sigma_"+msg,sigma_[i]);
+    }
+    for(unsigned i=0; i<sigma_max_.size(); ++i) {
+      std::string msg;
+      Tools::convert(i,msg);
+      restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
+    }
+    if(do_optsigmamean_>1&&restart_sfile.FieldExist("optimized_step_")) {
+      restart_sfile.scanField("optimized_step_",optimized_step_);
+      sigmamax_opt_done_=optimized_step_>N_optimized_step_;
+      for(unsigned i=0; i<sigma_max_est_.size(); ++i) {
+        std::string msg;
+        Tools::convert(i,msg);
+        restart_sfile.scanField("sigma_max_est_"+msg,sigma_max_est_[i]);
+        if(sigmamax_opt_done_) {
+          restart_sfile.scanField("dsigma_"+msg,Dsigma_[i]);
+        } else {
+          double restart_Dsigma;
+          restart_sfile.scanField("dsigma_"+msg,restart_Dsigma);
+        }
+      }
+    } else {
+      sigmamax_opt_done_=true;
+      if(do_optsigmamean_>1) {
+        optimized_step_=N_optimized_step_+1;
+      }
+    }
+    // ftilde is written only after the first step
+    if(noise_type_==GENERIC&&restart_sfile.FieldExist("ftilde_0")) {
+      ftilde_.resize(narg);
+      for(unsigned i=0; i<ftilde_.size(); ++i) {
+        std::string msg;
+        Tools::convert(i,msg);
+        restart_sfile.scanField("ftilde_"+msg,ftilde_[i]);
+      }
+      firstTime = false;
+    }
+    restart_sfile.scanField("scale0_",scale_);
+    restart_sfile.scanField("offset0_",offset_);
+
+    for(unsigned i=0; i<nsel_; i++) {
+      std::string msg;
+      Tools::convert(i,msg);
+      double tmp_w;
+      restart_sfile.scanField("weight_"+msg,tmp_w);
+      if(master) {
+        average_weights_[i][replica_] = tmp_w;
+        if(nrep_>1) {
+          multi_sim_comm.Sum(&average_weights_[i][0], nrep_);
+        }
+      }
+      comm.Sum(&average_weights_[i][0], nrep_);
+    }
+
     restart_sfile.scanField();
     restart_sfile.close();
   }
