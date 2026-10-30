@@ -519,14 +519,17 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
   IFile restart_sfile;
   restart_sfile.link(action_);
   if(action_.getRestart()&&restart_sfile.FileExist(status_file_name_)) {
-    firstTime = false;
-    for(unsigned i=0; i<nsel_; i++) {
-      firstTimeW[i] = false;
-    }
     restart_sfile.open(status_file_name_);
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)) {
+      // the weights and ftilde are not initialised from the first step
+      for(unsigned i=0; i<nsel_; i++) {
+        firstTimeW[i] = false;
+      }
+      if(noise_type_!=GENERIC) {
+        firstTime = false;
+      }
       // check for syncronisation
       std::vector<double> dummy_time(nrep_,0);
       if(master&&nrep_>1) {
@@ -620,12 +623,15 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
           optimized_step_=N_optimized_step_+1;
         }
       }
-      if(noise_type_==GENERIC) {
+      // ftilde is written only after the first step
+      if(noise_type_==GENERIC&&restart_sfile.FieldExist("ftilde_0")) {
+        ftilde_.resize(narg);
         for(unsigned i=0; i<ftilde_.size(); ++i) {
           std::string msg;
           Tools::convert(i,msg);
           restart_sfile.scanField("ftilde_"+msg,ftilde_[i]);
         }
+        firstTime = false;
       }
       restart_sfile.scanField("scale0_",scale_);
       restart_sfile.scanField("offset0_",offset_);
