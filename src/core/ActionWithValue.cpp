@@ -383,21 +383,20 @@ bool ActionWithValue::checkForForces() {
     double* const dest = ( nt>1 ? omp_f.data() : forcesForApply.data() );
     #pragma omp for
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+      // a plain loop is vectorized by the compiler and is as fast as an external
+      // blas daxpy, without the risk of calling a threaded blas within an OpenMP region
       const double ff=values[valsToForce[i]]->inputForce[0];
-      const double* const thisderiv = values[valsToForce[i]]->data.data()+1;
-      #pragma omp simd
+      const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+      double* f=( nt>1 ? omp_f.data() : forcesForApply.data() );
       for(unsigned j=0; j<nder; ++j) {
-        dest[j] += ff*thisderiv[j];
+        f[j]+=ff*thisderiv[j];
       }
     }
-    if( nt>1 ) {
-      #pragma omp critical
-      {
-        double* const f = forcesForApply.data();
-        const double* const src = omp_f.data();
-        #pragma omp simd
+    #pragma omp critical
+    {
+      if( nt>1 ) {
         for(unsigned j=0; j<nder; ++j) {
-          f[j] += src[j];
+          forcesForApply[j]+=omp_f[j];
         }
       }
     }

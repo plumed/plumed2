@@ -6199,8 +6199,8 @@ fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack and blas, could be inefficient" >&5
-$as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack and blas; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices" >&5
+$as_echo "$as_me: WARNING: using internal lapack and blas; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices" >&2;}
 fi
 
 # if found, also look for external lapack
@@ -6340,8 +6340,8 @@ fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack, could be inefficient" >&5
-$as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices" >&5
+$as_echo "$as_me: WARNING: using internal lapack; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices" >&2;}
 else
 $as_echo "#define __PLUMED_HAS_EXTERNAL_LAPACK 1" >>confdefs.h
 
