@@ -802,9 +802,14 @@ fi
 
 if test $asmjit = true ; then
   found=ko
-# asmjit calls clock_gettime and thus should be linked to rt on Linux
+# On older Linux systems, AsmJit's clock and POSIX shared-memory functions
+# require librt. Check each symbol: clock_gettime can be in libc even when
+# shm_open and shm_unlink still require -lrt.
   if test `(uname)` = Linux ; then
-    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+    found=ok
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_open],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_unlink],[rt],[],[found=ko])
   else
     found=ok
   fi
@@ -812,7 +817,7 @@ if test $asmjit = true ; then
     AC_MSG_NOTICE([Enabling embedded asmjit])
     AC_DEFINE([__PLUMED_HAS_ASMJIT])
   else
-    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
+    AC_MSG_WARN([cannot link required clock or shared-memory functions on this Linux, asmjit will not be enabled])
   fi
 fi
 
