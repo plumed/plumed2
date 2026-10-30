@@ -77,6 +77,10 @@ private:
   std::vector<unsigned> nga;
   std::unique_ptr<NeighborList> nl;
   unsigned         tot_size;
+  // the components with the back-calculated data
+  std::vector<Value*> dataValues_;
+  // index of the first pair of each group in the neighbor list
+  std::vector<unsigned> nga_offset_;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
@@ -238,6 +242,7 @@ PRE::PRE(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponentWithDerivatives("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
@@ -255,6 +260,7 @@ PRE::PRE(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponent("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     for(unsigned i=0; i<nga.size(); i++) {
       std::string num;
@@ -264,6 +270,11 @@ PRE::PRE(const ActionOptions&ao):
       Value* comp=getPntrToComponent("exp-"+num);
       comp->set(exppre[i]);
     }
+  }
+
+  nga_offset_.resize(nga.size(),0);
+  for(unsigned i=1; i<nga.size(); i++) {
+    nga_offset_[i]=nga_offset_[i-1]+nga[i-1];
   }
 
   requestAtoms(nl->getFullAtomList(), false);
@@ -284,14 +295,9 @@ void PRE::calculate() {
   for(unsigned i=0; i<nga.size(); i++) {
     Tensor dervir;
     double pre=0;
-    unsigned index=0;
-    for(unsigned k=0; k<i; k++) {
-      index+=nga[k];
-    }
+    const unsigned index=nga_offset_[i];
     const double c_aver=constant/static_cast<double>(nga[i]);
-    std::string num;
-    Tools::convert(i,num);
-    Value* val=getPntrToComponent("pre-"+num);
+    Value* val=dataValues_[i];
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       // the first atom is always the same (the paramagnetic group)
@@ -349,10 +355,7 @@ void PRE::calculate() {
     /* calculate final derivatives */
     Value* val=getPntrToComponent("score");
     for(unsigned i=0; i<nga.size(); i++) {
-      unsigned index=0;
-      for(unsigned k=0; k<i; k++) {
-        index+=nga[k];
-      }
+      const unsigned index=nga_offset_[i];
       // cycle over equivalent atoms
       for(unsigned j=0; j<nga[i]; j++) {
         const unsigned i0=nl->getClosePair(index+j).first;

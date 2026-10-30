@@ -147,6 +147,8 @@ PRINT ARG=st.corr,pcse.bias FILE=colvar
 class RDC :
   public MetainferenceBase {
 private:
+  // the components with the back-calculated data
+  std::vector<Value*> dataValues_;
   double         Const;
   double         mu_s;
   double         scale;
@@ -270,6 +272,7 @@ RDC::RDC(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponentWithDerivatives("rdc-"+num);
       componentIsNotPeriodic("rdc-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     if(addexp) {
       for(unsigned i=0; i<ndata; i++) {
@@ -287,6 +290,7 @@ RDC::RDC(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponentWithDerivatives("rdc-"+num);
       componentIsNotPeriodic("rdc-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     for(unsigned i=0; i<ndata; i++) {
       std::string num;
@@ -343,9 +347,7 @@ void RDC::calculate() {
       dRDC[index][1] *= prod_xy;
       dRDC[index][2] *= prod_z;
 
-      std::string num;
-      Tools::convert(index,num);
-      Value* val=getPntrToComponent("rdc-"+num);
+      Value* val=dataValues_[index];
       val->set(rdc);
       if(!getDoScore()) {
         setBoxDerivatives(val, Tensor(distance,dRDC[index]));

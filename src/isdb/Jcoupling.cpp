@@ -87,6 +87,8 @@ PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
 class JCoupling :
   public MetainferenceBase {
 private:
+  // the components with the back-calculated data
+  std::vector<Value*> dataValues_;
   bool pbc;
   enum { HAN, HAHN, CCG, NCG, CUSTOM };
   unsigned ncoupl_;
@@ -269,6 +271,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
       Tools::convert(i, num);
       addComponentWithDerivatives("j-" + num);
       componentIsNotPeriodic("j-" + num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
   } else {
     for (unsigned i = 0; i < ncoupl_; i++) {
@@ -276,6 +279,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
       Tools::convert(i, num);
       addComponent("j-" + num);
       componentIsNotPeriodic("j-" + num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
   }
 
@@ -374,9 +378,7 @@ void JCoupling::calculate() {
   } else {
     for (unsigned r=0; r<ncoupl_; r++) {
       const unsigned a0 = 6*r;
-      std::string num;
-      Tools::convert(r,num);
-      Value* val=getPntrToComponent("j-"+num);
+      Value* val=dataValues_[r];
       val->set(j[r]);
       setAtomsDerivatives(val, a0, deriv[a0]);
       setAtomsDerivatives(val, a0+1, deriv[a0+1]);
