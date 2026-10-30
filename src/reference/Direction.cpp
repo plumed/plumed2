@@ -60,7 +60,7 @@ void Direction::addDirection( const double& weight, const Direction& dir ) {
     reference_args[i] += weight*dir.reference_args[i];
   }
   for(unsigned i=0; i<reference_atoms.size(); ++i) {
-    reference_atoms[i] += weight*reference_atoms.size()*dir.reference_atoms[i];
+    reference_atoms[i] += weight*dir.reference_atoms[i];
   }
 }
 

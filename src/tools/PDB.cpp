@@ -166,6 +166,20 @@ void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
   }
 }
 
+void PDB::setOccupancy( const std::vector<double>& occ ) {
+  plumed_assert( occ.size()==occupancy.size() );
+  for(unsigned i=0; i<occupancy.size(); ++i) {
+    occupancy[i]=occ[i];
+  }
+}
+
+void PDB::setBeta( const std::vector<double>& bet ) {
+  plumed_assert( bet.size()==beta.size() );
+  for(unsigned i=0; i<beta.size(); ++i) {
+    beta[i]=bet[i];
+  }
+}
+
 void PDB::setArgumentValue( const std::string& argname, const double& val ) {
   // First set the value of the value of the argument in the map
   arg_data.find(argname)->second = val;

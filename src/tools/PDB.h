@@ -116,6 +116,10 @@ public:
   void setAtomNumbers( const std::vector<AtomNumber>& atoms );
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to set the atom positions
   void setAtomPositions( const std::vector<Vector>& pos );
+/// Set the occupancy column (the values that are used as weights for alignment by RMSD)
+  void setOccupancy( const std::vector<double>& occ );
+/// Set the beta column (the values that are used as weights for displacement by RMSD)
+  void setBeta( const std::vector<double>& bet );
 /// Set the argument names that you would like to use
   void setArgumentNames( const std::vector<std::string>& argument_names );
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values

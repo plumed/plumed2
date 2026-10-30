@@ -1,0 +1,5 @@
+# Adaptive path with frames given as atomic positions (see issue #587)
+p1: ADAPTIVE_PATH TYPE=OPTIMAL FIXED=2,8 UPDATE=500 WFILE=out-path.pdb WSTRIDE=5000 REFERENCE=path.pdb
+# Same reference path but with all frames free to move, a finite memory and without writing the path
+p2: ADAPTIVE_PATH TYPE=OPTIMAL FIXED=1,9 UPDATE=1000 HALFLIFE=5000 TOLERANCE=1E-5 REFERENCE=path.pdb
+PRINT ARG=p1.gspath,p1.gzpath,p2.gspath,p2.gzpath FILE=colvar FMT=%8.4f

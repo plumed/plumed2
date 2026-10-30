@@ -31,6 +31,13 @@
 namespace PLMD {
 namespace mapping {
 
+/// Create a PDB object that holds the current state of a reference configuration.
+/// The atom numbers, positions, alignment (occupancy) and displacement (beta) weights
+/// and the values of the arguments are all transferred to the PDB object so the reference
+/// configuration can be reset by calling read on the returned object or printed out.
+/// The weights are rescaled so that their average is equal to one.
+PDB referenceConfigurationToPDB( ReferenceConfiguration& conf );
+
 /// \ingroup TOOLBOX
 /// This class can be used to make a set of reference configurations equidistant
 

@@ -20,9 +20,41 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathReparameterization.h"
+#include "reference/ReferenceAtoms.h"
 
 namespace PLMD {
 namespace mapping {
+
+PDB referenceConfigurationToPDB( ReferenceConfiguration& conf ) {
+  PDB mypdb;
+  const std::vector<AtomNumber>& indices( conf.getAbsoluteIndexes() );
+  if( indices.size()>0 ) {
+    mypdb.setAtomNumbers( indices );
+    mypdb.addBlockEnd( indices.size() );
+    mypdb.setAtomPositions( conf.getReferencePositions() );
+    ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>( &conf );
+    if( atoms ) {
+      // Weights are normalized when they are read in, here we rescale them so they average to one
+      double natoms = static_cast<double>( indices.size() );
+      std::vector<double> align( atoms->getAlign() ), displace( atoms->getDisplace() );
+      plumed_assert( align.size()==indices.size() && displace.size()==indices.size() );
+      for(unsigned i=0; i<indices.size(); ++i) {
+        align[i] *= natoms;
+        displace[i] *= natoms;
+      }
+      mypdb.setOccupancy( align );
+      mypdb.setBeta( displace );
+    }
+  }
+  const std::vector<std::string>& argnames( conf.getArgumentNames() );
+  if( argnames.size()>0 ) {
+    mypdb.setArgumentNames( argnames );
+    for(unsigned j=0; j<argnames.size(); ++j) {
+      mypdb.setArgumentValue( argnames[j], conf.getReferenceArgument(j) );
+    }
+  }
+  return mypdb;
+}
 
 PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp ):
   mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
@@ -147,11 +179,16 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
     // Copy the positions of the new path to the new paths
     for(int i=istart+incr; loopEnd(i,cfin,incr)==false; i+=incr) {
-      mypdb.setAtomPositions( newpath[i].getReferencePositions() );
-      for(unsigned j=0; j<newpath[i].getNumberOfReferenceArguments(); ++j) {
-        mypdb.setArgumentValue( mypath[i]->getArgumentNames()[j], newpath[i].getReferenceArgument(j) );
+      // This ensures that the atom numbers and the weights for alignment and displacement
+      // of the reference configuration are preserved when it is reset
+      PDB newpdb( referenceConfigurationToPDB( *mypath[i] ) );
+      if( newpath[i].getNumberOfReferencePositions()>0 ) {
+        newpdb.setAtomPositions( newpath[i].getReferencePositions() );
       }
-      mypath[i]->read( mypdb );
+      for(unsigned j=0; j<newpath[i].getNumberOfReferenceArguments(); ++j) {
+        newpdb.setArgumentValue( mypath[i]->getArgumentNames()[j], newpath[i].getReferenceArgument(j) );
+      }
+      mypath[i]->read( newpdb );
     }
 
     // Recompute the separations between frames

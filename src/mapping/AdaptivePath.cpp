@@ -81,7 +81,48 @@ REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
 END
 \endauxfile
 
-Notice that one can also use RMSD frames in place of arguments like those above.
+Notice that one can also use RMSD frames in place of arguments like those above.  In the input below, for example,
+the nodes of the path are configurations of a set of atoms and the distance between the instantaneous configuration and
+each node is computed using the \ref RMSD after optimal alignment.  The path is updated every 1000 steps and written
+to the file out-path.pdb every 5000 steps.  The first and the last node of the path are kept fixed.
+
+\plumedfile
+p1: ADAPTIVE_PATH TYPE=OPTIMAL FIXED=1,3 UPDATE=1000 WFILE=out-path.pdb WSTRIDE=5000 REFERENCE=myrmsdpath.pdb
+RESTRAINT ARG=p1.gzpath AT=0.0 KAPPA=300
+PRINT ARG=p1.gspath,p1.gzpath FILE=colvar
+\endplumedfile
+
+The reference path (myrmsdpath.pdb) then contains one set of atomic positions for each node of the path. Each set
+of positions is terminated by an END line as shown in the extract below:
+
+\auxfile{myrmsdpath.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -3.068   0.887   1.837  1.00  1.00
+ATOM      5  CLP ALA     1      -1.881   0.231   1.548  1.00  1.00
+ATOM      6  OL  ALA     1      -1.282  -0.462   2.358  1.00  1.00
+ATOM      7  NL  ALA     1      -1.268   0.420   0.392  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -3.144   1.457   1.417  1.00  1.00
+ATOM      5  CLP ALA     1      -1.943   0.587   1.450  1.00  1.00
+ATOM      6  OL  ALA     1      -1.390  -0.040   2.340  1.00  1.00
+ATOM      7  NL  ALA     1      -1.226   0.497   0.252  1.00  1.00
+END
+\endauxfile
+
+As usual for \ref RMSD, the occupancy and beta columns of the reference file contain the weights used for the alignment and
+for the calculation of the displacement, respectively.  These weights are kept unchanged when the path is updated.
+The displacement between configurations can only be computed for some of the metrics that are available.  You can thus use
+ADAPTIVE_PATH with frames that contain arguments (e.g. TYPE=EUCLIDEAN) or atomic positions with TYPE=OPTIMAL or TYPE=SIMPLE,
+but not, for example, with TYPE=DRMSD or with any of the MULTI- types.
+
+Every WSTRIDE steps the full path is appended to the WFILE file after a line that starts with "# PATH AT STEP".
+Each node is written in PDB format, using the same units that are used to read the REFERENCE file, followed by an END line.
+You can thus use the last set of nodes in this file
+(i.e. the lines following the last "# PATH AT STEP" line) as the REFERENCE for a subsequent simulation.
 
 */
 //+ENDPLUMEDOC
@@ -95,6 +136,8 @@ private:
   std::string ofmt;
   double fadefact, tolerance;
   unsigned update_str, wstride;
+/// Accumulate the displacement of the current configuration from the path for one of the two closest nodes
+  void accumulateDisplacement( const unsigned& inode, const unsigned& jnode, const double& t, const double& weight );
   std::vector<unsigned> fixedn;
   TrigonometricPathVessel* mypathv;
   std::vector<double> wsum;
@@ -129,6 +172,9 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
 AdaptivePath::AdaptivePath(const ActionOptions& ao):
   Action(ao),
   Mapping(ao),
+  tolerance(1E-6),
+  update_str(0),
+  wstride(0),
   fixedn(2),
   displacement(ReferenceConfigurationOptions("DIRECTION")),
   displacement2(ReferenceConfigurationOptions("DIRECTION")) {
@@ -148,6 +194,8 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
     error("update frequency for path should be greater than or equal to one");
   }
   log.printf("  updating path every %u MD steps \n",update_str);
+  parse("TOLERANCE",tolerance);
+  log.printf("  tolerance for path reparameterization is %g \n",tolerance);
 
   double halflife;
   parse("HALFLIFE",halflife);
@@ -156,6 +204,14 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   } else {
     fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
     log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
+  }
+
+  // Check that the metric used allows us to compute and apply displacements between configurations
+  for(unsigned i=0; i<getNumberOfReferencePoints(); ++i) {
+    std::string mtype = getReferenceConfiguration(i)->getName();
+    if( mtype.find("MULTI")!=std::string::npos || !getReferenceConfiguration(i)->pcaIsEnabledForThisReference() ) {
+      error("cannot use ADAPTIVE_PATH with metric of type " + mtype + ". Displacements between configurations cannot be computed with this metric");
+    }
   }
 
   // Create the list of tasks (and reset projections of frames)
@@ -235,6 +291,20 @@ double AdaptivePath::transformHD( const double& dist, double& df ) const {
   return dist;
 }
 
+void AdaptivePath::accumulateDisplacement( const unsigned& inode, const unsigned& jnode, const double& t, const double& weight ) {
+  // The point on the path that is closest to the instantaneous configuration, x, is r_i + t*(r_j - r_i), where
+  // r_i is the position of node inode and r_j is the position of node jnode.
+  // The displacement of x from this point is thus (x - r_i) - t*(r_j - r_i).  We compute both vectors here using node inode
+  // as reference so that, when RMSD is used, the displacement is expressed in the frame of reference of the node that is
+  // going to be displaced.
+  ReferenceConfiguration* myref = getReferenceConfiguration( inode );
+  ReferenceConfiguration* oref = getReferenceConfiguration( jnode );
+  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
+  myref->extractDisplacementVector( oref->getReferencePositions(), getArguments(), oref->getReferenceArguments(), false, displacement2 );
+  displacement.addDirection( -t, displacement2 );
+  pdisplacements[inode].addDirection( weight, displacement );
+}
+
 void AdaptivePath::update() {
   double weight2 = -1.*mypathv->dx;
   double weight1 = 1.0 + mypathv->dx;
@@ -245,13 +315,10 @@ void AdaptivePath::update() {
     weight1=0.0;
     weight2=1.0;
   }
-  // Add projections to dispalcement accumulators
-  ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
-  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
-  getReferenceConfiguration( mypathv->iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, displacement2 );
-  displacement.addDirection( -mypathv->dx, displacement2 );
-  pdisplacements[mypathv->iclose1].addDirection( weight1, displacement );
-  pdisplacements[mypathv->iclose2].addDirection( weight2, displacement );
+  // Add projections to displacement accumulators.  The closest point on the path is at
+  // r_1 - dx*(r_2 - r_1) = r_2 + (1+dx)*(r_1 - r_2)
+  accumulateDisplacement( mypathv->iclose1, mypathv->iclose2, -mypathv->dx, weight1 );
+  accumulateDisplacement( mypathv->iclose2, mypathv->iclose1, 1.0 + mypathv->dx, weight2 );
   // Update weight accumulators
   wsum[mypathv->iclose1] *= fadefact;
   wsum[mypathv->iclose2] *= fadefact;
@@ -261,10 +328,16 @@ void AdaptivePath::update() {
   // This does the update of the path if it is time to
   if( (getStep()>0) && (getStep()%update_str==0) ) {
     wsum[fixedn[0]]=wsum[fixedn[1]]=0.;
+    pdisplacements[fixedn[0]].zeroDirection();
+    pdisplacements[fixedn[1]].zeroDirection();
     for(unsigned inode=0; inode<getNumberOfReferencePoints(); ++inode) {
       if( wsum[inode]>0 ) {
         // First displace the node by the weighted direction
-        getReferenceConfiguration( inode )->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
+        ReferenceConfiguration* myref = getReferenceConfiguration( inode );
+        myref->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
+        // And reset the reference configuration so that, if this is a configuration of atoms, the center is removed
+        // and the internal data that is used to calculate the RMSD is updated
+        myref->read( referenceConfigurationToPDB( *myref ) );
         // Reset the displacement
         pdisplacements[inode].zeroDirection();
       }
@@ -273,23 +346,14 @@ void AdaptivePath::update() {
     PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
     myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
   }
-  if( (getStep()>0) && (getStep()%wstride==0) ) {
+  if( wstride>0 && (getStep()>0) && (getStep()%wstride==0) ) {
     pathfile<<"# PATH AT STEP "<<getStep();
     pathfile.printf(" TIME %f \n",getTime());
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
     auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    std::vector<std::string> argument_names( getNumberOfArguments() );
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      argument_names[i] = getPntrToArgument(i)->getName();
-    }
-    PDB mypdb;
-    mypdb.setArgumentNames( argument_names );
     for(unsigned i=0; i<myconfs.size(); ++i) {
       pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
-      mypdb.setAtomPositions( myconfs[i]->getReferencePositions() );
-      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-        mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
-      }
+      PDB mypdb( referenceConfigurationToPDB( *myconfs[i] ) );
       mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
     }
     pathfile.flush();
