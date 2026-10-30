@@ -453,7 +453,8 @@ PIV::PIV(const ActionOptions&ao):
   // Build lists of Atoms/COMs for NLists
   //   comatm filled also for non_COM calculation for analysis purposes
   for (unsigned j=0; j<Natm; j++) {
-    unsigned oind;
+    // first Point of this type, set below when the first atom of type atype[j] is found
+    unsigned oind=0;
     for (unsigned i=0; i<Pind0.size(); i++) {
       Pind0[i]=0;
     }
@@ -468,14 +469,18 @@ PIV::PIV(const ActionOptions&ao):
       unsigned aind=anum.index();
       // This builds lists for NL
       string Pname;
-      unsigned Pind;
+      unsigned Pind=0;
       if(com) {
         Pname=rname;
+        // Presind holds the residue numbers of all the atoms of mypdb, so rind is always found
+        bool found=false;
         for(unsigned l=0; l<resnum; l++) {
           if(rind==Presind[l]) {
             Pind=l;
+            found=true;
           }
         }
+        plumed_assert(found);
       } else {
         Pname=aname;
         Pind=aind;
@@ -493,6 +498,9 @@ PIV::PIV(const ActionOptions&ao):
     }
     // Output Lists
     log << "  Groups of type  " << j << ": " << Plist[j].size() << " \n";
+    if(Plist[j].empty()) {
+      error("no atoms of type " + atype[j] + " found in the reference PDB file");
+    }
     string gname;
     unsigned gsize;
     if(com) {
