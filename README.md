@@ -108,7 +108,7 @@ Required software:
 Suggested software (libraries are checked by `./configure` and enabled if available):
 
 * MPI library to run parallel simulations. It should be the same library used by your MD code.
-* Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
+* Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
 * [VMD molfile plugins](https://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
 * [Zlib library](https://zlib.net/) to use compressed data files.
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).

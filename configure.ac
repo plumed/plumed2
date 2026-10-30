@@ -627,7 +627,7 @@ fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
-AC_MSG_WARN([using internal lapack and blas, could be inefficient])
+AC_MSG_WARN([using internal lapack and blas; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 fi
 
 # if found, also look for external lapack
@@ -646,7 +646,7 @@ fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([using internal lapack, could be inefficient])
+AC_MSG_WARN([using internal lapack; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi

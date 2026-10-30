@@ -25,7 +25,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
-#include "blas/blas.h"
 
 namespace PLMD {
 
@@ -379,31 +378,22 @@ bool ActionWithValue::checkForForces() {
     }
     #pragma omp for
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
-      double ff=values[valsToForce[i]]->inputForce[0];
-      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
-      int nn=nder;
-      int one1=1;
-      int one2=1;
-      if( nt>1 ) {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,omp_f.data(),&one2);
-      } else {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,forcesForApply.data(),&one2);
+      // a plain loop is vectorized by the compiler and is as fast as an external
+      // blas daxpy, without the risk of calling a threaded blas within an OpenMP region
+      const double ff=values[valsToForce[i]]->inputForce[0];
+      const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+      double* f=( nt>1 ? omp_f.data() : forcesForApply.data() );
+      for(unsigned j=0; j<nder; ++j) {
+        f[j]+=ff*thisderiv[j];
       }
-      // if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
-      //else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
     }
     #pragma omp critical
     {
       if( nt>1 ) {
-        int nn=forcesForApply.size();
-        double one0=1.0;
-        int one1=1;
-        int one2=1;
-        plumed_blas_daxpy(&nn,&one0,omp_f.data(),&one1,forcesForApply.data(),&one2);
+        for(unsigned j=0; j<nder; ++j) {
+          forcesForApply[j]+=omp_f[j];
+        }
       }
-      // for(unsigned j=0; j<forcesForApply.size(); ++j) {
-      // forcesForApply[j]+=omp_f[j];
-      // }
     }
   }
 
