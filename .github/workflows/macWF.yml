@@ -73,7 +73,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-15, macos-latest ]
+        # Keep native Intel coverage alongside the Apple Silicon runners.
+        # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+        os: [ macos-15-intel, macos-15, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
@@ -93,6 +95,10 @@ jobs:
         ./configure --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
         make install
+    - name: Check architecture and AsmJit availability
+      run: |
+        uname -m
+        plumed config has asmjit
     - name: Run tests
       run: |
          make --no-print-directory -C regtest
