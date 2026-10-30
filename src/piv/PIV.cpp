@@ -1053,7 +1053,7 @@ void PIV::calculate() {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
               // Loop on the number of head-to-tail pieces
-              for(unsigned m=0; m<OrdVecAll[i+l*Nprec]; m++) {
+              for(int m=0; m<OrdVecAll[i+l*Nprec]; m++) {
                 // cPIV is the current PIV at time t
                 cPIV[j].push_back(double(i)/double(Nprec-1));
                 Atom0[j].push_back(Atom0FAll[k[l]+Vpos[l]]);
@@ -1067,7 +1067,7 @@ void PIV::calculate() {
           }
         } else {
           for(unsigned i=1; i<Nprec; i++) {
-            for(unsigned m=0; m<OrdVec[i]; m++) {
+            for(int m=0; m<OrdVec[i]; m++) {
               cPIV[j].push_back(double(i)/double(Nprec-1));
               Atom0[j].push_back(A0[i][m]);
               Atom1[j].push_back(A1[i][m]);
