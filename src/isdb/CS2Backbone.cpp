@@ -538,7 +538,6 @@ public:
   explicit CS2Backbone(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
@@ -2141,13 +2140,6 @@ void CS2Backbone::xdist_name_map(std::string & name) {
     name = "CG";
   } else if ((name == "HA1")|| (name == "HA3")) {
     name = "HA";
-  }
-}
-
-void CS2Backbone::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

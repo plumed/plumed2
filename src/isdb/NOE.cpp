@@ -72,11 +72,14 @@ private:
   std::vector<unsigned> nga;
   std::unique_ptr<NeighborList> nl;
   unsigned         tot_size;
+  // the components with the back-calculated data
+  std::vector<Value*> dataValues_;
+  // index of the first pair of each group in the neighbor list
+  std::vector<unsigned> nga_offset_;
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
@@ -184,6 +187,7 @@ NOE::NOE(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponentWithDerivatives("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
@@ -201,6 +205,7 @@ NOE::NOE(const ActionOptions&ao):
       Tools::convert(i,num);
       addComponent("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
+      dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
     for(unsigned i=0; i<nga.size(); i++) {
       std::string num;
@@ -210,6 +215,11 @@ NOE::NOE(const ActionOptions&ao):
       Value* comp=getPntrToComponent("exp-"+num);
       comp->set(noedist[i]);
     }
+  }
+
+  nga_offset_.resize(nga.size(),0);
+  for(unsigned i=1; i<nga.size(); i++) {
+    nga_offset_[i]=nga_offset_[i-1]+nga[i-1];
   }
 
   requestAtoms(nl->getFullAtomList(), false);
@@ -229,13 +239,8 @@ void NOE::calculate() {
   for(unsigned i=0; i<ngasz; i++) {
     Tensor dervir;
     double noe=0;
-    unsigned index=0;
-    for(unsigned k=0; k<i; k++) {
-      index+=nga[k];
-    }
-    std::string num;
-    Tools::convert(i,num);
-    Value* val=getPntrToComponent("noe-"+num);
+    const unsigned index=nga_offset_[i];
+    Value* val=dataValues_[i];
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       const unsigned i0=nl->getClosePair(index+j).first;
@@ -277,10 +282,7 @@ void NOE::calculate() {
     /* calculate final derivatives */
     Value* val=getPntrToComponent("score");
     for(unsigned i=0; i<ngasz; i++) {
-      unsigned index=0;
-      for(unsigned k=0; k<i; k++) {
-        index+=nga[k];
-      }
+      const unsigned index=nga_offset_[i];
       // cycle over equivalent atoms
       for(unsigned j=0; j<nga[i]; j++) {
         const unsigned i0=nl->getClosePair(index+j).first;
@@ -299,13 +301,6 @@ void NOE::calculate() {
       }
     }
     setBoxDerivatives(val, dervir);
-  }
-}
-
-void NOE::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

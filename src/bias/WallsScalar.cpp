@@ -87,7 +87,7 @@ PRINT ARG=t,uwall.bias,lwall.bias
 Notice that the bias is discontinuous at the boundary of the periodic domain (here at $\pm\pi$). You should thus make sure that
 the walls keep the argument far from this boundary, e.g. by using both an upper and a lower wall as in the input above.
 
-Versions of PLUMED before 2.11 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
+Versions of PLUMED before 2.9.7 and 2.10.3 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
 periodic domain, and the region left free by an upper and a lower wall is smaller than the one between AT values
 (see [#658](https://github.com/plumed/plumed2/issues/658)).
 
@@ -156,7 +156,7 @@ PRINT ARG=t,uwall.bias,lwall.bias
 Notice that the bias is discontinuous at the boundary of the periodic domain (here at $\pm\pi$). You should thus make sure that
 the walls keep the argument far from this boundary, e.g. by using both an upper and a lower wall as in the input above.
 
-Versions of PLUMED before 2.11 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
+Versions of PLUMED before 2.9.7 and 2.10.3 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
 periodic domain, and the region left free by an upper and a lower wall is smaller than the one between AT values
 (see [#658](https://github.com/plumed/plumed2/issues/658)).
 
