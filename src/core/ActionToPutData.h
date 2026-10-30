@@ -56,6 +56,8 @@ private:
   std::unique_ptr<DataPassingObject> mydata;
 /// Convert the enum contaning the unit into the name of the unit
   std::string getUnitName() const ;
+/// Raise an error if forces have to be applied but the MD code did not pass the array to store them
+  void checkForcePointer() const ;
 protected:
 /// Setup the units of the input value
   void setUnit( const std::string& unitstr, const std::string& funitstr );

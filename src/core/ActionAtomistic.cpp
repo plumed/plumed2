@@ -618,12 +618,12 @@ void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<
 }
 
 void ActionAtomistic::updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l ) {
+  // The flag is set again when the atoms are requested again or when the local atoms change
+  unique_local_needs_update=false;
   if( useunique ) {
     unique_local=unique;
     return;
   }
-  // Update unique local if it needs an update
-  unique_local_needs_update=false;
   unique_local.clear();
   for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
     if(g2l[pp->index()]>=0) {

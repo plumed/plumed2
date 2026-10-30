@@ -307,6 +307,8 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     }
   }
   listBuilded=true;
+  // the reduced list changed, so it must be requested again
+  reducedRequested=false;
   if (stride_ >1) {
     setRequestList();
   } else {
@@ -439,10 +441,17 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
       firsttime=false;
     } else if(firsttime || (aa->getStep()%stride_==0 )) {
       aa->requestAtoms(getFullAtomList());
+      reducedRequested=false;
       invalidateList=true;
       firsttime=false;
     } else {
-      aa->requestAtoms(getReducedAtomList());
+      // The reduced list only changes when the list is updated, so it is requested once after each update.
+      // Requesting the same atoms at every step would make the action rebuild its lists of atoms,
+      // and PLUMED rebuild the lists of the atoms that are shared with the MD code, at every step.
+      if( !reducedRequested ) {
+        aa->requestAtoms(getReducedAtomList());
+        reducedRequested=true;
+      }
       invalidateList=false;
       if(aa->getExchangeStep()) {
         aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");

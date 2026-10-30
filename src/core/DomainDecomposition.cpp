@@ -128,8 +128,8 @@ Option interpretEnvString(const char* env,const char* str) {
 
 /// Use unique list of atoms to manipulate forces and positions.
 /// A unique list of atoms is used to manipulate forces and positions in MPI parallel runs.
-/// In serial runs, this is done if convenient. The code currently contain
-/// some heuristic to decide if the unique list should be used or not.
+/// In serial runs, this is done if convenient: with auto, the unique list is used
+/// when the atoms needed by all the active actions are less than half of the atoms.
 /// An env var can be used to override this decision.
 /// export PLUMED_FORCE_UNIQUE=yes  # enforce using the unique list in serial runs
 /// export PLUMED_FORCE_UNIQUE=no   # enforce not using the unique list in serial runs
@@ -183,7 +183,11 @@ DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
   ddStep(0),
   shuffledAtoms(0),
   asyncSent(false),
-  unique_serial(false) {
+  unique_serial(false),
+  g2lIsValid(false),
+  uniqueListsValid(false),
+  allActiveValid(false),
+  atomsNeeded(false) {
   // Read in the number of atoms
   int natoms;
   parse("NATOMS",natoms);
@@ -294,6 +298,11 @@ bool DomainDecomposition::setForcePointer( const std::string& argName, const Typ
 }
 
 void DomainDecomposition::setAtomsNlocal(int n) {
+  if( static_cast<std::size_t>(n)!=gatindex.size() ) {
+    // the local atoms will be set again by setAtomsGatindex or setAtomsContiguous
+    g2lIsValid=false;
+    invalidateUniqueLists();
+  }
   gatindex.resize(n);
   g2l.resize(getNumberOfAtoms(),-1);
   if(dd) {
@@ -316,18 +325,17 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   auto gg=g.get<const int*>({gatindex.size()});
   ddStep=getStep();
-  if(fortran) {
-    for(unsigned i=0; i<gatindex.size(); i++) {
-      gatindex[i]=gg[i]-1;
-    }
-  } else {
-    for(unsigned i=0; i<gatindex.size(); i++) {
-      gatindex[i]=gg[i];
+  // MD codes call this at every step, but the local atoms only change when the
+  // domains are redistributed: in that case the lists of atoms are not rebuilt
+  bool localAtomsChanged=!g2lIsValid;
+  const int shift=fortran ? 1 : 0;
+  for(unsigned i=0; i<gatindex.size(); i++) {
+    if( gatindex[i]!=gg[i]-shift ) {
+      gatindex[i]=gg[i]-shift;
+      localAtomsChanged=true;
     }
   }
-  for(unsigned i=0; i<g2l.size(); i++) {
-    g2l[i]=-1;
-  }
+  const bool wasShuffled=shuffledAtoms>0;
   if( gatindex.size()==getNumberOfAtoms() ) {
     shuffledAtoms=0;
     for(unsigned i=0; i<gatindex.size(); i++) {
@@ -342,15 +350,23 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   if(dd) {
     dd.Sum(shuffledAtoms);
   }
+  if( !localAtomsChanged && wasShuffled==(shuffledAtoms>0) ) {
+    return;
+  }
+  for(unsigned i=0; i<g2l.size(); i++) {
+    g2l[i]=-1;
+  }
   for(unsigned i=0; i<gatindex.size(); i++) {
     g2l[gatindex[i]]=i;
   }
+  g2lIsValid=true;
   // keep in unique only those atoms that are local
   for(unsigned i=0; i<actions.size(); i++) {
     actions[i]->unique_local_needs_update=true;
   }
   unique.clear();
   forced_unique.clear();
+  invalidateUniqueLists();
 }
 
 void DomainDecomposition::setAtomsContiguous(int start) {
@@ -364,6 +380,7 @@ void DomainDecomposition::setAtomsContiguous(int start) {
   for(unsigned i=0; i<gatindex.size(); i++) {
     g2l[gatindex[i]]=i;
   }
+  g2lIsValid=true;
   if(gatindex.size()<getNumberOfAtoms()) {
     shuffledAtoms=1;
   }
@@ -373,33 +390,126 @@ void DomainDecomposition::setAtomsContiguous(int start) {
   }
   unique.clear();
   forced_unique.clear();
+  invalidateUniqueLists();
+}
+
+bool DomainDecomposition::allAtomsAreLocal() const {
+  return gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0;
+}
+
+void DomainDecomposition::invalidateUniqueLists() {
+  uniqueListsValid=false;
+  allActiveValid=false;
+}
+
+void DomainDecomposition::setIndexesInMDArrays() {
+  const bool allLocal=allAtomsAreLocal();
+  uniq_index.resize(unique.size());
+  for(unsigned i=0; i<unique.size(); i++) {
+    // only atoms that the MD code passes to this rank can be in this list
+    plumed_dbg_assert( allLocal || g2l[unique[i].index()]>=0 );
+    uniq_index[i]=allLocal ? unique[i].index() : g2l[unique[i].index()];
+  }
+  forced_uniq_index.resize(forced_unique.size());
+  for(unsigned i=0; i<forced_unique.size(); i++) {
+    plumed_dbg_assert( allLocal || g2l[forced_unique[i].index()]>=0 );
+    forced_uniq_index[i]=allLocal ? forced_unique[i].index() : g2l[forced_unique[i].index()];
+  }
 }
 
 void DomainDecomposition::shareAll() {
   unique.clear();
-  forced_unique.clear();
-  int natoms = getNumberOfAtoms();
-  if( dd && shuffledAtoms>0 ) {
-    for(int i=0; i<natoms; ++i)
+  const unsigned natoms = getNumberOfAtoms();
+  if( allAtomsAreLocal() ) {
+    unique.resize(natoms);
+    for(unsigned i=0; i<natoms; i++) {
+      unique[i]=AtomNumber::index(i);
+    }
+  } else {
+    // only the atoms that the MD code passes to this rank can be read
+    for(unsigned i=0; i<natoms; ++i)
       if( g2l[i]>=0 ) {
         unique.push_back( AtomNumber::index(i) );
       }
-  } else {
-    unique.resize(natoms);
-    for(int i=0; i<natoms; i++) {
-      unique[i]=AtomNumber::index(i);
+  }
+  forced_unique=unique;
+  setIndexesInMDArrays();
+  // these lists are not the ones requested by the actions, so they are rebuilt at the next share
+  invalidateUniqueLists();
+  shareValues( allAtomsAreLocal() && !unique_serial );
+}
+
+bool DomainDecomposition::updateUniqueLists() {
+  // useunique is false only when the local atoms are a subset of the atoms, scattered across the ranks.
+  // It can only change in setAtomsGatindex or setAtomsContiguous, which ask the actions to update unique_local
+  const bool useunique=!(dd && shuffledAtoms>0);
+  bool changed=!uniqueListsValid;
+  if( actionState.size()!=actions.size() ) {
+    actionState.assign(actions.size(),0);
+    changed=true;
+  }
+  atomsNeeded=false;
+  for(unsigned i=0; i<actions.size(); i++) {
+    // atomsNeeded is computed from the global lists of atoms, so it is the same on all ranks
+    unsigned char state=0;
+    if( actions[i]->isActive() && !actions[i]->getUnique().empty() ) {
+      atomsNeeded=true;
+      state = actions[i]->actionHasForces() ? 2 : 1;
+    }
+    if( state!=actionState[i] ) {
+      actionState[i]=state;
+      changed=true;
+    }
+    // unique_local_needs_update is set when an action requests new atoms or when the local atoms change
+    if( state>0 && actions[i]->unique_local_needs_update ) {
+      actions[i]->updateUniqueLocal( useunique, g2l );
+      changed=true;
     }
   }
-  forced_unique.resize( unique.size() );
-  for(unsigned i=0; i<unique.size(); ++i) {
-    forced_unique[i] = unique[i];
+  if( !changed ) {
+    return false;
   }
-  share(unique);
+  gch::small_vector<const std::vector<AtomNumber>*,32> forced_vectors;
+  gch::small_vector<const std::vector<AtomNumber>*,32> nonforced_vectors;
+  forced_vectors.reserve(actions.size());
+  nonforced_vectors.reserve(actions.size()+1);
+  for(unsigned i=0; i<actions.size(); i++) {
+    // unique_local are the local atoms
+    if( actionState[i]==2 ) {
+      forced_vectors.push_back(&actions[i]->getUniqueLocal());
+    } else if( actionState[i]==1 ) {
+      nonforced_vectors.push_back(&actions[i]->getUniqueLocal());
+    }
+  }
+  // Merge the atoms from the atoms that have a force on
+  unique.clear();
+  forced_unique.clear();
+  mergeVectorTools::mergeSortedVectors(forced_vectors,forced_unique);
+  // Merge all the atoms
+  nonforced_vectors.push_back( &forced_unique );
+  mergeVectorTools::mergeSortedVectors(nonforced_vectors,unique);
+  setIndexesInMDArrays();
+  allActiveValid=false;
+  uniqueListsValid=true;
+  return true;
+}
+
+bool DomainDecomposition::activeAtomsChangedSinceShare() const {
+  if( !uniqueListsValid ) {
+    return true;
+  }
+  for(unsigned i=0; i<actions.size(); i++) {
+    // actions that were active with no atoms at share time and still have none are not considered
+    if( actions[i]->isActive() && actions[i]->unique_local_needs_update &&
+        (actionState[i]>0 || !actions[i]->getUnique().empty()) ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void DomainDecomposition::share() {
   // We can no longer set the pointers after the share
-  bool atomsNeeded=false;
   for(const auto & pp : inputs) {
     pp->share();
   }
@@ -408,120 +518,65 @@ void DomainDecomposition::share() {
   // not changing during the simulation!
   if( firststep ) {
     actions = plumed.getActionSet().select<ActionAtomistic*>();
+    actionState.assign(actions.size(),0);
     shareAll();
     return;
   }
 
-  if(getenvForceUnique()==Option::automatic) {
-    unsigned largest=0;
+  const bool allLocal=allAtomsAreLocal();
+  const Option forceUnique=getenvForceUnique();
+  if( allLocal && forceUnique==Option::no ) {
+    // all the atoms are copied at once, so the lists of atoms are not needed
+    unique_serial=false;
+    atomsNeeded=false;
     for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        auto l=actions[i]->getUnique().size();
-        if(l>largest) {
-          largest=l;
-        }
+      if( actions[i]->isActive() && !actions[i]->getUnique().empty() ) {
+        atomsNeeded=true;
+        break;
       }
     }
-    if(largest*2<getNumberOfAtoms()) {
-      unique_serial=true;
-    } else {
-      unique_serial=false;
+    if( atomsNeeded ) {
+      shareValues( true );
     }
-  } else if(getenvForceUnique()==Option::yes) {
-    unique_serial=true;
-  } else if(getenvForceUnique()==Option::no) {
-    unique_serial=false;
-  } else {
-    plumed_error();
+    return;
   }
 
-  if(unique_serial || !(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
-    for(unsigned i=0; i<actions.size(); i++) {
-      if( actions[i]->unique_local_needs_update ) {
-        actions[i]->updateUniqueLocal( !(dd && shuffledAtoms>0), g2l );
-      }
-    }
-    // Now reset unique for the new step
-    gch::small_vector<const std::vector<AtomNumber>*,32> forced_vectors;
-    gch::small_vector<const std::vector<AtomNumber>*,32> nonforced_vectors;
-    forced_vectors.reserve(actions.size());
-    nonforced_vectors.reserve(actions.size());
-    for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        if(!actions[i]->getUnique().empty()) {
-          // unique are the local atoms
-          if( actions[i]->actionHasForces() ) {
-            forced_vectors.push_back(&actions[i]->getUniqueLocal());
-          } else {
-            nonforced_vectors.push_back(&actions[i]->getUniqueLocal());
-          }
-        }
-      }
-    }
-    if( !(forced_vectors.empty() && nonforced_vectors.empty()) ) {
-      atomsNeeded=true;
-    }
-    // Merge the atoms from the atoms that have a force on
-    unique.clear();
-    forced_unique.clear();
-    mergeVectorTools::mergeSortedVectors(forced_vectors,forced_unique);
-    // Merge all the atoms
-    nonforced_vectors.push_back( &forced_unique );
-    mergeVectorTools::mergeSortedVectors(nonforced_vectors,unique);
-  } else {
-    for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        if(!actions[i]->getUnique().empty()) {
-          atomsNeeded=true;
-        }
-      }
+  // The lists are only rebuilt when the set of active actions, the atoms they request,
+  // or the atoms that are local to this rank change
+  updateUniqueLists();
+
+  if( allLocal ) {
+    if( forceUnique==Option::yes ) {
+      unique_serial=true;
+    } else {
+      // Copying only the atoms that are needed is worthwhile when they are a small fraction of
+      // all the atoms, as copying all the atoms reads contiguous memory and needs no indexes.
+      // The choice is based on the union of the atoms needed by all the active actions.
+      unique_serial = unique.size()*2<getNumberOfAtoms();
     }
   }
 
   // Now we retrieve the atom numbers we need
   if( atomsNeeded ) {
-    share( unique );
+    shareValues( allLocal && !unique_serial );
   }
 }
 
-void DomainDecomposition::share(const std::vector<AtomNumber>& uniqueIdxIn) {
-  // This retrieves what values we need to get
-  int ndata=0;
-  std::vector<Value*> values_to_get;
-  if(!(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
-    uniq_index.resize(uniqueIdxIn.size());
-    for(unsigned i=0; i<uniqueIdxIn.size(); i++) {
-      uniq_index[i]=g2l[uniqueIdxIn[i].index()];
-    }
-    for(const auto & ip : inputs) {
-      if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
-        values_to_get.push_back(ip->copyOutput(0));
-        ndata++;
-      }
-    }
-  } else if( unique_serial) {
-    uniq_index.resize(uniqueIdxIn.size());
-    for(unsigned i=0; i<uniqueIdxIn.size(); i++) {
-      uniq_index[i]=uniqueIdxIn[i].index();
-    }
-    for(const auto & ip : inputs) {
-      if( (!ip->fixed || firststep) && ip->wasset ) {
-        (ip->mydata)->share_data( uniqueIdxIn, uniq_index, ip->copyOutput(0) );
-        values_to_get.push_back(ip->copyOutput(0));
-        ndata++;
-      }
-    }
-  } else {
-// faster version, which retrieves all atoms
-    for(const auto & ip : inputs) {
-      if( (!ip->fixed || firststep) && ip->wasset ) {
+void DomainDecomposition::shareValues( const bool& allAtoms ) {
+  // This retrieves what values we need to get. The list is stored, as wait() must receive the same values
+  values_to_get.clear();
+  for(const auto & ip : inputs) {
+    if( (!ip->fixed || firststep) && ip->wasset ) {
+      if( allAtoms ) {
+        // faster version, which retrieves all atoms
         (ip->mydata)->share_data( 0, getNumberOfAtoms(), ip->copyOutput(0) );
-        values_to_get.push_back(ip->copyOutput(0));
-        ndata++;
+      } else {
+        (ip->mydata)->share_data( unique, uniq_index, gatindex.size(), ip->copyOutput(0) );
       }
+      values_to_get.push_back(ip->copyOutput(0));
     }
   }
+  const int ndata=values_to_get.size();
 
   if(dd && shuffledAtoms>0) {
     if(dd.async) {
@@ -534,7 +589,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& uniqueIdxIn) {
     }
 
     int count=0;
-    for(const auto & p : uniqueIdxIn) {
+    for(const auto & p : unique) {
       dd.indexToBeSent[count]=p.index();
       int dpoint=0;
       for(unsigned i=0; i<values_to_get.size(); ++i) {
@@ -589,21 +644,16 @@ void DomainDecomposition::wait() {
   }
 
   if(dd && shuffledAtoms>0) {
-    int ndata=0;
-    std::vector<Value*> values_to_set;
-    for(const auto & ip : inputs) {
-      if( (!ip->fixed || firststep) && ip->wasset ) {
-        values_to_set.push_back(ip->copyOutput(0));
-        ndata++;
-      }
-    }
+    // the values that were sent in share()
+    const std::vector<Value*> & values_to_set=values_to_get;
+    const std::size_t ndata=values_to_set.size();
 
 // receive toBeReceived
     if(asyncSent) {
       Communicator::Status status;
       std::size_t count=0;
       for(int i=0; i<dd.Get_size(); i++) {
-        plumed_assert(count<=dd.positionsToBeReceived.size()/ndata);
+        plumed_assert(count*ndata<=dd.positionsToBeReceived.size() && count<=dd.indexToBeReceived.size());
         const std::size_t remaining=dd.indexToBeReceived.size()-count;
         const std::size_t remainingData=dd.positionsToBeReceived.size()-ndata*count;
         // Empty ranks still send messages after an earlier rank fills the buffer.
@@ -633,38 +683,50 @@ unsigned DomainDecomposition::getNumberOfForcesToRescale() const {
 }
 
 void DomainDecomposition::apply() {
-  std::vector<unsigned> forced_uniq_index(forced_unique.size());
-  if(!(gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0)) {
-    for(unsigned i=0; i<forced_unique.size(); i++) {
-      forced_uniq_index[i]=g2l[forced_unique[i].index()];
-    }
-  } else {
-    for(unsigned i=0; i<forced_unique.size(); i++) {
-      forced_uniq_index[i]=forced_unique[i].index();
-    }
-  }
+  // forced_uniq_index was computed together with forced_unique
+  const bool allAtoms=!unique_serial && allAtomsAreLocal();
   for(const auto & ip : inputs) {
     if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
       continue;
-    } else if( ip->wasscaled || (!unique_serial && gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0) ) {
+    } else if( ip->wasscaled || allAtoms ) {
+      if( gatindex.size()>0 ) {
+        ip->checkForcePointer();
+      }
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
     } else {
-      (ip->mydata)->add_force( forced_unique, forced_uniq_index, ip->getPntrToValue() );
+      if( forced_unique.size()>0 ) {
+        ip->checkForcePointer();
+      }
+      (ip->mydata)->add_force( forced_unique, forced_uniq_index, gatindex.size(), ip->getPntrToValue() );
     }
   }
 }
 
 void DomainDecomposition::reset() {
-  if( !unique_serial && gatindex.size()==getNumberOfAtoms() && shuffledAtoms==0 ) {
+  if( !unique_serial && allAtomsAreLocal() ) {
     return;
   }
   // This is an optimisation to ensure that we don't call std::fill over the whole forces
-  // array if there are a small number of atoms passed between the MD code and PLUMED
-  if( dd && shuffledAtoms>0 ) {
-    getAllActiveAtoms( unique );
+  // array if there are a small number of atoms passed between the MD code and PLUMED.
+  // The forces were added by the active actions on the atoms they requested
+  const std::vector<AtomNumber>* toclear=&unique;
+  if( activeAtomsChangedSinceShare() ) {
+    // an action requested different atoms after share (e.g. a neighbor list update)
+    // or unique was set by shareAll, so the global list is rebuilt
+    if( uniqueListsValid || (dd && shuffledAtoms>0) ) {
+      getAllActiveAtoms( activeAtomsBuffer );
+      toclear=&activeAtomsBuffer;
+    }
+  } else if( dd && shuffledAtoms>0 ) {
+    // unique only holds the local atoms, but forces can be on all the atoms of the actions
+    if( !allActiveValid ) {
+      getAllActiveAtoms( allActiveUnique );
+      allActiveValid=true;
+    }
+    toclear=&allActiveUnique;
   }
   for(const auto & ip : inputs) {
-    (ip->copyOutput(0))->clearInputForce( unique );
+    (ip->copyOutput(0))->clearInputForce( *toclear );
   }
 }
 
@@ -724,13 +786,12 @@ void DomainDecomposition::createFullList(const TypesafePtr & n) {
       fullList[i]=i;
     }
   } else {
-// We update here the unique list defined at Atoms::unique.
-// This is not very clear, and probably should be coded differently.
-// Hopefully this fix the longstanding issue with NAMD.
-    getAllActiveAtoms( unique );
+// The list of the atoms needed by the active actions.
+// The MD code (e.g. NAMD) then passes only these atoms.
+    getAllActiveAtoms( activeAtomsBuffer );
     fullList.clear();
-    fullList.reserve(unique.size());
-    for(const auto & p : unique) {
+    fullList.reserve(activeAtomsBuffer.size());
+    for(const auto & p : activeAtomsBuffer) {
       fullList.push_back(p.index());
     }
     n.set(int(fullList.size()));
