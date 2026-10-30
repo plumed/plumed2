@@ -232,6 +232,10 @@ private:
   double biasDer_;
   // value of the bias used for reweighting at this step
   double reweight_bias_;
+  // the sigmas moved by the last MC move (MC_CHUNKSIZE)
+  std::vector<unsigned> moved_;
+  // the energy of the MC has been updated with differences
+  bool energy_from_differences_=false;
 
   double getEnergyMIGEN(const std::vector<double> &mean, const std::vector<double> &ftilde, const std::vector<double> &sigma,
                         const double scale, const double offset);
@@ -243,6 +247,7 @@ private:
                      const double scale, const double offset);
   double getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                       const double scale, const double offset);
+  double getEnergyTerm(const unsigned i, const double mean_i, const double sigma_i) const;
   void getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);

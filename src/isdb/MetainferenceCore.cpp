@@ -1037,6 +1037,83 @@ double MetainferenceCore::getEnergyGJE(const std::vector<double> &mean, const st
   return kbt_ * ene;
 }
 
+// energy (in kBT) of datum i with uncertainty sigma_i, for the noise models with one sigma per datum;
+// these are the terms summed in getEnergyGJE, getEnergySPE and getEnergyMIGEN, and are used to
+// compute the change of the energy when only a chunk of the sigmas is moved (MC_CHUNKSIZE)
+double MetainferenceCore::getEnergyTerm(const unsigned i, const double mean_i, const double sigma_i) const {
+  const double scale=scale_;
+  const double offset=offset_;
+  double ene=0.;
+  switch(noise_type_) {
+  case MGAUSS: {
+    const double scale2 = scale*scale;
+    const double inv_s2  = 1./(sigma_i*sigma_i + scale2*sigma_mean2_[i]);
+    const double inv_sss = 1./(sigma_i*sigma_i + sigma_mean2_[i]);
+    const double dev = scale*mean_i-parameters[i]+offset;
+    const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
+    const double jeffreys      = -0.5*std::log(2.*inv_sss);
+    ene = 0.5*dev*dev*inv_s2 + normalisation + jeffreys;
+    if(doscale_ || doregres_zero_) {
+      ene += jeffreys;
+    }
+    if(dooffset_) {
+      ene += jeffreys;
+    }
+    break;
+  }
+  case MOUTLIERS: {
+    const double scale2 = scale*scale;
+    const double sm2 = sigma_mean2_[i];
+    const double ss2 = sigma_i*sigma_i + scale2*sm2;
+    const double sss = sigma_i*sigma_i + sm2;
+    const double dev = scale*mean_i-parameters[i]+offset;
+    const double a2  = 0.5*dev*dev + ss2;
+    if(sm2 > 0.0) {
+      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+    } else {
+      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2);
+    }
+    if(doscale_ || doregres_zero_) {
+      ene += 0.5*std::log(sss);
+    }
+    if(dooffset_) {
+      ene += 0.5*std::log(sss);
+    }
+    break;
+  }
+  case GENERIC: {
+    const double inv_sb2  = 1./(sigma_i*sigma_i);
+    const double inv_sm2  = 1./sigma_mean2_[i];
+    double devb = 0;
+    if(gen_likelihood_==LIKE_GAUSS) {
+      devb = scale*ftilde_[i]-parameters[i]+offset;
+    } else if(gen_likelihood_==LIKE_LOGN) {
+      devb = std::log(scale*ftilde_[i]/parameters[i]);
+    }
+    const double devm = mean_i - ftilde_[i];
+    double normb = 0.;
+    if(gen_likelihood_==LIKE_GAUSS) {
+      normb = -0.5*std::log(0.5/M_PI*inv_sb2);
+    } else if(gen_likelihood_==LIKE_LOGN) {
+      normb = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
+    }
+    const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
+    const double jeffreys      = -0.5*std::log(2.*inv_sb2);
+    ene = 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
+    if(doscale_ || doregres_zero_) {
+      ene += jeffreys;
+    }
+    if(dooffset_) {
+      ene += jeffreys;
+    }
+    break;
+  }
+  default:
+    plumed_error();
+  }
+  return ene;
+}
+
 void MetainferenceCore::moveTilde(const std::vector<double> &mean_, double &old_energy) {
   std::vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
@@ -1047,8 +1124,30 @@ void MetainferenceCore::moveTilde(const std::vector<double> &mean_, double &old_
     const double ds3 = Dftilde_*std::sqrt(sigma_mean2_[j])*r3;
     new_ftilde[j] = ftilde_[j] + ds3;
   }
-  // calculate new energy
-  double new_energy = getEnergyMIGEN(mean_,new_ftilde,sigma_,scale_,offset_);
+  // calculate new energy: the normalisations and the priors do not depend on ftilde,
+  // so only the change of the deviations is needed
+  double diff = 0.0;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(diff)
+  {
+    #pragma omp for reduction( + : diff)
+    for(unsigned i=0; i<narg; ++i) {
+      const double inv_sb2  = 1./(sigma_[i]*sigma_[i]);
+      const double inv_sm2  = 1./sigma_mean2_[i];
+      double devb_new = 0;
+      double devb_old = 0;
+      if(gen_likelihood_==LIKE_GAUSS) {
+        devb_new = scale_*new_ftilde[i]-parameters[i]+offset_;
+        devb_old = scale_*ftilde_[i]-parameters[i]+offset_;
+      } else if(gen_likelihood_==LIKE_LOGN) {
+        devb_new = std::log(scale_*new_ftilde[i]/parameters[i]);
+        devb_old = std::log(scale_*ftilde_[i]/parameters[i]);
+      }
+      const double devm_new = mean_[i] - new_ftilde[i];
+      const double devm_old = mean_[i] - ftilde_[i];
+      diff += 0.5*(devb_new*devb_new-devb_old*devb_old)*inv_sb2 + 0.5*(devm_new*devm_new-devm_old*devm_old)*inv_sm2;
+    }
+  }
+  const double new_energy = old_energy + kbt_*diff;
 
   // accept or reject
   const double delta = ( new_energy - old_energy ) / kbt_;
@@ -1057,6 +1156,7 @@ void MetainferenceCore::moveTilde(const std::vector<double> &mean_, double &old_
     old_energy = new_energy;
     ftilde_ = new_ftilde;
     MCacceptFT_++;
+    energy_from_differences_ = true;
     // otherwise extract random number
   } else {
     const double s = random[0].RandU01();
@@ -1064,6 +1164,7 @@ void MetainferenceCore::moveTilde(const std::vector<double> &mean_, double &old_
       old_energy = new_energy;
       ftilde_ = new_ftilde;
       MCacceptFT_++;
+      energy_from_differences_ = true;
     }
   }
 }
@@ -1169,6 +1270,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
   std::vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;
 
+  moved_.clear();
   // change MCchunksize_ sigmas
   if (MCchunksize_ > 0) {
     if ((MCchunksize_ * i) >= sigma_.size()) {
@@ -1189,6 +1291,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
       new_sigma[index] = sigma_[index] + ds2;
       // check boundaries
       new_sigma[index] = reflect(new_sigma[index], sigma_min_[index], sigma_max_[index]);
+      moved_.push_back(index);
     }
   } else {
     // change all sigmas
@@ -1208,22 +1311,32 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
 
   // calculate new energy
   double new_energy = 0.;
-  switch(noise_type_) {
-  case GAUSS:
-    new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
-    break;
-  case MGAUSS:
-    new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_);
-    break;
-  case OUTLIERS:
-    new_energy = getEnergySP(mean_,new_sigma,scale_,offset_);
-    break;
-  case MOUTLIERS:
-    new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_);
-    break;
-  case GENERIC:
-    new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_);
-    break;
+  // with one sigma per datum, moving a chunk of sigmas only changes the energy of those data
+  const bool chunk_delta = MCchunksize_>0 && (noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC);
+  if(chunk_delta) {
+    double diff = 0.;
+    for(const auto j : moved_) {
+      diff += getEnergyTerm(j,mean_[j],new_sigma[j]) - getEnergyTerm(j,mean_[j],sigma_[j]);
+    }
+    new_energy = old_energy + kbt_*diff;
+  } else {
+    switch(noise_type_) {
+    case GAUSS:
+      new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
+      break;
+    case MGAUSS:
+      new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_);
+      break;
+    case OUTLIERS:
+      new_energy = getEnergySP(mean_,new_sigma,scale_,offset_);
+      break;
+    case MOUTLIERS:
+      new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_);
+      break;
+    case GENERIC:
+      new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_);
+      break;
+    }
   }
 
   // accept or reject
@@ -1233,6 +1346,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
     old_energy = new_energy;
     sigma_ = new_sigma;
     MCaccept_++;
+    energy_from_differences_ = energy_from_differences_ || chunk_delta;
     // otherwise extract random number
   } else {
     const double s = random[0].RandU01();
@@ -1240,6 +1354,7 @@ void MetainferenceCore::moveSigmas(const std::vector<double> &mean_, double &old
       old_energy = new_energy;
       sigma_ = new_sigma;
       MCaccept_++;
+      energy_from_differences_ = energy_from_differences_ || chunk_delta;
     }
   }
 }
@@ -1295,6 +1410,23 @@ double MetainferenceCore::doMonteCarlo(const std::vector<double> &mean_) {
       // exit from the loop if this is the case
       if(breaknow) {
         break;
+      }
+    }
+    // the energy obtained by adding differences is recomputed, so that it does not depend on the history of the moves
+    if(energy_from_differences_) {
+      energy_from_differences_=false;
+      switch(noise_type_) {
+      case MGAUSS:
+        old_energy = getEnergyGJE(mean_,sigma_,scale_,offset_);
+        break;
+      case MOUTLIERS:
+        old_energy = getEnergySPE(mean_,sigma_,scale_,offset_);
+        break;
+      case GENERIC:
+        old_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,scale_,offset_);
+        break;
+      default:
+        plumed_error();
       }
     }
 
