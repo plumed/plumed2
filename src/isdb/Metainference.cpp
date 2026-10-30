@@ -73,7 +73,19 @@ in such a way that MC_CHUNKSIZE*MC_STEPS will cover all the data points.
 
 Calculated and experimental data can be compared modulo a scaling factor and/or an offset
 using SCALEDATA and/or ADDOFFSET, the sampling is obtained by a MC algorithm either using
-a flat or a gaussian prior setting it with SCALE_PRIOR or OFFSET_PRIOR.
+a flat or a gaussian prior setting it with SCALE_PRIOR or OFFSET_PRIOR. With a flat prior the
+moves are reflected into the interval given by SCALE_MIN and SCALE_MAX (OFFSET_MIN and OFFSET_MAX),
+with a gaussian prior the prior is centered in SCALE0 (OFFSET0) and its width is DSCALE (DOFFSET),
+which also sets the size of the moves.
+
+The random numbers of the Monte Carlo are seeded from the clock, so that two runs are different;
+SEED makes them reproducible. The status of Metainference (uncertainties, history of sigma mean,
+scale, offset, averaged weights) is written every WRITE_STRIDE steps in the file MISTATUS followed
+by the label of the action (STATUS_FILE changes MISTATUS) and is read back when restarting.
+
+The same keywords can be used in the ISDB collective variables (e.g. [NOE](NOE.md), [RDC](RDC.md))
+together with DOSCORE: in this case the score is calculated directly by the collective variable,
+which is faster with many data.
 
 ## Examples
 
