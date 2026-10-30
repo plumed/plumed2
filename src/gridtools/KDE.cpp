@@ -242,7 +242,7 @@ void KDEShortcut::registerKeywords(Keywords& keys) {
   keys.addActionNameSuffix("_DISCRETEACC");
   keys.addActionNameSuffix("_KERNELSACC");
   keys.addActionNameSuffix("_BEADSACC");
-  keys.addActionNameSuffix("_FULLCOVARACC");  
+  keys.addActionNameSuffix("_FULLCOVARACC");
 }
 
 KDEShortcut::KDEShortcut(const ActionOptions&ao):
