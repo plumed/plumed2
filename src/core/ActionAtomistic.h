@@ -112,6 +112,20 @@ public:
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
+/// Translate all the atoms, including virtual ones, in the shared position arrays.
+/// These functions loop directly on the arrays, which is much faster than calling
+/// getGlobalPosition and setGlobalPosition for every atom.
+/// \warning Should be only used by actions that need to modify the shared position array.
+  void translateAllGlobalPositions(const Vector& shift);
+/// Rotate all the atoms, including virtual ones, in the shared position arrays: pos -> matmul(rotation,pos)
+  void rotateAllGlobalPositions(const Tensor& rotation);
+/// Move all the atoms, including virtual ones, in the shared position arrays: pos -> matmul(rotation,pos-shiftBefore)+shiftAfter
+  void rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter);
+/// Get the sum of the forces on all the atoms, including virtual ones
+  Vector getTotalForceOnAllAtoms() const;
+/// Rotate the forces on all the atoms, including virtual ones: f -> matmul(rotation,f).
+/// Returns the sum of the rotated forces.
+  Vector rotateForcesOnAllAtoms(const Tensor& rotation);
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
