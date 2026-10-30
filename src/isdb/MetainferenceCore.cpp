@@ -1714,9 +1714,7 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
   const double dnrep    = static_cast<double>(nrep_);
   std::vector<double> sigma_mean2_tmp(sigma_mean2_.size());
 
-  // the standard error of the mean is not defined with a single (effective) replica:
-  // in that case the history is not updated
-  if(do_optsigmamean_>0&&neff>1.) {
+  if(do_optsigmamean_>0) {
     /* this is the current estimate of sigma mean for each argument
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
@@ -1730,20 +1728,26 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
       }
     }
     comm.Sum(&sigma_mean2_now[0], narg);
-    for(unsigned i=0; i<narg; ++i) {
-      sigma_mean2_now[i] *= 1.0/(neff-1.)/norm;
-    }
 
-    // add sigma_mean2 to history
-    if(optsigmamean_stride_>0) {
+    // the standard error of the mean is not defined with a single (effective) replica:
+    // in that case the history is not updated (neff can differ between replicas with
+    // SELECTOR, so this test must not skip the sums above)
+    if(neff>1.) {
       for(unsigned i=0; i<narg; ++i) {
-        sigma_mean2_last_[iselect][i].push(sigma_mean2_now[i]);
+        sigma_mean2_now[i] *= 1.0/(neff-1.)/norm;
       }
-    } else {
-      for(unsigned i=0; i<narg; ++i)
-        if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i].get(0)) {
-          sigma_mean2_last_[iselect][i].setFirst(sigma_mean2_now[i]);
+
+      // add sigma_mean2 to history
+      if(optsigmamean_stride_>0) {
+        for(unsigned i=0; i<narg; ++i) {
+          sigma_mean2_last_[iselect][i].push(sigma_mean2_now[i]);
         }
+      } else {
+        for(unsigned i=0; i<narg; ++i)
+          if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i].get(0)) {
+            sigma_mean2_last_[iselect][i].setFirst(sigma_mean2_now[i]);
+          }
+      }
     }
   }
 
