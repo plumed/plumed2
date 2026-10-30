@@ -93,7 +93,6 @@ private:
   int N_Blocks;
   int total_PIV_length;
   int inited_step;
-  int last_step_latched;
   bool driver_mode;
   bool freeze_selection;
   std::vector<int> steps_since_update;
@@ -159,8 +158,8 @@ public:
     }
   };
 
-  virtual void calculate();
-  void checkFieldsAllowed() {}
+  void calculate() override;
+  void checkFieldsAllowed() override {}
   // -- SD prepare to requestAtoms during simulation
   void prepare() override;
 };
@@ -475,7 +474,6 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   N_Blocks(),
   total_PIV_length(),
   inited_step(-1),
-  last_step_latched(),
   driver_mode(),
   freeze_selection(),
   steps_since_update(),
