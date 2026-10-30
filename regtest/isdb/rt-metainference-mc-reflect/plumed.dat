@@ -18,4 +18,4 @@ TEMP=300 SEED=11 WRITE_STRIDE=100000
 LABEL=mi
 ... METAINFERENCE
 
-PRINT ARG=mi.bias,mi.sigma-0,mi.sigma-1,mi.sigma-2,mi.scale,mi.offset FILE=COLVAR FMT=%10.4f
+PRINT ARG=mi.bias,mi.sigma-0,mi.sigma-1,mi.sigma-2,mi.scale,mi.offset FILE=COLVAR FMT=%14.6e

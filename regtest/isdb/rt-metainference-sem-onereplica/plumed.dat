@@ -29,4 +29,4 @@ LABEL=mi
 ... METAINFERENCE
 
 BIASVALUE ARG=cv.score
-PRINT ARG=cv.score,cv.sigmaMean-0,cv.sigmaMean-2,mi.bias,mi.sigmaMean FILE=COLVAR FMT=%10.4f
+PRINT ARG=cv.score,cv.sigmaMean-0,cv.sigmaMean-2,mi.bias,mi.sigmaMean FILE=COLVAR FMT=%14.6e

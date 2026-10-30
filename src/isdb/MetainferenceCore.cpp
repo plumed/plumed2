@@ -431,11 +431,18 @@ MetainferenceCore::MetainferenceCore(Action& action, const bool active):
   }
 
   // initialize random seed
-  // with SEED the three streams are fixed: SEED+replica for random[0],
-  // SEED+2*nrep for random[1] (the same on all replicas), SEED+nrep+replica for random[2]
+  // with SEED each generator k (0: sigma and ftilde, 1: scale and offset, 2: chunks of sigmas)
+  // of each replica r gets its own seed 1+3*(SEED*nreplicas+r)+k, between 1 and 2^31-1;
+  // random[1] uses the seed of replica 0 on all the replicas, unless they are independent (NOENSEMBLE)
+  const unsigned nreplicas = action_.getNumberOfReplicas();
+  const unsigned ireplica = action_.getReplicaIndex();
+  auto fixedSeed=[&](const unsigned k, const unsigned r) {
+    const unsigned long long s = 3ULL*(static_cast<unsigned long long>(seed)*nreplicas+r)+k;
+    return static_cast<unsigned>(1 + s % 2147483646ULL);
+  };
   unsigned iseed;
   if(fixed_seed) {
-    iseed = static_cast<unsigned>(seed)+replica_;
+    iseed = fixedSeed(0,ireplica);
   } else if(master) {
     auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     iseed = static_cast<unsigned>(ts)+replica_;
@@ -451,7 +458,7 @@ MetainferenceCore::MetainferenceCore(Action& action, const bool active):
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
     if(fixed_seed) {
-      iseed = static_cast<unsigned>(seed)+2*nrep_;
+      iseed = fixedSeed(1, nrep_>1 ? 0 : ireplica);
     } else {
       auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
       iseed = static_cast<unsigned>(ts);
@@ -465,7 +472,7 @@ MetainferenceCore::MetainferenceCore(Action& action, const bool active):
   }
   // this is used for random chunk of sigmas, and it is different for each replica
   if(fixed_seed) {
-    iseed = static_cast<unsigned>(seed)+nrep_+replica_;
+    iseed = fixedSeed(2,ireplica);
   } else if(master) {
     auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     iseed = static_cast<unsigned>(ts)+replica_;
