@@ -134,7 +134,13 @@ void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& bo
     for(unsigned j=0; j<args.size(); ++j) {
       myargs[j] = args[j]->get(0);
     }
-    G::getDiscreteSupport( func.g, func.kernelsum.params, View<const double>( myargs.data() + ndim, K::getNumberOfShapeParameters(ndim)), func.nneigh, gridobject );
+    // Convert the input into kernel parameters, so that the support is computed from the same
+    // quantities used in transferParamsToKernel when it is recomputed for each kernel
+    // (NonDiagonalKernelParams stores the inverse of the covariance matrix, not the covariance)
+    std::vector<double> kparams( K::getNumberOfParameters(ndim), 0.0 );
+    View<double> kpview( kparams.data(), kparams.size() );
+    K::setKernelAndCheckHeight( kpview, ndim, myargs );
+    G::getDiscreteSupport( func.g, func.kernelsum.params, View<const double>( kparams.data() + ndim, K::getNumberOfShapeParameters(ndim)), func.nneigh, gridobject );
     func.fixed_width = true;
   }
 }

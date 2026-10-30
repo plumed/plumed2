@@ -218,6 +218,12 @@ void RegularKernel<K>::getSupport( const RegularKernel<K>& params, const View<co
 
 template <class K>
 double RegularKernel<K>::calc( const RegularKernel<K>& params, const K& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
+  // Not all the parameter derivatives are set below (e.g. those with respect to the bandwidths)
+  // and evaluateR2 for non-diagonal kernels accumulates into them, so they must start from zero:
+  // the derivative buffers of the task managers are reused between tasks (and are not initialised on the GPU)
+  for(unsigned i=0; i<paramderivs.size(); ++i) {
+    paramderivs[i] = 0;
+  }
   double r2 = K::evaluateR2( params, kp, x, paramderivs );
   double dval, val = kp.height[0]*params.switchingFunction.calculateSqr( r2, dval );
   dval *= kp.height[0];
@@ -225,7 +231,8 @@ double RegularKernel<K>::calc( const RegularKernel<K>& params, const K& kp, View
     der[i] += dval*paramderivs[i];
     paramderivs[i] = -dval*paramderivs[i];
   }
-  paramderivs[2*kp.at.size()] = val / kp.height[0];
+  // The height is always the last parameter of the kernel (DiagonalKernelParams: 2*ndim, NonDiagonalKernelParams: ndim*(1+ndim))
+  paramderivs[paramderivs.size()-1] = val / kp.height[0];
   return val;
 }
 

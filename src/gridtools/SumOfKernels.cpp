@@ -65,6 +65,11 @@ void HistogramBeadKernel::getSupport( HistogramBeadKernel& params, const View<co
 }
 
 double HistogramBeadKernel::calc( const HistogramBeadKernel& params, const DiagonalKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
+  // The derivatives with respect to the bandwidths are not set below: the derivative buffers
+  // of the task managers are reused between tasks (and are not initialised on the GPU)
+  for(unsigned i=0; i<paramderivs.size(); ++i) {
+    paramderivs[i] = 0;
+  }
   double val = kp.height[0];
   HistogramBead mybead( params.kerneltype, 0, 1, 0.5 );
   for(unsigned i=0; i<x.size(); ++i) {
@@ -148,7 +153,8 @@ double DiagonalKernelParams::evaluateR2( const RegularKernel<DiagonalKernelParam
 }
 
 bool NonDiagonalKernelParams::setKernelAndCheckHeight( View<double>& params, std::size_t ndim, const std::vector<double>& argval ) {
-  plumed_assert( argval.size()==2*ndim+1 );
+  // centers (ndim), covariance matrix (ndim*ndim) and height
+  plumed_assert( argval.size()==ndim*(ndim+1)+1 );
   View<double> loc( params.data(), ndim );
   Matrix<double> sigma( ndim, ndim ), metric( ndim, ndim );
   for(unsigned i=0; i<ndim; ++i) {
@@ -182,25 +188,19 @@ std::size_t NonDiagonalKernelParams::getNumberOfShapeParameters( const std::size
 }
 
 void NonDiagonalKernelParams::getSigmaProjections( const View<const double>& shape, std::vector<double>& support ) {
-  std::vector<double> myautoval(support.size());
-  Matrix<double> metric(support.size(),support.size()), myautovec(support.size(),support.size());
-  for(unsigned i=0; i<support.size(); ++i) {
-    for(unsigned j=0; j<support.size(); ++j) {
-      metric[i][j] = shape[i*support.size() + j];
+  // shape holds the metric M, i.e. the inverse of the covariance matrix C. The kernel is cut
+  // where (x-a)^T M (x-a) reaches the cutoff, and the smallest box containing that ellipsoid
+  // has half-widths proportional to sqrt(C_ii) (the same as sigma_i for a diagonal kernel).
+  std::size_t n = support.size();
+  Matrix<double> metric(n,n), covar(n,n);
+  for(unsigned i=0; i<n; ++i) {
+    for(unsigned j=0; j<n; ++j) {
+      metric[i][j] = shape[i*n + j];
     }
   }
-  diagMat( metric, myautoval, myautovec);
-  double maxautoval=1/myautoval[0];
-  unsigned ind_maxautoval=0;
-  for(unsigned i=1; i<support.size(); i++) {
-    double neweig=1/myautoval[i];
-    if(neweig>maxautoval) {
-      maxautoval=neweig;
-      ind_maxautoval=i;
-    }
-  }
-  for(unsigned i=0; i<support.size(); i++) {
-    support[i] = fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
+  Invert( metric, covar );
+  for(unsigned i=0; i<n; i++) {
+    support[i] = sqrt( covar[i][i] );
   }
 }
 
@@ -223,6 +223,11 @@ double NonDiagonalKernelParams::evaluateR2( const RegularKernel<NonDiagonalKerne
 }
 
 double UniversalVonMisses::calc( const UniversalVonMisses& params, const VonMissesKernelParams& kp, View<const double> x, View<double> der, View<double> paramderivs ) {
+  // The derivatives with respect to the concentration (and to the height if it is zero) are not set below:
+  // the derivative buffers of the task managers are reused between tasks (and are not initialised on the GPU)
+  for(unsigned i=0; i<paramderivs.size(); ++i) {
+    paramderivs[i] = 0;
+  }
   double dot=x[0]*kp.at[0] + x[1]*kp.at[1] + x[2]*kp.at[2];
   double newval = kp.height[0]*exp( kp.concentration[0]*dot );
   der[0] += newval*kp.concentration[0]*kp.at[0];

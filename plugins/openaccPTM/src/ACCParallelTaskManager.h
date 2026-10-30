@@ -350,7 +350,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 
 #define derivativeDrift(taskID,scalarID)  taskID*nderivatives_per_task \
                            + scalarID*myinput.ncomponents*myinput.nderivatives_per_scalar
-#define stashDrift(taskID,scalarID) taskID*myinput.nscalars \
+#define stashDrift(taskID,scalarID) taskID*myinput.nforcescalars \
                            + scalarID*myinput.ncomponents
 
   // myinput and the scalars are passed by value as kernel arguments.
@@ -417,7 +417,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                           force_indices );
 
       // Create a force input object
-      auto finput = ForcesInput<precision>::create ( myinput.nscalars,
+      auto finput = ForcesInput<precision>::create ( myinput.nforcescalars,
                     value_stash_data + stashDrift(task_index,vID),
                     myinput.nderivatives_per_scalar,
                     derivatives + derivativeDrift(t,vID));
