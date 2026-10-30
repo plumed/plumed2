@@ -1079,6 +1079,11 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
       // check boundaries
       new_scale = reflect(new_scale, scale_min_, scale_max_);
     } else {
+      // GAUSSIAN prior: the proposal s' = s + (mu-s)/2 + c*r, with r a standard normal number and
+      // c = D*e/pi, is an autoregressive move that is reversible with respect to a Gaussian centred
+      // in mu with standard deviation 2c/sqrt(3) = 0.9991*D. Accepting with the likelihood alone
+      // (no Hastings correction) samples the likelihood times this Gaussian, i.e. the Gaussian prior
+      // of mean SCALE0 (OFFSET0) and width DSCALE (DOFFSET); D also sets the size of the moves.
       const double r1 = random[1].Gaussian();
       const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*std::exp(1)/M_PI*r1;
       new_scale += ds1;
@@ -1095,6 +1100,7 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
       // check boundaries
       new_offset = reflect(new_offset, offset_min_, offset_max_);
     } else {
+      // GAUSSIAN prior, see the scale above
       const double r1 = random[1].Gaussian();
       const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*std::exp(1)/M_PI*r1;
       new_offset += ds1;
@@ -1122,7 +1128,10 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
     break;
   }
 
-  // for the scale/offset we need to consider the total energy
+  // for the scale/offset we need to consider the total energy;
+  // scale and offset stay the same on all the replicas because they use the same random numbers
+  // (random[1]) and the same total energy (this assumes that the sums over the replicas give the
+  // same result everywhere, which is the case for the MPI implementations we know of)
   std::vector<double> totenergies(2);
   if(master) {
     totenergies[0] = old_energy;
@@ -1491,21 +1500,17 @@ void MetainferenceCore::getEnergyForceGJE(const std::vector<double> &mean, const
 void MetainferenceCore::getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b) {
   std::vector<double> inv_s2(sigma_.size(),0.);
   std::vector<double> dev(sigma_.size(),0.);
-  std::vector<double> dev2(sigma_.size(),0.);
 
   for(unsigned i=0; i<sigma_.size(); ++i) {
     inv_s2[i]   = 1./sigma_mean2_[i];
     if(master) {
       dev[i]  = (mean[i]-ftilde_[i]);
-      dev2[i] = dev[i]*dev[i];
     }
   }
   if(master&&nrep_>1) {
     multi_sim_comm.Sum(&dev[0],dev.size());
-    multi_sim_comm.Sum(&dev2[0],dev2.size());
   }
   comm.Sum(&dev[0],dev.size());
-  comm.Sum(&dev2[0],dev2.size());
 
   double dene_b = 0.;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(dene_b)
@@ -1652,15 +1657,15 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
         if(sigma_max_est_[i]<sigma_mean2_tmp[i]&&optimized_step_>optsigmamean_stride_) {
           sigma_max_est_[i]=sigma_mean2_tmp[i];
         }
-        // ready to set once and for all the value of sigma_max
-        if(optimized_step_==N_optimized_step_) {
-          sigmamax_opt_done_=true;
-          for(unsigned ii=0; ii<sigma_max_.size(); ii++) {
-            sigma_max_[ii]=std::sqrt(sigma_max_est_[ii]*dnrep);
-            Dsigma_[ii] = 0.05*(sigma_max_[ii] - sigma_min_[ii]);
-            if(sigma_[ii]>sigma_max_[ii]) {
-              sigma_[ii]=sigma_max_[ii];
-            }
+      }
+      // ready to set once and for all the value of sigma_max
+      if(optimized_step_==N_optimized_step_) {
+        sigmamax_opt_done_=true;
+        for(unsigned i=0; i<sigma_max_.size(); i++) {
+          sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
+          Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+          if(sigma_[i]>sigma_max_[i]) {
+            sigma_[i]=sigma_max_[i];
           }
         }
       }
