@@ -8,6 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++

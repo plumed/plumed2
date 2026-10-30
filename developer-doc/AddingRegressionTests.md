@@ -82,6 +82,9 @@ in the directory regtest/trajectories in creating your own regression tests.
 The next step in creating your regression test will be to copy suitable trajectories to run the calculation into the test directory and to write a plumed input file.
 Obviously, we cannot tell you what to do here (although there are some suggestions in the next section) as the tests you will need to write will depend on the feature
 you are incorporating.  <b>In general though it should be possible it should be possible to run the test in a few seconds and the output files should be small.</b>
+A test that needs much longer, for example to check a long trajectory or a statistical property, can be marked as long by adding the line
+`plumed_long=yes` to its config file.  Long tests are run only when the environment variable `PLUMED_LONG_TESTS` is set to `yes`: on GitHub Actions
+this happens in the nightly run of the CI on the master branch, not on pull requests.  Elsewhere they are reported as not run, which is not an error.
 Once you have created this input you can run the test by simply executing 
 
 \verbatim
