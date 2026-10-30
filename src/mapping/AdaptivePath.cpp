@@ -118,6 +118,7 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
+  keys.add("compulsory","TOLERANCE","1E-4","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
   keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");
@@ -174,7 +175,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
       for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
         Tools::convert( mypdb.getOccupancy()[j], num );
         align_str += "," + num;
-        Tools::convert( mypdb.getBeta()[0], num );
+        Tools::convert( mypdb.getBeta()[j], num );
         displace_str += "," + num;
       }
       metric = "RMSD DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
@@ -193,14 +194,15 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   }
 
   // Create the object to update the path
-  std::string fixedn;
+  std::string fixedn, tolerance;
   parse("FIXED",fixedn);
+  parse("TOLERANCE",tolerance);
   std::string component="METRIC_COMPONENT=disp";
   if( argnames.size()>0 ) {
     metric="DIFFERENCE";
     component="";
   }
-  readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
+  readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " TOL=" + tolerance + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
 
   // Information for write out
   std::string wfilename;

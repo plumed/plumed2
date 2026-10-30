@@ -9,3 +9,6 @@
 !/module.type
 !/COPYRIGHT
 !/import.sh
+!/import.py
+!/plumed.patch
+!/README.md

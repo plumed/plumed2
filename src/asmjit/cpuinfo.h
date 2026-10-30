@@ -1,402 +1,813 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_cpuinfo_h
-#define __PLUMED_asmjit_cpuinfo_h
-#ifdef __PLUMED_HAS_ASMJIT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Guard]
-#ifndef _ASMJIT_BASE_CPUINFO_H
-#define _ASMJIT_BASE_CPUINFO_H
+#ifndef ASMJIT_CORE_CPUINFO_H_INCLUDED
+#define ASMJIT_CORE_CPUINFO_H_INCLUDED
 
-// [Dependencies]
-#include "./arch.h"
+#include "archtraits.h"
+#include "environment.h"
+#include "globals.h"
+#include "moved_string.h"
+#include "support.h"
 
-// [Api-Begin]
-#include "./asmjit_apibegin.h"
+ASMJIT_BEGIN_NAMESPACE
 
-namespace PLMD {
-namespace asmjit {
-
-//! \addtogroup asmjit_base
+//! \addtogroup asmjit_core
 //! \{
 
-// ============================================================================
-// [asmjit::CpuFeatures]
-// ============================================================================
-
+//! CPU features information.
+//!
+//! Each feature is represented by a single bit in an embedded bit array.
 class CpuFeatures {
 public:
-  typedef uintptr_t BitWord;
+  //! A word that is used to represents feature bits.
+  typedef Support::BitWord BitWord;
+  //! Iterator that can iterate all CPU features set.
+  typedef Support::BitVectorIterator<BitWord> Iterator;
 
-  enum {
-    kMaxFeatures = 128,
-    kBitWordSize = static_cast<int>(sizeof(BitWord)) * 8,
-    kNumBitWords = kMaxFeatures / kBitWordSize
+  //! \name Constants
+  //! \{
+
+  //! \cond INTERNAL
+  enum : uint32_t {
+    kMaxFeatures = 256,
+    kNumBitWords = kMaxFeatures / Support::kBitWordSizeInBits
+  };
+  //! \endcond
+
+  //! \}
+
+  //! \name Data
+  //! \{
+
+  //! CPU features data.
+  struct Data {
+    //! \name Members
+    //! \{
+
+    //! Data bits.
+    Support::Array<BitWord, kNumBitWords> _bits;
+
+    //! \}
+
+    //! \name Overloaded Operators
+    //! \{
+
+    inline bool operator==(const Data& other) noexcept { return  eq(other); }
+    inline bool operator!=(const Data& other) noexcept { return !eq(other); }
+
+    //! \}
+
+    //! \name Accessors
+    //! \{
+
+    //! Returns true if there are no features set.
+    inline bool empty() const noexcept { return _bits.aggregate<Support::Or>(0) == 0; }
+
+    //! Returns all features as array of bitwords (see \ref Support::BitWord).
+    inline BitWord* bits() noexcept { return _bits.data(); }
+    //! Returns all features as array of bitwords (const).
+    inline const BitWord* bits() const noexcept { return _bits.data(); }
+
+    //! Returns the number of BitWords returned by \ref bits().
+    inline size_t bitWordCount() const noexcept { return kNumBitWords; }
+
+    //! Returns \ref Support::BitVectorIterator, that can be used to iterate over all features efficiently.
+    inline Iterator iterator() const noexcept { return Iterator(_bits.data(), kNumBitWords); }
+
+    //! Tests whether the feature `featureId` is present.
+    template<typename FeatureId>
+    ASMJIT_FORCE_INLINE bool has(const FeatureId& featureId) const noexcept {
+      ASMJIT_ASSERT(uint32_t(featureId) < kMaxFeatures);
+
+      uint32_t idx = uint32_t(featureId) / Support::kBitWordSizeInBits;
+      uint32_t bit = uint32_t(featureId) % Support::kBitWordSizeInBits;
+
+      return bool((_bits[idx] >> bit) & 0x1);
+    }
+
+    //! Tests whether all features as defined by `other` are present.
+    ASMJIT_FORCE_INLINE bool hasAll(const Data& other) const noexcept {
+      for (uint32_t i = 0; i < kNumBitWords; i++)
+        if ((_bits[i] & other._bits[i]) != other._bits[i])
+          return false;
+      return true;
+    }
+
+    //! \}
+
+    //! \name Manipulation
+    //! \{
+
+    inline void reset() noexcept { _bits.fill(0); }
+
+    //! Adds the given CPU `featureId` to the list of features.
+    template<typename FeatureId>
+    ASMJIT_FORCE_INLINE void add(const FeatureId& featureId) noexcept {
+      ASMJIT_ASSERT(uint32_t(featureId) < kMaxFeatures);
+
+      uint32_t idx = uint32_t(featureId) / Support::kBitWordSizeInBits;
+      uint32_t bit = uint32_t(featureId) % Support::kBitWordSizeInBits;
+
+      _bits[idx] |= BitWord(1) << bit;
+    }
+
+    template<typename FeatureId, typename... Args>
+    ASMJIT_FORCE_INLINE void add(const FeatureId& featureId, Args&&... otherFeatureIds) noexcept {
+      add(featureId);
+      add(std::forward<Args>(otherFeatureIds)...);
+    }
+
+    template<typename FeatureId>
+    ASMJIT_FORCE_INLINE void addIf(bool condition, const FeatureId& featureId) noexcept {
+      ASMJIT_ASSERT(uint32_t(featureId) < kMaxFeatures);
+
+      uint32_t idx = uint32_t(featureId) / Support::kBitWordSizeInBits;
+      uint32_t bit = uint32_t(featureId) % Support::kBitWordSizeInBits;
+
+      _bits[idx] |= BitWord(condition) << bit;
+    }
+
+    template<typename FeatureId, typename... Args>
+    ASMJIT_FORCE_INLINE void addIf(bool condition, const FeatureId& featureId, Args&&... otherFeatureIds) noexcept {
+      addIf(condition, featureId);
+      addIf(condition, std::forward<Args>(otherFeatureIds)...);
+    }
+
+    //! Removes the given CPU `featureId` from the list of features.
+    template<typename FeatureId>
+    ASMJIT_FORCE_INLINE void remove(const FeatureId& featureId) noexcept {
+      ASMJIT_ASSERT(uint32_t(featureId) < kMaxFeatures);
+
+      uint32_t idx = uint32_t(featureId) / Support::kBitWordSizeInBits;
+      uint32_t bit = uint32_t(featureId) % Support::kBitWordSizeInBits;
+
+      _bits[idx] &= ~(BitWord(1) << bit);
+    }
+
+    template<typename FeatureId, typename... Args>
+    ASMJIT_FORCE_INLINE void remove(const FeatureId& featureId, Args&&... otherFeatureIds) noexcept {
+      remove(featureId);
+      remove(std::forward<Args>(otherFeatureIds)...);
+    }
+
+    //! Tests whether this CPU features data matches `other`.
+    ASMJIT_FORCE_INLINE bool eq(const Data& other) const noexcept { return _bits == other._bits; }
+
+    //! \}
+
   };
 
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
+  //! X86 specific features data.
+  struct X86 : public Data {
+    //! X86 CPU feature identifiers.
+    enum Id : uint8_t {
+      // @EnumValuesBegin{"enum": "CpuFeatures::X86"}@
+      kNone,                     //!< No feature (never set, used internally).
 
-  ASMJIT_INLINE CpuFeatures() noexcept { reset(); }
-  ASMJIT_INLINE CpuFeatures(const CpuFeatures& other) noexcept = default;
+      kMT,                       //!< CPU has multi-threading capabilities.
+      kNX,                       //!< CPU has Not-Execute-Bit aka DEP (data-execution prevention).
+      k3DNOW,                    //!< CPU has 3DNOW            (3DNOW base instructions) [AMD].
+      k3DNOW2,                   //!< CPU has 3DNOW2           (enhanced 3DNOW) [AMD].
+      kADX,                      //!< CPU has ADX              (multi-precision add-carry instruction extensions).
+      kAESNI,                    //!< CPU has AESNI            (AES encode/decode instructions).
+      kALTMOVCR8,                //!< CPU has LOCK MOV R<->CR0 (supports `MOV R<->CR8` via `LOCK MOV R<->CR0` in 32-bit mode) [AMD].
+      kAMX_BF16,                 //!< CPU has AMX_BF16         (advanced matrix extensions - BF16 instructions).
+      kAMX_INT8,                 //!< CPU has AMX_INT8         (advanced matrix extensions - INT8 instructions).
+      kAMX_TILE,                 //!< CPU has AMX_TILE         (advanced matrix extensions).
+      kAVX,                      //!< CPU has AVX              (advanced vector extensions).
+      kAVX2,                     //!< CPU has AVX2             (advanced vector extensions 2).
+      kAVX512_4FMAPS,            //!< CPU has AVX512_FMAPS     (FMA packed single).
+      kAVX512_4VNNIW,            //!< CPU has AVX512_VNNIW     (vector NN instructions word variable precision).
+      kAVX512_BF16,              //!< CPU has AVX512_BF16      (BFLOAT16 support instruction).
+      kAVX512_BITALG,            //!< CPU has AVX512_BITALG    (VPOPCNT[B|W], VPSHUFBITQMB).
+      kAVX512_BW,                //!< CPU has AVX512_BW        (packed BYTE|WORD).
+      kAVX512_CDI,               //!< CPU has AVX512_CDI       (conflict detection).
+      kAVX512_DQ,                //!< CPU has AVX512_DQ        (packed DWORD|QWORD).
+      kAVX512_ERI,               //!< CPU has AVX512_ERI       (exponential and reciprocal).
+      kAVX512_F,                 //!< CPU has AVX512_F         (AVX512 foundation).
+      kAVX512_FP16,              //!< CPU has AVX512_FP16      (FP16 extensions).
+      kAVX512_IFMA,              //!< CPU has AVX512_IFMA      (integer fused-multiply-add using 52-bit precision).
+      kAVX512_PFI,               //!< CPU has AVX512_PFI       (prefetch instructions).
+      kAVX512_VBMI,              //!< CPU has AVX512_VBMI      (vector byte manipulation).
+      kAVX512_VBMI2,             //!< CPU has AVX512_VBMI2     (vector byte manipulation 2).
+      kAVX512_VL,                //!< CPU has AVX512_VL        (vector length extensions).
+      kAVX512_VNNI,              //!< CPU has AVX512_VNNI      (vector neural network instructions).
+      kAVX512_VP2INTERSECT,      //!< CPU has AVX512_VP2INTERSECT
+      kAVX512_VPOPCNTDQ,         //!< CPU has AVX512_VPOPCNTDQ (VPOPCNT[D|Q] instructions).
+      kAVX_VNNI,                 //!< CPU has AVX_VNNI         (VEX encoding of vpdpbusd/vpdpbusds/vpdpwssd/vpdpwssds).
+      kBMI,                      //!< CPU has BMI              (bit manipulation instructions #1).
+      kBMI2,                     //!< CPU has BMI2             (bit manipulation instructions #2).
+      kCET_IBT,                  //!< CPU has CET-IBT          (indirect branch tracking).
+      kCET_SS,                   //!< CPU has CET-SS.
+      kCLDEMOTE,                 //!< CPU has CLDEMOTE         (cache line demote).
+      kCLFLUSH,                  //!< CPU has CLFUSH           (Cache Line flush).
+      kCLFLUSHOPT,               //!< CPU has CLFUSHOPT        (Cache Line flush - optimized).
+      kCLWB,                     //!< CPU has CLWB.
+      kCLZERO,                   //!< CPU has CLZERO.
+      kCMOV,                     //!< CPU has CMOV             (CMOV and FCMOV instructions).
+      kCMPXCHG16B,               //!< CPU has CMPXCHG16B       (compare-exchange 16 bytes) [X86_64].
+      kCMPXCHG8B,                //!< CPU has CMPXCHG8B        (compare-exchange 8 bytes).
+      kENCLV,                    //!< CPU has ENCLV.
+      kENQCMD,                   //!< CPU has ENQCMD           (enqueue stores).
+      kERMS,                     //!< CPU has ERMS             (enhanced REP MOVSB/STOSB).
+      kF16C,                     //!< CPU has F16C.
+      kFMA,                      //!< CPU has FMA              (fused-multiply-add 3 operand form).
+      kFMA4,                     //!< CPU has FMA4             (fused-multiply-add 4 operand form).
+      kFPU,                      //!< CPU has FPU              (FPU support).
+      kFSGSBASE,                 //!< CPU has FSGSBASE.
+      kFXSR,                     //!< CPU has FXSR             (FXSAVE/FXRSTOR instructions).
+      kFXSROPT,                  //!< CPU has FXSROTP          (FXSAVE/FXRSTOR is optimized).
+      kGEODE,                    //!< CPU has GEODE extensions (3DNOW additions).
+      kGFNI,                     //!< CPU has GFNI             (Galois field instructions).
+      kHLE,                      //!< CPU has HLE.
+      kHRESET,                   //!< CPU has HRESET.
+      kI486,                     //!< CPU has I486 features    (I486+ support).
+      kLAHFSAHF,                 //!< CPU has LAHF/SAHF        (LAHF/SAHF in 64-bit mode) [X86_64].
+      kLWP,                      //!< CPU has LWP              (lightweight profiling) [AMD].
+      kLZCNT,                    //!< CPU has LZCNT            (LZCNT instruction).
+      kMCOMMIT,                  //!< CPU has MCOMMIT          (MCOMMIT instruction).
+      kMMX,                      //!< CPU has MMX              (MMX base instructions).
+      kMMX2,                     //!< CPU has MMX2             (MMX extensions or MMX2).
+      kMONITOR,                  //!< CPU has MONITOR          (MONITOR/MWAIT instructions).
+      kMONITORX,                 //!< CPU has MONITORX         (MONITORX/MWAITX instructions).
+      kMOVBE,                    //!< CPU has MOVBE            (move with byte-order swap).
+      kMOVDIR64B,                //!< CPU has MOVDIR64B        (move 64 bytes as direct store).
+      kMOVDIRI,                  //!< CPU has MOVDIRI          (move dword/qword as direct store).
+      kMPX,                      //!< CPU has MPX              (memory protection extensions).
+      kMSR,                      //!< CPU has MSR              (RDMSR/WRMSR instructions).
+      kMSSE,                     //!< CPU has MSSE             (misaligned SSE support).
+      kOSXSAVE,                  //!< CPU has OSXSAVE          (XSAVE enabled by OS).
+      kOSPKE,                    //!< CPU has OSPKE            (PKE enabled by OS).
+      kPCLMULQDQ,                //!< CPU has PCLMULQDQ        (packed carry-less multiplication).
+      kPCONFIG,                  //!< CPU has PCONFIG          (PCONFIG instruction).
+      kPOPCNT,                   //!< CPU has POPCNT           (POPCNT instruction).
+      kPREFETCHW,                //!< CPU has PREFETCHW.
+      kPREFETCHWT1,              //!< CPU has PREFETCHWT1.
+      kPTWRITE,                  //!< CPU has PTWRITE.
+      kRDPID,                    //!< CPU has RDPID.
+      kRDPRU,                    //!< CPU has RDPRU.
+      kRDRAND,                   //!< CPU has RDRAND.
+      kRDSEED,                   //!< CPU has RDSEED.
+      kRDTSC,                    //!< CPU has RDTSC.
+      kRDTSCP,                   //!< CPU has RDTSCP.
+      kRTM,                      //!< CPU has RTM.
+      kSERIALIZE,                //!< CPU has SERIALIZE.
+      kSHA,                      //!< CPU has SHA              (SHA-1 and SHA-256 instructions).
+      kSKINIT,                   //!< CPU has SKINIT           (SKINIT/STGI instructions) [AMD].
+      kSMAP,                     //!< CPU has SMAP             (supervisor-mode access prevention).
+      kSMEP,                     //!< CPU has SMEP             (supervisor-mode execution prevention).
+      kSMX,                      //!< CPU has SMX              (safer mode extensions).
+      kSNP,                      //!< CPU has SNP.
+      kSSE,                      //!< CPU has SSE.
+      kSSE2,                     //!< CPU has SSE2.
+      kSSE3,                     //!< CPU has SSE3.
+      kSSE4_1,                   //!< CPU has SSE4.1.
+      kSSE4_2,                   //!< CPU has SSE4.2.
+      kSSE4A,                    //!< CPU has SSE4A [AMD].
+      kSSSE3,                    //!< CPU has SSSE3.
+      kSVM,                      //!< CPU has SVM              (virtualization) [AMD].
+      kTBM,                      //!< CPU has TBM              (trailing bit manipulation) [AMD].
+      kTSX,                      //!< CPU has TSX.
+      kTSXLDTRK,                 //!< CPU has TSXLDTRK.
+      kUINTR,                    //!< CPU has UINTR            (user interrupts).
+      kVAES,                     //!< CPU has VAES             (vector AES 256|512 bit support).
+      kVMX,                      //!< CPU has VMX              (virtualization) [INTEL].
+      kVPCLMULQDQ,               //!< CPU has VPCLMULQDQ       (vector PCLMULQDQ 256|512-bit support).
+      kWAITPKG,                  //!< CPU has WAITPKG          (UMONITOR, UMWAIT, TPAUSE).
+      kWBNOINVD,                 //!< CPU has WBNOINVD.
+      kXOP,                      //!< CPU has XOP              (XOP instructions) [AMD].
+      kXSAVE,                    //!< CPU has XSAVE.
+      kXSAVEC,                   //!< CPU has XSAVEC.
+      kXSAVEOPT,                 //!< CPU has XSAVEOPT.
+      kXSAVES,                   //!< CPU has XSAVES.
+      // @EnumValuesEnd@
 
-  // --------------------------------------------------------------------------
-  // [Init / Reset]
-  // --------------------------------------------------------------------------
+      kMaxValue = kXSAVES
+    };
 
-  ASMJIT_INLINE void init(const CpuFeatures& other) noexcept { ::memcpy(this, &other, sizeof(*this)); }
-  ASMJIT_INLINE void reset() noexcept { ::memset(this, 0, sizeof(*this)); }
+    #define ASMJIT_X86_FEATURE(FEATURE) \
+      inline bool has##FEATURE() const noexcept { return has(X86::k##FEATURE); }
 
-  // --------------------------------------------------------------------------
-  // [Ops]
-  // --------------------------------------------------------------------------
+    ASMJIT_X86_FEATURE(MT)
+    ASMJIT_X86_FEATURE(NX)
+    ASMJIT_X86_FEATURE(3DNOW)
+    ASMJIT_X86_FEATURE(3DNOW2)
+    ASMJIT_X86_FEATURE(ADX)
+    ASMJIT_X86_FEATURE(AESNI)
+    ASMJIT_X86_FEATURE(ALTMOVCR8)
+    ASMJIT_X86_FEATURE(AMX_BF16)
+    ASMJIT_X86_FEATURE(AMX_INT8)
+    ASMJIT_X86_FEATURE(AMX_TILE)
+    ASMJIT_X86_FEATURE(AVX)
+    ASMJIT_X86_FEATURE(AVX2)
+    ASMJIT_X86_FEATURE(AVX512_4FMAPS)
+    ASMJIT_X86_FEATURE(AVX512_4VNNIW)
+    ASMJIT_X86_FEATURE(AVX512_BF16)
+    ASMJIT_X86_FEATURE(AVX512_BITALG)
+    ASMJIT_X86_FEATURE(AVX512_BW)
+    ASMJIT_X86_FEATURE(AVX512_CDI)
+    ASMJIT_X86_FEATURE(AVX512_DQ)
+    ASMJIT_X86_FEATURE(AVX512_ERI)
+    ASMJIT_X86_FEATURE(AVX512_F)
+    ASMJIT_X86_FEATURE(AVX512_FP16)
+    ASMJIT_X86_FEATURE(AVX512_IFMA)
+    ASMJIT_X86_FEATURE(AVX512_PFI)
+    ASMJIT_X86_FEATURE(AVX512_VBMI)
+    ASMJIT_X86_FEATURE(AVX512_VBMI2)
+    ASMJIT_X86_FEATURE(AVX512_VL)
+    ASMJIT_X86_FEATURE(AVX512_VNNI)
+    ASMJIT_X86_FEATURE(AVX512_VP2INTERSECT)
+    ASMJIT_X86_FEATURE(AVX512_VPOPCNTDQ)
+    ASMJIT_X86_FEATURE(AVX_VNNI)
+    ASMJIT_X86_FEATURE(BMI)
+    ASMJIT_X86_FEATURE(BMI2)
+    ASMJIT_X86_FEATURE(CET_IBT)
+    ASMJIT_X86_FEATURE(CET_SS)
+    ASMJIT_X86_FEATURE(CLDEMOTE)
+    ASMJIT_X86_FEATURE(CLFLUSH)
+    ASMJIT_X86_FEATURE(CLFLUSHOPT)
+    ASMJIT_X86_FEATURE(CLWB)
+    ASMJIT_X86_FEATURE(CLZERO)
+    ASMJIT_X86_FEATURE(CMOV)
+    ASMJIT_X86_FEATURE(CMPXCHG16B)
+    ASMJIT_X86_FEATURE(CMPXCHG8B)
+    ASMJIT_X86_FEATURE(ENCLV)
+    ASMJIT_X86_FEATURE(ENQCMD)
+    ASMJIT_X86_FEATURE(ERMS)
+    ASMJIT_X86_FEATURE(F16C)
+    ASMJIT_X86_FEATURE(FMA)
+    ASMJIT_X86_FEATURE(FMA4)
+    ASMJIT_X86_FEATURE(FPU)
+    ASMJIT_X86_FEATURE(FSGSBASE)
+    ASMJIT_X86_FEATURE(FXSR)
+    ASMJIT_X86_FEATURE(FXSROPT)
+    ASMJIT_X86_FEATURE(GEODE)
+    ASMJIT_X86_FEATURE(GFNI)
+    ASMJIT_X86_FEATURE(HLE)
+    ASMJIT_X86_FEATURE(HRESET)
+    ASMJIT_X86_FEATURE(I486)
+    ASMJIT_X86_FEATURE(LAHFSAHF)
+    ASMJIT_X86_FEATURE(LWP)
+    ASMJIT_X86_FEATURE(LZCNT)
+    ASMJIT_X86_FEATURE(MCOMMIT)
+    ASMJIT_X86_FEATURE(MMX)
+    ASMJIT_X86_FEATURE(MMX2)
+    ASMJIT_X86_FEATURE(MONITOR)
+    ASMJIT_X86_FEATURE(MONITORX)
+    ASMJIT_X86_FEATURE(MOVBE)
+    ASMJIT_X86_FEATURE(MOVDIR64B)
+    ASMJIT_X86_FEATURE(MOVDIRI)
+    ASMJIT_X86_FEATURE(MPX)
+    ASMJIT_X86_FEATURE(MSR)
+    ASMJIT_X86_FEATURE(MSSE)
+    ASMJIT_X86_FEATURE(OSXSAVE)
+    ASMJIT_X86_FEATURE(OSPKE)
+    ASMJIT_X86_FEATURE(PCLMULQDQ)
+    ASMJIT_X86_FEATURE(PCONFIG)
+    ASMJIT_X86_FEATURE(POPCNT)
+    ASMJIT_X86_FEATURE(PREFETCHW)
+    ASMJIT_X86_FEATURE(PREFETCHWT1)
+    ASMJIT_X86_FEATURE(PTWRITE)
+    ASMJIT_X86_FEATURE(RDPID)
+    ASMJIT_X86_FEATURE(RDPRU)
+    ASMJIT_X86_FEATURE(RDRAND)
+    ASMJIT_X86_FEATURE(RDSEED)
+    ASMJIT_X86_FEATURE(RDTSC)
+    ASMJIT_X86_FEATURE(RDTSCP)
+    ASMJIT_X86_FEATURE(RTM)
+    ASMJIT_X86_FEATURE(SERIALIZE)
+    ASMJIT_X86_FEATURE(SHA)
+    ASMJIT_X86_FEATURE(SKINIT)
+    ASMJIT_X86_FEATURE(SMAP)
+    ASMJIT_X86_FEATURE(SMEP)
+    ASMJIT_X86_FEATURE(SMX)
+    ASMJIT_X86_FEATURE(SNP)
+    ASMJIT_X86_FEATURE(SSE)
+    ASMJIT_X86_FEATURE(SSE2)
+    ASMJIT_X86_FEATURE(SSE3)
+    ASMJIT_X86_FEATURE(SSE4_1)
+    ASMJIT_X86_FEATURE(SSE4_2)
+    ASMJIT_X86_FEATURE(SSE4A)
+    ASMJIT_X86_FEATURE(SSSE3)
+    ASMJIT_X86_FEATURE(SVM)
+    ASMJIT_X86_FEATURE(TBM)
+    ASMJIT_X86_FEATURE(TSX)
+    ASMJIT_X86_FEATURE(TSXLDTRK)
+    ASMJIT_X86_FEATURE(UINTR)
+    ASMJIT_X86_FEATURE(VAES)
+    ASMJIT_X86_FEATURE(VMX)
+    ASMJIT_X86_FEATURE(VPCLMULQDQ)
+    ASMJIT_X86_FEATURE(WAITPKG)
+    ASMJIT_X86_FEATURE(WBNOINVD)
+    ASMJIT_X86_FEATURE(XOP)
+    ASMJIT_X86_FEATURE(XSAVE)
+    ASMJIT_X86_FEATURE(XSAVEC)
+    ASMJIT_X86_FEATURE(XSAVEOPT)
+    ASMJIT_X86_FEATURE(XSAVES)
 
-  //! Get all features as `BitWord` array.
-  ASMJIT_INLINE BitWord* getBits() noexcept { return _bits; }
-  //! Get all features as `BitWord` array (const).
-  ASMJIT_INLINE const BitWord* getBits() const noexcept { return _bits; }
+    #undef ASMJIT_X86_FEATURE
+  };
 
-  //! Get if feature `feature` is present.
-  ASMJIT_INLINE bool has(uint32_t feature) const noexcept {
-    ASMJIT_ASSERT(feature < kMaxFeatures);
+  //! ARM specific features data.
+  struct ARM : public Data {
+    //! ARM CPU feature identifiers.
+    enum Id : uint8_t {
+      // @EnumValuesBegin{"enum": "CpuFeatures::ARM"}@
+      kNone = 0,                 //!< No feature (never set, used internally).
+      kTHUMB,                    //!< THUMB v1 ISA.
+      kTHUMBv2,                  //!< THUMB v2 ISA.
 
-    uint32_t idx = feature / kBitWordSize;
-    uint32_t bit = feature % kBitWordSize;
+      kARMv6,                    //!< ARMv6 ISA.
+      kARMv7,                    //!< ARMv7 ISA.
+      kARMv8a,                   //!< ARMv8-A ISA.
+      kARMv8_1a,                 //!< ARMv8.1-A ISA.
+      kARMv8_2a,                 //!< ARMv8.2-A ISA.
+      kARMv8_3a,                 //!< ARMv8.3-A ISA.
+      kARMv8_4a,                 //!< ARMv8.4-A ISA.
+      kARMv8_5a,                 //!< ARMv8.5-A ISA.
+      kARMv8_6a,                 //!< ARMv8.6-A ISA.
+      kARMv8_7a,                 //!< ARMv8.7-A ISA.
 
-    return static_cast<bool>((_bits[idx] >> bit) & 0x1);
-  }
+      kVFPv2,                    //!< CPU has VFPv2 instruction set.
+      kVFPv3,                    //!< CPU has VFPv3 instruction set.
+      kVFPv4,                    //!< CPU has VFPv4 instruction set.
+      kVFP_D32,                  //!< CPU has 32 VFP-D (64-bit) registers.
 
-  //! Get if all features as defined by `other` are  present.
-  ASMJIT_INLINE bool hasAll(const CpuFeatures& other) const noexcept {
-    for (uint32_t i = 0; i < kNumBitWords; i++)
-      if ((_bits[i] & other._bits[i]) != other._bits[i])
-        return false;
-    return true;
-  }
+      kAES,                      //!< CPU has AES (AArch64 only).
+      kALTNZCV,                  //!< CPU has ALTNZCV (AArch64 only).
+      kASIMD,                    //!< CPU has Advanced SIMD (NEON on ARM/THUMB).
+      kBF16,                     //!< CPU has BF16 (AArch64 only).
+      kBTI,                      //!< CPU has BTI (branch target identification).
+      kCPUID,                    //!< CPU has accessible CPUID register (ID_AA64ZFR0_EL1).
+      kCRC32,                    //!< CPU has CRC32 .
+      kDGH,                      //!< CPU has DGH (AArch64 only).
+      kDIT,                      //!< CPU has data independent timing instructions (DIT).
+      kDOTPROD,                  //!< CPU has DOTPROD (SDOT/UDOT).
+      kEDSP,                     //!< CPU has EDSP (ARM/THUMB only).
+      kFCMA,                     //!< CPU has FCMA (FCADD/FCMLA).
+      kFJCVTZS,                  //!< CPU has FJCVTZS (AArch64 only).
+      kFLAGM,                    //!< CPU has FLAGM (AArch64 only).
+      kFP16CONV,                 //!< CPU has FP16 (half-float) conversion.
+      kFP16FML,                  //!< CPU has FMLAL{2}/FMLSL{2}
+      kFP16FULL,                 //!< CPU has full support for FP16.
+      kFRINT,                    //!< CPU has FRINT[32|64][X|Z] (AArch64 only).
+      kI8MM,                     //!< CPU has I8MM (AArch64 only).
+      kIDIVA,                    //!< CPU has hardware SDIV and UDIV (ARM mode).
+      kIDIVT,                    //!< CPU has hardware SDIV and UDIV (THUMB mode).
+      kLSE,                      //!< CPU has large system extensions (LSE) (AArch64 only).
+      kMTE,                      //!< CPU has MTE (AArch64 only).
+      kRCPC_IMMO,                //!< CPU has RCPC_IMMO (AArch64 only).
+      kRDM,                      //!< CPU has RDM (AArch64 only).
+      kPMU,                      //!< CPU has PMU (AArch64 only).
+      kPMULL,                    //!< CPU has PMULL (AArch64 only).
+      kRNG,                      //!< CPU has random number generation (RNG).
+      kSB,                       //!< CPU has speculative barrier SB (AArch64 only).
+      kSHA1,                     //!< CPU has SHA1.
+      kSHA2,                     //!< CPU has SHA2.
+      kSHA3,                     //!< CPU has SHA3.
+      kSHA512,                   //!< CPU has SHA512.
+      kSM3,                      //!< CPU has SM3.
+      kSM4,                      //!< CPU has SM4.
+      kSSBS,                     //!< CPU has SSBS.
+      kSVE,                      //!< CPU has SVE (AArch64 only).
+      kSVE_BF16,                 //!< CPU has SVE-BF16 (AArch64 only).
+      kSVE_F32MM,                //!< CPU has SVE-F32MM (AArch64 only).
+      kSVE_F64MM,                //!< CPU has SVE-F64MM (AArch64 only).
+      kSVE_I8MM,                 //!< CPU has SVE-I8MM (AArch64 only).
+      kSVE_PMULL,                //!< CPU has SVE-PMULL (AArch64 only).
+      kSVE2,                     //!< CPU has SVE2 (AArch64 only).
+      kSVE2_AES,                 //!< CPU has SVE2-AES (AArch64 only).
+      kSVE2_BITPERM,             //!< CPU has SVE2-BITPERM (AArch64 only).
+      kSVE2_SHA3,                //!< CPU has SVE2-SHA3 (AArch64 only).
+      kSVE2_SM4,                 //!< CPU has SVE2-SM4 (AArch64 only).
+      kTME,                      //!< CPU has transactional memory extensions (TME).
+      // @EnumValuesEnd@
 
-  //! Add a CPU `feature`.
-  ASMJIT_INLINE CpuFeatures& add(uint32_t feature) noexcept {
-    ASMJIT_ASSERT(feature < kMaxFeatures);
+      kMaxValue = kTME
+    };
 
-    uint32_t idx = feature / kBitWordSize;
-    uint32_t bit = feature % kBitWordSize;
+    #define ASMJIT_ARM_FEATURE(FEATURE) \
+      inline bool has##FEATURE() const noexcept { return has(ARM::k##FEATURE); }
 
-    _bits[idx] |= static_cast<BitWord>(1) << bit;
-    return *this;
-  }
+    ASMJIT_ARM_FEATURE(THUMB)
+    ASMJIT_ARM_FEATURE(THUMBv2)
 
-  //! Remove a CPU `feature`.
-  ASMJIT_INLINE CpuFeatures& remove(uint32_t feature) noexcept {
-    ASMJIT_ASSERT(feature < kMaxFeatures);
+    ASMJIT_ARM_FEATURE(ARMv6)
+    ASMJIT_ARM_FEATURE(ARMv7)
+    ASMJIT_ARM_FEATURE(ARMv8a)
+    ASMJIT_ARM_FEATURE(ARMv8_1a)
+    ASMJIT_ARM_FEATURE(ARMv8_2a)
+    ASMJIT_ARM_FEATURE(ARMv8_3a)
+    ASMJIT_ARM_FEATURE(ARMv8_4a)
+    ASMJIT_ARM_FEATURE(ARMv8_5a)
+    ASMJIT_ARM_FEATURE(ARMv8_6a)
+    ASMJIT_ARM_FEATURE(ARMv8_7a)
 
-    uint32_t idx = feature / kBitWordSize;
-    uint32_t bit = feature % kBitWordSize;
+    ASMJIT_ARM_FEATURE(VFPv2)
+    ASMJIT_ARM_FEATURE(VFPv3)
+    ASMJIT_ARM_FEATURE(VFPv4)
+    ASMJIT_ARM_FEATURE(VFP_D32)
 
-    _bits[idx] &= ~(static_cast<BitWord>(1) << bit);
-    return *this;
-  }
+    ASMJIT_ARM_FEATURE(AES)
+    ASMJIT_ARM_FEATURE(ALTNZCV)
+    ASMJIT_ARM_FEATURE(ASIMD)
+    ASMJIT_ARM_FEATURE(BF16)
+    ASMJIT_ARM_FEATURE(BTI)
+    ASMJIT_ARM_FEATURE(CPUID)
+    ASMJIT_ARM_FEATURE(CRC32)
+    ASMJIT_ARM_FEATURE(DGH)
+    ASMJIT_ARM_FEATURE(DIT)
+    ASMJIT_ARM_FEATURE(DOTPROD)
+    ASMJIT_ARM_FEATURE(EDSP)
+    ASMJIT_ARM_FEATURE(FCMA)
+    ASMJIT_ARM_FEATURE(FLAGM)
+    ASMJIT_ARM_FEATURE(FP16CONV)
+    ASMJIT_ARM_FEATURE(FP16FML)
+    ASMJIT_ARM_FEATURE(FP16FULL)
+    ASMJIT_ARM_FEATURE(FRINT)
+    ASMJIT_ARM_FEATURE(IDIVA)
+    ASMJIT_ARM_FEATURE(IDIVT)
+    ASMJIT_ARM_FEATURE(LSE)
+    ASMJIT_ARM_FEATURE(MTE)
+    ASMJIT_ARM_FEATURE(FJCVTZS)
+    ASMJIT_ARM_FEATURE(I8MM)
+    ASMJIT_ARM_FEATURE(RCPC_IMMO)
+    ASMJIT_ARM_FEATURE(RDM)
+    ASMJIT_ARM_FEATURE(PMU)
+    ASMJIT_ARM_FEATURE(PMULL)
+    ASMJIT_ARM_FEATURE(RNG)
+    ASMJIT_ARM_FEATURE(SB)
+    ASMJIT_ARM_FEATURE(SHA1)
+    ASMJIT_ARM_FEATURE(SHA2)
+    ASMJIT_ARM_FEATURE(SHA3)
+    ASMJIT_ARM_FEATURE(SHA512)
+    ASMJIT_ARM_FEATURE(SM3)
+    ASMJIT_ARM_FEATURE(SM4)
+    ASMJIT_ARM_FEATURE(SSBS)
+    ASMJIT_ARM_FEATURE(SVE)
+    ASMJIT_ARM_FEATURE(SVE_BF16)
+    ASMJIT_ARM_FEATURE(SVE_F32MM)
+    ASMJIT_ARM_FEATURE(SVE_F64MM)
+    ASMJIT_ARM_FEATURE(SVE_I8MM)
+    ASMJIT_ARM_FEATURE(SVE_PMULL)
+    ASMJIT_ARM_FEATURE(SVE2)
+    ASMJIT_ARM_FEATURE(SVE2_AES)
+    ASMJIT_ARM_FEATURE(SVE2_BITPERM)
+    ASMJIT_ARM_FEATURE(SVE2_SHA3)
+    ASMJIT_ARM_FEATURE(SVE2_SM4)
+    ASMJIT_ARM_FEATURE(TME)
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
+    #undef ASMJIT_ARM_FEATURE
+  };
 
-  BitWord _bits[kNumBitWords];
+  static_assert(uint32_t(X86::kMaxValue) < kMaxFeatures, "The number of X86 CPU features cannot exceed CpuFeatures::kMaxFeatures");
+  static_assert(uint32_t(ARM::kMaxValue) < kMaxFeatures, "The number of ARM CPU features cannot exceed CpuFeatures::kMaxFeatures");
+
+  //! \}
+
+  //! \name Members
+  //! \{
+
+  Data _data {};
+
+  //! \}
+
+  //! \name Construction & Destruction
+  //! \{
+
+  inline CpuFeatures() noexcept {}
+  inline CpuFeatures(const CpuFeatures& other) noexcept = default;
+  inline explicit CpuFeatures(Globals::NoInit_) noexcept {}
+
+  //! \}
+
+  //! \name Overloaded Operators
+  //! \{
+
+  inline CpuFeatures& operator=(const CpuFeatures& other) noexcept = default;
+
+  inline bool operator==(const CpuFeatures& other) noexcept { return  eq(other); }
+  inline bool operator!=(const CpuFeatures& other) noexcept { return !eq(other); }
+
+  //! \}
+
+  //! \name Accessors
+  //! \{
+
+  //! Returns true if there are no features set.
+  inline bool empty() const noexcept { return _data.empty(); }
+
+  //! Casts this base class into a derived type `T`.
+  template<typename T = Data>
+  inline T& data() noexcept { return static_cast<T&>(_data); }
+
+  //! Casts this base class into a derived type `T` (const).
+  template<typename T = Data>
+  inline const T& data() const noexcept { return static_cast<const T&>(_data); }
+
+  //! Returns CpuFeatures::Data as \ref CpuFeatures::X86.
+  inline X86& x86() noexcept { return data<X86>(); }
+  //! Returns CpuFeatures::Data as \ref CpuFeatures::X86 (const).
+  inline const X86& x86() const noexcept { return data<X86>(); }
+
+  //! Returns CpuFeatures::Data as \ref CpuFeatures::ARM.
+  inline ARM& arm() noexcept { return data<ARM>(); }
+  //! Returns CpuFeatures::Data as \ref CpuFeatures::ARM (const).
+  inline const ARM& arm() const noexcept { return data<ARM>(); }
+
+  //! Returns all features as array of bitwords (see \ref Support::BitWord).
+  inline BitWord* bits() noexcept { return _data.bits(); }
+  //! Returns all features as array of bitwords (const).
+  inline const BitWord* bits() const noexcept { return _data.bits(); }
+  //! Returns the number of BitWords returned by \ref bits().
+  inline size_t bitWordCount() const noexcept { return _data.bitWordCount(); }
+
+  //! Returns \ref Support::BitVectorIterator, that can be used to iterate over all features efficiently.
+  inline Iterator iterator() const noexcept { return _data.iterator(); }
+
+  //! Tests whether the feature `featureId` is present.
+  template<typename FeatureId>
+  inline bool has(const FeatureId& featureId) const noexcept { return _data.has(featureId); }
+
+  //! Tests whether all features as defined by `other` are present.
+  inline bool hasAll(const CpuFeatures& other) const noexcept { return _data.hasAll(other._data); }
+
+  //! \}
+
+  //! \name Manipulation
+  //! \{
+
+  inline void reset() noexcept { _data.reset(); }
+
+  //! Adds the given CPU `featureId` to the list of features.
+  template<typename... Args>
+  inline void add(Args&&... args) noexcept { return _data.add(std::forward<Args>(args)...); }
+
+  //! Adds the given CPU `featureId` to the list of features if `condition` is true.
+  template<typename... Args>
+  inline void addIf(bool condition, Args&&... args) noexcept { return _data.addIf(condition, std::forward<Args>(args)...); }
+
+  //! Removes the given CPU `featureId` from the list of features.
+  template<typename... Args>
+  inline void remove(Args&&... args) noexcept { return _data.remove(std::forward<Args>(args)...); }
+
+  //! Tests whether this CPU features matches `other`.
+  inline bool eq(const CpuFeatures& other) const noexcept { return _data.eq(other._data); }
+
+  //! \}
 };
-
-// ============================================================================
-// [asmjit::CpuInfo]
-// ============================================================================
 
 //! CPU information.
 class CpuInfo {
 public:
-  //! CPU vendor ID.
-  ASMJIT_ENUM(Vendor) {
-    kVendorNone  = 0,                    //!< Generic or unknown.
-    kVendorIntel = 1,                    //!< Intel vendor.
-    kVendorAMD   = 2,                    //!< AMD vendor.
-    kVendorVIA   = 3                     //!< VIA vendor.
-  };
+  //! \name Members
+  //! \{
 
-  //! ARM/ARM64 CPU features.
-  ASMJIT_ENUM(ArmFeatures) {
-    kArmFeatureV6 = 1,                   //!< ARMv6 instruction set.
-    kArmFeatureV7,                       //!< ARMv7 instruction set.
-    kArmFeatureV8,                       //!< ARMv8 instruction set.
-    kArmFeatureTHUMB,                    //!< CPU provides THUMB v1 instruction set (THUMB mode).
-    kArmFeatureTHUMB2,                   //!< CPU provides THUMB v2 instruction set (THUMB mode).
-    kArmFeatureVFPv2,                    //!< CPU provides VFPv2 instruction set.
-    kArmFeatureVFPv3,                    //!< CPU provides VFPv3 instruction set.
-    kArmFeatureVFPv4,                    //!< CPU provides VFPv4 instruction set.
-    kArmFeatureVFP_D32,                  //!< CPU provides 32 VFP-D (64-bit) registers.
-    kArmFeatureEDSP,                     //!< CPU provides EDSP extensions.
-    kArmFeatureASIMD,                    //!< CPU provides 'Advanced SIMD'.
-    kArmFeatureIDIVA,                    //!< CPU provides hardware SDIV and UDIV (ARM mode).
-    kArmFeatureIDIVT,                    //!< CPU provides hardware SDIV and UDIV (THUMB mode).
-    kArmFeatureAES,                      //!< CPU provides AES instructions (ARM64 only).
-    kArmFeatureCRC32,                    //!< CPU provides CRC32 instructions.
-    kArmFeaturePMULL,                    //!< CPU provides PMULL instructions (ARM64 only).
-    kArmFeatureSHA1,                     //!< CPU provides SHA1 instructions.
-    kArmFeatureSHA256,                   //!< CPU provides SHA256 instructions.
-    kArmFeatureAtomics64,                //!< CPU provides 64-bit load/store atomics (ARM64 only).
+  //! Architecture.
+  Arch _arch;
+  //! Sub-architecture.
+  SubArch _subArch;
+  //! True if the CPU was detected, false if the detection failed or it's not available.
+  bool _wasDetected;
+  //! Reserved for future use.
+  uint8_t _reserved;
+  //! CPU family ID.
+  uint32_t _familyId;
+  //! CPU model ID.
+  uint32_t _modelId;
+  //! CPU brand ID.
+  uint32_t _brandId;
+  //! CPU stepping.
+  uint32_t _stepping;
+  //! Processor type.
+  uint32_t _processorType;
+  //! Maximum number of addressable IDs for logical processors.
+  uint32_t _maxLogicalProcessors;
+  //! Cache line size (in bytes).
+  uint32_t _cacheLineSize;
+  //! Number of hardware threads.
+  uint32_t _hwThreadCount;
 
-    kArmFeaturesCount                    //!< Count of ARM/ARM64 CPU features.
-  };
+  //! CPU vendor string.
+  FixedString<16> _vendor;
+  //! CPU brand string.
+  FixedString<64> _brand;
+  //! CPU features.
+  CpuFeatures _features;
 
-  //! X86/X64 CPU features.
-  ASMJIT_ENUM(X86Features) {
-    kX86FeatureI486 = 1,                 //!< CPU is at least I486.
-    kX86FeatureNX,                       //!< CPU has Not-Execute-Bit.
-    kX86FeatureMT,                       //!< CPU has multi-threading.
-    kX86FeatureALTMOVCR8,                //!< CPU supports `LOCK MOV CR8` (AMD CPUs).
-    kX86FeatureCMOV,                     //!< CPU has CMOV.
-    kX86FeatureCMPXCHG8B,                //!< CPU has CMPXCHG8B.
-    kX86FeatureCMPXCHG16B,               //!< CPU has CMPXCHG16B (x64).
-    kX86FeatureMSR,                      //!< CPU has RDMSR/WRMSR.
-    kX86FeatureRDTSC,                    //!< CPU has RDTSC.
-    kX86FeatureRDTSCP,                   //!< CPU has RDTSCP.
-    kX86FeatureCLFLUSH,                  //!< CPU has CLFUSH.
-    kX86FeatureCLFLUSHOPT,               //!< CPU has CLFUSHOPT.
-    kX86FeatureCLWB,                     //!< CPU has CLWB.
-    kX86FeatureCLZERO,                   //!< CPU has CLZERO.
-    kX86FeaturePCOMMIT,                  //!< CPU has PCOMMIT.
-    kX86FeaturePREFETCHW,                //!< CPU has PREFETCHW.
-    kX86FeaturePREFETCHWT1,              //!< CPU has PREFETCHWT1.
-    kX86FeatureLAHFSAHF,                 //!< CPU has LAHF/SAHF.
-    kX86FeatureFXSR,                     //!< CPU has FXSAVE/FXRSTOR.
-    kX86FeatureFXSROPT,                  //!< CPU has FXSAVE/FXRSTOR (optimized).
-    kX86FeatureMMX,                      //!< CPU has MMX.
-    kX86FeatureMMX2,                     //!< CPU has extended MMX.
-    kX86Feature3DNOW,                    //!< CPU has 3DNOW.
-    kX86Feature3DNOW2,                   //!< CPU has 3DNOW2 (enhanced).
-    kX86FeatureGEODE,                    //!< CPU has GEODE extensions (few additions to 3DNOW).
-    kX86FeatureSSE,                      //!< CPU has SSE.
-    kX86FeatureSSE2,                     //!< CPU has SSE2.
-    kX86FeatureSSE3,                     //!< CPU has SSE3.
-    kX86FeatureSSSE3,                    //!< CPU has SSSE3.
-    kX86FeatureSSE4A,                    //!< CPU has SSE4.A.
-    kX86FeatureSSE4_1,                   //!< CPU has SSE4.1.
-    kX86FeatureSSE4_2,                   //!< CPU has SSE4.2.
-    kX86FeatureMSSE,                     //!< CPU has Misaligned SSE (MSSE).
-    kX86FeatureMONITOR,                  //!< CPU has MONITOR and MWAIT.
-    kX86FeatureMOVBE,                    //!< CPU has MOVBE.
-    kX86FeaturePOPCNT,                   //!< CPU has POPCNT.
-    kX86FeatureLZCNT,                    //!< CPU has LZCNT.
-    kX86FeatureAESNI,                    //!< CPU has AESNI.
-    kX86FeaturePCLMULQDQ,                //!< CPU has PCLMULQDQ.
-    kX86FeatureRDRAND,                   //!< CPU has RDRAND.
-    kX86FeatureRDSEED,                   //!< CPU has RDSEED.
-    kX86FeatureSMAP,                     //!< CPU has SMAP (supervisor-mode access prevention).
-    kX86FeatureSMEP,                     //!< CPU has SMEP (supervisor-mode execution prevention).
-    kX86FeatureSHA,                      //!< CPU has SHA-1 and SHA-256.
-    kX86FeatureXSAVE,                    //!< CPU has XSAVE support (XSAVE/XRSTOR, XSETBV/XGETBV, and XCR).
-    kX86FeatureXSAVEC,                   //!< CPU has XSAVEC support (XSAVEC).
-    kX86FeatureXSAVES,                   //!< CPU has XSAVES support (XSAVES/XRSTORS).
-    kX86FeatureXSAVEOPT,                 //!< CPU has XSAVEOPT support (XSAVEOPT/XSAVEOPT64).
-    kX86FeatureOSXSAVE,                  //!< CPU has XSAVE enabled by OS.
-    kX86FeatureAVX,                      //!< CPU has AVX.
-    kX86FeatureAVX2,                     //!< CPU has AVX2.
-    kX86FeatureF16C,                     //!< CPU has F16C.
-    kX86FeatureFMA,                      //!< CPU has FMA.
-    kX86FeatureFMA4,                     //!< CPU has FMA4.
-    kX86FeatureXOP,                      //!< CPU has XOP.
-    kX86FeatureBMI,                      //!< CPU has BMI (bit manipulation instructions #1).
-    kX86FeatureBMI2,                     //!< CPU has BMI2 (bit manipulation instructions #2).
-    kX86FeatureADX,                      //!< CPU has ADX (multi-precision add-carry instruction extensions).
-    kX86FeatureTBM,                      //!< CPU has TBM (trailing bit manipulation).
-    kX86FeatureMPX,                      //!< CPU has MPX (memory protection extensions).
-    kX86FeatureHLE,                      //!< CPU has HLE.
-    kX86FeatureRTM,                      //!< CPU has RTM.
-    kX86FeatureTSX,                      //!< CPU has TSX.
-    kX86FeatureERMS,                     //!< CPU has ERMS (enhanced REP MOVSB/STOSB).
-    kX86FeatureFSGSBASE,                 //!< CPU has FSGSBASE.
-    kX86FeatureAVX512_F,                 //!< CPU has AVX512-F (foundation).
-    kX86FeatureAVX512_CDI,               //!< CPU has AVX512-CDI (conflict detection).
-    kX86FeatureAVX512_PFI,               //!< CPU has AVX512-PFI (prefetch instructions).
-    kX86FeatureAVX512_ERI,               //!< CPU has AVX512-ERI (exponential and reciprocal).
-    kX86FeatureAVX512_DQ,                //!< CPU has AVX512-DQ (DWORD/QWORD).
-    kX86FeatureAVX512_BW,                //!< CPU has AVX512-BW (BYTE/WORD).
-    kX86FeatureAVX512_VL,                //!< CPU has AVX512-VL (vector length extensions).
-    kX86FeatureAVX512_IFMA,              //!< CPU has AVX512-IFMA (integer fused-multiply-add using 52-bit precision).
-    kX86FeatureAVX512_VBMI,              //!< CPU has AVX512-VBMI (vector byte manipulation).
-    kX86FeatureAVX512_VPOPCNTDQ,         //!< CPU has AVX512-VPOPCNTDQ (VPOPCNT[D|Q] instructions).
-    kX86FeatureAVX512_4VNNIW,            //!< CPU has AVX512-VNNIW (vector NN instructions word variable precision).
-    kX86FeatureAVX512_4FMAPS,            //!< CPU has AVX512-FMAPS (FMA packed single).
+  //! \}
 
-    kX86FeaturesCount                    //!< Count of X86/X64 CPU features.
-  };
+  //! \name Construction & Destruction
+  //! \{
 
-  // --------------------------------------------------------------------------
-  // [ArmInfo]
-  // --------------------------------------------------------------------------
+  inline CpuInfo() noexcept { reset(); }
+  inline CpuInfo(const CpuInfo& other) noexcept = default;
 
-  struct ArmData {
-  };
+  inline explicit CpuInfo(Globals::NoInit_) noexcept
+    : _features(Globals::NoInit) {};
 
-  // --------------------------------------------------------------------------
-  // [X86Info]
-  // --------------------------------------------------------------------------
+  //! Returns the host CPU information.
+  ASMJIT_API static const CpuInfo& host() noexcept;
 
-  struct X86Data {
-    uint32_t _processorType;             //!< Processor type.
-    uint32_t _brandIndex;                //!< Brand index.
-    uint32_t _flushCacheLineSize;        //!< Flush cache line size (in bytes).
-    uint32_t _maxLogicalProcessors;      //!< Maximum number of addressable IDs for logical processors.
-  };
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE CpuInfo() noexcept { reset(); }
-  ASMJIT_INLINE CpuInfo(const CpuInfo& other) noexcept = default;
-
-  // --------------------------------------------------------------------------
-  // [Init / Reset]
-  // --------------------------------------------------------------------------
-
-  //! Initialize CpuInfo to the given architecture, see \ArchInfo.
-  ASMJIT_INLINE void initArch(uint32_t archType, uint32_t archMode = 0) noexcept {
-    _archInfo.init(archType, archMode);
+  //! Initializes CpuInfo architecture and sub-architecture members to `arch` and `subArch`, respectively.
+  inline void initArch(Arch arch, SubArch subArch = SubArch::kUnknown) noexcept {
+    _arch = arch;
+    _subArch = subArch;
   }
 
-  ASMJIT_INLINE void init(const CpuInfo& other) noexcept { ::memcpy(this, &other, sizeof(*this)); }
-  ASMJIT_INLINE void reset() noexcept { ::memset(this, 0, sizeof(*this)); }
+  inline void reset() noexcept { memset(this, 0, sizeof(*this)); }
 
-  // --------------------------------------------------------------------------
-  // [Detect]
-  // --------------------------------------------------------------------------
+  //! \}
 
-  ASMJIT_API void detect() noexcept;
+  //! \name Overloaded Operators
+  //! \{
 
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
+  inline CpuInfo& operator=(const CpuInfo& other) noexcept = default;
 
-  //! Get generic architecture information.
-  ASMJIT_INLINE const ArchInfo& getArchInfo() const noexcept { return _archInfo; }
-  //! Get CPU architecture type, see \ArchInfo::Type.
-  ASMJIT_INLINE uint32_t getArchType() const noexcept { return _archInfo.getType(); }
-  //! Get CPU architecture sub-type, see \ArchInfo::SubType.
-  ASMJIT_INLINE uint32_t getArchSubType() const noexcept { return _archInfo.getSubType(); }
+  //! \}
 
-    //! Get CPU vendor ID.
-  ASMJIT_INLINE uint32_t getVendorId() const noexcept { return _vendorId; }
-  //! Get CPU family ID.
-  ASMJIT_INLINE uint32_t getFamily() const noexcept { return _family; }
-  //! Get CPU model ID.
-  ASMJIT_INLINE uint32_t getModel() const noexcept { return _model; }
-  //! Get CPU stepping.
-  ASMJIT_INLINE uint32_t getStepping() const noexcept { return _stepping; }
+  //! \name Accessors
+  //! \{
 
-  //! Get number of hardware threads available.
-  ASMJIT_INLINE uint32_t getHwThreadsCount() const noexcept {
-    return _hwThreadsCount;
-  }
+  //! Returns the CPU architecture this information relates to.
+  inline Arch arch() const noexcept { return _arch; }
 
-  //! Get all CPU features.
-  ASMJIT_INLINE const CpuFeatures& getFeatures() const noexcept { return _features; }
-  //! Get whether CPU has a `feature`.
-  ASMJIT_INLINE bool hasFeature(uint32_t feature) const noexcept { return _features.has(feature); }
-  //! Add a CPU `feature`.
-  ASMJIT_INLINE CpuInfo& addFeature(uint32_t feature) noexcept { _features.add(feature); return *this; }
+  //! Returns the CPU sub-architecture this information relates to.
+  inline SubArch subArch() const noexcept { return _subArch; }
 
-  //! Get CPU vendor string.
-  ASMJIT_INLINE const char* getVendorString() const noexcept { return _vendorString; }
-  //! Get CPU brand string.
-  ASMJIT_INLINE const char* getBrandString() const noexcept { return _brandString; }
+  //! Returns whether the CPU was detected successfully.
+  //!
+  //! If the returned value is false it means that AsmJit either failed to detect the CPU or it doesn't have
+  //! implementation targeting the host architecture and operating system.
+  inline bool wasDetected() const noexcept { return _wasDetected; }
 
-  // --------------------------------------------------------------------------
-  // [Accessors - ARM]
-  // --------------------------------------------------------------------------
+  //! Returns the CPU family ID.
+  //!
+  //! Family identifier matches the FamilyId read by using CPUID on X86 architecture.
+  inline uint32_t familyId() const noexcept { return _familyId; }
 
-  // --------------------------------------------------------------------------
-  // [Accessors - X86]
-  // --------------------------------------------------------------------------
+  //! Returns the CPU model ID.
+  //!
+  //! Family identifier matches the ModelId read by using CPUID on X86 architecture.
 
-  //! Get processor type.
-  ASMJIT_INLINE uint32_t getX86ProcessorType() const noexcept {
-    return _x86Data._processorType;
-  }
+  inline uint32_t modelId() const noexcept { return _modelId; }
+  //! Returns the CPU brand id.
+  //!
+  //! Family identifier matches the BrandId read by using CPUID on X86 architecture.
+  inline uint32_t brandId() const noexcept { return _brandId; }
 
-  //! Get brand index.
-  ASMJIT_INLINE uint32_t getX86BrandIndex() const noexcept {
-    return _x86Data._brandIndex;
-  }
+  //! Returns the CPU stepping.
+  //!
+  //! Family identifier matches the Stepping information read by using CPUID on X86 architecture.
+  inline uint32_t stepping() const noexcept { return _stepping; }
 
-  //! Get flush cache line size.
-  ASMJIT_INLINE uint32_t getX86FlushCacheLineSize() const noexcept {
-    return _x86Data._flushCacheLineSize;
-  }
+  //! Returns the processor type.
+  //!
+  //! Family identifier matches the ProcessorType read by using CPUID on X86 architecture.
+  inline uint32_t processorType() const noexcept { return _processorType; }
 
-  //! Get maximum logical processors count.
-  ASMJIT_INLINE uint32_t getX86MaxLogicalProcessors() const noexcept {
-    return _x86Data._maxLogicalProcessors;
-  }
+  //! Returns the maximum number of logical processors.
+  inline uint32_t maxLogicalProcessors() const noexcept { return _maxLogicalProcessors; }
 
-  // --------------------------------------------------------------------------
-  // [Statics]
-  // --------------------------------------------------------------------------
+  //! Returns the size of a cache line flush.
+  inline uint32_t cacheLineSize() const noexcept { return _cacheLineSize; }
 
-  //! Get the host CPU information.
-  ASMJIT_API static const CpuInfo& getHost() noexcept;
+  //! Returns number of hardware threads available.
+  inline uint32_t hwThreadCount() const noexcept { return _hwThreadCount; }
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
+  //! Returns a CPU vendor string.
+  inline const char* vendor() const noexcept { return _vendor.str; }
+  //! Tests whether the CPU vendor string is equal to `s`.
+  inline bool isVendor(const char* s) const noexcept { return _vendor.eq(s); }
 
-  ArchInfo _archInfo;                    //!< CPU architecture information.
-  uint32_t _vendorId;                    //!< CPU vendor id, see \ref Vendor.
-  uint32_t _family;                      //!< CPU family ID.
-  uint32_t _model;                       //!< CPU model ID.
-  uint32_t _stepping;                    //!< CPU stepping.
-  uint32_t _hwThreadsCount;              //!< Number of hardware threads.
-  CpuFeatures _features;                 //!< CPU features.
-  char _vendorString[16];                //!< CPU vendor string.
-  char _brandString[64];                 //!< CPU brand string.
+  //! Returns a CPU brand string.
+  inline const char* brand() const noexcept { return _brand.str; }
 
-  // Architecture specific data.
-  union {
-    ArmData _armData;
-    X86Data _x86Data;
-  };
+  //! Returns CPU features.
+  inline CpuFeatures& features() noexcept { return _features; }
+  //! Returns CPU features (const).
+  inline const CpuFeatures& features() const noexcept { return _features; }
+
+  //! Tests whether the CPU has the given `feature`.
+  template<typename FeatureId>
+  inline bool hasFeature(const FeatureId& featureId) const noexcept { return _features.has(featureId); }
+
+  //! Adds the given CPU `featureId` to the list of features.
+  template<typename... Args>
+  inline void addFeature(Args&&... args) noexcept { return _features.add(std::forward<Args>(args)...); }
+
+  //! Removes the given CPU `featureId` from the list of features.
+  template<typename... Args>
+  inline void removeFeature(Args&&... args) noexcept { return _features.remove(std::forward<Args>(args)...); }
+
+  //! \}
 };
 
 //! \}
 
-} // asmjit namespace
-} // namespace PLMD
+ASMJIT_END_NAMESPACE
 
-// [Api-End]
-#include "./asmjit_apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_BASE_CPUINFO_H
-#pragma GCC diagnostic pop
-#endif // __PLUMED_HAS_ASMJIT
-#endif
+#endif // ASMJIT_CORE_CPUINFO_H_INCLUDED
