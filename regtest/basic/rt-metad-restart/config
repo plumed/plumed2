@@ -1,0 +1,4 @@
+type=driver
+# continuation of a run that stopped at step 49 or 50: the driver starts at step 50
+arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz --timestep 0.002 --initial-step 50"
+extra_files="../../trajectories/diala_traj_nm.xyz"

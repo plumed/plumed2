@@ -1,0 +1,4 @@
+mpiprocs=2
+type=driver
+# same as rt-metad-diff-restart, with two MPI processes (hills files are read by the first process only)
+arg="--plumed plumed.dat --ixyz traj.xyz --timestep 0.002 --initial-step 300"

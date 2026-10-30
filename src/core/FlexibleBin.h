@@ -38,6 +38,8 @@ private:
   std::vector<double> variance;
   // this is only there
   std::vector<double> average;
+  /// number of samples accumulated (diffusion only)
+  unsigned nsamples=0;
   // minimum and maximum values
   std::vector<double> sigmamin;
   std::vector<double> sigmamax;
@@ -50,8 +52,18 @@ public:
   FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg, double const &d, std::vector<double> &sigmamin, const std::vector<double> &sigmamax);
   /// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
   void update(bool nowAddAHill);
+  /// (diffusion only) restart the running average of the CVs from their next value, keeping the variance:
+  /// used when the CVs jump, e.g. after an accepted replica exchange
+  void restartAverage();
+  /// (diffusion only) set the running average, the variance (upper triangle) and the number of samples,
+  /// e.g. to continue the statistics of a previous run
+  void setStatistics(const std::vector<double>& average, const std::vector<double>& variance, unsigned nsamples);
   void update(bool nowAddAHill, unsigned iarg);
   std::vector<double> getMatrix() const;
+  /// (diffusion only) number of CV values used so far to estimate the variance
+  unsigned getNumberOfSamples() const {
+    return nsamples;
+  }
   std::vector<double> getInverseMatrix() const;
   std::vector<double> getInverseMatrix(unsigned iarg) const;
   enum AdaptiveHillsType { none, diffusion, geometry };
