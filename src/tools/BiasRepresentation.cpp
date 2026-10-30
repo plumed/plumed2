@@ -29,6 +29,7 @@
 #include "Tools.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 
@@ -174,10 +175,10 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile)
   return Tools::make_unique<KernelFunctions>(cc,histosigma,"stretched-gaussian","DIAGONAL",h);
 }
 
-void BiasRepresentation::pushKernel( IFile *ifile ) {
+void BiasRepresentation::pushKernel( IFile *ifile, double time ) {
   double bf;
   auto kk=readKernel(ifile,bf);
-  addKernel(std::move(kk),bf);
+  addKernel(std::move(kk),bf,time);
 }
 
 std::unique_ptr<KernelFunctions> BiasRepresentation::readKernel( IFile *ifile, double & bf ) {
@@ -217,8 +218,9 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readKernel( IFile *ifile, d
   return kk;
 }
 
-void BiasRepresentation::addKernel( std::unique_ptr<KernelFunctions> kk, double bf ) {
+void BiasRepresentation::addKernel( std::unique_ptr<KernelFunctions> kk, double bf, double time ) {
   nkernels++;
+  lasttime=std::max(lasttime,time);
   if(!hasgrid) {
     // without a grid only the support of the kernels is needed (see getMinMaxBin)
     std::vector<double> ss;
@@ -242,28 +244,39 @@ void BiasRepresentation::addKernel( std::unique_ptr<KernelFunctions> kk, double 
     return;
   }
   const double f=(rescaledToBias ? biasFactorToBias(bf) : 1.0);
-  double h,a,b,r2cut;
-  std::vector<double> w;
-  if(!doInt_ && kk->getSeparableGaussian(h,a,b,r2cut,w)) {
-    addSeparableGaussian(*kk,f*h,a,b,r2cut,w);
-  } else {
-    addGenericKernel(*kk,f);
+  if(!timeaverage || time<avt0) {
+    addToGrid(*BiasGrid_,*kk,f);
+  } else if(!avhasend || time<=avt1) {
+    // time average: the hills after t0 are accumulated with weights 1 and t,
+    // and combined in getGridPtr with the weight (t1-t)/(t1-t0)
+    addToGrid(*avS1_,*kk,f);
+    addToGrid(*avS2_,*kk,f*time);
   }
 }
 
-void BiasRepresentation::addGenericKernel( const KernelFunctions & kk, double f ) {
+void BiasRepresentation::addToGrid( Grid & g, const KernelFunctions & kk, double f ) {
+  double h,a,b,r2cut;
+  std::vector<double> w;
+  if(!doInt_ && kk.getSeparableGaussian(h,a,b,r2cut,w)) {
+    addSeparableGaussian(g,kk,f*h,a,b,r2cut,w);
+  } else {
+    addGenericKernel(g,kk,f);
+  }
+}
+
+void BiasRepresentation::addGenericKernel( Grid & g, const KernelFunctions & kk, double f ) {
   std::vector<unsigned> nneighb;
   if(doInt_&&(kk.getCenter()[0]+kk.getContinuousSupport()[0] > uppI_ || kk.getCenter()[0]-kk.getContinuousSupport()[0] < lowI_ )) {
-    nneighb=BiasGrid_->getNbin();
+    nneighb=g.getNbin();
   } else {
-    nneighb=kk.getSupport(BiasGrid_->getDx());
+    nneighb=kk.getSupport(g.getDx());
   }
-  std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk.getCenter(),nneighb);
+  std::vector<Grid::index_t> neighbors=g.getNeighbors(kk.getCenter(),nneighb);
   std::vector<double> der(ndim);
   std::vector<double> xx(ndim);
   for(unsigned i=0; i<neighbors.size(); ++i) {
     Grid::index_t ineigh=neighbors[i];
-    BiasGrid_->getPoint(ineigh,xx);
+    g.getPoint(ineigh,xx);
     for(int j=0; j<ndim; ++j) {
       values[j]->set(xx[j]);
     }
@@ -277,11 +290,11 @@ void BiasRepresentation::addGenericKernel( const KernelFunctions & kk, double f 
     for(int j=0; j<ndim; ++j) {
       der[j]*=f;
     }
-    BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
+    g.addValueAndDerivatives(ineigh,bias,der);
   }
 }
 
-void BiasRepresentation::addSeparableGaussian( const KernelFunctions & kk, double h, double a, double b, double r2cut, const std::vector<double> & w ) {
+void BiasRepresentation::addSeparableGaussian( Grid & g, const KernelFunctions & kk, double h, double a, double b, double r2cut, const std::vector<double> & w ) {
   // The kernel is evaluated on the same grid points as in addGenericKernel, but the
   // Gaussian factors are computed once per dimension and then multiplied, instead of
   // computing an exponential at each point of the grid.
@@ -358,7 +371,7 @@ void BiasRepresentation::addSeparableGaussian( const KernelFunctions & kk, doubl
       for(int l=1; l<ndim; ++l) {
         dd[l]=der[l]*kderiv;
       }
-      BiasGrid_->addValueAndDerivatives(iu+idx0[k],ha*ee+hb,dd.data(),ndim);
+      g.addValueAndDerivatives(iu+idx0[k],ha*ee+hb,dd.data(),ndim);
     }
     // next combination of the indices of the other dimensions
     int l=1;
@@ -385,17 +398,39 @@ int BiasRepresentation::getNumberOfKernels() {
 
 Grid* BiasRepresentation::getGridPtr() {
   plumed_massert(hasgrid,"if you want the grid pointer then you should have defined a grid before");
-  if(mycomm.Get_size()==1) {
+  if(mycomm.Get_size()==1 && !timeaverage) {
     return BiasGrid_.get();
   }
-  // sum the grids of all the processes
+  // sum the grids of all the processes and combine the grids of the time average
   const auto n=BiasGrid_->getSize();
-  std::vector<double> val(n), der(n*ndim);
-  for(Grid::index_t i=0; i<n; i++) {
-    val[i]=BiasGrid_->getValueAndDerivatives(i,&der[i*ndim],ndim);
+  auto getData=[&](const Grid & g, std::vector<double> & val, std::vector<double> & der) {
+    val.resize(n);
+    der.resize(n*ndim);
+    for(Grid::index_t i=0; i<n; i++) {
+      val[i]=g.getValueAndDerivatives(i,&der[i*ndim],ndim);
+    }
+    if(mycomm.Get_size()>1) {
+      mycomm.Sum(val);
+      mycomm.Sum(der);
+    }
+  };
+  std::vector<double> val,der;
+  getData(*BiasGrid_,val,der);
+  if(timeaverage) {
+    std::vector<double> val1,der1,val2,der2;
+    getData(*avS1_,val1,der1);
+    getData(*avS2_,val2,der2);
+    const double t1=getTimeAverageEnd();
+    // weight (t1-t)/(t1-t0) for the hills between t0 and t1
+    const double c1=(t1>avt0 ? t1/(t1-avt0) : 1.0);
+    const double c2=(t1>avt0 ? -1.0/(t1-avt0) : 0.0);
+    for(Grid::index_t i=0; i<n; i++) {
+      val[i]+=c1*val1[i]+c2*val2[i];
+    }
+    for(Grid::index_t i=0; i<n*ndim; i++) {
+      der[i]+=c1*der1[i]+c2*der2[i];
+    }
   }
-  mycomm.Sum(val);
-  mycomm.Sum(der);
   reducedGrid_=Tools::make_unique<Grid>(*BiasGrid_);
   std::vector<double> dd(ndim);
   for(Grid::index_t i=0; i<n; i++) {
@@ -405,6 +440,30 @@ Grid* BiasRepresentation::getGridPtr() {
     reducedGrid_->setValueAndDerivatives(i,val[i],dd);
   }
   return reducedGrid_.get();
+}
+
+void BiasRepresentation::setTimeAverage(double t0, bool hasend, double t1) {
+  plumed_massert(hasgrid,"the time average requires a grid");
+  plumed_massert(nkernels==0,"the time average should be set before adding the kernels");
+  timeaverage=true;
+  avt0=t0;
+  avhasend=hasend;
+  avt1=t1;
+  plumed_massert(!hasend || t1>t0,"the end of the time average should be after its beginning");
+  avS1_=Tools::make_unique<Grid>(*BiasGrid_);
+  avS2_=Tools::make_unique<Grid>(*BiasGrid_);
+}
+
+double BiasRepresentation::getTimeAverageEnd() const {
+  // without an explicit end (or before reaching it) the average ends at the last hill
+  if(!avhasend) {
+    return lasttime;
+  }
+  return std::min(avt1,lasttime);
+}
+
+double BiasRepresentation::getLastTime() const {
+  return lasttime;
 }
 
 void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin) {
@@ -429,10 +488,15 @@ void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<dou
 
 void BiasRepresentation::clear() {
   nkernels=0;
+  lasttime=-std::numeric_limits<double>::max();
   resetSupport();
   // clear the grid
   if(hasgrid) {
     BiasGrid_->clear();
+  }
+  if(timeaverage) {
+    avS1_->clear();
+    avS2_->clear();
   }
 }
 

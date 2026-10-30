@@ -26,6 +26,7 @@
 #include "tools/BiasRepresentation.h"
 #include "tools/KernelFunctions.h"
 #include "tools/File.h"
+#include <limits>
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
 #include "tools/Grid.h"
@@ -181,7 +182,7 @@ bool FilesHandler::readBunchMerged(BiasRepresentation *br, int stride) {
       (*log)<<"  final chunk: now with "<<br->getNumberOfKernels()<<" kernels  \n";
       return false;
     }
-    br->addKernel(std::move(pending[next].kernel),pending[next].biasf);
+    br->addKernel(std::move(pending[next].kernel),pending[next].biasf,pending[next].time);
     readPending(br,next);
     int n=br->getNumberOfKernels();
     if(stride>0 && n%stride==0) {
@@ -282,17 +283,10 @@ void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals,
   //for(unsigned i=0;i<vals.size();i++){cerr<<"XXX "<<vmin[i]<<" "<<vmax[i]<<" "<<vbin[i]<<"\n";}
 }
 bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ) {
-  double dummy;
-  if(ifile->scanField("time",dummy)) {
-    //(*log)<<"   scanning one hill: "<<dummy<<" \n";
-    if(ifile->FieldExist("biasf")) {
-      ifile->scanField("biasf",dummy);
-    }
-    if(ifile->FieldExist("clock")) {
-      ifile->scanField("clock",dummy);
-    }
-    // keep this intermediate function in case you need to parse more data in the future
-    br->pushKernel(ifile);
+  double time;
+  if(ifile->scanField("time",time)) {
+    // the other fields (e.g. clock) are ignored
+    br->pushKernel(ifile,time);
     //(*log)<<"  read hill\n";
     if(br->hasSigmaInInput()) {
       ifile->allowIgnoredFields();
@@ -335,6 +329,13 @@ class FuncSumHills :
   std::string outhisto;
   std::string fmt="%14.9f";
   std::string sortby;
+/// time average of the bias
+  std::vector<double> average;
+/// boxes (min and max for each variable) defining the basins whose free energies are written
+  std::vector<std::vector<double>> basinmin,basinmax;
+  std::string outbasins;
+/// write the free energy of each basin relative to the first one
+  void writeBasins(OFile & ofile, const Grid & fes, double time, int nkernels);
   std::unique_ptr<BiasRepresentation> biasrep;
   std::unique_ptr<BiasRepresentation> historep;
 public:
@@ -369,6 +370,9 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("optional","SORT","merge the hills of multiple files in order of time or clock instead of reading the files one after the other");
+  keys.add("optional","AVERAGE","time average of the bias: from time t0 (and until t1 if given) the hills are scaled by (t1-t)/(t1-t0), where t1 is by default the time of the last hill");
+  keys.add("optional","BASINS","basins (separated by colons) given by the minimum and maximum of each variable of the output, e.g. -3,-1:1,3; their free energies relative to the first basin are written at each output");
+  keys.add("optional","OUTBASINS","output file for the free energies of the basins");
   keys.setValueDescription("scalar","a scalar");
 }
 
@@ -585,13 +589,54 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   }
 
 
-  if( proj.size() != 0 || integratehisto==true  ) {
+  parseVector("AVERAGE",average);
+  if(average.size()!=0) {
+    if(average.size()>2) {
+      error("AVERAGE needs the initial time and optionally the final time");
+    }
+    if(!integratehills) {
+      error("AVERAGE can only be used with hills files");
+    }
+    if(average.size()==2 && average[1]<=average[0]) {
+      error("the final time of AVERAGE should be larger than the initial time");
+    }
+    log<<"  time average of the bias from time "<<average[0];
+    if(average.size()==2) {
+      log<<" to time "<<average[1];
+    }
+    log<<"\n";
+  }
+  std::string basins;
+  parse("BASINS",basins);
+  if(basins.length()>0) {
+    // the basins are defined on the variables of the output
+    const unsigned nout=(proj.size()>0 ? proj.size() : getNumberOfArguments());
+    for(const auto & b : Tools::getWords(basins,":")) {
+      std::vector<std::string> words=Tools::getWords(b,",");
+      if(words.size()!=2*nout) {
+        error("each basin needs a minimum and a maximum for each of the "+std::to_string(nout)+" variables of the output: "+b);
+      }
+      std::vector<double> bmin(nout),bmax(nout);
+      for(unsigned i=0; i<nout; i++) {
+        if(!Tools::convertNoexcept(words[2*i],bmin[i]) || !Tools::convertNoexcept(words[2*i+1],bmax[i])) {
+          error("cannot read basin "+b);
+        }
+      }
+      basinmin.push_back(bmin);
+      basinmax.push_back(bmax);
+    }
+    if(basinmin.size()<2) {
+      error("BASINS needs at least two basins");
+    }
+    log<<"  free energies of "<<basinmin.size()<<" basins relative to the first one are written at each output\n";
+  }
+  if( proj.size() != 0 || integratehisto==true || basinmin.size()>0 ) {
     parse("KT",beta);
     for(unsigned i=0; i<proj.size(); i++) {
       log<<"  projection "<<i<<" : "<<proj[i]<<"\n";
     }
     // this should be only for projection or free energy from histograms
-    plumed_massert(beta>0.,"if you make a projection or a histogram correction then you need KT flag!");
+    plumed_massert(beta>0.,"if you make a projection, a histogram correction or use basins then you need KT flag!");
     beta=1./beta;
     log<<"  beta is "<<beta<<"\n";
   }
@@ -659,6 +704,12 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
       biasrep=Tools::make_unique<BiasRepresentation>(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
+      if(average.size()>0) {
+        biasrep->setTimeAverage(average[0],average.size()==2,(average.size()==2?average[1]:0.0));
+      }
+      if(negativebias && basinmin.size()>0) {
+        error("BASINS requires a free energy and cannot be used with NEGBIAS");
+      }
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -672,6 +723,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
     parse("OUTHILLS",outhills);
     parse("OUTHISTO",outhisto);
+    outbasins="basins.dat";
+    parse("OUTBASINS",outbasins);
     if(integratehills) {
       log<<"  output file for fes/bias  is :  "<<outhills<<"\n";
     }
@@ -709,6 +762,22 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     }
 
 // Stopwatch is logged when it goes out of scope
+    OFile basinsfile, histobasinsfile;
+    if(basinmin.size()>0) {
+      if(integratehills) {
+        basinsfile.link(*this);
+        basinsfile.open(outbasins);
+        basinsfile.fmtField(fmt);
+        log<<"  output file for the free energies of the basins is :  "<<outbasins<<"\n";
+      }
+      if(integratehisto) {
+        histobasinsfile.link(*this);
+        histobasinsfile.open("histo_"+outbasins);
+        histobasinsfile.fmtField(fmt);
+        log<<"  output file for the free energies of the basins from the histogram is :  histo_"<<outbasins<<"\n";
+      }
+    }
+
     Stopwatch sw(log);
 
 // Stopwatch is stopped when swh goes out of scope
@@ -774,6 +843,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           smallGrid.setOutputFmt(fmt);
           smallGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(basinsfile,smallGrid,biasrep->getLastTime(),biasrep->getNumberOfKernels());
+          }
           gridfile.close();
           if(!ibias) {
             integratehills=false;  // once you get to the final bunch just give up
@@ -805,6 +877,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(histobasinsfile,histoGrid,historep->getLastTime(),historep->getNumberOfKernels());
+          }
 
           if(!ihisto) {
             integratehisto=false;  // once you get to the final bunch just give up
@@ -836,6 +911,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           biasGrid.setOutputFmt(fmt);
           biasGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(basinsfile,biasGrid,biasrep->getLastTime(),biasrep->getNumberOfKernels());
+          }
           // rescale back prior to accumulate
           if(!ibias) {
             integratehills=false;  // once you get to the final bunch just give up
@@ -867,6 +945,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           }
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
+          if(basinmin.size()>0) {
+            writeBasins(histobasinsfile,histoGrid,historep->getLastTime(),historep->getNumberOfKernels());
+          }
 
           if(!ihisto) {
             integratehisto=false;  // once you get to the final bunch just give up
@@ -887,6 +968,55 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   // if the grid does not exist crash and say that you need some data
   // otherwise just link with it
 
+}
+
+void FuncSumHills::writeBasins(OFile & ofile, const Grid & fes, double time, int nkernels) {
+  const unsigned nb=basinmin.size();
+  const unsigned nd=fes.getDimension();
+  const auto pbc=fes.getIsPeriodic();
+  // -kT log sum_s exp(-F(s)/kT) over the points of each basin, computed with a running maximum
+  std::vector<double> fmax(nb,-std::numeric_limits<double>::max()), sum(nb,0.0);
+  std::vector<double> x(nd);
+  for(Grid::index_t i=0; i<fes.getSize(); i++) {
+    const double mbf=-beta*fes.getValue(i);
+    if(!std::isfinite(mbf)) {
+      continue;
+    }
+    fes.getPoint(i,x);
+    for(unsigned b=0; b<nb; b++) {
+      bool inside=true;
+      for(unsigned d=0; d<nd && inside; d++) {
+        const double lo=basinmin[b][d];
+        const double hi=basinmax[b][d];
+        if(pbc[d] && lo>hi) {
+          // along a periodic variable a basin can cross the boundary
+          inside=(x[d]>=lo || x[d]<=hi);
+        } else {
+          inside=(x[d]>=lo && x[d]<=hi);
+        }
+      }
+      if(!inside) {
+        continue;
+      }
+      if(mbf>fmax[b]) {
+        sum[b]=sum[b]*std::exp(fmax[b]-mbf)+1.0;
+        fmax[b]=mbf;
+      } else {
+        sum[b]+=std::exp(mbf-fmax[b]);
+      }
+    }
+  }
+  std::vector<double> f(nb);
+  for(unsigned b=0; b<nb; b++) {
+    plumed_massert(sum[b]>0.0,"basin "+std::to_string(b)+" does not contain any point of the grid");
+    f[b]=-(std::log(sum[b])+fmax[b])/beta;
+  }
+  ofile.printField("time",time);
+  ofile.printField("nkernels",nkernels);
+  for(unsigned b=1; b<nb; b++) {
+    ofile.printField("deltaf_"+std::to_string(b),f[b]-f[0]);
+  }
+  ofile.printField();
 }
 
 void FuncSumHills::calculate() {

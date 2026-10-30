@@ -160,6 +160,34 @@ plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6 --n
 just to check the hypothetical free energy calculated in single blocks of time during a simulation
 and not in a cumulative way
 
+With standard (not well-tempered) metadynamics the bias does not converge but fluctuates around the free energy.
+A better estimate is the time average of the bias after an initial transient, which you can obtain with `--average`:
+
+```plumed
+plumed sum_hills --hills PATHTOMYHILLSFILE --average 1000
+```
+
+computes the average of the bias between time 1000 (in the units of the time column of the hills file) and the time of
+the last hill. This is done by scaling the height of each hill deposited at time t after 1000 by (t1-t)/(t1-1000), where
+t1 is the final time. You can also give the final time explicitly, e.g. `--average 1000,5000`: hills deposited after
+5000 are ignored. The same average is useful for well-tempered metadynamics, where it reduces the fluctuations of the
+estimate of the free energy. Combined with `--stride`, each output is the average from the initial time up to the last hill read.
+
+To check whether the free energy has converged you can follow the free-energy difference between basins as the
+simulation goes on. With `--basins` you can define two or more basins as boxes, each given by the minimum and
+the maximum of each variable of the output, with the basins separated by colons. Along a periodic variable a
+basin can cross the boundary if its minimum is larger than its maximum. For example
+
+```plumed
+plumed sum_hills --hills PATHTOMYHILLSFILE --stride 500 --kt 2.5 --basins -pi,0,-pi,pi:0,pi,-pi,pi
+```
+
+writes, at each output, the time of the last hill read, the number of hills, and the free energy of each basin
+relative to the first one, computed as $-k_BT \log \sum_{s\in\mathrm{basin}} e^{-F(s)/k_BT}$ over the points of
+the grid, in the file `basins.dat` (the name can be set with `--outbasins`). With `--idw` the basins are defined on
+the projected variables. With `--histo` the same is done for the free energy from the histogram, in the file `histo_basins.dat`.
+A plateau of these differences is a necessary (not sufficient) indication of convergence.
+
 The output format can be controlled by using the `--fmt` option as shown below
 
 ```plumed
@@ -232,6 +260,9 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
   keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (useful to compare results) ");
   keys.add("optional","--fmt","specify the output format");
   keys.add("optional","--sort","with multiple files (e.g. one per walker), merge the hills in order of time or clock instead of reading the files one after the other");
+  keys.add("optional","--average","time average of the bias from time t0 (t0) or between times t0 and t1 (t0,t1); without t1 the average ends at the last hill read");
+  keys.add("optional","--basins","basins separated by colons, each given by the minimum and maximum of each output variable (e.g. -3,-1:1,3); the free energy of each basin relative to the first one is written at each output in the file basins.dat");
+  keys.add("optional","--outbasins","specify the output file for the free energies of the basins");
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
@@ -469,10 +500,13 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     // in this case you need a beta factor!
   }
 
+  std::string basins;
+  parse("--basins",basins);
+
   std::string kt;
   kt=std::string("1.");// assign an arbitrary value just in case that idw.size()==cvs.size()
-  if ( dohisto || idw.size()!=0  ) {
-    plumed_massert(parse("--kt",kt),"if you make a dimensionality reduction (--idw) or a histogram (--histo) then you need to define --kt ");
+  if ( dohisto || idw.size()!=0 || basins.length()>0 ) {
+    plumed_massert(parse("--kt",kt),"if you make a dimensionality reduction (--idw), a histogram (--histo) or use --basins then you need to define --kt ");
   }
 
   std::string addme;
@@ -583,8 +617,22 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     }
   }
 
-  if(idw.size()!=0 || dohisto) {
+  if(idw.size()!=0 || dohisto || basins.length()>0) {
     actioninput.push_back("KT="+kt);
+  }
+  if(basins.length()>0) {
+    actioninput.push_back("BASINS="+basins);
+    std::string outbasins;
+    if(parse("--outbasins",outbasins)) {
+      actioninput.push_back("OUTBASINS="+outbasins);
+    }
+  }
+  std::vector<std::string> average;
+  if(parseVector("--average",average)) {
+    if(average.size()!=1 && average.size()!=2) {
+      plumed_merror("--average needs the initial time and optionally the final time");
+    }
+    actioninput.push_back("AVERAGE="+average[0]+(average.size()==2 ? ","+average[1] : ""));
   }
   if(dohisto) {
     addme="HISTOFILES=";
