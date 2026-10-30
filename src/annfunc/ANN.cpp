@@ -169,7 +169,7 @@ ANN::ANN(const ActionOptions&ao):
     int num_of_rows, num_of_cols; // num of rows/cols for the coeff matrix of this connection
     num_of_rows = num_nodes[ii + 1];
     num_of_cols = num_nodes[ii];
-    assert (num_of_rows * num_of_cols == temp_coeff[ii].size()); // check whether the size matches
+    assert (num_of_rows * num_of_cols == static_cast<int>(temp_coeff[ii].size())); // check whether the size matches
     // create a 2d array to hold coefficients
     coeff[ii] = new double*[num_of_rows];
     for (int kk = 0; kk < num_of_rows; kk ++) {
