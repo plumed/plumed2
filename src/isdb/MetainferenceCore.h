@@ -40,6 +40,64 @@ class Value;
 
 namespace isdb {
 
+/// History of the estimates of the squared standard error of the mean of one datum:
+/// a circular buffer of fixed capacity that keeps track of its maximum
+class SigmaMeanHistory {
+  std::vector<double> buf_;
+  unsigned first_=0;
+  unsigned n_=0;
+  double max_=0.;
+  void recomputeMax() {
+    max_=get(0);
+    for(unsigned k=1; k<n_; ++k) {
+      if(max_<get(k)) {
+        max_=get(k);
+      }
+    }
+  }
+public:
+  explicit SigmaMeanHistory(const unsigned capacity=1): buf_(capacity>0?capacity:1) {}
+  unsigned size() const {
+    return n_;
+  }
+  /// the maximum of the stored values (the history must not be empty)
+  double max() const {
+    return max_;
+  }
+  /// the k-th value, from the oldest
+  double get(const unsigned k) const {
+    return buf_[(first_+k)%buf_.size()];
+  }
+  void clear() {
+    first_=0;
+    n_=0;
+  }
+  /// add a value, removing the oldest one if the history is full
+  void push(const double v) {
+    if(n_==buf_.size()) {
+      const double old=buf_[first_];
+      buf_[first_]=v;
+      first_=(first_+1)%buf_.size();
+      if(max_<v) {
+        max_=v;
+      } else if(old==max_) {
+        recomputeMax();
+      }
+    } else {
+      buf_[(first_+n_)%buf_.size()]=v;
+      n_++;
+      if(n_==1||max_<v) {
+        max_=v;
+      }
+    }
+  }
+  /// replace the oldest value
+  void setFirst(const double v) {
+    buf_[first_]=v;
+    recomputeMax();
+  }
+};
+
 /**
 The Metainference algorithm shared by the METAINFERENCE bias and by the
 ISDB collective variables that inherit from MetainferenceBase.
@@ -156,7 +214,7 @@ private:
   unsigned iselect;
 
   // optimize sigma mean
-  std::vector< std::vector < std::vector <double> > > sigma_mean2_last_;
+  std::vector< std::vector <SigmaMeanHistory> > sigma_mean2_last_;
   unsigned optsigmamean_stride_;
   // optimize sigma max
   unsigned N_optimized_step_;

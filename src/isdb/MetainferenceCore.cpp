@@ -492,7 +492,7 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
   // resize std::vector for sigma_mean history
   sigma_mean2_last_.resize(nsel_);
   for(unsigned i=0; i<nsel_; i++) {
-    sigma_mean2_last_[i].resize(narg);
+    sigma_mean2_last_[i].resize(narg, SigmaMeanHistory(optsigmamean_stride_));
   }
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     if(sigma_mean2_.size()==1) {
@@ -504,13 +504,13 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
     // set the initial value for the history
     for(unsigned i=0; i<nsel_; i++)
       for(unsigned j=0; j<narg; j++) {
-        sigma_mean2_last_[i][j].push_back(sigma_mean2_[j]);
+        sigma_mean2_last_[i][j].push(sigma_mean2_[j]);
       }
   } else {
     // set the initial value for the history
     for(unsigned i=0; i<nsel_; i++)
       for(unsigned j=0; j<narg; j++) {
-        sigma_mean2_last_[i][j].push_back(sigma_mean2_[0]);
+        sigma_mean2_last_[i][j].push(sigma_mean2_[0]);
       }
   }
 
@@ -584,7 +584,7 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
             std::string msg = msg_i+"_"+msg_j;
             double read_sm;
             restart_sfile.scanField("sigmaMean_"+msg,read_sm);
-            sigma_mean2_last_[i][j][0] = read_sm*read_sm;
+            sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
           }
         }
         if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
@@ -594,7 +594,7 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
           std::string msg = msg_i+"_"+msg_j;
           restart_sfile.scanField("sigmaMean_"+msg,read_sm);
           for(unsigned j=0; j<narg; j++) {
-            sigma_mean2_last_[i][j][0] = read_sm*read_sm;
+            sigma_mean2_last_[i][j].setFirst(read_sm*read_sm);
           }
         }
         if(restart_sigma_history) {
@@ -615,7 +615,7 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
             for(unsigned k=0; k<history_values.size(); ++k) {
               double value;
               Tools::convert(history_values[k],value);
-              sigma_mean2_last_[i][j].push_back(value);
+              sigma_mean2_last_[i][j].push(value);
             }
           }
         }
@@ -1585,11 +1585,6 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
   // the standard error of the mean is not defined with a single (effective) replica:
   // in that case the history is not updated
   if(do_optsigmamean_>0&&neff>1.) {
-    // remove first entry of the history std::vector
-    if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0)
-      for(unsigned i=0; i<narg; ++i) {
-        sigma_mean2_last_[iselect][i].erase(sigma_mean2_last_[iselect][i].begin());
-      }
     /* this is the current estimate of sigma mean for each argument
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
@@ -1610,12 +1605,12 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
     // add sigma_mean2 to history
     if(optsigmamean_stride_>0) {
       for(unsigned i=0; i<narg; ++i) {
-        sigma_mean2_last_[iselect][i].push_back(sigma_mean2_now[i]);
+        sigma_mean2_last_[iselect][i].push(sigma_mean2_now[i]);
       }
     } else {
       for(unsigned i=0; i<narg; ++i)
-        if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i][0]) {
-          sigma_mean2_last_[iselect][i][0] = sigma_mean2_now[i];
+        if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i].get(0)) {
+          sigma_mean2_last_[iselect][i].setFirst(sigma_mean2_now[i]);
         }
     }
   }
@@ -1624,7 +1619,7 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
         /* set to the maximum in history std::vector */
-        sigma_mean2_tmp[i] = *max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end());
+        sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i].max();
         /* the standard error of the mean */
         valueSigmaMean[i]->set(std::sqrt(sigma_mean2_tmp[i]));
         if(noise_type_==GENERIC) {
@@ -1642,7 +1637,7 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
       // find maximum for each data point
       std::vector <double> max_values;
       for(unsigned i=0; i<narg; ++i) {
-        max_values.push_back(*max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end()));
+        max_values.push_back(sigma_mean2_last_[iselect][i].max());
       }
       // find maximum across data points
       const double max_now = *max_element(max_values.begin(), max_values.end());
@@ -1675,11 +1670,11 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
   } else {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
-        sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i][0];
+        sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i].get(0);
         valueSigmaMean[i]->set(std::sqrt(sigma_mean2_tmp[i]));
       }
     } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
-      sigma_mean2_tmp[0] = sigma_mean2_last_[iselect][0][0];
+      sigma_mean2_tmp[0] = sigma_mean2_last_[iselect][0].get(0);
       valueSigmaMean[0]->set(std::sqrt(sigma_mean2_tmp[0]));
     }
   }
@@ -1799,10 +1794,10 @@ void MetainferenceCore::writeStatus() {
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        sfile_.printField("sigmaMean_"+msg,std::sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+        sfile_.printField("sigmaMean_"+msg,std::sqrt(sigma_mean2_last_[i][j].max()));
       } else {
         // find maximum for each data point
-        max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
+        max_values.push_back(sigma_mean2_last_[i][j].max());
       }
     }
     if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
@@ -1827,7 +1822,7 @@ void MetainferenceCore::writeStatus() {
           if(k>0) {
             history << ",";
           }
-          history << sigma_mean2_last_[i][j][k];
+          history << sigma_mean2_last_[i][j].get(k);
         }
         sfile_.printField("sigmaMean2History_"+msg,history.str());
       }
