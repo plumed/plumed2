@@ -56,11 +56,28 @@ class FilesHandler {
   bool parallelread;
   unsigned beingread=0;
   bool isopen=false;
+/// key used to merge the files ("time" or "clock"); empty to read the files one after the other
+  std::string sortby;
+/// a hill read from one of the files and not yet added (used when merging)
+  struct PendingHill {
+    std::unique_ptr<KernelFunctions> kernel;
+    double biasf=1.0;
+    double clock=0.0;
+    double time=0.0;
+    bool valid=false;
+  };
+  std::vector<PendingHill> pending;
+  bool mergestarted=false;
+  bool unsortedwarning=false;
+/// read the next hill of file i into pending[i] (merge mode)
+  void readPending(BiasRepresentation *br, unsigned i);
+  bool readBunchMerged(BiasRepresentation *br, int stride);
 public:
   FilesHandler(const std::vector<std::string> &filenames,
                bool parallelread,
                Action &myaction,
-               Log &mylog);
+               Log &mylog,
+               const std::string & sortby="");
   bool readBunch(BiasRepresentation *br, int stride=-1);
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
   void getMinMaxBin(const std::vector<Value*> & vals,
@@ -78,10 +95,13 @@ public:
 FilesHandler::FilesHandler(const std::vector<std::string> &fnames,
                            const bool doparallelread,
                            Action &act,
-                           Log &mylog )
+                           Log &mylog,
+                           const std::string & sort)
   :filenames(fnames),
    log(&mylog),
-   parallelread(doparallelread) {
+   parallelread(doparallelread),
+   sortby(sort) {
+  plumed_massert(sortby=="" || sortby=="time" || sortby=="clock","files can only be sorted by time or clock");
   action=&act;
   for(unsigned i=0; i<filenames.size(); i++) {
     auto ifile=Tools::make_unique<IFile>();
@@ -94,7 +114,91 @@ FilesHandler::FilesHandler(const std::vector<std::string> &fnames,
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation
 // no check are made at this level
+void FilesHandler::readPending(BiasRepresentation *br, unsigned i) {
+  IFile *ff=ifiles[i].get();
+  PendingHill & p=pending[i];
+  double t;
+  if(!ff->scanField("time",t)) {
+    (*log)<<"  closing file "<<filenames[i]<<"\n";
+    ff->close();
+    p.valid=false;
+    p.kernel.reset();
+    return;
+  }
+  double c=0.0;
+  if(ff->FieldExist("clock")) {
+    ff->scanField("clock",c);
+  } else if(sortby=="clock") {
+    plumed_merror("cannot sort by clock: there is no clock field in file "+filenames[i]);
+  }
+  if(p.valid && !unsortedwarning) {
+    const bool back = (sortby=="clock") ? (c<p.clock || (c==p.clock && t<p.time)) : (t<p.time);
+    if(back) {
+      (*log)<<"  WARNING: file "<<filenames[i]<<" is not ordered by "<<sortby<<": hills are merged in the order in which they appear in each file\n";
+      unsortedwarning=true;
+    }
+  }
+  p.time=t;
+  p.clock=c;
+  p.kernel=br->readKernel(ff,p.biasf);
+  if(br->hasSigmaInInput()) {
+    ff->allowIgnoredFields();
+  }
+  ff->scanField();
+  p.valid=true;
+}
+
+bool FilesHandler::readBunchMerged(BiasRepresentation *br, int stride) {
+  if(!mergestarted) {
+    (*log)<<"  merging the hills of "<<filenames.size()<<" files in order of "<<sortby<<"\n";
+    pending.resize(ifiles.size());
+    for(unsigned i=0; i<ifiles.size(); i++) {
+      (*log)<<"  opening file "<<filenames[i]<<"\n";
+      ifiles[i]->open(filenames[i]);
+      readPending(br,i);
+    }
+    mergestarted=true;
+  }
+  while(true) {
+    // the next hill is the earliest; ties are resolved with time (for clock) and then with the order of the files
+    int next=-1;
+    for(unsigned i=0; i<pending.size(); i++) {
+      if(!pending[i].valid) {
+        continue;
+      }
+      if(next<0) {
+        next=i;
+        continue;
+      }
+      const auto & a=pending[i];
+      const auto & b=pending[next];
+      const bool earlier = (sortby=="clock") ? (a.clock<b.clock || (a.clock==b.clock && a.time<b.time)) : (a.time<b.time);
+      if(earlier) {
+        next=i;
+      }
+    }
+    if(next<0) {
+      (*log)<<"  final chunk: now with "<<br->getNumberOfKernels()<<" kernels  \n";
+      return false;
+    }
+    br->addKernel(std::move(pending[next].kernel),pending[next].biasf);
+    readPending(br,next);
+    int n=br->getNumberOfKernels();
+    if(stride>0 && n%stride==0) {
+      // stop here unless all files are over
+      for(const auto & p : pending)
+        if(p.valid) {
+          (*log)<<"  done with this chunk: now with "<<n<<" kernels  \n";
+          return true;
+        }
+    }
+  }
+}
+
 bool FilesHandler::readBunch(BiasRepresentation *br, int stride) {
+  if(sortby!="" && ifiles.size()>1) {
+    return readBunchMerged(br,stride);
+  }
   bool morefiles=true;
   if(parallelread) {
     (*log)<<"  doing parallelread \n";
@@ -230,6 +334,7 @@ class FuncSumHills :
   std::string outhills;
   std::string outhisto;
   std::string fmt="%14.9f";
+  std::string sortby;
   std::unique_ptr<BiasRepresentation> biasrep;
   std::unique_ptr<BiasRepresentation> historep;
 public:
@@ -263,6 +368,7 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("optional","SORT","merge the hills of multiple files in order of time or clock instead of reading the files one after the other");
   keys.setValueDescription("scalar","a scalar");
 }
 
@@ -511,6 +617,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       log<<"  nohistory: each stride block has no memory of the previous block\n";
     }
   }
+  parse("SORT",sortby);
+  if(sortby!="" && sortby!="time" && sortby!="clock") {
+    error("SORT can only be time or clock");
+  }
+  if(sortby!="") {
+    log<<"  hills from multiple files are merged in order of "<<sortby<<"\n";
+  }
   parseFlag("MINTOZERO",minTOzero);
   if(minTOzero) {
     log<<"  mintozero: bias/histogram will be translated to have the minimum value equal to zero\n";
@@ -589,10 +702,10 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     std::unique_ptr<FilesHandler> histoHandler;
 
     if(integratehills)	{
-      hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log);
+      hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log, sortby);
     }
     if(integratehisto)	{
-      histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log);
+      histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log, sortby);
     }
 
 // Stopwatch is logged when it goes out of scope
@@ -612,8 +725,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           log<<"  clearing history before reading a new block\n";
         };
         log<<"  reading hills: \n";
+        const int before=biasrep->getNumberOfKernels();
         ibias=hillsHandler->readBunch(biasrep.get(),initstride) ;
         log<<"\n";
+        // when the number of hills is a multiple of the stride the last block is empty: do not write it again
+        if(!ibias && nfiles>0 && biasrep->getNumberOfKernels()==before) {
+          integratehills=false;
+        }
       }
 
       if(  integratehisto  && ihisto ) {
@@ -622,8 +740,12 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           log<<"  clearing history before reading a new block\n";
         };
         log<<"  reading histogram: \n";
+        const int before=historep->getNumberOfKernels();
         ihisto=histoHandler->readBunch(historep.get(),initstride) ;
         log<<"\n";
+        if(!ihisto && nfiles>0 && historep->getNumberOfKernels()==before) {
+          integratehisto=false;
+        }
       }
 
       // dump: need to project?

@@ -1,0 +1,4 @@
+# hills of multiple walkers merged in order of time, so that the free energies
+# written with --stride follow the simulation (#1351)
+type=sum_hills
+arg="--hills HILLS.0,HILLS.1,HILLS.2 --sort time --stride 25 --min -pi --max pi --bin 60 --fmt %10.5f"

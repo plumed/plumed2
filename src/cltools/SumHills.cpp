@@ -60,6 +60,20 @@ The sum_hills tool can also accept multiple files that will be integrated one af
 plumed sum_hills  --hills PATHTOMYHILLSFILE1,PATHTOMYHILLSFILE2,PATHTOMYHILLSFILE3
 ```
 
+The files are integrated one after the other. This does not change the final free energy, but when
+you use `--stride` (see below) with the hills files of multiple walkers the intermediate free energies would
+not follow the simulation. With `--sort time` the hills of all the files are merged in order of their time
+(hills with the same time are taken in the order of the files), so that each intermediate free energy
+contains the hills deposited by all the walkers up to a given time:
+
+```plumed
+plumed sum_hills  --hills HILLS.0,HILLS.1,HILLS.2 --sort time --stride 300
+```
+
+With `--sort clock` the hills are merged in order of the `clock` field (the wall-clock time at which they were
+deposited, written with multiple walkers), which is more appropriate when the walkers run at different speeds.
+Each file should be ordered by the chosen field.
+
 if you want to integrate out some variable from your output free energy surface you do
 
 ```plumed
@@ -217,6 +231,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
   keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
   keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (useful to compare results) ");
   keys.add("optional","--fmt","specify the output format");
+  keys.add("optional","--sort","with multiple files (e.g. one per walker), merge the hills in order of time or clock instead of reading the files one after the other");
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
@@ -598,6 +613,14 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     addme+=lowI_+",";
     addme+=uppI_;
     actioninput.push_back(addme);
+  }
+
+  std::string sortby;
+  if(parse("--sort",sortby)) {
+    if(sortby!="time" && sortby!="clock") {
+      plumed_merror("--sort can only be time or clock");
+    }
+    actioninput.push_back("SORT="+sortby);
   }
 
   std::string fmt;

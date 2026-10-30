@@ -61,6 +61,10 @@ public:
   void 		addGrid(const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin );
   /// push a kernel on the representation (includes widths and height)
   void 		pushKernel( IFile * ff);
+  /// read a kernel from a file without adding it; bf is the bias factor of the hill (1 if not in the file)
+  std::unique_ptr<KernelFunctions> readKernel( IFile * ff, double & bf );
+  /// add a kernel previously read with readKernel
+  void 		addKernel( std::unique_ptr<KernelFunctions> kk, double bf );
   /// set the flag that rescales the free energy to the bias
   void 		setRescaledToBias(bool rescaled);
   /// check if the representation is rescaled to the bias

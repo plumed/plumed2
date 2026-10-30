@@ -155,6 +155,12 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile)
 }
 
 void BiasRepresentation::pushKernel( IFile *ifile ) {
+  double bf;
+  auto kk=readKernel(ifile,bf);
+  addKernel(std::move(kk),bf);
+}
+
+std::unique_ptr<KernelFunctions> BiasRepresentation::readKernel( IFile *ifile, double & bf ) {
   std::unique_ptr<KernelFunctions> kk;
   // here below the reading of the kernel is completely hidden
   if(histosigma.size()==0) {
@@ -167,15 +173,13 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
   }
   // the bias factor is not something about the kernels but
   // must be stored to keep the  bias/free energy duality
-  std::string dummy;
-  double dummyd;
   if(ifile->FieldExist("biasf")) {
+    std::string dummy;
     ifile->scanField("biasf",dummy);
-    Tools::convert(dummy,dummyd);
+    Tools::convert(dummy,bf);
   } else {
-    dummyd=1.0;
+    bf=1.0;
   }
-  biasf.push_back(dummyd);
   // the domain does not pertain to the kernel but to the values here defined
   std::string mins,maxs,minv,maxv,mini,maxi;
   mins="min_";
@@ -190,6 +194,11 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
       plumed_massert(maxi==maxv,"the input periodicity in hills and in value definition does not match"  );
     }
   }
+  return kk;
+}
+
+void BiasRepresentation::addKernel( std::unique_ptr<KernelFunctions> kk, double bf ) {
+  biasf.push_back(bf);
   // if grid is defined then it should be added on the grid
   //cerr<<"now with "<<hills.size()<<endl;
   if(hasgrid) {
