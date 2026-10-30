@@ -11,7 +11,7 @@ endif
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
 #this assumes gcc
 DEPDIR := .deps
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$(@:.o=.d)
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
 #-dc adds relocatable device code 
 #-dlto Perform link-time optimization of device code. 
