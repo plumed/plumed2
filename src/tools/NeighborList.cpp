@@ -262,7 +262,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
           const unsigned count=std::min(batchStep,end-begin);
           for(unsigned j=0; j<count; ++j) {
             const auto [index0,index1]=getIndexPair(begin+j);
-            pairs[j]={index0,index1};
+            pairs[j]= {index0,index1};
             distances[j]=delta(positions[index0],positions[index1]);
           }
           pbc_->apply(VectorView(distances[0].data(),count));
