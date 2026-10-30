@@ -32,6 +32,7 @@
 #include "LinkCells.h"
 #include "View.h"
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <numeric>
 #include <cstdlib>
@@ -170,10 +171,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-#ifdef _OPENMP
-  //nt is unused if openmp is not declared
   const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
-#endif //_OPENMP
   if(useCellList_) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
@@ -245,23 +243,47 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned int start= rank*elementsPerRank;
     const unsigned int end = ((start + elementsPerRank)< nallpairs_)?(start + elementsPerRank): nallpairs_;
     std::vector<unsigned> local_flat_nl;
+    constexpr unsigned batchSize=1024;
+    const unsigned work=end>start ? end-start : 0;
+    // Small lists do not amortize initializing the per-thread batch buffers.
+    // PAIR lists are linear searches and also perform better without batching.
+    const bool batchPbc=do_pbc_ && style_!=NNStyle::Pair && work/nt>=batchSize;
 
     #pragma omp parallel num_threads(nt)
     {
       std::vector<unsigned> private_flat_nl;
-      #pragma omp for nowait
-      for(unsigned int i=start; i<end; ++i) {
-        auto [index0, index1 ] = getIndexPair(i);
-        Vector distance;
-        if(do_pbc_) {
-          distance=pbc_->distance(positions[index0],positions[index1]);
-        } else {
-          distance=delta(positions[index0],positions[index1]);
+      if(batchPbc) {
+        // Bound the scratch space and keep enough batches for all threads.
+        const unsigned batchStep=nt>1 ? std::min(batchSize,std::max(1u,work/(4*nt))) : batchSize;
+        std::array<Vector,batchSize> distances;
+        std::array<pairIDs,batchSize> pairs;
+        #pragma omp for nowait
+        for(unsigned begin=start; begin<end; begin+=batchStep) {
+          const unsigned count=std::min(batchStep,end-begin);
+          for(unsigned j=0; j<count; ++j) {
+            const auto [index0,index1]=getIndexPair(begin+j);
+            pairs[j]={index0,index1};
+            distances[j]=delta(positions[index0],positions[index1]);
+          }
+          pbc_->apply(VectorView(distances[0].data(),count));
+          for(unsigned j=0; j<count; ++j) {
+            if(modulo2(distances[j])<=d2) {
+              private_flat_nl.push_back(pairs[j].first);
+              private_flat_nl.push_back(pairs[j].second);
+            }
+          }
         }
-        double value=modulo2(distance);
-        if(value<=d2) {
-          private_flat_nl.push_back(index0);
-          private_flat_nl.push_back(index1);
+      } else {
+        #pragma omp for nowait
+        for(unsigned int i=start; i<end; ++i) {
+          auto [index0, index1 ] = getIndexPair(i);
+          const Vector distance=do_pbc_ ? pbc_->distance(positions[index0],positions[index1]) :
+                                delta(positions[index0],positions[index1]);
+          double value=modulo2(distance);
+          if(value<=d2) {
+            private_flat_nl.push_back(index0);
+            private_flat_nl.push_back(index1);
+          }
         }
       }
       #pragma omp critical
