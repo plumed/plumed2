@@ -537,7 +537,9 @@ These commands use the lepton library that is included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
 As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED.
-As of PLUMED 2.8, ASMJIT is enabled by default on supported architectures (X86/X64).
+As of PLUMED 2.8, ASMJIT is enabled by default on X86/X64.
+Since PLUMED 2.11, it is also enabled by default on AArch64, including Apple Silicon.
+It can be disabled at build time with `./configure --disable-asmjit`.
 You can disable it at runtime setting the environment variable `PLUMED_USE_ASMJIT`:
 
 ```bash

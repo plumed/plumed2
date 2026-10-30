@@ -541,7 +541,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
@@ -2098,13 +2097,6 @@ void SAXS::calculate() {
     }
     setBoxDerivatives(chi2_val, -chi2_box_deriv);
     setBoxDerivatives(chi2red_val, -invdof*chi2_box_deriv);
-  }
-}
-
-void SAXS::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 

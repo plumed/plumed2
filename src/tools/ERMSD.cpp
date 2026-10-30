@@ -31,6 +31,7 @@
 #include "Tensor.h"
 
 #include "Pbc.h"
+#include <array>
 #include <cmath>
 #include <iostream>
 
@@ -173,6 +174,7 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
   }
 
   double maxdist = cutoff/form_factor[0];
+  const double maxdist2 = maxdist*maxdist;
   double gamma = pi/cutoff;
   unsigned idx;
   unsigned idx1 = 0;
@@ -187,8 +189,7 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
 
         // Calculate normal distance first
         Vector diff = delta(centers[i],centers[j]);
-        double d1 = diff.modulo();
-        if(d1<maxdist) {
+        if(diff.modulo2()<maxdist2) {
 
           // calculate r_tilde_ij
           Vector3d rtilde;
@@ -214,8 +215,7 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
             mat[idx][3] = (1.+ std::cos(gamma*rtilde_norm))/gamma;
 
             // Derivative (drtilde_dx)
-            std::vector<Tensor3d> drtilde_dx;
-            drtilde_dx.resize(6);
+            std::array<Tensor3d,6> drtilde_dx;
             unsigned pos_idx = 3*i;
             unsigned deri_idx = 9*i;
             for (unsigned at=0; at<3; at++) {

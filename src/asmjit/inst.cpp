@@ -1,103 +1,116 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ASMJIT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Export]
-#define ASMJIT_EXPORTS
+#include "api-build_p.h"
+#include "archtraits.h"
+#include "inst.h"
 
-// [Guard]
-#include "./asmjit_build.h"
-#if defined(ASMJIT_BUILD_X86)
-
-// [Dependencies]
-#include "./arch.h"
-#include "./inst.h"
-
-#if defined(ASMJIT_BUILD_X86)
-# include "./x86instimpl_p.h"
-#endif // ASMJIT_BUILD_X86
-
-#if defined(ASMJIT_BUILD_ARM)
-# include "./arminstimpl_p.h"
-#endif // ASMJIT_BUILD_ARM
-
-// [Api-Begin]
-#include "./asmjit_apibegin.h"
-
-namespace PLMD {
-namespace asmjit {
-
-// ============================================================================
-// [asmjit::Inst - Validate]
-// ============================================================================
-
-#if !defined(ASMJIT_DISABLE_VALIDATION)
-Error Inst::validate(uint32_t archType, const Detail& detail, const Operand_* operands, uint32_t count) noexcept {
-  #if defined(ASMJIT_BUILD_X86)
-  if (ArchInfo::isX86Family(archType))
-    return X86InstImpl::validate(archType, detail, operands, count);
-  #endif
-
-  #if defined(ASMJIT_BUILD_ARM)
-  if (ArchInfo::isArmFamily(archType))
-    return ArmInstImpl::validate(archType, detail, operands, count);
-  #endif
-
-  return DebugUtils::errored(kErrorInvalidArch);
-}
+#if !defined(ASMJIT_NO_X86)
+  #include "x86instapi_p.h"
 #endif
 
-// ============================================================================
-// [asmjit::Inst - CheckFeatures]
-// ============================================================================
+#if !defined(ASMJIT_NO_AARCH64)
+  #include "a64instapi_p.h"
+#endif
 
-#if !defined(ASMJIT_DISABLE_EXTENSIONS)
-Error Inst::checkFeatures(uint32_t archType, const Detail& detail, const Operand_* operands, uint32_t count, CpuFeatures& out) noexcept {
-  #if defined(ASMJIT_BUILD_X86)
-  if (ArchInfo::isX86Family(archType))
-    return X86InstImpl::checkFeatures(archType, detail, operands, count, out);
-  #endif
+ASMJIT_BEGIN_NAMESPACE
 
-  #if defined(ASMJIT_BUILD_ARM)
-  if (ArchInfo::isArmFamily(archType))
-    return ArmInstImpl::checkFeatures(archType, detail, operands, count, out);
-  #endif
+// InstAPI - InstId <-> String
+// ===========================
+
+#ifndef ASMJIT_NO_TEXT
+Error InstAPI::instIdToString(Arch arch, InstId instId, String& output) noexcept {
+#if !defined(ASMJIT_NO_X86)
+  if (Environment::isFamilyX86(arch))
+    return x86::InstInternal::instIdToString(arch, instId, output);
+#endif
+
+#if !defined(ASMJIT_NO_AARCH64)
+  if (Environment::isFamilyAArch64(arch))
+    return a64::InstInternal::instIdToString(arch, instId, output);
+#endif
 
   return DebugUtils::errored(kErrorInvalidArch);
 }
-#endif // !defined(ASMJIT_DISABLE_EXTENSIONS)
 
-} // asmjit namespace
-} // namespace PLMD
+InstId InstAPI::stringToInstId(Arch arch, const char* s, size_t len) noexcept {
+#if !defined(ASMJIT_NO_X86)
+  if (Environment::isFamilyX86(arch))
+    return x86::InstInternal::stringToInstId(arch, s, len);
+#endif
 
-// [Api-End]
-#include "./asmjit_apiend.h"
+#if !defined(ASMJIT_NO_AARCH64)
+  if (Environment::isFamilyAArch64(arch))
+    return a64::InstInternal::stringToInstId(arch, s, len);
+#endif
 
-// [Guard]
-#endif // ASMJIT_BUILD_X86
-#pragma GCC diagnostic pop
+  return 0;
+}
+#endif // !ASMJIT_NO_TEXT
+
+// InstAPI - Validate
+// ==================
+
+#ifndef ASMJIT_NO_VALIDATION
+Error InstAPI::validate(Arch arch, const BaseInst& inst, const Operand_* operands, size_t opCount, ValidationFlags validationFlags) noexcept {
+#if !defined(ASMJIT_NO_X86)
+  if (Environment::isFamilyX86(arch))
+    return x86::InstInternal::validate(arch, inst, operands, opCount, validationFlags);
+#endif
+
+#if !defined(ASMJIT_NO_AARCH64)
+  if (Environment::isFamilyAArch64(arch))
+    return a64::InstInternal::validate(arch, inst, operands, opCount, validationFlags);
+#endif
+
+  return DebugUtils::errored(kErrorInvalidArch);
+}
+#endif // !ASMJIT_NO_VALIDATION
+
+// InstAPI - QueryRWInfo
+// =====================
+
+#ifndef ASMJIT_NO_INTROSPECTION
+Error InstAPI::queryRWInfo(Arch arch, const BaseInst& inst, const Operand_* operands, size_t opCount, InstRWInfo* out) noexcept {
+  if (ASMJIT_UNLIKELY(opCount > Globals::kMaxOpCount))
+    return DebugUtils::errored(kErrorInvalidArgument);
+
+#if !defined(ASMJIT_NO_X86)
+  if (Environment::isFamilyX86(arch))
+    return x86::InstInternal::queryRWInfo(arch, inst, operands, opCount, out);
+#endif
+
+#if !defined(ASMJIT_NO_AARCH64)
+  if (Environment::isFamilyAArch64(arch))
+    return a64::InstInternal::queryRWInfo(arch, inst, operands, opCount, out);
+#endif
+
+  return DebugUtils::errored(kErrorInvalidArch);
+}
+#endif // !ASMJIT_NO_INTROSPECTION
+
+// InstAPI - QueryFeatures
+// =======================
+
+#ifndef ASMJIT_NO_INTROSPECTION
+Error InstAPI::queryFeatures(Arch arch, const BaseInst& inst, const Operand_* operands, size_t opCount, CpuFeatures* out) noexcept {
+#if !defined(ASMJIT_NO_X86)
+  if (Environment::isFamilyX86(arch))
+    return x86::InstInternal::queryFeatures(arch, inst, operands, opCount, out);
+#endif
+
+#if !defined(ASMJIT_NO_AARCH64)
+  if (Environment::isFamilyAArch64(arch))
+    return a64::InstInternal::queryFeatures(arch, inst, operands, opCount, out);
+#endif
+
+  return DebugUtils::errored(kErrorInvalidArch);
+}
+#endif // !ASMJIT_NO_INTROSPECTION
+
+ASMJIT_END_NAMESPACE
+
 #endif // __PLUMED_HAS_ASMJIT

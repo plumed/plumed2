@@ -1,0 +1,14 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --ixyz traj.xyz --multi 2"
+
+# the status files without the sigma mean history (written with full precision)
+plumed_regtest_after() {
+  : > state
+  for f in MISTATUScv.0 MISTATUScv.1 MISTATUSmi.0 MISTATUSmi.1; do
+    awk -v file="$f" '
+      NR==1 { for(i=3;i<=NF;i++) if($i !~ /^sigmaMean2History_/) { n++; idx[n]=i-2; name[n]=$i }; next }
+      NR==2 { printf "%s",file; for(i=1;i<=n;i++) printf " %s=%s",name[i],$idx[i]; printf "\n" }
+    ' "$f" >> state
+  done
+}

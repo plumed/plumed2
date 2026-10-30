@@ -1,0 +1,16 @@
+# Walls on periodic arguments act on the value in the periodic domain,
+# without applying PBCs to the difference with AT (issue #658)
+t1: TORSION ATOMS=1,2,3,4 NOPBC
+t2: TORSION ATOMS=1,2,3,5 NOPBC
+
+# scalar arguments
+uw: UPPER_WALLS ARG=t1,t2 AT=2.0,1.05 KAPPA=1.0,2.0
+lw: LOWER_WALLS ARG=t1,t2 AT=-2.0,-0.55 KAPPA=1.0,2.0 OFFSET=0.05,0.0 EXP=2,3
+
+# vector argument
+tv: TORSION ATOMS1=1,2,3,4 ATOMS2=1,2,3,5 NOPBC
+uwv: UPPER_WALLS ARG=tv AT=2.0 KAPPA=1.0
+lwv: LOWER_WALLS ARG=tv AT=-2.0 KAPPA=1.0
+
+PRINT ARG=t1,t2,uw.bias,lw.bias,uwv.bias,lwv.bias,uw.force2,lw.force2,uwv_force2,lwv_force2 FILE=COLVAR FMT=%8.4f
+DUMPDERIVATIVES ARG=uw.bias,lw.bias FILE=der FMT=%8.4f
