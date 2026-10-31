@@ -308,14 +308,16 @@ void Value::addForceOutOfRange( const std::size_t& iforce ) const {
 }
 
 void Value::addForceToSparseMatrix(const std::size_t& iforce, double f) {
-  unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+  unsigned irow = iforce / shape[1], jcol = iforce%shape[1];
   for(unsigned i=0; i<getRowLength(irow); ++i) {
     if( getRowIndex(irow,i)==jcol ) {
       inputForce[irow*ncols+i]+=f;
       return;
     }
   }
-  plumed_assert( fabs(f)<epsilon );
+  // elements that are not stored are zero; when their derivatives are zero too
+  // (e.g. switching functions beyond the cutoff) the force on them has no effect
+  plumed_massert( derivativeIsZeroWhenValueIsZero || fabs(f)<epsilon, "force on an element that is not stored in sparse matrix " + name );
 }
 
 size_t Value::addForces(View<const double> const forces) {

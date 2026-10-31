@@ -1297,10 +1297,16 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words, const bo
     }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
+    // update the lists incrementally: rebuilding them by scanning the whole action set
+    // after every line makes reading the input quadratic in the number of actions
+    Action* last=actionSet.back().get();
+    if( auto* pilot=dynamic_cast<ActionPilot*>(last) ) {
+      pilots.push_back(pilot);
+    }
+    if( dynamic_cast<ActionForInterface*>(last) ) {
+      setupInterfaceActions();
+    }
   };
-
-  pilots=actionSet.select<ActionPilot*>();
-  setupInterfaceActions();
 }
 
 ////////////////////////////////////////////////////////////////////////
