@@ -693,7 +693,8 @@ same syntax of --atom-distribution
   for(auto & k : kernels) {
     auto & p(k.handle);
     auto sw=k.stopwatch.startStop("A Initialization");
-    if(Communicator::plumedHasMPI() && domain_decomposition) {
+    // MPI should also be initialized (it is not with plumed --no-mpi)
+    if(Communicator::initialized() && domain_decomposition) {
       p.cmd("setMPIComm",&pc.Get_comm());
     }
     p.cmd("setRealPrecision",(int)sizeof(double));
