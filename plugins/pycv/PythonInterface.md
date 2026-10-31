@@ -14,10 +14,12 @@ PYFUNCTION IMPORT=pycv
 import plumedCommunications
 import pydoc
 
+
 def plumedInit(_):
     pydoc.writedoc(plumedCommunications)
     pydoc.writedoc(plumedCommunications.defaults)
-    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV}
+    return {"Value": plumedCommunications.defaults.COMPONENT_NODEV}
+
 
 def plumedCalculate(_):
     return 0.0

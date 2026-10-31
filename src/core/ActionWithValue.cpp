@@ -380,7 +380,6 @@ bool ActionWithValue::checkForForces() {
     if( nt>1 ) {
       omp_f.resize(nder,0);
     }
-    double* const dest = ( nt>1 ? omp_f.data() : forcesForApply.data() );
     #pragma omp for
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
       // a plain loop is vectorized by the compiler and is as fast as an external
