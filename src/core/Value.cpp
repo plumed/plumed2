@@ -256,11 +256,10 @@ double Value::get(const std::size_t ival, const bool trueind) const {
   if( hasDeriv ) {
     return data[ival*(1+ngrid_der)];
   }
-#ifdef DNDEBUG
+  // plumed_dbg_massert is only evaluated in debug builds (NDEBUG not defined)
   if( action ) {
     plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
   }
-#endif
   if( shape.size()==2 && ncols<shape[1] && trueind ) {
     const unsigned irow = std::floor( ival / shape[1] );
     const unsigned jcol = ival%shape[1];
