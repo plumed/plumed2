@@ -63,49 +63,9 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 }
 
 void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) {
-  std::vector<ActionShortcut*> shortcuts = plumed.getActionSet().select<ActionShortcut*>();
-  bool foundpdb=false;
-  for(const auto & ss : shortcuts ) {
-    if( ss->getName()=="READMASSCHARGE" ) {
-      foundpdb=true;
-      ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_mass");
-      plumed_assert( mv );
-      masv.push_back( mv->copyOutput(0) );
-      ActionWithValue* qv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_charges");
-      plumed_assert( qv );
-      chargev.push_back( qv->copyOutput(0) );
-    }
-  }
-  std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
-  for(const auto & vv : vatoms ) {
-    plumed_assert(vv); // needed for following calls, see #1046
-    ActionToPutData* ap = vv->castToActionToPutData();
-    if( ap ) {
-      if( ap->getRole()=="x" ) {
-        xpos.push_back( ap->copyOutput(0) );
-      }
-      if( ap->getRole()=="y" ) {
-        ypos.push_back( ap->copyOutput(0) );
-      }
-      if( ap->getRole()=="z" ) {
-        zpos.push_back( ap->copyOutput(0) );
-      }
-      if( !foundpdb && ap->getRole()=="m" ) {
-        masv.push_back( ap->copyOutput(0) );
-      }
-      if( !foundpdb && ap->getRole()=="q" ) {
-        chargev.push_back( ap->copyOutput(0) );
-      }
-    }
-    ActionWithVirtualAtom* av = vv->castToActionWithVirtualAtom();
-    if( av || vv->getName()=="ARGS2VATOM" ) {
-      xpos.push_back( vv->copyOutput( vv->getLabel() + ".x") );
-      ypos.push_back( vv->copyOutput( vv->getLabel() + ".y") );
-      zpos.push_back( vv->copyOutput( vv->getLabel() + ".z") );
-      masv.push_back( vv->copyOutput( vv->getLabel() + ".mass") );
-      chargev.push_back( vv->copyOutput( vv->getLabel() + ".charge") );
-    }
-  }
+  // the lists are kept by the ActionSet, so that they are not rebuilt by scanning
+  // all the actions every time a new atomistic action is created
+  plumed.getActionSet().getAtomValues( xpos, ypos, zpos, masv, chargev );
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ) {
@@ -697,7 +657,7 @@ void ActionAtomistic::makeWhole() {
       Vector & second (actionPositions[tree_indexes[j]]);
       second=first+pbcDistance(first,second);
     }
-  } else {
+  } else if(actionPositions.size()>1) {
     for(unsigned j=0; j<actionPositions.size()-1; ++j) {
       const Vector & first (actionPositions[j]);
       Vector & second (actionPositions[j+1]);

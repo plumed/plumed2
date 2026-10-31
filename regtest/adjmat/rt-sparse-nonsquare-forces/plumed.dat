@@ -1,0 +1,10 @@
+cmat: CONTACT_MATRIX GROUPA=1-5 GROUPB=6-100 SWITCH={RATIONAL R_0=0.4 D_MAX=0.9}
+f: FLATTEN ARG=cmat
+# a function that is zero (with zero derivative) on the elements that are not stored
+sq: CUSTOM ARG=f FUNC=x*x PERIODIC=NO
+s2: SUM ARG=sq PERIODIC=NO
+# a linear function: forces also reach elements that are not stored
+s1: SUM ARG=f PERIODIC=NO
+r2: RESTRAINT ARG=s2 AT=0 KAPPA=10
+r1: RESTRAINT ARG=s1 AT=0 KAPPA=3
+PRINT ARG=s1,s2 FILE=colvar FMT=%10.5f
