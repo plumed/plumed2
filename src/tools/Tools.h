@@ -554,7 +554,14 @@ inline double Tools::pbc(T x) {
   }
   return x;
 #else
-  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+  if constexpr (std::is_same_v<T,float>) {
+    // In single precision the offset used below costs accuracy: the spacing of floats
+    // close to 100 is 7.6e-6, so the result would have an error up to 3.8e-6
+    // whatever the value of x (e.g. in the scaled coordinates of a triclinic box
+    // in the single precision GPU code). x-rint(x) is exact and branch-free.
+    // At exact ties (x=+-0.5) the result can be +0.5 or -0.5 (both are valid images).
+    return x-std::rint(x);
+  } else if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
     constexpr T offset=100.0;
     x+=offset;
     if(x>=0) {

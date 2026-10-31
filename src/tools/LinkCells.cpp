@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LinkCells.h"
-#include "Communicator.h"
+#include "OpenMP.h"
 #include "Exception.h"
 #include "Tensor.h"
 #include "Tools.h"
@@ -32,8 +32,7 @@
 
 namespace PLMD {
 
-LinkCells::LinkCells( Communicator& cc ) :
-  comm(cc) {
+LinkCells::LinkCells( Communicator& ) {
 }
 
 void LinkCells::setCutoff( const double lcut ) {
@@ -102,19 +101,26 @@ void LinkCells::createCells(const PLMD::Tensor& box) {
 // notice that reciprocal.getRow(0) is a vector that is orthogonal to b and c
 // This allows to use linked cells in non orthorhomic boxes
   const auto reciprocal = transpose(mypbc.getInvBox());
-  ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
-  if( ncells[0]==0 ) {
-    ncells[0]=1;
+  // the width of the cells along each direction must be at least the cutoff
+  std::array<double,3> nc;
+  for(unsigned k=0; k<3; ++k) {
+    nc[k]=std::floor( 1.0/ reciprocal.getRow(k).modulo() / link_cutoff );
+    // also catches NaNs
+    if( !(nc[k]>=1.0) ) {
+      nc[k]=1.0;
+    }
   }
-  ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
-  if( ncells[1]==0 ) {
-    ncells[1]=1;
+  // Limit the total number of cells: with a small cutoff in a large box the number of
+  // cells (and the memory and the time spent looping over empty cells) would grow
+  // with the volume. Larger cells are still correct, they only contain more atoms.
+  while(nc[0]*nc[1]*nc[2]>maxNumberOfCells) {
+    const unsigned k=std::distance(nc.begin(),std::max_element(nc.begin(),nc.end()));
+    const double factor=std::cbrt(nc[0]*nc[1]*nc[2]/maxNumberOfCells);
+    nc[k]=std::max(1.0,std::min(nc[k]-1.0,std::floor(nc[k]/factor)));
   }
-  ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
-  if( ncells[2]==0 ) {
-    ncells[2]=1;
+  for(unsigned k=0; k<3; ++k) {
+    ncells[k]=static_cast<unsigned>(nc[k]);
   }
-
   // Setup the strides
   nstride[0]=1;
   nstride[1]=ncells[0];
@@ -149,20 +155,28 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   // Clear nlcells
   collection.lcell_tots.assign( ncellstot, 0 );
 
-  // Find out what cell everyone is in
-  const unsigned rank=comm.Get_rank();
-  const unsigned size=comm.Get_size();
-  const unsigned elementsPerRank = std::ceil(double(nat)/size);
-  const unsigned int start= rank*elementsPerRank;
-  const unsigned int end = ((start + elementsPerRank)< nat)?(start + elementsPerRank): nat;
-  for(unsigned i=start; i<end; ++i) {
-    allcells[i]=findCell( pos[i] );
+  // Find out what cell everyone is in.
+  // This is done locally on every process: finding the cell of an atom costs a few
+  // nanoseconds, much less than the two MPI_Allreduce (of the cell of each atom and of
+  // the number of atoms in each cell) that were needed when the atoms were split among processes.
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
+  const unsigned nt=(nat>=minAtomsPerThread)?
+                    std::min<unsigned>(OpenMP::getNumThreads(),nat/minAtomsPerThread) : 1;
+#endif
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for(unsigned i=0; i<nat; ++i) {
+    // no exceptions inside the parallel region: invalid cells are checked below
+    allcells[i]=findCellUnchecked( pos[i] );
+  }
+  for(unsigned i=0; i<nat; ++i) {
+    if(allcells[i]>=ncellstot) {
+      // this raises an error with an explanation
+      findMyCell( pos[i] );
+      plumed_error()<<"atom "<<i<<" is not inside a link cell";
+    }
     collection.lcell_tots[allcells[i]]++;
   }
-  // And gather all this information on every node
-  comm.Sum( allcells );
-  comm.Sum( collection.lcell_tots );
-
   // Now prepare the link cell lists
   unsigned tot=0;
   for(unsigned i=0; i<collection.lcell_tots.size(); ++i) {
@@ -274,6 +288,23 @@ void LinkCells::retrieveAtomsInCells( const unsigned ncells_required,
   }
 }
 
+unsigned LinkCells::findCellUnchecked( Vector mypos ) const noexcept {
+  if( nopbc ) {
+    mypos = mypos - origin;
+  }
+  const Vector fpos=mypbc.realToScaled( mypos );
+  const unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
+  unsigned index=0;
+  for(unsigned j=0; j<3; ++j) {
+    const double c=std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
+    if(!(c>=0.0 && c<ncells[j])) {
+      return ncellstot;
+    }
+    index+=static_cast<unsigned>(c)*nstride[j];
+  }
+  return index;
+}
+
 std::array<unsigned,3> LinkCells::findMyCell( Vector mypos ) const {
   std::array<unsigned,3> celn;
   if( nopbc ) {
@@ -340,7 +371,7 @@ void LinkCells::createNeighborList( unsigned nat,
   if( natoms_per_list>innerCollection.lcell_lists.size() ) {
     natoms_per_list = innerCollection.lcell_lists.size();
   }
-  const unsigned nlist_sz = nat*( 2 + natoms_per_list );
+  const std::size_t nlist_sz = std::size_t(nat)*( 2 + std::size_t(natoms_per_list) );
   nlist.resize( nlist_sz );
   std::vector<unsigned> indices( 1+natoms_per_list );
   std::vector<unsigned> cells_required( getNumberOfCells() );
@@ -355,7 +386,7 @@ void LinkCells::createNeighborList( unsigned nat,
                           indices,
                           ind[i]);
     nlist[tind[i]] = natoms;
-    const std::size_t lstart = nat + tind[i]*(1+natoms_per_list);
+    const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
     if( natoms>neigh_ind.size() ) {
       nlist[lstart] = ind[i];
       std::copy( neigh_ind.begin(),

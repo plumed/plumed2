@@ -47,9 +47,6 @@ class IFile:
     public FieldBase {
     bool read=false;
   };
-/// Low-level read.
-/// Note: in parallel, all processes read
-  std::size_t llread(char*,std::size_t);
 /// All the defined fields
   std::vector<Field> fields;
 /// Flag set in the middle of a field reading
