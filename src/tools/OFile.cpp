@@ -34,6 +34,9 @@
 #include <cerrno>
 #include <utility>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef __PLUMED_HAS_ZLIB
 #include <zlib.h>
 #endif
@@ -366,6 +369,9 @@ OFile& OFile::open(const std::string&setpath) {
   gzfp=NULL;
   path=setpath;
   path=appendSuffix(setpath,getSuffix());
+  // this must be done before backing up the file, otherwise
+  // the backup would rename the file that is being written by another OFile
+  checkNotOpenElsewhere();
   if(checkRestart()) {
     fp=std::fopen(const_cast<char*>(path.c_str()),"a");
     mode="a";
@@ -395,6 +401,47 @@ OFile& OFile::open(const std::string&setpath) {
     plumed->insertFile(*this);
   }
   return *this;
+}
+
+void OFile::checkNotOpenElsewhere()const {
+  if(!plumed) {
+    return;
+  }
+  if(path=="/dev/null") {
+    return;
+  }
+  struct stat st;
+  const bool exists=(stat(path.c_str(),&st)==0);
+// sharing devices, pipes, etc is legitimate
+  if(exists && !S_ISREG(st.st_mode)) {
+    return;
+  }
+  for(const auto & f : plumed->getFiles()) {
+    const auto other=dynamic_cast<const OFile*>(f);
+    // input files are ignored: reading a file while writing it is allowed (e.g. METAD restart)
+    if(!other || other==this || !other->fp) {
+      continue;
+    }
+    bool same=(other->path==path);
+    if(!same && exists) {
+      // catch the same file accessed with a different path (e.g. ./FILE, absolute paths, or links)
+      struct stat ost;
+      if(fstat(fileno(other->fp),&ost)==0) {
+        same=(ost.st_dev==st.st_dev && ost.st_ino==st.st_ino);
+      }
+    }
+    if(same) {
+      std::string msg="file " + path + " is already open for writing";
+      if(other->action) {
+        msg+=" by action " + other->action->getLabel() + " (" + other->action->getName() + ")";
+      }
+      if(action) {
+        msg+=" and cannot be opened again by action " + action->getLabel() + " (" + action->getName() + ")";
+      }
+      msg+=". Writing the same file twice would result in a corrupted file. Please use a different file name";
+      plumed_merror(msg);
+    }
+  }
 }
 
 OFile& OFile::rewind() {
