@@ -440,10 +440,18 @@ template <typename T> int diagMatRange( const Matrix<T>& A, unsigned first, unsi
   int liwork=-1;
   int m;
   int info=0;
+#ifdef __PLUMED_HAS_EXTERNAL_LAPACK
+  const bool partial=true;
+#else
+  // The internal dsyevr reads out of bounds when only a subset of the eigenpairs is
+  // requested, so all of them are computed and then the requested ones are copied
+  const bool partial=false;
+#endif
   // dsyevr numbers the eigenvalues from 1, in ascending order
-  int il=first+1;
-  int iu=last+1;
-  const unsigned nev=last-first+1;
+  const unsigned offset=( partial ? first : 0 );
+  int il=offset+1;
+  int iu=( partial ? last+1 : A.cl );
+  const unsigned nev=iu-il+1;
   std::vector<T> work(A.cl);
   std::vector<int> iwork(A.cl);
   T vl, vu, abstol=0.0;
@@ -485,9 +493,9 @@ template <typename T> int diagMatRange( const Matrix<T>& A, unsigned first, unsi
     return info;
   }
 
-  k=0;
+  k=(first-offset)*A.rw;
   for(unsigned i=first; i<=last; ++i) {
-    eigenvals[i]=evals[i-first];
+    eigenvals[i]=evals[i-offset];
     // N.B. For ease of producing projectors we store the eigenvectors
     // ROW-WISE in the eigenvectors matrix.  The first index is the
     // eigenvector number and the second the component
@@ -542,25 +550,27 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
     }
 
   int info=0;
-  int nr=nrows, nc=ncols, ns=nsv;
+  int nr=nrows, nc=ncols;
 
-  // Create some containers for stuff from the thin singular value decomposition A=U*S*VT
-  // (U is nrows x nsv and VT is nsv x ncols, both stored column by column)
+  // Create some containers for stuff from the singular value decomposition A=U*S*VT
+  // (U is nrows x nrows and VT is ncols x ncols, both stored column by column).
+  // The thin decomposition (JOBZ='S') would be enough, but the internal dgesdd
+  // writes out of bounds with JOBZ='S', so the full one is used.
   std::vector<T> S(nsv);
-  std::vector<T> U(static_cast<std::size_t>(nrows)*nsv);
-  std::vector<T> VT(static_cast<std::size_t>(nsv)*ncols);
+  std::vector<T> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<T> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<T> work(1);
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
-                          U.data(), &nr, VT.data(), &ns, work.data(),
+    plumed_lapack_dgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
-                          U.data(), &nr, VT.data(), &ns, work.data(),
+    plumed_lapack_sgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -575,12 +585,12 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
 
   // This does the singular value decomposition
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
-                          U.data(), &nr, VT.data(), &ns, work.data(),
+    plumed_lapack_dgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
-                          U.data(), &nr, VT.data(), &ns, work.data(),
+    plumed_lapack_sgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -608,7 +618,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
     const T inv=static_cast<T>(1)/S[isv];
     const T* Uk=U.data()+static_cast<std::size_t>(isv)*nrows;
     for(unsigned i=0; i<ncols; ++i) {
-      const T a=inv*VT[isv+static_cast<std::size_t>(i)*nsv];
+      const T a=inv*VT[isv+static_cast<std::size_t>(i)*ncols];
       for(unsigned j=0; j<nrows; ++j) {
         pseudoinverse(i,j)+=a*Uk[j];
       }
