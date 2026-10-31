@@ -1,0 +1,52 @@
+type=plumed
+# small command line tools; for those printing documentation or paths only
+# the presence of some expected text is checked, so that the test does not depend on the docs
+arg="kt --temp 300 --units kcal/mol"
+
+function cltools_check(){
+# cltools_check "description" command... : runs the command, then checks that its output contains the last argument
+  local what="$1"
+  local pattern="$2"
+  shift 2
+  if "$@" > check.out 2>&1 && grep -q -e "$pattern" check.out ; then
+    echo "$what: ok" >> checks
+  else
+    echo "$what: FAILED" >> checks
+  fi
+}
+
+function plumed_regtest_after(){
+  rm -f checks
+  $plumed_nompi kt --temp 250 >> kt.dat
+  $plumed_nompi kt --temp 300 --units eV >> kt.dat
+  cltools_check "info --version" "^[0-9]" $plumed_nompi info --version
+  cltools_check "info --long-version" "^[0-9]" $plumed_nompi info --long-version
+  cltools_check "info --git-version" "." $plumed_nompi info --git-version
+  cltools_check "info --root" "/" $plumed_nompi info --root
+  cltools_check "info --include-dir" "/" $plumed_nompi info --include-dir
+  cltools_check "info --configuration" "CXX" $plumed_nompi info --configuration
+  cltools_check "info --soext" "^[a-z]" $plumed_nompi info --soext
+  cltools_check "info --user-doc" "user-doc" $plumed_nompi info --user-doc
+  cltools_check "info --developer-doc" "developer-doc" $plumed_nompi info --developer-doc
+  cltools_check "gentemplate --action" "DISTANCE" $plumed_nompi gentemplate --action DISTANCE
+  cltools_check "gentemplate --include-optional" "COMPONENTS" $plumed_nompi gentemplate --action DISTANCE --include-optional
+  cltools_check "gentemplate --list" "DISTANCE" $plumed_nompi gentemplate --list
+  cltools_check "manual --action" "ATOMS" $plumed_nompi manual --action DISTANCE
+  cltools_check "manual --vim" "ATOMS" $plumed_nompi manual --action DISTANCE --vim
+  cltools_check "manual --spelling" "ATOMS" $plumed_nompi manual --action DISTANCE --spelling
+  cltools_check "manual of a cltool" "plumed" $plumed_nompi manual --action driver
+  cltools_check "completion" "cmd_keys_driver" $plumed_nompi completion
+  cltools_check "gen_json" '"DISTANCE"' $plumed_nompi gen_json --actions actions.txt
+# the output of gen_json should be valid json
+  $plumed_nompi gen_json --actions actions.txt > syntax.json 2> /dev/null
+  python=""
+  if ! python=$($plumed_nompi config python_bin 2> /dev/null) ; then
+    python=""
+  fi
+  if test -n "$python" && ! "$python" -c "import json,sys; d=json.load(open('syntax.json')); sys.exit(0 if d['DISTANCE']['description']=='Calculate the distance between a pair of atoms' else 1)" ; then
+    echo "gen_json: invalid json" >> checks
+  else
+    echo "gen_json: valid json" >> checks
+  fi
+  rm -f check.out syntax.json
+}

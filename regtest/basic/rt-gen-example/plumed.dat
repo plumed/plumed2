@@ -1,0 +1,11 @@
+# a comment
+d: DISTANCE ATOMS=1,2 COMPONENTS
+dd: DISTANCE ...
+   ATOMS=3,4
+...
+r: RESTRAINT ARG=d.x AT=0.1 KAPPA=10  # trailing comment
+c: CENTER ATOMS=1-4
+g: GROUP ATOMS=1-4
+PRINT ARG=d.x,dd,r.bias FILE=colvar
+ENDPLUMED
+text after ENDPLUMED

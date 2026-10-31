@@ -1,0 +1,50 @@
+type=plumed
+# wrong inputs to command line tools should give an error (exit code 1),
+# not a crash or a never ending run
+arg="kt --temp 300"
+
+function expect_error(){
+# expect_error "description" command... : the command should fail with exit code 1
+  local what="$1"
+  shift
+  "$@" > /dev/null 2>&1
+  echo "$what: exit code $?" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  printf "1\n1 1 1\nX 0 0 0\n" > one.xyz
+  echo "d: DISTANCE ATOMS=1,1" > plumed.dat
+  expect_error "driver, missing trajectory file" $plumed_nompi driver --plumed plumed.dat --ixyz missing.xyz
+  expect_error "driver, missing trajectory file from stdin" $plumed_nompi driver --plumed plumed.dat --ixtc - < /dev/null
+  expect_error "driver, box with 2 numbers" $plumed_nompi driver --plumed plumed.dat --ixyz one.xyz --box 1,2
+  expect_error "driver, box that is not a number" $plumed_nompi driver --plumed plumed.dat --ixyz one.xyz --box 1,2,x
+  printf "#! FIELDS index mass charge\n 5 1.0 0.0\n" > mc.dat
+  expect_error "driver, index in mc file out of range" $plumed_nompi driver --plumed plumed.dat --ixyz one.xyz --mc mc.dat
+  expect_error "driver, dump forces on a directory" $plumed_nompi driver --plumed plumed.dat --ixyz one.xyz --dump-forces .
+  expect_error "plotswitch, zero steps" $plumed_nompi plotswitch --steps 0
+  expect_error "plotswitch, empty interval" $plumed_nompi plotswitch --from 2 --to 1
+  printf "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00  0.00           N\n" > one.pdb
+  printf "1\nx\n" > numbers.dat
+  expect_error "pdbrenumber, invalid number" $plumed_nompi pdbrenumber --ipdb one.pdb --opdb out.pdb --atomnumbers numbers.dat
+  printf "ATOM  1\n" > short.pdb
+  expect_error "pdbrenumber, short ATOM line" $plumed_nompi pdbrenumber --ipdb short.pdb --opdb out.pdb
+  printf "inputfile one.xyz\noutputfile out.xyz\nnstep 1\nnconfig 1\n" > in
+  expect_error "simplemd, nconfig without file name" $plumed_nompi simplemd < in
+  printf "inputfile one.xyz\noutputfile out.xyz\nnstep 1\ntemperature 1.0\n" > in
+  expect_error "simplemd, temperature without friction" $plumed_nompi simplemd < in
+  printf "inputfile one.xyz\noutputfile out.xyz\nnstep 1\nlistcutoff 2.0\n" > in
+  expect_error "simplemd, listcutoff smaller than forcecutoff" $plumed_nompi simplemd < in
+  printf "temperature 1\nfriction -1\ndimension 1\nnstep 1\n" > in
+  expect_error "pesmd, negative friction" $plumed_nompi pesmd < in
+  printf "temperature 1\nfriction 1\ndimension 0\nnstep 1\n" > in
+  expect_error "pesmd, zero dimension" $plumed_nompi pesmd < in
+  printf "temperature 1\nfriction 1\ndimension 1\nnstep 1\nperiodic yes\n" > in
+  expect_error "pesmd, flag with a wrong value" $plumed_nompi pesmd < in
+  printf "temperature 1\nfrictio 1\ndimension 1\nnstep 1\n" > in
+  expect_error "pesmd, unknown keyword" $plumed_nompi pesmd < in
+  printf "temperature 1\nfriction 1\nnstep 1\n" > in
+  expect_error "pesmd, missing compulsory keyword" $plumed_nompi pesmd < in
+  expect_error "pesmd, missing input file" $plumed_nompi pesmd missing.in
+  rm -f out.pdb out.xyz bck.*
+}
