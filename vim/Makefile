@@ -7,10 +7,24 @@ endif
 
 plumed_compiled := $(wildcard ../src/lib/plumed)
 
+# the syntax files are generated with "plumed manual", which is in the cltools module.
+# cltools is a default-on module, so it is disabled when src/cltools.off exists
+# (see src/maketools/find_modules.sh), e.g. with ./configure --enable-modules=none
+cltools_disabled := $(wildcard ../src/cltools.off)
+
 ifeq ($(strip $(plumed_compiled)),)
 
 all:
 	@echo You must compile plumed before building the VIM syntax file
+
+else
+
+ifneq ($(strip $(cltools_disabled)),)
+
+# files left by a previous build with cltools enabled would be installed otherwise
+all:
+	@echo The cltools module is disabled, so you cannot generate VIM syntax file
+	rm -fr syntax help .syntax.stamp
 
 else
 
@@ -31,6 +45,8 @@ all: .syntax.stamp
 .syntax.stamp: vimsyntax.sh ../src/lib/plumed ../sourceme.sh
 	./vimsyntax.sh
 	touch $@
+
+endif
 
 endif
 
