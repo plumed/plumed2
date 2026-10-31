@@ -179,6 +179,10 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
         if(aaa!=mypdb.getAtomNumbers()) {
           error("frames should contain same atoms in same order");
         }
+        if(mypdb.getAtomNumbers().size()!=getNumberOfAtoms()) {
+          error("eigenvector " + std::to_string(neigenvects) + " contains " + std::to_string(mypdb.getAtomNumbers().size()) +
+                " atoms but the AVERAGE structure contains " + std::to_string(getNumberOfAtoms()));
+        }
         log<<"  Found eigenvector: "<<neigenvects<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
         pdbv.push_back(mypdb);
         eigenvectors.push_back(mypdb.getPositions());

@@ -55,8 +55,17 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   computeRefClose(false),
   nframes(0) {
   parse("LAMBDA",lambda);
+  if( !(lambda>0.0) ) {
+    error("LAMBDA should be positive");
+  }
   parse("NEIGH_SIZE",neigh_size);
   parse("NEIGH_STRIDE",neigh_stride);
+  if( neigh_size>0 && neigh_stride<=0 ) {
+    error("NEIGH_STRIDE should be specified and positive when NEIGH_SIZE is used");
+  }
+  if( neigh_stride>0 && neigh_size<=0 ) {
+    error("NEIGH_SIZE should be specified and positive when NEIGH_STRIDE is used");
+  }
   parse("REFERENCE",reference);
   parse("EPSILON", epsilonClose);
   parse("LOG_CLOSE", logClose);

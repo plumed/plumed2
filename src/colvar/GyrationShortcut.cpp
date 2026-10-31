@@ -191,6 +191,9 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   std::vector<std::string> atoms;
   parseVector("ATOMS",atoms);
   Tools::interpretRanges(atoms);
+  if( atoms.empty() ) {
+    plumed_merror("no atoms were specified, use the ATOMS keyword");
+  }
   std::string gtype, atlist=atoms[0];
   for(unsigned i=1; i<atoms.size(); ++i) {
     atlist += "," + atoms[i];
