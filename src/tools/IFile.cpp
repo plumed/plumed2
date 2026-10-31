@@ -37,34 +37,6 @@
 
 namespace PLMD {
 
-size_t IFile::llread(char*ptr,size_t s) {
-  plumed_assert(fp);
-  size_t r;
-  if(gzfp) {
-#ifdef __PLUMED_HAS_ZLIB
-    int rr=gzread(gzFile(gzfp),ptr,s);
-    if(rr==0) {
-      eof=true;
-    }
-    if(rr<0) {
-      err=true;
-    }
-    r=rr;
-#else
-    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
-#endif
-  } else {
-    r=std::fread(ptr,1,s,fp);
-    if(std::feof(fp)) {
-      eof=true;
-    }
-    if(std::ferror(fp)) {
-      err=true;
-    }
-  }
-  return r;
-}
-
 IFile& IFile::advanceField() {
   plumed_assert(!inMiddleOfField);
   std::string line;
@@ -286,34 +258,83 @@ IFile::~IFile() {
 }
 
 IFile& IFile::getline(std::string &str) {
-  char tmp=0;
-  str="";
-  fpos_t pos;
-  fgetpos(fp,&pos);
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err) {
-    str+=tmp;
+  str.clear();
+  // Lines are read in chunks with fgets/gzgets: reading one character at a time
+  // (as done until v2.10) was about 30 times slower on large files.
+  constexpr int chunk=4096;
+  char buffer[chunk];
+  // number of characters taken from the file for this line,
+  // used to go back to the beginning of an incomplete line
+  long consumed=0;
+  bool newline=false;
+  while(true) {
+    char* r=nullptr;
+    if(gzfp) {
+#ifdef __PLUMED_HAS_ZLIB
+      r=gzgets(gzFile(gzfp),buffer,chunk);
+#else
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
+#endif
+    } else {
+      r=std::fgets(buffer,chunk,fp);
+    }
+    if(!r) {
+      break;
+    }
+    const std::size_t len=std::strlen(buffer);
+    consumed+=len;
+    if(len>0 && buffer[len-1]=='\n') {
+      str.append(buffer,len-1);
+      newline=true;
+      break;
+    }
+    str.append(buffer,len);
   }
-  if(tmp=='\r') {
-    llread(&tmp,1);
-    plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
+  if(!newline) {
+    if(gzfp) {
+#ifdef __PLUMED_HAS_ZLIB
+      int errnum=0;
+      gzerror(gzFile(gzfp),&errnum);
+      if(errnum!=Z_OK && errnum!=Z_BUF_ERROR) {
+        err=true;
+      } else {
+        eof=true;
+      }
+#endif
+    } else {
+      if(std::ferror(fp)) {
+        err=true;
+      } else {
+        eof=true;
+      }
+    }
   }
+  if(newline && !str.empty() && str.back()=='\r') {
+    str.pop_back();
+  }
+  plumed_massert(str.find('\r')==std::string::npos,"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
   if(eof && noEOL) {
     if(str.length()>0) {
       eof=false;
     }
-  } else if(eof || err || tmp!='\n') {
+  } else if(eof || err) {
     eof = true;
-    str="";
-    if(!err) {
-      fsetpos(fp,&pos);
+    str.clear();
+    // Go back to the beginning of the incomplete line, so that it can be read
+    // again when it is complete (e.g. a file that is being written by another walker
+    // and is read again after a reset(false)).
+    // This is also necessary so that eof works properly for emacs files
+    // with no endline at end of file.
+    if(!err && consumed>0) {
+      if(gzfp) {
+#ifdef __PLUMED_HAS_ZLIB
+        gzclearerr(gzFile(gzfp));
+        gzseek(gzFile(gzfp),-consumed,SEEK_CUR);
+#endif
+      } else {
+        std::fseek(fp,-consumed,SEEK_CUR);
+      }
     }
-// there was a fsetpos here that apparently is not necessary
-//  fsetpos(fp,&pos);
-// I think it was necessary to have rewind working correctly
-// after end of file. Since rewind is not used now anywhere,
-// it should be ok not to reset position.
-// This is necessary so that eof works properly for emacs files
-// with no endline at end of file.
   }
   return *this;
 }

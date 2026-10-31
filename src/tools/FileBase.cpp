@@ -78,13 +78,12 @@ bool FileBase::FileExist(const std::string& setpath) {
   path=appendSuffix(setpath,getSuffix());
   mode="r";
   // first try with suffix
-  FILE *ff=std::fopen(const_cast<char*>(path.c_str()),"r");
-  unique_FILE fp_deleter(ff);
-
+  unique_FILE ff(std::fopen(path.c_str(),"r"));
   if(!ff) {
     path=setpath;
-    // then try without suffic
-    ff=std::fopen(const_cast<char*>(path.c_str()),"r");
+    // then try without suffix
+    // (the unique_FILE also closes this second file, which was leaked until v2.10)
+    ff.reset(std::fopen(path.c_str(),"r"));
     mode="r";
   }
   if(ff) {
