@@ -4,5 +4,5 @@ m: MOMENTS ARG=d POWERS=2,3
 cm: CONTACT_MATRIX GROUP=1-64 SWITCH={RATIONAL R_0=1.5 D_MAX=2.5}
 mm: MOMENTS ARG=cm POWERS=2
 h: HIGHEST ARG=cm
-PRINT ARG=s.*,m.*,mm.*,h FILE=colvar FMT=%10.6f
+PRINT ARG=s.*,m.*,mm.*,h FILE=colvar FMT=%8.4f
 RESTRAINT ARG=s.4,m.moment-3,mm.moment-2,h AT=0,0,0,0 KAPPA=1,100,1000,10
