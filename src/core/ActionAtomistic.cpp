@@ -657,7 +657,7 @@ void ActionAtomistic::makeWhole() {
       Vector & second (actionPositions[tree_indexes[j]]);
       second=first+pbcDistance(first,second);
     }
-  } else {
+  } else if(actionPositions.size()>1) {
     for(unsigned j=0; j<actionPositions.size()-1; ++j) {
       const Vector & first (actionPositions[j]);
       Vector & second (actionPositions[j+1]);

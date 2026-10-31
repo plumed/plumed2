@@ -218,7 +218,7 @@ void Value::push_back( const double& v ) {
     shape[0]++;
   } else if( shape.size()==2 ) {
     data.push_back(v);
-    shape[0] = std::ceil( data.size() / shape[1] );
+    shape[0] = ( data.size() + shape[1] - 1 ) / shape[1];
   }
 }
 

@@ -86,7 +86,9 @@ void PbcAction::setPbc() {
     if( allput.size()>1 ) {
       warning("found more than one interface so don't know how to broadcast cell");
     }
-    interface = allput[0];
+    if( !allput.empty() ) {
+      interface = allput[0];
+    }
   }
   Tensor box;
   if( interface ) {

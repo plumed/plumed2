@@ -387,7 +387,7 @@ void Action::warning( const std::string & msg ) {
 void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
-    ActionWithValue*av=castToActionWithValue();
+    ActionWithValue*av=p->castToActionWithValue();
     if(av) {
       av->clearInputForces();
       av->clearDerivatives();
