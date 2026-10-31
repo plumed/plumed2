@@ -36,9 +36,18 @@ static bool gone(pid_t p) {
   return false;
 }
 
+// Returns true if the file appears within ~5 seconds.
+// The trap might be executed after the Subprocess destructor has returned,
+// since the shell launching bash (/bin/sh) might exit before bash itself.
 static bool exists(const std::string & path) {
-  std::ifstream ifs(path);
-  return ifs.good();
+  for(unsigned i=0; i<500; i++) {
+    std::ifstream ifs(path);
+    if(ifs.good()) {
+      return true;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return false;
 }
 
 int main() {

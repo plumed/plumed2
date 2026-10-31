@@ -107,11 +107,17 @@ public:
         interval*=2;
       }
     }
-    // Kill whatever is left in the process group: the shell itself if it ignored
-    // SIGTERM, or processes that it spawned and that are still alive.
+    // If the shell did not exit within the grace period (e.g. because it ignores SIGTERM),
+    // kill the whole process group.
     // This is safe since the shell has not been reaped yet, so the pgid cannot
-    // have been recycled. If nothing is left, kill() just fails with ESRCH.
-    kill(-pid,SIGKILL);
+    // have been recycled.
+    // Notice that if the shell has exited we do not send SIGKILL to the rest of the group:
+    // processes started by the shell received SIGTERM as well, and they might still be
+    // running their cleanup (e.g. a bash EXIT trap in a script launched by a
+    // shell that does not exec it).
+    if(!exited()) {
+      kill(-pid,SIGKILL);
+    }
     // Reap the shell. This is anyway required to avoid leaks
     int status;
     while(waitpid(pid, &status, 0)<0 && errno==EINTR) {}
