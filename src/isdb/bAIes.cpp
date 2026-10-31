@@ -105,7 +105,7 @@ void BAIES::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","atoms used in the calculation of bAIes energy");
   keys.add("compulsory","DATA_FILE","file with AF2 fit parameters");
   keys.add("compulsory","PRIOR", "type of prior to use (NONE, JEFFREYS, CAUCHY");
-  keys.add("optional","TEMP", "temperature in kBt units");
+  keys.add("optional","TEMP", "temperature of the system, by default the one passed by the MD engine");
   keys.add("optional","SIGMA_MIN", "minimum value of sigma");
   keys.addOutputComponent("ene","default","scalar","Bayesian bAIes energy");
 }
@@ -145,9 +145,11 @@ BAIES::BAIES(const ActionOptions&ao):
   pbc_=!nopbc;
 
   // set kbt
-  //kbt_ = plumed.getAtoms().getKbT();
+  // getkBT reads TEMP (in kelvin) and converts it to energy units
   kbt_ = getkBT();
-  parse("TEMP", kbt_);
+  if(kbt_<=0.0) {
+    error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
+  }
 
   // set sigma_min
   double sigma_min = -1.0;
@@ -208,7 +210,7 @@ void BAIES::read_data_file(const std::string datafile, const std::vector<AtomNum
     index[atoms[i].serial()]=i;
   }
 // open file
-  IFile *ifile = new IFile();
+  auto ifile=Tools::make_unique<IFile>();
   if(ifile->FileExist(datafile)) {
     ifile->open(datafile);
     // read constant fields
@@ -220,18 +222,34 @@ void BAIES::read_data_file(const std::string datafile, const std::vector<AtomNum
     } else {
       error("Missing noise model type in DATA_FILE");
     }
+    // position of an atom (given by its serial) in the ATOMS list
+    auto getIndex=[&](const unsigned serial) {
+      const auto it=index.find(serial);
+      if(it==index.end()) {
+        std::string s;
+        Tools::convert(serial,s);
+        error("atom "+s+" is in DATA_FILE but not in ATOMS");
+      }
+      return it->second;
+    };
     // read line-by-line
     while(ifile->scanField("Id",id)) {
       ifile->scanField("atom_i",ai);
       ifile->scanField("atom_j",aj);
       ifile->scanField("mu",mu);
       ifile->scanField("sigma",sigma);
+      if(ai==aj) {
+        error("atom_i and atom_j must be different in DATA_FILE");
+      }
       // list of pairs of atoms
-      atom_pairs_.push_back(std::make_pair(index[ai],index[aj]));
+      atom_pairs_.push_back(std::make_pair(getIndex(ai),getIndex(aj)));
       // list of mus
       mus_.push_back(mu);
       // list of sigmas
       sigmas_.push_back(std::max(smin,sigma));
+      if(!(sigmas_.back()>0.)) {
+        error("sigma must be positive in DATA_FILE (or use SIGMA_MIN)");
+      }
       // new line
       ifile->scanField();
     }
@@ -239,7 +257,6 @@ void BAIES::read_data_file(const std::string datafile, const std::vector<AtomNum
   } else {
     error("Cannot find DATA_FILE "+datafile+"\n");
   }
-  delete ifile;
 }
 
 // Energy models
