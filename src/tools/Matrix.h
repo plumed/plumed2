@@ -72,6 +72,8 @@ class Matrix:
   template <typename U> friend void matrixOut( Log&, const Matrix<U>& );
   /// Diagonalize a symmetric matrix - returns zero if diagonalization worked
   template <typename U> friend int diagMat( const Matrix<U>&, std::vector<U>&, Matrix<U>& );
+  /// Diagonalize a symmetric matrix computing only the eigenpairs from first to last (0-based, ascending eigenvalues) - returns zero if diagonalization worked
+  template <typename U> friend int diagMatRange( const Matrix<U>&, unsigned, unsigned, std::vector<U>&, Matrix<U>& );
   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
   template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<U>& );
   /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if successful
@@ -409,11 +411,21 @@ template <typename T> bool choleskyInvert( const Matrix<T>& A, Matrix<T>& invers
   return true;
 }
 
-template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
+template <typename T> int diagMatRange( const Matrix<T>& A, unsigned first, unsigned last, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
 
   // Check matrix is square and symmetric
   plumed_assert( A.rw==A.cl );
   plumed_assert( A.isSymmetric()==1 );
+  if( eigenvals.size()!=A.cl ) {
+    eigenvals.resize( A.cl );
+  }
+  if( eigenvecs.rw!=A.rw || eigenvecs.cl!=A.cl ) {
+    eigenvecs.resize( A.rw, A.cl );
+  }
+  if( A.cl==0 ) {
+    return 0;
+  }
+  plumed_assert( first<=last && last<A.cl );
   std::vector<T> da(A.sz);
   unsigned k=0;
   std::vector<T> evals(A.cl);
@@ -428,18 +440,21 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   int liwork=-1;
   int m;
   int info=0;
-  int one=1;
+  // dsyevr numbers the eigenvalues from 1, in ascending order
+  int il=first+1;
+  int iu=last+1;
+  const unsigned nev=last-first+1;
   std::vector<T> work(A.cl);
   std::vector<int> iwork(A.cl);
   T vl, vu, abstol=0.0;
-  std::vector<int> isup(2*A.cl);
-  std::vector<T> evecs(A.sz);
+  std::vector<int> isup(2*nev);
+  std::vector<T> evecs(static_cast<std::size_t>(A.cl)*nev);
   if constexpr (std::is_same_v<T,double>) {
-    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else {
@@ -456,11 +471,11 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   work.resize(lwork);
 
   if constexpr (std::is_same_v<T,double>) {
-    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else {
@@ -470,15 +485,9 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
     return info;
   }
 
-  if( eigenvals.size()!=A.cl ) {
-    eigenvals.resize( A.cl );
-  }
-  if( eigenvecs.rw!=A.rw || eigenvecs.cl!=A.cl ) {
-    eigenvecs.resize( A.rw, A.cl );
-  }
   k=0;
-  for(unsigned i=0; i<A.cl; ++i) {
-    eigenvals[i]=evals[i];
+  for(unsigned i=first; i<=last; ++i) {
+    eigenvals[i]=evals[i-first];
     // N.B. For ease of producing projectors we store the eigenvectors
     // ROW-WISE in the eigenvectors matrix.  The first index is the
     // eigenvector number and the second the component
@@ -491,7 +500,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
-  for(int i=0; i<n; ++i) {
+  for(unsigned i=first; i<=last; ++i) {
     int j;
     for(j=0; j<n; j++)
       if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) {
@@ -506,7 +515,24 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   return 0;
 }
 
+template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
+  if( A.cl==0 ) {
+    return diagMatRange( A, 0, 0, eigenvals, eigenvecs );
+  }
+  return diagMatRange( A, 0, A.cl-1, eigenvals, eigenvecs );
+}
+
 template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinverse ) {
+  const unsigned nrows=A.rw, ncols=A.cl;
+  const unsigned nsv=std::min(nrows,ncols);
+  if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) {
+    pseudoinverse.resize( ncols, nrows );
+  }
+  pseudoinverse=static_cast<T>( 0 );
+  if( nsv==0 ) {
+    return 0;
+  }
+
   std::vector<T> da(A.sz);
   unsigned k=0;
   // Transfer the matrix to the local array
@@ -515,31 +541,26 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
       da[k++]=static_cast<T>( A(j,i) );
     }
 
-  int nsv;
   int info=0;
-  int nrows=A.rw, ncols=A.cl;
-  if(A.rw>A.cl) {
-    nsv=A.cl;
-  } else {
-    nsv=A.rw;
-  }
+  int nr=nrows, nc=ncols, ns=nsv;
 
-  // Create some containers for stuff from single value decomposition
+  // Create some containers for stuff from the thin singular value decomposition A=U*S*VT
+  // (U is nrows x nsv and VT is nsv x ncols, both stored column by column)
   std::vector<T> S(nsv);
-  std::vector<T> U(nrows*nrows);
-  std::vector<T> VT(ncols*ncols);
+  std::vector<T> U(static_cast<std::size_t>(nrows)*nsv);
+  std::vector<T> VT(static_cast<std::size_t>(nsv)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<T> work(1);
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_dgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &ns, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_sgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &ns, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -554,12 +575,12 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
 
   // This does the singular value decomposition
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_dgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &ns, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_sgesdd( "S", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &ns, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -571,46 +592,28 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
   T tol;
   tol=S[0];
-  for(int i=1; i<nsv; ++i) {
+  for(unsigned i=1; i<nsv; ++i) {
     if( S[i]>tol ) {
       tol=S[i];
     }
   }
   tol*=nsv*epsilon;
 
-  // Get the inverses of the singlular values
-  Matrix<T> Si( ncols, nrows );
-  Si=0.0;
-  for(int i=0; i<nsv; ++i) {
-    if( S[i]>tol ) {
-      Si(i,i)=1./S[i];
-    } else {
-      Si(i,i)=0.0;
+  // pseudoinverse = V * S^{-1} * U^T = sum_k (column k of V) (column k of U)^T / S_k,
+  // summing only over the singular values larger than the tolerance
+  for(unsigned isv=0; isv<nsv; ++isv) {
+    if( !(S[isv]>tol) ) {
+      continue;
+    }
+    const T inv=static_cast<T>(1)/S[isv];
+    const T* Uk=U.data()+static_cast<std::size_t>(isv)*nrows;
+    for(unsigned i=0; i<ncols; ++i) {
+      const T a=inv*VT[isv+static_cast<std::size_t>(i)*nsv];
+      for(unsigned j=0; j<nrows; ++j) {
+        pseudoinverse(i,j)+=a*Uk[j];
+      }
     }
   }
-
-  // Now extract matrices for pseudoinverse
-  Matrix<T> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows );
-  k=0;
-  for(int i=0; i<nrows; ++i) {
-    for(int j=0; j<nrows; ++j) {
-      UT(i,j)=U[k++];
-    }
-  }
-  k=0;
-  for(int i=0; i<ncols; ++i) {
-    for(int j=0; j<ncols; ++j) {
-      V(i,j)=VT[k++];
-    }
-  }
-
-  // And do matrix algebra to construct the pseudoinverse
-  if( pseudoinverse.rw!=static_cast<unsigned>(ncols)
-      || pseudoinverse.cl!=static_cast<unsigned>(nrows) ) {
-    pseudoinverse.resize( ncols, nrows );
-  }
-  mult( V, Si, tmp );
-  mult( tmp, UT, pseudoinverse );
 
   return 0;
 }

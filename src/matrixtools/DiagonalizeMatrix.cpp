@@ -22,6 +22,8 @@
 #include "MatrixOperationBase.h"
 #include "core/ActionRegister.h"
 
+#include <algorithm>
+
 //+PLUMEDOC ANALYSIS DIAGONALIZE
 /*
 Calculate the eigenvalues and eigenvectors of a square matrix
@@ -170,8 +172,16 @@ void DiagonalizeMatrix::calculate() {
 
   // Retrieve the matrix from input
   retrieveFullMatrix( mymatrix );
-  // Now diagonalize the matrix
-  diagMat( mymatrix, eigvals, eigvecs );
+  // Now diagonalize the matrix. The forces on an eigenvector depend on all the eigenvectors,
+  // so they are all computed when derivatives are needed. Otherwise only the eigenpairs from
+  // the smallest requested one to the largest eigenvalue are computed, which is faster
+  // when only a few of the largest eigenvalues are requested (e.g. VECTORS=1)
+  if( doNotCalculateDerivatives() ) {
+    const unsigned maxvec=*std::max_element( desired_vectors.begin(), desired_vectors.end() );
+    diagMatRange( mymatrix, nvals-maxvec, nvals-1, eigvals, eigvecs );
+  } else {
+    diagMat( mymatrix, eigvals, eigvecs );
+  }
   // And set the eigenvalues and eigenvectors
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     getPntrToComponent(2*i)->set( eigvals[ mymatrix.ncols()-desired_vectors[i]] );
