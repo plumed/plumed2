@@ -248,11 +248,22 @@ template <typename T> void mult( const Matrix<T>& A, const Matrix<T>& B, Matrix<
     C.resize( A.rw, B.cl );
   }
   C=static_cast<T>( 0 );
-  for(unsigned i=0; i<A.rw; ++i)
-    for(unsigned j=0; j<B.cl; ++j)
-      for (unsigned k=0; k<A.cl; ++k) {
-        C(i,j)+=A(i,k)*B(k,j);
+  // i-k-j loop order: the innermost loop runs over contiguous elements of B and C,
+  // so it is cache friendly and can be vectorized. For each element of C the
+  // products are summed in the same order as with the i-j-k loop order.
+  const T* a=A.data.data();
+  const T* b=B.data.data();
+  T* c=C.data.data();
+  for(unsigned i=0; i<A.rw; ++i) {
+    T* ci=c+i*B.cl;
+    for(unsigned k=0; k<A.cl; ++k) {
+      const T aik=a[i*A.cl+k];
+      const T* bk=b+k*B.cl;
+      for(unsigned j=0; j<B.cl; ++j) {
+        ci[j]+=aik*bk[j];
       }
+    }
+  }
 }
 
 template <typename T> void mult( const Matrix<T>& A, const std::vector<T>& B, std::vector<T>& C) {
@@ -277,8 +288,9 @@ template <typename T> void mult( const std::vector<T>& A, const Matrix<T>& B, st
   for(unsigned i=0; i<B.cl; ++i) {
     C[i]=static_cast<T>( 0 );
   }
-  for(unsigned i=0; i<B.cl; ++i)
-    for(unsigned k=0; k<B.rw; ++k) {
+  // loop on the rows of B in the outer loop, so that the inner loop is on contiguous elements
+  for(unsigned k=0; k<B.rw; ++k)
+    for(unsigned i=0; i<B.cl; ++i) {
       C[i]+=A[k]*B(k,i);
     }
 }
@@ -308,6 +320,93 @@ template <typename T> void matrixOut( Log& ostr, const Matrix<T>& mat) {
     ostr<<"\n";
   }
   return;
+}
+
+/// Cholesky factorization A=L*L^T of a symmetric positive definite n x n matrix.
+/// Only the upper triangle of A is read (as done by diagMat). L is returned as a lower
+/// triangular matrix stored row by row in a vector of size n*n.
+/// Returns false if A is not positive definite (or contains NaNs).
+template <typename T> bool choleskyFactorization( const Matrix<T>& A, std::vector<T>& L ) {
+  const unsigned n=A.nrows();
+  plumed_assert( A.ncols()==n );
+  // Right-looking factorization A=U^T*U working on the rows of the upper triangle,
+  // so that the innermost loop is a vectorizable update of contiguous elements
+  std::vector<T> U(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned j=0; j<n; ++j)
+    for(unsigned i=j; i<n; ++i) {
+      U[static_cast<std::size_t>(j)*n+i]=A(j,i);
+    }
+  for(unsigned j=0; j<n; ++j) {
+    T* Uj=U.data()+static_cast<std::size_t>(j)*n;
+    if( !(Uj[j]>0) ) {
+      return false;
+    }
+    Uj[j]=std::sqrt(Uj[j]);
+    const T invd=static_cast<T>(1)/Uj[j];
+    for(unsigned i=j+1; i<n; ++i) {
+      Uj[i]*=invd;
+    }
+    for(unsigned i=j+1; i<n; ++i) {
+      const T uji=Uj[i];
+      T* Ui=U.data()+static_cast<std::size_t>(i)*n;
+      for(unsigned k=i; k<n; ++k) {
+        Ui[k]-=uji*Uj[k];
+      }
+    }
+  }
+  L.assign(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned i=0; i<n; ++i)
+    for(unsigned j=0; j<=i; ++j) {
+      L[static_cast<std::size_t>(i)*n+j]=U[static_cast<std::size_t>(j)*n+i];
+    }
+  return true;
+}
+
+/// Inverse of a symmetric positive definite matrix from its Cholesky factorization.
+/// Returns false (and leaves inverse untouched) if A is not positive definite.
+template <typename T> bool choleskyInvert( const Matrix<T>& A, Matrix<T>& inverse ) {
+  const unsigned n=A.nrows();
+  std::vector<T> L;
+  if( !choleskyFactorization( A, L ) ) {
+    return false;
+  }
+  // Compute M=L^{-1} (lower triangular) row by row: M_i = (e_i - sum_{k<i} L_ik M_k) / L_ii
+  std::vector<T> M(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned i=0; i<n; ++i) {
+    const T* Li=L.data()+static_cast<std::size_t>(i)*n;
+    T* Mi=M.data()+static_cast<std::size_t>(i)*n;
+    Mi[i]=static_cast<T>(1);
+    for(unsigned k=0; k<i; ++k) {
+      const T lik=Li[k];
+      const T* Mk=M.data()+static_cast<std::size_t>(k)*n;
+      for(unsigned j=0; j<=k; ++j) {
+        Mi[j]-=lik*Mk[j];
+      }
+    }
+    const T invd=static_cast<T>(1)/Li[i];
+    for(unsigned j=0; j<=i; ++j) {
+      Mi[j]*=invd;
+    }
+  }
+  // A^{-1} = M^T M = sum_k (row k of M)^T (row k of M); compute the lower triangle
+  if( inverse.nrows()!=n || inverse.ncols()!=n ) {
+    inverse.resize(n,n);
+  }
+  inverse=static_cast<T>(0);
+  for(unsigned k=0; k<n; ++k) {
+    const T* Mk=M.data()+static_cast<std::size_t>(k)*n;
+    for(unsigned p=0; p<=k; ++p) {
+      const T mkp=Mk[p];
+      for(unsigned q=0; q<=p; ++q) {
+        inverse(p,q)+=mkp*Mk[q];
+      }
+    }
+  }
+  for(unsigned p=0; p<n; ++p)
+    for(unsigned q=0; q<p; ++q) {
+      inverse(q,p)=inverse(p,q);
+    }
+  return true;
 }
 
 template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
@@ -519,6 +618,11 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
 template <typename T> int Invert( const Matrix<T>& A, Matrix<T>& inverse ) {
 
   if( A.isSymmetric()==1 ) {
+    // Symmetric positive definite matrices (e.g. covariance and metric matrices) are inverted
+    // with a Cholesky factorization, which is several times faster than diagonalizing them.
+    if( choleskyInvert( A, inverse ) ) {
+      return 0;
+    }
     // GAT -- I only ever use symmetric matrices so I can invert them like this.
     // I choose to do this as I have had problems with the more general way of doing this that
     // is implemented below.
@@ -650,6 +754,18 @@ template <typename T> void chol_elsolve( const Matrix<T>& M, const std::vector<T
 template <typename T> int logdet( const Matrix<T>& M, T& ldet ) {
   // Check matrix is square and symmetric
   plumed_assert( M.rw==M.cl || M.isSymmetric() );
+
+  // For a positive definite matrix, log(det(M)) = 2 sum_i log(L_ii) with M=L*L^T
+  {
+    std::vector<T> L;
+    if( choleskyFactorization( M, L ) ) {
+      ldet=0;
+      for(unsigned i=0; i<M.rw; ++i) {
+        ldet+=2*std::log(L[static_cast<std::size_t>(i)*M.rw+i]);
+      }
+      return 0;
+    }
+  }
 
   std::vector<T> da(M.sz);
   unsigned k=0;
