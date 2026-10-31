@@ -198,6 +198,9 @@ void SecondaryStructureBase<T,myPTM>::readBackboneAtoms( ActionShortcut* action,
       all_atoms.push_back( bat_str );
     }
   }
+  if( all_atoms.empty() ) {
+    action->error("no backbone atoms were found for the residues specified with RESIDUES");
+  }
 }
 
 template <class T,typename myPTM>
