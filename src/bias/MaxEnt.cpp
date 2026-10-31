@@ -248,6 +248,9 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(apply_weights.size()==0) {
     apply_weights.resize(nrep,1.0);
   }
+  if(apply_weights.size()!=static_cast<std::size_t>(nrep)) {
+    error("APPLY_WEIGHTS should have one value per replica");
+  }
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   parseVector("TAU",tau);
