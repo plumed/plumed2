@@ -193,6 +193,10 @@ class OFile:
   bool enforceRestart_;
 /// True if backup behavior (i.e. non restart) should be forced
   bool enforceBackup_;
+/// Check that no other OFile linked to the same PlumedMain object
+/// is currently writing on the file this->path.
+/// Throws an exception if this is the case.
+  void checkNotOpenElsewhere()const;
 public:
 /// Constructor
   OFile();
