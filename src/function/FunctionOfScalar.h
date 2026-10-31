@@ -42,6 +42,8 @@ private:
   unsigned argstart;
 /// The function that is being computed
   T myfunc;
+/// Buffers for the arguments, values and derivatives (kept to avoid allocations at every step)
+  std::vector<double> args, vals, deriv;
 public:
   explicit FunctionOfScalar(const ActionOptions&);
   virtual ~FunctionOfScalar() {}
@@ -94,16 +96,18 @@ std::string FunctionOfScalar<T>::getOutputComponentDescription( const std::strin
   if( getName().find("SORT")==std::string::npos ) {
     return ActionWithValue::getOutputComponentDescription( cname, keys );
   }
-  return "the " + cname + "th largest of the input scalars";
+  return "the " + cname + "th smallest of the input scalars";
 }
 
 template <class T>
 void FunctionOfScalar<T>::calculate() {
-  std::vector<double> args( getNumberOfArguments() - argstart );
+  args.resize( getNumberOfArguments() - argstart );
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     args[i-argstart]=getPntrToArgument(i)->get();
   }
-  std::vector<double> vals( getNumberOfComponents() ), deriv( getNumberOfComponents()*args.size() );
+  // functions only set the derivatives that are not zero, so the buffers are reset here
+  vals.assign( getNumberOfComponents(), 0.0 );
+  deriv.assign( getNumberOfComponents()*args.size(), 0.0 );
   auto funcout = FunctionOutput::create( getNumberOfComponents(),
                                          vals.data(),
                                          args.size(),

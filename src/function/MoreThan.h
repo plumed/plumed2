@@ -79,7 +79,7 @@ void MoreThan::read( MoreThan& func, ActionWithArguments* action, FunctionOption
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
-      action->error("should only be one argument to less_than actions");
+      action->error("should only be one argument to this action");
     }
   }
   if( action->getPntrToArgument(0)->isPeriodic() ) {
