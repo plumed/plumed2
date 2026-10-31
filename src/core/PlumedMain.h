@@ -404,6 +404,10 @@ public:
   void insertFile(FileBase&);
 /// Erase a file
   void eraseFile(FileBase&);
+/// Get the files currently registered with insertFile()
+  const std::set<FileBase*> & getFiles()const {
+    return files;
+  }
 /// Flush all files
   void fflush();
 /// Check if restarting
