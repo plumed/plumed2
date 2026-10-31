@@ -418,10 +418,10 @@ PIV::PIV(const ActionOptions&ao):
   unsigned resnum=0;
   // Presind (array size: number of residues) contains the contains the residue number
   //   this is because the residue numbers may not always be ordered from 1 to resnum
-  std:: vector<unsigned> Presind;
+  std::vector<int> Presind;
   // Build Presind
   for (unsigned i=0; i<mypdb.getAtomNumbers().size(); i++) {
-    unsigned rind=mypdb.getResidueNumber(mypdb.getAtomNumbers()[i]);
+    const int rind=mypdb.getResidueNumber(mypdb.getAtomNumbers()[i]);
     bool oldres=false;
     for (unsigned j=0; j<Presind.size(); j++) {
       if(rind==Presind[j]) {
@@ -465,7 +465,7 @@ PIV::PIV(const ActionOptions&ao):
       string rname=mypdb.getResidueName(anum);
       string aname=mypdb.getAtomName(anum);
       // Index associated to residue/atom: used to separate COM-lists
-      unsigned rind=mypdb.getResidueNumber(anum);
+      const int rind=mypdb.getResidueNumber(anum);
       unsigned aind=anum.index();
       // This builds lists for NL
       string Pname;

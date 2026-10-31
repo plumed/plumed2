@@ -295,7 +295,7 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
   return false;
 }
 
-void MolDataClass::getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms ) {
+void MolDataClass::getBackboneForResidue( const std::string& type, int residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms ) {
   std::string residuename=mypdb.getResidueName( residuenum );
   plumed_massert( MolDataClass::allowedResidue( type, residuename ), "residue " + residuename + " unrecognized for molecule type " + type );
   if( type=="protein" ) {
@@ -442,8 +442,13 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
 
     std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
+    // a minus sign right before the residue number is part of the number (negative residue number),
+    // e.g. @phi--3, @phi-A-3 (chain A, residue -3) and @phi-A_-3
+    if(firstnum!=std::string::npos && firstnum>dash+1 && symbol[firstnum-1]=='-') {
+      firstnum--;
+    }
     std::string name=symbol.substr(0,dash);
-    unsigned resnum;
+    int resnum;
     std::string resname;
     std::string chainid;
     if(firstunderscore != std::string::npos) {
