@@ -149,7 +149,7 @@ std::string LocalEnsemble::getOutputComponentDescription( const std::string& cna
 void LocalEnsemble::calculate() {
   const double fact = 1.0/static_cast<double>(ens_dim);
   // each iteration costs a few flops: only use threads when there are many arguments
-  const unsigned nt = narg*ens_dim>10000 ? OpenMP::getNumThreads() : 1;
+  [[maybe_unused]] const unsigned nt = narg*ens_dim>10000 ? OpenMP::getNumThreads() : 1;
   #pragma omp parallel for num_threads(nt) if(nt>1)
   for(unsigned i=0; i<narg; ++i) {
     double mean = 0.;
