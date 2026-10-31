@@ -85,6 +85,33 @@ case "$WHAT" in
 esac
 
 
+# Stop here, before touching the remote, if what is going to be published looks wrong
+check_fail() {
+  echo "++++ ERROR ++++"
+  echo "$1"
+  echo "Not pushing ${WHAT} for ${BRANCH}"
+  exit 1
+}
+case "$WHAT" in
+(doc)
+  test -s user-doc/html/index.html || check_fail "user manual missing or empty (new-manual/site/index.html): did the manual build fail?"
+  test -s developer-doc/html/index.html || check_fail "developer manual missing or empty (developer-doc/html/index.html): did the doxygen build fail?"
+  ;;
+(coverage)
+  test -s coverage/index.html || check_fail "coverage report missing or empty (developer-doc/coverage/index.html)"
+  test -s coverage-libs/index.html || check_fail "coverage report for the libraries missing or empty (developer-doc/coverage-libs/index.html)"
+  ;;
+esac
+# the size is reported to help understanding a failing push; GitHub rejects files larger than 100MB
+set +x
+echo "Content to be pushed: $(du -sh . | cut -f1) in $(find . -type f | wc -l) files. Largest files:"
+find . -type f -exec ls -l {} + | sort -k5 -n -r | head -5
+big=$(find . -type f -size +95M)
+if test -n "$big" ; then
+  check_fail "these files are too large for GitHub (limit is 100MB): $big"
+fi
+set -x
+
 # This file should be here, it is needed otherwise
 # files beginning with _ are skipped
 touch .nojekyll
@@ -210,13 +237,20 @@ esac
 git add --all .
 # >/dev/null to avoid excessive noise on travis log
 git commit -m "Update to ${GIT_OWNER}/${GIT_REPO}@$hash" >/dev/null
-# -q and 2> is not to show the GIT_TOKEN on Travis log
-git push -q -f doc gh-pages 2> /dev/null || {
+# The output of git push is kept and shown if the push fails, since it is the only way to know why it failed.
+# GIT_TOKEN is masked by GitHub Actions, but it is removed here too, so that it does not leak on other CI systems.
+pusherr="$root/tmp/push.err.$$"
+if ! git push -q -f doc gh-pages > "$pusherr" 2>&1 ; then
+  set +x
   echo "++++ WARNING ++++"
-  echo "Pushing on repository https://${GIT_BOT}@github.com/$GIT_OWNER/doc-${BRANCH}.git failed"
-  echo "Please check if the repository exists"
+  echo "Pushing on repository https://${GIT_BOT}@github.com/$GIT_OWNER/${WHAT}-${BRANCH}.git failed"
+  echo "Output of git push:"
+  err=$(<"$pusherr")
+  echo "${err//"$GIT_TOKEN"/***}"
+  echo "Please check if the repository exists, if the token is still valid and has write access,"
+  echo "and if the content is acceptable for GitHub (see the size report above)"
   if [[ "$branchtype" != unofficial ]] ; then
      echo "This is an error on official, unsupported, and master branches"
      exit 1
   fi
-}
+fi
