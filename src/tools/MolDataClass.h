@@ -39,8 +39,9 @@ public:
   static bool allowedResidue( const std::string& type, const std::string& residuename );
 /// Return the number of atoms in the backbone per residue e.g. 5 for proteins
   static unsigned numberOfAtomsPerResidueInBackbone( const std::string& type );
-/// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues
-  static void getBackboneForResidue( const std::string& type, int residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms );
+/// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues.
+/// The residue is searched in the chain named chain ("*" matches any chain, picking the first residue with that number)
+  static void getBackboneForResidue( const std::string& type, int residuenum, const std::string& chain, const PDB& mypdb, std::vector<AtomNumber>& atoms );
 /// Return true if the residue is a terminal group e.g. ACE, NME for proteins
   static bool isTerminalGroup( const std::string& type, const std::string& residuename );
 /// Used to interpret special symbols - currently phi and psi and omega

@@ -295,39 +295,39 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
   return false;
 }
 
-void MolDataClass::getBackboneForResidue( const std::string& type, int residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms ) {
-  std::string residuename=mypdb.getResidueName( residuenum );
+void MolDataClass::getBackboneForResidue( const std::string& type, int residuenum, const std::string& chain, const PDB& mypdb, std::vector<AtomNumber>& atoms ) {
+  std::string residuename=mypdb.getResidueName( residuenum, chain );
   plumed_massert( MolDataClass::allowedResidue( type, residuename ), "residue " + residuename + " unrecognized for molecule type " + type );
   if( type=="protein" ) {
     if( residuename=="GLY") {
       atoms.resize(5);
-      atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
-      atoms[1]=mypdb.getNamedAtomFromResidue("CA",residuenum);
-      atoms[2]=mypdb.getNamedAtomFromResidue("HA2",residuenum);
-      atoms[3]=mypdb.getNamedAtomFromResidue("C",residuenum);
-      atoms[4]=mypdb.getNamedAtomFromResidue("O",residuenum);
+      atoms[0]=mypdb.getNamedAtomFromResidueAndChain("N",residuenum,chain);
+      atoms[1]=mypdb.getNamedAtomFromResidueAndChain("CA",residuenum,chain);
+      atoms[2]=mypdb.getNamedAtomFromResidueAndChain("HA2",residuenum,chain);
+      atoms[3]=mypdb.getNamedAtomFromResidueAndChain("C",residuenum,chain);
+      atoms[4]=mypdb.getNamedAtomFromResidueAndChain("O",residuenum,chain);
     } else if( residuename=="ACE") {
       atoms.resize(1);
-      atoms[0]=mypdb.getNamedAtomFromResidue("C",residuenum);
+      atoms[0]=mypdb.getNamedAtomFromResidueAndChain("C",residuenum,chain);
     } else if( residuename=="NME"||residuename=="NH2") {
       atoms.resize(1);
-      atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
+      atoms[0]=mypdb.getNamedAtomFromResidueAndChain("N",residuenum,chain);
     } else {
       atoms.resize(5);
-      atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
-      atoms[1]=mypdb.getNamedAtomFromResidue("CA",residuenum);
-      atoms[2]=mypdb.getNamedAtomFromResidue("CB",residuenum);
-      atoms[3]=mypdb.getNamedAtomFromResidue("C",residuenum);
-      atoms[4]=mypdb.getNamedAtomFromResidue("O",residuenum);
+      atoms[0]=mypdb.getNamedAtomFromResidueAndChain("N",residuenum,chain);
+      atoms[1]=mypdb.getNamedAtomFromResidueAndChain("CA",residuenum,chain);
+      atoms[2]=mypdb.getNamedAtomFromResidueAndChain("CB",residuenum,chain);
+      atoms[3]=mypdb.getNamedAtomFromResidueAndChain("C",residuenum,chain);
+      atoms[4]=mypdb.getNamedAtomFromResidueAndChain("O",residuenum,chain);
     }
   } else if( type=="dna" || type=="rna" ) {
     atoms.resize(6);
-    atoms[0]=mypdb.getNamedAtomFromResidue("P",residuenum);
-    atoms[1]=mypdb.getNamedAtomFromResidue("O5\'",residuenum);
-    atoms[2]=mypdb.getNamedAtomFromResidue("C5\'",residuenum);
-    atoms[3]=mypdb.getNamedAtomFromResidue("C4\'",residuenum);
-    atoms[4]=mypdb.getNamedAtomFromResidue("C3\'",residuenum);
-    atoms[5]=mypdb.getNamedAtomFromResidue("O3\'",residuenum);
+    atoms[0]=mypdb.getNamedAtomFromResidueAndChain("P",residuenum,chain);
+    atoms[1]=mypdb.getNamedAtomFromResidueAndChain("O5\'",residuenum,chain);
+    atoms[2]=mypdb.getNamedAtomFromResidueAndChain("C5\'",residuenum,chain);
+    atoms[3]=mypdb.getNamedAtomFromResidueAndChain("C4\'",residuenum,chain);
+    atoms[4]=mypdb.getNamedAtomFromResidueAndChain("C3\'",residuenum,chain);
+    atoms[5]=mypdb.getNamedAtomFromResidueAndChain("O3\'",residuenum,chain);
   } else {
     plumed_merror(type + " is not a valid molecule type");
   }
