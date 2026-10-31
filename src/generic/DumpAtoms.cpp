@@ -27,6 +27,7 @@
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "tools/Units.h"
+#include "tools/Communicator.h"
 #include "tools/CheckInRange.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
@@ -280,7 +281,7 @@ class DumpAtoms:
   std::string fmt_gro_pos;
   std::string fmt_gro_box;
   std::string fmt_xyz;
-  xdrfile::XDRFILE* xd;
+  xdrfile::XDRFILE* xd=nullptr;
 public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
@@ -393,12 +394,19 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   std::string path=of.getPath();
   log<<"  Writing on file "<<path<<"\n";
   std::string mode=of.getMode();
-  if(type=="xtc") {
+  if(type=="xtc" || type=="trr") {
     of.close();
-    xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
-  } else if(type=="trr") {
-    of.close();
-    xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
+    // only the first process of each replica writes: the positions are the same
+    // on all of them, and several processes writing on the same file corrupt it
+    int ok=1;
+    if(comm.Get_rank()==0) {
+      xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
+      ok=(xd!=nullptr);
+    }
+    comm.Bcast(ok,0);
+    if(!ok) {
+      error("cannot open file " + path);
+    }
   }
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -548,6 +556,9 @@ void DumpAtoms::update() {
               lenunit*t(0,1),lenunit*t(0,2),lenunit*t(1,0),
               lenunit*t(1,2),lenunit*t(2,0),lenunit*t(2,1));
   } else if(type=="xtc" || type=="trr") {
+    if(!xd) {
+      return;
+    }
     xdrfile::matrix box;
     const Tensor & t(getPbc().getBox());
     int natoms=getNumberOfAtoms();
@@ -576,9 +587,7 @@ void DumpAtoms::update() {
 }
 
 DumpAtoms::~DumpAtoms() {
-  if(type=="xtc") {
-    xdrfile_close(xd);
-  } else if(type=="trr") {
+  if(xd) {
     xdrfile_close(xd);
   }
 }

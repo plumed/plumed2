@@ -224,7 +224,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   parse("TYPE",type);
 
   parseFlag("NOPBC",nopbc);
-// if(type!="SIMPLE") error("Only TYPE=SIMPLE is implemented in FIT_TO_TEMPLATE");
+  if(type!="SIMPLE" && type!="OPTIMAL" && type!="OPTIMAL-FAST") {
+    error("unknown TYPE " + type + ": use SIMPLE, OPTIMAL or OPTIMAL-FAST");
+  }
 
   checkRead();
 
@@ -273,6 +275,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   n=0.0;
   for(unsigned i=0; i<weights_measure.size(); ++i) {
     n+=weights_measure[i];
+  }
+  if(n==0.0 && type!="SIMPLE") {
+    error("PDB file " + reference + " has zero weights for the RMSD. Please check the beta column.");
   }
   n=1.0/n;
   for(unsigned i=0; i<weights_measure.size(); ++i) {
