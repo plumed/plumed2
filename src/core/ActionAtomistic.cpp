@@ -649,12 +649,13 @@ void ActionAtomistic::makeWhole() {
     // make sure the tree has been constructed
     if(!tree) {
       tree=std::make_unique<Tree>(actionMoldat);
+      tree->buildTree(getAbsoluteIndexes());
     }
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
     for(unsigned j=0; j<root_indexes.size(); j++) {
       const Vector & first (actionPositions[root_indexes[j]]);
-      Vector & second (actionPositions[tree_indexes[j]]);
+      Vector & second (actionPositions[tree_indexes[j+1]]);
       second=first+pbcDistance(first,second);
     }
   } else if(actionPositions.size()>1) {
