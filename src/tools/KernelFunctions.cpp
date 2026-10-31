@@ -225,11 +225,11 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
       det*=width[i]*width[i];
     }
   } else if(dtype==matrixType::multi) {
-    Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
-    Invert(mymatrix,myinv);
+    // det is the determinant of the inverse of mymatrix
+    Matrix<double> mymatrix( getMatrix() );
     double logd;
-    logdet( myinv, logd );
-    det=std::exp(logd);
+    logdet( mymatrix, logd );
+    det=std::exp(-logd);
   }
   if( dtype==matrixType::diagonal || dtype==matrixType::multi ) {
     double volume;

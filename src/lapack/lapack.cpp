@@ -5545,7 +5545,7 @@ L170:
 		    j = i__;
 		    itmp = iblock[j];
 		    cnt = iwork[*n + iwork[j]];
-		    ibegin = isplit[itmp - 1] + 1;
+		    ibegin = (itmp == 1) ? 1 : isplit[itmp - 1] + 1;
 		    if (i__ == *m && till < *m) {
 			indexw[*m] = cnt - ibegin + 1;
 		    }
@@ -21147,7 +21147,7 @@ L170:
 		    j = i__;
 		    itmp = iblock[j];
 		    cnt = iwork[*n + iwork[j]];
-		    ibegin = isplit[itmp - 1] + 1;
+		    ibegin = (itmp == 1) ? 1 : isplit[itmp - 1] + 1;
 		    if (i__ == *m && till < *m) {
 			indexw[*m] = cnt - ibegin + 1;
 		    }

@@ -1186,13 +1186,11 @@ double RMSD::optimalAlignment_Fit(const std::vector<double>& alignTo,
 /// but automatically should properly account for non removed components: if not removed then it
 /// removes prior to calculation of the alignment
 void RMSDCoreData::doCoreCalc(const bool setSafe,
-                              const bool setAlEqDis,
-                              const bool only_rotation) {
+                              const bool setAlEqDis) {
 
   // transfer this bools to the cd so that this settings will be reflected in the other calls
   alEqDis=setAlEqDis;
   safe=setSafe;
-  retrieve_only_rotation=only_rotation;
   const unsigned n=static_cast<unsigned int>(reference.size());
 
   plumed_massert(creference_is_calculated,"the center of the reference frame must be already provided at this stage");
@@ -1244,61 +1242,48 @@ void RMSDCoreData::doCoreCalc(const bool setSafe,
 
 
   Tensor dm_drr01[4][4];
-  if(!alEqDis or !retrieve_only_rotation) {
-    dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0);
-    dm_drr01[1][1] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,+1.0);
-    dm_drr01[2][2] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,+1.0);
-    dm_drr01[3][3] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,-1.0);
-    dm_drr01[0][1] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,+1.0, 0.0);
-    dm_drr01[0][2] = 2.0*Tensor( 0.0, 0.0,+1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
-    dm_drr01[0][3] = 2.0*Tensor( 0.0,-1.0, 0.0, +1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
-    dm_drr01[1][2] = 2.0*Tensor( 0.0,-1.0, 0.0, -1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
-    dm_drr01[1][3] = 2.0*Tensor( 0.0, 0.0,-1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
-    dm_drr01[2][3] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,-1.0, 0.0);
-    dm_drr01[1][0] = dm_drr01[0][1];
-    dm_drr01[2][0] = dm_drr01[0][2];
-    dm_drr01[2][1] = dm_drr01[1][2];
-    dm_drr01[3][0] = dm_drr01[0][3];
-    dm_drr01[3][1] = dm_drr01[1][3];
-    dm_drr01[3][2] = dm_drr01[2][3];
-  }
+  dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0);
+  dm_drr01[1][1] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,+1.0);
+  dm_drr01[2][2] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,+1.0);
+  dm_drr01[3][3] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,-1.0);
+  dm_drr01[0][1] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,+1.0, 0.0);
+  dm_drr01[0][2] = 2.0*Tensor( 0.0, 0.0,+1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+  dm_drr01[0][3] = 2.0*Tensor( 0.0,-1.0, 0.0, +1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
+  dm_drr01[1][2] = 2.0*Tensor( 0.0,-1.0, 0.0, -1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
+  dm_drr01[1][3] = 2.0*Tensor( 0.0, 0.0,-1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+  dm_drr01[2][3] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,-1.0, 0.0);
+  dm_drr01[1][0] = dm_drr01[0][1];
+  dm_drr01[2][0] = dm_drr01[0][2];
+  dm_drr01[2][1] = dm_drr01[1][2];
+  dm_drr01[3][0] = dm_drr01[0][3];
+  dm_drr01[3][1] = dm_drr01[1][3];
+  dm_drr01[3][2] = dm_drr01[2][3];
 
 
   Vector4d q;
 
   Tensor dq_drr01[4];
-  if(!alEqDis or !only_rotation) {
-    diagMatSym(m, eigenvals, eigenvecs );
-    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
-    double dq_dm[4][4][4];
-    for(unsigned i=0; i<4; i++)
-      for(unsigned j=0; j<4; j++)
-        for(unsigned k=0; k<4; k++) {
-          double tmp=0.0;
+  diagMatSym(m, eigenvals, eigenvecs );
+  q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+  double dq_dm[4][4][4];
+  for(unsigned i=0; i<4; i++)
+    for(unsigned j=0; j<4; j++)
+      for(unsigned k=0; k<4; k++) {
+        double tmp=0.0;
 // perturbation theory for matrix m
-          for(unsigned l=1; l<4; l++) {
-            tmp+=eigenvecs[l][j]*eigenvecs[l][i]/(eigenvals[0]-eigenvals[l])*eigenvecs[0][k];
-          }
-          dq_dm[i][j][k]=tmp;
+        for(unsigned l=1; l<4; l++) {
+          tmp+=eigenvecs[l][j]*eigenvecs[l][i]/(eigenvals[0]-eigenvals[l])*eigenvecs[0][k];
         }
+        dq_dm[i][j][k]=tmp;
+      }
 // propagation to _drr01
-    for(unsigned i=0; i<4; i++) {
-      Tensor tmp;
-      for(unsigned j=0; j<4; j++)
-        for(unsigned k=0; k<4; k++) {
-          tmp+=dq_dm[i][j][k]*dm_drr01[j][k];
-        }
-      dq_drr01[i]=tmp;
-    }
-  } else {
-    TensorGeneric<1,4> here_eigenvecs;
-    VectorGeneric<1> here_eigenvals;
-    diagMatSym(m, here_eigenvals, here_eigenvecs );
-    for(unsigned i=0; i<4; i++) {
-      eigenvecs[0][i]=here_eigenvecs[0][i];
-    }
-    eigenvals[0]=here_eigenvals[0];
-    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+  for(unsigned i=0; i<4; i++) {
+    Tensor tmp;
+    for(unsigned j=0; j<4; j++)
+      for(unsigned k=0; k<4; k++) {
+        tmp+=dq_dm[i][j][k]*dm_drr01[j][k];
+      }
+    dq_drr01[i]=tmp;
   }
 
 // This is the rotation matrix that brings reference to positions
@@ -1315,17 +1300,15 @@ void RMSDCoreData::doCoreCalc(const bool setSafe,
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
 
-  if(!alEqDis or !only_rotation) {
-    drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
-    drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
-    drotation_drr01[2][2]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]+2*q[3]*dq_drr01[3];
-    drotation_drr01[0][1]=2*(+(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
-    drotation_drr01[0][2]=2*(-(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
-    drotation_drr01[1][2]=2*(+(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
-    drotation_drr01[1][0]=2*(-(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
-    drotation_drr01[2][0]=2*(+(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
-    drotation_drr01[2][1]=2*(-(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
-  }
+  drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
+  drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
+  drotation_drr01[2][2]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]+2*q[3]*dq_drr01[3];
+  drotation_drr01[0][1]=2*(+(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
+  drotation_drr01[0][2]=2*(-(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
+  drotation_drr01[1][2]=2*(+(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
+  drotation_drr01[1][0]=2*(-(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
+  drotation_drr01[2][0]=2*(+(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
+  drotation_drr01[2][1]=2*(-(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
 
   d.resize(n);
 
@@ -1343,17 +1326,15 @@ void RMSDCoreData::doCoreCalc(const bool setSafe,
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
   }
   // ddist_drotation if needed
-  if(!alEqDis or !only_rotation) {
-    for (unsigned iat=0; iat<n; iat++) {
-      ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
-    }
-
-    ddist_drr01.zero();
-    for(unsigned i=0; i<3; i++)
-      for(unsigned j=0; j<3; j++) {
-        ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
-      }
+  for (unsigned iat=0; iat<n; iat++) {
+    ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
   }
+
+  ddist_drr01.zero();
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++) {
+      ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
+    }
   isInitialized=true;
 
 }
@@ -1452,7 +1433,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
   if(!distanceIsMSD) {
     prefactor*=0.5/dist;
   }
-  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance) {
     plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   }
@@ -1503,7 +1483,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDReference() {
   }
   Vector csum;
 
-  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance) {
     plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
   }
@@ -1560,7 +1539,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDReferenceSOMA() {
   }
   Vector tmp1;
 
-  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance) {
     plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
   }
@@ -1604,7 +1582,6 @@ if inverseTransform=true then aligns the positions onto reference
 */
 Matrix<std::vector<Vector> >  RMSDCoreData::getDRotationDPositions( const bool inverseTransform ) {
   const unsigned n=static_cast<unsigned int>(reference.size());
-  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!isInitialized) {
     plumed_merror("getDRotationDPosition to initialize the coreData first!");
   }
@@ -1656,7 +1633,6 @@ if inverseTransform=true then aligns the positions onto reference
 */
 Matrix<std::vector<Vector> >  RMSDCoreData::getDRotationDReference( const bool inverseTransform ) {
   const unsigned n=static_cast<unsigned int>(reference.size());
-  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!isInitialized) {
     plumed_merror("getDRotationDPositions to initialize the coreData first!");
   }

@@ -340,7 +340,6 @@ private:
   Vector cpositions;
   bool cpositions_is_calculated;
   bool cpositions_is_removed;
-  bool retrieve_only_rotation;
 
   // use reference assignment to speed up instead of copying
   const View<Vector> positions;
@@ -376,7 +375,6 @@ public:
       cpositions(cp),
       cpositions_is_calculated(true),
       cpositions_is_removed(true),
-      retrieve_only_rotation(false),
       positions(p),
       reference(r),
       align(a),
@@ -393,7 +391,6 @@ public:
       cpositions(0.0,0.0,0.0),
       cpositions_is_calculated(false),
       cpositions_is_removed(false),
-      retrieve_only_rotation(false),
       positions(p),
       reference(r),
       align(a),
@@ -444,8 +441,7 @@ public:
     return creference_is_removed;
   }
   //  does the core calc : first thing to call after the constructor:
-  // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
-  void doCoreCalc(bool setSafe,bool setAlEqDis, bool only_rotation=false);
+  void doCoreCalc(bool setSafe,bool setAlEqDis);
   // do calculation with close structure data structures
   void doCoreCalcWithCloseStructure(bool setSafe,
                                     bool setAlEqDis,
