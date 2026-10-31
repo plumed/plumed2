@@ -1400,8 +1400,8 @@ void CudaCoordination<calculateFloat>::calculate() {
     // one block per accumulated quantity, the results go right after the derivatives
     CUDAHELPERS::reducePartials<calculateFloat, CUDAHELPERS::reducePartialsThreads>
     <<<nAccumulators, CUDAHELPERS::reducePartialsThreads, 0, stream>>> (devPartials.data(),
-                                         nPartials,
-                                         devOutput.data() + 3 * nActive);
+        nPartials,
+        devOutput.data() + 3 * nActive);
     CUDAHELPERS::cudaCheck (cudaGetLastError(), "launching the CUDACOORDINATION kernels");
     // a single transfer for derivatives, coordination and virial
     CUDAHELPERS::cudaCheck (cudaMemcpyAsync (hostOutput.data(),

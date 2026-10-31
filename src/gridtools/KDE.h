@@ -320,6 +320,7 @@ public:
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   unsigned getNumberOfDerivatives() override;
   int checkTaskIsActive( const unsigned& itask ) const override ;
+  void turnOnDerivatives() override ;
   void prepare() override ;
   void calculate() override ;
   void getInputData( std::vector<double>& inputdata ) const override ;
@@ -400,6 +401,14 @@ int KDE<K,P,G,myPTM>::checkTaskIsActive( const unsigned& itask ) const {
     return 1;
   }
   return -1;
+}
+
+template <class K, class P, class G, typename myPTM>
+void KDE<K,P,G,myPTM>::turnOnDerivatives() {
+  if( getName().find("DISCRETE")!=std::string::npos ) {
+    error("KDE with discrete kernels is not differentiable");
+  }
+  ActionWithValue::turnOnDerivatives();
 }
 
 template <class K, class P, class G, typename myPTM>
