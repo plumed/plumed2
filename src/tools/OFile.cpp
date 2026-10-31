@@ -413,7 +413,8 @@ void OFile::checkNotOpenElsewhere()const {
   struct stat st;
   const bool exists=(stat(path.c_str(),&st)==0);
 // sharing devices, pipes, etc is legitimate
-  if(exists && !S_ISREG(st.st_mode)) {
+// (S_ISREG is not defined by MSVC, so the file type is tested explicitly)
+  if(exists && (st.st_mode & S_IFMT)!=S_IFREG) {
     return;
   }
   for(const auto & f : plumed->getFiles()) {
@@ -423,6 +424,9 @@ void OFile::checkNotOpenElsewhere()const {
       continue;
     }
     bool same=(other->path==path);
+#ifndef _WIN32
+    // On Windows st_ino is always zero, so two different files on the same drive
+    // would look the same: there only the paths are compared
     if(!same && exists) {
       // catch the same file accessed with a different path (e.g. ./FILE, absolute paths, or links)
       struct stat ost;
@@ -430,6 +434,7 @@ void OFile::checkNotOpenElsewhere()const {
         same=(ost.st_dev==st.st_dev && ost.st_ino==st.st_ino);
       }
     }
+#endif
     if(same) {
       std::string msg="file " + path + " is already open for writing";
       if(other->action) {
