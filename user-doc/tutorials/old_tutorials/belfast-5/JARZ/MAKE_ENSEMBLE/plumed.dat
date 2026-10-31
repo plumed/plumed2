@@ -1,7 +1,0 @@
-# set up two variables for Phi and Psi dihedral angles
-phi: TORSION ATOMS=5,7,9,15
-psi: TORSION ATOMS=7,9,15,17
-# the restraint on phi
-RESTRAINT ARG=phi AT=-1.5 KAPPA=5000 LABEL=restraint
-# monitor the two variables and various restraint outputs
-PRINT STRIDE=1 ARG=* FILE=COLVAR
