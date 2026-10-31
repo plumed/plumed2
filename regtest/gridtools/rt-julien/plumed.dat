@@ -30,7 +30,11 @@ norm: REFERENCE_GRID PERIODIC=NO FUNC=x*x GRID_BIN=20 GRID_MIN=0 GRID_MAX=8
 rdf: CUSTOM ARG=kde,norm,sumcoord FUNC=x/(4*pi*y*z) PERIODIC=NO
 
 # Now we start calculating the entropy
-conv: CUSTOM ARG=rdf,norm FUNC=x*y*log(x)+(1-x)*y PERIODIC=NO
+# the two terms are computed separately (as in PAIRENTROPY): x*y*log(x) is skipped where x is zero,
+# which gives its limit (zero) instead of nan, while (1-x)*y must be computed also where x is zero
+conv_t1: CUSTOM ARG=rdf,norm FUNC=x*y*log(x) PERIODIC=NO
+conv_t2: CUSTOM ARG=rdf,norm FUNC=(1-x)*y PERIODIC=NO
+conv: CUSTOM ARG=conv_t1,conv_t2 FUNC=x+y PERIODIC=NO
 # Interpolate above function on to midpoints so we can integrate using trapezium rule
 midp: INTERPOLATE_GRID ARG=conv INTERPOLATION_TYPE=linear GRID_BIN=19 GRID_MIN=0.2 GRID_MAX=7.8
 # This sums the values of the functions at the midpoints and multiplies by the grid spacing

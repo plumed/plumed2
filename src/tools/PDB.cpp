@@ -275,6 +275,10 @@ const Tensor & PDB::getBoxVec()const {
   return Box;
 }
 
+const std::string & PDB::getSpaceGroup()const {
+  return spaceGroup;
+}
+
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
@@ -369,6 +373,8 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxA,BoxABG[0]);
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
+      spaceGroup=line.substr(55,11);
+      Tools::trim(spaceGroup);
       BoxXYZ*=scale;
       double cosA=std::cos(BoxABG[0]*pi/180.);
       double cosB=std::cos(BoxABG[1]*pi/180.);

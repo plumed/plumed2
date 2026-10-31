@@ -74,7 +74,7 @@ PRINT ARG=sort.1,sort.2,sort.3 FILE=colvar
 The elements of the three output vector here are determined by doing an elementwise comparison of the elements in the input vectors.  In the above
 input the first element of `sort.1` is equal to the distance between atoms 1 and 2 if this distance is smaller than the distances between atoms 5 and 6 and the distance between atoms 9 and 10.
 By the same token the second element of `sort.1` is equal to the distance between atoms 3 and 4 if this is smaller than the distance between atoms 7 and 8 and the distance between atoms 11 and 12.
-The elements of `sort.2` are the second largest of these distances, while the elements of `sort.3` are three largest distances
+The elements of `sort.2` are the second smallest of these distances, while the elements of `sort.3` are the largest distances.
 
 Notice that you can also use a combination of scalars and vectors in the input to this action as shown below:
 
@@ -130,7 +130,7 @@ PLUMED_REGISTER_ACTION(VectorSort,"SORT_VECTOR")
 void Sort::registerKeywords(Keywords& keys) {
   keys.setValueDescription("vector","sorted");
   keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
-                                 "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on");
+                                 "The smallest value is called label.1, the second smallest label.2, the third smallest label.3 and so on");
 }
 
 
