@@ -115,7 +115,14 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   parse("TYPES",types);
   parse("PARAMS",params);
   parse("ENERGY_UNITS",energy_units);
+  checkRead();
 
+  if( d0<0.0 || dmax<=d0 ) {
+    error("D_MAX should be larger than D_0 and D_0 should not be negative");
+  }
+  if( !(c>0.0 && c<1.0) ) {
+    error("C should be larger than 0 and smaller than 1");
+  }
   dmax2 = dmax-d0;
 
   A = (-c*dmax2*dmax2)/((1-c)*dmax2*dmax2);
@@ -148,6 +155,15 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
     typesTable.push_back(MapTypesTable[itype]);
   }
 
+  if( typesTable.empty() ) {
+    error("no atom types were found in the file " + types);
+  }
+  // the atoms of the two groups should all have a type
+  for(const auto & index : getAbsoluteIndexes() ) {
+    if( index.index()>=typesTable.size() ) {
+      error("your types table only covers " + std::to_string(typesTable.size()) + " atoms, but atom " + std::to_string(index.serial()) + " is used");
+    }
+  }
   n = (int)*std::max_element(std::begin(typesTable), std::end(typesTable));
   n+=1;
 
@@ -157,10 +173,24 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   etafile.open(params);
   std::string it,jt;
   double eta;
+  unsigned nskipped=0;
   while(etafile.scanField("itype",it).scanField("jtype",jt).scanField("eta",eta).scanField()) {
     plumed_assert(it.empty()==false)<<"itype is empty";
     plumed_assert(jt.empty()==false)<<"jtype is empty";
-    etas[n*MapTypesTable[it]+MapTypesTable[jt]]=eta;
+    // The file of the parameters can contain types that are not used by the atoms
+    // in the types table: these cannot be used and must be skipped.
+    // Using operator[] here would add them to the map as type 0 and the parameters
+    // of the (wrong) type 0 would be overwritten.
+    const auto iti = MapTypesTable.find(it);
+    const auto itj = MapTypesTable.find(jt);
+    if( iti==MapTypesTable.end() || itj==MapTypesTable.end() ) {
+      nskipped++;
+      continue;
+    }
+    etas[n*iti->second+itj->second]=eta;
+  }
+  if( nskipped>0 ) {
+    log.printf("  skipped %u lines of %s that contain types that are not in %s\n",nskipped,params.c_str(),types.c_str());
   }
 
   if(energy_units!="plumed") {
@@ -175,50 +205,36 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
 
 
 double GHBFIX::pairing(double distance2,double&dfunc,unsigned i,unsigned j)const {
-
-  const auto i1=getAbsoluteIndex(i).index();
-  plumed_assert(i1<typesTable.size())<<"your types table only covers "<<typesTable.size()<<" atoms, but you are trying to access atom number "<<(i1+1);
-  const auto t1=typesTable[i1];
-
-  const auto i2=getAbsoluteIndex(j).index();
-  plumed_assert(i2<typesTable.size())<<"your types table only covers "<<typesTable.size()<<" atoms, but you are trying to access atom number "<<(i2+1);
-  const auto t2=typesTable[i2];
-
-  const double scale=etas[n*t1+t2];
-
-  double result;
+  // Most of the pairs are beyond the cutoff: check it before looking up the types
   if(distance2>dmax_squared) {
-    result=0.;
     dfunc=0.0;
-    return result;
+    return 0.;
   }
+  // that the atoms are in the table of the types is checked in the constructor
+  const auto i1=getAbsoluteIndex(i).index();
+  const auto i2=getAbsoluteIndex(j).index();
+  plumed_dbg_assert(i1<typesTable.size() && i2<typesTable.size());
+  const double scale=etas[n*typesTable[i1]+typesTable[i2]];
   double distance=std::sqrt(distance2);
   const double rdist = (distance-d0);
-
+  double result=-1.;
   if(rdist<=0.) {
-    result=-1.;
     dfunc=0.0;
   } else {
-    result=-1.;
     dfunc=0.0;
-
     if (rdist > c*dmax2) {
       result+=(A + B*rdist + C*rdist*rdist);
       dfunc+=B+2*C*rdist;
-    } else if (rdist > 0.0) {
+    } else {
       result+=D*(rdist*rdist);
       dfunc+=2*D*rdist;
     }
-
     dfunc/=distance;
   }
-
   result*=scale;
   dfunc*=scale;
-
   return result;
 }
 
 }
-
 }
