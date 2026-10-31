@@ -607,6 +607,17 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   parseVector("FICT",fict);
   parseVector("VFICT",vfict);
   parseVector("MFICT",mfict);
+  // FICT, VFICT and MFICT are optional, and parseVector empties the vector of an
+  // optional keyword that is absent: put back the defaults.
+  if( fict.empty() ) {
+    fict.assign(getNumberOfArguments(),-999.0);
+  }
+  if( vfict.empty() ) {
+    vfict.assign(getNumberOfArguments(),0.0);
+  }
+  if( mfict.empty() ) {
+    mfict.assign(getNumberOfArguments(),10000.0);
+  }
 
   parse("XETA",xeta);
   parse("VETA",veta);
@@ -614,12 +625,19 @@ LogMFD::LogMFD( const ActionOptions& ao ):
 
   parse("FLOG",flog);
 
-  // read initial value of work for each replica of LogPD
-  if( multi_sim_comm.Get_size()>1 ) {
-    vector<double> vwork(multi_sim_comm.Get_size(),0.0);
+  // read initial value of work for each replica of LogPD.
+  // multi_sim_comm is only valid on the first process of each replica (see Action::multi_sim_comm),
+  // so the number of replicas and the replica index are taken from getNumberOfReplicas()
+  // and getReplicaIndex(), which are correct on every process.
+  if( getNumberOfReplicas()>1 ) {
+    vector<double> vwork(getNumberOfReplicas(),0.0);
     parseVector("WORK",vwork);
+    // WORK is optional and defaults to 0: parseVector empties vwork if it is absent
+    if( vwork.empty() ) {
+      vwork.assign(getNumberOfReplicas(),0.0);
+    }
     // initial work of this replica
-    work = vwork[multi_sim_comm.Get_rank()];
+    work = vwork[getReplicaIndex()];
   } else {
     work = 0.0;
   }
@@ -647,13 +665,13 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   checkRead();
 
   // output messaages to Plumed's log file
-  if( multi_sim_comm.Get_size()>1 ) {
+  if( getNumberOfReplicas()>1 ) {
     if( TAMD ) {
       log.printf("TAMD-PD, replica parallel of TAMD, no logarithmic flattening.\n");
     } else {
       log.printf("LogPD, replica parallel of LogMFD.\n");
     }
-    log.printf("number of replica : %d.\n", multi_sim_comm.Get_size() );
+    log.printf("number of replica : %d.\n", getNumberOfReplicas() );
   } else {
     if( TAMD ) {
       log.printf("TAMD, no logarithmic flattening.\n");
@@ -769,9 +787,14 @@ void LogMFD::calculate() {
       fict[i] = getArgument(i);
 
       // average values of fictitious variables by all replica.
-      if( multi_sim_comm.Get_size()>1 ) {
-        multi_sim_comm.Sum(fict[i]);
-        fict[i] /= multi_sim_comm.Get_size();
+      // multi_sim_comm is only valid on the first process of each replica:
+      // sum there and broadcast the result to the other processes of the replica.
+      if( getNumberOfReplicas()>1 ) {
+        if( comm.Get_rank()==0 ) {
+          multi_sim_comm.Sum(fict[i]);
+        }
+        comm.Bcast(fict[i],0);
+        fict[i] /= getNumberOfReplicas();
       }
     }
 
@@ -823,13 +846,13 @@ void LogMFD::calculate() {
     weight = 1.0; // for replica parallel
 
     // open LogMFD's log file
-    if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
+    if( comm.Get_rank()==0 && getReplicaIndex()==0 ) {
       FILE *outlog = std::fopen("logmfd.out", "w");
 
       // output messages to LogMFD's log file
-      if( multi_sim_comm.Get_size()>1 ) {
+      if( getNumberOfReplicas()>1 ) {
         fprintf(outlog, "# LogPD, replica parallel of LogMFD\n");
-        fprintf(outlog, "# number of replica : %d\n", multi_sim_comm.Get_size() );
+        fprintf(outlog, "# number of replica : %d\n", getNumberOfReplicas() );
       } else {
         fprintf(outlog, "# LogMFD\n");
       }
@@ -864,7 +887,7 @@ void LogMFD::calculate() {
       // the number of replica is added to file name to distingwish replica.
       FILE *outlog2 = fopen("replica.out", "w");
       fprintf(outlog2, "# Replica No. %d of %d.\n",
-              multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
+              getReplicaIndex(), getNumberOfReplicas() );
 
       fprintf(outlog2, "# 1:iter_mfd, 2:work, 3:weight,\n");
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -936,7 +959,7 @@ void LogMFD::update() {
   calcMeanForce();
 
   // record log for fictitious variables
-  if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
+  if( comm.Get_rank()==0 && getReplicaIndex()==0 ) {
     const double ekin = calcEkin();
     const double temp = 2.0*ekin/getNumberOfArguments()/getKBoltzmann();
 
@@ -1148,11 +1171,17 @@ void LogMFD::calcMeanForce() {
     fict_ave[i] = fictValue[i]->bringBackInPbc(fict_ave[i]);
   }
 
-  // for replica parallel
-  if( multi_sim_comm.Get_size()>1 ) {
+  // for replica parallel.
+  // multi_sim_comm is only valid on the first process of each replica:
+  // reduce there and broadcast the results to the other processes of the replica,
+  // so that all of them evolve the fictitious variables in the same way.
+  if( getNumberOfReplicas()>1 ) {
     // find the minimum work among all replicas
     double work_min = work;
-    multi_sim_comm.Min(work_min);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Min(work_min);
+    }
+    comm.Bcast(work_min,0);
 
     // weight of this replica.
     // here, work is reduced by work_min to avoid all exp(-work/kbt)s disconverge
@@ -1164,7 +1193,10 @@ void LogMFD::calcMeanForce() {
 
     // normalize the weight
     double sum_weight = weight;
-    multi_sim_comm.Sum(sum_weight);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Sum(sum_weight);
+    }
+    comm.Bcast(sum_weight,0);
     weight /= sum_weight;
 
     // weighting force of this replica
@@ -1173,9 +1205,10 @@ void LogMFD::calcMeanForce() {
     }
 
     // averaged mean forces of all replica.
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      multi_sim_comm.Sum(ffict[i]);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Sum(ffict);
     }
+    comm.Bcast(ffict,0);
     // now, mean force is obtained.
   }
 } // calcMeanForce

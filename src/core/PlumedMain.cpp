@@ -1297,10 +1297,16 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words, const bo
     }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
+    // update the lists incrementally: rebuilding them by scanning the whole action set
+    // after every line makes reading the input quadratic in the number of actions
+    Action* last=actionSet.back().get();
+    if( auto* pilot=dynamic_cast<ActionPilot*>(last) ) {
+      pilots.push_back(pilot);
+    }
+    if( dynamic_cast<ActionForInterface*>(last) ) {
+      setupInterfaceActions();
+    }
   };
-
-  pilots=actionSet.select<ActionPilot*>();
-  setupInterfaceActions();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1456,9 +1462,12 @@ void PlumedMain::justCalculate() {
     }
   }
 
-  int iaction=0;
+  // the counter is incremented at the top of the loop so that the labels of the
+  // detailed timers stay aligned also after the actions skipped with continue
+  int iaction=-1;
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
+    iaction++;
     Action* p(pp.get());
     plumed_assert(p);
     try {
@@ -1522,7 +1531,6 @@ void PlumedMain::justCalculate() {
     } catch(...) {
       plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
-    iaction++;
   }
 }
 
@@ -1596,11 +1604,13 @@ void PlumedMain::update() {
       }
     }
   }
+  // an UPDATE_IF block that is not closed with END extends to the end of the input,
+  // so more than one flag can be left here. Extra END lines are rejected when reading the input.
+  if(updateFlags.empty()) {
+    plumed_merror("non matching changes in the update flags");
+  }
   while(!updateFlags.empty()) {
     updateFlags.pop();
-  }
-  if(!updateFlags.empty()) {
-    plumed_merror("non matching changes in the update flags");
   }
 // Check that no action has told the calculation to stop
   if(stopNow) {

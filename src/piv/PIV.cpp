@@ -418,10 +418,10 @@ PIV::PIV(const ActionOptions&ao):
   unsigned resnum=0;
   // Presind (array size: number of residues) contains the contains the residue number
   //   this is because the residue numbers may not always be ordered from 1 to resnum
-  std:: vector<unsigned> Presind;
+  std::vector<int> Presind;
   // Build Presind
   for (unsigned i=0; i<mypdb.getAtomNumbers().size(); i++) {
-    unsigned rind=mypdb.getResidueNumber(mypdb.getAtomNumbers()[i]);
+    const int rind=mypdb.getResidueNumber(mypdb.getAtomNumbers()[i]);
     bool oldres=false;
     for (unsigned j=0; j<Presind.size(); j++) {
       if(rind==Presind[j]) {
@@ -453,7 +453,8 @@ PIV::PIV(const ActionOptions&ao):
   // Build lists of Atoms/COMs for NLists
   //   comatm filled also for non_COM calculation for analysis purposes
   for (unsigned j=0; j<Natm; j++) {
-    unsigned oind;
+    // first Point of this type, set below when the first atom of type atype[j] is found
+    unsigned oind=0;
     for (unsigned i=0; i<Pind0.size(); i++) {
       Pind0[i]=0;
     }
@@ -464,18 +465,22 @@ PIV::PIV(const ActionOptions&ao):
       string rname=mypdb.getResidueName(anum);
       string aname=mypdb.getAtomName(anum);
       // Index associated to residue/atom: used to separate COM-lists
-      unsigned rind=mypdb.getResidueNumber(anum);
+      const int rind=mypdb.getResidueNumber(anum);
       unsigned aind=anum.index();
       // This builds lists for NL
       string Pname;
-      unsigned Pind;
+      unsigned Pind=0;
       if(com) {
         Pname=rname;
+        // Presind holds the residue numbers of all the atoms of mypdb, so rind is always found
+        bool found=false;
         for(unsigned l=0; l<resnum; l++) {
           if(rind==Presind[l]) {
             Pind=l;
+            found=true;
           }
         }
+        plumed_assert(found);
       } else {
         Pname=aname;
         Pind=aind;
@@ -493,6 +498,9 @@ PIV::PIV(const ActionOptions&ao):
     }
     // Output Lists
     log << "  Groups of type  " << j << ": " << Plist[j].size() << " \n";
+    if(Plist[j].empty()) {
+      error("no atoms of type " + atype[j] + " found in the reference PDB file");
+    }
     string gname;
     unsigned gsize;
     if(com) {
@@ -1053,7 +1061,7 @@ void PIV::calculate() {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
               // Loop on the number of head-to-tail pieces
-              for(unsigned m=0; m<OrdVecAll[i+l*Nprec]; m++) {
+              for(int m=0; m<OrdVecAll[i+l*Nprec]; m++) {
                 // cPIV is the current PIV at time t
                 cPIV[j].push_back(double(i)/double(Nprec-1));
                 Atom0[j].push_back(Atom0FAll[k[l]+Vpos[l]]);
@@ -1067,7 +1075,7 @@ void PIV::calculate() {
           }
         } else {
           for(unsigned i=1; i<Nprec; i++) {
-            for(unsigned m=0; m<OrdVec[i]; m++) {
+            for(int m=0; m<OrdVec[i]; m++) {
               cPIV[j].push_back(double(i)/double(Nprec-1));
               Atom0[j].push_back(A0[i][m]);
               Atom1[j].push_back(A1[i][m]);

@@ -12,6 +12,13 @@ sudo apt-get install -y libopenblas-dev libhdf5-dev
 ITENSOR_VERSION=3.2.0
 ITENSOR_INSTALL_DIR="$HOME/opt/itensor"
 
+# On CI the prefix is restored by actions/cache (keyed on this file and options.mk.itensor):
+# the system packages above are still needed, but there is nothing to build.
+if test -f "$ITENSOR_INSTALL_DIR/lib/libitensor.a" && test -f "$ITENSOR_INSTALL_DIR/itensor/all.h"; then
+  echo "ITensor already installed in $ITENSOR_INSTALL_DIR"
+  exit 0
+fi
+
 cd "$(mktemp -dt plumed.XXXXXX)"
 
 wget https://github.com/ITensor/ITensor/archive/refs/tags/v${ITENSOR_VERSION}.tar.gz
@@ -21,7 +28,7 @@ cd ITensor-${ITENSOR_VERSION}
 # Use the CI-specific options.mk (OpenBLAS + system HDF5)
 cp "$CI_DIR/options.mk.itensor" options.mk
 
-make
+make -j 4
 
 # Copy the built library and headers to the install directory
 mkdir -p "$ITENSOR_INSTALL_DIR"

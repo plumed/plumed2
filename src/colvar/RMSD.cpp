@@ -106,7 +106,7 @@ file should be set equal to 1, 4, 6 and 28.
 
 The pdb input file should also contain the weights $w$ and $w'$. These second of these sets of weights, $w'$, appears in the OCCUPANCY column (the first column after the coordinates).
 These are the weights that are used to calculate the position of the center of mass.  The BETA column (the second column
-after the Cartesian coordinates) is used to provide the $w$ values which are used in the the calculation of the displacement.
+after the Cartesian coordinates) is used to provide the $w$ values which are used in the calculation of the displacement.
 Please note that it is possible to use fractional values for beta and for the occupancy. However, we recommend you only do this when
 you really know what you are doing however as the results can be rather strange.  A more common practise is to use different sets of atoms
 for the alignment and the displacement.  You can do this by setting the $w$ and $w'$ values for all the atoms you wish to use for alignment only equal to zero and

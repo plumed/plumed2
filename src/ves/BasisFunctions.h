@@ -35,7 +35,7 @@ namespace PLMD {
 
 /**
 \ingroup INHERIT
-Abstract base class for implenting new 1D basis sets.
+Abstract base class for implementing new 1D basis sets.
 */
 
 class Action;

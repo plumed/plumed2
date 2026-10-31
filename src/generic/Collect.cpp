@@ -91,7 +91,7 @@ the output Value is a vector or matrix.  In the above input we are storing a vec
 a list of 400 distances - 4 distances for each frame.  The assumption in the input above is that the four distances that have
 been computed by the DISTANCES command are indistinguishable.
 
-By using the following input we can ensure the the four distances are treated as distinguishable when we do any analysis:
+By using the following input we can ensure the four distances are treated as distinguishable when we do any analysis:
 
 ```plumed
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
@@ -199,9 +199,9 @@ Collect::Collect( const ActionOptions& ao ):
   }
 
   if( type=="vector" ) {
-    log.printf("  adding %ld elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  adding %zu elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
   } else {
-    log.printf("  constructing matrix with rows of length %ld from input data\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  constructing matrix with rows of length %zu from input data\n", getPntrToArgument(0)->getNumberOfValues() );
   }
 
   parse("CLEAR",clearstride);

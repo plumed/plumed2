@@ -1083,20 +1083,20 @@ line or optional module is required.  Bias examples using
 
 ## Soft assignment and coordination defects
 
-For a center \f$i\f$ and an assigned atom \f$j\f$, let \f$d_{ij}\f$ be their
+For a center $i$ and an assigned atom $j$, let $d_{ij}$ be their
 minimum-image distance.  The assignment weight is
 
-\f[
+$$
  w_{ij}=\frac{\exp(-\kappa d_{ij})}
  {\sum_k\exp(-\kappa d_{kj})}.
-\f]
+$$
 
-By default, \f$d_{ij}\f$ is evaluated with the minimum-image convention.
+By default, $d_{ij}$ is evaluated with the minimum-image convention.
 NOPBC instead uses the direct coordinate difference, so the input coordinates
 must already follow a consistent unwrapped image convention.
 
 The denominator contains all CENTERS for the same assigned atom, so
-\f$\sum_i w_{ij}=1\f$.  KAPPA is positive and has inverse units of the current
+$\sum_i w_{ij}=1$.  KAPPA is positive and has inverse units of the current
 PLUMED length unit.  Increasing KAPPA sharpens the assignment toward the
 nearest center; reducing it spreads an assigned atom over more centers.  The
 implementation uses a shifted softmax, which improves numerical stability
@@ -1111,13 +1111,13 @@ reactant, transition, product, and host-switching frames before applying a
 bias.  Values such as 5 for smoother sampling or 100 for sharper diagnosis are
 application examples, not transferable defaults.
 
-The smooth occupancy and coordination defect of center \f$i\f$ are
+The smooth occupancy and coordination defect of center $i$ are
 
-\f[
+$$
  n_i=\sum_j w_{ij}, \qquad q_i=n_i-\nu_i .
-\f]
+$$
 
-REFERENCE supplies \f$\nu_i\f$.  A single value is broadcast to all CENTERS;
+REFERENCE supplies $\nu_i$.  A single value is broadcast to all CENTERS;
 otherwise provide exactly one value per center in the same order as CENTERS.
 For example, `REFERENCE=2` with two water O centers is the vector `(2,2)`, not
 a one-center calculation.  Fractional entries are valid when the model
@@ -1125,10 +1125,10 @@ deliberately shares one reference occupancy over symmetry-related centers;
 they should not be introduced by averaging chemically nonequivalent sites.
 The identities
 
-\f[
+$$
  \sum_i n_i=N_{\mathrm{assigned}}, \qquad
  \sum_i q_i=N_{\mathrm{assigned}}-\sum_i\nu_i
-\f]
+$$
 
 provide useful checks on a new chemical mapping.  The Action does not infer
 elements, molecules, water, or a special reactive site from atom order.
@@ -1136,24 +1136,24 @@ CENTERS and ASSIGNED must be nonempty, internally unique, and disjoint.
 
 VORONOI_COORDINATION returns
 
-\f[
+$$
  Q_p=\sum_{i\in S} a_i q_i^p ,
-\f]
+$$
 
-where SELECT defines \f$S\f$ and COEFFICIENTS supplies \f$a_i\f$.  SELECT
+where SELECT defines $S$ and COEFFICIENTS supplies $a_i$.  SELECT
 defaults to all CENTERS and COEFFICIENTS defaults to one.  SIGN restricts the
-sum to \f$q_i>0\f$ or \f$q_i<0\f$ when POSITIVE or NEGATIVE is selected.
+sum to $q_i>0$ or $q_i<0$ when POSITIVE or NEGATIVE is selected.
 
 - POWER=1 preserves the signed defect.  With sign filtering it is
-  non-differentiable exactly at \f$q_i=0\f$.
+  non-differentiable exactly at $q_i=0$.
 - POWER=2 measures defect activity without cancellation.  With sign
-  filtering its value and first derivative are continuous at \f$q_i=0\f$,
+  filtering its value and first derivative are continuous at $q_i=0$,
   but its second derivative has a cusp there.
 - COEFFICIENTS can distinguish chemically different selected centers or
   reproduce a published scalar.  Coefficients do not change the assignment.
 
 Analytical coordinate and box derivatives are provided.  The derivative with
-respect to a defect is \f$a_i\f$ for POWER=1 and \f$2a_iq_i\f$ for POWER=2
+respect to a defect is $a_i$ for POWER=1 and $2a_iq_i$ for POWER=2
 inside the selected sign branch, and zero outside it.  These derivatives are
 propagated through every assignment weight.  A CV intended for biasing should
 avoid a POWER=1 sign boundary, a neighbor-list membership change, or another
@@ -1197,13 +1197,13 @@ error.
 
 Omitting NLIST therefore has no hidden cutoff.  When NLIST is enabled,
 NL_CUTOFF is an absolute CENTER-ASSIGNED distance in the active PLUMED length
-units, not a bond cutoff or a water-specific constant.  If \f$d_{\min}\f$ is
-the nearest-center distance and \f$R\f$ is a trial cutoff, the screening
+units, not a bond cutoff or a water-specific constant.  If $d_{\min}$ is
+the nearest-center distance and $R$ is a trial cutoff, the screening
 relation
 
-\f[
+$$
  \exp[-\kappa(R-d_{\min})] \le \epsilon
-\f]
+$$
 
 can provide an initial estimate for making a single omitted score small.
 Smaller KAPPA generally requires a larger cutoff.  This estimate does not
@@ -1246,9 +1246,9 @@ demonstrates a useful speed/accuracy tradeoff for the target system.
 
 ## CPU parallelism and practical scaling
 
-The exact calculation evaluates \f$N_{\mathrm{centers}}
-N_{\mathrm{assigned}}\f$ pairs per step.  For water with every O in CENTERS
-and every H in ASSIGNED, this is \f$2N_{\mathrm{water}}^2\f$.  Exact mode
+The exact calculation evaluates $N_{\mathrm{centers}}
+N_{\mathrm{assigned}}$ pairs per step.  For water with every O in CENTERS
+and every H in ASSIGNED, this is $2N_{\mathrm{water}}^2$.  Exact mode
 therefore remains quadratic even when it is parallel: additional CPU workers
 reduce elapsed time but do not change the asymptotic cost.
 
@@ -1488,27 +1488,27 @@ sites are.
 
 ## Definition and group semantics
 
-Let \f$q_i\f$ be the smooth coordination defect of center \f$i\f$.  When both
+Let $q_i$ be the smooth coordination defect of center $i$.  When both
 GROUP1 and GROUP2 are supplied, the Action returns
 
-\f[
+$$
  D(G_1,G_2)=-\sum_{i\in G_1}\sum_{k\in G_2}d_{ik}q_iq_k .
-\f]
+$$
 
 GROUP1 and GROUP2 are explicit, nonempty, disjoint subsets of CENTERS.  When
 GROUP2 is omitted, unique pairs within GROUP1 are used:
 
-\f[
+$$
  D(G_1)=-\sum_{\substack{i,k\in G_1\\i<k}}d_{ik}q_iq_k .
-\f]
+$$
 
-The center-center distance \f$d_{ik}\f$ uses the minimum image unless NOPBC
+The center-center distance $d_{ik}$ uses the minimum image unless NOPBC
 is specified.  CENTERS, ASSIGNED, KAPPA, REFERENCE, NOPBC, and NLIST have the
 same meaning as on the VORONOI_COORDINATION page.  NLIST truncates only the
 CENTER-ASSIGNED candidates used to construct the defects; it never removes
 GROUP1/GROUP2 center-center reduction pairs.
 
-The product \f$q_iq_k\f$ emphasizes pairs of centers carrying correlated or
+The product $q_iq_k$ emphasizes pairs of centers carrying correlated or
 complementary defects without assigning a permanent ion identity.  For one
 positive and one negative defect, the overall minus sign makes the leading
 term positive and approximately equal to their separation when the defects
@@ -1519,7 +1519,7 @@ ion-ion distance.
 ## Derivatives, periodicity, and bias suitability
 
 Both contributions to the derivative are included: the direct derivative of
-\f$d_{ik}\f$ and the chain-rule derivative of every \f$q_i\f$ through the
+$d_{ik}$ and the chain-rule derivative of every $q_i$ through the
 soft assignment.  Analytical box derivatives are also provided using the
 same minimum-image vectors.  The Action stops if a requested center-center
 distance is zero or non-finite because its radial derivative is then
@@ -1627,8 +1627,8 @@ vector `(2,2,2,0.5,0.5)` declares the neutral [N] chemical origin even though
 the fixture is [Z].  An ideal [Z] frame therefore has defects near
 `(0,0,+1,-0.5,-0.5)`, and the seven references sum to the seven atoms in AllH.
 The complete full-pair fixture gives `sp=0.0073`, `sd_water=0.0354`
-\f$\mathrm{\AA}\f$, `sd_internal=2.9789` \f$\mathrm{\AA}\f$, and
-`sd=3.0143` \f$\mathrm{\AA}\f$.
+$\mathrm{\AA}$, `sd_internal=2.9789` $\mathrm{\AA}$, and
+`sd=3.0143` $\mathrm{\AA}$.
 
 An alternative reference partition can accidentally give the same linear
 `sp` scalar when coefficients and total references cancel.  That does not
@@ -1794,7 +1794,7 @@ possible host centers by the smooth defects defined in
 moments with a physical Cartesian coordinate and provides analytical
 coordinate and box derivatives.
 
-Legacy index-weighted observables such as \f$\sum_i i q_i^2\f$ depend on the
+Legacy index-weighted observables such as $\sum_i i q_i^2$ depend on the
 order in which centers are listed: reordering chemically identical input can
 change the value even when the configuration is unchanged.  Such an index is
 useful at most as an internal diagnostic and is a poor general bias coordinate.
@@ -1803,29 +1803,29 @@ VORONOI_POSITION coordinate when the spatial location of a defect is needed.
 
 ## Definition
 
-For selected centers \f$S\f$, Cartesian axis \f$\alpha\f$, and fixed origin
-\f$x_0\f$, define the displacement
+For selected centers $S$, Cartesian axis $\alpha$, and fixed origin
+$x_0$, define the displacement
 
-\f[
+$$
  u_i=\operatorname{minimage}(x_{i,\alpha}-x_0)
-\f]
+$$
 
 when periodic boundaries are active.  NOPBC replaces it by the direct
 Cartesian difference.  The unnormalized Action is
 
-\f[
+$$
  P=\sum_{i\in S}g(q_i)f(u_i),
-\f]
+$$
 
-where \f$g(q_i)=q_i^2\f$ for defects retained by SIGN and zero for excluded
-defects.  The spatial function is \f$f(u)=u\f$ by default and
-\f$f(u)=|u|\f$ with ABSOLUTE.  SELECT defaults to all CENTERS.
+where $g(q_i)=q_i^2$ for defects retained by SIGN and zero for excluded
+defects.  The spatial function is $f(u)=u$ by default and
+$f(u)=|u|$ with ABSOLUTE.  SELECT defaults to all CENTERS.
 
 With NORMALIZE, the returned value is
 
-\f[
+$$
  \bar P=\frac{\sum_i g(q_i)f(u_i)}{\sum_i g(q_i)}.
-\f]
+$$
 
 The unnormalized form naturally approaches zero in a neutral configuration
 and measures position multiplied by defect activity.  The normalized form is
@@ -1846,8 +1846,8 @@ instead of returning a NaN or an arbitrarily amplified coordinate.
   a reactive molecular site in CENTERS for the shared assignment.
 
 The sign-gated squared weight has a continuous first derivative at
-\f$q_i=0\f$ but a discontinuous second derivative.  ABSOLUTE is
-non-differentiable at \f$u_i=0\f$.  Without ABSOLUTE, the direct Cartesian
+$q_i=0$ but a discontinuous second derivative.  ABSOLUTE is
+non-differentiable at $u_i=0$.  Without ABSOLUTE, the direct Cartesian
 derivative is smooth away from the periodic branch cut.
 
 ## Derivatives and bias suitability
@@ -1889,7 +1889,7 @@ the CV and its derivatives against full-pair mode.
 
 ## Worked example 1: water self-ions at an interface
 
-For a slab normal to \f$z\f$, positive and negative defects can be monitored
+For a slab normal to $z$, positive and negative defects can be monitored
 relative to a fixed reference plane.  The unnormalized form below remains
 defined in neutral configurations.
 

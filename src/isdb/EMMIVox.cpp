@@ -35,6 +35,8 @@
 #include <map>
 #include <numeric>
 #include <ctime>
+#include <algorithm>
+#include <utility>
 #include "tools/Random.h"
 
 //this avoids nasty warnings on which we have no control
@@ -96,15 +98,15 @@ private:
 // model - list of atom weights - one per atom type
   std::vector<Vector5d> Model_w_;
 // model - map between residue/chain IDs and list of atoms
-  std::map< std::pair<unsigned,std::string>, std::vector<unsigned> > Model_resmap_;
+  std::map< std::pair<int,std::string>, std::vector<unsigned> > Model_resmap_;
 // model - list of residue/chain IDs per atom
-  std::vector< std::pair<unsigned,std::string> > Model_res_;
+  std::vector< std::pair<int,std::string> > Model_res_;
 // model - list of neighboring voxels per atom
   std::vector< std::vector<unsigned> > Model_nb_;
 // model - map between residue/chain ID and bfactor
-  std::map< std::pair<unsigned, std::string>, double> Model_b_;
+  std::map< std::pair<int, std::string>, double> Model_b_;
 // model - global list of residue/chain IDs
-  std::vector< std::pair<unsigned,std::string> > Model_rlist_;
+  std::vector< std::pair<int,std::string> > Model_rlist_;
 // model density
   std::vector<double> ovmd_;
 
@@ -265,6 +267,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addFlag("BFACT_READ",false,"Read Bfactor on RESTART (automatic with DBFACT>0)");
   keys.addFlag("BFACT_MINIMIZE",false,"Accept only moves that decrease energy");
   keys.addFlag("MARTINI",false,"Use Martini scattering factors");
+  keys.add("optional","SEED","seed of the random number generator used by the Monte Carlo sampling of the Bfactors (by default it is taken from the clock at every run)");
   keys.addOutputComponent("scoreb","default","scalar","Bayesian score");
   keys.addOutputComponent("scale", "default","scalar","scale factor");
   keys.addOutputComponent("offset","default","scalar","offset");
@@ -403,6 +406,13 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
 // Martini model
   parseFlag("MARTINI",martini_);
+
+  // seed of the random number generator
+  int seed=-1;
+  parse("SEED",seed);
+  if(seed<-1) {
+    error("SEED must be a non-negative integer");
+  }
 
   // check read
   checkRead();
@@ -543,8 +553,15 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   }
 
   // initialize random seed
-  unsigned iseed = time(NULL)+replica_;
-  random_.setSeed(-iseed);
+  // with SEED replica r gets the stream 1+(SEED*nreplicas+r) mod (2^31-1)
+  unsigned iseed;
+  if(seed>=0) {
+    const unsigned long long nr = multi_sim_comm.Get_size();
+    iseed = static_cast<unsigned>(1 + (static_cast<unsigned long long>(seed)*nr+replica_) % 2147483646ULL);
+  } else {
+    iseed = time(NULL)+replica_;
+  }
+  random_.setSeed(-static_cast<int>(iseed));
 
   // request atoms
   requestAtoms(atoms);
@@ -630,7 +647,7 @@ void EMMIVOX::read_status() {
         // cycle on residues
         for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
           // key: pair of residue/chain IDs
-          std::pair<unsigned,std::string> key = Model_rlist_[ir];
+          std::pair<int,std::string> key = Model_rlist_[ir];
           // convert ires to std::string
           std::string num;
           Tools::convert(key.first,num);
@@ -672,7 +689,7 @@ void EMMIVOX::print_status(long int step) {
     // cycle on residues
     for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
       // key: pair of residue/chain IDs
-      std::pair<unsigned,std::string> key = Model_rlist_[ir];
+      std::pair<int,std::string> key = Model_rlist_[ir];
       // bfactor from map
       double bf = Model_b_[key];
       // convert ires to std::string
@@ -971,14 +988,14 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms) {
       Vector5d w = Model_w_[type_map[type_s]];
       Model_w.push_back(w[0]+w[1]+w[2]+w[3]+w[4]);
       // get residue id
-      unsigned ires = moldat->getResidueNumber(atoms[i]);
+      const int ires = moldat->getResidueNumber(atoms[i]);
       // and chain
       std::string c ("*");
       if(!bfactnoc_) {
         c = moldat->getChainID(atoms[i]);
       }
       // define pair residue/chain IDs
-      std::pair<unsigned,std::string> key = std::make_pair(ires,c);
+      std::pair<int,std::string> key = std::make_pair(ires,c);
       // add to map between residue/chain and list of atoms
       Model_resmap_[key].push_back(i);
       // and global list of residue/chain per atom
@@ -991,7 +1008,7 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms) {
   }
   // create ordered vector of residue-chain IDs
   for(unsigned i=0; i<Model_res_.size(); ++i) {
-    std::pair<unsigned,std::string> key = Model_res_[i];
+    std::pair<int,std::string> key = Model_res_[i];
     // search in Model_rlist_
     if(find(Model_rlist_.begin(), Model_rlist_.end(), key) == Model_rlist_.end()) {
       Model_rlist_.push_back(key);
@@ -1045,7 +1062,7 @@ void EMMIVOX::initialize_Bfactor(double reso) {
     bfactini = std::min(bfactmax_, std::max(bfactmin_, bfactini));
   }
   // set initial Bfactor
-  for(std::map< std::pair<unsigned,std::string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
+  for(std::map< std::pair<int,std::string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
     it->second = bfactini;
   }
   log.printf("  experimental map resolution : %3.2f\n", reso);
@@ -1075,7 +1092,7 @@ void EMMIVOX::get_auxiliary_vectors() {
     // get atom type
     unsigned atype = Model_type_[im];
     // get residue/chain IDs
-    std::pair<unsigned,std::string> key = Model_res_[im];
+    std::pair<int,std::string> key = Model_res_[im];
     // get bfactor
     double bfact = Model_b_[key];
     // sigma for 5 gaussians
@@ -1122,44 +1139,60 @@ void EMMIVOX::push_auxiliary_gpu() {
 }
 
 void EMMIVOX::get_close_residues() {
+  // two residues are neighbors if two of their atoms are closer than this
+  const double dcut = 0.5;
+  const unsigned nres = Model_rlist_.size();
   // clear neighbor list
   nl_res_.clear();
-  nl_res_.resize(Model_rlist_.size());
+  nl_res_.resize(nres);
+
+  // atoms, center and radius of each residue: two residues whose spheres are
+  // farther than dcut cannot have atoms closer than dcut
+  std::vector< const std::vector<unsigned>* > ratoms(nres);
+  std::vector<Vector> rcenter(nres);
+  std::vector<double> rradius(nres,0.0);
+  for(unsigned i=0; i<nres; ++i) {
+    ratoms[i] = &Model_resmap_[Model_rlist_[i]];
+    Vector c;
+    for(const auto im : *ratoms[i]) {
+      c += getPosition(im);
+    }
+    if(ratoms[i]->size()>0) {
+      c /= static_cast<double>(ratoms[i]->size());
+    }
+    rcenter[i] = c;
+    for(const auto im : *ratoms[i]) {
+      rradius[i] = std::max(rradius[i], delta(c,getPosition(im)).modulo());
+    }
+  }
 
   // loop in parallel
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  const unsigned nt = OpenMP::getNumThreads();
+  std::vector< std::vector< std::vector<unsigned> > > nl_res_t(nt);
+  #pragma omp parallel num_threads(nt)
   {
     // private variable
-    std::vector< std::vector<unsigned> > nl_res_l(Model_rlist_.size());
+    std::vector< std::vector<unsigned> > & nl_res_l = nl_res_t[OpenMP::getThreadNum()];
+    nl_res_l.resize(nres);
     // cycle on residues/chains #1
-    #pragma omp for
-    for(unsigned i=0; i<Model_rlist_.size()-1; ++i) {
-
-      // key1: pair of residue/chain IDs
-      std::pair<unsigned,std::string> key1 = Model_rlist_[i];
-
+    #pragma omp for schedule(dynamic)
+    for(unsigned i=0; i<nres; ++i) {
       // cycle over residues/chains #2
-      for(unsigned j=i+1; j<Model_rlist_.size(); ++j) {
-
-        // key2: pair of residue/chain IDs
-        std::pair<unsigned,std::string> key2 = Model_rlist_[j];
-
+      for(unsigned j=i+1; j<nres; ++j) {
+        if(delta(rcenter[i],rcenter[j]).modulo() > rradius[i]+rradius[j]+dcut) {
+          continue;
+        }
         // set flag neighbor
         bool neigh = false;
-
-        // cycle over all the atoms belonging to key1
-        for(unsigned im1=0; im1<Model_resmap_[key1].size(); ++im1) {
+        // cycle over all the atoms belonging to residue i
+        for(const auto im1 : *ratoms[i]) {
           // get atom position #1
-          Vector pos1 = getPosition(Model_resmap_[key1][im1]);
-          // cycle over all the atoms belonging to key2
-          for(unsigned im2=0; im2<Model_resmap_[key2].size(); ++im2) {
-            // get atom position #2
-            Vector pos2 = getPosition(Model_resmap_[key2][im2]);
-            // if closer than 0.5 nm, then residues key1 and key2 are neighbors
-            if(delta(pos1,pos2).modulo()<0.5) {
-              // set neighbors
+          const Vector pos1 = getPosition(im1);
+          // cycle over all the atoms belonging to residue j
+          for(const auto im2 : *ratoms[j]) {
+            // if closer than 0.5 nm, then residues i and j are neighbors
+            if(delta(pos1,getPosition(im2)).modulo()<dcut) {
               neigh = true;
-              // and exit
               break;
             }
           }
@@ -1168,7 +1201,6 @@ void EMMIVOX::get_close_residues() {
             break;
           }
         }
-
         // if neighbors, add to local list
         if(neigh) {
           nl_res_l[i].push_back(j);
@@ -1176,13 +1208,19 @@ void EMMIVOX::get_close_residues() {
         }
       }
     }
-    // add to global list
-    #pragma omp critical
-    {
-      for(unsigned i=0; i<nl_res_.size(); ++i) {
-        nl_res_[i].insert(nl_res_[i].end(), nl_res_l[i].begin(), nl_res_l[i].end());
-      }
+  }
+  // add to global list, sorted (reproducible results); the lists of the threads
+  // that did not run (e.g. without OpenMP) are empty and are skipped
+  for(unsigned t=0; t<nt; ++t) {
+    if(nl_res_t[t].empty()) {
+      continue;
     }
+    for(unsigned i=0; i<nres; ++i) {
+      nl_res_[i].insert(nl_res_[i].end(), nl_res_t[t][i].begin(), nl_res_t[t][i].end());
+    }
+  }
+  for(unsigned i=0; i<nres; ++i) {
+    std::sort(nl_res_[i].begin(), nl_res_[i].end());
   }
 }
 
@@ -1194,7 +1232,7 @@ void EMMIVOX::doMonteCarloBfact() {
   for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
 
     // key: pair of residue/chain IDs
-    std::pair<unsigned,std::string> key = Model_rlist_[ir];
+    std::pair<int,std::string> key = Model_rlist_[ir];
     // old bfactor
     double bfactold = Model_b_[key];
 
@@ -1210,12 +1248,14 @@ void EMMIVOX::doMonteCarloBfact() {
 
     // useful quantities
     std::map<unsigned, double> deltaov;
+    const unsigned nt = OpenMP::getNumThreads();
+    std::vector< std::map<unsigned, double> > deltaov_t(nt);
 
-    #pragma omp parallel num_threads(OpenMP::getNumThreads())
+    #pragma omp parallel num_threads(nt)
     {
       // private variables
-      std::map<unsigned, double> deltaov_l;
-      #pragma omp for
+      std::map<unsigned, double> & deltaov_l = deltaov_t[OpenMP::getThreadNum()];
+      #pragma omp for schedule(static)
       // cycle over all the atoms belonging to key (residue/chain)
       for(unsigned ia=0; ia<Model_resmap_[key].size(); ++ia) {
 
@@ -1242,12 +1282,11 @@ void EMMIVOX::doMonteCarloBfact() {
           deltaov_l[id] += dnew-dold;
         }
       }
-      // add to global list
-      #pragma omp critical
-      {
-        for(std::map<unsigned,double>::iterator itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov) {
-          deltaov[itov->first] += itov->second;
-        }
+    }
+    // add to global list, in thread order (reproducible results)
+    for(unsigned t=0; t<nt; ++t) {
+      for(const auto & itov : deltaov_t[t]) {
+        deltaov[itov.first] += itov.second;
       }
     }
 
@@ -1284,7 +1323,7 @@ void EMMIVOX::doMonteCarloBfact() {
     // add restraint to keep Bfactors of close residues close
     for(unsigned i=0; i<close.size(); ++i) {
       // residue/chain IDs of neighbor
-      std::pair<unsigned,std::string> keyn = Model_rlist_[close[i]];
+      std::pair<int,std::string> keyn = Model_rlist_[close[i]];
       // deviations
       double devold = bfactold - Model_b_[keyn];
       double devnew = bfactnew - Model_b_[keyn];
@@ -1360,34 +1399,107 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m,
 
 void EMMIVOX::update_neighbor_sphere() {
   // number of atoms
-  unsigned natoms = Model_type_.size();
+  const unsigned natoms = Model_type_.size();
   // clear neighbor sphere
   ns_.clear();
   // store reference positions
   refpos_ = getPositions();
+  if(natoms==0) {
+    return;
+  }
 
-  // cycle on voxels - in parallel
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  // the atoms are binned in cells larger than the largest sphere radius (2*cut_),
+  // so that only the 27 cells around a voxel have to be searched
+  const double rc = 2.0 * (*std::max_element(cut_.begin(), cut_.end()));
+  Vector lo = refpos_[0], hi = refpos_[0];
+  for(unsigned im=1; im<natoms; ++im) {
+    for(unsigned k=0; k<3; ++k) {
+      lo[k] = std::min(lo[k], refpos_[im][k]);
+      hi[k] = std::max(hi[k], refpos_[im][k]);
+    }
+  }
+  int ncell[3];
+  double csize[3];
+  for(unsigned k=0; k<3; ++k) {
+    // at most 200 cells per direction
+    const double len = hi[k]-lo[k];
+    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
+    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
+  }
+  auto cellIndex=[&](const Vector & x, const unsigned k) {
+    return static_cast<int>(std::floor((x[k]-lo[k])/csize[k]));
+  };
+  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
+  // atoms of each cell, in ascending order
+  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(natoms), atom_cell(natoms);
+  for(unsigned im=0; im<natoms; ++im) {
+    int c[3];
+    for(unsigned k=0; k<3; ++k) {
+      c[k] = std::min(ncell[k]-1, std::max(0, cellIndex(refpos_[im],k)));
+    }
+    atom_cell[im] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
+    cell_start[atom_cell[im]+1]++;
+  }
+  for(unsigned ic=0; ic<ncells; ++ic) {
+    cell_start[ic+1] += cell_start[ic];
+  }
+  {
+    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
+    for(unsigned im=0; im<natoms; ++im) {
+      cell_atoms[fill[atom_cell[im]]++] = im;
+    }
+  }
+
+  // cycle on voxels - in parallel; the pairs are sorted by voxel and then by atom
+  const unsigned nt = OpenMP::getNumThreads();
+  std::vector< std::vector< std::pair<unsigned,unsigned> > > ns_t(nt);
+  #pragma omp parallel num_threads(nt)
   {
     // private variables
-    std::vector< std::pair<unsigned,unsigned> > ns_l;
-    #pragma omp for
+    std::vector< std::pair<unsigned,unsigned> > & ns_l = ns_t[OpenMP::getThreadNum()];
+    std::vector<unsigned> close;
+    #pragma omp for schedule(static)
     for(unsigned id=0; id<ovdd_.size(); ++id) {
       // grid point
-      Vector d_m = Map_m_[id];
-      // cycle on atoms
-      for(unsigned im=0; im<natoms; ++im) {
-        // calculate distance
-        double dist = delta(getPosition(im), d_m).modulo();
-        // add to local list
-        if(dist<=2.0*cut_[im]) {
-          ns_l.push_back(std::make_pair(id,im));
+      const Vector d_m = Map_m_[id];
+      int c[3];
+      bool outside = false;
+      for(unsigned k=0; k<3; ++k) {
+        c[k] = cellIndex(d_m,k);
+        // more than one cell away from the atoms
+        if(c[k]<-1 || c[k]>ncell[k]) {
+          outside = true;
         }
       }
+      if(outside) {
+        continue;
+      }
+      close.clear();
+      for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
+        for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
+          for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
+            const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
+            for(unsigned j=cell_start[ic]; j<cell_start[ic+1]; ++j) {
+              const unsigned im = cell_atoms[j];
+              // calculate distance
+              const double dist = delta(getPosition(im), d_m).modulo();
+              // add to local list
+              if(dist<=2.0*cut_[im]) {
+                close.push_back(im);
+              }
+            }
+          }
+        }
+      }
+      std::sort(close.begin(), close.end());
+      for(const auto im : close) {
+        ns_l.push_back(std::make_pair(id,im));
+      }
     }
-    // add to global list
-    #pragma omp critical
-    ns_.insert(ns_.end(), ns_l.begin(), ns_l.end());
+  }
+  // add to global list, in thread order
+  for(unsigned t=0; t<nt; ++t) {
+    ns_.insert(ns_.end(), ns_t[t].begin(), ns_t[t].end());
   }
 }
 
@@ -1417,12 +1529,14 @@ void EMMIVOX::update_neighbor_list() {
   // clear neighbor list
   nl_.clear();
 
-  // cycle on neighbour sphere - in parallel
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  // cycle on neighbour sphere - in parallel, the order of the pairs is preserved
+  const unsigned nt = OpenMP::getNumThreads();
+  std::vector< std::vector< std::pair<unsigned,unsigned> > > nl_t(nt);
+  #pragma omp parallel num_threads(nt)
   {
     // private variables
-    std::vector< std::pair<unsigned,unsigned> > nl_l;
-    #pragma omp for
+    std::vector< std::pair<unsigned,unsigned> > & nl_l = nl_t[OpenMP::getThreadNum()];
+    #pragma omp for schedule(static)
     for(unsigned long long i=0; i<ns_.size(); ++i) {
       // calculate distance
       double dist = delta(Map_m_[ns_[i].first], getPosition(ns_[i].second)).modulo();
@@ -1431,9 +1545,10 @@ void EMMIVOX::update_neighbor_list() {
         nl_l.push_back(ns_[i]);
       }
     }
-    // add to global list
-    #pragma omp critical
-    nl_.insert(nl_.end(), nl_l.begin(), nl_l.end());
+  }
+  // add to global list, in thread order
+  for(unsigned t=0; t<nt; ++t) {
+    nl_.insert(nl_.end(), nl_t[t].begin(), nl_t[t].end());
   }
 
   // new dimension of neighbor list
@@ -1443,25 +1558,11 @@ void EMMIVOX::update_neighbor_list() {
 
   // in case of B-factors sampling - at the right step
   if(dbfact_>0 && getStep()%MCBstride_==0) {
-    // clear vectors
+    // list of voxels per atom, in the order of the neighbor list
     Model_nb_.clear();
     Model_nb_.resize(natoms);
-    // cycle over the neighbor list to creat a list of voxels per atom
-    #pragma omp parallel num_threads(OpenMP::getNumThreads())
-    {
-      // private variables
-      std::vector< std::vector<unsigned> > Model_nb_l(natoms);
-      #pragma omp for
-      for(unsigned long long i=0; i<nl_size; ++i) {
-        Model_nb_l[nl_[i].second].push_back(nl_[i].first);
-      }
-      // add to global list
-      #pragma omp critical
-      {
-        for(unsigned i=0; i<natoms; ++i) {
-          Model_nb_[i].insert(Model_nb_[i].end(), Model_nb_l[i].begin(), Model_nb_l[i].end());
-        }
-      }
+    for(unsigned long long i=0; i<nl_size; ++i) {
+      Model_nb_[nl_[i].second].push_back(nl_[i].first);
     }
   }
 
@@ -1503,7 +1604,7 @@ void EMMIVOX::calculate_fmod() {
   // number of data points
   int nd = ovdd_.size();
 
-  // fill positions in in parallel
+  // fill positions in parallel
   std::vector<double> posg(3*natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (int i=0; i<natoms; ++i) {
@@ -1597,7 +1698,8 @@ void EMMIVOX::calculate_score() {
   // energy - with limit dev going to zero
   torch::Tensor ene = 0.5 * ( errf / dev * zeros + torch::logical_not(zeros) * sqrt2_pi_ *  ismin_gpu_);
   // logarithm and sum
-  ene = -kbt_ * torch::sum(torch::log(ene));
+  // the sum over the voxels is done in double precision
+  ene = -kbt_ * torch::sum(torch::log(ene).to(torch::kFloat64));
   // and derivatives [1, nd]
   torch::Tensor d_der = -kbt_ * zeros * ( sqrt2_pi_ * torch::exp( -0.5 * dev * dev * ismin_gpu_ * ismin_gpu_ ) * ismin_gpu_ / errf - 1.0 / dev );
   // tensor for derivatives wrt atoms [1, nl_size]
@@ -1693,7 +1795,7 @@ void EMMIVOX::calculate() {
   Value* score = getPntrToComponent("scoreb");
   score->set(ene_);
   setBoxDerivatives(score, virial_);
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<atom_der_.size(); ++i) {
     setAtomsDerivatives(score, i, atom_der_[i]);
   }

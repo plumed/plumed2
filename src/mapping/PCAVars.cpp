@@ -33,7 +33,7 @@ namespace mapping {
 /*
 Projection on principal component eigenvectors or other high dimensional linear subspace
 
-As discussed in the documenation for [RMSD](RMSD.md) and [the refdist module](module_refdist.md) there are various different ways
+As discussed in the documentation for [RMSD](RMSD.md) and [the refdist module](module_refdist.md) there are various different ways
 of calculating the distance between the instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
 problem with all these methods, as one gets further and further from the reference configuration, the
 distance from it becomes a progressively poorer and poorer collective variable.  This happens because
@@ -60,7 +60,7 @@ $$
 $$
 
 Here $\mathbf{X}-\mathbf{X}^{ref}$ is the displacement from the refernece configuration in the high dimenisonal space, which you can
-calculate using the [RMSD](RMSD.md) action or by simply calculating difference between the instaneous values for a collection of variables
+calculate using the [RMSD](RMSD.md) action or by simply calculating difference between the instantaneous values for a collection of variables
 and the values of the variables for a particular reference configuration.  $A$ is then a $d$ by $D$ matrix where $D$ is the dimensionality
 of the high dimensional space and $d$ is the dimensionality of the lower dimensional subspace.   This matrix, $A$,
 can be found by various means including principal component analysis ([PCA](PCA.md)) and normal mode analysis.  In both these methods the
@@ -119,7 +119,7 @@ eig: CUSTOM ARG=eigu.disp,eign2 FUNC=x/sqrt(y) PERIODIC=NO
 eigT: TRANSPOSE ARG=eig
 # Everything prior to this point is only done in setup.  From here onwards we have the commands that are done during the main calculate loop.
 
-# Calculate the RMSD displacement between the instaneous structure and the first reference structure
+# Calculate the RMSD displacement between the instantaneous structure and the first reference structure
 rmsd: RMSD REFERENCE=regtest/mapping/rt-pca-two-frames/two-frames.pdb NUMBER=1 TYPE=OPTIMAL DISPLACEMENT SQUARED
 # Project the displacement computed above on the director of the vector that connects reference structure ref1 to refeference structure ref2
 pca: MATRIX_VECTOR_PRODUCT ARG=eigT,rmsd.disp
@@ -164,8 +164,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
-           "metrics that are available in PLUMED can be found in the section of the manual on "
-           "\\ref dists");
+           "metrics that are available in PLUMED can be found in the documentation for RMSD");
   keys.addInputKeyword("optional","ARG","scalar/vector","if there are arguments to be used specify them here");
   keys.addFlag("NOPBC",false,"do not use periodic boundary conditions when computing this quantity");
   keys.addOutputComponent("eig","default","vector","the projections on the eigenvalues");

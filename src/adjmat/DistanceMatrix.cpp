@@ -47,7 +47,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 NOPBC
 ```
 
 Once you have calculated your distance matrix in this way you can do many of the operations that were discussed for [CONTACT_MATRIX](CONTACT_MATRIX.md) with the output.
-For example, you can use the COMPONENTS flag to calcuate the $x$, $y$ and $z$ components of the vectors connecting the atoms in your two groups by using
+For example, you can use the COMPONENTS flag to calculate the $x$, $y$ and $z$ components of the vectors connecting the atoms in your two groups by using
 an input like that shown below:
 
 ```plumed
@@ -56,7 +56,7 @@ d1: DISTANCE_MATRIX GROUP=1-7 COMPONENTS
 
 ## Optimisation details
 
-If for some reaon, you only want to calculate the distances if they are less than a certain cutoff can add the LINKCELL_CUTOFF keyword as follows:
+If for some reason, you only want to calculate the distances if they are less than a certain cutoff can add the LINKCELL_CUTOFF keyword as follows:
 
 ```plumed
 d3: DISTANCE_MATRIX GROUP=1-7 LINKCELL_CUTOFF=1.0
@@ -64,7 +64,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 LINKCELL_CUTOFF=1.0
 
 Using a LINKCELL_CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
 Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
-atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are are calculated and stored__.
+atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are calculated and stored__.
 
 You can see how to work around this strange implementation detail in the following example input.  Lets suppose that we want to calculate the average distances
 between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
@@ -102,7 +102,7 @@ average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
 DUMPATOMS ATOMS=1-10 ARG=average FILE=avdist.xyz
 ``
 
-The advantage when using this input is the the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
+The advantage when using this input is the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
 method.
 
 Also notice that you can use MASK to calculate a subset of the rows in the DISTANCE matrix as is done in the following example:

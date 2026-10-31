@@ -1,0 +1,10 @@
+# c(t) (CALC_RCT) is an integral over all the points of the grid: with a sparse grid, the points that are not stored
+# have zero bias. Dense (bd, ed) and sparse (bs, es) grids give the same c(t) and rbias (up to round-off),
+# with a large fixed grid (b*) and with a grid that is extended (e*, c(t) over its current range).
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+bd: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FILE=H1 GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005 CALC_RCT
+bs: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FILE=H2 GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005 CALC_RCT GRID_SPARSE
+ed: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FILE=H3 GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005 CALC_RCT
+es: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FILE=H4 GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005 CALC_RCT GRID_SPARSE
+PRINT ARG=bd.rct,bs.rct,ed.rct,es.rct,bd.rbias,bs.rbias,ed.rbias,es.rbias FILE=colvar FMT=%10.5f

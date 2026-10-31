@@ -38,12 +38,15 @@
 #include "tools/PDB.h"
 #include "tools/Tools.h"
 #include "tools/IFile.h"
+#include "tools/Random.h"
+#include "tools/OpenMP.h"
 
 #include <map>
 #include <iterator>
 #include <iostream>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
@@ -82,17 +85,24 @@ and MARTINI representations, and a bead position file (e.g., bead1: CENTER ATOMS
 form factors for proteins and nucleic acids, while MARTINI_FF=3 uses Martini 3 form factors for proteins. The
 Martini 3 protein form factors are described in the corresponding paper in the bibliography below.
 
-ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
-the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+ONEBEAD scheme consists in a single-bead per amino acid residue, three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase), and a single bead per monosaccharide
+for glycans. Every bead carries the sign of its net scattering amplitude, so a bead whose contrast is negative
+with respect to the solvent enters the Debye sum with the correct sign. This matters for SANS close to a
+contrast-match point and for nuclei with a negative coherent scattering length such as Mn; in SAXS every bead
+has positive contrast and the sign is always positive. PLUMED creates a virtual bead on which
 the SAXS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
 account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
 solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
-nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
-electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
-with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
-SOLVATION_STRIDE, which is set to 10 steps by default.
+nucleobases / monosaccharides with a SASA (computed via LCPO algorithm) greater than a threshold are corrected
+according to an electron density term. Both the surface cut-off threshold and the electron density term can be
+set by the user with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be
+modified using SOLVATION_STRIDE, which is set to 10 steps by default.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
-keyword. This PDB file should only include the atoms for which the SAXS intensity will be computed.
+keyword. This PDB file must contain exactly the atoms selected by ATOMS, listed in the same order, with the
+atoms of each chain contiguous and the residues of each chain in ascending order. Any mismatch is reported as
+an error. Note that the ONEBEAD mapping is taken entirely from the TEMPLATE: unlike ATOMISTIC and MARTINI, it
+does not read residue or atom names from MOLINFO.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
 Three additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
 - 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by
@@ -167,22 +177,29 @@ a ONEBEAD coarse-grained implementation is available.
 
 Both for ATOMISTIC and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the SANS instruction.
 
-ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
-the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+ONEBEAD scheme consists in a single-bead per amino acid residue, three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase), and a single bead per monosaccharide
+for glycans. Every bead carries the sign of its net scattering amplitude, so a bead whose contrast is negative
+with respect to the solvent enters the Debye sum with the correct sign. This matters for SANS close to a
+contrast-match point and for nuclei with a negative coherent scattering length such as Mn; in SAXS every bead
+has positive contrast and the sign is always positive. PLUMED creates a virtual bead on which
 the SANS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
 account for the contribution of the solvation layer to the SANS intensity by adding a correction term for the
 solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
-nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
-electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
+nucleobases / monosaccharides with a SASA (computed via LCPO algorithm) greater than a threshold are corrected
+according to an electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
 with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
 SOLVATION_STRIDE, which is set to 10 steps by default. The deuteration of the solvent-exposed residues is chosen
 with a probability equal to the deuterium concentration in the buffer. The deuterated residues are updated with a
 stride equal to SOLVATION_STRIDE. The fraction of deuterated water can be set with DEUTER_CONC, the default value
 is 0.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
-keyword. This PDB file should only include the atoms for which the SANS intensity will be computed.
+keyword. This PDB file must contain exactly the atoms selected by ATOMS, listed in the same order, with the
+atoms of each chain contiguous and the residues of each chain in ascending order. Any mismatch is reported as
+an error. Note that the ONEBEAD mapping is taken entirely from the TEMPLATE: unlike ATOMISTIC and MARTINI, it
+does not read residue or atom names from MOLINFO.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
-Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
+Three additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
 - 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5",
 e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
 - 5'-phosphorylated end with an additional hydroxyl moiety at P (the residue name in the PDB must be followed by
@@ -245,7 +262,18 @@ PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
 class SAXS :
   public MetainferenceBase {
 private:
-  enum { H, C, N, O, P, S, NTT };
+  // ATOMISTIC X-ray/neutron form-factor slots. The first six are the original
+  // biological elements; the AFF_* entries are monoatomic ions whose Cromer-Mann
+  // and neutron parameters are supplied by getIonData().
+  enum { H, C, N, O, P, S,
+         AFF_NA, AFF_K, AFF_CL, AFF_CA, AFF_MG, AFF_ZN, AFF_FE2, AFF_FE3, AFF_MN,
+         NTT
+       };
+  // Canonical ion identifiers, shared by the ATOMISTIC and ONEBEAD routes.
+  // getIonData() and ionTypeFromResname() are keyed on these values. The AFF_*
+  // (atomistic) slots above and the OB_* (onebead) slots below MUST be listed in
+  // this same order so that affSlot()/obSlot() can map an ion id to its slot.
+  enum { ION_NA, ION_K, ION_CL, ION_CA, ION_MG, ION_ZN, ION_FE2, ION_FE3, ION_MN, NIONS };
   enum { ALA_BB, ARG_BB, ARG_SC1, ARG_SC2, ASN_BB, ASN_SC1, ASP_BB, ASP_SC1, CYS_BB, CYS_SC1,
          GLN_BB, GLN_SC1, GLU_BB, GLU_SC1, GLY_BB, HIS_BB, HIS_SC1, HIS_SC2, HIS_SC3, ILE_BB,
          ILE_SC1, LEU_BB, LEU_SC1, LYS_BB, LYS_SC1, LYS_SC2, MET_BB, MET_SC1, PHE_BB, PHE_SC1,
@@ -298,6 +326,15 @@ private:
          BASE_T,
          BASE_G,
          BASE_U,
+         // Monosaccharide bead types (one bead per residue, exactly as for the
+         // amino acids). GLYC_NAG/GLYC_NGA are the N-acetylated hexosamines
+         // (GlcNAc/GalNAc); see getOnebeadparam() for the provenance of the
+         // corresponding 21-parameter sets.
+         GLYC_FUC, GLYC_MAN, GLYC_BMA, GLYC_GAL, GLYC_GLC, GLYC_NAG, GLYC_NGA, GLYC_SIA,
+         // Monoatomic-ion bead types (one atom per bead). Their vac/solv/mix terms are
+         // filled analytically by getOnebeadIonparam_*(); see ionTypeFromResname() for
+         // residue-name detection. This list MUST stay in the same order as ION_*/AFF_*.
+         OB_NA, OB_K, OB_CL, OB_CA, OB_MG, OB_ZN, OB_FE2, OB_FE3, OB_MN,
          NONEBEAD
        };
   struct SplineCoeffs {
@@ -314,6 +351,9 @@ private:
   bool gpu;
   bool onebead;
   bool resolution;
+  bool chi2;
+  bool chi2ensemble;
+  int chi2ensemble_replicas;
   bool isFirstStep;
   int  deviceid;
   unsigned nres;
@@ -321,6 +361,8 @@ private:
   std::vector<unsigned> atoms_per_bead;
   std::vector<double>   atoms_masses;
   std::vector<double>   q_list;
+  std::vector<double>   expint;
+  std::vector<double>   experr;
   std::vector<double>   FF_rank;
   std::vector<std::vector<double> > FF_value_vacuum;
   std::vector<std::vector<double> > FF_value_solv;
@@ -336,6 +378,13 @@ private:
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
+  // ONEBEAD glycans. glyc_type[i] is the bead type (GLYC_*) of atom i, or -1 when
+  // atom i does not belong to a monosaccharide. glyc_bridge[i] flags the glycan
+  // oxygens that carry a glycosidic bond in the TEMPLATE, so that the LCPO SASA
+  // treats them as ethers rather than as free hydroxyls. Both are filled by
+  // getOnebeadMapping() and are indexed exactly like LCPOparam.
+  std::vector<int>  glyc_type;
+  std::vector<bool> glyc_bridge;
 
   double rho, rho_corr, sasa_cutoff;
   double deuter_conc;
@@ -344,6 +393,29 @@ private:
   std::vector<double> Iq0_solv;
   std::vector<double> Iq0_mix;
   double Iq0;
+  // Sign of each bead's net scattering amplitude, +1 or -1.
+  //
+  // The single-bead approximation stores B(q) = F_vac + rho^2 F_solv - rho F_mix,
+  // which is the orientational average of |sum_i A_i exp(i q r_i)|^2 over the
+  // atoms of the bead with A_i = b_i - rho v_i. Taking sqrt(B) therefore gives
+  // the MAGNITUDE of the bead amplitude and discards its sign. In the Debye sum
+  // I(q) = sum_j sum_l F_j F_l sinc(q R_jl) the sign matters as soon as two
+  // beads have different signs: a uniform flip cancels, a mixed one does not.
+  //
+  // This is reachable in SANS near a contrast-match point, and for a nucleus
+  // with a negative coherent scattering length such as Mn-55. In SAXS every
+  // bead has positive contrast against water, so the sign is always +1 and the
+  // result is unchanged.
+  //
+  // Recomputed together with Iq0 because it depends on the solvent density, on
+  // the solvation-layer correction, and in SANS on which residues are deuterated.
+  std::vector<double> bead_sign;
+  // Sign of A = sum_b - rho sum_v for one bead, from its q=0 terms.
+  // At q=0: F_solv(0) = sum_v^2 and F_mix(0) = 2 sum_b sum_v, with sum_v > 0.
+  // Hence 2 sum_v A = mix - 2 rho solv, and the two have the same sign.
+  static double beadSign(double iq0_solv, double iq0_mix, double rho) {
+    return (iq0_mix - 2.*rho*iq0_solv < 0.) ? -1. : 1.;
+  }
 
   // SANS:
   std::vector<double> Iq0_vac_H;
@@ -355,6 +427,15 @@ private:
   std::vector<std::vector<double> > qj_list;
   std::vector<std::vector<double> > Rij;
   std::vector<double> sigma_res;
+  // the smearing with the resolution function is linear: smeared I(q_k) = sum_l smear_[k*numq+l] I(q_l)
+  std::vector<double> smear_;
+  // q values as a uniform grid q0+k*dq plus small deviations (see sincos_q)
+  double qref0_;
+  double qref_dq_;
+  double qref_maxeps_;
+  std::vector<double> qref_eps_;
+  // random numbers for the deuteration of the solvent exposed residues (SANS)
+  Random random_deut_;
 
   // Chebyshev polynomial coefficients for i0e(x) used for resolution function
   // values taken from cephes library
@@ -419,7 +500,8 @@ private:
     };
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
-  void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
+  void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv);
+  void sincos_q(const double r, double *s, double *c) const;
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atoms);
@@ -433,6 +515,34 @@ private:
   void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
   void getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
+  // Ions (shared by ATOMISTIC and ONEBEAD).
+  // getIonData returns, for a canonical ION_* id: Cromer-Mann a[4]/b[4]/c (X-ray),
+  // the displaced-solvent volume vol (A^3), the bound coherent neutron scattering
+  // length neutron_b (10^-12 cm), and the atomic mass (g/mol).
+  void getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<double> &cm_b, double &cm_c, double &vol, double &neutron_b, double &mass) const;
+  // Returns the canonical ION_* id for a residue name, or -1 if it is not a known ion.
+  int ionTypeFromResname(const std::string &resname) const;
+  // True for monosaccharides that are recognised but not parameterised.
+  bool isUnsupportedGlycan(const std::string &resname) const;
+  // Canonical name of a residue whose name encodes a glycosylation site.
+  std::string onebeadResidueAlias(const std::string &resname) const;
+  // True when the residue is represented by a single bead (amino acids, incl. CYX).
+  bool isOnebeadProteinResidue(const PDB &pdb, const std::string &resname) const;
+  // Returns the GLYC_* bead type for a monosaccharide residue name, or -1 if the
+  // residue is not a supported glycan. hasN must be true when the residue carries
+  // an amide nitrogen: that is what distinguishes GlcNAc from Glc and GalNAc from
+  // Gal when the input file names an N-acetylhexosamine after its parent hexose.
+  int glycanTypeFromResname(const std::string &resname, bool hasN) const;
+  // Map a canonical ion id to its atomistic / onebead form-factor slot.
+  inline unsigned affSlot(unsigned ion) const {
+    return AFF_NA + ion;
+  }
+  inline unsigned obSlot(unsigned ion) const {
+    return OB_NA + ion;
+  }
+  // Fill the onebead vac/solv/mix terms (and q=0 Iq0 values) for every ion bead.
+  void getOnebeadIonparam_saxs(std::vector<std::vector<long double> > &FF_tmp_vac, std::vector<std::vector<long double> > &FF_tmp_mix, std::vector<std::vector<long double> > &FF_tmp_solv, std::vector<double> &iq0_vac, std::vector<double> &iq0_mix, std::vector<double> &iq0_solv) const;
+  void getOnebeadIonparam_sans(std::vector<std::vector<long double> > &FF_tmp_vac_H, std::vector<std::vector<long double> > &FF_tmp_mix_H, std::vector<std::vector<long double> > &FF_tmp_solv_H, std::vector<std::vector<long double> > &FF_tmp_vac_D, std::vector<std::vector<long double> > &FF_tmp_mix_D, std::vector<double> &iq0_vac_H, std::vector<double> &iq0_mix_H, std::vector<double> &iq0_solv_H, std::vector<double> &iq0_vac_D, std::vector<double> &iq0_mix_D) const;
   void resolution_function();
   std::vector<SplineCoeffs> spline_coeffs(std::vector<double> &x, std::vector<double> &y);
   inline double interpolation(std::vector<SplineCoeffs> &coeffs, double x);
@@ -443,7 +553,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
@@ -470,12 +579,21 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Solvation layer electron density correction (ONEBEAD only)");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only)");
   keys.add("numbered","EXPINT","Add an experimental value for each q value");
-  keys.add("numbered","SIGMARES","Variance of Gaussian distribution describing the deviation in the scattering angle for each q value");
+  keys.add("numbered","EXPERR","Add an experimental standard uncertainty for each q value. Values are divided by SCALE_EXPINT, exactly as EXPINT");
+  keys.addFlag("CHI2",false,"Calculate the scale-optimized chi-squared between calculated and experimental intensities using EXPERR");
+  keys.addFlag("CHI2ENSEMBLE",false,"Calculate chi-squared from arithmetic replica-averaged intensities for monitoring");
+  keys.add("numbered","SIGMARES","Standard deviation of the resolution function for each q value, in inverse angstroms");
   keys.add("compulsory","N","10","Number of points in the resolution function integral");
   keys.add("compulsory","SOLVATION_STRIDE","10","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
   keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
   keys.addOutputComponent("q","default","scalar","The # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","scalar","The # experimental intensity");
+  keys.addOutputComponent("chi2","CHI2","scalar","Scale-optimized chi-squared against EXPINT using EXPERR");
+  keys.addOutputComponent("chi2red","CHI2","scalar","Reduced scale-optimized chi-squared with N-1 degrees of freedom");
+  keys.addOutputComponent("chi2scale","CHI2","scalar","Best-fit multiplicative scale applied to the calculated intensities");
+  keys.addOutputComponent("chi2ensemble","CHI2ENSEMBLE","scalar","Chi-squared of replica-averaged intensities");
+  keys.addOutputComponent("chi2ensemblered","CHI2ENSEMBLE","scalar","Reduced chi-squared of replica-averaged intensities");
+  keys.addOutputComponent("chi2ensemblescale","CHI2ENSEMBLE","scalar","Best-fit scale for replica-averaged intensities");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
@@ -486,6 +604,9 @@ SAXS::SAXS(const ActionOptions&ao):
   serial(false),
   gpu(false),
   onebead(false),
+  chi2(false),
+  chi2ensemble(false),
+  chi2ensemble_replicas(1),
   isFirstStep(true),
   deviceid(-1) {
   if( getName().find("SAXS")!=std::string::npos) {
@@ -603,6 +724,9 @@ SAXS::SAXS(const ActionOptions&ao):
     ntarget++;
   }
   const unsigned numq = ntarget;
+  if(numq==0) {
+    error("At least one QVALUE must be specified");
+  }
 
   for(unsigned i=0; i<numq; ++i) {
     if(q_list[i]==0.) {
@@ -620,6 +744,18 @@ SAXS::SAXS(const ActionOptions&ao):
 
   double scale_expint=1.;
   parse("SCALE_EXPINT",scale_expint);
+  if(scale_expint<=0.) {
+    error("SCALE_EXPINT must be greater than zero");
+  }
+  parseFlag("CHI2",chi2);
+  parseFlag("CHI2ENSEMBLE",chi2ensemble);
+  if(chi2ensemble && !chi2) {
+    error("CHI2ENSEMBLE requires CHI2");
+  }
+  if(chi2ensemble) {
+    chi2ensemble_replicas = comm.Get_rank()==0 ? multi_sim_comm.Get_size() : 0;
+    comm.Sum(&chi2ensemble_replicas,1);
+  }
 
   if((!atomistic&&absolute)||(absolute&&scale_expint!=1)) {
     error("ABSOLUTE can be used only combined with ATOMISTIC without SCALE_EXPINT");
@@ -679,6 +815,7 @@ SAXS::SAXS(const ActionOptions&ao):
   if(onebead) {
     LCPOparam.resize(size);
     nres = getOnebeadMapping(pdb, atoms);
+    bead_sign.assign(nres, 1.);
     if(saxs) {
       Iq0_vac.resize(nres);
       Iq0_solv.resize(nres);
@@ -780,7 +917,7 @@ SAXS::SAXS(const ActionOptions&ao):
         if (line.empty()) {
           continue;
         }
-        if (ntarget > size) {
+        if (ntarget >= size) {
           error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
         }
         std::string num;
@@ -821,7 +958,7 @@ SAXS::SAXS(const ActionOptions&ao):
         if (line.empty()) {
           continue;
         }
-        if (ntarget > size) {
+        if (ntarget >= size) {
           error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
         }
         std::string num;
@@ -855,6 +992,14 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
       getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv, residue_atom);
+      // ion bead types carry no polynomial coefficients; insert a q=0 placeholder so the
+      // expansion and Iq0 loops below stay valid. Their ion entries are overwritten with
+      // analytic values by getOnebeadIonparam_saxs just afterwards.
+      for(unsigned s=OB_NA; s<NONEBEAD; ++s) {
+        parameter_vac[s].assign(1, 0.0);
+        parameter_mix[s].assign(1, 0.0);
+        parameter_solv[s].assign(1, 0.0);
+      }
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -873,6 +1018,8 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_mix[i]=parameter_mix[atoi[i]][0];
         Iq0_solv[i]=parameter_solv[atoi[i]][0];
       }
+      // overwrite ion bead types with analytic Cromer-Mann + excluded-volume terms
+      getOnebeadIonparam_saxs(FF_tmp_vac, FF_tmp_mix, FF_tmp_solv, Iq0_vac, Iq0_mix, Iq0_solv);
     } else { // SANS
       // read built-in ONEBEAD parameters
       FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
@@ -887,6 +1034,14 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
       getOnebeadparam_sansH(pdb, atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
       getOnebeadparam_sansD(pdb, atoms, parameter_vac_D, parameter_mix_D);
+      // q=0 placeholders for ion bead types (overwritten by getOnebeadIonparam_sans below)
+      for(unsigned s=OB_NA; s<NONEBEAD; ++s) {
+        parameter_vac_H[s].assign(1, 0.0);
+        parameter_mix_H[s].assign(1, 0.0);
+        parameter_solv_H[s].assign(1, 0.0);
+        parameter_vac_D[s].assign(1, 0.0);
+        parameter_mix_D[s].assign(1, 0.0);
+      }
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { // same number of parameters
@@ -909,6 +1064,9 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_vac_D[i]=parameter_vac_D[atoi[i]][0];
         Iq0_mix_D[i]=parameter_mix_D[atoi[i]][0];
       }
+      // overwrite ion bead types with analytic terms (neutron b + excluded volume)
+      getOnebeadIonparam_sans(FF_tmp_vac_H, FF_tmp_mix_H, FF_tmp_solv_H, FF_tmp_vac_D, FF_tmp_mix_D,
+                              Iq0_vac_H, Iq0_mix_H, Iq0_solv_H, Iq0_vac_D, Iq0_mix_D);
     }
   } else if(martini) {
     // read built-in MARTINI parameters
@@ -942,7 +1100,6 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
 
-  std::vector<double> expint;
   expint.resize( numq );
   ntarget=0;
   for(unsigned i=0; i<numq; ++i) {
@@ -965,6 +1122,49 @@ SAXS::SAXS(const ActionOptions&ao):
     error("with DOSCORE you need to set the EXPINT values");
   }
 
+  experr.resize( numq );
+  ntarget=0;
+  for(unsigned i=0; i<numq; ++i) {
+    if( !parseNumbered( "EXPERR", i+1, experr[i] ) ) {
+      break;
+    }
+    ntarget++;
+  }
+  std::transform(experr.begin(), experr.begin() + ntarget, experr.begin(), [scale_expint](double x) {
+    return x / scale_expint;
+  });
+  bool experr_complete=false;
+  if(ntarget!=numq && ntarget!=0) {
+    error("found wrong number of EXPERR values");
+  }
+  if(ntarget==numq) {
+    experr_complete=true;
+    for(unsigned i=0; i<numq; ++i) {
+      if(!std::isfinite(experr[i]) || experr[i]<=0.) {
+        error("EXPERR values must be finite and greater than zero");
+      }
+    }
+  }
+  if(chi2) {
+    if(absolute) {
+      error("CHI2 cannot be combined with ABSOLUTE in this first implementation because CHI2 fits a multiplicative intensity scale");
+    }
+    if(numq<2) {
+      error("CHI2 requires at least two QVALUE values because one multiplicative scale is fitted");
+    }
+    if(!exp) {
+      error("CHI2 requires one EXPINT value for every QVALUE");
+    }
+    if(!experr_complete) {
+      error("CHI2 requires one EXPERR value for every QVALUE");
+    }
+    for(unsigned i=0; i<numq; ++i) {
+      if(!std::isfinite(expint[i])) {
+        error("EXPINT values must be finite when using CHI2");
+      }
+    }
+  }
+
   sigma_res.resize( numq );
   resolution=false;
   ntarget=0;
@@ -979,10 +1179,24 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   if(ntarget==numq) {
     resolution=true;
+    if(numq==1) {
+      error("Resolution function requires at least two QVALUE values");
+    }
+    for(unsigned i=0; i<numq; ++i) {
+      if(sigma_res[i]<=0.) {
+        error("SIGMARES values must be greater than zero");
+      }
+      if(i>0&&q_list[i]<=q_list[i-1]) {
+        error("QVALUE values must be strictly increasing when using SIGMARES");
+      }
+    }
   }
 
   if(gpu && resolution) {
     error("Resolution function is not supported in GPUs");
+  }
+  if(chi2 && resolution) {
+    error("CHI2 with SIGMARES is not enabled in the first validation stage; resolution-smeared CHI2 will be tested separately");
   }
 
   Nj = 10;
@@ -1101,6 +1315,14 @@ SAXS::SAXS(const ActionOptions&ao):
         comp->set(expint[i]);
       }
     }
+    if(chi2) {
+      addComponentWithDerivatives("chi2");
+      componentIsNotPeriodic("chi2");
+      addComponentWithDerivatives("chi2red");
+      componentIsNotPeriodic("chi2red");
+      addComponent("chi2scale");
+      componentIsNotPeriodic("chi2scale");
+    }
   } else {
     for(unsigned i=0; i<numq; ++i) {
       std::string num;
@@ -1116,6 +1338,22 @@ SAXS::SAXS(const ActionOptions&ao):
       Value* comp=getPntrToComponent("exp-"+num);
       comp->set(expint[i]);
     }
+    if(chi2) {
+      addComponent("chi2");
+      componentIsNotPeriodic("chi2");
+      addComponent("chi2red");
+      componentIsNotPeriodic("chi2red");
+      addComponent("chi2scale");
+      componentIsNotPeriodic("chi2scale");
+    }
+  }
+  if(chi2ensemble) {
+    addComponent("chi2ensemble");
+    componentIsNotPeriodic("chi2ensemble");
+    addComponent("chi2ensemblered");
+    componentIsNotPeriodic("chi2ensemblered");
+    addComponent("chi2ensemblescale");
+    componentIsNotPeriodic("chi2ensemblescale");
   }
 
   // convert units to nm^-1
@@ -1126,12 +1364,38 @@ SAXS::SAXS(const ActionOptions&ao):
     }
   }
 
+  // q values as a uniform grid plus small deviations, used by sincos_q
+  qref0_ = q_list[0];
+  qref_dq_ = (numq>1) ? (q_list[numq-1]-q_list[0])/static_cast<double>(numq-1) : 0.0;
+  qref_maxeps_ = 0.0;
+  qref_eps_.resize(numq);
+  for(unsigned k=0; k<numq; ++k) {
+    qref_eps_[k] = q_list[k]-(qref0_+k*qref_dq_);
+    qref_maxeps_ = std::max(qref_maxeps_, std::fabs(qref_eps_[k]));
+  }
+
+  // the deuteration of the exposed residues is drawn by the first rank and broadcast
+  random_deut_.setSeed(-1);
+
   // compute resolution function after converting units
   if (resolution) {
     qj_list.resize(numq, std::vector<double>(Nj));
     Rij.resize(numq, std::vector<double>(Nj));
     // compute Rij and qj_list
     resolution_function();
+    // matrix of the smearing (spline interpolation and integral with the resolution function)
+    smear_.assign(numq*numq,0.0);
+    for(unsigned l=0; l<numq; ++l) {
+      std::vector<double> unit(numq,0.0);
+      unit[l] = 1.0;
+      std::vector<SplineCoeffs> coeffs = spline_coeffs(q_list, unit);
+      for(unsigned k=0; k<numq; ++k) {
+        const double dq = qj_list[k][1] - qj_list[k][0];
+        for(unsigned j=0; j<Nj; ++j) {
+          smear_[k*numq+l] += Rij[k][j] * interpolation(coeffs, qj_list[k][j]) * dq;
+        }
+      }
+    }
   }
 
   log<<"  Bibliography ";
@@ -1153,6 +1417,32 @@ SAXS::SAXS(const ActionOptions&ao):
     log<<plumed.cite("Pedersen, Posselt, Mortensen, J. Appl. Crystallogr., 23, 321–333 (1990)");
   }
 
+  // ion parameters: cite the sources only if any ion is actually present in the system
+  bool ions_present=false;
+  if(onebead) {
+    for(unsigned i=0; i<nres; ++i) {
+      if(atoi[i]>=OB_NA && atoi[i]<NONEBEAD) {
+        ions_present=true;
+        break;
+      }
+    }
+  } else if(atomistic) {
+    for(unsigned i=0; i<atoi.size(); ++i) {
+      if(atoi[i]>=AFF_NA && atoi[i]<NTT) {
+        ions_present=true;
+        break;
+      }
+    }
+  }
+  if(ions_present) {
+    log<<plumed.cite("Cromer, Mann, Acta Crystallogr. A, 24, 321-324 (1968)");
+    log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography, C, 554–595 (International Union of Crystallography, 2006)");
+    log<<plumed.cite("Shannon, Acta Crystallogr. A, 32, 751-767 (1976)");
+    if(!saxs) {
+      log<<plumed.cite("Sears, Neutron News, 3, 26-37 (1992)");
+    }
+  }
+
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
@@ -1168,22 +1458,84 @@ SAXS::SAXS(const ActionOptions&ao):
 
 // calculates SASA neighbor list
 void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
-  unsigned natoms = getNumberOfAtoms();
+  // pairs of atoms with LCPO parameters closer than the sum of their radii,
+  // found with a cell list; each list is sorted (as with the all-pairs loop)
+  const unsigned natoms = getNumberOfAtoms();
+  std::vector<unsigned> lcpo_atoms;
+  double maxr = 0.0;
   for(unsigned i = 0; i < natoms; ++i) {
     if (LCPOparam[i].size()>0) {
-      for (unsigned j = 0; j < i; ++j) {
-        if (LCPOparam[j].size()>0) {
-          double Delta_ij_mod = modulo(delta(getPosition(i), getPosition(j)))*10.;
-          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
-          if(Delta_ij_mod < overlapD) {
-            Nlist.at(i).push_back(j);
-            Nlist.at(j).push_back(i);
+      lcpo_atoms.push_back(i);
+      maxr = std::max(maxr, LCPOparam[i][0]);
+    }
+  }
+  if(lcpo_atoms.empty()) {
+    return;
+  }
+  // cell size (nm) not smaller than the largest cutoff (radii are in Angstrom)
+  const double rc = std::max(2.0*maxr/10., 1.e-6);
+  Vector lo = getPosition(lcpo_atoms[0]), hi = lo;
+  for(const auto i : lcpo_atoms) {
+    for(unsigned k=0; k<3; ++k) {
+      lo[k] = std::min(lo[k], getPosition(i)[k]);
+      hi[k] = std::max(hi[k], getPosition(i)[k]);
+    }
+  }
+  int ncell[3];
+  double csize[3];
+  for(unsigned k=0; k<3; ++k) {
+    const double len = hi[k]-lo[k];
+    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
+    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
+  }
+  auto cell=[&](const unsigned i, int *c) {
+    for(unsigned k=0; k<3; ++k) {
+      c[k] = std::min(ncell[k]-1, std::max(0, static_cast<int>(std::floor((getPosition(i)[k]-lo[k])/csize[k]))));
+    }
+  };
+  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
+  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(lcpo_atoms.size()), atom_cell(lcpo_atoms.size());
+  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+    int c[3];
+    cell(lcpo_atoms[a],c);
+    atom_cell[a] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
+    cell_start[atom_cell[a]+1]++;
+  }
+  for(unsigned ic=0; ic<ncells; ++ic) {
+    cell_start[ic+1] += cell_start[ic];
+  }
+  {
+    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
+    for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+      cell_atoms[fill[atom_cell[a]]++] = lcpo_atoms[a];
+    }
+  }
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+    const unsigned i = lcpo_atoms[a];
+    int c[3];
+    cell(i,c);
+    for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
+      for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
+        for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
+          const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
+          for(unsigned jj=cell_start[ic]; jj<cell_start[ic+1]; ++jj) {
+            const unsigned j = cell_atoms[jj];
+            if(j==i) {
+              continue;
+            }
+            // same expression as in the all-pairs loop (j<i), so that the result is the same
+            const double Delta_ij_mod = (j<i) ? modulo(delta(getPosition(i), getPosition(j)))*10. : modulo(delta(getPosition(j), getPosition(i)))*10.;
+            const double overlapD = (j<i) ? LCPOparam[i][0]+LCPOparam[j][0] : LCPOparam[j][0]+LCPOparam[i][0];
+            if(Delta_ij_mod < overlapD) {
+              Nlist[i].push_back(j);
+            }
           }
         }
       }
     }
+    std::sort(Nlist[i].begin(), Nlist[i].end());
   }
-
 }
 
 // calculates SASA according to LCPO algorithm
@@ -1192,11 +1544,16 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
   std::vector<std::vector<int> > Nlist(natoms);
   calcNlist(Nlist);
   std::vector<double> sasares(nres, 0.);
+  const unsigned nt = OpenMP::getNumThreads();
+  std::vector< std::vector<double> > sasares_t(nt);
 
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  #pragma omp parallel num_threads(nt)
   {
-    std::vector<double> private_sasares(nres, 0.);
-    #pragma omp for
+    std::vector<double> & private_sasares = sasares_t[OpenMP::getThreadNum()];
+    private_sasares.assign(nres, 0.);
+    // marks the neighbours of atom i (replaces a linear search in Nlist[i])
+    std::vector<char> is_neighbor(natoms, 0);
+    #pragma omp for schedule(static)
     for (unsigned i = 0; i < natoms; ++i) {
       if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
         double Aij = 0.0;
@@ -1204,13 +1561,16 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
         double Ajk = 0.0;
         double ri = LCPOparam[i][0];
         double S1 = 4.*M_PI*ri*ri;
+        for (const auto j : Nlist[i]) {
+          is_neighbor[j] = 1;
+        }
         for (unsigned j = 0; j < Nlist[i].size(); ++j) {
           double d_ij = modulo(delta( getPosition(i), getPosition(Nlist[i][j]) ))*10.;
           double rj = LCPOparam[Nlist[i][j]][0];
           double Aijt = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
           double Ajkt = 0.0;
           for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
-            if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+            if (is_neighbor[Nlist[Nlist[i][j]][k]]) {
               double d_jk = modulo(delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) ))*10.;
               double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
               double sjk =  (2.*M_PI*rj*(rj-d_jk/2.-((rj*rj-rk*rk)/(2.*d_jk))));
@@ -1221,18 +1581,25 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
           Aij += Aijt;
           Ajk += Ajkt;
         }
+        for (const auto j : Nlist[i]) {
+          is_neighbor[j] = 0;
+        }
         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
         if (sasai > 0) {
           private_sasares[residue_atom[i]] += sasai / 100.0;
         }
       }
     }
-    #pragma omp critical
-    {
-      // combining private_sasares into sasares
-      for (unsigned i = 0; i < nres; ++i) {
-        sasares[i] += private_sasares[i];
-      }
+  }
+  // combining private_sasares into sasares, in thread order (reproducible results);
+  // the buffers of the threads that did not run (e.g. without OpenMP, or when the
+  // runtime gives fewer threads than requested) are empty and are skipped
+  for (unsigned t = 0; t < nt; ++t) {
+    if(sasares_t[t].empty()) {
+      continue;
+    }
+    for (unsigned i = 0; i < nres; ++i) {
+      sasares[i] += sasares_t[t][i];
     }
   }
   for(unsigned i=0; i<nres; ++i) { // updating solv_res based on sasares
@@ -1262,17 +1629,14 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 
   // on gpu only the master rank run the calculation
   if(comm.Get_rank()==0) {
-    std::vector<float> posi;
-    posi.resize(3*size);
+    std::vector<float> posx(size), posy(size), posz(size);
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for (unsigned i=0; i<size; ++i) {
-      const Vector tmp = pos[i];
-      posi[3*i]   = static_cast<float>(tmp[0]);
-      posi[3*i+1] = static_cast<float>(tmp[1]);
-      posi[3*i+2] = static_cast<float>(tmp[2]);
+      posx[i] = static_cast<float>(pos[i][0]);
+      posy[i] = static_cast<float>(pos[i][1]);
+      posz[i] = static_cast<float>(pos[i][2]);
     }
 
-    // create array a and b containing atomic coordinates
 #ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
     af::setDevice(afcu::getNativeId(deviceid));
 #elif   __PLUMED_HAS_ARRAYFIRE_OCL
@@ -1280,71 +1644,68 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 #else
     af::setDevice(deviceid);
 #endif
-    // 3,size,1,1
-    af::array pos_a = af::array(3, size, &posi.front());
-    // size,3,1,1
-    pos_a = af::moddims(pos_a.T(), size, 3, 1);
-    // size,3,1,1
-    af::array pos_b = pos_a(af::span, af::span);
-    // size,1,3,1
-    pos_a = af::moddims(pos_a, size, 1, 3);
-    // 1,size,3,1
-    pos_b = af::moddims(pos_b, 1, size, 3);
-
-    // size,size,3,1
-    af::array pos_a_t = af::tile(pos_a, 1, size, 1);
-    // size,size,3,1: for some reason we need this
-    pos_a_t = af::moddims(pos_a_t, size, size, 3);
-    // size,size,3,1
-    af::array pos_b_t = af::tile(pos_b, size, 1, 1);
-    // size,size,3,1: for some reason we need this
-    pos_b_t = af::moddims(pos_b_t, size, size, 3);
-    // size,size,3,1
-    af::array xyz_dist = pos_a_t - pos_b_t;
-    // size,size,1,1
-    af::array square = af::sum(xyz_dist*xyz_dist,2);
-    // size,size,1,1
-    af::array dist_sqrt = af::sqrt(square);
-    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter because this are multiplied by zero)
-    af::replace(square,!(af::iszero(square)),1.);
-    // size,size,3,1
-    xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);
-    // numq,1,1,1
-    af::array sum_device   = af::constant(0, numq, f32);
-    // numq,size,3,1
-    af::array deriv_device = af::constant(0, numq, size, 3, f32);
-
+    // coordinates of all the particles as rows (1,size)
+    const af::array xall = af::array(1, size, posx.data());
+    const af::array yall = af::array(1, size, posy.data());
+    const af::array zall = af::array(1, size, posz.data());
+    // form factors of all the particles as rows (1,size), one per q
+    std::vector<af::array> ffall(numq);
     for (unsigned k=0; k<numq; ++k) {
-      // calculate FF matrix
-      // size,1,1,1
-      af::array AFF_value(size, &FFf_value[k].front());
-      // size,size,1,1
-      af::array FFdist_mod = af::tile(AFF_value(af::span), 1, size)*af::transpose(af::tile(AFF_value(af::span), 1, size));
+      ffall[k] = af::array(1, size, &FFf_value[k].front());
+    }
+    // accumulators: intensities and derivatives (1,size) for each q
+    af::array sum_device = af::constant(0, numq, f32);
+    std::vector<af::array> dx_device(numq), dy_device(numq), dz_device(numq);
+    for (unsigned k=0; k<numq; ++k) {
+      dx_device[k] = af::constant(0, 1, size, f32);
+      dy_device[k] = af::constant(0, 1, size, f32);
+      dz_device[k] = af::constant(0, 1, size, f32);
+    }
 
-      // get q
-      const float qvalue = static_cast<float>(q_list[k]);
-      // size,size,1,1
-      af::array dist_q = qvalue*dist_sqrt;
-      // size,size,1
-      af::array dist_sin = af::sin(dist_q)/dist_q;
-      af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
-      // 1,1,1,1
-      sum_device(k) = af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
-
-      // size,size,1,1
-      af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q));
-      // size,size,3,1
-      af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
-      // it should become 1,size,3
-      deriv_device(k, af::span, af::span) = af::sum(dd_all,0);
+    // the (i,j) matrices are built for blocks of rows i, so that the memory
+    // does not grow as size^2 (about 4M pairs per block)
+    const unsigned block = std::max(1U, std::min(size, (1U<<22)/std::max(size,1U)));
+    for (unsigned i0=0; i0<size; i0+=block) {
+      const unsigned nb = std::min(block, size-i0);
+      const af::seq rows(i0, i0+nb-1);
+      // x_i - x_j, (nb,size)
+      const af::array dxm = af::tile(af::transpose(xall(0,rows)), 1, size) - af::tile(xall, nb, 1);
+      const af::array dym = af::tile(af::transpose(yall(0,rows)), 1, size) - af::tile(yall, nb, 1);
+      const af::array dzm = af::tile(af::transpose(zall(0,rows)), 1, size) - af::tile(zall, nb, 1);
+      const af::array square = dxm*dxm + dym*dym + dzm*dzm;
+      const af::array dist = af::sqrt(square);
+      // 1/r^2, set to 0 for i==j (the derivative vanishes there)
+      const af::array iszero = (square == 0);
+      const af::array inv_square = (1.0f - iszero.as(f32)) / (square + iszero.as(f32));
+      for (unsigned k=0; k<numq; ++k) {
+        // FF_i*FF_j, (nb,size)
+        const af::array ffmat = af::tile(af::transpose(ffall[k](0,rows)), 1, size) * af::tile(ffall[k], nb, 1);
+        const float qvalue = static_cast<float>(q_list[k]);
+        const af::array dist_q = qvalue*dist;
+        // sin(qr)/qr, 1 for i==j
+        const af::array dist_sin = af::select(iszero, 1.0f, af::sin(dist_q)/(dist_q + iszero.as(f32)));
+        sum_device(k) += af::sum<float>(dist_sin*ffmat);
+        // derivatives with respect to j: sum over the rows i
+        const af::array tmp = ffmat*(dist_sin - af::cos(dist_q))*inv_square;
+        dx_device[k] += af::sum(tmp*dxm, 0);
+        dy_device[k] += af::sum(tmp*dym, 0);
+        dz_device[k] += af::sum(tmp*dzm, 0);
+      }
     }
 
     // read out results
     sum_device.host(&sum.front());
-
-    deriv_device = af::reorder(deriv_device, 2, 1, 0);
-    deriv_device = af::flat(deriv_device);
-    deriv_device.host(&dd.front());
+    std::vector<float> tx(size), ty(size), tz(size);
+    for (unsigned k=0; k<numq; ++k) {
+      dx_device[k].host(tx.data());
+      dy_device[k].host(ty.data());
+      dz_device[k].host(tz.data());
+      for (unsigned i=0; i<size; ++i) {
+        dd[k*size*3+i*3+0] = tx[i];
+        dd[k*size*3+i*3+1] = ty[i];
+        dd[k*size*3+i*3+2] = tz[i];
+      }
+    }
   }
 
   comm.Bcast(dd, 0);
@@ -1366,7 +1727,42 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 #endif
 }
 
-void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
+void SAXS::sincos_q(const double r, double *s, double *c) const {
+  // sin(q_k r) and cos(q_k r) for all the q values. When the q values are close to a
+  // uniform grid q0+k*dq (as usual for experimental data), sin and cos of the grid are
+  // obtained by angle addition (exact restart every 16 values) and corrected for the
+  // small deviations eps_k=q_k-q0-k*dq with a Taylor expansion (|eps_k r|<=0.1, error
+  // smaller than 1e-16). Otherwise sin and cos are computed for every q.
+  const unsigned numq = q_list.size();
+  if(numq<4 || qref_maxeps_*r>0.1) {
+    for(unsigned k=0; k<numq; ++k) {
+      s[k] = std::sin(q_list[k]*r);
+      c[k] = std::cos(q_list[k]*r);
+    }
+    return;
+  }
+  const double sd = std::sin(qref_dq_*r);
+  const double cd = std::cos(qref_dq_*r);
+  double sk = 0.0, ck = 1.0;
+  for(unsigned k=0; k<numq; ++k) {
+    if((k&15)==0) {
+      const double a = (qref0_+k*qref_dq_)*r;
+      sk = std::sin(a);
+      ck = std::cos(a);
+    }
+    const double x = qref_eps_[k]*r;
+    const double x2 = x*x;
+    const double cx = 1.-x2*(1./2-x2*(1./24-x2*(1./720-x2*(1./40320))));
+    const double sx = x*(1.-x2*(1./6-x2*(1./120-x2*(1./5040-x2*(1./362880)))));
+    s[k] = sk*cx+ck*sx;
+    c[k] = ck*cx-sk*sx;
+    const double s2 = sk*cd+ck*sd;
+    ck = ck*cd-sk*sd;
+    sk = s2;
+  }
+}
+
+void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv) {
   unsigned size;
   if(onebead) {
     size = nres;
@@ -1383,114 +1779,107 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
   }
   std::vector<double> sum(numq,0);
   const unsigned nt=OpenMP::getNumThreads();
+  // partial sums of the threads other than the first one, added in thread order
+  std::vector< std::vector<Vector> > deriv_t(nt);
+  std::vector< std::vector<double> > sum_t(nt);
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<Vector> omp_deriv(deriv.size());
-    std::vector<double> omp_sum(numq,0);
-    #pragma omp for nowait
+    const unsigned t = OpenMP::getThreadNum();
+    if(t>0) {
+      deriv_t[t].assign(deriv.size(),Vector(0,0,0));
+      sum_t[t].assign(numq,0.0);
+    }
+    std::vector<Vector> & my_deriv = (t>0) ? deriv_t[t] : deriv;
+    std::vector<double> & my_sum = (t>0) ? sum_t[t] : sum;
+    std::vector<double> sq(numq), cq(numq);
+    // the work of row i decreases with i: rows are dealt round robin
+    #pragma omp for schedule(static,1)
     for (unsigned i=rank; i<size-1; i+=stride) {
       Vector posi = pos[i];
       for (unsigned j=i+1; j<size ; ++j) {
         Vector c_distances = delta(posi,pos[j]);
         double m_distances = c_distances.modulo();
         c_distances = c_distances/m_distances/m_distances;
+        sincos_q(m_distances, sq.data(), cq.data());
         for (unsigned k=0; k<numq; ++k) {
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
           double FFF = 2.*FF_value[i][k]*FF_value[j][k];
-          double tsq = std::sin(qdist)/qdist;
-          double tcq = std::cos(qdist);
-          double tmp = FFF*(tcq-tsq);
+          double tsq = sq[k]/qdist;
+          double tmp = FFF*(cq[k]-tsq);
           Vector dd  = c_distances*tmp;
-          if(nt>1) {
-            omp_deriv[kdx+i] -=dd;
-            omp_deriv[kdx+j] +=dd;
-            omp_sum[k] += FFF*tsq;
-          } else {
-            deriv[kdx+i] -= dd;
-            deriv[kdx+j] += dd;
-            sum[k] += FFF*tsq;
-          }
+          my_deriv[kdx+i] -= dd;
+          my_deriv[kdx+j] += dd;
+          my_sum[k] += FFF*tsq;
         }
       }
     }
-    #pragma omp critical
-    if(nt>1) {
-      for(unsigned i=0; i<deriv.size(); ++i) {
-        deriv[i]+=omp_deriv[i];
-      }
-      for(unsigned k=0; k<numq; ++k) {
-        sum[k]+=omp_sum[k];
+  }
+  // only the threads that actually ran have filled their buffers: without OpenMP
+  // (or when the runtime gives fewer threads than requested) the others are empty
+  std::vector<unsigned> filled;
+  for(unsigned t=1; t<nt; ++t) {
+    if(sum_t[t].empty()) {
+      continue;
+    }
+    filled.push_back(t);
+    for(unsigned k=0; k<numq; ++k) {
+      sum[k] += sum_t[t][k];
+    }
+  }
+  if(!filled.empty()) {
+    #pragma omp parallel for num_threads(nt)
+    for(unsigned i=0; i<deriv.size(); ++i) {
+      for(const auto t : filled) {
+        deriv[i] += deriv_t[t][i];
       }
     }
   }
 
   if(!serial) {
-    comm.Sum(&deriv[0][0], 3*deriv.size());
     comm.Sum(&sum[0], numq);
   }
 
   if (resolution) {
-    // get spline for scatering curve
-    std::vector<SplineCoeffs> scatt_coeffs = spline_coeffs(q_list, sum);
-
-    // get spline for the derivatives
-    // copy the deriv to a new vector and zero deriv
-    std::vector<Vector> old_deriv(deriv);
-    memset(&deriv[0][0], 0.0, deriv.size() * sizeof deriv[0]);
-
-#ifdef _OPENMP
-    //NT is unused if openmp is not declared
-    const unsigned NT=OpenMP::getNumThreads();
-#endif //_OPENMP
-    for (unsigned i=rank; i<size; i+=stride) {
-      std::vector<double> deriv_i_x(numq);
-      std::vector<double> deriv_i_y(numq);
-      std::vector<double> deriv_i_z(numq);
-
-      std::vector<SplineCoeffs> deriv_coeffs_x;
-      std::vector<SplineCoeffs> deriv_coeffs_y;
-      std::vector<SplineCoeffs> deriv_coeffs_z;
-      for (unsigned k=0; k<numq; k++) {
-        unsigned kdx = k*size;
-        deriv_i_x[k] = old_deriv[kdx+i][0];
-        deriv_i_y[k] = old_deriv[kdx+i][1];
-        deriv_i_z[k] = old_deriv[kdx+i][2];
+    // the resolution function is applied to the whole intensity, self term included
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k]+=FF_rank[k];
+    }
+    const std::vector<double> old_sum(sum);
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k] = 0.;
+      for (unsigned l=0; l<numq; ++l) {
+        sum[k] += smear_[k*numq+l]*old_sum[l];
       }
-      deriv_coeffs_x = spline_coeffs(q_list, deriv_i_x);
-      deriv_coeffs_y = spline_coeffs(q_list, deriv_i_y);
-      deriv_coeffs_z = spline_coeffs(q_list, deriv_i_z);
-
-      // compute derivative with the smearing using the resolution function
-      #pragma omp parallel for num_threads(NT)
+    }
+    // the smearing is linear in the data, so it is applied to the partial
+    // derivatives of this rank (of all the particles) before summing them
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for (unsigned i=0; i<size; i++) {
+      std::vector<Vector> old_deriv_i(numq);
+      for (unsigned l=0; l<numq; l++) {
+        old_deriv_i[l] = deriv[l*size+i];
+      }
       for (unsigned k=0; k<numq; k++) {
-        unsigned kdx = k*size;
-        double dq = qj_list[k][1] - qj_list[k][0];
-        for (unsigned j=0; j<Nj; j++) {
-          deriv[kdx+i][0] += Rij[k][j] * interpolation(deriv_coeffs_x, qj_list[k][j]) * dq;
-          deriv[kdx+i][1] += Rij[k][j] * interpolation(deriv_coeffs_y, qj_list[k][j]) * dq;
-          deriv[kdx+i][2] += Rij[k][j] * interpolation(deriv_coeffs_z, qj_list[k][j]) * dq;
+        Vector d;
+        for (unsigned l=0; l<numq; l++) {
+          d += smear_[k*numq+l]*old_deriv_i[l];
         }
+        deriv[k*size+i] = d;
       }
     }
-
-    if(!serial) {
-      comm.Sum(&deriv[0][0], 3*deriv.size());
-    }
-
-    // compute the smeared spectra using the resolution function
-    #pragma omp parallel for num_threads(NT)
-    for (unsigned i=0; i<numq; i++) {
-      sum[i] = 0.;
-      double dq = qj_list[i][1] - qj_list[i][0];
-      for (unsigned j=0; j<Nj; j++) {
-        sum[i] += Rij[i][j] * interpolation(scatt_coeffs, qj_list[i][j]) * dq;
-      }
+  } else {
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k]+=FF_rank[k];
     }
   }
 
+  // with DOSCORE only the contraction with the score derivatives is summed (in calculate)
+  if(!serial && reduce_deriv) {
+    comm.Sum(&deriv[0][0], 3*deriv.size());
+  }
+
   for (unsigned k=0; k<numq; ++k) {
-    sum[k]+=FF_rank[k];
     std::string num;
     Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
@@ -1521,22 +1910,19 @@ void SAXS::calculate() {
 
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
+    std::vector<double> sum_mass(nres,0.);
+    std::vector<Vector> sum_pos(nres,Vector(0,0,0));
+    for(unsigned atom_id=0; atom_id<size; atom_id++) {
+      const unsigned resid = residue_atom[atom_id];
+      aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
+      sum_pos[resid] += atoms_masses[atom_id] * getPosition(atom_id);
+      sum_mass[resid] += atoms_masses[atom_id];
+    }
     for(unsigned resid=0; resid<nres; resid++) {
-      double sum_mass = 0.;
-      Vector sum_pos = Vector(0,0,0);
-      for(unsigned atom_id=0; atom_id<size; atom_id++) {
-        if(residue_atom[atom_id] == resid) {
-          aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
-          sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
-          sum_mass += atoms_masses[atom_id];
-        }
-      }
-      beads_pos[resid] = sum_pos/sum_mass;
-      for(unsigned atom_id=0; atom_id<size; atom_id++) {
-        if(residue_atom[atom_id] == resid) {
-          aa_deriv[atom_id] /= sum_mass;
-        }
-      }
+      beads_pos[resid] = sum_pos[resid]/sum_mass[resid];
+    }
+    for(unsigned atom_id=0; atom_id<size; atom_id++) {
+      aa_deriv[atom_id] /= sum_mass[residue_atom[atom_id]];
     }
     // SASA
     std::vector<bool> solv_res(nres, 0);
@@ -1548,26 +1934,28 @@ void SAXS::calculate() {
         }
         Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
-          if(solv_res[i] == 1 ) {
-            Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_solv[i]-rho_corr*Iq0_mix[i]));
-          } else {
-            Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_solv[i]-rho*Iq0_mix[i]));
-          }
+          // Iq0 accumulates the MAGNITUDE of each bead amplitude and is left as
+          // sum |A| on purpose: it stays well conditioned near a match point,
+          // where sum A passes through zero, and it equals |sum A| whenever
+          // every bead shares a sign, which is always the case in SAXS.
+          const double rho_i = (solv_res[i] == 1) ? rho_corr : rho;
+          bead_sign[i] = beadSign(Iq0_solv[i], Iq0_mix[i], rho_i);
+          Iq0 += std::sqrt(std::fabs(Iq0_vac[i] + rho_i*rho_i*Iq0_solv[i] - rho_i*Iq0_mix[i]));
         }
         // Form Factors
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned i=0; i<nres; ++i) {
             if(!gpu) {
               if(solv_res[i] == 0) { // buried
-                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
+                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
               } else { // surface
-                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
+                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
               }
             } else {
               if(solv_res[i] == 0) { // buried
-                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
+                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
               } else { // surface
-                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
+                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
               }
             }
           }
@@ -1591,40 +1979,64 @@ void SAXS::calculate() {
         if(deuter_conc!=0.||rho != rho_corr) {
           sasa_calculate(solv_res);
         }
+        // the exposed residues are deuterated with probability deuter_conc: the random
+        // numbers are drawn by the first rank (same sequence as before on every rank)
+        std::vector<int> deut_draw(nres,0);
+        if(comm.Get_rank()==0) {
+          for(unsigned i=0; i<nres; ++i) {
+            if(solv_res[i] == 1) {
+              deut_draw[i] = (random_deut_.RandU01()<deuter_conc) ? 1 : 0;
+            }
+          }
+        }
+        if(comm.Get_size()>1) {
+          comm.Bcast(deut_draw,0);
+        }
         Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
-          if(solv_res[i] == 1 ) {
-            if(rand()/RAND_MAX<deuter_conc) {
-              Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_D[i]));
+          // The density and the H/D term set are selected once and used for both
+          // the sign and the magnitude, so the two can never disagree. In SANS
+          // the sign genuinely varies between beads near a contrast-match point.
+          double vac_i, mix_i, rho_i;
+          if(solv_res[i] == 1) {
+            rho_i = rho_sans_corr;
+            if(deut_draw[i]) {
               deut_res[i] = 1;
+              vac_i = Iq0_vac_D[i];
+              mix_i = Iq0_mix_D[i];
             } else {
-              Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_H[i]));
+              vac_i = Iq0_vac_H[i];
+              mix_i = Iq0_mix_H[i];
             }
           } else {
-            Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans*rho_sans*Iq0_solv_H[i] - rho_sans*Iq0_mix_H[i]));
+            rho_i = rho_sans;
+            vac_i = Iq0_vac_H[i];
+            mix_i = Iq0_mix_H[i];
           }
+          bead_sign[i] = beadSign(Iq0_solv_H[i], mix_i, rho_i);
+          Iq0 += std::sqrt(std::fabs(vac_i + rho_i*rho_i*Iq0_solv_H[i] - rho_i*mix_i));
         }
         // Form Factors
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned i=0; i<nres; ++i) {
             if(!gpu) {
               if(solv_res[i] == 0) { // hydrogen
-                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
               } else {
                 if(deut_res[i] == 0) {
-                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+                  FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
                 } else {
-                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
+                  FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
                 }
               }
             } else {
               if(solv_res[i] == 0) { // hydrogen
-                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
               } else {
                 if(deut_res[i] == 0) {
-                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+                  FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
                 } else {
-                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
+                  FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
                 }
               }
             }
@@ -1648,10 +2060,60 @@ void SAXS::calculate() {
     aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
   }
 
+  // with DOSCORE the derivatives of the intensities are first contracted with the
+  // derivatives of the score, and only then summed over the ranks
   if(gpu) {
     calculate_gpu(beads_pos, bd_deriv);
   } else {
-    calculate_cpu(beads_pos, bd_deriv);
+    calculate_cpu(beads_pos, bd_deriv, !getDoScore());
+  }
+
+  std::vector<double> chi2_dq;
+  if(chi2 && !getDoScore()) {
+    chi2_dq.assign(numq,0.);
+  }
+  double chi2_raw=0.;
+  double chi2_reduced=0.;
+  double chi2_scale=1.;
+  if(chi2) {
+    double sum_xy=0.;
+    double sum_xx=0.;
+    double sum_yy=0.;
+    std::vector<double> calcint(numq,0.);
+    for(unsigned k=0; k<numq; ++k) {
+      std::string num;
+      Tools::convert(k,num);
+      calcint[k]=getPntrToComponent("q-"+num)->get();
+      if(!std::isfinite(calcint[k])) {
+        error("Non-finite calculated intensity encountered while evaluating CHI2");
+      }
+      const double weight=1./(experr[k]*experr[k]);
+      sum_xy += weight*calcint[k]*expint[k];
+      sum_xx += weight*calcint[k]*calcint[k];
+      sum_yy += weight*expint[k]*expint[k];
+    }
+    if(!std::isfinite(sum_xx) || sum_xx<=0.) {
+      error("Cannot evaluate CHI2 because the weighted calculated-intensity norm is not positive and finite");
+    }
+    chi2_scale=sum_xy/sum_xx;
+    chi2_raw=sum_yy-sum_xy*sum_xy/sum_xx;
+    const double roundoff_tol=1.e-12*std::max(1.,std::fabs(sum_yy));
+    if(chi2_raw<0. && chi2_raw>=-roundoff_tol) {
+      chi2_raw=0.;
+    }
+    if(!std::isfinite(chi2_scale) || !std::isfinite(chi2_raw) || chi2_raw<0.) {
+      error("Non-finite or negative CHI2 encountered after scale optimization");
+    }
+    chi2_reduced=chi2_raw/static_cast<double>(numq-1);
+    if(!getDoScore()) {
+      for(unsigned k=0; k<numq; ++k) {
+        const double weight=1./(experr[k]*experr[k]);
+        chi2_dq[k]=2.*weight*chi2_scale*(chi2_scale*calcint[k]-expint[k]);
+      }
+    }
+    getPntrToComponent("chi2")->set(chi2_raw);
+    getPntrToComponent("chi2red")->set(chi2_reduced);
+    getPntrToComponent("chi2scale")->set(chi2_scale);
   }
 
   if(getDoScore()) {
@@ -1660,72 +2122,135 @@ void SAXS::calculate() {
     setScore(score);
   }
 
-  for (unsigned k=0; k<numq; ++k) {
+  if(chi2ensemble) {
+    double ensemble_raw=chi2_raw;
+    double ensemble_reduced=chi2_reduced;
+    double ensemble_scale=chi2_scale;
+    if(chi2ensemble_replicas>1) {
+      std::vector<double> ensemble(numq,0.);
+      if(comm.Get_rank()==0) {
+        for(unsigned k=0; k<numq; ++k) {
+          std::string num;
+          Tools::convert(k,num);
+          ensemble[k]=getPntrToComponent("q-"+num)->get();
+        }
+        multi_sim_comm.Sum(&ensemble[0],numq);
+        for(unsigned k=0; k<numq; ++k) {
+          ensemble[k]/=static_cast<double>(chi2ensemble_replicas);
+        }
+      }
+      comm.Sum(&ensemble[0],numq);
+      double sum_xy=0.;
+      double sum_xx=0.;
+      double sum_yy=0.;
+      for(unsigned k=0; k<numq; ++k) {
+        if(!std::isfinite(ensemble[k])) {
+          error("Non-finite ensemble intensity encountered while evaluating CHI2ENSEMBLE");
+        }
+        const double weight=1./(experr[k]*experr[k]);
+        sum_xy += weight*ensemble[k]*expint[k];
+        sum_xx += weight*ensemble[k]*ensemble[k];
+        sum_yy += weight*expint[k]*expint[k];
+      }
+      if(!std::isfinite(sum_xx) || sum_xx<=0.) {
+        error("Cannot evaluate CHI2ENSEMBLE because the weighted calculated-intensity norm is not positive and finite");
+      }
+      ensemble_scale=sum_xy/sum_xx;
+      ensemble_raw=sum_yy-sum_xy*sum_xy/sum_xx;
+      const double roundoff_tol=1.e-12*std::max(1.,std::fabs(sum_yy));
+      if(ensemble_raw<0. && ensemble_raw>=-roundoff_tol) {
+        ensemble_raw=0.;
+      }
+      if(!std::isfinite(ensemble_scale) || !std::isfinite(ensemble_raw) || ensemble_raw<0.) {
+        error("Non-finite or negative CHI2ENSEMBLE encountered after scale optimization");
+      }
+      ensemble_reduced=ensemble_raw/static_cast<double>(numq-1);
+    }
+    getPntrToComponent("chi2ensemble")->set(ensemble_raw);
+    getPntrToComponent("chi2ensemblered")->set(ensemble_reduced);
+    getPntrToComponent("chi2ensemblescale")->set(ensemble_scale);
+  }
+
+  std::vector<Vector> chi2_atom_deriv;
+  if(chi2 && !getDoScore()) {
+    chi2_atom_deriv.assign(size,Vector(0,0,0));
+  }
+  Tensor chi2_box_deriv;
+
+  // derivatives of each intensity (without DOSCORE)
+  for (unsigned k=0; k<numq && !getDoScore(); ++k) {
     const unsigned kdx=k*beads_size;
     Tensor deriv_box;
-    Value* val;
-    if(!getDoScore()) {
-      std::string num;
-      Tools::convert(k,num);
-      val=getPntrToComponent("q-"+num);
+    std::string num;
+    Tools::convert(k,num);
+    Value* val=getPntrToComponent("q-"+num);
 
-      if(onebead) {
-        unsigned atom_id=0;
-        for(unsigned i=0; i<beads_size; ++i) {
-          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
-            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
-                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
-                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
-            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
-                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
-                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
-            atom_id++;
-          }
-        }
-      } else {
-        for(unsigned i=0; i<beads_size; ++i) {
-          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0], \
-                                             bd_deriv[kdx+i][1], \
-                                             bd_deriv[kdx+i][2]) );
-          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0], \
-                              bd_deriv[kdx+i][1], \
-                              bd_deriv[kdx+i][2]) );
+    if(onebead) {
+      for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+        const unsigned bead_id = residue_atom[atom_id];
+        const Vector qderiv(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0],
+                            aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1],
+                            aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]);
+        setAtomsDerivatives(val, atom_id, qderiv);
+        deriv_box += Tensor(getPosition(atom_id),qderiv);
+        if(chi2) {
+          chi2_atom_deriv[atom_id] += chi2_dq[k]*qderiv;
         }
       }
     } else {
-      val=getPntrToComponent("score");
-      if(onebead) {
-        unsigned atom_id=0;
-        for(unsigned i=0; i<beads_size; ++i) {
-          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
-            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
-            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
-            atom_id++;
-          }
-        }
-      } else {
-        for(unsigned i=0; i<beads_size; ++i) {
-          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
-                                             bd_deriv[kdx+i][1]*getMetaDer(k),
-                                             bd_deriv[kdx+i][2]*getMetaDer(k)) );
-          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
-                              bd_deriv[kdx+i][1]*getMetaDer(k),
-                              bd_deriv[kdx+i][2]*getMetaDer(k)) );
+      for(unsigned i=0; i<beads_size; ++i) {
+        const Vector qderiv(bd_deriv[kdx+i][0],
+                            bd_deriv[kdx+i][1],
+                            bd_deriv[kdx+i][2]);
+        setAtomsDerivatives(val, i, qderiv);
+        deriv_box += Tensor(getPosition(i),qderiv);
+        if(chi2) {
+          chi2_atom_deriv[i] += chi2_dq[k]*qderiv;
         }
       }
     }
+    if(chi2) {
+      chi2_box_deriv += chi2_dq[k]*deriv_box;
+    }
     setBoxDerivatives(val, -deriv_box);
   }
-}
 
-void SAXS::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
+  if(getDoScore()) {
+    // derivative of the score with respect to the beads, from all the q values
+    std::vector<Vector> score_deriv(beads_size, Vector(0,0,0));
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<beads_size; ++i) {
+      for(unsigned k=0; k<numq; ++k) {
+        score_deriv[i] += getMetaDer(k)*bd_deriv[k*beads_size+i];
+      }
+    }
+    // calculate_cpu does not sum the derivatives over the ranks with DOSCORE
+    if(!gpu && !serial && comm.Get_size()>1) {
+      comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
+    }
+    Value* val=getPntrToComponent("score");
+    Tensor deriv_box;
+    for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+      const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
+      const Vector der(aa_deriv[atom_id][0]*score_deriv[bead_id][0],
+                       aa_deriv[atom_id][1]*score_deriv[bead_id][1],
+                       aa_deriv[atom_id][2]*score_deriv[bead_id][2]);
+      setAtomsDerivatives(val, atom_id, der);
+      deriv_box += Tensor(getPosition(atom_id),der);
+    }
+    setBoxDerivatives(val, -deriv_box);
+  }
+
+  if(chi2 && !getDoScore()) {
+    Value* chi2_val=getPntrToComponent("chi2");
+    Value* chi2red_val=getPntrToComponent("chi2red");
+    const double invdof=1./static_cast<double>(numq-1);
+    for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+      setAtomsDerivatives(chi2_val, atom_id, chi2_atom_deriv[atom_id]);
+      setAtomsDerivatives(chi2red_val, atom_id, invdof*chi2_atom_deriv[atom_id]);
+    }
+    setBoxDerivatives(chi2_val, -chi2_box_deriv);
+    setBoxDerivatives(chi2red_val, -invdof*chi2_box_deriv);
   }
 }
 
@@ -1734,25 +2259,163 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
   pdb.getChainNames( chains );
   std::vector<std::vector<std::string> > AtomResidueName;
 
+  const unsigned n_map = std::max(atoms.size(), pdb.getPositions().size());
+  glyc_type.assign(n_map, -1);
+  glyc_bridge.assign(n_map, false);
+  // Atom numbers in TEMPLATE traversal order, one entry per atom, ions included.
+  std::vector<AtomNumber> atom_numbers;
+  atom_numbers.reserve(atoms.size());
+  // Audit trail. Accepting several spellings for the same residue is only safe if the
+  // user can see what each one was taken to mean, so every distinct residue name that
+  // reaches the glycan or alias path is recorded with its resolution and its count and
+  // printed below.
+  std::map<std::string, std::pair<int, unsigned> > glyc_seen;
+  std::map<std::string, std::pair<std::string, unsigned> > alias_seen;
+  std::vector<unsigned> glyc_count(NONEBEAD, 0);
+  unsigned glyc_nbridge = 0;
+
+  // Heavy-atom positions of the TEMPLATE. They are used below to tell a glycosidic
+  // (bridging) oxygen from a free hydroxyl, which selects the LCPO atom class of
+  // every glycan oxygen. Note that the TEMPLATE is read with scale=1, so these
+  // coordinates are in Angstrom, like the LCPO radii.
+  const std::vector<Vector>     &tmpl_pos = pdb.getPositions();
+  const std::vector<AtomNumber> &tmpl_num = pdb.getAtomNumbers();
+  std::vector<bool> tmpl_heavy(tmpl_pos.size(), false);
+  for(unsigned k=0; k<tmpl_num.size(); ++k) {
+    std::string an = pdb.getAtomName(tmpl_num[k]);
+    if(an.empty()) {
+      continue;
+    }
+    char e = an.at(0);
+    if(isdigit(e) && an.size()>1) {
+      e = an.at(1);
+    }
+    tmpl_heavy[k] = (e!='H');
+  }
+  // Number of heavy atoms covalently bound to a: C-O and C-N bonds are ~1.4 Angstrom
+  // while the shortest non-bonded contacts are well above 2.2 Angstrom, so 1.8 is a
+  // safe threshold. Only glycan oxygens are queried, so the cost is negligible and
+  // it is paid once, at setup.
+  const double bond_cut = 1.8;
+  auto nHeavyBonded = [&](AtomNumber a) {
+    const Vector pa = pdb.getPosition(a);
+    unsigned nb = 0;
+    for(unsigned k=0; k<tmpl_pos.size(); ++k) {
+      if(!tmpl_heavy[k] || tmpl_num[k].index()==a.index()) {
+        continue;
+      }
+      const Vector d = tmpl_pos[k]-pa;
+      if(std::fabs(d[0])>bond_cut || std::fabs(d[1])>bond_cut || std::fabs(d[2])>bond_cut) {
+        continue;
+      }
+      if(d.modulo2() < bond_cut*bond_cut) {
+        nb++;
+      }
+    }
+    return nb;
+  };
+  // Same neighbourhood, but returning the template indices instead of the count.
+  auto listHeavyBonded = [&](AtomNumber a) {
+    const Vector pa = pdb.getPosition(a);
+    std::vector<unsigned> nb;
+    for(unsigned k=0; k<tmpl_pos.size(); ++k) {
+      if(!tmpl_heavy[k] || tmpl_num[k].index()==a.index()) {
+        continue;
+      }
+      const Vector d = tmpl_pos[k]-pa;
+      if(std::fabs(d[0])>bond_cut || std::fabs(d[1])>bond_cut || std::fabs(d[2])>bond_cut) {
+        continue;
+      }
+      if(d.modulo2() < bond_cut*bond_cut) {
+        nb.push_back(k);
+      }
+    }
+    return nb;
+  };
+
+  // Every per-atom array is appended here and only here, so that they cannot drift
+  // out of step. Returns the running index of the atom just added.
+  AtomResidueName.resize(2);
+  auto registerAtom = [&](AtomNumber a, const std::string &rname, double mass) {
+    AtomResidueName[0].push_back(pdb.getAtomName(a));
+    AtomResidueName[1].push_back(rname);
+    atom_numbers.push_back(a);
+    atoms_masses.push_back(mass);
+    return AtomResidueName[0].size()-1;
+  };
+
   // cycle over chains
   for(unsigned i=0; i<chains.size(); ++i) {
-    unsigned start, end;
-    std::string errmsg;
-    pdb.getResidueRange(chains[i], start, end, errmsg);
     AtomResidueName.resize(2);
-    // cycle over residues
-    for(unsigned res=start; res<=end; res++) {
+    // cycle over the residues present in the chain
+    // (this works also with negative residue numbers and with gaps in the numbering)
+    for(const int res : pdb.getResiduesInChain(chains[i])) {
       std::string Rname = pdb.getResidueName(res, chains[i]);
       Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+      const std::string Rraw = Rname;
+      Rname = onebeadResidueAlias(Rname);
+      if(Rname!=Rraw) {
+        alias_seen[Rraw].first = Rname;
+        alias_seen[Rraw].second++;
+      }
       std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(res, chains[i]);
+      // monoatomic ion: a single bead per ion, detected by residue name. We register the
+      // atom name/residue name (so readLCPOparam can recognise and skip it for SASA) and
+      // use the tabulated atomic mass. The mass is immaterial for a one-atom bead (the COM
+      // is the atom itself) but is set correctly for clarity.
+      int ion = ionTypeFromResname(Rname);
+      if(ion >= 0) {
+        if(res_atoms.size()!=1) {
+          error("Monoatomic ion residue "+Rname+" of chain "+chains[i]+" in the TEMPLATE must contain exactly one atom; found "+std::to_string(res_atoms.size())+".");
+        }
+        std::vector<double> a, b;
+        double c, v, bN, m;
+        getIonData(ion, a, b, c, v, bN, m);
+        for(unsigned a_i=0; a_i<res_atoms.size(); a_i++) {
+          registerAtom(res_atoms[a_i], Rname, m);
+          residue_atom.push_back(atoms_per_bead.size());
+        }
+        atoms_per_bead.push_back(res_atoms.size());
+        continue;
+      }
+      // Glycans: a monosaccharide is a single bead, like an amino acid. The presence
+      // of an amide nitrogen is what separates GlcNAc from Glc and GalNAc from Gal,
+      // so that both the PDB chemical-component codes (NAG/NDG, NGA/A2G) and the
+      // force-field conventions that keep the parent hexose name are handled.
+      bool res_hasN = false;
+      for(unsigned a=0; a<res_atoms.size(); a++) {
+        std::string an = pdb.getAtomName(res_atoms[a]);
+        if(!an.empty() && an.at(0)=='N') {
+          res_hasN = true;
+          break;
+        }
+      }
+      for(unsigned a=0; a<res_atoms.size(); a++) {
+        for(unsigned b=a+1; b<res_atoms.size(); b++) {
+          if(pdb.getAtomName(res_atoms[a])==pdb.getAtomName(res_atoms[b])) {
+            error("Atom "+pdb.getAtomName(res_atoms[a])+" appears more than once in residue "+
+                  Rname+" of chain "+chains[i]+" in the TEMPLATE. This usually means the file still "
+                  "contains alternate locations (altLoc) or several models. Keep one of each before "
+                  "running ONEBEAD.");
+          }
+        }
+      }
+      const int glyc = glycanTypeFromResname(Rname, res_hasN);
+      const bool is_onebead_res = (glyc>=0) || isOnebeadProteinResidue(pdb,Rname);
+      if(glyc>=0) {
+        glyc_count[glyc]++;
+        glyc_seen[Rraw].first = glyc;
+        glyc_seen[Rraw].second++;
+      } else if(isUnsupportedGlycan(Rname)) {
+        error("Residue "+Rname+" is a monosaccharide for which no ONEBEAD parameters are "
+              "available. Remove it, or exclude it from ATOMS=.");
+      }
       std::vector<unsigned> tmp_residue_atom;
       tmp_residue_atom.resize(3,0);
       // cycle over atoms
       for(unsigned a=0; a<res_atoms.size(); a++) {
         // operations shared among all beads
         std::string Aname=pdb.getAtomName(res_atoms[a]);
-        AtomResidueName[0].push_back(Aname);
-        AtomResidueName[1].push_back(Rname);
         char type;
         char first = Aname.at(0);
         // We assume that element symbol is first letter, if not a number
@@ -1762,22 +2425,33 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
         } else {
           type = Aname.at(1);
         }
+        double amass = 0.;
         if (type == 'H') {
-          atoms_masses.push_back(1.008);
+          amass = 1.008;
         } else if(type == 'C') {
-          atoms_masses.push_back(12.011);
+          amass = 12.011;
         } else if(type == 'N') {
-          atoms_masses.push_back(14.007);
+          amass = 14.007;
         } else if(type == 'O') {
-          atoms_masses.push_back(15.999);
+          amass = 15.999;
         } else if(type == 'S') {
-          atoms_masses.push_back(32.065);
+          amass = 32.065;
         } else if(type == 'P') {
-          atoms_masses.push_back(30.974);
+          amass = 30.974;
         } else {
           error("Unknown element in mass extraction\n");
         }
-        if(pdb.allowedResidue("protein",Rname)) {
+        const unsigned idx = registerAtom(res_atoms[a], Rname, amass);
+        if(glyc>=0) {
+          glyc_type[idx] = glyc;
+          // a glycan oxygen bound to two heavy atoms is either the ring oxygen or
+          // a glycosidic bridge; both are ethers as far as LCPO is concerned
+          if(type=='O' && nHeavyBonded(res_atoms[a])>1) {
+            glyc_bridge[idx] = true;
+            glyc_nbridge++;
+          }
+          residue_atom.push_back(atoms_per_bead.size());
+        } else if(isOnebeadProteinResidue(pdb,Rname)) {
           residue_atom.push_back(atoms_per_bead.size());
         } else {
           // check for nucleic acids
@@ -1814,15 +2488,116 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
           }
         }
       }
-      if(pdb.allowedResidue("protein",Rname)) {
+      if(is_onebead_res) {
         atoms_per_bead.push_back(res_atoms.size());
       } else {
+        if(tmp_residue_atom[0]==0) {
+          error("Nucleotide residue "+Rname+" of chain "+chains[i]+" in the TEMPLATE has no atoms assigned to the pentose bead.");
+        }
+        if(tmp_residue_atom[1]==0) {
+          error("Nucleotide residue "+Rname+" of chain "+chains[i]+" in the TEMPLATE has no atoms assigned to the nucleobase bead.");
+        }
         atoms_per_bead.push_back(tmp_residue_atom[0]);
         atoms_per_bead.push_back(tmp_residue_atom[1]);
         if(tmp_residue_atom[2]>0) {
           atoms_per_bead.push_back(tmp_residue_atom[2]);
         }
       }
+    }
+  }
+  unsigned glyc_tot = 0;
+  for(unsigned s=GLYC_FUC; s<=GLYC_SIA; ++s) {
+    glyc_tot += glyc_count[s];
+  }
+  // Protein-glycan junction. The side-chain atom that receives the glycan loses its
+  // hydrogen and gains a heavy neighbour: ASN ND2 becomes a secondary amide, SER OG /
+  // THR OG1 / TYR OH become ethers. That is the same change of LCPO class as for a
+  // glycosidic oxygen, so the acceptor is flagged here and readLCPOparam() picks up
+  // the "_L" entry. The bead composition is untouched: the form factors are not
+  // affected, only the solvent-accessible surface.
+  unsigned nlink = 0;
+  if(glyc_tot>0) {
+    for(unsigned idx=0; idx<glyc_type.size() && idx<AtomResidueName[0].size(); ++idx) {
+      if(glyc_type[idx]<0) {
+        continue;
+      }
+      // the anomeric carbon is C1 in a pyranose and C2 in a sialic acid
+      const std::string &an = AtomResidueName[0][idx];
+      const bool anomeric = (glyc_type[idx]==GLYC_SIA) ? (an=="C2") : (an=="C1");
+      if(!anomeric || idx>=atom_numbers.size()) {
+        continue;
+      }
+      const std::vector<unsigned> nb = listHeavyBonded(atom_numbers[idx]);
+      for(unsigned n=0; n<nb.size(); ++n) {
+        // find the running index of the bonded atom
+        for(unsigned j=0; j<atom_numbers.size(); ++j) {
+          if(atom_numbers[j].index()!=tmpl_num[nb[n]].index()) {
+            continue;
+          }
+          if(glyc_type[j]<0 && j<glyc_bridge.size() && !glyc_bridge[j]) {
+            glyc_bridge[j] = true;
+            nlink++;
+          }
+          break;
+        }
+      }
+    }
+  }
+  if(!alias_seen.empty()) {
+    log.printf("  Residue-name aliases applied:\n");
+    for(std::map<std::string, std::pair<std::string, unsigned> >::const_iterator it=alias_seen.begin();
+        it!=alias_seen.end(); ++it) {
+      log.printf("    %-8s -> %-8s (%u residues)\n",
+                 it->first.c_str(), it->second.first.c_str(), it->second.second);
+    }
+  }
+  if(glyc_tot>0) {
+    const char* gname[8] = {"Fuc","Man(a)","Man(b)","Gal","Glc","GlcNAc","GalNAc","Neu5Ac"};
+    log.printf("  Glycan beads: %u (", glyc_tot);
+    for(unsigned s=GLYC_FUC; s<=GLYC_SIA; ++s) {
+      if(glyc_count[s]>0) {
+        log.printf(" %s:%u", gname[s-GLYC_FUC], glyc_count[s]);
+      }
+    }
+    log.printf(" ), %u bridging/ring oxygens, %u protein/nucleic linkages\n",
+               glyc_nbridge, nlink);
+    log.printf("  Glycan residue names as read, and the bead type each was resolved to:\n");
+    for(std::map<std::string, std::pair<int, unsigned> >::const_iterator it=glyc_seen.begin();
+        it!=glyc_seen.end(); ++it) {
+      log.printf("    %-8s -> %-8s (%u residues)\n", it->first.c_str(),
+                 gname[it->second.first-GLYC_FUC], it->second.second);
+    }
+  }
+  // the per-atom arrays are all appended by registerAtom(), so these can only fail if
+  // a future branch bypasses it
+  plumed_massert(atom_numbers.size()==AtomResidueName[0].size(),
+                 "getOnebeadMapping: atom_numbers and AtomResidueName out of step");
+  plumed_massert(atom_numbers.size()==AtomResidueName[1].size(),
+                 "getOnebeadMapping: AtomResidueName rows out of step");
+  plumed_massert(atom_numbers.size()==atoms_masses.size(),
+                 "getOnebeadMapping: atoms_masses out of step");
+  plumed_massert(atom_numbers.size()==residue_atom.size(),
+                 "getOnebeadMapping: residue_atom out of step");
+
+  if(atom_numbers.size()!=atoms.size()) {
+    std::string msg = "The TEMPLATE describes " + std::to_string(atom_numbers.size()) +
+                      " atoms but ATOMS selects " + std::to_string(atoms.size()) + ". For ONEBEAD the "
+                      "TEMPLATE must contain exactly the atoms selected by ATOMS, in the same order. ";
+    if(atom_numbers.size()>atoms.size()) {
+      msg += "Remove from the TEMPLATE whatever is not in ATOMS (water, ions, other chains).";
+    } else {
+      msg += "The TEMPLATE is missing atoms that ATOMS selects.";
+    }
+    error(msg);
+  }
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(atom_numbers[i].index()!=atoms[i].index()) {
+      error("TEMPLATE and ATOMS disagree at position " + std::to_string(i+1) + ": the TEMPLATE has atom " +
+            std::to_string(atom_numbers[i].serial()) + " (" + AtomResidueName[0][i] + " of " +
+            AtomResidueName[1][i] + ") where ATOMS has atom " + std::to_string(atoms[i].serial()) +
+            ". For ONEBEAD the two must list the same atoms in the same order; note that the TEMPLATE is "
+            "read chain by chain and, within a chain, by ascending residue number, so the atoms of each "
+            "chain must be contiguous and its residues in ascending order.");
     }
   }
   readLCPOparam(AtomResidueName, atoms.size());
@@ -3286,7 +4061,6 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-
 void SAXS::getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter) {
   // Kept separate from the Martini 2.2 table in getMartiniFFparam because the coefficients
   // differ and the Martini 3 protein topology adds beads absent in 2.2 (ALA_SC1, TRP_SC5,
@@ -4414,6 +5188,7 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
     std::string Aname = pdb.getAtomName(atoms[i]);
     std::string Rname = pdb.getResidueName(atoms[i]);
     Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    Rname = onebeadResidueAlias(Rname);
     if(Rname=="ALA") {
       atoi[residue_atoms[i]]=ALA;
     } else if(Rname=="ARG") {
@@ -5076,6 +5851,16 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+    } else if(glyc_type[i] >= 0) {
+      // monosaccharide: the bead type was resolved once, from the residue name and
+      // from the presence of an N-acetyl group, in getOnebeadMapping()
+      atoi[residue_atoms[i]] = static_cast<unsigned>(glyc_type[i]);
+    } else if(isUnsupportedGlycan(Rname)) {
+      error("Residue "+Rname+" is a monosaccharide for which no ONEBEAD parameters are available.");
+    } else if(ionTypeFromResname(Rname) >= 0) {
+      // monoatomic ion: assign its onebead bead type. The vac/solv/mix terms for this
+      // slot are filled analytically in getOnebeadIonparam_saxs (called from the constructor).
+      atoi[residue_atoms[i]] = obSlot(ionTypeFromResname(Rname));
     } else {
       error("Residue not known: "+Rname);
     }
@@ -5930,6 +6715,7 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
     std::string Aname = pdb.getAtomName(atoms[i]);
     std::string Rname = pdb.getResidueName(atoms[i]);
     Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    Rname = onebeadResidueAlias(Rname);
     if(Rname=="ALA") {
       atoi[residue_atom[i]]=ALA;
     } else if(Rname=="ARG") {
@@ -6592,6 +7378,15 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+    } else if(glyc_type[i] >= 0) {
+      // monosaccharide: the bead type was resolved once, from the residue name and
+      // from the presence of an N-acetyl group, in getOnebeadMapping()
+      atoi[residue_atom[i]] = static_cast<unsigned>(glyc_type[i]);
+    } else if(isUnsupportedGlycan(Rname)) {
+      error("Residue "+Rname+" is a monosaccharide for which no ONEBEAD parameters are available.");
+    } else if(ionTypeFromResname(Rname) >= 0) {
+      // monoatomic ion: assign its onebead bead type (terms filled in getOnebeadIonparam_sans).
+      atoi[residue_atom[i]] = obSlot(ionTypeFromResname(Rname));
     } else {
       error("Residue not known: "+Rname);
     }
@@ -7165,6 +7960,7 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
     std::string Aname = pdb.getAtomName(atoms[i]);
     std::string Rname = pdb.getResidueName(atoms[i]);
     Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    Rname = onebeadResidueAlias(Rname);
     if(Rname=="ALA") {
       atoi[residue_atom[i]]=ALA;
     } else if(Rname=="ARG") {
@@ -7827,8 +8623,316 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+    } else if(glyc_type[i] >= 0) {
+      // monosaccharide: the bead type was resolved once, from the residue name and
+      // from the presence of an N-acetyl group, in getOnebeadMapping()
+      atoi[residue_atom[i]] = static_cast<unsigned>(glyc_type[i]);
+    } else if(isUnsupportedGlycan(Rname)) {
+      error("Residue "+Rname+" is a monosaccharide for which no ONEBEAD parameters are available.");
+    } else if(ionTypeFromResname(Rname) >= 0) {
+      // monoatomic ion: assign its onebead bead type (terms filled in getOnebeadIonparam_sans).
+      atoi[residue_atom[i]] = obSlot(ionTypeFromResname(Rname));
     } else {
       error("Residue not known: "+Rname);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Monoatomic-ion parameters, shared by the ATOMISTIC and ONEBEAD routes.
+//
+// X-ray Cromer-Mann coefficients (a1..a4, b1..b4, c) are taken from the
+// charged-ion scattering-factor entries tabulated in the International Tables
+// for Crystallography / International Tables for X-ray Crystallography, based
+// on Cromer & Mann, Acta Cryst. A24, 321-324 (1968).
+// For each ion, Sum(a)+c gives the q=0 electron count of the ion
+// (atomic number minus charge), as expected for the forward X-ray factor.
+//
+// Neutron bound coherent scattering lengths are taken from the NIST NCNR table,
+// based on Sears, Neutron News 3, No. 3, 1992. These values are nuclear/isotopic
+// scattering lengths, so they do not depend on the ion oxidation state in this
+// model; for example Fe2+ and Fe3+ use the same Fe neutron value.
+//
+// The displaced-solvent volume is estimated from Shannon effective ionic radii
+// (Shannon, Acta Cryst. A32, 751-767 (1976); here using a fixed coordination
+// choice, currently 6-fold) as the volume of a sphere with that radius.
+// It is used instead of neutral-atom van der Waals radii because neutral vdW
+// radii are too large for small cations and would over-subtract the solvent
+// excluded-volume contribution.
+// ----------------------------------------------------------------------------
+void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<double> &cm_b, double &cm_c, double &vol, double &neutron_b, double &mass) const {
+  cm_a.resize(4);
+  cm_b.resize(4);
+  switch(ion) {
+  case ION_NA: // Na1+
+    cm_a = {3.2565, 3.9362, 1.3998, 1.0032};
+    cm_b = {2.6671, 6.1153, 0.2001, 14.039};
+    cm_c = 0.404;
+    vol = 4.445;
+    neutron_b = 0.363;
+    mass = 22.990;
+    break;
+  case ION_K: // K1+
+    cm_a = {7.9578, 7.4917, 6.359, 1.1915};
+    cm_b = {12.6331, 0.7674, -0.0020, 31.9128};
+    cm_c = -4.9978;
+    vol = 11.008;
+    neutron_b = 0.367;
+    mass = 39.098;
+    break;
+  case ION_CL: // Cl1-
+    cm_a = {18.2915, 7.2084, 6.5337, 2.3386};
+    cm_b = {0.0066, 1.1717, 19.5424, 60.4486};
+    cm_c = -16.378;
+    vol = 24.838;
+    neutron_b = 0.9577;
+    mass = 35.453;
+    break;
+  case ION_CA: // Ca2+
+    cm_a = {15.6348, 7.9518, 8.4372, 0.8537};
+    cm_b = {-0.0074, 0.6089, 10.3116, 25.9905};
+    cm_c = -14.875;
+    vol = 4.189;
+    neutron_b = 0.47;
+    mass = 40.078;
+    break;
+  case ION_MG: // Mg2+
+    cm_a = {3.4988, 3.8378, 1.3284, 0.8497};
+    cm_b = {2.1676, 4.7542, 0.185, 10.1411};
+    cm_c = 0.4853;
+    vol = 1.563;
+    neutron_b = 0.5375;
+    mass = 24.305;
+    break;
+  case ION_ZN: // Zn2+
+    cm_a = {11.9719, 7.3862, 6.4668, 1.394};
+    cm_b = {2.9946, 0.2031, 7.0826, 18.0995};
+    cm_c = 0.7807;
+    vol = 1.697;
+    neutron_b = 0.568;
+    mass = 65.38;
+    break;
+  case ION_FE2: // Fe2+
+    cm_a = {11.0424, 7.374, 4.1346, 0.4399};
+    cm_b = {4.6538, 0.3053, 12.0546, 31.2809};
+    cm_c = 1.0097;
+    vol = 1.988;
+    neutron_b = 0.945;
+    mass = 55.845;
+    break;
+  case ION_FE3: // Fe3+
+    cm_a = {11.1764, 7.3863, 3.3948, 0.0724};
+    cm_b = {4.6147, 0.3005, 11.6729, 38.5566};
+    cm_c = 0.9707;
+    vol = 1.124;
+    neutron_b = 0.945;
+    mass = 55.845;
+    break;
+  case ION_MN: // Mn2+
+    cm_a = {10.8061, 7.362, 3.5268, 0.2184};
+    cm_b = {5.2796, 0.3435, 14.343, 41.3235};
+    cm_c = 1.0874;
+    vol = 2.395;
+    neutron_b = -0.373;
+    mass = 54.938;
+    break;
+  default:
+    plumed_merror("getIonData called with an unknown ion id");
+  }
+}
+
+// Detect a monoatomic ion from its residue name. Detection is by RESIDUE name only.
+// The protein/nucleic-acid branches are matched before this is reached.
+// Accepted aliases follow the RCSB PDB het codes plus the AMBER and CHARMM ion residue names.
+int SAXS::ionTypeFromResname(const std::string &resname) const {
+  std::string r = resname;
+  r.erase(std::remove_if(r.begin(), r.end(), ::isspace), r.end());
+  std::transform(r.begin(), r.end(), r.begin(), ::toupper);
+  if(r=="NA"  || r=="SOD" || r=="NA+") {
+    return ION_NA;
+  }
+  if(r=="K"   || r=="POT" || r=="K+") {
+    return ION_K;
+  }
+  if(r=="CL"  || r=="CLA" || r=="CL-") {
+    return ION_CL;
+  }
+  if(r=="CA"  || r=="CAL" || r=="CA2+") {
+    return ION_CA;
+  }
+  if(r=="MG"  || r=="MG2+") {
+    return ION_MG;
+  }
+  if(r=="ZN"  || r=="ZN2" || r=="ZN2+") {
+    return ION_ZN;
+  }
+  if(r=="FE2") {
+    return ION_FE2;
+  }
+  if(r=="FE3") {
+    return ION_FE3;
+  }
+  if(r=="MN"  || r=="MN2+") {
+    return ION_MN;
+  }
+  return -1;
+}
+
+// Fill, for every ION_* bead type, the SAXS vac/solv/mix terms across q, and the q=0 Iq0 values
+// for the corresponding beads. For a one-atom bead vac=(f^a)^2, solv=(f^s)^2, mix=2 f^a f^s, so
+// the existing runtime combination sqrt(|vac + rho^2 solv - rho mix|) reproduces |f^a - rho f^s|
+// exactly, keeping rho a live SOLVDENS knob. q_list is in A^-1. This runs before the A^-1 ->
+// nm^-1 conversion in the constructor).
+// Maps a monosaccharide residue name onto one of the eight ONEBEAD glycan bead
+// types. Both the PDB chemical-component codes and the usual force-field spellings
+// are accepted. hasN tells whether the residue carries an amide nitrogen in the
+// TEMPLATE: it resolves the N-acetylhexosamines when the input file names them
+// after their parent hexose, which is the convention used by several builders.
+// Some builders rename the amino acid that carries a glycan (GLYCAM writes NLN for
+// an N-linked Asn, OLS/OLT for an O-linked Ser/Thr). Only a hydrogen is lost to the
+// glycosidic bond, so the bead is the parent amino acid and is treated as such. The
+// alias is applied to the name used everywhere downstream, including the LCPO key,
+// so no duplicate tables are needed.
+std::string SAXS::onebeadResidueAlias(const std::string &resname) const {
+  if(resname=="NLN") {
+    return "ASN";
+  }
+  if(resname=="OLS") {
+    return "SER";
+  }
+  if(resname=="OLT") {
+    return "THR";
+  }
+  return resname;
+}
+
+// Residues that the ONEBEAD model represents with a single bead per residue.
+// PDB::allowedResidue already covers all of them, CYX included; the explicit test is
+// kept only so that this stays correct if the module is ever pointed at
+// MolDataClass::allowedResidue, whose protein list does not contain CYX.
+bool SAXS::isOnebeadProteinResidue(const PDB &pdb, const std::string &resname) const {
+  return pdb.allowedResidue("protein",resname) || resname=="CYX";
+}
+
+int SAXS::glycanTypeFromResname(const std::string &resname, bool hasN) const {
+  const std::string &r = resname;
+
+  // explicitly N-acetylated hexosamines
+  if(r=="NAG" || r=="NDG" || r=="AGLCNA" || r=="BGLCNA") {
+    return GLYC_NAG;
+  }
+  if(r=="NGA" || r=="A2G" || r=="AGALNA" || r=="BGALNA") {
+    return GLYC_NGA;
+  }
+  // glucose / galactose: N-acetylated or not
+  if(r=="GLC" || r=="BGC" || r=="AGLC" || r=="BGLC") {
+    return hasN ? GLYC_NAG : GLYC_GLC;
+  }
+  if(r=="GAL" || r=="GLA" || r=="AGAL" || r=="BGAL") {
+    return hasN ? GLYC_NGA : GLYC_GAL;
+  }
+  // mannose: the two anomers have their own parameter sets
+  if(r=="MAN" || r=="AMAN") {
+    return GLYC_MAN;
+  }
+  if(r=="BMA" || r=="BMAN") {
+    return GLYC_BMA;
+  }
+  // 6-deoxyhexoses. FUC/FUL are alpha/beta-L-fucose and FCA/FCB their D enantiomers:
+  // all four have exactly the same composition and differ only in configuration, which
+  // no scattering experiment resolves. Rhamnose (RAM, RM4) is deliberately NOT here:
+  // it shares the formula but is a different sugar, so it belongs to the unsupported
+  // list rather than being silently given fucose parameters.
+  if(r=="FUC" || r=="FUL" || r=="FCA" || r=="FCB" || r=="AFUC" || r=="BFUC") {
+    return GLYC_FUC;
+  }
+  // N-acetylneuraminic acid
+  if(r=="SIA" || r=="SLB" || r=="ANE5AC" || r=="BNE5AC") {
+    return GLYC_SIA;
+  }
+  return -1;
+}
+
+// Monosaccharides that the ONEBEAD model recognises but has no parameters for. They
+// are listed separately so that the user gets a specific message instead of the
+// generic "Residue not known".
+bool SAXS::isUnsupportedGlycan(const std::string &r) const {
+  return (r=="RAM" || r=="RM4" || r=="XXR" ||               // rhamnose
+          r=="XYL" || r=="XYS" || r=="XYP" || r=="LXZ" ||   // xylose
+          r=="GCU" || r=="BDP" || r=="GCV" ||               // glucuronic acid
+          r=="IDS" || r=="IDR" ||                           // iduronic acid
+          r=="SGN" || r=="SUS" || r=="UAP" ||               // sulfated sugars
+          r=="NGC" || r=="NGE" ||                           // Neu5Gc
+          r=="RIB" || r=="ARA" || r=="ARB" || r=="AHR" ||   // pentoses
+          r=="GLP" || r=="PA1" || r=="GCS");                // glucosamine
+}
+
+void SAXS::getOnebeadIonparam_saxs(std::vector<std::vector<long double> > &FF_tmp_vac, std::vector<std::vector<long double> > &FF_tmp_mix, std::vector<std::vector<long double> > &FF_tmp_solv, std::vector<double> &iq0_vac, std::vector<double> &iq0_mix, std::vector<double> &iq0_solv) const {
+  const unsigned numq = q_list.size();
+  for(unsigned t=0; t<NIONS; ++t) {
+    std::vector<double> a, b;
+    double c, v, bN, m;
+    getIonData(t, a, b, c, v, bN, m);
+    const unsigned slot = obSlot(t);
+    const double volr = std::pow(v, 2.0/3.0)/(4.*M_PI);
+    for(unsigned k=0; k<numq; ++k) {
+      const double q = q_list[k];
+      const double s = q/(4.*M_PI);
+      double fa = c;
+      for(unsigned j=0; j<4; ++j) {
+        fa += a[j]*std::exp(-b[j]*s*s);
+      }
+      const double fs = v*std::exp(-volr*q*q);
+      FF_tmp_vac[k][slot]  = static_cast<long double>(fa*fa);
+      FF_tmp_solv[k][slot] = static_cast<long double>(fs*fs);
+      FF_tmp_mix[k][slot]  = static_cast<long double>(2.*fa*fs);
+    }
+    // q=0 forward values (exp(0)=1): f^a(0) = sum(a)+c, f^s(0) = v
+    double fa0 = c;
+    for(unsigned j=0; j<4; ++j) {
+      fa0 += a[j];
+    }
+    const double fs0 = v;
+    for(unsigned i=0; i<nres; ++i) {
+      if(atoi[i]==slot) {
+        iq0_vac[i]  = fa0*fa0;
+        iq0_solv[i] = fs0*fs0;
+        iq0_mix[i]  = 2.*fa0*fs0;
+      }
+    }
+  }
+}
+
+// SANS analogue. The neutron amplitude b is real and q-independent, so vac = b^2 (constant)
+// and mix = 2 b f^s; the solvent term f^s depends only on the volume and is shared with SAXS.
+// Ions have no exchangeable hydrogens, so the deuterated terms equal the hydrogenated ones
+// (vac_D = vac_H, mix_D = mix_H).
+void SAXS::getOnebeadIonparam_sans(std::vector<std::vector<long double> > &FF_tmp_vac_H, std::vector<std::vector<long double> > &FF_tmp_mix_H, std::vector<std::vector<long double> > &FF_tmp_solv_H, std::vector<std::vector<long double> > &FF_tmp_vac_D, std::vector<std::vector<long double> > &FF_tmp_mix_D, std::vector<double> &iq0_vac_H, std::vector<double> &iq0_mix_H, std::vector<double> &iq0_solv_H, std::vector<double> &iq0_vac_D, std::vector<double> &iq0_mix_D) const {
+  const unsigned numq = q_list.size();
+  for(unsigned t=0; t<NIONS; ++t) {
+    std::vector<double> a, b;
+    double c, v, bN, m;
+    getIonData(t, a, b, c, v, bN, m);
+    const unsigned slot = obSlot(t);
+    const double volr = std::pow(v, 2.0/3.0)/(4.*M_PI);
+    for(unsigned k=0; k<numq; ++k) {
+      const double q = q_list[k];
+      const double fs = v*std::exp(-volr*q*q);
+      FF_tmp_vac_H[k][slot] = static_cast<long double>(bN*bN);
+      FF_tmp_vac_D[k][slot] = static_cast<long double>(bN*bN);
+      FF_tmp_solv_H[k][slot] = static_cast<long double>(fs*fs);
+      FF_tmp_mix_H[k][slot] = static_cast<long double>(2.*bN*fs);
+      FF_tmp_mix_D[k][slot] = static_cast<long double>(2.*bN*fs);
+    }
+    const double fs0 = v;
+    for(unsigned i=0; i<nres; ++i) {
+      if(atoi[i]==slot) {
+        iq0_vac_H[i] = bN*bN;
+        iq0_vac_D[i] = bN*bN;
+        iq0_solv_H[i] = fs0*fs0;
+        iq0_mix_H[i] = 2.*bN*fs0;
+        iq0_mix_D[i] = 2.*bN*fs0;
+      }
     }
   }
 }
@@ -7930,6 +9034,20 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
   param_a[S][4] = 0.0;
   param_b[S][4] = 1.0;
 
+  // monoatomic-ion X-ray Cromer-Mann parameters (charged-ion rows; see getIonData)
+  for(unsigned t=0; t<NIONS; ++t) {
+    std::vector<double> a, b;
+    double c, v, bN, m;
+    getIonData(t, a, b, c, v, bN, m);
+    const unsigned idx = affSlot(t);
+    for(unsigned j=0; j<4; ++j) {
+      param_a[idx][j] = a[j];
+      param_b[idx][j] = b[j];
+    }
+    param_c[idx] = c;
+    param_v[idx] = v;
+  }
+
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   double Iq_0=0.;
@@ -7952,6 +9070,18 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
     }
     // cycle over the atoms to assign the atom type and calculate I0
     for(unsigned i=0; i<atoms.size(); ++i) {
+      // ions are detected by residue name (never by the leading element letter,
+      // which would misread CL/CA as carbon, NA as nitrogen, ...)
+      int ion = ionTypeFromResname(moldat->getResidueName(atoms[i]));
+      if(ion >= 0) {
+        const unsigned index = affSlot(ion);
+        atoi[i] = index;
+        for(unsigned j=0; j<4; ++j) {
+          Iq_0 += param_a[index][j];
+        }
+        Iq_0 -= Rho*param_v[index] - param_c[index];
+        continue;
+      }
       // get atom name
       std::string name = moldat->getAtomName(atoms[i]);
       char type;
@@ -8015,6 +9145,16 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
   param_b[S] =  0.28;
   param_v[S] = 19.86;
 
+  // monoatomic-ion neutron scattering lengths (nuclear, charge-independent) and volumes
+  for(unsigned t=0; t<NIONS; ++t) {
+    std::vector<double> a, b;
+    double c, v, bN, m;
+    getIonData(t, a, b, c, v, bN, m);
+    const unsigned idx = affSlot(t);
+    param_b[idx] = bN;
+    param_v[idx] = v;
+  }
+
   double solv_sc_length = 0.1*(param_b[O] + 2.*((1. - deuterConc) * param_b[H] + deuterConc * 0.667)); // per water electron (10 electrons)
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
@@ -8034,6 +9174,14 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
     }
     // cycle over the atoms to assign the atom type and calculate I0
     for(unsigned i=0; i<atoms.size(); ++i) {
+      // ions are detected by residue name (never by the leading element letter)
+      int ion = ionTypeFromResname(moldat->getResidueName(atoms[i]));
+      if(ion >= 0) {
+        const unsigned index = affSlot(ion);
+        atoi[i] = index;
+        Iq_0 += param_b[index]-solv_sc_length*rho*param_v[index];
+        continue;
+      }
       // get atom name
       std::string name = moldat->getAtomName(atoms[i]);
       char type;
@@ -9266,6 +10414,129 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["U_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
+  // ---------------------------------------------------------------------------
+  // Glycans.
+  //
+  // No new fitting is involved here. The LCPO atom classes of Weiser, Shenkin and
+  // Still (J. Comput. Chem. 20 (1999) 217) are selected, exactly as for the amino
+  // acids and the nucleotides above, from the element, its hybridisation and its
+  // number of bonded heavy atoms, all of which follow from the covalent structure
+  // of a pyranose. The three groups a monosaccharide is made of already appear in
+  // the table above:
+  //   - the ring is the direct analogue of the ribose (compare A_C1'-A_C4' for the
+  //     CH carbons, A_C5' for the exocyclic CH2 and A_O4' for the ring ether);
+  //   - the N-acetyl group is the ASN side-chain amide (ASN_CG, ASN_OD1, ASN_ND2),
+  //     except that the sugar amide nitrogen is secondary and therefore takes the
+  //     two-neighbour class, like a backbone N;
+  //   - the sialic-acid carboxylate is GLU_OE1/OE2.
+  //
+  // The one genuinely context-dependent case is a hydroxyl oxygen, which becomes a
+  // bridging ether when it carries a glycosidic bond. Both variants are tabulated
+  // and readLCPOparam() picks the "_L" entry for the oxygens that
+  // getOnebeadMapping() found to be two-coordinate in the TEMPLATE.
+  {
+    const std::vector<double> gC1 = { 1.7,  0.77887,  -0.28063,   -1.2968e-03, 3.9328e-04}; // C sp3, 1 heavy neighbour
+    const std::vector<double> gC2 = { 1.7,  0.56482,  -0.19608,   -1.0219e-03, 2.658e-04 }; // C sp3, 2
+    const std::vector<double> gC3 = { 1.7,  0.23348,  -0.072627,  -2.0079e-04, 7.967e-05 }; // C sp3, 3
+    const std::vector<double> gC4 = { 1.7,  0.0,       0.0,        0.0,         0.0      }; // C sp3, 4 (no accessible surface)
+    const std::vector<double> gCA = { 1.7,  0.070344, -0.019015,  -2.2009e-05, 1.6875e-05}; // C sp2, 3 (amide / carboxyl carbon)
+    const std::vector<double> gN2 = { 1.65, 0.41102,  -0.12254,   -7.5448e-05, 1.1804e-04}; // N sp2, 2 (secondary amide)
+    const std::vector<double> gOH = { 1.6,  0.77914,  -0.25262,   -1.6056e-03, 3.5071e-04}; // O sp3, 1 (hydroxyl, carboxylate)
+    const std::vector<double> gOE = { 1.6,  0.49392,  -0.16038,   -1.5512e-04, 1.6453e-04}; // O sp3, 2 (ring or glycosidic ether)
+    const std::vector<double> gOC = { 1.6,  0.68563,  -0.1868,    -1.35573e-03,2.3743e-04}; // O sp2, 1 (amide carbonyl)
+
+    // aldohexopyranoses, including the N-acetylhexosamines: exocyclic C6-O6
+    const std::vector<std::string> glyc_hexo = {
+      "GLC", "BGC", "GAL", "GLA", "MAN", "BMA", "NAG", "NDG", "NGA", "A2G",
+      "AGLC", "BGLC", "AGAL", "BGAL", "AMAN", "BMAN", "AGLCNA", "BGLCNA", "AGALNA", "BGALNA"
+    };
+    // 6-deoxyhexopyranoses: C6 is a methyl and there is no O6
+    const std::vector<std::string> glyc_dhexo = {
+      "FUC", "FUL", "FCA", "FCB", "AFUC", "BFUC"
+    };
+    // N-acetylneuraminic acid
+    const std::vector<std::string> glyc_neu = { "SIA", "SLB", "ANE5AC", "BNE5AC" };
+
+    for(unsigned s=0; s<glyc_hexo.size()+glyc_dhexo.size(); ++s) {
+      const bool deoxy = (s>=glyc_hexo.size());
+      const std::string r = deoxy ? glyc_dhexo[s-glyc_hexo.size()] : glyc_hexo[s];
+      lcpomap[r+"_C1"] = gC3;                 // anomeric: O5, C2 and the glycosidic (or anomeric) oxygen
+      lcpomap[r+"_C2"] = gC3;
+      lcpomap[r+"_C3"] = gC3;
+      lcpomap[r+"_C4"] = gC3;
+      lcpomap[r+"_C5"] = gC3;
+      lcpomap[r+"_C6"] = deoxy ? gC1 : gC2;   // methyl in a 6-deoxyhexose, CH2OH otherwise
+      lcpomap[r+"_O5"] = gOE;                 // ring oxygen
+      std::vector<std::string> oh = {"O1", "O2", "O3", "O4"};
+      if(!deoxy) {
+        oh.push_back("O6");
+      }
+      for(unsigned k=0; k<oh.size(); ++k) {
+        lcpomap[r+"_"+oh[k]]      = gOH;
+        lcpomap[r+"_"+oh[k]+"_L"] = gOE;
+      }
+      // N-acetyl group, in the force-field (N, C, O, CT) and PDB-CCD (N2, C7, O7, C8) spellings
+      lcpomap[r+"_N"]  = gN2;
+      lcpomap[r+"_N2"] = gN2;
+      lcpomap[r+"_C"]  = gCA;
+      lcpomap[r+"_C7"] = gCA;
+      lcpomap[r+"_O"]  = gOC;
+      lcpomap[r+"_O7"] = gOC;
+      lcpomap[r+"_CT"] = gC1;
+      lcpomap[r+"_C8"] = gC1;
+    }
+
+    // Glycosylation acceptors. Flagged by getOnebeadMapping() when they actually
+    // carry a glycan; the base entries above stay in force otherwise.
+    lcpomap["ASN_ND2_L"] = gN2;   // N-glycosylation: primary -> secondary amide
+    lcpomap["SER_OG_L"]  = gOE;   // O-glycosylation: hydroxyl -> ether
+    lcpomap["THR_OG1_L"] = gOE;
+    lcpomap["TYR_OH_L"]  = gOE;
+    lcpomap["HIS_ND1_L"] = gN2;
+    lcpomap["TRP_CD1_L"] = gCA;   // C-mannosylation: C sp2 2 -> C sp2 3
+    lcpomap["CYS_SG_L"]  = { 1.9, 0.54581, -0.19477, -0.0012873, 0.00029247}; // S-glycosylation
+    lcpomap["CYX_SG_L"]  = lcpomap["CYS_SG_L"];
+    // nucleic-acid acceptors (glucosylated hydroxymethyl bases and the like)
+    const std::vector<std::string> glyc_na = {"A", "C", "G", "U", "DA", "DC", "DG", "DT"};
+    for(unsigned s=0; s<glyc_na.size(); ++s) {
+      const std::string r = glyc_na[s];
+      if(lcpomap.count(r+"_O2'")>0) {
+        lcpomap[r+"_O2'_L"] = gOE;
+      }
+    }
+
+    for(unsigned s=0; s<glyc_neu.size(); ++s) {
+      const std::string r = glyc_neu[s];
+      lcpomap[r+"_C1"]  = gCA;                // carboxylate carbon
+      lcpomap[r+"_C2"]  = gC4;                // quaternary anomeric carbon: C1, C3, O6 and O2
+      lcpomap[r+"_C3"]  = gC2;
+      lcpomap[r+"_C4"]  = gC3;
+      lcpomap[r+"_C5"]  = gC3;
+      lcpomap[r+"_C6"]  = gC3;
+      lcpomap[r+"_C7"]  = gC3;
+      lcpomap[r+"_C8"]  = gC3;
+      lcpomap[r+"_C9"]  = gC2;
+      lcpomap[r+"_O6"]  = gOE;                // ring oxygen
+      lcpomap[r+"_O11"] = gOH;                // carboxylate, force-field naming
+      lcpomap[r+"_O12"] = gOH;
+      lcpomap[r+"_O1A"] = gOH;                // carboxylate, PDB-CCD naming
+      lcpomap[r+"_O1B"] = gOH;
+      lcpomap[r+"_N"]   = gN2;                // acetamido group, force-field naming
+      lcpomap[r+"_C"]   = gCA;
+      lcpomap[r+"_O"]   = gOC;
+      lcpomap[r+"_CT"]  = gC1;
+      lcpomap[r+"_N5"]  = gN2;                // acetamido group, PDB-CCD naming
+      lcpomap[r+"_C10"] = gCA;
+      lcpomap[r+"_O10"] = gOC;
+      lcpomap[r+"_C11"] = gC1;
+      const std::vector<std::string> oh = {"O2", "O4", "O7", "O8", "O9"};
+      for(unsigned k=0; k<oh.size(); ++k) {
+        lcpomap[r+"_"+oh[k]]      = gOH;
+        lcpomap[r+"_"+oh[k]+"_L"] = gOE;
+      }
+    }
+  }
+
   return lcpomap;
 }
 
@@ -9274,9 +10545,23 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
   std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
 
   for(unsigned i=0; i<natoms; ++i) {
+    // ions are excluded from the SASA calculation: skip so they keep an empty
+    // LCPOparam (this also avoids a spurious lookup, e.g. for Cl/Ca whose names start with C)
+    if (ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+      continue;
+    }
     if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S' || (AtomResidueName[0][i][0]=='P'))) {
       std::string identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
-      std::vector<double> LCPOparamVector = lcpomap.at(identifier);
+      // a glycan oxygen that carries a glycosidic bond is an ether, not a hydroxyl
+      if(i<glyc_bridge.size() && glyc_bridge[i] && lcpomap.count(identifier+"_L")>0) {
+        identifier += "_L";
+      }
+      std::map<std::string, std::vector<double> >::const_iterator lcpoit = lcpomap.find(identifier);
+      if(lcpoit==lcpomap.end()) {
+        error("Could not find LCPO parameters for atom "+AtomResidueName[0][i]+
+              " of residue "+AtomResidueName[1][i]+". Check the PDB.");
+      }
+      const std::vector<double> &LCPOparamVector = lcpoit->second;
       double rs = 0.14;
       LCPOparam[i].push_back(LCPOparamVector[0]+rs*10.);
       LCPOparam[i].push_back(LCPOparamVector[1]);
@@ -9287,26 +10572,51 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
   }
 
   for(unsigned i=0; i<natoms; ++i) {
+    if (ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+      continue;
+    }
     if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S') || (AtomResidueName[0][i][0]=='P')) {
-        std::cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
+        std::cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
         error ("missing LCPO parameters\n");
       }
     }
   }
 
-  if (AtomResidueName[0][0] == "N") {
-    LCPOparam[0][1] = 7.3511e-01;
-    LCPOparam[0][2] = -2.2116e-01;
-    LCPOparam[0][3] = -8.9148e-04;
-    LCPOparam[0][4] = 2.5230e-04;
+  // Terminal corrections. These used to be applied to the very first and very last
+  // atom of the system; with a glycan written after the protein that is a sugar atom,
+  // so the protein terminus silently lost its correction. The first and last atoms
+  // that belong to a one-bead amino acid are used instead, which is the same thing
+  // for a protein on its own.
+  unsigned ifirst = 0, ilast = natoms-1;
+  bool have_first = false, have_last = false;
+  for(unsigned i=0; i<natoms; ++i) {
+    if(i<glyc_type.size() && glyc_type[i]>=0) {
+      continue;
+    }
+    if(ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+      continue;
+    }
+    if(!have_first) {
+      ifirst = i;
+      have_first = true;
+    }
+    ilast = i;
+    have_last = true;
   }
 
-  if (AtomResidueName[0][natoms-1] == "O") {
-    LCPOparam[natoms-1][1] = 8.8857e-01;
-    LCPOparam[natoms-1][2] = -3.3421e-01;
-    LCPOparam[natoms-1][3] = -1.8683e-03;
-    LCPOparam[natoms-1][4] = 4.9372e-04;
+  if (have_first && AtomResidueName[0][ifirst] == "N" && LCPOparam[ifirst].size()>4) {
+    LCPOparam[ifirst][1] = 7.3511e-01;
+    LCPOparam[ifirst][2] = -2.2116e-01;
+    LCPOparam[ifirst][3] = -8.9148e-04;
+    LCPOparam[ifirst][4] = 2.5230e-04;
+  }
+
+  if (have_last && AtomResidueName[0][ilast] == "O" && LCPOparam[ilast].size()>4) {
+    LCPOparam[ilast][1] = 8.8857e-01;
+    LCPOparam[ilast][2] = -3.3421e-01;
+    LCPOparam[ilast][3] = -1.8683e-03;
+    LCPOparam[ilast][4] = 4.9372e-04;
   }
 }
 

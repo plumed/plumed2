@@ -285,7 +285,21 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     if( !cl->readInput( argc-i,&argv[i],in,out ) ) {
       return 0;
     }
-    int ret=cl->main(in,out,pc);
+    int ret=0;
+    // NOTE: catch PLUMED exceptions from CLTool main() so that user-input
+    // errors terminate cleanly with a message and nonzero exit status
+    // instead of an uncaught-exception abort (0xc0000409) on Windows.
+    try {
+      ret=cl->main(in,out,pc);
+    } catch(const PLMD::Exception& e) {
+      std::fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",command.c_str(),e.what());
+      std::fflush(stderr);
+      return 1;
+    } catch(const std::exception& e) {
+      std::fprintf(stderr,"ERROR : in command line tool %s : %s\n",command.c_str(),e.what());
+      std::fflush(stderr);
+      return 1;
+    }
     return ret;
   }
 

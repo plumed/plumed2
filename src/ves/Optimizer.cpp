@@ -350,7 +350,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
         bool file_exist = ifile.FileExist(coeffs_fnames[i]);
         if(!file_exist) {
           std::string fname = FileBase::appendSuffix(coeffs_fnames[i],ifile.getSuffix());
-          plumed_merror("Cannot find coefficient file " + fname + " when trying to restart an optimzation. If you don't want to restart the optimzation please remove the RESTART keyword or use the RESTART=NO within the "+getName()+" action to locally disable the restart.");
+          plumed_merror("Cannot find coefficient file " + fname + " when trying to restart an optimization. If you don't want to restart the optimization please remove the RESTART keyword or use the RESTART=NO within the "+getName()+" action to locally disable the restart.");
         }
       }
       readCoeffsFromFiles(coeffs_fnames,true);

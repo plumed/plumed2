@@ -40,9 +40,21 @@ jobs:
     - name: Build astyle
       run: |
         make -j 4 -C astyle
+    # cppcheck keeps the results of each file in PLMD_CPPCHECK_BUILD_DIR and re-analyses only the files
+    # whose code (or the code of the headers they include) changed, see src/maketools/codecheck.
+    # Each run restores the directory saved by the most recent run and saves its own one.
+    # The nightly run starts from scratch, as a safety net against stale results.
+    - name: Restore the cppcheck results of the previous runs
+      if: github.event_name != 'schedule'
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.cache/plumed-cppcheck
+        key: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
+        restore-keys: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-
     - name: Checking code
       id: codecheck
       run: |
+        export PLMD_CPPCHECK_BUILD_DIR="$HOME/.cache/plumed-cppcheck"
         # this is required so as to have all the include files in place
         # notice that this is done automatically in build
         # first make sure that dirslinks are generated for all modules
@@ -50,14 +62,24 @@ jobs:
         # then generate the links
         make -C src/lib/ dirslinks
         make codecheck
+    # saved also when codecheck fails: the stored results are valid, a failure only means that some of them are errors
+    - name: Save the cppcheck results for the next runs
+      if: success() || failure()
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.cache/plumed-cppcheck
+        key: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
+    # The reports are uploaded also when codecheck passes (they have no results then), otherwise GitHub
+    # never closes the alerts that have been fixed. Pull requests from forks are skipped: their token
+    # cannot upload security events.
     - name: Upload codecheck report to gh
-      if: failure() && steps.codecheck.outcome == 'failure'
+      if: always() && hashFiles('src/codecheck.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: src/codecheck.sarif
         category: plumedcheck
     - name: Upload ruff report to gh
-      if: failure() && steps.codecheck.outcome == 'failure'
+      if: always() && hashFiles('src/ruff.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: src/ruff.sarif

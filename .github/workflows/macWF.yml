@@ -8,6 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
@@ -71,7 +73,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-14, macos-latest ]
+        # Keep native Intel coverage alongside the Apple Silicon runners.
+        # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+        os: [ macos-15-intel, macos-15, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
@@ -91,8 +95,13 @@ jobs:
         ./configure --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
         make install
+    - name: Check architecture and AsmJit availability
+      run: |
+        uname -m
+        plumed config has asmjit
     - name: Run tests
       run: |
-         make --no-print-directory -C regtest
+         # regtests run in their own tmp/ directories, so they can run concurrently
+         make --no-print-directory -j 2 -C regtest
          # these can fail for numerical reasons
          make -C regtest checkfail

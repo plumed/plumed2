@@ -16,6 +16,8 @@ for module in ../*/module.type ../../plugins/*/module.type; do
   modulename=${moduledir##*/}
   {
     for file in "$moduledir"/*.cpp; do
+      # plugins that keep their sources in a subfolder (e.g. openaccPTM) have no *.cpp here: skip the unexpanded glob
+      [[ -e "$file" ]] || continue
       if grep -q PLUMED_REGISTER_ACTION "${file}"; then
         # gawk and perl implementation in case your bash dialect do not process correctly the regex
         # actionName=$(gawk 'match($0,/PLUMED_REGISTER_ACTION *\( *[0-9_a-zA-Z]+ *, *"([0-9a-zA-Z_]+)" *\)/, captured){print captured[1]}' "${file}" )

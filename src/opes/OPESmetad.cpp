@@ -80,7 +80,7 @@ The neighbor list can be switched off with NLIST_OFF.
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
-It is possible to take into account also of other bias potentials besides the one of OPES_METAD during the internal reweighting for \f$P(\mathbf{s})\f$ estimation.
+It is possible to take into account also of other bias potentials besides the one of OPES_METAD during the internal reweighting for $P(\mathbf{s})$ estimation.
 To do so, one has to add those biases with the EXTRA_BIAS keyword, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
 Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against another fixed bias added to restrain the CVs range (e.g. [UPPER_WALLS](UPPER_WALLS.md)).
@@ -392,7 +392,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.add("optional","STATE_RFILE","read from this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
-  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of overwriting it each time");
 //miscellaneous
   keys.addInputKeyword("optional","EXCLUDED_REGION","scalar","kernels are not deposited when the action provided here has a nonzero value, see example above");
   if(!mode::explore) {
@@ -636,13 +636,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     //If this Action is not compiled with MPI the user is informed and we exit gracefully
     plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
     plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
-
-    if(comm.Get_rank()==0) { //multi_sim_comm works on first rank only
-      NumWalkers_=multi_sim_comm.Get_size();
-      walker_rank_=multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
-    comm.Bcast(walker_rank_,0);
+    NumWalkers_=getNumberOfReplicas();
+    walker_rank_=getReplicaIndex();
   } else {
     NumWalkers_=1;
     walker_rank_=0;

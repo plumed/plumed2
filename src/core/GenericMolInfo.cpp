@@ -31,6 +31,7 @@
 #include "config/Config.h"
 #include <cmath>
 #include <algorithm>
+#include <map>
 
 namespace PLMD {
 
@@ -166,7 +167,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
     pdb.getChainNames( chains );
     log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
     for(unsigned i=0; i<chains.size(); ++i) {
-      unsigned start,end;
+      int start,end;
       std::string errmsg;
       pdb.getResidueRange( chains[i], start, end, errmsg );
       if( errmsg.length()!=0 ) {
@@ -177,7 +178,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
       if( errmsg.length()!=0 ) {
         error( errmsg );
       }
-      log.printf("  chain named %s contains residues %u to %u and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
+      log.printf("  chain named %s contains residues %d to %d and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
 
     std::string python_bin;
@@ -272,51 +273,87 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     }
   } else {
     bool useter=false; // This is used to deal with terminal groups in WHOLEMOLECULES
-    if( restrings.size()==1 ) {
-      useter=( restrings[0].find("ter")!=std::string::npos );
-      if( restrings[0].find("all")!=std::string::npos ) {
-        std::vector<std::string> chains;
-        pdb.getChainNames( chains );
-        for(unsigned i=0; i<chains.size(); ++i) {
-          unsigned r_start, r_end;
-          std::string errmsg, mm, nn;
-          pdb.getResidueRange( chains[i], r_start, r_end, errmsg );
-          if( !useter ) {
-            std::string resname = pdb.getResidueName( r_start );
-            if( MolDataClass::isTerminalGroup( mytype, resname ) ) {
-              r_start++;
-            }
-            resname = pdb.getResidueName( r_end );
-            if( MolDataClass::isTerminalGroup( mytype, resname ) ) {
-              r_end--;
-            }
-          }
-          Tools::convert(r_start,mm);
-          Tools::convert(r_end,nn);
-          if(i==0) {
-            restrings[0] = mm + "-" + nn;
-          } else {
-            restrings.push_back(  mm + "-" + nn );
-          }
+    // residues are identified by (chain, residue number), so that chains that use
+    // the same residue numbers (e.g. all starting from 1) are not mixed up
+    std::vector< std::pair<std::string,int> > residues;
+    std::vector<std::string> chains;
+    {
+      std::vector<std::string> allchains;
+      pdb.getChainNames( allchains );
+      // a chain can appear in more than one block of the pdb file: list it once
+      for(const auto & c : allchains) {
+        if( std::find(chains.begin(),chains.end(),c)==chains.end() ) {
+          chains.push_back(c);
         }
       }
     }
-    Tools::interpretRanges(restrings);
+    if( restrings.size()==1 ) {
+      useter=( restrings[0].find("ter")!=std::string::npos );
+    }
+    if( restrings.size()==1 && restrings[0].find("all")!=std::string::npos ) {
+      // list explicitly the residues that are present in each chain:
+      // this works also with negative residue numbers and with gaps in the numbering
+      for(const auto & c : chains) {
+        const std::vector<int> res = pdb.getResiduesInChain( c );
+        if( res.empty() ) {
+          continue;
+        }
+        std::size_t first=0, last=res.size();
+        if( !useter ) {
+          if( MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.front(), c ) ) ) {
+            first++;
+          }
+          if( last>first && MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.back(), c ) ) ) {
+            last--;
+          }
+        }
+        for(std::size_t k=first; k<last; ++k) {
+          residues.emplace_back( c, res[k] );
+        }
+      }
+    } else {
+      Tools::interpretRanges(restrings);
+      // chains containing each residue number
+      std::map< int, std::vector<std::string> > chains_of_residue;
+      for(const auto & c : chains) {
+        for(const int r : pdb.getResiduesInChain( c )) {
+          chains_of_residue[r].push_back( c );
+        }
+      }
+      std::string ambiguous;
+      for(const auto & rs : restrings) {
+        int r;
+        if( !Tools::convertNoexcept( rs, r ) ) {
+          error("cannot interpret " + rs + " as a residue number");
+        }
+        const auto p=chains_of_residue.find( r );
+        if( p==chains_of_residue.end() ) {
+          error("residue " + rs + " is not in the reference pdb file");
+        }
+        // a residue number present in more than one chain is taken from the first chain, as in previous versions
+        if( p->second.size()>1 ) {
+          ambiguous += " " + rs;
+        }
+        residues.emplace_back( p->second[0], r );
+      }
+      if( ambiguous.length()>0 ) {
+        warning("residues" + ambiguous + " are present in more than one chain of the reference pdb file: they are taken from the first chain that contains them. Use RESIDUES=all to include all the chains");
+      }
+    }
+    if( residues.empty() ) {
+      error("no residues found in the reference pdb file");
+    }
 
-    // Convert the list of involved residues into a list of segments of chains
-    int nk, nj;
-    std::vector< std::vector<unsigned> > segments;
-    std::vector<unsigned> thissegment;
-    Tools::convert(restrings[0],nk);
-    thissegment.push_back(nk);
-    for(unsigned i=1; i<restrings.size(); ++i) {
-      Tools::convert(restrings[i-1],nk);
-      Tools::convert(restrings[i],nj);
-      if( (nk+1)!=nj || pdb.getChainID(nk)!=pdb.getChainID(nj) ) {
+    // Convert the list of involved residues into a list of segments of consecutive residues of the same chain
+    std::vector< std::vector< std::pair<std::string,int> > > segments;
+    std::vector< std::pair<std::string,int> > thissegment;
+    thissegment.push_back( residues[0] );
+    for(unsigned i=1; i<residues.size(); ++i) {
+      if( residues[i-1].second+1!=residues[i].second || residues[i-1].first!=residues[i].first ) {
         segments.push_back(thissegment);
         thissegment.resize(0);
       }
-      thissegment.push_back(nj);
+      thissegment.push_back( residues[i] );
     }
     segments.push_back( thissegment );
 
@@ -325,24 +362,23 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     std::vector<AtomNumber> atomnumbers;
     for(unsigned i=0; i<segments.size(); ++i) {
       for(unsigned j=0; j<segments[i].size(); ++j) {
-        std::string resname=pdb.getResidueName( segments[i][j] );
+        const std::string & chain=segments[i][j].first;
+        const int resnum=segments[i][j].second;
+        std::string num;
+        Tools::convert( resnum, num );
+        num += " of chain " + chain;
+        std::string resname=pdb.getResidueName( resnum, chain );
         if( !MolDataClass::allowedResidue(mytype, resname) ) {
-          std::string num;
-          Tools::convert( segments[i][j], num );
           error("residue " + num + " is not recognized for moltype " + mytype );
         }
         if( !useter && MolDataClass::isTerminalGroup( mytype, resname ) ) {
-          std::string num;
-          Tools::convert( segments[i][j], num );
           error("residue " + num + " appears to be a terminal group");
         }
         if( resname=="GLY" ) {
           warning("GLY residues are achiral - assuming HA1 atom is in CB position");
         }
-        MolDataClass::getBackboneForResidue( mytype, segments[i][j], pdb, atomnumbers );
+        MolDataClass::getBackboneForResidue( mytype, resnum, chain, pdb, atomnumbers );
         if( atomnumbers.size()==0 ) {
-          std::string num;
-          Tools::convert( segments[i][j], num );
           error("Could not find required backbone atom in residue number " + num );
         } else {
           for(unsigned k=0; k<atomnumbers.size(); ++k) {
@@ -464,7 +500,7 @@ bool GenericMolInfo::checkForAtom(AtomNumber a)const {
   return pdb.checkForAtom(a);
 }
 
-unsigned GenericMolInfo::getResidueNumber(AtomNumber a)const {
+int GenericMolInfo::getResidueNumber(AtomNumber a)const {
   return pdb.getResidueNumber(a);
 }
 

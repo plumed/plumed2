@@ -1,0 +1,29 @@
+type=driver
+# two copies of the ala12 helix of rt32, as chains A and B that both use residue numbers 1 to 14.
+# Chain B is taken from a different frame of the trajectory and is shifted by 0.6 nm along x.
+extra_files="../rt32/helix.pdb ../rt32/ala12_trajectory.xyz"
+arg="--plumed plumed.dat --ixyz two_chains.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+
+function plumed_regtest_before() {
+  # pdb: chain A and chain B, with the same residue numbers
+  {
+    awk '/^ATOM/{print substr($0,1,21) "A" substr($0,23)}' helix.pdb
+    echo TER
+    awk '/^ATOM/{printf("%s%5d%sB%s\n",substr($0,1,6),substr($0,7,5)+132,substr($0,12,10),substr($0,23))}' helix.pdb
+    echo TER
+    echo END
+  } > two_chains.pdb
+  # trajectory: frame i contains frame i (chain A) and frame (i+6)%12 shifted by 0.6 nm (chain B)
+  awk 'BEGIN{n=0}
+    NR%134==1{f=int((NR-1)/134); nfr=f+1; next}
+    NR%134==2{box[f]=$0; next}
+    {line[f,(NR-1)%134-2]=$0}
+    END{
+      for(i=0;i<nfr;i++){
+        j=(i+6)%nfr
+        print 264; print box[i]
+        for(k=0;k<132;k++) print line[i,k]
+        for(k=0;k<132;k++){split(line[j,k],a," "); printf("%s %.4f %s %s\n",a[1],a[2]+0.6,a[3],a[4])}
+      }
+    }' ala12_trajectory.xyz > two_chains.xyz
+}

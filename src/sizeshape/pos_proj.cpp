@@ -47,7 +47,7 @@ $$
 where, $\mathbf{\Sigma}^{-1}$ is the $N\times N$ precision matrix. See also [SIZESHAPE_POSITION_MAHA_DIST](SIZESHAPE_POSITION_MAHA_DIST.md) for information about calculating Mahalanobis distance in size-and-shape space.
 
 Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
-Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
 ##Examples
 
@@ -335,7 +335,7 @@ void position_linear_proj::kabsch_rot_mat() {
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
   // Retrieve correct sizes for work and rellocate
@@ -346,7 +346,7 @@ void position_linear_proj::kabsch_rot_mat() {
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
 

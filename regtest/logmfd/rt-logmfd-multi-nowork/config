@@ -1,0 +1,26 @@
+plumed_modules=logmfd
+mpiprocs=2
+type=driver
+# Two replicas with one rank each; replica 1 reads traj.1.xyz.
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2"
+
+# The expected output is the same run with WORK, VFICT and MFICT given explicitly at their
+# documented defaults, made here rather than stored (#1480).
+function plumed_regtest_before() {
+  $mpi $valgrind $plumed driver --plumed plumed_defaults.dat --ixyz traj.xyz --multi 2 \
+    > out_defaults 2> err_defaults || return 1
+  mv logmfd.out defaults_logmfd.out || return 1
+  for r in 0 1; do
+    mv colvar.$r defaults_colvar.$r || return 1
+  done
+}
+
+function plumed_regtest_after() {
+  same() { cmp -s "$1" "$2" && echo same || echo DIFFERENT; }
+  {
+    for r in 0 1; do
+      echo "replica $r colvar: $(same colvar.$r defaults_colvar.$r)"
+    done
+    echo "logmfd.out: $(same logmfd.out defaults_logmfd.out)"
+  } > defaults
+}

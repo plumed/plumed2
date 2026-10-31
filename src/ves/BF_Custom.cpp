@@ -316,9 +316,9 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
   parseFlag("CHECK_NAN_INF",check_nan_inf_);
   addKeywordToList("CHECK_NAN_INF",check_nan_inf_);
   if(check_nan_inf_) {
-    log.printf("  The code will check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
+    log.printf("  The code will check that values given are numerically stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
   } else {
-    log.printf("  The code will NOT check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
+    log.printf("  The code will NOT check that values given are numerically stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
   }
 
   setupBF();

@@ -57,7 +57,7 @@ public:
         (the first word in the input line for your CV).
 PLUMED_REGISTER_ACTION(ColvarNAME,"KEYWORD")
 
- /----- The following routine creates the documentation for the keyowrds used by your CV
+ /----- The following routine creates the documentation for the keywords used by your CV
 void ColvarName::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
 \endverbatim

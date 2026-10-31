@@ -61,7 +61,7 @@ weights: CONSTANT VALUES=1,1,1,1
 proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
 proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
 
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
@@ -98,7 +98,7 @@ weights: CONSTANT VALUES=1,1,1,1
 proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
 proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
 
-# Calcuate the instantaneous values of the distances
+# Calculate the instantaneous values of the distances
 d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
 d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
 d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
@@ -139,7 +139,7 @@ PRINT ARG=proj.* FILE=colvar
 ```
 
 For ths input there are 42 landmark points and dissimilarities are computed by computing the RMSD distance between the 13 atoms in
-each of landmark coordinates and the instaneous positions of those 13 atoms.
+each of landmark coordinates and the instantaneous positions of those 13 atoms.
 
 ## Using transformed distances
 
@@ -166,7 +166,7 @@ weights: CONSTANT VALUES=1,1,1,1
 proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
 proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
 
-# Calcuate the instantaneous values of the distances
+# Calculate the instantaneous values of the distances
 d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
 d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
 d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
@@ -174,7 +174,7 @@ d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
 # Calculate the distances between the instananeous points and the current positions
 ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
 
-# Transform the dissimilarities by applying the funciton F
+# Transform the dissimilarities by applying the function F
 fed: MORE_THAN ARG=ed SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
 
 # And generate the projection
@@ -195,7 +195,7 @@ $$
 \chi(y) = \sum_{i=1}^N \sum_{j=1}^M w_{ij} [ F_j[D(X_i, Y)] - f_j[d(x_i,y)] ]^2
 $$
 
-The input below shows how this can be implemted within PLUMED:
+The input below shows how this can be implemented within PLUMED:
 
 ```plumed
 # The coordinates of the landmarks in the high dimensional space
@@ -212,14 +212,14 @@ w2: CUSTOM ARG=weights FUNC=(1-0.3)*x PERIODIC=NO
 proj1_ref: CONSTANT VALUES=0.5,0.8,0.2,0.4
 proj2_ref: CONSTANT VALUES=0.2,0.9,0.3,0.7
 
-# Calcuate the instantaneous values of the distances
+# Calculate the instantaneous values of the distances
 d1: DISTANCE ATOMS1=1,2 ATOMS2=7,8   ATOMS3=13,14 ATOMS4=19,20
 d2: DISTANCE ATOMS1=3,4 ATOMS2=9,10  ATOMS3=15,16 ATOMS4=21,22
 d3: DISTANCE ATOMS1=5,6 ATOMS2=11,12 ATOMS3=17,18 ATOMS4=23,24
 
 # Calculate the distances between the instananeous points and the current positions
 ed: EUCLIDEAN_DISTANCE SQUARED ARG1=d1,d2,d3 ARG2=d1_ref,d2_ref,d3_ref
-# Transform the dissimilarities by applying the funciton F
+# Transform the dissimilarities by applying the function F
 fed: MORE_THAN ARG=ed SQUARED SWITCH={SMAP R_0=4 A=3 B=2}
 
 # And generate the projection
@@ -359,7 +359,7 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
         error("problem reading switching function description " + errors);
       }
     }
-    log.printf("  %sth term seeks to match tranformed distances with those in matrix %s \n", inum.c_str(), target[0]->getName().c_str() );
+    log.printf("  %sth term seeks to match transformed distances with those in matrix %s \n", inum.c_str(), target[0]->getName().c_str() );
     log.printf("  in %sth term distances are transformed by 1-switching function with r_0=%s \n", inum.c_str(), switchingFunction[i-1].description().c_str() );
     log.printf("  in %sth term weights of matrix elements in stress function are given by %s \n", inum.c_str(), weights[0]->getName().c_str() );
   }

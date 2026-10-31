@@ -119,7 +119,7 @@ void Coordination::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.setValueDescription("scalar","the value of the coordination");

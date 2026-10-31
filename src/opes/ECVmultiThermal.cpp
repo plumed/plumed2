@@ -26,7 +26,7 @@ namespace opes {
 /*
 Expand a simulation to sample multiple temperatures simultaneously.
 
-The internal energy $U$ of of the system should be used as ARG.
+The internal energy $U$ of the system should be used as ARG.
 
 $$
   \Delta u_{\beta'}=(\beta'-\beta) U\, ,
@@ -36,7 +36,7 @@ where $\beta'$ are the temperatures to be sampled and $\beta$ is the temperature
 In case of fixed volume, the internal energy is simply the potential energy given by the [ENERGY](ENERGY.md) colvar $U=E$, and you will run a multicanonical simulation.
 If instead the simulation is at fixed pressure $p$, the contribution of the volume must be added $U=E+pV$ (see example below).
 
-By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in the paper cited below.
+By default the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as described in the paper cited below.
 Otherwise you can manually set this number with TEMP_STEPS.
 In both cases the steps will be geometrically spaced in temperature.
 Use instead the keyword NO_GEOM_SPACING for a linear spacing in the inverse temperature (beta), that typically increases the focus on lower temperatures.
@@ -63,7 +63,7 @@ ecv: ECV_MULTITHERMAL ARG=ene TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 ```
 
-If instead the pressure is fixed and the volume changes, you shuld calculate the internal energy first, $U=E+pV$
+If instead the pressure is fixed and the volume changes, you should calculate the internal energy first, $U=E+pV$
 
 ```plumed
 ene: ENERGY

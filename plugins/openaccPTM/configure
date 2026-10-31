@@ -29,7 +29,7 @@ fi
   #            -e 's/-f/-Xcompiler -f/g'
   #    #prints the rest of the file
   #    grep -eDYNAMIC_LIBS -eLDFLAGS -eCXXFLAGS Make.tmp -v
-  sed -e 's/-fno-gnu-unique//g' -e 's/-Wno-unknown-pragmas//g' \
+  sed -e 's/-fno-gnu-unique//g' -e 's/-Wno-unknown-pragmas//g' -e 's/-fconcepts//g' \
     -e 's/ -Wno-unknown-pragmas//g' \
     Make.tmp
 } >Makefile.conf

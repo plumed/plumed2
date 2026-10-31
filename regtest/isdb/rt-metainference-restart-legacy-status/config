@@ -1,0 +1,52 @@
+mpiprocs=6
+type=driver
+arg="--plumed plumed.Q.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajQ.xyz --multi 3"
+
+state_line() {
+  local tag="$1"
+  local file="$2"
+  awk -v tag="$tag" -v file="$file" '
+    NR==1 {
+      for(i=3;i<=NF;i++) {
+        if($i ~ /^sigmaMean_/ || $i ~ /^sigmaMean2History_/ || $i ~ /^sigma_max_/ || $i=="optimized_step_" || $i ~ /^sigma_max_est_/ || $i ~ /^dsigma_/) {
+          n++
+          idx[n]=i-2
+          name[n]=$i
+        }
+      }
+      next
+    }
+    NR==2 {
+      printf "%s %s",tag,file
+      for(i=1;i<=n;i++) printf " %s=%s",name[i],$idx[i]
+      printf "\n"
+    }
+  ' "$file"
+}
+
+snapshot_statuses() {
+  local tag="$1"
+  for f in MISTATUSspe.0 MISTATUSspe.1 MISTATUSspe.2 MISTATUSrdcmi.0 MISTATUSrdcmi.1 MISTATUSrdcmi.2; do
+    test -f "$f" || return 1
+    cp -f "$f" "${tag}_$f"
+  done
+}
+
+plumed_regtest_before() {
+  for f in LEGACY_MISTATUSspe.0 LEGACY_MISTATUSspe.1 LEGACY_MISTATUSspe.2 LEGACY_MISTATUSrdcmi.0 LEGACY_MISTATUSrdcmi.1 LEGACY_MISTATUSrdcmi.2; do
+    test -f "$f" || return 1
+    cp -f "$f" "${f#LEGACY_}"
+  done
+  $mpi $plumed driver --plumed plumed.P.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajP.xyz --multi 3 > pre_P.out 2> pre_P.err || return 1
+  snapshot_statuses P || return 1
+  return 0
+}
+
+plumed_regtest_after() {
+  snapshot_statuses Q || return 1
+  : > state
+  state_line P P_MISTATUSspe.0 >> state
+  state_line P P_MISTATUSrdcmi.0 >> state
+  state_line Q Q_MISTATUSspe.0 >> state
+  state_line Q Q_MISTATUSrdcmi.0 >> state
+}

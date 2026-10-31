@@ -65,19 +65,48 @@ private:
 
   bool asyncSent;
   bool unique_serial; // use unique in serial mode
-/// This holds the list of unique atoms
+/// Are g2l and shuffledAtoms consistent with gatindex
+  bool g2lIsValid;
+/// Are unique, forced_unique and the corresponding indexes up to date with the atoms requested by the actions
+  bool uniqueListsValid;
+/// Is allActiveUnique up to date
+  bool allActiveValid;
+/// Is any active action using atoms (the same on all ranks)
+  bool atomsNeeded;
+/// This holds the list of unique atoms that are local to this rank
   std::vector<AtomNumber> unique;
+/// The position of the atoms in unique in the arrays passed from the MD code
   std::vector<unsigned> uniq_index;
 /// This holds the list of atoms that have a force on
   std::vector<AtomNumber> forced_unique;
+/// The position of the atoms in forced_unique in the arrays passed from the MD code
+  std::vector<unsigned> forced_uniq_index;
+/// The atoms requested by all the active actions, including those that are not local (used with domain decomposition)
+  std::vector<AtomNumber> allActiveUnique;
+/// A buffer used when the list of active atoms has to be rebuilt
+  std::vector<AtomNumber> activeAtomsBuffer;
+/// The state of each action when the lists were built: 0 inactive or without atoms, 1 active, 2 active and applying forces
+  std::vector<unsigned char> actionState;
+/// The values that are exchanged between the domains in share and received in wait
+  std::vector<Value*> values_to_get;
 /// This holds the list of actions that are set from this action
   std::vector<ActionToPutData*> inputs;
 /// This holds all the actions that read atoms
   std::vector<ActionAtomistic*> actions;
 /// The list that holds all the atom indexes we need
   std::vector<int> fullList;
-/// This actually does the sharing of the data across the domains
-  void share(const std::vector<AtomNumber>& unique);
+/// Are all the atoms local and in the order of their index
+  bool allAtomsAreLocal() const ;
+/// The lists of atoms must be rebuilt at the next share
+  void invalidateUniqueLists();
+/// Compute uniq_index and forced_uniq_index
+  void setIndexesInMDArrays();
+/// Rebuild the lists of atoms if the active actions or their atoms changed, returns true if they were rebuilt
+  bool updateUniqueLists();
+/// Did an active action request different atoms after the lists were built
+  bool activeAtomsChangedSinceShare() const ;
+/// This actually does the sharing of the data across the domains, either all the atoms or those in unique
+  void shareValues( const bool& allAtoms );
 /// Get all the atoms in the input that are active at this time
   void getAllActiveAtoms( std::vector<AtomNumber>& u );
 public:

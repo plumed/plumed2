@@ -43,7 +43,7 @@ $$
  f(x) = \sum_{ijk} g( \theta_{ijk} )
 $$
 
-where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and and $j$ and the vector connecting atom $j$ and atom $k$.
+where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and $j$ and the vector connecting atom $j$ and atom $k$.
 Alternatively you can use this command to calculate functions such as:
 
 $$

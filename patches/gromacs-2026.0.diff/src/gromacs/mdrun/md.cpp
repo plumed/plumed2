@@ -863,6 +863,9 @@ void gmx::LegacySimulator::do_md()
     }
 
     bool usedMdGpuGraphLastStep = false;
+    /* PLUMED */
+    bool plumedWarnedAboutShells = false;
+    /* END PLUMED */
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -1129,6 +1132,31 @@ void gmx::LegacySimulator::do_md()
         {
             /* setupStepWorkload() snapshots force_flags below, so PLUMED has to be
                asked for the potential energy before that, not from within do_force(). */
+            if (simulationWork.useMts && !do_per_step(step, ir->mtsLevels.back().stepFactor))
+            {
+                gmx_fatal(FARGS,
+                          "PLUMED needs the potential energy at step %" PRId64
+                          ", but with multiple time stepping the slow forces, and so the "
+                          "potential energy, are computed only every %d steps "
+                          "(mts-level2-factor). Use a PLUMED input that needs the energy only "
+                          "on those steps (e.g. no bias on ENERGY), or do not use multiple time "
+                          "stepping.",
+                          step,
+                          ir->mtsLevels.back().stepFactor);
+            }
+            if (shellfc != nullptr && !plumedWarnedAboutShells)
+            {
+                GMX_LOG(mdLog_.warning)
+                        .asParagraph()
+                        .appendText(
+                                "With shell particles or flexible constraints, PLUMED updates (e.g. "
+                                "prints, deposits its bias, checks COMMITTOR) on the first force "
+                                "calculation of each step, before the shells are relaxed. This PLUMED "
+                                "input needs the potential energy: the energy that it uses for these "
+                                "updates, like the collective variables that depend on the shells, is "
+                                "the one before the relaxation.");
+                plumedWarnedAboutShells = true;
+            }
             force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
         }
         /* END PLUMED */

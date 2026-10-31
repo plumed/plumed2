@@ -66,10 +66,8 @@ void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
 }
 
 void ActionWithVirtualAtom::apply() {
-  if( !checkForForces() ) {
-    return ;
-  }
-
+  // checkForForces() is not called here: it would build the full forcesForApply
+  // array, which the specialised loop below does not use
   Value* xval=getPntrToComponent(0);
   Value* yval=getPntrToComponent(1);
   Value* zval=getPntrToComponent(2);

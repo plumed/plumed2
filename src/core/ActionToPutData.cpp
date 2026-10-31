@@ -104,6 +104,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   Action(ao),
   ActionForInterface(ao),
   noforce(false),
+  forces_added_elsewhere(false),
   fixed(false),
   from_domains(false),
   resetable(false),
@@ -273,10 +274,18 @@ void ActionToPutData::wait() {
 }
 
 void ActionToPutData::apply() {
-  if( getPntrToValue()->forcesWereAdded() && !noforce ) {
+  if( getPntrToValue()->forcesWereAdded() && !noforce && !forces_added_elsewhere ) {
     if( getName()=="ENERGY" || getDependencies().size()==0 ) {
+      checkForcePointer();
       mydata->add_force( getPntrToValue() );
     }
+  }
+}
+
+void ActionToPutData::checkForcePointer() const {
+  if( !mydata->hasForcePointer() ) {
+    plumed_merror("PLUMED has to apply forces on " + getLabel() + " but the MD code did not pass the array where these forces should be stored. "
+                  "Pass it with the command setValueForces (setForces for positions, setVirial for the cell) or, if this quantity cannot be biased, make sure no bias acts on it");
   }
 }
 

@@ -90,8 +90,8 @@ avt: CUSTOM ARG=tc,c FUNC=x/y PERIODIC=NO
 ```
 
 If you have a large number of molecules the most expensive part of this calculation will be the evalulation of the TORSIONS_MATRIX as you need to evaluate one torsion anlge for every pair of molecules.
-Furthermore, this computation is unecessary as most pairs of molecules will __not__ be neighbors.  In other words, for the majority of the molecular pairs element the corresponding element of the
-[CONTACT_MATRIX](CONTACT_MATRIX.md) will be zero.  Consequently, when you compute the the corresponding element `tc` by multiplying the torsion $i,j$ by the crresponding $i,j$ element of the
+Furthermore, this computation is unnecessary as most pairs of molecules will __not__ be neighbors.  In other words, for the majority of the molecular pairs element the corresponding element of the
+[CONTACT_MATRIX](CONTACT_MATRIX.md) will be zero.  Consequently, when you compute the corresponding element `tc` by multiplying the torsion $i,j$ by the crresponding $i,j$ element of the
 [CONTACT_MATRIX](CONTACT_MATRIX.md) you will get zero.
 
 Thankfully PLUMED allows you to exploit this fact through the MASK keyword as illustrated below:

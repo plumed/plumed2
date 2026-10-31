@@ -1,0 +1,8 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.B.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajB.xyz --multi 2"
+
+plumed_regtest_before() {
+  $mpi $plumed driver --plumed plumed.A.dat --trajectory-stride 1 --timestep 0.005 --ixyz trajA.xyz --multi 2 > pre_A.out 2> pre_A.err || return 1
+  return 0
+}

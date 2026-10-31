@@ -224,7 +224,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   parse("TYPE",type);
 
   parseFlag("NOPBC",nopbc);
-// if(type!="SIMPLE") error("Only TYPE=SIMPLE is implemented in FIT_TO_TEMPLATE");
+  if(type!="SIMPLE" && type!="OPTIMAL" && type!="OPTIMAL-FAST") {
+    error("unknown TYPE " + type + ": use SIMPLE, OPTIMAL or OPTIMAL-FAST");
+  }
 
   checkRead();
 
@@ -273,6 +275,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   n=0.0;
   for(unsigned i=0; i<weights_measure.size(); ++i) {
     n+=weights_measure[i];
+  }
+  if(n==0.0 && type!="SIMPLE") {
+    error("PDB file " + reference + " has zero weights for the RMSD. Please check the beta column.");
   }
   n=1.0/n;
   for(unsigned i=0; i<weights_measure.size(); ++i) {
@@ -333,35 +338,20 @@ void FitToTemplate::calculate() {
 
     shift=center-cc;
     setValue(shift.modulo());
-    unsigned nat = getTotAtoms();
-    for(unsigned i=0; i<nat; i++) {
-      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-      Vector ato=getGlobalPosition(a);
-      setGlobalPosition(a,ato+shift);
-    }
+    translateAllGlobalPositions(shift);
   } else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     // specific stuff that provides all that is needed
     double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
     setValue(r);
-    unsigned nat = getTotAtoms();
-    for(unsigned i=0; i<nat; i++) {
-      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-      Vector ato=getGlobalPosition(a);
-      setGlobalPosition(a,matmul(rotation,ato-center_positions)+center);
-    }
+    rotateAllGlobalPositions(rotation,center_positions,center);
 // rotate box
     pbc_action->getPbc().setBox(matmul(pbc_action->getPbc().getBox(),transpose(rotation)));
   }
 }
 
 void FitToTemplate::apply() {
-  auto nat=getTotAtoms();
   if (type=="SIMPLE") {
-    Vector totForce;
-    for(unsigned i=0; i<nat; i++) {
-      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-      totForce+=getForce(a);
-    }
+    Vector totForce=getTotalForceOnAllAtoms();
     Tensor vv=Tensor(center,totForce);
     for(unsigned i=0; i<3; ++i)
       for(unsigned j=0; j<3; ++j) {
@@ -371,16 +361,9 @@ void FitToTemplate::apply() {
       addForce( p_aligned[i], -totForce*weights[i]);
     }
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
-    Vector totForce;
-    for(unsigned i=0; i<nat; i++) {
-      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-      Vector f=getForce(a);
-// rotate back forces
-      Vector nf=matmul(transpose(rotation),f);
-      addForce(a, nf-f);
-// accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
-      totForce+=nf;
-    }
+    const Tensor rotationT=transpose(rotation);
+// rotate back forces and accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
+    Vector totForce=rotateForcesOnAllAtoms(rotationT);
     Tensor virial;
     for(unsigned i=0; i<3; ++i)
       for(unsigned j=0; j<3; ++j) {
@@ -388,17 +371,25 @@ void FitToTemplate::apply() {
       }
 // notice that an extra Tensor(center,matmul(rotation,totForce)) is required to
 // compute the derivatives of the rotation with respect to center
-    Tensor ww=matmul(transpose(rotation),virial+Tensor(center,matmul(rotation,totForce)));
+    Tensor ww=matmul(rotationT,virial+Tensor(center,matmul(rotation,totForce)));
 // rotate back virial
-    virial=matmul(transpose(rotation),matmul(virial,rotation));
+    virial=matmul(rotationT,matmul(virial,rotation));
 
 // now we compute the force due to alignment
     for(unsigned i=0; i<p_aligned.size(); i++) {
       Vector g;
       for(unsigned k=0; k<3; k++) {
-// this could be made faster computing only the diagonal of d
-        Tensor d=matmul(ww,RMSD::getMatrixFromDRot(drotdpos,i,k));
-        g[k]=(d(0,0)+d(1,1)+d(2,2));
+// trace of matmul(ww,RMSD::getMatrixFromDRot(drotdpos,i,k)): only the diagonal is computed,
+// summing in the same order as matmul
+        double trace=0.0;
+        for(unsigned l=0; l<3; l++) {
+          double dll=0.0;
+          for(unsigned m=0; m<3; m++) {
+            dll+=ww(l,m)*drotdpos(m,l)[i][k];
+          }
+          trace+=dll;
+        }
+        g[k]=trace;
       }
 // here is the extra contribution
       addForce( p_aligned[i], -g-weights[i]*totForce );
@@ -409,7 +400,7 @@ void FitToTemplate::apply() {
     }
 // finally, correction to the virial
     boxValue->clearInputForce();
-    virial+=extProduct(matmul(transpose(rotation),center),totForce);
+    virial+=extProduct(matmul(rotationT,center),totForce);
     for(unsigned i=0; i<3; ++i)
       for(unsigned j=0; j<3; ++j) {
         boxValue->addForce( 3*i+j, virial(i,j) );

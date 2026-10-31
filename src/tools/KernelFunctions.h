@@ -80,6 +80,10 @@ public:
                    bool doInt=false,
                    double lowI_=-1,
                    double uppI_=-1 ) const;
+/// If this is a Gaussian kernel with a diagonal metric, get the parameters to evaluate it
+/// as a product over the dimensions: with t_i=(x_i-c_i)/w_i and r2=sum_i t_i^2, the kernel is
+/// height*(a*prod_i exp(-t_i^2/2)+b) for r2<r2cut and zero otherwise. Returns false otherwise.
+  bool getSeparableGaussian(double & h, double & a, double & b, double & r2cut, std::vector<double> & w) const;
 /// Read a kernel function from a file
   static std::unique_ptr<KernelFunctions> read( IFile* ifile,
       const bool& cholesky,

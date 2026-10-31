@@ -37,7 +37,7 @@ $$
 
 Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature $\beta$.
 
-By defauly the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as descibed in the paper cited below.
+By default the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as described in the paper cited below.
 Otherwise one can set this number with LAMBDA_STEPS.
 In both cases the steps will be uniformly distriuted.
 Finally, one can use instead the keyword LAMBDA_SET_ALL and explicitly provide each lambda value.
@@ -66,7 +66,7 @@ ecv: ECV_LINEAR ARG=DeltaU TEMP=300
 opes: OPES_EXPANDED ARG=ecv.* PACE=100
 ```
 
-Notice that by defauly LAMBDA=0, LAMBDA_MIN=0 and LAMBDA_MAX=1, which is the typical case for thermodynamic integration.
+Notice that by default LAMBDA=0, LAMBDA_MIN=0 and LAMBDA_MAX=1, which is the typical case for thermodynamic integration.
 
 */
 //+ENDPLUMEDOC

@@ -175,12 +175,12 @@ non-zero are stored.  The same thing holds for the additional values that are cr
 when the elements of `c4.w` are non-zero.
 
 We can also use the sparsity of the adjacency matrix to make the time required to compute a contact matrix scale linearly rather than quadratically with the number of atoms. Element
-$i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $r_c$. We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+$i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $r_c$. We can determine that many pairs of atoms are further apart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists.  __To turn on these features you need to set the `D_MAX` parameter in the
 switching functions.__ The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
 
 In theory we could further optimize the implementation of the HBOND_MATRIX action by exploiting neighbor lists. If we were to do this we would likely add two further keywords as shown
-below:
+below (this input is not accepted at the moment, as NL_STRIDE must be 1):
 
 ```plumed
 cmap: HBOND_MATRIX ...

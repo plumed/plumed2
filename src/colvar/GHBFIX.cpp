@@ -35,7 +35,7 @@ namespace colvar {
 Calculate the GHBFIX interaction energy between GROUPA and GROUPB
 
 The GHBFIX interaction energy between GROUPA and GROUPB is computed
-using a potential that is defiend in the paper cited in the bibliogrpahy below.  The potential introduced in that paper is
+using a potential that is defined in the paper cited in the bibliography below.  The potential introduced in that paper is
 essentially a switching function that is -1 for small distances and 0 for large distances with a smooth interpolation in the middle.
 This function can be scaled as desired by specifying interaction scaling parameters and energy units.
 

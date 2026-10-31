@@ -100,7 +100,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
+           "in plumed can be found in the documentation for KDE.");
   keys.add("optional","NBINS","the number of bins to use in each direction (alternative to GRID_NBIN)");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (default boxlengths)");
   keys.add("optional","GRID_MAX","the upper bounds for the grid (default boxlengths)");

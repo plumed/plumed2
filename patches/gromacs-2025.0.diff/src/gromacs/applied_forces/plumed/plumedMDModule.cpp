@@ -55,7 +55,7 @@
 #include "plumedOptions.h"
 #include "plumedforceprovider.h"
 
-class gmx_multisim_t;
+struct gmx_multisim_t;
 
 namespace gmx
 {

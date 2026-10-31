@@ -53,7 +53,7 @@ private:
   FCLASS myclass_func;
 public:
   explicit Brent1DRootSearch( const FCLASS& pf,  double t=3.0E-8 );
-/// Bracket the minium
+/// Bracket the minimum
   void bracket( double ax, double xx, eng_pointer eng );
 /// Find the minimum between two brackets
   double search( eng_pointer eng );

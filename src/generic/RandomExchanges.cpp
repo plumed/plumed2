@@ -34,7 +34,7 @@ Set random pattern for exchanges.
 
 This command is typically used if you are using the bias exchange method that is
 discussed in the paper in the bibliography.  When it is present it tells PLUMED
-not do do exchanges between replicas with consecutive indices and instad to use
+not do exchanges between replicas with consecutive indices and instead to use
 use a random pattern.
 
 The following three example input files show how one can run a bias exchange

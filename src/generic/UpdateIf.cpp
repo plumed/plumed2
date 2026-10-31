@@ -23,6 +23,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace generic {
@@ -52,7 +53,7 @@ only when another variable is within a given range.
 !!! caution ""
 
     Notice that not all the possible usage make
-    particular sense. For example, conditionally updating a \ref METAD keyword
+    particular sense. For example, conditionally updating a [METAD](METAD.md) keyword
     (that is: adding hills only if a variable is within a given range)
     can lead to unexpected results.
 
@@ -127,6 +128,17 @@ UpdateIf::UpdateIf(const ActionOptions&ao):
   parseFlag("END",end);
   parseVector("LESS_THAN",upper);
   parseVector("MORE_THAN",lower);
+  if(end) {
+    // an END without a matching opening line would remove the flag of the
+    // enclosing level at every step (undefined behavior in PlumedMain::update)
+    int open=0;
+    for(const auto & u : plumed.getActionSet().select<UpdateIf*>()) {
+      open += ( u->end ? -1 : 1 );
+    }
+    if(open<=0) {
+      error("END without a matching UPDATE_IF");
+    }
+  }
   if(end && upper.size()!=0) {
     error("END and LESS_THAN are not compatible");
   }

@@ -61,7 +61,7 @@ $$
 
 In this expression $R$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
 reference positions specified by the user. The first of these unit vectors points from the first reference atom to the second.
-The second is then the normal to the plane containing atoms 1,2 and 3 and the the third is the unit vector orthogonal to
+The second is then the normal to the plane containing atoms 1,2 and 3 and the third is the unit vector orthogonal to
 these first two vectors.  $(x_o,y_o,z_o)$, meanwhile, specifies the position of the first reference atom.
 
 In the first expression above $K$ is one of the kernel functions described in the documentation for the action [BETWEEN](BETWEEN.md)
@@ -181,7 +181,7 @@ void VolumeCavity::parseInput( ActionVolume<VolumeCavity>* action ) {
   std::string mykerneltype;
   action->parse("KERNEL",mykerneltype);
   kerneltype=HistogramBead::getKernelType(mykerneltype);
-  action->log.printf("  using %s kernels with a bandwidth of %d \n", mykerneltype.c_str(), sigma );
+  action->log.printf("  using %s kernels with a bandwidth of %f \n", mykerneltype.c_str(), sigma );
 }
 
 void VolumeCavity::parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms ) {

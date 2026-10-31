@@ -49,7 +49,7 @@ d: DISTANCE ATOMS=1,2
 g: GATHER_REPLICAS ARG=d
 # Now average the two distances on the two replicas
 s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
-# And print the instaneous average for the distance on the two replicas
+# And print the instantaneous average for the distance on the two replicas
 PRINT ARG=s FILE=colvar
 ```
 
@@ -169,8 +169,9 @@ void GatherReplicas::calculate() {
           myout->setDerivative( j, dval[i*(1+nder)+1+j] );
         }
       } else if( myarg->hasDerivatives() ) {
+        // the derivatives of a grid are part of the data gathered from replica k
         for(unsigned j=0; j<nder; ++j) {
-          myout->addGridDerivatives( i, j, dval[i*(1+nder)+1+j] );
+          myout->addGridDerivatives( i, j, datap[sstart+i*(1+nder)+1+j] );
         }
       }
     }

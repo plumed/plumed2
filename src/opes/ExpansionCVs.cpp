@@ -57,7 +57,7 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
       getPntrToComponent(j)->setNotPeriodic();
     }
   }
-  plumed_massert((int)getNumberOfArguments()==getNumberOfComponents(),"Expansion CVs have same number of arguments and components");
+  plumed_massert(getNumberOfArguments()==getNumberOfComponents(),"Expansion CVs have same number of arguments and components");
 }
 
 std::string ExpansionCVs::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
@@ -128,19 +128,19 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
     log.printf(" +++ WARNING +++ %s_MIN and %s_MAX are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
-  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs) { //HWHM = half width at half maximum. neff is in general not symmetric
+  auto get_neff_HWHM=[](const double side,const std::vector<double>& observ) { //HWHM = half width at half maximum. neff is in general not symmetric
     //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const double delta,const std::vector<double>& obs) {
+    auto func=[](const double delta,const std::vector<double>& samples) {
       double sum_w=0;
       double sum_w2=0;
       //we could avoid recomputing safe_shift every time, but here speed is not a concern
-      const double safe_shift=delta<0?*std::max_element(obs.begin(),obs.end()):*std::min_element(obs.begin(),obs.end());
-      for(unsigned t=0; t<obs.size(); t++) {
-        const double w=std::exp(-delta*(obs[t]-safe_shift)); //robust to overflow
+      const double safe_shift=delta<0?*std::max_element(samples.begin(),samples.end()):*std::min_element(samples.begin(),samples.end());
+      for(unsigned t=0; t<samples.size(); t++) {
+        const double w=std::exp(-delta*(samples[t]-safe_shift)); //robust to overflow
         sum_w+=w;
         sum_w2+=w*w;
       }
-      return sum_w*sum_w/sum_w2/obs.size()-0.5;
+      return sum_w*sum_w/sum_w2/samples.size()-0.5;
     };
     //here we find the root of func using the regula falsi (false position) method
     //but any method would be OK, not much precision is needed. src/tools/RootFindingBase.h looked complicated
@@ -148,7 +148,7 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
     double a=0; //default is right side case
     double func_a=0.5;
     double b=side;
-    double func_b=func(side,obs);
+    double func_b=func(side,observ);
     if(func_b>=0) {
       return 0.0;  //no zero is present!
     }
@@ -167,7 +167,7 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
         func_b=func_c;
       }
       c=(a*func_b-b*func_a)/(func_b-func_a);
-      func_c=func(c,obs); //func is evaluated only here, it might be expensive
+      func_c=func(c,observ); //func is evaluated only here, it might be expensive
     }
     return std::abs(c);
   };

@@ -25,6 +25,9 @@
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
+#include <cerrno>
+#include <chrono>
+#include <thread>
 #include <sys/wait.h>
 #endif
 
@@ -39,8 +42,32 @@ inline static bool SubprocessPidGetenvSignals() noexcept {
 }
 
 /// Small utility class, used to avoid inclusion of unistd.h> in a header file.
+///
+/// The subprocess is launched as `/bin/sh -c cmd` and is made leader of a new
+/// process group (with pgid equal to its pid). All signals are sent to the whole
+/// process group (`kill(-pid,...)`), so that they also reach the processes
+/// spawned by the shell (e.g. the python interpreter launched by a script).
+/// Sending them only to the shell would leave the actual worker untouched.
 class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
+  /// Time given to the process group to exit after SIGTERM before sending SIGKILL.
+  static constexpr std::chrono::milliseconds gracePeriod{1000};
+  /// Returns true if the shell process has exited.
+  /// The process is NOT reaped (WNOWAIT), so that its pid (and thus the process group id)
+  /// cannot be recycled by the system before we are done signaling the group.
+  bool exited() const noexcept {
+    while(true) {
+      siginfo_t info;
+      info.si_pid=0;
+      if(waitid(P_PID,pid,&info,WEXITED|WNOHANG|WNOWAIT)==0) {
+        return info.si_pid==pid;
+      }
+      if(errno!=EINTR) {
+        // ECHILD or other errors: nothing to wait for
+        return true;
+      }
+    }
+  }
 public:
   const pid_t pid;
   explicit SubprocessPid(pid_t pid_):
@@ -51,26 +78,49 @@ public:
     // Signals give problems with MPI on Travis.
     // I disable them for now.
     if(SubprocessPidGetenvSignals()) {
-      kill(pid,SIGSTOP);
+      kill(-pid,SIGSTOP);
     }
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
     if(SubprocessPidGetenvSignals()) {
-      kill(pid,SIGCONT);
+      kill(-pid,SIGCONT);
     }
   }
   ~SubprocessPid() {
-    // the destructor implies we do not need the subprocess anymore, so SIGKILL
-    // is the fastest exit.
-    // if we want to gracefully kill the process with a delay, it would be cleaner
-    // to have another member function
-    kill(pid,SIGKILL);
-    // Wait for the child process to terminate
-    // This is anyway required to avoid leaks
+    // The destructor implies we do not need the subprocess anymore.
+    // At this point its stdin has already been closed.
+    // We first ask the whole process group to terminate with SIGTERM, which
+    // allows a clean exit (e.g., shell EXIT traps removing temporary files).
+    // SIGCONT is needed because the group might have been stopped with SIGSTOP
+    // (see stop()), in which case SIGTERM would remain pending forever.
+    kill(-pid,SIGTERM);
+    kill(-pid,SIGCONT);
+    // Poll with an increasing interval, so that the common case
+    // (immediate exit) is fast.
+    const auto start=std::chrono::steady_clock::now();
+    std::chrono::microseconds interval{50};
+    while(!exited() && std::chrono::steady_clock::now()-start<gracePeriod) {
+      std::this_thread::sleep_for(interval);
+      if(interval<std::chrono::milliseconds(20)) {
+        interval*=2;
+      }
+    }
+    // If the shell did not exit within the grace period (e.g. because it ignores SIGTERM),
+    // kill the whole process group.
+    // This is safe since the shell has not been reaped yet, so the pgid cannot
+    // have been recycled.
+    // Notice that if the shell has exited we do not send SIGKILL to the rest of the group:
+    // processes started by the shell received SIGTERM as well, and they might still be
+    // running their cleanup (e.g. a bash EXIT trap in a script launched by a
+    // shell that does not exec it).
+    if(!exited()) {
+      kill(-pid,SIGKILL);
+    }
+    // Reap the shell. This is anyway required to avoid leaks
     int status;
-    waitpid(pid, &status, 0);
+    while(waitpid(pid, &status, 0)<0 && errno==EINTR) {}
   }
 #endif
 };
@@ -117,11 +167,21 @@ Subprocess::Subprocess(const std::string & cmd) {
     if(close(cp[0])<0) {
       plumed_error()<<"error closing file";
     }
+    // Make the child the leader of a new process group, so that signals
+    // can be sent to it and to all the processes it spawns.
+    if(setpgid(0,0)<0) {
+      plumed_error()<<"error setting process group";
+    }
     auto err=execv(arr[0],arr);
     plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
   }
 // PARENT::
   default:
+    // setpgid is also called here to avoid a race condition:
+    // the parent might send a signal to the group before the child has created it.
+    // Errors are ignored: the call fails with EACCES if the child has already called execv,
+    // but in that case the child has already set its process group.
+    setpgid(forkedPid,forkedPid);
     pid=Tools::make_unique<SubprocessPid>(forkedPid);
     if(close(pc[0])<0) {
       plumed_error()<<"error closing file";

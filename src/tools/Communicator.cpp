@@ -43,7 +43,12 @@ Communicator::Communicator()
 {
 }
 
-Communicator::Communicator(const Communicator&pc) {
+Communicator::Communicator(const Communicator&pc)
+#ifdef __PLUMED_HAS_MPI
+// communicator must be initialized before calling Set_comm, which frees it if needed
+  : communicator(MPI_COMM_SELF)
+#endif
+{
   Set_comm(pc.communicator);
   standIn=pc.standIn;
 }
@@ -107,11 +112,14 @@ void Communicator::Set_comm(MPI_Comm c) {
   standIn=false;
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) {
-    if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) {
+    if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
       MPI_Comm_free(&communicator);
     }
     if(c!=MPI_COMM_SELF) {
       MPI_Comm_dup(c,&communicator);
+    } else {
+      // MPI_Comm_free sets the freed communicator to MPI_COMM_NULL
+      communicator=MPI_COMM_SELF;
     }
   }
 #else
@@ -121,7 +129,7 @@ void Communicator::Set_comm(MPI_Comm c) {
 
 Communicator::~Communicator() {
 #ifdef __PLUMED_HAS_MPI
-  if(initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) {
+  if(initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
     MPI_Comm_free(&communicator);
   }
 #endif
@@ -461,6 +469,11 @@ template<> MPI_Datatype Communicator::getMPIType<long double>() {
 void Communicator::Split(int color,int key,Communicator&pc)const {
   checkNotStandIn();
 #ifdef __PLUMED_HAS_MPI
+  // free the communicator previously held by pc (it was obtained with MPI_Comm_dup or MPI_Comm_split)
+  if(pc.communicator!=MPI_COMM_SELF && pc.communicator!=MPI_COMM_WORLD && pc.communicator!=MPI_COMM_NULL) {
+    MPI_Comm_free(&pc.communicator);
+  }
+  pc.standIn=false;
   MPI_Comm_split(communicator,color,key,&pc.communicator);
 #else
   (void) color;

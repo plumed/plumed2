@@ -137,6 +137,7 @@ class Rescale : public bias::Bias {
   unsigned MCstride_;
   long long int MCfirst_;
   long long unsigned MCaccgamma_;
+  Random random_;
   // replica stuff
   unsigned nrep_;
   unsigned replica_;
@@ -146,6 +147,8 @@ class Rescale : public bias::Bias {
   // Monte Carlo
   void doMonteCarlo(unsigned igamma, double oldE, const std::vector<double> & args, const std::vector<double> & bargs);
   unsigned proposeMove(unsigned x, unsigned xmin, unsigned xmax);
+  // current value of the SELECTOR, checked against the number of bins
+  unsigned getSelector();
   bool doAccept(double oldE, double newE);
   // read and print bias
   void read_bias();
@@ -176,6 +179,7 @@ void Rescale::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
+  keys.add("optional","SEED","seed of the random number generator used by the Monte Carlo sampling (by default it is taken from the clock at every run)");
   keys.addOutputComponent("igamma",  "default","scalar","gamma parameter");
   keys.addOutputComponent("accgamma","default","scalar","MC acceptance for gamma");
   keys.addOutputComponent("wtbias",  "default","scalar","well-tempered bias");
@@ -258,6 +262,11 @@ Rescale::Rescale(const ActionOptions&ao):
   MCstride_ *= getStride();
   // read bias deposition pace
   parse("PACE", Biaspace_);
+  int seed=-1;
+  parse("SEED",seed);
+  if(seed<-1) {
+    error("SEED must be a non-negative integer");
+  }
   // multiply by MCstride
   Biaspace_ *= MCstride_;
 
@@ -294,7 +303,14 @@ Rescale::Rescale(const ActionOptions&ao):
   componentIsNotPeriodic("wtbias");
 
   // initialize random seed
-  srand (time(NULL));
+  // each replica gets its own stream, between 1 and 2^31-1
+  unsigned iseed;
+  if(seed>=0) {
+    iseed = static_cast<unsigned>(1 + (static_cast<unsigned long long>(seed)*nrep_+replica_) % 2147483646ULL);
+  } else {
+    iseed = static_cast<unsigned>(time(NULL))+replica_;
+  }
+  random_.setSeed(-static_cast<int>(iseed));
 
   // read bias if restarting
   if(getRestart()) {
@@ -333,12 +349,22 @@ void Rescale::read_bias() {
   }
 }
 
+unsigned Rescale::getSelector() {
+  const auto it = plumed.passMap.find(selector_);
+  if(it==plumed.passMap.end()) {
+    error("SELECTOR "+selector_+" is not defined");
+  }
+  if(!(it->second>=0.0) || it->second>=static_cast<double>(gamma_.size())) {
+    error("the value of SELECTOR "+selector_+" must be between 0 and NBIN-1");
+  }
+  return static_cast<unsigned>(it->second);
+}
+
 unsigned Rescale::proposeMove(unsigned x, unsigned xmin, unsigned xmax) {
   int xmin_i = static_cast<int>(xmin);
   int xmax_i = static_cast<int>(xmax);
   int dx;
-  int r = rand() % 2;
-  if( r % 2 == 0 ) {
+  if( random_.RandU01() < 0.5 ) {
     dx = +1;
   } else {
     dx = -1;
@@ -364,7 +390,7 @@ bool Rescale::doAccept(double oldE, double newE) {
     accept = true;
   } else {
     // otherwise extract random number
-    double s = static_cast<double>(rand()) / RAND_MAX;
+    double s = random_.RandU01();
     if( s < std::exp(-delta) ) {
       accept = true;
     }
@@ -446,7 +472,7 @@ void Rescale::print_bias(long long int step) {
 
 void Rescale::calculate() {
   // get the current value of the selector
-  const unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
+  const unsigned igamma = getSelector();
 
   // collect data from other replicas
   std::vector<double> all_args(getNumberOfArguments(), 0.0);
@@ -470,7 +496,7 @@ void Rescale::calculate() {
 
   // now separate terms that should be rescaled
   std::vector<double> args;
-  if(getNumberOfArguments()-nores_>0) {
+  if(getNumberOfArguments()>nores_) {
     args.resize(getNumberOfArguments()-nores_);
   }
   for(unsigned i=0; i<args.size(); ++i) {
@@ -524,7 +550,7 @@ void Rescale::calculate() {
   // add well-tempered like bias
   if(step%Biaspace_==0) {
     // get updated igamma
-    const unsigned newigamma = static_cast<unsigned>(plumed.passMap[selector_]);
+    const unsigned newigamma = getSelector();
     // add "Gaussian"
     double kbDT = kbt_ * ( biasf_ - 1.0 );
     bias_[newigamma] += w0_ * std::exp(-bias_[newigamma] / kbDT);

@@ -68,7 +68,7 @@ For more examples see the documentation for [driver](driver.md).
 
 //+PLUMEDOC TOOLS driver
 /*
-driver is a tool that allows one to to use plumed to post-process an existing trajectory.
+driver is a tool that allows one to use plumed to post-process an existing trajectory.
 
 The input to driver is specified using the command line arguments described below.
 

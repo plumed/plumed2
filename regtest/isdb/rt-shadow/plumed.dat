@@ -1,0 +1,6 @@
+# replica 0 provides the reference (shadow.0.dat has the REFERENCE flag)
+INCLUDE FILE=shadow.dat
+
+PRINT ARG=sh FILE=colvar FMT=%10.6f
+RESTRAINT ARG=sh AT=0.0 KAPPA=100.0
+ENDPLUMED

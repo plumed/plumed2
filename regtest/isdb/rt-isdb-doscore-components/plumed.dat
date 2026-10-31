@@ -1,0 +1,59 @@
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# the same J-couplings and RDCs without and with DOSCORE:
+# the j-# and rdc-# components must be the same in the two cases
+JCOUPLING ...
+    NOPBC
+    TYPE=HAHN
+    ATOMS1=@psi-2
+    ATOMS2=@psi-3
+    ATOMS3=@psi-4
+    LABEL=jcv
+... JCOUPLING
+
+JCOUPLING ...
+    NOPBC
+    TYPE=HAHN
+    ATOMS1=@psi-2 COUPLING1=6.5
+    ATOMS2=@psi-3 COUPLING2=1
+    ATOMS3=@psi-4 COUPLING3=2
+    LABEL=jmi
+    DOSCORE
+    NOISETYPE=GAUSS
+    SIGMA_MEAN0=1
+    DSIGMA=0
+    TEMP=300
+    WRITE_STRIDE=10000
+... JCOUPLING
+
+RDC ...
+    NOPBC
+    GYROM=-72.5388
+    SCALE=0.001
+    ATOMS1=18,19
+    ATOMS2=25,26
+    ATOMS3=35,36
+    LABEL=rdccv
+... RDC
+
+RDC ...
+    NOPBC
+    GYROM=-72.5388
+    SCALE=0.001
+    ATOMS1=18,19 COUPLING1=1.0
+    ATOMS2=25,26 COUPLING2=-2.0
+    ATOMS3=35,36 COUPLING3=0.5
+    LABEL=rdcmi
+    DOSCORE
+    NOISETYPE=GAUSS
+    SIGMA_MEAN0=1
+    DSIGMA=0
+    TEMP=300
+    WRITE_STRIDE=10000
+... RDC
+
+PRINT ARG=jcv.j-0,jcv.j-1,jcv.j-2,jmi.j-0,jmi.j-1,jmi.j-2,jmi.score FILE=jvalues FMT=%10.5f
+PRINT ARG=rdccv.rdc-0,rdccv.rdc-1,rdccv.rdc-2,rdcmi.rdc-0,rdcmi.rdc-1,rdcmi.rdc-2,rdcmi.score FILE=rdcvalues FMT=%10.5f
+
+ENDPLUMED

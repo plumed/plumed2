@@ -36,7 +36,7 @@
 int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
-  for(unsigned iarg=1; iarg<argc; iarg++) {
+  for(int iarg=1; iarg<argc; iarg++) {
     if(!std::strcmp(argv[iarg],"--no-mpi")) {
       nompi=true;
     }
@@ -57,7 +57,7 @@ int main(int argc,char**argv) {
   try {
     PLMD::Plumed p;
     p.cmd("CLTool setArgc",&argc);
-    p.cmd("CLTool setArgv",argv, {argc});
+    p.cmd("CLTool setArgv",argv, {static_cast<std::size_t>(argc)});
 #ifdef __PLUMED_HAS_MPI
     if(!nompi) {
       MPI_Comm comm;

@@ -67,11 +67,16 @@ This plumed script can be generated with function `Plumed_helper.get_ANN_express
 
 ```Python
 from plumed_helper import Plumed_helper
-ANN_weights = [np.array([1,2,3,4,5,6]), np.array([7,8,9])]
+
+ANN_weights = [np.array([1, 2, 3, 4, 5, 6]), np.array([7, 8, 9])]
 ANN_bias = [np.array([10, 11, 12]), np.array([13])]
-Plumed_helper.get_ANN_expression('ANN', node_num=[2, 3, 1], 
-                                 ANN_weights=ANN_weights, ANN_bias=ANN_bias,
-                                 activation_list=['Tanh', 'Tanh'])
+Plumed_helper.get_ANN_expression(
+    "ANN",
+    node_num=[2, 3, 1],
+    ANN_weights=ANN_weights,
+    ANN_bias=ANN_bias,
+    activation_list=["Tanh", "Tanh"],
+)
 ```
 
 ## Authors

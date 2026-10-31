@@ -45,7 +45,7 @@ class ActionAtomistic;
 /// PLMD::ActionWithValue is part of a class that calculates multiple components
 /// then the class will contain multiple that will be called label.component-name
 /// This class is used to pass information between different PLMD::Action
-/// objects.  However, if you find a use for a tempory PLMD::Value in some method
+/// objects.  However, if you find a use for a temporary PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
   friend struct ArgumentsBookkeeping;
@@ -110,6 +110,10 @@ private:
   void setupPeriodicity();
 // bring value within PBCs
   void applyPeriodicity( const unsigned& ival );
+/// Add a force on an element of a sparse matrix (the uncommon case of addForce)
+  void addForceToSparseMatrix( const std::size_t& iforce, double f );
+/// Error raised by addForce, out of line so that addForce can be inlined
+  [[noreturn]] void addForceOutOfRange( const std::size_t& iforce ) const ;
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -387,6 +391,19 @@ inline
 void Value::addForce(double f) {
   hasForce=true;
   inputForce[0]+=f;
+}
+
+inline
+void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
+    addForceToSparseMatrix( iforce, f );
+    return;
+  }
+  if( iforce>=inputForce.size() ) {
+    addForceOutOfRange( iforce );
+  }
+  inputForce[iforce]+=f;
 }
 
 inline

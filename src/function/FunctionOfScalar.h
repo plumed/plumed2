@@ -24,6 +24,7 @@
 
 #include "Function.h"
 #include "FunctionSetup.h"
+#include "Custom.h"
 
 namespace PLMD {
 namespace function {
@@ -130,6 +131,11 @@ void FunctionOfScalar<T>::calculate() {
   }
 }
 
+
+
+/// Explicit specialization defined in the corresponding .cpp file; declared
+/// here so that every translation unit instantiating the template sees it.
+template <> std::string FunctionOfScalar<Custom>::writeInGraph() const;
 }
 }
 #endif

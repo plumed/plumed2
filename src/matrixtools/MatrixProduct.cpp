@@ -93,7 +93,7 @@ and the molecules in their first coordination sphere.
 
 Ideass similar to this are used in the calculation of [LOCAL_Q3](LOCAL_Q3.md), [LOCAL_Q4](LOCAL_Q4.md) and [LOCAL_Q6](LOCAL_Q6.md).  Notice, that it is very important to
 use `MASK` keyword in the MATRIX_PRODUCT action when you are doing this type calculation.  Using this keyword ensures that PLUMED does not calculate the $(i,j)$ matrix of
-the matrix `prod` if the corresponding element in `cmap` is zero.  Using this keyword thus ensures that we can avoid a large number of unecessary calculations and improves
+the matrix `prod` if the corresponding element in `cmap` is zero.  Using this keyword thus ensures that we can avoid a large number of unnecessary calculations and improves
 the performance of the calculation considerably.
 
 ## Calculating angles

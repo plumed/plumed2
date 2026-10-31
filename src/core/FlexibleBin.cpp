@@ -110,11 +110,14 @@ void FlexibleBin::update(bool nowAddAHill) {
     for(unsigned i=0; i<ncv; i++) {
       cv.push_back(paction->getArgument(i));
     }
+    bool restarted;
+    restarted=false;
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(ncv);
       for(unsigned i=0; i<ncv; i++) {
         average[i]=cv[i];
       }
+      restarted=(variance.size()>0); // after restartAverage() the variance is kept as it is
     } else { // accumulate
       for(unsigned i=0; i<ncv; i++) {
         delta[i]=paction->difference(i,average[i],cv[i]);
@@ -122,10 +125,11 @@ void FlexibleBin::update(bool nowAddAHill) {
         average[i]=paction->bringBackInPbc(i,average[i]); // equation 8 of "Metadynamics with adaptive Gaussians"
       }
     }
+    nsamples++;
     // THE VARIANCE
     if(variance.size()==0) {
       variance.resize(dimension,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
-    } else {
+    } else if(!restarted) {
       unsigned k=0;
       for(unsigned i=0; i<ncv; i++) {
         for(unsigned j=i; j<ncv; j++) { // upper diagonal loop
@@ -157,6 +161,21 @@ void FlexibleBin::update(bool nowAddAHill) {
   }
 }
 
+void FlexibleBin::restartAverage() {
+  plumed_massert(type==diffusion,"the average can be restarted only for diffusion-based adaptive hills");
+  average.clear();
+}
+
+void FlexibleBin::setStatistics(const std::vector<double>& av, const std::vector<double>& var, unsigned ns) {
+  plumed_massert(type==diffusion,"the statistics can be set only for diffusion-based adaptive hills");
+  const unsigned ncv=paction->getNumberOfArguments();
+  // (one dimensional, for one argument of PBMETAD, or for all the arguments)
+  plumed_assert((av.size()==1 && var.size()==1) || (av.size()==ncv && var.size()==ncv*(ncv+1)/2));
+  average=av;
+  variance=var;
+  nsamples=ns;
+}
+
 std::vector<double> FlexibleBin::getMatrix() const {
   return variance;
 }
@@ -178,18 +197,22 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
     // THE AVERAGE VALUE
     delta.resize(1);
     cv.push_back(paction->getArgument(iarg));
+    bool restarted;
+    restarted=false;
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(1);
       average[0]=cv[0];
+      restarted=(variance.size()>0); // after restartAverage() the variance is kept as it is
     } else { // accumulate
       delta[0]=paction->difference(iarg,average[0],cv[0]);
       average[0]+=decay*delta[0];
       average[0]=paction->bringBackInPbc(iarg,average[0]); // equation 8 of "Metadynamics with adaptive Gaussians"
     }
+    nsamples++;
     // THE VARIANCE
     if(variance.size()==0) {
       variance.resize(1,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
-    } else {
+    } else if(!restarted) {
       variance[0]+=decay*(delta[0]*delta[0]-variance[0]);
     }
     break;

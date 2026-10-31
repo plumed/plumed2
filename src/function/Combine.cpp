@@ -110,7 +110,7 @@ PRINT ARG=c FILE=colvar
 ```
 
 The output from the COMBINE action here is also a vector with four elements. The first element of this vector is the square of the
-distance betwen atoms 1 and 2, the second is the square of the distance between atoms 3 and 4 and so on.
+distance between atoms 1 and 2, the second is the square of the distance between atoms 3 and 4 and so on.
 
 The COMBINE action can also take a mixture of scalars and vectors in input as long as the labels of vectors appear before the labels of scalars
 in the input to the ARG keyword.  The following input illustrates an COMBINE action that takes vectors and scalars in input.

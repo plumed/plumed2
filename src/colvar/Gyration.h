@@ -438,7 +438,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       VectorTyped<T,3> tX;
       const VectorTyped<T,3> diff=delta( com,VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
-      //project atomic postional vectors to diagonalized frame
+      //project atomic positional vectors to diagonalized frame
       for(unsigned j=0; j<3; j++) {
         tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
       }
@@ -451,7 +451,7 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       VectorTyped<T,3> tX;
       const VectorTyped<T,3> diff=delta( com, VectorTyped<T,3>(cvin.pos[i][0],cvin.pos[i][1],cvin.pos[i][2]) );
-      //project atomic postional vectors to diagonalized frame
+      //project atomic positional vectors to diagonalized frame
       for(unsigned j=0; j<3; j++) {
         tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
       }

@@ -179,9 +179,9 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
       log.printf(" %s",dernames[i].c_str());
     }
     log.printf("\n");
-    log.printf("  on %ld", gbin[0]);
+    log.printf("  on %zu", gbin[0]);
     for(unsigned i=1; i<gbin.size(); ++i) {
-      log.printf(" by %ld \n", gbin[i]);
+      log.printf(" by %zu \n", gbin[i]);
     }
     log.printf(" grid of points between (%s", gmin[0].c_str() );
     for(unsigned i=1; i<gmin.size(); ++i) {
@@ -284,10 +284,10 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
         ifile.scanField( "nbins_" + dernames[i], gbin1);
         gbin[i]=gbin1;
         if( pstring=="true" ) {
-          log.printf("   for periodic coordinate %s minimum is %s maximum is %s and number of bins is %ld \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+          log.printf("   for periodic coordinate %s minimum is %s maximum is %s and number of bins is %zu \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
           ipbc[i]=true;
         } else if( pstring=="false" ) {
-          log.printf("   for coordinate %s minimum is %s maximum is %s and number of bins is %ld \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+          log.printf("   for coordinate %s minimum is %s maximum is %s and number of bins is %zu \n",dernames[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
           ipbc[i]=false;
         } else {
           error("do not understand periodidicy of " + dernames[i] );

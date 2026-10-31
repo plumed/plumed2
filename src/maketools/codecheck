@@ -106,6 +106,22 @@ fi
   fi
 
   if [ $do_cppcheck == true ]; then
+    # Optional incremental analysis (used by CI, which keeps the directory with actions/cache):
+    # if PLMD_CPPCHECK_BUILD_DIR is set, cppcheck stores there the results of each file and only
+    # re-analyses the files whose code, or the code of one of the headers they include, changed
+    # (the hash also includes the cppcheck version, the options and the inline suppressions).
+    # A build dir also enables the whole-program checks (unusedFunction and the ctu* ones), which
+    # cppcheck otherwise skips with -j: their messages are discarded below, so that the report is
+    # the same with or without the build dir.
+    # src and plugins get separate directories since cppcheck names its files after the basename
+    # of the sources.
+    builddir_src=()
+    builddir_plugins=()
+    if [[ -n "${PLMD_CPPCHECK_BUILD_DIR:-}" ]]; then
+      mkdir -p "${PLMD_CPPCHECK_BUILD_DIR}/src" "${PLMD_CPPCHECK_BUILD_DIR}/plugins"
+      builddir_src=(--cppcheck-build-dir="${PLMD_CPPCHECK_BUILD_DIR}/src")
+      builddir_plugins=(--cppcheck-build-dir="${PLMD_CPPCHECK_BUILD_DIR}/plugins")
+    fi
     # we discard configurations introduced in small_vector because they are many and
     # get included in many files
     function docheck(){
@@ -127,13 +143,13 @@ fi
     srcfiles=$(grep -E -v -s '/plugins/'  <<< "$files" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
-      docheck $srcfiles
+      docheck "${builddir_src[@]}" $srcfiles
     fi
     pluginfiles=$(grep -E  '/plugins/'  <<< "$files" || true)
     if [[ -n $pluginfiles ]];then
       # this will work only if plumed is configured
       # shellcheck disable=SC2086
-      docheck  -I "${basedir}/src/include/" $pluginfiles
+      docheck "${builddir_plugins[@]}" -I "${basedir}/src/include/" $pluginfiles
     fi
     #You coud add -I ${basedir}/src/ but that will not check if the correct
     # requisite modules are set in the module configuration file
@@ -181,6 +197,8 @@ gawk '{
   } else {
 # with cppcheck we exclude molfile lapack and blas
     if(match($0,"[[](.*/|)molfile/")) next;
+# whole-program checks, only active with PLMD_CPPCHECK_BUILD_DIR (see above)
+    if(match($0,":(unusedFunction|ctu[A-Za-z]+):")) next;
     if(match($0,"[[](.*/|)lapack/")) next;
     if(match($0,"[[](.*/|)blas//")) next;
     if(match($0,"[[](.*/|)lepton/")) next;
@@ -203,6 +221,26 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
 grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >"${FATAL_FILE}" || true
 count=$(wc -l <"${FATAL_FILE}")
+
+#just a small check to see if python is there
+if [[ $do_local == false ]] && python --version &>/dev/null; then
+# --------------------------------------------------------------------
+#   This converst $FATAL_FILE to the sarif format,
+#   so that it can be integrated with the codeQL stuff in the CI
+#   SARIF is a fancy json with some specific fields
+#
+#   As now this converts only things in this form:
+#   [{file}:{line}] ({severity}) :{id}: {message}
+#   As now the errors in the format:
+#   [global_check] ({severity}) :{id}: {message}
+#   are ignored
+#
+#   The report is written also when there are no errors (with no results): when it is uploaded,
+#   GitHub closes the alerts of the previous reports that have been fixed
+
+  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
+fi
+
 echo
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 if ((count == 0)); then
@@ -227,21 +265,5 @@ if grep -q 'ruff_' "${FATAL_FILE}"; then
 fi
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
-
-#just a small check to see if python is there
-if [[ $do_local == false ]] && python --version &>/dev/null; then
-# --------------------------------------------------------------------
-#   This converst $FATAL_FILE to the sarif format,
-#   so that it can be integrated with the codeQL stuff in the CI
-#   SARIF is a fancy json with some specific fields
-#
-#   As now this converts only things in this form:
-#   [{file}:{line}] ({severity}) :{id}: {message}
-#   As now the errors in the format:
-#   [global_check] ({severity}) :{id}: {message}
-#   are ignored
-
-  python maketools/sarif.py "${FATAL_FILE}" >codecheck.sarif
-fi
 
 exit 1

@@ -1,0 +1,13 @@
+# The distance d goes from 0 to 2: the bias is printed also at the ends of the grids and beyond them.
+# i: INTERVAL, hills read from HI (centers 0.95, 1.5, 0.3): the grid is extended, the bias beyond the limits
+#    of the interval is constant (also in the last cell of the grid and beyond the grid), with zero derivative
+# l: initial grid with more points than GRID_SIZE_LIMIT: the limit is raised to twice the initial size (see log),
+#    so the grid can be extended for the hill at 0.3 (from HL)
+# e: no initial range, restart from a grid file written before the first hill (GE): the grid is placed around the first hill
+RESTART
+d: DISTANCE ATOMS=1,2 NOPBC
+i: METAD ARG=d SIGMA=0.1 HEIGHT=1 PACE=100000 GRID_MIN=0.4 GRID_MAX=1.1 GRID_BIN=70 INTERVAL=0.5,1.0 FILE=HI FMT=%14.6f
+l: METAD ARG=d SIGMA=0.1 HEIGHT=1 PACE=100000 GRID_MIN=0.4 GRID_MAX=1.1 GRID_BIN=70 GRID_SIZE_LIMIT=50 FILE=HL FMT=%14.6f
+e: METAD ARG=d SIGMA=0.1 HEIGHT=1 PACE=50 GRID_SPACING=0.01 GRID_RFILE=GE FILE=HE FMT=%14.6f
+PRINT ARG=d,i.bias,l.bias,e.bias FILE=colvar FMT=%10.5f
+DUMPDERIVATIVES ARG=i.bias FILE=deriv FMT=%10.5f

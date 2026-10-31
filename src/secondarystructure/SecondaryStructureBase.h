@@ -37,7 +37,7 @@ namespace PLMD {
 namespace secondarystructure {
 
 namespace helpers {
-//this makes the variabe needstype only needed to be declared explicitly
+//this makes the variable needstype only needed to be declared explicitly
 //needsType activate the reading of "TYPE" during the parsing
 template <typename T, typename=void>
 constexpr bool needsType=false;
@@ -45,7 +45,7 @@ constexpr bool needsType=false;
 template <typename T>
 constexpr bool needsType<T,std::void_t<decltype(T::needsType)>> =T::needsType;
 
-//this makes the variabe needstype only needed to be declared explicitly
+//this makes the variable needstype only needed to be declared explicitly
 //needsBondLength activate the reading of "TYPE" during the parsing
 template <typename T, typename=void>
 constexpr bool needsBondLength=false;
@@ -128,11 +128,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   keys.add("numbered","STRUCTURE","the reference structure");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
-             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD.");
+             "For more details on the OPTIMAL and SIMPLE methods see RMSD.");
   } else if constexpr ( !needsBondLength /*keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
-             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
-             "DRMSD method see \\ref DRMSD.");
+             "For more details on the OPTIMAL and SIMPLE methods see RMSD. For more details on the "
+             "DRMSD method see DRMSD.");
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.reset_style("VERBOSE","hidden");
@@ -140,13 +140,13 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   if constexpr ( !needsBondLength && !needsType ) {
     keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
              "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
-             "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
+             "MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
              "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
              "As such if you define portions of the chain with fewer than N residues the code will crash.");
     keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a switching function.");
     keys.add("optional","R_0","The r_0 parameter of the switching function.");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
@@ -341,42 +341,47 @@ void SecondaryStructureBase<T,myPTM>::getInputData( std::vector<float>& inputdat
 
 template <class T,typename myPTM>
 void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T& actiondata, ParallelActionsInput& input, ParallelActionsOutput& output ) {
-  // std::vector<Vector> pos( actiondata.natoms );
-  std::array<Vector,30> pos;
+  // Empty is only used to reach the static shortcut helpers (see the
+  // SecondaryStructureInput alias); this body is never called for it. MSVC
+  // instantiates member bodies eagerly, hence the guard.
+  if constexpr ( !std::is_same_v<T,Empty> ) {
+    // std::vector<Vector> pos( actiondata.natoms );
+    std::array<Vector,30> pos;
 
-  for(unsigned i=0; i<actiondata.natoms; ++i) {
-    const unsigned atno = actiondata.colvar_atoms(task_index,i);
-    pos[i][0] = input.inputdata[3*atno+0];
-    pos[i][1] = input.inputdata[3*atno+1];
-    pos[i][2] = input.inputdata[3*atno+2];
-  }
-  // This aligns the two strands if this is required
-  if( actiondata.align_strands ) {
-    Vector distance=input.pbc->distance( pos[6],pos[21] );
-    distance += pos[6] - pos[21];
-    //Vector origin_old, origin_new;
-    //origin_old=pos[21];
-    //origin_new=pos[6]+distance;
-    for(unsigned i=15; i<30; ++i) {
-      //pos[i]+=( origin_new - origin_old );
-      pos[i]+=distance;
+    for(unsigned i=0; i<actiondata.natoms; ++i) {
+      const unsigned atno = actiondata.colvar_atoms(task_index,i);
+      pos[i][0] = input.inputdata[3*atno+0];
+      pos[i][1] = input.inputdata[3*atno+1];
+      pos[i][2] = input.inputdata[3*atno+2];
     }
-  } else if( !actiondata.nopbc ) {
-    for(unsigned i=0; i<actiondata.natoms-1; ++i) {
-      const Vector & first (pos[i]);
-      Vector & second (pos[i+1]);
-      second=first+input.pbc->distance(first,second);
+    // This aligns the two strands if this is required
+    if( actiondata.align_strands ) {
+      Vector distance=input.pbc->distance( pos[6],pos[21] );
+      distance += pos[6] - pos[21];
+      //Vector origin_old, origin_new;
+      //origin_old=pos[21];
+      //origin_new=pos[6]+distance;
+      for(unsigned i=15; i<30; ++i) {
+        //pos[i]+=( origin_new - origin_old );
+        pos[i]+=distance;
+      }
+    } else if( !actiondata.nopbc ) {
+      for(unsigned i=0; i<actiondata.natoms-1; ++i) {
+        const Vector & first (pos[i]);
+        Vector & second (pos[i+1]);
+        second=first+input.pbc->distance(first,second);
+      }
     }
-  }
 
-  // Create a holder for the derivatives
-  const unsigned rs = actiondata.nstructures;
-  ColvarOutput rmsd_output( output.values,
-                            3*pos.size()+virialSize,
-                            output.derivatives.data() );
-  // And now calculate the DRMSD
-  for(unsigned i=0; i<rs; ++i) {
-    T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
+    // Create a holder for the derivatives
+    const unsigned rs = actiondata.nstructures;
+    ColvarOutput rmsd_output( output.values,
+                              3*pos.size()+virialSize,
+                              output.derivatives.data() );
+    // And now calculate the DRMSD
+    for(unsigned i=0; i<rs; ++i) {
+      T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
+    }
   }
 }
 
@@ -398,23 +403,26 @@ void SecondaryStructureBase<T,myPTM>::getForceIndices( std::size_t task_index,
     const T& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  for(unsigned i=0; i<input.ncomponents; ++i) {
-    std::size_t m = 0;
-    for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
-      std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
-      force_indices.indices[i][m] = base + 0;
-      ++m;
-      force_indices.indices[i][m] = base + 1;
-      ++m;
-      force_indices.indices[i][m] = base + 2;
-      ++m;
+  // Guarded for the same reason as performTask().
+  if constexpr ( !std::is_same_v<T,Empty> ) {
+    for(unsigned i=0; i<input.ncomponents; ++i) {
+      std::size_t m = 0;
+      for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {
+        std::size_t base = 3*actiondata.colvar_atoms[task_index][j];
+        force_indices.indices[i][m] = base + 0;
+        ++m;
+        force_indices.indices[i][m] = base + 1;
+        ++m;
+        force_indices.indices[i][m] = base + 2;
+        ++m;
+      }
+      for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
+        force_indices.indices[i][m] = n;
+        ++m;
+      }
+      force_indices.threadsafe_derivatives_end[i] = 0;
+      force_indices.tot_indices[i] = m;
     }
-    for(unsigned n=ntotal_force-virialSize; n<ntotal_force; ++n) {
-      force_indices.indices[i][m] = n;
-      ++m;
-    }
-    force_indices.threadsafe_derivatives_end[i] = 0;
-    force_indices.tot_indices[i] = m;
   }
 }
 

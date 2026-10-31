@@ -1,7 +1,7 @@
-[![Homepage](https://img.shields.io/badge/Home-plumed.org-green.svg)](http://www.plumed.org)
-[![Homepage](https://img.shields.io/badge/Google_group-plumed--users-green.svg)](http://groups.google.com/forum/#!forum/plumed-users)
+[![Homepage](https://img.shields.io/badge/Home-plumed.org-green.svg)](https://www.plumed.org)
+[![Google group](https://img.shields.io/badge/Google_group-plumed--users-green.svg)](https://groups.google.com/g/plumed-users)
 [![codecov](https://codecov.io/gh/plumed/plumed2/branch/master/graph/badge.svg)](https://codecov.io/gh/plumed/plumed2)
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
 [![MacPorts package](https://repology.org/badge/version-for-repo/macports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/plumed/badges/version.svg)](https://anaconda.org/conda-forge/plumed)
@@ -9,7 +9,7 @@
 [![DPorts package](https://repology.org/badge/version-for-repo/dports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Spack package](https://repology.org/badge/version-for-repo/spack/plumed.svg)](https://repology.org/project/plumed/versions)
-[![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
+[![Bluesky](https://img.shields.io/bluesky/followers/plumed.org?label=Follow)](https://bsky.app/profile/plumed.org)
 
 Branches and releases
 ---------------------
@@ -34,7 +34,7 @@ To report problems found on beta or official releases, use the normal
 [plumed-users@googlegroups.com](mailto:plumed-users@googlegroups.com)
 mailing list. Please state exactly which version you are using.
 To report problems found on `master` branch, use the
-[plumed2-git@googlegroups.com](plumed2-git@googlegroups.com) mailing list.
+[plumed2-git@googlegroups.com](mailto:plumed2-git@googlegroups.com) mailing list.
 This is also the correct place for discussions about new features etc.
 When reporting please provide the git hash (you can obtain it with `git rev-parse HEAD`).
 
@@ -48,11 +48,11 @@ Below you find the status on [GitHub Actions](https://github.com/plumed/plumed2/
 | master   | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2026 (expected) | / |
 | v2.10    | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.10)](https://github.com/plumed/plumed2/actions/workflows/ci.yml)| 2025 | yes |
 | v2.9     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.9)](https://github.com/plumed/plumed2/actions/workflows/ci.yml)   | 2023 | yes |
-| v2.8     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions) | 2022 | no |
-| v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions) | 2020 | no |
-| v2.6     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions) | 2019 | no |
-| v2.5     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions) | 2018 | no |
-| v2.4     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions) | 2017 | no |
+| v2.8     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2022 | no |
+| v2.7     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2020 | no |
+| v2.6     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2019 | no |
+| v2.5     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2018 | no |
+| v2.4     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2017 | no |
 | v2.3     | Not available | 2016 | no |
 | v2.2     | Not available | 2015 | no |
 | v2.1     | Not available | 2014 | no |
@@ -63,7 +63,9 @@ Content
 
 Here's a description of the content of each file and directory in the root PLUMED directory.
 
+    .ci              : helper scripts used by continuous integration
     CHANGES          : change log
+    CMakeLists.txt   : experimental CMake build for MSVC/Windows (not the official build system)
     COPYING.LESSER   : license
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
@@ -71,20 +73,27 @@ Here's a description of the content of each file and directory in the root PLUME
     README.md        : this file
     VERSION.txt      : version file
     astyle           : a local version of astyle, used to format code
+    cmake-msvc       : support files for the experimental CMake build
+    conda            : conda packaging scripts
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
     developer-doc    : developer documentation
     docker           : directory where Docker is generated
+    fortran          : Fortran interfaces
+    json             : tools to generate the JSON syntax file
     macports         : directory where Portfiles are generated
+    new-manual       : user manual (MkDocs)
     patches          : patch scripts
+    plugins          : optional plugins (e.g. pycv)
     python           : python stuff
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
+    ruff.toml        : configuration for the ruff Python linter
     scripts          : shell tools
     sourceme.sh.in   : template configuration script
     src              : source code
     test             : examples
-    user-doc         : user documentation
+    user-doc         : old tutorials and pages from the Doxygen manual, not part of the current manual
     vim              : directory where vim syntax is generated
 
 Required software
@@ -99,18 +108,18 @@ Required software:
 Suggested software (libraries are checked by `./configure` and enabled if available):
 
 * MPI library to run parallel simulations. It should be the same library used by your MD code.
-* Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
-* [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
-* [Zlib library](http://zlib.net/) to use compressed data files.
-* [Doxygen](http:://www.doxygen.org) to build user manual. Doxygen might need the following packages:
-  * Latex to build the pdf user manual.
-  * [Graphviz](http://www.graphviz.org) to show class hierarchy in
+* Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
+* [VMD molfile plugins](https://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
+* [Zlib library](https://zlib.net/) to use compressed data files.
+* [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
+* [Doxygen](https://www.doxygen.nl) to build the developer manual. Doxygen might need:
+  * [Graphviz](https://www.graphviz.org) to show class hierarchy in
     developer manual.
 
 Quick compilation instructions
 ------------------------------
 
-Extensive installation instructions are in the [user documentation](http://www.plumed.org/doc).
+Extensive installation instructions are in the [user documentation](https://www.plumed.org/doc).
 Quick instructions:
 
     ./configure --prefix=$HOME/opt
@@ -118,18 +127,18 @@ Quick instructions:
     make doc # optional
     make test # optional
 
-User documentation can be found at `user-doc/html/index.html`.
+User documentation can be found at `new-manual/site/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
-[Pre-compiled documentation](http://www.plumed.org/doc) is available online, so this is only required
+[Pre-compiled documentation](https://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
-we recommend installing PLUMED. 
+we recommend installing PLUMED.
 To install it in `$HOME/opt` (directory should be set during `./configure`):
 
     umask 022
     make install
-    
+
 Now you will be able to run plumed using e.g.
 
     plumed help

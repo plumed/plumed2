@@ -43,7 +43,7 @@ d^2 = (u-v)^T (u-v)
 $$
 
 The input below shows an example where this is used to calculate the Euclidean distance
-between the instaneous values of some torsional angles and some reference values
+between the instantaneous values of some torsional angles and some reference values
 for these torsion.  In this first example the input values are vectors:
 
 ```plumed
@@ -121,7 +121,7 @@ dd: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
 PRINT ARG=dd FILE=colvar
 ```
 
-This final example then computes three distances between three pairs of torsional angles and threee
+This final example then computes three distances between three pairs of torsional angles and three
 reference values for these three values.
 
 ```plumed
@@ -137,7 +137,7 @@ PRINT ARG=dd FILE=colvar
 
 !!! note "scalars must be specified in ARG2"
 
-    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    If you use a mixture of vectors are scalars when specifying the input to this action the
     vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
     as is done in the example inputs above.
 

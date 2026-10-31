@@ -37,7 +37,7 @@ private:
   const std::vector<double>& p;
 /// The direction of the vector we are minimising along
   const std::vector<double>& dir;
-/// Tempory vector that holds a point at which we want to calculate the energy
+/// Temporary vector that holds a point at which we want to calculate the energy
   std::vector<double> pt;
 /// Vector that holds the derivatives at the point at which we calculate the energy (these are not used)
   std::vector<double> fake_der;

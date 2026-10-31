@@ -24,7 +24,6 @@
 
 #include "Vector.h"
 #include "Tensor.h"
-#include "small_vector/small_vector.h"
 #include "View.h"
 #include "View2D.h"
 #include <vector>
@@ -50,11 +49,10 @@ distances. It stores privately information about reduced lattice vectors
 class Pbc {
 /// Type of box
   enum {unset,orthorombic,generic} type;
-/// This is the maximum expected size for general boxes.
-/// I found this empirically by manually modifying regtest basic/rt-make-1
-/// Since it uses randomly generated boxes it should be correct.
-/// In any case, this is just used as a hint for small_vector,
-/// which will then switch to heap allocations if more shifts are needed
+/// Maximum number of shifts to be tried for a given octant.
+/// This is an exact bound: buildShifts only keeps shifts whose nonzero
+/// components have the sign opposite to the octant, and with one or two
+/// nonzero components (out of three) there are 3+3=6 such shifts.
   static constexpr unsigned maxshiftsize=6;
 /// Box
   Tensor box;
@@ -69,17 +67,22 @@ class Pbc {
 /// List of shifts that should be attempted.
 /// Depending on the sign of the scaled coordinates representing
 /// a distance vector, a different set of shifts must be tried.
-  gch::small_vector<Vector,maxshiftsize> shifts[2][2][2];
-/// Alternative representation for orthorombic cells.
+/// Fixed-size arrays (rather than a container with a pointer to its data)
+/// are used so that a bitwise copy of the object, as done by OpenACC,
+/// is also valid on the device.
+  Vector shifts[2][2][2][maxshiftsize];
+/// Number of valid entries in each list of shifts
+  unsigned nShiftsPerOctant[2][2][2];
+/// Alternative representation for orthorhombic cells.
 /// Not really used, but could be used to optimize search in
-/// orthorombic cells.
+/// orthorhombic cells.
   Vector diag,hdiag,mdiag;
 /// Build list of shifts.
 /// This is expensive, and must be called only when box is
 /// reset. It allows building a minimal set of shifts
 /// depending on the sign of the scaled coordinates representing
 /// a distance vector.
-  void buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const;
+  void buildShifts();
 public:
 ///Helper function for moving the class to an openacc device
   void toACCDevice()const ;

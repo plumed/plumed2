@@ -157,6 +157,9 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
     type=nomask;
     log.printf("  setting all points in output mask to zero \n");
   } else if( stype=="stride" ) {
+    if( nzeros==0 ) {
+      error("NZEROS should be greater than zero");
+    }
     type=stride;
     log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
   } else if( stype=="random" ) {

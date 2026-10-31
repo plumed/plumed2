@@ -1,0 +1,14 @@
+# Continuation at step 300 of a run in which the grids were extended (written at step 300 in GS, GN, GP).
+# g: same input as the first run (initial range 0.40-0.41), restart from the extended grid GS:
+#    the grid in the file has a different range, on the same lattice
+# n: no initial range, restart from GN
+# p: sparse grid, restart from GP
+# h: restart from the hills (HH, same hills as the other files) on a large grid
+# The biases are the same, up to the precision of the grid files.
+RESTART
+d: DISTANCE ATOMS=5,17
+g: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HG GRID_MIN=0.40 GRID_MAX=0.41 GRID_SPACING=0.005 GRID_RFILE=GS
+n: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HN GRID_SPACING=0.005 GRID_RFILE=GN
+p: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HP GRID_MIN=0.40 GRID_MAX=0.41 GRID_SPACING=0.005 GRID_SPARSE GRID_RFILE=GP
+h: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HH GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.005
+PRINT ARG=d,g.bias,n.bias,p.bias,h.bias FILE=colvar FMT=%10.5f

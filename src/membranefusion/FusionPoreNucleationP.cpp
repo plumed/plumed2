@@ -275,7 +275,7 @@ void fusionPoreNucleationP::calculate() {
   ZlMemsin = ZlMemsin / UMEM.size();
   ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + M_PI) / (2.0 * M_PI);
 
-  // Z center of the boths membranes (upper and lower).
+  // Z center of the both membranes (upper and lower).
   double ZMems = (ZuMem + ZlMem) / 2.0;
 
   /**************************
@@ -683,6 +683,7 @@ void fusionPoreNucleationP::calculate() {
 
       ri = sqrt(pow(CylDistances[i][0], 2) + pow(CylDistances[i][1], 2));
       x = ri / RCYL[0];
+      fradial = 0.0;
       if (!((x <= -1.0 - HCH[0]) || (x >= 1.0 + HCH[0]))) {
         if (((-1.0 + HCH[0]) <= x) && (x <= (1.0 - HCH[0]))) {
           fradial = 1.0;

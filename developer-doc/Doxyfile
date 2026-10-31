@@ -857,7 +857,10 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */src/asmjit/*
+# asmjit is a third-party library: since the upgrade to AsmJit 1.9.0 (#1533) doxygen
+# generates html pages of 100-175 MB for its classes (class_builder.html, class_emitter.html, ...),
+# which cannot be pushed to GitHub (100 MB limit per file) and make the developer manual 1.3 GB
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

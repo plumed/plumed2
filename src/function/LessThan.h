@@ -62,8 +62,8 @@ void LessThan::registerKeywords(Keywords& keys) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.addFlag("SQUARED",false,"is the input quantity the square of the value that you would like to apply the switching function to");
   keys.setValueDescription("scalar/vector/matrix","a function that is one if the input is less than a threshold");
@@ -118,11 +118,14 @@ void LessThan::calc( const LessThan& func,
   double d;
   if( func.squared ) {
     funcout.values[0] = func.switchingFunction.calculateSqr( args[0], d );
+    if( !noderiv ) {
+      funcout.derivs[0][0] = d/2;
+    }
   } else {
     funcout.values[0] = func.switchingFunction.calculate( args[0], d );
-  }
-  if( !noderiv ) {
-    funcout.derivs[0][0] = args[0]*d;
+    if( !noderiv ) {
+      funcout.derivs[0][0] = args[0]*d;
+    }
   }
 }
 

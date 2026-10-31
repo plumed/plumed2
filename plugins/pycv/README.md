@@ -162,14 +162,16 @@ Nothe that if you use ATOMS and the NL keywords (GROUPA, GROUPB, PAIR, NLIST, NL
 ```python
 import plumedCommunications as PLMD
 
+
 def plumedInit(action: PLMD.PythonCVInterface):
-    action.data["count"]=0.0
+    action.data["count"] = 0.0
     return {"NOPBC": True, "Value": PLMD.defaults.COMPONENT_NODEV}
 
+
 def plumedCalculate(action: PLMD.PythonCVInterface):
-    #...something is defined...
+    # ...something is defined...
     if g(something):
-        action.data["example"]+=1.0
+        action.data["example"] += 1.0
     return f(something)
 ```
 
@@ -194,8 +196,9 @@ plumedInit = {
     }
 }
 
+
 def plumedCalculate(action: PLMD.PythonCVInterface):
-    #...complex calculation are called here...
+    # ...complex calculation are called here...
     return {
         "first": [resForFirst],
         "second": [resForSecond, derivativeForSecond, boxDerivativeForSecond],
@@ -245,7 +248,9 @@ PRINT FILE=colvar.out ARG=*
 **pycv.py**
 ```python
 import plumedCommunications as PLMD
-plumedInit={"Value":PLMD.defaults.COMPONENT_NODEV}
+
+plumedInit = {"Value": PLMD.defaults.COMPONENT_NODEV}
+
 
 def plumedCalculate(action: PLMD.PythonFunction):
     action.lognl("Hello, world!")
@@ -287,27 +292,29 @@ import jax.numpy as np
 from jax import grad, jit, vmap
 import plumedCommunications
 
-plumedInit={"Value": plumedCommunications.defaults.COMPONENT}
+plumedInit = {"Value": plumedCommunications.defaults.COMPONENT}
+
 
 # Implementation of the angle function. @jit really improves speed
 @jit
 def angle(x):
-    r1 = x[0,:]-x[1,:]
-    r2 = x[2,:]-x[1,:]
+    r1 = x[0, :] - x[1, :]
+    r2 = x[2, :] - x[1, :]
 
-    costheta = np.dot(r1,r2) / np.sqrt(np.dot(r1,r1) * np.dot(r2,r2))
+    costheta = np.dot(r1, r2) / np.sqrt(np.dot(r1, r1) * np.dot(r2, r2))
     # OR: costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
     theta = np.arccos(costheta)
     return theta
 
+
 # Use JAX to auto-gradient it
 grad_angle = jit(grad(angle))
 
+
 # The CV function actually called
 def cv1(action):
-    x=action.getPositions()
+    x = action.getPositions()
     return angle(x), grad_angle(x)
-
 ```
 
 ## Limitations

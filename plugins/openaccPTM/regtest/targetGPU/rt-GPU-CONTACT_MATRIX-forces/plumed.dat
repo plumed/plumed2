@@ -1,0 +1,20 @@
+LOAD FILE=../../../../plumedOpenACC.so
+# forces.reference must be generated with the CPU version (this input without USEGPU)
+
+# square matrix: every atom is both a row and a column
+cm: CONTACT_MATRIX GROUP=1-14 SWITCH={RATIONAL R_0=1.5 D_MAX=3.0} USEGPU
+cmcpu: CONTACT_MATRIX GROUP=1-14 SWITCH={RATIONAL R_0=1.5 D_MAX=3.0}
+# many rows and a single column, all rows add forces to the same atom
+cab: CONTACT_MATRIX GROUPA=2-14 GROUPB=1 SWITCH={RATIONAL R_0=1.5 D_MAX=3.0} USEGPU
+cabcpu: CONTACT_MATRIX GROUPA=2-14 GROUPB=1 SWITCH={RATIONAL R_0=1.5 D_MAX=3.0}
+
+s: SUM ARG=cm PERIODIC=NO
+scpu: SUM ARG=cmcpu PERIODIC=NO
+sab: SUM ARG=cab PERIODIC=NO
+sabcpu: SUM ARG=cabcpu PERIODIC=NO
+diff: CUSTOM ARG=s,scpu FUNC=x-y PERIODIC=NO
+diffab: CUSTOM ARG=sab,sabcpu FUNC=x-y PERIODIC=NO
+
+PRINT ARG=s,sab FILE=colvar FMT=%8.4f
+PRINT ARG=diff,diffab FILE=diff FMT=%8.4f
+BIASVALUE ARG=s,sab

@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 namespace bias {
@@ -52,7 +53,6 @@ void Walls::registerKeywords(Keywords& keys) {
   keys.needsAction("COMBINE");
   keys.needsAction("CUSTOM");
   keys.needsAction("SUM");
-  keys.needsAction("COMBINE");
   keys.needsAction("BIASVALUE");
 }
 
@@ -117,7 +117,26 @@ Walls::Walls(const ActionOptions&ao):
     } else {
       argn = args[i];
     }
-    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
+    // The wall acts on the value of the argument in its domain, without periodic images
+    // (see https://github.com/plumed/plumed2/issues/658). COMBINE cannot be used here
+    // because it applies periodic boundary conditions to the difference.
+    std::vector<Value*> argvals;
+    ActionWithArguments::interpretArgumentList( std::vector<std::string>(1,args[i]), plumed.getActionSet(), this, argvals );
+    for(const auto & v : argvals) {
+      if( v->isPeriodic() ) {
+        double min, max, atv;
+        v->getDomain( min, max );
+        Tools::convert( at[i], atv );
+        if( atv<min || atv>max ) {
+          error("the position of the wall (AT) for periodic argument " + v->getName() + " should be within its periodic domain");
+        }
+        log.printf("  WARNING: argument %s is periodic. The wall acts on its value in the domain [%f,%f]\n"
+                   "    without periodic images, so the bias is discontinuous at the boundary of the domain.\n"
+                   "    Make sure that the walls keep the argument far from it (e.g. use both an upper and a lower wall).\n",
+                   v->getName().c_str(), min, max );
+      }
+    }
+    readInputLine( getShortcutLabel() + "_cv_" + argn + ": CUSTOM PERIODIC=NO FUNC=x-(" + at[i] + ") ARG=" + args[i] );
     if( getName()=="UPPER_WALLS" ) {
       readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );

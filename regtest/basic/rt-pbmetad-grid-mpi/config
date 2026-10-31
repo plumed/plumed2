@@ -1,0 +1,7 @@
+type=driver
+mpiprocs=4
+# two MPI walkers with two processes each: all the processes extend their grids in the same way
+arg="--plumed plumed.dat --ixyz traj.xyz --timestep 0.002 --multi 2"
+extra_files="../rt-metad-diff-restart-mpi/traj.0.xyz ../rt-metad-diff-restart-mpi/traj.1.xyz"
+# this is to enforce two threads
+PLUMED_NUM_THREADS=2

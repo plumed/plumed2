@@ -41,6 +41,8 @@
 
 #include "plumedforceprovider.h"
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -74,7 +76,9 @@ namespace gmx
 
 PlumedForceProvider::~PlumedForceProvider() = default;
 PlumedForceProvider::PlumedForceProvider(const PlumedOptions& options)
-try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
+try : plumed_(std::make_unique<PLMD::Plumed>()),
+      replex_(options.replex_),
+      isVirtualSite_(options.isVirtualSite_)
 {
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
@@ -151,6 +155,11 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),replex_(options.replex_)
     plumed_->cmd("setTimestep", &options.simulationTimeStep_);
     plumed_->cmd("init", nullptr);
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
@@ -165,6 +174,11 @@ try
         checkpointRequested_ = 1;
     }
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
@@ -178,7 +192,12 @@ try
     // setup: these instructions in the original patch are BEFORE do_force()
     // now this is called within do_force(), but this does not impact the results
     const t_commrec* cr    = &(forceProviderInput.cr_);
-    long int         lstep = forceProviderInput.step_;
+    long int         lstep = prepareStepIsCalled_ ? currentStep_ : forceProviderInput.step_;
+    // With shell particles, relax_shell_flexcon() calls do_force() again on the same step (passing
+    // step 1): PLUMED then calculates its forces again, without updating (depositing, printing...).
+    // "Again" means since the last prepareStep(), which MD and reruns call before each step
+    repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
+    calculatedStep_ = lstep;
     plumed_->cmd("setStepLong", &lstep);
     if (haveDDAtomOrdering(*cr))
     {
@@ -205,7 +224,10 @@ try
     }
     preparedStep_.reset();
 
-    plumedWantsToStop_ = 0;
+    if (!repeatedCall_)
+    {
+        plumedWantsToStop_ = 0;
+    }
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
 
     if (!prepareStepIsCalled_)
@@ -233,17 +255,40 @@ try
     clear_mat(plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
 
-    plumed_->cmd("performCalc", nullptr);
+    plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
 
     checkReplicaExchangeBias();
 
     msmul(plumedVir_, 0.5, plumedVir_);
     forceProviderOutput->forceWithVirial_.addVirialContribution(plumedVir_);
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
+}
+
+bool PlumedForceProvider::usesVirtualSites()
+{
+    if (isVirtualSite_.empty())
+    {
+        return false;
+    }
+    /* PLUMED applies forces only on the atoms it uses. Their list is the same on all ranks,
+       so that all take the same decision. It is empty when PLUMED only biases the energy. */
+    int numAtoms = 0;
+    plumed_->cmd("createFullList", &numAtoms);
+    const int* atoms = nullptr;
+    plumed_->cmd("getFullList", &atoms);
+    const bool found =
+            std::any_of(atoms, atoms + numAtoms, [this](int atom) { return isVirtualSite_[atom]; });
+    plumed_->cmd("clearFullList", nullptr);
+    return found;
 }
 
 bool PlumedForceProvider::prepareStep(int64_t step, bool isCheckpointingStep)
@@ -256,6 +301,8 @@ try
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
     prepareStepIsCalled_ = true;
+    currentStep_         = step;
+    calculatedStep_.reset();
     if (plumedAPIversion_ > 3)
     {
         // Set on every step: PLUMED resets it only on the steps when some action is active
@@ -268,10 +315,20 @@ try
     preparedStep_ = step;
     return plumedNeedsEnergy_ != 0;
 }
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
+}
 catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was preparing the step\n:") + ex.what()));
+}
+
+bool PlumedForceProvider::requestsStop() const
+{
+    return plumedWantsToStop_ != 0;
 }
 
 void PlumedForceProvider::checkReplicaExchangeBias()
@@ -288,7 +345,7 @@ void PlumedForceProvider::checkReplicaExchangeBias()
     }
 }
 
-void PlumedForceProvider::applyAfterPotentialEnergy(bool          energyWasComputed,
+bool PlumedForceProvider::applyAfterPotentialEnergy(bool          energyWasComputed,
                                                     real*         potentialEnergy,
                                                     ArrayRef<RVec> force,
                                                     tensor        virial)
@@ -296,7 +353,7 @@ try
 {
     if (!plumedNeedsEnergy_)
     {
-        return;
+        return false;
     }
     if (!energyWasComputed || potentialEnergy == nullptr)
     {
@@ -316,11 +373,17 @@ try
     // Match the legacy GROMACS patch: pass 2*virial into PLUMED, then replace.
     msmul(virial, 2.0, plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
-    plumed_->cmd("performCalc", nullptr);
+    plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
 
     checkReplicaExchangeBias();
 
     msmul(plumedVir_, 0.5, virial);
+    return usesVirtualSites();
+}
+catch (const GromacsException&)
+{
+    // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
+    throw;
 }
 catch (const std::exception& ex)
 {

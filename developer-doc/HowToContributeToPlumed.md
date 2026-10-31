@@ -16,7 +16,7 @@ do to maintain PLUMED does not involve coding.  It involves ensuring that the co
 large test suite, ensuring that old features are not broken when new methods are added to the code,
 updating the manual, answering users questions on the mail list and organising PLUMED
 meetings and tutorials.  None of the core developers are employed to do these things full-time and as 
-such we would like to minimise the amount of time we spend on this sort of maintence.  As such it is
+such we would like to minimise the amount of time we spend on this sort of maintenance.  As such it is
 very important to us that we <b>ensure that we understand who wrote every file within PLUMED</b>.  There are
 two reasons why we believe this is important:
 
@@ -42,7 +42,7 @@ distinct groups.   There is a small group of core-developers who work to ensure 
 and a second larger group of contributors who work on new features.  We should be clear, however, that we do not
 make this distinction because we believe that what we (the core developers) do is more valuable than the work 
 of contributors.  The core developers are only called the core developers because they maintain the core parts of the code
-that are used in every PLUMED calculation.  This maintence work is not even software development per say as
+that are used in every PLUMED calculation.  This maintenance work is not even software development per se as
 <b>the core of the code has not changed much since the publication of the original paper.</b>  In fact we consider almost every
 addition we have made since publication and even some of the functionalities that were described in the original papers to 
 be extensions upon the original core code.

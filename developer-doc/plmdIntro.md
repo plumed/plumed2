@@ -252,7 +252,7 @@ PLMD::Action.  To make that clear it looks like the code can calculate the dista
 atoms without ever calling any of the routines from PLMD::colvar::Distance!      
 
 We can program in this way because we take advantage of dynamic polymorhpism.  If you look at the
-documenation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
+documentation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
 PLMD::Action as:
 
 \verbatim
@@ -585,23 +585,22 @@ PLUMED to run metadynamics with an distance and a torsion.
 
 The first step in ensuring that the code will compile even if your fancy library is not available is to thus 
 put all the calls to the functions in these libraries inside an ifdef block.  So for example here is a block
-of code that uses the boost graph library:
+of code that uses the boost serialization library:
 
 \verbatim
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/connected_components.hpp>
-#include <boost/graph/graph_utility.hpp>
+#ifdef __PLUMED_HAS_BOOST_SERIALIZATION
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #endif
 \endverbatim
 
-Here the `#ifdef __PLUMED_HAS_BOOST_GRAPH` ensures that this part of the code is only compiled when the 
-`-D__PLUMED_HAS_BOOST_GRAPH` flag is set at compile time.  
+Here the `#ifdef __PLUMED_HAS_BOOST_SERIALIZATION` ensures that this part of the code is only compiled when the 
+`-D__PLUMED_HAS_BOOST_SERIALIZATION` flag is set at compile time.  
 
-This example is a bit of a special case as the particular PLMD::Action I took this example from both when the 
-library is available and when it is not.  Obviously, if your PLMD::Action does not work without the library
-then you should place everything in the file inside the file (the definition of the class, the definitions of 
-the methods and the PLUMED_REGISTER_ACTION command) an ifdef block like the one shown above. 
+If your PLMD::Action can still work (perhaps with reduced functionality or a different algorithm) when the library is
+not available, you only need to guard the calls to the library with `#ifdef`/`#else` blocks.  Obviously, if your PLMD::Action
+does not work without the library then you should place everything in the file inside the file (the definition of the class, 
+the definitions of the methods and the PLUMED_REGISTER_ACTION command) an ifdef block like the one shown above. 
 
 Once you have written the code and surrounded all the calls to the library by an ifdef block like the one above
 you then need to adjust the configure scripts so that the user is provided with the option to compile the code
@@ -631,8 +630,8 @@ Makefiles are generated with the appropriate precompiler directives and lists of
 available a warning is issued to the user that tells him/her that PLUMED will not be compiled with the requested
 features.  The PLUMED_CHECK_PACKAGE command that we use to do this check here takes in four arguments.  The first
 is the name of one of the header files from the library that you are using.  You specify the location of this header
-file in the same way as you specified its location within the code.  So for example if you had #include <boost/graph/adjacency_list.hpp> 
-in your cpp code you would replace header_file.hpp in the above with boost/graph/adjacency_list.hpp.  The next 
+file in the same way as you specified its location within the code.  So for example if you had #include <boost/archive/text_oarchive.hpp> 
+in your cpp code you would replace header_file.hpp in the above with boost/archive/text_oarchive.hpp.  The next 
 argument to PLUMED_CHECK_PACKAGE is one of the functions that is within the library that you are trying to link.  If in doubt
 you can use the exit function here, which should work even if you are using template functions.  The third argument is the precompiler
 directive that appears around your library calling code and that we discussed earlier.  The last argument meanwhile is the name of the library - 

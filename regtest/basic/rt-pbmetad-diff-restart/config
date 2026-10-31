@@ -1,0 +1,4 @@
+type=driver
+# continuation of a run at step 300 (traj.xyz contains the frames from step 300 on)
+arg="--plumed plumed.dat --ixyz traj.xyz --timestep 0.002 --initial-step 300"
+extra_files="../rt-metad-diff-restart/traj.xyz"

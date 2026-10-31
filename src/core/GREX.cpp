@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GREX.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
+#include "DomainDecomposition.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
@@ -189,6 +191,14 @@ void GREX::savePositions() {
   plumedMain.resetActive(true);
   plumedMain.shareAll();
   plumedMain.waitData();
+  // shareAll() also starts the exchange of the domain decomposition when no action needs atoms on this
+  // step, but waitData() only completes the exchanges of the active inputs. Complete it here, or the
+  // next exchange waits for messages that were never received (with asynchronous sharing).
+  for(const auto & dd : plumedMain.getActionSet().select<DomainDecomposition*>()) {
+    if(!dd->isActive() && dd->hasBeenSet()) {
+      dd->wait();
+    }
+  }
   std::ostringstream o;
   plumedMain.writeBinary(o);
   buffer=o.str();
@@ -196,6 +206,19 @@ void GREX::savePositions() {
 
 void GREX::calculate() {
   unsigned nn=buffer.size();
+  // the buffers of the two replicas must have the same size, otherwise the partner
+  // state would be read from a truncated or partially filled buffer
+  unsigned partner_nn=nn;
+  if(intracomm.Get_rank()==0) {
+    Communicator::Request req=intercomm.Isend(nn,partner,1065);
+    intercomm.Recv(partner_nn,partner,1065);
+    req.wait();
+  }
+  intracomm.Bcast(partner_nn,0);
+  if(partner_nn!=nn) {
+    plumed_error()<<"GREX: the state of replica "<<partner<<" has a different size ("<<partner_nn<<" bytes instead of "<<nn
+                  <<"): replicas must use PLUMED inputs that define the same values";
+  }
   std::vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
@@ -204,7 +227,7 @@ void GREX::calculate() {
     req.wait();
   }
   intracomm.Bcast(rbuf,0);
-  std::istringstream i(std::string(&rbuf[0],rbuf.size()));
+  std::istringstream i(std::string(rbuf.data(),rbuf.size()));
   plumedMain.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();

@@ -138,6 +138,29 @@ public:
       ptr_{acc_malloc(size_ * sizeof(T))} {
     copyToDevice(data.data());
   }
+  /// owns device memory: copying would free it twice
+  memoryManager(const memoryManager&)=delete;
+  memoryManager& operator=(const memoryManager&)=delete;
+  memoryManager(memoryManager&& other) noexcept
+    : size_{other.size_},
+  stored_{other.stored_},
+  ptr_{other.ptr_} {
+    other.size_=0;
+    other.stored_=0;
+    other.ptr_=nullptr;
+  }
+  memoryManager& operator=(memoryManager&& other) noexcept {
+    if (this!=&other) {
+      acc_free(ptr_);
+      size_=other.size_;
+      stored_=other.stored_;
+      ptr_=other.ptr_;
+      other.size_=0;
+      other.stored_=0;
+      other.ptr_=nullptr;
+    }
+    return *this;
+  }
   /// frees the stored memory
   ~memoryManager() {
     acc_free(ptr_);
@@ -171,6 +194,20 @@ public:
   /// @brief copies the data from the device to the host
   void copyFromDevice(T *data) {
     acc_memcpy_from_device(data, ptr_, sizeof(T) * size_);
+  }
+  /// @brief Queues the copy of the data from the address to the device on the
+  /// given async queue: the host data must stay valid until the queue is waited
+  void copyToDeviceAsync(T const *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_to_device_async(ptr_, const_cast<T *>(data), sizeof(T) * size_, queue);
+    }
+  }
+  /// @brief Queues the copy of the data from the device to the host on the
+  /// given async queue: the host data is valid only after the queue is waited
+  void copyFromDeviceAsync(T *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_from_device_async(data, ptr_, sizeof(T) * size_, queue);
+    }
   }
 };
 #endif //__PLUMED_HAS_OPENACC

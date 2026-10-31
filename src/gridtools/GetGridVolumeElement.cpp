@@ -41,7 +41,7 @@ $$
 y = \frac{b-a}{n} \sum_{i=0}^{n} f\left( a + \frac{i(b-a)}{n} \right)
 $$
 
-This action gets the the value of $\frac{b-a}{n}$ so that we can multiply by this value by the sum in the expression
+This action gets the value of $\frac{b-a}{n}$ so that we can multiply by this value by the sum in the expression
 above, which is computed by a [SUM](SUM.md) action.
 
 */

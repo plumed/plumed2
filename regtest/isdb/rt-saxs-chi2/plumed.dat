@@ -1,0 +1,27 @@
+SAXS ...
+  LABEL=saxs
+  ATOMS=1
+  NOPBC
+  PARAMETERS1=1.0
+
+  QVALUE1=0.02  EXPINT1=1.10  EXPERR1=0.10
+  QVALUE2=0.05  EXPINT2=0.90  EXPERR2=0.20
+  QVALUE3=0.08  EXPINT3=1.05  EXPERR3=0.15
+
+  CHI2
+... SAXS
+
+SANS ...
+  LABEL=sans
+  ATOMS=1
+  NOPBC
+  PARAMETERS1=1.0
+
+  QVALUE1=0.02  EXPINT1=0.90  EXPERR1=0.08
+  QVALUE2=0.05  EXPINT2=1.20  EXPERR2=0.12
+  QVALUE3=0.08  EXPINT3=1.00  EXPERR3=0.20
+
+  CHI2
+... SANS
+
+PRINT ARG=saxs.q-0,saxs.q-1,saxs.q-2,saxs.chi2,saxs.chi2red,saxs.chi2scale,sans.q-0,sans.q-1,sans.q-2,sans.chi2,sans.chi2red,sans.chi2scale FILE=chi2.dat STRIDE=1 FMT=%16.10e

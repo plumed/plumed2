@@ -50,7 +50,7 @@ public:
   explicit Info(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
   std::string description()const override {
-    return "provide informations about plumed";
+    return "provide information about plumed";
   }
 };
 
@@ -110,7 +110,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
     if(ff) {
       std::fclose(ff);
     } else {
-      userdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
+      userdoc="https://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
     }
     std::fprintf(out,"%s\n",userdoc.c_str());
   }
@@ -121,7 +121,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
     if(ff) {
       std::fclose(ff);
     } else {
-      developerdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
+      developerdoc="https://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
     }
     std::fprintf(out,"%s\n",developerdoc.c_str());
   }

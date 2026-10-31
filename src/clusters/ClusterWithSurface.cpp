@@ -48,7 +48,7 @@ dfs: DFSCLUSTERING ARG=mat
 
 # Now identify the atoms that are within the largest cluster and the atoms that are within 0.38 nm of the
 # atoms that are within this cluster.  Determine how many atoms in total satisfy this condition and the
-# distance betwen the two atoms in this set that are farthest appart.
+# distance between the two atoms in this set that are farthest apart.
 clust2a: CLUSTER_WITHSURFACE ATOMS=1-1996 CLUSTERS=dfs CLUSTER=1 RCUT_SURF={CUBIC D_0=0.34 D_MAX=0.38}
 size2a: SUM ARG=clust2a PERIODIC=NO
 dia2a: CLUSTER_DIAMETER ATOMS=1-1996 ARG=clust2a
@@ -74,7 +74,7 @@ void ClusterWithSurface::registerKeywords(Keywords& keys) {
   keys.add("optional","RCUT_SURF","the cutoff to use for determining which atoms are connected to the surface of the cluster");
   keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the third largest and so on.");
   keys.setValueDescription("vector","a vector that is one for those atoms that are within the cluster or that are within a cetain cutoff of one of the atoms in the cluster and zero otherwise");
   keys.needsAction("CLUSTER_WEIGHTS");
   keys.needsAction("CONTACT_MATRIX");

@@ -31,7 +31,7 @@
 /*
 Path collective variables with a more flexible framework for the distance metric being used.
 
-The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
 path.  The progress along the path (s) is computed using:
 
@@ -168,7 +168,7 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 $$
 
 In these expressions the value of the property $X$ is given at the position of $N$ high-dimensional frames ($X_i$). The distances, $D_i$, between
-these frames and our instaneous position are then used to compute the value of the property at the instaneous position in the high dimensional space.
+these frames and our instantaneous position are then used to compute the value of the property at the instantaneous position in the high dimensional space.
 As illustrated in the examples below, this implementation of the property map allows you to calculate these distances in various different ways.
 This is as opposed to the alternative implementation [PROPERTYMAP](PROPERTYMAP.md) which is a bit faster but which only allows one to use the RMSD distance.
 
@@ -290,8 +290,7 @@ void Path::registerKeywords( Keywords& keys ) {
 void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
-           "metrics that are available in PLUMED can be found in the section of the manual on "
-           "\\ref dists");
+           "metrics that are available in PLUMED can be found in the documentation for RMSD");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.needsAction("DRMSD");
   keys.needsAction("RMSD");

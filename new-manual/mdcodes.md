@@ -24,11 +24,29 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 - [ASE](https://wiki.fysik.dtu.dk/ase/)
 - [GPUMD](https://gpumd.org/)
-- [GROMACS](https://www.gromacs.org/) as of version 2025, with limited support (no replica exchange, no [ENERGY](ENERGY.md) collective variable, no lambda dynamics).
+- [GROMACS](https://www.gromacs.org/) as of version 2025, with limited support (see the table below).
 
-We also provide patches for [namd](https://www.ks.uiuc.edu/Research/namd/) and [quantum espresso](https://www.quantum-espresso.org) as well as a 
-patch for [GROMACS](https://www.gromacs.org/) that you should use in place of the native implementation if you want to do replica exchange, 
-use the [ENERGY](ENERGY.md) collective variable or do lambda dynamics.
+We also provide patches for [namd](https://www.ks.uiuc.edu/Research/namd/), [quantum espresso](https://www.quantum-espresso.org) and
+[GROMACS](https://www.gromacs.org/) (`plumed patch --list-engines` lists them). The patches for GROMACS 2025 and 2026 add features to the
+PLUMED interface that GROMACS includes since version 2025, and the patch for GROMACS 2024 has some more:
+
+| Feature | GROMACS 2025 or later, without patches | patches for GROMACS 2025 and 2026 | patch for GROMACS 2024 |
+|:--|:--:|:--:|:--:|
+| biases on atoms, with domain decomposition and multiple time stepping | yes (1) | yes | yes |
+| [ENERGY](ENERGY.md) collective variable and biases on the energy | no | yes (2,3) | yes (3) |
+| multiple simulations that communicate through MPI (e.g. `WALKERS_MPI`) | no | yes | yes |
+| PLUMED checkpoint data written at the steps of the GROMACS checkpoints | no | yes (2) | yes |
+| PLUMED stopping the simulation (e.g. [COMMITTOR](COMMITTOR.md)) | no | yes | yes |
+| polarizable models with shells | no | yes (4) | no |
+| replica exchange with a PLUMED bias (`-replex`, `-hrex`) | no | no | yes |
+| lambda dynamics (expanded ensemble) | no | no | yes |
+
+Notes on the table:
+
+1. GROMACS 2026.0 to 2026.3 without patches stop at startup with more than one MPI rank.
+2. Not with the modular simulator of GROMACS, the default for md-vv: set `GMX_DISABLE_MODULAR_SIMULATOR=1`.
+3. With multiple time stepping, only on the steps when the slow forces are computed.
+4. With [ENERGY](ENERGY.md), PLUMED updates (e.g. deposits its bias) with the energy before the shells are relaxed.
 
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
 
@@ -59,7 +77,7 @@ automatically to take into account PLUMED!
 
 It is important to notice that the optimal setup to use GROMACS alone
 on the GPU or GROMACS + PLUMED can be different, try to change the number
-of MPI/OpenMP processes (\ref Openmp) used by GROMACS and PLUMED to find
+of MPI/OpenMP processes (see [OpenMP](actions.md#openmp)) used by GROMACS and PLUMED to find
 optimal performances. Remember that in GROMACS multiple MPI threads
 can use the same GPU:
 

@@ -37,6 +37,9 @@ class ActionToPutData :
 private:
 /// Are we not applying forces on this values
   bool noforce;
+/// Are the forces on this value added by another rank? The forces that the MD code
+/// holds in this value are still rescaled on this rank (e.g. its share of the virial)
+  bool forces_added_elsewhere;
 /// Is this quantity fixed
   bool fixed;
 /// Is this quantity passed from the domains
@@ -47,12 +50,14 @@ private:
   bool dataCanBeSet;
 /// The unit of the value that has been passed to plumed
   enum {n,e,l,m,q,t} unit;
-/// The unit to to use for the force
+/// The unit to use for the force
   enum {d,eng} funit;
 /// This holds the pointer that we getting data from
   std::unique_ptr<DataPassingObject> mydata;
 /// Convert the enum contaning the unit into the name of the unit
   std::string getUnitName() const ;
+/// Raise an error if forces have to be applied but the MD code did not pass the array to store them
+  void checkForcePointer() const ;
 protected:
 /// Setup the units of the input value
   void setUnit( const std::string& unitstr, const std::string& funitstr );

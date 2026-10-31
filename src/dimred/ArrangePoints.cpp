@@ -49,12 +49,12 @@ were input. The $w_{ij}$ is a weight that determines how important reproducing t
 The example input below illustrates how you can use ARRANGE_POINTS to project a high-dimensional representational of a trajectory in a low-dimensional space.
 
 ```plumed
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
-# Collect the calulated distances for later analysis
+# Collect the calculated distances for later analysis
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
@@ -112,12 +112,12 @@ $$
 The two functions $F$ and $f$ in this expression are usually different as you can see in the input below:
 
 ```plumed
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
-# Collect the calulated distances for later analysis
+# Collect the calculated distances for later analysis
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
@@ -148,15 +148,15 @@ $$
 \chi(\{x_k\}) = \sum_{i=2}^N \sum_{j=1}^i \sum_{n=1}^M w_{nij} [ F_n[D(X_i,X_j)] - f_n[d(x_i,x_j)] ]^2
 $$
 
-The input below shows how this can be implemted within PLUMED:
+The input below shows how this can be implemented within PLUMED:
 
 ```plumed
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
-# Collect the calulated distances for later analysis
+# Collect the calculated distances for later analysis
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
@@ -199,12 +199,12 @@ wish you can change the algorithm used to optimize the sketch-map function.  For
 [smacof](https://en.wikipedia.org/wiki/Stress_majorization) algorithm is used in place of conjugate gradients.
 
 ```plumed
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
-# Collect the calulated distances for later analysis
+# Collect the calculated distances for later analysis
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
@@ -228,12 +228,12 @@ Alternatively, the following example uses a combination of conjugate gradients a
 stress function
 
 ```plumed
-# Calcuate the instantaneous values of the three distances
+# Calculate the instantaneous values of the three distances
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 d3: DISTANCE ATOMS=5,6
 
-# Collect the calulated distances for later analysis
+# Collect the calculated distances for later analysis
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ff_weights: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 
@@ -358,7 +358,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
         error("problem reading switching function description " + errors);
       }
     }
-    log.printf("  %sth term seeks to match tranformed distances with those in matrix %s \n", inum.c_str(), target[0]->getName().c_str() );
+    log.printf("  %sth term seeks to match transformed distances with those in matrix %s \n", inum.c_str(), target[0]->getName().c_str() );
     log.printf("  in %sth term distances are transformed by 1-switching function with r_0=%s \n", inum.c_str(), switchingFunction[i-1].description().c_str() );
     log.printf("  in %sth term weights of matrix elements in stress function are given by %s \n", inum.c_str(), weights[0]->getName().c_str() );
   }
@@ -380,15 +380,15 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       error("interpolation only works in two dimensions");
     }
     log.printf("  doing %u cycles of global optimization sweeps\n",ncycles);
-    log.printf("  using coarse grid of points that is %u",npoints[0]);
+    log.printf("  using coarse grid of points that is %zu",npoints[0]);
     for(unsigned j=1; j<npoints.size(); ++j) {
-      log.printf(" by %u",npoints[j]);
+      log.printf(" by %zu",npoints[j]);
     }
     log.printf("\n  grid is %f times larger than the difference between the position of the minimum and maximum projection \n",gbuf);
     if( nfgrid[0]>0 ) {
-      log.printf("  interpolating stress onto grid of points that is %u",nfgrid[0]);
+      log.printf("  interpolating stress onto grid of points that is %zu",nfgrid[0]);
       for(unsigned j=1; j<nfgrid.size(); ++j) {
-        log.printf(" by %u",nfgrid[j]);
+        log.printf(" by %zu",nfgrid[j]);
       }
       log.printf("\n");
     }
@@ -397,7 +397,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
     if( dist_target<0 ) {
       error("one of targets must be distances in order to use smacof");
     }
-    log.printf("  minimising stress fucntion using smacof\n");
+    log.printf("  minimising stress function using smacof\n");
     parse("SMACTOL",smacof_tol);
     parse("SMACREG",smacof_reg);
     log.printf("  tolerance for smacof algorithms equals %f \n", smacof_tol);

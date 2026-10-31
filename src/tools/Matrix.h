@@ -72,9 +72,11 @@ class Matrix:
   template <typename U> friend void matrixOut( Log&, const Matrix<U>& );
   /// Diagonalize a symmetric matrix - returns zero if diagonalization worked
   template <typename U> friend int diagMat( const Matrix<U>&, std::vector<U>&, Matrix<U>& );
+  /// Diagonalize a symmetric matrix computing only the eigenpairs from first to last (0-based, ascending eigenvalues) - returns zero if diagonalization worked
+  template <typename U> friend int diagMatRange( const Matrix<U>&, unsigned, unsigned, std::vector<U>&, Matrix<U>& );
   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
   template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<U>& );
-  /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
+  /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if successful
   template <typename U> friend int logdet( const Matrix<U>&, U& );
   /// Invert a matrix (works for both symmetric and asymmetric matrices) - returns zero if sucesfull
   template <typename U> friend int Invert( const Matrix<U>&, Matrix<U>& );
@@ -248,11 +250,22 @@ template <typename T> void mult( const Matrix<T>& A, const Matrix<T>& B, Matrix<
     C.resize( A.rw, B.cl );
   }
   C=static_cast<T>( 0 );
-  for(unsigned i=0; i<A.rw; ++i)
-    for(unsigned j=0; j<B.cl; ++j)
-      for (unsigned k=0; k<A.cl; ++k) {
-        C(i,j)+=A(i,k)*B(k,j);
+  // i-k-j loop order: the innermost loop runs over contiguous elements of B and C,
+  // so it is cache friendly and can be vectorized. For each element of C the
+  // products are summed in the same order as with the i-j-k loop order.
+  const T* a=A.data.data();
+  const T* b=B.data.data();
+  T* c=C.data.data();
+  for(unsigned i=0; i<A.rw; ++i) {
+    T* ci=c+i*B.cl;
+    for(unsigned k=0; k<A.cl; ++k) {
+      const T aik=a[i*A.cl+k];
+      const T* bk=b+k*B.cl;
+      for(unsigned j=0; j<B.cl; ++j) {
+        ci[j]+=aik*bk[j];
       }
+    }
+  }
 }
 
 template <typename T> void mult( const Matrix<T>& A, const std::vector<T>& B, std::vector<T>& C) {
@@ -277,8 +290,9 @@ template <typename T> void mult( const std::vector<T>& A, const Matrix<T>& B, st
   for(unsigned i=0; i<B.cl; ++i) {
     C[i]=static_cast<T>( 0 );
   }
-  for(unsigned i=0; i<B.cl; ++i)
-    for(unsigned k=0; k<B.rw; ++k) {
+  // loop on the rows of B in the outer loop, so that the inner loop is on contiguous elements
+  for(unsigned k=0; k<B.rw; ++k)
+    for(unsigned i=0; i<B.cl; ++i) {
       C[i]+=A[k]*B(k,i);
     }
 }
@@ -310,11 +324,108 @@ template <typename T> void matrixOut( Log& ostr, const Matrix<T>& mat) {
   return;
 }
 
-template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
+/// Cholesky factorization A=L*L^T of a symmetric positive definite n x n matrix.
+/// Only the upper triangle of A is read (as done by diagMat). L is returned as a lower
+/// triangular matrix stored row by row in a vector of size n*n.
+/// Returns false if A is not positive definite (or contains NaNs).
+template <typename T> bool choleskyFactorization( const Matrix<T>& A, std::vector<T>& L ) {
+  const unsigned n=A.nrows();
+  plumed_assert( A.ncols()==n );
+  // Right-looking factorization A=U^T*U working on the rows of the upper triangle,
+  // so that the innermost loop is a vectorizable update of contiguous elements
+  std::vector<T> U(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned j=0; j<n; ++j)
+    for(unsigned i=j; i<n; ++i) {
+      U[static_cast<std::size_t>(j)*n+i]=A(j,i);
+    }
+  for(unsigned j=0; j<n; ++j) {
+    T* Uj=U.data()+static_cast<std::size_t>(j)*n;
+    if( !(Uj[j]>0) ) {
+      return false;
+    }
+    Uj[j]=std::sqrt(Uj[j]);
+    const T invd=static_cast<T>(1)/Uj[j];
+    for(unsigned i=j+1; i<n; ++i) {
+      Uj[i]*=invd;
+    }
+    for(unsigned i=j+1; i<n; ++i) {
+      const T uji=Uj[i];
+      T* Ui=U.data()+static_cast<std::size_t>(i)*n;
+      for(unsigned k=i; k<n; ++k) {
+        Ui[k]-=uji*Uj[k];
+      }
+    }
+  }
+  L.assign(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned i=0; i<n; ++i)
+    for(unsigned j=0; j<=i; ++j) {
+      L[static_cast<std::size_t>(i)*n+j]=U[static_cast<std::size_t>(j)*n+i];
+    }
+  return true;
+}
+
+/// Inverse of a symmetric positive definite matrix from its Cholesky factorization.
+/// Returns false (and leaves inverse untouched) if A is not positive definite.
+template <typename T> bool choleskyInvert( const Matrix<T>& A, Matrix<T>& inverse ) {
+  const unsigned n=A.nrows();
+  std::vector<T> L;
+  if( !choleskyFactorization( A, L ) ) {
+    return false;
+  }
+  // Compute M=L^{-1} (lower triangular) row by row: M_i = (e_i - sum_{k<i} L_ik M_k) / L_ii
+  std::vector<T> M(static_cast<std::size_t>(n)*n,static_cast<T>(0));
+  for(unsigned i=0; i<n; ++i) {
+    const T* Li=L.data()+static_cast<std::size_t>(i)*n;
+    T* Mi=M.data()+static_cast<std::size_t>(i)*n;
+    Mi[i]=static_cast<T>(1);
+    for(unsigned k=0; k<i; ++k) {
+      const T lik=Li[k];
+      const T* Mk=M.data()+static_cast<std::size_t>(k)*n;
+      for(unsigned j=0; j<=k; ++j) {
+        Mi[j]-=lik*Mk[j];
+      }
+    }
+    const T invd=static_cast<T>(1)/Li[i];
+    for(unsigned j=0; j<=i; ++j) {
+      Mi[j]*=invd;
+    }
+  }
+  // A^{-1} = M^T M = sum_k (row k of M)^T (row k of M); compute the lower triangle
+  if( inverse.nrows()!=n || inverse.ncols()!=n ) {
+    inverse.resize(n,n);
+  }
+  inverse=static_cast<T>(0);
+  for(unsigned k=0; k<n; ++k) {
+    const T* Mk=M.data()+static_cast<std::size_t>(k)*n;
+    for(unsigned p=0; p<=k; ++p) {
+      const T mkp=Mk[p];
+      for(unsigned q=0; q<=p; ++q) {
+        inverse(p,q)+=mkp*Mk[q];
+      }
+    }
+  }
+  for(unsigned p=0; p<n; ++p)
+    for(unsigned q=0; q<p; ++q) {
+      inverse(q,p)=inverse(p,q);
+    }
+  return true;
+}
+
+template <typename T> int diagMatRange( const Matrix<T>& A, unsigned first, unsigned last, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
 
   // Check matrix is square and symmetric
   plumed_assert( A.rw==A.cl );
   plumed_assert( A.isSymmetric()==1 );
+  if( eigenvals.size()!=A.cl ) {
+    eigenvals.resize( A.cl );
+  }
+  if( eigenvecs.rw!=A.rw || eigenvecs.cl!=A.cl ) {
+    eigenvecs.resize( A.rw, A.cl );
+  }
+  if( A.cl==0 ) {
+    return 0;
+  }
+  plumed_assert( first<=last && last<A.cl );
   std::vector<T> da(A.sz);
   unsigned k=0;
   std::vector<T> evals(A.cl);
@@ -329,18 +440,29 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   int liwork=-1;
   int m;
   int info=0;
-  int one=1;
+#ifdef __PLUMED_HAS_EXTERNAL_LAPACK
+  const bool partial=true;
+#else
+  // The internal dsyevr reads out of bounds when only a subset of the eigenpairs is
+  // requested, so all of them are computed and then the requested ones are copied
+  const bool partial=false;
+#endif
+  // dsyevr numbers the eigenvalues from 1, in ascending order
+  const unsigned offset=( partial ? first : 0 );
+  int il=offset+1;
+  int iu=( partial ? last+1 : A.cl );
+  const unsigned nev=iu-il+1;
   std::vector<T> work(A.cl);
   std::vector<int> iwork(A.cl);
   T vl, vu, abstol=0.0;
-  std::vector<int> isup(2*A.cl);
-  std::vector<T> evecs(A.sz);
+  std::vector<int> isup(2*nev);
+  std::vector<T> evecs(static_cast<std::size_t>(A.cl)*nev);
   if constexpr (std::is_same_v<T,double>) {
-    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else {
@@ -357,11 +479,11 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   work.resize(lwork);
 
   if constexpr (std::is_same_v<T,double>) {
-    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+    plumed_lapack_ssyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &il, &iu,
                          &abstol, &m, evals.data(), evecs.data(), &n,
                          isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   } else {
@@ -371,15 +493,9 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
     return info;
   }
 
-  if( eigenvals.size()!=A.cl ) {
-    eigenvals.resize( A.cl );
-  }
-  if( eigenvecs.rw!=A.rw || eigenvecs.cl!=A.cl ) {
-    eigenvecs.resize( A.rw, A.cl );
-  }
-  k=0;
-  for(unsigned i=0; i<A.cl; ++i) {
-    eigenvals[i]=evals[i];
+  k=(first-offset)*A.rw;
+  for(unsigned i=first; i<=last; ++i) {
+    eigenvals[i]=evals[i-offset];
     // N.B. For ease of producing projectors we store the eigenvectors
     // ROW-WISE in the eigenvectors matrix.  The first index is the
     // eigenvector number and the second the component
@@ -392,7 +508,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
-  for(int i=0; i<n; ++i) {
+  for(unsigned i=first; i<=last; ++i) {
     int j;
     for(j=0; j<n; j++)
       if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) {
@@ -407,7 +523,24 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals
   return 0;
 }
 
+template <typename T> int diagMat( const Matrix<T>& A, std::vector<T>& eigenvals, Matrix<T>& eigenvecs ) {
+  if( A.cl==0 ) {
+    return diagMatRange( A, 0, 0, eigenvals, eigenvecs );
+  }
+  return diagMatRange( A, 0, A.cl-1, eigenvals, eigenvecs );
+}
+
 template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinverse ) {
+  const unsigned nrows=A.rw, ncols=A.cl;
+  const unsigned nsv=std::min(nrows,ncols);
+  if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) {
+    pseudoinverse.resize( ncols, nrows );
+  }
+  pseudoinverse=static_cast<T>( 0 );
+  if( nsv==0 ) {
+    return 0;
+  }
+
   std::vector<T> da(A.sz);
   unsigned k=0;
   // Transfer the matrix to the local array
@@ -416,31 +549,28 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
       da[k++]=static_cast<T>( A(j,i) );
     }
 
-  int nsv;
   int info=0;
-  int nrows=A.rw, ncols=A.cl;
-  if(A.rw>A.cl) {
-    nsv=A.cl;
-  } else {
-    nsv=A.rw;
-  }
+  int nr=nrows, nc=ncols;
 
-  // Create some containers for stuff from single value decomposition
+  // Create some containers for stuff from the singular value decomposition A=U*S*VT
+  // (U is nrows x nrows and VT is ncols x ncols, both stored column by column).
+  // The thin decomposition (JOBZ='S') would be enough, but the internal dgesdd
+  // writes out of bounds with JOBZ='S', so the full one is used.
   std::vector<T> S(nsv);
-  std::vector<T> U(nrows*nrows);
-  std::vector<T> VT(ncols*ncols);
+  std::vector<T> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<T> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<T> work(1);
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_dgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_sgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -455,12 +585,12 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
 
   // This does the singular value decomposition
   if constexpr (std::is_same_v<T,double> ) {
-    plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_dgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else if constexpr (std::is_same_v<T,float>) {
-    plumed_lapack_sgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(),
-                          U.data(), &nrows, VT.data(), &ncols, work.data(),
+    plumed_lapack_sgesdd( "A", &nr, &nc, da.data(), &nr, S.data(),
+                          U.data(), &nr, VT.data(), &nc, work.data(),
                           &lwork, iwork.data(), &info );
   } else {
     static_assert(std::is_same_v<T,double> || std::is_same_v<T,float>, "pseudoInvert works only for float and double");
@@ -472,46 +602,28 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
   T tol;
   tol=S[0];
-  for(int i=1; i<nsv; ++i) {
+  for(unsigned i=1; i<nsv; ++i) {
     if( S[i]>tol ) {
       tol=S[i];
     }
   }
   tol*=nsv*epsilon;
 
-  // Get the inverses of the singlular values
-  Matrix<T> Si( ncols, nrows );
-  Si=0.0;
-  for(int i=0; i<nsv; ++i) {
-    if( S[i]>tol ) {
-      Si(i,i)=1./S[i];
-    } else {
-      Si(i,i)=0.0;
+  // pseudoinverse = V * S^{-1} * U^T = sum_k (column k of V) (column k of U)^T / S_k,
+  // summing only over the singular values larger than the tolerance
+  for(unsigned isv=0; isv<nsv; ++isv) {
+    if( !(S[isv]>tol) ) {
+      continue;
+    }
+    const T inv=static_cast<T>(1)/S[isv];
+    const T* Uk=U.data()+static_cast<std::size_t>(isv)*nrows;
+    for(unsigned i=0; i<ncols; ++i) {
+      const T a=inv*VT[isv+static_cast<std::size_t>(i)*ncols];
+      for(unsigned j=0; j<nrows; ++j) {
+        pseudoinverse(i,j)+=a*Uk[j];
+      }
     }
   }
-
-  // Now extract matrices for pseudoinverse
-  Matrix<T> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows );
-  k=0;
-  for(int i=0; i<nrows; ++i) {
-    for(int j=0; j<nrows; ++j) {
-      UT(i,j)=U[k++];
-    }
-  }
-  k=0;
-  for(int i=0; i<ncols; ++i) {
-    for(int j=0; j<ncols; ++j) {
-      V(i,j)=VT[k++];
-    }
-  }
-
-  // And do matrix algebra to construct the pseudoinverse
-  if( pseudoinverse.rw!=static_cast<unsigned>(ncols)
-      || pseudoinverse.cl!=static_cast<unsigned>(nrows) ) {
-    pseudoinverse.resize( ncols, nrows );
-  }
-  mult( V, Si, tmp );
-  mult( tmp, UT, pseudoinverse );
 
   return 0;
 }
@@ -519,6 +631,11 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<T>& pseudoinv
 template <typename T> int Invert( const Matrix<T>& A, Matrix<T>& inverse ) {
 
   if( A.isSymmetric()==1 ) {
+    // Symmetric positive definite matrices (e.g. covariance and metric matrices) are inverted
+    // with a Cholesky factorization, which is several times faster than diagonalizing them.
+    if( choleskyInvert( A, inverse ) ) {
+      return 0;
+    }
     // GAT -- I only ever use symmetric matrices so I can invert them like this.
     // I choose to do this as I have had problems with the more general way of doing this that
     // is implemented below.
@@ -650,6 +767,18 @@ template <typename T> void chol_elsolve( const Matrix<T>& M, const std::vector<T
 template <typename T> int logdet( const Matrix<T>& M, T& ldet ) {
   // Check matrix is square and symmetric
   plumed_assert( M.rw==M.cl || M.isSymmetric() );
+
+  // For a positive definite matrix, log(det(M)) = 2 sum_i log(L_ii) with M=L*L^T
+  {
+    std::vector<T> L;
+    if( choleskyFactorization( M, L ) ) {
+      ldet=0;
+      for(unsigned i=0; i<M.rw; ++i) {
+        ldet+=2*std::log(L[static_cast<std::size_t>(i)*M.rw+i]);
+      }
+      return 0;
+    }
+  }
 
   std::vector<T> da(M.sz);
   unsigned k=0;

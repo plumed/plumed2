@@ -126,6 +126,17 @@ int main(){
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100");
+// PBMETAD needs the temperature
+  test_line(ofs,plumed,"PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 HEIGHT=1");
+// the arguments of a PBMETAD family must have the same periodicity
+  test_line(ofs,plumed,"PBMETAD ARG=d,t PF0=d,t PACE=1 SIGMA=1 HEIGHT=1 TEMP=300");
+// invalid values
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=0 HEIGHT=1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 SIGMA_MIN=0.1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=0 WALKERS_RSTRIDE=0");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=-1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 GRID_WSTRIDE=10");
+  test_line(ofs,plumed,"PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 TAU=-1 BIASFACTOR=5 TEMP=300");
 
 // these should not fail
   plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");

@@ -162,10 +162,10 @@ public:
 /// Verify if a key is present in the register, only considering the default image
   bool check(const std::string & key) const;
 
-/// Return the content associated to a key in the register, accessing to registerd images
+/// Return the content associated to a key in the register, accessing to registered images
   const Content & get(const std::vector<void*> & images,const std::string & key) const;
 
-/// Return the full path associated to a key in the register, accessing to registerd images
+/// Return the full path associated to a key in the register, accessing to registered images
   const std::string & getFullPath(const std::vector<void*> & images,const std::string & key) const;
 
 /// Return the content associated to a key in the register, only considering the default image

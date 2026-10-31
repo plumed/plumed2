@@ -28,15 +28,15 @@
 namespace PLMD {
 
 Pbc::Pbc():
-  type(unset) {
+  type(unset),
+  nShiftsPerOctant{} {
   box.zero();
   invBox.zero();
 }
 
 void Pbc::toACCDevice()const  {
-  if(type!=unset && type!=orthorombic) {
-    plumed_merror("Current openACC implementation only works with unset or orthorombic pbcs");
-  }
+  // all the data (including the reduced box and the shifts used for generic
+  // boxes) is stored in fixed-size members, so copying the object is enough
 #pragma acc enter data copyin(this[0:1], type)
   box.toACCDevice();
   invBox.toACCDevice();
@@ -56,14 +56,14 @@ void Pbc::removeFromACCDevice() const {
 //   invReduced(other.invReduced)
 // {}
 
-void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> newshifts[2][2][2])const {
+void Pbc::buildShifts() {
   const double small=1e-28;
 
 // clear all shifts
   for(int i=0; i<2; i++)
     for(int j=0; j<2; j++)
       for(int k=0; k<2; k++) {
-        newshifts[i][j][k].clear();
+        nShiftsPerOctant[i][j][k]=0;
       }
 
 // enumerate all possible shifts
@@ -129,7 +129,8 @@ void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> newshifts[2][2][2])
               }
 
 // if we arrive to this point, shift is eligible and is added to the list
-              newshifts[i][j][k].push_back(matmul(transpose(reduced),dshift));
+              plumed_assert(nShiftsPerOctant[i][j][k]<maxshiftsize) << "too many shifts for a generic box";
+              shifts[i][j][k][nShiftsPerOctant[i][j][k]++]=matmul(transpose(reduced),dshift);
             }
       }
 }
@@ -206,7 +207,7 @@ void Pbc::setBox(const Tensor&b) {
     reduced=box;
     LatticeReduction::reduce(reduced);
     invReduced=inverse(reduced);
-    buildShifts(shifts);
+    buildShifts();
   }
 
 }
@@ -252,9 +253,16 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       }
     }
 #else
+    // Keep invariant box values independent of writes through the distance view.
+    const Vector inverseDiagonal(invBox(0,0),invBox(1,1),invBox(2,2));
+    const Vector diagonal(box(0,0),box(1,1),box(2,2));
+    // VectorView has exactly three components per row. Express the fixed
+    // stride directly so the compiler can prove that rows do not overlap.
+    double* const values=dlist.data();
     for(unsigned k=0; k<max_index; ++k) {
       for(int i=0; i<3; i++) {
-        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+        double& value=values[std::size_t(k)*3+i];
+        value=Tools::pbc(value*inverseDiagonal[i])*diagonal[i];
       }
     }
 #endif
@@ -262,7 +270,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
     for(unsigned k=0; k<max_index; ++k) {
       //Inlining by hand this part of function from distance speeds up by about 20-30%
       //against the previos version, and 60-80% agains this version non inlined.
-      //I do not think is the `if(nshifts) *nshifts+=myshifts.size();`,
+      //I do not think is the `if(nshifts) *nshifts+=nmyshifts;`,
       //but that the compiler now see how we are juggling with the memory and it
       //does its magic
 
@@ -277,11 +285,13 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
         // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+        const Vector* myshifts=shifts[o0][o1][o2];
+        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
         Vector reference = best;
         double lbest(modulo2(best));
         // loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); ++i) {
+        for(unsigned i=0; i<nmyshifts; ++i) {
           Vector trial=reference+myshifts[i];
           double ltrial=modulo2(trial);
           if(ltrial<lbest) {
@@ -335,14 +345,16 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
 // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
 // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+        const Vector* myshifts=shifts[o0][o1][o2];
+        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
         Vector best(d);
         double lbest(modulo2(best));
 // loop over possible shifts:
         if(nshifts) {
-          *nshifts+=myshifts.size();
+          *nshifts+=nmyshifts;
         }
-        for(unsigned i=0; i<myshifts.size(); i++) {
+        for(unsigned i=0; i<nmyshifts; i++) {
           Vector trial=d+myshifts[i];
           double ltrial=modulo2(trial);
           if(ltrial<lbest) {
@@ -394,11 +406,13 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
 // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
 // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+        const Vector* myshifts=shifts[o0][o1][o2];
+        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
         Vector best(d);
         double lbest(modulo2(best));
 // loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); i++) {
+        for(unsigned i=0; i<nmyshifts; i++) {
           Vector trial=d+myshifts[i];
           double ltrial=modulo2(trial);
           if(ltrial<lbest) {
@@ -449,11 +463,13 @@ Vector3f Pbc::distance(const Vector3f&v1,const Vector3f&v2)const {
 // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
 // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+        const Vector* myshifts=shifts[o0][o1][o2];
+        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
         Vector3f best(d);
         double lbest(modulo2(best));
 // loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); i++) {
+        for(unsigned i=0; i<nmyshifts; i++) {
           Vector3f trial=sumT(d,myshifts[i]);
           double ltrial=modulo2(trial);
           if(ltrial<lbest) {

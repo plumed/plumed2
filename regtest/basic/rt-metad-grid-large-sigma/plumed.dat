@@ -1,0 +1,10 @@
+# Gaussians whose support is larger than the periodic domain:
+# the bias on the grid should match the bias computed without grid
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+g: METAD ARG=phi,psi SIGMA=1.5,0.2 HEIGHT=1.0 PACE=5 GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_SPACING=0.05,0.05 FILE=HG FMT=%14.6f
+n: METAD ARG=phi,psi SIGMA=1.5,0.2 HEIGHT=1.0 PACE=5 FILE=HN FMT=%14.6f
+
+PRINT ARG=phi,psi,g.bias,n.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,psi STRIDE=2 FILE=forces FMT=%10.5f
