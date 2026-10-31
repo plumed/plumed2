@@ -140,7 +140,11 @@ class FuncPathMSD : public Function {
   double neigh_stride;
   std::vector< std::pair<Value *,double> > neighpair;
   std::map<Value *,double > indexmap; // use double to allow isomaps
+/// the index (as in indexmap) of each element of neighpair, so the map is not searched at every step
+  std::vector<double> neighindex;
   std::vector <Value*> allArguments;
+/// rebuild neighindex after neighpair has changed
+  void updateNeighIndex();
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // this below is useful when one wants to sort a vector of double and have back the order
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -208,9 +212,16 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   parse("NEIGH_STRIDE",neigh_stride);
   checkRead();
   log.printf("  lambda is %f\n",lambda);
+  if( !(lambda>0) ) {
+    error("LAMBDA should be positive");
+  }
+  if( neigh_size>0 && !(neigh_stride>0) ) {
+    error("with NEIGH_SIZE you should also give a positive NEIGH_STRIDE");
+  }
   // list the action involved and check the type
   std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-  if(myname!="RMSD_SCALAR"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") {
+  // DISTANCE is a shortcut: the scalar distance is computed by DISTANCE_SCALAR
+  if(myname!="RMSD_SCALAR"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="DISTANCE_SCALAR"&&myname!="PIV") {
     error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
   }
   for(unsigned i=1; i<getNumberOfArguments(); i++) {
@@ -221,7 +232,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   }
   log.printf("  Consistency check completed! Your path cvs look good!\n");
   // do some neighbor printout
-  if(neigh_stride>0. || neigh_size>0) {
+  if(neigh_size>0) {
     if(neigh_size>static_cast<int>(getNumberOfArguments())) {
       log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
       neigh_size=getNumberOfArguments();
@@ -249,9 +260,15 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   }
 
 }
+void FuncPathMSD::updateNeighIndex() {
+  neighindex.resize(neighpair.size());
+  for(unsigned i=0; i<neighpair.size(); ++i) {
+    neighindex[i]=indexmap[neighpair[i].first];
+  }
+}
+
 // calculator
 void FuncPathMSD::calculate() {
-// log.printf("NOW CALCULATE! \n");
   double s_path=0.;
   double partition=0.;
   if(neighpair.empty()) { // at first step, resize it
@@ -260,28 +277,39 @@ void FuncPathMSD::calculate() {
       neighpair[i].first=allArguments[i];
     }
   }
+  if( neighindex.size()!=neighpair.size() ) {
+    updateNeighIndex();
+  }
 
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
 
-  for(auto & it : neighpair) {
-    it.second=std::exp(-lambda*(it.first->get()));
-    s_path+=(indexmap[it.first])*it.second;
+  // The weights are computed relative to the closest frame, exp(-lambda*(d_i-d_min)),
+  // so that they do not all underflow to zero far from the path.
+  double dmin=neighpair[0].first->get();
+  for(const auto & it : neighpair) {
+    dmin=std::min(dmin,it.first->get());
+  }
+  for(unsigned i=0; i<neighpair.size(); ++i) {
+    auto & it=neighpair[i];
+    it.second=std::exp(-lambda*(it.first->get()-dmin));
+    s_path+=neighindex[i]*it.second;
     partition+=it.second;
+  }
+  // the closest frame has weight one, so partition>=1; the check makes this explicit
+  // (and keeps static analysis from flagging the logarithm below)
+  if( !(partition>=1.0) ) {
+    error("the weights of the frames of the path are not finite: check LAMBDA and the arguments");
   }
   s_path/=partition;
   val_s_path->set(s_path);
-  val_z_path->set(-(1./lambda)*std::log(partition));
-  int n=0;
-  for(const auto & it : neighpair) {
-    double expval=it.second;
-    double tmp=lambda*expval*(s_path-(indexmap[it.first]))/partition;
+  val_z_path->set(dmin-(1./lambda)*std::log(partition));
+  for(unsigned n=0; n<neighpair.size(); ++n) {
+    double expval=neighpair[n].second;
+    double tmp=lambda*expval*(s_path-neighindex[n])/partition;
     setDerivative(val_s_path,n,tmp);
     setDerivative(val_z_path,n,expval/partition);
-    n++;
   }
-
-//  log.printf("CALCULATION DONE! \n");
 }
 ///
 /// this function updates the needed argument list
@@ -308,7 +336,8 @@ void FuncPathMSD::prepare() {
       }
       log.printf(" \n");
     } else {
-      if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
+      const long long nstride=std::max(1LL,static_cast<long long>(neigh_stride/getTimeStep()));
+      if( getStep()%nstride==0 ) {
         log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
         neighpair.resize(allArguments.size());
         for(unsigned i=0; i<allArguments.size(); i++) {
@@ -325,28 +354,22 @@ void FuncPathMSD::prepare() {
     }
   }
   std::vector<Value*> argstocall;
-//log.printf("PREPARING \n");
-  argstocall.clear();
   if(!neighpair.empty()) {
     for(const auto & it : neighpair) {
       argstocall.push_back( it.first );
-      //     log.printf("CALLING %p %f ",(*it).first ,indexmap[(*it).first] );
     }
   } else {
-    for(unsigned i=0; i<allArguments.size(); i++) {
-      argstocall.push_back(allArguments[i]);
+    argstocall=allArguments;
+  }
+  updateNeighIndex();
+// the list of arguments (and the dependencies) only needs to be updated when it changes
+  if( argstocall!=getArguments() ) {
+    requestArguments(argstocall);
+    for(unsigned i=0; i< getNumberOfComponents(); i++) {
+      getPntrToComponent(i)->clearDerivatives();
+      getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
     }
   }
-// now the list of argument changes
-  requestArguments(argstocall);
-//now resize the derivatives as well
-//for each value in this action
-  for(unsigned i=0; i< getNumberOfComponents(); i++) {
-    //resize the derivative to the number   the
-    getPntrToComponent(i)->clearDerivatives();
-    getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
-  }
-//log.printf("PREPARING DONE! \n");
 }
 
 }

@@ -97,6 +97,46 @@ c: COMBINE ARG=t POWERS=3 PERIODIC=-pi^3,pi^3
 PRINT ARG=c FILE=colvar
 ```
 
+When an argument $x_i$ is periodic the difference $x_i-a_i$ is computed taking the periodicity into account, that is,
+it is wrapped into the interval $[-L_i/2,L_i/2)$, where $L_i$ is the length of the periodic domain of $x_i$.
+
+## Combining angles: the CIRCULAR flag
+
+A linear combination of periodic variables is not a periodic variable with a well defined domain. For example, if you average
+two torsions, one equal to $-0.9\pi$ and one equal to $0.9\pi$, by using the input below you get 0, while the two angles are
+close to each other and their average should be close to $\pi$:
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+# this is not the average of two angles
+c: COMBINE ARG=t1,t2 COEFFICIENTS=0.5,0.5 PERIODIC=-pi,pi
+```
+
+If all the arguments are periodic you can use the CIRCULAR flag to combine them as angles.  Each difference $x_i-a_i$ is
+first converted to an angle $\theta_i = 2\pi (x_i-a_i)/L_i$ and the output is
+
+$$
+C = \frac{B-A}{2\pi} \textrm{atan2}\left( \sum_{i=1}^{N_{arg}} c_i \sin(p_i\theta_i), \sum_{i=1}^{N_{arg}} c_i \cos(p_i\theta_i) \right)
+$$
+
+where $A$ and $B$ are the boundaries of the domain of the output, which are given with the PERIODIC keyword (this keyword
+cannot be NO when CIRCULAR is used). The POWERS must be non-negative integers: $p_i$ multiplies the angle, which corresponds to
+taking a power of the complex number $\exp(i\theta_i)$.  The result does not change if all the coefficients are multiplied by the
+same positive number, so the NORMALIZE flag has no effect.  With the default coefficients and powers the output is the circular
+mean of the arguments, so the following input computes the average of three torsions:
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+t3: TORSION ATOMS=9,10,11,12
+av: COMBINE ARG=t1,t2,t3 CIRCULAR PERIODIC=-pi,pi
+PRINT ARG=av FILE=colvar
+```
+
+The output is not defined when the sum of the complex numbers above is zero (e.g. for two angles that differ by $\pi$).
+In that case the output is set to zero and so are its derivatives.
+
 ## Vector arguments
 
 The two examples in the previous section demonstrate how to use the COMBINE action with scalar arguments.  However, you can also

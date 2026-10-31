@@ -38,8 +38,11 @@ This action can be used to evaluate [Bessel functions](https://en.wikipedia.org/
 This was action is needed because the modified Bessel function of the first kind of order 0 is needed in
 order to calculate the [von-Misses distribution](https://en.wikipedia.org/wiki/Von_Mises_distribution)
 that is used in the implementation of [KERNEL](KERNEL.md).  You can thus only use this function to evaluate the
-modified Bessel function of the first kind of order 0.  You can evaluate the value of this Bessel function
-at $x=1$ by using the following input:
+modified Bessel function of the first kind of order 0.  Notice that the function that is computed is the
+exponentially scaled one, $e^{-|x|} I_0(x)$ (for example, it is equal to 0.4658 at $x=1$, where $I_0(1)=1.2661$),
+which is the quantity needed to normalize the von Mises kernels that are used in [KERNEL](KERNEL.md).
+Derivatives are not implemented, so this action cannot be used in a bias.
+You can evaluate the value of this Bessel function at $x=1$ by using the following input:
 
 ```plumed
 c: CONSTANT VALUE=1
@@ -49,7 +52,7 @@ b: BESSEL ARG=c ORDER=0
 Notice that you can also use a vector in the input for this action as illustrated below:
 
 ```plumed
-c: CONSTANT VALUES=1,1,5,2
+c: CONSTANT VALUES=1,1.5,2
 b: BESSEL ARG=c ORDER=0
 ```
 
@@ -66,7 +69,7 @@ evaluated.  Consequently in the example input shown below only the 1st and 4th e
 
 ```plumed
 m: CONSTANT VALUES=1,0,0,1
-c: CONSTANT VALUES=1,1,5,2
+c: CONSTANT VALUES=1,1.5,2,5
 b: BESSEL ARG=c MASK=m ORDER=0
 ```
 
@@ -148,7 +151,7 @@ PLUMED_REGISTER_ACTION(VectorBessel,"BESSEL_VECTOR")
 
 void Bessel::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ORDER","0","the order of Bessel function to use.  Can only be zero at the moment.");
-  keys.setValueDescription("scalar/vector","the value of the bessel function");
+  keys.setValueDescription("scalar/vector","the value of the exponentially scaled modified bessel function of the first kind, exp(-|x|) I_0(x)");
 }
 
 Bessel::Bessel() {
@@ -158,7 +161,7 @@ void Bessel::read( Bessel& func, ActionWithArguments* action, FunctionOptions& o
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
-      action->error("should only be one argument to less_than actions");
+      action->error("should only be one argument to this action");
     }
   }
   if( action->getPntrToArgument(0)->isPeriodic() ) {
