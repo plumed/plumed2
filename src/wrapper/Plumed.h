@@ -1600,7 +1600,7 @@ __PLUMED_WRAPPER_C_END
 __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(void,void,1)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(char,char,(CHAR_MIN==0)*0x100+3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned char,unsigned_char,0x100+3)
-__PLUMED_WRAPPER_C_TYPESAFE_SIZED(signed char,signed_char,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(signed char,signed_char,3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(short,short,3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned short,unsigned_short,0x100+3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(int,int,3)
@@ -2601,8 +2601,8 @@ private:
 /// 0x100: unsigned
     __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(char,(CHAR_MIN==0)*0x100+3)
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,3)
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(signed char,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(signed char,3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3)
@@ -3169,7 +3169,7 @@ private:
       str.copy(buffer,len);
       buffer[len]='\0'; // ensure null termination
       data=buffer;
-      static_buffer[0]='\0';
+      // Notice that static_buffer must not be touched here: it might be the buffer that has just been filled.
     }
 #endif
     operator const char* () const noexcept {
@@ -3356,7 +3356,8 @@ public:
   template<typename Key,typename T, typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
   void cmd(Key && key,T* val, I nelem) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
-    static_assert("in strict mode you cannot pass nelem, please pass full shape instead");
+    // the condition depends on T so that the assertion only fires when this overload is instantiated
+    static_assert(!std::is_same<T,T>::value,"in strict mode you cannot pass nelem, please pass full shape instead");
 #else
     cmd_with_nelem(std::forward<Key>(key),val,__PLUMED_WRAPPER_STD size_t(nelem));
 #endif
@@ -3969,10 +3970,14 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   void* p;
   char* pc;
   __PLUMED_WRAPPER_STD size_t strlenpath;
+  __PLUMED_WRAPPER_STD size_t pos;
+  int found;
   pathcopy=__PLUMED_WRAPPER_CXX_NULLPTR;
   p=__PLUMED_WRAPPER_CXX_NULLPTR;
   pc=__PLUMED_WRAPPER_CXX_NULLPTR;
   strlenpath=0;
+  pos=0;
+  found=0;
   dlerror();
   p=dlopen(path,mode);
   if(!p) {
@@ -3991,11 +3996,19 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_WRAPPER_STD abort();
     }
     __PLUMED_WRAPPER_STD memcpy(pathcopy,path,strlenpath+1);
-    pc=pathcopy+strlenpath-6;
-    while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) {
-      pc--;
+    /* search the last occurrence of "Kernel" using indexes, so that no pointer outside the buffer is ever formed */
+    if(strlenpath>=6) {
+      pos=strlenpath-5;
+      while(pos>0) {
+        pos--;
+        if(!__PLUMED_WRAPPER_STD memcmp(pathcopy+pos,"Kernel",6)) {
+          found=1;
+          break;
+        }
+      }
     }
-    if(pc>=pathcopy) {
+    if(found) {
+      pc=pathcopy+pos;
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
       __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
       __PLUMED_FPRINTF(stderr,"+++ Trying %s +++\n",pathcopy);
