@@ -21,6 +21,10 @@ jobs:
       # objects compiled with -g and _GLIBCXX_DEBUG are about 15 times larger than optimized ones:
       # with 100M the cache of the debug builds does not hold a full build and ccache keeps missing
       PLUMED_CCACHE_SIZE: ${{ contains( matrix.variant, '-debug-' ) && '500M' || '100M' }}
+      # number of regtests run at the same time. The debug builds run them one at a time: the type=make
+      # regtests link the static libplumed.a, and with -g and _GLIBCXX_DEBUG a single link takes more than
+      # 5 GB, so two of them together exhaust the memory of the runner and the step is killed (exit 143)
+      PLUMED_REGTEST_JOBS: ${{ contains( matrix.variant, '-debug-' ) && '1' || '2' }}
     strategy:
       fail-fast: false
       matrix:
@@ -267,7 +271,8 @@ jobs:
               done) &
          # each regtest runs in its own tmp/ directory, so they can run concurrently.
          # Two at a time on the 4 cores of the runner, since many tests use 2 OpenMP threads or 2-4 MPI processes
-         make --no-print-directory -j 2 -C regtest testclean
+         # (one at a time in the debug builds, see PLUMED_REGTEST_JOBS above)
+         make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
