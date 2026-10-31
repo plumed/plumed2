@@ -23,6 +23,8 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
+#include <cmath>
+#include <limits>
 
 namespace PLMD {
 namespace isdb {
@@ -45,7 +47,7 @@ This collective variable computes the J-couplings for a set of atoms defining a 
 the atoms involved using the [MOLINFO](MOLINFO.md) notation. You can also specify the experimental couplings using the
  COUPLING keywords. These will be included in the output. You must choose the type of
 coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
-and SHIFT keywords. You will need to make sure you are using the correct dihedral angle:
+and SHIFT keywords (A, B and C are compulsory with TYPE=CUSTOM, SHIFT is zero by default). You will need to make sure you are using the correct dihedral angle:
 
 - Ha-N: $\psi$
 - Ha-HN: $\phi$
@@ -92,10 +94,10 @@ private:
   bool pbc;
   enum { HAN, HAHN, CCG, NCG, CUSTOM };
   unsigned ncoupl_;
-  double ka_;
-  double kb_;
-  double kc_;
-  double kshift_;
+  double ka_=0.0;
+  double kb_=0.0;
+  double kc_=0.0;
+  double kshift_=0.0;
 
 public:
   static void registerKeywords(Keywords& keys);
@@ -113,10 +115,10 @@ void JCoupling::registerKeywords(Keywords& keys) {
            "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS", "atoms");
   keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
-  keys.add("optional", "A", "Karplus parameter A");
-  keys.add("optional", "B", "Karplus parameter B");
-  keys.add("optional", "C", "Karplus parameter C");
-  keys.add("optional", "SHIFT", "Angle shift in radians");
+  keys.add("optional", "A", "Karplus parameter A (compulsory with TYPE=CUSTOM)");
+  keys.add("optional", "B", "Karplus parameter B (compulsory with TYPE=CUSTOM)");
+  keys.add("optional", "C", "Karplus parameter C (compulsory with TYPE=CUSTOM)");
+  keys.add("optional", "SHIFT", "Angle shift in radians (used with TYPE=CUSTOM, zero by default)");
   keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
   keys.addOutputComponent("j", "default","scalar", "the calculated J-coupling");
   keys.addOutputComponent("exp", "COUPLING","scalar", "the experimental J-coupling");
@@ -195,12 +197,18 @@ JCoupling::JCoupling(const ActionOptions&ao):
     error("with DOSCORE you need to set the COUPLING values");
   }
 
-  // For custom types we allow use of custom Karplus parameters
+  // For custom types the Karplus parameters must be given (the shift is zero by default)
   if (jtype_ == CUSTOM) {
+    constexpr double unset = std::numeric_limits<double>::quiet_NaN();
+    ka_ = kb_ = kc_ = unset;
+    kshift_ = 0.0;
     parse("A", ka_);
     parse("B", kb_);
     parse("C", kc_);
     parse("SHIFT", kshift_);
+    if(std::isnan(ka_) || std::isnan(kb_) || std::isnan(kc_)) {
+      error("with TYPE=CUSTOM the Karplus parameters A, B and C must be given");
+    }
   }
 
   log << "  Bibliography ";
