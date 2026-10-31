@@ -24,16 +24,76 @@
 #include "Exception.h"
 #include "IFile.h"
 #include "lepton/Lepton.h"
+#include <cctype>
+#include <charconv>
 #include <cstring>
 #include <filesystem>
+#include <limits>
+#include <type_traits>
 #include <iomanip>
 #include <sstream>
 #include <string_view>
 
 namespace PLMD {
 
+namespace {
+/// Removes leading and trailing blanks without allocating
+std::string_view trimBlanks(const std::string & str) {
+  std::size_t b=0;
+  std::size_t e=str.size();
+  while(b<e && std::isspace(static_cast<unsigned char>(str[b]))) {
+    ++b;
+  }
+  while(e>b && std::isspace(static_cast<unsigned char>(str[e-1]))) {
+    --e;
+  }
+  return std::string_view(str).substr(b,e-b);
+}
+
+/// Fast conversion of the whole (trimmed) string with std::from_chars.
+/// Returns false if std::from_chars is not available for T, or if it fails,
+/// in which case the caller falls back to the slower conversions.
+template<class T>
+bool convertFromChars(std::string_view s,T & t) {
+#if defined(__cpp_lib_to_chars)
+  // floating point std::from_chars is only available when __cpp_lib_to_chars is defined
+  constexpr bool available=std::is_arithmetic_v<T>;
+#else
+  constexpr bool available=std::is_integral_v<T>;
+#endif
+  if constexpr (available && !std::is_same_v<T,bool>) {
+    if(s.empty()) {
+      return false;
+    }
+    T v;
+    const auto [ptr,ec]=std::from_chars(s.data(),s.data()+s.size(),v);
+    if(ec!=std::errc() || ptr!=s.data()+s.size()) {
+      return false;
+    }
+    t=v;
+    return true;
+  } else {
+    (void) s;
+    (void) t;
+    return false;
+  }
+}
+}
+
 template<class T>
 bool Tools::convertToAny(const std::string & str,T & t) {
+  const auto trimmed=trimBlanks(str);
+  if constexpr (std::is_unsigned_v<T>) {
+    // istream accepts a minus sign for unsigned types and wraps the number around
+    // (e.g. "-1" becomes 4294967295): negative numbers are rejected here
+    if(!trimmed.empty() && trimmed[0]=='-') {
+      return false;
+    }
+  }
+  // fast path: std::from_chars is about 20 times faster than an istringstream
+  if(convertFromChars(trimmed,t)) {
+    return true;
+  }
   std::istringstream istr(str.c_str());
   bool ok=static_cast<bool>(istr>>t);
   if(!ok) {
@@ -131,6 +191,24 @@ template<class T>
 bool Tools::convertToReal(const std::string & str,T & t) {
   if(convertToAny(str,t)) {
     return true;
+  }
+  {
+    // nan and inf, as written by printf (OFile writes NaNs as "nan"),
+    // case insensitive and with an optional sign
+    auto s=trimBlanks(str);
+    bool negative=false;
+    if(!s.empty() && (s[0]=='+' || s[0]=='-')) {
+      negative=(s[0]=='-');
+      s.remove_prefix(1);
+    }
+    if(caseInSensStringCompare(s,"nan")) {
+      t=std::numeric_limits<T>::quiet_NaN();
+      return true;
+    }
+    if(caseInSensStringCompare(s,"inf") || caseInSensStringCompare(s,"infinity")) {
+      t=negative ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::infinity();
+      return true;
+    }
   }
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi;
