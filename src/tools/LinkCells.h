@@ -60,8 +60,10 @@ public:
     }
   };
 private:
-/// Symbolic link to plumed communicator
-  Communicator & comm;
+/// Minimum number of atoms per thread when finding the cells of the atoms
+  static constexpr unsigned minAtomsPerThread=4096;
+/// Maximum total number of cells
+  static constexpr double maxNumberOfCells=1048576;
 /// Check that the link cells were set up correctly
   bool cutoffwasset=false;
 /// Are there periodic boundary conditions setup
@@ -81,8 +83,12 @@ private:
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
   void createCells(const PLMD::Tensor&);
+/// Find the index of the cell of a position, without checks:
+/// returns getNumberOfCells() if the position is not in a cell
+  unsigned findCellUnchecked( Vector pos ) const noexcept;
 public:
-///
+/// The communicator is not used: the cells are built locally on every process
+/// (the argument is kept for backward compatibility)
   explicit LinkCells( Communicator& comm );
 /// Have the link cells been enabled
   bool enabled() const ;
