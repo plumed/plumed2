@@ -288,7 +288,7 @@ RDC::RDC(const ActionOptions&ao):
     for(unsigned i=0; i<ndata; i++) {
       std::string num;
       Tools::convert(i,num);
-      addComponentWithDerivatives("rdc-"+num);
+      addComponent("rdc-"+num);
       componentIsNotPeriodic("rdc-"+num);
       dataValues_.push_back(getPntrToComponent(getNumberOfComponents()-1));
     }
