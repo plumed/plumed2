@@ -382,22 +382,26 @@ void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T&
       pos[i][1] = input.inputdata[3*atno+1];
       pos[i][2] = input.inputdata[3*atno+2];
     }
-    // This aligns the two strands if this is required
-    if( actiondata.align_strands ) {
-      Vector distance=input.pbc->distance( pos[6],pos[21] );
-      distance += pos[6] - pos[21];
-      //Vector origin_old, origin_new;
-      //origin_old=pos[21];
-      //origin_new=pos[6]+distance;
-      for(unsigned i=15; i<30; ++i) {
-        //pos[i]+=( origin_new - origin_old );
-        pos[i]+=distance;
+    if( !actiondata.nopbc ) {
+      // Reconstruct the segment by making each pair of consecutive atoms whole. The two strands of a sheet
+      // (atoms 0-14 and atoms 15-29) are made whole separately, because the last atom of the first strand
+      // and the first atom of the second strand are not bonded
+      const unsigned nstrand = actiondata.align_strands ? actiondata.natoms/2 : actiondata.natoms;
+      for(unsigned start=0; start<actiondata.natoms; start+=nstrand) {
+        for(unsigned i=start; i+1<start+nstrand; ++i) {
+          const Vector & first (pos[i]);
+          Vector & second (pos[i+1]);
+          second=first+input.pbc->distance(first,second);
+        }
       }
-    } else if( !actiondata.nopbc ) {
-      for(unsigned i=0; i<actiondata.natoms-1; ++i) {
-        const Vector & first (pos[i]);
-        Vector & second (pos[i+1]);
-        second=first+input.pbc->distance(first,second);
+      // This aligns the two strands if this is required: atom 22 is moved to the periodic image that is
+      // closest to atom 7 and the rest of the second strand follows
+      if( actiondata.align_strands ) {
+        Vector distance=input.pbc->distance( pos[6],pos[21] );
+        distance += pos[6] - pos[21];
+        for(unsigned i=actiondata.natoms/2; i<actiondata.natoms; ++i) {
+          pos[i]+=distance;
+        }
       }
     }
 
