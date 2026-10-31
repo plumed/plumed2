@@ -96,8 +96,8 @@ public:
   static void registerKeywords( Keywords& keys ) {
     CLTool::registerKeywords( keys );
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
-    keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
-    keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
+    keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units. With NVE there is no thermostat and the particle starts at rest");
+    keys.add("compulsory","friction","off","The relaxation time (in LJ units) of the Langevin thermostat that is used to keep the temperature constant, i.e. the inverse of the friction coefficient");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
     keys.add("compulsory","dimension","the dimension of your energy landscape");
     keys.add("compulsory","plumed","plumed.dat","the name of the plumed input file containing the potential");
@@ -128,20 +128,29 @@ private:
     // Read everything from input file
     std::string tempstr;
     parse("temperature",tempstr);
-    if( tempstr!="NVE" ) {
-      Tools::convert(tempstr,temperature);
-    }
     parse("tstep",tstep);
     std::string frictionstr;
     parse("friction",frictionstr);
-    if( tempstr!="NVE" ) {
-      if(frictionstr=="off") {
-        error("pecify friction for thermostat");
+    if( tempstr=="NVE" ) {
+      // no thermostat, the particle starts at rest
+      temperature=0.0;
+      friction=-1.0; // negative: no thermostat
+    } else {
+      if(!Tools::convertNoexcept(tempstr,temperature) || temperature<0.0) {
+        error("temperature should be NVE or a non negative number");
       }
-      Tools::convert(frictionstr,friction);
+      if(frictionstr=="off") {
+        error("Specify friction for thermostat");
+      }
+      if(!Tools::convertNoexcept(frictionstr,friction) || friction<0.0) {
+        error("friction should be a non negative number");
+      }
     }
     parse("plumed",plumedin);
     parse("dimension",dim);
+    if( dim<1 ) {
+      error("dimension should be a positive integer");
+    }
     parse("nstep",nstep);
     parse("idum",idum);
     ipos.resize( dim );
@@ -265,16 +274,29 @@ public:
     plumed->cmd("calc");
 
     double therm_eng=0;
-    FILE* fp=fopen("stats.out","w+");
+    FILE* fp=nullptr;
+    if( pc.Get_rank()==0 ) {
+      fp=std::fopen("stats.out","w");
+      if(!fp) {
+        error("cannot open file stats.out for writing");
+      }
+    }
+    // call fclose when fp goes out of scope
+    auto deleter=[](auto f) {
+      if(f) {
+        std::fclose(f);
+      }
+    };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     for(int istep=0; istep<nsteps; ++istep) {
 
       if( istep%20==0 && pc.Get_rank()==0 ) {
-        std::printf("Doing step %i\n",istep);
+        std::fprintf(out,"Doing step %i\n",istep);
       }
 
-      // Langevin thermostat
-      double lscale=std::exp(-0.5*tstep/friction);
+      // Langevin thermostat (friction is the relaxation time, a negative value means NVE)
+      double lscale=(friction<0.0?1.0:std::exp(-0.5*tstep/friction));
       double lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
@@ -283,7 +305,7 @@ public:
           }
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
-          therm_eng=therm_eng-0.5*velocities[j][k]*velocities[0][k];
+          therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
         }
       }
 
@@ -325,7 +347,7 @@ public:
       }
 
       // Langevin thermostat
-      lscale=std::exp(-0.5*tstep/friction);
+      lscale=(friction<0.0?1.0:std::exp(-0.5*tstep/friction));
       lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
@@ -355,8 +377,7 @@ public:
       }
     }
 
-    fclose(fp);
-
+    plumed->cmd("runFinalJobs");
     return 0;
   }
 };
