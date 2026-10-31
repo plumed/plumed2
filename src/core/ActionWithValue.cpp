@@ -25,7 +25,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
-#include "blas/blas.h"
 
 namespace PLMD {
 
@@ -364,39 +363,36 @@ bool ActionWithValue::checkForForces() {
     nt=1;
   }
 
+  // Note: plain loops are used here on purpose instead of BLAS daxpy.
+  // An external multithreaded BLAS (e.g. OpenBLAS, MKL) would spawn its own
+  // threads for long vectors (nder>~10000), ignoring the number of threads
+  // set by the MD engine and oversubscribing the cores (see issue #1121).
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_f;
     if( nt>1 ) {
       omp_f.resize(nder,0);
     }
+    double* const dest = ( nt>1 ? omp_f.data() : forcesForApply.data() );
     #pragma omp for
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
-      double ff=values[valsToForce[i]]->inputForce[0];
-      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
-      int nn=nder;
-      int one1=1;
-      int one2=1;
-      if( nt>1 ) {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,omp_f.data(),&one2);
-      } else {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,forcesForApply.data(),&one2);
+      const double ff=values[valsToForce[i]]->inputForce[0];
+      const double* const thisderiv = values[valsToForce[i]]->data.data()+1;
+      #pragma omp simd
+      for(unsigned j=0; j<nder; ++j) {
+        dest[j] += ff*thisderiv[j];
       }
-      // if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
-      //else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
     }
-    #pragma omp critical
-    {
-      if( nt>1 ) {
-        int nn=forcesForApply.size();
-        double one0=1.0;
-        int one1=1;
-        int one2=1;
-        plumed_blas_daxpy(&nn,&one0,omp_f.data(),&one1,forcesForApply.data(),&one2);
+    if( nt>1 ) {
+      #pragma omp critical
+      {
+        double* const f = forcesForApply.data();
+        const double* const src = omp_f.data();
+        #pragma omp simd
+        for(unsigned j=0; j<nder; ++j) {
+          f[j] += src[j];
+        }
       }
-      // for(unsigned j=0; j<forcesForApply.size(); ++j) {
-      // forcesForApply[j]+=omp_f[j];
-      // }
     }
   }
 
