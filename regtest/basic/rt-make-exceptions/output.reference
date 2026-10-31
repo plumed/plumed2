@@ -96,6 +96,16 @@ readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 GRID_WSTRIDE=10
 +++ catched
 readInputLine PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 TAU=-1 BIASFACTOR=5 TEMP=300
 +++ catched
+readInputLine RESTRAINT_SCALAR ARG=dv AT=1 KAPPA=1
++++ catched
+readInputLine BIASVALUE ARG=dv
++++ catched
+readInputLine MOVINGRESTRAINT ARG=d STEP0=0 AT0=1 STEP1=10 AT1=2 KAPPA1=1
++++ catched
+readInputLine MOVINGRESTRAINT ARG=d VERSE=X STEP0=0 AT0=1 KAPPA0=1
++++ catched
+readInputLine MAXENT ARG=d AT=1 TAU=1 TYPE=EQUALS TEMP=300
++++ catched
 something random here NULL
 +++ catched
 setStep NULL

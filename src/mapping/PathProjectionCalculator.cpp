@@ -33,7 +33,7 @@ void PathProjectionCalculator::registerKeywords(Keywords& keys) {
   keys.addInputKeyword("compulsory","ARG","matrix","the labels of the matrix that contains the vectors of displacements from each frame in the path");
   keys.add("compulsory","METRIC","the method to use for computing the displacement vectors between the reference frames");
   keys.add("compulsory","METRIC_COMPONENT","if the final action in your metric contains multiple components this keyword is used to specify the component that should be used");
-  keys.addInputKeyword("compulsory","REFERENCE","vector","labels for actions that contain reference coordinates for each point on the path");
+  keys.addInputKeyword("compulsory","REFERENCE","vector/matrix","labels for actions that contain reference coordinates for each point on the path (one matrix, or vectors)");
 }
 
 PathProjectionCalculator::PathProjectionCalculator( Action* act ):
