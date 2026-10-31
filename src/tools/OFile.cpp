@@ -366,36 +366,21 @@ OFile& OFile::open(const std::string&setpath) {
   // this must be done before backing up the file, otherwise
   // the backup would rename the file that is being written by another OFile
   checkNotOpenElsewhere();
+  // Only the writer opens the file (the other processes open /dev/null):
+  // with many processes on a parallel file system, opening (and truncating)
+  // the same file from all of them is slow.
   if(checkRestart()) {
-    fp=std::fopen(const_cast<char*>(path.c_str()),"a");
+    openOnWriter("a","a9");
     mode="a";
-    if(Tools::extension(path)=="gz") {
-#ifdef __PLUMED_HAS_ZLIB
-      gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"a9");
-#else
-      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
-#endif
-    }
   } else {
     backupFile( backstring, path );
     if(comm) {
       comm->Barrier();
     }
-    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+    openOnWriter("w","w9");
     mode="w";
-    if(Tools::extension(path)=="gz") {
-#ifdef __PLUMED_HAS_ZLIB
-      gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"w9");
-#else
-      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
-#endif
-    }
-    // All processes open (and truncate) the file: the first process must not
-    // write before the others have opened it, or what it wrote could be truncated
-    if(comm) {
-      comm->Barrier();
-    }
   }
+  syncOpen();
   if(plumed) {
     plumed->insertFile(*this);
   }
@@ -409,42 +394,110 @@ void OFile::checkNotOpenElsewhere()const {
   if(path=="/dev/null") {
     return;
   }
-  struct stat st;
-  const bool exists=(stat(path.c_str(),&st)==0);
-// sharing devices, pipes, etc is legitimate
-// (S_ISREG is not defined by MSVC, so the file type is tested explicitly)
-  if(exists && (st.st_mode & S_IFMT)!=S_IFREG) {
+  // The files are compared on the writer only: the other processes have the null device
+  // as file pointer (see openOnWriter), and the files could be different if paths
+  // are local to nodes. The verdict is then broadcast, so that all processes
+  // stop with the same error (if only the writer stopped, the others would hang).
+  const auto findDuplicate=[&]() {
+    std::string msg;
+    struct stat st;
+    const bool exists=(stat(path.c_str(),&st)==0);
+    // sharing devices, pipes, etc is legitimate
+    // (S_ISREG is not defined by MSVC, so the file type is tested explicitly)
+    if(exists && (st.st_mode & S_IFMT)!=S_IFREG) {
+      return std::string();
+    }
+    for(const auto & f : plumed->getFiles()) {
+      const auto other=dynamic_cast<const OFile*>(f);
+      // input files are ignored: reading a file while writing it is allowed (e.g. METAD restart)
+      if(!other || other==this || !other->fp) {
+        continue;
+      }
+      bool same=(other->path==path);
+#ifndef _WIN32
+      // On Windows st_ino is always zero, so two different files on the same drive
+      // would look the same: there only the paths are compared
+      if(!same && exists) {
+        // catch the same file accessed with a different path (e.g. ./FILE, absolute paths, or links)
+        struct stat ost;
+        if(fstat(fileno(other->fp),&ost)==0) {
+          same=(ost.st_dev==st.st_dev && ost.st_ino==st.st_ino);
+        }
+      }
+#endif
+      if(same) {
+        msg="file " + path + " is already open for writing";
+        if(other->action) {
+          msg+=" by action " + other->action->getLabel() + " (" + other->action->getName() + ")";
+        }
+        if(action) {
+          msg+=" and cannot be opened again by action " + action->getLabel() + " (" + action->getName() + ")";
+        }
+        msg+=". Writing the same file twice would result in a corrupted file. Please use a different file name";
+        break;
+      }
+    }
+    return msg;
+  };
+  std::string msg;
+  if(isWriter()) {
+    msg=findDuplicate();
+  }
+  if(comm) {
+    unsigned len=msg.length();
+    comm->Bcast(len,0);
+    std::vector<char> chars(msg.begin(),msg.end());
+    chars.resize(len);
+    if(len>0) {
+      comm->Bcast(chars,0);
+    }
+    msg.assign(chars.begin(),chars.end());
+  }
+  if(!msg.empty()) {
+    plumed_merror(msg);
+  }
+}
+
+bool OFile::isWriter()const {
+  return !comm || comm->Get_rank()==0;
+}
+
+void OFile::openOnWriter(const char* fmode,const char* gzmode,bool reopenFp) {
+#ifdef _WIN32
+  constexpr const char* nullDevice="NUL";
+#else
+  constexpr const char* nullDevice="/dev/null";
+#endif
+  const char* p=isWriter() ? path.c_str() : nullDevice;
+  if(reopenFp) {
+    fp=std::fopen(p,fmode);
+  }
+  if(Tools::extension(path)=="gz") {
+#ifdef __PLUMED_HAS_ZLIB
+    gzfp=(void*)gzopen(p,gzmode);
+#else
+    (void) gzmode;
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
+#endif
+  }
+}
+
+void OFile::syncOpen() {
+  if(!comm) {
     return;
   }
-  for(const auto & f : plumed->getFiles()) {
-    const auto other=dynamic_cast<const OFile*>(f);
-    // input files are ignored: reading a file while writing it is allowed (e.g. METAD restart)
-    if(!other || other==this || !other->fp) {
-      continue;
-    }
-    bool same=(other->path==path);
-#ifndef _WIN32
-    // On Windows st_ino is always zero, so two different files on the same drive
-    // would look the same: there only the paths are compared
-    if(!same && exists) {
-      // catch the same file accessed with a different path (e.g. ./FILE, absolute paths, or links)
-      struct stat ost;
-      if(fstat(fileno(other->fp),&ost)==0) {
-        same=(ost.st_dev==st.st_dev && ost.st_ino==st.st_ino);
-      }
+  int ok=(fp!=NULL);
+  comm->Bcast(ok,0);
+  if(!ok && fp) {
+    // the writer could not open the file: behave as if no process could
+    std::fclose(fp);
+    fp=NULL;
+#ifdef __PLUMED_HAS_ZLIB
+    if(gzfp) {
+      gzclose(gzFile(gzfp));
     }
 #endif
-    if(same) {
-      std::string msg="file " + path + " is already open for writing";
-      if(other->action) {
-        msg+=" by action " + other->action->getLabel() + " (" + other->action->getName() + ")";
-      }
-      if(action) {
-        msg+=" and cannot be opened again by action " + action->getLabel() + " (" + action->getName() + ")";
-      }
-      msg+=". Writing the same file twice would result in a corrupted file. Please use a different file name";
-      plumed_merror(msg);
-    }
+    gzfp=NULL;
   }
 }
 
@@ -473,17 +526,15 @@ OFile& OFile::rewind() {
 #ifdef __PLUMED_HAS_ZLIB
     gzclose((gzFile)gzfp);
     // no exception here
-    gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
+    openOnWriter("w","w9",false);
 #endif
   } else {
     std::fclose(fp);
     // no exception here
-    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+    openOnWriter("w","w9");
   }
   // see OFile::open
-  if(comm) {
-    comm->Barrier();
-  }
+  syncOpen();
   return *this;
 }
 
@@ -493,12 +544,12 @@ FileBase& OFile::flush() {
 #ifdef __PLUMED_HAS_ZLIB
       gzclose(gzFile(gzfp));
       // no exception here
-      gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"a");
+      openOnWriter("a","a",false);
 #endif
     } else {
       std::fclose(fp);
       // no exception here
-      fp=std::fopen(const_cast<char*>(path.c_str()),"a");
+      openOnWriter("a","a");
     }
   } else {
     FileBase::flush();
