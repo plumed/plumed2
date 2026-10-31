@@ -371,7 +371,7 @@ PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
-PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
+PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic (metatomic-core)],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
@@ -1212,11 +1212,6 @@ else
   have_kenref=no
 fi
 
-# libmetatomic requires libtorch
-if test $libmetatomic = true ; then
-  libtorch=true;
-fi
-
 #added by luigibonati
 if test $libtorch = true ; then
   # disable as-needed in linking libraries (both static and shared)
@@ -1253,37 +1248,18 @@ if test $libtorch = true ; then
   fi
 fi
 
+# metatomic-core, which also runs TorchScript models through its Python plugin
 if test $libmetatomic = true ; then
-  # find metatomic & related libraries
   PLUMED_CHECK_CXX_PACKAGE([libmetatomic],[
-    // torch header creates a lot a pedantic warnings, which we can't do anything about
-    // we disable them to make finding the relevant part in the config.log easier
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
-    #pragma GCC diagnostic ignored "-Wfloat-equal"
-    #pragma GCC diagnostic ignored "-Wfloat-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
-    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
-    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
-    #pragma GCC diagnostic ignored "-Wsign-conversion"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #include <torch/torch.h>
-    #include <torch/script.h>
-    #pragma GCC diagnostic pop
     #include <metatensor.hpp>
-    #include <metatensor/torch.hpp>
-    #include <metatomic/torch.hpp>
-    #if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
-    #error "this code is only compatible with metatomic-torch >=0.1.12,<0.2"
-    #endif
+    #include <metatomic.hpp>
     int main() {
-      metatomic_torch::version();
-      metatensor_torch::version();
+      auto model = metatomic::load_model("model");
+      auto outputs = metatomic::execute_model(model, std::vector<metatomic::System>(), std::nullopt, {}, false);
       mts_version();
-      return 0;
+      return static_cast<int>(outputs.size());
     }
-  ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic_torch metatensor_torch metatensor], [true])
+  ], [__PLUMED_HAS_LIBMETATOMIC], [metatomic metatensor], [true])
 fi
 
 # libitensor requires libhdf5

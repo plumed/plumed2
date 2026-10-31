@@ -1,0 +1,8 @@
+plumed_needs=libmetatomic
+plumed_modules=metatomic
+type=plumed
+arg="info --root"
+
+function plumed_regtest_after(){
+  "${METATOMIC_PYTHON:-python}" check.py || echo "FAILURE: numerical gradient check"
+}

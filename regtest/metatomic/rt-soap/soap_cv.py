@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 import torch
+from featomic.torch import SoapPowerSpectrum
 from metatensor.torch import Labels, TensorBlock, TensorMap
 from metatomic.torch import (
     AtomisticModel,
@@ -9,7 +10,6 @@ from metatomic.torch import (
     ModelOutput,
     System,
 )
-from featomic.torch import SoapPowerSpectrum
 
 
 class SOAP_CV(torch.nn.Module):
@@ -50,12 +50,18 @@ class SOAP_CV(torch.nn.Module):
         if outputs["feature"].sample_kind != "atom":
             raise ValueError("only per-atom output is supported")
 
+        soap_block: Optional[TensorBlock] = None
         if len(systems[0]) == 0:
             # PLUMED is trying to determine the size of the output
             projected = torch.zeros((0, 3), dtype=torch.float64)
             samples = Labels(["system", "atom"], torch.zeros((0, 2), dtype=torch.int32))
         else:
-            soap = self.calculator(systems, selected_samples=selected_atoms)
+            gradients: List[str] = []
+            if outputs["feature"].explicit_gradients:
+                gradients = ["positions", "cell"]
+            soap = self.calculator(
+                systems, selected_samples=selected_atoms, gradients=gradients
+            )
             soap = soap.keys_to_samples("center_type")
             soap = soap.keys_to_properties(self.neighbor_type_pairs)
 
@@ -70,6 +76,63 @@ class SOAP_CV(torch.nn.Module):
             components=[],
             properties=Labels("soap_pca", torch.tensor([[0], [1], [2]])),
         )
+        for parameter in outputs["feature"].explicit_gradients:
+            if soap_block is None:
+                components = [
+                    Labels("xyz", torch.arange(3, dtype=torch.int32).reshape(-1, 1))
+                ]
+                gradient_samples = Labels(
+                    ["sample", "system", "atom"], torch.zeros((0, 3), dtype=torch.int32)
+                )
+                gradient_values = torch.zeros((0, 3, 3), dtype=torch.float64)
+                if parameter == "strain":
+                    components = [
+                        Labels(
+                            "xyz_1", torch.arange(3, dtype=torch.int32).reshape(-1, 1)
+                        ),
+                        Labels(
+                            "xyz_2", torch.arange(3, dtype=torch.int32).reshape(-1, 1)
+                        ),
+                    ]
+                    gradient_samples = Labels(
+                        "sample", torch.arange(0, dtype=torch.int32).reshape(-1, 1)
+                    )
+                    gradient_values = torch.zeros((0, 3, 3, 3), dtype=torch.float64)
+            elif parameter == "positions":
+                gradient = soap_block.gradient("positions")
+                components = gradient.components
+                gradient_samples = gradient.samples
+                gradient_values = gradient.values @ self.pca_projection
+            else:
+                # featomic exposes cell derivatives at fixed positions. Strain
+                # deforms both: R -> R (I + strain), H -> H (I + strain).
+                cell_gradient = soap_block.gradient("cell")
+                cell_values = cell_gradient.values @ self.pca_projection
+                gradient_values = torch.einsum(
+                    "ka,skbp->sabp", systems[0].cell, cell_values
+                )
+                positions_gradient = soap_block.gradient("positions")
+                positions_values = positions_gradient.values @ self.pca_projection
+                for row in range(len(positions_gradient.samples)):
+                    sample = int(positions_gradient.samples.values[row, 0])
+                    atom = int(positions_gradient.samples.values[row, 2])
+                    gradient_values[sample] += torch.einsum(
+                        "a,bp->abp", systems[0].positions[atom], positions_values[row]
+                    )
+                components = [
+                    Labels("xyz_1", torch.arange(3, dtype=torch.int32).reshape(-1, 1)),
+                    Labels("xyz_2", torch.arange(3, dtype=torch.int32).reshape(-1, 1)),
+                ]
+                gradient_samples = cell_gradient.samples
+            block.add_gradient(
+                parameter,
+                TensorBlock(
+                    values=gradient_values,
+                    samples=gradient_samples,
+                    components=components,
+                    properties=block.properties,
+                ),
+            )
         cv = TensorMap(
             keys=Labels("_", torch.tensor([[0]])),
             blocks=[block],
@@ -83,7 +146,11 @@ cv.eval()
 
 
 capabilities = ModelCapabilities(
-    outputs={"feature": ModelOutput(sample_kind="atom")},
+    outputs={
+        "feature": ModelOutput(
+            sample_kind="atom", explicit_gradients=["positions", "strain"]
+        )
+    },
     interaction_range=4.0,
     supported_devices=["cpu"],
     length_unit="nm",

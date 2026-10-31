@@ -1,5 +1,7 @@
-# The extra url makes pip grap the torch fersion we want to use in the regtests
+# Use the CPU Torch wheels for the regression tests.
 --extra-index-url=https://download.pytorch.org/whl/cpu
 torch>=2.7
-metatomic-torch>=0.1.13,<0.2
-featomic-torch>=0.7.4,<0.8
+# metatomic-core and metatomic-torch are built from source by .ci/install.metatomic,
+# these are their dependencies (and featomic's) that come from PyPI
+metatensor-torch>=0.10.0,<0.11
+featomic>=0.6.6,<0.7

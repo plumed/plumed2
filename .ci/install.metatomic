@@ -1,0 +1,35 @@
+#! /usr/bin/env bash
+
+set -euo pipefail
+set -x
+
+# Install metatomic-core, and metatomic-torch (whose LegacyModel runs TorchScript models through
+# metatomic-core), in the active Python environment.
+#
+# metatomic-core is not on PyPI yet, so both are built from a PINNED commit, which needs Python >= 3.11,
+# Rust >= 1.88 and CMake. torch and metatensor-torch must already be installed (from
+# .ci/pytorch/requirements.txt), since metatomic-torch is compiled against them.
+#
+# The clone is blobless rather than shallow: the packages compute their version from the git tags.
+# Wrapper PR #6 only; no dependency on the docs or PLUMED changes.
+METATOMIC_COMMIT=8b0c104c989ebda67140deb3a33a731617770eff
+METATOMIC_URL=https://github.com/EricBoittier/metatomic.git
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+git clone --quiet --filter=blob:none "$METATOMIC_URL" metatomic
+cd metatomic
+git checkout --quiet "$METATOMIC_COMMIT"
+
+"$PYTHON_BIN" -m pip install "setuptools>=77" "packaging>=26" cmake setuptools-scm \
+  "metatensor-core>=0.2.0,<0.3" "metatensor-operations>=0.5.0,<0.6" "wigners>=0.4.0"
+
+"$PYTHON_BIN" -m pip install --no-deps --no-build-isolation ./python/metatomic_core
+"$PYTHON_BIN" -m pip install --no-deps --no-build-isolation ./python/metatomic_torch
+
+# featomic-torch (used by the SOAP regtest) requires metatomic-torch<0.2 from PyPI, which would
+# replace the one above
+"$PYTHON_BIN" -m pip install --no-deps "featomic-torch>=0.7.4,<0.8"
+
+"$PYTHON_BIN" -c "import metatomic.utils, metatomic_torch.legacy; print(metatomic.utils.python_plugin_path)"
