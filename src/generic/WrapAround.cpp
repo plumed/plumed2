@@ -25,6 +25,7 @@
 #include "tools/Vector.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
+#include "tools/Pbc.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
@@ -153,6 +154,8 @@ class WrapAround:
   public ActionAtomistic {
   // cppcheck-suppress duplInheritedMember
   std::vector<Vector> refatoms;
+  // distances from the atom being wrapped to all the reference atoms
+  std::vector<Vector> distances;
   std::vector<std::pair<std::size_t,std::size_t> > p_atoms;
   std::vector<std::pair<std::size_t,std::size_t> > p_reference;
   unsigned groupby;
@@ -190,6 +193,9 @@ WrapAround::WrapAround(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   std::vector<AtomNumber> reference;
   parseAtomList("AROUND",reference);
+  if(reference.empty()) {
+    error("no reference atoms given with AROUND");
+  }
   parse("GROUPBY",groupby);
   parseFlag("PAIR", pair_);
 
@@ -246,24 +252,54 @@ WrapAround::WrapAround(const ActionOptions&ao):
 }
 
 void WrapAround::calculate() {
-  for(unsigned j=0; j<p_reference.size(); ++j) {
+  const unsigned nref=p_reference.size();
+  for(unsigned j=0; j<nref; ++j) {
     refatoms[j] = getGlobalPosition(p_reference[j]);
   }
-
+  if(!pair_) {
+    distances.resize(nref);
+  }
+  const Pbc& pbc=getPbc();
+#ifdef __PLUMED_PBC_WHILE
+  const bool orthorombic=false;
+#else
+  const bool orthorombic=pbc.isOrthorombic();
+#endif
+  const Vector diag(pbc.getBox()(0,0),pbc.getBox()(1,1),pbc.getBox()(2,2));
+  const Vector invdiag(pbc.getInvBox()(0,0),pbc.getInvBox()(1,1),pbc.getInvBox()(2,2));
   for(unsigned i=0; i<p_atoms.size(); i+=groupby) {
     Vector second, first=getGlobalPosition(p_atoms[i]);
-    double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
     if(pair_) {
       closest = i/groupby;
     } else {
-      for(unsigned j=0; j<p_reference.size(); ++j) {
-        second=refatoms[j];
-        const Vector distance=pbcDistance(first,second);
-        const double distance2=modulo2(distance);
-        if(distance2<mindist2) {
-          mindist2=distance2;
-          closest=j;
+      double mindist2=std::numeric_limits<double>::max();
+      if(orthorombic) {
+        // same operations as Pbc::distance, written out so that the loop is inlined
+        for(unsigned j=0; j<nref; ++j) {
+          double distance2=0.0;
+          for(unsigned k=0; k<3; ++k) {
+            const double d=Tools::pbc((refatoms[j][k]-first[k])*invdiag[k])*diag[k];
+            distance2+=d*d;
+          }
+          if(distance2<mindist2) {
+            mindist2=distance2;
+            closest=j;
+          }
+        }
+      } else {
+        // all the distances to the reference atoms are computed in one call,
+        // the result is the same as calling pbcDistance(first,refatoms[j]) for each j
+        for(unsigned j=0; j<nref; ++j) {
+          distances[j]=delta(first,refatoms[j]);
+        }
+        pbc.apply(VectorView(&distances[0][0],nref));
+        for(unsigned j=0; j<nref; ++j) {
+          const double distance2=modulo2(distances[j]);
+          if(distance2<mindist2) {
+            mindist2=distance2;
+            closest=j;
+          }
         }
       }
       plumed_massert(closest>=0,"closest not found");
