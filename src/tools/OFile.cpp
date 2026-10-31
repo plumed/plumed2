@@ -44,35 +44,29 @@
 namespace PLMD {
 
 size_t OFile::llwrite(const char*ptr,size_t s) {
-  size_t r;
   if(linked) {
     return linked->llwrite(ptr,s);
   }
-  if(! (comm && comm->Get_rank()>0)) {
-    if(!fp) {
-      plumed_merror("writing on uninitialized File");
-    }
-    if(gzfp) {
+  // Only the first process writes. Until v2.10 this was followed by a Barrier and by a
+  // Bcast of the number of written bytes, i.e. two collective operations per line,
+  // which slowed down runs with many processes and hung if the processes did not
+  // write the same number of lines. The return value is not used.
+  if(comm && comm->Get_rank()>0) {
+    return s;
+  }
+  if(!fp) {
+    plumed_merror("writing on uninitialized File");
+  }
+  size_t r=0;
+  if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
-      r=gzwrite(gzFile(gzfp),ptr,s);
+    r=gzwrite(gzFile(gzfp),ptr,s);
 #else
-      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
-    } else {
-      r=std::fwrite(ptr,1,s,fp);
-    }
+  } else {
+    r=std::fwrite(ptr,1,s,fp);
   }
-  if(comm) {
-//  This barrier is apparently useless since it comes
-//  just before a Bcast.
-//
-//  Anyway, it looks like it is solving an issue that appeared on
-//  TRAVIS (at least on my laptop) so I add it here.
-//  GB
-    comm->Barrier();
-    comm->Bcast(r,0);
-  }
-
   return r;
 }
 
@@ -396,6 +390,11 @@ OFile& OFile::open(const std::string&setpath) {
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
+    // All processes open (and truncate) the file: the first process must not
+    // write before the others have opened it, or what it wrote could be truncated
+    if(comm) {
+      comm->Barrier();
+    }
   }
   if(plumed) {
     plumed->insertFile(*this);
@@ -480,6 +479,10 @@ OFile& OFile::rewind() {
     std::fclose(fp);
     // no exception here
     fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  }
+  // see OFile::open
+  if(comm) {
+    comm->Barrier();
   }
   return *this;
 }
