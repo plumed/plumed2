@@ -159,8 +159,11 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   // This is done locally on every process: finding the cell of an atom costs a few
   // nanoseconds, much less than the two MPI_Allreduce (of the cell of each atom and of
   // the number of atoms in each cell) that were needed when the atoms were split among processes.
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt=(nat>=minAtomsPerThread)?
                     std::min<unsigned>(OpenMP::getNumThreads(),nat/minAtomsPerThread) : 1;
+#endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<nat; ++i) {
     // no exceptions inside the parallel region: invalid cells are checked below
