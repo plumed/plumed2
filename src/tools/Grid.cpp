@@ -132,7 +132,12 @@ public:
     plumed_dbg_assert(x.size()==dimension_);
     plumed_dbg_assert(rindex_size==dimension_);
     for(unsigned int i=0; i<dimension_; ++i) {
-      rindex_data[i] = unsigned(std::floor((x[i]-min_[i])/dx_[i]));
+      const double f=std::floor((x[i]-min_[i])/dx_[i]);
+      // converting a negative (or too large) double to unsigned is undefined behavior:
+      // on x86 it gave a huge index (and getIndex raised an error), on arm64 it gives 0
+      // (i.e. the value of the first bin). Map it explicitly to an invalid index.
+      rindex_data[i] = (f>=0.0 && f<double(std::numeric_limits<unsigned>::max())) ?
+                       static_cast<unsigned>(f) : std::numeric_limits<unsigned>::max();
     }
   }
 
