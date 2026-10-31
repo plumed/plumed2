@@ -23,7 +23,9 @@
 #include "Function.h"
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
+#include <algorithm>
 #include <limits>
+#include <string>
 
 namespace PLMD {
 namespace function {
@@ -147,6 +149,9 @@ void FuncPathGeneral::loadReference() {
         continue;
       }
 
+      if( col<0 || col>=static_cast<int>(strings.size()) ) {
+        error("column " + std::to_string(col) + " not found in line of reference file " + reference);
+      }
       Tools::convert(strings[col], value);
       colvarLine.push_back(value);
     }
@@ -189,12 +194,26 @@ FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
     }
   }
   log.printf("  Consistency check completed! Your path cvs look good!\n");
+  if( !(lambda>0) ) {
+    error("LAMBDA should be positive");
+  }
+  if( neigh_size>0 && !(neigh_stride>0) ) {
+    error("with NEIGH_SIZE you should also give a positive NEIGH_STRIDE");
+  }
 
   // Load the reference colvar file
   loadReference();
+  if( path_cv_values.empty() ) {
+    error("no frames found in reference file " + reference);
+  }
+  for(const auto & frame : path_cv_values) {
+    if( frame.size()<getNumberOfArguments() ) {
+      error("each line of the reference file should contain at least one value for each argument");
+    }
+  }
 
   // Do some neighbour printout
-  if (neigh_stride > 0. || neigh_size > 0) {
+  if (neigh_size > 0) {
     if (static_cast<unsigned>(neigh_size) > path_cv_values.size()) {
       log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n", neigh_size, getNumberOfArguments());
       neigh_size = path_cv_values.size();
@@ -278,20 +297,22 @@ void FuncPathGeneral::calculate() {
     }
   }
 
+  // The weights are computed relative to the closest frame, exp(-lambda*(d_i-d_min)),
+  // so that they do not all underflow to zero far from the path.
+  double dmin = neighpair[0].second;
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
-    expdist = std::exp(-lambda * (*it).second);
+    dmin = std::min(dmin, (*it).second);
+  }
+  for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
+    expdist = std::exp(-lambda * ((*it).second - dmin));
     expdists[(*it).first] = expdist;
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
   }
 
-  if(partition==0.0) {
-    partition=std::numeric_limits<double>::min();
-  }
-
   s_path /= partition;
   val_s_path->set(s_path);
-  val_z_path->set(-(1. / lambda) * std::log(partition));
+  val_z_path->set(dmin - (1. / lambda) * std::log(partition));
 
   // Derivatives
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
@@ -335,7 +356,8 @@ void FuncPathGeneral::prepare() {
       }
       log.printf(" \n");
     } else {
-      if (int(getStep()) % int(neigh_stride / getTimeStep()) == 0) {
+      const long long nstride = std::max(1LL, static_cast<long long>(neigh_stride / getTimeStep()));
+      if (getStep() % nstride == 0) {
         log.printf(" Time %f : recalculating full neighbour list \n", getStep() * getTimeStep());
         neighpair.resize(path_cv_values.size());
         for (unsigned i = 0; i < path_cv_values.size(); ++i) {
@@ -344,8 +366,7 @@ void FuncPathGeneral::prepare() {
       }
     }
   }
-
-  requestArguments(allArguments);
+  // all the arguments are always needed, so the argument list never changes
 }
 
 }
