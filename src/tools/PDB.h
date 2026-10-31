@@ -42,7 +42,7 @@ class Log;
 class PDB {
   std::vector<unsigned> block_ends;
   std::vector<std::string> atomsymb, chain;
-  std::vector<unsigned> residue;
+  std::vector<int> residue;
   std::vector<Vector> positions;
   std::vector<double> occupancy;
   std::vector<double> beta;
@@ -77,11 +77,14 @@ public:
 /// Get the names of all the chains in the pdb file
   void getChainNames( std::vector<std::string>& chains ) const;
 /// Get the residues in each of the chains
-  void getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const;
+  void getResidueRange( const std::string& chainname, int& res_start, int& res_end, std::string& errmsg ) const;
+/// Get the residue numbers found in a chain, in the order in which they appear in the file (each listed once).
+/// Contrary to looping from res_start to res_end, this works also when the numbering has gaps.
+  std::vector<int> getResiduesInChain( const std::string& chainname ) const;
 /// Get the atoms in each of the chains
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
 /// Get the chain ID that a particular residue is a part of
-  std::string getChainID(const unsigned& resnumber) const;
+  std::string getChainID(int resnumber) const;
 /// Get the chain ID from atom number
   std::string getChainID(AtomNumber a) const;
 ///use the log to dump information
@@ -89,14 +92,14 @@ public:
 /// return the name of a specific atom
   std::string getAtomName(AtomNumber a) const;
 /// return the residue number for a specific atom
-  unsigned getResidueNumber(AtomNumber a) const;
+  int getResidueNumber(AtomNumber a) const;
 /// return the residue name for a specific atom
   std::string getResidueName(AtomNumber a) const;
 /// get the name of the resnum'th residue
-  std::string getResidueName(const unsigned& resnum ) const;
+  std::string getResidueName(int resnum ) const;
 /// get the name of the resnum'th residue of chain
 /// Chain=="*" matches any chain and makes it equivalent to getResidueName
-  std::string getResidueName(const unsigned& resnum,const std::string& chain ) const;
+  std::string getResidueName(int resnum,const std::string& chain ) const;
 /// Check if any of the residues are named name
   bool checkForResidue( const std::string& name ) const ;
 /// Check if any of the atoms are named atom
@@ -104,10 +107,10 @@ public:
 /// Check if specific atom exists
   bool checkForAtom( AtomNumber a ) const ;
 /// Return the atom named aname from residue number resnum
-  AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
+  AtomNumber getNamedAtomFromResidue( const std::string& aname, int resnum ) const;
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
-  AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
+  AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chain ) const;
 /// Check if the properties that are required are in this pdb this is used in PLMD::mapping::Mapping
 //  bool hasRequiredProperties( const std::vector<std::string>& inproperties );
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to add the sizes of the domains for PLMD::MultiRMSD
@@ -123,7 +126,7 @@ public:
 /// Get the value of one of the arguments in the PDB file
   bool getArgumentValue( const std::string& name, std::vector<double>& value ) const ;
 /// Access to the atoms of a residue
-  std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
+  std::vector<AtomNumber> getAtomsInResidue(int resnum,const std::string& chainid)const;
 /// Access to the atoms of a chain
   std::vector<AtomNumber> getAtomsInChain(const std::string& chainid)const;
 /// Get the extents of the blocks containing the atoms

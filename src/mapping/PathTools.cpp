@@ -181,7 +181,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
     std::vector<double> alig( mypdb.getOccupancy() ), disp( mypdb.getBeta() );
     std::vector<AtomNumber> indices( mypdb.getAtomNumbers() );
-    std::vector<unsigned> residue_indices( indices.size() );
+    std::vector<int> residue_indices( indices.size() );
     for(unsigned i=0; i<residue_indices.size(); ++i) {
       residue_indices[i] = mypdb.getResidueNumber( indices[i] );
     }
@@ -409,7 +409,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
 // Now create the metric object
   std::vector<double> alig, disp;
-  std::vector<unsigned> residue_indices;
+  std::vector<int> residue_indices;
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
     std::string trinput = "endT: TRANSPOSE ARG=end";
     const char* tinp=trinput.c_str();
