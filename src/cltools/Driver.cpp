@@ -363,7 +363,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(multi<2) {
       error("--debug_grex needs --multi with at least two replicas");
     }
-    Tools::convert(fakein,grex_stride);
+    if(!Tools::convertNoexcept(fakein,grex_stride) || grex_stride<=0) {
+      error("--debug-grex should be a positive integer");
+    }
     std::string n;
     Tools::convert(intercomm.Get_rank(),n);
     std::string file;
@@ -490,13 +492,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(pbc_cli_list.length()>0) {
       pbc_cli_given=true;
       std::vector<std::string> words=Tools::getWords(pbc_cli_list,",");
-      if(words.size()==3) {
-        for(int i=0; i<3; i++) {
-          std::sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[4*i]));
-        }
-      } else if(words.size()==9) {
-        for(int i=0; i<9; i++) {
-          std::sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[i]));
+      if(words.size()==3 || words.size()==9) {
+        for(unsigned i=0; i<words.size(); i++) {
+          // with 3 numbers, they are the diagonal elements
+          if(!Tools::convertNoexcept(words[i],pbc_cli_box[words.size()==3?4*i:i])) {
+            error("cannot parse command-line box "+pbc_cli_list);
+          }
         }
       } else {
         std::string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
@@ -543,9 +544,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
   p.cmd("setLog",out);
-  p.cmd("setMDLengthUnits",units.getLength());
-  p.cmd("setMDChargeUnits",units.getCharge());
-  p.cmd("setMDMassUnits",units.getMass());
+  // the units should be passed with the same precision as the other real numbers
+  p.cmd("setMDLengthUnits",real(units.getLength()));
+  p.cmd("setMDChargeUnits",real(units.getCharge()));
+  p.cmd("setMDMassUnits",real(units.getMass()));
   p.cmd("setMDEngine","driver");
   p.cmd("setTimestep",timestep);
   if( !parseOnly || full_outputfile.length()==0 ) {
@@ -569,7 +571,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   if(!noatoms&&!parseOnly) {
     if (trajectoryFile=="-") {
-      parser.init(trajectory_fmt, in);
+      auto errormessage=parser.init(trajectory_fmt, in);
+      if(errormessage) {
+        error(*errormessage);
+      }
     } else {
       if(multi) {
         std::string n;
@@ -582,7 +587,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           trajectoryFile=testfile;
         }
       }
-      parser.init(trajectory_fmt,trajectoryFile,use_molfile,command_line_natoms);
+      auto errormessage=parser.init(trajectory_fmt,trajectoryFile,use_molfile,command_line_natoms);
+      if(errormessage) {
+        error(*errormessage);
+      }
       natoms = parser.nOfAtoms();
     }
     if(dumpforces.length()>0) {
@@ -592,6 +600,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         dumpforces+="."+n;
       }
       fp_forces=std::fopen(dumpforces.c_str(),"w");
+      if(!fp_forces) {
+        error("cannot open file "+dumpforces+" for writing");
+      }
       fp_forces_deleter.reset(fp_forces);
     }
     if(debugforces.length()>0) {
@@ -675,6 +686,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         double mass;
         double charge;
         while(ifile.scanField("index",index).scanField("mass",mass).scanField("charge",charge).scanField()) {
+          if( index<0 || index>=natoms ) {
+            error("atom index in file " + mcfile + " is not between 0 and the number of atoms in trajectory minus one");
+          }
           masses[index]=mass;
           charges[index]=charge;
         }
@@ -935,12 +949,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           for(int i=0; i<npe; i++) {
             std::fprintf(out,"%d ",loc[i]);
           }
-          printf("\n");
+          std::fprintf(out,"\n");
           std::fprintf(out,"DRIVER: ");
           for(int i=0; i<npe; i++) {
             std::fprintf(out,"%d ",start[i]);
           }
-          printf("\n");
+          std::fprintf(out,"\n");
         }
         p.cmd("setAtomsNlocal",pd_nlocal);
         p.cmd("setAtomsContiguous",pd_start);
@@ -1015,6 +1029,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           dd_coordinates[3*i+0]=coordinates[3*kk+0];
           dd_coordinates[3*i+1]=coordinates[3*kk+1];
           dd_coordinates[3*i+2]=coordinates[3*kk+2];
+          // masses and charges might have been read in readAtoms (e.g., dlp4)
+          dd_masses[i]=masses[kk];
+          dd_charges[i]=charges[kk];
         }
         p.cmd("setForces",&dd_forces[0], {dd_nlocal,3});
         p.cmd("setPositions",&dd_coordinates[0], {dd_nlocal,3});
@@ -1112,7 +1129,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       real base=0;
       p.cmd("getBias",&base);
       if( std::abs(base)<epsilon ) {
-        printf("WARNING: bias for configuration appears to be zero so debugging forces is trivial");
+        std::fprintf(out,"WARNING: bias for configuration appears to be zero so debugging forces is trivial\n");
       }
       evaluateNumericalDerivatives( step, p, coordinates, masses, charges, cell, base, numder );
 
