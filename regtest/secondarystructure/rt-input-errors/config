@@ -1,0 +1,29 @@
+type=driver
+# wrong input in the SECONDARY_STRUCTURE_RMSD and SECONDARY_STRUCTURE_DRMSD actions must give an error
+# (the segments with the wrong number of atoms or with indexes outside ATOMS used to crash). The runner
+# only accepts a non zero exit code from the main command, so the wrong inputs are run in plumed_regtest_after
+# and the error messages are compared with errors.reference
+arg="--plumed plumed.dat --parse-only --natoms 100"
+export PLUMED_STACK_TRACE=no
+
+function plumed_regtest_after() {
+  S31=$(seq -s, 0 30)
+  rm -f errors
+  while read -r name line ; do
+    echo "$line" > wrong.dat
+    echo "== $name" >> errors
+    plumed driver --plumed wrong.dat --parse-only --natoms 100 2>&1 | awk 'f{print; exit} /^\([a-zA-Z_\/.]+:[0-9]+\)/{f=1}' >> errors
+  done <<EOT
+ragged_segments c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,2 SEGMENT2=3,4,5,6 TYPE=OPTIMAL
+index_outside_atoms c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,12 TYPE=OPTIMAL
+too_many_atoms c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-40 STRUCTURE1=$(seq -s, 1 93) SEGMENT1=$S31 TYPE=OPTIMAL
+one_atom c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0 SEGMENT1=0 TYPE=OPTIMAL
+wrong_structure_size c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0 SEGMENT1=0,1,2 TYPE=OPTIMAL
+no_structure c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 SEGMENT1=0,1,2 TYPE=OPTIMAL
+structures_different_size c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0,0,0,1 STRUCTURE2=1,0,0,0,1,0 SEGMENT1=0,1,2 TYPE=OPTIMAL
+align_strands_three_atoms c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 ALIGN_STRANDS STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,2 TYPE=OPTIMAL
+drmsd_ragged_segments c1: SECONDARY_STRUCTURE_DRMSD ATOMS=1-12 BONDLENGTH=0.17 STRUCTURE1=2,0,0,0,2,0,0,0,2 SEGMENT1=0,1,2 SEGMENT2=3,4,5,6
+drmsd_index_outside_atoms c1: SECONDARY_STRUCTURE_DRMSD ATOMS=1-12 BONDLENGTH=0.17 STRUCTURE1=2,0,0,0,2,0,0,0,2 SEGMENT1=0,1,20
+drmsd_all_pairs_bonded c1: SECONDARY_STRUCTURE_DRMSD ATOMS=1-12 BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,2
+EOT
+}
