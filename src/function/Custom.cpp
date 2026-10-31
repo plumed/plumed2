@@ -28,6 +28,9 @@
 #include "tools/OpenMP.h"
 #include "tools/LeptonCall.h"
 
+#include <cmath>
+#include <set>
+
 namespace PLMD {
 namespace function {
 
@@ -619,6 +622,39 @@ void Custom::registerKeywords(Keywords& keys) {
   keys.addDOI("10.1093/nar/gkv872");
 }
 
+/// Collect the names of the variables v such that the expression is of the form v*g(...),
+/// i.e. it is zero whenever v is zero (as long as g is finite)
+static void findMultiplicativeFactors( const lepton::ExpressionTreeNode& node, std::set<std::string>& factors ) {
+  const lepton::Operation& op = node.getOperation();
+  switch( op.getId() ) {
+  case lepton::Operation::VARIABLE:
+    factors.insert( op.getName() );
+    break;
+  case lepton::Operation::MULTIPLY:
+    findMultiplicativeFactors( node.getChildren()[0], factors );
+    findMultiplicativeFactors( node.getChildren()[1], factors );
+    break;
+  case lepton::Operation::DIVIDE:
+  case lepton::Operation::NEGATE:
+  case lepton::Operation::SQUARE:
+  case lepton::Operation::CUBE:
+    findMultiplicativeFactors( node.getChildren()[0], factors );
+    break;
+  case lepton::Operation::MULTIPLY_CONSTANT:
+    if( std::isfinite( dynamic_cast<const lepton::Operation::MultiplyConstant&>(op).getValue() ) ) {
+      findMultiplicativeFactors( node.getChildren()[0], factors );
+    }
+    break;
+  case lepton::Operation::POWER_CONSTANT:
+    if( dynamic_cast<const lepton::Operation::PowerConstant&>(op).getValue()>0 ) {
+      findMultiplicativeFactors( node.getChildren()[0], factors );
+    }
+    break;
+  default:
+    break;
+  }
+}
+
 void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& options ) {
   // Read in the variables
   unsigned nargs = action->getNumberOfArguments();
@@ -646,58 +682,6 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   if(f.var.size()!=nargs) {
     action->error("Size of VAR array should be the same as number of arguments");
   }
-  // Check for operations that are not multiplication (this can probably be done much more cleverly)
-  bool onlymultiplication = f.func.find("*")!=std::string::npos;
-  // Find first bracket in expression
-  if( f.func.find("(")!=std::string::npos ) {
-    std::size_t br = f.func.find_first_of("(");
-    std::string subexpr=f.func.substr(0,br);
-    onlymultiplication = f.func.find("*")!=std::string::npos;
-    if( subexpr.find("/")!=std::string::npos ) {
-      std::size_t sl = f.func.find_first_of("/");
-      std::string aa = subexpr.substr(0,sl);
-      subexpr=aa;
-    }
-    if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) {
-      onlymultiplication=false;
-    }
-    // Now work out which vars are in multiplication
-    if( onlymultiplication ) {
-      for(unsigned i=0; i<f.var.size(); ++i) {
-        if( subexpr.find(f.var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-          f.check_multiplication_vars.push_back(i);
-        }
-      }
-    }
-  } else if( f.func.find("/")!=std::string::npos ) {
-    onlymultiplication=true;
-    if( f.func.find("+")!=std::string::npos || f.func.find("-")!=std::string::npos ) {
-      onlymultiplication=false;
-    }
-    if( onlymultiplication ) {
-      std::size_t br = f.func.find_first_of("/");
-      std::string subexpr=f.func.substr(0,br);
-      for(unsigned i=0; i<f.var.size(); ++i) {
-        if( subexpr.find(f.var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-          f.check_multiplication_vars.push_back(i);
-        }
-      }
-    }
-  } else if( f.func.find("+")!=std::string::npos || f.func.find("-")!=std::string::npos ) {
-    onlymultiplication=false;
-  } else {
-    for(unsigned i=0; i<f.var.size(); ++i) {
-      if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-        f.check_multiplication_vars.push_back(i);
-      }
-    }
-  }
-  if( f.check_multiplication_vars.size()>0 ) {
-    action->log.printf("  optimizing implementation as function only involves multiplication \n");
-  }
-
   action->log.printf("  with function : %s\n",f.func.c_str());
   action->log.printf("  with variables :");
   for(unsigned i=0; i<f.var.size(); i++) {
@@ -710,9 +694,37 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   }
   action->log.printf("\n");
   f.function.set( f.func, f.var, action );
+  // Find the arguments that multiply the whole expression.  If one of these
+  // arguments is zero the function is zero.  If, in addition, the derivative of
+  // that argument is zero whenever its value is zero (e.g. a switching function
+  // beyond its cutoff) all the derivatives of the function are also zero, so the
+  // evaluation can be skipped. This is decided on the lepton parse tree: the
+  // previous string based check got wrong expressions such as x*cos(y)+1 or exp(x)*y.
+  std::set<std::string> factors;
+  findMultiplicativeFactors( lepton::Parser::parse(f.func).optimize(lepton::Constants()).getRootNode(), factors );
+  for(unsigned i=0; i<f.var.size(); ++i) {
+    if( factors.count(f.var[i])>0 && action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      f.check_multiplication_vars.push_back(i);
+    }
+  }
+  if( f.check_multiplication_vars.size()>0 ) {
+    action->log.printf("  optimizing implementation as function only involves multiplication \n");
+  }
+
+  // If the function is zero when all the arguments are zero and all the arguments have zero
+  // derivatives when they are zero, value and derivatives are zero and need not be computed.
+  // If some argument has a non-zero derivative when it is zero the derivatives of the function
+  // must be computed (e.g. FUNC=x+y), so this shortcut is not used.
+  bool allderivzero=true;
+  for(unsigned i=0; i<nargs; ++i) {
+    if( !action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      allderivzero=false;
+      break;
+    }
+  }
   std::vector<double> zeros( nargs, 0 );
   double fval = fabs(f.function.evaluate(zeros));
-  f.zerowhenallzero=(fval<epsilon );
+  f.zerowhenallzero=(allderivzero && fval<epsilon );
   if( f.zerowhenallzero ) {
     action->log.printf("  not calculating when all arguments are zero \n");
   }

@@ -1,0 +1,4 @@
+type=driver
+# FUNCPATHMSD far from all the frames (exp(-lambda*d) underflows) and with a neighbor list
+arg="--plumed plumed.dat --ixyz trajectory.xyz --timestep 0.005 --dump-forces forces --dump-forces-fmt=%10.6f"
+extra_files="../../trajectories/trajectory.xyz"

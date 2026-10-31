@@ -126,6 +126,9 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
       log.printf("\n");
     }
   }
+  if( arg.empty() || arg.size()%ens_dim!=0 ) {
+    error("LOCALENSEMBLE needs NUM keywords ARG1, ARG2, ..., each with the same number of arguments");
+  }
   requestArguments(arg);
   narg = arg.size()/ens_dim;
 
@@ -145,7 +148,9 @@ std::string LocalEnsemble::getOutputComponentDescription( const std::string& cna
 
 void LocalEnsemble::calculate() {
   const double fact = 1.0/static_cast<double>(ens_dim);
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  // each iteration costs a few flops: only use threads when there are many arguments
+  [[maybe_unused]] const unsigned nt = narg*ens_dim>10000 ? OpenMP::getNumThreads() : 1;
+  #pragma omp parallel for num_threads(nt) if(nt>1)
   for(unsigned i=0; i<narg; ++i) {
     double mean = 0.;
     Value* v=getPntrToComponent(i);

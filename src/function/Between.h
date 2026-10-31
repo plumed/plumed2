@@ -49,7 +49,7 @@ struct Between {
   }
   void removeFromACCDevice() const {
     hist.removeFromACCDevice();
-#pragma acc exit data delete(order, this[0:1])
+#pragma acc exit data delete(this[0:1])
   }
 #endif // __PLUMED_HAS_OPENACC
 };
@@ -69,7 +69,7 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
-      action->error("should only be one argument to less_than actions");
+      action->error("should only be one argument to this action");
     }
   }
 
