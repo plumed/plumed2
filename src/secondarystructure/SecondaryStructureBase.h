@@ -67,6 +67,9 @@ public:
   static constexpr size_t virialSize=9;
   static constexpr unsigned customGatherStep=3;
   static constexpr unsigned customGatherStopBefore=virialSize;
+  /// The largest number of atoms in a segment (the size of the position buffer in performTask).
+  /// ALPHARMSD, ANTIBETARMSD and PARABETARMSD all use segments of exactly this size
+  static constexpr unsigned maxAtomsInSegment=30;
 
 private:
   PTM taskmanager;
@@ -235,6 +238,22 @@ SecondaryStructureBase<T,myPTM>::SecondaryStructureBase(const ActionOptions&ao):
     if( !parseNumberedVector("SEGMENT",i,newatoms) ) {
       break;
     }
+    // The segments are copied into a rectangular matrix and the positions of their atoms into a
+    // buffer of fixed size, so everything is checked here rather than in performTask
+    if( newatoms.size()<2 || newatoms.size()>maxAtomsInSegment ) {
+      error("SEGMENT" + std::to_string(i) + " contains " + std::to_string(newatoms.size()) + " atoms. A segment must contain between 2 and "
+            + std::to_string(maxAtomsInSegment) + " atoms");
+    }
+    if( !colvar_atoms.empty() && newatoms.size()!=colvar_atoms[0].size() ) {
+      error("all the SEGMENT keywords must contain the same number of atoms but SEGMENT1 contains "
+            + std::to_string(colvar_atoms[0].size()) + " atoms and SEGMENT" + std::to_string(i) + " contains " + std::to_string(newatoms.size()) );
+    }
+    for(unsigned ii=0; ii<newatoms.size(); ++ii) {
+      if( newatoms[ii]>=all_atoms.size() ) {
+        error("SEGMENT" + std::to_string(i) + " contains index " + std::to_string(newatoms[ii]) + " but only " + std::to_string(all_atoms.size())
+              + " atoms were specified with ATOMS (indices start from zero)");
+      }
+    }
     if( verbose_output ) {
       log.printf("  Secondary structure segment %u contains atoms : ", static_cast<unsigned>(colvar_atoms.size()+1));
       for(unsigned ii=0; ii<newatoms.size(); ++ii) {
@@ -265,7 +284,10 @@ SecondaryStructureBase<T,myPTM>::SecondaryStructureBase(const ActionOptions&ao):
     if( !parseNumberedVector("STRUCTURE",ii,cstruct) ) {
       break ;
     }
-    plumed_assert( cstruct.size()%3==0 && cstruct.size()/3==colvar_atoms[0].size() );
+    if( cstruct.size()%3!=0 || cstruct.size()/3!=colvar_atoms[0].size() ) {
+      error("STRUCTURE" + std::to_string(ii) + " contains " + std::to_string(cstruct.size()) + " numbers. It must contain the three coordinates of each of the "
+            + std::to_string(colvar_atoms[0].size()) + " atoms in a segment");
+    }
     std::vector<Vector> structure( cstruct.size()/3 );
     for(unsigned i=0; i<structure.size(); ++i) {
       for(unsigned j=0; j<3; ++j) {
@@ -276,7 +298,13 @@ SecondaryStructureBase<T,myPTM>::SecondaryStructureBase(const ActionOptions&ao):
   }
 
   // And create values to hold everything
-  plumed_assert( myinput.nstructures>0 );
+  if( myinput.nstructures==0 ) {
+    error("no reference structure was found in input -- use STRUCTURE");
+  }
+  if( myinput.align_strands && colvar_atoms[0].size()!=maxAtomsInSegment ) {
+    error("ALIGN_STRANDS assumes that the two strands are the first and second halves of a segment containing " + std::to_string(maxAtomsInSegment)
+          + " atoms, but the segments contain " + std::to_string(colvar_atoms[0].size()) + " atoms");
+  }
   std::vector<std::size_t> shape(1);
   shape[0]=colvar_atoms.size();
   if( myinput.nstructures==1 ) {
@@ -345,8 +373,8 @@ void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T&
   // SecondaryStructureInput alias); this body is never called for it. MSVC
   // instantiates member bodies eagerly, hence the guard.
   if constexpr ( !std::is_same_v<T,Empty> ) {
-    // std::vector<Vector> pos( actiondata.natoms );
-    std::array<Vector,30> pos;
+    // The constructor checks that natoms<=maxAtomsInSegment
+    std::array<Vector,maxAtomsInSegment> pos;
 
     for(unsigned i=0; i<actiondata.natoms; ++i) {
       const unsigned atno = actiondata.colvar_atoms(task_index,i);
@@ -373,14 +401,16 @@ void SecondaryStructureBase<T,myPTM>::performTask( unsigned task_index, const T&
       }
     }
 
-    // Create a holder for the derivatives
+    // Create a holder for the derivatives. The number of derivatives per component has to be the one that
+    // was given to setupParallelTaskManager (3*natoms+virialSize), and the view must contain just the atoms of
+    // the segment: the size of the buffer is only an upper limit.
     const unsigned rs = actiondata.nstructures;
     ColvarOutput rmsd_output( output.values,
-                              3*pos.size()+virialSize,
+                              3*actiondata.natoms+virialSize,
                               output.derivatives.data() );
     // And now calculate the DRMSD
     for(unsigned i=0; i<rs; ++i) {
-      T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),pos.size()}, rmsd_output );
+      T::calculateDistance( i, input.noderiv, actiondata, View{pos.data(),actiondata.natoms}, rmsd_output );
     }
   }
 }
