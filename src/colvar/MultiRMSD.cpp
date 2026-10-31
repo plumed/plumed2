@@ -29,7 +29,7 @@
 /*
 Calculate RMSD distances for different domains and combine them.
 
-This action is largely depracated.  In previous versions of PLUMED a more complex version of this method was implemented.
+This action is largely deprecated.  In previous versions of PLUMED a more complex version of this method was implemented.
 You can see an example in [example from the plumed nest](https://www.plumed-nest.org/eggs/20/026/).
 
 We felt that the input syntax for the method was not very transparant.  We have thus provided this minimal action
@@ -72,7 +72,7 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
 MultiRMSD::MultiRMSD(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  warning("this action is depracated.  look at the log to see how it is implemented using the new syntax");
+  warning("this action is deprecated.  look at the log to see how it is implemented using the new syntax");
   std::string type;
   parse("TYPE",type);
   bool nopbc;

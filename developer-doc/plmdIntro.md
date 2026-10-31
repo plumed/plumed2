@@ -252,7 +252,7 @@ PLMD::Action.  To make that clear it looks like the code can calculate the dista
 atoms without ever calling any of the routines from PLMD::colvar::Distance!      
 
 We can program in this way because we take advantage of dynamic polymorhpism.  If you look at the
-documenation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
+documentation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
 PLMD::Action as:
 
 \verbatim

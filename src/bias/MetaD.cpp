@@ -1479,7 +1479,7 @@ void MetaD::setupComponents(const SetupInput& in) {
     log.printf("  calculation on the fly of the acceleration factor\n");
     addComponent("acc");
     componentIsNotPeriodic("acc");
-    // Set the initial value of the the acceleration.
+    // Set the initial value of the acceleration.
     // If this is not a restart, set to 1.0.
     if (in.acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);

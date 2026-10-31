@@ -124,8 +124,8 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SPECIES","the label of the DISTANCES or PLANES action that computes the orientations of the molecules for which you would like to compute SMAC.  The coordination sphere contains the same list of molecules if you use this keyword.");
   keys.add("optional","SPECIESA","the label of the DISTANCES or PLANES action that computes the orientations of the molecules for which you would like to compute SMAC.  This keyword must be used with SPECIESB.");
   keys.add("optional","SPECIESB","the label of the DISTANCES or PLANES action that computes the orientations of the molecules that should be considered as part of the coordination sphere.  This keyword must be used with SPECIESA.");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("numbered","KERNEL","The kernels used in the function of the angle");

@@ -44,9 +44,9 @@ PRINT ARG=c1 FILE=colvar
 ```
 
 A four dimensional vector is then returned that contains the RMSD distances between the 4 sets of 3 atoms that were specified using the `SEGMENT` keywords
-and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the the number of vectors output
+and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the number of vectors output
 is equal to the number of times the `STRUCTURE` keyword is used.  Further note that the indices specified to the SEGMENT keywords give the indices in the list
-of atoms specified by the ATOMS keyword.  `SEGMENT1=0,1,2` in the above input is measuring the distance between the instaneous positions of atoms 13, 14 and 15
+of atoms specified by the ATOMS keyword.  `SEGMENT1=0,1,2` in the above input is measuring the distance between the instantaneous positions of atoms 13, 14 and 15
 and the reference structure.
 
 ## Periodic boundary conditions
@@ -64,8 +64,8 @@ c1: SECONDARY_STRUCTURE_RMSD ...
 PRINT ARG=c1 FILE=colvar
 ```
 
-the distances between in the instaneous structure are evaluated in a way that does not take the periodic boundary conditions
-into account.  Whenver this flag is __not__ present the distances in the instaneous structure are evaluated in a way that takes the periodic boundary conditions
+the distances between in the instantaneous structure are evaluated in a way that does not take the periodic boundary conditions
+into account.  Whenver this flag is __not__ present the distances in the instantaneous structure are evaluated in a way that takes the periodic boundary conditions
 into account.
 
 If you use the `ALIGN_STRANDS` flag to evaluate the distances in a way that takes the periodic boundary conditions into accounts means that
@@ -77,7 +77,7 @@ $$
 $$
 
 where the difference in the second term on the right of the equality sign is evaluated using the periodic boundary conditions. New positions are then determined
-for atoms 16 through 30 by adding the difference (evaluated without PBC) between the new position for atom 22 after the above transformation has been perfomed and the
+for atoms 16 through 30 by adding the difference (evaluated without PBC) between the new position for atom 22 after the above transformation has been performed and the
 original position of this atom.  This treatment is designed for making sure that the two strands of the [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md)
 sheets are not broken by the periodic boundaries.
 
@@ -112,8 +112,8 @@ PRINT ARG=ab FILE=colvar
 The input above illustrates the input that is used by the shortcut that computes the [ANTIBETARMSD](ANTIBETARMSD.md). You can see that the distances between the atoms on the two strands of the
 beta sheet are computed in a [DISTANCE](DISTANCE.md) action before we computed the SECONDARY_STRUCTURE_RMSD values.  These distances are then transformed by a Heavyside function that is 1 if
 the distance is less than 1 nm and zero otherwise.  This vector of ones and zeros is then fed into the SECONDARY_STRUCTURE_RMSD action as a mask.  By doing this we ensure that SECONDARY_STRUCTURE_RMSD
-values are only computed for parts of the strand that are close together. This avoids performing unecessarily expensive calculations and is also a reasonable thing to do as if the two strands are more than
-1 nm appart the residues in question are not at all similar to a beta sheet structure.
+values are only computed for parts of the strand that are close together. This avoids performing unnecessarily expensive calculations and is also a reasonable thing to do as if the two strands are more than
+1 nm apart the residues in question are not at all similar to a beta sheet structure.
 
 */
 //+ENDPLUMEDOC

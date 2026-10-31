@@ -90,7 +90,7 @@ PRINT ARG=theta
 The previous examples demonstrates how CUSTOM can be used to evaluate mathematical expressions that involve taking powers (^), adding (+),
 multiplying (*), dividing (/) and subtracting (-) variables and can control the order in which operations are performed by using parenthesis.
 In addition to these basic binary operations you can also use a range of mathematical functions in your expressions.  The following table lists all the mathematical functions
-that you can use in in the input to the `FUNC` keyword for CUSTOM.
+that you can use in the input to the `FUNC` keyword for CUSTOM.
 
 | Function | Description |
 |:--------:|:------------|
@@ -280,7 +280,7 @@ $$
 Notice that the value called `onaxis` in the above input is thus $o=x\cos(\theta) + \frac{z}{2}$.  Adding the factor of $\frac{z}{2}$ ensures that the origin
 is at the center of the bond connecting atom 1 to atom 2.
 
-The value `fromaxis` measures the square of the distance from the the line.  It is calculated using pythagoras theorem as follows:
+The value `fromaxis` measures the square of the distance from the line.  It is calculated using pythagoras theorem as follows:
 
 $$
 f^2 = y^2 - x^2\cos^2(\theta)
@@ -446,7 +446,7 @@ are matrices:
 d_mat: DISTANCE_MATRIX GROUP=1-64 LINKCELL_CUTOFF=4.5 COMPONENTS
 # Find the six nearest atom to each of the coordinates
 nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
-# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+# Evaluate the lengths of the bonds connecting each atom to its nearest neighbors
 r: CUSTOM ...
    ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn
    FUNC=sqrt(x*x+y*y+z*z)
@@ -472,11 +472,11 @@ PRINT ARG=d_mean FILE=colv
 
 Using the MASK here ensures that we only calculate the CUSTOM functions for the six nearest neighbors of each of the input atoms. However, it is important to note that
 this input is rather unsual.  In general you rarely need to use the MASK keyword for CUSTOM actions that take matrices in input.  For example, if we use the following
-(more conventional version) of the above CV the MASK is unecessary as the sparsity pattern of the input matrices are all identical.
+(more conventional version) of the above CV the MASK is unnecessary as the sparsity pattern of the input matrices are all identical.
 
 ```plumed
 cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={RATIONAL R_0=1.0 D_MAX=4.5} COMPONENTS
-# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+# Evaluate the lengths of the bonds connecting each atom to its nearest neighbors
 r: CUSTOM ...
    ARG=cmat.x,cmat.y,cmat.z
    FUNC=sqrt(x*x+y*y+z*z)

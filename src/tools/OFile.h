@@ -140,7 +140,7 @@ int main(){
 }
 
 \notice
-Notice that it is not necessary to explicitely close files, since they are closed implicitly
+Notice that it is not necessary to explicitly close files, since they are closed implicitly
 when the object goes out of scope. In case you need to explicitly close the file before it is
 destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
 statement.

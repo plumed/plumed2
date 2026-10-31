@@ -28,7 +28,7 @@
 /*
 Distance along and from a path calculated using geometric formulas
 
-The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that
 paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating
 the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their
@@ -56,7 +56,7 @@ The example input below shows how to use this action
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-adapt/mypath.pdb
-# Calculate the instaneous position in the high dimensional space
+# Calculate the instantaneous position in the high dimensional space
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 # Read in the refence coordinates from the path
 ref_d1x: PDB2CONSTANT REFERENCE=regtest/mapping/rt-adapt/mypath.pdb ARG=d1.x

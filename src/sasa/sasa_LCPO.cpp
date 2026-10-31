@@ -477,7 +477,7 @@ void SASA_LCPO::readLCPOparam() {
   for(unsigned i=0; i<natoms; i++) {
     if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
-        cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
+        cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
         error ("missing LCPO parameters\n");
       }
     }

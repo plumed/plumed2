@@ -30,7 +30,7 @@ Adjacency matrix in which two atoms are adjacent if they are within a certain cu
 As discussed [here](module_adjmat.md) a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an $N \times N$ matrix in which the $i$th, $j$th element tells you whether
 or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  These matrices can then be further
-analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
+analyzed using a number of other algorithms as is detailed in [this paper](https://doi.org/10.1021/acs.jctc.6b01073).
 
 For this action the elements of the contact matrix are calculated using:
 
@@ -157,7 +157,7 @@ ones64: ONES SIZE=64
 cm_cncn: CONTACT_MATRIX GROUP=cn SWITCH={RATIONAL R_0=0.8}
 # Coordination number of methylamounium with methylamonium
 cc_cncn: MATRIX_VECTOR_PRODUCT ARG=cm_cncn,ones64
-# Vector with elements that are one if coordiantion of methylamonium with methylamonium >5
+# Vector with elements that are one if coordination of methylamonium with methylamonium >5
 mt_cncn: MORE_THAN ARG=cc_cncn SWITCH={RATIONAL R_0=5 NN=12 MM=24}
 
 # Contact matrix that determines if methylamoinium moleulcule and Pb atom are within 7.5 A of each other
@@ -218,7 +218,7 @@ non-zero are stored.  The same thing holds for the additional values that are cr
 when the elements of `c4.w` are non-zero.
 
 We can also use the sparsity of the adjacency matrix to make the time required to compute a contact matrix scale linearly rather than quadratically with the number of atoms. Element
-$i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $r_c$. We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+$i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $r_c$. We can determine that many pairs of atoms are further apart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists.  __To turn on these features you need to set the `D_MAX` parameter in the
 switching functions.__ The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
 
@@ -263,7 +263,7 @@ PRINT ARG=av FILE=colvar STRIDE=1
 ```
 
 This calculation is slow because you have to calculate the coordination numbers of all the atoms even though only a small subset of these quanitties are required to compute the average coordination number in the
-sphere.  To avoid all these unecessary calculations you use the `MASK` keyword as shown below:
+sphere.  To avoid all these unnecessary calculations you use the `MASK` keyword as shown below:
 
 ```plumed
 # The atoms that are of interest
@@ -322,7 +322,7 @@ mt_cnpb: MORE_THAN ARG=cc_cnpb SWITCH={RATIONAL R_0=7 NN=12 MM=24}
 cm_cncn: CONTACT_MATRIX GROUP=cn SWITCH={RATIONAL R_0=0.8 D_MAX=1.75} MASK=mt_cnI
 # Coordination number of methylamounium with methylamonium
 cc_cncn: MATRIX_VECTOR_PRODUCT ARG=cm_cncn,ones64
-# Vector with elements that are one if coordiantion of methylamonium with methylamonium >5
+# Vector with elements that are one if coordination of methylamonium with methylamonium >5
 mt_cncn: MORE_THAN ARG=cc_cncn SWITCH={RATIONAL R_0=5 NN=12 MM=24}
 
 # Element wise product of these three input vectors.

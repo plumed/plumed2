@@ -52,7 +52,7 @@ only when another variable is within a given range.
 !!! caution ""
 
     Notice that not all the possible usage make
-    particular sense. For example, conditionally updating a \ref METAD keyword
+    particular sense. For example, conditionally updating a [METAD](METAD.md) keyword
     (that is: adding hills only if a variable is within a given range)
     can lead to unexpected results.
 

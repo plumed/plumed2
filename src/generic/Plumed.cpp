@@ -68,7 +68,7 @@ from libraries linked to PLUMED, and would differ depending on the operating sys
 are using:
 - On OSX:
   - Symbols from the PLUMED library would clash. The only way to avoid is to load PLUMED dynamically:
-    - If you are are using PLUMED with an MD code, it should be patched with `--runtime`.
+    - If you are using PLUMED with an MD code, it should be patched with `--runtime`.
     - If you are using PLUMED driver, you should launch the `plumed-runtime` executable (contained in the
       `prefix/lib/plumed/` directory) and export `PLUMED_KERNEL` equal to the path of the host kernel library
      (as usual in runtime loading). Notice that as of PLUMED 2.10 we load kernels with RTLD_LOCAL by default.

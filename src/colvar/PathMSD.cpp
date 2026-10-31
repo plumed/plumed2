@@ -30,7 +30,7 @@ namespace colvar {
 This Colvar calculates path collective variables.
 
 Path collective variables were introduced in the paper cited in the bibliography.
-This CV defines a a curvilinear path using a set of reference configurations. Variables
+This CV defines a curvilinear path using a set of reference configurations. Variables
 that measure the instantaneous position, sss, of the system on this path and the distance from
 this path, zzz, are then computed.  The following input illustrates the syntax that is used
 with this variable

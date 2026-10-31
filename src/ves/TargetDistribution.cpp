@@ -231,7 +231,7 @@ Grid TargetDistribution::getMarginalDistributionGrid(Grid* grid_pntr, const std:
   Pw.reset();
   //
   // scale with the bin volume used for the integral such that the
-  // marginals are proberly normalized to 1.0
+  // marginals are properly normalized to 1.0
   double intVol = grid_pntr->getBinVolume();
   for(unsigned int l=0; l<args_index.size(); l++) {
     intVol/=grid_pntr->getDx()[args_index[l]];
@@ -273,7 +273,7 @@ void TargetDistribution::updateTargetDist() {
     if(normalization < 1.0-normalization_thrshold || normalization > 1.0+normalization_thrshold) {
       std::string norm_str;
       Tools::convert(normalization,norm_str);
-      std::string msg = "the target distribution grid is not proberly normalized, integrating over the grid gives: " + norm_str + " - You can avoid this problem by using the NORMALIZE keyword";
+      std::string msg = "the target distribution grid is not properly normalized, integrating over the grid gives: " + norm_str + " - You can avoid this problem by using the NORMALIZE keyword";
       warning(msg);
     }
   }

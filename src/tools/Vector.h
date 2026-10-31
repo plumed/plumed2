@@ -41,7 +41,7 @@ This class implements a vector of doubles with size fixed at
 compile time. It is useful for small fixed size objects (e.g.
 3d vectors) as it does not waste space to store the vector size.
 Moreover, as the compiler knows the size, it can be completely
-opimized inline.
+optimized inline.
 All the methods are inlined for better optimization and
 all the loops are explicitly unrolled using PLMD::LoopUnroller class.
 Vector elements are initialized to zero by default. Notice that
@@ -149,7 +149,7 @@ public:
   friend constexpr VectorTyped delta<>(const VectorTyped&v1,const VectorTyped&v2);
 /// return v1 .scalar. v2
   friend constexpr T dotProduct<>(const VectorTyped&,const VectorTyped&);
-  //this bad boy produces a warning (in fact becasue declrare the crossproduc as a friend for ALL thhe possible combinations of n and T)
+  //this bad boy produces a warning (in fact because declrare the crossproduc as a friend for ALL thhe possible combinations of n and T)
 /// return v1 .vector. v2
 /// Only available for size 3
   template<typename U>

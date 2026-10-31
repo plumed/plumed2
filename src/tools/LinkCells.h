@@ -109,7 +109,7 @@ public:
 ///setups the cells
 ///
 /// Usually it only uses the pbcs
-/// if the pbc box is  null (three zero vectors) it builds an orthorombic box from the given positions
+/// if the pbc box is  null (three zero vectors) it builds an orthorhombic box from the given positions
   void setupCells( View<const Vector> pos,
                    const Pbc& pbc );
   template <typename T>
@@ -176,7 +176,7 @@ public:
 /// @param neigh_ind indexes of the candidate neighbors
 /// @param pbc
 /// @param natoms_per_list *output* number of atom per list (mapped on tind) `nlist[tind[i]]=natoms[i]`
-/// @param nlist *output* list of the central atoms plus their neigbors
+/// @param nlist *output* list of the central atoms plus their neighbors
   void createNeighborList( unsigned nat,
                            View<const Vector> pos,
                            View<const unsigned> ind,

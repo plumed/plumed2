@@ -75,7 +75,7 @@ public:
 /// Check if a point is within the grid boundaries
   bool inbounds( const std::vector<double>& point ) const ;
   bool inbounds( View<const double> point ) const ;
-/// Convert a point in space the the correspoinding grid point
+/// Convert a point in space the correspoinding grid point
   unsigned getIndex( const std::vector<double>& p ) const ;
   unsigned getIndex( View<const double> point ) const ;
 ///  Flatten the grid and get the grid index for a point

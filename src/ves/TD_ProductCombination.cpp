@@ -229,7 +229,7 @@ void TD_ProductCombination::updateGrid() {
   if(norm>0.0) {
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
   } else if(!isTargetDistGridShiftedToZero()) {
-    plumed_merror(getName()+": The target distribution function cannot be normalized proberly. You should change the definition of the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
+    plumed_merror(getName()+": The target distribution function cannot be normalized properly. You should change the definition of the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
   }
   logTargetDistGrid().setMinToZero();
 }

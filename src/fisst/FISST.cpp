@@ -277,7 +277,7 @@ FISST::FISST(const ActionOptions&ao):
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {
       error("  Unable to determine valid kBT. "
-            "Could be because you are runnning from driver or MD didn't give temperature.\n"
+            "Could be because you are running from driver or MD didn't give temperature.\n"
             "Consider setting temperature manually with the KBT keyword.");
     }
 

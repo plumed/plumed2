@@ -736,7 +736,7 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
     }
   }
 // And read the stuff from the header
-  plumed_massert( ifile.FieldExist( funcl ), "no column labelled " + funcl + " in in grid input");
+  plumed_massert( ifile.FieldExist( funcl ), "no column labelled " + funcl + " in grid input");
   for(unsigned i=0; i<args.size(); ++i) {
     ifile.scanField( "min_" + labels[i], gmin[i]);
     ifile.scanField( "max_" + labels[i], gmax[i]);

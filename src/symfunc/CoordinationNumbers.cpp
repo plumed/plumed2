@@ -118,7 +118,7 @@ PRINT ARG=av FILE=colvar STRIDE=1
 ```
 
 This calculation is slow because you have to calculate the coordination numbers of all the atoms even though only a small subset of these quanitties are required to compute the average coordination number in the
-sphere.  To avoid all these unecessary calculations you use the `MASK` keyword as shown below:
+sphere.  To avoid all these unnecessary calculations you use the `MASK` keyword as shown below:
 
 ```plumed
 # Fixed virtual atom which serves as the probe volume's center (pos. in nm)

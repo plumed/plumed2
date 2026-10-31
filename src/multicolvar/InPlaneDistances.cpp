@@ -42,7 +42,7 @@ $$
 $$
 
 where $\mathbf{r}_j$ is the distance between one of the two atoms that define the vector $\mathbf{n}$ and a third atom (atom $j$) and where $\theta_j$
-is the angle between the vector \f$\mathbf{n}\f$ and the vector $\mathbf{r}_{j}$.  The $x_j$ values for each of the atoms specified using the GROUP keyword are calculated.
+is the angle between the vector $\mathbf{n}$ and the vector $\mathbf{r}_{j}$.  The $x_j$ values for each of the atoms specified using the GROUP keyword are calculated.
 Keywords such as MORE_THAN and LESS_THAN can then be used to calculate the number of these quantities that are more or less than a given cutoff.
 
 The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that

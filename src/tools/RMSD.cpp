@@ -1182,7 +1182,7 @@ double RMSD::optimalAlignment_Fit(const std::vector<double>& alignTo,
 
 /// This calculates the elements needed by the quaternion to calculate everything that is needed
 /// additional calls retrieve different components
-/// note that this considers that the centers of both reference and positions are already setted
+/// note that this considers that the centers of both reference and positions are already set
 /// but automatically should properly account for non removed components: if not removed then it
 /// removes prior to calculation of the alignment
 void RMSDCoreData::doCoreCalc(const bool setSafe,

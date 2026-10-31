@@ -182,7 +182,7 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
     if( t.size()==0 ) {
       parseAtomList("ATOMS", t);
       if( t.size()>0 ) {
-        warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+        warning("using deprecated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
       }
     }
   } else if( t.size()>0 ) {

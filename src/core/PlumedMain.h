@@ -251,10 +251,10 @@ public:
 /// This determines if the user has created a value to hold the quantity that is being passed
   bool valueExists( const std::string& name ) const ;
 
-/// This sets the the value with a particular name to the pointer to the data in the MD code
+/// This sets the value with a particular name to the pointer to the data in the MD code
   void setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val );
 
-/// This sets the the forces with a particular name to the pointer to the data in the MD code
+/// This sets the forces with a particular name to the pointer to the data in the MD code
   void setInputForce( const std::string& name, const TypesafePtr & val );
 
 /// This updates the units of the input quantities

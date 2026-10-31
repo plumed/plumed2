@@ -193,7 +193,7 @@ void OPESexpanded::registerKeywords(Keywords& keys) {
   keys.add("optional","STATE_RFILE","read from this file the Delta F estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the Delta F estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
-  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of overwriting it each time");
 //miscellaneous
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
@@ -331,9 +331,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       } else { //get just deltaFs names
         ifile.scanFieldList(deltaF_name_);
         plumed_massert(deltaF_name_.size()>=4,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[0]=="time","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[1]=="rct","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[0]=="time","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[1]=="rct","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
         deltaF_name_.pop_back();
         deltaF_name_.erase(deltaF_name_.begin(),deltaF_name_.begin()+2);
         std::size_t pos=5; //each name starts with "DeltaF"

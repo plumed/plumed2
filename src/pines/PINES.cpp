@@ -181,7 +181,7 @@ struct alignas(CACHE_LINE_SIZE) Padded {
 void PINES::registerKeywords(Keywords &keys) {
   Colvar::registerKeywords(keys);
   keys.add("numbered", "SWITCH", "The switching functions parameter. You must specify a Switching function for all PINES blocks."
-           "Details of the various switching functions you can use are provided on \\ref switchingfunction.");
+           "Details of the various switching functions you can use are provided in the documentation for LESS_THAN.");
   keys.add("numbered", "BLOCK", "Each block of the PIV");
   keys.add("compulsory", "REF_FILE", "PDB file name that contains the information about system connectivity and labels.");
   keys.add("compulsory", "N_BLOCKS", "Number of blocks in PIV");

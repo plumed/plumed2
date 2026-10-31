@@ -10425,7 +10425,7 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
     }
     if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S') || (AtomResidueName[0][i][0]=='P')) {
-        std::cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
+        std::cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
         error ("missing LCPO parameters\n");
       }
     }

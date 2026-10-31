@@ -385,7 +385,7 @@ public:
 
 // These are the versions used when compiling with NDEBUG flag.
 // The if constexpr(false) gurarantees that the compiler will optimize away the assertion
-// We are not using an empty macro becasue the user may want to use the << operator
+// We are not using an empty macro because the user may want to use the << operator
 
 #define plumed_dbg_assert(test) if constexpr(false) plumed_assert(true)
 #define plumed_dbg_massert(test,msg) if constexpr(false) plumed_massert(true,msg)

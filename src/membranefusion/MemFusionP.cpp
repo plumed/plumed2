@@ -236,7 +236,7 @@ void memFusionP::calculate() {
   ZuMem = Lz * (atan2(-ZuMemsin, -ZuMemcos) + M_PI) / (2.0 * M_PI);
   ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + M_PI) / (2.0 * M_PI);
 
-  // Z center of the boths membranes (upper and lower).
+  // Z center of the both membranes (upper and lower).
   double ZMems = (ZuMem + ZlMem) / 2.0;
 
   /*************************

@@ -1503,7 +1503,7 @@ void EMMIVOX::calculate_fmod() {
   // number of data points
   int nd = ovdd_.size();
 
-  // fill positions in in parallel
+  // fill positions in parallel
   std::vector<double> posg(3*natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (int i=0; i<natoms; ++i) {

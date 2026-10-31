@@ -338,7 +338,7 @@ void Keywords::addOrReserve( std::string_view keytype,
     //keytype may be "residues" or something like "atoms-3"
     keywords.find(key)->second.atomtag=keytype;
     if (isaction && keytype == "atoms") { //this narrow the doctrstring ONLY to atoms
-      keywords.find(key)->second.docstring+= ".  For more information on how to specify lists of atoms see \\ref Group";
+      keywords.find(key)->second.docstring+= ".  For more information on how to specify lists of atoms see the section of the manual on specifying atoms";
     }
   }
   if (reserve) {
@@ -904,7 +904,7 @@ std::string Keywords::getTooltip( const std::string& name ) const {
       mystring += w[i] + " ";
     }
     if( w[i].find(".")!=std::string::npos ) {
-      break;  // Only write up the the first dot
+      break;  // Only write up the first dot
     }
   }
   return mystring;

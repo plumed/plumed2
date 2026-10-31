@@ -293,7 +293,7 @@ $$
 where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
 keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
 eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
-of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further apart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
 need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
 from the parameters of the Gaussian kernels directly.
@@ -410,7 +410,7 @@ $$
 where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
 keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
 eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
-of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further apart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
 need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
 from the parameters of the Gaussian kernels directly.
@@ -528,7 +528,7 @@ $$
 where $i$ runs over all the PAMM kernels.  $g_{cut}$ is the gaussian cutoff that is specified using the REGULARIZE
 keyword,  $\mu_i^{(ad)}$ is the mean acceptor-donor distance for the $i$th kernel, $\lambda_{i,max}$ is the largest
 eigenvalue of the covariance for the $i$th kernel and $v_\textrm{i,max}^{(ad)}$ is the acceptor-donor distance component
-of its corresponding eigenvector.  We can determine that many pairs of atoms are further appart than $r_c$ without computing the
+of its corresponding eigenvector.  We can determine that many pairs of atoms are further apart than $r_c$ without computing the
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists. Furthermore, we do not even
 need to set a `D_MAX` parameter as we would have to if we were using [CONTACT_MATRIX](CONTACT_MATRIX.md) as the above cutoff can be determined
 from the parameters of the Gaussian kernels directly.
@@ -765,23 +765,23 @@ void HBPammShortcut::registerKeywords( Keywords& keys ) {
   keys.reset_style("NL_CUTOFF","hidden");
   keys.reset_style("NL_STRIDE","hidden");
   keys.add("atoms","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
-           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified "
+           "as a list of labels of multicolvar actions.  If you would just like to use "
+           "the atomic positions you can use a DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other multicolvar commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in the documentation for CONTACT_MATRIX");
   keys.add("atoms","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+           "as a list of labels of multicolvar actions.  If you would just like to use "
+           "the atomic positions you can use a DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other multicolvar commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in the documentation for CONTACT_MATRIX");
   keys.add("atoms","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+           "as a list of labels of multicolvar actions.  If you would just like to use "
+           "the atomic positions you can use a DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other multicolvar commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in the documentation for CONTACT_MATRIX");
   keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
-           "an index range or by using a \\ref GROUP");
+           "an index range or by using a GROUP action");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("HBPAMM_MATRIX");
   keys.setValueDescription("vector","a vector specifiying the number of hydrogen bonds each of the specified atoms participates within");

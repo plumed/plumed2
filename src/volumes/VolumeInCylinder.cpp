@@ -29,7 +29,7 @@
 
 //+PLUMEDOC VOLUMES INCYLINDER
 /*
-This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of the cell.
 
 This action can be used to calculate whether each of the atoms are within a particular part of the simulation box or not as illustrated by the following example:
 
@@ -63,7 +63,7 @@ $w(x_i,y_i,z_i)$ is 1 if the atom is within a cylinder that is centered on the $
 is determined by the values specified by `LOWER` and `UPPER` keywords.  The radial extent of this cylinder is determined by the parameters of the switching function that is
 specified using the `RADIUS` keyword.
 
-If you want to caluclate and print the number of atoms in the cylinder of interest you can use an input like the one shown below:
+If you want to calculate and print the number of atoms in the cylinder of interest you can use an input like the one shown below:
 
 ```plumed
 f: FIXEDATOM AT=0,0,0

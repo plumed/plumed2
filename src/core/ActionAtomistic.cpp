@@ -257,7 +257,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
         for(int k=0; k<3; k++) {
           virial(i,k)= (valuebox[j](i,k)-ref)/delta;
         }
-// BE CAREFUL WITH NON ORTHOROMBIC CELL
+// BE CAREFUL WITH NON ORTHORHOMBIC CELL
       virial=-matmul(box.transpose(),virial);
       for(int i=0; i<3; i++)
         for(int k=0; k<3; k++) {

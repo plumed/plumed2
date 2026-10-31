@@ -103,7 +103,7 @@ a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
 DUMPGRID ARG=a FILE=histo.grid
 ```
 
-At first glance the fact that we use a [KDE](KDE.md) action to construct an instaneous histogram from a single
+At first glance the fact that we use a [KDE](KDE.md) action to construct an instantaneous histogram from a single
 distance may appear odd.  The reason for doing this, however, is to introduce a clear distinction between
 the syntaxes that are used for spatial and temporal averaging.  To see what I mean consider the following input:
 
@@ -122,9 +122,9 @@ a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
 DUMPGRID ARG=a FILE=histo.grid
 ```
 
-This input computes 5 distances. Kernels correpsonding to all five of these distances are added to the instaneous
+This input computes 5 distances. Kernels corresponding to all five of these distances are added to the instantaneous
 histogram that is constructed using the [KDE](KDE.md) action.  When we call the accumulate action here we are thus
-not simply adding a single kernel to the accumulated grid when we add the the elements from `kde`.
+not simply adding a single kernel to the accumulated grid when we add the elements from `kde`.
 
 */
 //+ENDPLUMEDOC

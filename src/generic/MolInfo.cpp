@@ -83,7 +83,7 @@ If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e
 **This will impact PBC calculations in all the actions following the MOLINFO action!**.
 In particular, actions that reconstruct molecules locally will do the reconstruction using a
 minimum spanning tree rather than the order in which atoms are provided.
-Notice that in PLUMED 2.8, 2.9, and 2.10 this would only have affected the behavior of \ref WHOLEMOLECULES
+Notice that in PLUMED 2.8, 2.9, and 2.10 this would only have affected the behavior of [WHOLEMOLECULES](WHOLEMOLECULES.md)
 actions, whereas starting with PLUMED 2.11 all actions that reconstruct PBCs are affected.
 If you want a variable to ignore this, you can just repeate the MOLINFO action without
 the `WHOLE` flag: all the following actions will use the traditional reconstruction algorithm,

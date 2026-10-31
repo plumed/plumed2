@@ -27,7 +27,7 @@
 /*
 Distance along and from a path calculated using geometric formulas
 
-The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional path.  The method introduced in that
 paper is implemented in the shortcut [PATH](PATH.md). This action provides an implementation of the alternative method for calculating
 the position on and distance from the path that was proposed by Diaz Leines and Ensing in the second paper that is cited below.  In their
@@ -73,7 +73,7 @@ PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 ```
 
 When an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
-action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
+action with the DISPLACEMENT flag enabled.  The instantaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
 of mass and rotation of the reference frame.  Furthermore, because we have not used the PROPERTY keyword in this input, the $i$ values in the equation for $s$
 above are set equal to 1, 2, 3...
 

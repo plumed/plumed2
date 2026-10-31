@@ -122,7 +122,7 @@ KernelFunctions::KernelFunctions( const std::string& input ) {
     plumed_merror("one dimensional kernel cannot be multivariate");
   }
   if( center.size()==1 && vonmises ) {
-    plumed_merror("one dimensional kernal cannot be von-misses");
+    plumed_merror("one dimensional kernel cannot be von-misses");
   }
   if( center.size()==1 && sig.size()!=1 ) {
     plumed_merror("size mismatch between center size and sigma size");

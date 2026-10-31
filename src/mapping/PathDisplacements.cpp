@@ -50,7 +50,7 @@ In these expressions $N$ high-dimensional frames ($X_i$) are used to describe th
 space. The two expressions above are then functions of the distances from each of the high-dimensional frames $R[X - X_i]$.
 
 When a simulator uses this method of path CVs the assumption is that when the system undergoes the transition from state A
-to state B it passes through a narrow (non-linear) tube that is centered on the $s$ coordinate that is defiend above in terms the
+to state B it passes through a narrow (non-linear) tube that is centered on the $s$ coordinate that is defined above in terms the
 various milestones that are used to define the path. In other words, when the system transitions from A to be B it does not pass along the $s$
 coordinate. If, however, we average the vector connecting each position the system passes through to the nearest
 point on the path that underpins the definition of the $s$ we should get zero as the $s$ coordinate is centered on the path connecting the two states.
@@ -58,7 +58,7 @@ point on the path that underpins the definition of the $s$ we should get zero as
 With that theory in mind this action can be used to collect the average displacement between the points that trajectories are passing through and the path.
 This action can thus be used to update the definitions of the milestones that are used in the definition of a [PATH](PATH.md) or [GPATH](GPATH.md) coordinate
 so that the PATH more clearly passes through the center of the path that the system has traversed along in passing from state A to state B.  These path displacements
-are accumulated as follows.  You first determine the vectors, $\mathbf{v}_1$ and $\mathbf{v}_3$ that connect the instaneous position to the closest and second closest milestones on the
+are accumulated as follows.  You first determine the vectors, $\mathbf{v}_1$ and $\mathbf{v}_3$ that connect the instantaneous position to the closest and second closest milestones on the
 current path.  You can then compute the following:
 
 $$

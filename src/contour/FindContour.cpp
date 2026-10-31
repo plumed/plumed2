@@ -63,7 +63,7 @@ where $(x_i, y_i, z_i)$ is the position of atom $i$ relative to the position of 
 
 The virtual atom that is computed using [CENTER](CENTER.md) is located in the center of the region where the atoms are solid like and the positions of the atoms
 $(x_i, y_i, z_i)$ are given relative to this position when computing the phase field in the expression above.  This phase field provides a continuous function that
-gives a measure of the average degree of solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a a set of points
+gives a measure of the average degree of solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a set of points
 at which the value of this phase field is equal to 0.5.  This set of points is output to file called `mycontour.dat`.  A new contour
 is found on every single step for each frame that is read in.
 

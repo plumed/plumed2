@@ -37,8 +37,8 @@ lowest free energy path that connects the two states.
 
 The Path Collective Variables developed by Branduardi that are described in the first paper cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
-path.  Instad of computing progress along the path ($s$) using Branduardi's method we use the expressions that are used in
-[GEOMETRIC_PATH](GEOMETRIC_PATH.md) and that are introduced in the second paper that is cited below.  The progress along the path is is thus computed using:
+path.  Instead of computing progress along the path ($s$) using Branduardi's method we use the expressions that are used in
+[GEOMETRIC_PATH](GEOMETRIC_PATH.md) and that are introduced in the second paper that is cited below.  The progress along the path is thus computed using:
 
 $$
 s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
@@ -90,7 +90,7 @@ PRINT ARG=p1b.* FILE=colvar_b STRIDE=1
 
 As we have not used the PROPERTY keyword in the input the $i$ values in the equation for $s$ above are set equal to 1, 2, 3...
 Furthermore, when an input like the one above is used the vectors $\mathbf{v}_1$, $\mathbf{v}_2$ and $\mathbf{v}_3$ from the expression above are computed using an [RMSD](RMSD.md)
-action with the DISPLACEMENT flag enabled.  The instaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
+action with the DISPLACEMENT flag enabled.  The instantaneous structure is thus aligned with the reference structures so as to remove motions due to translation of the center
 of mass and rotation of the reference frame. These vector of atomic displacements that do not include the translation and rotation are also used in the
 [AVERAGE_PATH_DISPLACEMENT](AVERAGE_PATH_DISPLACEMENT.md) action that is used to update the path.
 

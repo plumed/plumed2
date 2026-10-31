@@ -74,7 +74,7 @@ class Matrix:
   template <typename U> friend int diagMat( const Matrix<U>&, std::vector<U>&, Matrix<U>& );
   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
   template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<U>& );
-  /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
+  /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if successful
   template <typename U> friend int logdet( const Matrix<U>&, U& );
   /// Invert a matrix (works for both symmetric and asymmetric matrices) - returns zero if sucesfull
   template <typename U> friend int Invert( const Matrix<U>&, Matrix<U>& );

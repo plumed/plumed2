@@ -77,10 +77,10 @@ ll: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=100 NOVORONOI
 DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
 ```
 
-Be aware, however, that dissimilarities are still computed if you only the the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
+Be aware, however, that dissimilarities are still computed if you only the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
 and the dissimilarities are not computed.
 
-If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_STRIDE funtion as shown below:
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_STRIDE function as shown below:
 
 ```plumed
 # This stores the positions of all the first 10 atoms in the system for later analysis
@@ -155,10 +155,10 @@ ll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=100 NOVORONOI
 DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
 ```
 
-Be aware, however, that dissimilarities are still computed if you only the the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
+Be aware, however, that dissimilarities are still computed if you only the NOVORONOI flag.  If you use NODISSIMILARITIES the voronoi weights are not computed
 and the dissimilarities are not computed.
 
-If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_RANDOM funtion as shown below:
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_RANDOM function as shown below:
 
 ```plumed
 # This stores the positions of all the first 10 atoms in the system for later analysis
@@ -218,7 +218,7 @@ ll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=100 NOVORONOI
 DUMPPDB ATOMS=ll_data ATOM_INDICES=1,2,3,4,5,6,7,8,9,10 FILE=traj.pdb STRIDE=1000
 ```
 
-If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_FPS funtion as shown below:
+If you have already computed the dissimilarities between the collected frames you can pass them in input to the LANDMARK_SELECT_FPS function as shown below:
 
 ```plumed
 # This stores the positions of all the first 10 atoms in the system for later analysis

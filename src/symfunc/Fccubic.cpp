@@ -83,7 +83,7 @@ of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
 ## Working with two types of atom
 
-If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in in an FCC structure you use an input like the one
+If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in an FCC structure you use an input like the one
 shown below:
 
 ```plumed
@@ -152,7 +152,7 @@ Notice that the decomposition of the function that is illustrated above allows y
 d_mat: DISTANCE_MATRIX GROUP=1-64 LINKCELL_CUTOFF=4.5 COMPONENTS
 # Find the six nearest atom to each of the coordinates
 nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
-# Evalulate the FCC function
+# Evaluate the FCC function
 d_vfunc: FCCUBIC_FUNC ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn ALPHA=3.0
 # Take the product of the weights with the fcc function evaluations
 d_wvfunc: CUSTOM ARG=d_vfunc,nn FUNC=x*y PERIODIC=NO

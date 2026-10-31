@@ -45,7 +45,7 @@ one if only two arguments are provided in input.  At present, the arguments for 
 These arguments must all have the same shape as the two output components will also be matrices that are
 calculated by applying the function above to each of the elements of the input matrix in turn.
 
-The following intput provides an example that demonstrates how this function is used:
+The following input provides an example that demonstrates how this function is used:
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-10 COMPONENTS

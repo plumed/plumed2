@@ -295,10 +295,10 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
                            std::string_view line,
                            const std::string_view separators) {
   words.clear();
-  //NOTE::this function is written assuming that we have only a level of parentesis
+  //NOTE::this function is written assuming that we have only a level of parenthesis
   // so "{a b x},{s}" is ok, "x,{{a,r}}" is not
-  // unlike getWords it will not delete the parentesis, in the spirit of returning a view
-  // to remove the parentesis you have to use a erase-remove idiom (see parseVector)
+  // unlike getWords it will not delete the parenthesis, in the spirit of returning a view
+  // to remove the parenthesis you have to use a erase-remove idiom (see parseVector)
   constexpr char openPar='{';
   constexpr char closePar = '}';
   size_t init=0;
@@ -489,7 +489,7 @@ void getWords_replicas(gch::small_vector<std::string_view> & words,
   //NOTE: this function is tested in basic/rt-make-getwords
   // via unravelReplicas and parseVector
 
-  //NOTE: this function ignores the first parenthesis becasue
+  //NOTE: this function ignores the first parenthesis because
   // expects something like "@replica:{a,b c}" or "@replica:a b c"
   // the user should cut the "@replica:" before running this.
   // in case of a '{' being present the vector will be returned as soon the '}' is found

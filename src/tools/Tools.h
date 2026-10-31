@@ -437,7 +437,7 @@ public:
 ///
 ///C++ wants a raw string (like `R"<<(content)<<"`) for the regexes
 ///and the python package json (and the json format itself actually)
-/// wants the various '\' to be escaped with and '\' becasue the interpreter tries
+/// wants the various '\' to be escaped with and '\' because the interpreter tries
 /// to read anything that begins with '\' as an escape sequence (it does not know that it is an input for a regex)
 ///
 /// For example '\n' will not cause an error but it will be intepreted as and explicit newline, so we we want '\\n' in the json

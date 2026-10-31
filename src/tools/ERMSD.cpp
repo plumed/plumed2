@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /*
- This vast majority of the source code in this file was writting by
+ This vast majority of the source code in this file was written by
  Sandro Bottaro with some help from Giovanni Bussi
 */
 

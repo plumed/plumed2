@@ -94,7 +94,7 @@ molecule are computed.
 
 Notice that PLUMED does not use periodic boundary conditions when computing the reference distances.  However, the instantaneous
 values of the distances are computed using periodic boundary conditions.  If you would like not to use periodic boundary conditions
-when computing these instaneous distances you use the NOPBC flag as illustrated below:
+when computing these instantaneous distances you use the NOPBC flag as illustrated below:
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/basic/rt-drmsd/test1.pdb
@@ -124,7 +124,7 @@ void DRMSD::registerKeywords( Keywords& keys ) {
            "the atoms in your molecule.  Alternatively, if you have multiple molecules you can use the type INTER-DRMSD "
            "to compute DRMSD values involving only those distances between the atoms at least two molecules or the type INTRA-DRMSD "
            "to compute DRMSD values involving only those distances between atoms in the same molecule");
-  keys.addFlag("SQUARED",false,"This should be setted if you want MSD instead of RMSD ");
+  keys.addFlag("SQUARED",false,"This should be set if you want MSD instead of RMSD ");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   // This is just ignored in reality which is probably bad
   keys.addDeprecatedFlag("NUMERICAL_DERIVATIVES","");

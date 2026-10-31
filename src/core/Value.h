@@ -45,7 +45,7 @@ class ActionAtomistic;
 /// PLMD::ActionWithValue is part of a class that calculates multiple components
 /// then the class will contain multiple that will be called label.component-name
 /// This class is used to pass information between different PLMD::Action
-/// objects.  However, if you find a use for a tempory PLMD::Value in some method
+/// objects.  However, if you find a use for a temporary PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
   friend struct ArgumentsBookkeeping;

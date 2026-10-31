@@ -41,7 +41,7 @@ ones: ONES SIZE=100
 coord: MATRIX_VECTOR_PRODUCT ARG=cm,ones
 # Find the connected components from the contact matrix
 dfs: DFSCLUSTERING ARG=cm
-# Returns a 100-dimensional vector that is 1 if the correpsonding atom index is in the largest cluster and is zero otherwise
+# Returns a 100-dimensional vector that is 1 if the corresponding atom index is in the largest cluster and is zero otherwise
 c1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
 # Now evaluate the sum of the coordination numbers of the atoms in the larget cluster
 numerv: CUSTOM ARG=c1,coord FUNC=x*y PERIODIC=NO
@@ -88,7 +88,7 @@ void ClusterWeights::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the third largest and so on.");
   keys.addDeprecatedFlag("LOWMEM","");
   // keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
   keys.setValueDescription("vector","vector with elements that are one if the atom of interest is part of the required cluster and zero otherwise");

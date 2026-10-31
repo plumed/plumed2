@@ -168,7 +168,7 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
     // Store the reference position in a collect action
     readInputLine( getShortcutLabel() + "_refpos: COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_ref STRIDE=" + clearstride + " CLEAR=" + clearstride );
     readInputLine( getShortcutLabel() + "_refposT: TRANSPOSE ARG=" + getShortcutLabel() + "_refpos");
-    // Calculate the RMSD between the instaneous position and the reference position
+    // Calculate the RMSD between the instantaneous position and the reference position
     readInputLine( getShortcutLabel() + "_rmsd: RMSD_VECTOR ARG=" + getShortcutLabel() + "_getpos," + getShortcutLabel() + "_refpos DISPLACEMENT SQUARED TYPE=" + align );
     // Add the reference position to the RMSD displacement
     readInputLine( getShortcutLabel() + "_fpos: COMBINE ARG=" + getShortcutLabel() + "_refposT," + getShortcutLabel() + "_rmsd.disp PERIODIC=NO");

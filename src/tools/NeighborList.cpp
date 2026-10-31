@@ -123,7 +123,7 @@ void NeighborList::initialize() {
   try {
     //preallocating some memory now to not spend too much time in the first update
     // If the memory is underestimated it should be less than doubled if needed, the factor should depend on the implementation
-    //Asserting 20 maximun neigbors to occupy less memory
+    //Asserting 20 maximun neighbors to occupy less memory
     neighbors_.resize((stride_==0 || style_ == NNStyle::Pair) ?
                       nallpairs_
                       : (std::min((nlist0_*((useCellList_)?100:30)),nallpairs_)));

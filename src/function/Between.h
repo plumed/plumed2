@@ -57,9 +57,9 @@ struct Between {
 void Between::registerKeywords(Keywords& keys) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
-  keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
+  keys.add("compulsory","SMEAR","0.5","the amount to smear the Gaussian for each value in the distribution");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous function defined above. "
-           "The following provides information on the \\ref histogrambead that are available. "
+           "The following provides information on the kernel functions that are available. "
            "When this keyword is present you no longer need the LOWER, UPPER, SMEAR and KERNEL keywords.");
   keys.setValueDescription("scalar/vector/matrix","a function that is one if the input falls within a particular range and zero otherwise");
 }
