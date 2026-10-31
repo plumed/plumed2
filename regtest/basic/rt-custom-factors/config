@@ -1,0 +1,5 @@
+type=driver
+# CUSTOM skips the evaluation when an argument that multiplies the whole expression is zero:
+# check expressions where the argument that is zero is not a factor
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+extra_files="../../trajectories/trajectory.xyz"

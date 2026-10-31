@@ -25,8 +25,20 @@
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"
 
+#include <cstdio>
+
 namespace PLMD {
 namespace generic {
+
+namespace {
+// the values are passed to CONSTANT as text: they are written with all their digits,
+// so that they are read back exactly (Tools::convert would only keep 6 digits)
+std::string fullPrecision(double v) {
+  char buffer[32];
+  std::snprintf(buffer,sizeof(buffer),"%.17g",v);
+  return buffer;
+}
+}
 
 //+PLUMEDOC COLVAR PDB2CONSTANT
 /*
@@ -324,13 +336,10 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
     nframes=1;
   }
   std::fclose(fp);
-  std::string rnum;
   plumed_assert( vals.size()>0 );
-  Tools::convert( vals[0], rnum );
-  std::string valstr = " VALUES=" + rnum;
+  std::string valstr = " VALUES=" + fullPrecision( vals[0] );
   for(unsigned i=1; i<vals.size(); ++i) {
-    Tools::convert( vals[i], rnum );
-    valstr += "," + rnum;
+    valstr += "," + fullPrecision( vals[i] );
   }
   if( vals.size()>nframes ) {
     std::string nc, nr;

@@ -98,15 +98,15 @@ private:
 // model - list of atom weights - one per atom type
   std::vector<Vector5d> Model_w_;
 // model - map between residue/chain IDs and list of atoms
-  std::map< std::pair<unsigned,std::string>, std::vector<unsigned> > Model_resmap_;
+  std::map< std::pair<int,std::string>, std::vector<unsigned> > Model_resmap_;
 // model - list of residue/chain IDs per atom
-  std::vector< std::pair<unsigned,std::string> > Model_res_;
+  std::vector< std::pair<int,std::string> > Model_res_;
 // model - list of neighboring voxels per atom
   std::vector< std::vector<unsigned> > Model_nb_;
 // model - map between residue/chain ID and bfactor
-  std::map< std::pair<unsigned, std::string>, double> Model_b_;
+  std::map< std::pair<int, std::string>, double> Model_b_;
 // model - global list of residue/chain IDs
-  std::vector< std::pair<unsigned,std::string> > Model_rlist_;
+  std::vector< std::pair<int,std::string> > Model_rlist_;
 // model density
   std::vector<double> ovmd_;
 
@@ -647,7 +647,7 @@ void EMMIVOX::read_status() {
         // cycle on residues
         for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
           // key: pair of residue/chain IDs
-          std::pair<unsigned,std::string> key = Model_rlist_[ir];
+          std::pair<int,std::string> key = Model_rlist_[ir];
           // convert ires to std::string
           std::string num;
           Tools::convert(key.first,num);
@@ -689,7 +689,7 @@ void EMMIVOX::print_status(long int step) {
     // cycle on residues
     for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
       // key: pair of residue/chain IDs
-      std::pair<unsigned,std::string> key = Model_rlist_[ir];
+      std::pair<int,std::string> key = Model_rlist_[ir];
       // bfactor from map
       double bf = Model_b_[key];
       // convert ires to std::string
@@ -988,14 +988,14 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms) {
       Vector5d w = Model_w_[type_map[type_s]];
       Model_w.push_back(w[0]+w[1]+w[2]+w[3]+w[4]);
       // get residue id
-      unsigned ires = moldat->getResidueNumber(atoms[i]);
+      const int ires = moldat->getResidueNumber(atoms[i]);
       // and chain
       std::string c ("*");
       if(!bfactnoc_) {
         c = moldat->getChainID(atoms[i]);
       }
       // define pair residue/chain IDs
-      std::pair<unsigned,std::string> key = std::make_pair(ires,c);
+      std::pair<int,std::string> key = std::make_pair(ires,c);
       // add to map between residue/chain and list of atoms
       Model_resmap_[key].push_back(i);
       // and global list of residue/chain per atom
@@ -1008,7 +1008,7 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms) {
   }
   // create ordered vector of residue-chain IDs
   for(unsigned i=0; i<Model_res_.size(); ++i) {
-    std::pair<unsigned,std::string> key = Model_res_[i];
+    std::pair<int,std::string> key = Model_res_[i];
     // search in Model_rlist_
     if(find(Model_rlist_.begin(), Model_rlist_.end(), key) == Model_rlist_.end()) {
       Model_rlist_.push_back(key);
@@ -1062,7 +1062,7 @@ void EMMIVOX::initialize_Bfactor(double reso) {
     bfactini = std::min(bfactmax_, std::max(bfactmin_, bfactini));
   }
   // set initial Bfactor
-  for(std::map< std::pair<unsigned,std::string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
+  for(std::map< std::pair<int,std::string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
     it->second = bfactini;
   }
   log.printf("  experimental map resolution : %3.2f\n", reso);
@@ -1092,7 +1092,7 @@ void EMMIVOX::get_auxiliary_vectors() {
     // get atom type
     unsigned atype = Model_type_[im];
     // get residue/chain IDs
-    std::pair<unsigned,std::string> key = Model_res_[im];
+    std::pair<int,std::string> key = Model_res_[im];
     // get bfactor
     double bfact = Model_b_[key];
     // sigma for 5 gaussians
@@ -1232,7 +1232,7 @@ void EMMIVOX::doMonteCarloBfact() {
   for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
 
     // key: pair of residue/chain IDs
-    std::pair<unsigned,std::string> key = Model_rlist_[ir];
+    std::pair<int,std::string> key = Model_rlist_[ir];
     // old bfactor
     double bfactold = Model_b_[key];
 
@@ -1323,7 +1323,7 @@ void EMMIVOX::doMonteCarloBfact() {
     // add restraint to keep Bfactors of close residues close
     for(unsigned i=0; i<close.size(); ++i) {
       // residue/chain IDs of neighbor
-      std::pair<unsigned,std::string> keyn = Model_rlist_[close[i]];
+      std::pair<int,std::string> keyn = Model_rlist_[close[i]];
       // deviations
       double devold = bfactold - Model_b_[keyn];
       double devnew = bfactnew - Model_b_[keyn];

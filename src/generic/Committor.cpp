@@ -94,6 +94,7 @@ Committor::Committor(const ActionOptions&ao):
   ActionPilot(ao),
   ActionWithArguments(ao),
   fmt("%f"),
+  nbasins(0),
   basin(0),
   doNotStop(false) {
   ofile.link(*this);
@@ -130,6 +131,9 @@ Committor::Committor(const ActionOptions&ao):
   parseFlag("NOSTOP", doNotStop);
 
   checkRead();
+  if(nbasins==0) {
+    error("no basin defined: use BASIN_LL1 and BASIN_UL1");
+  }
 
 
   for(unsigned b=0; b<nbasins; b++) {
