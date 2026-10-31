@@ -1297,6 +1297,12 @@ bool CudaCoordination<calculateFloat>::needsListUpdate() {
 
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::updateNeighborLists() {
+  // LinkCells builds the cells locally (no MPI collectives), so only the
+  // process that owns the GPU needs them: the others only take part in the
+  // decision of needsListUpdate()
+  if (!mpiActive) {
+    return;
+  }
   cells.setCutoff(NL.cutoff);
   if (pbc) {
     cells.setupCells(getPbc());
@@ -1305,43 +1311,36 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
   }
   switch (mode) {
   case calculationMode::self: {
-    //this needs to be done BY ALL the mpi processes
     cells.resetCollection(cs.listA,
                           make_const_view(getPositions()),
                           make_const_view(indexesForCells));
-    if (mpiActive) {
-      cellConfiguration_coord.build(cells, cs.listA, cs.listA, pbc);
-      remapActiveAtoms();
-      cellConfiguration_coord.upload(stream);
-    }
+    cellConfiguration_coord.build(cells, cs.listA, cs.listA, pbc);
+    remapActiveAtoms();
+    cellConfiguration_coord.upload(stream);
   }
   break;
   case calculationMode::dual: {
-    //this needs to be done BY ALL the mpi processes
     cells.resetCollection(cs.listA,
                           View{getPositions().data(), atomsInA},
                           View<const unsigned> {indexesForCells.data(), atomsInA});
     cells.resetCollection(cs.listB,
                           View{getPositions().data() + atomsInA, atomsInB},
                           View<const unsigned> {indexesForCells.data() + atomsInA, atomsInB});
-
-    if (mpiActive) {
-      //atoms of A, with the atoms of B as neighbours: coordination, virial and derivatives of A
-      cellConfiguration_coord.build(cells, cs.listA, cs.listB, pbc);
-      //atoms of B, with the atoms of A as neighbours: derivatives of B
-      cellConfiguration_dv.build(cells, cs.listB, cs.listA, pbc);
-      remapActiveAtoms();
-      //both on the main stream: they will be completed before the
-      //inputReady event that the auxiliary stream waits for
-      cellConfiguration_coord.upload(stream);
-      cellConfiguration_dv.upload(stream);
-    }
+    //atoms of A, with the atoms of B as neighbours: coordination, virial and derivatives of A
+    cellConfiguration_coord.build(cells, cs.listA, cs.listB, pbc);
+    //atoms of B, with the atoms of A as neighbours: derivatives of B
+    cellConfiguration_dv.build(cells, cs.listB, cs.listA, pbc);
+    remapActiveAtoms();
+    //both on the main stream: they will be completed before the
+    //inputReady event that the auxiliary stream waits for
+    cellConfiguration_coord.upload(stream);
+    cellConfiguration_dv.upload(stream);
   }
   break;
   default:
   {}
   }
-  if (mpiActive && checkDisplacement) {
+  if (checkDisplacement) {
     const auto & positions = getPositions();
     std::copy(positions.begin(), positions.end(), positionsAtLastUpdate.begin());
   }
