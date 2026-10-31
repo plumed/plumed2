@@ -105,7 +105,8 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
     std::string nn, mm, d_0, r_0;
     action->parse("R_0",r_0);
     if( r_0.length()==0 ) {
-      r_0="0.08";
+      // The default is 0.08 nm. The distances are in the units that were set with UNITS, so it has to be converted
+      Tools::convert( 0.08/action->plumed.getUnits().getLength(), r_0 );
     }
     action->parse("NN",nn);
     action->parse("D_0",d_0);
