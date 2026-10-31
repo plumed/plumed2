@@ -105,7 +105,7 @@ esac
 # the size is reported to help understanding a failing push; GitHub rejects files larger than 100MB
 set +x
 echo "Content to be pushed: $(du -sh . | cut -f1) in $(find . -type f | wc -l) files. Largest files:"
-find . -type f -exec ls -l {} + | sort -k5 -n -r | head -5
+find . -type f -exec ls -l {} + | sort -k5 -n -r | awk 'NR<=5'
 big=$(find . -type f -size +95M)
 if test -n "$big" ; then
   check_fail "these files are too large for GitHub (limit is 100MB): $big"
