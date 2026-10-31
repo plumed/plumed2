@@ -1,0 +1,10 @@
+#! FIELDS idx_d ves1.coeffs index
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  4
+#! SET shape_d  4
+       0     0.000000       0
+       1     2.000000       1
+       2    -1.000000       2
+       3     0.500000       3
+#!-------------------

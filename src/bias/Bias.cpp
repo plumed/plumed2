@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 
+#include <algorithm>
+
 
 namespace PLMD {
 namespace bias {
@@ -40,6 +42,10 @@ Bias::Bias(const ActionOptions&ao):
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // only the first element of a vector or matrix argument would be read and biased
+    if(getPntrToArgument(i)->getRank()!=0 && getPntrToArgument(i)->getNumberOfValues()!=1) {
+      error("argument " + getPntrToArgument(i)->getName() + " is not a scalar: biases act on scalars (use e.g. SUM to make a scalar)");
+    }
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 
@@ -54,6 +60,11 @@ void Bias::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","scalar","the labels of the scalars on which the bias will act");
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+}
+
+void Bias::clearDerivatives(const bool& force) {
+  ActionWithValue::clearDerivatives(force);
+  std::fill(outputForces.begin(),outputForces.end(),0.0);
 }
 
 void Bias::apply() {

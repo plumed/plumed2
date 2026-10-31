@@ -1,0 +1,11 @@
+# Forces must be zero when the bias does not act:
+# MOVINGRESTRAINT with VERSE=U for d below the center,
+# ABMD when the CV gets closer to the target than ever before.
+# (they kept the force of the last step in which the bias was acting)
+d: DISTANCE ATOMS=1,2
+e: DISTANCE ATOMS=3,4
+mr: MOVINGRESTRAINT ARG=d VERSE=U STEP0=0 AT0=1.0 KAPPA0=10 STEP1=60 AT1=1.2 KAPPA1=20
+mrl: MOVINGRESTRAINT ARG=e VERSE=L STEP0=0 AT0=0.8 KAPPA0=10 STEP1=60 KAPPA1=20
+a: ABMD ARG=d TO=0.5 KAPPA=10 MIN=0.2
+PRINT ARG=d,e,mr.bias,mr.force2,mr.d_work,mr.d_kappa,mrl.bias,mrl.e_work,mrl.e_kappa,a.bias,a.d_min FILE=colvar FMT=%8.4f
+DUMPFORCES ARG=d,e FILE=fd FMT=%8.4f

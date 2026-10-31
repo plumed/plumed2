@@ -56,6 +56,9 @@ public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
   void apply() override;
+/// Also resets the forces on the arguments, so that a bias that does not call
+/// setOutputForce for an argument at this step applies no force to it
+  void clearDerivatives(const bool& force=false) override;
   unsigned getNumberOfDerivatives() override;
 };
 

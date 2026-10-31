@@ -183,6 +183,7 @@ void ABMD::calculate() {
     // min is set to the CV value
     if(min[i]<0.||cv2<min[i]) {
       min[i] = cv2;
+      setOutputForce(i,0.0);
     } else {
       // otherwise a noise is added to the minimum value
       min[i] += noise;
