@@ -34,6 +34,8 @@
 #include <fstream>
 #include <iterator>
 #include <sstream>
+#include <map>
+#include <algorithm>
 
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
@@ -515,7 +517,17 @@ class CS2Backbone : public MetainferenceBase {
   std::vector<RingInfo> ringInfo;
   std::vector<unsigned> type;
   std::vector<unsigned> res_num;
-  unsigned         max_cs_atoms;
+  // chain of each atom (an index), used together with res_num
+  std::vector<unsigned> res_chain;
+  // position in the ATOMS list of each atom of the template (by AtomNumber::index())
+  std::vector<int> atom_pos_;
+  // the derivatives of chemical shift cs are stored in [cs_offset_[cs],cs_offset_[cs+1])
+  std::vector<unsigned> cs_offset_;
+  // the atom of each derivative (it changes only when the neighbour list is updated)
+  std::vector<unsigned> cs_atoms_;
+  // the chemical shifts computed by this rank are [cs_begin_,cs_end_)
+  unsigned         cs_begin_;
+  unsigned         cs_end_;
   unsigned         box_nupdate;
   unsigned         box_count;
   bool             camshift;
@@ -524,6 +536,9 @@ class CS2Backbone : public MetainferenceBase {
 
   void init_cs(const std::string &file, const std::string &k, const PDB &pdb);
   void update_neighb();
+  void set_layout(const unsigned cs);
+  void get_block(const unsigned r, const unsigned size, unsigned &b, unsigned &e) const;
+  unsigned atomPos(const AtomNumber &a) const;
   void compute_ring_parameters();
   void init_types(const PDB &pdb);
   void init_rings(const PDB &pdb);
@@ -574,7 +589,8 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
-  max_cs_atoms(0),
+  cs_begin_(0),
+  cs_end_(0),
   camshift(false),
   pbc(true),
   serial(false) {
@@ -620,6 +636,36 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   PDB pdb;
   if( !pdb.read(stringapdb,usingNaturalUnits(),1./scale) ) {
     plumed_merror("missing input file " + stringapdb);
+  }
+
+  // the template and ATOMS must contain the same atoms (in any order):
+  // the template atoms are then addressed by their position in ATOMS
+  {
+    const std::vector<AtomNumber> & tatoms = pdb.getAtomNumbers();
+    if(tatoms.size()!=used_atoms.size()) {
+      plumed_merror("ATOMS and the TEMPLATE " + stringapdb + " must contain the same atoms");
+    }
+    unsigned maxindex=0;
+    for(const auto & a : used_atoms) {
+      maxindex=std::max(maxindex,a.index());
+    }
+    for(const auto & a : tatoms) {
+      maxindex=std::max(maxindex,a.index());
+    }
+    atom_pos_.assign(maxindex+1,-1);
+    for(unsigned i=0; i<used_atoms.size(); i++) {
+      if(atom_pos_[used_atoms[i].index()]!=-1) {
+        plumed_merror("an atom is listed twice in ATOMS");
+      }
+      atom_pos_[used_atoms[i].index()]=i;
+    }
+    for(const auto & a : tatoms) {
+      if(atom_pos_[a.index()]==-1) {
+        std::string num;
+        Tools::convert(a.serial(),num);
+        plumed_merror("atom " + num + " of the TEMPLATE " + stringapdb + " is not in ATOMS");
+      }
+    }
   }
 
   // first of all we build the list of chemical shifts we want to predict
@@ -815,17 +861,17 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     for(unsigned a=0; a<res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(res_atoms[a]);
       if(nucl=="HA"&&(AN=="HA"||AN=="HA1"||AN=="HA3")) {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       } else if(nucl=="H"&&(AN=="H"||AN=="HN")) {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       } else if(nucl=="N"&&AN=="N") {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       } else if(nucl=="CA"&&AN=="CA") {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       } else if(nucl=="CB"&&AN=="CB") {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       } else if(nucl=="C"&&AN=="C" ) {
-        tmp_cs.ipos = res_atoms[a].index();
+        tmp_cs.ipos = atomPos(res_atoms[a]);
       }
     }
 
@@ -834,40 +880,40 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     for(unsigned a=0; a<prev_res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(prev_res_atoms[a]);
       if(AN=="N")                             {
-        tmp_cs.bb[Np]  = prev_res_atoms[a].index();
+        tmp_cs.bb[Np]  = atomPos(prev_res_atoms[a]);
       } else if(AN=="CA")                       {
-        tmp_cs.bb[CAp] = prev_res_atoms[a].index();
+        tmp_cs.bb[CAp] = atomPos(prev_res_atoms[a]);
       } else if(AN=="HA"||AN=="HA1"||AN=="HA3") {
-        tmp_cs.bb[HAp] = prev_res_atoms[a].index();
+        tmp_cs.bb[HAp] = atomPos(prev_res_atoms[a]);
       } else if(AN=="C" )                       {
-        tmp_cs.bb[Cp]  = prev_res_atoms[a].index();
+        tmp_cs.bb[Cp]  = atomPos(prev_res_atoms[a]);
       } else if(AN=="O" )                       {
-        tmp_cs.bb[Op]  = prev_res_atoms[a].index();
+        tmp_cs.bb[Op]  = atomPos(prev_res_atoms[a]);
       }
     }
 
     for(unsigned a=0; a<res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(res_atoms[a]);
       if(AN=="N")                                         {
-        tmp_cs.bb[Nc]  = res_atoms[a].index();
+        tmp_cs.bb[Nc]  = atomPos(res_atoms[a]);
       } else if(AN=="H" ||AN=="HN"||(AN=="CD"&&RES=="PRO")) {
-        tmp_cs.bb[Hc]  = res_atoms[a].index();
+        tmp_cs.bb[Hc]  = atomPos(res_atoms[a]);
       } else if(AN=="CA")                                   {
-        tmp_cs.bb[CAc] = res_atoms[a].index();
+        tmp_cs.bb[CAc] = atomPos(res_atoms[a]);
       } else if(AN=="HA"||AN=="HA1"||AN=="HA3")             {
-        tmp_cs.bb[HAc] = res_atoms[a].index();
+        tmp_cs.bb[HAc] = atomPos(res_atoms[a]);
       } else if(AN=="C" )                                   {
-        tmp_cs.bb[Cc]  = res_atoms[a].index();
+        tmp_cs.bb[Cc]  = atomPos(res_atoms[a]);
       } else if(AN=="O" )                                   {
-        tmp_cs.bb[Oc]  = res_atoms[a].index();
+        tmp_cs.bb[Oc]  = atomPos(res_atoms[a]);
       }
 
       if(RES!="ALA"&&RES!="GLY") {
         if(AN=="CB") {
-          tmp_cs.bb[CBc] = res_atoms[a].index();
+          tmp_cs.bb[CBc] = atomPos(res_atoms[a]);
         }
         if(is_chi1_cx(RES,AN)) {
-          tmp_cs.bb[CGc] = res_atoms[a].index();
+          tmp_cs.bb[CGc] = atomPos(res_atoms[a]);
         }
       }
     }
@@ -878,15 +924,15 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     for(unsigned a=0; a<next_res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(next_res_atoms[a]);
       if(AN=="N")                                          {
-        tmp_cs.bb[Nn]  = next_res_atoms[a].index();
+        tmp_cs.bb[Nn]  = atomPos(next_res_atoms[a]);
       } else if(AN=="H" ||AN=="HN"||(AN=="CD"&&NRES=="PRO")) {
-        tmp_cs.bb[Hn]  = next_res_atoms[a].index();
+        tmp_cs.bb[Hn]  = atomPos(next_res_atoms[a]);
       } else if(AN=="CA")                                    {
-        tmp_cs.bb[CAn] = next_res_atoms[a].index();
+        tmp_cs.bb[CAn] = atomPos(next_res_atoms[a]);
       } else if(AN=="HA"||AN=="HA1"||AN=="HA3")              {
-        tmp_cs.bb[HAn] = next_res_atoms[a].index();
+        tmp_cs.bb[HAn] = atomPos(next_res_atoms[a]);
       } else if(AN=="C" )                                    {
-        tmp_cs.bb[Cn]  = next_res_atoms[a].index();
+        tmp_cs.bb[Cn]  = atomPos(next_res_atoms[a]);
       }
     }
 
@@ -896,7 +942,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     for(unsigned sc=0; sc<sc_atm.size(); sc++) {
       for(unsigned aa=0; aa<res_atoms.size(); aa++) {
         if(pdb.getAtomName(res_atoms[aa])==sc_atm[sc]) {
-          tmp_cs.side_chain.push_back(res_atoms[aa].index());
+          tmp_cs.side_chain.push_back(atomPos(res_atoms[aa]));
         }
       }
     }
@@ -937,7 +983,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
         xdist_name_map(name);
 
         if(name==atomsP1[q]) {
-          tmp1 = at1[a].index();
+          tmp1 = atomPos(at1[a]);
           break;
         }
       }
@@ -948,7 +994,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
         xdist_name_map(name);
 
         if(name==atomsP2[q]) {
-          tmp2 = at2[a].index();
+          tmp2 = atomPos(at2[a]);
           break;
         }
       }
@@ -972,7 +1018,19 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
 void CS2Backbone::init_types(const PDB &pdb) {
   enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
   std::vector<AtomNumber> aa = pdb.getAtomNumbers();
+  // these are indexed by the position of the atom in ATOMS
+  res_num.assign(aa.size(),0);
+  res_chain.assign(aa.size(),0);
+  type.assign(aa.size(),0);
+  std::map<std::string,unsigned> chain_index;
   for(unsigned i=0; i<aa.size(); i++) {
+    const unsigned ipos = atomPos(aa[i]);
+    const std::string chain = pdb.getChainID(aa[i]);
+    if(chain_index.find(chain)==chain_index.end()) {
+      const unsigned nchains=chain_index.size();
+      chain_index[chain]=nchains;
+    }
+    res_chain[ipos] = chain_index[chain];
     unsigned frag = pdb.getResidueNumber(aa[i]);
     std::string fragName = pdb.getResidueName(aa[i]);
     std::string atom_name = pdb.getAtomName(aa[i]);
@@ -980,7 +1038,7 @@ void CS2Backbone::init_types(const PDB &pdb) {
     if(isdigit(atom_name[0])) {
       atom_type = atom_name[1];
     }
-    res_num.push_back(frag);
+    res_num[ipos] = frag;
     unsigned t = 0;
     if (!isSP2(fragName, atom_name)) {
       if (atom_type == 'C') {
@@ -1007,7 +1065,7 @@ void CS2Backbone::init_types(const PDB &pdb) {
         plumed_merror("Unknown atom type: " + atom_name);
       }
     }
-    type.push_back(t);
+    type[ipos] = t;
   }
 }
 
@@ -1042,7 +1100,7 @@ void CS2Backbone::init_rings(const PDB &pdb) {
       if(frg=="PHE"||frg=="TYR") {
         RingInfo ri;
         for(unsigned a=0; a<frg_atoms.size(); a++) {
-          unsigned atm = frg_atoms[a].index();
+          unsigned atm = atomPos(frg_atoms[a]);
           for(unsigned aa=0; aa<6; aa++) {
             if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]) {
               ri.atom[aa] = atm;
@@ -1064,7 +1122,7 @@ void CS2Backbone::init_rings(const PDB &pdb) {
         //First ring
         RingInfo ri;
         for(unsigned a=0; a<frg_atoms.size(); a++) {
-          unsigned atm = frg_atoms[a].index();
+          unsigned atm = atomPos(frg_atoms[a]);
           for(unsigned aa=0; aa<6; aa++) {
             if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]) {
               ri.atom[aa] = atm;
@@ -1079,7 +1137,7 @@ void CS2Backbone::init_rings(const PDB &pdb) {
         //Second Ring
         RingInfo ri2;
         for(unsigned a=0; a<frg_atoms.size(); a++) {
-          unsigned atm = frg_atoms[a].index();
+          unsigned atm = atomPos(frg_atoms[a]);
           for(unsigned aa=0; aa<5; aa++) {
             if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]) {
               ri2.atom[aa] = atm;
@@ -1097,7 +1155,7 @@ void CS2Backbone::init_rings(const PDB &pdb) {
                 (frg=="HSP")) {//HIS case
         RingInfo ri;
         for(unsigned a=0; a<frg_atoms.size(); a++) {
-          unsigned atm = frg_atoms[a].index();
+          unsigned atm = atomPos(frg_atoms[a]);
           for(unsigned aa=0; aa<5; aa++) {
             if(pdb.getAtomName(frg_atoms[a])==his_n[aa]) {
               ri.atom[aa] = atm;
@@ -1140,36 +1198,28 @@ void CS2Backbone::calculate() {
   camshift_sigma2[4] = 1.56; // CB
   camshift_sigma2[5] = 1.70; // CO
 
-  std::vector<Vector>   cs_derivs;
+  // derivatives of each chemical shift, with the layout set in update_neighb
+  std::vector<Vector>   cs_derivs(cs_offset_.back(),Vector(0,0,0));
   std::vector<Vector>   aa_derivs;
-  std::vector<unsigned> cs_atoms;
-  std::vector<double>   all_shifts;
-
-  cs_derivs.resize(chemicalshifts.size()*max_cs_atoms,Vector(0,0,0));
-  cs_atoms.resize(chemicalshifts.size()*max_cs_atoms,0);
-  all_shifts.resize(chemicalshifts.size(),0);
+  std::vector<double>   all_shifts(chemicalshifts.size(),0);
   if(camshift||getDoScore()) {
     aa_derivs.resize(getNumberOfAtoms(),Vector(0,0,0));
   }
 
-  unsigned stride = comm.Get_size();
-  unsigned rank   = comm.Get_rank();
-  if(serial) {
-    stride = 1;
-    rank   = 0;
-  }
+  const unsigned stride = serial ? 1 : comm.Get_size();
+  const unsigned rank   = serial ? 0 : comm.Get_rank();
 
   unsigned nt=OpenMP::getNumThreads();
   if(nt*stride*2>chemicalshifts.size()) {
     nt=1;
   }
 
-  // a single loop over all chemical shifts
+  // a single loop over the chemical shifts of this rank
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for schedule(dynamic)
-    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
-      const unsigned kdx=cs*max_cs_atoms;
+    for(unsigned cs=cs_begin_; cs<cs_end_; cs++) {
+      const unsigned kdx=cs_offset_[cs];
       const ChemicalShift *myfrag = &chemicalshifts[cs];
       const unsigned aa_kind = myfrag->res_kind;
       const unsigned at_kind = myfrag->atm_kind;
@@ -1179,7 +1229,6 @@ void CS2Backbone::calculate() {
                      db.CONSTAANEXT(aa_kind,at_kind)[myfrag->res_type_next];
 
       const unsigned ipos = myfrag->ipos;
-      cs_atoms[kdx+0] = ipos;
       unsigned atom_counter = 1;
 
       //BACKBONE (PREV CURR NEXT)
@@ -1203,7 +1252,6 @@ void CS2Backbone::calculate() {
 
         cs_derivs[kdx+0] += der;
         cs_derivs[kdx+q+atom_counter] = -der;
-        cs_atoms[kdx+q+atom_counter] = jpos;
       }
 
       atom_counter += bbsize;
@@ -1228,10 +1276,6 @@ void CS2Backbone::calculate() {
         cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
         cs_derivs[kdx+CAc+1]+= fact*(dd2-dd1);
         cs_derivs[kdx+Cc+1] += -fact*dd2;
-        cs_atoms[kdx+Cp+1] = myfrag->bb[Cp];
-        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
       }
 
       //Psi
@@ -1252,10 +1296,6 @@ void CS2Backbone::calculate() {
         cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
         cs_derivs[kdx+Cc+1] += fact*(dd2-dd1);
         cs_derivs[kdx+Nn+1] += -fact*dd2;
-        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
-        cs_atoms[kdx+Nn+1] = myfrag->bb[Nn];
       }
 
       //Chi
@@ -1276,10 +1316,6 @@ void CS2Backbone::calculate() {
         cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
         cs_derivs[kdx+CBc+1] += fact*(dd2-dd1);
         cs_derivs[kdx+CGc+1] += -fact*dd2;
-        cs_atoms[kdx+Nc+1]  = myfrag->bb[Nc];
-        cs_atoms[kdx+CAc+1] = myfrag->bb[CAc];
-        cs_atoms[kdx+CBc+1] = myfrag->bb[CBc];
-        cs_atoms[kdx+CGc+1] = myfrag->bb[CGc];
 
         atom_counter += 2;
       }
@@ -1305,7 +1341,6 @@ void CS2Backbone::calculate() {
         const Vector der = fact*distance;
         cs_derivs[kdx+0] += der;
         cs_derivs[kdx+q+atom_counter] = -der;
-        cs_atoms[kdx+q+atom_counter] = jpos;
       }
 
       atom_counter += sidsize;
@@ -1329,8 +1364,6 @@ void CS2Backbone::calculate() {
         const Vector der = fact*distance;
         cs_derivs[kdx+2*q+atom_counter  ] = der;
         cs_derivs[kdx+2*q+atom_counter+1] = -der;
-        cs_atoms[kdx+2*q+atom_counter] = myfrag->xd2[q];
-        cs_atoms[kdx+2*q+atom_counter+1] = myfrag->xd1[q];
       }
 
       atom_counter += 2*xdsize;
@@ -1389,7 +1422,6 @@ void CS2Backbone::calculate() {
             const Vector factor1 = 0.5*ab;
             const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
             cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
-            cs_atoms[kdx+at+atom_counter] = ringInfo[q].atom[at];
           }
           atom_counter += 6;
         }  else {
@@ -1401,9 +1433,6 @@ void CS2Backbone::calculate() {
             const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
             cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
           }
-          cs_atoms[kdx+atom_counter] = ringInfo[q].atom[0];
-          cs_atoms[kdx+atom_counter+1] = ringInfo[q].atom[2];
-          cs_atoms[kdx+atom_counter+2] = ringInfo[q].atom[3];
           atom_counter += 3;
         }
       }
@@ -1453,7 +1482,6 @@ void CS2Backbone::calculate() {
 
           cs_derivs[kdx+0] += der;
           cs_derivs[kdx+q+atom_counter] = -der;
-          cs_atoms[kdx+q+atom_counter] = jpos;
         }
       }
       //END NON BOND
@@ -1468,25 +1496,42 @@ void CS2Backbone::calculate() {
     box_count = 0;
   }
 
-  if(!camshift) {
-    if(!serial) {
-      if(!getDoScore()) {
-        comm.Sum(&cs_derivs[0][0], 3*cs_derivs.size());
-        comm.Sum(&cs_atoms[0], cs_atoms.size());
-      }
-      comm.Sum(&all_shifts[0], chemicalshifts.size());
+  // every rank owns a contiguous block of chemical shifts: gather the blocks
+  // (the atoms of the derivatives are known on every rank)
+  if(!serial && stride>1) {
+    const unsigned size=comm.Get_size();
+    std::vector<int> counts(size), displ(size);
+    for(unsigned r=0; r<size; r++) {
+      unsigned b, e;
+      get_block(r,size,b,e);
+      counts[r]=e-b;
+      displ[r]=b;
     }
+    const std::vector<double> my_shifts(all_shifts.begin()+cs_begin_, all_shifts.begin()+cs_end_);
+    comm.Allgatherv(my_shifts.data(), cs_end_-cs_begin_, all_shifts.data(), counts.data(), displ.data());
+    if(!camshift && !getDoScore()) {
+      for(unsigned r=0; r<size; r++) {
+        unsigned b, e;
+        get_block(r,size,b,e);
+        counts[r]=3*(cs_offset_[e]-cs_offset_[b]);
+        displ[r]=3*cs_offset_[b];
+      }
+      const std::vector<Vector> my_derivs(cs_derivs.begin()+cs_offset_[cs_begin_], cs_derivs.begin()+cs_offset_[cs_end_]);
+      comm.Allgatherv(&my_derivs[0][0], 3*(cs_offset_[cs_end_]-cs_offset_[cs_begin_]), &cs_derivs[0][0], counts.data(), displ.data());
+    }
+  }
+
+  if(!camshift) {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       Value *comp = chemicalshifts[cs].comp;
       comp->set(all_shifts[cs]);
       if(getDoScore()) {
         setCalcData(cs, all_shifts[cs]);
       } else {
-        const unsigned kdx=cs*max_cs_atoms;
         Tensor csvirial;
-        for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
-          setAtomsDerivatives(comp,cs_atoms[kdx+i],cs_derivs[kdx+i]);
-          csvirial-=Tensor(getPosition(cs_atoms[kdx+i]),cs_derivs[kdx+i]);
+        for(unsigned i=cs_offset_[cs]; i<cs_offset_[cs+1]; i++) {
+          setAtomsDerivatives(comp,cs_atoms_[i],cs_derivs[i]);
+          csvirial-=Tensor(getPosition(cs_atoms_[i]),cs_derivs[i]);
         }
         setBoxDerivatives(comp,csvirial);
       }
@@ -1501,23 +1546,21 @@ void CS2Backbone::calculate() {
   /* Metainference */
   if(getDoScore()) {
     score = getScore();
-    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
-      const unsigned kdx=cs*max_cs_atoms;
+    for(unsigned cs=cs_begin_; cs<cs_end_; cs++) {
       const double fact = getMetaDer(cs);
-      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
-        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      for(unsigned i=cs_offset_[cs]; i<cs_offset_[cs+1]; i++) {
+        aa_derivs[cs_atoms_[i]] += cs_derivs[i]*fact;
       }
     }
   }
 
   /* camshift */
   if(camshift) {
-    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
-      const unsigned kdx=cs*max_cs_atoms;
+    for(unsigned cs=cs_begin_; cs<cs_end_; cs++) {
       score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
       double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
-        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      for(unsigned i=cs_offset_[cs]; i<cs_offset_[cs+1]; i++) {
+        aa_derivs[cs_atoms_[i]] += cs_derivs[i]*fact;
       }
     }
   }
@@ -1555,6 +1598,77 @@ void CS2Backbone::calculate() {
   setBoxDerivatives(val,-virial);
 }
 
+unsigned CS2Backbone::atomPos(const AtomNumber &a) const {
+  plumed_assert(a.index()<atom_pos_.size() && atom_pos_[a.index()]>=0);
+  return atom_pos_[a.index()];
+}
+
+void CS2Backbone::get_block(const unsigned r, const unsigned size, unsigned &b, unsigned &e) const {
+  // contiguous blocks of chemical shifts with about the same number of derivatives
+  const unsigned ncs = chemicalshifts.size();
+  const unsigned long long total = cs_offset_.back();
+  auto bound=[&](const unsigned k) {
+    if(k==0) {
+      return 0U;
+    }
+    if(k>=size) {
+      return ncs;
+    }
+    const unsigned long long target = (total*k)/size;
+    const unsigned pos = std::lower_bound(cs_offset_.begin(), cs_offset_.end(), target) - cs_offset_.begin();
+    return std::min(pos, ncs);
+  };
+  b = bound(r);
+  e = bound(r+1);
+}
+
+void CS2Backbone::set_layout(const unsigned cs) {
+  // the atom of each derivative, in the same order used in calculate()
+  const ChemicalShift & myfrag = chemicalshifts[cs];
+  unsigned * atoms = &cs_atoms_[cs_offset_[cs]];
+  atoms[0] = myfrag.ipos;
+  // backbone distances and dihedrals (slots 1-16)
+  for(unsigned q=0; q<16; q++) {
+    atoms[q+1] = myfrag.bb[q];
+  }
+  unsigned atom_counter = 17;
+  if(myfrag.has_chi1) {
+    atoms[CBc+1] = myfrag.bb[CBc];
+    atoms[CGc+1] = myfrag.bb[CGc];
+    atom_counter += 2;
+  }
+  for(unsigned q=0; q<myfrag.side_chain.size(); q++) {
+    atoms[q+atom_counter] = myfrag.side_chain[q];
+  }
+  atom_counter += myfrag.side_chain.size();
+  for(unsigned q=0; q<myfrag.xd1.size(); q++) {
+    if(myfrag.xd1[q]==-1||myfrag.xd2[q]==-1) {
+      continue;
+    }
+    atoms[2*q+atom_counter]   = myfrag.xd2[q];
+    atoms[2*q+atom_counter+1] = myfrag.xd1[q];
+  }
+  atom_counter += 2*myfrag.xd1.size();
+  for(unsigned q=0; q<ringInfo.size(); q++) {
+    if(ringInfo[q].numAtoms==6) {
+      for(unsigned at=0; at<6; at++) {
+        atoms[at+atom_counter] = ringInfo[q].atom[at];
+      }
+      atom_counter += 6;
+    } else {
+      atoms[atom_counter]   = ringInfo[q].atom[0];
+      atoms[atom_counter+1] = ringInfo[q].atom[2];
+      atoms[atom_counter+2] = ringInfo[q].atom[3];
+      atom_counter += 3;
+    }
+  }
+  for(unsigned q=0; q<myfrag.box_nb.size(); q++) {
+    atoms[q+atom_counter] = myfrag.box_nb[q];
+  }
+  atom_counter += myfrag.box_nb.size();
+  plumed_assert(atom_counter==myfrag.totcsatoms);
+}
+
 void CS2Backbone::update_neighb() {
   // cycle over chemical shifts
 #ifdef _OPENMP
@@ -1566,13 +1680,14 @@ void CS2Backbone::update_neighb() {
     const unsigned boxsize = getNumberOfAtoms();
     chemicalshifts[cs].box_nb.clear();
     chemicalshifts[cs].box_nb.reserve(150);
-    const unsigned res_curr = res_num[chemicalshifts[cs].ipos];
+    const unsigned ipos = chemicalshifts[cs].ipos;
+    const int res_curr = res_num[ipos];
     for(unsigned bat=0; bat<boxsize; bat++) {
-      const unsigned res_dist = std::abs(static_cast<int>(res_curr-res_num[bat]));
-      if(res_dist<2) {
+      // atoms of the same and of the adjacent residues of the same chain are excluded
+      if(res_chain[bat]==res_chain[ipos] && std::abs(res_curr-static_cast<int>(res_num[bat]))<2) {
         continue;
       }
-      const Vector distance = delta(getPosition(bat),getPosition(chemicalshifts[cs].ipos));
+      const Vector distance = delta(getPosition(bat),getPosition(ipos));
       const double d2=distance.modulo2();
       if(d2<cutOffNB2) {
         chemicalshifts[cs].box_nb.push_back(bat);
@@ -1580,11 +1695,22 @@ void CS2Backbone::update_neighb() {
     }
     chemicalshifts[cs].totcsatoms = chemicalshifts[cs].csatoms + chemicalshifts[cs].box_nb.size();
   }
-  max_cs_atoms=0;
+  // layout of the derivatives
+  cs_offset_.assign(chemicalshifts.size()+1,0);
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
-    if(chemicalshifts[cs].totcsatoms>max_cs_atoms) {
-      max_cs_atoms = chemicalshifts[cs].totcsatoms;
-    }
+    cs_offset_[cs+1] = cs_offset_[cs] + chemicalshifts[cs].totcsatoms;
+  }
+  cs_atoms_.assign(cs_offset_.back(),0);
+  #pragma omp parallel for num_threads(nt)
+  for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
+    set_layout(cs);
+  }
+  // chemical shifts computed by this rank
+  if(serial) {
+    cs_begin_ = 0;
+    cs_end_ = chemicalshifts.size();
+  } else {
+    get_block(comm.Get_rank(),comm.Get_size(),cs_begin_,cs_end_);
   }
 }
 

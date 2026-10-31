@@ -1,0 +1,32 @@
+type=driver
+plumed_needs=libtorch
+arg="--plumed plumed.dat --mf_pdb traj.pdb --dump-forces forces --dump-forces-fmt %10.4f"
+export PLUMED_NUM_THREADS=2
+
+# EMMIVOX computes the forward model in single precision with libtorch, so the
+# last digits depend on the libtorch version and on the CPU. A file is accepted
+# (replaced with its reference before the comparison) when every number differs
+# from the reference by less than 1e-5 times the largest number in the file.
+function plumed_regtest_after() {
+  for ref in *.reference ; do
+    new="${ref%.reference}"
+    test -f "$new" || continue
+    if awk -v tol=1e-5 '
+      function isnum(x) { return x ~ /^[-+]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$/ }
+      NR==FNR { nref=FNR; ref[FNR]=$0; next }
+      {
+        nnew=FNR
+        nr=split(ref[FNR],a," "); nn=split($0,b," ")
+        if(nr!=nn) { bad=1; next }
+        for(i=1;i<=nr;i++) {
+          if(isnum(a[i]) && isnum(b[i])) {
+            d=a[i]-b[i]; if(d<0) d=-d; if(d>maxd) maxd=d
+            m=a[i]; if(m<0) m=-m; if(m>maxa) maxa=m
+          } else if(a[i]!=b[i]) bad=1
+        }
+      }
+      END { exit (bad || nref!=nnew || maxd>tol*maxa) }' "$ref" "$new" ; then
+      cp "$ref" "$new"
+    fi
+  done
+}

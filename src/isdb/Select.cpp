@@ -98,7 +98,15 @@ Select::Select(const ActionOptions&ao):
 }
 
 void Select::calculate() {
-  unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
+  const auto it = plumed.passMap.find(selector_);
+  if(it==plumed.passMap.end()) {
+    error("SELECTOR "+selector_+" is not defined");
+  }
+  const double value = it->second;
+  if(!(value>=0.0)) {
+    error("the value of the SELECTOR must be a non-negative integer");
+  }
+  const unsigned iselect = static_cast<unsigned>(value);
 
   // check if iselect is smaller than the number of arguments
   if(iselect>=getNumberOfArguments()) {

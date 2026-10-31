@@ -348,6 +348,8 @@ void JCoupling::calculate() {
       dd2 *= derj;
 
       if(getDoScore()) {
+        // the j-# components have no derivatives here, they only report the value
+        dataValues_[r]->set(j[r]);
         setCalcData(r, j[r]);
       }
       deriv[a0] =  dd0;

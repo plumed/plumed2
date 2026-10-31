@@ -1,0 +1,21 @@
+MOLINFO STRUCTURE=structure.pdb
+WHOLEMOLECULES ENTITY0=1-22 ADDREFERENCE
+
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+
+phi: TORSION ATOMS=5,7,9,15
+# the bias is different on the two replicas, so the weights are different
+r: RESTRAINT ARG=phi AT=0.0 KAPPA=20.0
+
+# two groups of GMM components (Beta=0,1), sigma sampled with a fixed SEED
+EMMI ...
+    REWEIGHT ARG=r.bias
+    LABEL=gmm NOPBC TEMP=310 NL_STRIDE=5 NL_CUTOFF=0.01
+    ATOMS=protein-h GMM_FILE=map.dat
+    WRITE_STRIDE=10 SEED=11
+    SIGMA0=0.5 SIGMA_MIN=0.2 DSIGMA=0.1 MC_STRIDE=2 RESOLUTION=1.0 NOISETYPE=GAUSS
+...
+
+DUMPDERIVATIVES ARG=gmm.scoreb STRIDE=5 FMT=%10.4f FILE=deriva
+PRINT ARG=phi,r.bias,gmm.* FILE=GMM STRIDE=1 FMT=%10.4f
+ENDPLUMED

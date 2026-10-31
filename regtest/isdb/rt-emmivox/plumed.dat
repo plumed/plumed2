@@ -1,0 +1,37 @@
+MOLINFO STRUCTURE=structure.pdb
+
+# forward model and score; the neighbor sphere is updated when needed
+EMMIVOX ...
+  LABEL=emv
+  ATOMS=1-234
+  DATA_FILE=map.dat
+  NORM_DENSITY=6.3034
+  RESOLUTION=0.2
+  SIGMA_MIN=0.2
+  NL_DIST_CUTOFF=0.6 NL_GAUSS_CUTOFF=3.0 NL_STRIDE=2
+  SCALE=1.1 OFFSET=0.01
+  WRITE_STRIDE=2 STATUS_FILE=emvstatus
+  TEMP=300.0
+  CORRELATION
+  WRITE_MAP=model.dat WRITE_MAP_STRIDE=4
+...
+
+# with sampling of the residue Bfactors
+EMMIVOX ...
+  LABEL=emvb
+  ATOMS=1-234
+  DATA_FILE=map.dat
+  NORM_DENSITY=6.3034
+  RESOLUTION=0.2
+  SIGMA_MIN=0.2
+  NL_DIST_CUTOFF=0.6 NL_GAUSS_CUTOFF=3.0 NL_STRIDE=1
+  DBFACT=0.05 MCBFACT_STRIDE=2 BFACT_SIGMA=0.1
+  WRITE_STRIDE=2 STATUS_FILE=emvbstatus
+  TEMP=300.0
+  SEED=5
+...
+
+BIASVALUE ARG=emv.scoreb
+PRINT ARG=emv.*,emvb.* FILE=colvar FMT=%12.4f
+DUMPDERIVATIVES ARG=emv.scoreb,emvb.scoreb FILE=deriv FMT=%10.4f STRIDE=3
+ENDPLUMED
