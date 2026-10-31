@@ -192,7 +192,7 @@ void Combine::read( Combine& func, ActionWithArguments* action,
         action->error("with CIRCULAR all the arguments must be periodic (" + action->getPntrToArgument(i)->getName() + " is not)");
       }
       const double p=func.components[i].power;
-      if( p<0 || p!=std::floor(p) ) {
+      if( p<0 || std::fabs(p-std::round(p))>0.0 ) {
         action->error("with CIRCULAR the POWERS must be non-negative integers");
       }
     }

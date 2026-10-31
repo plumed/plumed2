@@ -46,25 +46,26 @@ LeptonCall& LeptonCall::operator=(const LeptonCall& other) {
 }
 
 void LeptonCall::linkVariables() {
-  const unsigned nth=expression.size();
-  lepton_ref.assign(nth*nargs,nullptr);
-  for(unsigned t=0; t<nth; ++t) {
-    for(unsigned j=0; j<nargs; ++j) {
+  const std::size_t nth=expression.size();
+  const std::size_t na=nargs;
+  lepton_ref.assign(nth*na,nullptr);
+  for(std::size_t t=0; t<nth; ++t) {
+    for(std::size_t j=0; j<na; ++j) {
       try {
-        lepton_ref[t*nargs+j]=&expression[t].getVariableReference(varnames[j]);
+        lepton_ref[t*na+j]=&expression[t].getVariableReference(varnames[j]);
       } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
     }
   }
-  lepton_ref_deriv.assign(nth*nargs*nargs,nullptr);
-  for(unsigned i=0; i<expression_deriv.size(); i++) {
+  lepton_ref_deriv.assign(nth*na*na,nullptr);
+  for(std::size_t i=0; i<expression_deriv.size(); i++) {
     plumed_assert( expression_deriv[i].size()==nth );
-    for(unsigned t=0; t<nth; ++t) {
-      for(unsigned j=0; j<nargs; ++j) {
+    for(std::size_t t=0; t<nth; ++t) {
+      for(std::size_t j=0; j<na; ++j) {
         try {
-          lepton_ref_deriv[i*nth*nargs + t*nargs+j]=&expression_deriv[i][t].getVariableReference(varnames[j]);
+          lepton_ref_deriv[i*nth*na + t*na+j]=&expression_deriv[i][t].getVariableReference(varnames[j]);
         } catch(const PLMD::lepton::Exception& exc) {
         }
       }
@@ -114,7 +115,7 @@ double LeptonCall::evaluate( const std::vector<double>& args ) const {
 
 double LeptonCall::evaluate(const View<const double> args ) const {
   plumed_dbg_assert( allow_extra_args || args.size()==nargs );
-  const unsigned t=OpenMP::getThreadNum(), tbas=t*nargs;
+  const std::size_t t=OpenMP::getThreadNum(), tbas=t*nargs;
   plumed_dbg_assert( t<expression.size() );
   for(unsigned i=0; i<nargs; ++i) {
     if( lepton_ref[tbas+i] ) {
@@ -131,7 +132,8 @@ double LeptonCall::evaluateDeriv( const unsigned ider, const std::vector<double>
 double LeptonCall::evaluateDeriv( const unsigned ider, const View<const double> args ) const {
   plumed_dbg_assert( allow_extra_args || args.size()==nargs );
   plumed_dbg_assert( ider<nargs );
-  const unsigned t=OpenMP::getThreadNum(), dbas = ider*expression.size()*nargs + t*nargs;
+  const std::size_t t=OpenMP::getThreadNum();
+  const std::size_t dbas = static_cast<std::size_t>(ider)*expression.size()*nargs + t*nargs;
   for(unsigned j=0; j<nargs; j++) {
     if(lepton_ref_deriv[dbas+j] ) {
       *lepton_ref_deriv[dbas+j] = args[j];

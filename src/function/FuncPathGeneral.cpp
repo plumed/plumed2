@@ -313,6 +313,7 @@ void FuncPathGeneral::calculate() {
   // (and keeps static analysis from flagging the logarithm below)
   if (!(partition >= 1.0)) {
     error("the weights of the frames of the path are not finite: check LAMBDA and the arguments");
+    return;
   }
 
   s_path /= partition;
