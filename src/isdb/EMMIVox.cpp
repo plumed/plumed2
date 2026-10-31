@@ -1209,8 +1209,12 @@ void EMMIVOX::get_close_residues() {
       }
     }
   }
-  // add to global list, sorted (reproducible results)
+  // add to global list, sorted (reproducible results); the lists of the threads
+  // that did not run (e.g. without OpenMP) are empty and are skipped
   for(unsigned t=0; t<nt; ++t) {
+    if(nl_res_t[t].empty()) {
+      continue;
+    }
     for(unsigned i=0; i<nres; ++i) {
       nl_res_[i].insert(nl_res_[i].end(), nl_res_t[t][i].begin(), nl_res_t[t][i].end());
     }
