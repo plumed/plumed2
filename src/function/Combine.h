@@ -26,6 +26,7 @@
 #include "tools/View.h"
 #include "core/ActionWithArguments.h"
 
+#include <cmath>
 #include <numeric>
 namespace PLMD {
 namespace function {
@@ -38,11 +39,17 @@ class Combine  {
     double max_minus_min{0.0};
     double inv_max_minus_min{0.0};
     bool periodic{false};
+    /// power is exactly one: avoid the calls to pow
+    bool linear{false};
   };
   std::vector<component> components{};
 public:
   std::size_t ncomponents{0};
   component * cmps=nullptr;
+  /// with CIRCULAR the arguments are combined as angles: atan2(sum c_i sin(p_i theta_i),sum c_i cos(p_i theta_i))
+  bool circular{false};
+  /// (max-min)/(2 pi) for the output domain, used with CIRCULAR
+  double output_scale{1.0};
   void update() {
     cmps = components.data();
     ncomponents = components.size();
@@ -50,16 +57,22 @@ public:
   Combine() = default;
   ~Combine() = default;
   Combine(const Combine&x):
-    components(x.components) {
+    components(x.components),
+    circular(x.circular),
+    output_scale(x.output_scale) {
     update();
   }
   Combine(Combine&&x):
-    components(std::move(x.components)) {
+    components(std::move(x.components)),
+    circular(x.circular),
+    output_scale(x.output_scale) {
     update();
   }
   Combine &operator=(const Combine&x) {
     if (this!=&x) {
       components=x.components;
+      circular=x.circular;
+      output_scale=x.output_scale;
       update();
     }
     return *this;
@@ -67,6 +80,8 @@ public:
   Combine &operator=(Combine&&x) {
     if (this!=&x) {
       components=std::move(x.components);
+      circular=x.circular;
+      output_scale=x.output_scale;
       update();
     }
     return *this;
@@ -95,6 +110,9 @@ void Combine::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PARAMETERS","0.0","the parameters of the arguments in your function");
   keys.add("compulsory","POWERS","1.0","the powers to which you are raising each of the arguments in your function");
   keys.addFlag("NORMALIZE",false,"normalize all the coefficients so that in total they are equal to one");
+  keys.addFlag("CIRCULAR",false,"all the arguments are periodic and are combined as angles: the output is the argument of the complex number "
+               "sum_i c_i exp(i p_i theta_i), where theta_i is (x_i-a_i) converted to an angle, scaled to the domain given with PERIODIC. "
+               "With the default coefficients and powers this is the circular mean of the arguments");
   keys.setValueDescription("scalar/vector/matrix","a linear combination");
 }
 
@@ -150,6 +168,9 @@ void Combine::read( Combine& func, ActionWithArguments* action,
     action->log.printf(" %f",func.components[i].power);
   }
   action->log.printf("\n");
+  for(unsigned i=0; i<nargs; ++i) {
+    func.components[i].linear = (func.components[i].power==1.0);
+  }
   // Store periodicity stuff
   for(unsigned i=0; i<nargs; ++i) {
     if( (action->getPntrToArgument(i))->isPeriodic() ) {
@@ -164,18 +185,75 @@ void Combine::read( Combine& func, ActionWithArguments* action,
     }
   }
 
+  action->parseFlag("CIRCULAR",func.circular);
+  if( func.circular ) {
+    for(unsigned i=0; i<nargs; ++i) {
+      if( !func.components[i].periodic ) {
+        action->error("with CIRCULAR all the arguments must be periodic (" + action->getPntrToArgument(i)->getName() + " is not)");
+      }
+      const double p=func.components[i].power;
+      if( p<0 || p!=std::floor(p) ) {
+        action->error("with CIRCULAR the POWERS must be non-negative integers");
+      }
+    }
+    // The output domain is needed to scale the angle; PERIODIC is read later by FunctionData::setup
+    std::string pstr=action->getKeyword("PERIODIC");
+    std::vector<std::string> period=Tools::getWords(pstr.substr(pstr.find("=")+1),"\t\n ,");
+    if( period.size()!=2 ) {
+      action->error("with CIRCULAR the output is periodic: use PERIODIC=min,max to give its domain");
+    }
+    double omin, omax;
+    Tools::convert( period[0], omin );
+    Tools::convert( period[1], omax );
+    if( !(omax>omin) ) {
+      action->error("with CIRCULAR the domain given with PERIODIC must have max>min");
+    }
+    func.output_scale = (omax-omin)/(2*pi);
+    action->log.printf("  combining the arguments as angles (CIRCULAR); output domain %s\n", pstr.c_str());
+  }
 }
 
 void Combine::calc( const Combine& func,
                     bool noderiv,
                     const View<const double>& args,
                     FunctionOutput& funcout ) {
+  if( func.circular ) {
+    // theta_i = 2 pi pbc(x_i-a_i)/(max_i-min_i), output = scale*atan2( sum c_i sin(p_i theta_i), sum c_i cos(p_i theta_i) )
+    double ssum=0.0, csum=0.0;
+    for(unsigned i=0; i<func.ncomponents; ++i) {
+      const auto& cmp = func.cmps[i];
+      const double angle = cmp.power*2*pi*Tools::pbc( (args[i] - cmp.parameter)*cmp.inv_max_minus_min );
+      ssum += cmp.coefficient*sin(angle);
+      csum += cmp.coefficient*cos(angle);
+    }
+    funcout.values[0] = func.output_scale*atan2( ssum, csum );
+    if( !noderiv ) {
+      const double r2 = ssum*ssum + csum*csum;
+      // the result is undefined when the sum vanishes: use zero derivatives there
+      const double ir2 = r2>0 ? 1.0/r2 : 0.0;
+      for(unsigned i=0; i<func.ncomponents; ++i) {
+        const auto& cmp = func.cmps[i];
+        const double angle = cmp.power*2*pi*Tools::pbc( (args[i] - cmp.parameter)*cmp.inv_max_minus_min );
+        funcout.derivs[0][i] = func.output_scale*cmp.coefficient*cmp.power*2*pi*cmp.inv_max_minus_min*
+                               ( csum*cos(angle) + ssum*sin(angle) )*ir2;
+      }
+    }
+    return;
+  }
   funcout.values[0]=0.0;
   for(unsigned i=0; i<func.ncomponents; ++i) {
     const auto& cmp = func.cmps[i];
     double cv = args[i] - cmp.parameter;
     if( cmp.periodic ) {
       cv = cmp.max_minus_min*Tools::pbc( cv*cmp.inv_max_minus_min );
+    }
+    if( cmp.linear ) {
+      // same result as pow(cv,1) and pow(cv,0), without the calls
+      funcout.values[0] += cmp.coefficient*cv;
+      if( !noderiv ) {
+        funcout.derivs[0][i] = cmp.coefficient;
+      }
+      continue;
     }
     funcout.values[0] += cmp.coefficient*pow( cv, cmp.power );
     if( !noderiv ) {
