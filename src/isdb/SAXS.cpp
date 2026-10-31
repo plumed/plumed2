@@ -1591,8 +1591,13 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
       }
     }
   }
-  // combining private_sasares into sasares, in thread order (reproducible results)
+  // combining private_sasares into sasares, in thread order (reproducible results);
+  // the buffers of the threads that did not run (e.g. without OpenMP, or when the
+  // runtime gives fewer threads than requested) are empty and are skipped
   for (unsigned t = 0; t < nt; ++t) {
+    if(sasares_t[t].empty()) {
+      continue;
+    }
     for (unsigned i = 0; i < nres; ++i) {
       sasares[i] += sasares_t[t][i];
     }
@@ -1810,15 +1815,22 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
       }
     }
   }
+  // only the threads that actually ran have filled their buffers: without OpenMP
+  // (or when the runtime gives fewer threads than requested) the others are empty
+  std::vector<unsigned> filled;
   for(unsigned t=1; t<nt; ++t) {
+    if(sum_t[t].empty()) {
+      continue;
+    }
+    filled.push_back(t);
     for(unsigned k=0; k<numq; ++k) {
       sum[k] += sum_t[t][k];
     }
   }
-  if(nt>1) {
+  if(!filled.empty()) {
     #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<deriv.size(); ++i) {
-      for(unsigned t=1; t<nt; ++t) {
+      for(const auto t : filled) {
         deriv[i] += deriv_t[t][i];
       }
     }
