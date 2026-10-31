@@ -26,11 +26,17 @@ inputs:
     required: false
     default: false
     type: boolean
+  free-space:
+    description: 'remove large unused packages from the runner (needed by the jobs that build and test plumed, it takes 1-2 minutes)'
+    required: false
+    default: true
+    type: boolean
 runs:
   using: "composite"
   steps:
     # the boolean are evaluated to string... -> the various "=='true'"
     - name: Remove unused stuff
+      if: ${{ inputs.free-space == 'true' }}
       run: |
         echo "Making some space"
         df -h

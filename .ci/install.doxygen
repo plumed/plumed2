@@ -21,13 +21,24 @@ else
   echo "installing latest doxigen ($version)"
 fi
 
+# installation prefix (CI installs in a separate prefix, so that it can be cached)
+prefix="${DOXYGEN_PREFIX:-$HOME/opt}"
+
+# skip the build if this version is already installed there (e.g. restored by actions/cache)
+wanted="${version#Release_}"
+wanted="${wanted//_/.}"
+if test -x "$prefix/bin/doxygen" && test "$("$prefix/bin/doxygen" --version | awk '{print $1}')" = "$wanted"; then
+  echo "doxygen $wanted already installed in $prefix"
+  exit 0
+fi
+
 #cloning ONLY the code we need
 git clone "$repo" --branch "$version" --depth 1
 cd doxygen
 
 mkdir build
 cd build
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/opt" ../
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$prefix" ../
 make -j 4
 make install
 

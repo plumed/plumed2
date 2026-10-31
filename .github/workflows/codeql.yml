@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "59 1 * * 2"
 
+# same policy as in ci.yml: cancel superseded pull request runs, collapse queued runs on branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

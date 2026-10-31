@@ -69,6 +69,8 @@ jobs:
       uses: ./.github/actions/linux-setup
       with:
         export-kernel: true
+        # this job only unpacks the plumed built by linux-build-plumed, it does not need the extra space
+        free-space: false
 
     - name: Download artifacts
       uses: actions/download-artifact@v7

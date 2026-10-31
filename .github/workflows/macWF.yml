@@ -101,6 +101,7 @@ jobs:
         plumed config has asmjit
     - name: Run tests
       run: |
-         make --no-print-directory -C regtest
+         # regtests run in their own tmp/ directories, so they can run concurrently
+         make --no-print-directory -j 2 -C regtest
          # these can fail for numerical reasons
          make -C regtest checkfail
