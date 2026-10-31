@@ -4,7 +4,9 @@ c: CUSTOM ARG=t1 FUNC=-x PERIODIC=NO
 p: PRODUCT ARG=t1,t2,c
 t: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
 pv: PRODUCT ARG=t
-dm: DISTANCE_MATRIX ATOMS=1-4
+# a matrix with negative eigenvalues (zero diagonal), built without the adjmat module
+d: DISTANCE ATOMS1=1,2 ATOMS2=1,50 ATOMS3=1,80 ATOMS4=3,100
+dm: OUTER_PRODUCT ARG=d,d FUNC=abs(x-y)
 det: DETERMINANT ARG=dm
 PRINT ARG=p,pv,det FILE=colvar FMT=%8.4f
-RESTRAINT ARG=p,pv,det AT=0,0,0 KAPPA=1,1,0.1
+RESTRAINT ARG=p,pv,det AT=0,0,0 KAPPA=1,1,1

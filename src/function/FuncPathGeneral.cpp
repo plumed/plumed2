@@ -309,6 +309,11 @@ void FuncPathGeneral::calculate() {
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
   }
+  // the closest frame has weight one, so partition>=1; the check makes this explicit
+  // (and keeps static analysis from flagging the logarithm below)
+  if (!(partition >= 1.0)) {
+    error("the weights of the frames of the path are not finite: check LAMBDA and the arguments");
+  }
 
   s_path /= partition;
   val_s_path->set(s_path);
