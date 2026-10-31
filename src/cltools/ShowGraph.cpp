@@ -127,8 +127,8 @@ PLUMED_REGISTER_CLTOOL(ShowGraph,"show_graph")
 void ShowGraph::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--plumed","plumed.dat","the plumed input that we are generating the graph for");
-  keys.add("compulsory","--out","graph.md","the dot file containing the graph that has been generated");
-  keys.add("compulsory","--natoms","1000000;","the dot file containing the graph that has been generated");
+  keys.add("compulsory","--out","graph.md","the file containing the graph that has been generated, in mermaid flowchart syntax");
+  keys.add("compulsory","--natoms","1000000","the number of atoms in the system (should be larger than the largest atom index in the input)");
   keys.addFlag("--force",false,"print a graph that shows how forces are passed through the actions");
 }
 
