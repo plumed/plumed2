@@ -152,10 +152,14 @@ public:
     output.values[n] = sqrt(inpairs*drmsd);
 
     if( !noderiv ) {
-      double scalef = inpairs / output.values[n];
+      // The derivative of the square root is not defined when the structure is exactly the reference.
+      // Using zero here avoids that 0*inf=nan is passed to the forces
+      const double scalef = output.values[n]>0.0 ? inpairs / output.values[n] : 0.0;
 
       PLMD::LoopUnroller<9>::_mul(output.virial.getView(n).data(),scalef);
-      for(unsigned i=0; i<actiondata.natoms; ++i ) {
+      // The atoms that do not take part in any pair are not in targetList: looping on
+      // actiondata.natoms would read past the end of targetList
+      for(unsigned i=0; i<targetAtoms; ++i ) {
         output.derivs[n][targetList[i]] *= scalef;
       }
     }
@@ -166,7 +170,7 @@ public:
     //set is ordered and contains no duplicated data
     std::set<unsigned> atoms_targets;
     //targets.reserve( (structure.size()*(structure.size()-1))/2 );?
-    for(unsigned i=0; i<structure.size()-1; ++i) {
+    for(unsigned i=0; i+1<structure.size(); ++i) {
       for(unsigned j=i+1; j<structure.size(); ++j) {
         double distance = delta( structure[i], structure[j] ).modulo();
         if(distance > bondlength) {
@@ -175,6 +179,9 @@ public:
           atoms_targets.emplace(j);
         }
       }
+    }
+    if( targets.empty() ) {
+      plumed_merror("all the distances in the reference structure are shorter than BONDLENGTH so there is nothing to compare");
     }
     drmsd_targets.extend( targets );
 
