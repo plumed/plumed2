@@ -638,7 +638,9 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
   std::vector<std::string> news;
   for(const auto & p :s) {
     news.push_back(p);
-    size_t dash=p.find("-");
+    // the separating dash is searched from the second character, so that the first
+    // end of the range can be negative (e.g. -10-5 or -10--1, used for residue numbers)
+    size_t dash=p.find('-',1);
     if(dash==std::string::npos) {
       continue;
     }

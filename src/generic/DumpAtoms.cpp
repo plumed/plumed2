@@ -274,7 +274,7 @@ class DumpAtoms:
   int iprecision;
   CheckInRange bounds;
   std::vector<std::string> names;
-  std::vector<unsigned>    residueNumbers;
+  std::vector<int>         residueNumbers;
   std::vector<std::string> residueNames;
   std::string type;
   std::string fmt_gro_pos;
@@ -519,7 +519,7 @@ void DumpAtoms::update() {
       of.printf("\n");
     }
   } else if(type=="gro") {
-    const std::string posFormatString="%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n";
+    const std::string posFormatString="%5d%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n";
     std::string extraFormatString=" "+fmt_xyz;
     const Tensor & t(getPbc().getBox());
     of.printf("Made with PLUMED t=%f\n",getTime()/getUnits().getTime());
@@ -527,7 +527,7 @@ void DumpAtoms::update() {
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
       const char* atomName=defname;
-      unsigned residueNumber=0;
+      int residueNumber=0;
       if(names.size()>0)
         if(names[i].length()>0) {
           atomName=names[i].c_str();

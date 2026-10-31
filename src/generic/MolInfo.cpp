@@ -128,6 +128,7 @@ So for example
 ````
 @psi-1 will select the atoms defining the psi torsion of residue 1
 @psi-C1  or @psi-C_1 will define the same torsion for residue 1 of chain C.
+@psi--3, @psi-C-3 or @psi-C_-3 will select the psi torsion of residue -3 (of chain C in the last two cases).
 @psi-3_1 will define the same torsion for residue 1 of chain 3.
 ````
 
