@@ -190,48 +190,64 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   if(argc==2) {
     mystdin=std::fopen(argv[1],"r");
     if(!mystdin) {
-      std::fprintf(stderr,"ERROR: cannot open file %s\n\n",argv[1]);
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
       std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
-      return false;
+      // an error, so that the exit code is not zero
+      error(std::string("cannot open file ") + argv[1]);
     }
     fp_deleter.reset(mystdin);
   }
 
   plumed_assert(mystdin);
 
-  char buffer[256];
+  // Set all flags to default false
+  for(unsigned k=0; k<keywords.size(); ++k) {
+    const std::string & thiskey=keywords.getKeyword(k);
+    if( keywords.style(thiskey,"flag") ) {
+      inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
+    }
+  }
+
   std::string line;
-  line.resize(256);
-  while(fgets(buffer,256,mystdin)) {
-    line=buffer;
-    for(unsigned i=0; i<line.length(); ++i)
-      if(line[i]=='#' || line[i]=='\n') {
-        line.erase(i);
-      }
+  // lines of any length
+  while(Tools::getline(mystdin,line)) {
+    auto comment=line.find('#');
+    if(comment!=std::string::npos) {
+      line.erase(comment);
+    }
     Tools::stripLeadingAndTrailingBlanks( line );
     if(line.length()==0) {
       continue;
     }
-    std::sscanf(line.c_str(),"%255s",buffer);
-    std::string keyword=buffer;
+    const std::string keyword=line.substr(0,line.find_first_of(" \t"));
     bool found=false;
     for(unsigned i=0; i<keywords.size(); ++i) {
       std::string thiskey=keywords.getKeyword(i);
       if(thiskey==keyword) {
         found=true;
-        std::size_t keypos=line.find_first_of(keyword)+keyword.length();
-        inputData.insert(std::pair<std::string,std::string>(thiskey,line.substr(keypos)));
-        Tools::stripLeadingAndTrailingBlanks( inputData[thiskey] );
+        std::string value=line.substr(keyword.length());
+        Tools::stripLeadingAndTrailingBlanks( value );
+        if( keywords.style(thiskey,"flag") ) {
+          // a flag can be given alone or followed by true or false
+          if( value.length()==0 ) {
+            value="true";
+          }
+          if( value!="true" && value!="false" ) {
+            error("flag " + keyword + " should be followed by nothing, true or false");
+          }
+          inputData[thiskey]=value;
+        } else {
+          inputData.insert(std::pair<std::string,std::string>(thiskey,value));
+        }
       }
     }
     if(!found) {
-      std::fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n\n",name.c_str(),keyword.c_str());
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
       std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
-      return false;
+      // an error, so that the exit code is not zero
+      error("unknown keyword " + keyword + " found in input file");
     }
   }
 
