@@ -145,22 +145,20 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
   double mean=0;
   double inorm = 1.0 / static_cast<double>( args.size() );
   if( func.isperiodic ) {
-    double sinsum=0, cossum=0, val;
+    // Circular mean: the angles are measured from the lower end of the domain,
+    // so the mean is min + (max-min)*atan2(<sin>,<cos>)/(2 pi)
+    double sinsum=0, cossum=0;
     for(unsigned i=0; i<args.size(); ++i) {
-      val=func.pfactor*( args[i] - func.min );
+      const double val=func.pfactor*( args[i] - func.min );
       sinsum+=sin(val);
       cossum+=cos(val);
     }
-    mean = 0.5 + atan2( inorm*sinsum, inorm*cossum ) / (2*pi);
-    mean = func.min + (func.max-func.min)*mean;
-  } else {
-    for(unsigned i=0; i<args.size(); ++i) {
-      mean+=args[i];
-    }
-    mean *= inorm;
-  }
-
-  if( func.isperiodic ) {
+    const double meanangle = atan2( sinsum, cossum );
+    mean = func.min + func.max_minus_min*meanangle/(2*pi);
+    // derivative of the circular mean with respect to argument i is cos(theta_i-theta_mean)/R
+    // with R=|sum_j exp(i theta_j)|; it reduces to 1/N when all the angles are equal
+    const double r2 = sinsum*sinsum + cossum*cossum;
+    const double invr = r2>0 ? 1.0/std::sqrt(r2) : 0.0;
     for(unsigned npow=0; npow<func.powers.size(); ++npow) {
       double dev1=0;
       for(unsigned i=0; i<args.size(); ++i) {
@@ -168,7 +166,6 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
         s = Tools::pbc(s);
         dev1+=pow( s*func.max_minus_min, func.powers[npow] - 1 );
       }
-      dev1*=inorm;
       funcout.values[npow] = 0;
       double prefactor = func.powers[npow]*inorm;
       for(unsigned i=0; i<args.size(); ++i) {
@@ -176,11 +173,16 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
         tmp = func.max_minus_min*Tools::pbc(tmp);
         funcout.values[npow] += inorm*pow( tmp, func.powers[npow] );
         if( !noderiv ) {
-          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1);
+          const double dmean = invr*cos( func.pfactor*( args[i] - func.min ) - meanangle );
+          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1*dmean);
         }
       }
     }
   } else {
+    for(unsigned i=0; i<args.size(); ++i) {
+      mean+=args[i];
+    }
+    mean *= inorm;
     for(unsigned npow=0; npow<func.powers.size(); ++npow) {
       double dev1=0;
       for(unsigned i=0; i<args.size(); ++i) {
