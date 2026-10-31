@@ -289,6 +289,10 @@ void RMSDVector::getPositionsFromInputData( const ParallelActionsInput& input, s
   }
 }
 
+bool RMSDVector::derivativesComputedInGatherForces( const RMSDVectorData& actiondata ) {
+  return actiondata.displacement && actiondata.type!="SIMPLE" && actiondata.myrmsd.size()>1;
+}
+
 void RMSDVector::performTask( std::size_t task_index,
                               const RMSDVectorData& actiondata,
                               ParallelActionsInput& input,
@@ -305,8 +309,9 @@ void RMSDVector::performTask( std::size_t task_index,
       output.values[1+2*natoms+i] = direction[i][2];
     }
   } else if( actiondata.displacement ) {
-    if( !input.noderiv && actiondata.myrmsd.size()>1 ) {
+    if( !input.noderiv && derivativesComputedInGatherForces( actiondata ) ) {
       // This is activated on the backwards loop to ensure that we don't calculate the RMSD twice during that backwards loop
+      // The derivatives of the distance are then taken from the alignment that is recomputed in gatherForces
       return;
     }
     Tensor rot;
@@ -427,6 +432,19 @@ void RMSDVector::gatherForces( std::size_t task_index,
         }
       }
     }
+    if( derivativesComputedInGatherForces( actiondata ) ) {
+      // Forces on the distance, using the derivatives that were calculated by the alignment above
+      for(unsigned i=0; i<natoms; ++i) {
+        outforces[i] += f[0]*der[i][0];
+        outforces[natoms + i] += f[0]*der[i][1];
+        outforces[2*natoms + i] += f[0]*der[i][2];
+      }
+    }
+  }
+  if( derivativesComputedInGatherForces( actiondata ) ) {
+    // The derivatives of the distance were not calculated in performTask (deriv is zero here)
+    // so the forces on the distance are applied in the branch above
+    return;
   }
   double ff = f[0];
   for(unsigned j=0; j<deriv.size(); ++j ) {

@@ -132,9 +132,9 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
 // calculator
 void SelectMassCharge::calculate() {
   Value* myval = getPntrToComponent(0);
-  if( getName()=="CHARGES" ) {
+  if( getName()=="CHARGE" ) {
     if( !chargesWereSet ) {
-      error("cannot determine charges are charges were not set");
+      error("cannot determine charges if charges were not set by the MD code");
     }
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       myval->set( i, getCharge(i) );

@@ -84,6 +84,9 @@ RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   unsigned nf=1;
   if( frame==0 ) {
     FILE* fp=std::fopen(reference.c_str(),"r");
+    if(!fp) {
+      plumed_merror("cannot open file " + reference );
+    }
     bool do_read=true;
     nf=0;
     while ( do_read ) {
@@ -94,6 +97,7 @@ RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
       }
       nf++;
     }
+    std::fclose(fp);
   }
   bool nopbc;
   parseFlag("NOPBC",nopbc);

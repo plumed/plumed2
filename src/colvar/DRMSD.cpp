@@ -312,6 +312,9 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   // Now create values that hold all the reference distances
   fclose(fp);
 
+  if( refvals.empty() ) {
+    plumed_merror("no pairs of atoms are within the cutoffs for the reference structure, no distances can be computed");
+  }
   if( nframes==1 ) {
     readInputLine( getShortcutLabel() + "_d: DISTANCE" + allpairs + " " + pbc_str );
     std::string refstr = refvals[0];

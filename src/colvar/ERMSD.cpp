@@ -183,8 +183,11 @@ ERMSD::ERMSD(const ActionOptions&ao):
     //log.printf("%f %f %f \n",reference_positions[i][0],reference_positions[i][1],reference_positions[i][2]);
   }
 
-// shift to count from zero
+// shift to count from zero (pairs are residue indices, 1-based in input)
   for(unsigned i=0; i<pairs_.size(); ++i) {
+    if(pairs_[i]<1 || pairs_[i]>natoms/3) {
+      error("PAIRS should contain residue indices between 1 and the number of residues (" + std::to_string(natoms/3) + ")");
+    }
     pairs_[i]--;
   }
 
@@ -209,8 +212,10 @@ void ERMSD::calculate() {
   double ermsdist;
   Tensor virial;
 // This is a trick to avoid explicit virial calculation
-// 1. we make the molecule whole
-  makeWhole();
+// 1. we make the molecule whole (unless NOPBC was requested)
+  if(pbc) {
+    makeWhole();
+  }
 // 2. we ignore pbcs
   Pbc fake_pbc;
 // Notice that this might have problems when having 2 RNA molecules (hybridization).

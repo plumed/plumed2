@@ -79,6 +79,8 @@ DihedralCorrelation<T>::DihedralCorrelation(const ActionOptions&ao):
   }
   addValueWithDerivatives();
   setNotPeriodic();
+  requestAtoms(atoms);
+  checkRead();
 }
 
 template <typename T>

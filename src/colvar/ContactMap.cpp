@@ -186,6 +186,9 @@ ContactMap::ContactMap(const ActionOptions&ao):
       componentIsNotPeriodic("contact-"+num);
     }
   }
+  if( ga_lista.empty() ) {
+    error("no contacts have been specified, use the ATOMS1, ATOMS2, ... keywords");
+  }
   // Create neighbour lists
   nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,true,pbc,getPbc(),comm);
 
@@ -233,10 +236,18 @@ ContactMap::ContactMap(const ActionOptions&ao):
     nswitch++;
   }
   if( nswitch==0 ) {
-    parse("REFERENCE",reference[0]);
-    for(unsigned i=1; i<ga_lista.size(); ++i) {
-      reference[i]=reference[0];
-      nswitch++;
+    // a single value (REFERENCE) for all the contacts
+    std::string global_ref;
+    parse("REFERENCE",global_ref);
+    if( global_ref.length()>0 ) {
+      double ref0=0.0;
+      if( !Tools::convertNoexcept(global_ref,ref0) ) {
+        error("cannot understand the value " + global_ref + " given to the REFERENCE keyword");
+      }
+      for(unsigned i=0; i<ga_lista.size(); ++i) {
+        reference[i]=ref0;
+      }
+      nswitch = ga_lista.size();
     }
   }
   if(nswitch == 0 && docmdist) {
