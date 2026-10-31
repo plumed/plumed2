@@ -323,3 +323,17 @@ jobs:
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
+
+  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
+  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
+  # which are in cltools.
+  modules-none:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build PLUMED with --enable-modules=none
+      run: |
+        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install
