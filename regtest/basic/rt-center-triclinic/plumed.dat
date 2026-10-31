@@ -14,6 +14,8 @@ d2: DISTANCE ATOMS=c3,c4
 d3: DISTANCE ATOMS=c5,6
 bias: BIASVALUE ARG=d1,d2,d3
 
-DUMPATOMS ATOMS=c1,c2,c3,c4,c5 FILE=centers.xyz
+# the center of two atoms is exactly their midpoint, which has 7 decimals: a precision of 6 puts
+# values on a rounding tie, so the printed digit depends on the platform
+DUMPATOMS ATOMS=c1,c2,c3,c4,c5 FILE=centers.xyz PRECISION=5
 PRINT ARG=c1.mass,c1.charge,c2.mass,c2.charge,c3.mass,c3.charge,c4.mass,c4.charge,c5.mass,c5.charge FILE=masscharge FMT=%10.6f
 PRINT ARG=d1,d2,d3,bias.bias FILE=colvar FMT=%10.6f
