@@ -1,0 +1,19 @@
+# Centers computed with PHASES in a triclinic cell.
+# The forces on the atoms (forces) are the regression part of this test; they were checked against
+# numerical derivatives with --debug-forces. Derivatives of CENTER/COM with PHASES were wrong
+# for non-orthorhombic cells (only the orthorhombic case was tested before).
+c1: CENTER ATOMS=1-4 PHASES
+c2: CENTER ATOMS=2,3,5 WEIGHTS=2,1,0.5 PHASES
+c3: COM ATOMS=1,3,6 PHASES
+c4: CENTER ATOMS=4,5,6 MASS PHASES
+# charges are summed, SET_MASS and SET_CHARGE overwrite mass and charge
+c5: CENTER ATOMS=1,2 PHASES SET_MASS=3 SET_CHARGE=0.5
+
+d1: DISTANCE ATOMS=c1,c2
+d2: DISTANCE ATOMS=c3,c4
+d3: DISTANCE ATOMS=c5,6
+bias: BIASVALUE ARG=d1,d2,d3
+
+DUMPATOMS ATOMS=c1,c2,c3,c4,c5 FILE=centers.xyz
+PRINT ARG=c1.mass,c1.charge,c2.mass,c2.charge,c3.mass,c3.charge,c4.mass,c4.charge,c5.mass,c5.charge FILE=masscharge FMT=%10.6f
+PRINT ARG=d1,d2,d3,bias.bias FILE=colvar FMT=%10.6f
