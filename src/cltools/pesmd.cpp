@@ -274,6 +274,27 @@ public:
     plumed->cmd("calc");
 
     double therm_eng=0;
+    // Langevin thermostat on half a time step (friction is the relaxation time).
+    // With NVE (negative friction) the velocities are left untouched, so that
+    // therm_eng stays exactly zero (adding and subtracting the kinetic energy
+    // can leave a tiny residue, whose sign depends e.g. on the use of FMA)
+    const double lscale=(friction<0.0?1.0:std::exp(-0.5*tstep/friction));
+    const double lrand=std::sqrt((1.-lscale*lscale)*temp);
+    auto thermostat=[&]() {
+      if( friction<0.0 ) {
+        return;
+      }
+      for(int j=0; j<nat; ++j) {
+        for(int k=0; k<3; ++k) {
+          if( 3*j+k>dim-1 ) {
+            break;
+          }
+          therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
+          velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
+          therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
+        }
+      }
+    };
     FILE* fp=nullptr;
     if( pc.Get_rank()==0 ) {
       fp=std::fopen("stats.out","w");
@@ -296,18 +317,7 @@ public:
       }
 
       // Langevin thermostat (friction is the relaxation time, a negative value means NVE)
-      double lscale=(friction<0.0?1.0:std::exp(-0.5*tstep/friction));
-      double lrand=std::sqrt((1.-lscale*lscale)*temp);
-      for(int j=0; j<nat; ++j) {
-        for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1 ) {
-            break;
-          }
-          therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
-          velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
-          therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
-        }
-      }
+      thermostat();
 
       // First step of velocity verlet
       for(int j=0; j<nat; ++j) {
@@ -347,18 +357,7 @@ public:
       }
 
       // Langevin thermostat
-      lscale=(friction<0.0?1.0:std::exp(-0.5*tstep/friction));
-      lrand=std::sqrt((1.-lscale*lscale)*temp);
-      for(int j=0; j<nat; ++j) {
-        for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1) {
-            break;
-          }
-          therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
-          velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
-          therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
-        }
-      }
+      thermostat();
       // Calculate total kinetic energy
       tke=0;
       for(int i=0; i<nat; ++i) {
