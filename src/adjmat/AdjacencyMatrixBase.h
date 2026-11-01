@@ -594,7 +594,7 @@ void AdjacencyMatrixBase<CV, myPTM>::performTask( std::size_t task_index,
   if( actiondata.no_thread_gather ) {
     for(unsigned i=0; i<nneigh; ++i ) {
       adjinp.pos = Vector(atoms[i][0],atoms[i][1],atoms[i][2]);
-      const std::size_t valpos = i*ncomponents;
+      const std::size_t valpos = static_cast<std::size_t>(i) * ncomponents;
       MatrixOutput adjout{View<double,1>{&output.values[valpos]},
                           View{output.buffer.data() + 3*(nneigh+n3neigh),nderiv+3}};
       CV::calculateWeight( actiondata.matrixdata, adjinp, adjout );
