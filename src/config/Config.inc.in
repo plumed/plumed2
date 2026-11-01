@@ -24,7 +24,7 @@
 #include "version.h"
 #include <cstdlib>
 #include <cstring>
-#ifdef __PLUMED_HAS_DLOPEN
+#if defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
 #include <dlfcn.h>
 #endif
 
@@ -208,7 +208,7 @@ std::string getCompilationTime() {
 std::string getLibraryPath() {
 #ifdef __PLUMED_HAS_DLADDR
   Dl_info info;
-  if(dladdr((void*)getLibraryPath,&info)) {
+  if(dladdr((void*)getLibraryPath,&info) && info.dli_fname) {
     return info.dli_fname;
   } else {
     return "";
