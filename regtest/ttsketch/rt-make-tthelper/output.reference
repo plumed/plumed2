@@ -1,0 +1,24 @@
+fourier evalAll ok
+fourier grad ok
+fourier integrals ok
+fourier gram ok
+fourier-conv evalAll ok
+fourier-conv grad ok
+fourier-conv integrals ok
+fourier-conv gram ok
+kernel evalAll ok
+kernel grad ok
+kernel integrals ok
+kernel gram ok
+kernel-default-dx evalAll ok
+kernel-default-dx grad ok
+kernel-default-dx integrals ok
+kernel-default-dx gram ok
+DenseTT kernel=0 conv=0 value ok gradient ok
+DenseTT kernel=0 conv=1 value ok gradient ok
+DenseTT kernel=1 conv=0 value ok gradient ok
+ttCount missing file ok
+ttCount ok
+ttRead ok
+ttMomentsRead missing ok
+ttMomentsRead ok

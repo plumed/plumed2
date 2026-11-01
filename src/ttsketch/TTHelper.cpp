@@ -5,6 +5,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TTHelper.h"
 #include "tools/OpenMP.h"
+#include <cstdio>
+#include <stdexcept>
 #ifdef __PLUMED_HAS_LIBITENSOR
 #ifdef __PLUMED_HAS_LIBHDF5
 
@@ -32,6 +34,53 @@ void ttSumWrite(const std::string& filename, const MPS& tt, unsigned count) {
 MPS ttSumRead(const std::string& filename, unsigned count) {
   auto f = h5_open(filename, 'r');
   return h5_read<MPS>(f, "vb_" + std::to_string(count - 1));
+}
+
+unsigned ttCount(const std::string& filename) {
+  {
+    // h5::file throws (and HDF5 prints an error stack) on a missing file
+    FILE* fp = std::fopen(filename.c_str(), "r");
+    if(!fp) {
+      return 0;
+    }
+    std::fclose(fp);
+  }
+  auto f = h5_open(filename, 'r');
+  h5::group g(f);
+  unsigned n = 0;
+  while(g.has_subgroup("tt_" + std::to_string(n + 1))) {
+    ++n;
+  }
+  return n;
+}
+
+void ttMomentsWrite(const std::string& filename, const MPS& B, const std::vector<ITensor>& A, unsigned count) {
+  auto f = h5_open(filename, 'a');
+  const std::string tag = std::to_string(count - 1);
+  h5_write(f, "bprev_" + tag, B);
+  for(unsigned k = 0; k < A.size(); ++k) {
+    h5_write(f, "aprev_" + tag + "_" + std::to_string(k + 1), A[k]);
+  }
+}
+
+bool ttMomentsRead(const std::string& filename, unsigned count, unsigned nA, MPS& B, std::vector<ITensor>& A) {
+  auto f = h5_open(filename, 'r');
+  h5::group g(f);
+  const std::string tag = std::to_string(count - 1);
+  if(!g.has_subgroup("bprev_" + tag)) {
+    return false;
+  }
+  for(unsigned k = 0; k < nA; ++k) {
+    if(!g.has_subgroup("aprev_" + tag + "_" + std::to_string(k + 1))) {
+      return false;
+    }
+  }
+  B = h5_read<MPS>(f, "bprev_" + tag);
+  A.resize(nA);
+  for(unsigned k = 0; k < nA; ++k) {
+    A[k] = h5_read<ITensor>(f, "aprev_" + tag + "_" + std::to_string(k + 1));
+  }
+  return true;
 }
 
 // Evaluate TT and gradient together using a prefix-suffix sweep: O(d) contractions.
@@ -84,6 +133,132 @@ bool conv) {
   }
 
   return {val, grad};
+}
+
+DenseTT::DenseTT(const MPS& tt) {
+  const int d = length(tt);
+  rank_.assign(d + 1, 1);
+  nbasis_.resize(d);
+  core_.resize(d);
+  for(int i = 1; i <= d; ++i) {
+    const Index s = siteIndex(tt, i);
+    const Index l = i > 1 ? linkIndex(tt, i - 1) : Index();
+    const Index r = i < d ? linkIndex(tt, i) : Index();
+    const int rl = i > 1 ? dim(l) : 1;
+    const int rr = i < d ? dim(r) : 1;
+    const int n = dim(s);
+    rank_[i] = rr;
+    nbasis_[i - 1] = n;
+    // the core has exactly the indices (l,s,r) without the missing boundary bonds
+    if(order(tt(i)) != 1 + (i > 1) + (i < d)) {
+      throw std::runtime_error("unexpected index structure in TT core " + std::to_string(i));
+    }
+    auto& c = core_[i - 1];
+    c.resize(static_cast<size_t>(rl) * n * rr);
+    for(int a = 1; a <= rl; ++a) {
+      for(int j = 1; j <= n; ++j) {
+        for(int b = 1; b <= rr; ++b) {
+          double v;
+          if(i > 1 && i < d) {
+            v = tt(i).elt(l = a, s = j, r = b);
+          } else if(i > 1) {
+            v = tt(i).elt(l = a, s = j);
+          } else if(i < d) {
+            v = tt(i).elt(s = j, r = b);
+          } else {
+            v = tt(i).elt(s = j);
+          }
+          c[(static_cast<size_t>(a - 1) * n + (j - 1)) * rr + (b - 1)] = v;
+        }
+      }
+    }
+  }
+}
+
+double DenseTT::eval(const std::vector<BasisFunc>& basis, const std::vector<double>& elements, bool conv, std::vector<double>* grad) const {
+  const unsigned d = core_.size();
+  // contracted cores: M[i] = sum_j core_i[:,j,:] phi_j(x_i), D[i] the same with dphi
+  thread_local std::vector<std::vector<double>> M, D;
+  thread_local std::vector<double> phi, dphi;
+  M.resize(d);
+  D.resize(d);
+  for(unsigned i = 0; i < d; ++i) {
+    const int rl = rank_[i], rr = rank_[i + 1], n = nbasis_[i];
+    phi.resize(n);
+    dphi.resize(n);
+    basis[i].evalAll(elements[i], conv, phi.data(), dphi.data());
+    M[i].assign(static_cast<size_t>(rl) * rr, 0.0);
+    if(grad) {
+      D[i].assign(static_cast<size_t>(rl) * rr, 0.0);
+    }
+    const double* c = core_[i].data();
+    for(int a = 0; a < rl; ++a) {
+      double* m = M[i].data() + static_cast<size_t>(a) * rr;
+      double* g = grad ? D[i].data() + static_cast<size_t>(a) * rr : nullptr;
+      for(int j = 0; j < n; ++j) {
+        const double* cj = c + (static_cast<size_t>(a) * n + j) * rr;
+        const double p = phi[j];
+        for(int b = 0; b < rr; ++b) {
+          m[b] += cj[b] * p;
+        }
+        if(g) {
+          const double dp = dphi[j];
+          for(int b = 0; b < rr; ++b) {
+            g[b] += cj[b] * dp;
+          }
+        }
+      }
+    }
+  }
+  // left sweep: left[i] = M[0]...M[i-1] (row vector of size r_i)
+  thread_local std::vector<std::vector<double>> left, right;
+  left.resize(d + 1);
+  left[0].assign(1, 1.0);
+  for(unsigned i = 0; i < d; ++i) {
+    const int rl = rank_[i], rr = rank_[i + 1];
+    left[i + 1].assign(rr, 0.0);
+    for(int a = 0; a < rl; ++a) {
+      const double la = left[i][a];
+      const double* m = M[i].data() + static_cast<size_t>(a) * rr;
+      for(int b = 0; b < rr; ++b) {
+        left[i + 1][b] += la * m[b];
+      }
+    }
+  }
+  const double val = left[d][0];
+  if(grad) {
+    // right sweep: right[i] = M[i]...M[d-1] (column vector of size r_i)
+    right.resize(d + 1);
+    right[d].assign(1, 1.0);
+    for(int i = d - 1; i >= 0; --i) {
+      const int rl = rank_[i], rr = rank_[i + 1];
+      right[i].assign(rl, 0.0);
+      for(int a = 0; a < rl; ++a) {
+        const double* m = M[i].data() + static_cast<size_t>(a) * rr;
+        double sum = 0.0;
+        for(int b = 0; b < rr; ++b) {
+          sum += m[b] * right[i + 1][b];
+        }
+        right[i][a] = sum;
+      }
+    }
+    // grad_i = left[i] * D[i] * right[i+1]
+    grad->resize(d);
+    for(unsigned i = 0; i < d; ++i) {
+      const int rl = rank_[i], rr = rank_[i + 1];
+      double sum = 0.0;
+      for(int a = 0; a < rl; ++a) {
+        const double* g = D[i].data() + static_cast<size_t>(a) * rr;
+        double t = 0.0;
+        for(int b = 0; b < rr; ++b) {
+          t += g[b] * right[i + 1][b];
+        }
+        sum += left[i][a] * t;
+      }
+      (*grad)[i] = sum;
+    }
+  }
+  return val;
 }
 
 // ttEval delegates to ttEvalAndGrad and discards the gradient.

@@ -1,0 +1,5 @@
+plumed_needs=libitensor
+plumed_modules=ttsketch
+type=driver
+# kernel basis; SKETCH_PACE < PACE, so that some sketches have no hill (skipped) and the others only one
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro --dump-forces forces --dump-forces-fmt %.4lf"

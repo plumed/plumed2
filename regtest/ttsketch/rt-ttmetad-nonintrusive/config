@@ -1,0 +1,7 @@
+plumed_needs=libitensor
+plumed_modules=ttsketch
+type=driver
+# SKETCH_WIDTH smoothing, with and without NONINTRUSIVE. The TT rank is not truncated,
+# so the two variants must give the same bias (t1.bias = t2.bias).
+# The two actions need different TT_FILEs.
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro"

@@ -1,0 +1,6 @@
+#! FIELDS time phi psi d1 sigma_phi sigma_psi sigma_d1 height biasf
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+   20.000000   -1.199652    0.952913    0.578474    0.300000    0.300000    0.050000    1.107550    8.000000

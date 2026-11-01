@@ -65,6 +65,59 @@ BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool k
       }
     }
     pseudoInvert(this->gram_, this->ginv_);
+  } else {
+    // damping factors of the harmonics in conv mode (see operator())
+    this->damp_.resize(nbasis / 2 + 1);
+    for(unsigned k = 0; k < this->damp_.size(); ++k) {
+      this->damp_[k] = exp(-0.5 * pow(M_PI * this->w_ * k * this->inv_L_, 2));
+    }
+  }
+}
+
+void BasisFunc::evalAll(double x, bool conv, double* phi, double* dphi) const {
+  if(this->kernel_) {
+    // constant function, then the periodized Gaussians (widened by w_ in conv mode)
+    phi[0] = 1.0;
+    dphi[0] = 0.0;
+    const double s2 = conv ? this->dx_ * this->dx_ + this->w_ * this->w_ : this->dx_ * this->dx_;
+    const double pref = conv ? this->dx_ / sqrt(s2) : 1.0;
+    const double inv_s2 = 1.0 / s2;
+    for(int pos = 2; pos <= this->nbasis_; ++pos) {
+      double v = 0.0, g = 0.0;
+      for(int k = -1; k <= 1; ++k) {
+        const double u = x - this->centers_[pos - 2] + 2 * k * this->L_;
+        const double e = pref * exp(-0.5 * u * u * inv_s2);
+        v += e;
+        g -= u * inv_s2 * e;
+      }
+      phi[pos - 1] = v;
+      dphi[pos - 1] = g;
+    }
+  } else {
+    // Fourier: phi_{2k} ~ cos(k*theta), phi_{2k+1} ~ sin(k*theta), theta = pi*(x-shift)/L
+    phi[0] = this->inv_sqrt_2L_;
+    dphi[0] = 0.0;
+    const double theta = M_PI * this->inv_L_ * (x - this->shift_);
+    const double c1 = cos(theta), s1 = sin(theta);
+    const double dtheta = M_PI * this->inv_L_;
+    double ck = c1, sk = s1;
+    for(int pos = 2; pos <= this->nbasis_; ++pos) {
+      const int k = pos / 2;
+      if(pos > 2 && pos % 2 == 0) {
+        // cos(k*theta), sin(k*theta) from k-1
+        const double cn = ck * c1 - sk * s1;
+        sk = sk * c1 + ck * s1;
+        ck = cn;
+      }
+      const double a = conv ? this->sqrt_inv_L_ * this->damp_[k] : this->sqrt_inv_L_;
+      if(pos % 2 == 0) {
+        phi[pos - 1] = a * ck;
+        dphi[pos - 1] = -a * k * dtheta * sk;
+      } else {
+        phi[pos - 1] = a * sk;
+        dphi[pos - 1] = a * k * dtheta * ck;
+      }
+    }
   }
 }
 
