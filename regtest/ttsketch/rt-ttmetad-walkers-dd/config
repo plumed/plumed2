@@ -6,7 +6,4 @@ plumed_needs=libitensor
 # walker 1 reads traj.1.gro, the same frames in reverse order
 arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro --multi 2 --debug-dd yes --dump-forces forces --dump-forces-fmt %.4lf"
 
-# with WALKERS_MPI the shared sketch file is written one level up
-function plumed_regtest_after(){
-  rm -f ../ttsketch.h5
-}
+# with WALKERS_MPI the shared TT file (ttsketch.h5) is next to the shared hills file

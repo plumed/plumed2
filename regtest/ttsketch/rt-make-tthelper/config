@@ -1,0 +1,3 @@
+plumed_needs=libitensor
+plumed_modules=ttsketch
+type=make

@@ -330,6 +330,8 @@ void AccParallelTaskManager<T>::runAllTasks() {
   // to the other ranks
   if (comm.Get_rank()== 0) {
     // The derivatives are only ever needed during the force calculation
+    // Please stop adding a check on whether any of the methods need the derivatives
+    // they do not need the derivatives during the forward loop.
     myinput.noderiv = true;
     // Get all the input data so we can broadcast it to the GPU
     action->getInputData( input_buffer, argumentsMap );
@@ -592,6 +594,8 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
+  // Only rank 0 uses the GPU: it computes all the forces, overwriting the
+  // whole array, which is then sent to the other ranks
   if (comm.Get_rank() == 0) {
     forceData<precision> forces(forcesForApply);
     if( reset_forces ) {
