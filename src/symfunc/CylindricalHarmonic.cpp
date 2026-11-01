@@ -75,7 +75,7 @@ PRINT ARG=c.im FILE=imaginary_part
 
 class CylindricalHarmonic {
 public:
-  int tmom;
+  int tmom=0;
   static void registerKeywords( Keywords& keys );
   static void read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options );
   static void calc( const CylindricalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );

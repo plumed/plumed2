@@ -93,13 +93,14 @@ public:
   using precision=double;
   typedef VolumeIn<precision> VolumeInput;
   typedef VolumeOut<precision> VolumeOutput;
-  double gvol, maxs;
+  double gvol=0.0;
+  double maxs=0.0;
   std::string kerneltype;
   std::vector<double> bandwidth;
   std::string sfunc_str;
   SwitchingFunction sfunc, switchingFunction;
-  unsigned natoms_in_list;
-  unsigned natoms_per_list;
+  unsigned natoms_in_list=0;
+  unsigned natoms_per_list=0;
   std::vector<std::size_t> nlist;
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeInEnvelope>* action );
