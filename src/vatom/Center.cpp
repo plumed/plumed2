@@ -211,6 +211,10 @@ class Center:
   bool nopbc;
   bool first;
   bool phases;
+// true if the masses and charges of all the atoms are declared constant (e.g. they come from the MD engine)
+  bool constantMassCharge;
+// computes mass and charge of the virtual atom and, if needed, the mass-based weights
+  void updateMassAndCharge();
 public:
   explicit Center(const ActionOptions&ao);
   void calculate() override;
@@ -241,7 +245,8 @@ Center::Center(const ActionOptions&ao):
   weight_mass(false),
   nopbc(false),
   first(true),
-  phases(false) {
+  phases(false),
+  constantMassCharge(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
@@ -259,14 +264,17 @@ Center::Center(const ActionOptions&ao):
   if(charge_!=std::numeric_limits<double>::lowest()) {
     isChargeSet_=true;
   }
-  double mass_=-1;
+  const double massNotSet=std::numeric_limits<double>::lowest();
+  double mass_=massNotSet;
   parse("SET_MASS",mass_);
-  setMass(mass_);
-  if(mass_>0.) {
+  if(mass_!=massNotSet) {
+    if(!(mass_>0.)) {
+      error("SET_MASS must be greater than 0");
+    }
     isMassSet_=true;
-  }
-  if(mass_==0.) {
-    error("SETMASS must be greater than 0");
+    setMass(mass_);
+  } else {
+    setMass(-1);
   }
   if( getName()=="COM") {
     weight_mass=true;
@@ -305,15 +313,78 @@ Center::Center(const ActionOptions&ao):
       }
       log.printf("\n");
     }
+    // weights are constant: they are normalized once here
+    double wtot=0.0;
+    for(unsigned i=0; i<weights.size(); i++) {
+      wtot+=weights[i];
+    }
+    if(wtot==0.0) {
+      error("the sum of the weights is zero");
+    }
+    for(unsigned i=0; i<weights.size(); i++) {
+      weights[i]/=wtot;
+    }
   }
   if(phases) {
     log<<"  Phases will be used to take into account PBC\n";
+    if(nopbc) {
+      log<<"  WARNING: NOPBC has no effect when PHASES is used\n";
+    }
   } else if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
+  // masses and charges coming from the MD engine are declared constant, and in that case
+  // they are processed only once. Otherwise (e.g. center of virtual atoms) at every step.
+  std::vector<Value*> xv, yv, zv, mv, cv;
+  getAtomValuesFromPlumedObject( plumed, xv, yv, zv, mv, cv );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    const std::pair<std::size_t,std::size_t> p = getValueIndices( atoms[i] );
+    if( !mv[p.first]->isConstant() || !cv[p.first]->isConstant() ) {
+      constantMassCharge=false;
+    }
+  }
   requestAtoms(atoms);
+}
+
+void Center::updateMassAndCharge() {
+  const std::vector<double>& m=getMasses();
+  double mass(0.0);
+  for(unsigned i=0; i<m.size(); i++) {
+    mass+=m[i];
+  }
+  if( weight_mass ) {
+    // a NaN in any mass propagates to the sum
+    if(std::isnan(mass)) {
+      error(
+        "You are trying to compute a CENTER or COM but masses are not known.\n"
+        "        If you are using plumed driver, please use the --mc option"
+      );
+    }
+    if(mass==0.0) {
+      error("You are trying to compute a CENTER or COM but the total mass of the atoms is zero");
+    }
+    weights.resize( m.size() );
+    for(unsigned i=0; i<weights.size(); i++) {
+      weights[i] = m[i] / mass;
+    }
+  }
+  if( !isMassSet_ ) {
+    setMass(mass);
+  }
+  if( !isChargeSet_ ) {
+    if( chargesWereSet ) {
+      const std::vector<double>& q=getCharges();
+      double charge(0.0);
+      for(unsigned i=0; i<q.size(); i++) {
+        charge+=q[i];
+      }
+      setCharge(charge);
+    } else {
+      setCharge(0.0);
+    }
+  }
 }
 
 void Center::calculate() {
@@ -325,48 +396,13 @@ void Center::calculate() {
   }
 
   if( first ) {
-    if( weight_mass ) {
-      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-        if(std::isnan(getMass(i))) {
-          error(
-            "You are trying to compute a CENTER or COM but masses are not known.\n"
-            "        If you are using plumed driver, please use the --mc option"
-          );
-        }
-      }
+    first=false;
+    if( !weight_mass && !isMassSet_ && !massesWereSet ) {
+      log.printf("WARNING: masses were not passed to plumed\n");
     }
-    double mass(0.0);
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      mass+=getMass(i);
-    }
-    if( chargesWereSet && !isChargeSet_) {
-      double charge(0.0);
-      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-        charge+=getCharge(i);
-      }
-      setCharge(charge);
-    } else if( !isChargeSet_ ) {
-      setCharge(0.0);
-    }
-    if(!isMassSet_) {
-      setMass(mass);
-    }
-
-    if( weight_mass ) {
-      weights.resize( getNumberOfAtoms() );
-      for(unsigned i=0; i<weights.size(); i++) {
-        weights[i] = getMass(i) / mass;
-      }
-    } else {
-      double wtot=0.0;
-      for(unsigned i=0; i<weights.size(); i++) {
-        wtot+=weights[i];
-      }
-      for(unsigned i=0; i<weights.size(); i++) {
-        weights[i]=weights[i]/wtot;
-      }
-      first=false;
-    }
+    updateMassAndCharge();
+  } else if( !constantMassCharge ) {
+    updateMassAndCharge();
   }
 
   deriv.resize(getNumberOfAtoms());
@@ -411,7 +447,11 @@ void Center::calculate() {
 
     // normalization is convenient for doing derivatives later
     for(unsigned l=0; l<3; l++) {
-      double norm=1.0/(center_sin[l]*center_sin[l]+center_cos[l]*center_cos[l]);
+      const double den=center_sin[l]*center_sin[l]+center_cos[l]*center_cos[l];
+      if(den==0.0) {
+        error("the center cannot be computed with PHASES: the weighted sum of sines and cosines vanishes along one of the cell vectors");
+      }
+      double norm=1.0/den;
       center_sin[l]*=norm;
       center_cos[l]*=norm;
     }
@@ -424,8 +464,11 @@ void Center::calculate() {
           // l over scaled coordinates
           dd[l][k]= (center_cos[l]*dcenter_sin[i][l][k] - center_sin[l]*dcenter_cos[i][l][k]);
         }
-      // scaled to real
-      deriv[i]=matmul(dd,box2pi);
+      // dd[l][k] is the derivative of the scaled component l with respect to the real coordinate k,
+      // whereas deriv[i][k][m] must be the derivative of the real component m with respect to the
+      // real coordinate k: dd has to be transposed before going from scaled to real
+      // (this matters only for non-orthorhombic cells)
+      deriv[i]=matmul(dd.transpose(),box2pi);
     }
     setAtomsDerivatives(deriv);
     // scaled to real
