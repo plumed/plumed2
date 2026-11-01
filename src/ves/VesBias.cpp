@@ -213,7 +213,10 @@ VesBias::VesBias(const ActionOptions&ao):
     if(calc_reweightfactor_) {
       addComponent("rct");
       componentIsNotPeriodic("rct");
-      updateReweightFactor();
+      // The reweight factor cannot be computed here: updateReweightFactor() calls the
+      // virtual function calculateReweightFactor(), which in a constructor would always
+      // resolve to the version of this class (that raises an error) and the derived
+      // object is not set up yet. The first value is set by the optimizer.
     }
   }
 
