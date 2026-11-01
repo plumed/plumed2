@@ -1,0 +1,7 @@
+c: CENTER ATOMS=1,2,3 MASS
+d: DISTANCE ATOMS=c,4
+dip: DIPOLE GROUP=1,2,3,4
+vol: VOLUME
+r: RESTRAINT ARG=d,dip AT=0.5,0.1 KAPPA=10,5
+rw: REWEIGHT_BIAS ARG=r.bias
+PRINT ARG=d,dip,vol,r.bias,rw FILE=colvar FMT=%10.5f
