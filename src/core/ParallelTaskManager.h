@@ -611,8 +611,10 @@ void ParallelTaskManager<T>::runAllTasks() {
 template<typename prec>
 struct forceData {
   std::vector<prec> ffa;
+  // the forces already in forcesForApply are kept: the caller may be
+  // accumulating over several applyForces calls (reset_forces=false)
   forceData( std::vector<double>& forcesForApply ):
-    ffa(forcesForApply.size()),destination(forcesForApply) {}
+    ffa(forcesForApply.begin(),forcesForApply.end()),destination(forcesForApply) {}
   void update() {
     std::copy(ffa.begin(),ffa.end(),destination.begin());
   }

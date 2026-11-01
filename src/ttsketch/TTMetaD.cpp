@@ -14,6 +14,12 @@
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
+#include "tools/OFile.h"
+#include "tools/IFile.h"
+#include <algorithm>
+#include <ctime>
+#include <filesystem>
+#include <random>
 
 namespace PLMD {
 namespace ttsketch {
@@ -27,6 +33,19 @@ Gaussian hills into a low-rank tensor train (TT) using the TT-Sketch algorithm.
 The TT representation keeps memory and evaluation cost bounded throughout long
 simulations, in contrast to standard metadynamics where cost grows linearly with
 the number of deposited hills.
+
+The basis functions of each argument are defined on [INTERVAL_MIN, INTERVAL_MAX] and are
+periodic over this interval. For a periodic argument the interval should thus coincide with the
+periodicity domain. For a non periodic argument the interval should contain the region that is
+explored: outside it the bias is the one at the closest limit and there is no biasing force along
+that argument, and hills deposited outside are folded back into the interval when they are
+compressed into the TT (a warning is written in the log).
+
+After every compression the TT is appended to the HDF5 file given by TT_FILE, and the hills file
+restarts empty. When restarting, the last TT in TT_FILE is read back together with the hills in FILE,
+i.e. those deposited after it. With multiple replicas each replica has its own TT_FILE (with the
+replica suffix), unless WALKERS_MPI is used, in which case the walkers share one TT_FILE next to
+the shared hills file. Two TTMETAD actions must use different TT_FILE.
 
 ## Examples
 
@@ -77,6 +96,9 @@ using namespace itensor;
 class TTMetaD : public Bias {
 
 private:
+  // singular values of the cross-gram matrices smaller than this fraction of the largest
+  // one are not inverted when the TT cores are recovered (see paraSketch())
+  static constexpr double svdTolerance = 1e-12;
   struct Gaussian {
     double height;
     std::vector<double> center;
@@ -119,6 +141,10 @@ private:
   std::vector<BasisFunc> sketch_basis_;  // one BasisFunc per CV dimension
   unsigned sketch_count_;    // number of TT updates performed so far (starts at 1, increments after each update)
   MPS vb_;                   // current TT approximation of the accumulated bias (V_bias^TT)
+  DenseTT vbDense_;          // plain-array copy of vb_ used to evaluate the bias (rebuilt by setVb())
+  std::string ttfilename_;   // HDF5 file where the TTs are stored (TT_FILE, with replica suffix or in the walkers directory)
+  std::vector<double> imin_; // INTERVAL_MIN
+  std::vector<double> imax_; // INTERVAL_MAX
   double sketch_until_;      // simulation time after which the bias is frozen (no further updates)
   bool frozen_;              // true once the bias has been frozen (after sketch_until_)
   bool sketch_conv_;         // true if Gaussian smoothing (conv mode) is active for basis evaluation
@@ -129,6 +155,12 @@ private:
   std::vector<ITensor> A_prev_;   // accumulated cross-gram matrices per bond (nonintrusive only)
 
   void readGaussians(IFile *ifile);
+  void setVb(const MPS& vb);
+  // clamp cv to [INTERVAL_MIN, INTERVAL_MAX]; out[i] is true if cv[i] was outside
+  void clampToInterval(std::vector<double>& cv, std::vector<char>& out) const;
+  bool writerReplica() const {
+    return !this->walkers_mpi_ || this->mpi_rank_ == 0;
+  }
   void writeGaussian(const Gaussian& hill, OFile& file);
   double getHeight(const std::vector<double>& cv);
   double getBias(const std::vector<double>& cv);
@@ -138,8 +170,8 @@ private:
   bool scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height);
   void paraSketch();
   MPS createTTCoeff() const;
-  std::pair<std::vector<ITensor>, IndexSet> intBasisSample(const IndexSet& is) const;
-  std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> formTensorMoment(const std::vector<ITensor>& M, const MPS& coeff, const IndexSet& is);
+  std::vector<Matrix<double>> intBasisSample() const;
+  std::pair<MPS, std::vector<Matrix<double>>> formTensorMoment(const std::vector<Matrix<double>>& M, const MPS& coeff) const;
   std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> formTensorMomentVb(const MPS& coeff);
 
 public:
@@ -213,6 +245,20 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   if(this->walkers_mpi_ && this->mw_dir_ != "") {
     this->hillsfname_ = this->mw_dir_ + "/" + this->hillsfname_;
   }
+  std::string ttfile = "ttsketch.h5";
+  parse("TT_FILE", ttfile);
+  if(this->walkers_mpi_) {
+    // shared by all the walkers, next to the shared hills file
+    this->ttfilename_ = this->mw_dir_ + "/" + ttfile;
+  } else {
+    // one file per replica, as for the other output files
+    this->ttfilename_ = FileBase::appendSuffix(ttfile, plumed.getSuffix());
+  }
+  for(const auto* other : plumed.getActionSet().select<const TTMetaD*>()) {
+    if(other->ttfilename_ == this->ttfilename_) {
+      error("TT_FILE " + this->ttfilename_ + " is already used by action " + other->getLabel() + ": use a different TT_FILE");
+    }
+  }
 
   parse("SKETCH_RANK", this->sketch_r_);
   parse("SKETCH_CUTOFF", this->sketch_cutoff_);
@@ -280,10 +326,34 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
     if(interval_max[i] <= interval_min[i]) {
       error("INTERVAL_MAX parameters need to be greater than respective INTERVAL_MIN parameters");
     }
+    if(getPntrToArgument(i)->isPeriodic()) {
+      // the basis is periodic over the interval: for a periodic CV the two periods should coincide
+      double pmin, pmax;
+      getPntrToArgument(i)->getDomain(pmin, pmax);
+      const double tol = 1e-4 * (pmax - pmin);
+      if(std::abs(interval_min[i] - pmin) > tol || std::abs(interval_max[i] - pmax) > tol) {
+        warning("the interval of the periodic argument " + getPntrToArgument(i)->getName() +
+                " does not coincide with its periodicity domain: the bias will be discontinuous");
+      }
+    }
     this->sketch_basis_.push_back(BasisFunc(std::make_pair(interval_min[i], interval_max[i]), nbasis, w[i], kernel, dx[i]));
   }
   if(kernel && this->sketch_conv_) {
     error("kernel smoothing incompatible with kernel basis");
+  }
+  this->imin_ = interval_min;
+  this->imax_ = interval_max;
+  if(kernel) {
+    for(unsigned i = 0; i < this->d_; ++i) {
+      const BasisFunc& b = this->sketch_basis_[i];
+      log.printf("  kernel basis of argument %s: %d kernels of width %g, Gram matrix condition number %.1e, %d nearly dependent direction(s) left out\n",
+                 getPntrToArgument(i)->getName().c_str(), nbasis - 1, b.dx(), b.gramCondition(), b.gramDropped());
+      if(b.gramDropped() > 1) {
+        warning("the kernel basis of argument " + getPntrToArgument(i)->getName() +
+                " is nearly linearly dependent (" + std::to_string(b.gramDropped()) +
+                " directions left out): KERNEL_DX is too large for SKETCH_NBASIS");
+      }
+    }
   }
   if(this->walkers_mpi_) {
     this->mpi_size_ = getNumberOfReplicas();
@@ -296,37 +366,58 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   parseFlag("DETERMINISTIC", this->deterministic_);
 
   if(getRestart()) {
-    std::string ttfilename = "ttsketch.h5";
+    // the last TT in the file is the bias; the hills file holds the hills deposited after it
+    const unsigned ntt = ttCount(this->ttfilename_);
+    if(ntt > 0) {
+      this->sketch_count_ = ntt + 1;
+      setVb(ttRead(this->ttfilename_, this->sketch_count_));
+      if(length(this->vb_) != static_cast<int>(this->d_)) {
+        error("the TT in " + this->ttfilename_ + " has " + std::to_string(length(this->vb_)) +
+              " dimensions, but TTMETAD has " + std::to_string(this->d_) + " arguments");
+      }
+      for(unsigned i = 0; i < this->d_; ++i) {
+        if(this->vbDense_.nbasis(i) != this->sketch_basis_[i].nbasis()) {
+          error("the TT in " + this->ttfilename_ + " has " + std::to_string(this->vbDense_.nbasis(i)) +
+                " basis functions along argument " + std::to_string(i + 1) + ", but SKETCH_NBASIS gives " +
+                std::to_string(this->sketch_basis_[i].nbasis()));
+        }
+      }
+      if(this->nonintrusive_ && !ttMomentsRead(this->ttfilename_, this->sketch_count_, this->d_ - 1, this->B_prev_, this->A_prev_)) {
+        error("NONINTRUSIVE restart needs the tensor moments of the last sketch, which are not in " + this->ttfilename_);
+      }
+    }
+    log << "  restarting from TT " << this->sketch_count_ - 1 << " in " << this->ttfilename_ << "\n";
+    IFile hills_ifile;
+    hills_ifile.link(*this);
     if(this->walkers_mpi_) {
-      ttfilename = "../" + ttfilename;
+      hills_ifile.enforceSuffix("");
     }
-    while(true) {
-      try {
-        this->vb_ = ttRead(ttfilename, ++this->sketch_count_);
-      } catch(...) {
-        --this->sketch_count_;
-        break;
-      }
+    if(!hills_ifile.FileExist(this->hillsfname_)) {
+      error("The hills file cannot be found");
     }
-    if(this->sketch_count_ == 1) {
-      this->vb_ = MPS();
-    }
-    if(getTime() >= this->sketch_until_) {
-      this->frozen_ = true;
-    } else {
-      IFile hills_ifile;
-      if(!hills_ifile.FileExist(this->hillsfname_)) {
-        error("The hills file cannot be found");
-      }
-      hills_ifile.open(this->hillsfname_);
-      readGaussians(&hills_ifile);
-      hills_ifile.close();
-    }
+    hills_ifile.open(this->hillsfname_);
+    readGaussians(&hills_ifile);
+    hills_ifile.close();
+  } else if(writerReplica()) {
+    // a fresh run: keep a TT file left by a previous run as a backup, as for the other output files,
+    // so that it cannot be mistaken for the TTs of this run at a later restart
+    OFile backup;
+    backup.link(*this);
+    backup.backupFile("bck", this->ttfilename_);
   }
 
-  if(!this->walkers_mpi_ || this->mpi_rank_ == 0) {
+  log << "  TTs are stored in " << this->ttfilename_ << "\n";
+  log << "  Bibliography " << plumed.cite("Strand, Yang, Khoo, and Dinner, https://arxiv.org/abs/2603.13549 (2026)");
+  log << plumed.cite("Fishman, White, and Stoudenmire, https://arxiv.org/abs/2007.14822 (2020)");
+  log << "\n";
+
+  if(writerReplica()) {
     this->hillsOfile_.link(*this);
-    this->hillsOfile_.enforceSuffix("");
+    if(this->walkers_mpi_) {
+      // a single hills file shared by all the walkers (written by the first one);
+      // otherwise each replica has its own, with the replica suffix
+      this->hillsOfile_.enforceSuffix("");
+    }
     this->hillsOfile_.open(this->hillsfname_);
     if(this->fmt_.length() > 0) {
       this->hillsOfile_.fmtField(this->fmt_);
@@ -356,12 +447,25 @@ void TTMetaD::readGaussians(IFile *ifile) {
     }
     this->hills_.push_back(Gaussian(height, center, sigma));
   }
-  log << "  restarting from step " << this->sketch_count_ << "\n";
   log << "  " << nhills << " hills retrieved\n";
+}
 
-  log << "  Bibliography " << plumed.cite("Strand, Yang, Khoo, and Dinner, https://arxiv.org/abs/2603.13549 (2026)");
-  log << plumed.cite("Fishman, White, and Stoudenmire, https://arxiv.org/abs/2007.14822 (2020)");
-  log << "\n";
+void TTMetaD::setVb(const MPS& vb) {
+  this->vb_ = vb;
+  this->vbDense_ = length(vb) == 0 ? DenseTT() : DenseTT(vb);
+}
+
+void TTMetaD::clampToInterval(std::vector<double>& cv, std::vector<char>& out) const {
+  out.assign(this->d_, 0);
+  for(unsigned i = 0; i < this->d_; ++i) {
+    if(cv[i] < this->imin_[i]) {
+      cv[i] = this->imin_[i];
+      out[i] = 1;
+    } else if(cv[i] > this->imax_[i]) {
+      cv[i] = this->imax_[i];
+      out[i] = 1;
+    }
+  }
 }
 
 bool TTMetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector<double>& center, std::vector<double>& sigma, double& height) {
@@ -419,9 +523,18 @@ void TTMetaD::calculate() {
     cv[i] = getArgument(i);
   }
 
+  // outside the interval the bias is the one at the closest boundary and the force along that CV is zero
+  std::vector<char> out;
+  clampToInterval(cv, out);
+
   std::vector<double> der(this->d_, 0.0);
 
   double ene = getBiasAndDerivatives(cv, der);
+  for(unsigned i = 0; i < this->d_; ++i) {
+    if(out[i]) {
+      der[i] = 0.0;
+    }
+  }
   setBias(ene);
   for(unsigned i = 0; i < this->d_; ++i) {
     setOutputForce(i, -der[i]);
@@ -434,35 +547,37 @@ void TTMetaD::calculate() {
 //      clear the hills list, and rewind the HILLS file for the next interval.
 //   2. Every stride_ steps: deposit a new Gaussian hill and write it to the HILLS file.
 void TTMetaD::update() {
-  bool nowAddATT;
-  if(getStep() % this->sketch_stride_ == 0 && !this->isFirstStep_ && !this->frozen_) {
-    nowAddATT = true;
-    if(!this->walkers_mpi_ || this->mpi_rank_ == 0) {
-      this->hillsOfile_.flush();
-    }
-  } else {
-    nowAddATT = false;
-  }
+  // SKETCH_UNTIL: at the first step after this time the pending hills are sketched
+  // one last time and the bias is frozen
+  const bool freezeNow = !this->frozen_ && !this->isFirstStep_ && getTime() >= this->sketch_until_;
+  // all the walkers hold the same list of hills, so they all take the same decision here
+  const bool nowAddATT = !this->frozen_ && !this->isFirstStep_ && !this->hills_.empty() &&
+                         (getStep() % this->sketch_stride_ == 0 || freezeNow);
 
   if(nowAddATT) {
-    if(!this->walkers_mpi_ || this->mpi_rank_ == 0) {
+    if(writerReplica()) {
+      this->hillsOfile_.flush();
       unsigned N = this->hills_.size();
       log << "Sample limits\n";
       for(unsigned i = 0; i < this->d_; ++i) {
         auto [large, small] = this->sketch_basis_[i].dom();
+        unsigned nout = 0;
         for(unsigned j = 0; j < N; ++j) {
-          if(this->hills_[j].center[i] > large) {
-            large = this->hills_[j].center[i];
+          const double c = this->hills_[j].center[i];
+          if(c < this->imin_[i] || c > this->imax_[i]) {
+            ++nout;
           }
-          if(this->hills_[j].center[i] < small) {
-            small = this->hills_[j].center[i];
-          }
+          large = std::max(large, c);
+          small = std::min(small, c);
         }
         log << small << " " << large << "\n";
+        if(nout > 0) {
+          log << "  WARNING: " << nout << " hills are centered outside the interval of argument " << getPntrToArgument(i)->getName()
+              << ": the periodic basis folds them back into the interval\n";
+        }
       }
 
       log << "\nEmpirical means:\n";
-      Matrix<double> sigmahat(this->d_, this->d_);
       std::vector<double> muhat(this->d_, 0.0);
       for(unsigned k = 0; k < this->d_; ++k) {
         for(unsigned j = 0; j < N; ++j) {
@@ -470,26 +585,29 @@ void TTMetaD::update() {
         }
         log << muhat[k] << " ";
       }
-      log << "\nEmpirical covariance matrix:\n";
-      for(unsigned k = 0; k < this->d_; ++k) {
-        for(unsigned l = k; l < this->d_; ++l) {
-          sigmahat(k, l) = sigmahat(l, k) = 0.0;
-          for(unsigned j = 0; j < N; ++j) {
-            sigmahat(k, l) += (this->hills_[j].center[k] - muhat[k]) * (this->hills_[j].center[l] - muhat[l]) / (N - 1);
+      if(N > 1) {
+        log << "\nEmpirical covariance matrix:\n";
+        Matrix<double> sigmahat(this->d_, this->d_);
+        for(unsigned k = 0; k < this->d_; ++k) {
+          for(unsigned l = k; l < this->d_; ++l) {
+            double sum = 0.0;
+            for(unsigned j = 0; j < N; ++j) {
+              sum += (this->hills_[j].center[k] - muhat[k]) * (this->hills_[j].center[l] - muhat[l]);
+            }
+            sigmahat(k, l) = sigmahat(l, k) = sum / (N - 1);
           }
-          sigmahat(l, k) = sigmahat(k, l);
         }
+        matrixOut(log, sigmahat);
+      } else {
+        log << "\n";
       }
-      matrixOut(log, sigmahat);
 
       // record current bias at hill centers before update, for computing relative error after
+      std::vector<std::vector<double>> x(N);
       std::vector<double> A0(N);
-      Matrix<double> x(N, this->d_);
       for(unsigned i = 0; i < N; ++i) {
-        for(unsigned j = 0; j < this->d_; ++j) {
-          x(i, j) = this->hills_[i].center[j];
-        }
-        A0[i] = getBias(this->hills_[i].center);
+        x[i] = this->hills_[i].center;
+        A0[i] = getBias(x[i]);
       }
 
       log << "\nStarting TT-sketch...\n";
@@ -502,23 +620,17 @@ void TTMetaD::update() {
       // compute relative L2 approximation error at hill centers: ||V_new - V_old|| / ||V_old||
       std::vector<double> diff(N);
       for(unsigned i = 0; i < N; ++i) {
-        std::vector<double> xi(this->d_);
-        for(unsigned j = 0; j < this->d_; ++j) {
-          xi[j] = x(i, j);
-        }
-        diff[i] = getBias(xi);
+        diff[i] = getBias(x[i]) - A0[i];
       }
-      std::transform(diff.begin(), diff.end(), A0.begin(), diff.begin(), std::minus<double>());
       log << "Relative l2 error = " << sqrt(norm(diff) / norm(A0)) << "\n\n";
       log.flush();
 
-      std::string ttfilename = "ttsketch.h5";
-      if(this->walkers_mpi_) {
-        ttfilename = "../" + ttfilename;
-      }
       // all ranks of the replica hold the same vb_; one of them writes it
       if(comm.Get_rank() == 0) {
-        ttWrite(ttfilename, this->vb_, this->sketch_count_);
+        ttWrite(this->ttfilename_, this->vb_, this->sketch_count_);
+        if(this->nonintrusive_) {
+          ttMomentsWrite(this->ttfilename_, this->B_prev_, this->A_prev_, this->sketch_count_);
+        }
       }
     }
 
@@ -529,12 +641,11 @@ void TTMetaD::update() {
       comm.Bcast(this->sketch_count_, 0);
       if(this->mpi_rank_ != 0) {
         this->hills_.clear();
-        this->vb_ = ttRead("../ttsketch.h5", this->sketch_count_);
+        setVb(ttRead(this->ttfilename_, this->sketch_count_));
       }
     }
-    if(getTime() >= this->sketch_until_) {
-      this->frozen_ = true;
-    } else if(!this->walkers_mpi_ || this->mpi_rank_ == 0) {
+    // the hills are now in the TT: the hills file restarts empty
+    if(writerReplica()) {
       this->hillsOfile_.rewind();
       this->hillsOfile_.clearFields();
       if(this->fmt_.length() > 0) {
@@ -545,6 +656,10 @@ void TTMetaD::update() {
         hillsOfile_.setupPrintValue(getPntrToArgument(i));
       }
     }
+  }
+  if(freezeNow) {
+    this->frozen_ = true;
+    log << "TT bias frozen at time " << getTime() << "\n";
   }
 
   bool nowAddAHill;
@@ -608,7 +723,11 @@ void TTMetaD::update() {
 double TTMetaD::getHeight(const std::vector<double>& cv) {
   double height = this->height0_;
   if(this->welltemp_) {
-    double vbias = getBias(cv);
+    // the bias felt by the system (see calculate())
+    std::vector<double> cvc(cv);
+    std::vector<char> out;
+    clampToInterval(cvc, out);
+    double vbias = getBias(cvc);
     if(this->biasf_ > 1.0) {
       height = this->height0_ * exp(-vbias / (this->kbt_ * (this->biasf_ - 1.0)));
     } else {
@@ -620,7 +739,7 @@ double TTMetaD::getHeight(const std::vector<double>& cv) {
 
 // Total bias = TT approximation of accumulated hills + sum of recently deposited Gaussians.
 double TTMetaD::getBias(const std::vector<double>& cv) {
-  double bias = length(this->vb_) == 0 ? 0.0 : ttEval(this->vb_, this->sketch_basis_, cv, this->sketch_conv_);
+  double bias = this->vbDense_.empty() ? 0.0 : this->vbDense_.eval(this->sketch_basis_, cv, this->sketch_conv_, nullptr);
   unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
@@ -634,10 +753,8 @@ double TTMetaD::getBias(const std::vector<double>& cv) {
 
 double TTMetaD::getBiasAndDerivatives(const std::vector<double>& cv, std::vector<double>& der) {
   double bias = 0.0;
-  if (length(this->vb_) != 0) {
-    auto [tt_bias, tt_grad] = ttEvalAndGrad(this->vb_, this->sketch_basis_, cv, this->sketch_conv_);
-    bias = tt_bias;
-    der = std::move(tt_grad);
+  if (!this->vbDense_.empty()) {
+    bias = this->vbDense_.eval(this->sketch_basis_, cv, this->sketch_conv_, &der);
   } else {
     der.assign(this->d_, 0.0);
   }
@@ -704,22 +821,21 @@ double TTMetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, co
 //
 // Overview (see paper Algorithm 2):
 //   1. createTTCoeff(): build a random sketch coefficient TT `coeff` of rank sketch_rc_.
-//   2. intBasisSample(): compute M[i][j,k] = <phi_k, g_j>_{dim i}, the inner product of
+//   2. intBasisSample(): compute M[i](j,k) = <phi_k, g_j>_{dim i}, the inner product of
 //      each basis function with each Gaussian along dimension i.
-//   3. formTensorMoment(): contract coeff with M to get the tensor moment Bemp and
-//      left/right environment tensors envi_L, envi_R needed to form the normal equations.
+//   3. formTensorMoment(): contract coeff with M to get the tensor moment Bemp and the
+//      cross-gram matrices A of the bonds (normal equations).
 //   4. For each bond between cores k and k+1:
-//      - Form the cross-gram matrix A from envi_L and envi_R.
+//      - Add the contribution of the previous bias (or of the previous moments) to A.
 //      - SVD A to get the rank-trimmed projection V (truncating to sketch_r_ or sketch_cutoff_).
 //   5. Recover TT cores G from Bemp and the pseudo-inverse of U*S.
 //   6. Apply Gram matrix correction (kernel basis only) to convert to dual basis coefficients.
 void TTMetaD::paraSketch() {
-  unsigned N = this->hills_.size();
   auto coeff = createTTCoeff();
-  auto [M, is] = intBasisSample(siteInds(coeff));
+  auto M = intBasisSample();
   MPS G(this->d_);
 
-  auto [Bemp, envi_L, envi_R] = formTensorMoment(M, coeff, is);
+  auto [Bemp, AMats] = formTensorMoment(M, coeff);
   MPS Bemp_Vb;
   std::vector<ITensor> envi_L_Vb;
   std::vector<ITensor> envi_R_Vb;
@@ -760,20 +876,10 @@ void TTMetaD::paraSketch() {
           this->vb_.ref(i).noPrime();
         }
       }
-      if(this->sketch_conv_) {
-        // Apply Fourier convolution damping factors to vb_ to account for basis smoothing
-        for(unsigned i = 1; i <= this->d_; ++i) {
-          double L = (this->sketch_basis_[i - 1].dom().second - this->sketch_basis_[i - 1].dom().first) / 2;
-          double w = this->sketch_basis_[i - 1].w();
-          auto s = siteIndex(this->vb_, i);
-          ITensor inner(s, prime(s));
-          for(int j = 1; j < dim(s); ++j) {
-            inner.set(s = j, prime(s) = j, exp(-pow(M_PI * w * (j / 2), 2) / (2 * pow(L, 2))));
-          }
-          this->vb_.ref(i) *= inner;
-          this->vb_.ref(i).noPrime();
-        }
-      }
+      // Note: in SKETCH_WIDTH (conv) mode the coefficients of vb_ are those of the unsmoothed bias,
+      // the smoothing being applied when the basis is evaluated, so they are added as they are.
+      // Damping them here as well (as done before) smoothed the old bias again at every sketch,
+      // so that the intrusive variant did not match NONINTRUSIVE even when the TT is exact.
       auto vbresult = formTensorMomentVb(coeff);
       Bemp_Vb = std::get<0>(vbresult);
       envi_L_Vb = std::get<1>(vbresult);
@@ -797,16 +903,8 @@ void TTMetaD::paraSketch() {
   std::vector<Index> links_trimmed;
   for(unsigned core_id = 2; core_id <= this->d_; ++core_id) {
     int rank = dim(links(core_id - 1));
-    Matrix<double> LMat(N, rank), RMat(N, rank);
-    for(unsigned i = 1; i <= N; ++i) {
-      for(int j = 1; j <= rank; ++j) {
-        LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id) = i, links(core_id - 1) = j);
-        RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id - 1) = i, links(core_id - 1) = j);
-      }
-    }
-    Matrix<double> Lt, AMat, PMat, AMat_Vb;
-    transpose(LMat, Lt);
-    mult(Lt, RMat, AMat);
+    const Matrix<double>& AMat = AMats[core_id - 2];
+    Matrix<double> LMat, RMat, Lt, AMat_Vb;
 
     if(this->sketch_count_ != 1 && !this->nonintrusive_) {
       auto ivb = linkIndex(this->vb_, core_id - 1);
@@ -862,22 +960,32 @@ void TTMetaD::paraSketch() {
   // G[1] = Bemp[1] * V[1] (project first core onto rank-trimmed subspace)
   // G[k] = pinv(U[k]*S[k]) * Bemp[k] * V[k]  for 2 <= k < d
   // G[d] = pinv(U[d]*S[d]) * Bemp[d]
+  // Since U has orthonormal columns, pinv(U*S) = S^+ * U^T, where S^+ inverts only the
+  // singular values above a relative threshold: the others (e.g. all but one when a single
+  // hill is sketched, so that A has rank one) are rounding errors, and dividing Bemp by them
+  // would fill the TT with noise of order one.
   G.ref(1) = Bemp(1) * V[1];
+  std::vector<int> effective_rank(this->d_, 0);
   for(unsigned core_id = 2; core_id <= this->d_; ++core_id) {
     int rank = dim(links(core_id - 1)), rank_trimmed = dim(links_trimmed[core_id - 2]);
-    ITensor A = U[core_id - 1] * S[core_id - 1];
-    ITensor Pinv(links_trimmed[core_id - 2], links(core_id - 1));
-    Matrix<double> AMat(rank, rank_trimmed), PMat;
-    for(int i = 1; i <= rank; ++i) {
-      for(int j = 1; j <= rank_trimmed; ++j) {
-        AMat(i - 1, j - 1) = A.elt(prime(links(core_id - 1)) = i, links_trimmed[core_id - 2] = j);
+    const Index iu = commonIndex(U[core_id - 1], S[core_id - 1]);
+    const Index iv = links_trimmed[core_id - 2];
+    std::vector<double> sinv(rank_trimmed, 0.0);
+    double smax = 0.0;
+    for(int j = 1; j <= rank_trimmed; ++j) {
+      smax = std::max(smax, S[core_id - 1].elt(iu = j, iv = j));
+    }
+    for(int j = 1; j <= rank_trimmed; ++j) {
+      const double sj = S[core_id - 1].elt(iu = j, iv = j);
+      if(sj > svdTolerance * smax) {
+        sinv[j - 1] = 1.0 / sj;
+        ++effective_rank[core_id - 2];
       }
     }
-    pseudoInvert(AMat, PMat);
-
+    ITensor Pinv(iv, links(core_id - 1));
     for(int i = 1; i <= rank_trimmed; ++i) {
       for(int j = 1; j <= rank; ++j) {
-        Pinv.set(links_trimmed[core_id - 2] = i, links(core_id - 1) = j, PMat(i - 1, j - 1));
+        Pinv.set(iv = i, links(core_id - 1) = j, sinv[i - 1] * U[core_id - 1].elt(prime(links(core_id - 1)) = j, iu = i));
       }
     }
     G.ref(core_id) = Pinv * Bemp(core_id);
@@ -890,7 +998,11 @@ void TTMetaD::paraSketch() {
   for(unsigned i = 1; i < this->d_; ++i) {
     log << dim(linkIndex(G, i)) << " ";
   }
-  log << "\n";
+  log << "(effective ";
+  for(unsigned i = 1; i < this->d_; ++i) {
+    log << effective_rank[i - 1] << " ";
+  }
+  log << ")\n";
   log.flush();
 
   if(this->sketch_basis_[0].kernel()) {
@@ -909,7 +1021,7 @@ void TTMetaD::paraSketch() {
     }
   }
 
-  this->vb_ = G;
+  setVb(G);
 }
 
 // Build the random sketch coefficient TT `coeff` of bond dimension sketch_rc_.
@@ -966,17 +1078,13 @@ MPS TTMetaD::createTTCoeff() const {
 //   - Fourier basis: Fourier transform of the 1D Gaussian (exponential decay * harmonic)
 // Returns M as a vector of ITensors (one per dimension) and a new IndexSet is_new
 // where is_new(i) indexes the N sample points for dimension i.
-std::pair<std::vector<ITensor>, IndexSet> TTMetaD::intBasisSample(const IndexSet& is) const {
+std::vector<Matrix<double>> TTMetaD::intBasisSample() const {
   unsigned N = this->hills_.size();
   int nb = this->sketch_basis_[0].nbasis();
-  auto sites_new = SiteSet(this->d_, N);
-  std::vector<ITensor> M;
-  std::vector<Index> is_new;
+  std::vector<Matrix<double>> M(this->d_, Matrix<double>(N, nb));
   for(unsigned i = 1; i <= this->d_; ++i) {
     double L = (this->sketch_basis_[i - 1].dom().second - this->sketch_basis_[i - 1].dom().first) / 2;
     double a = (this->sketch_basis_[i - 1].dom().second + this->sketch_basis_[i - 1].dom().first) / 2;
-    M.push_back(ITensor(sites_new(i), is(i)));
-    is_new.push_back(sites_new(i));
     for(unsigned j = 1; j <= N; ++j) {
       double x = this->hills_[j - 1].center[i - 1];
       double w = this->hills_[j - 1].sigma[i - 1];
@@ -1007,97 +1115,179 @@ std::pair<std::vector<ITensor>, IndexSet> TTMetaD::intBasisSample(const IndexSet
             result = exp(-pow(M_PI * w * (pos / 2), 2) / (2 * pow(L, 2))) * h * sqrt(2 * M_PI / L) * w * sin(M_PI * (x - a) * (pos / 2) / L);
           }
         }
-        M.back().set(sites_new(i) = j, is(i) = pos, result);
+        M[i - 1](j - 1, pos - 1) = result;
       }
     }
   }
-  return std::make_pair(M, IndexSet(is_new));
+  return M;
 }
 
-// Compute the tensor moment B and environment tensors for the new Gaussian hills.
+// Compute the tensor moment B of the new Gaussian hills and the cross-gram matrices A.
 //
-// First, L = coeff with each core's basis index replaced by the sample index via M:
-//   L[i] = coeff[i] * M[i], so L has (sample_index, bond_left, bond_right) indices.
-//
-// envi_L[i] = partial contraction of L(1)...L(i) summed over sample indices 1..N,
-//   yielding shape (sample_index_{i+1}, link_i). Used to form the left half of A.
-// envi_R[i] = partial contraction of L(i+2)...L(d) summed over sample indices,
-//   yielding shape (sample_index_{i+1}, link_{i+1}). Used to form the right half of A.
-//
-// B[k] = sum_j envi_L[k-1][j, :] * envi_R[k-1][j, :] * M[k][:, basis_k],
-//   which is the "tensor moment" for core k: the sketch of the Gaussian sum projected
-//   onto the basis functions of dimension k and the sketch subspaces of all other dims.
-std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorMoment(const std::vector<ITensor>& M, const MPS& coeff, const IndexSet& is) {
-  int N = dim(is(1));
-  auto links = linkInds(coeff);
-  // L[i] = coeff[i] with basis index contracted against M[i] -> sample index
-  auto L = coeff;
-
-  for(unsigned i = 1; i <= this->d_; ++i) {
-    L.ref(i) *= M[i - 1];
+// With K_i(j) = sum_p coeff_i[:, p, :] M_i(j, p) the core i of coeff contracted with the
+// basis integrals of hill j (a r_{i-1} x r_i matrix), the left and right environments are
+//   EL_i(j, :) = K_1(j) ... K_i(j)       (i = 1..d-1, size r_i)
+//   ER_i(j, :) = K_{i+2}(j) ... K_d(j)   (i = 0..d-2, size r_{i+1})
+// The tensor moment is
+//   B_1[p, b]    = sum_j ER_0(j, b) M_1(j, p)
+//   B_k[a, p, b] = sum_j EL_{k-1}(j, a) ER_{k-1}(j, b) M_k(j, p)   (1 < k < d)
+//   B_d[a, p]    = sum_j EL_{d-1}(j, a) M_d(j, p)
+// and the cross-gram matrix of bond k = 1..d-1 is A_k = EL_k^T ER_{k-1}.
+// Everything is done on plain arrays (the environments are independent across hills),
+// only B is converted to ITensors at the end.
+std::pair<MPS, std::vector<Matrix<double>>> TTMetaD::formTensorMoment(const std::vector<Matrix<double>>& M, const MPS& coeff) const {
+  const unsigned d = this->d_;
+  const unsigned N = M[0].nrows();
+  const DenseTT C(coeff);
+  const auto sites = siteInds(coeff);
+  const auto links = linkInds(coeff);
+  std::vector<int> r(d + 1), n(d);
+  for(unsigned i = 0; i <= d; ++i) {
+    r[i] = C.rank(i);
   }
-
-  // Build left environments: envi_L[i] accumulates the contraction of L(1)..L(i)
-  // over the shared sample index, leaving the next sample index and link free.
-  std::vector<ITensor> envi_L(this->d_);
-  envi_L[1] = L(1) * delta(is(1), is(2));
-  for(unsigned i = 2; i < this->d_; ++i) {
-    int rankl = dim(links(i - 1));
-    int rankr = dim(links(i));
-    envi_L[i] = ITensor(is(i + 1), links(i));
-    for(int j = 1; j <= N; ++j) {
-      for(int k = 1; k <= rankr; ++k) {
-        ITensor LHS(links(i - 1)), RHS(links(i - 1));
-        for(int ii = 1; ii <= rankl; ++ii) {
-          LHS.set(links(i - 1) = ii, envi_L[i - 1].elt(is(i) = j, links(i - 1) = ii));
-          RHS.set(links(i - 1) = ii, L(i).elt(links(i - 1) = ii, is(i) = j, links(i) = k));
+  for(unsigned i = 0; i < d; ++i) {
+    n[i] = C.nbasis(i);
+  }
+  // EL[i] for i = 1..d-1 (N x r_i), ER[i] for i = 0..d-2 (N x r_{i+1}), row-major
+  std::vector<std::vector<double>> EL(d), ER(d - 1);
+  for(unsigned i = 1; i < d; ++i) {
+    EL[i].assign(static_cast<size_t>(N) * r[i], 0.0);
+    ER[i - 1].assign(static_cast<size_t>(N) * r[i], 0.0);
+  }
+  const unsigned nt = OpenMP::getNumThreads();
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<std::vector<double>> K(d);
+    std::vector<double> tmp;
+    #pragma omp for schedule(static)
+    for(unsigned j = 0; j < N; ++j) {
+      // contracted cores K[i] = K_{i+1}(j), r_i x r_{i+1}
+      for(unsigned i = 0; i < d; ++i) {
+        const int rl = r[i], rr = r[i + 1], nb = n[i];
+        K[i].assign(static_cast<size_t>(rl) * rr, 0.0);
+        const double* c = C.core(i).data();
+        for(int a = 0; a < rl; ++a) {
+          double* k = K[i].data() + static_cast<size_t>(a) * rr;
+          for(int p = 0; p < nb; ++p) {
+            const double m = M[i](j, p);
+            const double* cp = c + (static_cast<size_t>(a) * nb + p) * rr;
+            for(int b = 0; b < rr; ++b) {
+              k[b] += cp[b] * m;
+            }
+          }
         }
-        envi_L[i].set(is(i + 1) = j, links(i) = k, elt(LHS * RHS));
+      }
+      // left environments
+      for(int b = 0; b < r[1]; ++b) {
+        EL[1][static_cast<size_t>(j) * r[1] + b] = K[0][b];
+      }
+      for(unsigned i = 2; i < d; ++i) {
+        const int rl = r[i - 1], rr = r[i];
+        const double* prev = EL[i - 1].data() + static_cast<size_t>(j) * rl;
+        double* out = EL[i].data() + static_cast<size_t>(j) * rr;
+        for(int a = 0; a < rl; ++a) {
+          const double* k = K[i - 1].data() + static_cast<size_t>(a) * rr;
+          for(int b = 0; b < rr; ++b) {
+            out[b] += prev[a] * k[b];
+          }
+        }
+      }
+      // right environments
+      for(int a = 0; a < r[d - 1]; ++a) {
+        ER[d - 2][static_cast<size_t>(j) * r[d - 1] + a] = K[d - 1][a];
+      }
+      for(int i = static_cast<int>(d) - 3; i >= 0; --i) {
+        // ER[i] = K_{i+2} ER[i+1], K_{i+2} = K[i+1] is r_{i+1} x r_{i+2}
+        const int rl = r[i + 1], rr = r[i + 2];
+        const double* next = ER[i + 1].data() + static_cast<size_t>(j) * rr;
+        double* out = ER[i].data() + static_cast<size_t>(j) * rl;
+        for(int a = 0; a < rl; ++a) {
+          const double* k = K[i + 1].data() + static_cast<size_t>(a) * rr;
+          double sum = 0.0;
+          for(int b = 0; b < rr; ++b) {
+            sum += k[b] * next[b];
+          }
+          out[a] = sum;
+        }
       }
     }
   }
 
-  // Build right environments: envi_R[i] accumulates L(i+2)..L(d) right-to-left.
-  std::vector<ITensor> envi_R(this->d_);
-  envi_R[this->d_ - 2] = L(this->d_) * delta(is(this->d_), is(this->d_ - 1));
-  for(int i = this->d_ - 3; i >= 0; --i) {
-    int rankl = dim(links(i + 1));
-    int rankr = dim(links(i + 2));
-    envi_R[i] = ITensor(is(i + 1), links(i + 1));
-    for(int j = 1; j <= N; ++j) {
-      for(int k = 1; k <= rankl; ++k) {
-        ITensor LHS(links(i + 2)), RHS(links(i + 2));
-        for(int ii = 1; ii <= rankr; ++ii) {
-          LHS.set(links(i + 2) = ii, envi_R[i + 1].elt(is(i + 2) = j, links(i + 2) = ii));
-          RHS.set(links(i + 2) = ii, L(i + 2).elt(links(i + 2) = ii, is(i + 2) = j, links(i + 1) = k));
+  // cross-gram matrices
+  std::vector<Matrix<double>> A(d - 1);
+  for(unsigned k = 1; k < d; ++k) {
+    const int rk = r[k];
+    A[k - 1] = Matrix<double>(rk, rk);
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(int a = 0; a < rk; ++a) {
+      for(int b = 0; b < rk; ++b) {
+        double sum = 0.0;
+        for(unsigned j = 0; j < N; ++j) {
+          sum += EL[k][static_cast<size_t>(j) * rk + a] * ER[k - 1][static_cast<size_t>(j) * rk + b];
         }
-        envi_R[i].set(is(i + 1) = j, links(i + 1) = k, elt(LHS * RHS));
+        A[k - 1](a, b) = sum;
       }
     }
   }
 
-  // Assemble tensor moment B: for each core, combine the left and right environments
-  // element-wise over sample indices, then contract with M to restore basis indices.
-  MPS B(this->d_);
-  B.ref(1) = envi_R[0] * M[0];
-  for(unsigned core_id = 2; core_id < this->d_; ++core_id) {
-    int rankl = dim(links(core_id - 1));
-    int rankr = dim(links(core_id));
-    B.ref(core_id) = ITensor(links(core_id - 1), is(core_id), links(core_id));
-    for(int i = 1; i <= rankl; ++i) {
-      for(int j = 1; j <= rankr; ++j) {
-        for(int k = 1; k <= N; ++k) {
-          double Lelt = envi_L[core_id - 1].elt(is(core_id) = k, links(core_id - 1) = i);
-          double Relt = envi_R[core_id - 1].elt(is(core_id) = k, links(core_id) = j);
-          B.ref(core_id).set(links(core_id - 1) = i, is(core_id) = k, links(core_id) = j, Lelt * Relt);
+  // tensor moment
+  MPS B(d);
+  {
+    const int nb = n[0], rr = r[1];
+    ITensor core(sites(1), links(1));
+    for(int p = 0; p < nb; ++p) {
+      for(int b = 0; b < rr; ++b) {
+        double sum = 0.0;
+        for(unsigned j = 0; j < N; ++j) {
+          sum += ER[0][static_cast<size_t>(j) * rr + b] * M[0](j, p);
+        }
+        core.set(sites(1) = p + 1, links(1) = b + 1, sum);
+      }
+    }
+    B.ref(1) = core;
+  }
+  for(unsigned k = 2; k < d; ++k) {
+    const int rl = r[k - 1], rr = r[k], nb = n[k - 1];
+    std::vector<double> Bk(static_cast<size_t>(rl) * rr * nb, 0.0); // [a][b][p]
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(int a = 0; a < rl; ++a) {
+      for(unsigned j = 0; j < N; ++j) {
+        const double la = EL[k - 1][static_cast<size_t>(j) * rl + a];
+        const double* er = ER[k - 1].data() + static_cast<size_t>(j) * rr;
+        for(int b = 0; b < rr; ++b) {
+          const double w = la * er[b];
+          double* out = Bk.data() + (static_cast<size_t>(a) * rr + b) * nb;
+          for(int p = 0; p < nb; ++p) {
+            out[p] += w * M[k - 1](j, p);
+          }
         }
       }
     }
-    B.ref(core_id) *= M[core_id - 1];
+    ITensor core(links(k - 1), sites(k), links(k));
+    for(int a = 0; a < rl; ++a) {
+      for(int b = 0; b < rr; ++b) {
+        for(int p = 0; p < nb; ++p) {
+          core.set(links(k - 1) = a + 1, sites(k) = p + 1, links(k) = b + 1, Bk[(static_cast<size_t>(a) * rr + b) * nb + p]);
+        }
+      }
+    }
+    B.ref(k) = core;
   }
-  B.ref(this->d_) = envi_L[this->d_ - 1] * M[this->d_ - 1];
-
-  return std::make_tuple(B, envi_L, envi_R);
+  {
+    const int nb = n[d - 1], rl = r[d - 1];
+    ITensor core(links(d - 1), sites(d));
+    for(int a = 0; a < rl; ++a) {
+      for(int p = 0; p < nb; ++p) {
+        double sum = 0.0;
+        for(unsigned j = 0; j < N; ++j) {
+          sum += EL[d - 1][static_cast<size_t>(j) * rl + a] * M[d - 1](j, p);
+        }
+        core.set(links(d - 1) = a + 1, sites(d) = p + 1, sum);
+      }
+    }
+    B.ref(d) = core;
+  }
+  return std::make_pair(B, A);
 }
 
 // Compute the tensor moment B and environments for the previous TT bias vb_.
@@ -1140,6 +1330,8 @@ void TTMetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
   keys.add("compulsory", "PACE", "the frequency for hill addition");
   keys.add("compulsory", "FILE", "HILLS", "a file in which the list of added hills is stored");
+  keys.add("compulsory", "TT_FILE", "ttsketch.h5", "the HDF5 file where the TT bias is stored after every sketch, and read at restart. "
+           "With multiple replicas the replica suffix is added, with WALKERS_MPI the file is shared and is in the walkers directory");
   keys.add("compulsory", "HEIGHT", "the heights of the Gaussian hills");
   keys.add("optional", "FMT", "specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional", "BIASFACTOR", "use well tempered metadynamics and use this bias factor. Please note you must also specify temp");
@@ -1151,11 +1343,11 @@ void TTMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional", "SKETCH_CUTOFF", "Truncation error cutoff for singular value decomposition - compulsory if SKETCH_RANK is not specified");
   keys.add("compulsory", "SKETCH_INITRANK", "Initial rank for TTSketch algorithm");
   keys.add("compulsory", "SKETCH_PACE", "1e6", "The frequency for TT Vbias updates");
-  keys.add("compulsory", "INTERVAL_MIN", "Lower limits, outside the limits the system will not feel the biasing force");
-  keys.add("compulsory", "INTERVAL_MAX", "Upper limits, outside the limits the system will not feel the biasing force");
+  keys.add("compulsory", "INTERVAL_MIN", "Lower limits of the domain of the basis functions. Outside the limits the bias is the one at the closest limit and the system does not feel the biasing force along that argument");
+  keys.add("compulsory", "INTERVAL_MAX", "Upper limits of the domain of the basis functions. Outside the limits the bias is the one at the closest limit and the system does not feel the biasing force along that argument");
   keys.add("compulsory", "SKETCH_NBASIS", "20", "Number of basis functions per dimension");
   keys.add("compulsory", "SKETCH_ALPHA", "0.05", "Weight coefficient for random tensor train construction");
-  keys.add("optional", "SKETCH_UNTIL", "After this time, the bias potential freezes");
+  keys.add("optional", "SKETCH_UNTIL", "After this time, the hills deposited so far are compressed into the TT one last time and the bias potential freezes");
   keys.add("optional", "SKETCH_WIDTH", "Width of Gaussian kernels for smoothing");
   keys.add("optional", "KERNEL_DX", "Width of basis function kernels");
   keys.addFlag("NONINTRUSIVE", false, "Sketching uses previous exact sum of Gaussians instead of TT approximation");

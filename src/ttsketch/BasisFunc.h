@@ -38,7 +38,10 @@ private:
   double dx_;                     // kernel basis function width (std dev of each periodized Gaussian)
   std::vector<double> centers_;   // centers of kernel basis functions (size nbasis-1, uniformly spaced)
   Matrix<double> ginv_;           // pseudo-inverse of the Gram matrix (kernel basis only)
+  double gramCondition_;          // ratio between the largest and the smallest eigenvalue of the Gram matrix
+  int gramDropped_;               // eigen-directions of the Gram matrix left out of ginv_ (see the constructor)
   Matrix<double> gram_;           // Gram matrix: gram_(i,j) = int phi_i(x)*phi_j(x) dx (kernel basis only)
+  std::vector<double> damp_;      // conv mode, Fourier basis: damp_[k] = exp(-(pi*w*k/L)^2/2), k = 0..nbasis/2
 
 public:
   BasisFunc();
@@ -56,6 +59,11 @@ public:
   double operator()(double x, int pos, bool conv) const;
   // Derivative of operator()(x, pos, conv) w.r.t. x.
   double grad(double x, int pos, bool conv) const;
+  // Values and derivatives of all the basis functions at x:
+  // phi[pos-1] = operator()(x, pos, conv) and dphi[pos-1] = grad(x, pos, conv), pos = 1..nbasis.
+  // Equivalent to nbasis calls of operator() and grad(), but the Fourier harmonics are
+  // obtained from a single sin/cos pair by the angle-addition recurrence.
+  void evalAll(double x, bool conv, double* phi, double* dphi) const;
   int nbasis() const {
     return this->nbasis_;
   }
@@ -82,6 +90,18 @@ public:
   }
   const Matrix<double>& gram() const {
     return this->gram_;
+  }
+  // Eigenvalues of the Gram matrix smaller than gramTolerance() times the largest one are
+  // left out of ginv(): their directions are combinations of the basis functions that
+  // vanish (to working precision) and whose dual coefficients would be meaningless.
+  static constexpr double gramTolerance() {
+    return 1e-10;
+  }
+  double gramCondition() const {
+    return this->gramCondition_;
+  }
+  int gramDropped() const {
+    return this->gramDropped_;
   }
   double center(int pos) const {
     return this->kernel_ ? this->centers_[pos - 1] : 0.0;

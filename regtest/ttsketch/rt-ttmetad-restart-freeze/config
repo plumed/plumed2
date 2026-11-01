@@ -1,0 +1,12 @@
+plumed_needs=libitensor
+plumed_modules=ttsketch
+type=driver
+# a first run (plumed0.dat) writes the TT files and the hills files, then the test restarts from them:
+# - t1 is NONINTRUSIVE: its accumulated tensor moments are read back from t1.h5
+# - t2 was frozen by SKETCH_UNTIL in the first run: its hills are already in the TT,
+#   so none is read back and t2.bias is the frozen TT
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro"
+
+function plumed_regtest_before(){
+  $plumed_nompi driver --plumed plumed0.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro > out0 2> err0
+}
