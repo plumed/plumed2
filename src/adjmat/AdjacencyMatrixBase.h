@@ -100,7 +100,7 @@ template <class CV, typename myPTM=defaultPTM>
 class AdjacencyMatrixBase : public ActionWithMatrix {
 public:
   using input_type = AdjacencyMatrixData<CV>;
-  using PTM = ParallelTaskManager<AdjacencyMatrixBase<CV, myPTM>>;
+  using PTM = typename myPTM::template PTM<AdjacencyMatrixBase<CV, myPTM>>;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
