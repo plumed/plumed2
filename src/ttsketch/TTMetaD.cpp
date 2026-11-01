@@ -96,6 +96,9 @@ using namespace itensor;
 class TTMetaD : public Bias {
 
 private:
+  // singular values of the cross-gram matrices smaller than this fraction of the largest
+  // one are not inverted when the TT cores are recovered (see paraSketch())
+  static constexpr double svdTolerance = 1e-12;
   struct Gaussian {
     double height;
     std::vector<double> center;
@@ -340,6 +343,18 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   }
   this->imin_ = interval_min;
   this->imax_ = interval_max;
+  if(kernel) {
+    for(unsigned i = 0; i < this->d_; ++i) {
+      const BasisFunc& b = this->sketch_basis_[i];
+      log.printf("  kernel basis of argument %s: %d kernels of width %g, Gram matrix condition number %.1e, %d nearly dependent direction(s) left out\n",
+                 getPntrToArgument(i)->getName().c_str(), nbasis - 1, b.dx(), b.gramCondition(), b.gramDropped());
+      if(b.gramDropped() > 1) {
+        warning("the kernel basis of argument " + getPntrToArgument(i)->getName() +
+                " is nearly linearly dependent (" + std::to_string(b.gramDropped()) +
+                " directions left out): KERNEL_DX is too large for SKETCH_NBASIS");
+      }
+    }
+  }
   if(this->walkers_mpi_) {
     this->mpi_size_ = getNumberOfReplicas();
     this->mpi_rank_ = getReplicaIndex();
@@ -945,22 +960,32 @@ void TTMetaD::paraSketch() {
   // G[1] = Bemp[1] * V[1] (project first core onto rank-trimmed subspace)
   // G[k] = pinv(U[k]*S[k]) * Bemp[k] * V[k]  for 2 <= k < d
   // G[d] = pinv(U[d]*S[d]) * Bemp[d]
+  // Since U has orthonormal columns, pinv(U*S) = S^+ * U^T, where S^+ inverts only the
+  // singular values above a relative threshold: the others (e.g. all but one when a single
+  // hill is sketched, so that A has rank one) are rounding errors, and dividing Bemp by them
+  // would fill the TT with noise of order one.
   G.ref(1) = Bemp(1) * V[1];
+  std::vector<int> effective_rank(this->d_, 0);
   for(unsigned core_id = 2; core_id <= this->d_; ++core_id) {
     int rank = dim(links(core_id - 1)), rank_trimmed = dim(links_trimmed[core_id - 2]);
-    ITensor A = U[core_id - 1] * S[core_id - 1];
-    ITensor Pinv(links_trimmed[core_id - 2], links(core_id - 1));
-    Matrix<double> AMat(rank, rank_trimmed), PMat;
-    for(int i = 1; i <= rank; ++i) {
-      for(int j = 1; j <= rank_trimmed; ++j) {
-        AMat(i - 1, j - 1) = A.elt(prime(links(core_id - 1)) = i, links_trimmed[core_id - 2] = j);
+    const Index iu = commonIndex(U[core_id - 1], S[core_id - 1]);
+    const Index iv = links_trimmed[core_id - 2];
+    std::vector<double> sinv(rank_trimmed, 0.0);
+    double smax = 0.0;
+    for(int j = 1; j <= rank_trimmed; ++j) {
+      smax = std::max(smax, S[core_id - 1].elt(iu = j, iv = j));
+    }
+    for(int j = 1; j <= rank_trimmed; ++j) {
+      const double sj = S[core_id - 1].elt(iu = j, iv = j);
+      if(sj > svdTolerance * smax) {
+        sinv[j - 1] = 1.0 / sj;
+        ++effective_rank[core_id - 2];
       }
     }
-    pseudoInvert(AMat, PMat);
-
+    ITensor Pinv(iv, links(core_id - 1));
     for(int i = 1; i <= rank_trimmed; ++i) {
       for(int j = 1; j <= rank; ++j) {
-        Pinv.set(links_trimmed[core_id - 2] = i, links(core_id - 1) = j, PMat(i - 1, j - 1));
+        Pinv.set(iv = i, links(core_id - 1) = j, sinv[i - 1] * U[core_id - 1].elt(prime(links(core_id - 1)) = j, iu = i));
       }
     }
     G.ref(core_id) = Pinv * Bemp(core_id);
@@ -973,7 +998,11 @@ void TTMetaD::paraSketch() {
   for(unsigned i = 1; i < this->d_; ++i) {
     log << dim(linkIndex(G, i)) << " ";
   }
-  log << "\n";
+  log << "(effective ";
+  for(unsigned i = 1; i < this->d_; ++i) {
+    log << effective_rank[i - 1] << " ";
+  }
+  log << ")\n";
   log.flush();
 
   if(this->sketch_basis_[0].kernel()) {

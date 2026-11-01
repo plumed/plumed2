@@ -4,18 +4,21 @@
    See the COPYRIGHT file distributed with this software for license details.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "BasisFunc.h"
+#include "tools/Exception.h"
+#include <limits>
 
 namespace PLMD {
 namespace ttsketch {
 
 BasisFunc::BasisFunc()
-  : dom_(std::make_pair(0.0, 0.0)), nbasis_(0), L_(0.0), shift_(0.0), inv_L_(0.0), sqrt_inv_L_(0.0), inv_sqrt_2L_(0.0), w_(0.0), kernel_(false), dx_(0.0) {}
+  : dom_(std::make_pair(0.0, 0.0)), nbasis_(0), L_(0.0), shift_(0.0), inv_L_(0.0), sqrt_inv_L_(0.0), inv_sqrt_2L_(0.0), w_(0.0), kernel_(false), dx_(0.0),
+    gramCondition_(1.0), gramDropped_(0) {}
 
 BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool kernel, double dx)
   : dom_(dom), nbasis_(nbasis), L_((dom.second - dom.first) * 0.5), shift_((dom.second + dom.first) * 0.5),
     inv_L_(2.0 / (dom.second - dom.first)), sqrt_inv_L_(sqrt(2.0 / (dom.second - dom.first))),
     inv_sqrt_2L_(sqrt(1.0 / (dom.second - dom.first))),
-    w_(w), kernel_(kernel), dx_(dx) {
+    w_(w), kernel_(kernel), dx_(dx), gramCondition_(1.0), gramDropped_(0) {
   if(kernel) {
     double spacing = (dom.second - dom.first) / (nbasis - 1);
     if(dx == 0) {
@@ -64,7 +67,37 @@ BasisFunc::BasisFunc(std::pair<double, double> dom, int nbasis, double w, bool k
         this->gram_(i, j) = this->gram_(j, i) = result;
       }
     }
-    pseudoInvert(this->gram_, this->ginv_);
+    // Pseudo-inverse of the (symmetric, positive semi-definite) Gram matrix from its
+    // eigen-decomposition, ginv = sum_k v_k v_k^T / lambda_k over the eigenvalues
+    // lambda_k > gramTolerance() * lambda_max. The kernel basis is nearly linearly
+    // dependent when the kernels are wide compared with their spacing: the constant
+    // function is then almost a combination of the periodized Gaussians, and the
+    // Gram matrix has an eigenvalue at the level of the rounding errors (e.g. 1e-14
+    // relative for dx equal to the spacing). Inverting it would divide by a number
+    // that is mostly rounding error and amplify it into the dual coefficients, making
+    // the bias depend on the machine at the percent level.
+    std::vector<double> eval;
+    Matrix<double> evec; // eigenvectors are the rows
+    if(diagMat(this->gram_, eval, evec) != 0) {
+      plumed_merror("diagonalization of the Gram matrix of the kernel basis failed");
+    }
+    const double lmax = eval[nbasis - 1];
+    const double lmin = eval[0];
+    this->gramCondition_ = lmin > 0.0 ? lmax / lmin : std::numeric_limits<double>::infinity();
+    this->ginv_ = Matrix<double>(nbasis, nbasis);
+    this->ginv_ = 0.0;
+    for(int k = 0; k < nbasis; ++k) {
+      if(!(eval[k] > gramTolerance() * lmax)) {
+        ++this->gramDropped_;
+        continue;
+      }
+      const double inv = 1.0 / eval[k];
+      for(int i = 0; i < nbasis; ++i) {
+        for(int j = 0; j < nbasis; ++j) {
+          this->ginv_(i, j) += inv * evec(k, i) * evec(k, j);
+        }
+      }
+    }
   } else {
     // damping factors of the harmonics in conv mode (see operator())
     this->damp_.resize(nbasis / 2 + 1);

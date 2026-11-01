@@ -86,6 +86,25 @@ int main() {
     ofs << c.name << " gram " << ok(egram < 1e-8) << "\n";
   }
 
+  // Gram pseudo-inverse of a nearly dependent kernel basis (default width = spacing: the
+  // constant function is almost a combination of the kernels): one direction is left out,
+  // and what is left is a proper pseudo-inverse, G ginv G = G
+  {
+    BasisFunc b(dom, 9, 0.0, true, 0.0);
+    const int n = b.nbasis();
+    Matrix<double> t1, t2;
+    mult(b.gram(), b.ginv(), t1);
+    mult(t1, b.gram(), t2);
+    double e = 0.0;
+    for(int i = 0; i < n; ++i) {
+      for(int j = 0; j < n; ++j) {
+        e = std::max(e, std::abs(t2(i, j) - b.gram()(i, j)));
+      }
+    }
+    ofs << "kernel gram pseudo-inverse: dropped " << ok(b.gramDropped() == 1) << " condition " << ok(b.gramCondition() > 1e12)
+        << " G*ginv*G=G " << ok(e < 1e-10) << "\n";
+  }
+
   // a random TT with three dimensions and different ranks
   std::mt19937 gen(7);
   std::normal_distribution<double> dist(0.0, 1.0);

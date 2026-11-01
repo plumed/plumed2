@@ -14,6 +14,7 @@ kernel-default-dx evalAll ok
 kernel-default-dx grad ok
 kernel-default-dx integrals ok
 kernel-default-dx gram ok
+kernel gram pseudo-inverse: dropped ok condition ok G*ginv*G=G ok
 DenseTT kernel=0 conv=0 value ok gradient ok
 DenseTT kernel=0 conv=1 value ok gradient ok
 DenseTT kernel=1 conv=0 value ok gradient ok

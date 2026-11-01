@@ -2,4 +2,8 @@ plumed_needs=libitensor
 plumed_modules=ttsketch
 type=driver
 # kernel basis; SKETCH_PACE < PACE, so that some sketches have no hill (skipped) and the others only one
+# (the cross-gram matrices have rank one: only one singular value is inverted).
+# KERNEL_DX is comparable to the spacing of the kernels, so the Gram matrix of the basis is nearly
+# singular (condition number ~1e14): the nearly dependent direction must be left out of its
+# pseudo-inverse, otherwise the bias depends on rounding errors at the percent level
 arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro --dump-forces forces --dump-forces-fmt %.4lf"
