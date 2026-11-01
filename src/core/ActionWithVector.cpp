@@ -299,7 +299,13 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata, ArgumentsBo
   if( getNumberOfArguments()==0 ) {
     return;
   }
-  getArgumentInputData( inputdata );
+  // The masks are not part of the input data.  If the only arguments are masks
+  // the buffer holds the atomic data only and must not be touched: the default
+  // getArgumentInputData resizes it to the size of the (non-mask) arguments,
+  // which would discard the atomic data (and leave a null pointer on the GPU)
+  if( nmask<=0 || getNumberOfArguments()>static_cast<unsigned>(nmask) ) {
+    getArgumentInputData( inputdata );
+  }
   copyArgumentBookeeping( argumentsMap );
 }
 
@@ -308,7 +314,13 @@ void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBoo
   if( getNumberOfArguments()==0 ) {
     return;
   }
-  getArgumentInputData( inputdata );
+  // The masks are not part of the input data.  If the only arguments are masks
+  // the buffer holds the atomic data only and must not be touched: the default
+  // getArgumentInputData resizes it to the size of the (non-mask) arguments,
+  // which would discard the atomic data (and leave a null pointer on the GPU)
+  if( nmask<=0 || getNumberOfArguments()>static_cast<unsigned>(nmask) ) {
+    getArgumentInputData( inputdata );
+  }
   copyArgumentBookeeping( argumentsMap );
 }
 
