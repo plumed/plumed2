@@ -128,10 +128,10 @@ std::vector<double> WaveletGrid::calcIntegerValues(const Matrix<double> &M, cons
 std::vector<double> WaveletGrid::getEigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows
-  std::vector<double> da(N*N);
+  std::vector<double> da(static_cast<std::size_t>(N)*N);
   std::vector<double> S(N);
-  std::vector<double> U(N*N);
-  std::vector<double> VT(N*N);
+  std::vector<double> U(static_cast<std::size_t>(N)*N);
+  std::vector<double> VT(static_cast<std::size_t>(N)*N);
   std::vector<int> iwork(8*N);
 
   // Transfer the matrix to the local array and substract eigenvalue

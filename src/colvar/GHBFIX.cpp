@@ -168,7 +168,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   n+=1;
 
   //scalingParameters
-  etas.resize(n*n,0.0);
+  etas.resize(static_cast<std::size_t>(n)*n,0.0);
   IFile etafile;
   etafile.open(params);
   std::string it,jt;

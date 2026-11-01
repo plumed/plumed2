@@ -325,8 +325,8 @@ void position_linear_proj::kabsch_rot_mat() {
 
   // Create some containers for stuff from single value decomposition
   std::vector<double> S(nsv);
-  std::vector<double> U(nrows*nrows);
-  std::vector<double> VT(ncols*ncols);
+  std::vector<double> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<double> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition

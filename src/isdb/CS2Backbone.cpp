@@ -1206,7 +1206,7 @@ void CS2Backbone::calculate() {
   const unsigned rank   = serial ? 0 : comm.Get_rank();
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*2>chemicalshifts.size()) {
+  if(static_cast<std::size_t>(nt)*stride*2>chemicalshifts.size()) {
     nt=1;
   }
 

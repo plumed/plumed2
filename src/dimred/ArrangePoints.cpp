@@ -643,7 +643,7 @@ void ArrangePoints::prepare() {
 void ArrangePoints::calculate() {
   // Retrive the initial value
   unsigned nvals = getPntrToArgument( dimout )->getShape()[0];
-  std::vector<double> pos( dimout*nvals );
+  std::vector<double> pos( static_cast<std::size_t>(dimout)*nvals );
   for(unsigned i=0; i<nvals; ++i) {
     for(unsigned j=0; j<dimout; ++j) {
       pos[ dimout*i + j ] = getPntrToArgument(j)->get(i);

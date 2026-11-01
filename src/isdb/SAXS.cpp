@@ -1384,7 +1384,7 @@ SAXS::SAXS(const ActionOptions&ao):
     // compute Rij and qj_list
     resolution_function();
     // matrix of the smearing (spline interpolation and integral with the resolution function)
-    smear_.assign(numq*numq,0.0);
+    smear_.assign(static_cast<std::size_t>(numq)*numq,0.0);
     for(unsigned l=0; l<numq; ++l) {
       std::vector<double> unit(numq,0.0);
       unit[l] = 1.0;
