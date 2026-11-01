@@ -479,8 +479,6 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ) {
-//     bool skipcheck=false;
-//     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
     if( !skipcheck && t.size()!=size ) {
       error("vector read in for keyword " + key + " has the wrong size");
     }

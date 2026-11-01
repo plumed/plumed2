@@ -38,8 +38,6 @@ class Pbc;
 
 /// A class that implements ERMSD calculations
 class ERMSD {
-  //std::map< std::pair <unsigned,unsigned> , double> targets;
-  //unsigned natoms;
   std::vector<Vector4d> reference_mat;
   std::size_t natoms;
   std::size_t nresidues;

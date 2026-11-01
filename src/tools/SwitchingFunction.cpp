@@ -462,7 +462,6 @@ struct cubicSwitch: public baseSwitch<cubicSwitch> {
   static inline ValueDerivative function(const double rdist) {
     const double tmp1 = rdist - 1.0;
     const double tmp2 = 1.0+2.0*rdist;
-    //double result = tmp1*tmp1*tmp2;
     double dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
     return {tmp1*tmp1*tmp2,dfunc};
   }
@@ -480,7 +479,6 @@ struct tanhSwitch: public baseSwitch<tanhSwitch> {
     const double tmp1 = std::tanh(rdist);
     //was dfunc=-(1-tmp1*tmp1);
     double dfunc = tmp1 * tmp1 - 1.0;
-    //return result;
     return {1.0 - tmp1,dfunc };
   }
 };

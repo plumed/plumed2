@@ -1232,10 +1232,6 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
   }
   // when there are no more bin to dig in then retrieve the value
   if(i==vHigh.size()) {
-    //std::cerr<<"POINT: ";
-    //for(unsigned j=0;j<vHigh.size();j++){
-    //   std::cerr<<vHigh[j]<<" ";
-    //}
     std::vector<unsigned> vv(vHigh.size());
     for(unsigned j=0; j<vHigh.size(); j++) {
       vv[j]=unsigned(vHigh[j]);

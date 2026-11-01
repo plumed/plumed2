@@ -324,7 +324,6 @@ std::vector<std::string> Tools::getWords(std::string_view line,
     if(!(parenthesisLevel==0 && (found||onParenthesis))) {
       word.push_back(line[i]);
     }
-    //if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) {
       parenthesisLevel++;
     }
@@ -403,7 +402,6 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
         size=0;
       }
     }
-//    plumed_assert(parlevel<=1&& parlevel>=0) << "getWordsSimple do not support nested parenthesis ('" << line << "')";
   }
   if(size>0) {
     words.emplace_back(line.substr(init,size));

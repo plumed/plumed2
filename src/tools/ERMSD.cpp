@@ -184,7 +184,6 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
 
       // skip i==j
       if(inPair(i,j) and i != j) {
-        //if(i!=j){
 
 
         // Calculate normal distance first
@@ -232,7 +231,6 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
             idx1 = i*nresidues*6 + j*6;
 
             for (unsigned l=0; l<6; l++) {
-              //std::cout << i << " " << j << " " << idx1 << " " << idx1+l << "\n";
 
               // components 1,2,3
               // std::sin(gamma*|rtilde|)/gamma*|rtilde|*d_rtilde +

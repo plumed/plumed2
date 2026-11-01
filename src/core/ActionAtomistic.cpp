@@ -385,7 +385,6 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
     if(!ok) {
       action->error("it was not possible to interpret atom name " + strings[i]);
     }
-    // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }
 
@@ -430,15 +429,6 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
   }
   unsigned j = 0;
 
-// for(const auto & a : atom_value_ind) {
-//   std::size_t nn = a.first, kk = a.second;
-//   actionPositions[j][0] = xpos[nn]->data[kk];
-//   actionPositions[j][1] = ypos[nn]->data[kk];
-//   actionPositions[j][2] = zpos[nn]->data[kk];
-//   charges[j] = chargev[nn]->data[kk];
-//   masses[j] = masv[nn]->data[kk];
-//   j++;
-// }
 
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
@@ -469,13 +459,6 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     zpos[value_depends[i]]->hasForce = true;
   }
 
-// for(const auto & a : atom_value_ind) {
-//   plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-//   std::size_t nn = a.first, kk = a.second;
-//   xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-//   ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-//   zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-// }
 
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;

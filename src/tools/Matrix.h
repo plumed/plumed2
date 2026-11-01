@@ -157,12 +157,10 @@ public:
   /// Return element i,j of the matrix
   inline const T& operator () (const unsigned& i, const unsigned& j) const {
     return helper.data[j+i*cl];
-    // return data[j+i*cl];
   }
   /// Return a referenre to element i,j of the matrix
   inline T& operator () (const unsigned& i, const unsigned& j)      {
     return helper.data[j+i*cl];
-    // return data[j+i*cl];
   }
   /// Set all elements of the matrix equal to the value of v
   Matrix<T>& operator=(const T& v) {

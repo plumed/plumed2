@@ -623,7 +623,6 @@ void Keywords::print_html() const {
       std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
       for(const auto& cname : cnames) {
-        //plumed_assert( components.at(cname).key=="default" );
         if( components.at(cname).key!="default" ) {
           nndef++;
           continue;
@@ -918,7 +917,6 @@ void Keywords::print_html_item( const std::string& key ) const {
 }
 
 bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
-  // plumed_massert(exists(key)||reserved(key),"You can't ask for the default value of a keyword that doesn't exist("+key+")");
   if (std::holds_alternative<bool>(keywords.at(key).defaultValue)) {
     def = std::get<bool>(keywords.at(key).defaultValue);
     return true;

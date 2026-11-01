@@ -236,7 +236,6 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::size_t eq=v1[i].find_first_of('=');
       std::string name=v1[i].substr(0,eq);
       std::string sval=v1[i].substr(eq+1);
-      // double val; Tools::convert( sval, val );
       std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
       std::vector<double> val( words.size() );
       for(unsigned ii=0; ii<val.size(); ++ii) {
@@ -317,7 +316,6 @@ unsigned PDB::size()const {
 }
 
 bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
-  //cerr<<file<<endl;
   bool file_is_alive=false;
   if(naturalUnits) {
     scale=1.0;
@@ -326,7 +324,6 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   fpos_t pos;
   bool between_ters=true;
   while(Tools::getline(fp,line)) {
-    //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) {
       line.push_back(' ');
