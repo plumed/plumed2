@@ -472,7 +472,9 @@ same syntax of --atom-distribution
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
     // if(numblocks>20) numblocks=20;
-    const auto blocksize=size/numblocks;
+    // size is zero if no timings were recorded (e.g. when only dumping the trajectory):
+    // do not divide by zero (it is a SIGFPE in builds without optimization)
+    const auto blocksize=numblocks>0 ? size/numblocks : 0;
 
     if(f->size()<2) {
       log<<"Single run, skipping comparative analysis\n";
