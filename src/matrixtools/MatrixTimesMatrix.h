@@ -140,7 +140,13 @@ MatrixTimesMatrix<CV, myPTM>::MatrixTimesMatrix(const ActionOptions&ao):
   shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape );
   setNotPeriodic();
-  getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+  // With a MASK the output has the sparsity pattern of the mask (set at every
+  // step by updateBookeepingArrays): do not allocate a dense matrix for it
+  if( nm>0 ) {
+    getPntrToComponent(0)->reshapeMatrixStore( getPntrToArgument(getNumberOfArguments()-1)->getNumberOfColumns() );
+  } else {
+    getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+  }
   if( !isDissimilarities && getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() && getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) {
     getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   }
@@ -177,7 +183,11 @@ void MatrixTimesMatrix<CV, myPTM>::prepare() {
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
   myval->setShape(shape);
-  myval->reshapeMatrixStore( shape[1] );
+  if( getNumberOfMasks()>0 ) {
+    myval->reshapeMatrixStore( getPntrToArgument(getNumberOfArguments()-1)->getNumberOfColumns() );
+  } else {
+    myval->reshapeMatrixStore( shape[1] );
+  }
 }
 
 template <class CV, typename myPTM>
