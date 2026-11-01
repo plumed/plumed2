@@ -117,8 +117,9 @@ PathProjectionCalculator::PathProjectionCalculator( Action* act ):
     if( !as ) {
       break ;
     }
-    aind = aind - 1;
-    plumed_assert( aind>=0 );
+    // aind is unsigned: check before decrementing, otherwise it wraps around
+    plumed_assert( aind>0 );
+    --aind;
   }
   ActionWithValue* fav = dynamic_cast<ActionWithValue*>( metric.getActionSet()[aind].get() );
   if( !fav ) {

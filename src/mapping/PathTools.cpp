@@ -473,8 +473,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     if( !as ) {
       break ;
     }
-    aind = aind - 1;
-    plumed_assert( aind>=0 );
+    // aind is unsigned: check before decrementing, otherwise it wraps around
+    plumed_assert( aind>0 );
+    --aind;
   }
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( plmd.getActionSet()[aind].get() );
   if( !av ) {
