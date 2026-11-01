@@ -34,8 +34,11 @@ public:
   static void shortcutKeywords( Keywords& keys );
   static void parseAtomList( const std::string& key, std::vector<std::string>& atoms, ActionShortcut* action );
   static void readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
+/// If outputs is not null the ends of the labels (labout + suffix) of the scalars that sum the elements of the input
+/// vector or matrix (sum, lessthan, lessthan-n, morethan, morethan-n, between, between-n) are appended to it.
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
-                               const std::map<std::string,std::string>& keymap, ActionShortcut* action );
+                               const std::map<std::string,std::string>& keymap, ActionShortcut* action,
+                               std::vector<std::string>* outputs=nullptr );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action );
 };
 
