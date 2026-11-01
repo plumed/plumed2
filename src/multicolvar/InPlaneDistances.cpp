@@ -93,6 +93,15 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   std::vector<std::string> str_atomsC;
   parseVector("GROUP",str_atomsC);
   Tools::interpretRanges( str_atomsC );
+  if( str_atomsA.size()==0 ) {
+    error("no atoms found in VECTORSTART");
+  }
+  if( str_atomsB.size()==0 ) {
+    error("no atoms found in VECTOREND");
+  }
+  if( str_atomsC.size()==0 ) {
+    error("no atoms found in GROUP");
+  }
   unsigned n=1;
   std::string dinput= getShortcutLabel() + "_dis: DISTANCE", ainput = getShortcutLabel() + "_ang: ANGLE";
   for(unsigned i=0; i<str_atomsA.size(); ++i ) {
@@ -101,7 +110,7 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
         std::string str_n;
         Tools::convert( n, str_n );
         n++;
-        dinput += " ATOMS" + str_n + "=" + str_atomsA[j] + "," + str_atomsC[k];
+        dinput += " ATOMS" + str_n + "=" + str_atomsA[i] + "," + str_atomsC[k];
         ainput += " ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsC[k];
       }
     }
