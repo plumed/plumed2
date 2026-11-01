@@ -137,6 +137,9 @@ FindContour::FindContour(const ActionOptions&ao):
   }
 
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !ag ) {
+    error("input action should be a grid");
+  }
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
   std::vector<std::size_t> shape(1);
