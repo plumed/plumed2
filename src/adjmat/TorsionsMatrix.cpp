@@ -403,11 +403,11 @@ void TorsionsMatrix::performTask( std::size_t task_index,
   // Now compute all the torsions
   Torsion t;
   Vector dv1, dconn, dv2 ;
-  unsigned nderper = 21;
+  std::size_t nderper = 21;
   if( actiondata.no_thread_gather ) {
     nderper = 15;
   }
-  for(unsigned i=0; i<nelements; ++i) {
+  for(std::size_t i=0; i<nelements; ++i) {
     if( atom2[i].modulo2()<epsilon ) {
       if( !input.noderiv ) {
         output.derivatives.subview( nderper, nderper*i ).zero();
@@ -432,7 +432,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
       continue ;
     }
 
-    std::size_t base = static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i);
+    std::size_t base = nderper * i;
     if( !actiondata.no_thread_gather ) {
       output.derivatives.subview_n<3>(base) = dv1;
       output.derivatives.subview_n<3>(base+3) = -dconn;
