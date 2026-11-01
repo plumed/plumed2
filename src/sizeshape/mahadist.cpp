@@ -243,10 +243,10 @@ double position_maha_dist::determinant(int n, const std::vector<std::vector<doub
       return 0.0;  // Singular matrix
     }
 
-    for ( int r = i + 1; r < n; r++ ) {                  // On lower rows
-      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+    for ( int row = i + 1; row < n; row++ ) {            // On lower rows
+      double multiple = A[row][i] / pivot;              // Multiple of row i to clear element in ith column
       for ( int j = i; j < n; j++ ) {
-        A[r][j] -= multiple * A[i][j];
+        A[row][j] -= multiple * A[i][j];
       }
     }
     det *= pivot;                                        // Determinant is product of diagonal
@@ -296,15 +296,14 @@ void position_maha_dist::kabsch_rot_mat() {
 
   // Create some containers for stuff from single value decomposition
   std::vector<double> S(nsv);
-  std::vector<double> U(nrows*nrows);
-  std::vector<double> VT(ncols*ncols);
+  std::vector<double> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<double> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<double> work(1);
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
     log.printf("info: %d\n", info);
   }
@@ -315,7 +314,6 @@ void position_maha_dist::kabsch_rot_mat() {
 
   // This does the singular value decomposition
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
     log.printf("info: %d\n", info);
   }
@@ -355,7 +353,6 @@ void position_maha_dist::kabsch_rot_mat() {
   }
 
 
-  //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
   for(int i=0; i<3; ++i) {

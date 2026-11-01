@@ -325,15 +325,6 @@ size_t Value::addForces(View<const double> const forces) {
   plumed_massert( inputForce.size()>=nvals, "can't add force to " + name );
   //I need at least nvals elements in forces
   plumed_massert( forces.size()>=nvals, "can't add force to " + name );
-  /*
-    {//this gives a very little speedup (+1 step in the 60s dragrace)
-      auto f = forces.begin();
-      const auto end=inputForce.begin()+nvals;
-      for(auto iptf=inputForce.begin()  ; iptf<end; ++iptf, ++f) {
-        *iptf+=*f;
-      }
-    }
-  */
   //is this daxpy?
   for(auto i=0u; i<nvals; ++i) {
     inputForce[i]+=forces[i];

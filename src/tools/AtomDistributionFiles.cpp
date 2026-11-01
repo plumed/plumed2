@@ -105,10 +105,13 @@ fileTraj::fileTraj(std::string_view fmt,
                    std::string_view fname,
                    bool useMolfile,
                    int command_line_natoms) {
-  parser.init(fmt,
-              fname,
-              useMolfile,
-              command_line_natoms);
+  auto errormessage=parser.init(fmt,
+                                fname,
+                                useMolfile,
+                                command_line_natoms);
+  if(errormessage) {
+    plumed_error()<<*errormessage;
+  }
   step();
 }
 

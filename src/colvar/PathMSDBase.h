@@ -90,7 +90,6 @@ public:
   ~PathMSDBase();
 // active methods:
   void calculate() override;
-//  virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };
 

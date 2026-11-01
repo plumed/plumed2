@@ -68,7 +68,6 @@ void RopsShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNELFILE_DOPS","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","KERNELFILE_ROPS","the file containing the list of kernel parameters.  We expect the normalization factor (height), concentration parameter (kappa), and 4 quaternion pieces of the mean for a bipolar watson distribution (mu_w,mu_i,mu_j,mu_k)): (h*exp(kappa*dot(q_mean,q))), where dot is the dot product ");
   keys.add("compulsory", "CUTOFF", "cutoff for the distance matrix");
-//  keys.add("compulsory","SWITCH","the switching function that acts on the distances between points)");
   keys.setValueDescription("vector","the values of the ROPS order parameters");
   keys.needsAction("DISTANCE_MATRIX");
   keys.needsAction("QUATERNION_PRODUCT_MATRIX");
@@ -144,8 +143,6 @@ RopsShortcut::RopsShortcut(const ActionOptions&ao):
   std::string sp_str, specA, specB, grpinfo;
   double cutoff;
   parse("SPECIES",sp_str);
-  //parse("SPECIESA",specA);
-  //parse("SPECIESB",specB);
   parse("CUTOFF",cutoff);
   if( sp_str.length()>0 ) {
     grpinfo="GROUP=" + sp_str;

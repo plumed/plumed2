@@ -1,0 +1,22 @@
+== ragged_segments
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : all the SEGMENT keywords must contain the same number of atoms but SEGMENT1 contains 3 atoms and SEGMENT2 contains 4
+== index_outside_atoms
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : SEGMENT1 contains index 12 but only 12 atoms were specified with ATOMS (indices start from zero)
+== too_many_atoms
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : SEGMENT1 contains 31 atoms. A segment must contain between 2 and 30 atoms
+== one_atom
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : SEGMENT1 contains 1 atoms. A segment must contain between 2 and 30 atoms
+== wrong_structure_size
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : STRUCTURE1 contains 6 numbers. It must contain the three coordinates of each of the 3 atoms in a segment
+== no_structure
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : no reference structure was found in input -- use STRUCTURE
+== structures_different_size
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : STRUCTURE2 contains 6 numbers. It must contain the three coordinates of each of the 3 atoms in a segment
+== align_strands_three_atoms
+ERROR in input to action SECONDARY_STRUCTURE_RMSD with label c1 : ALIGN_STRANDS assumes that the two strands are the first and second halves of a segment containing 30 atoms, but the segments contain 3 atoms
+== drmsd_ragged_segments
+ERROR in input to action SECONDARY_STRUCTURE_DRMSD_CPU with label c1 : all the SEGMENT keywords must contain the same number of atoms but SEGMENT1 contains 3 atoms and SEGMENT2 contains 4
+== drmsd_index_outside_atoms
+ERROR in input to action SECONDARY_STRUCTURE_DRMSD_CPU with label c1 : SEGMENT1 contains index 20 but only 12 atoms were specified with ATOMS (indices start from zero)
+== drmsd_all_pairs_bonded
+all the distances in the reference structure are shorter than BONDLENGTH so there is nothing to compare

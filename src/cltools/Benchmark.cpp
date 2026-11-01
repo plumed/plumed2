@@ -472,7 +472,9 @@ same syntax of --atom-distribution
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
     // if(numblocks>20) numblocks=20;
-    const auto blocksize=size/numblocks;
+    // size is zero if no timings were recorded (e.g. when only dumping the trajectory):
+    // do not divide by zero (it is a SIGFPE in builds without optimization)
+    const auto blocksize=numblocks>0 ? size/numblocks : 0;
 
     if(f->size()<2) {
       log<<"Single run, skipping comparative analysis\n";
@@ -693,7 +695,8 @@ same syntax of --atom-distribution
   for(auto & k : kernels) {
     auto & p(k.handle);
     auto sw=k.stopwatch.startStop("A Initialization");
-    if(Communicator::plumedHasMPI() && domain_decomposition) {
+    // MPI should also be initialized (it is not with plumed --no-mpi)
+    if(Communicator::initialized() && domain_decomposition) {
       p.cmd("setMPIComm",&pc.Get_comm());
     }
     p.cmd("setRealPrecision",(int)sizeof(double));
@@ -710,6 +713,8 @@ same syntax of --atom-distribution
 
   std::vector<double> cell( 9 ), virial( 9 );
   std::vector<Vector> pos( natoms ), forces( natoms );
+  // positions in the shuffled order, used with --shuffled
+  std::vector<Vector> pos_shuffled;
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
   if(shuffled) {
@@ -718,6 +723,7 @@ same syntax of --atom-distribution
       shuffled_indexes[i]=i;
     }
     std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
+    pos_shuffled.resize(natoms);
   }
 
   // non owning pointers, used for shuffling the execution order
@@ -739,6 +745,15 @@ same syntax of --atom-distribution
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
     distribution->frame(pos,cell,step,atomicGenerator);
+    if(shuffled) {
+      // atom shuffled_indexes[k] is passed in place k, so its position is copied there:
+      // the structure seen by PLUMED does not depend on the permutation
+      // (which is not portable, since std::shuffle is implementation defined)
+      for(unsigned k=0; k<natoms; k++) {
+        pos_shuffled[k]=pos[shuffled_indexes[k]];
+      }
+    }
+    auto & pos_passed(shuffled?pos_shuffled:pos);
 
     double* pos_ptr;
     double* for_ptr;
@@ -764,13 +779,13 @@ same syntax of --atom-distribution
           shift+=1;
         }
       }
-      pos_ptr=&pos[shift][0];
+      pos_ptr=&pos_passed[shift][0];
       for_ptr=&forces[shift][0];
       charges_ptr=&charges[shift];
       masses_ptr=&masses[shift];
       indexes_ptr=shuffled_indexes.data()+shift;
     } else {
-      pos_ptr=&pos[0][0];
+      pos_ptr=&pos_passed[0][0];
       for_ptr=&forces[0][0];
       charges_ptr=&charges[0];
       masses_ptr=&masses[0];

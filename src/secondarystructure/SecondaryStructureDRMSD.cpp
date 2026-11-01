@@ -31,12 +31,12 @@ Calclulate the DRMSD between segments of a protein and a reference structure of 
 This action is used in the shortcuts [ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md).  It calculates a
 vector of [DRMSD](DRMSD.md) values between a single reference multiple configurations and the instantaneous
 positions of various groups of atoms.  For example, in the following input we define a single set of reference
-set of coordinates for 3 atoms.
+set of coordinates for 3 atoms (the coordinates are in Angstroms and only the pairs of atoms that are further apart than BONDLENGTH nm are used).
 
 ```plumed
 c1: SECONDARY_STRUCTURE_DRMSD ...
     ATOMS=13-24
-    BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1
+    BONDLENGTH=0.17 STRUCTURE1=2,0,0,0,2,0,0,0,2
     SEGMENT1=0,1,2 SEGMENT2=3,4,5
     SEGMENT3=6,7,8 SEGMENT4=9,10,11
 ...
@@ -56,7 +56,7 @@ If you turn off periodic boundary conditions by using the NOPBC flag as shown be
 ```plumed
 c1: SECONDARY_STRUCTURE_DRMSD ...
     ATOMS=13-24 NOPBC
-    BONDLENGTH=0.17 STRUCTURE1=1,0,0,0,1,0,0,0,1
+    BONDLENGTH=0.17 STRUCTURE1=2,0,0,0,2,0,0,0,2
     SEGMENT1=0,1,2 SEGMENT2=3,4,5
     SEGMENT3=6,7,8 SEGMENT4=9,10,11
 ...

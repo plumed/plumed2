@@ -1,0 +1,7 @@
+temperature 0.5
+friction 0.2
+tstep 0.01
+dimension 4
+nstep 200
+idum 3
+ipos 0.1 -0.2 0.3 0.4

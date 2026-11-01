@@ -456,7 +456,7 @@ class CS2Backbone : public MetainferenceBase {
     bool has_chi1;              // does we have a chi1
     unsigned csatoms;           // fixed number of atoms used
     unsigned totcsatoms;        // number of atoms used
-    unsigned res_num;           // residue number
+    int res_num;                // residue number
     unsigned chain;             // chain number
     unsigned ipos;              // index of the atom for which we are calculating the chemical shifts
     std::vector<unsigned> bb;        // atoms for the previous, current and next backbone
@@ -516,7 +516,7 @@ class CS2Backbone : public MetainferenceBase {
 
   std::vector<RingInfo> ringInfo;
   std::vector<unsigned> type;
-  std::vector<unsigned> res_num;
+  std::vector<int> res_num;
   // chain of each atom (an index), used together with res_num
   std::vector<unsigned> res_chain;
   // position in the ATOMS list of each atom of the template (by AtomNumber::index())
@@ -778,11 +778,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
       }
       continue;
     }
-    int ro = atoi(tok.c_str());
-    if(ro<0) {
-      plumed_merror("Residue numbers should be positive\n");
-    }
-    unsigned resnum = static_cast<unsigned> (ro);
+    const int resnum = atoi(tok.c_str());
     tok = *iter;
     ++iter;
     double cs = atof(tok.c_str());
@@ -790,7 +786,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
       continue;
     }
 
-    unsigned fres, lres;
+    int fres, lres;
     std::string errmsg;
     pdb.getResidueRange(chains[ichain], fres, lres, errmsg);
     if(resnum==fres||resnum==lres) {
@@ -1031,7 +1027,7 @@ void CS2Backbone::init_types(const PDB &pdb) {
       chain_index[chain]=nchains;
     }
     res_chain[ipos] = chain_index[chain];
-    unsigned frag = pdb.getResidueNumber(aa[i]);
+    const int frag = pdb.getResidueNumber(aa[i]);
     std::string fragName = pdb.getResidueName(aa[i]);
     std::string atom_name = pdb.getAtomName(aa[i]);
     char atom_type = atom_name[0];
@@ -1082,11 +1078,11 @@ void CS2Backbone::init_rings(const PDB &pdb) {
 
   // cycle over chains
   for(unsigned i=0; i<chains.size(); i++) {
-    unsigned start, end;
-    std::string errmsg;
-    pdb.getResidueRange( chains[i], start, end, errmsg );
-    // cycle over residues
-    for(unsigned res=start; res<end; res++) {
+    // cycle over the residues present in the chain, excluding the last one
+    // (this works also with negative residue numbers and with gaps in the numbering)
+    const std::vector<int> chain_res = pdb.getResiduesInChain( chains[i] );
+    for(std::size_t ires=0; ires+1<chain_res.size(); ires++) {
+      const int res = chain_res[ires];
       std::string frg = pdb.getResidueName(res, chains[i]);
       if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
            (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
@@ -1210,7 +1206,7 @@ void CS2Backbone::calculate() {
   const unsigned rank   = serial ? 0 : comm.Get_rank();
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*2>chemicalshifts.size()) {
+  if(static_cast<std::size_t>(nt)*stride*2>chemicalshifts.size()) {
     nt=1;
   }
 
@@ -1684,7 +1680,7 @@ void CS2Backbone::update_neighb() {
     const int res_curr = res_num[ipos];
     for(unsigned bat=0; bat<boxsize; bat++) {
       // atoms of the same and of the adjacent residues of the same chain are excluded
-      if(res_chain[bat]==res_chain[ipos] && std::abs(res_curr-static_cast<int>(res_num[bat]))<2) {
+      if(res_chain[bat]==res_chain[ipos] && std::abs(res_curr-res_num[bat])<2) {
         continue;
       }
       const Vector distance = delta(getPosition(bat),getPosition(ipos));

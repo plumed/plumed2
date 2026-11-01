@@ -194,7 +194,6 @@ void PINES::registerKeywords(Keywords &keys) {
   keys.add("optional", "EXCLUDE_PAIRS", "Excluded pairs");
   keys.addFlag("DRIVERMODE", false, "Use when post-processing a trajectory. This will force the pair list to be rebuilt at every step (i.e. no pair list)");
   keys.addFlag("FREEZE_SELECTION", false, "Freeze top-K membership during derivative checks");
-  //componentsAreNotOptional(keys);
   keys.addOutputComponent("ELEMENT", "default", "scalar", "Elements of the PINES block");
   keys.reset_style("SWITCH", "compulsory");
 }
@@ -232,7 +231,6 @@ bool PINES::atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const st
 }
 
 void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair<double, AtomPair>>& heap) {
-  //logMsg("Building Pair List for block: " + std::to_string(n), "buildMaxHeapVecBlock");
 #ifdef _OPENMP
   int nthreads = omp_get_max_threads();
 #else
@@ -240,7 +238,6 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
 #endif
   std::vector<std::vector<std::pair<double, AtomPair>>> thread_heaps(nthreads);
 
-  //logMsg("isFirstBuild[n]? " + std::to_string(isFirstBuild[n]), "buildMaxHeapVecBlock");
 
   // Rough estimate, tweak as needed
   int estimated_pairs_per_thread = block_groups_atom_list[n][0].size() * block_groups_atom_list[n][1].size() / nthreads;
@@ -265,13 +262,8 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
     std::set<AtomPair> local_unique_pairs;
 
 
-    // logMsg("ind0: " + std::to_string(ind0.index()), "buildMaxHeapVecBlock");
-    // logMsg("Num pairs in heap: " + std::to_string(block_groups_atom_list[n][0].size()), "buildMaxHeapVecBlock");
-    // logMsg(Pos0, "buildMaxHeapVecBlock");
     for (int j = 0; j < static_cast<int>(block_groups_atom_list[n][1].size()); j++) {
       AtomNumber ind1 = block_groups_atom_list[n][1][j];
-      // logMsg("ind1: " + std::to_string(ind1.index()), "buildMaxHeapVecBlock");
-      // logMsg("Num pairs in heap: " + std::to_string(block_groups_atom_list[n][1].size()), "buildMaxHeapVecBlock");
       if (ind1 == ind0) {
         continue;
       }
@@ -290,9 +282,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
 
       Vector Pos1 = isFirstBuild[n] ? refpdb.getPosition(ind1) : getPosition(atom_ind_hashmap[ind1.index()]);
 
-      //logMsg(Pos1, "buildMaxHeapVecBlock");
       double mag = pbcDistance(Pos0, Pos1).modulo();
-      //logMsg("pairdist: " + std::to_string(mag), "buildMaxHeapVecBlock");
       local_heap.emplace_back(mag, test_pair);
     }
   }
@@ -308,12 +298,9 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
   size_t K = std::min(static_cast<size_t>(tot_num_pairs[n]), all_pairs.size());
   heap.assign(all_pairs.begin(), all_pairs.begin() + K);
 
-  //logMsg("Heap created succesfully", "buildMaxHeapVecBlock");
   std::sort(heap.begin(), heap.end(), MaxCompareDist());
   int chk1 = 0;
   int chk2 = Buffer_Pairs[n];
-  //logMsg("heap[chk1].first: " + std::to_string(heap[chk1].first), "buildMaxHeapVecBlock");
-  //logMsg("heap[chk2].first: " + std::to_string(heap[chk2].first), "buildMaxHeapVecBlock");
   delta_pd[n] = heap[chk1].first - heap[chk2].first;
   r_tolerance[n] = delta_pd[n]/4;
   listreduced[n].clear();
@@ -325,17 +312,12 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
   for (const auto& atom : uniqueAtoms) {
     listreduced[n].push_back(atom);
   }
-  //logMsg("listreduced.size(): " + std::to_string(listreduced[n].size()), "buildMaxHeapVecBlock");
   if(driver_mode || isFirstBuild[n]) {
     listreduced[n] = listall[n];
   }
-  //logMsg("listreduced.size() after drivermode change: " + std::to_string(listreduced[n].size()), "buildMaxHeapVecBlock");
-  //logMsg("listreduced[" + std::to_string(n) + "].size(): " + std::to_string(listreduced[n].size()), "buildMaxHeapVecBlock");
   PL_atoms_ref_coords[n].resize(listreduced[n].size());
-  //logMsg("PL_atoms_ref_coords[" + std::to_string(n) + "].size(): " + std::to_string(PL_atoms_ref_coords[n].size()), "buildMaxHeapVecBlock");
   for (int i=0; i<static_cast<int>(listreduced[n].size()); i++) {
     PL_atoms_ref_coords[n][i].zero();
-    //logMsg("listreduced[" + std::to_string(n) + "][" + std::to_string(i) + "].index(): " + std::to_string(listreduced[n][i].index()), "buildMaxHeapVecBlock");
     PL_atoms_ref_coords[n][i] = isFirstBuild[n] ? refpdb.getPosition(listreduced[n][i]) : getPosition(atom_ind_hashmap[listreduced[n][i].index()]);
   }
   isFirstBuild[n] = false;
@@ -363,10 +345,6 @@ void PINES::updateBlockPairList(int n, std::vector<std::pair<double, AtomPair>>&
   }
   std::nth_element(heap.begin(), heap.begin() + block_lengths[n], heap.end(), MinCompareDist());
   std::sort(heap.begin(), heap.begin() + block_lengths[n], MaxCompareDist());
-  // for (int i = 0; i < tot_num_pairs[n]; i++)
-  // {
-  //   logMsg("Pair: " + std::to_string(heap[i].second.first.index()) + ", " + std::to_string(heap[i].second.second.index()) + "; Dist: " + std::to_string(heap[i].first),"updateBlockPairList");
-  // }
 }
 
 double PINES::calculateDistance(int n, const AtomNumber& ind0, const AtomNumber& ind1, const PDB& refpdb) {
@@ -528,7 +506,6 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
   parse("N_BLOCKS", N_Blocks);
   parseFlag("DRIVERMODE", driver_mode);
   parseFlag("FREEZE_SELECTION", freeze_selection);
-  //logMsg("N_Blocks: " + std::to_string(N_Blocks), "Constructor");
   resizeAllContainers(N_Blocks);
 
 
@@ -624,29 +601,20 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       nstride[n] = 25;
     }
     tot_num_pairs[n] = block_lengths[n] + Buffer_Pairs[n];
-    // logMsg("N: " + std::to_string(n), "Constructor");
-    // logMsg("Nstride: " + std::to_string(nstride[n]), "Constructor");
-    // logMsg("Buffer_pairs: " + std::to_string(Buffer_Pairs[n]), "Constructor");
-    // logMsg("Block_lengths: " + std::to_string(block_lengths[n]), "Constructor");
-    // logMsg("Total_num_pairs: " + std::to_string(tot_num_pairs[n]), "Constructor");
   }
 
   total_PIV_length = std::accumulate(block_lengths.begin(), block_lengths.end(), 0);
-  // logMsg("total_PIV_length: " + std::to_string(total_PIV_length), "Constructor");
   for (int n = 0; n < N_Blocks; n++) {
     // pseudo-code ish
     for (int g = 0; g < 2; g++) {
       if (ID_list[n][g].size() > 0) {
         input_filters[n][g][0] = true;
-        //logMsg("n: " + std::to_string(n) + "; g: " + std::to_string(g) + "-- ID Keyword", "Constructor");
       }
       if (ResID_list[n][g].size() > 0) {
         input_filters[n][g][1] = true;
-        //logMsg("n: " + std::to_string(n) + "; g: " + std::to_string(g) + "-- ResID Keyword", "Constructor");
       }
       if (Name_list[n][g].size() > 0) {
         input_filters[n][g][2] = true;
-        //logMsg("n: " + std::to_string(n) + "; g: " + std::to_string(g) + "-- Name Keyword", "Constructor");
       }
     }
   }
@@ -664,7 +632,6 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       for (int g = 0; g < 2; g++) {
         if (atomMatchesFilters(n, g, ind, resid, atom_name)) {
           block_groups_atom_list[n][g].push_back(ind);
-          //logMsg("n: " + std::to_string(n) + "; g: " + std::to_string(g) + ";  block_groups_atom_list[n][g]: " + std::to_string(ind.index()), "Constructor");
           atom_added = true;
         }
       }
@@ -698,7 +665,6 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
       error("problem reading SWITCH" + num + " keyword : " + errors);
     }
     r00[n] = sfs[n].get_r0();
-    //logMsg("n: " + std::to_string(n) + "; r00: " + std::to_string(r00[n]), "Constructor");
   }
   checkRead();
 
@@ -721,8 +687,6 @@ void PINES::prepare() {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
       heap_refreshed = true;
     } else if((steps_since_update[n] >= nstride[n] || stale_tolerance[n]) && !all_g1g2_pairs[n]) {
-      //logMsg("Pair List " + std::to_string(n) + " is stale. All g1/g2 atoms are being requested to rebuild pair list from scratch.", "Prepare");
-      //logMsg( "Nstride: " + std::to_string(nstride[n]) + "; Steps Since Update: " + std::to_string(steps_since_update[n]), "Prepare");
       listreduced[n] = listall[n];
       stale_refresh_prep = true;
       steps_since_update[n] = -1;
@@ -738,7 +702,6 @@ void PINES::prepare() {
     }
     atom_ind_hashmap.clear();
     listreducedall_vec = std::vector<AtomNumber>(listreducedall.begin(), listreducedall.end());
-    //logMsg("listreducedall_vec size: " + std::to_string(listreducedall_vec.size()), "Prepare");
     for (int i=0; i < static_cast<int>(listreducedall_vec.size()); i++) {
       atom_ind_hashmap[listreducedall_vec[i].index()] = i;
     }
@@ -789,7 +752,6 @@ void PINES::calculate() {
   AtomNumber aID;
   double delta_r;
 
-  //timer.start("toleranceCheck");
 
   for(int n = 0; n < N_Blocks; n++) {
     if(steps_since_update[n] > 0 && steps_since_update[n] < nstride[n] && r_tolerance[n] > 0.0 && !all_g1g2_pairs[n]) {
@@ -800,15 +762,11 @@ void PINES::calculate() {
         delta_r = pbcDistance(ref_xyz, step_xyz).modulo();
         if(delta_r >= r_tolerance[n]) {
           stale_tolerance[n] = true;
-          //logMsg("Stale tolerance triggered for atom: " + std::to_string(aID.index()), "Calculate");
-          //logMsg("delta_r: " + std::to_string(delta_r) + "; r_tolerance: " + std::to_string(r_tolerance[n]), "Calculate");
         }
       }
     }
   }
-  //timer.stop("toleranceCheck");
   const Vector zeroVec(0., 0., 0.);
-  //timer.start("setToZero");
 #ifdef _OPENMP
   #pragma omp parallel for schedule(static)
 #endif
@@ -829,15 +787,12 @@ void PINES::calculate() {
   }
 
 
-  //timer.stop("setToZero");
 
 
 
-  //timer.start("bigCalc");
   int PINES_element = 0;
   if (freeze_selection) {
     for (int n = 0; n < N_Blocks; ++n) {
-      //ensureBlockUpdated(n);
       logMsg("***************N: "+std::to_string(n)+"***************\n","bigCalc");
       for (int i = 0; i < block_lengths[n]; ++i) {
         const auto& pr = latched_pairs[n][i];
@@ -862,10 +817,6 @@ void PINES::calculate() {
 
       ensureBlockUpdated(n);
       bool updated = true;
-      // }
-      // //timer.stop("updateBPL");
-      //logMsg("Switching Function Parameters: " + sfs[n].description(), "Calculate");
-      //logMsg("Steps Since Update: " + std::to_string(steps_since_update[n]), "Calculate");
       for (int i=0; i < block_lengths[n]; i++) {
         double ds_element = 0.;
         double dfunc = 0.;
@@ -876,35 +827,20 @@ void PINES::calculate() {
         } else {
           piv_ind = i + Buffer_Pairs[n];
         }
-        //logMsg("Pair Distance: Dist[" + std::to_string(n) + "][" + std::to_string(i) + "]= " + std::to_string(vecMaxHeapVecs[n][i].first), "Calculate");
-        //timer.start("sfs");
         PIV[n][i] = sfs[n].calculate(vecMaxHeapVecs[n][piv_ind].first, dfunc);
-        //timer.stop("sfs");
-        //logMsg("PIV Values: PIV[" + std::to_string(n) + "][" + std::to_string(i) + "]= " + std::to_string(PIV[n][i]), "Calculate");
-        //timer.start("distCalc");
         local_aid0 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.alpha_group.index()];
         local_aid1 = atom_ind_hashmap[vecMaxHeapVecs[n][piv_ind].second.beta_group.index()];
         Vector Pos0 = getPosition(local_aid0);
         Vector Pos1 = getPosition(local_aid1);
         Vector dr_dcoord = pbcDistance(Pos0, Pos1) / vecMaxHeapVecs[n][piv_ind].first;
-        //timer.stop("distCalc");
-        //timer.start("derivCalc");
         ds_element = dfunc * vecMaxHeapVecs[n][piv_ind].first;
         ann_deriv[local_aid0][PINES_element] = -ds_element * dr_dcoord;
         ann_deriv[local_aid1][PINES_element] = ds_element * dr_dcoord;
-        //timer.stop("derivCalc");
-        //logMsg("ann_deriv[" + std::to_string(local_aid0) + "][" + std::to_string(PINES_element) + "]: ", "Calculate");
-        //logMsg(ann_deriv[local_aid0][PINES_element], "Calculate");
-        //logMsg("ann_deriv[" + std::to_string(local_aid1) + "][" + std::to_string(PINES_element) + "]: ", "Calculate");
-        //logMsg(ann_deriv[local_aid1][PINES_element], "Calculate");
         PINES_element += 1;
       }
     }
   }
 
-  //timer.stop("bigCalc");
-  //timer.start("commStuff");
-  //timer.start("commStuff");
 
   if (comm.initialized()) {
     // Flatten PIV
@@ -956,7 +892,6 @@ void PINES::calculate() {
   }
 
 
-  //timer.stop("commStuff");
 
 
 
@@ -974,7 +909,6 @@ void PINES::calculate() {
       total_count += 1;
     }
   }
-  //timer.stop("valuePass");
 
   const int Natoms = static_cast<int>(ann_deriv.size());
 
@@ -1026,7 +960,6 @@ void PINES::calculate() {
       }
     }
   }
-  //log << timer;
 }
 }
 }

@@ -1,0 +1,14 @@
+# DIHEDRAL_CORRELATION with ATOMS= (it used to crash)
+d: DIHEDRAL_CORRELATION ATOMS=1,2,3,4,5,6,7,8
+# CHARGE used to return the masses
+q: CHARGE ATOMS=1,2,3
+m: MASS ATOMS=1,2,3
+# the forces on r.dist were zero for multi-frame OPTIMAL DISPLACEMENT
+r: RMSD REFERENCE=multi.pdb TYPE=OPTIMAL DISPLACEMENT
+s: SUM ARG=r.dist PERIODIC=NO
+# CMDIST with a single contact and a global REFERENCE used to fail
+c: CONTACTMAP ATOMS1=1,2 SWITCH={RATIONAL R_0=0.5} REFERENCE=0.4 CMDIST
+bd: BIASVALUE ARG=d
+bs: BIASVALUE ARG=s
+bc: BIASVALUE ARG=c
+PRINT ARG=d,q,m,r.dist,s,c FILE=colvar FMT=%8.4f

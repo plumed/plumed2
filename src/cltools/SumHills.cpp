@@ -511,9 +511,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
         }
       }
 
-//  for(unsigned i=0;i< actioninput.size();i++){
-//    cerr<<"AA "<<actioninput[i]<<endl;
-//  }
       plumed.readInputWords(actioninput,false);
     }
 
@@ -583,9 +580,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     addme+=std::string(cvs[ncv-1][0])+"."+std::string(cvs[ncv-1][1]);
   }
   actioninput.push_back(addme);
-  //for(unsigned i=0;i< actioninput.size();i++){
-  //  cerr<<"AA "<<actioninput[i]<<endl;
-  //}
   if(dohills) {
     addme="HILLSFILES=";
     for(unsigned i=0; i<hillsFiles.size()-1; i++) {
@@ -723,9 +717,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
 
-//  for(unsigned i=0;i< actioninput.size();i++){
-//   cerr<<"AA "<<actioninput[i]<<endl;
-//  }
   plumed.readInputWords(actioninput,false);
   // if not a grid, then set it up automatically
   return 0;

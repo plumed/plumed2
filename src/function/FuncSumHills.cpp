@@ -280,14 +280,12 @@ void FilesHandler::getMinMaxBin(const std::vector<Value*> & vals,
   readBunch(&br);
   // loop over the kernels and get the support
   br.getMinMaxBin(vmin,vmax,vbin);
-  //for(unsigned i=0;i<vals.size();i++){cerr<<"XXX "<<vmin[i]<<" "<<vmax[i]<<" "<<vbin[i]<<"\n";}
 }
 bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ) {
   double time;
   if(ifile->scanField("time",time)) {
     // the other fields (e.g. clock) are ignored
     br->pushKernel(ifile,time);
-    //(*log)<<"  read hill\n";
     if(br->hasSigmaInInput()) {
       ifile->allowIgnoredFields();
     }

@@ -24,6 +24,7 @@
 #include "Log.h"
 #include "h36.h"
 #include <cstdio>
+#include <set>
 #include "core/GenericMolInfo.h"
 #include "Tensor.h"
 
@@ -235,7 +236,6 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::size_t eq=v1[i].find_first_of('=');
       std::string name=v1[i].substr(0,eq);
       std::string sval=v1[i].substr(eq+1);
-      // double val; Tools::convert( sval, val );
       std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
       std::vector<double> val( words.size() );
       for(unsigned ii=0; ii<val.size(); ++ii) {
@@ -274,6 +274,10 @@ const Tensor & PDB::getBoxVec()const {
   return Box;
 }
 
+const std::string & PDB::getSpaceGroup()const {
+  return spaceGroup;
+}
+
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
@@ -285,7 +289,7 @@ std::string PDB::getAtomName(AtomNumber a)const {
   }
 }
 
-unsigned PDB::getResidueNumber(AtomNumber a)const {
+int PDB::getResidueNumber(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
     std::string num;
@@ -312,7 +316,6 @@ unsigned PDB::size()const {
 }
 
 bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
-  //cerr<<file<<endl;
   bool file_is_alive=false;
   if(naturalUnits) {
     scale=1.0;
@@ -321,7 +324,6 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   fpos_t pos;
   bool between_ters=true;
   while(Tools::getline(fp,line)) {
-    //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) {
       line.push_back(' ');
@@ -368,6 +370,8 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxA,BoxABG[0]);
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
+      spaceGroup=line.substr(55,11);
+      Tools::trim(spaceGroup);
       BoxXYZ*=scale;
       double cosA=std::cos(BoxABG[0]*pi/180.);
       double cosB=std::cos(BoxABG[1]*pi/180.);
@@ -388,7 +392,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
       AtomNumber a;
-      unsigned resno=0; // GB: when resnum string is not present, we set res number to zero
+      int resno=0; // GB: when resnum string is not present, we set res number to zero
       double o,b;
       Vector p;
       {
@@ -477,7 +481,7 @@ void PDB::getChainNames( std::vector<std::string>& chains ) const {
   }
 }
 
-void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const {
+void PDB::getResidueRange( const std::string& chainname, int& res_start, int& res_end, std::string& errmsg ) const {
   bool inres=false, foundchain=false;
   for(unsigned i=0; i<size(); ++i) {
     if( chain[i]==chainname ) {
@@ -497,6 +501,17 @@ void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, un
   if(inres) {
     res_end=residue[size()-1];
   }
+}
+
+std::vector<int> PDB::getResiduesInChain( const std::string& chainname ) const {
+  std::vector<int> res;
+  std::set<int> seen;
+  for(unsigned i=0; i<size(); ++i) {
+    if( chain[i]==chainname && seen.insert(residue[i]).second ) {
+      res.push_back(residue[i]);
+    }
+  }
+  return res;
 }
 
 void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const {
@@ -521,7 +536,7 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
   }
 }
 
-std::string PDB::getResidueName( const unsigned& resnum ) const {
+std::string PDB::getResidueName( int resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum ) {
       return residuenames[i];
@@ -532,7 +547,7 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   plumed_merror("residue " + num + " not found" );
 }
 
-std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
+std::string PDB::getResidueName(int resnum,const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
       return residuenames[i];
@@ -544,7 +559,7 @@ std::string PDB::getResidueName(const unsigned& resnum,const std::string& chaini
 }
 
 
-AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
+AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, int resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && atomsymb[i]==aname ) {
       return numbers[i];
@@ -555,7 +570,7 @@ AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigne
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
 }
 
-AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const {
+AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) {
       return numbers[i];
@@ -566,7 +581,7 @@ AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const
   plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
 }
 
-std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
+std::vector<AtomNumber> PDB::getAtomsInResidue(int resnum,const std::string& chainid)const {
   std::vector<AtomNumber> tmp;
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
@@ -594,7 +609,7 @@ std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
   return tmp;
 }
 
-std::string PDB::getChainID(const unsigned& resnumber) const {
+std::string PDB::getChainID(int resnumber) const {
   for(unsigned i=0; i<size(); ++i) {
     if(resnumber==residue[i]) {
       return chain[i];

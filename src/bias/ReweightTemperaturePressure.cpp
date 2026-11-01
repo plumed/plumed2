@@ -215,6 +215,9 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   parse("REWEIGHT_PRESSURE",rpress_);
   parse("PRESSURE",press_);
   parse("REWEIGHT_TEMP",rtemp_);
+  if(rtemp_==0) {
+    error("REWEIGHT_TEMP should be positive");
+  }
   rtemp_*=getKBoltzmann();
 
   parseArgumentList("ENERGY",myenergy);
@@ -225,7 +228,6 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
     }
     log.printf("\n");
   }
-  //requestArguments(myenergy);
 
   parseArgumentList("VOLUME",myvol);
   if(!myvol.empty()) {

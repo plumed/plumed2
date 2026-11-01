@@ -142,7 +142,7 @@ void Difference::read( Difference& func, ActionWithArguments* action, function::
     if( !action->getPntrToArgument(1)->isConstant() ) {
       std::string min1, max1;
       action->getPntrToArgument(1)->getDomain( min1, max1 );
-      if( min0!=min0 || max0!=max1 ) {
+      if( min0!=min1 || max0!=max1 ) {
         action->error("domain for input variables should be the same");
       }
     } else {

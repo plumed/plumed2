@@ -60,7 +60,6 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   keys.addActionNameSuffix("_MATRIX");
   keys.addActionNameSuffix("_MATRIXACC");
   keys.addActionNameSuffix("_GRID");
-  //keys.addActionNameSuffix("_GRIDACC");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   T::registerKeywords( keys );

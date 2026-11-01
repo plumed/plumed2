@@ -46,7 +46,6 @@ void AtomDistribution::frame(std::vector<Vector>& posToUpdate,
 }
 
 class UniformSphericalVector {
-  //double rminCub;
   double rCub;
 
 public:
@@ -166,9 +165,6 @@ struct uniformCube:public AtomDistribution {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
 
-    // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-    //   return Vector (rndR(rng),rndR(rng),rndR(rng));
-    // });
     auto s=posToUpdate.begin();
     auto e=posToUpdate.end();
     //I am using the iterators:this is slightly faster,
@@ -662,7 +658,7 @@ usage:
     return std::make_unique<forceBoxTrajectory>(std::move(d),newBox);
   }
   forceBoxTrajectory(std::unique_ptr<AtomDistribution>&& d,
-                     std::array<double,9> mybox):
+                     const std::array<double,9>& mybox):
     distribution(std::move(d)),
     fixedbox(mybox)
   {}

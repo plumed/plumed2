@@ -907,7 +907,7 @@ def createPluginPage(
                 + " eggs](https://img.shields.io/badge/nest-"
                 + str(neggs)
                 + "-green.svg)](https://www.plumed-nest.org/browse.html?module="
-                + modname
+                + plugname
                 + ")"
             )
         else:

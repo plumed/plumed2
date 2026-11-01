@@ -129,9 +129,6 @@ void BF_Powers::getAllValues(const double arg, double& argT, bool& inside_range,
   derivs[0]=0.0;
   //
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    // double io = static_cast<double>(i);
-    // values[i] = pow(argT,io);
-    // derivs[i] = io*pow(argT,io-1.0);
     values[i] = argT*values[i-1];
     derivs[i]=values[i-1]+argT*derivs[i-1];
   }

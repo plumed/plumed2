@@ -167,6 +167,11 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   f(getNumberOfArguments()),
   dpotdk(getNumberOfArguments()) {
   parseVector("VERSE",verse);
+  for(const auto & v : verse) {
+    if(v!="U" && v!="L" && v!="B") {
+      error("VERSE should be U, L or B, found " + v);
+    }
+  }
   std::vector<long long int> ss(1);
   ss[0]=-1;
   for(int i=0;; i++) {
@@ -183,15 +188,24 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
 
     // Try to read kappa
     if( !parseNumberedVector("KAPPA",i,kk) ) {
+      if(i==0) {
+        error("KAPPA0 is required");
+      }
       kk=kappa[i-1];
     }
     kappa.push_back(kk);
 
     // Now read AT
     if( !parseNumberedVector("AT",i,aa) ) {
+      if(i==0) {
+        error("AT0 is required");
+      }
       aa=at[i-1];
     }
     at.push_back(aa);
+  }
+  if(step.empty()) {
+    error("STEP0 is required");
   }
   checkRead();
 
@@ -278,25 +292,26 @@ void MovingRestraint::calculate() {
     const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
     valueCntr[i]->set(aa[i]);
     const double k=kk[i];
-    f[i]=-k*cv;
-    if(verse[i]=="U" && cv<0) {
-      continue;
+    // with VERSE=U (L) the restraint acts only when the CV is larger (smaller) than the center:
+    // otherwise the potential, the force and the derivative with respect to kappa are zero
+    const bool acting=!( (verse[i]=="U" && cv<0) || (verse[i]=="L" && cv>0) );
+    if(acting) {
+      f[i]=-k*cv;
+      dpotdk[i]=0.5*cv*cv;
+      ene+=0.5*k*cv*cv;
+    } else {
+      f[i]=0.0;
+      dpotdk[i]=0.0;
     }
-    if(verse[i]=="L" && cv>0) {
-      continue;
-    }
-    plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
-    dpotdk[i]=0.5*cv*cv;
     if(oldaa.size()==aa.size() && oldf.size()==f.size()) {
       work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     }
     valueWork[i]->set(work[i]);
     valueKappa[i]->set(kk[i]);
     tot_work+=work[i];
-    ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
     totf2+=f[i]*f[i];
-  };
+  }
   valueTotWork->set(tot_work);
   oldf=f;
   oldaa=aa;

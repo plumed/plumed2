@@ -783,7 +783,6 @@ double RMSD::optimalAlignment(const std::vector<double>& align,
                               const std::vector<Vector>& reference,
                               std::vector<Vector>& derivatives,
                               const bool squared) const {
-  //std::cerr<<"setting up the core data \n";
   RMSDCoreData cd(align,displace,make_view(positions),reference);
 
   // transfer the settings for the center to let the CoreCalc deal with it
@@ -1323,7 +1322,6 @@ void RMSDCoreData::doCoreCalc(const bool setSafe,
   for(unsigned iat=0; iat<n; iat++) {
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);
-    //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
   }
   // ddist_drotation if needed
   for (unsigned iat=0; iat<n; iat++) {

@@ -1,0 +1,12 @@
+# LAPLACE prior: the multiplier is kept within the allowed range, _error is xi(lambda)
+# average in [TSTART,TEND] with an update exactly at TEND
+d: DISTANCE ATOMS=1,2
+MAXENT ...
+LABEL=res ARG=d KAPPA=2.0 TAU=10 TYPE=EQUAL AT=0.5 ERROR_TYPE=LAPLACE SIGMA=1.0
+PACE=1 TSTART=10 TEND=20 TEMP=1 FMT=%10.6f
+... MAXENT
+MAXENT ...
+LABEL=avg ARG=d KAPPA=0.1 TAU=100 TYPE=EQUAL AT=0.5
+PACE=1 TSTART=10 TEND=20 TEMP=1 FMT=%10.6f
+... MAXENT
+PRINT ARG=d,res.d_coupling,res.d_error,res.bias,avg.d_coupling FILE=colvar FMT=%10.6f

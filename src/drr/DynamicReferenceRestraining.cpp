@@ -401,7 +401,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseFlag("UI", useUIestimator);
   bool noCZAR = false;
   parseFlag("NOCZAR", noCZAR);
-//   noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseFlag("TEXTOUTPUT", textoutput);
   parseFlag("MERGEHISTORYFILES", mergeHistoryFiles);
   parseVector("TAU", tau);

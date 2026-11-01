@@ -192,12 +192,16 @@ const gridtools::GridCoordinatesObject& FourierTransform::getGridCoordinatesObje
 
 std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  // already checked in the constructor
+  plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
 
 void FourierTransform::calculate() {
   if( firsttime ) {
     gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+    // already checked in the constructor
+    plumed_assert( ag );
     const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
     std::vector<double> fspacing;
     std::vector<std::size_t> snbins( getGridCoordinatesObject().getDimension() );

@@ -34,7 +34,6 @@
 
 namespace PLMD {
 
-// class Grid;
 class Action;
 
 namespace ves {

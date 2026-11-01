@@ -1,0 +1,8 @@
+pathmsd_stride0: rejected
+pathmsd_lambda0: rejected
+contactmap_noatoms: rejected
+pcarmsd_size: rejected
+drmsd_nopairs: rejected
+ermsd_pairs: rejected
+ghbfix_dmax: rejected
+ghbfix_types: rejected

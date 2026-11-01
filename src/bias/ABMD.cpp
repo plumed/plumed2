@@ -124,8 +124,16 @@ ABMD::ABMD(const ActionOptions&ao):
   if(min.size()!=getNumberOfArguments()) {
     error("MIN array should have the same size as ARG array");
   }
+  // optional keywords that are not given leave an empty vector: restore the defaults
+  // (the code below read temp[i] and seed[i] out of bounds without NOISE or SEED)
   parseVector("NOISE",temp);
+  if(temp.size()==0) {
+    temp.assign(getNumberOfArguments(),0.0);
+  }
   parseVector("SEED",seed);
+  if(seed.size()==0) {
+    seed.assign(getNumberOfArguments(),std::time(0));
+  }
   parseVector("TO",to);
   checkRead();
 
@@ -183,6 +191,7 @@ void ABMD::calculate() {
     // min is set to the CV value
     if(min[i]<0.||cv2<min[i]) {
       min[i] = cv2;
+      setOutputForce(i,0.0);
     } else {
       // otherwise a noise is added to the minimum value
       min[i] += noise;

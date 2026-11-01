@@ -250,7 +250,9 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
 // All the matrices input have to have the same sparsity pattern.
 // I can do everything I want to do with this limitation.  If
 // anyone wants to make this smarter in the future they can
-#ifndef DNDEBUG
+// This check was guarded by a misspelled "#ifndef DNDEBUG", so it has always been active.
+// It is kept active also in optimized builds: it costs ~1% of a CONTACT_MATRIX->CUSTOM pipeline
+// and it catches inputs that would otherwise give wrong results silently.
   for(unsigned k=argstart; k<getNumberOfArguments(); ++k) {
     if( getPntrToArgument(k)->getRank()!=2 ) {
       continue ;
@@ -269,7 +271,6 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
       }
     }
   }
-#endif
   return active_tasks;
 }
 

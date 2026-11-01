@@ -573,7 +573,6 @@ void FISST::apply_bias() {
 
   setBias(ene);
   value_force2_->set(totf2);
-  //log.flush();
 }
 
 void FISST::update_statistics()  {

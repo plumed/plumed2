@@ -53,8 +53,6 @@ public:
     beta=v;
     invbeta=1./beta;
   }
-  //double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
-  //double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
   double projectInnerLoop(double &input, double &v) override {
     auto betav=beta*v;
     auto x=betav-shift;
@@ -231,7 +229,6 @@ protected:
 /// move the values after resize(): oldnbin are the numbers of points before resizing; the point with index k
 /// along direction i before resizing has index k+shift[i] after (it was removed if this is out of range)
   virtual void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift);
-// std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
 public:

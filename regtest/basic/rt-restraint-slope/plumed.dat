@@ -1,0 +1,12 @@
+# scalar RESTRAINT: SLOPE=0.0,2.0 used to be dropped
+d: DISTANCE ATOMS=1,2
+e: DISTANCE ATOMS=3,4
+r: RESTRAINT ARG=d,e AT=1.0,1.0 KAPPA=1,1 SLOPE=0.0,2.0
+# vector RESTRAINT: zero KAPPA for the first argument and force2 with KAPPA and SLOPE
+dv: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+ev: DISTANCE ATOMS1=1,4 ATOMS2=2,3
+rv: RESTRAINT ARG=dv,ev AT=1.0,1.0 KAPPA=0,1 SLOPE=0,0
+rk: RESTRAINT ARG=dv AT=1.0 KAPPA=2 SLOPE=3
+rk2: SUM ARG=rk_force2 PERIODIC=NO
+rs: RESTRAINT ARG=d,e AT=1.0,1.0 KAPPA=2,2 SLOPE=3,3
+PRINT ARG=d,e,r.bias,rv.bias,rk.bias,rk2,rs.bias,rs.force2 FILE=colvar FMT=%8.4f

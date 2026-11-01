@@ -154,27 +154,27 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
   parseFlag("FRACTIONAL",fractional);
   std::vector<Value*> xpos;
   parseArgumentList("XPOS",xpos);
-  if( xpos.size()!=1 && xpos[0]->getRank()!=0 ) {
+  if( xpos.size()!=1 || xpos[0]->getRank()!=0 ) {
     error("invalid input argument for XPOS");
   }
   std::vector<Value*> ypos;
   parseArgumentList("YPOS",ypos);
-  if( ypos.size()!=1 && ypos[0]->getRank()!=0 ) {
+  if( ypos.size()!=1 || ypos[0]->getRank()!=0 ) {
     error("invalid input argument for YPOS");
   }
   std::vector<Value*> zpos;
   parseArgumentList("ZPOS",zpos);
-  if( zpos.size()!=1 && zpos[0]->getRank()!=0 ) {
+  if( zpos.size()!=1 || zpos[0]->getRank()!=0 ) {
     error("invalid input argument for ZPOS");
   }
   std::vector<Value*> mass;
   parseArgumentList("MASS",mass);
-  if( mass.size()!=1 && mass[0]->getRank()!=0 ) {
+  if( mass.size()!=1 || mass[0]->getRank()!=0 ) {
     error("invalid input argument for MASS");
   }
   std::vector<Value*> charge;
   parseArgumentList("CHARGE",charge);
-  if( charge.size()!=1 && charge[0]->getRank()!=0 ) {
+  if( charge.size()!=1 || charge[0]->getRank()!=0 ) {
     error("invalid input argument for CHARGE");
   }
   // Make sure we have requested everything that we need in xpos
@@ -187,17 +187,17 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
     std::vector<Value*> xbkp;
     parseArgumentList("XBKP",xbkp);
     if( xbkp.size()>0 ) {
-      if( xbkp.size()!=1 && xbkp[0]->getRank()!=0 ) {
+      if( xbkp.size()!=1 || xbkp[0]->getRank()!=0 ) {
         error("invalid input argument for XBKP");
       }
       std::vector<Value*> ybkp;
       parseArgumentList("YBKP",ybkp);
-      if( ybkp.size()!=1 && ybkp[0]->getRank()!=0 ) {
+      if( ybkp.size()!=1 || ybkp[0]->getRank()!=0 ) {
         error("invalid input argument for YBKP");
       }
       std::vector<Value*> zbkp;
       parseArgumentList("ZBKP",zbkp);
-      if( zbkp.size()!=1 && zpos[0]->getRank()!=0 ) {
+      if( zbkp.size()!=1 || zbkp[0]->getRank()!=0 ) {
         error("invalid input argument for ZBKP");
       }
       // Store backup for NOPBC

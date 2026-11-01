@@ -130,15 +130,15 @@ public:
   }
   static constexpr bool needsType=true;
 /// The number of atoms
-  std::size_t natoms;
+  std::size_t natoms{0};
 /// The number of structures
-  std::size_t nstructures;
+  std::size_t nstructures{0};
 /// The number of indices per task
-  std::size_t nindices_per_task;
+  std::size_t nindices_per_task{0};
 /// Are we operating without periodic boundary conditions
-  bool nopbc;
+  bool nopbc{false};
 /// Variables for strands cutoff
-  bool align_strands;
+  bool align_strands{false};
 /// The atoms involved in each of the secondary structure segments
   Matrix<unsigned> colvar_atoms;
 //   void toACCDevice()const {
@@ -149,16 +149,20 @@ public:
 //     colvar_atoms.removeFromACCDevice();
 // #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
 
-//   }
   static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
+    if( this==&m ) {
+      return *this;
+    }
     natoms = m.natoms;
     nstructures = m.nstructures;
     nindices_per_task = m.nindices_per_task;
     nopbc = m.nopbc;
     align_strands = m.align_strands;
     colvar_atoms=m.colvar_atoms;
+    // setReferenceStructure appends to myrmsd, so the structures that are already here have to go
+    myrmsd.clear();
     for(unsigned i=0; i<m.myrmsd.size(); ++i) {
       std::vector<Vector> mystruct( m.myrmsd[i].getReference() );
       setReferenceStructure( m.myrmsd[i].getMethod(), 0.0, mystruct );
@@ -169,19 +173,13 @@ public:
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
-//_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
-//typedef AccelerableShortcut<colv> shortcut;
-//_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
-  Vector center;
+  if( !myrmsd.empty() && structure.size()!=natoms ) {
+    plumed_merror("input structures have a different number of atoms");
+  }
+  // RMSD::set puts the center of the reference in the origin
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
-  for(unsigned i=0; i<structure.size(); ++i) {
-    center+=structure[i]*align[i];
-  }
-  for(unsigned i=0; i<structure.size(); ++i) {
-    structure[i] -= center;
-  }
   RMSD newrmsd;
   newrmsd.clear();
   newrmsd.set(align,displace,structure,type,true,true);

@@ -1,0 +1,8 @@
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+# without correction the parameters are the ones at 298.15 K
+plain: EEFSOLV ATOMS=protein-h NL_STRIDE=1
+# TEMP_CORRECTION used to have no effect at all
+tcorr: EEFSOLV ATOMS=protein-h NL_STRIDE=1 TEMP_CORRECTION
+dsol: COMBINE ARG=tcorr,plain COEFFICIENTS=1,-1 PERIODIC=NO
+PRINT ARG=plain,tcorr,dsol FILE=SOLV FMT=%10.4f

@@ -37,6 +37,9 @@
 
 #include "tools/File.h"
 #include "tools/Pbc.h"
+#include "tools/OpenMP.h"
+
+#include <algorithm>
 
 namespace PLMD {
 namespace generic {
@@ -82,7 +85,6 @@ class EffectiveEnergyDrift:
 
   std::vector<ActionWithValue*> biases;
 
-  long long int pDdStep;
   unsigned nLocalAtoms;
   unsigned pNLocalAtoms;
   std::vector<int> pGatindex;
@@ -206,6 +208,9 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
   // Get the domain decomposition object
   std::vector<DomainDecomposition*> ddact=plumed.getActionSet().select<DomainDecomposition*>();
+  if( ddact.empty() ) {
+    error("cannot find the atoms passed by the MD code");
+  }
   if( ddact.size()>1 ) {
     warning("found more than one interface so don't know get gatindex");
   }
@@ -248,18 +253,21 @@ void EffectiveEnergyDrift::update() {
   posz->getLocalValues( zpositions );
   positions.resize( gatindex.size() );
   forces.resize( gatindex.size() );
+  const Value* fx=posx->copyOutput(0);
+  const Value* fy=posy->copyOutput(0);
+  const Value* fz=posz->copyOutput(0);
   for(unsigned i=0; i<gatindex.size(); ++i ) {
     positions[i][0] = xpositions[i];
     positions[i][1] = ypositions[i];
     positions[i][2] = zpositions[i];
-    forces[i][0] = (posx->copyOutput(0))->getForce( gatindex[i] );
-    forces[i][1] = (posy->copyOutput(0))->getForce( gatindex[i] );
-    forces[i][2] = (posz->copyOutput(0))->getForce( gatindex[i] );
+    forces[i][0] = fx->getForce( gatindex[i] );
+    forces[i][1] = fy->getForce( gatindex[i] );
+    forces[i][2] = fz->getForce( gatindex[i] );
   }
   if(pbc) {
     Tensor B=tpbc.getBox();
     Tensor IB=tpbc.getInvBox();
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
     for(unsigned i=0; i<positions.size(); ++i) {
       positions[i]=matmul(positions[i],IB);
       forces[i]=matmul(B,forces[i]);
@@ -276,7 +284,6 @@ void EffectiveEnergyDrift::update() {
 
   //init stored data at the first step
   if(isFirstStep) {
-    pDdStep=0;
     pGatindex = domains->getGatindex();
     pNLocalAtoms = pGatindex.size();
     pPositions=positions;
@@ -288,52 +295,76 @@ void EffectiveEnergyDrift::update() {
     isFirstStep=false;
   }
 
-  //if the dd has changed we have to reshare the stored data
-  if(pDdStep<domains->getDdStep() && nLocalAtoms<(posx->copyOutput(0))->getShape()[0]) {
-    //prepare the data to be sent
-    indexS.resize(pNLocalAtoms);
-    dataS.resize(pNLocalAtoms*6);
-
-    for(unsigned i=0; i<pNLocalAtoms; i++) {
-      indexS[i] = pGatindex[i];
-      dataS[i*6] = pPositions[i][0];
-      dataS[i*6+1] = pPositions[i][1];
-      dataS[i*6+2] = pPositions[i][2];
-      dataS[i*6+3] = pForces[i][0];
-      dataS[i*6+4] = pForces[i][1];
-      dataS[i*6+5] = pForces[i][2];
-    }
-
-    //setup the counters and displacements for the communication
-    plumed.comm.Allgather(&pNLocalAtoms,1,&indexCnt[0],1);
-    indexDsp[0] = 0;
-    for(int i=0; i<nProc; i++) {
-      dataCnt[i] = indexCnt[i]*6;
-
-      if(i+1<nProc) {
-        indexDsp[i+1] = indexDsp[i]+indexCnt[i];
+  // The local atoms, or their order, may have changed since the previous step:
+  // domain decomposition, or a serial MD code that reorders its atoms (as LAMMPS does).
+  // In that case the stored data is remapped. The local lists are compared at each step:
+  // DomainDecomposition::getDdStep() cannot be used, since most MD codes pass the
+  // local atoms at every step.
+  int changed=(pGatindex.size()!=gatindex.size() || !std::equal(gatindex.begin(),gatindex.end(),pGatindex.begin()));
+  if(nProc>1) {
+    plumed.comm.Sum(changed);
+  }
+  if(changed) {
+    unsigned nrecv=0;
+    if(nProc>1) {
+      //prepare the data to be sent
+      indexS.resize(pNLocalAtoms);
+      dataS.resize(pNLocalAtoms*6);
+      for(unsigned i=0; i<pNLocalAtoms; i++) {
+        indexS[i] = pGatindex[i];
+        dataS[i*6] = pPositions[i][0];
+        dataS[i*6+1] = pPositions[i][1];
+        dataS[i*6+2] = pPositions[i][2];
+        dataS[i*6+3] = pForces[i][0];
+        dataS[i*6+4] = pForces[i][1];
+        dataS[i*6+5] = pForces[i][2];
       }
-      dataDsp[i] = indexDsp[i]*6;
+      //setup the counters and displacements for the communication
+      plumed.comm.Allgather(&pNLocalAtoms,1,&indexCnt[0],1);
+      indexDsp[0] = 0;
+      for(int i=0; i<nProc; i++) {
+        dataCnt[i] = indexCnt[i]*6;
+        if(i+1<nProc) {
+          indexDsp[i+1] = indexDsp[i]+indexCnt[i];
+        }
+        dataDsp[i] = indexDsp[i]*6;
+        nrecv += indexCnt[i];
+      }
+      plumed_assert(nrecv<=indexR.size());
+      //share stored data
+      plumed.comm.Allgatherv((!indexS.empty()?&indexS[0]:NULL), pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
+      plumed.comm.Allgatherv((!dataS.empty()?&dataS[0]:NULL), pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
+    } else {
+      // a single process: the stored data is only reordered
+      nrecv=pNLocalAtoms;
+      plumed_assert(nrecv<=indexR.size());
+      for(unsigned i=0; i<pNLocalAtoms; i++) {
+        indexR[i] = pGatindex[i];
+        dataR[i*6] = pPositions[i][0];
+        dataR[i*6+1] = pPositions[i][1];
+        dataR[i*6+2] = pPositions[i][2];
+        dataR[i*6+3] = pForces[i][0];
+        dataR[i*6+4] = pForces[i][1];
+        dataR[i*6+5] = pForces[i][2];
+      }
     }
-
-    //share stored data
-    plumed.comm.Allgatherv((!indexS.empty()?&indexS[0]:NULL), pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
-    plumed.comm.Allgatherv((!dataS.empty()?&dataS[0]:NULL), pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
-
     //resize vectors to store the proper amount of data
-    pGatindex.resize(nLocalAtoms);
     pPositions.resize(nLocalAtoms);
     pForces.resize(nLocalAtoms);
-
-    //compute backmap
-    for(unsigned j=0; j<indexR.size(); j++) {
+    //compute backmap (atoms that were not stored anywhere keep -1)
+    std::fill(backmap.begin(),backmap.end(),-1);
+    for(unsigned j=0; j<nrecv; j++) {
       backmap[indexR[j]]=j;
     }
-
-    //fill the vectors pGatindex, pPositions and pForces
+    //fill the vectors pPositions and pForces
     for(unsigned i=0; i<nLocalAtoms; i++) {
       int glb=backmap[gatindex[i]];
-      pGatindex[i] = indexR[glb];
+      if(glb<0) {
+        // no data from the previous step: this atom does not contribute to this step
+        pPositions[i] = positions[i];
+        pForces[i] = forces[i];
+        continue;
+      }
       pPositions[i][0] = dataR[glb*6];
       pPositions[i][1] = dataR[glb*6+1];
       pPositions[i][2] = dataR[glb*6+2];
@@ -341,12 +372,13 @@ void EffectiveEnergyDrift::update() {
       pForces[i][1] = dataR[glb*6+4];
       pForces[i][2] = dataR[glb*6+5];
     }
+    pGatindex=gatindex;
   }
 
   //compute the effective energy drift on local atoms
 
   double eed_tmp=eed;
-  #pragma omp parallel for reduction(+:eed_tmp)
+  #pragma omp parallel for reduction(+:eed_tmp) num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0; i<nLocalAtoms; i++) {
     Vector dst=delta(pPositions[i],positions[i]);
     if(pbc)
@@ -397,7 +429,6 @@ void EffectiveEnergyDrift::update() {
   }
 
   //store the data of the current step
-  pDdStep = domains->getDdStep();
   pNLocalAtoms = nLocalAtoms;
   pPositions.swap(positions);
   pForces.swap(forces);

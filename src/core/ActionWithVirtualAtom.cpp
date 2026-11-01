@@ -87,12 +87,6 @@ void ActionWithVirtualAtom::apply() {
   double xf = xval->inputForce[0];
   double yf = yval->inputForce[0];
   double zf = zval->inputForce[0];
-// for(const auto & a : atom_value_ind) {
-//   std::size_t nn = a.first, kk = a.second;
-//   xpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
-//   ypos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
-//   zpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
-// }
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
     auto & xp=xpos[nn]->inputForce;

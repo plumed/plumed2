@@ -462,7 +462,6 @@ struct cubicSwitch: public baseSwitch<cubicSwitch> {
   static inline ValueDerivative function(const double rdist) {
     const double tmp1 = rdist - 1.0;
     const double tmp2 = 1.0+2.0*rdist;
-    //double result = tmp1*tmp1*tmp2;
     double dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
     return {tmp1*tmp1*tmp2,dfunc};
   }
@@ -480,7 +479,6 @@ struct tanhSwitch: public baseSwitch<tanhSwitch> {
     const double tmp1 = std::tanh(rdist);
     //was dfunc=-(1-tmp1*tmp1);
     double dfunc = tmp1 * tmp1 - 1.0;
-    //return result;
     return {1.0 - tmp1,dfunc };
   }
 };
@@ -706,6 +704,9 @@ public:
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
+
+  // the implicit assignment is what is needed (the copy constructor above only rebuilds the expressions)
+  leptonSwitch& operator=(const leptonSwitch& other) = default;
 
   inline double calculate(const double distance,double&dfunc) const  {
     double res = 0.0;
@@ -943,6 +944,7 @@ public:
     function(D0,DMAX,R0,func) {}
   SwitchInterface_lepton(const SwitchInterface_lepton& other):
     function(other.function) {}
+  SwitchInterface_lepton& operator=(const SwitchInterface_lepton& other) = default;
   double calculate(double distance, double& dfunc) const override {
     return function.calculate(distance,dfunc);
   }

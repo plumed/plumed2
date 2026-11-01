@@ -32,8 +32,6 @@ namespace ves {
 
 
 void VesTools::copyGridValues(GridBase* grid_pntr_orig, GridBase* grid_pntr_copy) {
-  // plumed_massert(grid_pntr_orig!=NULL,"grid not defined");
-  // plumed_massert(grid_pntr_copy!=NULL,"grid not defined");
   plumed_massert(grid_pntr_orig->getSize()==grid_pntr_copy->getSize(),"the two grids are not of the same size");
   plumed_massert(grid_pntr_orig->getDimension()==grid_pntr_copy->getDimension(),"the two grids are not of the same dimension");
   //

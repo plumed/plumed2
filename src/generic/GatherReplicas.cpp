@@ -169,8 +169,9 @@ void GatherReplicas::calculate() {
           myout->setDerivative( j, dval[i*(1+nder)+1+j] );
         }
       } else if( myarg->hasDerivatives() ) {
+        // the derivatives of a grid are part of the data gathered from replica k
         for(unsigned j=0; j<nder; ++j) {
-          myout->addGridDerivatives( i, j, dval[i*(1+nder)+1+j] );
+          myout->addGridDerivatives( i, j, datap[sstart+i*(1+nder)+1+j] );
         }
       }
     }

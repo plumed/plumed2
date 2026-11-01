@@ -606,7 +606,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   double conserved = potential+1.5*ttt+therm_eng;
-  //std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   if( intra.Get_rank()==0 ) {
     std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   }
@@ -622,7 +621,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
   for(long long unsigned int istep=0; istep<nsteps; ++istep) {
-    //if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %llu\n",istep);
 
     // Langevin thermostat
     double lscale=exp(-0.5*tstep*friction); //exp(-0.5*tstep/friction);
@@ -664,7 +662,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
-      //if(istep%2000==0) plumed->cmd("writeCheckPointFile");
       if(plumedWantsToStop) {
         nsteps=istep;
       }
@@ -692,8 +689,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     }
   }
 
-  //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
-  //printf("Rank: %d, Size: %d, MultiSimCommRank: %d, MultiSimCommSize: %d \n", pc.Get_rank(), pc.Get_size(), multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
 
   return 0;
 }

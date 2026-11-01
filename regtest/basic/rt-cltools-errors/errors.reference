@@ -1,0 +1,19 @@
+driver, missing trajectory file: exit code 1
+driver, missing trajectory file from stdin: exit code 1
+driver, box with 2 numbers: exit code 1
+driver, box that is not a number: exit code 1
+driver, index in mc file out of range: exit code 1
+driver, dump forces on a directory: exit code 1
+plotswitch, zero steps: exit code 1
+plotswitch, empty interval: exit code 1
+pdbrenumber, invalid number: exit code 1
+pdbrenumber, short ATOM line: exit code 1
+simplemd, nconfig without file name: exit code 1
+simplemd, temperature without friction: exit code 1
+simplemd, listcutoff smaller than forcecutoff: exit code 1
+pesmd, negative friction: exit code 1
+pesmd, zero dimension: exit code 1
+pesmd, flag with a wrong value: exit code 1
+pesmd, unknown keyword: exit code 1
+pesmd, missing compulsory keyword: exit code 1
+pesmd, missing input file: exit code 1

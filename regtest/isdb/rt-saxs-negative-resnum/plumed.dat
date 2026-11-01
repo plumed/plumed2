@@ -1,0 +1,42 @@
+# protein_neg.pdb contains residues -20 to -1 followed by 1 onwards:
+# the results must be identical to those obtained with the original numbering (protein.pdb)
+MOLINFO STRUCTURE=protein_neg.pdb
+
+SAXS ...
+NOPBC
+ATOMS=1-3439
+ONEBEAD
+TEMPLATE=protein_neg.pdb
+LABEL=saxsneg
+QVALUE1=0.0002
+QVALUE2=0.03
+QVALUE3=0.04
+QVALUE4=0.05
+QVALUE5=0.06
+QVALUE6=0.07
+QVALUE7=0.08
+QVALUE8=0.09
+QVALUE9=0.1
+... SAXS
+
+SANS ...
+NOPBC
+ATOMS=1-3439
+ONEBEAD
+SOLVATION_CORRECTION=0.1
+DEUTER_CONC=0
+TEMPLATE=protein_neg.pdb
+LABEL=sansneg
+QVALUE1=0.0002
+QVALUE2=0.03
+QVALUE3=0.04
+QVALUE4=0.05
+QVALUE5=0.06
+QVALUE6=0.07
+QVALUE7=0.08
+QVALUE8=0.09
+QVALUE9=0.1
+... SANS
+
+PRINT ARG=saxsneg.* FILE=saxs.dat STRIDE=1 FMT=%10.6f
+PRINT ARG=sansneg.* FILE=sans.dat STRIDE=1 FMT=%10.6f

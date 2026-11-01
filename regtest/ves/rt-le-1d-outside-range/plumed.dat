@@ -1,0 +1,6 @@
+# outside the range of the basis functions the force must be zero (it was the force of the last step inside)
+d: DISTANCE ATOMS=1,2
+bf: BF_LEGENDRE ORDER=3 MINIMUM=0.6 MAXIMUM=1.4
+ves1: VES_LINEAR_EXPANSION ARG=d BASIS_FUNCTIONS=bf TEMP=300 GRID_BINS=50 COEFFS=coeffs.in
+PRINT ARG=d,ves1.bias FILE=colvar FMT=%8.4f
+DUMPFORCES ARG=d FILE=fd FMT=%8.4f

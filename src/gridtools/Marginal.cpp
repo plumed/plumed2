@@ -69,6 +69,9 @@ public:
   ActionWithGrid* gridact=NULL;
   static void registerKeywords( Keywords& keys );
   static void read( MarginalInput& func, ActionWithArguments* action );
+  // the assignment is customized (see below): copy construction is the default one
+  MarginalInput() = default;
+  MarginalInput(const MarginalInput&) = default;
   MarginalInput& operator=( const MarginalInput& m ) {
     dir = m.dir;
     function = m.function;

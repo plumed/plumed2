@@ -623,7 +623,6 @@ void Keywords::print_html() const {
       std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
       for(const auto& cname : cnames) {
-        //plumed_assert( components.at(cname).key=="default" );
         if( components.at(cname).key!="default" ) {
           nndef++;
           continue;
@@ -918,7 +917,6 @@ void Keywords::print_html_item( const std::string& key ) const {
 }
 
 bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
-  // plumed_massert(exists(key)||reserved(key),"You can't ask for the default value of a keyword that doesn't exist("+key+")");
   if (std::holds_alternative<bool>(keywords.at(key).defaultValue)) {
     def = std::get<bool>(keywords.at(key).defaultValue);
     return true;
@@ -1062,25 +1060,29 @@ std::vector<std::string> Keywords::getArgumentKeys() const {
 }
 
 bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
-  bool allArgumentsAreCorrect = true;
-  for(auto const& kw : getArgumentKeys() ) {
-    const auto & at = std::get<argType>(keywords.at(kw).argument_type);
-    bool kwIsCorrect = false;
-    if( rank==0  && valid(at | argType::scalar)) {
-      kwIsCorrect = true;
-    }
-    if( hasderiv && valid(at | argType::grid)) {
-      kwIsCorrect = true;
-    }
-    if( rank==1  && valid(at | argType::vector)) {
-      kwIsCorrect = true;
-    }
-    if( rank==2  && valid(at | argType::matrix)) {
-      kwIsCorrect = true;
-    }
-    allArgumentsAreCorrect &= kwIsCorrect;
+  // The argument is accepted if at least one of the keywords that read arguments accepts its type
+  // (the argument list does not record which keyword it was read from).
+  // The types are bits of a mask: they must be tested with &, a test with | was always true.
+  const auto argument_keys=getArgumentKeys();
+  if( argument_keys.empty() ) {
+    return true;
   }
-  return allArgumentsAreCorrect;
+  for(auto const& kw : argument_keys ) {
+    const auto & at = std::get<argType>(keywords.at(kw).argument_type);
+    if( rank==0  && valid(at & argType::scalar)) {
+      return true;
+    }
+    if( hasderiv && valid(at & argType::grid)) {
+      return true;
+    }
+    if( rank==1  && valid(at & argType::vector)) {
+      return true;
+    }
+    if( rank==2  && valid(at & argType::matrix)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::string Keywords::getArgumentType( const std::string& name ) const {

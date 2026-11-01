@@ -1109,7 +1109,6 @@ void SASA_LCPO::calculate() {
   if (nl_update == stride) {
     nl_update = 0;
   }
-// setBoxDerivativesNoPbc();
 }
 
 }//namespace sasa

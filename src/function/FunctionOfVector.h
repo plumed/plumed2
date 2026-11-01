@@ -44,6 +44,8 @@ private:
   PTM taskmanager;
 /// Set equal to one if we are doing EvaluateGridFunction
   unsigned argstart;
+/// Can an element be skipped when all its arguments are zero (i.e. is the function zero there)?
+  bool skipZeroElements;
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfVector(const ActionOptions&);
@@ -58,6 +60,8 @@ public:
   std::string writeInGraph() const override ;
 /// This builds the task list for the action
   void calculate() override;
+/// Elements whose arguments are all zero are skipped only if the function is zero there
+  int checkTaskIsActive( const unsigned& itask ) const override ;
 /// Add some forces
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
 /// Get the input data
@@ -98,7 +102,7 @@ void FunctionOfVector<CV, myPTM>::registerKeywords(Keywords& keys ) {
     keys.setValueDescription("scalar/vector","the largest element of the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
     keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   } else if( keys.getDisplayName()=="LOWEST" ) {
-    keys.setValueDescription("scalar/vector","the smallest element in the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
+    keys.setValueDescription("scalar/vector","the smallest element in the input vector if one vector specified.  If multiple vectors of the same size specified the smallest elements of these vector computed elementwise.");
     keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
   } else if( keys.getDisplayName()=="SORT" ) {
     keys.setValueDescription("vector","a vector that has been sorted into ascending order");
@@ -115,7 +119,8 @@ FunctionOfVector<CV, myPTM>::FunctionOfVector(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   taskmanager(this),
-  argstart(0) {
+  argstart(0),
+  skipZeroElements(true) {
   // Check if first argument is grid
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
     argstart=1;
@@ -162,8 +167,26 @@ FunctionOfVector<CV, myPTM>::FunctionOfVector(const ActionOptions&ao):
   myfunc.argstart = argstart;
   myfunc.nscalars = nscalars;
   FunctionData<CV>::setup( myfunc.f, keywords.getOutputComponents(), shape, false, this );
+  // ActionWithVector skips the elements for which all the arguments are zero (and have zero
+  // derivatives there); the output is then zero, which is wrong if the function is not zero
+  // there (e.g. FUNC=x+1).  The check is only needed when no masks, scalars or grids are used:
+  // in the other cases the elements are not skipped this way.
+  if( nmasks<=0 && argstart==0 && nscalars==0 ) {
+    skipZeroElements = functionIsZeroWhenArgumentsAreZero( myfunc.f, nargs, getNumberOfComponents() );
+    if( !skipZeroElements ) {
+      log.printf("  the function is not zero when its arguments are zero: all the elements are computed\n");
+    }
+  }
   // Setup the parallel task manager
   taskmanager.setupParallelTaskManager( nargs-argstart, nscalars );
+}
+
+template <class CV, typename myPTM>
+int FunctionOfVector<CV, myPTM>::checkTaskIsActive( const unsigned& itask ) const {
+  if( !skipZeroElements ) {
+    return 1;
+  }
+  return ActionWithVector::checkTaskIsActive( itask );
 }
 
 template <class CV, typename myPTM>
@@ -173,7 +196,7 @@ const Keywords& keys ) const {
   if( getName().find("SORT")==std::string::npos ) {
     return ActionWithValue::getOutputComponentDescription( cname, keys );
   }
-  return "the " + cname + "th largest element in the input vectors";
+  return "the " + cname + "th smallest element in the input vectors";
 }
 
 template <class CV, typename myPTM>

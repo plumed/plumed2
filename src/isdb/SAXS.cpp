@@ -1384,7 +1384,7 @@ SAXS::SAXS(const ActionOptions&ao):
     // compute Rij and qj_list
     resolution_function();
     // matrix of the smearing (spline interpolation and integral with the resolution function)
-    smear_.assign(numq*numq,0.0);
+    smear_.assign(static_cast<std::size_t>(numq)*numq,0.0);
     for(unsigned l=0; l<numq; ++l) {
       std::vector<double> unit(numq,0.0);
       unit[l] = 1.0;
@@ -2346,12 +2346,10 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
 
   // cycle over chains
   for(unsigned i=0; i<chains.size(); ++i) {
-    unsigned start, end;
-    std::string errmsg;
-    pdb.getResidueRange(chains[i], start, end, errmsg);
     AtomResidueName.resize(2);
-    // cycle over residues
-    for(unsigned res=start; res<=end; res++) {
+    // cycle over the residues present in the chain
+    // (this works also with negative residue numbers and with gaps in the numbering)
+    for(const int res : pdb.getResiduesInChain(chains[i])) {
       std::string Rname = pdb.getResidueName(res, chains[i]);
       Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
       const std::string Rraw = Rname;
