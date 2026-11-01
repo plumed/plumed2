@@ -268,6 +268,18 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
   Vector imag_dz;
   // Do stuff for all other m values
   const unsigned imbase = 3*func.tmom+1;
+  // The imaginary part for m=0 is always zero, but it is a component like the
+  // others and its derivatives are read when the forces are applied: set them
+  // here rather than relying on the buffer being zero (on the GPU it is not)
+  funcout.values[imbase] = 0.0;
+  if( !noderiv ) {
+    funcout.derivs[imbase][0] = 0.0;
+    funcout.derivs[imbase][1] = 0.0;
+    funcout.derivs[imbase][2] = 0.0;
+    if( args.size()==4 ) {
+      funcout.derivs[imbase][3] = 0.0;
+    }
+  }
   double pref = -1.0;
   for(decltype(func.tmom) m=1; m<=func.tmom; ++m) {
     // Calculate Legendre Polynomial

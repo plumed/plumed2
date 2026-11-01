@@ -11,10 +11,10 @@ The openaccPTM plugin is compiled separately to the main PLUMED code. To compile
 the plugin by issuing the following commands:
 
 ```bash
-cd plugin/openaccPTM
+cd plugins/openaccPTM
 ./configure 
 make clean
-NVCXX=mpic++ make
+make
 ```  
 
 If PLUMED has been compiled with MPI, `configure` sets `NVCXX=mpic++`. The wrapper must call `nvc++` and not the compiler
@@ -32,7 +32,7 @@ echo "LDSHARED += --gcc-toolchain=$GCCROOT" >> Makefile.conf
 ```
 
 It is worth running these commands more than once if the compilation doesn't work the first time. If they complete correctly a dynamic libarary called `plumedOpenACC.so` 
-will be created in the plumed2/plugin directory.
+will be created in the plumed2/plugins/openaccPTM directory.
 
 We have tested this module with the [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads) version of the NVIDIA HPC SDK compiler and found that it works.
 It currently does not work with NVHPC 26.5 compiler.
@@ -40,7 +40,7 @@ It currently does not work with NVHPC 26.5 compiler.
 Note that we recommend running the test suite after compilation.  You can do this by issuing the following commands:
 
 ```bash
-cd plugin/openaccPTM/regtest
+cd plugins/openaccPTM/regtest
 make
 ```
 
@@ -53,13 +53,16 @@ LOAD FILE=/path/to/plumedOpenACC.so
 ```
 
 where `/path/to` is the directory that contains the compiled plugins. If you choose not to move the library after compilation this will 
-be the `plumed2/plugin` directory. To use the plugin to calculate an action using the GPU you add the `USEGPU` keyword to the list of keywords
+be the `plumed2/plugins/openaccPTM` directory. To use the plugin to calculate an action using the GPU you add the `USEGPU` keyword to the list of keywords
 for that action.  For example, to calculate a contact matrix using the GPU you would use the following input:
 
 ```plumed
 LOAD FILE=/path/to/plumedOpenACC.so
 CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 ``` 
+
+When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
+on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
 
 The next section contains a list of the actions that can take the USEGPU command in input and that can thus be run on the GPU using this plugin.
 
@@ -93,6 +96,9 @@ The next section contains a list of the actions that can take the USEGPU command
    - [MORE_THAN](MORE_THAN.md)
    - [BETWEEN](BETWEEN.md)
    - [COMBINE](COMBINE.md)
+- gridtools
+   - [KDE](KDE.md)
+   - [SPHERICAL_KDE](SPHERICAL_KDE.md)
 - matrixtools
    - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
    - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)
@@ -107,7 +113,7 @@ The next section contains a list of the actions that can take the USEGPU command
    - [SIMPLECUBIC](SIMPLECUBIC.md)
    - [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
    - [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md)
-   - [LOCAL_Q1](LOCAL_qQ1.md)
-   - [LOCAL_Q3](LOCAL_qQ3.md)
-   - [LOCAL_Q4](LOCAL_qQ4.md)
-   - [LOCAL_Q6](LOCAL_qQ6.md)
+   - [LOCAL_Q1](LOCAL_Q1.md)
+   - [LOCAL_Q3](LOCAL_Q3.md)
+   - [LOCAL_Q4](LOCAL_Q4.md)
+   - [LOCAL_Q6](LOCAL_Q6.md)

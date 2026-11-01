@@ -34,9 +34,60 @@
 #include "plumed/tools/Pbc.h"
 
 #include <algorithm>
+#include <cstring>
 #include <vector>
 
 namespace PLMD {
+
+/// The async queue used by the task manager. All the transfers and the kernels
+/// of a call are queued on it and the host waits only once, at the end.
+inline constexpr int accQueue=1;
+
+/// A device buffer that remembers what was last copied into it.
+/// update() queues the copy only if the data differs (byte by byte) from the
+/// previous one, so data that does not change between calls (the argument
+/// bookkeeping and the task list, which runAllTasks and applyForces of the
+/// same step share and which are usually the same at every step, and the box
+/// in NVT) is transferred only once.
+/// The copy is made from the host mirror, which is not modified until the
+/// next call: the caller does not need to keep the data alive until the
+/// queue is waited.
+/// The mirror costs a host copy of the data when it changes, so this is
+/// meant for small arrays or arrays that rarely change.
+template <typename T>
+class AccCachedBuffer {
+  OpenACC::memoryManager<T> device;
+  std::vector<unsigned char> host;
+  bool valid=false;
+public:
+  T* update(const T* data, std::size_t n) {
+    const std::size_t nbytes=n*sizeof(T);
+    const bool same = valid && host.size()==nbytes
+                      && (nbytes==0 || std::memcmp(host.data(), data, nbytes)==0);
+    if(!same) {
+      host.resize(nbytes);
+      if(nbytes>0) {
+        std::memcpy(host.data(), data, nbytes);
+      }
+      device.resize(n);
+      device.copyToDeviceAsync(reinterpret_cast<const T*>(host.data()), accQueue);
+      valid=true;
+    }
+    return device.devicePtr();
+  }
+};
+
+/// Sets n elements of a device array to zero, on accQueue
+template <typename T>
+void accZeroAsync(T* p, const std::size_t n) {
+  if(n==0) {
+    return;
+  }
+#pragma acc parallel loop gang vector async(accQueue) firstprivate(n) deviceptr(p) default(none)
+  for(std::size_t i=0; i<n; ++i) {
+    p[i]=T(0);
+  }
+}
 
 /// Device buffers used by the OpenACC task manager.
 /// They are kept between calls (one set per action) and grown when needed, so
@@ -46,24 +97,43 @@ template <typename precision>
 struct AccDeviceWorkspace {
   /// device copies of the data pointed by ParActionsInput (see toDeviceInput)
   OpenACC::memoryManager<precision> inputdata;
-  OpenACC::memoryManager<Pbc> pbc;
-  OpenACC::memoryManager<std::size_t> argbook;
+  /// the host array inputdata was last copied from, and its size
+  const precision* inputdata_src=nullptr;
+  std::size_t inputdata_size=0;
+  AccCachedBuffer<Pbc> pbc;
+  AccCachedBuffer<std::size_t> argbook;
   /// host staging area for the argument bookkeeping, packed in a single array
   std::vector<std::size_t> argbook_host;
+  AccCachedBuffer<unsigned> taskList;
   OpenACC::memoryManager<precision> value_stash;
-  OpenACC::memoryManager<unsigned> taskList;
   OpenACC::memoryManager<precision> buffer;
   OpenACC::memoryManager<precision> derivatives;
+  /// address and size of derivatives when it was last cleared
+  const precision* derivatives_cleared=nullptr;
+  std::size_t derivatives_cleared_size=0;
   OpenACC::memoryManager<precision> forces;
   OpenACC::memoryManager<std::size_t> indices;
   OpenACC::memoryManager<precision> valstmp;
   /// per-task partial sums of the forces on the last entries of the force array
   OpenACC::memoryManager<precision> sharedForces;
+  /// Resizes the buffer of the derivatives and returns its device address.
+  /// The CPU task manager gives each thread a zeroed buffer at every call, so
+  /// the entries that an action never writes (and that it may still list in
+  /// getForceIndices) are zero; device memory is not initialized, and garbage
+  /// there (even multiplied by a zero force, if it is a NaN) corrupts the
+  /// forces. The buffer is therefore cleared whenever it is reallocated or its
+  /// size changes: the entries that are written are rewritten at every call,
+  /// the others stay zero.
+  precision* getDerivatives(const std::size_t n) {
+    derivatives.resize(n);
+    if(derivatives.devicePtr()!=derivatives_cleared || n!=derivatives_cleared_size) {
+      accZeroAsync(derivatives.devicePtr(), n);
+      derivatives_cleared=derivatives.devicePtr();
+      derivatives_cleared_size=n;
+    }
+    return derivatives.devicePtr();
+  }
 };
-
-/// The async queue used by the task manager. All the transfers and the kernels
-/// of a call are queued on it and the host waits only once, at the end.
-inline constexpr int accQueue=1;
 
 template <class T>
 class AccParallelTaskManager : public ParallelTaskManager<T> {
@@ -75,9 +145,7 @@ class AccParallelTaskManager : public ParallelTaskManager<T> {
   using ParallelTaskManager<T>::actiondata;
   using ParallelTaskManager<T>::nderivatives_per_task;
   using ParallelTaskManager<T>::workspace_size;
-  using ParallelTaskManager<T>::omp_forces;
   using ParallelTaskManager<T>::input_buffer;
-  using ParallelTaskManager<T>::serial;
   using ParallelTaskManager<T>::useacc;
   using ParallelTaskManager<T>::getValueStashSize;
 public:
@@ -110,28 +178,37 @@ struct ACCPTM {
 
 /// Returns a copy of the input whose pointers are device addresses.
 /// The data (input data, Pbc and argument bookkeeping) is copied in the
-/// device buffers of the workspace, with one transfer per array: the
-/// bookkeeping arrays are packed in a single buffer. The returned object can
-/// be passed to the kernels as firstprivate, i.e. as a kernel argument.
-/// The copies are queued on accQueue: the host data must not change until
-/// the queue is waited.
+/// device buffers of the workspace, with one transfer per array (the
+/// bookkeeping arrays are packed in a single buffer). The Pbc and the
+/// bookkeeping are copied only if they changed since the previous call.
+/// The input data (positions or arguments, which change at every step) is
+/// copied when called from runAllTasks (refresh=true). In applyForces
+/// (refresh=false) it is copied only if it was not uploaded from the same
+/// host array: the task manager fills input_buffer only in runAllTasks,
+/// which always uploads it, so the device copy is then still current.
+/// The returned object can be passed to the kernels as firstprivate, i.e. as
+/// a kernel argument.
+/// The copies are queued on accQueue: in.inputdata must not change until the
+/// queue is waited.
 /// Before this, the input was put on the device with "enter data" and removed
 /// with "exit data" at every call: each pointer member costs a transfer and
 /// an attach/detach (another small transfer), i.e. about 40 transfers of a
 /// few microseconds each per call, which dominated the time of small actions.
 template <typename precision>
 ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
-    AccDeviceWorkspace<precision>& ws) {
+    AccDeviceWorkspace<precision>& ws, const bool refresh) {
   ParActionsInput<precision> dev=in;
 
-  ws.inputdata.resize(in.dataSize);
-  ws.inputdata.copyToDeviceAsync(in.inputdata, accQueue);
+  if(refresh || ws.inputdata_src!=in.inputdata || ws.inputdata_size!=in.dataSize) {
+    ws.inputdata.resize(in.dataSize);
+    ws.inputdata.copyToDeviceAsync(in.inputdata, accQueue);
+    ws.inputdata_src=in.inputdata;
+    ws.inputdata_size=in.dataSize;
+  }
   dev.inputdata=ws.inputdata.devicePtr();
 
   // Pbc only holds fixed-size members, so a bitwise copy is valid on the device
-  ws.pbc.resize(1);
-  ws.pbc.copyToDeviceAsync(in.pbc, accQueue);
-  dev.pbc=ws.pbc.devicePtr();
+  dev.pbc=ws.pbc.update(in.pbc, 1);
 
   if(in.nargs>0) {
     const std::size_t* src[]= {in.ranks, in.shapestarts, in.shapedata, in.ncols,
@@ -154,11 +231,10 @@ ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
       std::copy(src[i], src[i]+sizes[i], ws.argbook_host.begin()+offset);
       offset+=sizes[i];
     }
-    ws.argbook.resize(total);
-    ws.argbook.copyToDeviceAsync(ws.argbook_host.data(), accQueue);
+    const std::size_t* argbook=ws.argbook.update(ws.argbook_host.data(), total);
     offset=0;
     for(unsigned i=0; i<narrays; ++i) {
-      *dst[i]=ws.argbook.devicePtr()+offset;
+      *dst[i]=argbook+offset;
       offset+=sizes[i];
     }
   }
@@ -179,24 +255,25 @@ void runAllTasksACC(typename T::input_type actiondata,
                     AccDeviceWorkspace<precision>& ws
                    ) {
   // from here on the pointers in myinput are device addresses
-  myinput = toDeviceInput(myinput, ws);
+  myinput = toDeviceInput(myinput, ws, true);
   auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
-  // the device buffers are reused between steps: resize() reallocates only if they grow
+  // the device buffers are reused between steps: resize() reallocates only if they grow.
+  // The stash is cleared on the device (tasks may leave some entries untouched)
+  // and then copied back as a whole, so the host copy does not need to be cleared
   ws.value_stash.resize(value_stash.size());
-  ws.value_stash.copyToDeviceAsync(value_stash.data(), accQueue);
   auto value_stash_data = ws.value_stash.devicePtr();
+  accZeroAsync(value_stash_data, value_stash.size());
 
-  ws.taskList.resize(partialTaskList.size());
-  ws.taskList.copyToDeviceAsync(partialTaskList.data(), accQueue);
-  auto partialTaskList_data = ws.taskList.devicePtr();
+  auto partialTaskList_data = ws.taskList.update(partialTaskList.data(), partialTaskList.size());
 
   ws.buffer.resize(workspace_size*nactive_tasks);
   auto buffer = ws.buffer.devicePtr();
-  ws.derivatives.resize(nderivatives_per_task*nactive_tasks);
-  auto derivatives = ws.derivatives.devicePtr();
-  // myinput and the scalars are passed by value as kernel arguments
-#pragma acc parallel loop async(accQueue) present(actiondata) \
+  auto derivatives = ws.getDerivatives(nderivatives_per_task*nactive_tasks);
+  // myinput and the scalars are passed by value as kernel arguments.
+  // One task per thread, as in the force kernel
+  if(nactive_tasks>0) {
+#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   nderivatives_per_task, \
@@ -206,19 +283,20 @@ void runAllTasksACC(typename T::input_type actiondata,
                                   value_stash_data, \
                                   buffer) \
                           default(none)
-  for(unsigned i=0; i<nactive_tasks; ++i) {
-    std::size_t task_index = partialTaskList_data[i];
-    std::size_t val_pos = task_index*myinput.nscalars;
-    auto myout = ParActionsOutput<precision>::create (myinput.nscalars,
-                 value_stash_data+val_pos,
-                 nderivatives_per_task,
-                 derivatives+nderivatives_per_task*i,
-                 workspace_size,
-                 (workspace_size>0)?
-                 buffer+workspace_size*i
-                 :nullptr  );
-    // Calculate the stuff in the loop for this action
-    T::performTask( task_index, actiondata, myinput, myout );
+    for(unsigned i=0; i<nactive_tasks; ++i) {
+      std::size_t task_index = partialTaskList_data[i];
+      std::size_t val_pos = task_index*myinput.nscalars;
+      auto myout = ParActionsOutput<precision>::create (myinput.nscalars,
+                   value_stash_data+val_pos,
+                   nderivatives_per_task,
+                   derivatives+nderivatives_per_task*i,
+                   workspace_size,
+                   (workspace_size>0)?
+                   buffer+workspace_size*i
+                   :nullptr  );
+      // Calculate the stuff in the loop for this action
+      T::performTask( task_index, actiondata, myinput, myout );
+    }
   }
   ws.value_stash.copyFromDeviceAsync(value_stash.data(), accQueue);
   // the only synchronization of the call
@@ -242,20 +320,24 @@ void AccParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
-  // Get all the input data so we can broadcast it to the GPU
-  myinput.noderiv = true;
-  action->getInputData( input_buffer, argumentsMap );
-  myinput.dataSize = input_buffer.size();
-  myinput.inputdata = input_buffer.data();
-  // Transfer all the bookeeping information about the arguments
-  myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
   if( value_stash.size()!=totalvals ) {
     value_stash.resize(totalvals);
   }
-  std::fill (value_stash.begin(),value_stash.end(), 0.0);
-  if (comm.Get_rank()== 0) {// no multigpu shenanigans until this works
+  // Only rank 0 uses the GPU (no multigpu shenanigans until this works): it
+  // computes all the tasks and overwrites the whole stash, which is then sent
+  // to the other ranks
+  if (comm.Get_rank()== 0) {
+    // The derivatives are only ever needed during the force calculation
+    myinput.noderiv = true;
+    // Get all the input data so we can broadcast it to the GPU
+    action->getInputData( input_buffer, argumentsMap );
+    myinput.dataSize = input_buffer.size();
+    myinput.inputdata = input_buffer.data();
+    // Transfer all the bookeeping information about the arguments
+    argumentsMap.setupArguments( action );
+    myinput.setupArguments( argumentsMap );
     runAllTasksACC<T>(
       actiondata,
       myinput,
@@ -267,12 +349,9 @@ void AccParallelTaskManager<T>::runAllTasks() {
       devws
     );
   }
+  // Rank 0 holds the complete result: it must be broadcast, not summed
+  // (summing would multiply the values by the number of ranks)
   comm.Bcast( value_stash.data(), value_stash.size(), 0);
-
-  // MPI Gather everything
-  if( !serial ) {
-    this->comm.Sum( this->value_stash );
-  }
 
 // And transfer the value to the output values
   action->transferStashToValues( partialTaskList,  value_stash );
@@ -292,8 +371,10 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const std::size_t workspace_size,
                         AccDeviceWorkspace<precision>& ws
                        ) {
-  // from here on the pointers in myinput are device addresses
-  myinput = toDeviceInput(myinput, ws);
+  // from here on the pointers in myinput are device addresses.
+  // The input data is the one of the last runAllTasks, so nothing is copied
+  // here unless something changed in between
+  myinput = toDeviceInput(myinput, ws, false);
   auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
@@ -301,15 +382,13 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   ws.value_stash.copyToDeviceAsync(value_stash.data(), accQueue);
   auto value_stash_data = ws.value_stash.devicePtr();
 
-  ws.taskList.resize(partialTaskList.size());
-  ws.taskList.copyToDeviceAsync(partialTaskList.data(), accQueue);
-  auto partialTaskList_data = ws.taskList.devicePtr();
+  auto partialTaskList_data = ws.taskList.update(partialTaskList.data(), partialTaskList.size());
 
-  // forcesForApply has been zeroed on the host: this also clears the device buffer
+  // the forces are cleared on the device and copied back as a whole
   ws.forces.resize(forcesForApply.size());
-  ws.forces.copyToDeviceAsync(forcesForApply.data(), accQueue);
   auto forcesForApply_data = ws.forces.devicePtr();
   const auto forcesForApply_size = ws.forces.size();
+  accZeroAsync(forcesForApply_data, forcesForApply_size);
   const std::size_t nind_per_scalar = ForceIndexHolder::indexesPerScalar(myinput);
 
   // Forces on entries that several tasks can touch (the "thread-unsafe" ones,
@@ -329,15 +408,15 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   // With atomics the order of the sums is not fixed, so results are
   // reproducible only up to rounding.
   constexpr std::size_t maxShared = 32;
-  const std::size_t n_unsafe = forcesForApply_size - myinput.threadunsafe_forces_start;
+  const std::size_t n_unsafe = (forcesForApply_size > myinput.threadunsafe_forces_start) ?
+                               forcesForApply_size - myinput.threadunsafe_forces_start : 0;
   const std::size_t nshared = (n_unsafe < maxShared) ? n_unsafe : maxShared;
   const std::size_t sharedStart = forcesForApply_size - nshared;
   // the forces are added as soon as the indices are known, so each task needs
   // space for the indices of one value at a time
   const std::size_t ind_stride_task = nind_per_scalar;
 
-  ws.derivatives.resize(nderivatives_per_task*nactive_tasks);
-  auto derivatives = ws.derivatives.devicePtr();
+  auto derivatives = ws.getDerivatives(nderivatives_per_task*nactive_tasks);
   ws.indices.resize(ind_stride_task*nactive_tasks);
   auto indices = ws.indices.devicePtr();
   ws.valstmp.resize(myinput.sizeOfFakeVals()*nactive_tasks);
@@ -352,10 +431,11 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #define stashDrift(taskID,scalarID) taskID*myinput.nforcescalars \
                            + scalarID*myinput.ncomponents
 
-  // myinput and the scalars are passed by value as kernel arguments.
-  // One task per thread (gang vector), and every inner loop is sequential:
-  // without this, nvc++ makes the task loop gang-only and vectorizes the
-  // short inner loops, i.e. one block of 128 threads per task, mostly idle
+  if(nactive_tasks>0) {
+    // myinput and the scalars are passed by value as kernel arguments.
+    // One task per thread (gang vector), and every inner loop is sequential:
+    // without this, nvc++ makes the task loop gang-only and vectorizes the
+    // short inner loops, i.e. one block of 128 threads per task, mostly idle
 #pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
@@ -372,117 +452,120 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                                   sharedForces, \
                                   buffer) \
                           default(none)
-  for(unsigned t=0; t<nactive_tasks; ++t) {
-    std::size_t task_index = partialTaskList_data[t];
-    auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
-                 valstmp+myinput.nscalars*t,
-                 nderivatives_per_task,
-                 derivatives+nderivatives_per_task*t,
-                 workspace_size,
-                 (workspace_size>0)?buffer+workspace_size*t:nullptr);
-    // Calculate the stuff in the loop for this action
-    T::performTask( task_index, actiondata, myinput, myout );
+    for(unsigned t=0; t<nactive_tasks; ++t) {
+      std::size_t task_index = partialTaskList_data[t];
+      auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
+                   valstmp+myinput.nscalars*t,
+                   nderivatives_per_task,
+                   derivatives+nderivatives_per_task*t,
+                   workspace_size,
+                   (workspace_size>0)?buffer+workspace_size*t:nullptr);
+      // Calculate the stuff in the loop for this action
+      T::performTask( task_index, actiondata, myinput, myout );
 
-    // this task's column of the buffer of the shared entries
+      // this task's column of the buffer of the shared entries
 #pragma acc loop seq
-    for(std::size_t k=0; k<nshared; ++k) {
-      sharedForces[k*nactive_tasks+t]=0.0;
-    }
-    // private accumulators of the other thread-unsafe entries: slot s holds
-    // the s-th thread-unsafe contribution of the current value; it is summed
-    // to the one of the next value if they go to the same entry, and added
-    // to the forces with an atomic otherwise
-    constexpr unsigned nslots=32;
-    constexpr std::size_t noSlot=~std::size_t(0);
-    std::size_t slotIndex[nslots];
-    precision slotForce[nslots];
+      for(std::size_t k=0; k<nshared; ++k) {
+        sharedForces[k*nactive_tasks+t]=0.0;
+      }
+      // private accumulators of the other thread-unsafe entries: slot s holds
+      // the s-th thread-unsafe contribution of the current value; it is summed
+      // to the one of the next value if they go to the same entry, and added
+      // to the forces with an atomic otherwise
+      constexpr unsigned nslots=32;
+      constexpr std::size_t noSlot=~std::size_t(0);
+      std::size_t slotIndex[nslots];
+      precision slotForce[nslots];
 #pragma acc loop seq
-    for(unsigned s=0; s<nslots; ++s) {
-      slotIndex[s]=noSlot;
-      slotForce[s]=0.0;
-    }
+      for(unsigned s=0; s<nslots; ++s) {
+        slotIndex[s]=noSlot;
+        slotForce[s]=0.0;
+      }
 
-    // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-    const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+      // If this is a matrix this returns a number that isn't one as we have to loop over the columns
+      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
 #pragma acc loop seq
-    for(unsigned vID=0; vID<nvpt; ++vID) {
-      auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
-      // Get the indices for forces
-      T::getForceIndices( task_index,
-                          vID,
-                          forcesForApply_size,
-                          actiondata,
-                          myinput,
-                          force_indices );
+      for(unsigned vID=0; vID<nvpt; ++vID) {
+        auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
+        // Get the indices for forces
+        T::getForceIndices( task_index,
+                            vID,
+                            forcesForApply_size,
+                            actiondata,
+                            myinput,
+                            force_indices );
 
-      // Create a force input object
-      auto finput = ForcesInput<precision>::create ( myinput.nforcescalars,
-                    value_stash_data + stashDrift(task_index,vID),
-                    myinput.nderivatives_per_scalar,
-                    derivatives + derivativeDrift(t,vID));
+        // Create a force input object
+        auto finput = ForcesInput<precision>::create ( myinput.nforcescalars,
+                      value_stash_data + stashDrift(task_index,vID),
+                      myinput.nderivatives_per_scalar,
+                      derivatives + derivativeDrift(t,vID));
 
-      // Gather forces that can be gathered locally
-      ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
-          force_indices,
-          finput,
-          View<precision>(forcesForApply_data,
-                          forcesForApply_size));
-      // Add the forces that other tasks can also touch
-      unsigned s=0;
+        // Gather forces that can be gathered locally
+        ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
+            force_indices,
+            finput,
+            View<precision>(forcesForApply_data,
+                            forcesForApply_size));
+        // Add the forces that other tasks can also touch
+        unsigned s=0;
 #pragma acc loop seq
-      for(unsigned i=0; i<myinput.ncomponents; ++i) {
-        const precision ff = finput.force[i];
+        for(unsigned i=0; i<myinput.ncomponents; ++i) {
+          const precision ff = finput.force[i];
 #pragma acc loop seq
-        for(std::size_t d=force_indices.threadsafe_derivatives_end[i];
-            d<force_indices.tot_indices[i]; ++d, ++s) {
-          const std::size_t fi = force_indices.indices[i][d];
-          const precision contribution = ff*finput.deriv[i][d];
-          if(fi>=sharedStart) {
-            sharedForces[(fi-sharedStart)*nactive_tasks+t] += contribution;
-          } else if(s<nslots) {
-            if(slotIndex[s]==fi) {
-              slotForce[s]+=contribution;
-            } else {
-              if(slotIndex[s]!=noSlot) {
-                const precision old=slotForce[s];
+          for(std::size_t d=force_indices.threadsafe_derivatives_end[i];
+              d<force_indices.tot_indices[i]; ++d, ++s) {
+            const std::size_t fi = force_indices.indices[i][d];
+            const precision contribution = ff*finput.deriv[i][d];
+            if(fi>=sharedStart) {
+              sharedForces[(fi-sharedStart)*nactive_tasks+t] += contribution;
+            } else if(s<nslots) {
+              if(slotIndex[s]==fi) {
+                slotForce[s]+=contribution;
+              } else {
+                if(slotIndex[s]!=noSlot) {
+                  const precision old=slotForce[s];
 #pragma acc atomic update
-                forcesForApply_data[slotIndex[s]] += old;
+                  forcesForApply_data[slotIndex[s]] += old;
+                }
+                slotIndex[s]=fi;
+                slotForce[s]=contribution;
               }
-              slotIndex[s]=fi;
-              slotForce[s]=contribution;
-            }
-          } else {
+            } else {
 #pragma acc atomic update
-            forcesForApply_data[fi] += contribution;
+              forcesForApply_data[fi] += contribution;
+            }
           }
         }
       }
-    }
-    // flush the private accumulators
+      // flush the private accumulators
 #pragma acc loop seq
-    for(unsigned s=0; s<nslots; ++s) {
-      if(slotIndex[s]!=noSlot) {
-        const precision old=slotForce[s];
+      for(unsigned s=0; s<nslots; ++s) {
+        if(slotIndex[s]!=noSlot) {
+          const precision old=slotForce[s];
 #pragma acc atomic update
-        forcesForApply_data[slotIndex[s]] += old;
+          forcesForApply_data[slotIndex[s]] += old;
+        }
       }
     }
-  }
 
-  // sum the columns of the buffer of the shared entries: one gang per entry,
-  // the threads of the gang sum over the tasks. It runs after the previous
-  // kernel, on the same queue, and only it writes these entries
+    // sum the columns of the buffer of the shared entries: one gang per entry,
+    // the threads of the gang sum over the tasks. It runs after the previous
+    // kernel, on the same queue, and only it writes these entries
+    if(nshared>0) {
 #pragma acc parallel loop gang async(accQueue) \
                      firstprivate(nactive_tasks, nshared, sharedStart) \
                         deviceptr(sharedForces, forcesForApply_data) \
                           default(none)
-  for(std::size_t k=0; k<nshared; ++k) {
-    double tmp = 0.0;
+      for(std::size_t k=0; k<nshared; ++k) {
+        double tmp = 0.0;
 #pragma acc loop vector reduction(+:tmp)
-    for(unsigned t=0; t<nactive_tasks; ++t) {
-      tmp += sharedForces[k*nactive_tasks+t];
+        for(unsigned t=0; t<nactive_tasks; ++t) {
+          tmp += sharedForces[k*nactive_tasks+t];
+        }
+        forcesForApply_data[sharedStart+k] += tmp;
+      }
     }
-    forcesForApply_data[sharedStart+k] += tmp;
   }
 #undef derivativeDrift
 #undef stashDrift
@@ -509,6 +592,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
+<<<<<<< HEAD
   forceData<precision> forces(forcesForApply);
   if( reset_forces ) {
     // Clear force buffer
@@ -520,7 +604,15 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   action->transferForcesToStash( partialTaskList, value_stash );
 
   std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
+=======
+  // Only rank 0 uses the GPU: it computes all the forces, overwriting the
+  // whole array, which is then sent to the other ranks
+>>>>>>> 63fa77f6b (openaccPTM: fix MPI results, uninitialised derivatives, fewer transfers (#1557))
   if (comm.Get_rank() == 0) {
+    forceData<precision> forces(forcesForApply);
+    myinput.noderiv = false;
+    // Retrieve the forces from the values
+    action->transferForcesToStash( partialTaskList, value_stash );
     applyForcesWithACC<T>(
       PLMD::View<precision> { forces.ffa.data(), forces.ffa.size() },
       actiondata,
@@ -532,15 +624,12 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
       workspace_size,
       devws
     );
+    forces.update();
   }
-  forces.update();
-  // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
-  if( !serial ) {
-    this->comm.Sum( forcesForApply );
-  }
+  // Every rank needs the complete forces, also with SERIAL (where the CPU
+  // version computes them on every rank): broadcast them from rank 0
+  comm.Bcast( forcesForApply, 0 );
 }
 
 } // namespace PLMD
 #endif // __PLUMED_acc_ParallelTaskManager_h
-
-
