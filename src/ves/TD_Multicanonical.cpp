@@ -408,8 +408,7 @@ void TD_Multicanonical::updateGrid() {
           double value = getFesGridPntr()->getValue(l);
           value = beta*value + (beta_prime-beta)*energy - minval;
           if (value<threshold_) {
-            double value = 1.0;
-            targetDistGrid().setValue(l,value);
+            targetDistGrid().setValue(l,1.0);
           }
         }
       }

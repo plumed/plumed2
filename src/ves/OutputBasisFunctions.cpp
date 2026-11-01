@@ -170,7 +170,7 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
     if(!parseNumbered("TARGET_DISTRIBUTION",i,targetdist_label)) {
       break;
     }
-    std::string error_msg = "";
+    error_msg = "";
     TargetDistribution* pntr_tmp = VesTools::getPointerFromLabel<TargetDistribution*>(targetdist_label,plumed.getActionSet(),error_msg);
     if(error_msg.size()>0) {
       plumed_merror("Error in keyword TARGET_DISTRIBUTION of "+getName()+": "+error_msg);

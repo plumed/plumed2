@@ -73,7 +73,7 @@ void legendre_compute_glr ( int n, double x[], double w[] )
 //
 //  If N is odd, then zero is a root.
 //
-  if ( n % 2 == 1 ) {
+  if ( n % 2 != 0 ) {
     x[(n-1)/2] = p;
     w[(n-1)/2] = pp;
   }
@@ -230,7 +230,7 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
   double *up;
   double xp;
 
-  if ( n % 2 == 1 ) {
+  if ( n % 2 != 0 ) {
     n2 = ( n - 1 ) / 2 - 1;
     s = 1;
   } else {

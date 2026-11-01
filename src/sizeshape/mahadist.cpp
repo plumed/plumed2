@@ -243,10 +243,10 @@ double position_maha_dist::determinant(int n, const std::vector<std::vector<doub
       return 0.0;  // Singular matrix
     }
 
-    for ( int r = i + 1; r < n; r++ ) {                  // On lower rows
-      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+    for ( int row = i + 1; row < n; row++ ) {            // On lower rows
+      double multiple = A[row][i] / pivot;              // Multiple of row i to clear element in ith column
       for ( int j = i; j < n; j++ ) {
-        A[r][j] -= multiple * A[i][j];
+        A[row][j] -= multiple * A[i][j];
       }
     }
     det *= pivot;                                        // Determinant is product of diagonal
