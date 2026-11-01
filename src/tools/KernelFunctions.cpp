@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KernelFunctions.h"
+#include <limits>
 #include "IFile.h"
 #include <cmath>
 
@@ -121,7 +122,7 @@ KernelFunctions::KernelFunctions( const std::string& input ) {
     plumed_merror("one dimensional kernel cannot be multivariate");
   }
   if( center.size()==1 && vonmises ) {
-    plumed_merror("one dimensional kernal cannot be von-misses");
+    plumed_merror("one dimensional kernel cannot be von-misses");
   }
   if( center.size()==1 && sig.size()!=1 ) {
     plumed_merror("size mismatch between center size and sigma size");
@@ -224,11 +225,11 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
       det*=width[i]*width[i];
     }
   } else if(dtype==matrixType::multi) {
-    Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
-    Invert(mymatrix,myinv);
+    // det is the determinant of the inverse of mymatrix
+    Matrix<double> mymatrix( getMatrix() );
     double logd;
-    logdet( myinv, logd );
-    det=std::exp(logd);
+    logdet( mymatrix, logd );
+    det=std::exp(-logd);
   }
   if( dtype==matrixType::diagonal || dtype==matrixType::multi ) {
     double volume;
@@ -524,6 +525,26 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos,
       }
   }
   return kval;
+}
+
+bool KernelFunctions::getSeparableGaussian(double & h, double & a, double & b, double & r2cut, std::vector<double> & w) const {
+  if(dtype!=matrixType::diagonal) {
+    return false;
+  }
+  if(ktype==kernelType::gaussian || ktype==kernelType::truncatedgaussian) {
+    a=1.0;
+    b=0.0;
+    r2cut=std::numeric_limits<double>::max();
+  } else if(ktype==kernelType::stretchedgaussian) {
+    a=stretchA;
+    b=stretchB;
+    r2cut=2.0*dp2cutoff;
+  } else {
+    return false;
+  }
+  h=height;
+  w=width;
+  return true;
 }
 
 std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile,

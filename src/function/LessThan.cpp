@@ -127,7 +127,7 @@ ones: ONES SIZE=400
 coord: MATRIX_VECTOR_PRODUCT ARG=adj,ones
 # Determine if coordination numbers are less than 4 or not
 lt: LESS_THAN ARG=coord MASK=sphere SWITCH={RATIONAL R_0=4.0}
-# And calculate how many atoms in the region of interst have a coordination number that is less than four
+# And calculate how many atoms in the region of interest have a coordination number that is less than four
 ltsphere: CUSTOM ARG=lt,sphere FUNC=x*y PERIODIC=NO
 cv: SUM ARG=ltsphere PERIODIC=NO
 PRINT ARG=cv FILE=colvar
@@ -150,8 +150,8 @@ $r \le d_0 \quad s(r)=1.0$ while for $r > d_0$ the function decays smoothly to 0
 function you are using you change the decay that occurs in the switching function for $r$ values that are greater
 that $d_0$.
 
-You can specify the value at which the the switching function goes to zero by using the D_MAX keyword.
-PLUMED will ensure that the swtiching function is definitely zero for for input values that are greater than
+You can specify the value at which the switching function goes to zero by using the D_MAX keyword.
+PLUMED will ensure that the switching function is definitely zero for input values that are greater than
 or equal to D_MAX by by stretching and shifting the function using the following transformations.
 
 $
@@ -293,7 +293,7 @@ s'(r) = \begin{cases}
 \end{cases}
 $$
 
-This type of swtiching function would be used with PLUMED's implementation of [SKETCHMAP](SKETCHMAP.md). If you are
+This type of switching function would be used with PLUMED's implementation of [SKETCHMAP](SKETCHMAP.md). If you are
 performing a sketch-map projection an input like the one below would be more common:
 
 ```plumed
@@ -337,7 +337,7 @@ a coarse grainded models values of $\lambda=1.5$ and $\beta=50 nm^-1$ are more a
 
 ### Cubic switching function
 
-You can specify that the cubic swtiching function is to be used by using the following input:
+You can specify that the cubic switching function is to be used by using the following input:
 
 ```plumed
 d: DISTANCE ATOMS=1,2
@@ -354,7 +354,7 @@ No stretching is required for this type of switching function as its functional 
 
 ### Tanh switching function
 
-You can specify that the cubic swtiching function is to be used by using the following input:
+You can specify that the cubic switching function is to be used by using the following input:
 
 ```plumed
 d: DISTANCE ATOMS=1,2
@@ -442,7 +442,7 @@ was described in the previous section is not performed.
 
     With the default implementation CUSTOM is slower than other functions
     (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
-    You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md)
+    You can find information on how to improve its performance in the documentation for [CUSTOM](CUSTOM.md)
 
 */
 //+ENDPLUMEDOC

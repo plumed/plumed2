@@ -47,7 +47,7 @@ Once LibTorch has been downloaded and the relevant environment variables are set
 ````
 
 To verify that the linking of LibTorch is succesful, one should look at the output of the configure commands: `checking libtorch[cpu/cuda] [without extra libs/with -ltorch_cpu ... ]`.  If any 
-of these commands are succesfull, it will return `... yes`. Otherwise, the configure will display a warning (and not an error!) that says: 
+of these commands are successful, it will return `... yes`. Otherwise, the configure will display a warning (and not an error!) that says: 
 `configure: WARNING: cannot enable __PLUMED_HAS_LIBTORCH`. In this case, it is recommended to examine the output of the above commands in the config.log file to understand the reason 
 (e.g. it cannot find the required libraries).  
 

@@ -50,7 +50,7 @@ public:
   explicit Info(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
   std::string description()const override {
-    return "provide informations about plumed";
+    return "provide information about plumed";
   }
 };
 

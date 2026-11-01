@@ -38,7 +38,7 @@ $$
 Here $\mathbf{x}$ is the configuration at time t, $\mathbf{\mu}$ is the reference and $\mathbf{\Sigma}^{-1}$ is the $N \times N$ precision matrix.
 
 Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference
-$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
 ## Examples
 In the following example, a group is defined with atom indices of selected atoms and then Mahalanobis distance is calculated with respect to the given reference and precision. Each file is a space separated list of 3N floating point numbers.

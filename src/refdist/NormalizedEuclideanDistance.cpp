@@ -46,7 +46,7 @@ where $\odot$ here is used to indicate the [Hadamard product](https://en.wikiped
 of the two vectors.
 
 The inputs below shows an example where this is used to calculate the Normalized Euclidean distance
-between the instaneous values of some torsional angles and some reference values
+between the instantaneous values of some torsional angles and some reference values
 for these torsion.  The inverse covriance values are provided in the constant value with label `m`.
 In this first example the input values are vectors:
 
@@ -131,7 +131,7 @@ dd: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
 PRINT ARG=dd FILE=colvar
 ```
 
-This final example then computes three distances between three pairs of torsional angles and threee
+This final example then computes three distances between three pairs of torsional angles and three
 reference values for these three values.
 
 ```plumed
@@ -148,7 +148,7 @@ PRINT ARG=dd FILE=colvar
 
 !!! note "scalars must be specified in ARG2"
 
-    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    If you use a mixture of vectors are scalars when specifying the input to this action the
     vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
     as is done in the example inputs above.
 */

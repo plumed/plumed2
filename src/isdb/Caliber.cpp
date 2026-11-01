@@ -24,6 +24,8 @@
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include <fstream>
+#include <algorithm>
+#include <cmath>
 
 namespace PLMD {
 namespace isdb {
@@ -200,18 +202,35 @@ Caliber::Caliber(const ActionOptions&ao):
   }
   var.resize(narg);
   dvar.resize(narg);
-  while (!varfile.eof()) {
-    double tempT, tempVar;
-    varfile >> tempT;
+  double tempT;
+  while(varfile >> tempT) {
     time.push_back(tempT/tscale);
     for(unsigned i=0; i<narg; i++) {
-      varfile >> tempVar;
+      double tempVar;
+      if(!(varfile >> tempVar)) {
+        error("the last line of "+filename+" does not contain a value for each argument");
+      }
       var[i].push_back(tempVar);
     }
   }
+  if(!varfile.eof()) {
+    error("cannot read "+filename+": only numbers are allowed");
+  }
   varfile.close();
+  if(time.size()<2) {
+    error("the file "+filename+" must contain at least two times");
+  }
 
   const double deltat = time[1] - time[0];
+  if(!(deltat>0.)) {
+    error("the times in "+filename+" must be increasing");
+  }
+  // getSpline assumes equally spaced times
+  for(unsigned j=1; j<time.size(); j++) {
+    if(std::abs(time[j]-time[j-1]-deltat)>1.e-6*deltat) {
+      error("the times in "+filename+" must be equally spaced");
+    }
+  }
   for(unsigned i=0; i<narg; i++) {
     for(unsigned j=0; j<var[i].size(); j++) {
       if(j==0) {
@@ -288,7 +307,13 @@ void Caliber::replica_averaging(const double fact, std::vector<double> &mean) {
 
 double Caliber::getSpline(const unsigned iarg) {
   const double deltat = time[1] - time[0];
-  const unsigned tindex = getTime()/deltat;
+  // index of the last data point before the current time (times are equally spaced)
+  const double tpos = (getTime()-time[0])/deltat;
+  if(tpos<-1.e-9 || tpos>static_cast<double>(time.size()-1)+1.e-9) {
+    error("the simulation time is outside the time range of the experimental data");
+  }
+  const unsigned tindex = std::min(static_cast<unsigned>(std::max(tpos,0.)),
+                                   static_cast<unsigned>(time.size()-1));
 
   unsigned start, end;
   start=tindex;
@@ -359,7 +384,8 @@ void Caliber::calculate() {
     const double x0 = getSpline(i);
     const double kappa = mult*dnrep/sigma_mean2_[i];
     const double cv=difference(i,x0,scale_*mean[i]);
-    const double f=-kappa*cv*dmean_x[i]/scale_;
+    // ene = 0.5*kappa*cv^2 with cv = scale*mean-x0 and d(mean)/d(arg) = dmean_x
+    const double f=-kappa*cv*dmean_x[i]*scale_;
     setOutputForce(i,f);
     ene+=0.5*kappa*cv*cv;
     x0comp[i]->set(x0);

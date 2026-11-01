@@ -365,9 +365,9 @@ X 0.8 2.8 3.5
 ....... and so on ......
 \endverbatim
 That is, foreach snapsnot: first line, number of atoms; second line, box; then for each atom name/x/y/z coordinates.
-Notice that coordinates are expected to be in in nanometers (PLUMED units).
+Notice that coordinates are expected to be in nanometers (PLUMED units).
 For orthorhombic boxes the box line will contain three numbers, namely box size in x, y, and z directions.
-For non orthorombic boxes, the box line will contain nine numbers, namely (ax,ay,az,bx,by,bz,cx,cy,cz),
+For non orthorhombic boxes, the box line will contain nine numbers, namely (ax,ay,az,bx,by,bz,cx,cy,cz),
 where ax is the x component of the first lattice vector.
 
 The produced test.xyz should match the trajectory file produced by your MD code.

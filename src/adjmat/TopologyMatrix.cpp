@@ -55,7 +55,7 @@ $$
 \rho_{ij} = \max_{m \in M} \left[ \frac{M}{d_\textrm{max}} \right] \sum_k f(r_{ik}, r_{ij}) \int_{(m-1)d_{\textrm{max}}/M}^{ md_{\textrm{max}} /M } \textrm{d}x \quad K\left( \frac{x - r_{ks} \cdot r_{ij} }{ | r_{ks} | }\right)
 $$
 
-where $d_\textrm{max}$ is the `D_MAX` parameter of the switching function $s_3$ that appears in the next equation, $K$ is a kernal function and $s$ is used to represent a point in space that is $d_\textrm{max}$ from atom $j$ along the vector connecting atom $j$ to atom $i$.
+where $d_\textrm{max}$ is the `D_MAX` parameter of the switching function $s_3$ that appears in the next equation, $K$ is a kernel function and $s$ is used to represent a point in space that is $d_\textrm{max}$ from atom $j$ along the vector connecting atom $j$ to atom $i$.
 
 The final value that is stored in the $i, j$ element of the output matrix is:
 
@@ -179,11 +179,11 @@ PLUMED_REGISTER_ACTION(tmap,"TOPOLOGY_MATRIX")
 
 void TopologyMatrix::registerKeywords( Keywords& keys ) {
   keys.add("atoms","BACKGROUND_ATOMS","the list of atoms that should be considered as part of the background density");
-  keys.add("compulsory","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+  keys.add("compulsory","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
-  keys.add("compulsory","RADIUS","swtiching function that acts upon the radial distance of the atom from the center of the cylinder");
+  keys.add("compulsory","RADIUS","switching function that acts upon the radial distance of the atom from the center of the cylinder");
   keys.linkActionInDocs("RADIUS","LESS_THAN");
   keys.add("compulsory","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
   keys.linkActionInDocs("CYLINDER_SWITCH","LESS_THAN");
@@ -305,7 +305,7 @@ void TopologyMatrix::calculateWeight( const TopologyMatrix& data,
     if( excess>data.low_sf.get_dmax() || -proj_between>data.low_sf.get_dmax() ) {
       continue;
     }
-    // Calculate the excess swiching functions
+    // Calculate the excess switching functions
     double edf1;
     double eval1 = data.low_sf.calculate( excess, edf1 );
     double edf2;

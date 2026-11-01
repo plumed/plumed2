@@ -36,7 +36,7 @@ An example input that can be used to implement one of the CVs that is introduced
 d1: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5 ATOMS5=2,3 ATOMS6=2,4 ATOMS7=2,5 ATOMS8=3,4 ATOMS9=3,5 ATOMS10=4,5
 d1lt: LESS_THAN ARG=d1 SWITCH={RATIONAL D_0=2.0 R_0=0.5 D_MAX=5.0}
 
-# These commands caluclate the angle between the z axis and the bond directions
+# These commands calculate the angle between the z axis and the bond directions
 d1c: DISTANCE ATOMS1=2,1 ATOMS2=3,1 ATOMS3=4,1 ATOMS4=5,1 ATOMS5=3,2 ATOMS6=4,2 ATOMS7=5,2 ATOMS8=4,3 ATOMS9=5,3 ATOMS10=5,4 COMPONENTS
 d2: COMBINE ARG=d1c.x,d1c.y,d1c.z POWERS=2,2,2 PERIODIC=NO
 aa: MATHEVAL ARG=d1c.z,d2 FUNC=acos(x/sqrt(y)) PERIODIC=NO
@@ -59,7 +59,7 @@ tt: TORSION ...
    VECTORA10=5,4 VECTORB10=ddx,dd0 AXIS10=ddz,dd0
 ...
 
-# We now compute our instaneous normalised histogram of the bond directions.  Notice that the weights are used here so that we do not consider
+# We now compute our instantaneous normalised histogram of the bond directions.  Notice that the weights are used here so that we do not consider
 # non-bonded atoms
 hu: KDE VOLUMES=d1lt ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.2,0.2
 de: SUM ARG=d1lt PERIODIC=NO
@@ -75,8 +75,8 @@ of all the bonds in our structure relative to the lab frame by computing the ang
 our bond vector and the positive x direction.  In other words, we compute two of the three [spherical polar coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system)
 for each of the bond directions in our crystal structure.
 
-A normalised histogram that describes the instaneous distribution for these bond directions is then computed by using the [KDE](KDE.md) action. The final scalar value for the CV is computed by
-determining the [Kullbeck-Leibler divergence](https://en.wikipedia.org/wiki/Kullback–Leibler_divergence) between this instaneous distribution and a reference distribution that is provided in input.
+A normalised histogram that describes the instantaneous distribution for these bond directions is then computed by using the [KDE](KDE.md) action. The final scalar value for the CV is computed by
+determining the [Kullbeck-Leibler divergence](https://en.wikipedia.org/wiki/Kullback–Leibler_divergence) between this instantaneous distribution and a reference distribution that is provided in input.
 
 Notice that this action will also works if you use KDEs computed using the [SPHERICAL_KDE](SPHERICAL_KDE.md) action in input as is illustrated in the following input:
 
@@ -94,7 +94,7 @@ d1nx: CUSTOM ARG=d1c.x,d1l FUNC=x/y PERIODIC=NO
 d1ny: CUSTOM ARG=d1c.y,d1l FUNC=x/y PERIODIC=NO
 d1nz: CUSTOM ARG=d1c.z,d1l FUNC=x/y PERIODIC=NO
 
-# Now compute our instaneous normalised histogram of the bond directions
+# Now compute our instantaneous normalised histogram of the bond directions
 hu: SPHERICAL_KDE HEIGHTS=d1lt ARG=d1nx,d1ny,d1nz GRID_BIN=400 CONCENTRATION=100.0
 de: SUM ARG=d1lt PERIODIC=NO
 h: CUSTOM ARG=hu,de FUNC=x/y PERIODIC=NO

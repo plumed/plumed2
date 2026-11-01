@@ -1,0 +1,4 @@
+type=driver
+plumed_modules=gridtools
+# GPU version of regtest/gridtools/rt-kde-fullcovar: KDE with a full (non-diagonal) covariance matrix, i.e. KDE_FULLCOVAR, with forces
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt %8.4f"

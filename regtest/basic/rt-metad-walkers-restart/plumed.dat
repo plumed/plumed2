@@ -1,0 +1,23 @@
+# Two walkers sharing the hills through files (WALKERS_N), continuation at step 300.
+# The hills files and the grids (HR.*, GA.*) were written by a run in which the walkers read the files of each other
+# every 5 steps: walker 0 stopped at time 0.39, walker 1 at 0.59. Each grid contains the number of hills of the other
+# walker that it contains (comment at its end).
+# r: restart from the grids: the hills of the other walker that are not in the grid are added from its hills file;
+# h: restart from the hills (HH.* = HR.*). Same bias (up to the precision of the grid files).
+# p, q: the same with PBMETAD (grids PGA*, hills PR*, PH*).
+# o: restart from grids written by an older version (GO.*, without the number of hills): the hills of the other
+#    walker up to the last hill of this walker are assumed to be in the grid (true for these grids);
+#    oh: restart from the hills (HOH.* = HO.*).
+# m: WALKERS_MPI, restart from the hills file HM shared by the walkers: HM.1 (a file with the suffix of replica 1,
+#    with different hills) is not read.
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+r: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=HR WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005 GRID_RFILE=@replicas:GA.0,GA.1
+h: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=HH WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005
+p: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=PR0,PR1 WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005 GRID_RFILES=@replicas:{{PGA0.0,PGA1.0},{PGA0.1,PGA1.1}}
+q: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=PH0,PH1 WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005
+o: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=HO WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005 GRID_RFILE=@replicas:GO.0,GO.1
+oh: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=HOH WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=100000 GRID_MIN=-pi,0.2 GRID_MAX=pi,0.5 GRID_SPACING=0.05,0.005
+m: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.9f FILE=HM WALKERS_MPI
+PRINT ARG=phi,d,r.bias,h.bias,p.bias,q.bias,o.bias,oh.bias,m.bias FILE=colvar FMT=%10.5f

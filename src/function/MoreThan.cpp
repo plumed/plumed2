@@ -135,7 +135,7 @@ ones: ONES SIZE=400
 coord: MATRIX_VECTOR_PRODUCT ARG=adj,ones
 # Determine if coordination numbers are more than 4 or not
 lt: MORE_THAN ARG=coord MASK=sphere SWITCH={RATIONAL R_0=4.0}
-# And calculate how many atoms in the region of interst have a coordination number that is less than four
+# And calculate how many atoms in the region of interest have a coordination number that is less than four
 ltsphere: CUSTOM ARG=lt,sphere FUNC=x*y PERIODIC=NO
 cv: SUM ARG=ltsphere PERIODIC=NO
 PRINT ARG=cv FILE=colvar

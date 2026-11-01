@@ -27,7 +27,7 @@
 /*
 Add lower walls to a vector of quantities
 
-Depracated action: use [UPPER_WALLS](UPPER_WALLS.md)
+Deprecated action: use [UPPER_WALLS](UPPER_WALLS.md)
 
 */
 //+ENDPLUMEDOC

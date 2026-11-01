@@ -33,7 +33,7 @@ The remaining points are then selected by taking the unselected point in the inp
 from all the points that have been selected thus far.
 
 This particular action is designed to be used in conjunction with [SELECT_WITH_MASK](SELECT_WITH_MASK.md) in the same way that
-[CREATE_MASK](CREATE_MASK.md) is designed to be be used with that action.  This action takes an $N\times N$ matrix of dissimilarities
+[CREATE_MASK](CREATE_MASK.md) is designed to be used with that action.  This action takes an $N\times N$ matrix of dissimilarities
 in input and outputs and $N$ dimensional vector whose elements are ones and zeros. As shown in the example input below, this output
 vector is passed to a [SELECT_WITH_MASK](SELECT_WITH_MASK.md) using the MASK keyword.
 
@@ -92,7 +92,7 @@ void FarthestPointSampling::registerKeywords( Keywords& keys ) {
   matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","NZEROS","the number of landmark points that you want to select");
   keys.add("compulsory","SEED","1234","a random number seed");
-  keys.setValueDescription("vector","a vector which has as many elements as there are rows in the input matrix of dissimilarities. NZEROS of the elements in this vector are equal to one, the rest of the elements are equal to zero.  The nodes that have elements equal to one are the NZEROS points that are farthest appart according to the input dissimilarities");
+  keys.setValueDescription("vector","a vector which has as many elements as there are rows in the input matrix of dissimilarities. NZEROS of the elements in this vector are equal to one, the rest of the elements are equal to zero.  The nodes that have elements equal to one are the NZEROS points that are farthest apart according to the input dissimilarities");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):

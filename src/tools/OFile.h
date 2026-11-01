@@ -140,7 +140,7 @@ int main(){
 }
 
 \notice
-Notice that it is not necessary to explicitely close files, since they are closed implicitly
+Notice that it is not necessary to explicitly close files, since they are closed implicitly
 when the object goes out of scope. In case you need to explicitly close the file before it is
 destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
 statement.
@@ -193,6 +193,21 @@ class OFile:
   bool enforceRestart_;
 /// True if backup behavior (i.e. non restart) should be forced
   bool enforceBackup_;
+/// Check that no other OFile linked to the same PlumedMain object
+/// is currently writing on the file this->path.
+/// Throws an exception if this is the case.
+  void checkNotOpenElsewhere()const;
+/// True if this process writes the file: the first process of the communicator,
+/// or every process if there is no communicator
+  bool isWriter()const;
+/// Open fp (and gzfp for gz files) with the given modes.
+/// Only the writer opens the file: the other processes open the null device (/dev/null, NUL on Windows),
+/// so that fp is valid on all processes but the file is opened (and truncated) only once.
+  void openOnWriter(const char* fmode,const char* gzmode,bool reopenFp=true);
+/// After the writer opened the file: let all processes know whether it succeeded.
+/// This is also a synchronization point: the other processes continue
+/// only after the writer has opened (and created) the file.
+  void syncOpen();
 public:
 /// Constructor
   OFile();

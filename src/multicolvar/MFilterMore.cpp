@@ -26,7 +26,7 @@
 /*
 Apply one minus a switching function to the input vector.
 
-This action has been depracated as it is equivalent to [MORE_THAN](MORE_THAN.md).
+This action has been deprecated as it is equivalent to [MORE_THAN](MORE_THAN.md).
 
 */
 //+ENDPLUMEDOC
@@ -59,7 +59,7 @@ void MFilterMore::registerKeywords(Keywords& keys) {
 MFilterMore::MFilterMore(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
+  warning("This action has been deprecated.  Look at the log to see how the same result is achieved with the new syntax");
   bool lowmem;
   parseFlag("LOWMEM",lowmem);
   if( lowmem ) {

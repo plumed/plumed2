@@ -1,0 +1,15 @@
+# The box passed by the driver is set, but c, d, e and f do not use pbc:
+# the cells must enclose the atoms rather than follow the periodic box.
+# Atoms are spread over the whole box, so many close pairs straddle the planes
+# at half box, where the scaled coordinates wrap.
+c: COORDINATION GROUPA=1-100 GROUPB=101-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NOPBC NLIST      NL_STRIDE=1 NL_CUTOFF=2.0
+d: COORDINATION GROUPA=1-100 GROUPB=101-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NOPBC NLISTCELLS NL_STRIDE=1 NL_CUTOFF=2.0
+e: COORDINATION GROUPA=1-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NOPBC NLIST      NL_STRIDE=1 NL_CUTOFF=2.0
+f: COORDINATION GROUPA=1-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NOPBC NLISTCELLS NL_STRIDE=1 NL_CUTOFF=2.0
+# the same with pbc
+g: COORDINATION GROUPA=1-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLIST      NL_STRIDE=1 NL_CUTOFF=2.0
+h: COORDINATION GROUPA=1-200 SWITCH={RATIONAL R_0=1 D_MAX=1.5} NLISTCELLS NL_STRIDE=1 NL_CUTOFF=2.0
+s: CUSTOM ARG=c,d FUNC=abs(y-x) PERIODIC=NO
+t: CUSTOM ARG=e,f FUNC=abs(y-x) PERIODIC=NO
+u: CUSTOM ARG=g,h FUNC=abs(y-x) PERIODIC=NO
+PRINT ARG=c,s,e,t,g,u FILE=check_diff FMT=%8.4f STRIDE=1

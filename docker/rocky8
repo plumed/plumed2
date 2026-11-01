@@ -52,4 +52,4 @@ RUN . ./.bashrc \
  && pip3 install --user -r ./python/requirements_run.txt \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
- && make check
+ && make -j 2 check

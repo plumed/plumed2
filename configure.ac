@@ -627,7 +627,7 @@ fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
-AC_MSG_WARN([using internal lapack and blas, could be inefficient])
+AC_MSG_WARN([using internal lapack and blas; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 fi
 
 # if found, also look for external lapack
@@ -646,7 +646,7 @@ fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([using internal lapack, could be inefficient])
+AC_MSG_WARN([using internal lapack; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi
@@ -778,32 +778,38 @@ fi
 PLUMED_OPENMP
 
 if test $asmjit = true ; then
-  AC_MSG_CHECKING([whether architecture is X86/X64])
+  AC_MSG_CHECKING([whether architecture is X86/X64 or AArch64])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
       defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
       defined(__i486__) || defined(__i586__) || defined(__i686__) || \
       defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
-      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
-this_is_not_x86_x64
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__) || \
+      defined(__aarch64__) || defined(_M_ARM64))
+this_is_not_x86_x64_or_aarch64
 #endif
   ])],
   [AC_MSG_RESULT([yes])];
-  x86_x64=true,
+  asmjit_arch_supported=true,
   [AC_MSG_RESULT([no]) ;
-  x86_x64=false])
+  asmjit_arch_supported=false])
 fi
 
-if test $asmjit = true && test $x86_x64 = false ; then
+if test $asmjit = true && test $asmjit_arch_supported = false ; then
   AC_MSG_WARN([asmjit does not support this architecture, it will be disabled])
   asmjit=false
 fi
 
 if test $asmjit = true ; then
   found=ko
-# asmjit calls clock_gettime and thus should be linked to rt on Linux
+# On older Linux systems, AsmJit's clock and POSIX shared-memory functions
+# require librt. Check each symbol: clock_gettime can be in libc even when
+# shm_open and shm_unlink still require -lrt.
   if test `(uname)` = Linux ; then
-    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+    found=ok
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_open],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_unlink],[rt],[],[found=ko])
   else
     found=ok
   fi
@@ -811,7 +817,7 @@ if test $asmjit = true ; then
     AC_MSG_NOTICE([Enabling embedded asmjit])
     AC_DEFINE([__PLUMED_HAS_ASMJIT])
   else
-    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
+    AC_MSG_WARN([cannot link required clock or shared-memory functions on this Linux, asmjit will not be enabled])
   fi
 fi
 

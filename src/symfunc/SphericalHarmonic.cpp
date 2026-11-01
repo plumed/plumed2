@@ -49,9 +49,9 @@ $$
 At present, the arguments for this action must be matrices. However, it would be easy to add functionality that would allow you to compute this function for scalar or vector input.
 The arguments must all have the same shape as the two output components will also be matrices that are
 calculated by applying the function above to each of the elements of the input matrix in turn.  The number of components output will be equal to $2(2L+1)$ and will contain
-the real and imaginary parts of the $Y_l^m$ functions with the the $2l+1$ possible $m$ values.
+the real and imaginary parts of the $Y_l^m$ functions with the $2l+1$ possible $m$ values.
 
-The following intput provides an example that demonstrates how this function is used:
+The following input provides an example that demonstrates how this function is used:
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-10 COMPONENTS

@@ -10,12 +10,12 @@ if your experience was negative.)
 
 _This section will likely be moved  in the proper installation page_
 
-To compile PLUMED with openacc enabled you will need to have the [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk) avaiable on your path.
+To compile PLUMED with openacc enabled you will need to have the [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk) available on your path.
 
 Plumed is tested with the [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads) version.
 
 To prepare the compilation add `--enable-opeacc` to the `./configure` options.
-It is also possible to pass some extra options by exporting or specifying the the following variables:
+It is also possible to pass some extra options by exporting or specifying the following variables:
  - **PLUMED_ACC_TYPE**: if omitted defaults to `gpu`, can be changed to `host` or `multicore` to try a compilation that targets the CPU also for the openacc accellerate part of the code.
  - **PLUMED_ACC_GPU**: if `PLUMED_ACC_TYPE` is set to `gpu`, it can be used to specify a range of `-gpu` optios to pass to the nvhpc compiler (for example the target gpu, see the [compiler manual](https://docs.nvidia.com/hpc-sdk/compilers/hpc-compilers-user-guide/index.html) for the options) options can be comma separated or space separated
 
@@ -69,8 +69,8 @@ It is also possible to pass some extra options by exporting or specifying the th
    - [SIMPLECUBIC](SIMPLECUBIC.md)
    - [COORDINATION_SHELL_FUNCTION](COORDINATION_SHELL_FUNCTION.md)
    - [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md)
-   - [LOCAL_Q1](LOCAL_qQ1.md)
-   - [LOCAL_Q3](LOCAL_qQ3.md)
-   - [LOCAL_Q4](LOCAL_qQ4.md)
-   - [LOCAL_Q6](LOCAL_qQ6.md)
+   - [LOCAL_Q1](LOCAL_Q1.md)
+   - [LOCAL_Q3](LOCAL_Q3.md)
+   - [LOCAL_Q4](LOCAL_Q4.md)
+   - [LOCAL_Q6](LOCAL_Q6.md)
    

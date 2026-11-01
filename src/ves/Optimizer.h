@@ -39,7 +39,7 @@ namespace PLMD {
 
 /**
 \ingroup INHERIT
-Abstract base class for implenting new optimization methods
+Abstract base class for implementing new optimization methods
 */
 
 class OFile;

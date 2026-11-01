@@ -73,9 +73,9 @@ class Pbc {
   Vector shifts[2][2][2][maxshiftsize];
 /// Number of valid entries in each list of shifts
   unsigned nShiftsPerOctant[2][2][2];
-/// Alternative representation for orthorombic cells.
+/// Alternative representation for orthorhombic cells.
 /// Not really used, but could be used to optimize search in
-/// orthorombic cells.
+/// orthorhombic cells.
   Vector diag,hdiag,mdiag;
 /// Build list of shifts.
 /// This is expensive, and must be called only when box is

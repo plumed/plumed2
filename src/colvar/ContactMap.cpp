@@ -126,7 +126,7 @@ void ContactMap::registerKeywords( Keywords& keys ) {
   keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map. "
            "You can either specify a global switching function using SWITCH or one "
            "switching function for each contact. Details of the various switching "
-           "functions you can use are provided on \\ref switchingfunction.");
+           "functions you can use are provided in the documentation for LESS_THAN.");
   keys.add("numbered","REFERENCE","A reference value for a given contact, by default is 0.0 "
            "You can either specify a global reference value using REFERENCE or one "
            "reference value for each contact.");

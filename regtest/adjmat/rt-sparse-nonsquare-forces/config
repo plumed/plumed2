@@ -1,0 +1,7 @@
+type=driver
+plumed_modules="adjmat valtools function"
+# The CONTACT_MATRIX between GROUPA (5 atoms) and GROUPB (95 atoms) is non-square and,
+# with D_MAX, it is stored as a sparse matrix. Forces reach it element by element through
+# FLATTEN. forces.reference was generated with the equivalent input that does not use
+# FLATTEN (biases on the matrix directly), so the two routes must give the same forces.
+arg="--plumed plumed.dat --ixyz traj.xyz --length-units 1 --dump-forces forces --dump-forces-fmt=%10.5f"

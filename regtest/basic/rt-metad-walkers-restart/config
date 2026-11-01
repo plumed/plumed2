@@ -1,0 +1,5 @@
+type=driver
+mpiprocs=2
+# two walkers, continuation at step 300 (traj.*.xyz contain the frames from step 300 on)
+arg="--plumed plumed.dat --ixyz traj.xyz --timestep 0.002 --initial-step 300 --multi 2"
+extra_files="../rt-metad-diff-restart-mpi/traj.0.xyz ../rt-metad-diff-restart-mpi/traj.1.xyz"

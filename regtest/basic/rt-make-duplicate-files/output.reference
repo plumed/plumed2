@@ -1,0 +1,35 @@
+readInputLine d: DISTANCE ATOMS=1,2
++++ ok
+readInputLine p1: PRINT ARG=d FILE=COLVAR
++++ ok
+readInputLine p2: PRINT ARG=d FILE=COLVAR
++++ catched
++++ message ok
+readInputLine p3: PRINT ARG=d FILE=./COLVAR
++++ catched
++++ message ok
+readInputLine p4: PRINT ARG=d FILE=/absolute/path/to/COLVAR
++++ catched
++++ message ok
+readInputLine p5: PRINT ARG=d FILE=COLVAR RESTART=YES
++++ catched
++++ message ok
+readInputLine p6: PRINT ARG=d FILE=COLVAR2
++++ ok
+readInputLine p7: PRINT ARG=d FILE=/dev/null
++++ ok
+readInputLine p8: PRINT ARG=d FILE=/dev/null
++++ ok
+readInputLine m1: METAD ARG=d SIGMA=0.1 HEIGHT=1.0 PACE=2
++++ ok
+readInputLine m2: METAD ARG=d SIGMA=0.1 HEIGHT=1.0 PACE=2
++++ catched
++++ message ok
+readInputLine m3: METAD ARG=d SIGMA=0.1 HEIGHT=1.0 PACE=2 FILE=HILLS2
++++ ok
+bck.0.COLVAR exists: 0
+bck.0.HILLS exists: 0
+readInputLine d: DISTANCE ATOMS=1,2
++++ ok
+readInputLine p1: PRINT ARG=d FILE=COLVAR
++++ ok

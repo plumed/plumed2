@@ -1,0 +1,23 @@
+unix file
+  line 1: [first line]
+  line 2: []
+  line 3: [third line]
+  line 4: 20000 characters, starting with abcdefghij and ending with wxyzabcdef
+unix file, allowNoEOL
+  line 1: [first line]
+  line 2: []
+  line 3: [third line]
+  line 4: 20000 characters, starting with abcdefghij and ending with wxyzabcdef
+  line 5: [last line without newline]
+dos file
+  line 1: [first line]
+  line 2: [second line]
+growing file
+  [complete line 1]
+  end of file reached
+  [incomplete line 2]
+  [complete line 3]
+  end of file reached
+gzipped file
+  line 1: [line 1]
+  line 2: [line 2]

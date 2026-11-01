@@ -33,7 +33,7 @@ $$
 f(x) = \sum_{ijk} s(r_{ij})s(r_{jk}) g(\theta_{ijk})
 $$
 
-where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and and $j$ and the vector connecting atom $j$ and atom $k$ and
+where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and $j$ and the vector connecting atom $j$ and atom $k$ and
 where $s(r)$ is a switching function.  The switching functions in the expression above ensure that we can calculate all the angles in the first coordination
 spheres of an atom using an input like the one shown below:
 

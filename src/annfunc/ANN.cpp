@@ -160,7 +160,7 @@ ANN::ANN(const ActionOptions&ao):
     log.printf("size of biases = %lu\n", biases.size());
   }
 
-  if(getNumberOfArguments() != num_nodes[0]) {
+  if(static_cast<int>(getNumberOfArguments()) != num_nodes[0]) {
     error("Number of arguments is wrong");
   }
 
@@ -169,13 +169,13 @@ ANN::ANN(const ActionOptions&ao):
     int num_of_rows, num_of_cols; // num of rows/cols for the coeff matrix of this connection
     num_of_rows = num_nodes[ii + 1];
     num_of_cols = num_nodes[ii];
-    assert (num_of_rows * num_of_cols == temp_coeff[ii].size()); // check whether the size matches
+    assert (num_of_rows * num_of_cols == static_cast<int>(temp_coeff[ii].size())); // check whether the size matches
     // create a 2d array to hold coefficients
     coeff[ii] = new double*[num_of_rows];
     for (int kk = 0; kk < num_of_rows; kk ++) {
       coeff[ii][kk] = new double[num_of_cols];
     }
-    for (int jj = 0; jj < temp_coeff[ii].size(); jj ++) {
+    for (int jj = 0; jj < static_cast<int>(temp_coeff[ii].size()); jj ++) {
       coeff[ii][jj / num_of_cols][jj % num_of_cols] = temp_coeff[ii][jj];
     }
   }
@@ -211,7 +211,7 @@ void ANN::calculate_output_of_each_layer(const vector<double>& input) {
   // first layer
   output_of_each_layer[0] = input;
   // following layers
-  for(int ii = 1; ii < num_nodes.size(); ii ++) {
+  for(int ii = 1; ii < static_cast<int>(num_nodes.size()); ii ++) {
     output_of_each_layer[ii].resize(num_nodes[ii]);
     input_of_each_layer[ii].resize(num_nodes[ii]);
     // first calculate input

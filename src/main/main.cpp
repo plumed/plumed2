@@ -36,7 +36,7 @@
 int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
-  for(unsigned iarg=1; iarg<argc; iarg++) {
+  for(int iarg=1; iarg<argc; iarg++) {
     if(!std::strcmp(argv[iarg],"--no-mpi")) {
       nompi=true;
     }

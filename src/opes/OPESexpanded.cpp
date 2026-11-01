@@ -193,7 +193,7 @@ void OPESexpanded::registerKeywords(Keywords& keys) {
   keys.add("optional","STATE_RFILE","read from this file the Delta F estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the Delta F estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
-  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of overwriting it each time");
 //miscellaneous
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
@@ -331,9 +331,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       } else { //get just deltaFs names
         ifile.scanFieldList(deltaF_name_);
         plumed_massert(deltaF_name_.size()>=4,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[0]=="time","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-        plumed_massert(deltaF_name_[1]=="rct","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[0]=="time","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[1]=="rct","RESTART - could not find expected FIELDS in '"+deltaFsFileName+"' file");
         deltaF_name_.pop_back();
         deltaF_name_.erase(deltaF_name_.begin(),deltaF_name_.begin()+2);
         std::size_t pos=5; //each name starts with "DeltaF"
@@ -804,13 +804,12 @@ void OPESexpanded::init_fromObs() { //This could probably be faster and/or requi
 
 //initialize deltaF_ from obs
 //for the first point, t=0, the ECVs are calculated by initECVs_observ, setting also any initial guess
-  index_j=0;
   for(unsigned i=0; i<deltaF_.size(); i++)
     for(unsigned j=0; j<ncv_; j++) {
       deltaF_[i]+=kbt_*ECVs_[j][index_k_[i][j]];
     }
   for(unsigned t=1; t<obs_steps_; t++) { //starts from t=1
-    unsigned index_j=0;
+    index_j=0;
     for(unsigned l=0; l<pntrToECVsClass_.size(); l++) {
       pntrToECVsClass_[l]->calculateECVs(&obs_cvs_[t*ncv_+index_j]);
       index_j+=pntrToECVsClass_[l]->getNumberOfArguments();

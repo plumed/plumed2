@@ -55,7 +55,7 @@ Insert declarations for your function's parameters here.
           (the first word in the input line for your function).
 PLUMED_REGISTER_ACTION(FunctionNAME,"COMBINE")
 
-/----- The following routine creates the documentation for the keyowrds used by your CV
+/----- The following routine creates the documentation for the keywords used by your CV
 void FunctionNAME::registerKeywords( Keywords& keys ){
   Function::registerKeywords(keys);
 \endverbatim

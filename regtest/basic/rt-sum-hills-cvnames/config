@@ -1,0 +1,3 @@
+# variables whose names contain "sigma_" or "time" (#1226)
+type=sum_hills
+arg="--hills HILLS --bin 30,30 --fmt %10.5f"

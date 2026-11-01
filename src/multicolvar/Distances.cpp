@@ -202,7 +202,7 @@ d1: XDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 
@@ -251,7 +251,7 @@ d1: YDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 
@@ -299,7 +299,7 @@ d1: ZDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 

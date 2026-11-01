@@ -45,7 +45,7 @@ n: NEIGHBORS ARG=c1 NHIGHEST=6
 
 This command is useful for implementing alternatives to the symmatry functions that are defined by the shortcuts
 in the module symfunc.  For example, suppose that you want to calculate a variant on the [TETRAHEDRAL](TETRAHEDRAL.md) symmetry function.
-In this variant on the CV the coordination sphere around each central atom is not defined using a switching function.  Instad
+In this variant on the CV the coordination sphere around each central atom is not defined using a switching function.  Instead
 this coordination sphere contains only the four nearest atoms.  You can implement this CV by using the following input:
 
 ```plumed
@@ -127,20 +127,20 @@ NeighborsShortcut::NeighborsShortcut(const ActionOptions& ao):
     error("should only be one of NLOWEST or NHIGHEST set in input");
   }
   if( nlow==1 ) {
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",nlow);
+    log.printf("  output matrix will have non-zero values for elements that correspond to the %d lowest elements in each row of the input matrix\n",nlow);
     readInputLine( getShortcutLabel() + ": NEIGHBORS_1LOW N=1 " + convertInputLineToString() );
   } else if( nlow>1 ) {
     std::string str_n;
     Tools::convert( nlow, str_n );
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d lowest elements in each row of the input matrix\n",nlow);
+    log.printf("  output matrix will have non-zero values for elements that correspond to the %d lowest elements in each row of the input matrix\n",nlow);
     readInputLine( getShortcutLabel() + ": NEIGHBORS_NLOW N=" + str_n + " " + convertInputLineToString() );
   } else if( nhigh==1 ) {
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",nhigh);
+    log.printf("  output matrix will have non-zero values for elements that correspond to the %d highest elements in each row of the input matrix\n",nhigh);
     readInputLine( getShortcutLabel() + ": NEIGHBORS_1HIGH N=1 " + convertInputLineToString() );
   } else if( nhigh>1 ) {
     std::string str_n;
     Tools::convert( nlow, str_n );
-    log.printf("  output matrix will have non-zero values for elements that correpsond to the %d highest elements in each row of the input matrix\n",nhigh);
+    log.printf("  output matrix will have non-zero values for elements that correspond to the %d highest elements in each row of the input matrix\n",nhigh);
     readInputLine( getShortcutLabel() + ": NEIGHBORS_NHIGH N=" + str_n + " " + convertInputLineToString() );
   } else {
     error("do not know what I am supposed to do");

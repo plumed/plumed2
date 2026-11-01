@@ -179,7 +179,9 @@ void Random::Shuffle(std::vector<unsigned>& vec) {
   std::iterator_traits<std::vector<unsigned>::iterator >::difference_type i, n;
   n = vec.end() - vec.begin();
   for(i=n-1; i>0; --i) {
-    std::swap(vec[i], vec[(int)round(RandU01() * IM) % i]);
+    // Fisher-Yates: j is drawn from [0,i]. Drawing it from [0,i-1] (Sattolo's algorithm)
+    // would only produce cyclic permutations
+    std::swap(vec[i], vec[(int)round(RandU01() * IM) % (i+1)]);
   }
 }
 

@@ -1,0 +1,2 @@
+Tools::pbc<float> exact: yes
+Pbc::distance single vs double precision within 5e-6: yes

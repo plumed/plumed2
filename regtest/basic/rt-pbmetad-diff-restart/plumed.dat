@@ -1,0 +1,16 @@
+# PBMETAD with ADAPTIVE=DIFF, continuation at step 300 of a run with SIGMA=100 (steps) and PACE=5.
+# Two torsions in a family (PF0), and a distance (PF1): each argument has its own statistics.
+# a: restart from the hills (HA*, hills up to step 295): the statistics of the fluctuations of each argument are
+#    initialized from its last hills, so that the hills at step 300 are added with the right widths
+# s: same, with DIFF_FROM_SCRATCH: the statistics start from scratch (no hill until two values are available)
+# g: restart from the grids GG*, written at step 300 by a run that went on until step 400: the hills files HG*
+#    are scanned for the statistics, using only the hills up to step 300, and for the time of the last hill
+#    (they contain the hill at step 300, which is not added again)
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+d: DISTANCE ATOMS=5,17
+a: PBMETAD ARG=phi,psi,d PF0=phi,psi PF1=d ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 TEMP=300 FMT=%10.5f FILE=HA0,HA1
+s: PBMETAD ARG=phi,psi,d PF0=phi,psi PF1=d ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 TEMP=300 FMT=%10.5f FILE=HS0,HS1 DIFF_FROM_SCRATCH
+g: PBMETAD ARG=phi,psi,d PF0=phi,psi PF1=d ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 TEMP=300 FMT=%10.5f FILE=HG0,HG1 GRID_MIN=-pi,0 GRID_MAX=pi,1 GRID_BIN=60,200 SIGMA_MIN=0.01,0.001 GRID_RFILES=GG0,GG1
+PRINT ARG=phi,psi,d,a.bias,s.bias,g.bias STRIDE=5 FILE=colvar FMT=%10.5f

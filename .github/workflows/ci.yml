@@ -10,6 +10,15 @@ on:
     - cron: "37 2 * * *"
   workflow_dispatch:
 
+# One group per workflow, event and ref, so that the nightly run never waits for a push or vice versa.
+# - pull requests: a new push cancels the run of the previous one;
+# - pushes to a branch (master included): the run in progress is never cancelled, but runs still
+#   waiting are replaced by the newest one, so a burst of merges does not queue one full CI per commit
+#   (this was the main source of wall-clock time, with jobs waiting up to 1.5 h for a runner).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
 # on CI, better dump stack trace in case there is an error
   PLUMED_STACK_TRACE: yes

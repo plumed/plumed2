@@ -1,0 +1,50 @@
+double "1": 1
+double "-2.5": -2.5
+double " 3.25 ": 3.25
+double "1e-3": 0.001
+double "+4": 4
+double "0.1": 0.10000000000000001
+double "nan": nan
+double "-nan": nan
+double "NAN": nan
+double "NaN": nan
+double "inf": +inf
+double "-inf": -inf
+double "+Inf": +inf
+double "infinity": +inf
+double "pi": 3.1415926535897931
+double "2pi": 6.2831853071795862
+double "-PI": -3.1415926535897931
+double "1+1": 2
+double "exp(1)": 2.7182818284590451
+double "1.5x": not converted
+double "": not converted
+double "nanx": not converted
+double "1,5": not converted
+float "0.1": 0.10000000149011612
+float "nan": nan
+float "-inf": -inf
+float "1e40": +inf
+int "12": 12
+int " 12 ": 12
+int "+12": 12
+int "-12": -12
+int "2*3": 6
+int "1.0": 1
+int "1.5": not converted
+int "2147483647": 2147483647
+int "2147483648": not converted
+int "-2147483648": -2147483648
+unsigned "12": 12
+unsigned "+12": 12
+unsigned "-1": not converted
+unsigned " -1": not converted
+unsigned "-0": 0
+unsigned "4294967295": 4294967295
+unsigned "4294967296": not converted
+unsigned "3-5": not converted
+unsigned "2*3": 6
+unsigned long "-1": not converted
+unsigned long "18446744073709551615": 18446744073709551615
+AtomNumber "-1": not converted
+AtomNumber "7": 7

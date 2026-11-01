@@ -466,6 +466,9 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
 
 void PDB::getChainNames( std::vector<std::string>& chains ) const {
   chains.resize(0);
+  if(chain.empty()) {
+    return;
+  }
   chains.push_back( chain[0] );
   for(unsigned i=1; i<size(); ++i) {
     if( chains[chains.size()-1]!=chain[i] ) {

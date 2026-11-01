@@ -99,7 +99,7 @@ Action::Action(const ActionOptions&ao):
   }
   if(actionLabel.length()==0) {
     std::string s;
-    Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
+    Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().getNumberOfActionsForInterface(),s);
     actionLabel="@"+s;
   } else if ( actionLabel.find(".")!=std::string::npos ) {
     warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
@@ -387,7 +387,7 @@ void Action::warning( const std::string & msg ) {
 void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
-    ActionWithValue*av=castToActionWithValue();
+    ActionWithValue*av=p->castToActionWithValue();
     if(av) {
       av->clearInputForces();
       av->clearDerivatives();

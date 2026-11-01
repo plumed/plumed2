@@ -132,7 +132,7 @@ void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
 }
 

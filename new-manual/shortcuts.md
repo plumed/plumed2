@@ -2,7 +2,7 @@ Shortcuts
 ---------
 
 Many of the commands in a PLUMED input file are shortcuts. When PLUMED reads one of these shortcuts replaces it with multiple lines of PLUMED input and then reads 
-in all the [actions](actions.md) that are defiend in this longer and more complicated input.  The reason for implementing these commands in this way is twofold:
+in all the [actions](actions.md) that are defined in this longer and more complicated input.  The reason for implementing these commands in this way is twofold:
 
 1. It ensures that there is less code within PLUMED to maintain.
 2. It allows users of PLUMED to understand how various methods are implemented within PLUMED.   

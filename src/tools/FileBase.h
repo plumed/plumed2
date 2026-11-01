@@ -105,7 +105,7 @@ public:
 /// Flushes the file to disk
   virtual FileBase& flush();
 /// Closes the file
-/// Should be used only for explicitely opened files.
+/// Should be used only for explicitly opened files.
   void        close();
 /// Virtual destructor (allows inheritance)
   virtual ~FileBase();

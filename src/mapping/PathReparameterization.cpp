@@ -80,7 +80,7 @@ private:
   unsigned ifix1, ifix2;
 /// Tolerance for the minimization algorithm
   double TOL;
-/// Value containing ammount to displace each reference configuration by
+/// Value containing amount to displace each reference configuration by
   Value* displace_value;
 /// The action for calculating the distances between the frames
   PathProjectionCalculator path_projector;
@@ -258,7 +258,7 @@ void PathReparameterization::reparameterizePart( const int istart, const int ien
         newmatrix(i,j) = data[j];
       }
       path_projector.getDisplaceVector( k, k+incr, data );
-      // Shift the reference configuration by this ammount
+      // Shift the reference configuration by this amount
       for(unsigned j=0; j<data.size(); ++j) {
         newmatrix(i,j) += dr*data[j];
       }

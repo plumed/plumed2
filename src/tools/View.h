@@ -63,7 +63,7 @@ PLMD::View<PLMD::VecorGeneric<3>,3> vd(v.data());
 @endcode
 
 @todo  ctors from std::array and from iterators to parallel the span
-implementatio
+implementation
 */
 template <typename T, std::size_t N = helpers::dynamic_extent> class View {
 public:

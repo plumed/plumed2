@@ -27,7 +27,7 @@
 
 //+PLUMEDOC VOLUMES AROUND
 /*
-This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of the cell.
 
 This action can be used to calculate whether each of the atoms are within a particular part of the simulation box or not as illustrated by the following example:
 

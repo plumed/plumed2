@@ -1,131 +1,170 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_globals_h
-#define __PLUMED_asmjit_globals_h
-#ifdef __PLUMED_HAS_ASMJIT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Guard]
-#ifndef _ASMJIT_BASE_GLOBALS_H
-#define _ASMJIT_BASE_GLOBALS_H
+#ifndef ASMJIT_CORE_GLOBALS_H_INCLUDED
+#define ASMJIT_CORE_GLOBALS_H_INCLUDED
 
-// [Dependencies]
-#include "./asmjit_build.h"
+#include "api-config.h"
 
-// [Api-Begin]
-#include "./asmjit_apibegin.h"
+ASMJIT_BEGIN_NAMESPACE
 
-namespace PLMD {
-namespace asmjit {
+//! \cond INTERNAL
+//! \addtogroup asmjit_utilities
+//! \{
+namespace Support {
+  //! Cast designed to cast between function and void* pointers.
+  template<typename Dst, typename Src>
+  static inline Dst ptr_cast_impl(Src p) noexcept { return (Dst)p; }
+} // {Support}
 
-//! \addtogroup asmjit_base
+#if defined(ASMJIT_NO_STDCXX)
+namespace Support {
+  ASMJIT_FORCE_INLINE void* operatorNew(size_t n) noexcept { return malloc(n); }
+  ASMJIT_FORCE_INLINE void operatorDelete(void* p) noexcept { if (p) free(p); }
+} // {Support}
+
+#define ASMJIT_BASE_CLASS(TYPE)                                                  \
+  ASMJIT_FORCE_INLINE void* operator new(size_t n) noexcept {                    \
+    return Support::operatorNew(n);                                              \
+  }                                                                              \
+                                                                                 \
+  ASMJIT_FORCE_INLINE void  operator delete(void* p) noexcept {                  \
+    Support::operatorDelete(p);                                                  \
+  }                                                                              \
+                                                                                 \
+  ASMJIT_FORCE_INLINE void* operator new(size_t, void* p) noexcept { return p; } \
+  ASMJIT_FORCE_INLINE void  operator delete(void*, void*) noexcept {}
+#else
+#define ASMJIT_BASE_CLASS(TYPE)
+#endif
+
+//! \}
+//! \endcond
+
+//! \addtogroup asmjit_core
 //! \{
 
-// ============================================================================
-// [asmjit::Globals]
-// ============================================================================
+//! Byte order.
+enum class ByteOrder {
+  //! Little endian.
+  kLE = 0,
+  //! Big endian.
+  kBE = 1,
+  //! Native byte order of the target architecture.
+  kNative = ASMJIT_ARCH_LE ? kLE : kBE,
+  //! Swapped byte order of the target architecture.
+  kSwapped = ASMJIT_ARCH_LE ? kBE : kLE
+};
 
-enum { kInvalidValue = 0xFFFFFFFFU };
+//! A policy that can be used with some `reset()` member functions.
+enum class ResetPolicy : uint32_t {
+  //! Soft reset, doesn't deallocate memory (default).
+  kSoft = 0,
+  //! Hard reset, releases all memory used, if any.
+  kHard = 1
+};
 
-//! AsmJit globals.
+//! Contains typedefs, constants, and variables used globally by AsmJit.
 namespace Globals {
 
-//! Invalid index
+//! Host memory allocator overhead.
+static constexpr uint32_t kAllocOverhead = uint32_t(sizeof(intptr_t) * 4);
+
+//! Host memory allocator alignment.
+static constexpr uint32_t kAllocAlignment = 8;
+
+//! Aggressive growing strategy threshold.
+static constexpr uint32_t kGrowThreshold = 1024 * 1024 * 16;
+
+//! Maximum depth of RB-Tree is:
 //!
-//! Invalid index is the last possible index that is never used in practice. In
-//! AsmJit it is used exclusively with strings to indicate the the length of the
-//! string is not known and has to be determined.
-static const size_t kInvalidIndex = ~static_cast<size_t>(0);
+//!   `2 * log2(n + 1)`
+//!
+//! Size of RB node is at least two pointers (without data), so a theoretical architecture limit would be:
+//!
+//!   `2 * log2(addressableMemorySize / sizeof(Node) + 1)`
+//!
+//! Which yields 30 on 32-bit arch and 61 on 64-bit arch. The final value was adjusted by +1 for safety reasons.
+static constexpr uint32_t kMaxTreeHeight = (ASMJIT_ARCH_BITS == 32 ? 30 : 61) + 1;
+
+//! Maximum number of operands per a single instruction.
+static constexpr uint32_t kMaxOpCount = 6;
+
+//! Maximum arguments of a function supported by the Compiler / Function API.
+static constexpr uint32_t kMaxFuncArgs = 16;
+
+//! The number of values that can be assigned to a single function argument or
+//! return value.
+static constexpr uint32_t kMaxValuePack = 4;
+
+//! Maximum number of physical registers AsmJit can use per register group.
+static constexpr uint32_t kMaxPhysRegs = 32;
+
+//! Maximum alignment.
+static constexpr uint32_t kMaxAlignment = 64;
+
+//! Maximum label or symbol size in bytes.
+static constexpr uint32_t kMaxLabelNameSize = 2048;
+
+//! Maximum section name size.
+static constexpr uint32_t kMaxSectionNameSize = 35;
+
+//! Maximum size of comment.
+static constexpr uint32_t kMaxCommentSize = 1024;
+
+//! Invalid identifier.
+static constexpr uint32_t kInvalidId = 0xFFFFFFFFu;
+
+//! Returned by `indexOf()` and similar when working with containers that use 32-bit index/size.
+static constexpr uint32_t kNotFound = 0xFFFFFFFFu;
 
 //! Invalid base address.
-static const uint64_t kNoBaseAddress = ~static_cast<uint64_t>(0);
+static constexpr uint64_t kNoBaseAddress = ~uint64_t(0);
 
-//! Global definitions.
-ASMJIT_ENUM(Defs) {
-  //! Invalid register id.
-  kInvalidRegId = 0xFF,
+//! Number of virtual register groups.
+static constexpr uint32_t kNumVirtGroups = 4;
 
-  //! Host memory allocator overhead.
-  kAllocOverhead = static_cast<int>(sizeof(intptr_t) * 4),
-  //! Aggressive growing strategy threshold.
-  kAllocThreshold = 8192 * 1024
-};
+struct Init_ {};
+struct NoInit_ {};
 
-ASMJIT_ENUM(Limits) {
-  //! Count of register kinds that are important to Function API and CodeCompiler.
-  //! The target architecture can define more register kinds for special registers,
-  //! but these will never map to virtual registers and will never be used to pass
-  //! and return function arguments and function return values, respectively.
-  kMaxVRegKinds = 4,
+static const constexpr Init_ Init {};
+static const constexpr NoInit_ NoInit {};
 
-  //! Maximum number of physical registers of all kinds of all supported
-  //! architectures. This is only important for \ref CodeCompiler and its
-  //! \ref RAPass (register allocator pass).
-  //!
-  //! NOTE: The distribution of these registers is architecture specific.
-  kMaxPhysRegs = 64,
+} // {Globals}
 
-  //! Maximum alignment.
-  kMaxAlignment = 64,
+template<typename Func>
+static inline Func ptr_as_func(void* func) noexcept { return Support::ptr_cast_impl<Func, void*>(func); }
 
-  //! Maximum label or symbol length in bytes (take into consideration that a
-  //! single UTF-8 character can take more than single byte to encode it).
-  kMaxLabelLength = 2048
-};
+template<typename Func>
+static inline void* func_as_ptr(Func func) noexcept { return Support::ptr_cast_impl<void*, Func>(func); }
 
-} // Globals namespace
+//! \}
 
-// ============================================================================
-// [asmjit::Error]
-// ============================================================================
+//! \addtogroup asmjit_error_handling
+//! \{
 
 //! AsmJit error type (uint32_t).
 typedef uint32_t Error;
 
 //! AsmJit error codes.
-ASMJIT_ENUM(ErrorCode) {
+enum ErrorCode : uint32_t {
+  // @EnumValuesBegin{"enum": "ErrorCode"}@
+
   //! No error (success).
-  //!
-  //! This is default state and state you want.
   kErrorOk = 0,
 
-  //! Heap memory allocation failed.
-  kErrorNoHeapMemory,
-
-  //! Virtual memory allocation failed.
-  kErrorNoVirtualMemory,
+  //! Out of memory.
+  kErrorOutOfMemory,
 
   //! Invalid argument.
   kErrorInvalidArgument,
 
   //! Invalid state.
   //!
-  //! If this error is returned it means that either you are doing something
-  //! wrong or AsmJit caught itself by doing something wrong. This error should
-  //! not be underestimated.
+  //! If this error is returned it means that either you are doing something wrong or AsmJit caught itself by
+  //! doing something wrong. This error should never be ignored.
   kErrorInvalidState,
 
   //! Invalid or incompatible architecture.
@@ -139,22 +178,23 @@ ASMJIT_ENUM(ErrorCode) {
   //! Built-in feature was disabled at compile time and it's not available.
   kErrorFeatureNotEnabled,
 
-  //! CodeHolder can't have attached more than one \ref Assembler at a time.
-  kErrorSlotOccupied,
+  //! Too many handles (Windows) or file descriptors (Unix/Posix).
+  kErrorTooManyHandles,
+  //! Code generated is larger than allowed.
+  kErrorTooLarge,
 
   //! No code generated.
   //!
   //! Returned by runtime if the \ref CodeHolder contains no code.
   kErrorNoCodeGenerated,
-  //! Code generated is larger than allowed.
-  kErrorCodeTooLarge,
 
+  //! Invalid directive.
+  kErrorInvalidDirective,
   //! Attempt to use uninitialized label.
   kErrorInvalidLabel,
-  //! Label index overflow - a single `Assembler` instance can hold more than
-  //! 2 billion labels (2147483391 to be exact). If there is an attempt to
-  //! create more labels this error is returned.
-  kErrorLabelIndexOverflow,
+  //! Label index overflow - a single \ref BaseAssembler instance can hold almost 2^32 (4 billion) labels. If
+  //! there is an attempt to create more labels then this error is returned.
+  kErrorTooManyLabels,
   //! Label is already bound.
   kErrorLabelAlreadyBound,
   //! Label is already defined (named labels).
@@ -163,47 +203,59 @@ ASMJIT_ENUM(ErrorCode) {
   kErrorLabelNameTooLong,
   //! Label must always be local if it's anonymous (without a name).
   kErrorInvalidLabelName,
-  //! Parent id passed to `CodeHolder::newNamedLabelId()` was invalid.
+  //! Parent id passed to \ref CodeHolder::newNamedLabelEntry() was either invalid or parent is not supported
+  //! by the requested `LabelType`.
   kErrorInvalidParentLabel,
-  //! Parent id specified for a non-local (global) label.
-  kErrorNonLocalLabelCantHaveParent,
 
-  //! Relocation index overflow.
-  kErrorRelocIndexOverflow,
+  //! Invalid section.
+  kErrorInvalidSection,
+  //! Too many sections (section index overflow).
+  kErrorTooManySections,
+  //! Invalid section name (most probably too long).
+  kErrorInvalidSectionName,
+
+  //! Relocation index overflow (too many relocations).
+  kErrorTooManyRelocations,
   //! Invalid relocation entry.
   kErrorInvalidRelocEntry,
+  //! Reloc entry contains address that is out of range (unencodable).
+  kErrorRelocOffsetOutOfRange,
 
+  //! Invalid assignment to a register, function argument, or function return value.
+  kErrorInvalidAssignment,
   //! Invalid instruction.
   kErrorInvalidInstruction,
   //! Invalid register type.
   kErrorInvalidRegType,
-  //! Invalid register kind.
-  kErrorInvalidRegKind,
-  //! Invalid register's physical id.
+  //! Invalid register group.
+  kErrorInvalidRegGroup,
+  //! Invalid physical register id.
   kErrorInvalidPhysId,
-  //! Invalid register's virtual id.
+  //! Invalid virtual register id.
   kErrorInvalidVirtId,
-  //! Invalid prefix combination.
+  //! Invalid element index (ARM).
+  kErrorInvalidElementIndex,
+  //! Invalid prefix combination (X86|X64).
   kErrorInvalidPrefixCombination,
-  //! Invalid LOCK prefix.
+  //! Invalid LOCK prefix (X86|X64).
   kErrorInvalidLockPrefix,
-  //! Invalid XACQUIRE prefix.
+  //! Invalid XACQUIRE prefix (X86|X64).
   kErrorInvalidXAcquirePrefix,
-  //! Invalid XACQUIRE prefix.
+  //! Invalid XRELEASE prefix (X86|X64).
   kErrorInvalidXReleasePrefix,
-  //! Invalid REP prefix.
+  //! Invalid REP prefix (X86|X64).
   kErrorInvalidRepPrefix,
-  //! Invalid REX prefix.
+  //! Invalid REX prefix (X86|X64).
   kErrorInvalidRexPrefix,
-  //! Invalid mask register (not 'k').
-  kErrorInvalidKMaskReg,
-  //! Invalid {k} use (not supported by the instruction).
+  //! Invalid {...} register (X86|X64).
+  kErrorInvalidExtraReg,
+  //! Invalid {k} use (not supported by the instruction) (X86|X64).
   kErrorInvalidKMaskUse,
-  //! Invalid {k}{z} use (not supported by the instruction).
+  //! Invalid {k}{z} use (not supported by the instruction) (X86|X64).
   kErrorInvalidKZeroUse,
-  //! Invalid broadcast - Currently only related to invalid use of AVX-512 {1tox}.
+  //! Invalid broadcast - Currently only related to invalid use of AVX-512 {1tox} (X86|X64).
   kErrorInvalidBroadcast,
-  //! Invalid 'embedded-rounding' {er} or 'suppress-all-exceptions' {sae} (AVX-512).
+  //! Invalid 'embedded-rounding' {er} or 'suppress-all-exceptions' {sae} (AVX-512) (X86|X64).
   kErrorInvalidEROrSAE,
   //! Invalid address used (not encodable).
   kErrorInvalidAddress,
@@ -213,6 +265,8 @@ ASMJIT_ENUM(ErrorCode) {
   kErrorInvalidAddressScale,
   //! Invalid use of 64-bit address.
   kErrorInvalidAddress64Bit,
+  //! Invalid use of 64-bit address that require 32-bit zero-extension (X64).
+  kErrorInvalidAddress64BitZeroExtension,
   //! Invalid displacement (not encodable).
   kErrorInvalidDisplacement,
   //! Invalid segment (X86).
@@ -228,75 +282,66 @@ ASMJIT_ENUM(ErrorCode) {
   //! Mismatching operand size (size of multiple operands doesn't match the operation size).
   kErrorOperandSizeMismatch,
 
+  //! Invalid option.
+  kErrorInvalidOption,
+  //! Option already defined.
+  kErrorOptionAlreadyDefined,
+
   //! Invalid TypeId.
   kErrorInvalidTypeId,
   //! Invalid use of a 8-bit GPB-HIGH register.
   kErrorInvalidUseOfGpbHi,
   //! Invalid use of a 64-bit GPQ register in 32-bit mode.
   kErrorInvalidUseOfGpq,
-  //! Invalid use of an 80-bit float (TypeId::kF80).
+  //! Invalid use of an 80-bit float (\ref TypeId::kFloat80).
   kErrorInvalidUseOfF80,
-  //! Some registers in the instruction muse be consecutive (some ARM and AVX512 neural-net instructions).
+  //! Instruction requires the use of consecutive registers, but registers in operands weren't (AVX512, ASIMD load/store, etc...).
   kErrorNotConsecutiveRegs,
+  //! Failed to allocate consecutive registers - allocable registers either too restricted or a bug in RW info.
+  kErrorConsecutiveRegsAllocation,
+
+  //! Illegal virtual register - reported by instruction validation.
+  kErrorIllegalVirtReg,
+  //! AsmJit cannot create more virtual registers.
+  kErrorTooManyVirtRegs,
 
   //! AsmJit requires a physical register, but no one is available.
   kErrorNoMorePhysRegs,
-  //! A variable has been assigned more than once to a function argument (CodeCompiler).
+  //! A variable has been assigned more than once to a function argument (BaseCompiler).
   kErrorOverlappedRegs,
   //! Invalid register to hold stack arguments offset.
   kErrorOverlappingStackRegWithRegArg,
+
+  //! Unbound label cannot be evaluated by expression.
+  kErrorExpressionLabelNotBound,
+  //! Arithmetic overflow during expression evaluation.
+  kErrorExpressionOverflow,
+
+  //! Failed to open anonymous memory handle or file descriptor.
+  kErrorFailedToOpenAnonymousMemory,
+
+  // @EnumValuesEnd@
 
   //! Count of AsmJit error codes.
   kErrorCount
 };
 
-// ============================================================================
-// [asmjit::Internal]
-// ============================================================================
-
-namespace Internal {
-
-#if defined(ASMJIT_CUSTOM_ALLOC)   && \
-    defined(ASMJIT_CUSTOM_REALLOC) && \
-    defined(ASMJIT_CUSTOM_FREE)
-static ASMJIT_INLINE void* allocMemory(size_t size) noexcept { return ASMJIT_CUSTOM_ALLOC(size); }
-static ASMJIT_INLINE void* reallocMemory(void* p, size_t size) noexcept { return ASMJIT_CUSTOM_REALLOC(p, size); }
-static ASMJIT_INLINE void releaseMemory(void* p) noexcept { ASMJIT_CUSTOM_FREE(p); }
-#elif !defined(ASMJIT_CUSTOM_ALLOC)   && \
-      !defined(ASMJIT_CUSTOM_REALLOC) && \
-      !defined(ASMJIT_CUSTOM_FREE)
-static ASMJIT_INLINE void* allocMemory(size_t size) noexcept { return ::malloc(size); }
-static ASMJIT_INLINE void* reallocMemory(void* p, size_t size) noexcept { return ::realloc(p, size); }
-static ASMJIT_INLINE void releaseMemory(void* p) noexcept { ::free(p); }
-#else
-# error "[asmjit] You must provide either none or all of ASMJIT_CUSTOM_[ALLOC|REALLOC|FREE]"
-#endif
-
-//! Cast designed to cast between function and void* pointers.
-template<typename Dst, typename Src>
-static ASMJIT_INLINE Dst ptr_cast(Src p) noexcept { return (Dst)p; }
-
-} // Internal namespace
-
-template<typename Func>
-static ASMJIT_INLINE Func ptr_as_func(void* func) noexcept { return Internal::ptr_cast<Func, void*>(func); }
-
-template<typename Func>
-static ASMJIT_INLINE void* func_as_ptr(Func func) noexcept { return Internal::ptr_cast<void*, Func>(func); }
-
-// ============================================================================
-// [asmjit::DebugUtils]
-// ============================================================================
-
+//! Debugging utilities.
 namespace DebugUtils {
+
+//! \cond INTERNAL
+//! Used to silence warnings about unused arguments or variables.
+template<typename... Args>
+static inline void unused(Args&&...) noexcept {}
+//! \endcond
 
 //! Returns the error `err` passed.
 //!
-//! Provided for debugging purposes. Putting a breakpoint inside `errored` can
-//! help with tracing the origin of any error reported / returned by AsmJit.
-static ASMJIT_INLINE Error errored(Error err) noexcept { return err; }
+//! Provided for debugging purposes. Putting a breakpoint inside `errored` can help with tracing the origin of any
+//! error reported / returned by AsmJit.
+static constexpr Error errored(Error err) noexcept { return err; }
 
-//! Get a printable version of `asmjit::Error` code.
+//! Returns a printable version of `asmjit::Error` code.
 ASMJIT_API const char* errorAsString(Error err) noexcept;
 
 //! Called to output debugging message(s).
@@ -308,32 +353,32 @@ ASMJIT_API void debugOutput(const char* str) noexcept;
 //! \param line Line in the source file.
 //! \param msg Message to display.
 //!
-//! If you have problems with assertions put a breakpoint at assertionFailed()
-//! function (asmjit/base/globals.cpp) and check the call stack to locate the
-//! failing code.
+//! If you have problems with assertion failures a breakpoint can be put at \ref assertionFailed() function
+//! (asmjit/core/globals.cpp). A call stack will be available when such assertion failure is triggered. AsmJit
+//! always returns errors on failures, assertions are a last resort and usually mean unrecoverable state due to out
+//! of range array access or totally invalid arguments like nullptr where a valid pointer should be provided, etc...
 ASMJIT_API void ASMJIT_NORETURN assertionFailed(const char* file, int line, const char* msg) noexcept;
 
-#if defined(ASMJIT_DEBUG)
-# define ASMJIT_ASSERT(exp)                                          \
-  do {                                                               \
-    if (ASMJIT_LIKELY(exp))                                          \
-      break;                                                         \
-    ::PLMD::asmjit::DebugUtils::assertionFailed(__FILE__, __LINE__, #exp); \
-  } while (0)
-# define ASMJIT_NOT_REACHED()                                        \
-  do {                                                               \
-    ::PLMD::asmjit::DebugUtils::assertionFailed(__FILE__, __LINE__,        \
-      "ASMJIT_NOT_REACHED has been reached");                        \
-    ASMJIT_ASSUME(0);                                                \
+} // {DebugUtils}
+
+//! \def ASMJIT_ASSERT(...)
+//!
+//! AsmJit's own assert macro used in AsmJit code-base.
+#if defined(ASMJIT_BUILD_DEBUG)
+#define ASMJIT_ASSERT(...)                                                     \
+  do {                                                                         \
+    if (ASMJIT_LIKELY(__VA_ARGS__))                                            \
+      break;                                                                   \
+    ::PLMD::asmjit::DebugUtils::assertionFailed(__FILE__, __LINE__, #__VA_ARGS__);   \
   } while (0)
 #else
-# define ASMJIT_ASSERT(exp) ASMJIT_NOP
-# define ASMJIT_NOT_REACHED() ASMJIT_ASSUME(0)
-#endif // DEBUG
+#define ASMJIT_ASSERT(...) ((void)0)
+#endif
 
-//! \internal
+//! \def ASMJIT_PROPAGATE(...)
 //!
-//! Used by AsmJit to propagate a possible `Error` produced by `...` to the caller.
+//! Propagates a possible `Error` produced by `...` to the caller by returning the error immediately. Used by AsmJit
+//! internally, but kept public for users that want to use the same technique to propagate errors to the caller.
 #define ASMJIT_PROPAGATE(...)               \
   do {                                      \
     ::PLMD::asmjit::Error _err = __VA_ARGS__;     \
@@ -341,30 +386,8 @@ ASMJIT_API void ASMJIT_NORETURN assertionFailed(const char* file, int line, cons
       return _err;                          \
   } while (0)
 
-} // DebugUtils namespace
-
-// ============================================================================
-// [asmjit::Init / NoInit]
-// ============================================================================
-
-#if !defined(ASMJIT_DOCGEN)
-struct _Init {};
-static const _Init Init = {};
-
-struct _NoInit {};
-static const _NoInit NoInit = {};
-#endif // !ASMJIT_DOCGEN
-
 //! \}
 
-} // asmjit namespace
-} // namespace PLMD
+ASMJIT_END_NAMESPACE
 
-// [Api-End]
-#include "./asmjit_apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_BASE_GLOBALS_H
-#pragma GCC diagnostic pop
-#endif // __PLUMED_HAS_ASMJIT
-#endif
+#endif // ASMJIT_CORE_GLOBALS_H_INCLUDED

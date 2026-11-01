@@ -17,6 +17,14 @@ env:
 jobs:
   linux:
     runs-on: ubuntu-24.04
+    env:
+      # objects compiled with -g and _GLIBCXX_DEBUG are about 15 times larger than optimized ones:
+      # with 100M the cache of the debug builds does not hold a full build and ccache keeps missing
+      PLUMED_CCACHE_SIZE: ${{ contains( matrix.variant, '-debug-' ) && '500M' || '100M' }}
+      # number of regtests run at the same time. The debug builds run them one at a time: the type=make
+      # regtests link the static libplumed.a, and with -g and _GLIBCXX_DEBUG a single link takes more than
+      # 5 GB, so two of them together exhaust the memory of the runner and the step is killed (exit 143)
+      PLUMED_REGTEST_JOBS: ${{ contains( matrix.variant, '-debug-' ) && '1' || '2' }}
     strategy:
       fail-fast: false
       matrix:
@@ -101,8 +109,16 @@ jobs:
 
         # the flags above enable the use of both libmetatomic and libtorch
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch --enable-cxx=20" >> $GITHUB_ENV
+    # ITensor is always built with g++ and options.mk.itensor, whatever the variant, so one cache is shared
+    # by all the jobs that use it. .ci/install.itensor skips the build when the prefix was restored.
+    # -nvhpc- is excluded since it does not configure ITensor (see below)
+    - uses: actions/cache@v5
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
+      with:
+        path: ~/opt/itensor
+        key: itensor-${{ steps.image.outputs.os }}-${{ hashFiles('.ci/install.itensor', '.ci/options.mk.itensor') }}
     - name: Install ITensor
-      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
         .ci/install.itensor
     - name: Configure ITensor
@@ -118,6 +134,13 @@ jobs:
         echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
+    # doxygen is built from source in its own prefix, so that it can be cached;
+    # .ci/install.doxygen skips the build when the right version is already there
+    - uses: actions/cache@v5
+      if: contains( matrix.variant, '-doc-' )
+      with:
+        path: ~/opt/doxygen
+        key: doxygen-${{ steps.image.outputs.os }}-Release_1_13_2-${{ hashFiles('.ci/install.doxygen') }}
     - name: Install tools for setting up the manuals
       if: contains( matrix.variant, '-doc-' )
       run: |
@@ -125,7 +148,8 @@ jobs:
         pip install --user -r ./new-manual/requirements.txt
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        .ci/install.doxygen Release_1_13_2
+        DOXYGEN_PREFIX="$HOME/opt/doxygen" .ci/install.doxygen Release_1_13_2
+        echo "$HOME/opt/doxygen/bin" >> $GITHUB_PATH
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -194,22 +218,22 @@ jobs:
     - name: Configure PLUMED
       id: config
       run: |
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
         #removed LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH
         ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG  --prefix="$HOME/opt"
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
     - name: Config Log
       if: failure() && steps.config.outcome == 'failure'
       run: cat config.log
 
     - name: Build PLUMED
       run: |
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
 
     - name: Install NVHPC compiler
       if: contains( matrix.variant, '-nvhpc-' )
@@ -249,7 +273,10 @@ jobs:
               df -h
               sleep 15
               done) &
-         make --no-print-directory -C regtest testclean
+         # each regtest runs in its own tmp/ directory, so they can run concurrently.
+         # Two at a time on the 4 cores of the runner, since many tests use 2 OpenMP threads or 2-4 MPI processes
+         # (one at a time in the debug builds, see PLUMED_REGTEST_JOBS above)
+         make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
@@ -300,3 +327,17 @@ jobs:
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
+
+  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
+  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
+  # which are in cltools.
+  modules-none:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build PLUMED with --enable-modules=none
+      run: |
+        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install

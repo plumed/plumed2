@@ -25,7 +25,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
-#include "blas/blas.h"
 
 namespace PLMD {
 
@@ -77,16 +76,31 @@ void ActionWithValue::clearInputForces( const bool& force ) {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
+  // Opening an OpenMP region costs microseconds and this is called for every
+  // active action at every step: use threads only when there is enough to clear.
 #ifdef _OPENMP
-  //nt is unused if openmp is not declared
-  const unsigned nt=OpenMP::getNumThreads();
-#endif //_OPENMP
-  #pragma omp parallel num_threads(nt)
-  {
-    #pragma omp for
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt>1 ) {
+    std::size_t tot=0;
+    for(const auto & v : values) {
+      tot+=v->data.size();
+    }
+    if( values.size()<2 || tot<32768 ) {
+      nt=1;
+    } else if( nt>values.size() ) {
+      nt=values.size();
+    }
+  }
+  if( nt>1 ) {
+    #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<values.size(); i++) {
       values[i]->clearDerivatives();
     }
+    return;
+  }
+#endif //_OPENMP
+  for(unsigned i=0; i<values.size(); i++) {
+    values[i]->clearDerivatives();
   }
 }
 
@@ -371,39 +385,41 @@ bool ActionWithValue::checkForForces() {
     nt=1;
   }
 
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<double> omp_f;
-    if( nt>1 ) {
-      omp_f.resize(nder,0);
-    }
-    #pragma omp for
+  // Note: plain loops are used here on purpose instead of BLAS daxpy.
+  // An external multithreaded BLAS (e.g. OpenBLAS, MKL) would spawn its own
+  // threads for long vectors (nder>~10000), ignoring the number of threads
+  // set by the MD engine and oversubscribing the cores (see issue #1121).
+  if( nt==1 ) {
+    // serial path: opening an OpenMP region would cost more than the loop for small actions
+    double* const dest=forcesForApply.data();
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
-      double ff=values[valsToForce[i]]->inputForce[0];
-      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
-      int nn=nder;
-      int one1=1;
-      int one2=1;
-      if( nt>1 ) {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,omp_f.data(),&one2);
-      } else {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,forcesForApply.data(),&one2);
+      // a plain loop is vectorized by the compiler and is as fast as an external
+      // blas daxpy, without the risk of calling a threaded blas within an OpenMP region
+      const double ff=values[valsToForce[i]]->inputForce[0];
+      const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+      for(unsigned j=0; j<nder; ++j) {
+        dest[j]+=ff*thisderiv[j];
       }
-      // if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
-      //else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
     }
-    #pragma omp critical
+  } else {
+    #pragma omp parallel num_threads(nt)
     {
-      if( nt>1 ) {
-        int nn=forcesForApply.size();
-        double one0=1.0;
-        int one1=1;
-        int one2=1;
-        plumed_blas_daxpy(&nn,&one0,omp_f.data(),&one1,forcesForApply.data(),&one2);
+      std::vector<double> omp_f(nder,0);
+      double* const dest=omp_f.data();
+      #pragma omp for
+      for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+        const double ff=values[valsToForce[i]]->inputForce[0];
+        const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+        for(unsigned j=0; j<nder; ++j) {
+          dest[j]+=ff*thisderiv[j];
+        }
       }
-      // for(unsigned j=0; j<forcesForApply.size(); ++j) {
-      // forcesForApply[j]+=omp_f[j];
-      // }
+      #pragma omp critical
+      {
+        for(unsigned j=0; j<nder; ++j) {
+          forcesForApply[j]+=omp_f[j];
+        }
+      }
     }
   }
 

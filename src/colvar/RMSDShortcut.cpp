@@ -42,7 +42,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
   keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
-  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.addFlag("SQUARED",false," This should be set if you want MSD instead of RMSD ");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
@@ -50,7 +50,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
   keys.addOutputComponent("disp","DISPLACEMENT","vector/matrix","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","scalar/vector","the RMSD distance the atoms have moved");
-  keys.setValueDescription("scalar/vector","the RMSD distance between the instaneous structure and the reference structure/s that were input");
+  keys.setValueDescription("scalar/vector","the RMSD distance between the instantaneous structure and the reference structure/s that were input");
   keys.addActionNameSuffix("_SCALAR");
   keys.addActionNameSuffix("_VECTOR");
   keys.needsAction("PDB2CONSTANT");

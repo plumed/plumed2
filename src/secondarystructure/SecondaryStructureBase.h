@@ -37,7 +37,7 @@ namespace PLMD {
 namespace secondarystructure {
 
 namespace helpers {
-//this makes the variabe needstype only needed to be declared explicitly
+//this makes the variable needstype only needed to be declared explicitly
 //needsType activate the reading of "TYPE" during the parsing
 template <typename T, typename=void>
 constexpr bool needsType=false;
@@ -45,7 +45,7 @@ constexpr bool needsType=false;
 template <typename T>
 constexpr bool needsType<T,std::void_t<decltype(T::needsType)>> =T::needsType;
 
-//this makes the variabe needstype only needed to be declared explicitly
+//this makes the variable needstype only needed to be declared explicitly
 //needsBondLength activate the reading of "TYPE" during the parsing
 template <typename T, typename=void>
 constexpr bool needsBondLength=false;
@@ -128,11 +128,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   keys.add("numbered","STRUCTURE","the reference structure");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
-             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD.");
+             "For more details on the OPTIMAL and SIMPLE methods see RMSD.");
   } else if constexpr ( !needsBondLength /*keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
-             "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
-             "DRMSD method see \\ref DRMSD.");
+             "For more details on the OPTIMAL and SIMPLE methods see RMSD. For more details on the "
+             "DRMSD method see DRMSD.");
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.reset_style("VERBOSE","hidden");
@@ -140,13 +140,13 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   if constexpr ( !needsBondLength && !needsType ) {
     keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
              "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
-             "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
+             "MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
              "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
              "As such if you define portions of the chain with fewer than N residues the code will crash.");
     keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a switching function.");
     keys.add("optional","R_0","The r_0 parameter of the switching function.");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");

@@ -1,0 +1,934 @@
+--- a/CompiledExpression.cpp
++++ b/CompiledExpression.cpp
+@@ -30,7 +30,13 @@
+ #include "CompiledExpression.h"
+ #include "Operation.h"
+ #include "ParsedExpression.h"
++#ifdef __PLUMED_HAS_ASMJIT
++    #include "asmjit/a64.h"
++    #include "asmjit/x86.h"
++#endif
+ #include <utility>
++#include <cstdlib>
++#include <limits>
+
+ namespace PLMD {
+ using namespace lepton;
+@@ -38,6 +44,36 @@
+ #ifdef __PLUMED_HAS_ASMJIT
+     using namespace asmjit;
+ #endif
++
++bool lepton::useAsmJit() {
++#ifdef __PLUMED_HAS_ASMJIT
++  static const bool use=[](){
++    if(auto s=std::getenv("PLUMED_USE_ASMJIT")) {
++      auto ss=std::string(s);
++      if(ss=="yes") return true;
++      if(ss=="no") return false;
++      throw Exception("PLUMED_USE_ASMJIT variable is set to " + ss + "; should be yes or no");
++    }
++    return true; // by default use asmjit
++  }();
++  return use;
++#else
++  return false;
++#endif
++}
++
++AsmJitRuntimePtr::AsmJitRuntimePtr()
++#ifdef __PLUMED_HAS_ASMJIT
++  : ptr(useAsmJit()?new asmjit::JitRuntime:nullptr)
++#endif
++{}
++
++AsmJitRuntimePtr::~AsmJitRuntimePtr()
++{
++#ifdef __PLUMED_HAS_ASMJIT
++  if(useAsmJit()) delete static_cast<asmjit::JitRuntime*>(ptr);
++#endif
++}
+
+ CompiledExpression::CompiledExpression() : jitCode(NULL) {
+ }
+@@ -52,7 +88,7 @@
+             maxArguments = operation[i]->getNumArguments();
+     argValues.resize(maxArguments);
+ #ifdef __PLUMED_HAS_ASMJIT
+-    generateJitCode();
++    if(useAsmJit()) generateJitCode();
+ #endif
+ }
+
+@@ -144,13 +180,16 @@
+ }
+
+ void CompiledExpression::setVariableLocations(map<string, double*>& variableLocations) {
+-    variablePointers = variableLocations;
++  variablePointers = variableLocations;
++  static const bool asmjit=useAsmJit();
++  if(asmjit) {
+ #ifdef __PLUMED_HAS_ASMJIT
+     // Rebuild the JIT code.
+
+     if (workspace.size() > 0)
+         generateJitCode();
+ #endif
++  }
+     // Make a list of all variables we will need to copy before evaluating the expression.
+
+     variablesToCopy.clear();
+@@ -162,8 +201,9 @@
+ }
+
+ double CompiledExpression::evaluate() const {
+-    if (jitCode)
+-        return jitCode();
++#ifdef __PLUMED_HAS_ASMJIT
++    if(jitCode) return jitCode();
++#endif
+     for (int i = 0; i < variablesToCopy.size(); i++)
+         *variablesToCopy[i].first = *variablesToCopy[i].second;
+
+@@ -183,6 +223,13 @@
+ }
+
+ #ifdef __PLUMED_HAS_ASMJIT
++#if defined(__aarch64__) || defined(_M_ARM64)
++static void generateSingleArgCall(a64::Compiler&, arm::Vec&, arm::Vec&, double (*)(double));
++static void generateTwoArgCall(a64::Compiler&, arm::Vec&, arm::Vec&, arm::Vec&, double (*)(double, double));
++#else
++static void generateSingleArgCall(x86::Compiler&, x86::Xmm&, x86::Xmm&, double (*)(double));
++static void generateTwoArgCall(x86::Compiler&, x86::Xmm&, x86::Xmm&, x86::Xmm&, double (*)(double, double));
++#endif
+ static double evaluateOperation(Operation* op, double* args) {
+     static map<string, double> dummyVariables;
+     return op->evaluate(args, dummyVariables);
+@@ -230,8 +277,13 @@
+     }
+ }
+
+-#if defined(__ARM__) || defined(__ARM64__)
++#if defined(__aarch64__) || defined(_M_ARM64)
+ void CompiledExpression::generateJitCode() {
++    auto& runtime = *static_cast<asmjit::JitRuntime*>(runtimeptr.get());
++    if (jitCode) {
++        runtime.release(jitCode);
++        jitCode = nullptr;
++    }
+     CodeHolder code;
+     code.init(runtime.environment());
+     a64::Compiler c(&code);
+@@ -273,7 +325,7 @@
+         else if (op.getId() == Operation::STEP)
+             value = 1.0;
+         else if (op.getId() == Operation::DELTA)
+-            value = 1.0;
++            value = std::numeric_limits<double>::infinity();
+         else if (op.getId() == Operation::POWER_CONSTANT) {
+             if (stepGroup[step] == -1)
+                 value = dynamic_cast<Operation::PowerConstant&>(op).getValue();
+@@ -428,11 +480,11 @@
+                 generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tanh);
+                 break;
+             case Operation::STEP:
+-                c.cmge(workspaceVar[target[step]], workspaceVar[args[0]], imm(0));
++                c.fcmge(workspaceVar[target[step]], workspaceVar[args[0]], imm(0));
+                 c.and_(workspaceVar[target[step]], workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+                 break;
+             case Operation::DELTA:
+-                c.cmeq(workspaceVar[target[step]], workspaceVar[args[0]], imm(0));
++                c.fcmeq(workspaceVar[target[step]], workspaceVar[args[0]], imm(0));
+                 c.and_(workspaceVar[target[step]], workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+                 break;
+             case Operation::SQUARE:
+@@ -489,11 +541,14 @@
+     }
+     c.ret(workspaceVar[workspace.size()-1]);
+     c.endFunc();
+-    c.finalize();
+-    runtime.add(&jitCode, &code);
+-}
+-
+-void CompiledExpression::generateSingleArgCall(a64::Compiler& c, arm::Vec& dest, arm::Vec& arg, double (*function)(double)) {
++    Error error = c.finalize();
++    if (!error)
++        error = runtime.add(&jitCode, &code);
++    if (error)
++        throw Exception(string("AsmJit compilation failed: ") + DebugUtils::errorAsString(error));
++}
++
++static void generateSingleArgCall(a64::Compiler& c, arm::Vec& dest, arm::Vec& arg, double (*function)(double)) {
+     arm::Gp fn = c.newIntPtr();
+     c.mov(fn, imm((void*) function));
+     InvokeNode* invoke;
+@@ -502,7 +557,7 @@
+     invoke->setRet(0, dest);
+ }
+
+-void CompiledExpression::generateTwoArgCall(a64::Compiler& c, arm::Vec& dest, arm::Vec& arg1, arm::Vec& arg2, double (*function)(double, double)) {
++static void generateTwoArgCall(a64::Compiler& c, arm::Vec& dest, arm::Vec& arg1, arm::Vec& arg2, double (*function)(double, double)) {
+     arm::Gp fn = c.newIntPtr();
+     c.mov(fn, imm((void*) function));
+     InvokeNode* invoke;
+@@ -516,6 +571,11 @@
+     const CpuInfo& cpu = CpuInfo::host();
+     if (!cpu.hasFeature(CpuFeatures::X86::kAVX))
+         return;
++    auto& runtime = *static_cast<asmjit::JitRuntime*>(runtimeptr.get());
++    if (jitCode) {
++        runtime.release(jitCode);
++        jitCode = nullptr;
++    }
+     CodeHolder code;
+     code.init(runtime.environment());
+     x86::Compiler c(&code);
+@@ -558,7 +618,7 @@
+         else if (op.getId() == Operation::STEP)
+             value = 1.0;
+         else if (op.getId() == Operation::DELTA)
+-            value = 1.0;
++            value = std::numeric_limits<double>::infinity();
+         else if (op.getId() == Operation::ABS) {
+             long long mask = 0x7FFFFFFFFFFFFFFF;
+             value = *reinterpret_cast<double*>(&mask);
+@@ -785,11 +845,14 @@
+     }
+     c.ret(workspaceVar[workspace.size()-1]);
+     c.endFunc();
+-    c.finalize();
+-    runtime.add(&jitCode, &code);
+-}
+-
+-void CompiledExpression::generateSingleArgCall(x86::Compiler& c, x86::Xmm& dest, x86::Xmm& arg, double (*function)(double)) {
++    Error error = c.finalize();
++    if (!error)
++        error = runtime.add(&jitCode, &code);
++    if (error)
++        throw Exception(string("AsmJit compilation failed: ") + DebugUtils::errorAsString(error));
++}
++
++static void generateSingleArgCall(x86::Compiler& c, x86::Xmm& dest, x86::Xmm& arg, double (*function)(double)) {
+     x86::Gp fn = c.newIntPtr();
+     c.mov(fn, imm((void*) function));
+     InvokeNode* invoke;
+@@ -798,7 +861,7 @@
+     invoke->setRet(0, dest);
+ }
+
+-void CompiledExpression::generateTwoArgCall(x86::Compiler& c, x86::Xmm& dest, x86::Xmm& arg1, x86::Xmm& arg2, double (*function)(double, double)) {
++static void generateTwoArgCall(x86::Compiler& c, x86::Xmm& dest, x86::Xmm& arg1, x86::Xmm& arg2, double (*function)(double, double)) {
+     x86::Gp fn = c.newIntPtr();
+     c.mov(fn, imm((void*) function));
+     InvokeNode* invoke;
+--- a/CompiledExpression.h
++++ b/CompiledExpression.h
+@@ -37,16 +37,32 @@
+ #include <string>
+ #include <utility>
+ #include <vector>
+-#ifdef __PLUMED_HAS_ASMJIT
+-#if defined(__ARM__) || defined(__ARM64__)
+-#include "asmjit/a64.h"
+-#else
+-#include "asmjit/x86.h"
+-#endif
+-#endif
+
+ namespace PLMD {
+ namespace lepton {
++
++bool useAsmJit();
++
++// Utility class.
++// Implement an unique pointer to asmjit::JitRuntime.
++// Needed to decouple asmjit header file from this one.
++class AsmJitRuntimePtr {
++/// if ASMJIT is not defined, just set the pointer to null
++  void* ptr=nullptr;
++public:
++/// constructor
++  AsmJitRuntimePtr();
++/// destructor
++  ~AsmJitRuntimePtr();
++/// deleted copy constructor
++  AsmJitRuntimePtr(const AsmJitRuntimePtr&) = delete;
++/// deleted assignment
++  AsmJitRuntimePtr & operator=(const AsmJitRuntimePtr&) = delete;
++/// get the pointer
++  void* get() {
++    return ptr;
++  }
++};
+
+ class Operation;
+ class ParsedExpression;
+@@ -103,19 +119,10 @@
+     mutable std::vector<double> argValues;
+     std::map<std::string, double> dummyVariables;
+     double (*jitCode)();
+-#ifdef __PLUMED_HAS_ASMJIT
++    void generateJitCode();
+     void findPowerGroups(std::vector<std::vector<int> >& groups, std::vector<std::vector<int> >& groupPowers, std::vector<int>& stepGroup);
+-    void generateJitCode();
+-#if defined(__ARM__) || defined(__ARM64__)
+-    void generateSingleArgCall(asmjit::a64::Compiler& c, asmjit::arm::Vec& dest, asmjit::arm::Vec& arg, double (*function)(double));
+-    void generateTwoArgCall(asmjit::a64::Compiler& c, asmjit::arm::Vec& dest, asmjit::arm::Vec& arg1, asmjit::arm::Vec& arg2, double (*function)(double, double));
+-#else
+-    void generateSingleArgCall(asmjit::x86::Compiler& c, asmjit::x86::Xmm& dest, asmjit::x86::Xmm& arg, double (*function)(double));
+-    void generateTwoArgCall(asmjit::x86::Compiler& c, asmjit::x86::Xmm& dest, asmjit::x86::Xmm& arg1, asmjit::x86::Xmm& arg2, double (*function)(double, double));
+-#endif
+     std::vector<double> constants;
+-    asmjit::JitRuntime runtime;
+-#endif
++    AsmJitRuntimePtr runtimeptr;
+ };
+
+ } // namespace lepton
+--- a/CustomFunction.h
++++ b/CustomFunction.h
+@@ -85,7 +85,7 @@
+      *
+      * @param numArgs    the number of arguments the function expects
+      */
+-    PlaceholderFunction(int numArgs) : numArgs(numArgs) {
++    PlaceholderFunction(int numArguments) : numArgs(numArguments) {
+     }
+     int getNumArguments() const {
+         return numArgs;
+--- a/Exception.h
++++ b/Exception.h
+@@ -42,7 +42,7 @@
+
+ class Exception : public std::exception {
+ public:
+-    Exception(const std::string& message) : message(message) {
++    Exception(const std::string& msg) : message(msg) {
+     }
+     ~Exception() throw() {
+     }
+--- a/ExpressionProgram.cpp
++++ b/ExpressionProgram.cpp
+@@ -107,5 +107,4 @@
+     }
+     return stack[stackSize-1];
+ }
+-
+-} // namespace PLMD
++}
+--- a/Lepton.h
++++ b/Lepton.h
+@@ -30,6 +30,16 @@
+  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
+  * -------------------------------------------------------------------------- */
+
++#include <map>
++#include <cmath>
++#include <string>
++
++namespace PLMD {
++namespace lepton {
++const std::map<std::string, double> & Constants();
++}
++}
++
+ #include "CompiledExpression.h"
+ #include "CustomFunction.h"
+ #include "ExpressionProgram.h"
+--- a/Operation.cpp
++++ b/Operation.cpp
+@@ -333,11 +333,15 @@
+ }
+
+ ExpressionTreeNode Operation::Step::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+-    return ExpressionTreeNode(new Operation::Constant(0.0));
++    return ExpressionTreeNode(new Operation::Delta(),children[0]);
+ }
+
+ ExpressionTreeNode Operation::Delta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+-    return ExpressionTreeNode(new Operation::Constant(0.0));
++    return ExpressionTreeNode(new Operation::Nandelta(), children[0]);
++}
++
++ExpressionTreeNode Operation::Nandelta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return ExpressionTreeNode(new Operation::Nandelta(), children[0]);
+ }
+
+ ExpressionTreeNode Operation::Square::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+@@ -420,7 +424,213 @@
+ }
+
+ ExpressionTreeNode Operation::Select::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+-    return ExpressionTreeNode(new Operation::Select(), {children[0], childDerivs[1], childDerivs[2]});
+-}
+-
+-} // namespace PLMD
++    vector<ExpressionTreeNode> derivChildren;
++    derivChildren.push_back(children[0]);
++    derivChildren.push_back(childDerivs[1]);
++    derivChildren.push_back(childDerivs[2]);
++    return ExpressionTreeNode(new Operation::Select(), derivChildren);
++}
++
++#define LEPTON_CONST(x) ExpressionTreeNode(new Operation::Constant(x))
++#define LEPTON_OP1(name,x) ExpressionTreeNode(new Operation::name(),x)
++#define LEPTON_OP2(name,x,y) ExpressionTreeNode(new Operation::name(),x,y)
++#define LEPTON_ADD_CONST(x,y) ExpressionTreeNode(new Operation::AddConstant(x),y)
++
++ExpressionTreeNode Operation::Acot::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++      LEPTON_OP2(Multiply,
++        LEPTON_OP1(Negate,
++          LEPTON_OP1(Reciprocal,
++            LEPTON_ADD_CONST(1.0,
++              LEPTON_OP1(Square,children[0])
++            )
++          )
++        ),
++        childDerivs[0]
++      );
++}
++
++ExpressionTreeNode Operation::Asec::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++      LEPTON_OP2(Multiply,
++        LEPTON_OP1(Reciprocal,
++          LEPTON_OP2(Multiply,
++            LEPTON_OP1(Abs,children[0]),
++            LEPTON_OP1(Sqrt,
++              LEPTON_OP2(Subtract,
++                LEPTON_OP1(Square,children[0]),
++                LEPTON_CONST(1.0)
++              )
++            )
++          )
++        ),
++        childDerivs[0]
++      );
++}
++
++ExpressionTreeNode Operation::Acsc::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Negate,
++        LEPTON_OP1(Reciprocal,
++          LEPTON_OP2(Multiply,
++            LEPTON_OP1(Abs,children[0]),
++            LEPTON_OP1(Sqrt,
++              LEPTON_OP2(Subtract,
++                LEPTON_OP1(Square,children[0]),
++                LEPTON_CONST(1.0)
++              )
++            )
++          )
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Coth::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP2(Subtract,
++        LEPTON_CONST(1.0),
++        LEPTON_OP1(Square,
++          LEPTON_OP1(Coth,children[0])
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Sech::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Negate,
++        LEPTON_OP2(Multiply,
++          LEPTON_OP1(Tanh,children[0]),
++          LEPTON_OP1(Sech,children[0])
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Csch::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Negate,
++        LEPTON_OP2(Multiply,
++          LEPTON_OP1(Coth,children[0]),
++          LEPTON_OP1(Csch,children[0])
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Acosh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Reciprocal,
++        LEPTON_OP1(Sqrt,
++          LEPTON_OP2(Subtract,
++            LEPTON_OP1(Square,children[0]),
++            LEPTON_CONST(1.0)
++          )
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Atanh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Reciprocal,
++        LEPTON_OP2(Subtract,
++          LEPTON_CONST(1.0),
++          LEPTON_OP1(Square,children[0])
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Asinh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Reciprocal,
++        LEPTON_OP1(Sqrt,
++          LEPTON_ADD_CONST(1.0,
++            LEPTON_OP1(Square,children[0])
++          )
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Acoth::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Reciprocal,
++        LEPTON_OP2(Subtract,
++          LEPTON_CONST(1.0),
++          LEPTON_OP1(Square,children[0])
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Asech::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Negate,
++        LEPTON_OP1(Reciprocal,
++          LEPTON_OP2(Multiply,
++            children[0],
++            LEPTON_OP2(Multiply,
++              LEPTON_ADD_CONST(1.0,
++                children[0]
++              ),
++              LEPTON_OP1(Sqrt,
++                LEPTON_OP2(Divide,
++                  LEPTON_OP2(Subtract,
++                    LEPTON_CONST(1.0),
++                    children[0]
++                  ),
++                  LEPTON_ADD_CONST(1.0,
++                    children[0]
++                  )
++                )
++              )
++            )
++          )
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++ExpressionTreeNode Operation::Acsch::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
++    return
++    LEPTON_OP2(Multiply,
++      LEPTON_OP1(Negate,
++        LEPTON_OP1(Reciprocal,
++          LEPTON_OP2(Multiply,
++            LEPTON_OP1(Square,children[0]),
++            LEPTON_OP1(Sqrt,
++              LEPTON_ADD_CONST(1.0,
++                LEPTON_OP1(Reciprocal,
++                  LEPTON_OP1(Square,children[0])
++                )
++              )
++            )
++          )
++        )
++      ),
++      childDerivs[0]
++    );
++}
++
++}
+--- a/Operation.h
++++ b/Operation.h
+@@ -39,6 +39,7 @@
+ #include <vector>
+ #include <sstream>
+ #include <algorithm>
++#include <limits>
+
+ namespace PLMD {
+ namespace lepton {
+@@ -62,8 +63,9 @@
+      * can be used when processing or analyzing parsed expressions.
+      */
+     enum Id {CONSTANT, VARIABLE, CUSTOM, ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, NEGATE, SQRT, EXP, LOG,
+-             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, ATAN2, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, SQUARE, CUBE, RECIPROCAL,
+-             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT};
++             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, ATAN2, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, NANDELTA, SQUARE, CUBE, RECIPROCAL,
++             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT,
++             ACOT, ASEC, ACSC, COTH, SECH, CSCH, ASINH, ACOSH, ATANH, ACOTH, ASECH, ACSCH};
+     /**
+      * Get the name of this Operation.
+      */
+@@ -144,6 +146,7 @@
+     class Erfc;
+     class Step;
+     class Delta;
++    class Nandelta;
+     class Square;
+     class Cube;
+     class Reciprocal;
+@@ -156,11 +159,23 @@
+     class Floor;
+     class Ceil;
+     class Select;
++    class Acot;
++    class Asec;
++    class Acsc;
++    class Coth;
++    class Sech;
++    class Csch;
++    class Asinh;
++    class Acosh;
++    class Atanh;
++    class Acoth;
++    class Asech;
++    class Acsch;
+ };
+
+ class LEPTON_EXPORT Operation::Constant : public Operation {
+ public:
+-    Constant(double value) : value(value) {
++    Constant(double setValue) : value(setValue) {
+     }
+     std::string getName() const {
+         std::stringstream name;
+@@ -193,7 +208,7 @@
+
+ class LEPTON_EXPORT Operation::Variable : public Operation {
+ public:
+-    Variable(const std::string& name) : name(name) {
++    Variable(const std::string& varname) : name(varname) {
+     }
+     std::string getName() const {
+         return name;
+@@ -224,9 +239,9 @@
+
+ class LEPTON_EXPORT Operation::Custom : public Operation {
+ public:
+-    Custom(const std::string& name, CustomFunction* function) : name(name), function(function), isDerivative(false), derivOrder(function->getNumArguments(), 0) {
+-    }
+-    Custom(const std::string& name, CustomFunction* function, const std::vector<int>& derivOrder) : name(name), function(function), isDerivative(false), derivOrder(derivOrder) {
++    Custom(const std::string& cname, CustomFunction* cfunction) : name(cname), function(cfunction), isDerivative(false), derivOrder(cfunction->getNumArguments(), 0) {
++    }
++    Custom(const std::string& cname, CustomFunction* cfunction, const std::vector<int>& cderivOrder) : name(cname), function(cfunction), isDerivative(false), derivOrder(cderivOrder) {
+         for (int order : derivOrder)
+             if (order != 0)
+                 isDerivative = true;
+@@ -856,7 +871,29 @@
+         return new Delta();
+     }
+     double evaluate(double* args, const std::map<std::string, double>& variables) const {
+-        return (args[0] == 0.0 ? 1.0 : 0.0);
++        return (args[0] == 0.0 ? std::numeric_limits<double>::infinity() : 0.0);
++    }
++    ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
++};
++
++class LEPTON_EXPORT Operation::Nandelta : public Operation {
++public:
++    Nandelta() {
++    }
++    std::string getName() const {
++        return "nandelta";
++    }
++    Id getId() const {
++        return NANDELTA;
++    }
++    int getNumArguments() const {
++        return 1;
++    }
++    Operation* clone() const {
++        return new Nandelta();
++    }
++    double evaluate(double* args, const std::map<std::string, double>& variables) const {
++        return (args[0] == 0.0 ? std::numeric_limits<double>::quiet_NaN() : 0.0);
+     }
+     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
+ };
+@@ -929,7 +966,7 @@
+
+ class LEPTON_EXPORT Operation::AddConstant : public Operation {
+ public:
+-    AddConstant(double value) : value(value) {
++    AddConstant(double cvalue) : value(cvalue) {
+     }
+     std::string getName() const {
+         std::stringstream name;
+@@ -962,7 +999,7 @@
+
+ class LEPTON_EXPORT Operation::MultiplyConstant : public Operation {
+ public:
+-    MultiplyConstant(double value) : value(value) {
++    MultiplyConstant(double cvalue) : value(cvalue) {
+     }
+     std::string getName() const {
+         std::stringstream name;
+@@ -995,7 +1032,7 @@
+
+ class LEPTON_EXPORT Operation::PowerConstant : public Operation {
+ public:
+-    PowerConstant(double value) : value(value) {
++    PowerConstant(double cvalue) : value(cvalue) {
+         intValue = (int) value;
+         isIntPower = (intValue == value);
+     }
+@@ -1187,6 +1224,44 @@
+     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
+ };
+
++#define LEPTON_CLASS_OPERATION(Name,name,NAME,nargs,impl) \
++class LEPTON_EXPORT Operation::Name : public Operation { \
++public: \
++    Name() { \
++    } \
++    std::string getName() const { \
++        return #name; \
++    } \
++    Id getId() const { \
++        return NAME; \
++    } \
++    int getNumArguments() const { \
++        return nargs; \
++    } \
++    Operation* clone() const { \
++        return new Name(); \
++    } \
++    double evaluate(double* args, const std::map<std::string, double>& variables) const { \
++        return impl; \
++    } \
++    ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const; \
++}
++
++LEPTON_CLASS_OPERATION(Acot,acot,ACOT,1,std::atan(1.0/args[0]));
++LEPTON_CLASS_OPERATION(Asec,asec,ASEC,1,std::acos(1.0/args[0]));
++LEPTON_CLASS_OPERATION(Acsc,acsc,ACSC,1,std::asin(1.0/args[0]));
++LEPTON_CLASS_OPERATION(Coth,coth,ACOT,1,1.0/std::tanh(args[0]));
++LEPTON_CLASS_OPERATION(Sech,sech,SECH,1,1.0/std::cosh(args[0]));
++LEPTON_CLASS_OPERATION(Csch,csch,CSCH,1,1.0/std::sinh(args[0]));
++
++LEPTON_CLASS_OPERATION(Asinh,asinh,ASINH,1,std::asinh(args[0]));
++LEPTON_CLASS_OPERATION(Acosh,acosh,ACOSH,1,std::acosh(args[0]));
++LEPTON_CLASS_OPERATION(Atanh,atanh,ATANH,1,std::atanh(args[0]));
++
++LEPTON_CLASS_OPERATION(Acoth,acoth,ACOTH,1,0.5*std::log((args[0]+1.0)/(args[0]-1.0)));
++LEPTON_CLASS_OPERATION(Asech,asech,ASECH,1,std::log(std::sqrt(1.0/args[0]-1.0)*std::sqrt(1.0/args[0]+1.0)+1.0/args[0]));
++LEPTON_CLASS_OPERATION(Acsch,acsch,ACSCH,1,std::log(1.0/args[0]+std::sqrt(1.0/(args[0]*args[0])+1.0)));
++
+ } // namespace lepton
+ } // namespace PLMD
+
+--- a/ParsedExpression.cpp
++++ b/ParsedExpression.cpp
+@@ -29,7 +29,6 @@
+
+ #include "ParsedExpression.h"
+ #include "CompiledExpression.h"
+-#include "CompiledVectorExpression.h"
+ #include "ExpressionProgram.h"
+ #include "Operation.h"
+ #include <limits>
+@@ -381,10 +380,6 @@
+     return CompiledExpression(*this);
+ }
+
+-CompiledVectorExpression ParsedExpression::createCompiledVectorExpression(int width) const {
+-    return CompiledVectorExpression(*this, width);
+-}
+-
+ ParsedExpression ParsedExpression::renameVariables(const map<string, string>& replacements) const {
+     return ParsedExpression(renameNodeVariables(getRootNode(), replacements));
+ }
+@@ -427,5 +422,4 @@
+     out << exp.getRootNode();
+     return out;
+ }
+-
+-} // namespace PLMD
++}
+--- a/ParsedExpression.h
++++ b/ParsedExpression.h
+@@ -40,7 +40,6 @@
+
+ class CompiledExpression;
+ class ExpressionProgram;
+-class CompiledVectorExpression;
+
+ /**
+  * This class represents the result of parsing an expression.  It provides methods for working with the
+@@ -103,16 +102,6 @@
+      */
+     CompiledExpression createCompiledExpression() const;
+     /**
+-     * Create a CompiledVectorExpression that allows the expression to be evaluated efficiently
+-     * using the CPU's vector unit.
+-     *
+-     * @param width    the width of the vectors to evaluate it on.  The allowed values
+-     *                 depend on the CPU.  4 is always allowed, and 8 is allowed on
+-     *                 x86 processors with AVX.  Call CompiledVectorExpression::getAllowedWidths()
+-     *                 to query the allowed widths on the current processor.
+-     */
+-    CompiledVectorExpression createCompiledVectorExpression(int width) const;
+-    /**
+      * Create a new ParsedExpression which is identical to this one, except that the names of some
+      * variables have been changed.
+      *
+--- a/Parser.cpp
++++ b/Parser.cpp
+@@ -40,11 +40,35 @@
+ using namespace lepton;
+ using namespace std;
+
++namespace lepton {
++
+ static const string Digits = "0123456789";
+ static const string Operators = "+-*/^";
+ static const bool LeftAssociative[] = {true, true, true, true, false};
+ static const int Precedence[] = {0, 0, 1, 1, 3};
+ static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
++
++const std::map<std::string, double> & Constants() {
++  static const std::map<std::string, double> constants = {
++  {"e", std::exp(1.0)},
++  {"log2e", 1.0/std::log(2.0)},
++  {"log10e", 1.0/std::log(10.0)},
++  {"ln2", std::log(2.0)},
++  {"ln10", std::log(10.0)},
++  {"pi", 3.14159265358979323844},
++  {"pi_2", 3.14159265358979323844*0.5},
++  {"pi_4", 3.14159265358979323844*0.25},
++//  {"1_pi", 1.0/pi},
++//  {"2_pi", 2.0/pi},
++//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
++  {"sqrt2", std::sqrt(2.0)},
++  {"sqrt1_2", std::sqrt(0.5)}
++  };
++  return constants;
++}
++
++}
++
+
+ class lepton::ParseToken {
+ public:
+@@ -298,8 +322,8 @@
+
+ Operation* Parser::getFunctionOperation(const std::string& name, const map<string, CustomFunction*>& customFunctions) {
+
+-    static map<string, Operation::Id> opMap;
+-    if (opMap.size() == 0) {
++    const static map<string, Operation::Id> opMap = []() {
++        map<string, Operation::Id> opMap;
+         opMap["sqrt"] = Operation::SQRT;
+         opMap["exp"] = Operation::EXP;
+         opMap["log"] = Operation::LOG;
+@@ -320,6 +344,7 @@
+         opMap["erfc"] = Operation::ERFC;
+         opMap["step"] = Operation::STEP;
+         opMap["delta"] = Operation::DELTA;
++        opMap["nandelta"] = Operation::NANDELTA;
+         opMap["square"] = Operation::SQUARE;
+         opMap["cube"] = Operation::CUBE;
+         opMap["recip"] = Operation::RECIPROCAL;
+@@ -329,7 +354,21 @@
+         opMap["floor"] = Operation::FLOOR;
+         opMap["ceil"] = Operation::CEIL;
+         opMap["select"] = Operation::SELECT;
+-    }
++        opMap["acot"] = Operation::ACOT;
++        opMap["asec"] = Operation::ASEC;
++        opMap["acsc"] = Operation::ACSC;
++        opMap["coth"] = Operation::COTH;
++        opMap["sech"] = Operation::SECH;
++        opMap["csch"] = Operation::CSCH;
++        opMap["asinh"] = Operation::ASINH;
++        opMap["acosh"] = Operation::ACOSH;
++        opMap["atanh"] = Operation::ATANH;
++        opMap["acoth"] = Operation::ACOTH;
++        opMap["asech"] = Operation::ASECH;
++        opMap["acsch"] = Operation::ACSCH;
++        opMap["atan2"] = Operation::ATAN2;
++        return opMap;
++    }();
+     string trimmed = name.substr(0, name.size()-1);
+
+     // First check custom functions.
+@@ -384,6 +423,8 @@
+             return new Operation::Step();
+         case Operation::DELTA:
+             return new Operation::Delta();
++        case Operation::NANDELTA:
++            return new Operation::Nandelta();
+         case Operation::SQUARE:
+             return new Operation::Square();
+         case Operation::CUBE:
+@@ -402,9 +443,32 @@
+             return new Operation::Ceil();
+         case Operation::SELECT:
+             return new Operation::Select();
++        case Operation::ACOT:
++            return new Operation::Acot();
++        case Operation::ASEC:
++            return new Operation::Asec();
++        case Operation::ACSC:
++            return new Operation::Acsc();
++        case Operation::COTH:
++            return new Operation::Coth();
++        case Operation::SECH:
++            return new Operation::Sech();
++        case Operation::CSCH:
++            return new Operation::Csch();
++        case Operation::ASINH:
++            return new Operation::Asinh();
++        case Operation::ACOSH:
++            return new Operation::Acosh();
++        case Operation::ATANH:
++            return new Operation::Atanh();
++        case Operation::ACOTH:
++            return new Operation::Acoth();
++        case Operation::ASECH:
++            return new Operation::Asech();
++        case Operation::ACSCH:
++            return new Operation::Acsch();
+         default:
+             throw Exception("unknown function");
+     }
+ }
+-
+-} // namespace PLMD
++}

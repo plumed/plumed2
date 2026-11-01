@@ -38,6 +38,8 @@
 #include "tools/PDB.h"
 #include "tools/Tools.h"
 #include "tools/IFile.h"
+#include "tools/Random.h"
+#include "tools/OpenMP.h"
 
 #include <map>
 #include <iterator>
@@ -425,6 +427,15 @@ private:
   std::vector<std::vector<double> > qj_list;
   std::vector<std::vector<double> > Rij;
   std::vector<double> sigma_res;
+  // the smearing with the resolution function is linear: smeared I(q_k) = sum_l smear_[k*numq+l] I(q_l)
+  std::vector<double> smear_;
+  // q values as a uniform grid q0+k*dq plus small deviations (see sincos_q)
+  double qref0_;
+  double qref_dq_;
+  double qref_maxeps_;
+  std::vector<double> qref_eps_;
+  // random numbers for the deuteration of the solvent exposed residues (SANS)
+  Random random_deut_;
 
   // Chebyshev polynomial coefficients for i0e(x) used for resolution function
   // values taken from cephes library
@@ -489,7 +500,8 @@ private:
     };
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
-  void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
+  void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv);
+  void sincos_q(const double r, double *s, double *c) const;
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atoms);
@@ -541,7 +553,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
   void calculate() override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
@@ -1353,12 +1364,38 @@ SAXS::SAXS(const ActionOptions&ao):
     }
   }
 
+  // q values as a uniform grid plus small deviations, used by sincos_q
+  qref0_ = q_list[0];
+  qref_dq_ = (numq>1) ? (q_list[numq-1]-q_list[0])/static_cast<double>(numq-1) : 0.0;
+  qref_maxeps_ = 0.0;
+  qref_eps_.resize(numq);
+  for(unsigned k=0; k<numq; ++k) {
+    qref_eps_[k] = q_list[k]-(qref0_+k*qref_dq_);
+    qref_maxeps_ = std::max(qref_maxeps_, std::fabs(qref_eps_[k]));
+  }
+
+  // the deuteration of the exposed residues is drawn by the first rank and broadcast
+  random_deut_.setSeed(-1);
+
   // compute resolution function after converting units
   if (resolution) {
     qj_list.resize(numq, std::vector<double>(Nj));
     Rij.resize(numq, std::vector<double>(Nj));
     // compute Rij and qj_list
     resolution_function();
+    // matrix of the smearing (spline interpolation and integral with the resolution function)
+    smear_.assign(numq*numq,0.0);
+    for(unsigned l=0; l<numq; ++l) {
+      std::vector<double> unit(numq,0.0);
+      unit[l] = 1.0;
+      std::vector<SplineCoeffs> coeffs = spline_coeffs(q_list, unit);
+      for(unsigned k=0; k<numq; ++k) {
+        const double dq = qj_list[k][1] - qj_list[k][0];
+        for(unsigned j=0; j<Nj; ++j) {
+          smear_[k*numq+l] += Rij[k][j] * interpolation(coeffs, qj_list[k][j]) * dq;
+        }
+      }
+    }
   }
 
   log<<"  Bibliography ";
@@ -1421,22 +1458,84 @@ SAXS::SAXS(const ActionOptions&ao):
 
 // calculates SASA neighbor list
 void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
-  unsigned natoms = getNumberOfAtoms();
+  // pairs of atoms with LCPO parameters closer than the sum of their radii,
+  // found with a cell list; each list is sorted (as with the all-pairs loop)
+  const unsigned natoms = getNumberOfAtoms();
+  std::vector<unsigned> lcpo_atoms;
+  double maxr = 0.0;
   for(unsigned i = 0; i < natoms; ++i) {
     if (LCPOparam[i].size()>0) {
-      for (unsigned j = 0; j < i; ++j) {
-        if (LCPOparam[j].size()>0) {
-          double Delta_ij_mod = modulo(delta(getPosition(i), getPosition(j)))*10.;
-          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
-          if(Delta_ij_mod < overlapD) {
-            Nlist.at(i).push_back(j);
-            Nlist.at(j).push_back(i);
+      lcpo_atoms.push_back(i);
+      maxr = std::max(maxr, LCPOparam[i][0]);
+    }
+  }
+  if(lcpo_atoms.empty()) {
+    return;
+  }
+  // cell size (nm) not smaller than the largest cutoff (radii are in Angstrom)
+  const double rc = std::max(2.0*maxr/10., 1.e-6);
+  Vector lo = getPosition(lcpo_atoms[0]), hi = lo;
+  for(const auto i : lcpo_atoms) {
+    for(unsigned k=0; k<3; ++k) {
+      lo[k] = std::min(lo[k], getPosition(i)[k]);
+      hi[k] = std::max(hi[k], getPosition(i)[k]);
+    }
+  }
+  int ncell[3];
+  double csize[3];
+  for(unsigned k=0; k<3; ++k) {
+    const double len = hi[k]-lo[k];
+    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
+    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
+  }
+  auto cell=[&](const unsigned i, int *c) {
+    for(unsigned k=0; k<3; ++k) {
+      c[k] = std::min(ncell[k]-1, std::max(0, static_cast<int>(std::floor((getPosition(i)[k]-lo[k])/csize[k]))));
+    }
+  };
+  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
+  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(lcpo_atoms.size()), atom_cell(lcpo_atoms.size());
+  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+    int c[3];
+    cell(lcpo_atoms[a],c);
+    atom_cell[a] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
+    cell_start[atom_cell[a]+1]++;
+  }
+  for(unsigned ic=0; ic<ncells; ++ic) {
+    cell_start[ic+1] += cell_start[ic];
+  }
+  {
+    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
+    for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+      cell_atoms[fill[atom_cell[a]]++] = lcpo_atoms[a];
+    }
+  }
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+    const unsigned i = lcpo_atoms[a];
+    int c[3];
+    cell(i,c);
+    for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
+      for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
+        for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
+          const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
+          for(unsigned jj=cell_start[ic]; jj<cell_start[ic+1]; ++jj) {
+            const unsigned j = cell_atoms[jj];
+            if(j==i) {
+              continue;
+            }
+            // same expression as in the all-pairs loop (j<i), so that the result is the same
+            const double Delta_ij_mod = (j<i) ? modulo(delta(getPosition(i), getPosition(j)))*10. : modulo(delta(getPosition(j), getPosition(i)))*10.;
+            const double overlapD = (j<i) ? LCPOparam[i][0]+LCPOparam[j][0] : LCPOparam[j][0]+LCPOparam[i][0];
+            if(Delta_ij_mod < overlapD) {
+              Nlist[i].push_back(j);
+            }
           }
         }
       }
     }
+    std::sort(Nlist[i].begin(), Nlist[i].end());
   }
-
 }
 
 // calculates SASA according to LCPO algorithm
@@ -1445,11 +1544,16 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
   std::vector<std::vector<int> > Nlist(natoms);
   calcNlist(Nlist);
   std::vector<double> sasares(nres, 0.);
+  const unsigned nt = OpenMP::getNumThreads();
+  std::vector< std::vector<double> > sasares_t(nt);
 
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  #pragma omp parallel num_threads(nt)
   {
-    std::vector<double> private_sasares(nres, 0.);
-    #pragma omp for
+    std::vector<double> & private_sasares = sasares_t[OpenMP::getThreadNum()];
+    private_sasares.assign(nres, 0.);
+    // marks the neighbours of atom i (replaces a linear search in Nlist[i])
+    std::vector<char> is_neighbor(natoms, 0);
+    #pragma omp for schedule(static)
     for (unsigned i = 0; i < natoms; ++i) {
       if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
         double Aij = 0.0;
@@ -1457,13 +1561,16 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
         double Ajk = 0.0;
         double ri = LCPOparam[i][0];
         double S1 = 4.*M_PI*ri*ri;
+        for (const auto j : Nlist[i]) {
+          is_neighbor[j] = 1;
+        }
         for (unsigned j = 0; j < Nlist[i].size(); ++j) {
           double d_ij = modulo(delta( getPosition(i), getPosition(Nlist[i][j]) ))*10.;
           double rj = LCPOparam[Nlist[i][j]][0];
           double Aijt = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
           double Ajkt = 0.0;
           for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
-            if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+            if (is_neighbor[Nlist[Nlist[i][j]][k]]) {
               double d_jk = modulo(delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) ))*10.;
               double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
               double sjk =  (2.*M_PI*rj*(rj-d_jk/2.-((rj*rj-rk*rk)/(2.*d_jk))));
@@ -1474,18 +1581,25 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
           Aij += Aijt;
           Ajk += Ajkt;
         }
+        for (const auto j : Nlist[i]) {
+          is_neighbor[j] = 0;
+        }
         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
         if (sasai > 0) {
           private_sasares[residue_atom[i]] += sasai / 100.0;
         }
       }
     }
-    #pragma omp critical
-    {
-      // combining private_sasares into sasares
-      for (unsigned i = 0; i < nres; ++i) {
-        sasares[i] += private_sasares[i];
-      }
+  }
+  // combining private_sasares into sasares, in thread order (reproducible results);
+  // the buffers of the threads that did not run (e.g. without OpenMP, or when the
+  // runtime gives fewer threads than requested) are empty and are skipped
+  for (unsigned t = 0; t < nt; ++t) {
+    if(sasares_t[t].empty()) {
+      continue;
+    }
+    for (unsigned i = 0; i < nres; ++i) {
+      sasares[i] += sasares_t[t][i];
     }
   }
   for(unsigned i=0; i<nres; ++i) { // updating solv_res based on sasares
@@ -1515,17 +1629,14 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 
   // on gpu only the master rank run the calculation
   if(comm.Get_rank()==0) {
-    std::vector<float> posi;
-    posi.resize(3*size);
+    std::vector<float> posx(size), posy(size), posz(size);
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for (unsigned i=0; i<size; ++i) {
-      const Vector tmp = pos[i];
-      posi[3*i]   = static_cast<float>(tmp[0]);
-      posi[3*i+1] = static_cast<float>(tmp[1]);
-      posi[3*i+2] = static_cast<float>(tmp[2]);
+      posx[i] = static_cast<float>(pos[i][0]);
+      posy[i] = static_cast<float>(pos[i][1]);
+      posz[i] = static_cast<float>(pos[i][2]);
     }
 
-    // create array a and b containing atomic coordinates
 #ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
     af::setDevice(afcu::getNativeId(deviceid));
 #elif   __PLUMED_HAS_ARRAYFIRE_OCL
@@ -1533,71 +1644,68 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 #else
     af::setDevice(deviceid);
 #endif
-    // 3,size,1,1
-    af::array pos_a = af::array(3, size, &posi.front());
-    // size,3,1,1
-    pos_a = af::moddims(pos_a.T(), size, 3, 1);
-    // size,3,1,1
-    af::array pos_b = pos_a(af::span, af::span);
-    // size,1,3,1
-    pos_a = af::moddims(pos_a, size, 1, 3);
-    // 1,size,3,1
-    pos_b = af::moddims(pos_b, 1, size, 3);
-
-    // size,size,3,1
-    af::array pos_a_t = af::tile(pos_a, 1, size, 1);
-    // size,size,3,1: for some reason we need this
-    pos_a_t = af::moddims(pos_a_t, size, size, 3);
-    // size,size,3,1
-    af::array pos_b_t = af::tile(pos_b, size, 1, 1);
-    // size,size,3,1: for some reason we need this
-    pos_b_t = af::moddims(pos_b_t, size, size, 3);
-    // size,size,3,1
-    af::array xyz_dist = pos_a_t - pos_b_t;
-    // size,size,1,1
-    af::array square = af::sum(xyz_dist*xyz_dist,2);
-    // size,size,1,1
-    af::array dist_sqrt = af::sqrt(square);
-    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter because this are multiplied by zero)
-    af::replace(square,!(af::iszero(square)),1.);
-    // size,size,3,1
-    xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);
-    // numq,1,1,1
-    af::array sum_device   = af::constant(0, numq, f32);
-    // numq,size,3,1
-    af::array deriv_device = af::constant(0, numq, size, 3, f32);
-
+    // coordinates of all the particles as rows (1,size)
+    const af::array xall = af::array(1, size, posx.data());
+    const af::array yall = af::array(1, size, posy.data());
+    const af::array zall = af::array(1, size, posz.data());
+    // form factors of all the particles as rows (1,size), one per q
+    std::vector<af::array> ffall(numq);
     for (unsigned k=0; k<numq; ++k) {
-      // calculate FF matrix
-      // size,1,1,1
-      af::array AFF_value(size, &FFf_value[k].front());
-      // size,size,1,1
-      af::array FFdist_mod = af::tile(AFF_value(af::span), 1, size)*af::transpose(af::tile(AFF_value(af::span), 1, size));
+      ffall[k] = af::array(1, size, &FFf_value[k].front());
+    }
+    // accumulators: intensities and derivatives (1,size) for each q
+    af::array sum_device = af::constant(0, numq, f32);
+    std::vector<af::array> dx_device(numq), dy_device(numq), dz_device(numq);
+    for (unsigned k=0; k<numq; ++k) {
+      dx_device[k] = af::constant(0, 1, size, f32);
+      dy_device[k] = af::constant(0, 1, size, f32);
+      dz_device[k] = af::constant(0, 1, size, f32);
+    }
 
-      // get q
-      const float qvalue = static_cast<float>(q_list[k]);
-      // size,size,1,1
-      af::array dist_q = qvalue*dist_sqrt;
-      // size,size,1
-      af::array dist_sin = af::sin(dist_q)/dist_q;
-      af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
-      // 1,1,1,1
-      sum_device(k) = af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
-
-      // size,size,1,1
-      af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q));
-      // size,size,3,1
-      af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
-      // it should become 1,size,3
-      deriv_device(k, af::span, af::span) = af::sum(dd_all,0);
+    // the (i,j) matrices are built for blocks of rows i, so that the memory
+    // does not grow as size^2 (about 4M pairs per block)
+    const unsigned block = std::max(1U, std::min(size, (1U<<22)/std::max(size,1U)));
+    for (unsigned i0=0; i0<size; i0+=block) {
+      const unsigned nb = std::min(block, size-i0);
+      const af::seq rows(i0, i0+nb-1);
+      // x_i - x_j, (nb,size)
+      const af::array dxm = af::tile(af::transpose(xall(0,rows)), 1, size) - af::tile(xall, nb, 1);
+      const af::array dym = af::tile(af::transpose(yall(0,rows)), 1, size) - af::tile(yall, nb, 1);
+      const af::array dzm = af::tile(af::transpose(zall(0,rows)), 1, size) - af::tile(zall, nb, 1);
+      const af::array square = dxm*dxm + dym*dym + dzm*dzm;
+      const af::array dist = af::sqrt(square);
+      // 1/r^2, set to 0 for i==j (the derivative vanishes there)
+      const af::array iszero = (square == 0);
+      const af::array inv_square = (1.0f - iszero.as(f32)) / (square + iszero.as(f32));
+      for (unsigned k=0; k<numq; ++k) {
+        // FF_i*FF_j, (nb,size)
+        const af::array ffmat = af::tile(af::transpose(ffall[k](0,rows)), 1, size) * af::tile(ffall[k], nb, 1);
+        const float qvalue = static_cast<float>(q_list[k]);
+        const af::array dist_q = qvalue*dist;
+        // sin(qr)/qr, 1 for i==j
+        const af::array dist_sin = af::select(iszero, 1.0f, af::sin(dist_q)/(dist_q + iszero.as(f32)));
+        sum_device(k) += af::sum<float>(dist_sin*ffmat);
+        // derivatives with respect to j: sum over the rows i
+        const af::array tmp = ffmat*(dist_sin - af::cos(dist_q))*inv_square;
+        dx_device[k] += af::sum(tmp*dxm, 0);
+        dy_device[k] += af::sum(tmp*dym, 0);
+        dz_device[k] += af::sum(tmp*dzm, 0);
+      }
     }
 
     // read out results
     sum_device.host(&sum.front());
-
-    deriv_device = af::reorder(deriv_device, 2, 1, 0);
-    deriv_device = af::flat(deriv_device);
-    deriv_device.host(&dd.front());
+    std::vector<float> tx(size), ty(size), tz(size);
+    for (unsigned k=0; k<numq; ++k) {
+      dx_device[k].host(tx.data());
+      dy_device[k].host(ty.data());
+      dz_device[k].host(tz.data());
+      for (unsigned i=0; i<size; ++i) {
+        dd[k*size*3+i*3+0] = tx[i];
+        dd[k*size*3+i*3+1] = ty[i];
+        dd[k*size*3+i*3+2] = tz[i];
+      }
+    }
   }
 
   comm.Bcast(dd, 0);
@@ -1619,7 +1727,42 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
 #endif
 }
 
-void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
+void SAXS::sincos_q(const double r, double *s, double *c) const {
+  // sin(q_k r) and cos(q_k r) for all the q values. When the q values are close to a
+  // uniform grid q0+k*dq (as usual for experimental data), sin and cos of the grid are
+  // obtained by angle addition (exact restart every 16 values) and corrected for the
+  // small deviations eps_k=q_k-q0-k*dq with a Taylor expansion (|eps_k r|<=0.1, error
+  // smaller than 1e-16). Otherwise sin and cos are computed for every q.
+  const unsigned numq = q_list.size();
+  if(numq<4 || qref_maxeps_*r>0.1) {
+    for(unsigned k=0; k<numq; ++k) {
+      s[k] = std::sin(q_list[k]*r);
+      c[k] = std::cos(q_list[k]*r);
+    }
+    return;
+  }
+  const double sd = std::sin(qref_dq_*r);
+  const double cd = std::cos(qref_dq_*r);
+  double sk = 0.0, ck = 1.0;
+  for(unsigned k=0; k<numq; ++k) {
+    if((k&15)==0) {
+      const double a = (qref0_+k*qref_dq_)*r;
+      sk = std::sin(a);
+      ck = std::cos(a);
+    }
+    const double x = qref_eps_[k]*r;
+    const double x2 = x*x;
+    const double cx = 1.-x2*(1./2-x2*(1./24-x2*(1./720-x2*(1./40320))));
+    const double sx = x*(1.-x2*(1./6-x2*(1./120-x2*(1./5040-x2*(1./362880)))));
+    s[k] = sk*cx+ck*sx;
+    c[k] = ck*cx-sk*sx;
+    const double s2 = sk*cd+ck*sd;
+    ck = ck*cd-sk*sd;
+    sk = s2;
+  }
+}
+
+void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv) {
   unsigned size;
   if(onebead) {
     size = nres;
@@ -1636,114 +1779,107 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
   }
   std::vector<double> sum(numq,0);
   const unsigned nt=OpenMP::getNumThreads();
+  // partial sums of the threads other than the first one, added in thread order
+  std::vector< std::vector<Vector> > deriv_t(nt);
+  std::vector< std::vector<double> > sum_t(nt);
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<Vector> omp_deriv(deriv.size());
-    std::vector<double> omp_sum(numq,0);
-    #pragma omp for nowait
+    const unsigned t = OpenMP::getThreadNum();
+    if(t>0) {
+      deriv_t[t].assign(deriv.size(),Vector(0,0,0));
+      sum_t[t].assign(numq,0.0);
+    }
+    std::vector<Vector> & my_deriv = (t>0) ? deriv_t[t] : deriv;
+    std::vector<double> & my_sum = (t>0) ? sum_t[t] : sum;
+    std::vector<double> sq(numq), cq(numq);
+    // the work of row i decreases with i: rows are dealt round robin
+    #pragma omp for schedule(static,1)
     for (unsigned i=rank; i<size-1; i+=stride) {
       Vector posi = pos[i];
       for (unsigned j=i+1; j<size ; ++j) {
         Vector c_distances = delta(posi,pos[j]);
         double m_distances = c_distances.modulo();
         c_distances = c_distances/m_distances/m_distances;
+        sincos_q(m_distances, sq.data(), cq.data());
         for (unsigned k=0; k<numq; ++k) {
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
           double FFF = 2.*FF_value[i][k]*FF_value[j][k];
-          double tsq = std::sin(qdist)/qdist;
-          double tcq = std::cos(qdist);
-          double tmp = FFF*(tcq-tsq);
+          double tsq = sq[k]/qdist;
+          double tmp = FFF*(cq[k]-tsq);
           Vector dd  = c_distances*tmp;
-          if(nt>1) {
-            omp_deriv[kdx+i] -=dd;
-            omp_deriv[kdx+j] +=dd;
-            omp_sum[k] += FFF*tsq;
-          } else {
-            deriv[kdx+i] -= dd;
-            deriv[kdx+j] += dd;
-            sum[k] += FFF*tsq;
-          }
+          my_deriv[kdx+i] -= dd;
+          my_deriv[kdx+j] += dd;
+          my_sum[k] += FFF*tsq;
         }
       }
     }
-    #pragma omp critical
-    if(nt>1) {
-      for(unsigned i=0; i<deriv.size(); ++i) {
-        deriv[i]+=omp_deriv[i];
-      }
-      for(unsigned k=0; k<numq; ++k) {
-        sum[k]+=omp_sum[k];
+  }
+  // only the threads that actually ran have filled their buffers: without OpenMP
+  // (or when the runtime gives fewer threads than requested) the others are empty
+  std::vector<unsigned> filled;
+  for(unsigned t=1; t<nt; ++t) {
+    if(sum_t[t].empty()) {
+      continue;
+    }
+    filled.push_back(t);
+    for(unsigned k=0; k<numq; ++k) {
+      sum[k] += sum_t[t][k];
+    }
+  }
+  if(!filled.empty()) {
+    #pragma omp parallel for num_threads(nt)
+    for(unsigned i=0; i<deriv.size(); ++i) {
+      for(const auto t : filled) {
+        deriv[i] += deriv_t[t][i];
       }
     }
   }
 
   if(!serial) {
-    comm.Sum(&deriv[0][0], 3*deriv.size());
     comm.Sum(&sum[0], numq);
   }
 
   if (resolution) {
-    // get spline for scatering curve
-    std::vector<SplineCoeffs> scatt_coeffs = spline_coeffs(q_list, sum);
-
-    // get spline for the derivatives
-    // copy the deriv to a new vector and zero deriv
-    std::vector<Vector> old_deriv(deriv);
-    memset(&deriv[0][0], 0.0, deriv.size() * sizeof deriv[0]);
-
-#ifdef _OPENMP
-    //NT is unused if openmp is not declared
-    const unsigned NT=OpenMP::getNumThreads();
-#endif //_OPENMP
-    for (unsigned i=rank; i<size; i+=stride) {
-      std::vector<double> deriv_i_x(numq);
-      std::vector<double> deriv_i_y(numq);
-      std::vector<double> deriv_i_z(numq);
-
-      std::vector<SplineCoeffs> deriv_coeffs_x;
-      std::vector<SplineCoeffs> deriv_coeffs_y;
-      std::vector<SplineCoeffs> deriv_coeffs_z;
-      for (unsigned k=0; k<numq; k++) {
-        unsigned kdx = k*size;
-        deriv_i_x[k] = old_deriv[kdx+i][0];
-        deriv_i_y[k] = old_deriv[kdx+i][1];
-        deriv_i_z[k] = old_deriv[kdx+i][2];
+    // the resolution function is applied to the whole intensity, self term included
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k]+=FF_rank[k];
+    }
+    const std::vector<double> old_sum(sum);
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k] = 0.;
+      for (unsigned l=0; l<numq; ++l) {
+        sum[k] += smear_[k*numq+l]*old_sum[l];
       }
-      deriv_coeffs_x = spline_coeffs(q_list, deriv_i_x);
-      deriv_coeffs_y = spline_coeffs(q_list, deriv_i_y);
-      deriv_coeffs_z = spline_coeffs(q_list, deriv_i_z);
-
-      // compute derivative with the smearing using the resolution function
-      #pragma omp parallel for num_threads(NT)
+    }
+    // the smearing is linear in the data, so it is applied to the partial
+    // derivatives of this rank (of all the particles) before summing them
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for (unsigned i=0; i<size; i++) {
+      std::vector<Vector> old_deriv_i(numq);
+      for (unsigned l=0; l<numq; l++) {
+        old_deriv_i[l] = deriv[l*size+i];
+      }
       for (unsigned k=0; k<numq; k++) {
-        unsigned kdx = k*size;
-        double dq = qj_list[k][1] - qj_list[k][0];
-        for (unsigned j=0; j<Nj; j++) {
-          deriv[kdx+i][0] += Rij[k][j] * interpolation(deriv_coeffs_x, qj_list[k][j]) * dq;
-          deriv[kdx+i][1] += Rij[k][j] * interpolation(deriv_coeffs_y, qj_list[k][j]) * dq;
-          deriv[kdx+i][2] += Rij[k][j] * interpolation(deriv_coeffs_z, qj_list[k][j]) * dq;
+        Vector d;
+        for (unsigned l=0; l<numq; l++) {
+          d += smear_[k*numq+l]*old_deriv_i[l];
         }
+        deriv[k*size+i] = d;
       }
     }
-
-    if(!serial) {
-      comm.Sum(&deriv[0][0], 3*deriv.size());
-    }
-
-    // compute the smeared spectra using the resolution function
-    #pragma omp parallel for num_threads(NT)
-    for (unsigned i=0; i<numq; i++) {
-      sum[i] = 0.;
-      double dq = qj_list[i][1] - qj_list[i][0];
-      for (unsigned j=0; j<Nj; j++) {
-        sum[i] += Rij[i][j] * interpolation(scatt_coeffs, qj_list[i][j]) * dq;
-      }
+  } else {
+    for (unsigned k=0; k<numq; ++k) {
+      sum[k]+=FF_rank[k];
     }
   }
 
+  // with DOSCORE only the contraction with the score derivatives is summed (in calculate)
+  if(!serial && reduce_deriv) {
+    comm.Sum(&deriv[0][0], 3*deriv.size());
+  }
+
   for (unsigned k=0; k<numq; ++k) {
-    sum[k]+=FF_rank[k];
     std::string num;
     Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
@@ -1843,6 +1979,19 @@ void SAXS::calculate() {
         if(deuter_conc!=0.||rho != rho_corr) {
           sasa_calculate(solv_res);
         }
+        // the exposed residues are deuterated with probability deuter_conc: the random
+        // numbers are drawn by the first rank (same sequence as before on every rank)
+        std::vector<int> deut_draw(nres,0);
+        if(comm.Get_rank()==0) {
+          for(unsigned i=0; i<nres; ++i) {
+            if(solv_res[i] == 1) {
+              deut_draw[i] = (random_deut_.RandU01()<deuter_conc) ? 1 : 0;
+            }
+          }
+        }
+        if(comm.Get_size()>1) {
+          comm.Bcast(deut_draw,0);
+        }
         Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
           // The density and the H/D term set are selected once and used for both
@@ -1851,7 +2000,7 @@ void SAXS::calculate() {
           double vac_i, mix_i, rho_i;
           if(solv_res[i] == 1) {
             rho_i = rho_sans_corr;
-            if(static_cast<double>(rand())/RAND_MAX<deuter_conc) {
+            if(deut_draw[i]) {
               deut_res[i] = 1;
               vac_i = Iq0_vac_D[i];
               mix_i = Iq0_mix_D[i];
@@ -1911,10 +2060,12 @@ void SAXS::calculate() {
     aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
   }
 
+  // with DOSCORE the derivatives of the intensities are first contracted with the
+  // derivatives of the score, and only then summed over the ranks
   if(gpu) {
     calculate_gpu(beads_pos, bd_deriv);
   } else {
-    calculate_cpu(beads_pos, bd_deriv);
+    calculate_cpu(beads_pos, bd_deriv, !getDoScore());
   }
 
   std::vector<double> chi2_dq;
@@ -2026,64 +2177,66 @@ void SAXS::calculate() {
   }
   Tensor chi2_box_deriv;
 
-  for (unsigned k=0; k<numq; ++k) {
+  // derivatives of each intensity (without DOSCORE)
+  for (unsigned k=0; k<numq && !getDoScore(); ++k) {
     const unsigned kdx=k*beads_size;
     Tensor deriv_box;
-    Value* val;
-    if(!getDoScore()) {
-      std::string num;
-      Tools::convert(k,num);
-      val=getPntrToComponent("q-"+num);
+    std::string num;
+    Tools::convert(k,num);
+    Value* val=getPntrToComponent("q-"+num);
 
-      if(onebead) {
-        for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-          const unsigned bead_id = residue_atom[atom_id];
-          const Vector qderiv(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0],
-                              aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1],
-                              aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]);
-          setAtomsDerivatives(val, atom_id, qderiv);
-          deriv_box += Tensor(getPosition(atom_id),qderiv);
-          if(chi2) {
-            chi2_atom_deriv[atom_id] += chi2_dq[k]*qderiv;
-          }
+    if(onebead) {
+      for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+        const unsigned bead_id = residue_atom[atom_id];
+        const Vector qderiv(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0],
+                            aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1],
+                            aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]);
+        setAtomsDerivatives(val, atom_id, qderiv);
+        deriv_box += Tensor(getPosition(atom_id),qderiv);
+        if(chi2) {
+          chi2_atom_deriv[atom_id] += chi2_dq[k]*qderiv;
         }
-      } else {
-        for(unsigned i=0; i<beads_size; ++i) {
-          const Vector qderiv(bd_deriv[kdx+i][0],
-                              bd_deriv[kdx+i][1],
-                              bd_deriv[kdx+i][2]);
-          setAtomsDerivatives(val, i, qderiv);
-          deriv_box += Tensor(getPosition(i),qderiv);
-          if(chi2) {
-            chi2_atom_deriv[i] += chi2_dq[k]*qderiv;
-          }
-        }
-      }
-      if(chi2) {
-        chi2_box_deriv += chi2_dq[k]*deriv_box;
       }
     } else {
-      val=getPntrToComponent("score");
-      if(onebead) {
-        for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-          const unsigned bead_id = residue_atom[atom_id];
-          setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0]*getMetaDer(k),
-                              aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1]*getMetaDer(k),
-                              aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]*getMetaDer(k)) );
-          deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0]*getMetaDer(k),
-                              aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1]*getMetaDer(k),
-                              aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]*getMetaDer(k)) );
-        }
-      } else {
-        for(unsigned i=0; i<beads_size; ++i) {
-          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
-                                             bd_deriv[kdx+i][1]*getMetaDer(k),
-                                             bd_deriv[kdx+i][2]*getMetaDer(k)) );
-          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
-                              bd_deriv[kdx+i][1]*getMetaDer(k),
-                              bd_deriv[kdx+i][2]*getMetaDer(k)) );
+      for(unsigned i=0; i<beads_size; ++i) {
+        const Vector qderiv(bd_deriv[kdx+i][0],
+                            bd_deriv[kdx+i][1],
+                            bd_deriv[kdx+i][2]);
+        setAtomsDerivatives(val, i, qderiv);
+        deriv_box += Tensor(getPosition(i),qderiv);
+        if(chi2) {
+          chi2_atom_deriv[i] += chi2_dq[k]*qderiv;
         }
       }
+    }
+    if(chi2) {
+      chi2_box_deriv += chi2_dq[k]*deriv_box;
+    }
+    setBoxDerivatives(val, -deriv_box);
+  }
+
+  if(getDoScore()) {
+    // derivative of the score with respect to the beads, from all the q values
+    std::vector<Vector> score_deriv(beads_size, Vector(0,0,0));
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<beads_size; ++i) {
+      for(unsigned k=0; k<numq; ++k) {
+        score_deriv[i] += getMetaDer(k)*bd_deriv[k*beads_size+i];
+      }
+    }
+    // calculate_cpu does not sum the derivatives over the ranks with DOSCORE
+    if(!gpu && !serial && comm.Get_size()>1) {
+      comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
+    }
+    Value* val=getPntrToComponent("score");
+    Tensor deriv_box;
+    for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+      const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
+      const Vector der(aa_deriv[atom_id][0]*score_deriv[bead_id][0],
+                       aa_deriv[atom_id][1]*score_deriv[bead_id][1],
+                       aa_deriv[atom_id][2]*score_deriv[bead_id][2]);
+      setAtomsDerivatives(val, atom_id, der);
+      deriv_box += Tensor(getPosition(atom_id),der);
     }
     setBoxDerivatives(val, -deriv_box);
   }
@@ -2098,13 +2251,6 @@ void SAXS::calculate() {
     }
     setBoxDerivatives(chi2_val, -chi2_box_deriv);
     setBoxDerivatives(chi2red_val, -invdof*chi2_box_deriv);
-  }
-}
-
-void SAXS::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
-    writeStatus();
   }
 }
 
@@ -10433,7 +10579,7 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
     }
     if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S') || (AtomResidueName[0][i][0]=='P')) {
-        std::cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
+        std::cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
         error ("missing LCPO parameters\n");
       }
     }

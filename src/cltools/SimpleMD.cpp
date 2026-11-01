@@ -593,7 +593,7 @@ private:
 //   compute forces
 //   update velocities
 //   thermostat
-//   (eventually dump output informations)
+//   (eventually dump output information)
     for(int istep=0; istep<nstep; istep++) {
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 

@@ -97,10 +97,10 @@ PRINT ARG=pb FILE=colvar
 ```
 
 If you are using [DRMSD](DRMSD.md) to measure distances and you __don't__ use the NOPBC flag then
-all distances in the instaneous structure are evaluated in a way that takes the periodic boundary conditions
+all distances in the instantaneous structure are evaluated in a way that takes the periodic boundary conditions
 into account. Using the NOPBC flag turns off this treatment.
 
-If you are using [RMSD](RMSD.md) to measure distances and you __don't__ use the NOPBC flag the the instaneous positions of
+If you are using [RMSD](RMSD.md) to measure distances and you __don't__ use the NOPBC flag the instantaneous positions of
 each segment for which the RMSD is computed is reconstructed using the procedure outlined in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md)
 before the RMSD is computed. Using the NOPBC flag turns off this treatment.
 

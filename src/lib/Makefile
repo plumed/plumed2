@@ -106,16 +106,30 @@ endif
 #endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
+.PHONY: link-libs link-all install-link install-build
+
+# update links and objects, then link everything
+# (both the libraries in the build directory and those in install/).
 all:
 	$(MAKE) dirslinks
 	$(MAKE) dirs
+	$(MAKE) link-all
+
+# Linking step, only. Objects are expected to be up to date (see dirs).
+link-libs:
 ifdef SOEXT
 	$(MAKE) lib
 else
 	$(MAKE) lib-static
 endif
+
+# Notice that the libraries in the build directory and those in install/ share
+# the same (already compiled) objects and are linked independently
+# so that, with make -j, they can be linked concurrently.
 ifneq ($(PLUMED_INSTALL),Install)
-	$(MAKE) install-build
+link-all: link-libs install-link
+else
+link-all: link-libs
 endif
 
 # on Mac, for pkgconfigInternals should also link -lplumedKernel
@@ -127,9 +141,20 @@ dirs:
 	@echo "*** Compiling all directories ***"
 	$(MAKE) $(DIRS)
 
+# update links and objects, then link the libraries in install/
+# (used by make install, which does not assume that make all has been run).
 install-build:
+	$(MAKE) dirslinks
+	$(MAKE) dirs
+	$(MAKE) install-link
+
+# link the libraries in install/ (objects are expected to be up to date, see dirs).
+# This is the only step which differs between the build and install versions:
+# the objects are shared, only libraries/executables are linked again
+# (with different soname, paths, etc).
+install-link:
 	mkdir -p install/
-	$(MAKE) PLUMED_INSTALL=Install all
+	$(MAKE) PLUMED_INSTALL=Install link-libs
 ifdef LD_RO
 	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
@@ -318,13 +343,7 @@ endif
 	if test -f ../../json/syntax.json ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/json" && cp ../../json/syntax.json  "$(DESTDIR)$(libdir)/$(program_name)/json/" ; fi
 # python installation (rebuild prior to installation so as to discover plumed in path)
 ifdef python_bin
-	cp -pr ../../python install
-	rm -f ./install/python/include/Plumed.h
-	cd ./install/python/include/ && cp -s ../../../../wrapper/Plumed.h .
-	cd install/python && rm -fr *.so plumed.cpp build dist && \
-          unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
-          ./onlyBuild.sh -v $(VERSION) -p $(python_bin) \
-          -k "$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	$(MAKE) install-python
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
 	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
 endif
@@ -403,6 +422,40 @@ else ifeq ($(program_can_run_mpi),no)
 	@echo "WARNING: - all command line tools are available as '$(program_name) --no-mpi name-of-the-tool'"
 	@echo "WARNING:   e.g. '$(program_name) --no-mpi driver'"
 	@echo "WARNING:   (MPI will be disabled in this case)"
+endif
+
+# python interface for the installed version of plumed.
+# The kernel library has the installed path hardcoded, so this is built in a separate
+# directory (install/python) and not in python/.
+# As in python/Makefile, it is only rebuilt when something it depends on changes
+# (and not when the C++ code is modified), so that repeated installations are fast.
+# The .config file records the settings used for the build and is only updated if they change.
+ifdef python_bin
+.PHONY: install-python FORCE
+FORCE:
+
+install-python: install/python.stamp
+
+install/python.config: FORCE
+	@mkdir -p install
+	@echo "$(libdir) $(program_name) $(SOEXT) $(python_bin) $(VERSION)" > $@~
+	@cmp -s $@~ $@ || cp $@~ $@
+	@rm -f $@~
+
+install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
+                      ../../python/onlyBuild.sh ../../python/README.rst ../../python/MANIFEST.in \
+                      ../wrapper/Plumed.h ../../VERSION.txt ../../Makefile.conf install/python.config
+	$(MAKE) -C ../../python plumed.c
+	rm -fr install/python
+	cp -pr ../../python install
+	cp ../../VERSION.txt install/python/PLUMED_VERSION
+	rm -f ./install/python/include/Plumed.h
+	cd ./install/python/include/ && cp -s ../../../../wrapper/Plumed.h .
+	cd install/python && rm -fr *.so plumed.cpp build dist && \
+          unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
+          ./onlyBuild.sh -v $(VERSION) -p $(python_bin) \
+          -k "$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	touch $@
 endif
 
 uninstall:

@@ -77,7 +77,7 @@ diff: DIFFERENCE ARG=t,ref_psi
 PRINT ARG=diff FILE=colvar
 ```
 
-You can also use this action to calculate the difference between the instaneous values of a vector of quantities and a
+You can also use this action to calculate the difference between the instantaneous values of a vector of quantities and a
 reference vector as illustrated in the example below:
 
 ```plumed

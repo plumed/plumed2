@@ -988,16 +988,19 @@ def createCLToolPage(
         if tool in plumeddocs.keys():
             if os.path.isfile("../src/" + value["module"] + "/module.yml"):
                 actions = set()
-                ninp, nf = processMarkdownString(
-                    plumeddocs[tool],
-                    "docs/" + tool + ".md",
-                    (PLUMED,),
-                    (version,),
-                    actions,
-                    f,
-                    ghmarkdown=False,
-                    test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
-                )
+                # as for the action pages, the inputs are processed from docs, so that
+                # the files listed in INPUTFILES (e.g. regtest/...) are found
+                with cd("docs"):
+                    ninp, nf = processMarkdownString(
+                        plumeddocs[tool],
+                        tool + ".md",
+                        (PLUMED,),
+                        (version,),
+                        actions,
+                        f,
+                        ghmarkdown=False,
+                        test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
+                    )
                 if nf[0] > 0:
                     broken_inputs.append(
                         ['<a href="../' + tool + '">' + tool + "</a>", str(nf[0])]

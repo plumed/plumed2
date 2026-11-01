@@ -218,7 +218,7 @@ void Value::push_back( const double& v ) {
     shape[0]++;
   } else if( shape.size()==2 ) {
     data.push_back(v);
-    shape[0] = std::ceil( data.size() / shape[1] );
+    shape[0] = ( data.size() + shape[1] - 1 ) / shape[1];
   }
 }
 
@@ -256,11 +256,10 @@ double Value::get(const std::size_t ival, const bool trueind) const {
   if( hasDeriv ) {
     return data[ival*(1+ngrid_der)];
   }
-#ifdef DNDEBUG
+  // plumed_dbg_massert is only evaluated in debug builds (NDEBUG not defined)
   if( action ) {
     plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
   }
-#endif
   if( shape.size()==2 && ncols<shape[1] && trueind ) {
     const unsigned irow = std::floor( ival / shape[1] );
     const unsigned jcol = ival%shape[1];
@@ -303,21 +302,21 @@ size_t Value::assignValues(View<double> target) {
   return nvals;
 }
 
-void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
-  hasForce=true;
-  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
-    unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
-    for(unsigned i=0; i<getRowLength(irow); ++i) {
-      if( getRowIndex(irow,i)==jcol ) {
-        inputForce[irow*ncols+i]+=f;
-        return;
-      }
+void Value::addForceOutOfRange( const std::size_t& iforce ) const {
+  plumed_merror( "can't add force to " + name );
+}
+
+void Value::addForceToSparseMatrix(const std::size_t& iforce, double f) {
+  unsigned irow = iforce / shape[1], jcol = iforce%shape[1];
+  for(unsigned i=0; i<getRowLength(irow); ++i) {
+    if( getRowIndex(irow,i)==jcol ) {
+      inputForce[irow*ncols+i]+=f;
+      return;
     }
-    plumed_assert( fabs(f)<epsilon );
-    return;
   }
-  plumed_massert( iforce<inputForce.size(), "can't add force to " + name );
-  inputForce[iforce]+=f;
+  // elements that are not stored are zero; when their derivatives are zero too
+  // (e.g. switching functions beyond the cutoff) the force on them has no effect
+  plumed_massert( derivativeIsZeroWhenValueIsZero || fabs(f)<epsilon, "force on an element that is not stored in sparse matrix " + name );
 }
 
 size_t Value::addForces(View<const double> const forces) {

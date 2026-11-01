@@ -1,318 +1,372 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2008-2017, Petr Kobalicek
-
-This software is provided 'as-is', without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_moved_string_h
-#define __PLUMED_asmjit_moved_string_h
-#ifdef __PLUMED_HAS_ASMJIT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-// [AsmJit]
-// Complete x86/x64 JIT and Remote Assembler for C++.
+// This file is part of AsmJit project <https://asmjit.com>
 //
-// [License]
-// Zlib - See LICENSE.md file in the package.
+// See asmjit.h or LICENSE.md for license and copyright information
+// SPDX-License-Identifier: Zlib
 
-// [Guard]
-#ifndef _ASMJIT_BASE_STRING_H
-#define _ASMJIT_BASE_STRING_H
+#ifndef ASMJIT_CORE_STRING_H_INCLUDED
+#define ASMJIT_CORE_STRING_H_INCLUDED
 
-// [Dependencies]
-#include "./globals.h"
+#include "support.h"
+#include "zone.h"
 
-// [Api-Begin]
-#include "./asmjit_apibegin.h"
+ASMJIT_BEGIN_NAMESPACE
 
-namespace PLMD {
-namespace asmjit {
-
-//! \addtogroup asmjit_base
+//! \addtogroup asmjit_utilities
 //! \{
 
-// ============================================================================
-// [asmjit::SmallString]
-// ============================================================================
+//! Format flags used by \ref String API.
+enum class StringFormatFlags : uint32_t {
+  //! No flags.
+  kNone = 0x00000000u,
+  //! Show sign.
+  kShowSign = 0x00000001u,
+  //! Show space.
+  kShowSpace = 0x00000002u,
+  //! Alternate form (use 0x when formatting HEX number).
+  kAlternate = 0x00000004u,
+  //! The input is signed.
+  kSigned = 0x80000000u
+};
+ASMJIT_DEFINE_ENUM_FLAGS(StringFormatFlags)
 
-//! Small string is a template that helps to create strings that can be either
-//! statically allocated if they are small, or externally allocated in case
-//! their length exceed the limit. The `WholeSize` represents the size of the
-//! whole `SmallString` structure, based on that size the maximum size of the
-//! internal buffer is determined.
-template<size_t WholeSize>
-class SmallString {
+//! Fixed string - only useful for strings that would never exceed `N - 1` characters; always null-terminated.
+template<size_t N>
+union FixedString {
+  //! \name Constants
+  //! \{
+
+  // This cannot be constexpr as GCC 4.8 refuses constexpr members of unions.
+  enum : uint32_t {
+    kNumUInt32Words = uint32_t((N + sizeof(uint32_t) - 1) / sizeof(uint32_t))
+  };
+
+  //! \}
+
+  //! \name Members
+  //! \{
+
+  char str[kNumUInt32Words * sizeof(uint32_t)];
+  uint32_t u32[kNumUInt32Words];
+
+  //! \}
+
+  //! \name Utilities
+  //! \{
+
+  inline bool eq(const char* other) const noexcept {
+    return strcmp(str, other) == 0;
+  }
+
+  //! \}
+};
+
+//! A simple non-reference counted string that uses small string optimization (SSO).
+//!
+//! This string has 3 allocation possibilities:
+//!
+//!   1. Small    - embedded buffer is used for up to `kSSOCapacity` characters. This should handle most small
+//!                 strings and thus avoid dynamic memory allocation for most use-cases.
+//!
+//!   2. Large    - string that doesn't fit into an embedded buffer (or string that was truncated from a larger
+//!                 buffer) and is owned by AsmJit. When you destroy the string AsmJit would automatically
+//!                 release the large buffer.
+//!
+//!   3. External - like Large (2), however, the large buffer is not owned by AsmJit and won't be released when
+//!                 the string is destroyed or reallocated. This is mostly useful for working with larger temporary
+//!                 strings allocated on stack or with immutable strings.
+class String {
 public:
-  enum { kMaxEmbeddedLength = WholeSize - 5 };
+  ASMJIT_NONCOPYABLE(String)
 
-  ASMJIT_INLINE SmallString() noexcept { reset(); }
-  ASMJIT_INLINE void reset() noexcept { ::memset(this, 0, sizeof(*this)); }
+  //! String operation.
+  enum class ModifyOp : uint32_t {
+    //! Assignment - a new content replaces the current one.
+    kAssign = 0,
+    //! Append - a new content is appended to the string.
+    kAppend = 1
+  };
 
-  ASMJIT_INLINE bool isEmpty() const noexcept { return _length == 0; }
-  ASMJIT_INLINE bool isEmbedded() const noexcept { return _length <= kMaxEmbeddedLength; }
-  ASMJIT_INLINE bool mustEmbed(size_t len) const noexcept { return len <= kMaxEmbeddedLength; }
+  //! \cond INTERNAL
+  enum : uint32_t {
+    kLayoutSize = 32,
+    kSSOCapacity = kLayoutSize - 2
+  };
 
-  ASMJIT_INLINE uint32_t getLength() const noexcept { return _length; }
-  ASMJIT_INLINE char* getData() const noexcept {
-    return _length <= kMaxEmbeddedLength ? const_cast<char*>(_embedded) : _external[1];
-  }
+  //! String type.
+  enum Type : uint8_t {
+    //! Large string (owned by String).
+    kTypeLarge = 0x1Fu,
+    //! External string (zone allocated or not owned by String).
+    kTypeExternal = 0x20u
+  };
 
-  ASMJIT_INLINE void setEmbedded(const char* data, size_t len) noexcept {
-    ASMJIT_ASSERT(len <= kMaxEmbeddedLength);
+  union Raw {
+    uint8_t u8[kLayoutSize];
+    uint64_t u64[kLayoutSize / sizeof(uint64_t)];
+    uintptr_t uptr[kLayoutSize / sizeof(uintptr_t)];
+  };
 
-    _length = static_cast<uint32_t>(len);
-    ::memcpy(_embedded, data, len);
-    _embedded[len] = '\0';
-  }
+  struct Small {
+    uint8_t type;
+    char data[kSSOCapacity + 1u];
+  };
 
-  ASMJIT_INLINE void setExternal(const char* data, size_t len) noexcept {
-    ASMJIT_ASSERT(len > kMaxEmbeddedLength);
-    ASMJIT_ASSERT(len <= ~static_cast<uint32_t>(0));
-
-    _length = static_cast<uint32_t>(len);
-    _external[1] = const_cast<char*>(data);
-  }
+  struct Large {
+    uint8_t type;
+    uint8_t reserved[sizeof(uintptr_t) - 1];
+    size_t size;
+    size_t capacity;
+    char* data;
+  };
 
   union {
-    struct {
-      uint32_t _length;
-      char _embedded[WholeSize - 4];
-    };
-    char* _external[2];
+    uint8_t _type;
+    Raw _raw;
+    Small _small;
+    Large _large;
   };
-};
+  //! \endcond
 
-// ============================================================================
-// [asmjit::StringBuilder]
-// ============================================================================
+  //! \name Construction & Destruction
+  //! \{
 
-//! String builder.
-//!
-//! String builder was designed to be able to build a string using append like
-//! operation to append numbers, other strings, or signle characters. It can
-//! allocate it's own buffer or use a buffer created on the stack.
-//!
-//! String builder contains method specific to AsmJit functionality, used for
-//! logging or HTML output.
-class StringBuilder {
-public:
-  ASMJIT_NONCOPYABLE(StringBuilder)
+  //! Creates a default-initialized string if zero length.
+  inline String() noexcept
+    : _small {} {}
 
-  //! \internal
+  //! Creates a string that takes ownership of the content of the `other` string.
+  inline String(String&& other) noexcept {
+    _raw = other._raw;
+    other._resetInternal();
+  }
+
+  inline ~String() noexcept {
+    reset();
+  }
+
+  //! Reset the string into a construction state.
+  ASMJIT_API Error reset() noexcept;
+
+  //! \}
+
+  //! \name Overloaded Operators
+  //! \{
+
+  inline String& operator=(String&& other) noexcept {
+    swap(other);
+    other.reset();
+    return *this;
+  }
+
+  inline bool operator==(const char* other) const noexcept { return  eq(other); }
+  inline bool operator!=(const char* other) const noexcept { return !eq(other); }
+
+  inline bool operator==(const String& other) const noexcept { return  eq(other); }
+  inline bool operator!=(const String& other) const noexcept { return !eq(other); }
+
+  //! \}
+
+  //! \name Accessors
+  //! \{
+
+  inline bool isExternal() const noexcept { return _type == kTypeExternal; }
+  inline bool isLargeOrExternal() const noexcept { return _type >= kTypeLarge; }
+
+  //! Tests whether the string is empty.
+  inline bool empty() const noexcept { return size() == 0; }
+  //! Returns the size of the string.
+  inline size_t size() const noexcept { return isLargeOrExternal() ? size_t(_large.size) : size_t(_type); }
+  //! Returns the capacity of the string.
+  inline size_t capacity() const noexcept { return isLargeOrExternal() ? _large.capacity : size_t(kSSOCapacity); }
+
+  //! Returns the data of the string.
+  inline char* data() noexcept { return isLargeOrExternal() ? _large.data : _small.data; }
+  //! \overload
+  inline const char* data() const noexcept { return isLargeOrExternal() ? _large.data : _small.data; }
+
+  inline char* start() noexcept { return data(); }
+  inline const char* start() const noexcept { return data(); }
+
+  inline char* end() noexcept { return data() + size(); }
+  inline const char* end() const noexcept { return data() + size(); }
+
+  //! \}
+
+  //! \name String Operations
+  //! \{
+
+  //! Swaps the content of this string with `other`.
+  inline void swap(String& other) noexcept {
+    std::swap(_raw, other._raw);
+  }
+
+  //! Clears the content of the string.
+  ASMJIT_API Error clear() noexcept;
+
+  ASMJIT_API char* prepare(ModifyOp op, size_t size) noexcept;
+
+  ASMJIT_API Error _opString(ModifyOp op, const char* str, size_t size = SIZE_MAX) noexcept;
+  ASMJIT_API Error _opChar(ModifyOp op, char c) noexcept;
+  ASMJIT_API Error _opChars(ModifyOp op, char c, size_t n) noexcept;
+  ASMJIT_API Error _opNumber(ModifyOp op, uint64_t i, uint32_t base = 0, size_t width = 0, StringFormatFlags flags = StringFormatFlags::kNone) noexcept;
+  ASMJIT_API Error _opHex(ModifyOp op, const void* data, size_t size, char separator = '\0') noexcept;
+  ASMJIT_API Error _opFormat(ModifyOp op, const char* fmt, ...) noexcept;
+  ASMJIT_API Error _opVFormat(ModifyOp op, const char* fmt, va_list ap) noexcept;
+
+  //! Replaces the current of the string with `data` of the given `size`.
   //!
-  //! String operation.
-  ASMJIT_ENUM(OpType) {
-    kStringOpSet = 0,                    //!< Replace the current string by a given content.
-    kStringOpAppend = 1                  //!< Append a given content to the current string.
-  };
+  //! Null terminated strings can set `size` to `SIZE_MAX`.
+  ASMJIT_API Error assign(const char* data, size_t size = SIZE_MAX) noexcept;
 
-  //! \internal
+  //! Replaces the current of the string with `other` string.
+  inline Error assign(const String& other) noexcept {
+    return assign(other.data(), other.size());
+  }
+
+  //! Replaces the current of the string by a single `c` character.
+  inline Error assign(char c) noexcept {
+    return _opChar(ModifyOp::kAssign, c);
+  }
+
+  //! Replaces the current of the string by a `c` character, repeated `n` times.
+  inline Error assignChars(char c, size_t n) noexcept {
+    return _opChars(ModifyOp::kAssign, c, n);
+  }
+
+  //! Replaces the current of the string by a formatted integer `i` (signed).
+  inline Error assignInt(int64_t i, uint32_t base = 0, size_t width = 0, StringFormatFlags flags = StringFormatFlags::kNone) noexcept {
+    return _opNumber(ModifyOp::kAssign, uint64_t(i), base, width, flags | StringFormatFlags::kSigned);
+  }
+
+  //! Replaces the current of the string by a formatted integer `i` (unsigned).
+  inline Error assignUInt(uint64_t i, uint32_t base = 0, size_t width = 0, StringFormatFlags flags = StringFormatFlags::kNone) noexcept {
+    return _opNumber(ModifyOp::kAssign, i, base, width, flags);
+  }
+
+  //! Replaces the current of the string by the given `data` converted to a HEX string.
+  inline Error assignHex(const void* data, size_t size, char separator = '\0') noexcept {
+    return _opHex(ModifyOp::kAssign, data, size, separator);
+  }
+
+  //! Replaces the current of the string by a formatted string `fmt`.
+  template<typename... Args>
+  inline Error assignFormat(const char* fmt, Args&&... args) noexcept {
+    return _opFormat(ModifyOp::kAssign, fmt, std::forward<Args>(args)...);
+  }
+
+  //! Replaces the current of the string by a formatted string `fmt` (va_list version).
+  inline Error assignVFormat(const char* fmt, va_list ap) noexcept {
+    return _opVFormat(ModifyOp::kAssign, fmt, ap);
+  }
+
+  //! Appends `str` having the given size `size` to the string.
   //!
-  //! String format flags.
-  ASMJIT_ENUM(StringFormatFlags) {
-    kStringFormatShowSign  = 0x00000001,
-    kStringFormatShowSpace = 0x00000002,
-    kStringFormatAlternate = 0x00000004,
-    kStringFormatSigned    = 0x80000000
-  };
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_API StringBuilder() noexcept;
-  ASMJIT_API ~StringBuilder() noexcept;
-
-  ASMJIT_INLINE StringBuilder(const _NoInit&) noexcept {}
-
-  // --------------------------------------------------------------------------
-  // [Accessors]
-  // --------------------------------------------------------------------------
-
-  //! Get string builder capacity.
-  ASMJIT_INLINE size_t getCapacity() const noexcept { return _capacity; }
-  //! Get length.
-  ASMJIT_INLINE size_t getLength() const noexcept { return _length; }
-
-  //! Get null-terminated string data.
-  ASMJIT_INLINE char* getData() noexcept { return _data; }
-  //! Get null-terminated string data (const).
-  ASMJIT_INLINE const char* getData() const noexcept { return _data; }
-
-  // --------------------------------------------------------------------------
-  // [Prepare / Reserve]
-  // --------------------------------------------------------------------------
-
-  //! Prepare to set/append.
-  ASMJIT_API char* prepare(uint32_t op, size_t len) noexcept;
-
-  //! Reserve `to` bytes in string builder.
-  ASMJIT_API Error reserve(size_t to) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Clear]
-  // --------------------------------------------------------------------------
-
-  //! Clear the content in String builder.
-  ASMJIT_API void clear() noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Op]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_API Error _opString(uint32_t op, const char* str, size_t len = Globals::kInvalidIndex) noexcept;
-  ASMJIT_API Error _opVFormat(uint32_t op, const char* fmt, va_list ap) noexcept;
-  ASMJIT_API Error _opChar(uint32_t op, char c) noexcept;
-  ASMJIT_API Error _opChars(uint32_t op, char c, size_t n) noexcept;
-  ASMJIT_API Error _opNumber(uint32_t op, uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) noexcept;
-  ASMJIT_API Error _opHex(uint32_t op, const void* data, size_t len) noexcept;
-
-  // --------------------------------------------------------------------------
-  // [Set]
-  // --------------------------------------------------------------------------
-
-  //! Replace the current string with `str` having `len` characters (or `kInvalidIndex` if it's null terminated).
-  ASMJIT_INLINE Error setString(const char* str, size_t len = Globals::kInvalidIndex) noexcept { return _opString(kStringOpSet, str, len); }
-  //! Replace the current content by a formatted string `fmt`.
-  ASMJIT_API Error setFormat(const char* fmt, ...) noexcept;
-  //! Replace the current content by a formatted string `fmt` (va_list version).
-  ASMJIT_INLINE Error setFormatVA(const char* fmt, va_list ap) noexcept { return _opVFormat(kStringOpSet, fmt, ap); }
-
-  //! Replace the current content by a single `c` character.
-  ASMJIT_INLINE Error setChar(char c) noexcept { return _opChar(kStringOpSet, c); }
-  //! Replace the current content by `c` character `n` times.
-  ASMJIT_INLINE Error setChars(char c, size_t n) noexcept { return _opChars(kStringOpSet, c, n); }
-
-  //! Replace the current content by a formatted integer `i` (signed).
-  ASMJIT_INLINE Error setInt(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) noexcept {
-    return _opNumber(kStringOpSet, i, base, width, flags | kStringFormatSigned);
+  //! Null terminated strings can set `size` to `SIZE_MAX`.
+  inline Error append(const char* str, size_t size = SIZE_MAX) noexcept {
+    return _opString(ModifyOp::kAppend, str, size);
   }
 
-  //! Replace the current content by a formatted integer `i` (unsigned).
-  ASMJIT_INLINE Error setUInt(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) noexcept {
-    return _opNumber(kStringOpSet, i, base, width, flags);
+  //! Appends `other` string to this string.
+  inline Error append(const String& other) noexcept {
+    return append(other.data(), other.size());
   }
 
-  //! Replace the current content by the given `data` converted to a HEX string.
-  ASMJIT_INLINE Error setHex(const void* data, size_t len) noexcept {
-    return _opHex(kStringOpSet, data, len);
+  //! Appends a single `c` character.
+  inline Error append(char c) noexcept {
+    return _opChar(ModifyOp::kAppend, c);
   }
 
-  // --------------------------------------------------------------------------
-  // [Append]
-  // --------------------------------------------------------------------------
-
-  //! Append string `str` having `len` characters (or `kInvalidIndex` if it's null terminated).
-  ASMJIT_INLINE Error appendString(const char* str, size_t len = Globals::kInvalidIndex) noexcept { return _opString(kStringOpAppend, str, len); }
-  //! Append a formatted string `fmt`.
-  ASMJIT_API Error appendFormat(const char* fmt, ...) noexcept;
-  //! Append a formatted string `fmt` (va_list version).
-  ASMJIT_INLINE Error appendFormatVA(const char* fmt, va_list ap) noexcept { return _opVFormat(kStringOpAppend, fmt, ap); }
-
-  //! Append a single `c` character.
-  ASMJIT_INLINE Error appendChar(char c) noexcept { return _opChar(kStringOpAppend, c); }
-  //! Append `c` character `n` times.
-  ASMJIT_INLINE Error appendChars(char c, size_t n) noexcept { return _opChars(kStringOpAppend, c, n); }
-
-  //! Append `i`.
-  ASMJIT_INLINE Error appendInt(int64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) noexcept {
-    return _opNumber(kStringOpAppend, static_cast<uint64_t>(i), base, width, flags | kStringFormatSigned);
+  //! Appends `c` character repeated `n` times.
+  inline Error appendChars(char c, size_t n) noexcept {
+    return _opChars(ModifyOp::kAppend, c, n);
   }
 
-  //! Append `i`.
-  ASMJIT_INLINE Error appendUInt(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) noexcept {
-    return _opNumber(kStringOpAppend, i, base, width, flags);
+  //! Appends a formatted integer `i` (signed).
+  inline Error appendInt(int64_t i, uint32_t base = 0, size_t width = 0, StringFormatFlags flags = StringFormatFlags::kNone) noexcept {
+    return _opNumber(ModifyOp::kAppend, uint64_t(i), base, width, flags | StringFormatFlags::kSigned);
   }
 
-  //! Append the given `data` converted to a HEX string.
-  ASMJIT_INLINE Error appendHex(const void* data, size_t len) noexcept {
-    return _opHex(kStringOpAppend, data, len);
+  //! Appends a formatted integer `i` (unsigned).
+  inline Error appendUInt(uint64_t i, uint32_t base = 0, size_t width = 0, StringFormatFlags flags = StringFormatFlags::kNone) noexcept {
+    return _opNumber(ModifyOp::kAppend, i, base, width, flags);
   }
 
-  // --------------------------------------------------------------------------
-  // [Eq]
-  // --------------------------------------------------------------------------
+  //! Appends the given `data` converted to a HEX string.
+  inline Error appendHex(const void* data, size_t size, char separator = '\0') noexcept {
+    return _opHex(ModifyOp::kAppend, data, size, separator);
+  }
 
-  //! Check for equality with other `str` of length `len`.
-  ASMJIT_API bool eq(const char* str, size_t len = Globals::kInvalidIndex) const noexcept;
-  //! Check for equality with `other`.
-  ASMJIT_INLINE bool eq(const StringBuilder& other) const noexcept { return eq(other._data, other._length); }
+  //! Appends a formatted string `fmt` with `args`.
+  template<typename... Args>
+  inline Error appendFormat(const char* fmt, Args&&... args) noexcept {
+    return _opFormat(ModifyOp::kAppend, fmt, std::forward<Args>(args)...);
+  }
 
-  // --------------------------------------------------------------------------
-  // [Operator Overload]
-  // --------------------------------------------------------------------------
+  //! Appends a formatted string `fmt` (va_list version).
+  inline Error appendVFormat(const char* fmt, va_list ap) noexcept {
+    return _opVFormat(ModifyOp::kAppend, fmt, ap);
+  }
 
-  ASMJIT_INLINE bool operator==(const StringBuilder& other) const noexcept { return  eq(other); }
-  ASMJIT_INLINE bool operator!=(const StringBuilder& other) const noexcept { return !eq(other); }
+  ASMJIT_API Error padEnd(size_t n, char c = ' ') noexcept;
 
-  ASMJIT_INLINE bool operator==(const char* str) const noexcept { return  eq(str); }
-  ASMJIT_INLINE bool operator!=(const char* str) const noexcept { return !eq(str); }
+  //! Truncate the string length into `newSize`.
+  ASMJIT_API Error truncate(size_t newSize) noexcept;
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
+  ASMJIT_API bool eq(const char* other, size_t size = SIZE_MAX) const noexcept;
+  inline bool eq(const String& other) const noexcept { return eq(other.data(), other.size()); }
 
-  char* _data;                           //!< String data.
-  size_t _length;                        //!< String length.
-  size_t _capacity;                      //!< String capacity.
-  size_t _canFree;                       //!< If the string data can be freed.
+  //! \}
+
+  //! \name Internal Functions
+  //! \{
+
+  //! Resets string to embedded and makes it empty (zero length, zero first char)
+  //!
+  //! \note This is always called internally after an external buffer was released as it zeroes all bytes
+  //! used by String's embedded storage.
+  inline void _resetInternal() noexcept {
+    for (size_t i = 0; i < ASMJIT_ARRAY_SIZE(_raw.uptr); i++)
+      _raw.uptr[i] = 0;
+  }
+
+  inline void _setSize(size_t newSize) noexcept {
+    if (isLargeOrExternal())
+      _large.size = newSize;
+    else
+      _small.type = uint8_t(newSize);
+  }
+
+  //! \}
 };
-
-// ============================================================================
-// [asmjit::StringBuilderTmp]
-// ============================================================================
 
 //! Temporary string builder, has statically allocated `N` bytes.
 template<size_t N>
-class StringBuilderTmp : public StringBuilder {
+class StringTmp : public String {
 public:
-  ASMJIT_NONCOPYABLE(StringBuilderTmp)
-
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_INLINE StringBuilderTmp() noexcept : StringBuilder(NoInit) {
-    _data = _embeddedData;
-    _data[0] = 0;
-
-    _length = 0;
-    _capacity = N;
-    _canFree = false;
-  }
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
+  ASMJIT_NONCOPYABLE(StringTmp)
 
   //! Embedded data.
-  char _embeddedData[static_cast<size_t>(
-    N + 1 + sizeof(intptr_t)) & ~static_cast<size_t>(sizeof(intptr_t) - 1)];
+  char _embeddedData[Support::alignUp(N + 1, sizeof(size_t))];
+
+  //! \name Construction & Destruction
+  //! \{
+
+  inline StringTmp() noexcept {
+    _resetToTemporary();
+  }
+
+  inline void _resetToTemporary() noexcept {
+    _large.type = kTypeExternal;
+    _large.capacity = ASMJIT_ARRAY_SIZE(_embeddedData) - 1;
+    _large.data = _embeddedData;
+    _embeddedData[0] = '\0';
+  }
+
+  //! \}
 };
 
 //! \}
 
-} // asmjit namespace
-} // namespace PLMD
+ASMJIT_END_NAMESPACE
 
-// [Api-End]
-#include "./asmjit_apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_BASE_STRING_H
-#pragma GCC diagnostic pop
-#endif // __PLUMED_HAS_ASMJIT
-#endif
+#endif // ASMJIT_CORE_STRING_H_INCLUDED

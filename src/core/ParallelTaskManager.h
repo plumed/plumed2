@@ -364,14 +364,14 @@ protected:
   std::size_t nthreaded_forces;
 /// This holds the values before we pass them to the value
   std::vector<precision> value_stash;
-/// A tempory set of vectors for holding forces over threads
+/// A temporary set of vectors for holding forces over threads
   std::vector<std::vector<precision> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
   ParallelActionsInput myinput;
   ArgumentsBookkeeping argumentsMap;
 //this holds the data for myinput that will be passed though myinput
   std::vector<precision> input_buffer;
-/// This holds tempory data that we use in performTask
+/// This holds temporary data that we use in performTask
   std::size_t workspace_size;
 /// This holds data for that the underlying action needs to do the calculation
   input_type actiondata;
@@ -564,7 +564,7 @@ void ParallelTaskManager<T>::runAllTasks() {
   }
   std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
   if( useacc ) {
-    // there should not be any avaiable path to get here
+    // there should not be any available path to get here
     plumed_merror("to use the USEGPU flag you need to LOAD a plugin like \"openaccPTM\"");
   } else {
     // Get the MPI details
@@ -649,7 +649,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
   action->transferForcesToStash( partialTaskList, value_stash );
 
   if( useacc ) {
-    // there should not be any avaiable path to get here
+    // there should not be any available path to get here
     plumed_merror("to use the USEGPU flag you need to LOAD a plugin like \"openaccPTM\"");
   } else {
     // Get the MPI details

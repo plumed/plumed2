@@ -479,7 +479,7 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
       }
       // cppcheck-suppress nullPointerRedundantCheck
       if (!(a->getPbc().isOrthorombic())) {
-        log.printf("  WARNING: EDS Virial should have a orthorombic cell\n");
+        log.printf("  WARNING: EDS Virial should have a orthorhombic cell\n");
       }
     }
     log.printf("done.\n");
@@ -501,7 +501,7 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
     // in driver, this results in kbt of 0
     if (kbt_ == 0) {
       error("  Unable to determine valid kBT. "
-            "Could be because you are runnning from driver or MD didn't give temperature.\n"
+            "Could be because you are running from driver or MD didn't give temperature.\n"
             "Consider setting temperature manually with the TEMP keyword.");
       kbt_ = 1;
     }
@@ -918,7 +918,7 @@ void EDS::update_pseudo_virial() {
     // dCV/dV = sum dCV/dvij * vij / V
     // where vij is box element
     // add diagonal of virial tensor to get net pressure
-    // TODO: replace this with adjugate (Jacobi's Formula)   for non-orthorombic case(?)
+    // TODO: replace this with adjugate (Jacobi's Formula)   for non-orthorhombic case(?)
     p = v(0, 0) * box(0, 0) + v(1, 1) * box(1, 1) + v(2, 2) * box(2, 2);
     p /= volume;
 

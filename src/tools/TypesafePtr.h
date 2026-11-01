@@ -313,10 +313,10 @@ private:
       } else {
         if(!std::is_const<T>::value) {
           if(cons==1) {
-            throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead"<<extra_msg();
+            throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value instead"<<extra_msg();
           }
           if(cons==2 || cons==3) {
-            throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead"<<extra_msg();
+            throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer instead"<<extra_msg();
           }
           if(!std::is_const<T_noptr>::value) {
             if(cons!=4) {

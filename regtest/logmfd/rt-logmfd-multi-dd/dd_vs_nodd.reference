@@ -1,0 +1,11 @@
+replica 0 rank 0 forces: same
+replica 0 rank 1 forces: same
+replica 1 rank 0 forces: same
+replica 1 rank 1 forces: same
+replica 0 colvar: same
+replica 1 colvar: same
+logmfd.out: same
+forces are non-zero: yes
+replicas get different forces: yes
+fictitious variables move: yes
+replicas share the fictitious variables: yes

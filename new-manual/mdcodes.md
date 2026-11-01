@@ -77,7 +77,7 @@ automatically to take into account PLUMED!
 
 It is important to notice that the optimal setup to use GROMACS alone
 on the GPU or GROMACS + PLUMED can be different, try to change the number
-of MPI/OpenMP processes (\ref Openmp) used by GROMACS and PLUMED to find
+of MPI/OpenMP processes (see [OpenMP](actions.md#openmp)) used by GROMACS and PLUMED to find
 optimal performances. Remember that in GROMACS multiple MPI threads
 can use the same GPU:
 

@@ -2,6 +2,8 @@
 # if unset, use normal CXX
 ifndef CXXDEP
 CXXDEP=$(CXX)
+endif
+ifndef CCDEP
 CCDEP=$(CC)
 endif
 
@@ -9,45 +11,53 @@ ifndef VERBOSE
 AT=@
 endif
 
+# Rules for c++ and c.
+#
+# Dependency tracking:
+# when the compiler used for dependencies (CXXDEP/CCDEP) is the same as the
+# compiler (default), the dependency file is written by the compiler itself
+# while compiling (-MMD -MP -MF), so each source is compiled only once.
+# -MP adds a phony target for each header, so that removing a header
+# does not break the build.
+# If a different compiler is requested for dependencies, they are generated
+# separately with it (-MM, preprocessing only) and the source is then compiled
+# with the normal compiler.
+# The dependency file is written directly in deps/ (no post-processing needed).
+
 # rule for c++
 %.o: %.cpp
 	@echo "compiling " $*.cpp
-	@-test -d deps || mkdir deps
 ifneq ($(disable_dependency_tracking),yes)
-	$(AT)$(CXXDEP) -MMD -MP -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
+	@mkdir -p deps
+ifeq ($(CXXDEP),$(CXX))
+	$(AT)$(CXX) -MMD -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
 	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CXXFLAGS) \
 	-c $*.cpp -o $*.o
-	@cp -f $*.d $*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@mv $*.d deps/$*.d
-	@rm -f $*.d.tmp
+else
+	$(AT)$(CXXDEP) -MM -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
+	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CXXFLAGS) $*.cpp
+	$(AT)$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) \
+	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $*.cpp -o $*.o
+endif
 else
 	$(AT)$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) \
 	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $*.cpp -o $*.o
 endif
-ifndef XLF
-	$(AT)$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) -DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $*.cpp -o $*.o
-endif
 
 # rule for c
+# (PLUMED_MODULE_DIR is only used in c++ code and is not defined here)
 %.o: %.c
 	@echo "compiling " $*.c
-	@-test -d deps || mkdir deps
 ifneq ($(disable_dependency_tracking),yes)
-	$(AT)$(CCDEP) -MMD -MP -MF $*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
-	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $(CFLAGS) \
+	@mkdir -p deps
+ifeq ($(CCDEP),$(CC))
+	$(AT)$(CC) -MMD -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) \
 	-c $*.c -o $*.o
-	@cp -f $*.d $*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@mv $*.d deps/$*.d
-	@rm -f $*.d.tmp
 else
-	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) \
-	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" $*.c -o $*.o
+	$(AT)$(CCDEP) -MM -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c
+	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 endif
-ifndef XLF
+else
 	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 endif
 

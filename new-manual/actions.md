@@ -125,7 +125,7 @@ PLUMED uses parallelism to improve the performance of many actions.  Within PLUM
 [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) and [OpenMP](https://en.wikipedia.org/wiki/OpenMP).  In addition, 
 we are starting to use [openACC](https://www.openacc.org) in some actions in order to write code than can run on GPUs.
 
-Importantly, all parallism within PLUMED is implemented within actions.  __We do not parallelise over actions.__  Consequently, if you run 
+Importantly, all parallelism within PLUMED is implemented within actions.  __We do not parallelise over actions.__  Consequently, if you run 
 this input with MPI or openMP:
 
 ```plumed
@@ -155,7 +155,7 @@ mpirun -np 4 plumed driver --ixyz traj.xyz
 ``` 
 
 When this command is run, any actions that can use MPI will run on four MPI processes unless you use the `SERIAL` keyword in the input for those 
-actions in which case any MPI parallism in that action is turned off.
+actions in which case any MPI parallelism in that action is turned off.
 
 ### OpenMP
 

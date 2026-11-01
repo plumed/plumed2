@@ -1,0 +1,9 @@
+# INTERVAL: beyond the limits the hills are evaluated at the limit, and the force is zero.
+# a: no neighbor list, no grid; b: neighbor list (it is built around the CV within the limits);
+# g: grid (beyond the limits the value at the limit, also within the grid cell that contains a limit)
+d: DISTANCE ATOMS=5,17
+a: METAD ARG=d SIGMA=0.005 HEIGHT=0.5 PACE=4 BIASFACTOR=5 TEMP=300 INTERVAL=0.31,0.32 FILE=HA FMT=%14.6f
+b: METAD ARG=d SIGMA=0.005 HEIGHT=0.5 PACE=4 BIASFACTOR=5 TEMP=300 INTERVAL=0.31,0.32 NLIST FILE=HB FMT=%14.6f
+g: METAD ARG=d SIGMA=0.005 HEIGHT=0.5 PACE=4 BIASFACTOR=5 TEMP=300 INTERVAL=0.31,0.32 FILE=HG FMT=%14.6f GRID_SPACING=0.0005
+PRINT ARG=d,a.bias,b.bias,g.bias FILE=colvar FMT=%10.5f
+DUMPDERIVATIVES ARG=a.bias,b.bias,g.bias FILE=deriv FMT=%10.4f

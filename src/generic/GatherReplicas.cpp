@@ -49,7 +49,7 @@ d: DISTANCE ATOMS=1,2
 g: GATHER_REPLICAS ARG=d
 # Now average the two distances on the two replicas
 s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
-# And print the instaneous average for the distance on the two replicas
+# And print the instantaneous average for the distance on the two replicas
 PRINT ARG=s FILE=colvar
 ```
 

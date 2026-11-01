@@ -1,0 +1,2 @@
+type=make
+mpiprocs=4

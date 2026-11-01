@@ -89,7 +89,7 @@ struct theLine:public AtomDistribution {
   }
 };
 
-///Atom randomly distribuited in a sphere
+///Atom randomly distributed in a sphere
 struct uniformSphere:public AtomDistribution {
   static constexpr auto id="sphere";
   static constexpr auto doc="Atoms are displaced uniformly in a sphere, the desity is ccirca 1/unit^3";
@@ -121,10 +121,10 @@ struct uniformSphere:public AtomDistribution {
   }
 };
 
-///Atom randomly distribuited between two not overlapping a spheres
+///Atom randomly distributed between two not overlapping a spheres
 struct twoGlobs: public AtomDistribution {
   static constexpr auto id="globs";
-  static constexpr auto doc="Two spheres of uniformly distribuited atosm";
+  static constexpr auto doc="Two spheres of uniformly distributed atosm";
   void frame(View<Vector> posToUpdate,
              View<double,9> box,
              unsigned /*step*/,
@@ -252,7 +252,7 @@ struct inscribedFaceCenteredCubic:public AtomDistribution {
              View<double,9> box,
              unsigned /*step*/,
              Random& rng) override {
-    //Here we are exploiting a litte trick:
+    //Here we are exploiting a little trick:
     // if you remove the even or odd atoms from a simple cubic built with our algorithm,
     //you get an fcc boxed in a cube
     const unsigned rmax = [&] {
@@ -383,7 +383,7 @@ struct inscribedBodyCenteredCubic:public AtomDistribution {
              View<double,9> box,
              unsigned /*step*/,
              Random& rng) override {
-    //Here we are exploiting a litte trick:
+    //Here we are exploiting a little trick:
     // if you remove the even or odd atoms from a simple cubic built with our algorithm,
     //you get an bcc boxed in a cube
     const unsigned rmax = [&] {

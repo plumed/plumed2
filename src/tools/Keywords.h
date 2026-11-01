@@ -115,7 +115,7 @@ private:
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
-    //these functions are not neeeded (this is a struct), but are useful in constructing the key
+    //these functions are not needed (this is a struct), but are useful in constructing the key
     keyInfo& setType(KeyType t);
     keyInfo& setDocString(std::string_view d);
     keyInfo& setDefaultValue(std::string_view d);
@@ -143,7 +143,7 @@ private:
     /// The type of the component
     componentType type;
     component();
-    //these functions are not neeeded (this is a struct), but are useful in constructing the component
+    //these functions are not needed (this is a struct), but are useful in constructing the component
     component& setKey(std::string_view k);
     component& setDocstring(std::string_view d);
     component& setType(componentType t);
@@ -211,7 +211,7 @@ public:
   void add( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Add a keyword that was used in older versions of the code and that has now been replaced
   void addDeprecatedKeyword( std::string_view key, const std::string& replacement );
-/// Add a flag that was used in older versions of the the code that has now been replaced
+/// Add a flag that was used in older versions of the code that has now been replaced
   void addDeprecatedFlag( const std::string& key, const std::string& replacement );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
   void add( std::string_view keytype, std::string_view key, std::string_view defaultValue, std::string_view docstring );
@@ -310,7 +310,7 @@ public:
   bool isActionNeeded( std::string_view name ) const ;
 /// Add a suffix to the list of possible action name suffixes
   void addActionNameSuffix( const std::string& suffix );
-  /** @brief checks that name is is a composition of basename and one of the possible suffixes
+  /** @brief checks that name is a composition of basename and one of the possible suffixes
 
   Cycles on the registered suffixed and return true if the combination
   `basename+suffix` equals to the passed name

@@ -72,7 +72,7 @@ will make values outside to be taken as zero.
 
 ## Examples
 
-Generally you only need to provide the the filename of the external grid
+Generally you only need to provide the filename of the external grid
 file.
 
 ```plumed

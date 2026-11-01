@@ -61,7 +61,7 @@ private:
   FCLASS myclass_func;
 public:
   explicit Minimise1DBrent( const FCLASS& pf,  const double& t=3.0E-8 );
-/// Bracket the minium
+/// Bracket the minimum
   void bracket( const double& ax, const double& xx, eng_pointer eng );
 /// Find the minimum between two brackets
   double minimise( eng_pointer eng );
