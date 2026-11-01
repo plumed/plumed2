@@ -19,7 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarShortcuts.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
@@ -75,7 +74,6 @@ PLUMED_REGISTER_ACTION(PlaneShortcut,"PLANES")
 
 void PlaneShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  MultiColvarShortcuts::shortcutKeywords( keys );
   keys.add("numbered","ATOMS","the sets of atoms that you would like to calculate the planes for");
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
   keys.reset_style("LOCATION","atoms");
