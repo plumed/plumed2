@@ -149,7 +149,6 @@ public:
 //     colvar_atoms.removeFromACCDevice();
 // #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
 
-//   }
   static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
@@ -174,9 +173,6 @@ public:
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
-//_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
-//typedef AccelerableShortcut<colv> shortcut;
-//_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
   if( !myrmsd.empty() && structure.size()!=natoms ) {

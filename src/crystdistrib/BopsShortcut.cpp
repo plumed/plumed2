@@ -89,7 +89,6 @@ void BopsShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNELFILE_DOPS","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","KERNELFILE_BOPS","the second file containing the list of kernel parameters. Expecting a normalization factor (height), concentration parameter (kappa), and 3 norm vector pieces of the mean (mu_i, mu_j, mu_k )for a fisher distribution. of the form h*exp(kappa*dot(r_mean,r)), where dot is a standard dot product.");
   keys.add("compulsory", "CUTOFF", "cutoff for the distance matrix");
-//  keys.add("compulsory","SWITCH","the switching function that acts on the distances between points)");
   keys.setValueDescription("vector","the values of the bops order parameters");
   keys.needsAction("DISTANCE_MATRIX");
   keys.needsAction("QUATERNION_BOND_PRODUCT_MATRIX");
@@ -133,7 +132,6 @@ BopsShortcut::BopsShortcut(const ActionOptions&ao):
 
     ifile_dops.scanField("mu",mu_dops);
     Tools::convert( mu_dops, smu_dops );
-    //ifile_bops.scanField("mu_w",mu_w); Tools::convert( mu_w, smu_w );
     ifile_bops.scanField("mu_i",mu_i);
     Tools::convert( mu_i, smu_i );
     ifile_bops.scanField("mu_j",mu_j);
@@ -181,14 +179,9 @@ BopsShortcut::BopsShortcut(const ActionOptions&ao):
 //  std::string switchstr; parse("SWITCH",switchstr);
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " LINKCELL_CUTOFF=" + cutstr + " COMPONENTS");
 
-  // if( specA.length()==0 ) {
   std::string quatstr;
   parse("QUATERNIONS",quatstr);
   readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_BOND_PRODUCT_MATRIX ARG=" + quatstr + ".*," + getShortcutLabel() + "_cmat.*" );
-  // }  else {
-  //   plumed_error();
-  // }
-  //
 
   ///////////////////
   ///replace/////

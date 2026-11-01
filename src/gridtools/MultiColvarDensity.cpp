@@ -180,7 +180,6 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
     hasheights=true;
     dist_words += " ATOMS=" + data_str;
   }
-  // plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
   readInputLine( dist_words );
 
   std::string inputLine = convertInputLineToString();

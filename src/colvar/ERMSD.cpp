@@ -162,10 +162,6 @@ ERMSD::ERMSD(const ActionOptions&ao):
   }
 
 
-  //checkRead();
-  //log.printf("  of atoms");
-  //for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
-  //requestAtoms(atoms);
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
@@ -180,7 +176,6 @@ ERMSD::ERMSD(const ActionOptions&ao):
   reference_positions.resize(natoms);
   for(unsigned i=0; i<natoms; i++) {
     reference_positions[i] = pdb.getPosition(atoms_[i]);
-    //log.printf("%f %f %f \n",reference_positions[i][0],reference_positions[i][1],reference_positions[i][2]);
   }
 
 // shift to count from zero (pairs are residue indices, 1-based in input)

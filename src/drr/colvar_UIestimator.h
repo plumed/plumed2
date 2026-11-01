@@ -75,11 +75,6 @@ public:
   }
 
   int inline get_value(const std::vector<double> & x, const std::vector<double> & y) {
-    //if (matrix[convert_x(x)][convert_y(x, y)]!=0)
-    //{
-    //std::cout<<convert_x(x)<<" "<<convert_y(x, y)<<" "<<x[0]<<" "<<x[1]<<" "<<y[0]<<" "<<y[1]<<" ";
-    //std::cout<<matrix[convert_x(x)][convert_y(x, y)]<<"sadasfdasaaaaaaaa"<<std::endl;
-    //}
     return matrix[convert_x(x)][convert_y(x, y)];
   }
 
@@ -303,32 +298,19 @@ INITIAL_LOOPEND:
   // called from MD engine every step
   bool update(const int step, const std::vector<double> & x, std::vector<double> y) {
 
-    //std::cout<<"weeeee: :"<<std::endl;
-    //for (int i = 0; i < dimension; i++)
-    //{
-    //	std::cout<<x[i]<<" "<<y[i]<<" ";
-    //}
-    //std::cout<<std::endl;
 
     if (step % output_freq == 0) {
       calc_pmf();
       write_files();
-      //write_interal_data();
     }
 
     for (int i = 0; i < dimension; i++) {
       // for dihedral RC, it is possible that x = 179 and y = -179, should correct it
       // may have problem, need to fix
       if (x[i] > 150 && y[i] < -150) {
-        //std::vector<double> x_temp(x);
-        //x_temp[i] -= 360;
-        //update(7, x_temp, y);
         y[i] += 360;
       }
       if (x[i] < -150 && y[i] > 150) {
-        //std::vector<double> x_temp(x);
-        //x_temp[i] += 360;
-        //update(7, x_temp, y);
         y[i] -= 360;
       }
 
@@ -339,11 +321,6 @@ INITIAL_LOOPEND:
       }
     }
 
-    //for (int i = 0; i < dimension; i++)
-    //{
-    //	std::cout<<x[i]<<" "<<y[i]<<" ";
-    //}
-    //std::cout<<std::endl;
 
     for (int i = 0; i < dimension; i++) {
       sum_x[i].increase_value(y, x[i]);
@@ -454,7 +431,6 @@ LOOPEND:
       }
 
       while (true) {
-        //std::cout<<"pppppppppppppppppppppp "<<loop_flag_x[0]<<" "<<loop_flag_x[1]<<" "<<loop_flag_y[0]<<" "<<loop_flag_y[1]<<std::endl;
         norm += distribution_x_y.get_value(loop_flag_x, loop_flag_y);
         for (int i = 0; i < dimension; i++) {
           if (sigma_square[i].get_value(loop_flag_y) > 0.00001 || sigma_square[i].get_value(loop_flag_y) < -0.00001) {

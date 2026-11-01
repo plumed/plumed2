@@ -228,7 +228,6 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
     }
     log.printf("\n");
   }
-  //requestArguments(myenergy);
 
   parseArgumentList("VOLUME",myvol);
   if(!myvol.empty()) {

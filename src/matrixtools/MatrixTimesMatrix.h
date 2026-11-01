@@ -98,9 +98,6 @@ void MatrixTimesMatrix<CV, myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys);
   keys.addInputKeyword("optional","MASK","matrix","a matrix that is used to used to determine which elements of the output matrix to compute");
   keys.addInputKeyword("compulsory","ARG","matrix","the label of the two matrices from which the product is calculated");
-  //if( keys.getDisplayName()=="MATRIX_PRODUCT" ) {
-  //  keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
-  //}
   CV::registerKeywords( keys );
   PTM::registerKeywords( keys );
 }
@@ -188,7 +185,6 @@ void MatrixTimesMatrix<CV, myPTM>::calculate() {
     }
   }
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  //unsigned nvals = getPntrToComponent(0)->getNumberOfColumns();
   taskmanager.setupParallelTaskManager( 2*getPntrToArgument(0)->getNumberOfColumns(),
                                         getPntrToArgument(1)->getNumberOfStoredValues() );
   taskmanager.setWorkspaceSize( 2*getPntrToArgument(0)->getNumberOfColumns() );

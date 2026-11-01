@@ -157,7 +157,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   int s=sizeof(double);
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setMDEngine","pathtools");
-  // plmd.cmd("setNoVirial");
   double tstep=1.0;
   plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");

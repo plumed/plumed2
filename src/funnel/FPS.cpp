@@ -252,12 +252,6 @@ void FUNNEL_PS::calculate() {
   */
 
   // DEBUG
-  /*    log.printf(" RMSD: %13.6lf\n",rmsd );
-      log.printf(" cpos: %13.6lf %13.6lf %13.6lf\n",centerpositions[0],centerpositions[1],centerpositions[2] );
-      log.printf(" Rotation: %13.6lf %13.6lf %13.6lf\n",Rotation[0][0],Rotation[0][1],Rotation[0][2] );
-      log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[1][0],Rotation[1][1],Rotation[1][2] );
-      log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[2][0],Rotation[2][1],Rotation[2][2] );
-  */
 
   // the position is   Rot(ligand-com_prot_md)+ com_prot_ref
   Vector ligand_centered =getPositions().back()-centerpositions;

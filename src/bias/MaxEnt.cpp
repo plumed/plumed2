@@ -232,11 +232,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   nrep=getNumberOfReplicas();
   myrep=getReplicaIndex();
   parseFlag("NO_BROADCAST",no_broadcast);
-  //if(no_broadcast){
-  //for(int irep=0;irep<nrep;irep++){
-  //  if(irep!=myrep)
-  //    apply_weights[irep]=0.0;}
-  //}
   avgstep=1.0;
   tstart=-1.0;
   tend=-1.0;
@@ -323,10 +318,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(no_broadcast) {
     log.printf("Using NO_BROADCAST options. Lagrangian multipliers will not be comunicated to other replicas.\n");
   }
-  //for(int irep=0;irep<nrep;irep++){
-  //  if(apply_weights[irep]!=0)
-  //    log.printf("%d",irep);
-  //  }
   addComponent("force2");
   componentIsNotPeriodic("force2");
   addComponent("work");

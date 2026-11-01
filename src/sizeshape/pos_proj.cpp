@@ -333,7 +333,6 @@ void position_linear_proj::kabsch_rot_mat() {
   int lwork=-1;
   std::vector<double> work(1);
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
     log.printf("info: %d\n", info);
   }
@@ -344,7 +343,6 @@ void position_linear_proj::kabsch_rot_mat() {
 
   // This does the singular value decomposition
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
     log.printf("info: %d\n", info);
   }
@@ -384,7 +382,6 @@ void position_linear_proj::kabsch_rot_mat() {
   }
 
 
-  //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
   for(int i=0; i<3; ++i) {
@@ -419,7 +416,6 @@ double position_linear_proj::cal_position_linear_proj() {
     }
   }
 
-  //double proj_val = dotProduct(disp, linear_coeffs);
   double proj_val = 0.0;
   for(unsigned int i=0; i<N*3; ++i) {
     proj_val += (linear_coeffs[i]*disp[i]);

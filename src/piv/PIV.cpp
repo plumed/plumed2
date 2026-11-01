@@ -393,7 +393,6 @@ PIV::PIV(const ActionOptions&ao):
   parse("PIVATOMS",Natm);
   std:: vector<string> atype(Natm);
   parseVector("ATOMTYPES",atype);
-  //if(atype.size()!=getNumberOfArguments() && atype.size()!=0) error("not enough values for ATOMTYPES");
 
   // Reference PDB file
   parse("REF_FILE",ref_file);
@@ -539,7 +538,6 @@ PIV::PIV(const ActionOptions&ao):
   }
   if(keywords.exists("SFACTOR")) {
     parseVector("SFACTOR",scaling);
-    //if(scaling.size()!=getNumberOfArguments() && scaling.size()!=0) error("not enough values for SFACTOR");
   }
   // Neighbour Lists option
   parseFlag("NLIST",doneigh);
@@ -549,11 +547,8 @@ PIV::PIV(const ActionOptions&ao):
     std:: vector<double> nl_cut(Nlist,0.);
     std:: vector<int> nl_st(Nlist,0);
     parseVector("NL_CUTOFF",nl_cut);
-    //if(nl_cut.size()!=getNumberOfArguments() && nl_cut.size()!=0) error("not enough values for NL_CUTOFF");
     parseVector("NL_STRIDE",nl_st);
-    //if(nl_st.size()!=getNumberOfArguments() && nl_st.size()!=0) error("not enough values for NL_STRIDE");
     parseVector("NL_SKIN",nl_skin);
-    //if(nl_skin.size()!=getNumberOfArguments() && nl_skin.size()!=0) error("not enough values for NL_SKIN");
     for (unsigned j=0; j<Nlist; j++) {
       if(nl_cut[j]<=0.0) {
         error("NL_CUTOFF should be explicitly specified and positive");
@@ -717,7 +712,6 @@ PIV::PIV(const ActionOptions&ao):
       //calculate/get COM position of centers i0 and i1
       Vector Pos0,Pos1;
       if(com) {
-        //if(pbc) makeWhole();
         Pos0=compos[i0];
         Pos1=compos[i1];
       } else {

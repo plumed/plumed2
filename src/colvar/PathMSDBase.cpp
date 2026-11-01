@@ -174,7 +174,6 @@ void PathMSDBase::calculate() {
     error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
   }
 
-  //log.printf("NOW CALCULATE! \n");
 
   if(!nopbc) {
     makeWhole();
@@ -376,7 +375,6 @@ void PathMSDBase::calculate() {
       imgVec.resize(neigh_size);
     }
   }
-  //log.printf("CALCULATION DONE! \n");
 }
 
 }

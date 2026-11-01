@@ -341,7 +341,6 @@ public:
       plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
-      // if(istep%2000==0) plumed->cmd("writeCheckPointFile");
       if(plumedWantsToStop) {
         nsteps=istep;
       }

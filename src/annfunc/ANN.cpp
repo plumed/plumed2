@@ -28,13 +28,9 @@ SOFTWARE.
 #include <string>
 #include <cmath>
 #include <iostream>
-// #include <stdio.h>
 
 using namespace std;
 
-// #define DEBUG
-// #define DEBUG_2
-// #define DEBUG_3
 
 namespace PLMD {
 namespace function {
@@ -247,7 +243,6 @@ void ANN::calculate_output_of_each_layer(const vector<double>& input) {
 #ifdef DEBUG_2
   // print out the result for debugging
   printf("output_of_each_layer = \n");
-  // for (int ii = num_layers - 1; ii < num_layers; ii ++) {
   for (int ii = 0; ii < num_layers; ii ++) {
     printf("layer[%d]: ", ii);
     if (ii != 0) {
@@ -285,7 +280,6 @@ void ANN::back_prop(vector<vector<double> >& derivatives_of_each_layer, int inde
 #endif
       // first calculate the derivative of input from derivative of output of this circular layer
       for(int ii = 0; ii < num_nodes[jj + 1] / 2; ii ++) {
-        // printf("size of input_of_each_layer[%d] = %d\n",jj,  input_of_each_layer[jj].size());
         double x_p = input_of_each_layer[jj + 1][2 * ii];
         double x_q = input_of_each_layer[jj + 1][2 * ii + 1];
         double radius = sqrt(x_p * x_p + x_q * x_q);
@@ -320,12 +314,10 @@ void ANN::back_prop(vector<vector<double> >& derivatives_of_each_layer, int inde
         derivatives_of_each_layer[jj][mm] = 0;
         for (int kk = 0; kk < num_nodes[jj + 1]; kk ++) {
           if (activations[jj] == string("Tanh")) {
-            // printf("tanh\n");
             derivatives_of_each_layer[jj][mm] += derivatives_of_each_layer[jj + 1][kk] \
                                                  * coeff[jj][kk][mm] \
                                                  * (1 - output_of_each_layer[jj + 1][kk] * output_of_each_layer[jj + 1][kk]);
           } else if (activations[jj] == string("Linear")) {
-            // printf("linear\n");
             derivatives_of_each_layer[jj][mm] += derivatives_of_each_layer[jj + 1][kk] \
                                                  * coeff[jj][kk][mm] \
                                                  * 1;
