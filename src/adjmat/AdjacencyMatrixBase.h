@@ -109,6 +109,9 @@ private:
   unsigned natoms_per_list;
   std::vector<std::size_t> nlist_v;
   LinkCells linkcells, threecells;
+/// True if the matrix elements are exactly zero beyond the link cell cutoff: the
+/// neighbour lists then hold only the atoms within the cutoff
+  bool exact_cutoff{false};
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
   unsigned nl_stride;
@@ -130,7 +133,11 @@ public:
     }
     return getName();
   }
-  void setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut=-1.0 );
+/// Set the cutoff of the link cells. With exact=true the matrix elements are
+/// known to be zero when the atoms are further apart than lcut, so the rows of
+/// the sparse matrix hold only the atoms within the cutoff instead of all the
+/// atoms in the neighbouring link cells (many more at short cutoffs)
+  void setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut=-1.0, const bool exact=false );
   static void performTask( std::size_t task_index,
                            const AdjacencyMatrixData<CV>& actiondata,
                            ParallelActionsInput& input,
@@ -346,10 +353,12 @@ void AdjacencyMatrixBase<CV, myPTM>::setupThirdAtomBlock( const std::vector<Atom
 template <class CV, typename myPTM>
 void AdjacencyMatrixBase<CV, myPTM>::setLinkCellCutoff( const bool& symmetric,
     const double& lcut,
-    double tcut ) {
+    double tcut,
+    const bool exact ) {
   if( read_one_group && symmetric ) {
     getPntrToComponent(0)->setSymmetric( true );
   }
+  exact_cutoff = exact;
   if( nl_cut>0 && lcut>nl_cut ) {
     error("D_MAX for switching functions should be shorter than neighbor list cutoff");
   }
@@ -364,6 +373,9 @@ void AdjacencyMatrixBase<CV, myPTM>::setLinkCellCutoff( const bool& symmetric,
   }
   if( linkcells.getCutoff()<std::numeric_limits<double>::max() ) {
     log.printf("  set link cell cutoff to %f \n", linkcells.getCutoff() );
+    if( exact_cutoff ) {
+      log.printf("  only atoms within the cutoff are stored in the rows of the matrix \n");
+    }
   }
   threecells.setCutoff( tcut );
 }
@@ -447,7 +459,8 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
                                   make_const_view(ablocks),
                                   getPbc(),
                                   natoms_per_list,
-                                  nlist_v );
+                                  nlist_v,
+                                  exact_cutoff );
     if( threeblocks.size()>0 ) {
       std::vector<Vector> ltmp_pos3( threeblocks.size() );
       for(unsigned i=0; i<threeblocks.size(); ++i) {

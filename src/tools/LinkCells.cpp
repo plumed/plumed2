@@ -26,6 +26,7 @@
 #include "Tools.h"
 #include "View.h"
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <numeric>
 #include <vector>
@@ -363,7 +364,8 @@ void LinkCells::createNeighborList( unsigned nat,
                                     View<const unsigned> neigh_ind,
                                     const Pbc& pbc,
                                     unsigned& natoms_per_list,
-                                    std::vector<std::size_t>& nlist ) {
+                                    std::vector<std::size_t>& nlist,
+                                    const bool applyCutoff ) {
   buildCellLists( neigh_pos, neigh_ind, pbc );
 //  natoms_per_list = 27*getMaxInCell();
 //this should save a little memory
@@ -373,26 +375,59 @@ void LinkCells::createNeighborList( unsigned nat,
   }
   const std::size_t nlist_sz = std::size_t(nat)*( 2 + std::size_t(natoms_per_list) );
   nlist.resize( nlist_sz );
-  std::vector<unsigned> indices( 1+natoms_per_list );
-  std::vector<unsigned> cells_required( getNumberOfCells() );
-  for(unsigned i=0; i<pos.size(); ++i) {
-    unsigned ncells_required=0;
-    addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
-    unsigned natoms=1;
-    indices[0] = ind[i];
-    retrieveAtomsInCells( ncells_required,
-                          make_const_view(cells_required),
-                          natoms,
-                          indices,
-                          ind[i]);
-    nlist[tind[i]] = natoms;
-    const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
-    if( natoms>neigh_ind.size() ) {
-      nlist[lstart] = ind[i];
-      std::copy( neigh_ind.begin(),
-                 neigh_ind.end(),
-                 nlist.begin()+lstart+1 );
-    } else {
+  // The distance test needs the position of a candidate from its index: the
+  // cell lists hold the indices of neigh_ind, the positions are in neigh_pos
+  const bool useCutoff = applyCutoff && link_cutoff<std::sqrt(std::numeric_limits<double>::max());
+  const double cutoff2 = link_cutoff*link_cutoff;
+  std::vector<unsigned> posOfIndex;
+  if( useCutoff ) {
+    unsigned maxind=0;
+    for(unsigned j=0; j<neigh_ind.size(); ++j) {
+      maxind = std::max( maxind, neigh_ind[j] );
+    }
+    posOfIndex.resize( maxind+1 );
+    for(unsigned j=0; j<neigh_ind.size(); ++j) {
+      posOfIndex[neigh_ind[j]] = j;
+    }
+  }
+  // Each central atom writes its own slots of nlist, so the loop is parallel
+  const unsigned nt=(pos.size()>=minAtomsPerThread/16)?
+                    std::min<unsigned>(OpenMP::getNumThreads(),pos.size()/(minAtomsPerThread/16)) : 1;
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<unsigned> indices( 1+natoms_per_list );
+    std::vector<unsigned> cells_required( getNumberOfCells() );
+    #pragma omp for schedule(static)
+    for(unsigned i=0; i<pos.size(); ++i) {
+      unsigned ncells_required=0;
+      addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
+      unsigned natoms=1;
+      indices[0] = ind[i];
+      retrieveAtomsInCells( ncells_required,
+                            make_const_view(cells_required),
+                            natoms,
+                            indices,
+                            ind[i]);
+      const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
+      if( natoms>neigh_ind.size() ) {
+        // the cells wrap around the box: the same atom was found more than once,
+        // use the whole list of candidates instead
+        natoms = 1 + neigh_ind.size();
+        indices[0] = ind[i];
+        std::copy( neigh_ind.begin(), neigh_ind.end(), indices.begin()+1 );
+      }
+      if( useCutoff ) {
+        unsigned nkept=1;
+        for(unsigned j=1; j<natoms; ++j) {
+          const Vector d = pbc.distance( pos[i], neigh_pos[posOfIndex[indices[j]]] );
+          if( d.modulo2()<=cutoff2 ) {
+            indices[nkept] = indices[j];
+            nkept++;
+          }
+        }
+        natoms = nkept;
+      }
+      nlist[tind[i]] = natoms;
       std::copy(indices.begin(),
                 indices.begin()+natoms,
                 nlist.begin()+lstart);

@@ -245,7 +245,7 @@ void TopologyMatrix::parseInput( AdjacencyMatrixBase<TopologyMatrix>* action ) {
 
   // Set the link cell cutoff
   action->setLinkCellCutoff( true, switchingFunction.get_dmax(),
-                             std::numeric_limits<double>::max() );
+                             std::numeric_limits<double>::max(), true );
   // Set the number of bins
   maxbins = std::floor( switchingFunction.get_dmax() / binw_mat ) + 1;
   // Set the cell volume
