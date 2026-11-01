@@ -261,7 +261,6 @@ std::string CoeffsBase::getCoeffDescription(const std::vector<unsigned int>& ind
 
 inline
 std::string CoeffsBase::getDimensionLabel(const unsigned int dim_index) const {
-  // plumed_massert(dim_index<numberOfDimensions(),"Trying to get the label of a dimension outside the number of dimensions");
   return dimension_labels_[dim_index];
 }
 
@@ -269,15 +268,6 @@ std::string CoeffsBase::getDimensionLabel(const unsigned int dim_index) const {
 // we are flattening arrays using a column-major order
 inline
 size_t CoeffsBase::getIndex(const std::vector<unsigned int>& indices) const {
-  // plumed_dbg_assert(indices.size()==ndimensions_);
-  // for(unsigned int i=0; i<ndimensions_; i++){
-  //   if(indices[i]>=indices_shape_[i]){
-  //     std::string is;
-  //     Tools::convert(i,is);
-  //     std::string msg="ERROR: the system is looking for a value outside the indices along the " + is + "dimension!";
-  //     plumed_merror(msg);
-  //   }
-  // }
   size_t index=indices[ndimensions_-1];
   for(unsigned int i=ndimensions_-1; i>0; --i) {
     index=index*indices_shape_[i-1]+indices[i-1];

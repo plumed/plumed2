@@ -68,7 +68,6 @@ class BF_Combined : public BasisFunctions {
   std::vector<BasisFunctions*> basisf_pntrs_;
   void setupLabels() override;
   void setupUniformIntegrals() override;
-  // void getBFandValueIndices(const unsigned int, unsigned int&, unsigned int&) const;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Combined(const ActionOptions&);
@@ -133,27 +132,6 @@ BF_Combined::BF_Combined(const ActionOptions&ao):
 }
 
 
-// void BF_Combined::getBFandValueIndices(const unsigned int n, unsigned int& bf_index, unsigned int& value_index) const {
-//   bf_index = 0; value_index = 0;
-//   if(n==0){
-//     bf_index = 0;
-//     value_index = 0;
-//     return;
-//   }
-//   else{
-//     unsigned int r=1;
-//     for(unsigned int i=0; i<basisf_pntrs_.size(); i++){
-//       for(unsigned int l=1; l<basisf_pntrs_[i]->numberOfBasisFunctions(); l++){
-//         if(r==n){
-//           bf_index = i;
-//           value_index = l;
-//           return;
-//         }
-//         r++;
-//       }
-//     }
-//   }
-// }
 
 
 void BF_Combined::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {

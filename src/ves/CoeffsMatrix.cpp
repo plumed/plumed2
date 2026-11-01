@@ -197,7 +197,6 @@ size_t CoeffsMatrix::getMatrixIndex(const size_t index1, const size_t index2) co
   plumed_dbg_assert(index1<nrows_);
   plumed_dbg_assert(index2<ncolumns_);
   if(diagonal_) {
-    // plumed_massert(index1==index2,"CoeffsMatrix: you trying to access a off-diagonal element of a diagonal coeffs matrix");
     matrix_idx=index1;
   } else if (index1<=index2) {
     matrix_idx=index2+index1*(nrows_-1)-index1*(index1-1)/2;
@@ -365,10 +364,6 @@ CoeffsMatrix& CoeffsMatrix::operator=(const std::vector<double>& values) {
 }
 
 
-// CoeffsMatrix& CoeffsMatrix::operator=(const CoeffsMatrix& other_coeffsmatrix) {
-//   setValues(other_coeffsmatrix);
-//   return *this;
-// }
 
 
 CoeffsMatrix CoeffsMatrix::operator+() const {

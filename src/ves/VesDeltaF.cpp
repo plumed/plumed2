@@ -26,7 +26,6 @@
 #include "tools/Communicator.h"
 #include "tools/Grid.h"
 #include "tools/File.h"
-//#include <algorithm> //std::fill
 
 namespace PLMD {
 namespace ves {

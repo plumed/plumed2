@@ -123,7 +123,6 @@ void TD_VonMises::registerKeywords(Keywords& keys) {
   keys.add("hidden","PERIODS","The periods for each of the dimensions. By default they are 2*pi for each dimension.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
-  //keys.use("NORMALIZE");
 }
 
 

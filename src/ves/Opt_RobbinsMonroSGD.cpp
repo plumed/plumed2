@@ -60,7 +60,6 @@ void Opt_RobbinsMonroSGD::registerKeywords(Keywords& keys) {
   Optimizer::useMultipleWalkersKeywords(keys);
   Optimizer::useMaskKeywords(keys);
   Optimizer::useRestartKeywords(keys);
-  // Optimizer::useMonitorAveragesKeywords(keys);
   Optimizer::useDynamicTargetDistributionKeywords(keys);
   keys.add("optional","DECAY_CONSTANT","the decay constant used for the step size.");
 }

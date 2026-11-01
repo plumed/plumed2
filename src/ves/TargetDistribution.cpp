@@ -180,7 +180,6 @@ void TargetDistribution::calculateStaticDistributionGrid() {
   if(static_grid_calculated && !bias_cutoff_active_) {
     return;
   }
-  // plumed_massert(isStatic(),"this should only be used for static distributions");
   plumed_massert(targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
   plumed_massert(log_targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
@@ -265,8 +264,6 @@ void TargetDistribution::updateTargetDist() {
   if(force_normalization_ && !(bias_cutoff_active_) ) {
     normalizeTargetDistGrid();
   }
-  //
-  // if(check_normalization_ && !force_normalization_ && !shift_targetdist_to_zero_){
   if(check_normalization_ && !(bias_cutoff_active_)) {
     double normalization = integrateGrid(targetdist_grid_pntr_.get());
     const double normalization_thrshold = 0.1;
@@ -299,8 +296,6 @@ void TargetDistribution::updateTargetDist() {
 void TargetDistribution::updateBiasCutoffForTargetDistGrid() {
   plumed_massert(vesbias_pntr_!=NULL,"The VesBias has to be linked to use updateBiasCutoffForTargetDistGrid()");
   plumed_massert(vesbias_pntr_->biasCutoffActive(),"updateBiasCutoffForTargetDistGrid() should only be used if the bias cutoff is active");
-  // plumed_massert(targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
-  // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   plumed_massert(getBiasWithoutCutoffGridPntr()!=NULL,"the bias without cutoff grid has to be linked");
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
@@ -316,17 +311,11 @@ void TargetDistribution::updateBiasCutoffForTargetDistGrid() {
     // this comes from the derivative of V(s)
     value *= deriv_factor_swf;
     targetdist_grid_pntr_->setValue(l,value);
-    // double log_value = log_targetdist_grid_pntr_->getValue(l) - std::log(swf);
-    // log_targetdist_grid_pntr_->setValue(l,log_value);
   }
   targetdist_grid_pntr_->scaleAllValuesAndDerivatives(1.0/norm);
-  // log_targetdist_grid_pntr_->setMinToZero();
 }
 
 void TargetDistribution::applyTargetDistModiferToGrid(TargetDistModifer* modifer_pntr) {
-  // plumed_massert(targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
-  // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
-  //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {

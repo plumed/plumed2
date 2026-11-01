@@ -131,9 +131,6 @@ protected:
   void turnOnHessian();
   void turnOffHessian();
   std::vector<CoeffsMatrix*> enableHessian(VesBias*, const bool diagonal_hessian=false);
-  // CoeffsMatrix* switchToDiagonalHessian(VesBias*);
-  // CoeffsMatrix* switchToFullHessian(VesBias*);
-  //
   CoeffsVector& Coeffs(const unsigned int coeffs_id = 0) const;
   CoeffsVector& AuxCoeffs(const unsigned int coeffs_id = 0) const;
   CoeffsVector& Gradient(const unsigned int coeffs_id = 0) const;
