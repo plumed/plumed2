@@ -61,6 +61,9 @@ public:
   static void registerKeywords(Keywords& keys);
   static void pruneShortcuts(Keywords& keys);
   explicit CoordAngles(const ActionOptions&);
+private:
+  /// Create the actions that calculate the angles between the bonds that connect catom to the atoms in group
+  void createAngles( const std::string& lab, const std::string& catom, const std::vector<std::string>& group, const std::string& switch_input );
 };
 
 PLUMED_REGISTER_ACTION(CoordAngles,"COORD_ANGLES")
@@ -90,6 +93,44 @@ void CoordAngles::pruneShortcuts(Keywords& keys) {
   keys.remove("LOWEST");
 }
 
+void CoordAngles::createAngles( const std::string& lab, const std::string& catom, const std::vector<std::string>& group, const std::string& switch_input ) {
+  // Create the list of atoms.  An atom is not bonded to itself so the central atom is not used as one of its own neighbours
+  std::string atlist;
+  unsigned k=1;
+  for(unsigned j=0; j<group.size(); ++j) {
+    if( group[j]==catom ) {
+      continue;
+    }
+    std::string num;
+    Tools::convert( k, num );
+    atlist += " ATOMS" + num + "=" + catom + "," + group[j];
+    k++;
+  }
+  if( k==1 ) {
+    error("there are no atoms in GROUP that are different from the central atom " + catom );
+  }
+  // Calculate the distances
+  readInputLine( lab + "_dd: DISTANCE" + atlist );
+  // Transform with the switching function
+  readInputLine( lab + "_sw: LESS_THAN ARG=" + lab + "_dd SWITCH={" + switch_input +"}");
+  // Now get the normalised vectors
+  readInputLine( lab + "_comp: DISTANCE" + atlist + " COMPONENTS");
+  readInputLine( lab + "_norm2: COMBINE ARG=" + lab + "_comp.x" + "," + lab + "_comp.y," + lab + "_comp.z POWERS=2,2,2 PERIODIC=NO");
+  readInputLine( lab + "_norm: CUSTOM ARG=" + lab + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( lab + "_norm_x: CUSTOM ARG=" + lab + "_comp.x," + lab + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( lab + "_norm_y: CUSTOM ARG=" + lab + "_comp.y," + lab + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( lab + "_norm_z: CUSTOM ARG=" + lab + "_comp.z," + lab + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( lab + "_stack: VSTACK ARG=" + lab + "_norm_x" + "," + lab + "_norm_y," + lab + "_norm_z");
+  readInputLine( lab + "_stackT: TRANSPOSE ARG=" + lab + "_stack");
+  // Create the matrix of weights
+  readInputLine( lab + "_swd: OUTER_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + lab + "_sw," + lab + "_sw");
+  // Avoid double counting
+  readInputLine( lab + "_wmat: CUSTOM ARG=" + lab + "_swd FUNC=0.5*x PERIODIC=NO");
+  // And the matrix of dot products and the angles
+  readInputLine( lab + "_dpmat: MATRIX_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + lab + "_stack," + lab + "_stackT");
+  readInputLine( lab + "_angles: CUSTOM ARG=" + lab + "_dpmat FUNC=acos(x) PERIODIC=NO");
+}
+
 CoordAngles::CoordAngles(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
@@ -97,43 +138,18 @@ CoordAngles::CoordAngles(const ActionOptions& ao):
   std::vector<std::string> catoms;
   parseVector("CATOMS",catoms);
   Tools::interpretRanges(catoms);
+  if( catoms.size()==0 ) {
+    error("no central atoms were found in CATOMS");
+  }
   // Parse the coordination sphere
   std::vector<std::string> group;
   parseVector("GROUP",group);
   Tools::interpretRanges(group);
-  // Create the list of atoms
-  std::string atlist;
-  unsigned k=1;
-  for(unsigned i=0; i<catoms.size(); ++i) {
-    for(unsigned j=0; j<group.size(); ++j) {
-      std::string num;
-      Tools::convert( k, num );
-      atlist += " ATOMS" + num + "=" + catoms[i] + "," + group[j];
-      k++;
-    }
+  if( group.size()==0 ) {
+    error("no atoms were found in GROUP");
   }
-  // Calculate the distances
-  readInputLine( getShortcutLabel() + "_dd: DISTANCE" + atlist );
-  // Transform with the switching function
   std::string switch_input;
   parse("SWITCH",switch_input);
-  readInputLine( getShortcutLabel() + "_sw: LESS_THAN ARG=" + getShortcutLabel() + "_dd SWITCH={" + switch_input +"}");
-  // Now get the normalised vectors
-  readInputLine( getShortcutLabel() + "_comp: DISTANCE" + atlist + " COMPONENTS");
-  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG=" + getShortcutLabel() + "_comp.x" + "," + getShortcutLabel() + "_comp.y," + getShortcutLabel() + "_comp.z POWERS=2,2,2 PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG=" + getShortcutLabel() + "_comp.x," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG=" + getShortcutLabel() + "_comp.y," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG=" + getShortcutLabel() + "_comp.z," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_stack: VSTACK ARG=" + getShortcutLabel() + "_norm_x" + "," + getShortcutLabel() + "_norm_y," + getShortcutLabel() + "_norm_z");
-  readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_stack");
-  // Create the matrix of weights
-  readInputLine( getShortcutLabel() + "_swd: OUTER_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + getShortcutLabel() + "_sw," + getShortcutLabel() + "_sw");
-  // Avoid double counting
-  readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG=" + getShortcutLabel() + "_swd FUNC=0.5*x PERIODIC=NO");
-  // And the matrix of dot products and the angles
-  readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + getShortcutLabel() + "_stack," + getShortcutLabel() + "_stackT");
-  readInputLine( getShortcutLabel() + "_angles: CUSTOM ARG=" + getShortcutLabel() + "_dpmat FUNC=acos(x) PERIODIC=NO");
   // Read the input
   Keywords keys;
   MultiColvarShortcuts::shortcutKeywords( keys );
@@ -145,10 +161,48 @@ CoordAngles::CoordAngles(const ActionOptions& ao):
   if( do_mean ) {
     keymap.insert(std::pair<std::string,std::string>("SUM",""));
   }
-  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_angles", getShortcutLabel() + "_wmat", keymap, this );
+  const std::string lab = getShortcutLabel();
+  if( catoms.size()==1 ) {
+    createAngles( lab, catoms[0], group, switch_input );
+    MultiColvarShortcuts::expandFunctions( lab, lab + "_angles", lab + "_wmat", keymap, this );
+    if( do_mean ) {
+      readInputLine( lab + "_denom: SUM ARG=" + lab + "_wmat PERIODIC=NO");
+      readInputLine( lab + "_mean: CUSTOM ARG=" + lab + "_sum," + lab + "_denom FUNC=x/y PERIODIC=NO");
+    }
+    return;
+  }
+  // The angles are calculated separately for each of the central atoms, as the angles between bonds
+  // that start from different atoms are not wanted.  Everything that we output is a sum over the angles
+  // so the final quantities are the sums of the quantities for each central atom.
+  std::vector<std::string> outputs, prefixes;
+  for(unsigned i=0; i<catoms.size(); ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    prefixes.push_back( lab + "_c" + num );
+    createAngles( prefixes[i], catoms[i], group, switch_input );
+    std::vector<std::string> thisoutputs;
+    MultiColvarShortcuts::expandFunctions( prefixes[i], prefixes[i] + "_angles", prefixes[i] + "_wmat", keymap, this, &thisoutputs );
+    if( i==0 ) {
+      outputs = thisoutputs;
+    }
+    if( do_mean ) {
+      readInputLine( prefixes[i] + "_denom: SUM ARG=" + prefixes[i] + "_wmat PERIODIC=NO");
+    }
+  }
+  for(const auto& suffix : outputs ) {
+    std::string args = prefixes[0] + suffix;
+    for(unsigned i=1; i<prefixes.size(); ++i) {
+      args += "," + prefixes[i] + suffix;
+    }
+    readInputLine( lab + suffix + ": COMBINE ARG=" + args + " PERIODIC=NO");
+  }
   if( do_mean ) {
-    readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_wmat PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_mean: CUSTOM ARG=" + getShortcutLabel() + "_sum," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    std::string args = prefixes[0] + "_denom";
+    for(unsigned i=1; i<prefixes.size(); ++i) {
+      args += "," + prefixes[i] + "_denom";
+    }
+    readInputLine( lab + "_denom: COMBINE ARG=" + args + " PERIODIC=NO");
+    readInputLine( lab + "_mean: CUSTOM ARG=" + lab + "_sum," + lab + "_denom FUNC=x/y PERIODIC=NO");
   }
 }
 
