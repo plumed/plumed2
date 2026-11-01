@@ -65,8 +65,8 @@ public:
 /// Add some forces
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
 /// Get the input data
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<float>& inputdata ) const override ;
 /// Calculate the function
   static void performTask( std::size_t task_index,
                            const FunctionData<CV>& actiondata,
@@ -233,7 +233,7 @@ void FunctionOfVector<CV, myPTM>::prepare() {
 }
 
 template <class CV, typename myPTM>
-void FunctionOfVector<CV, myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void FunctionOfVector<CV, myPTM>::getArgumentInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
@@ -269,7 +269,7 @@ void FunctionOfVector<CV, myPTM>::getInputData( std::vector<double>& inputdata )
 }
 
 template <class CV, typename myPTM>
-void FunctionOfVector<CV, myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void FunctionOfVector<CV, myPTM>::getArgumentInputData( std::vector<float>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks = getNumberOfMasks();
   if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {

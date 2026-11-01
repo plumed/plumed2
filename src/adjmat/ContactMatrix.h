@@ -89,7 +89,7 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix,myPTM>* action
   }
   // And set the link cell cutoff
   action->log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
-  action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
+  action->setLinkCellCutoff( true, switchingFunction.get_dmax(), -1.0, true );
 }
 
 void ContactMatrix::calculateWeight( const ContactMatrix& data,
@@ -97,6 +97,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data,
                                      MatrixOutput output ) {
   const double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
+    output.val[0]=0;
     return;  // Atoms can't be bonded to themselves
   }
   double dfunc;

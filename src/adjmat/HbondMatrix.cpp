@@ -271,7 +271,7 @@ void HbondMatrix::parseInput( AdjacencyMatrixBase<HbondMatrix>* action ) {
   }
 
   // Setup link cells
-  action->setLinkCellCutoff( false, distanceOOSwitch.get_dmax() );
+  action->setLinkCellCutoff( false, distanceOOSwitch.get_dmax(), -1.0, true );
 }
 
 void HbondMatrix::calculateWeight( const HbondMatrix& data,
