@@ -221,6 +221,10 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
       if( chains[ichain]%5!=0 ) {
         error("backbone segment received does not contain a multiple of five residues");
       }
+      if( inres<3 ) {
+        // A strand contains three residues. Without this the unsigned subtraction in the loop below wraps around
+        continue;
+      }
       for(unsigned ires=0; ires<inres-2; ++ires) {
         for(unsigned jchain=0; jchain<ichain; ++jchain) {
           unsigned jprev=0;
@@ -230,6 +234,9 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
           unsigned jnres=chains[jchain]/5;
           if( chains[jchain]%5!=0 ) {
             error("backbone segment received does not contain a multiple of five residues");
+          }
+          if( jnres<3 ) {
+            continue;
           }
           for(unsigned jres=0; jres<jnres-2; ++jres) {
             for(unsigned kk=0; kk<15; ++kk) {
@@ -252,6 +259,10 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
         }
       }
     }
+  }
+
+  if( seglist.empty() ) {
+    error("it is not possible to build any segment of backbone that could form a sheet with the residues and the STYLE that were given");
   }
 
   // Build the reference structure ( in angstroms )
@@ -333,7 +344,8 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
              + " " + atoms + nopbcstr + usegpustr;
 
   if( strands_cutoff>0 ) {
-    readInputLine( scutoff_action );
+    // The distance used for the cutoff has to treat the periodic boundary conditions as the rest of the calculation
+    readInputLine( scutoff_action + nopbcstr );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()

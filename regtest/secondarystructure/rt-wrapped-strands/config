@@ -1,0 +1,21 @@
+type=driver
+# same input and same trajectory as rt33, but the atoms are shifted by 2.5 nm and then wrapped
+# in the box one by one: the chains are broken by the periodic boundaries. The values of the
+# variables and the forces have to be the same as in rt33
+extra_files="../rt33/amyloid.pdb ../rt33/amyloid.xyz"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz wrapped.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{n=0}
+    NR==1{natoms=$1}
+    (NR-1)%(natoms+2)==0{print; next}
+    (NR-1)%(natoms+2)==1{print; split($0,L," "); next}
+    {
+      for(k=1;k<=3;k++){
+        x[k]=$(k+1)+2.5
+        x[k]-=L[k]*int(x[k]/L[k])
+        if(x[k]<0) x[k]+=L[k]
+      }
+      printf("%s %.4f %.4f %.4f\n",$1,x[1],x[2],x[3])
+    }' amyloid.xyz > wrapped.xyz
+}
