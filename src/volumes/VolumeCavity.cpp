@@ -145,6 +145,8 @@ public:
   void setupRegions( ActionVolume<VolumeCavity>* action, const Pbc& pbc, const std::vector<Vector>& positions );
   void parseInput( ActionVolume<VolumeCavity>* action );
   static void parseAtoms( ActionVolume<VolumeCavity>* action, std::vector<AtomNumber>& atoms );
+  // the assignment is customized (see below): copy construction is the default one
+  VolumeCavity(const VolumeCavity&) = default;
   VolumeCavity& operator=( const VolumeCavity& m ) {
     jacob_det=m.jacob_det;
     len_bi=m.len_bi;

@@ -662,7 +662,7 @@ usage:
     return std::make_unique<forceBoxTrajectory>(std::move(d),newBox);
   }
   forceBoxTrajectory(std::unique_ptr<AtomDistribution>&& d,
-                     std::array<double,9> mybox):
+                     const std::array<double,9>& mybox):
     distribution(std::move(d)),
     fixedbox(mybox)
   {}

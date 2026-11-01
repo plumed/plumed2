@@ -548,6 +548,9 @@ public:
   std::vector<Tensor> kmat;
   static void registerKeywords( Keywords& keys );
   void parseInput( adjmat::AdjacencyMatrixBase<HBPammMatrix>* action );
+  // the assignment is customized (see below): copy construction is the default one
+  HBPammMatrix() = default;
+  HBPammMatrix(const HBPammMatrix&) = default;
   HBPammMatrix& operator=( const HBPammMatrix& m ) {
     regulariser = m.regulariser;
     incoord_to_hbcoord = m.incoord_to_hbcoord;

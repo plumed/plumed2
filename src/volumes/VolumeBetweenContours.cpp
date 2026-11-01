@@ -105,6 +105,9 @@ public:
   void parseInput( ActionVolume<VolumeInEnvelope>* action );
   void setupRegions( ActionVolume<VolumeInEnvelope>* action, const Pbc& pbc, const std::vector<Vector>& positions );
   static void parseAtoms( ActionVolume<VolumeInEnvelope>* action, std::vector<AtomNumber>& atom );
+  // the assignment is customized (see below): copy construction is the default one
+  VolumeInEnvelope() = default;
+  VolumeInEnvelope(const VolumeInEnvelope&) = default;
   VolumeInEnvelope& operator=( const VolumeInEnvelope& m ) {
     gvol=m.gvol;
     maxs=m.maxs;

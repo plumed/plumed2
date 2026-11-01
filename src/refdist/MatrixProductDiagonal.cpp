@@ -49,6 +49,9 @@ namespace refdist {
 
 class MatrixProductDiagonalInput {
 public:
+  // the assignment is customized (see below): copy construction is the default one
+  MatrixProductDiagonalInput() = default;
+  MatrixProductDiagonalInput(const MatrixProductDiagonalInput&) = default;
   MatrixProductDiagonalInput& operator=( const MatrixProductDiagonalInput& m ) {
     // Don't need to copy A and B here as they will be set in calculate
     return *this;
