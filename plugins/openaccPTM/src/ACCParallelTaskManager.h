@@ -329,15 +329,10 @@ void AccParallelTaskManager<T>::runAllTasks() {
   // computes all the tasks and overwrites the whole stash, which is then sent
   // to the other ranks
   if (comm.Get_rank()== 0) {
-    // The derivatives are only needed during the force calculation, unless
-    // a component stores them (as the CPU task manager does)
+    // The derivatives are only ever needed during the force calculation
+    // Please stop adding a check on whether any of the methods need the derivatives
+    // they do not need the derivatives during the forward loop.
     myinput.noderiv = true;
-    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-      if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
-        myinput.noderiv=false;
-        break;
-      }
-    }
     // Get all the input data so we can broadcast it to the GPU
     action->getInputData( input_buffer, argumentsMap );
     myinput.dataSize = input_buffer.size();
