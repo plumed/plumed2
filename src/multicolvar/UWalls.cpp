@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "MultiColvarShortcuts.h"
 
 //+PLUMEDOC MCOLVAR UWALLS
 /*
@@ -52,9 +51,6 @@ void UWalls::registerKeywords(Keywords& keys) {
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  keys.add("atoms","CATOMS","all the angles between the bonds that radiate out from these central atom are computed");
-  keys.add("atoms","GROUP","a list of angls between pairs of bonds connecting one of the atoms specified using the CATOM command and two of the atoms specified here are computed");
-  keys.add("compulsory","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
   keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
   keys.needsAction("UPPER_WALLS");

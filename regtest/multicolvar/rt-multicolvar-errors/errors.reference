@@ -22,3 +22,7 @@ INPLANEDISTANCES without VECTOREND: exit code 1
 ERROR in input to action INPLANEDISTANCES : no atoms found in VECTOREND 
 COORD_ANGLES without neighbours: exit code 1
 ERROR in input to action COORD_ANGLES : there are no atoms in GROUP that are different from the central atom 1 
+PLANES with a keyword that it does not use: exit code 1
+ERROR in input to action PLANE_VECTOR : cannot understand the following words from the input line : MEAN 
+UWALLS with a keyword that it does not use: exit code 1
+ERROR in input to action UPPER_WALLS : cannot understand the following words from the input line : SWITCH 

@@ -1,2 +1,5 @@
 d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 MEAN
-PRINT ARG=d_mean FILE=colvar FMT=%9.5f
+# these keep working
+p: PLANES ATOMS1=1,2,3 ATOMS2=4,5,6 VMEAN VSUM
+u: UWALLS DATA=d AT=1.0 KAPPA=1.0
+PRINT ARG=d_mean,p_vmean,p_vsum,u.bias FILE=colvar FMT=%9.5f
