@@ -104,12 +104,9 @@ def readme():
 
 # allow one to force using cython with env var plumed_force_cython=yes
 USE_CYTHON = False
-try:
-    if os.environ["plumed_force_cython"] == "yes":
-        print("plumed_force_cython=yes")
-        USE_CYTHON = True
-except KeyError:
-    pass
+if os.environ.get("plumed_force_cython") == "yes":
+    print("plumed_force_cython=yes")
+    USE_CYTHON = True
 
 # if plumed.c is available, do not need cython
 if not USE_CYTHON:
