@@ -592,7 +592,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
-<<<<<<< HEAD
+  <<<<<<< HEAD
   forceData<precision> forces(forcesForApply);
   if( reset_forces ) {
     // Clear force buffer
@@ -604,10 +604,10 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   action->transferForcesToStash( partialTaskList, value_stash );
 
   std::fill (omp_forces[0].begin(),omp_forces[0].end(), 0.0);
-=======
-  // Only rank 0 uses the GPU: it computes all the forces, overwriting the
-  // whole array, which is then sent to the other ranks
->>>>>>> 63fa77f6b (openaccPTM: fix MPI results, uninitialised derivatives, fewer transfers (#1557))
+  =======
+    // Only rank 0 uses the GPU: it computes all the forces, overwriting the
+    // whole array, which is then sent to the other ranks
+    >>>>>>> 63fa77f6b (openaccPTM: fix MPI results, uninitialised derivatives, fewer transfers (#1557))
   if (comm.Get_rank() == 0) {
     forceData<precision> forces(forcesForApply);
     myinput.noderiv = false;
